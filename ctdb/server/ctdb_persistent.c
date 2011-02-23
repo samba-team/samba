@@ -29,6 +29,7 @@
 struct ctdb_persistent_state {
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db; /* used by trans3_commit */
+	struct ctdb_client *client; /* used by trans3_commit */
 	struct ctdb_req_control *c;
 	const char *errormsg;
 	uint32_t num_pending;
@@ -277,6 +278,10 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 
 static int ctdb_persistent_state_destructor(struct ctdb_persistent_state *state)
 {
+	if (state->client != NULL) {
+		state->client->db_id = 0;
+	}
+
 	if (state->ctdb_db != NULL) {
 		state->ctdb_db->persistent_state = NULL;
 	}
@@ -303,6 +308,21 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+	if (client == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store "
+				 "to a client. Returning error\n"));
+		return -1;
+	}
+
+	if (client->db_id != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ERROR: trans3_commit: "
+				 "client-db_id[0x%08x] != 0 "
+				 "(client_id[0x%08x]): trans3_commit active?\n",
+				 client->db_id, client->client_id));
+		return -1;
+	}
+
 	ctdb_db = find_ctdb_db(ctdb, m->db_id);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control_trans3_commit: "
@@ -318,21 +338,18 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
-	if (client == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store "
-				 "to a client. Returning error\n"));
-		return -1;
-	}
-
 	ctdb_db->persistent_state = talloc_zero(ctdb_db,
 						struct ctdb_persistent_state);
 	CTDB_NO_MEMORY(ctdb, ctdb_db->persistent_state);
+
+	client->db_id = m->db_id;
 
 	state = ctdb_db->persistent_state;
 	state->ctdb = ctdb;
 	state->ctdb_db = ctdb_db;
 	state->c    = c;
+	state->client = client;
+
 	talloc_set_destructor(state, ctdb_persistent_state_destructor);
 
 	for (i = 0; i < ctdb->vnn_map->size; i++) {
