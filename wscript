@@ -21,7 +21,7 @@ samba_dist.DIST_DIRS('.')
 #samba-4.0.0 branded tarball (until the merge is complete) and the
 #core elements of the autotools build system (which is known to
 #produce buggy binaries).
-samba_dist.DIST_BLACKLIST('README Manifest Read-Manifest-Now Roadmap source3/ ' +
+samba_dist.DIST_BLACKLIST('README Manifest Read-Manifest-Now Roadmap ' +
                           'packaging/ docs-xml/ examples/ swat/ WHATSNEW.txt MAINTAINERS ')
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
