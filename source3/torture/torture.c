@@ -4436,6 +4436,7 @@ static bool run_opentest(int dummy)
 	SMB_OFF_T fsize;
 	bool correct = True;
 	char *tmp_path;
+	NTSTATUS status;
 
 	printf("starting open test\n");
 
@@ -4774,6 +4775,31 @@ static bool run_opentest(int dummy)
 	printf("non-io open test #7 passed.\n");
 
 	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
+
+	printf("TEST #8 testing open without WRITE_ATTRIBUTES, updating close write time.\n");
+	status = cli_ntcreate(cli1, fname, 0, FILE_WRITE_DATA, FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				FILE_OVERWRITE_IF, 0, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("TEST #8 open of %s failed (%s)\n", fname, nt_errstr(status));
+		correct = false;
+		goto out;
+	}
+
+	/* Write to ensure we have to update the file time. */
+	if (cli_write(cli1, fnum1, 0, "TEST DATA\n", 0, 10) != 10) {
+		printf("TEST #8 cli_write failed: %s\n", cli_errstr(cli1));
+		correct = false;
+		goto out;
+	}
+
+        status = cli_close(cli1, fnum1);
+        if (!NT_STATUS_IS_OK(status)) {
+                printf("TEST #8 close of %s failed (%s)\n", fname, nt_errstr(status));
+		correct = false;
+        }
+
+  out:
 
 	if (!torture_close_connection(cli1)) {
 		correct = False;
