@@ -47,17 +47,9 @@ LIBCLI_WINREG_SRC = '''rpc_client/cli_winreg.c
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 
-LIBREPLACE_SRC = '''${LIBREPLACE_SRCS}'''
-
-LIBSAMBAUTIL_SRC = '''${LIBREPLACE_SRC}'''
-
-LIBTEVENT_SRC0 = ''
-
 PTHREADPOOL_SRC = ''
 
-LIBREPLACE_SRCS = ''
-
-LIB_SRC = '''${LIBSAMBAUTIL_SRC}
+LIB_SRC = '''
           lib/messages.c lib/messages_local.c
           lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
           lib/interfaces.c lib/memcache.c
@@ -86,7 +78,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC}
           intl/lang_tdb.c
           lib/conn_tdb.c lib/adt_tree.c lib/gencache.c
           lib/sessionid_tdb.c
-          lib/module.c lib/events.c ${LIBTEVENT_SRC0}
+          lib/module.c lib/events.c
           lib/server_contexts.c
           lib/ldap_escape.c
           lib/secdesc.c ${PTHREADPOOL_SRC}
