@@ -129,11 +129,7 @@ LIBSMB_ERR_SRC = '''${DCE_RPC_ERR_SRC}'''
 
 LIBNTLMSSP_SRC = '''
                libsmb/ntlmssp.c
-               libsmb/ntlmssp_wrap.c
-               ../libcli/auth/ntlmssp.c
-               ../libcli/auth/ntlmssp_sign.c
-               ../libcli/auth/ntlmssp_ndr.c
-               ../libcli/auth/ntlmssp_server.c'''
+               libsmb/ntlmssp_wrap.c'''
 
 TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
@@ -719,7 +715,7 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
 
 bld.SAMBA3_LIBRARY('passdb',
                    source=PASSDB_SRC,
-                   deps='SECRETS3 SMBLDAP GROUPDB pdb wbclient',
+                   deps='SECRETS3 SMBLDAP GROUPDB pdb wbclient LIBCLI_AUTH',
                    private_library=True,
                    vars=locals())
 
@@ -787,7 +783,7 @@ bld.SAMBA3_SUBSYSTEM('LIBSMB_ERR',
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
                     source=LIBNTLMSSP_SRC,
-                    deps='LIBSMB_ERR NDR_NTLMSSP ntlm_check',
+                    deps='LIBSMB_ERR NDR_NTLMSSP NTLMSSP_COMMON',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBSMB',
