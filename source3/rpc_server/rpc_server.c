@@ -918,6 +918,132 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 			    s);
 }
 
+/********************************************************************
+ * Start listening on the ncalrpc socket
+ ********************************************************************/
+
+static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
+				    struct tevent_fd *fde,
+				    uint16_t flags,
+				    void *private_data);
+
+bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
+				 struct messaging_context *msg_ctx,
+				 struct ndr_syntax_id syntax_id,
+				 const struct sockaddr_storage *ifss,
+				 const char *name)
+{
+	struct dcerpc_ncacn_listen_state *state;
+	struct tevent_fd *fde;
+
+	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
+	if (state == NULL) {
+		DEBUG(0, ("Out of memory\n"));
+		return false;
+	}
+
+	state->syntax_id = syntax_id;
+	state->fd = -1;
+
+	if (name == NULL) {
+		name = "DEFAULT";
+	}
+	state->ep.name = talloc_strdup(state, name);
+
+	if (state->ep.name == NULL) {
+		DEBUG(0, ("Out of memory\n"));
+		talloc_free(state);
+		return false;
+	}
+
+	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0700)) {
+		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
+			  lp_ncalrpc_dir(), strerror(errno)));
+		goto out;
+	}
+
+	state->fd = create_pipe_sock(lp_ncalrpc_dir(), name, 0700);
+	if (state->fd == -1) {
+		DEBUG(0, ("Failed to create pipe socket! [%s/%s]\n",
+			  lp_ncalrpc_dir(), name));
+		goto out;
+	}
+
+	DEBUG(10, ("Openened pipe socket fd %d for %s\n", state->fd, name));
+
+	state->ev_ctx = ev_ctx;
+	state->msg_ctx = msg_ctx;
+
+	/* Set server socket to non-blocking for the accept. */
+	set_blocking(state->fd, false);
+
+	fde = tevent_add_fd(state->ev_ctx,
+			    state,
+			    state->fd,
+			    TEVENT_FD_READ,
+			    dcerpc_ncalrpc_listener,
+			    state);
+	if (fde == NULL) {
+		DEBUG(0, ("Failed to add event handler for ncalrpc!\n"));
+		goto out;
+	}
+
+	tevent_fd_set_auto_close(fde);
+
+	return true;
+out:
+	if (state->fd != -1) {
+		close(state->fd);
+	}
+	TALLOC_FREE(state);
+
+	return 0;
+}
+
+static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
+					struct tevent_fd *fde,
+					uint16_t flags,
+					void *private_data)
+{
+	struct dcerpc_ncacn_listen_state *state =
+			talloc_get_type_abort(private_data,
+					      struct dcerpc_ncacn_listen_state);
+	struct tsocket_address *cli_addr = NULL;
+	struct sockaddr_un sunaddr;
+	struct sockaddr *addr = (struct sockaddr *)(void *)&sunaddr;
+	socklen_t len;
+	int sd = -1;
+	int rc;
+
+	while (sd == -1) {
+		sd = accept(state->fd, addr, &len);
+		if (sd == -1 && errno != EINTR) {
+			break;
+		}
+	}
+
+	if (sd == -1) {
+		DEBUG(0, ("ncalrpc accept() failed: %s\n", strerror(errno)));
+		return;
+	}
+
+	rc = tsocket_address_bsd_from_sockaddr(state,
+					       addr, len,
+					       &cli_addr);
+	if (rc < 0) {
+		close(sd);
+		return;
+	}
+
+	DEBUG(10, ("Accepted ncalrpc socket %d\n", sd));
+
+	dcerpc_ncacn_accept(state->ev_ctx,
+			    state->msg_ctx,
+			    state->syntax_id, NCALRPC,
+			    state->ep.name, 0,
+			    cli_addr, NULL, sd);
+}
+
 struct dcerpc_ncacn_conn {
 	struct ndr_syntax_id syntax_id;
 
