@@ -743,7 +743,17 @@ fail:
 	/* terminate client connection */
 	talloc_free(npc);
 	return;
- }
+}
+
+static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx,
+				struct ndr_syntax_id syntax_id,
+				enum dcerpc_transport_t transport,
+				const char *name,
+				uint16_t port,
+				struct tsocket_address *cli_addr,
+				struct tsocket_address *srv_addr,
+				int s);
 
 /********************************************************************
  * Start listening on the tcp/ip socket
@@ -767,7 +777,7 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
 		DEBUG(0, ("setup_dcerpc_ncacn_tcpip_socket: Out of memory\n"));
-		return false;
+		return 0;
 	}
 
 	state->syntax_id = syntax_id;
@@ -842,16 +852,6 @@ out:
 
 	return 0;
 }
-
-static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
-				struct messaging_context *msg_ctx,
-				struct ndr_syntax_id syntax_id,
-				enum dcerpc_transport_t transport,
-				const char *name,
-				uint16_t port,
-				struct tsocket_address *cli_addr,
-				struct tsocket_address *srv_addr,
-				int s);
 
 static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 					struct tevent_fd *fde,
@@ -969,11 +969,11 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	int sys_errno;
 	int rc;
 
-	DEBUG(5, ("dcerpc_ncacn_accept\n"));
+	DEBUG(10, ("dcerpc_ncacn_accept\n"));
 
 	ncacn_conn = talloc_zero(ev_ctx, struct dcerpc_ncacn_conn);
 	if (ncacn_conn == NULL) {
-		DEBUG(0, ("dcerpc_ncacn_accept: Out of memory!\n"));
+		DEBUG(0, ("Out of memory!\n"));
 		close(s);
 		return;
 	}
@@ -987,8 +987,8 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			ncacn_conn->ep.name = talloc_strdup(ncacn_conn, name);
 			break;
 		default:
-			DEBUG(0, ("dcerpc_ncacn_accept_function: "
-				  "unknown transport: %u!\n", transport));
+			DEBUG(0, ("unknown dcerpc transport: %u!\n",
+				  transport));
 			talloc_free(ncacn_conn);
 			close(s);
 			return;
@@ -1010,7 +1010,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 						  ncacn_conn);
 	}
 	if (ncacn_conn->client_name == NULL) {
-		DEBUG(0, ("dcerpc_ncacn_accept: Out of memory!\n"));
+		DEBUG(0, ("Out of memory!\n"));
 		talloc_free(ncacn_conn);
 		close(s);
 		return;
@@ -1023,7 +1023,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			tsocket_address_inet_addr_string(ncacn_conn->server,
 							 ncacn_conn);
 		if (ncacn_conn->server_name == NULL) {
-			DEBUG(0, ("dcerpc_ncacn_accept: Out of memory!\n"));
+			DEBUG(0, ("Out of memory!\n"));
 			talloc_free(ncacn_conn);
 			close(s);
 			return;
@@ -1032,27 +1032,25 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 	rc = set_blocking(s, false);
 	if (rc < 0) {
-		DEBUG(2, ("dcerpc_ncacn_accept: Failed to set socket to "
-			  "non-blocking\n"));
+		DEBUG(2, ("Failed to set dcerpc socket to non-blocking\n"));
 		talloc_free(ncacn_conn);
 		close(s);
 		return;
 	}
 
 	/*
-	 * As soon as we have tstream_bsd_existing_socket set up it will take
-	 * care closing the socket.
+	 * As soon as we have tstream_bsd_existing_socket set up it will
+	 * take care of closing the socket.
 	 */
 	rc = tstream_bsd_existing_socket(ncacn_conn, s, &ncacn_conn->tstream);
 	if (rc < 0) {
-		DEBUG(2, ("dcerpc_ncacn_accept: Failed to create tstream "
-			  "socket\n"));
+		DEBUG(2, ("Failed to create tstream socket for dcerpc\n"));
 		talloc_free(ncacn_conn);
 		close(s);
 		return;
 	}
 
-	switch(ncacn_conn->transport) {
+	switch (ncacn_conn->transport) {
 		case NCACN_IP_TCP:
 			pipe_name = tsocket_address_string(ncacn_conn->client,
 							   ncacn_conn);
@@ -1084,7 +1082,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		status = auth_anonymous_session_info(ncacn_conn,
 						     &ncacn_conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2, ("dcerpc_ncacn_accept: Failed to create "
+			DEBUG(2, ("Failed to create "
 				  "auth_anonymous_session_info - %s\n",
 				  nt_errstr(status)));
 			talloc_free(ncacn_conn);
@@ -1101,16 +1099,16 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				      &ncacn_conn->p,
 				      &sys_errno);
 	if (rc < 0) {
-		DEBUG(2, ("dcerpc_ncacn_accept: Failed to create pipe "
-			  "struct - %s", strerror(sys_errno)));
+		DEBUG(2, ("Failed to create pipe struct - %s",
+			  strerror(sys_errno)));
 		talloc_free(ncacn_conn);
 		return;
 	}
 
 	ncacn_conn->send_queue = tevent_queue_create(ncacn_conn,
-			"dcerpc_tcpip_accept_function");
+							"dcerpc send queue");
 	if (ncacn_conn->send_queue == NULL) {
-		DEBUG(0, ("dcerpc_ncacn_accept_function: Out of memory!\n"));
+		DEBUG(0, ("Out of memory!\n"));
 		talloc_free(ncacn_conn);
 		return;
 	}
@@ -1119,15 +1117,14 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					       ncacn_conn->ev_ctx,
 					       ncacn_conn->tstream);
 	if (subreq == NULL) {
-		DEBUG(2, ("dcerpc_ncacn_accept: Failed to send ncacn "
-			  "packet\n"));
+		DEBUG(2, ("Failed to send ncacn packet\n"));
 		talloc_free(ncacn_conn);
 		return;
 	}
 
 	tevent_req_set_callback(subreq, dcerpc_ncacn_packet_process, ncacn_conn);
 
-	DEBUG(5, ("dcerpc_ncacn_accept done\n"));
+	DEBUG(10, ("dcerpc_ncacn_accept done\n"));
 
 	return;
 }
