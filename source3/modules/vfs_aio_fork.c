@@ -407,6 +407,12 @@ static void handle_aio_completion(struct event_context *event_ctx,
 		child->retval.ret_errno = EIO;
 	}
 
+	if (child->aiocb == NULL) {
+		DEBUG(1, ("Inactive child died\n"));
+		TALLOC_FREE(child);
+		return;
+	}
+
 	if (child->cancelled) {
 		child->aiocb = NULL;
 		child->cancelled = false;
