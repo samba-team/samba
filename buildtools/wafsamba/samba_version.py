@@ -52,6 +52,10 @@ def bzr_version_summary(path):
 
 def git_version_summary(path, env=None):
     # Get version from GIT
+    if not 'GIT' in env and os.path.exists("/usr/bin/git"):
+        # this is useful when doing make dist without configuring
+        env.GIT = "/usr/bin/git"
+
     if not 'GIT' in env:
         return ("GIT-UNKNOWN", {})
 
@@ -74,7 +78,7 @@ def git_version_summary(path, env=None):
     ret = "GIT-" + fields["GIT_COMMIT_ABBREV"]
 
     if env.GIT_LOCAL_CHANGES:
-        clean = Utils.cmd_output('git diff HEAD | wc -l', silent=True).strip()
+        clean = Utils.cmd_output('%s diff HEAD | wc -l' % env.GIT, silent=True).strip()
         if clean == "0":
             fields["COMMIT_IS_CLEAN"] = 1
         else:
