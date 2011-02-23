@@ -57,6 +57,14 @@ struct samsync_ldb_state {
 	struct samsync_ldb_trusted_domain *trusted_domains;
 };
 
+/* This wrapper is needed for the "ADD_OR_DEL" macros */
+static int samdb_msg_add_string(struct ldb_context *sam_ldb,
+				TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+				const char *attr_name, const char *str)
+{
+	return ldb_msg_add_string(msg, attr_name, str);
+}
+
 static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 							 struct samsync_ldb_state *state,
 							 struct dom_sid *sid,
