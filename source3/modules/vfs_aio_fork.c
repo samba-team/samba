@@ -389,6 +389,7 @@ static void handle_aio_completion(struct event_context *event_ctx,
 {
 	struct aio_extra *aio_ex = NULL;
 	struct aio_child *child = (struct aio_child *)p;
+	NTSTATUS status;
 
 	DEBUG(10, ("handle_aio_completion called with flags=%d\n", flags));
 
@@ -396,10 +397,12 @@ static void handle_aio_completion(struct event_context *event_ctx,
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(read_data(child->sockfd,
-				       (char *)&child->retval,
-				       sizeof(child->retval)))) {
-		DEBUG(0, ("aio child %d died\n", (int)child->pid));
+	status = read_data(child->sockfd, (char *)&child->retval,
+			   sizeof(child->retval));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("aio child %d died: %s\n", (int)child->pid,
+			  nt_errstr(status)));
 		child->retval.size = -1;
 		child->retval.ret_errno = EIO;
 	}
