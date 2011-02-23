@@ -988,6 +988,8 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_NOTICE,("Recovery has finished\n"));
 
+	ctdb_persistent_finish_trans3_commits(ctdb);
+
 	state = talloc(ctdb, struct recovery_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
