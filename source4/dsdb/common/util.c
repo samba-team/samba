@@ -702,7 +702,7 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 int samdb_find_or_add_value(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
 {
 	if (samdb_find_attribute(ldb, msg, name, set_value) == NULL) {
-		return samdb_msg_add_string(ldb, msg, msg, name, set_value);
+		return ldb_msg_add_string(msg, name, set_value);
 	}
 	return LDB_SUCCESS;
 }
@@ -716,22 +716,7 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
 		return LDB_SUCCESS;
 	}
 
-	return samdb_msg_add_string(ldb, msg, msg, name, set_value);
-}
-
-
-
-/*
-  add a string element to a message
-*/
-int samdb_msg_add_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, const char *str)
-{
-	const char *s = talloc_strdup(mem_ctx, str);
-	if (s == NULL) {
-		return ldb_oom(sam_ldb);
-	}
-	return ldb_msg_add_string(msg, attr_name, s);
+	return ldb_msg_add_string(msg, name, set_value);
 }
 
 /*
@@ -1034,7 +1019,7 @@ int samdb_msg_set_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 	if (el) {
 		el->num_values = 0;
 	}
-	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, str);
+	return ldb_msg_add_string(msg, attr_name, str);
 }
 
 /*
