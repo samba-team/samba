@@ -1216,6 +1216,8 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 				   struct ctdb_req_control *c,
 				   TDB_DATA recdata, bool *async_reply);
 
+void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
+
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);

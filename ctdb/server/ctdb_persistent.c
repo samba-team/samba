@@ -118,6 +118,40 @@ static void ctdb_persistent_store_timeout(struct event_context *ev, struct timed
 	talloc_free(state);
 }
 
+/**
+ * Finish pending trans3 commit controls, i.e. send
+ * reply to the client. This is called by the end-recovery
+ * control to fix the situation when a recovery interrupts
+ * the usual porgress of a transaction.
+ */
+void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_INFO, ("ctdb_persistent_store_timeout: ignoring "
+				   "timeout during recovery\n"));
+		return;
+	}
+
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		struct ctdb_persistent_state *state;
+
+		if (ctdb_db->persistent_state == NULL) {
+			continue;
+		}
+
+		state = ctdb_db->persistent_state;
+
+		ctdb_request_control_reply(ctdb, state->c, NULL,
+					   CTDB_TRANS2_COMMIT_SOMEFAIL,
+					   "trans3 commit ended by recovery");
+
+		/* The destructor sets ctdb_db->persistent_state to NULL. */
+		talloc_free(state);
+	}
+}
+
 /*
   store a set of persistent records - called from a ctdb client when it has updated
   some records in a persistent database. The client will have the record
