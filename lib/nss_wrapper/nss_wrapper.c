@@ -464,6 +464,8 @@ static bool nwrap_module_init(const char *name,
 			      int *num_backends,
 			      struct nwrap_backend **backends)
 {
+	struct nwrap_backend *b;
+
 	*backends = (struct nwrap_backend *)realloc(*backends,
 		sizeof(struct nwrap_backend) * ((*num_backends) + 1));
 	if (!*backends) {
@@ -472,11 +474,13 @@ static bool nwrap_module_init(const char *name,
 		return false;
 	}
 
-	(*backends)[*num_backends].name = name;
-	(*backends)[*num_backends].ops = ops;
-	(*backends)[*num_backends].so_path = so_path;
-	(*backends)[*num_backends].so_handle = nwrap_load_module(so_path);
-	(*backends)[*num_backends].fns = nwrap_load_module_fns(&((*backends)[*num_backends]));
+	b = &((*backends)[*num_backends]);
+
+	b->name = name;
+	b->ops = ops;
+	b->so_path = so_path;
+	b->so_handle = nwrap_load_module(so_path);
+	b->fns = nwrap_load_module_fns(b);
 
 	(*num_backends)++;
 
