@@ -138,9 +138,6 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent,
 			      struct ifs_security_descriptor *sd, int snum,
 			      uint32_t *security_info_effective);
 
-NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
-				      char **pbase, char **pstream);
-
 NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
 				     const struct smb_filename *smb_fname_in,
 				     struct smb_filename **smb_fname_out);

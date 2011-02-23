@@ -170,8 +170,6 @@ bool cell_list_remove(struct likewise_cell * cell);
 
 void cell_list_destroy(void);
 void cell_destroy(struct likewise_cell *c);
-void cell_set_forest_searches(struct likewise_cell *c,
-				bool search);
 void cell_set_dns_domain(struct likewise_cell *c,
 			   const char *dns_domain);
 void cell_set_connection(struct likewise_cell *c,

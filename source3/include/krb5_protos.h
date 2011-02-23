@@ -74,8 +74,6 @@ krb5_error_code smb_krb5_verify_checksum(krb5_context context,
 					 uint8 *data,
 					 size_t length);
 time_t get_authtime_from_tkt(krb5_ticket *tkt);
-void smb_krb5_free_ap_req(krb5_context context,
-			  krb5_ap_req *ap_req);
 krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context,
 						 const krb5_data *inbuf,
 						 krb5_kvno *kvno,
