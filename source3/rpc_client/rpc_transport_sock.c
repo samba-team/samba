@@ -31,6 +31,8 @@ NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 	int ret;
 	NTSTATUS status;
 
+	set_blocking(fd, false);
+
 	ret = tstream_bsd_existing_socket(mem_ctx, fd, &stream);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
