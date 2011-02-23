@@ -133,8 +133,6 @@ LIBNTLMSSP_SRC = '''
 
 TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
-SCHANNEL_SRC = '''../libcli/auth/schannel_sign.c'''
-
 LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clispnego.c
              libsmb/clirap.c libsmb/clierror.c libsmb/climessage.c
@@ -147,7 +145,6 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/smbsock_connect.c'''
 
 LIBMSRPC_SRC = '''
-               ${SCHANNEL_SRC}
                rpc_client/cli_pipe.c
                librpc/crypto/gse_krb5.c
                librpc/crypto/gse.c
@@ -687,7 +684,7 @@ bld.SAMBA3_LIBRARY('nss_wins',
 bld.SAMBA3_SUBSYSTEM('msrpc3',
                     source='${LIBMSRPC_SRC}',
                     deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
-                    RPC_NDR_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH
+                    RPC_NDR_EPMAPPER COMMON_SCHANNEL LIBCLI_AUTH
                     LIBTSOCKET krb5''',
                     vars=locals())
 
