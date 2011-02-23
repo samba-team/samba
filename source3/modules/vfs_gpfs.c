@@ -1026,7 +1026,8 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
 						     size);
 		}
 
-                DEBUG(1, ("gpfs_get_xattr: Get GPFS attributes failed: %d\n",ret));
+                DEBUG(1, ("gpfs_get_xattr: Get GPFS attributes failed: "
+			  "%d (%s)\n", ret, strerror(errno)));
                 return -1;
         }
 
