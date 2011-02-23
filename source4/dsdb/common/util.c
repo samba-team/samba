@@ -699,14 +699,6 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 	return NULL;
 }
 
-int samdb_find_or_add_value(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
-{
-	if (samdb_find_attribute(ldb, msg, name, set_value) == NULL) {
-		return ldb_msg_add_string(msg, name, set_value);
-	}
-	return LDB_SUCCESS;
-}
-
 int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
 {
 	struct ldb_message_element *el;
