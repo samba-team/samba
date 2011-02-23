@@ -1487,6 +1487,14 @@ main() {
     conf.CHECK_FUNCS_IN('getspnam', 'security')
     conf.CHECK_FUNCS_IN('getspnam', 'sec')
 
+    if Options.options.with_quotas:
+        # For quotas on Veritas VxFS filesystems
+        conf.CHECK_HEADERS('sys/fs/vx_quota.h')
+        # For quotas on Linux XFS filesystems
+        conf.CHECK_HEADERS('linux/dqblk_xfs.h')
+        # For sys/quota.h and linux/quota.h
+        conf.CHECK_HEADERS('sys/quota.h')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
