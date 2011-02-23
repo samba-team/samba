@@ -31,4 +31,9 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 					 const struct sockaddr_storage *ifss,
 					 uint16_t port);
 
+bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
+				 struct messaging_context *msg_ctx,
+				 struct ndr_syntax_id syntax_id,
+				 const char *name);
+
 #endif /* _PRC_SERVER_H_ */

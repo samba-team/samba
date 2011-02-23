@@ -930,7 +930,6 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
 				 struct ndr_syntax_id syntax_id,
-				 const struct sockaddr_storage *ifss,
 				 const char *name)
 {
 	struct dcerpc_ncacn_listen_state *state;
