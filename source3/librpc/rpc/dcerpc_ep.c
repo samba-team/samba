@@ -123,8 +123,11 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 			    uint32_t replace,
 			    uint32_t unregister)
 {
-	struct dcerpc_binding_handle *h = NULL;
-	static struct client_address client_id;
+	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *h;
+	struct pipe_auth_data *auth;
+	const char *ncalrpc_sock;
+	const char *rpcsrv_type;
 	struct epm_entry_t *entries;
 	uint32_t num_ents, i;
 	TALLOC_CTX *tmp_ctx;
@@ -144,43 +147,60 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-#if 0
-	/* NOTE: Samba3 doesn't have a ncalrpc server component yet. As soon as
-	 * this is supported, we should talk to the endpoint mapper over the
-	 * local transport.
-	 */
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", "epmapper",
+					   "none");
 
-	/* Connect to the endpoint mapper locally */
-	ncalrpc_sock = talloc_asprintf(tmp_ctx,
-				      "%s/%s",
-				      get_dyn_NCALRPCDIR(),
-				      "epmapper");
-	if (ncalrpc_sock == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
+		static struct client_address client_id;
 
-	status = rpc_pipe_open_ncalrpc(tmp_ctx,
-				       ncalrpc_sock,
-				       &ndr_table_epmapper.syntax_id,
-				       &cli);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-#endif
+		strlcpy(client_id.addr, "localhost", sizeof(client_id.addr));
+		client_id.name = "localhost";
 
-	strlcpy(client_id.addr, "localhost", sizeof(client_id.addr));
-	client_id.name = "localhost";
+		status = rpcint_binding_handle(tmp_ctx,
+					       &ndr_table_epmapper,
+					       &client_id,
+					       get_session_info_system(),
+					       server_messaging_context(),
+					       &h);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("dcerpc_ep_register: Could not connect to "
+				  "epmapper (%s)", nt_errstr(status)));
+			goto done;
+		}
+	} else if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		/* Connect to the endpoint mapper locally */
+		ncalrpc_sock = talloc_asprintf(tmp_ctx,
+					      "%s/%s",
+					      lp_ncalrpc_dir(),
+					      "EPMAPPER");
+		if (ncalrpc_sock == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
-	status = rpcint_binding_handle(tmp_ctx,
-				       &ndr_table_epmapper,
-				       &client_id,
-				       get_session_info_system(),
-				       server_messaging_context(),
-				       &h);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("dcerpc_ep_register: Could not connect to epmapper (%s)",
-			  nt_errstr(status)));
+		status = rpc_pipe_open_ncalrpc(tmp_ctx,
+					       ncalrpc_sock,
+					       &ndr_table_epmapper.syntax_id,
+					       &cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		status = rpccli_ncalrpc_bind_data(cli, &auth);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to initialize anonymous bind.\n"));
+			goto done;
+		}
+
+		status = rpc_pipe_bind(cli, auth);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2, ("Failed to bind ncalrpc socket.\n"));
+			goto done;
+		}
+
+		h = cli->binding_handle;
+	} else {
 		goto done;
 	}
 
