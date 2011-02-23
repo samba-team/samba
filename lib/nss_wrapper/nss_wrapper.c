@@ -479,8 +479,17 @@ static bool nwrap_module_init(const char *name,
 	b->name = name;
 	b->ops = ops;
 	b->so_path = so_path;
-	b->so_handle = nwrap_load_module(so_path);
-	b->fns = nwrap_load_module_fns(b);
+
+	if (so_path != NULL) {
+		b->so_handle = nwrap_load_module(so_path);
+		b->fns = nwrap_load_module_fns(b);
+		if (b->fns == NULL) {
+			return false;
+		}
+	} else {
+		b->so_handle = NULL;
+		b->fns = NULL;
+	}
 
 	(*num_backends)++;
 
