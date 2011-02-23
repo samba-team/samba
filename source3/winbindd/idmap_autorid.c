@@ -395,6 +395,7 @@ static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
 
 	TDB_DATA data;
 	struct autorid_global_config *cfg;
+	unsigned long minvalue, rangesize, maxranges;
 
 	data = dbwrap_fetch_bystring(autorid_db, ctx, CONFIGKEY);
 
@@ -408,15 +409,18 @@ static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
 		return NULL;
 	}
 
-	if (sscanf
-	    ((char *)data.dptr, "minvalue:%lu rangesize:%lu maxranges:%lu",
-	     (unsigned long *)&cfg->minvalue, (unsigned long *)&cfg->rangesize,
-	     (unsigned long *)&cfg->maxranges) != 3) {
+	if (sscanf((char *)data.dptr,
+		   "minvalue:%lu rangesize:%lu maxranges:%lu",
+		   &minvalue, &rangesize, &maxranges) != 3) {
 		DEBUG(1,
 		      ("Found invalid configuration data"
 		       "creating new config\n"));
 		return NULL;
 	}
+
+	cfg->minvalue = minvalue;
+	cfg->rangesize = rangesize;
+	cfg->maxranges = maxranges;
 
 	DEBUG(10, ("Loaded previously stored configuration "
 		   "minvalue:%d rangesize:%d\n",
