@@ -242,8 +242,8 @@ static int syncops_close(vfs_handle_struct *handle, files_struct *fsp)
 	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
-int syncops_connect(struct vfs_handle_struct *handle, const char *service,
-			const char *user)
+static int syncops_connect(struct vfs_handle_struct *handle, const char *service,
+			   const char *user)
 {
 
 	struct syncops_config_data *config;
