@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../lib/util/select.h"
 #include "system/select.h"
+#include "packet.h"
 
 struct packet_context {
 	int fd;
