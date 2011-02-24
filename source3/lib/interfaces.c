@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "interfaces.h"
 
 /****************************************************************************
  Create a struct sockaddr_storage with the netmask bits set to 1.

@@ -543,7 +543,6 @@ extern void *cmdline_lp_ctx;
 #include "../lib/util/asn1.h"
 
 #include "libads/ads_status.h"
-#include "interfaces.h"
 #include "trans2.h"
 #include "../libcli/util/error.h"
 #include "ntioctl.h"
