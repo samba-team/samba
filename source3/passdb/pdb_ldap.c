@@ -49,6 +49,7 @@
 #include "idmap_cache.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
+#include "lib/winbind_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

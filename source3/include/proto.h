@@ -159,6 +159,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				const char *domain,
 				struct auth_serversupplied_info **server_info,
 				struct netr_SamInfo3 *info3);
+struct wbcAuthUserInfo;
 NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const char *sent_nt_username,
 					  const char *domain,
@@ -1448,40 +1449,6 @@ int islower_ascii(int c);
 /* The following definitions come from lib/version.c  */
 
 const char *samba_version_string(void);
-
-/* The following definitions come from lib/winbind_util.c  */
-
-bool winbind_lookup_name(const char *dom_name, const char *name, struct dom_sid *sid,
-                         enum lsa_SidType *name_type);
-bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
-			const char **domain, const char **name,
-                        enum lsa_SidType *name_type);
-bool winbind_ping(void);
-bool winbind_sid_to_uid(uid_t *puid, const struct dom_sid *sid);
-bool winbind_uid_to_sid(struct dom_sid *sid, uid_t uid);
-bool winbind_sid_to_gid(gid_t *pgid, const struct dom_sid *sid);
-bool winbind_gid_to_sid(struct dom_sid *sid, gid_t gid);
-struct passwd * winbind_getpwnam(const char * sname);
-struct passwd * winbind_getpwsid(const struct dom_sid *sid);
-wbcErr wb_is_trusted_domain(const char *domain);
-bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
-			 const struct dom_sid *domain_sid,
-			 int num_rids, uint32 *rids,
-			 const char **domain_name,
-			 const char ***names, enum lsa_SidType **types);
-bool winbind_allocate_uid(uid_t *uid);
-bool winbind_allocate_gid(gid_t *gid);
-bool winbind_get_groups(TALLOC_CTX *mem_ctx,
-			const char *account,
-			uint32_t *num_groups,
-			gid_t ** _groups);
-bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
-			     const struct dom_sid *dom_sid,
-		             const struct dom_sid *members,
-			     size_t num_members,
-			     uint32_t **pp_alias_rids,
-			     size_t *p_num_alias_rids);
-
 
 /* The following definitions come from lib/wins_srv.c  */
 

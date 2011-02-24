@@ -41,6 +41,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/crypto/arcfour.h"
 #include "lib/crypto/md4.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 extern userdom_struct current_user_info;
 

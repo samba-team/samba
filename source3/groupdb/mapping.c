@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "groupdb/mapping.h"
 #include "../libcli/security/security.h"
+#include "lib/winbind_util.h"
 
 static const struct mapping_backend *backend;
 

@@ -30,6 +30,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
+#include "lib/winbind_util.h"
 
 /****************************************************************************
  Check for a SID in an struct security_token

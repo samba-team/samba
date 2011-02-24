@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/krb5pac.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
