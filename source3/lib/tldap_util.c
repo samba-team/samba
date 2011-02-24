@@ -21,6 +21,7 @@
 #include "tldap.h"
 #include "tldap_util.h"
 #include "../libcli/security/security.h"
+#include "../lib/util/asn1.h"
 
 bool tldap_entry_values(struct tldap_message *msg, const char *attribute,
 			DATA_BLOB **values, int *num_values)

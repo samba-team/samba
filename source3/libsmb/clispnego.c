@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
+#include "../lib/util/asn1.h"
 
 /*
   generate a negTokenInit packet given a list of supported
