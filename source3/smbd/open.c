@@ -946,7 +946,7 @@ static void find_oplock_types(struct share_mode_lock *lck,
 
 		if (BATCH_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
 			/* batch - can only be one. */
-			if (*pp_batch || *got_level2 || *got_no_oplock) {
+			if (*pp_ex_or_batch || *pp_batch || *got_level2 || *got_no_oplock) {
 				smb_panic("Bad batch oplock entry.");
 			}
 			*pp_batch = &lck->share_modes[i];
