@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/crypto/arcfour.h"
 #include "async_smb.h"
+#include "libsmb/clirap.h"
 
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 

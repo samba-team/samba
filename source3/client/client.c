@@ -31,6 +31,7 @@
 #include "../libcli/smbreadline/smbreadline.h"
 #include "../libcli/security/security.h"
 #include "system/select.h"
+#include "libsmb/clirap.h"
 
 #ifndef REGISTER
 #define REGISTER 0

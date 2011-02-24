@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/rap.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "utils/net.h"
+#include "libsmb/clirap.h"
 
 /* The following messages were for error checking that is not properly
    reported at the moment.  Which should be reinstated? */

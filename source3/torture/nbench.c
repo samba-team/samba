@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "torture/proto.h"
+#include "libsmb/clirap.h"
 
 static long long int ival(const char *str)
 {

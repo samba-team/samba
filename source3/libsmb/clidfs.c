@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/clirap.h"
 
 /********************************************************************
  Important point.

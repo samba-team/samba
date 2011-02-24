@@ -78,6 +78,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../librpc/gen_ndr/svcctl.h"
+#include "libsmb/clirap.h"
 
 #define WORDSIZE 2
 #define DWORDSIZE 4

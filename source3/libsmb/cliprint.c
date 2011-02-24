@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/clirap.h"
 
 /*****************************************************************************
  Convert a character pointer in a cli_call_api() response to a form we can use.

@@ -39,6 +39,7 @@
 #include "lib/netapi/netapi_net.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "libsmb/clirap.h"
 
 static int net_mode_share;
 static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask);

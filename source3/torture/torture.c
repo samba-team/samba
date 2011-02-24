@@ -30,6 +30,7 @@
 #include "dbwrap.h"
 #include "talloc_dict.h"
 #include "async_smb.h"
+#include "libsmb/clirap.h"
 
 extern char *optarg;
 extern int optind;
