@@ -133,7 +133,7 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 
 /* The following definitions come from libads/ndr.c  */
 
-void ndr_print_ads_auth_flags(struct ndr_print *ndr, const char *name, uint32_t r);
+struct ndr_print;
 void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct ads_struct *r);
 
 /* The following definitions come from libads/sasl.c  */

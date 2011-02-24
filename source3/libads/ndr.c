@@ -24,7 +24,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/ndr/util.h"
 
-void ndr_print_ads_auth_flags(struct ndr_print *ndr, const char *name, uint32_t r)
+static void ndr_print_ads_auth_flags(struct ndr_print *ndr, const char *name, uint32_t r)
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
