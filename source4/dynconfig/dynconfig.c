@@ -45,25 +45,38 @@
 #define DEFINE_DYN_CONFIG_PARAM(name) \
 const char *dyn_##name = name; \
 \
- const char *get_dyn_##name(void) \
+bool is_default_dyn_##name(void) \
 {\
-	if (dyn_##name == NULL) {\
-		return name;\
-	}\
+	if (strcmp(name, dyn_##name) == 0) { \
+		return true; \
+	} \
+	return false; \
+}\
+\
+const char *get_dyn_##name(void) \
+{\
 	return dyn_##name;\
 }\
 \
- const char *set_dyn_##name(const char *newpath) \
+const char *set_dyn_##name(const char *newpath) \
 {\
-	if (dyn_##name) {\
-		free(discard_const(dyn_##name));	\
+	if (newpath == NULL) { \
+		return NULL; \
+	} \
+	if (strcmp(name, newpath) == 0) { \
+		return dyn_##name; \
+	} \
+	newpath = strdup(newpath);\
+	if (newpath == NULL) { \
+		return NULL; \
+	} \
+	if (is_default_dyn_##name()) { \
+		/* do not free a static string */ \
+	} else if (dyn_##name) {\
+		free(discard_const(dyn_##name)); \
 	}\
-	dyn_##name = strdup(newpath);\
+	dyn_##name = newpath; \
 	return dyn_##name;\
-}\
- bool is_default_dyn_##name(void) \
-{\
-	return (dyn_##name == NULL);\
 }
 
 /* these are in common with s3 */
