@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
+#include "libcli/security/display_sec.h"
 
 /****************************************************************************
 convert a security permissions into a string

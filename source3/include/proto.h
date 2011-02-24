@@ -502,16 +502,6 @@ int connections_forall_read(int (*fn)(const struct connections_key *key,
 			    void *private_data);
 bool connections_init(bool rw);
 
-/* The following definitions come from lib/display_sec.c  */
-
-char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type);
-void display_sec_access(uint32_t *info);
-void display_sec_ace_flags(uint8_t flags);
-void display_sec_ace(struct security_ace *ace);
-void display_sec_acl(struct security_acl *sec_acl);
-void display_acl_type(uint16 type);
-void display_sec_desc(struct security_descriptor *sec);
-
 /* The following definitions come from lib/dmallocmsg.c  */
 
 void register_dmalloc_msgs(struct messaging_context *msg_ctx);

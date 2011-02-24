@@ -31,6 +31,7 @@
 #include "registry/reg_import.h"
 #include "registry/reg_format.h"
 #include <assert.h>
+#include "../libcli/security/display_sec.h"
 
 /*
  *

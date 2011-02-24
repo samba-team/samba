@@ -106,5 +106,6 @@ struct object_tree {
 #include "libcli/security/privileges.h"
 #include "libcli/security/access_check.h"
 #include "libcli/security/session.h"
+#include "libcli/security/display_sec.h"
 
 #endif
