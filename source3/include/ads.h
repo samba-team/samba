@@ -6,6 +6,8 @@
   basically this is a wrapper around ldap
 */
 
+#include "smb_ldap.h"
+
 struct ads_struct;
 
 struct ads_saslwrap_ops {

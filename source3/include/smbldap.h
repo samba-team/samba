@@ -23,6 +23,8 @@
 
 struct smbldap_state;
 
+#include "smb_ldap.h"
+
 #ifdef HAVE_LDAP
 
 /* specify schema versions between 2.2. and 3.0 */
@@ -277,23 +279,11 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
                                     LDAPMessage ** result, const char *domain_name,
                                     bool try_add);
 
-#else
-#define LDAP void
-#define LDAPMessage void
-#define LDAPMod void
-#define LDAP_CONST const
-#define LDAPControl void
-struct berval;
-struct ldapsam_privates;
 #endif 	/* HAVE_LDAP */
 
 #define LDAP_DEFAULT_TIMEOUT   15
 #define LDAP_CONNECTION_DEFAULT_TIMEOUT 2
 #define LDAP_PAGE_SIZE 1024
-
-#ifndef LDAP_OPT_SUCCESS
-#define LDAP_OPT_SUCCESS 0
-#endif
 
 #define ADS_PAGE_CTL_OID 	"1.2.840.113556.1.4.319"
 

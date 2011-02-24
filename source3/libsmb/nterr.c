@@ -20,6 +20,7 @@
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
+#include "smb_ldap.h"
 #undef strcasecmp
 
 #if !defined(N_)

@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/wbint.h"
 
 #include "talloc_dict.h"
+#include "smb_ldap.h"
 
 #ifdef HAVE_LIBNSCD
 #include <libnscd.h>

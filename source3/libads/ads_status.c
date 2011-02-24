@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "smb_krb5.h"
+#include "smb_ldap.h"
 
 /*
   build a ADS_STATUS structure
