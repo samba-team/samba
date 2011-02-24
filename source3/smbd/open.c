@@ -3233,7 +3233,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 NTSTATUS get_relative_fid_filename(connection_struct *conn,
 				   struct smb_request *req,
 				   uint16_t root_dir_fid,
-				   struct smb_filename *smb_fname)
+				   const struct smb_filename *smb_fname,
+				   struct smb_filename **smb_fname_out)
 {
 	files_struct *dir_fsp;
 	char *parent_fname = NULL;
@@ -3321,16 +3322,23 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 		}
 	}
 
-	new_base_name = talloc_asprintf(smb_fname, "%s%s", parent_fname,
+	new_base_name = talloc_asprintf(talloc_tos(), "%s%s", parent_fname,
 					smb_fname->base_name);
 	if (new_base_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	TALLOC_FREE(smb_fname->base_name);
-	smb_fname->base_name = new_base_name;
-	status = NT_STATUS_OK;
+	status = filename_convert(req,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				new_base_name,
+				0,
+				NULL,
+				smb_fname_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
  out:
 	TALLOC_FREE(parent_fname);
@@ -3377,11 +3385,13 @@ NTSTATUS create_file_default(connection_struct *conn,
 	 */
 
 	if (root_dir_fid != 0) {
+		struct smb_filename *smb_fname_out = NULL;
 		status = get_relative_fid_filename(conn, req, root_dir_fid,
-						   smb_fname);
+						   smb_fname, &smb_fname_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
+		smb_fname = smb_fname_out;
 	}
 
 	/*
