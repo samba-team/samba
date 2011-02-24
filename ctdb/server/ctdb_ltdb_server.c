@@ -1111,12 +1111,12 @@ int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata)
 	ctdb_db = find_ctdb_db(ctdb, db_prio->db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_set_db_priority\n", db_prio->db_id));
-		return -1;
+		return 0;
 	}
 
 	if ((db_prio->priority<1) || (db_prio->priority>NUM_DB_PRIORITIES)) {
 		DEBUG(DEBUG_ERR,("Trying to set invalid priority : %u\n", db_prio->priority));
-		return -1;
+		return 0;
 	}
 
 	ctdb_db->priority = db_prio->priority;
