@@ -184,4 +184,6 @@
 #define SMB2_GETINFO_SECURITY           0x03
 #define SMB2_GETINFO_QUOTA              0x04
 
+#define SMB2_CLOSE_FLAGS_FULL_INFORMATION (0x01)
+
 #endif
