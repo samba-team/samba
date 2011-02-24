@@ -38,6 +38,7 @@
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
 #include "lib/messaging/irpc.h"
+#include "librpc/rpc/rpc_common.h"
 
 /* this is only used when the client asks for an unknown interface */
 #define DUMMY_ASSOC_GROUP 0x0FFFFFFF

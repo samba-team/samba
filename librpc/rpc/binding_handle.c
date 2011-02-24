@@ -23,6 +23,7 @@
 #include <tevent.h>
 #include "../lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/dcerpc.h"
+#include "rpc_common.h"
 
 struct dcerpc_binding_handle {
 	void *private_data;

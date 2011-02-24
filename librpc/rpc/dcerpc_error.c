@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/rpc/dcerpc.h"
+#include "rpc_common.h"
 
 struct dcerpc_fault_table {
 	const char *errstr;

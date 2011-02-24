@@ -27,6 +27,8 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/rpc/dcerpc.h"
+#include "rpc_common.h"
+
 #undef strcasecmp
 #undef strncasecmp
 

@@ -565,3 +565,8 @@ bld.SAMBA_LIBRARY('ndr',
 	depends_on='PIDL_MISC',
 	vnum='0.0.1'
 	)
+
+bld.SAMBA_LIBRARY('rpccommon',
+                  source='rpc/dcerpc_error.c rpc/binding.c rpc/dcerpc_util.c rpc/binding_handle.c',
+                  deps='ndr tevent NDR_DCERPC LIBTSOCKET',
+                  private_library=True)

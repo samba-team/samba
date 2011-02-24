@@ -31,6 +31,7 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "librpc/rpc/rpc_common.h"
 
 _PUBLIC_ NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx)
 {

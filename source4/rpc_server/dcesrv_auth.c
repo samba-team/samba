@@ -30,6 +30,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "librpc/rpc/rpc_common.h"
 
 /*
   parse any auth information from a dcerpc bind request

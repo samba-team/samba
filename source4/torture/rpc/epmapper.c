@@ -24,6 +24,7 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "torture/rpc/torture_rpc.h"
 #include "lib/util/util_net.h"
+#include "librpc/rpc/rpc_common.h"
 
 /*
   display any protocol tower

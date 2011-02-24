@@ -27,6 +27,7 @@
 #include "libcli/raw/ioctl.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
+#include "librpc/rpc/rpc_common.h"
 
 /* transport private information used by SMB2 pipe transport */
 struct smb2_private {

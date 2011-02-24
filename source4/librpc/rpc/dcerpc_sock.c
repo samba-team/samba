@@ -29,6 +29,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "libcli/resolve/resolve.h"
+#include "librpc/rpc/rpc_common.h"
 
 /* transport private information used by general socket pipe transports */
 struct sock_private {

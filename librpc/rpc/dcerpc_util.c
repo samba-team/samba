@@ -26,6 +26,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "rpc_common.h"
 
 /* we need to be able to get/set the fragment length without doing a full
    decode */

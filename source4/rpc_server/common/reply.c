@@ -38,6 +38,7 @@
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
 #include "lib/messaging/irpc.h"
+#include "librpc/rpc/rpc_common.h"
 
 
 /*

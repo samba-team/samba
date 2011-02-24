@@ -25,6 +25,7 @@
 #include "libcli/composite/composite.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
+#include "librpc/rpc/rpc_common.h"
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {

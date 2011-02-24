@@ -31,6 +31,7 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
+#include "librpc/rpc/rpc_common.h"
 
 /*
   find a dcerpc call on an interface by name

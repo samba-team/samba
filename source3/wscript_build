@@ -122,10 +122,6 @@ LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
              libsmb/namequery.c libsmb/conncache.c
              libads/dns.c libads/sitename_cache.c'''
 
-DCE_RPC_ERR_SRC = '../librpc/rpc/dcerpc_error.c'
-
-LIBSMB_ERR_SRC = '''${DCE_RPC_ERR_SRC}'''
-
 LIBNTLMSSP_SRC = '''
                libsmb/ntlmssp.c
                libsmb/ntlmssp_wrap.c'''
@@ -152,10 +148,8 @@ LIBMSRPC_SRC = '''
                rpc_client/rpc_transport_np.c
                rpc_client/rpc_transport_sock.c
                rpc_client/rpc_transport_tstream.c
-               ../librpc/rpc/binding.c
-               ../librpc/rpc/dcerpc_util.c
                librpc/rpc/dcerpc_helpers.c
-               ../librpc/rpc/binding_handle.c'''
+               '''
 
 #
 # registry-related objects
@@ -684,7 +678,7 @@ bld.SAMBA3_SUBSYSTEM('msrpc3',
                     source='${LIBMSRPC_SRC}',
                     deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
                     RPC_NDR_EPMAPPER COMMON_SCHANNEL LIBCLI_AUTH
-                    LIBTSOCKET krb5''',
+                    LIBTSOCKET krb5 rpccommon''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
@@ -773,8 +767,8 @@ bld.SAMBA3_SUBSYSTEM('LIB_NONSMBD',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBSMB_ERR',
-                    source=LIBSMB_ERR_SRC,
-                    deps='errors3 SECRETS3 ldap lber MSRPC_PARSE LIBCLI_AUTH',
+                    source='',
+                    deps='errors3 SECRETS3 ldap lber MSRPC_PARSE LIBCLI_AUTH rpccommon',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
