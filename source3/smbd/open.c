@@ -3540,6 +3540,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 
  out:
 	TALLOC_FREE(parent_fname);
+	TALLOC_FREE(new_base_name);
 	return status;
 }
 
