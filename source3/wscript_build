@@ -64,7 +64,7 @@ LIB_SRC = '''
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
           lib/access.c lib/smbrun.c
-          lib/bitmap.c lib/dprintf.c ${UTIL_REG_SRC}
+          lib/bitmap.c lib/dprintf.c
           lib/wins_srv.c
           lib/clobber.c lib/util_sid.c
           lib/util_file.c
@@ -154,7 +154,6 @@ LIBMSRPC_SRC = '''
 #
 # registry-related objects
 #
-UTIL_REG_SRC = '''../libcli/registry/util_reg.c'''
 
 REG_INIT_BASIC_SRC = '''registry/reg_init_basic.c'''
 REG_INIT_SMBCONF_SRC = '''registry/reg_init_smbconf.c'''
@@ -757,7 +756,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 samba-util3 CHARSET3 UTIL_TDB SAMBA_VERSION krb5 flag_mapping',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 samba-util3 CHARSET3 UTIL_TDB SAMBA_VERSION krb5 flag_mapping util_reg',
                    private_library=True,
                    vars=locals())
 
@@ -1336,6 +1335,7 @@ bld.RECURSE('../libcli/security')
 bld.RECURSE('../libcli/smb')
 bld.RECURSE('../libcli/smbreadline')
 bld.RECURSE('../libcli/nbt')
+bld.RECURSE('../libcli/registry')
 bld.RECURSE('../lib/crypto')
 bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/nss_wrapper')
