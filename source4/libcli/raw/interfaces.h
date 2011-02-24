@@ -2090,7 +2090,6 @@ union smb_close {
 		struct {
 			union smb_handle file;
 			time_t write_time;
-#define SMB2_CLOSE_FLAGS_FULL_INFORMATION (1<<0)
 			uint16_t flags; /* SMB2_CLOSE_FLAGS_* */
 		} in;
 		struct {

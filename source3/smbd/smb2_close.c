@@ -24,7 +24,8 @@
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				uint16_t in_flags,
-				uint64_t in_file_id_volatile);
+				uint64_t in_file_id_volatile,
+				DATA_BLOB *outbody);
 
 NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 {
@@ -52,6 +53,11 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
+	outbody = data_blob_talloc(req->out.vector, NULL, 0x3C);
+	if (outbody.data == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+
 	in_flags		= SVAL(inbody, 0x02);
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
@@ -64,40 +70,37 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 
 	status = smbd_smb2_close(req,
 				in_flags,
-				in_file_id_volatile);
+				in_file_id_volatile,
+				&outbody);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
-
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x3C);
-	if (outbody.data == NULL) {
-		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
-	}
-
-	SSVAL(outbody.data, 0x00, 0x3C);	/* struct size */
-	SSVAL(outbody.data, 0x02, 0);		/* flags */
-	SIVAL(outbody.data, 0x04, 0);		/* reserved */
-	SBVAL(outbody.data, 0x08, 0);		/* creation time */
-	SBVAL(outbody.data, 0x10, 0);		/* last access time */
-	SBVAL(outbody.data, 0x18, 0);		/* last write time */
-	SBVAL(outbody.data, 0x20, 0);		/* change time */
-	SBVAL(outbody.data, 0x28, 0);		/* allocation size */
-	SBVAL(outbody.data, 0x30, 0);		/* end of size */
-	SIVAL(outbody.data, 0x38, 0);		/* file attributes */
-
 	return smbd_smb2_request_done(req, outbody, NULL);
 }
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				uint16_t in_flags,
-				uint64_t in_file_id_volatile)
+				uint64_t in_file_id_volatile,
+				DATA_BLOB *outbody)
 {
 	NTSTATUS status;
 	struct smb_request *smbreq;
 	connection_struct *conn = req->tcon->compat_conn;
 	files_struct *fsp;
+	struct smb_filename *smb_fname = NULL;
+	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
+	uint64_t allocation_size = 0;
+	uint64_t file_size = 0;
+	uint32_t dos_attrs = 0;
+	uint16_t out_flags = 0;
+	bool posix_open = false;
+
+	ZERO_STRUCT(create_date_ts);
+	ZERO_STRUCT(adate_ts);
+	ZERO_STRUCT(mdate_ts);
+	ZERO_STRUCT(cdate_ts);
 
 	DEBUG(10,("smbd_smb2_close: file_id[0x%016llX]\n",
 		  (unsigned long long)in_file_id_volatile));
@@ -118,12 +121,64 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 		return NT_STATUS_FILE_CLOSED;
 	}
 
+	posix_open = fsp->posix_open;
+	status = copy_smb_filename(talloc_tos(),
+				fsp->fsp_name,
+				&smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = close_file(smbreq, fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("smbd_smb2_close: close_file[%s]: %s\n",
 			 fsp_str_dbg(fsp), nt_errstr(status)));
 		return status;
 	}
+
+	if (in_flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) {
+		int ret;
+		if (posix_open) {
+			ret = SMB_VFS_LSTAT(conn, smb_fname);
+		} else {
+			ret = SMB_VFS_STAT(conn, smb_fname);
+		}
+		if (ret == 0) {
+			out_flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+			dos_attrs = dos_mode(conn, smb_fname);
+			mdate_ts = smb_fname->st.st_ex_mtime;
+			adate_ts = smb_fname->st.st_ex_atime;
+			create_date_ts = get_create_timespec(conn, NULL, smb_fname);
+			cdate_ts = get_change_timespec(conn, NULL, smb_fname);
+
+			if (lp_dos_filetime_resolution(SNUM(conn))) {
+				dos_filetime_timespec(&create_date_ts);
+				dos_filetime_timespec(&mdate_ts);
+				dos_filetime_timespec(&adate_ts);
+				dos_filetime_timespec(&cdate_ts);
+			}
+			if (!(dos_attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+				file_size = get_file_size_stat(&smb_fname->st);
+			}
+
+			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
+		}
+	}
+
+	SSVAL(outbody->data, 0x00, 0x3C);	/* struct size */
+	SSVAL(outbody->data, 0x02, out_flags);	/* flags */
+	SIVAL(outbody->data, 0x04, 0);		/* reserved */
+	put_long_date_timespec(conn->ts_res,
+		(char *)&outbody->data[0x8],create_date_ts); /* creation time */
+	put_long_date_timespec(conn->ts_res,
+		(char *)&outbody->data[0x10],adate_ts); /* last access time */
+	put_long_date_timespec(conn->ts_res,
+		(char *)&outbody->data[0x18],mdate_ts); /* last write time */
+	put_long_date_timespec(conn->ts_res,
+		(char *)&outbody->data[0x20],cdate_ts); /* change time */
+	SBVAL(outbody->data, 0x28, allocation_size);/* allocation size */
+	SBVAL(outbody->data, 0x30, file_size);	/* end of file */
+	SIVAL(outbody->data, 0x38, dos_attrs);	/* file attributes */
 
 	return NT_STATUS_OK;
 }
