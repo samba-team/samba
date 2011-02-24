@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
+#include "serverid.h"
 
 extern fstring remote_proto;
 

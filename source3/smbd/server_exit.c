@@ -42,6 +42,7 @@
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 #include "printing/notify.h"
 #include "printing.h"
+#include "serverid.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)

@@ -44,6 +44,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "rpc_misc.h"
 #include "printing/notify.h"
+#include "serverid.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
