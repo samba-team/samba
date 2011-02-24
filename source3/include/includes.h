@@ -625,7 +625,6 @@ extern void *cmdline_lp_ctx;
 #include "librpc/rpc/dcerpc.h"
 #include "client.h"
 
-#include "session.h"
 #include "module.h"
 #include "packet.h"
 #include "../lib/util/talloc_stack.h"

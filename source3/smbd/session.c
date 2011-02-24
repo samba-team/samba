@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "dbwrap.h"
+#include "session.h"
 
 /********************************************************************
  called when a session is created

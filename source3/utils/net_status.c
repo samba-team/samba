@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "session.h"
 
 int net_status_usage(struct net_context *c, int argc, const char **argv)
 {

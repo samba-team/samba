@@ -21,6 +21,7 @@
 #include "utils/net.h"
 #include "dbwrap.h"
 #include "serverid.h"
+#include "session.h"
 
 static int net_serverid_list_fn(const struct server_id *id,
 				uint32_t msg_flags, void *priv)

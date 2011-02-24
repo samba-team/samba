@@ -5159,7 +5159,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 void close_cnum(connection_struct *conn, uint16 vuid);
 
 /* The following definitions come from smbd/session.c  */
-
+struct sessionid;
 bool session_init(void);
 bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser);
 void session_yield(user_struct *vuser);
