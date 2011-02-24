@@ -117,6 +117,13 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 	char *full_path;
 	char real_pathname[PATH_MAX+1];
 	int buflen;
+	bool mangled;
+
+	mangled = mangle_is_mangled(name, handle->conn->params);
+	if (mangled) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
+						      mem_ctx, found_name);
+	}
 
 	full_path = talloc_asprintf(talloc_tos(), "%s/%s", path, name);
 	if (full_path == NULL) {
