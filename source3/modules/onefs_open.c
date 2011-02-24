@@ -2094,11 +2094,13 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 
 	/* Get the file name if root_dir_fid was specified. */
 	if (root_dir_fid != 0) {
+		struct smb_filename *smb_fname_out = NULL;
 		status = get_relative_fid_filename(conn, req, root_dir_fid,
-						   smb_fname);
+						   smb_fname, &smb_fname_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
+		smb_fname = smb_fname_out;
 	}
 
 	/* All file access must go through check_name() */
