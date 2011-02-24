@@ -805,6 +805,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
+	struct ctdb_client *client = NULL;
 
 	/* dont allow any local clients to attach while we are in recovery mode
 	 * except for the recovery daemon.
@@ -812,13 +813,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	 * recovery daemons.
 	 */
 	if (client_id != 0) {
-		struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
-
-		if (client == NULL) {
-			DEBUG(DEBUG_ERR,("DB Attach to database %s refused. Can not match clientid:%d to a client structure.\n", db_name, client_id));
-			return -1;
-		}
-
+		client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	}
+	if (client != NULL) {
 		/* If the node is inactive it is not part of the cluster
 		   and we should not allow clients to attach to any
 		   databases
