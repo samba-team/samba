@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('cliauth',
                   source='',
-                  deps='NTLMSSP_COMMON MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS',
+                  deps='NTLMSSP_COMMON MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE',
                   private_library=True,
                   grouping_library=True)
 
@@ -34,3 +34,7 @@ bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
 	source='pam_errors.c',
 	deps='talloc'
 	)
+
+bld.SAMBA_SUBSYSTEM('SPNEGO_PARSE',
+                    source='spnego_parse.c',
+                    deps='ASN1_UTIL')

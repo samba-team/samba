@@ -928,10 +928,6 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
                     source=SLCACHE_SRC,
                     vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('SPNEGO_PARSE',
-                    source='../libcli/auth/spnego_parse.c',
-                    vars=locals())
-
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
                     vars=locals())

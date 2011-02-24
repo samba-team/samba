@@ -37,11 +37,11 @@ bld.SAMBA_MODULE('cyrus_sasl',
 
 
 bld.SAMBA_MODULE('gensec_spnego',
-	source='spnego.c ../../../libcli/auth/spnego_parse.c',
+	source='spnego.c',
 	autoproto='spnego_proto.h',
 	subsystem='gensec',
 	init_function='gensec_spnego_init',
-	deps='ASN1_UTIL credentials'
+	deps='ASN1_UTIL credentials SPNEGO_PARSE'
 	)
 
 
