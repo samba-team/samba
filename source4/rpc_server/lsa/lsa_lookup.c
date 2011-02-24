@@ -21,6 +21,7 @@
 */
 
 #include "rpc_server/lsa/lsa.h"
+#include "libds/common/flag_mapping.h"
 
 static const struct {
 	const char *domain;

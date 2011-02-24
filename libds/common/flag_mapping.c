@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/samr.h"
 #include "../libds/common/flags.h"
+#include "flag_mapping.h"
 
 /*
 translated the ACB_CTRL Flags to UserFlags (userAccountControl)

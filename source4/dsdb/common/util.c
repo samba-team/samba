@@ -43,6 +43,7 @@
 #include "dsdb/common/util.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/irpc.h"
+#include "libds/common/flag_mapping.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on

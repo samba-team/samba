@@ -39,6 +39,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "ldb_wrap.h"
 #include "param/param.h"
+#include "libds/common/flag_mapping.h"
 
 struct samldb_ctx;
 

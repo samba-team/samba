@@ -63,7 +63,6 @@ LIB_SRC = '''
           lib/interface.c lib/pidfile.c
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
-          ../libds/common/flag_mapping.c
           lib/access.c lib/smbrun.c
           lib/bitmap.c lib/dprintf.c ${UTIL_REG_SRC}
           lib/wins_srv.c
@@ -764,7 +763,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 samba-util3 CHARSET3 UTIL_TDB SAMBA_VERSION krb5',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 samba-util3 CHARSET3 UTIL_TDB SAMBA_VERSION krb5 flag_mapping',
                    private_library=True,
                    vars=locals())
 
@@ -1360,6 +1359,7 @@ bld.RECURSE('../lib/util')
 bld.RECURSE('../lib/tevent')
 bld.RECURSE('../lib/tsocket')
 bld.RECURSE('../lib/zlib')
+bld.RECURSE('../libds/common')
 bld.RECURSE('../nsswitch')
 bld.RECURSE('../nsswitch/libwbclient')
 bld.RECURSE('auth')
@@ -1371,6 +1371,7 @@ bld.RECURSE('pam_smbpass')
 bld.RECURSE('passdb')
 bld.RECURSE('rpc_server')
 bld.RECURSE('winbindd')
+
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()

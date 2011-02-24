@@ -39,6 +39,7 @@
 #include "../lib/util/util_ldb.h"
 #include "param/param.h"
 #include "lib/util/tsort.h"
+#include "libds/common/flag_mapping.h"
 
 /* these query macros make samr_Query[User|Group|Alias]Info a bit easier to read */
 

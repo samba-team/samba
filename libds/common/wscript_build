@@ -1,0 +1,3 @@
+
+bld.SAMBA_SUBSYSTEM('flag_mapping',
+                    source='flag_mapping.c')

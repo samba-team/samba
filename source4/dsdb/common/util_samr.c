@@ -28,6 +28,8 @@
 #include "../libds/common/flags.h"
 #include "libcli/security/security.h"
 
+#include "libds/common/flag_mapping.h"
+
 /* Add a user, SAMR style, including the correct transaction
  * semantics.  Used by the SAMR server and by pdb_samba4 */
 NTSTATUS dsdb_add_user(struct ldb_context *ldb,

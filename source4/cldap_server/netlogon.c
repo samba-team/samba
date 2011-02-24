@@ -36,6 +36,7 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
+#include "libds/common/flag_mapping.h"
 
 /*
   fill in the cldap netlogon union for a given version
