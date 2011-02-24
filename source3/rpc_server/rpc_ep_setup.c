@@ -61,12 +61,12 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 	uint16_t p = 0;
 	const char *rpcsrv_type;
 
-	/* TODO: Remove this if we enable epmapper */
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", "epmapper",
+					   "rpc_server",
+					   "epmapper",
 					   "none");
 	if (StrCaseCmp(rpcsrv_type, "none") == 0) {
-		return 1;
+		return (uint16_t) -1;
 	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
@@ -135,7 +135,8 @@ static NTSTATUS _rpc_ep_register(struct tevent_context *ev_ctx,
 
 	/* start endpoint mapper only if enabled */
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", "epmapper",
+					   "rpc_server",
+					   "epmapper",
 					   "none");
 	if (StrCaseCmp(rpcsrv_type, "none") == 0) {
 		return NT_STATUS_OK;
@@ -168,7 +169,8 @@ static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 
 	/* start endpoint mapper only if enabled */
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", "epmapper",
+					   "rpc_server",
+					   "epmapper",
 					   "none");
 	if (StrCaseCmp(rpcsrv_type, "none") == 0) {
 		return NT_STATUS_OK;
@@ -600,7 +602,8 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 
 	/* start endpoint mapper only if enabled */
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", "epmapper",
+					   "rpc_server",
+					   "epmapper",
 					   "none");
 	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
 		epmapper_cb.init         = epmapper_init_cb;

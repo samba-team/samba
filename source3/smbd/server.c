@@ -37,6 +37,9 @@
 #include "printing.h"
 #include "serverid.h"
 
+extern void start_epmd(struct tevent_context *ev_ctx,
+		       struct messaging_context *msg_ctx);
+
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
@@ -1206,6 +1209,18 @@ extern void build_options(bool screen);
 	if (!file_init(smbd_server_conn)) {
 		DEBUG(0, ("ERROR: file_init failed\n"));
 		return -1;
+	}
+
+	if (is_daemon && !interactive) {
+		const char *rpcsrv_type;
+
+		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+						   "rpc_server", "epmapper",
+						   "none");
+		if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+			start_epmd(smbd_event_context(),
+				   smbd_server_conn->msg_ctx);
+		}
 	}
 
 	if (!dcesrv_ep_setup(smbd_event_context(), smbd_server_conn->msg_ctx)) {
