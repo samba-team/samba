@@ -53,19 +53,6 @@
 
 #include "local.h"
 
-#ifdef AIX
-#define DEFAULT_PRINTING PRINT_AIX
-#define PRINTCAP_NAME "/etc/qconfig"
-#endif
-
-#ifdef HPUX
-#define DEFAULT_PRINTING PRINT_HPUX
-#endif
-
-#ifdef QNX
-#define DEFAULT_PRINTING PRINT_QNX
-#endif
-
 #ifdef SUNOS4
 /* on SUNOS4 termios.h conflicts with sys/ioctl.h */
 #undef HAVE_TERMIOS_H
@@ -704,23 +691,6 @@ enum flush_reason_enum {
 
 /* prototypes from lib/util_transfer_file.c */
 #include "transfer_file.h"
-
-#ifndef DEFAULT_PRINTING
-#ifdef HAVE_CUPS
-#define DEFAULT_PRINTING PRINT_CUPS
-#define PRINTCAP_NAME "cups"
-#elif defined(SYSV)
-#define DEFAULT_PRINTING PRINT_SYSV
-#define PRINTCAP_NAME "lpstat"
-#else
-#define DEFAULT_PRINTING PRINT_BSD
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-#endif
-
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
 
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD

@@ -125,6 +125,36 @@ extern struct printif	iprint_printif;
 #endif
 #define PRINT_DATABASE_VERSION 7
 
+#ifdef AIX
+#define DEFAULT_PRINTING PRINT_AIX
+#define PRINTCAP_NAME "/etc/qconfig"
+#endif
+
+#ifdef HPUX
+#define DEFAULT_PRINTING PRINT_HPUX
+#endif
+
+#ifdef QNX
+#define DEFAULT_PRINTING PRINT_QNX
+#endif
+
+#ifndef DEFAULT_PRINTING
+#ifdef HAVE_CUPS
+#define DEFAULT_PRINTING PRINT_CUPS
+#define PRINTCAP_NAME "cups"
+#elif defined(SYSV)
+#define DEFAULT_PRINTING PRINT_SYSV
+#define PRINTCAP_NAME "lpstat"
+#else
+#define DEFAULT_PRINTING PRINT_BSD
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+#endif
+
+#ifndef PRINTCAP_NAME
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+
 /* There can be this many printing tdb's open, plus any locked ones. */
 #define MAX_PRINT_DBS_OPEN 1
 
