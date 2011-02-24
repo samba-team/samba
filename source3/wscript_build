@@ -119,7 +119,7 @@ SECRETS_SRC = '''passdb/secrets.c passdb/machine_account_secrets.c
                  passdb/machine_sid.c'''
 
 LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
-             libsmb/namequery.c ../libcli/nbt/lmhosts.c libsmb/conncache.c
+             libsmb/namequery.c libsmb/conncache.c
              libads/dns.c libads/sitename_cache.c'''
 
 DCE_RPC_ERR_SRC = '../librpc/rpc/dcerpc_error.c'
@@ -903,8 +903,9 @@ bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNMB',
-                    source=LIBNMB_SRC,
-                    vars=locals())
+                     source=LIBNMB_SRC,
+                     deps='lmhosts',
+                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNBT',
                     source='',
