@@ -23,6 +23,7 @@
 #include "winbindd.h"
 #include "nsswitch/winbind_client.h"
 #include "idmap.h"
+#include "lib/winbind_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

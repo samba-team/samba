@@ -37,6 +37,7 @@
  */
 
 #include "includes.h"
+#include "lib/winbind_util.h"
 
 /***************************************************************************
   Default implementations of some functions.

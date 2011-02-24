@@ -38,6 +38,7 @@
  */
 
 #include "includes.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

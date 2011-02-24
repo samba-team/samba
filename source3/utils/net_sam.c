@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/samr.h"
 #include "smbldap.h"
 #include "../libcli/security/security.h"
+#include "lib/winbind_util.h"
 
 /*
  * Set a user's data

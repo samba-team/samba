@@ -30,6 +30,7 @@
 #include "../lib/crypto/md5.h"
 #include "../lib/crypto/arcfour.h"
 #include "../lib/crypto/hmacmd5.h"
+#include "../nsswitch/libwbclient/wbclient.h"
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 				       TALLOC_CTX *out_mem_ctx, /* Unused at this time */

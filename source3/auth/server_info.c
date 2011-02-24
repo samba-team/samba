@@ -22,6 +22,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 #include "rpc_client/util_netlogon.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

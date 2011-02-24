@@ -20,7 +20,6 @@
  */
 
 #include "includes.h"
-#include "nsswitch/libwbclient/wbclient.h"
 
 #if HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>

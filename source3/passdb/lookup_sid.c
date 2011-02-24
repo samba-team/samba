@@ -25,6 +25,7 @@
 #include "memcache.h"
 #include "idmap_cache.h"
 #include "../libcli/security/security.h"
+#include "lib/winbind_util.h"
 
 /*****************************************************************
  Dissect a user-provided name into domain, name, sid and type.
