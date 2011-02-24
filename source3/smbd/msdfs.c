@@ -23,6 +23,7 @@
 #define DBGC_CLASS DBGC_MSDFS
 #include "includes.h"
 #include "smbd/globals.h"
+#include "msdfs.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath

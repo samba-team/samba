@@ -559,7 +559,6 @@ extern void *cmdline_lp_ctx;
 #include "../lib/util/byteorder.h"
 #include "mapping.h"
 #include "passdb.h"
-#include "msdfs.h"
 
 #include "auth.h"
 #include "librpc/rpc/dcerpc.h"

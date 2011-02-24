@@ -1652,6 +1652,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				int port,
 				int name_type);
 void cli_cm_display(const struct cli_state *c);
+struct client_dfs_referral;
 NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,
@@ -4410,6 +4411,7 @@ void reply_sendend(struct smb_request *req);
 bool is_msdfs_link(connection_struct *conn,
 		const char *path,
 		SMB_STRUCT_STAT *sbufp);
+struct junction_map;
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			const char *dfs_path,
 			struct junction_map *jucn,

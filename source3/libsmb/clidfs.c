@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libsmb/clirap.h"
+#include "msdfs.h"
 
 /********************************************************************
  Important point.

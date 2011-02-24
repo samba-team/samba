@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_dfs.h"
+#include "msdfs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_MSDFS
