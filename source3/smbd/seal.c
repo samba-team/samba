@@ -23,6 +23,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "smb_crypt.h"
+#include "../lib/util/asn1.h"
 
 /******************************************************************************
  Server side encryption.

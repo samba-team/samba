@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "libads/kerberos_proto.h"
+#include "../lib/util/asn1.h"
 
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {

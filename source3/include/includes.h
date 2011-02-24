@@ -540,7 +540,6 @@ extern void *cmdline_lp_ctx;
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
-#include "../lib/util/asn1.h"
 
 #include "libads/ads_status.h"
 #include "trans2.h"

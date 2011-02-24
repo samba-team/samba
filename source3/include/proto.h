@@ -2298,6 +2298,10 @@ DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
 				  const char *OIDs[],
 				  DATA_BLOB *psecblob,
 				  const char *principal);
+
+#ifndef ASN1_MAX_OIDS
+#define ASN1_MAX_OIDS 20
+#endif
 bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 			       DATA_BLOB blob,
 			       char *OIDs[ASN1_MAX_OIDS],
