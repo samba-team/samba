@@ -23,6 +23,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "async_smb.h"
 #include "smb_crypt.h"
+#include "trans2.h"
 
 /****************************************************************************
  Get UNIX extensions version info.

@@ -25,6 +25,7 @@
 #include "../lib/crypto/arcfour.h"
 #include "async_smb.h"
 #include "libsmb/clirap.h"
+#include "trans2.h"
 
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 

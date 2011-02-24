@@ -32,6 +32,7 @@
 #include "../libcli/security/security.h"
 #include "system/select.h"
 #include "libsmb/clirap.h"
+#include "trans2.h"
 
 #ifndef REGISTER
 #define REGISTER 0

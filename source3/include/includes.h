@@ -539,7 +539,6 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/time.h"
 
 #include "libads/ads_status.h"
-#include "trans2.h"
 #include "../libcli/util/error.h"
 #include "ntioctl.h"
 #include "../lib/util/charset/charset.h"
