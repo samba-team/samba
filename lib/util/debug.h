@@ -36,48 +36,16 @@
 #define MAX_DEBUG_LEVEL 1000
 #endif
 
-/* mkproto.awk has trouble with ifdef'd function definitions (it ignores
- * the #ifdef directive and will read both definitions, thus creating two
- * diffferent prototype declarations), so we must do these by hand.
- */
-/* I know the __attribute__ stuff is ugly, but it does ensure we get the 
-   arguments to DEBUG() right. We have got them wrong too often in the 
-   past.
-   The PRINTFLIKE comment does the equivalent for SGI MIPSPro.
- */
-/* PRINTFLIKE1 */
 int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
-/* PRINTFLIKE1 */
 bool dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 bool dbghdrclass( int level, int cls, const char *location, const char *func);
 bool dbghdr( int level, const char *location, const char *func);
 
-#if defined(sgi) && (_COMPILER_VERSION >= 730)
-#pragma mips_frequency_hint NEVER Debug1
-#pragma mips_frequency_hint NEVER dbgtext
-#pragma mips_frequency_hint NEVER dbghdrclass
-#pragma mips_frequency_hint NEVER dbghdr
-#endif
-
-/* If we have these macros, we can add additional info to the header. */
-
-#ifdef HAVE_FUNCTION_MACRO
-#define FUNCTION_MACRO  (__FUNCTION__)
-#else
-#define FUNCTION_MACRO  ("")
-#endif
-
-/* 
+/*
  * Redefine DEBUGLEVEL because so we don't have to change every source file
- * that *unnecessarily* references it. Source files neeed not extern reference 
- * DEBUGLEVEL, as it's extern in includes.h (which all source files include).
- * Eventually, all these references should be removed, and all references to
- * DEBUGLEVEL should be references to DEBUGLEVEL_CLASS[DBGC_ALL]. This could
- * still be through a macro still called DEBUGLEVEL. This cannot be done now
- * because some references would expand incorrectly.
+ * that *unnecessarily* references it.
  */
-#define DEBUGLEVEL *debug_level
-extern int DEBUGLEVEL;
+#define DEBUGLEVEL DEBUGLEVEL_CLASS[DBGC_ALL]
 
 /*
  * Define all new debug classes here. A class is represented by an entry in
@@ -88,7 +56,7 @@ extern int DEBUGLEVEL;
  *   #define DBGC_CLASS DBGC_<your class name here>
  *
  * at the start of the file (after #include "includes.h") will default to
- * using index zero, so it will behaive just like it always has. 
+ * using index zero, so it will behaive just like it always has.
  */
 #define DBGC_ALL		0 /* index equivalent to DEBUGLEVEL */
 
@@ -112,47 +80,41 @@ extern int DEBUGLEVEL;
 #define DBGC_DMAPI		18
 #define DBGC_REGISTRY		19
 
+/* Always ensure this is updated when new fixed classes area added, to ensure the array in debug.c is the right size */
+#define DBGC_MAX_FIXED		19
+
 /* So you can define DBGC_CLASS before including debug.h */
 #ifndef DBGC_CLASS
 #define DBGC_CLASS            0     /* override as shown above */
 #endif
 
 extern int  *DEBUGLEVEL_CLASS;
-extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 /* Debugging macros
  *
  * DEBUGLVL()
- *   If the 'file specific' debug class level >= level OR the system-wide 
+ *   If the 'file specific' debug class level >= level OR the system-wide
  *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
- *   generate a header using the default macros for file, line, and 
+ *   generate a header using the default macros for file, line, and
  *   function name. Returns True if the debug level was <= DEBUGLEVEL.
- * 
+ *
  *   Example: if( DEBUGLVL( 2 ) ) dbgtext( "Some text.\n" );
  *
- * DEBUGLVLC()
- *   If the 'macro specified' debug class level >= level OR the system-wide 
- *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then 
- *   generate a header using the default macros for file, line, and 
- *   function name. Returns True if the debug level was <= DEBUGLEVEL.
- * 
- *   Example: if( DEBUGLVLC( DBGC_TDB, 2 ) ) dbgtext( "Some text.\n" );
- *
  * DEBUG()
- *   If the 'file specific' debug class level >= level OR the system-wide 
- *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then 
- *   generate a header using the default macros for file, line, and 
- *   function name. Each call to DEBUG() generates a new header *unless* the 
+ *   If the 'file specific' debug class level >= level OR the system-wide
+ *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
+ *   generate a header using the default macros for file, line, and
+ *   function name. Each call to DEBUG() generates a new header *unless* the
  *   previous debug output was unterminated (i.e. no '\n').
  *   See debug.c:dbghdr() for more info.
  *
  *   Example: DEBUG( 2, ("Some text and a value %d.\n", value) );
  *
  * DEBUGC()
- *   If the 'macro specified' debug class level >= level OR the system-wide 
- *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then 
- *   generate a header using the default macros for file, line, and 
- *   function name. Each call to DEBUG() generates a new header *unless* the 
+ *   If the 'macro specified' debug class level >= level OR the system-wide
+ *   DEBUGLEVEL (synomym for DEBUGLEVEL_CLASS[ DBGC_ALL ]) >= level then
+ *   generate a header using the default macros for file, line, and
+ *   function name. Each call to DEBUG() generates a new header *unless* the
  *   previous debug output was unterminated (i.e. no '\n').
  *   See debug.c:dbghdr() for more info.
  *
@@ -160,13 +122,13 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
  *
  *  DEBUGADD(), DEBUGADDC()
  *    Same as DEBUG() and DEBUGC() except the text is appended to the previous
- *    DEBUG(), DEBUGC(), DEBUGADD(), DEBUGADDC() with out another interviening 
+ *    DEBUG(), DEBUGC(), DEBUGADD(), DEBUGADDC() with out another interviening
  *    header.
  *
  *    Example: DEBUGADD( 2, ("Some text and a value %d.\n", value) );
  *             DEBUGADDC( DBGC_TDB, 2, ("Some text and a value %d.\n", value) );
  *
- * Note: If the debug class has not be redeined (see above) then the optimizer 
+ * Note: If the debug class has not be redeined (see above) then the optimizer
  * will remove the extra conditional test.
  */
 
@@ -195,51 +157,33 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 #define CHECK_DEBUGLVL( level ) \
   ( ((level) <= MAX_DEBUG_LEVEL) && \
-     unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
-     (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) )
+    unlikely(DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level)))
 
 #define DEBUGLVL( level ) \
   ( CHECK_DEBUGLVL(level) \
-   && dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO ) )
-
-
-#define DEBUGLVLC( dbgc_class, level ) \
-  ( ((level) <= MAX_DEBUG_LEVEL) && \
-     unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
-     (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
-      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-   && dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO) )
+   && dbghdrclass( level, DBGC_CLASS, __location__, __FUNCTION__ ) )
 
 
 #define DEBUG( level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-            DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO )) \
+	  unlikely(DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))		\
+       && (dbghdrclass( level, DBGC_CLASS, __location__, __FUNCTION__ )) \
        && (dbgtext body) )
 
 #define DEBUGC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
-	    DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
-       && (dbghdrclass( level, DBGC_CLASS, __location__, FUNCTION_MACRO)) \
+	  unlikely(DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))		\
+       && (dbghdrclass( level, DBGC_CLASS, __location__, __FUNCTION__ )) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-            DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+	  unlikely(DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))	\
        && (dbgtext body) )
 
 #define DEBUGADDC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-          unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
-           (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
-            DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+          unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))) \
        && (dbgtext body) )
 
 /* Print a separator to the debug log. */
@@ -255,19 +199,29 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
  * file-based logging */
 enum debug_logtype {DEBUG_DEFAULT_STDERR = 0, DEBUG_STDOUT = 1, DEBUG_FILE = 2, DEBUG_STDERR = 3};
 
+struct debug_settings {
+	size_t max_log_size;
+	bool syslog;
+	bool syslog_only;
+	bool timestamp_logs;
+	bool debug_prefix_timestamp;
+	bool debug_hires_timestamp;
+	bool debug_pid;
+	bool debug_uid;
+	bool debug_class;
+};
+
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
 
 void debug_close_dbf(void);
 void gfree_debugsyms(void);
-const char *debug_classname_from_index(int ndx);
 int debug_add_class(const char *classname);
 int debug_lookup_classname(const char *classname);
 bool debug_parse_levels(const char *params_str);
-void debug_message(struct messaging_context *msg_ctx, void *private_data, uint32_t msg_type, struct server_id src, DATA_BLOB *data);
-void debug_init(void);
-void debug_register_msgs(struct messaging_context *msg_ctx);
+void debug_setup_talloc_log(void);
 void debug_set_logfile(const char *name);
-bool reopen_logs( void );
+void debug_set_settings(struct debug_settings *settings);
+bool reopen_logs_internal( void );
 void force_check_log_size( void );
 bool need_to_check_log_size( void );
 void check_log_size( void );
@@ -275,6 +229,41 @@ void dbgflush( void );
 bool dbghdrclass(int level, int cls, const char *location, const char *func);
 bool dbghdr(int level, const char *location, const char *func);
 bool debug_get_output_is_stderr(void);
+void debug_schedule_reopen_logs(void);
+char *debug_list_class_names_and_levels(void);
+
+/**
+  log suspicious usage - print comments and backtrace
+*/	
+_PUBLIC_ void log_suspicious_usage(const char *from, const char *info);
+
+/**
+  print suspicious usage - print comments and backtrace
+*/	
+_PUBLIC_ void print_suspicious_usage(const char* from, const char* info);
+_PUBLIC_ uint32_t get_task_id(void);
+_PUBLIC_ void log_task_id(void);
+
+/* the debug operations structure - contains function pointers to
+   various debug implementations of each operation */
+struct debug_ops {
+	/* function to log (using DEBUG) suspicious usage of data structure */
+	void (*log_suspicious_usage)(const char* from, const char* info);
+
+	/* function to log (using printf) suspicious usage of data structure.
+	 * To be used in circumstances when using DEBUG would cause loop. */
+	void (*print_suspicious_usage)(const char* from, const char* info);
+
+	/* function to return process/thread id */
+	uint32_t (*get_task_id)(void);
+
+	/* function to log process/thread id */
+	void (*log_task_id)(int fd);
+};
+
+/**
+  register a set of debug handlers. 
+*/
+_PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
 
 #endif
-

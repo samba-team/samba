@@ -57,7 +57,7 @@
 #endif
 #include "../lib/util/xfile.h"
 #include "../lib/util/attr.h"
-#include "../lib/util/debug_s4.h"
+#include "../lib/util/debug.h"
 #include "../lib/util/util.h"
 
 #include "libcli/util/error.h"

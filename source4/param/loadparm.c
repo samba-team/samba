@@ -133,6 +133,7 @@ struct loadparm_global
 	char *tls_crlfile;
 	char *tls_dhpfile;
 	char *logfile;
+	char *loglevel;
 	char *panic_action;
 	int max_mux;
 	int debuglevel;
@@ -396,8 +397,8 @@ static struct parm_struct parm_table[] = {
 	{"hosts allow", P_LIST, P_LOCAL, LOCAL_VAR(szHostsallow), NULL, NULL},
 	{"hosts deny", P_LIST, P_LOCAL, LOCAL_VAR(szHostsdeny), NULL, NULL},
 
-	{"log level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL},
-	{"debuglevel", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL},
+	{"log level", P_STRING, P_GLOBAL, GLOBAL_VAR(loglevel), handle_debuglevel, NULL},
+	{"debuglevel", P_STRING, P_GLOBAL, GLOBAL_VAR(loglevel), handle_debuglevel, NULL},
 	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), handle_logfile, NULL},
 
 	{"smb ports", P_LIST, P_GLOBAL, GLOBAL_VAR(smb_ports), NULL, NULL},
@@ -1524,22 +1525,15 @@ static bool handle_copy(struct loadparm_context *lp_ctx,
 static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr)
 {
-	DEBUGLEVEL = atoi(pszParmValue);
 
-	/* also set in the loadparm table, so querying debug level
-	   works */
-	*(int *)ptr = DEBUGLEVEL;
-
-	return true;
+	string_set(lp_ctx, ptr, pszParmValue);
+	return debug_parse_levels(pszParmValue);
 }
 
 static bool handle_logfile(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr)
 {
-	if (logfile != NULL) {
-		free(discard_const_p(char, logfile));
-	}
-	logfile = strdup(pszParmValue);
+	debug_set_logfile(pszParmValue);
 	string_set(lp_ctx, ptr, pszParmValue);
 	return true;
 }
@@ -2371,6 +2365,11 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		}
 	}
 
+
+	lpcfg_do_global_parameter(lp_ctx, "log level", "0");
+
+	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
+
 	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
 
 	lpcfg_do_global_parameter(lp_ctx, "server role", "standalone");
@@ -2560,6 +2559,7 @@ const char *lp_default_path(void)
  */
 static bool lpcfg_update(struct loadparm_context *lp_ctx)
 {
+	struct debug_settings settings;
 	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx));
 
 	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
@@ -2569,6 +2569,12 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	panic_action = lp_ctx->globals->panic_action;
 
 	reload_charcnv(lp_ctx);
+
+	ZERO_STRUCT(settings);
+	/* Add any more debug-related smb.conf parameters created in
+	 * future here */
+	settings.timestamp_logs = true;
+	debug_set_settings(&settings);
 
 	/* FIXME: ntstatus_check_dos_mapping = lpcfg_nt_status_support(lp_ctx); */
 

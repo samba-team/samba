@@ -7,23 +7,25 @@ bld.SAMBA_LIBRARY('samba-util-common',
                   util_file.c time.c rbtree.c rfc1738.c select.c
                   genrand.c fsusage.c blocking.c become_daemon.c
                   data_blob.c signal.c system.c params.c util.c util_id.c util_net.c
-                  util_strlist.c idtree.c''',
+                  util_strlist.c idtree.c debug.c''',
                   public_deps='talloc pthread',
                   # until we get all the dependencies in this library in common
                   # we need to allow this library to be built with unresolved symbols
                   allow_undefined_symbols=True,
                   local_include=False,
+                  public_headers='debug.h',
+                  header_path= [('*', 'util') ],
                   private_library=True
                   )
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_LIBRARY('samba-util',
-                      source='''debug_s4.c dprintf.c fault.c
+                      source='''dprintf.c fault.c
                       ms_fnmatch.c parmlist.c substitute.c util_str.c
                       ''',
                       deps='samba-util-common',
                       public_deps='talloc LIBCRYPTO CHARSET execinfo uid_wrapper',
-                      public_headers='attr.h byteorder.h data_blob.h debug.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h',
+                      public_headers='attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h',
                       header_path= [ ('dlinklist.h util.h', '.'), ('*', 'util') ],
                       local_include=False,
                       vnum='0.0.1',

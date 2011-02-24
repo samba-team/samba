@@ -9458,7 +9458,6 @@ static bool lp_load_ex(const char *pszFname,
 	bAllowIncludeRegistry = allow_include_registry;
 
 	init_globals(initialize_globals);
-	debug_init();
 
 	free_file_list();
 

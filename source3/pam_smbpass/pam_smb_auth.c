@@ -18,7 +18,7 @@
 #define PAM_SM_AUTH
 
 #include "includes.h"
-#include "debug.h"
+#include "lib/util/debug.h"
 
 #ifndef LINUX
 

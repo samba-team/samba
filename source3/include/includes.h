@@ -739,8 +739,6 @@ enum flush_reason_enum {
 #endif
 #endif
 
-extern int DEBUGLEVEL;
-
 #define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
 
 

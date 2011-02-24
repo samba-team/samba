@@ -69,7 +69,8 @@
 #define SMB_SECONDARY_WAIT (60*1000)
 
 /* Debugging stuff */
-#include "debug.h"
+#include "lib/util/debug.h"
+#include "lib/util/debug_s3.h"
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
 enum smb_read_errors {
