@@ -21,6 +21,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "fake_file.h"
 #include "../libcli/security/security.h"
+#include "trans2.h"
 
 NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum)
 {

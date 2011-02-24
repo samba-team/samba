@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../libcli/security/security.h"
+#include "trans2.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

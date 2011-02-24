@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "async_smb.h"
+#include "trans2.h"
 
 /****************************************************************************
  Calculate a safe next_entry_offset.

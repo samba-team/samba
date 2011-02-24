@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "trans2.h"
 
 static fstring password;
 static fstring username;
