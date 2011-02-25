@@ -46,6 +46,7 @@
    */
 
 #include "includes.h"
+#include "system/terminal.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_server/samr/srv_samr_util.h"
