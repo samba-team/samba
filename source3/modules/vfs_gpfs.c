@@ -1220,6 +1220,12 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
 }
 
+static bool vfs_gpfs_aio_force(struct vfs_handle_struct *handle,
+			       struct files_struct *fsp)
+{
+	return vfs_gpfs_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
+}
+
 int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 			const char *user)
 {
@@ -1295,6 +1301,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
         .lstat = vfs_gpfs_lstat,
 	.ntimes = vfs_gpfs_ntimes,
 	.is_offline = vfs_gpfs_is_offline,
+	.aio_force = vfs_gpfs_aio_force,
 	.ftruncate = vfs_gpfs_ftruncate
 };
 
