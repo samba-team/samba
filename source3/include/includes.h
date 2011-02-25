@@ -75,7 +75,6 @@
 #include "system/passwd.h"
 #include "system/select.h"
 #include "system/shmem.h"
-#include "system/terminal.h"
 #include "system/time.h"
 #include "system/wait.h"
 
