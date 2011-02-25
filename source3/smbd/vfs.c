@@ -2014,8 +2014,8 @@ bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
-			     const char *path)
+                             const struct smb_filename *fname)
 {
 	VFS_FIND(set_offline);
-	return handle->fns->set_offline(handle, path);
+	return handle->fns->set_offline(handle, fname);
 }

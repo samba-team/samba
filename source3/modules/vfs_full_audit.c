@@ -2215,6 +2215,17 @@ static bool smb_full_audit_is_offline(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_full_audit_set_offline(struct vfs_handle_struct *handle,
+				      const struct smb_filename *fname)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_SET_OFFLINE(handle, fname);
+	do_log(SMB_VFS_OP_SET_OFFLINE, result >= 0, handle, "%s",
+	       smb_fname_str_do_log(fname));
+	return result;
+}
+
 static struct vfs_fn_pointers vfs_full_audit_fns = {
 
 	/* Disk operations */
@@ -2333,6 +2344,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.aio_suspend = smb_full_audit_aio_suspend,
 	.aio_force = smb_full_audit_aio_force,
 	.is_offline = smb_full_audit_is_offline,
+	.set_offline = smb_full_audit_set_offline,
 };
 
 NTSTATUS vfs_full_audit_init(void)

@@ -404,7 +404,8 @@ struct vfs_fn_pointers {
 	bool (*is_offline)(struct vfs_handle_struct *handle,
 			   const struct smb_filename *fname,
 			   SMB_STRUCT_STAT *sbuf);
-	int (*set_offline)(struct vfs_handle_struct *handle, const char *path);
+	int (*set_offline)(struct vfs_handle_struct *handle,
+			   const struct smb_filename *fname);
 };
 
 /*
@@ -820,6 +821,6 @@ bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
 			     const struct smb_filename *fname,
 			     SMB_STRUCT_STAT *sbuf);
 int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
-			     const char *path);
+			     const struct smb_filename *fname);
 
 #endif /* _VFS_H */

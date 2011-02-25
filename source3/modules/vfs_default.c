@@ -1634,7 +1634,8 @@ static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
 	return (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
 }
 
-static int vfswrap_set_offline(struct vfs_handle_struct *handle, const char *path)
+static int vfswrap_set_offline(struct vfs_handle_struct *handle,
+			       const struct smb_filename *fname)
 {
 	/* We don't know how to set offline bit by default, needs to be overriden in the vfs modules */
 #if defined(ENOTSUP)
