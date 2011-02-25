@@ -31,7 +31,7 @@ static const char yysccsid[] = "@(#)yaccpar	1.9 (Berkeley) 02/21/93";
 
 extern int YYPARSE_DECL();
 
-#line 35 ""
+#line 35 "sel-gram.c"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -40,12 +40,12 @@ extern int YYPARSE_DECL();
 #include <hx_locl.h>
 
 
-#line 45 ""
+#line 45 "sel-gram.c"
 typedef union {
     char *string;
     struct hx_expr *expr;
 } YYSTYPE;
-#line 48 ""
+#line 48 "sel-gram.c"
 #define kw_TRUE 257
 #define kw_FALSE 258
 #define kw_AND 259
@@ -436,109 +436,109 @@ yyreduce:
     switch (yyn)
     {
 case 1:
-#line 73 ""
+#line 73 "sel-gram.c"
 	{ _hx509_expr_input.expr = yystack.l_mark[0].expr; }
 break;
 case 2:
-#line 75 ""
+#line 75 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(op_TRUE, NULL, NULL); }
 break;
 case 3:
-#line 76 ""
+#line 76 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(op_FALSE, NULL, NULL); }
 break;
 case 4:
-#line 77 ""
+#line 77 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(op_NOT, yystack.l_mark[0].expr, NULL); }
 break;
 case 5:
-#line 78 ""
+#line 78 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(op_AND, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 6:
-#line 79 ""
+#line 79 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(op_OR, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 7:
-#line 80 ""
+#line 80 "sel-gram.c"
 	{ yyval.expr = yystack.l_mark[-1].expr; }
 break;
 case 8:
-#line 81 ""
+#line 81 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(op_COMP, yystack.l_mark[0].expr, NULL); }
 break;
 case 9:
-#line 84 ""
+#line 84 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(expr_WORDS, yystack.l_mark[0].expr, NULL); }
 break;
 case 10:
-#line 85 ""
+#line 85 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(expr_WORDS, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 11:
-#line 88 ""
+#line 88 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(comp_EQ, yystack.l_mark[-3].expr, yystack.l_mark[0].expr); }
 break;
 case 12:
-#line 89 ""
+#line 89 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(comp_NE, yystack.l_mark[-3].expr, yystack.l_mark[0].expr); }
 break;
 case 13:
-#line 90 ""
+#line 90 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(comp_TAILEQ, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 14:
-#line 91 ""
+#line 91 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(comp_IN, yystack.l_mark[-4].expr, yystack.l_mark[-1].expr); }
 break;
 case 15:
-#line 92 ""
+#line 92 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(comp_IN, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 16:
-#line 95 ""
+#line 95 "sel-gram.c"
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 17:
-#line 96 ""
+#line 96 "sel-gram.c"
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 18:
-#line 97 ""
+#line 97 "sel-gram.c"
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 19:
-#line 98 ""
+#line 98 "sel-gram.c"
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 20:
-#line 101 ""
+#line 101 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(expr_NUMBER, yystack.l_mark[0].string, NULL); }
 break;
 case 21:
-#line 102 ""
+#line 102 "sel-gram.c"
 	{ yyval.expr = _hx509_make_expr(expr_STRING, yystack.l_mark[0].string, NULL); }
 break;
 case 22:
-#line 104 ""
+#line 104 "sel-gram.c"
 	{
 			yyval.expr = _hx509_make_expr(expr_FUNCTION, yystack.l_mark[-3].string, yystack.l_mark[-1].expr); }
 break;
 case 23:
-#line 107 ""
+#line 107 "sel-gram.c"
 	{ yyval.expr = yystack.l_mark[-1].expr; }
 break;
 case 24:
-#line 110 ""
+#line 110 "sel-gram.c"
 	{
 			yyval.expr = _hx509_make_expr(expr_VAR, yystack.l_mark[-2].string, yystack.l_mark[0].expr); }
 break;
 case 25:
-#line 112 ""
+#line 112 "sel-gram.c"
 	{
 			yyval.expr = _hx509_make_expr(expr_VAR, yystack.l_mark[0].string, NULL); }
 break;
-#line 541 ""
+#line 541 "sel-gram.c"
     }
     yystack.s_mark -= yym;
     yystate = *yystack.s_mark;

@@ -1,6 +1,6 @@
 #include "config.h"
 
-#line 3 ""
+#line 3 "lex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -527,7 +527,7 @@ static int getstring(void);
 
 #undef ECHO
 
-#line 530 ""
+#line 530 "lex.c"
 
 #define INITIAL 0
 
@@ -709,7 +709,7 @@ YY_DECL
     
 #line 58 "lex.l"
 
-#line 712 ""
+#line 712 "lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -873,7 +873,7 @@ YY_RULE_SETUP
 #line 74 "lex.l"
 ECHO;
 	YY_BREAK
-#line 876 ""
+#line 876 "lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

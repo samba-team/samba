@@ -31,7 +31,7 @@ static const char yysccsid[] = "@(#)yaccpar	1.9 (Berkeley) 02/21/93";
 
 extern int YYPARSE_DECL();
 
-#line 2 ""
+#line 2 "parse.c"
 /*
  * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -82,12 +82,12 @@ extern char *yytext;
 #define YYMALLOC malloc
 #define YYFREE free
 
-#line 54 ""
+#line 54 "parse.c"
 typedef union {
   char *string;
   int number;
 } YYSTYPE;
-#line 90 ""
+#line 90 "parse.c"
 #define ET 257
 #define INDEX 258
 #define PREFIX 259
@@ -261,7 +261,7 @@ YYSTYPE  yylval;
 
 /* variables for the parser stack */
 static YYSTACKDATA yystack;
-#line 144 ""
+#line 144 "parse.c"
 
 static long
 name2number(const char *str)
@@ -293,7 +293,7 @@ yyerror (char *s)
 {
      _lex_error_message ("%s\n", s);
 }
-#line 296 ""
+#line 296 "parse.c"
 /* allocate initial stack or double stack size, up to YYMAXDEPTH */
 static int yygrowstack(YYSTACKDATA *data)
 {
@@ -496,13 +496,13 @@ yyreduce:
     switch (yyn)
     {
 case 5:
-#line 74 ""
+#line 74 "parse.c"
 	{
 		    id_str = yystack.l_mark[0].string;
 		}
 break;
 case 6:
-#line 80 ""
+#line 80 "parse.c"
 	{
 		    base_id = name2number(yystack.l_mark[0].string);
 		    strlcpy(name, yystack.l_mark[0].string, sizeof(name));
@@ -510,7 +510,7 @@ case 6:
 		}
 break;
 case 7:
-#line 86 ""
+#line 86 "parse.c"
 	{
 		    base_id = name2number(yystack.l_mark[-1].string);
 		    strlcpy(name, yystack.l_mark[0].string, sizeof(name));
@@ -519,13 +519,13 @@ case 7:
 		}
 break;
 case 10:
-#line 99 ""
+#line 99 "parse.c"
 	{
 			number = yystack.l_mark[0].number;
 		}
 break;
 case 11:
-#line 103 ""
+#line 103 "parse.c"
 	{
 		    free(prefix);
 		    asprintf (&prefix, "%s_", yystack.l_mark[0].string);
@@ -535,7 +535,7 @@ case 11:
 		}
 break;
 case 12:
-#line 111 ""
+#line 111 "parse.c"
 	{
 		    prefix = realloc(prefix, 1);
 		    if (prefix == NULL)
@@ -544,7 +544,7 @@ case 12:
 		}
 break;
 case 13:
-#line 118 ""
+#line 118 "parse.c"
 	{
 		    struct error_code *ec = malloc(sizeof(*ec));
 		
@@ -566,12 +566,12 @@ case 13:
 		}
 break;
 case 14:
-#line 138 ""
+#line 138 "parse.c"
 	{
 			YYACCEPT;
 		}
 break;
-#line 574 ""
+#line 574 "parse.c"
     }
     yystack.s_mark -= yym;
     yystate = *yystack.s_mark;

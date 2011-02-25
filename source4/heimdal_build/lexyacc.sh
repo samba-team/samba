@@ -28,16 +28,16 @@ call_lex() {
 
     if [ -r lex.yy.c ]; then
 	echo "#include \"config.h\"" > $base.c
-	sed -e "s|lex\.yy\.c|$DEST|" lex.yy.c >> $base.c
+	sed -e "s|lex\.yy\.c|$cfile|" lex.yy.c >> $base.c
 	rm -f $base.yy.c
     elif [ -r $base.yy.c ]; then
 	echo "#include \"config.h\"" > $base.c
-	sed -e "s|$base\.yy\.c|$DEST|" $base.yy.c >> $base.c
+	sed -e "s|$base\.yy\.c|$cfile|" $base.yy.c >> $base.c
 	rm -f $base.yy.c
     elif [ -r $base.c ]; then
 	mv $base.c $base.c.tmp
 	echo "#include \"config.h\"" > $base.c
-	sed -e "s|$base\.yy\.c|$DEST|" $base.c.tmp >> $base.c
+	sed -e "s|$base\.yy\.c|$cfile|" $base.c.tmp >> $base.c
 	rm -f $base.c.tmp
     elif [ ! -r base.c ]; then
 	echo "$base.c nor $base.yy.c nor lex.yy.c generated."
@@ -61,8 +61,8 @@ call_yacc() {
 
     $YACC -d $yfile || exit 1
     if [ -r y.tab.h -a -r y.tab.c ];then
-	sed -e "/^#/!b" -e "s|y\.tab\.h|$SRC|" -e "s|\"$base.y|\"$SRC|"  y.tab.h > $base.h
-	sed -e "s|y\.tab\.c|$SRC|" -e "s|\"$base.y|\"$SRC|" y.tab.c > $base.c
+	sed -e "/^#/!b" -e "s|y\.tab\.h|$cfile|" -e "s|\"$base.y|\"$cfile|"  y.tab.h > $base.h
+	sed -e "s|y\.tab\.c|$cfile|" -e "s|\"$base.y|\"$cfile|" y.tab.c > $base.c
 	rm -f y.tab.c y.tab.h
     elif [ ! -r $base.h -a ! -r $base.c]; then
 	echo "$base.h nor $base.c generated."

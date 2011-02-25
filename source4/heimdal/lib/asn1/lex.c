@@ -1,6 +1,6 @@
 #include "config.h"
 
-#line 3 ""
+#line 3 "lex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -848,7 +848,7 @@ static unsigned lineno = 1;
 static void unterminated(const char *, unsigned);
 
 /* This is for broken old lexes (solaris 10 and hpux) */
-#line 851 ""
+#line 851 "lex.c"
 
 #define INITIAL 0
 
@@ -1032,7 +1032,7 @@ YY_DECL
     
 #line 68 "lex.l"
 
-#line 1035 ""
+#line 1035 "lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -1701,7 +1701,7 @@ YY_RULE_SETUP
 #line 274 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1704 ""
+#line 1704 "lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
