@@ -35,6 +35,7 @@
 
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "clitar.h"
 #include "client/client_proto.h"
 

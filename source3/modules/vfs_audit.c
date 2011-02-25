@@ -22,6 +22,7 @@
 
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "system/syslog.h"
 
 #undef DBGC_CLASS

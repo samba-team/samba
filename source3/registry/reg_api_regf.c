@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "registry.h"
 #include "reg_api_regf.h"
 #include "reg_cachehook.h"

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb.h"
 #include "ctdb_private.h"

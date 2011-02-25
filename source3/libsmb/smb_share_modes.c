@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "smb_share_modes.h"
 
 /* Database context handle. */

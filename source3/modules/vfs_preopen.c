@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 struct preopen_state;
 

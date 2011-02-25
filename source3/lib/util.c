@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "system/filesys.h"
 #include "popt_common.h"
 #include "secrets.h"
 #include "ctdbd_conn.h"

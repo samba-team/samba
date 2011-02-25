@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"

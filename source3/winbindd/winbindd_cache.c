@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "winbindd.h"
 #include "tdb_validate.h"
 #include "../libcli/auth/libcli_auth.h"

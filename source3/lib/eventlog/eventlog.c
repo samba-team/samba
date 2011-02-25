@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "lib/eventlog/eventlog.h"
 #include "../libcli/security/security.h"
 

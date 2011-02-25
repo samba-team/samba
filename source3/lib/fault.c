@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>

@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "torture/proto.h"
 
 extern bool torture_showall;

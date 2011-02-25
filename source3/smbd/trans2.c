@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "version.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"

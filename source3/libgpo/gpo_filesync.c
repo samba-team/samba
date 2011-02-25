@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
 

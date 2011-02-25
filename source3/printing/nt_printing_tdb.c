@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "printing/nt_printing_tdb.h"
 #include "librpc/gen_ndr/spoolss.h"
 #include "librpc/gen_ndr/ndr_security.h"

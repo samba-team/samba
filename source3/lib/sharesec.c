@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "dbwrap.h"

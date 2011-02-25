@@ -31,6 +31,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "popt_common.h"
 #include "dbwrap.h"
 #include "../libcli/security/security.h"

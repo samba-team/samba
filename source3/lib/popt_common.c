@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "popt_common.h"
 
 /* Handle command line options:

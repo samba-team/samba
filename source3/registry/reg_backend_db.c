@@ -21,7 +21,7 @@
 /* Implementation of internal registry database functions. */
 
 #include "includes.h"
-
+#include "system/filesys.h"
 #include "registry.h"
 #include "reg_db.h"
 #include "reg_util_internal.h"

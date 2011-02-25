@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #undef malloc
 #undef realloc
 #undef calloc

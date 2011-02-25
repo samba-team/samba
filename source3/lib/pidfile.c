@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 #ifndef O_NONBLOCK
 #define O_NONBLOCK

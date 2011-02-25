@@ -23,6 +23,7 @@
    such as the local SID and machine trust password */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_secrets.h"
 #include "secrets.h"

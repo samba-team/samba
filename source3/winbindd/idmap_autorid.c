@@ -23,6 +23,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "winbindd.h"
 #include "dbwrap.h"
 #include "idmap.h"

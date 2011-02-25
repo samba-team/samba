@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 /* For reasons known only to MS, many of their NT/Win2k versions
    need serialised access only.  Two connections at the same time

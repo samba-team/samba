@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "system/select.h"
 #include "../lib/util/select.h"
 

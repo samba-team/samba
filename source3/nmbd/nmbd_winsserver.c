@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "nmbd/nmbd.h"
 
 #define WINS_LIST "wins.dat"

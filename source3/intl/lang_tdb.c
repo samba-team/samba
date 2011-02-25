@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 static TDB_CONTEXT *tdb;
 

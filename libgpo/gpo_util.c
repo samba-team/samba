@@ -18,12 +18,12 @@
  */
 #define TALLOC_DEPRECATED 1
 #include "includes.h"
+#include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../libgpo/gpo.h"
 #include "../libcli/security/security.h"
 #if _SAMBA_BUILD_ == 4
-#include "system/filesys.h"
 #include "auth/auth.h"
 #include <talloc.h>
 #include "source4/libgpo/ads_convenience.h"

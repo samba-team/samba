@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "dbwrap.h"
 #include "printer_list.h"
 

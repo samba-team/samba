@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
+#include "system/filesys.h"
 #include "utils/net.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
