@@ -1718,3 +1718,22 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 }
+
+
+/**
+ * retrieve credentials from a dce_call
+ */
+_PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_state *dce_call)
+{
+	return dce_call->conn->auth_state.session_info->credentials;
+}
+
+/**
+ * returns true if this is an authenticated call
+ */
+_PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
+{
+	enum security_user_level level;
+	level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
+	return level >= SECURITY_USER;
+}

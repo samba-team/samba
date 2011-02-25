@@ -383,5 +383,15 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
 		       struct tevent_context *event_ctx,
 		       const struct model_ops *model_ops);
 
+/**
+ * retrieve credentials from a dce_call
+ */
+_PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_state *dce_call);
+
+/**
+ * returns true if this is an authenticated call
+ */
+_PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call);
+
 
 #endif /* SAMBA_DCERPC_SERVER_H */
