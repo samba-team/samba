@@ -8,8 +8,8 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 
 bld.SAMBA_SUBSYSTEM('lmhosts',
                     source='lmhosts.c',
-                    deps='replace')
-
+                    deps='replace talloc'
+                    )
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_LIBRARY('cli-nbt',
