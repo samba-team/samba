@@ -2261,8 +2261,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	/*
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
+	 * but we don't have to store this - just ignore it on access check.
 	 */
-	fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
+	fsp->access_mask = access_mask;
 
 	if (file_existed) {
 		/* stat opens on existing files don't get oplocks. */
