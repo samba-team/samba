@@ -488,8 +488,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		    The architecture of the remote
 		    machine.  It currently recognizes Samba (<constant>Samba</constant>), 
 		    the Linux CIFS file system (<constant>CIFSFS</constant>), OS/2, (<constant>OS2</constant>),
-		    Mac OS X (<constant>OSX</constant>),
-		    Windows for Workgroups (<constant>WfWg</constant>), Windows 9x/ME 
+		    Mac OS X (<constant>OSX</constant>), Windows for Workgroups (<constant>WfWg</constant>), Windows 9x/ME 
 		    (<constant>Win95</constant>), Windows NT (<constant>WinNT</constant>),
 		    Windows 2000 (<constant>Win2K</constant>),
 		    Windows XP (<constant>WinXP</constant>),
