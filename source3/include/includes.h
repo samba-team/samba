@@ -675,12 +675,6 @@ enum flush_reason_enum {
 #endif
 
 
-/* needed for some systems without iconv. Doesn't really matter
-   what error code we use */
-#ifndef EILSEQ
-#define EILSEQ EIO
-#endif
-
 /* add varargs prototypes with printf checking */
 /*PRINTFLIKE2 */
 int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
