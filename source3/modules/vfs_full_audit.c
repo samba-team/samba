@@ -58,6 +58,7 @@
 
 
 #include "includes.h"
+#include "system/syslog.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 
 static int vfs_full_audit_debug_level = DBGC_VFS;

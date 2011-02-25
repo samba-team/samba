@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/syslog.h"
 #include "printing.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
