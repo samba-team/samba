@@ -1858,6 +1858,9 @@ void set_remote_arch(enum remote_arch_types type)
 	case RA_CIFSFS:
 		remote_arch_str = "CIFSFS";
 		break;
+	case RA_OSX:
+		remote_arch_str = "OSX";
+		break;
 	default:
 		ra_type = RA_UNKNOWN;
 		remote_arch_str = "UNKNOWN";

@@ -1095,6 +1095,10 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		} else {
 			ra_lanman_string( native_lanman );
 		}
+	} else if ( ra_type == RA_VISTA ) {
+		if ( strncmp(native_os, "Mac OS X", 8) == 0 ) {
+			set_remote_arch(RA_OSX);
+		}
 	}
 
 	/* Did we get a valid vuid ? */
