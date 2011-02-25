@@ -334,8 +334,8 @@ static struct {
 	{ SMB_VFS_OP_AIO_FSYNC,	"aio_fsync" },
 	{ SMB_VFS_OP_AIO_SUSPEND,"aio_suspend" },
 	{ SMB_VFS_OP_AIO_FORCE, "aio_force" },
-	{ SMB_VFS_OP_IS_OFFLINE, "aio_is_offline" },
-	{ SMB_VFS_OP_SET_OFFLINE, "aio_set_offline" },
+	{ SMB_VFS_OP_IS_OFFLINE, "is_offline" },
+	{ SMB_VFS_OP_SET_OFFLINE, "set_offline" },
 	{ SMB_VFS_OP_LAST, NULL }
 };
 
