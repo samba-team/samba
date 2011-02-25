@@ -34,6 +34,7 @@
 struct gpfs_config_data {
 	bool sharemodes;
 	bool leases;
+	bool hsm;
 };
 
 
@@ -1211,6 +1212,9 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 	config->leases = lp_parm_bool(SNUM(handle->conn), "gpfs",
 					"leases", true);
 
+	config->hsm = lp_parm_bool(SNUM(handle->conn), "gpfs",
+				   "hsm", false);
+
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct syncops_config_data,
 				return -1);
@@ -1218,9 +1222,28 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 	return 0;
 }
 
+static uint32_t vfs_gpfs_capabilities(struct vfs_handle_struct *handle,
+				      enum timestamp_set_resolution *p_ts_res)
+{
+	struct gpfs_config_data *config;
+	uint32_t next;
+
+	next = SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res);
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return next);
+
+	if (config->hsm) {
+		next |= FILE_SUPPORTS_REMOTE_STORAGE;
+	}
+	return next;
+}
+
 
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.connect_fn = vfs_gpfs_connect,
+	.fs_capabilities = vfs_gpfs_capabilities,
 	.kernel_flock = vfs_gpfs_kernel_flock,
         .linux_setlease = vfs_gpfs_setlease,
         .get_real_filename = vfs_gpfs_get_real_filename,
