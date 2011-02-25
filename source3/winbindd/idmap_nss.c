@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "winbindd.h"
 #include "nsswitch/winbind_client.h"
 #include "idmap.h"

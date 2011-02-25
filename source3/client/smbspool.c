@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 
 /*
  * Starting with CUPS 1.3, Kerberos support is provided by cupsd including

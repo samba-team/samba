@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "smbd/globals.h"
 

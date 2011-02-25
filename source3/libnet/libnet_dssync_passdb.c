@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "libnet/libnet_dssync.h"
 #include "libnet/libnet_samsync.h"
 #include "../libcli/security/security.h"

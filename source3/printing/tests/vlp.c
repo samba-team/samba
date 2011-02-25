@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "printing.h"
 
 #ifdef malloc

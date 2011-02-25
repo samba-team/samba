@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "nsswitch/winbind_client.h"
 
 #ifndef HAVE_GETGROUPLIST

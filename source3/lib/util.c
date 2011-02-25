@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "popt_common.h"
 #include "secrets.h"
 #include "ctdbd_conn.h"

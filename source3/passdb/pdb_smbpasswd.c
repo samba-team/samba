@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../libcli/security/security.h"
 
