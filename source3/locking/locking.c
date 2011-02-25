@@ -36,6 +36,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "smbd/globals.h"
 #include "dbwrap.h"

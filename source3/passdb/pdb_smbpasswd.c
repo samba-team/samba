@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "system/filesys.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../libcli/security/security.h"
 

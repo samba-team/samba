@@ -55,6 +55,7 @@
 
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "printing/pcap.h"
 
 /* handle standard printcap - moved from pcap_printer_fn() */

@@ -28,6 +28,7 @@
  **/
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "popt_common.h"
 #include "web/swat_proto.h"
 #include "printing/pcap.h"

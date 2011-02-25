@@ -69,7 +69,6 @@
 #endif /* RELIANTUNIX */
 
 #include "system/dir.h"
-#include "system/filesys.h"
 #include "system/locale.h"
 #include "system/time.h"
 #include "system/wait.h"

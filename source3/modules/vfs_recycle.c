@@ -23,6 +23,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 
 #define ALLOC_CHECK(ptr, label) do { if ((ptr) == NULL) { DEBUG(0, ("recycle.bin: out of memory!\n")); errno = ENOMEM; goto label; } } while(0)

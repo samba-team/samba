@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "printing/nt_printing_migrate.h"
 
 #include "librpc/gen_ndr/ndr_ntprinting.h"

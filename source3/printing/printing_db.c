@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "printing.h"
 
 static struct tdb_print_db *print_db_head;

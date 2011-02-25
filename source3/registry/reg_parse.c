@@ -26,6 +26,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "cbuf.h"
 #include "srprs.h"
 #include "reg_parse_internal.h"

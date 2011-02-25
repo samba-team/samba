@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "serverid.h"
 #include "dbwrap.h"
 

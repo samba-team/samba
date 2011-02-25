@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "utils/net.h"
 #include "librpc/gen_ndr/ndr_ntprinting.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"

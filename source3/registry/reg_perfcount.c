@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "../librpc/gen_ndr/perfcount.h"
 #include "registry.h"
 #include "reg_perfcount.h"

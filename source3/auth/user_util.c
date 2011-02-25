@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 /*******************************************************************
  Map a username from a dos name to a unix name by looking in the username

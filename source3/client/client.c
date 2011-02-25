@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "popt_common.h"
 #include "rpc_client/cli_pipe.h"
 #include "client/client_proto.h"

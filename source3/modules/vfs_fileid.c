@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 static int vfs_fileid_debug_level = DBGC_VFS;
 

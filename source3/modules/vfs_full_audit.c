@@ -58,6 +58,7 @@
 
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "system/syslog.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 

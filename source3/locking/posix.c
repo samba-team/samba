@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "dbwrap.h"
 
 #undef DBGC_CLASS

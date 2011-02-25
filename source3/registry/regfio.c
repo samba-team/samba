@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "regfio.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 

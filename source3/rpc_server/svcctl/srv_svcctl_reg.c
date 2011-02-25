@@ -22,6 +22,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "services/services.h"
 #include "services/svc_winreg_glue.h"
 #include "../librpc/gen_ndr/ndr_winreg_c.h"

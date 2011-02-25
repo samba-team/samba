@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "smbd/globals.h"
 #include "mangle.h"
 

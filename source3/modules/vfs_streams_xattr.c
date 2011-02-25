@@ -22,6 +22,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "../lib/crypto/md5.h"
 
 #undef DBGC_CLASS

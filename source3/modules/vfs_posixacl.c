@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 
 /* prototypes for static functions first - for clarity */

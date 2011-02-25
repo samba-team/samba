@@ -28,6 +28,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "utils/net.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"

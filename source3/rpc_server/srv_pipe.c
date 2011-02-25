@@ -28,6 +28,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "srv_pipe_internal.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../libcli/auth/schannel.h"

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "system/filesys.h"
 #include "vfstest.h"
 #include "../lib/util/util_pw.h"
 

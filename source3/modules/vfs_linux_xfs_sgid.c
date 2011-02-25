@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 static int linux_xfs_sgid_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
 {

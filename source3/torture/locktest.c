@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 static fstring password[2];
 static fstring username[2];

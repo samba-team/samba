@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 #if defined(LINUX) && defined(HAVE_FSID_INT)
 static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
