@@ -104,6 +104,27 @@
 		</listitem>
 
 		</varlistentry>
+
+		<varlistentry>
+
+		<term>gpfs:hsm = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Enable/Disable announcing if this FS has HSM enabled.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>no(default)</command> - Do not announce HSM.
+		</para></listitem>
+		<listitem><para>
+		<command>no</command> - Announce HSM.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+
 		<varlistentry>
 
 		<term>gpfs:getrealfilename = [ yes | no ]</term>
