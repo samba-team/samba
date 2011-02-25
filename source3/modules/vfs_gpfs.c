@@ -1190,6 +1190,36 @@ static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
+static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
+				const struct smb_filename *fname,
+				SMB_STRUCT_STAT *sbuf)
+{
+	struct gpfs_winattr attrs;
+	char *path = NULL;
+	NTSTATUS status;
+	int ret;
+
+	status = get_full_smb_filename(talloc_tos(), fname, &path);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+	ret = get_gpfs_winattrs(path, &attrs);
+
+	if (ret == -1) {
+		TALLOC_FREE(path);
+		return false;
+	}
+	if ((attrs.winAttrs & GPFS_WINATTR_OFFLINE) != 0) {
+		DEBUG(10, ("%s is offline\n", path));
+		TALLOC_FREE(path);
+		return true;
+	}
+	DEBUG(10, ("%s is online\n", path));
+	TALLOC_FREE(path);
+	return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
+}
+
 int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 			const char *user)
 {
@@ -1264,6 +1294,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
         .fstat = vfs_gpfs_fstat,
         .lstat = vfs_gpfs_lstat,
 	.ntimes = vfs_gpfs_ntimes,
+	.is_offline = vfs_gpfs_is_offline,
 	.ftruncate = vfs_gpfs_ftruncate
 };
 
