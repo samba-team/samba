@@ -25,6 +25,7 @@
 #define __REG_PARSE_INTERNAL_H
 
 #include "includes.h"
+#include "system/iconv.h"
 
 struct cbuf;
 
