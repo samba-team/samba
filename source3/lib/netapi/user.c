@@ -28,6 +28,7 @@
 #include "../libds/common/flags.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "../libds/common/flag_mapping.h"
 
 /****************************************************************
 ****************************************************************/

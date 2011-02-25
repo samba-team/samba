@@ -29,6 +29,7 @@
 #include "secrets.h"
 #include "../libcli/ldap/ldap_ndr.h"
 #include "../libcli/security/security.h"
+#include "../libds/common/flag_mapping.h"
 
 #ifdef HAVE_ADS
 

@@ -24,6 +24,7 @@
 #include "../libds/common/flags.h"
 #include "../librpc/gen_ndr/ndr_drsuapi.h"
 #include "dbwrap.h"
+#include "../libds/common/flag_mapping.h"
 
 /****************************************************************
 ****************************************************************/
