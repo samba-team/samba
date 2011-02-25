@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "smbd/globals.h"
 #include "memcache.h"
+#include "transfer_file.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

@@ -17,6 +17,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "transfer_file.h"
 
 
 #define MODULE "crossrename"
