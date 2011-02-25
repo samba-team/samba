@@ -648,7 +648,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		}
 	}
 
-	offline = SMB_VFS_IS_OFFLINE(conn, smb_fname->base_name, &smb_fname->st);
+	offline = SMB_VFS_IS_OFFLINE(conn, smb_fname, &smb_fname->st);
 	if (S_ISREG(smb_fname->st.st_ex_mode) && offline) {
 		result |= FILE_ATTRIBUTE_OFFLINE;
 	}

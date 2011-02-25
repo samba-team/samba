@@ -401,7 +401,9 @@ struct vfs_fn_pointers {
 	bool (*aio_force)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 
 	/* offline operations */
-	bool (*is_offline)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
+	bool (*is_offline)(struct vfs_handle_struct *handle,
+			   const struct smb_filename *fname,
+			   SMB_STRUCT_STAT *sbuf);
 	int (*set_offline)(struct vfs_handle_struct *handle, const char *path);
 };
 
@@ -815,7 +817,8 @@ int smb_vfs_call_aio_suspend(struct vfs_handle_struct *handle,
 bool smb_vfs_call_aio_force(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp);
 bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
-			     const char *path, SMB_STRUCT_STAT *sbuf);
+			     const struct smb_filename *fname,
+			     SMB_STRUCT_STAT *sbuf);
 int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
 			     const char *path);
 

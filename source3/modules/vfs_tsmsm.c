@@ -146,8 +146,9 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 }
 
 static bool tsmsm_is_offline(struct vfs_handle_struct *handle, 
-			    const char *path,
-			    SMB_STRUCT_STAT *stbuf) {
+			     const struct smb_filename *fname,
+			     SMB_STRUCT_STAT *stbuf)
+{
 	struct tsmsm_struct *tsmd = (struct tsmsm_struct *) handle->data;
 	const dm_sessid_t *dmsession_id;
 	void *dmhandle = NULL;
@@ -158,6 +159,14 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	bool offline;
 	char *buf = NULL;
 	size_t buflen;
+	NTSTATUS status;
+	char *path;
+
+        status = get_full_smb_filename(talloc_tos(), fname, &path);
+        if (!NT_STATUS_IS_OK(status)) {
+                errno = map_errno_from_nt_status(status);
+                return false;
+        }
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */

@@ -2006,10 +2006,11 @@ bool smb_vfs_call_aio_force(struct vfs_handle_struct *handle,
 }
 
 bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
-			     const char *path, SMB_STRUCT_STAT *sbuf)
+			     const struct smb_filename *fname,
+			     SMB_STRUCT_STAT *sbuf)
 {
 	VFS_FIND(is_offline);
-	return handle->fns->is_offline(handle, path, sbuf);
+	return handle->fns->is_offline(handle, fname, sbuf);
 }
 
 int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
