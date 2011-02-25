@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_ntsvcs.h"
 #include "services/svc_winreg_glue.h"
+#include "../libcli/registry/util_reg.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

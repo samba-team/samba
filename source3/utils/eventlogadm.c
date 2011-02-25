@@ -27,6 +27,7 @@
 #include "registry.h"
 #include "registry/reg_backend_db.h"
 #include "registry/reg_objects.h"
+#include "../libcli/registry/util_reg.h"
 
 extern int optind;
 extern char *optarg;

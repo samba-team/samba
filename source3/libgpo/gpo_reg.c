@@ -26,6 +26,7 @@
 #include "registry/reg_api_util.h"
 #include "registry/reg_init_basic.h"
 #include "../libcli/security/security.h"
+#include "../libcli/registry/util_reg.h"
 
 
 /****************************************************************

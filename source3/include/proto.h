@@ -1173,15 +1173,6 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 			struct security_token **token_out);
 bool token_sid_in_ace(const struct security_token *token, const struct security_ace *ace);
 
-/* The following definitions come from ..libcli/registry/util_reg.c  */
-
-const char *str_regtype(int type);
-int regtype_by_string(const char *str);
-bool push_reg_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *s);
-bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a);
-bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s);
-bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char ***a);
-
 /* The following definitions come from lib/util_sec.c  */
 
 void sec_init(void);

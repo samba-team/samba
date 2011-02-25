@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
+#include "../libcli/registry/util_reg.h"
 
 /**
  * @file

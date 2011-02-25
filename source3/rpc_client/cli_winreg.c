@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "rpc_client/cli_winreg.h"
+#include "../libcli/registry/util_reg.h"
 
 NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *h,

@@ -33,6 +33,7 @@
 #include "nt_printing.h"
 #include "../libcli/security/display_sec.h"
 #include "../libcli/security/security_descriptor.h"
+#include "../libcli/registry/util_reg.h"
 
 #define RPCCLIENT_PRINTERNAME(_printername, _cli, _arg) \
 { \

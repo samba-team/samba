@@ -33,6 +33,7 @@
 #include <assert.h>
 #include "../libcli/security/display_sec.h"
 #include "../libcli/security/sddl.h"
+#include "../libcli/registry/util_reg.h"
 
 /*
  *
