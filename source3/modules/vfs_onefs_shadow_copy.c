@@ -634,8 +634,10 @@ onefs_shadow_copy_lsetxattr(vfs_handle_struct *handle, const char *path,
 
 static bool
 onefs_shadow_copy_is_offline(struct vfs_handle_struct *handle,
-			     const char *path, SMB_STRUCT_STAT *sbuf)
+			     const struct smb_fname *fname,
+			     SMB_STRUCT_STAT *sbuf)
 {
+#error Isilon, please convert "char *path" to "struct smb_fname *fname"
 	SHADOW_NEXT(IS_OFFLINE,
 		    (handle, cpath ?: path, sbuf),
 		    bool);

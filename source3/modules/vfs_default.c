@@ -1607,9 +1607,14 @@ static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_str
 	return false;
 }
 
-static bool vfswrap_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf)
+static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
+			       const struct smb_filename *fname,
+			       SMB_STRUCT_STAT *sbuf)
 {
-	if (ISDOT(path) || ISDOTDOT(path)) {
+	NTSTATUS status;
+	char *path;
+
+        if (ISDOT(fname->base_name) || ISDOTDOT(fname->base_name)) {
 		return false;
 	}
 
@@ -1619,6 +1624,12 @@ static bool vfswrap_is_offline(struct vfs_handle_struct *handle, const char *pat
 #endif
 		return false;
 	}
+
+        status = get_full_smb_filename(talloc_tos(), fname, &path);
+        if (!NT_STATUS_IS_OK(status)) {
+                errno = map_errno_from_nt_status(status);
+                return false;
+        }
 
 	return (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
 }
