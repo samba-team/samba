@@ -31,7 +31,6 @@ static const char yysccsid[] = "@(#)yaccpar	1.9 (Berkeley) 02/21/93";
 
 extern int YYPARSE_DECL();
 
-#line 35 ""
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -40,12 +39,10 @@ extern int YYPARSE_DECL();
 #include <hx_locl.h>
 
 
-#line 45 ""
 typedef union {
     char *string;
     struct hx_expr *expr;
 } YYSTYPE;
-#line 48 ""
 #define kw_TRUE 257
 #define kw_FALSE 258
 #define kw_AND 259
@@ -436,109 +433,83 @@ yyreduce:
     switch (yyn)
     {
 case 1:
-#line 73 ""
 	{ _hx509_expr_input.expr = yystack.l_mark[0].expr; }
 break;
 case 2:
-#line 75 ""
 	{ yyval.expr = _hx509_make_expr(op_TRUE, NULL, NULL); }
 break;
 case 3:
-#line 76 ""
 	{ yyval.expr = _hx509_make_expr(op_FALSE, NULL, NULL); }
 break;
 case 4:
-#line 77 ""
 	{ yyval.expr = _hx509_make_expr(op_NOT, yystack.l_mark[0].expr, NULL); }
 break;
 case 5:
-#line 78 ""
 	{ yyval.expr = _hx509_make_expr(op_AND, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 6:
-#line 79 ""
 	{ yyval.expr = _hx509_make_expr(op_OR, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 7:
-#line 80 ""
 	{ yyval.expr = yystack.l_mark[-1].expr; }
 break;
 case 8:
-#line 81 ""
 	{ yyval.expr = _hx509_make_expr(op_COMP, yystack.l_mark[0].expr, NULL); }
 break;
 case 9:
-#line 84 ""
 	{ yyval.expr = _hx509_make_expr(expr_WORDS, yystack.l_mark[0].expr, NULL); }
 break;
 case 10:
-#line 85 ""
 	{ yyval.expr = _hx509_make_expr(expr_WORDS, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 11:
-#line 88 ""
 	{ yyval.expr = _hx509_make_expr(comp_EQ, yystack.l_mark[-3].expr, yystack.l_mark[0].expr); }
 break;
 case 12:
-#line 89 ""
 	{ yyval.expr = _hx509_make_expr(comp_NE, yystack.l_mark[-3].expr, yystack.l_mark[0].expr); }
 break;
 case 13:
-#line 90 ""
 	{ yyval.expr = _hx509_make_expr(comp_TAILEQ, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 14:
-#line 91 ""
 	{ yyval.expr = _hx509_make_expr(comp_IN, yystack.l_mark[-4].expr, yystack.l_mark[-1].expr); }
 break;
 case 15:
-#line 92 ""
 	{ yyval.expr = _hx509_make_expr(comp_IN, yystack.l_mark[-2].expr, yystack.l_mark[0].expr); }
 break;
 case 16:
-#line 95 ""
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 17:
-#line 96 ""
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 18:
-#line 97 ""
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 19:
-#line 98 ""
 	{ yyval.expr = yystack.l_mark[0].expr; }
 break;
 case 20:
-#line 101 ""
 	{ yyval.expr = _hx509_make_expr(expr_NUMBER, yystack.l_mark[0].string, NULL); }
 break;
 case 21:
-#line 102 ""
 	{ yyval.expr = _hx509_make_expr(expr_STRING, yystack.l_mark[0].string, NULL); }
 break;
 case 22:
-#line 104 ""
 	{
 			yyval.expr = _hx509_make_expr(expr_FUNCTION, yystack.l_mark[-3].string, yystack.l_mark[-1].expr); }
 break;
 case 23:
-#line 107 ""
 	{ yyval.expr = yystack.l_mark[-1].expr; }
 break;
 case 24:
-#line 110 ""
 	{
 			yyval.expr = _hx509_make_expr(expr_VAR, yystack.l_mark[-2].string, yystack.l_mark[0].expr); }
 break;
 case 25:
-#line 112 ""
 	{
 			yyval.expr = _hx509_make_expr(expr_VAR, yystack.l_mark[0].string, NULL); }
 break;
-#line 541 ""
     }
     yystack.s_mark -= yym;
     yystate = *yystack.s_mark;

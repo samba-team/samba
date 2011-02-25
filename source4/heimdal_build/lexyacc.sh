@@ -24,7 +24,8 @@ call_lex() {
 
     cd $dir
 
-    $LEX $lfile || exit 1
+    # --noline specified because line directives cause more bother than they solve (including possibly invalid DWARF headers if the filename ends up as "")
+    $LEX --noline $lfile || exit 1
 
     if [ -r lex.yy.c ]; then
 	echo "#include \"config.h\"" > $base.c
@@ -59,7 +60,8 @@ call_yacc() {
 
     cd $dir
 
-    $YACC -d $yfile || exit 1
+    # -l specified because line directives cause more bother than they solve (including possibly invalid DWARF headers if the filename ends up as "")
+    $YACC -l -d $yfile || exit 1
     if [ -r y.tab.h -a -r y.tab.c ];then
 	sed -e "/^#/!b" -e "s|y\.tab\.h|$SRC|" -e "s|\"$base.y|\"$SRC|"  y.tab.h > $base.h
 	sed -e "s|y\.tab\.c|$SRC|" -e "s|\"$base.y|\"$SRC|" y.tab.c > $base.c
