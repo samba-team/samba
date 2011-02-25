@@ -71,7 +71,6 @@
 #include "system/capability.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "system/glob.h"
 #include "system/locale.h"
 #include "system/network.h"
 #include "system/passwd.h"
