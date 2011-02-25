@@ -607,9 +607,9 @@
 #define SMB_VFS_NEXT_IS_OFFLINE(handle,fname,sbuf) \
 	smb_vfs_call_is_offline((handle)->next,(fname),(sbuf))
 
-#define SMB_VFS_SET_OFFLINE(conn,path) \
-	smb_vfs_call_set_offline((conn)->vfs_handles,(path))
-#define SMB_VFS_NEXT_SET_OFFLINE(handle,path) \
-	smb_vfs_call_set_offline((handle)->next, (path))
+#define SMB_VFS_SET_OFFLINE(conn,fname) \
+	smb_vfs_call_set_offline((conn)->vfs_handles,(fname))
+#define SMB_VFS_NEXT_SET_OFFLINE(handle,fname) \
+	smb_vfs_call_set_offline((handle)->next, (fname))
 
 #endif /* _VFS_MACROS_H */

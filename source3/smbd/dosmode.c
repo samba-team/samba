@@ -719,7 +719,7 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 
 	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
 		if (!(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
-			lret = SMB_VFS_SET_OFFLINE(conn, smb_fname->base_name);
+			lret = SMB_VFS_SET_OFFLINE(conn, smb_fname);
 			if (lret == -1) {
 				DEBUG(0, ("set_dos_mode: client has asked to "
 					  "set FILE_ATTRIBUTE_OFFLINE to "

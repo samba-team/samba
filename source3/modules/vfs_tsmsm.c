@@ -349,16 +349,25 @@ static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struc
 }
 
 static int tsmsm_set_offline(struct vfs_handle_struct *handle, 
-			     const char *path) {
+                             const struct smb_filename *fname)
+{
 	struct tsmsm_struct *tsmd = (struct tsmsm_struct *) handle->data;
 	int result = 0;
 	char *command;
+	NTSTATUS status;
+	char *path;
 
 	if (tsmd->hsmscript == NULL) {
 		/* no script enabled */
 		DEBUG(1, ("tsmsm_set_offline: No 'tsmsm:hsm script' configured\n"));
 		return 0;
 	}
+
+        status = get_full_smb_filename(talloc_tos(), fname, &path);
+        if (!NT_STATUS_IS_OK(status)) {
+                errno = map_errno_from_nt_status(status);
+                return false;
+        }
 
 	/* Now, call the script */
 	command = talloc_asprintf(tsmd, "%s offline \"%s\"", tsmd->hsmscript, path);
