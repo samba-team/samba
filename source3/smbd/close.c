@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "smbd/globals.h"
 #include "fake_file.h"
+#include "transfer_file.h"
 
 /****************************************************************************
  Run a file if it is a magic script.

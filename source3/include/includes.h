@@ -605,9 +605,6 @@ enum flush_reason_enum {
 #include "srvstr.h"
 #include "safe_string.h"
 
-/* prototypes from lib/util_transfer_file.c */
-#include "transfer_file.h"
-
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD
 #endif
