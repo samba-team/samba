@@ -216,83 +216,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-/* Add some helper functions to wrap the common ncacn packet reading functions
- * until we can share more dcerpc code */
-struct dcerpc_ncacn_read_packet_state {
-	struct ncacn_packet *pkt;
-	DATA_BLOB buffer;
-};
-
-static void dcerpc_ncacn_read_packet_done(struct tevent_req *subreq);
-
-static struct tevent_req *dcerpc_ncacn_read_packet_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					struct tstream_context *tstream)
-{
-	struct dcerpc_ncacn_read_packet_state *state;
-	struct tevent_req *req, *subreq;
-
-	req = tevent_req_create(mem_ctx, &state,
-				struct dcerpc_ncacn_read_packet_state);
-	if (!req) {
-		return NULL;
-	}
-	ZERO_STRUCTP(state);
-
-	subreq = dcerpc_read_ncacn_packet_send(state, ev, tstream);
-	if (!subreq) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-		tevent_req_post(req, ev);
-		return req;
-	}
-	tevent_req_set_callback(subreq, dcerpc_ncacn_read_packet_done, req);
-
-	return req;
-}
-
-static void dcerpc_ncacn_read_packet_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq, struct tevent_req);
-	struct dcerpc_ncacn_read_packet_state *state =
-		tevent_req_data(req, struct dcerpc_ncacn_read_packet_state);
-	NTSTATUS status;
-
-	status = dcerpc_read_ncacn_packet_recv(subreq, state,
-						&state->pkt,
-						&state->buffer);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Failed to receive dceprc packet!\n"));
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	tevent_req_done(req);
-}
-
-static NTSTATUS dcerpc_ncacn_read_packet_recv(struct tevent_req *req,
-						TALLOC_CTX *mem_ctx,
-						DATA_BLOB *buffer)
-{
-	struct dcerpc_ncacn_read_packet_state *state =
-		tevent_req_data(req, struct dcerpc_ncacn_read_packet_state);
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		tevent_req_received(req);
-		return status;
-	}
-
-	buffer->data = talloc_move(mem_ctx, &state->buffer.data);
-	buffer->length = state->buffer.length;
-
-	tevent_req_received(req);
-	return NT_STATUS_OK;
-}
-
-
-
 /* Start listening on the appropriate unix socket and setup all is needed to
  * dispatch requests to the pipes rpc implementation */
 
@@ -559,7 +482,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	}
 
 	/* And now start receaving and processing packets */
-	subreq = dcerpc_ncacn_read_packet_send(npc, npc->ev, npc->tstream);
+	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 	if (!subreq) {
 		DEBUG(2, ("Failed to start receving packets\n"));
 		goto fail;
@@ -581,6 +504,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq, struct named_pipe_client);
 	struct _output_data *out = &npc->p->out_data;
 	DATA_BLOB recv_buffer = data_blob_null;
+	struct ncacn_packet *pkt;
 	NTSTATUS status;
 	ssize_t data_left;
 	ssize_t data_used;
@@ -588,7 +512,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 	uint32_t to_send;
 	bool ok;
 
-	status = dcerpc_ncacn_read_packet_recv(subreq, npc, &recv_buffer);
+	status = dcerpc_read_ncacn_packet_recv(subreq, npc, &pkt, &recv_buffer);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -612,6 +536,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 
 	/* Do not leak this buffer, npc is a long lived context */
 	talloc_free(recv_buffer.data);
+	talloc_free(pkt);
 
 	/* this is needed because of the way DCERPC Binds work in
 	 * the RPC marshalling code */
@@ -673,7 +598,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 	 * data */
 	if (npc->count == 0) {
 		/* Wait for the next packet */
-		subreq = dcerpc_ncacn_read_packet_send(npc, npc->ev, npc->tstream);
+		subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 		if (!subreq) {
 			DEBUG(2, ("Failed to start receving packets\n"));
 			status = NT_STATUS_NO_MEMORY;
@@ -729,7 +654,7 @@ static void named_pipe_packet_done(struct tevent_req *subreq)
 	data_blob_free(&npc->p->out_data.rdata);
 
 	/* Wait for the next packet */
-	subreq = dcerpc_ncacn_read_packet_send(npc, npc->ev, npc->tstream);
+	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 	if (!subreq) {
 		DEBUG(2, ("Failed to start receving packets\n"));
 		sys_errno = ENOMEM;
@@ -1243,7 +1168,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	subreq = dcerpc_ncacn_read_packet_send(ncacn_conn,
+	subreq = dcerpc_read_ncacn_packet_send(ncacn_conn,
 					       ncacn_conn->ev_ctx,
 					       ncacn_conn->tstream);
 	if (subreq == NULL) {
@@ -1266,6 +1191,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 
 	struct _output_data *out = &ncacn_conn->p->out_data;
 	DATA_BLOB recv_buffer = data_blob_null;
+	struct ncacn_packet *pkt;
 	ssize_t data_left;
 	ssize_t data_used;
 	uint32_t to_send;
@@ -1273,7 +1199,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	NTSTATUS status;
 	bool ok;
 
-	status = dcerpc_ncacn_read_packet_recv(subreq, ncacn_conn, &recv_buffer);
+	status = dcerpc_read_ncacn_packet_recv(subreq, ncacn_conn, &pkt, &recv_buffer);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -1296,6 +1222,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 
 	/* Do not leak this buffer */
 	talloc_free(recv_buffer.data);
+	talloc_free(pkt);
 
 	/*
 	 * This is needed because of the way DCERPC binds work in the RPC
@@ -1363,7 +1290,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	 */
 	if (ncacn_conn->count == 0) {
 		/* Wait for the next packet */
-		subreq = dcerpc_ncacn_read_packet_send(ncacn_conn,
+		subreq = dcerpc_read_ncacn_packet_send(ncacn_conn,
 						       ncacn_conn->ev_ctx,
 						       ncacn_conn->tstream);
 		if (subreq == NULL) {
@@ -1425,7 +1352,7 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 	data_blob_free(&ncacn_conn->p->out_data.rdata);
 
 	/* Wait for the next packet */
-	subreq = dcerpc_ncacn_read_packet_send(ncacn_conn,
+	subreq = dcerpc_read_ncacn_packet_send(ncacn_conn,
 					       ncacn_conn->ev_ctx,
 					       ncacn_conn->tstream);
 	if (subreq == NULL) {
