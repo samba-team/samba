@@ -42,6 +42,7 @@
 #include "lib/crypto/arcfour.h"
 #include "lib/crypto/md4.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "../libcli/registry/util_reg.h"
 
 extern userdom_struct current_user_info;
 

@@ -23,6 +23,7 @@
 #include "registry.h"
 #include "utils/net_registry_util.h"
 #include "utils/net.h"
+#include "../libcli/registry/util_reg.h"
 
 void print_registry_key(const char *keyname, NTTIME *modtime)
 {

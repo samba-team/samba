@@ -23,6 +23,7 @@
 #include "libgpo/gpo_proto.h"
 #include "registry.h"
 #include "registry/reg_api.h"
+#include "../libcli/registry/util_reg.h"
 
 #define GP_EXT_NAME "scripts"
 

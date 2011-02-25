@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/perfcount.h"
 #include "registry.h"
 #include "reg_perfcount.h"
+#include "../libcli/registry/util_reg.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

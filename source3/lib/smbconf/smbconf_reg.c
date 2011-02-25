@@ -27,6 +27,7 @@
 #include "registry/reg_init_smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/smbconf/smbconf_reg.h"
+#include "../libcli/registry/util_reg.h"
 
 #define INCLUDES_VALNAME "includes"
 
