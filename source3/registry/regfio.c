@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "regfio.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../libcli/security/security_descriptor.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
