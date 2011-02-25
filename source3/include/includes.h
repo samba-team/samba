@@ -68,7 +68,6 @@
 #endif
 #endif /* RELIANTUNIX */
 
-#include "system/capability.h"
 #include "system/dir.h"
 #include "system/filesys.h"
 #include "system/locale.h"
