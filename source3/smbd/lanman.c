@@ -5571,14 +5571,22 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	struct pack_desc desc;
-	struct sessionid *session_list;
-	int i, num_sessions;
+	int i;
+
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
+	struct srvsvc_NetSessInfoCtr info_ctr;
+	uint32_t totalentries, resume_handle = 0;
+	uint32_t count = 0;
 
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
 
-	memset((char *)&desc,'\0',sizeof(desc));
+	ZERO_STRUCT(desc);
 
 	uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 
@@ -5594,25 +5602,70 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	num_sessions = list_sessions(talloc_tos(), &session_list);
+	status = rpc_pipe_open_interface(conn,
+					 &ndr_table_srvsvc.syntax_id,
+					 conn->session_info,
+					 &conn->sconn->client_id,
+					 conn->sconn->msg_ctx,
+					 &cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("RNetSessionEnum: could not connect to srvsvc: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	b = cli->binding_handle;
 
+	info_ctr.level = 1;
+	info_ctr.ctr.ctr1 = talloc_zero(talloc_tos(), struct srvsvc_NetSessCtr1);
+	if (info_ctr.ctr.ctr1 == NULL) {
+		desc.errcode = W_ERROR_V(WERR_NOMEM);
+		goto out;
+	}
+
+	status = dcerpc_srvsvc_NetSessEnum(b, mem_ctx,
+					   cli->srv_name_slash,
+					   NULL, /* client */
+					   NULL, /* user */
+					   &info_ctr,
+					   (uint32_t)-1, /* max_buffer */
+					   &totalentries,
+					   &resume_handle,
+					   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("RNetSessionEnum: dcerpc_srvsvc_NetSessEnum failed: %s\n",
+			  nt_errstr(status)));
+		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,("RNetSessionEnum: dcerpc_srvsvc_NetSessEnum failed: %s\n",
+			  win_errstr(werr)));
+		desc.errcode = W_ERROR_V(werr);
+		goto out;
+	}
+
+	count = info_ctr.ctr.ctr1->count;
+
+ out:
 	if (mdrcnt > 0) {
 		*rdata = smb_realloc_limit(*rdata,mdrcnt);
 		if (!*rdata) {
 			return False;
 		}
 	}
-	memset((char *)&desc,'\0',sizeof(desc));
+
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 	desc.format = str2;
-	if (!init_package(&desc,num_sessions,0)) {
+	if (!init_package(&desc, count,0)) {
 		return False;
 	}
 
-	for(i=0; i<num_sessions; i++) {
-		PACKS(&desc, "z", session_list[i].remote_machine);
-		PACKS(&desc, "z", session_list[i].username);
+	for(i=0; i < count; i++) {
+		PACKS(&desc, "z", info_ctr.ctr.ctr1->array[i].client);
+		PACKS(&desc, "z", info_ctr.ctr.ctr1->array[i].user);
 		PACKI(&desc, "W", 1); /* num conns */
 		PACKI(&desc, "W", 0); /* num opens */
 		PACKI(&desc, "W", 1); /* num users */
@@ -5631,7 +5684,7 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 	}
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0); /* converter */
-	SSVAL(*rparam,4,num_sessions); /* count */
+	SSVAL(*rparam,4, count); /* count */
 
 	DEBUG(4,("RNetSessionEnum: errorcode %d\n",desc.errcode));
 
