@@ -1012,9 +1012,11 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 	struct tsocket_address *cli_addr = NULL;
 	struct sockaddr_un sunaddr;
 	struct sockaddr *addr = (struct sockaddr *)(void *)&sunaddr;
-	socklen_t len;
+	socklen_t len = sizeof(sunaddr);
 	int sd = -1;
 	int rc;
+
+	ZERO_STRUCT(sunaddr);
 
 	while (sd == -1) {
 		sd = accept(state->fd, addr, &len);
