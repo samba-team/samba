@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/syslog.h"
+#include "system/capability.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
