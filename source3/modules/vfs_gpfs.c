@@ -1050,7 +1050,8 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
 		dosmode |= FILE_ATTRIBUTE_SPARSE;
 	}
 
-        snprintf(attrstr, size, "0x%2.2x", dosmode & SAMBA_ATTRIBUTES_MASK);
+        snprintf(attrstr, size, "0x%2.2x",
+		 (unsigned int)(dosmode & SAMBA_ATTRIBUTES_MASK));
         DEBUG(10, ("gpfs_get_xattr: returning %s\n",attrstr));
         return 4;
 }
