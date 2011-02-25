@@ -3955,12 +3955,15 @@ bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
 void set_profile_level(int level, struct server_id src);
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly);
 
-/* The following definitions come from rpc_client/cli_pipe.c  */
+/* The following definitions come from librpc/rpc/rpc_common.c  */
+
 bool smb_register_ndr_interface(const struct ndr_interface_table *interface);
 const struct ndr_interface_table *get_iface_from_syntax(
 	const struct ndr_syntax_id *syntax);
 const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
                                      const struct ndr_syntax_id *syntax);
+
+/* The following definitions come from rpc_server/rpc_ncacn_np.c  */
 
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
@@ -3985,6 +3988,9 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 struct client_address *client_id,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe);
+
+/* The following definitions come from rpc_client/cli_pipe_schannel.c  */
+
 NTSTATUS get_schannel_session_key(struct cli_state *cli,
 				  const char *domain,
 				  uint32 *pneg_flags,
@@ -4002,7 +4008,6 @@ NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_cli_transport **presult);
-struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 
 /* The following definitions come from rpc_client/rpc_transport_sock.c  */
 
@@ -4010,9 +4015,11 @@ NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 				 struct rpc_cli_transport **presult);
 
 /* The following definitions come from rpc_client/rpc_transport_tstream.c  */
+
 NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
 				struct tstream_context **stream,
 				struct rpc_cli_transport **presult);
+struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
@@ -5369,7 +5376,7 @@ void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 void msg_idmap_register_msgs(struct messaging_context *ctx);
 
-/* Misc protos */
+/* The following definitions come from lib/fncall.c */
 
 struct fncall_context *fncall_context_init(TALLOC_CTX *mem_ctx,
 					   int max_threads);
@@ -5378,6 +5385,8 @@ struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       void (*fn)(void *private_data),
 			       void *private_data);
 int fncall_recv(struct tevent_req *req, int *perr);
+
+/* The following definitions come from libsmb/smbsock_connect.c */
 
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
