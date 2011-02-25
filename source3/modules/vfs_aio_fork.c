@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "system/shmem.h"
 
 struct mmap_area {
 	size_t size;
