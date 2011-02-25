@@ -17,6 +17,7 @@
  * this program; if not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../lib/util/util_pw.h"

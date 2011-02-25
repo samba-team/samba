@@ -24,6 +24,7 @@
 /* This is the implementation of the srvsvc pipe. */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../libcli/security/security.h"

@@ -18,6 +18,7 @@
 
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "web/swat_proto.h"
 
 #define MAX_VARIABLES 10000

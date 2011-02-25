@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "memcache.h"
 #include "../lib/util/util_pw.h"
 

@@ -19,6 +19,7 @@
 
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "utils/net.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "smbldap.h"

@@ -20,6 +20,7 @@
 
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "secrets.h"
 
 static char *alloc_sub_basic(const char *smb_name, const char *domain_name,

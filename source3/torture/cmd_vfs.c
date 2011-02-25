@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "vfstest.h"
 #include "../lib/util/util_pw.h"
 

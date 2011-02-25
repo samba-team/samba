@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../lib/util/util_pw.h"
+#include "system/passwd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA

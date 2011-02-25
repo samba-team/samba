@@ -72,7 +72,6 @@
 #include "system/filesys.h"
 #include "system/locale.h"
 #include "system/network.h"
-#include "system/passwd.h"
 #include "system/time.h"
 #include "system/wait.h"
 

@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "secrets.h"
 #include "../libcli/security/security.h"
