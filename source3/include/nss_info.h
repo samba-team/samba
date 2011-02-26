@@ -84,7 +84,6 @@ NTSTATUS smb_register_idmap_nss(int version,
 
 NTSTATUS nss_get_info( const char *domain, const struct dom_sid *user_sid,
 		       TALLOC_CTX *ctx,
-		       ADS_STRUCT *ads, LDAPMessage *msg,
 		       const char **homedir, const char **shell,
 		       const char **gecos, gid_t *p_gid);
 

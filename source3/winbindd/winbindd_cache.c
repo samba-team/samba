@@ -4673,7 +4673,7 @@ NTSTATUS nss_get_info_cached( struct winbindd_domain *domain,
 
 do_query:
 
-	nt_status = nss_get_info( domain->name, user_sid, ctx, ads, msg, 
+	nt_status = nss_get_info( domain->name, user_sid, ctx,
 				  homedir, shell, gecos, p_gid );
 
 	DEBUG(10, ("nss_get_info returned %s\n", nt_errstr(nt_status)));
