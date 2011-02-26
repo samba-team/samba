@@ -8,12 +8,12 @@
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-   
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -45,7 +45,7 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
 {     
 	if ( !homedir || !shell || !gecos )
 		return NT_STATUS_INVALID_PARAMETER;
-	
+
 	/* protect against home directories using whitespace in the
 	  username */
 	*homedir = talloc_strdup( ctx, lp_template_homedir() );
@@ -55,7 +55,7 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
 	if ( !*homedir || !*shell ) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -100,7 +100,7 @@ static struct nss_info_methods nss_template_methods = {
 	.map_from_alias = nss_template_map_from_alias,
 	.close_fn       = nss_template_close
 };
-		
+
 NTSTATUS nss_info_template_init( void )
 {
 	return smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION, 

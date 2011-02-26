@@ -2153,7 +2153,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	/* for net ads leave, try to delete the account.  If it works, 
 	   no sense in disabling.  If it fails, we can still try to 
 	   disable it. jmcd */
-	   
+
 	if (r->in.delete_machine_account) {
 		ADS_STATUS ads_status;
 		ads_status = libnet_unjoin_connect_ads(mem_ctx, r);
@@ -2191,7 +2191,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 			}
 			return ntstatus_to_werror(status);
 		}
-		
+
 		r->out.disabled_machine_account = true;
 	}
 

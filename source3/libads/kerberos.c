@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -192,7 +192,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	if ((code = krb5_cc_resolve(ctx, cache_name ? cache_name : krb5_cc_default_name(ctx), &cc))) {
 		goto out;
 	}
-	
+
 	if ((code = smb_krb5_parse_name(ctx, principal, &me))) {
 		goto out;
 	}
@@ -231,7 +231,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	if ((code = krb5_cc_initialize(ctx, cc, me))) {
 		goto out;
 	}
-	
+
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
 		goto out;
 	}
@@ -298,7 +298,7 @@ int ads_kdestroy(const char *cc_name)
 			error_message(code)));
 		return code;
 	}
-  
+
 	if (!cc_name) {
 		if ((code = krb5_cc_default(ctx, &cc))) {
 			krb5_free_context(ctx);
@@ -541,11 +541,11 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 {
 	char *unparsed_name = NULL, *salt_princ_s = NULL;
 	krb5_principal ret_princ = NULL;
-	
+
 	/* lookup new key first */
 
 	if ( (salt_princ_s = kerberos_secrets_fetch_des_salt()) == NULL ) {
-	
+
 		/* look under the old key.  If this fails, just use the standard key */
 
 		if (smb_krb5_unparse_name(talloc_tos(), context, host_princ, &unparsed_name) != 0) {
@@ -560,10 +560,10 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 	if (smb_krb5_parse_name(context, salt_princ_s, &ret_princ) != 0) {
 		ret_princ = NULL;
 	}
-	
+
 	TALLOC_FREE(unparsed_name);
 	SAFE_FREE(salt_princ_s);
-	
+
 	return ret_princ;
 }
 
@@ -604,7 +604,6 @@ bool kerberos_secrets_store_salting_principal(const char *service,
 
 	if (smb_krb5_parse_name(context, princ_s, &princ) != 0) {
 		goto out;
-		
 	}
 	if (smb_krb5_unparse_name(talloc_tos(), context, princ, &unparsed_name) != 0) {
 		goto out;
