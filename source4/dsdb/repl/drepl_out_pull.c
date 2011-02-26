@@ -178,6 +178,7 @@ void dreplsrv_run_pull_ops(struct dreplsrv_service *s)
 	time_t t;
 	NTTIME now;
 	struct tevent_req *subreq;
+	WERROR werr;
 
 	if (s->ops.current) {
 		/* if there's still one running, we're done */
@@ -198,24 +199,40 @@ void dreplsrv_run_pull_ops(struct dreplsrv_service *s)
 
 	op->source_dsa->repsFrom1->last_attempt = now;
 
+	/* check if inbound replication is enabled */
+	if (!(op->options & DRSUAPI_DRS_SYNC_FORCED)) {
+		uint32_t rep_options;
+		if (samdb_ntds_options(op->service->samdb, &rep_options) != LDB_SUCCESS) {
+			werr = WERR_DS_DRA_INTERNAL_ERROR;
+			goto failed;
+		}
+
+		if ((rep_options & DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL)) {
+			werr = WERR_DS_DRA_SINK_DISABLED;
+			goto failed;
+		}
+	}
+
 	subreq = dreplsrv_op_pull_source_send(op, s->task->event_ctx, op);
 	if (!subreq) {
-		struct repsFromTo1 *rf = op->source_dsa->repsFrom1;
-
-		if (op->extended_op == DRSUAPI_EXOP_NONE) {
-			drepl_reps_update(s, "repsFrom", op->source_dsa->partition->dn,
-					  &rf->source_dsa_obj_guid, WERR_NOMEM);
-		}
-		s->ops.current = NULL;
-
-		/*
-		 * call the callback (if any) so it gets the chance
-		 * to do its job just like in any other failure situation
-		 */
-		if (op->callback) {
-			op->callback(s, WERR_NOMEM, op->extended_ret, op->cb_data);
-		}
-		return;
+		werr = WERR_NOMEM;
+		goto failed;
 	}
+
 	tevent_req_set_callback(subreq, dreplsrv_pending_op_callback, op);
+	return;
+
+failed:
+	if (op->extended_op == DRSUAPI_EXOP_NONE) {
+		drepl_reps_update(s, "repsFrom", op->source_dsa->partition->dn,
+				  &op->source_dsa->repsFrom1->source_dsa_obj_guid, werr);
+	}
+	/* unblock queue processing */
+	s->ops.current = NULL;
+	/*
+	 * let the callback do its job just like in any other failure situation
+	 */
+	if (op->callback) {
+		op->callback(s, werr, op->extended_ret, op->cb_data);
+	}
 }
