@@ -89,6 +89,7 @@ void drepl_reps_update(struct dreplsrv_service *s, const char *reps_attr,
 
 WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 					       struct dreplsrv_partition_source_dsa *source,
+					       uint32_t options,
 					       enum drsuapi_DsExtendedOperation extended_op,
 					       uint64_t fsmo_info,
 					       dreplsrv_extended_callback_t callback,
@@ -101,6 +102,7 @@ WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 
 	op->service	= s;
 	op->source_dsa	= source;
+	op->options	= options;
 	op->extended_op = extended_op;
 	op->fsmo_info   = fsmo_info;
 	op->callback    = callback;
@@ -121,7 +123,7 @@ static WERROR dreplsrv_schedule_partition_pull(struct dreplsrv_service *s,
 
 	for (cur = p->sources; cur; cur = cur->next) {
 		status = dreplsrv_schedule_partition_pull_source(s, cur,
-		                                                 DRSUAPI_EXOP_NONE, 0,
+		                                                 0, DRSUAPI_EXOP_NONE, 0,
 		                                                 NULL, NULL);
 		W_ERROR_NOT_OK_RETURN(status);
 	}

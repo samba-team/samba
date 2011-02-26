@@ -198,7 +198,7 @@ WERROR drepl_request_extended_op(struct dreplsrv_service *service,
 	data->sdsa = sdsa;
 
 	werr = dreplsrv_schedule_partition_pull_source(service, sdsa,
-						       extended_op, fsmo_info,
+						       0, extended_op, fsmo_info,
 						       extended_op_callback, data);
 	if (!W_ERROR_IS_OK(werr)) {
 		talloc_free(sdsa);

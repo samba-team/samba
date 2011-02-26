@@ -125,6 +125,8 @@ struct dreplsrv_out_operation {
 
 	struct dreplsrv_partition_source_dsa *source_dsa;
 
+	/* replication options - currently used by DsReplicaSync */
+	uint32_t options;
 	enum drsuapi_DsExtendedOperation extended_op;
 	uint64_t fsmo_info;
 	enum drsuapi_DsExtendedError extended_ret;

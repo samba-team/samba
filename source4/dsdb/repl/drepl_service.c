@@ -170,6 +170,7 @@ static void _drepl_replica_sync_done_cb(struct dreplsrv_service *service,
 static WERROR _drepl_schedule_replication(struct dreplsrv_service *service,
 					  struct dreplsrv_partition_source_dsa *dsa,
 					  struct drsuapi_DsReplicaObjectIdentifier *nc,
+					  uint32_t rep_options,
 					  struct drepl_replica_sync_cb_data *data,
 					  TALLOC_CTX *mem_ctx)
 {
@@ -181,7 +182,7 @@ static WERROR _drepl_schedule_replication(struct dreplsrv_service *service,
 	}
 
 	/* schedule replication item */
-	werr = dreplsrv_schedule_partition_pull_source(service, dsa,
+	werr = dreplsrv_schedule_partition_pull_source(service, dsa, rep_options,
 	                                               DRSUAPI_EXOP_NONE, 0,
 	                                               fn_callback, data);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -277,7 +278,8 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	if (req1->options & DRSUAPI_DRS_SYNC_ALL) {
 		for (dsa = p->sources; dsa; dsa = dsa->next) {
 			/* schedule replication item */
-			werr = _drepl_schedule_replication(service, dsa, nc, cb_data, msg);
+			werr = _drepl_schedule_replication(service, dsa, nc,
+							   req1->options, cb_data, msg);
 			if (!W_ERROR_IS_OK(werr)) {
 				REPLICA_SYNC_FAIL("_drepl_schedule_replication() failed",
 				                  werr);
@@ -311,7 +313,8 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 		}
 
 		/* schedule replication item */
-		werr = _drepl_schedule_replication(service, dsa, nc, cb_data, msg);
+		werr = _drepl_schedule_replication(service, dsa, nc,
+						   req1->options, cb_data, msg);
 		if (!W_ERROR_IS_OK(werr)) {
 			REPLICA_SYNC_FAIL("_drepl_schedule_replication() failed",
 			                  werr);
