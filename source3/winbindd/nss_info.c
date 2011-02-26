@@ -88,8 +88,6 @@ static struct nss_function_entry *nss_get_backend(const char *name )
 static bool parse_nss_parm( const char *config, char **backend, char **domain )
 {
 	char *p;
-	char *q;
-	int len;
 
 	*backend = *domain = NULL;
 
@@ -111,17 +109,8 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 		*domain = SMB_STRDUP( p+1 );
 	}
 
-	len = PTR_DIFF(p,config)+1;
-	if ( (q = SMB_MALLOC_ARRAY( char, len )) == NULL ) {
-		SAFE_FREE( *backend );
-		return False;
-	}
-
-	StrnCpy( q, config, len-1);
-	q[len-1] = '\0';
-	*backend = q;
-
-	return True;
+	*backend = SMB_STRNDUP(config, PTR_DIFF(p, config));
+	return (*backend != NULL);
 }
 
 static NTSTATUS nss_domain_list_add_domain(const char *domain,
