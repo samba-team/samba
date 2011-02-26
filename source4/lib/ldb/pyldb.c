@@ -85,6 +85,7 @@ static void py_ldb_control_dealloc(PyLdbControlObject *self)
 	if (self->mem_ctx != NULL) {
 		talloc_free(self->mem_ctx);
 	}
+	self->data = NULL;
 	self->ob_type->tp_free(self);
 }
 
@@ -111,7 +112,6 @@ static PyObject *py_ldb_control_set_critical(PyLdbControlObject *self, PyObject 
 static PyObject *py_ldb_control_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	char *data = NULL;
-	const char *array[2];
 	const char * const kwnames[] = { "ldb", "data", NULL };
 	struct ldb_control *parsed_controls;
 	PyLdbControlObject *ret;
@@ -148,7 +148,7 @@ static PyObject *py_ldb_control_new(PyTypeObject *type, PyObject *args, PyObject
 
 	ret->mem_ctx = mem_ctx;
 
-	ret->data = talloc_steal(mem_ctx, parsed_controls);
+	ret->data = talloc_move(mem_ctx, &parsed_controls);
 	if (ret->data == NULL) {
 		Py_DECREF(ret);
 		PyErr_NoMemory();
@@ -209,6 +209,7 @@ static PyObject *PyLdbControl_FromControl(struct ldb_control *control)
 
 	ctrl = (PyLdbControlObject *)PyLdbControl.tp_alloc(&PyLdbControl, 0);
 	if (ctrl == NULL) {
+		talloc_free(ctl_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
