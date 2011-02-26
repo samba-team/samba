@@ -570,10 +570,16 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 void dptr_CloseDir(files_struct *fsp)
 {
 	if (fsp->dptr) {
+/*
+ * Ugly hack. We have defined fdopendir to return ENOSYS if dirfd also isn't
+ * present. I hate Solaris. JRA.
+ */
+#ifdef HAVE_DIRFD
 		if (fsp->fh->fd == dirfd(fsp->dptr->dir_hnd->dir)) {
 			/* The call below closes the underlying fd. */
 			fsp->fh->fd = -1;
 		}
+#endif
 		dptr_close_internal(fsp->dptr);
 		fsp->dptr = NULL;
 	}
