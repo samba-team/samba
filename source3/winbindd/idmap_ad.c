@@ -856,27 +856,6 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* See if we can use the ADS connection struct swe were given */
-
-#if 0
-	if (ads) {
-		DEBUG(10, ("nss_ad_get_info: using given ads connection and "
-			   "LDAP message (%p)\n", msg));
-
-		*homedir = ads_pull_string( ads, mem_ctx, msg, ctx->ad_schema->posix_homedir_attr );
-		*shell   = ads_pull_string( ads, mem_ctx, msg, ctx->ad_schema->posix_shell_attr );
-		*gecos   = ads_pull_string( ads, mem_ctx, msg, ctx->ad_schema->posix_gecos_attr );
-
-		if (gid) {
-			if ( !ads_pull_uint32(ads, msg, ctx->ad_schema->posix_gidnumber_attr, gid ) )
-				*gid = (uint32)-1;
-		}
-
-		nt_status = NT_STATUS_OK;
-		goto done;
-	}
-#endif
-
 	/* Have to do our own query */
 
 	DEBUG(10, ("nss_ad_get_info: no ads connection given, doing our "
