@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   idmap PASSDB backend
+   idmap NSS backend
 
    Copyright (C) Simo Sorce 2006
 
