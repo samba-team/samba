@@ -2068,6 +2068,8 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		LIBNET_JOIN_IN_DUMP_CTX(mem_ctx, r);
 	}
 
+	ZERO_STRUCT(r->out);
+
 	werr = libnet_join_pre_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
