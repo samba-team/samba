@@ -184,9 +184,7 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 
 static NTSTATUS idmap_rid_close(struct idmap_domain *dom)
 {
-	if (dom->private_data) {
-		TALLOC_FREE(dom->private_data);
-	}
+	TALLOC_FREE(dom->private_data);
 	return NT_STATUS_OK;
 }
 
