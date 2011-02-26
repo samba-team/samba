@@ -1152,7 +1152,7 @@ static NTSTATUS pdb_ads_enum_group_memberships(struct pdb_methods *m,
 					       struct samu *user,
 					       struct dom_sid **pp_sids,
 					       gid_t **pp_gids,
-					       size_t *p_num_groups)
+					       uint32_t *p_num_groups)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
