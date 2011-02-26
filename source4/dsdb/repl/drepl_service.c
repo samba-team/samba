@@ -324,8 +324,11 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	/* if we got here, everything is OK */
 	r->out.result = WERR_OK;
 
-	/* force execution of scheduled replications */
-	dreplsrv_run_pending_ops(service);
+	/*
+	 * schedule replication event to force
+	 * replication as soon as possible
+	 */
+	dreplsrv_periodic_schedule(service, 0);
 
 done:
 	return NT_STATUS_OK;
