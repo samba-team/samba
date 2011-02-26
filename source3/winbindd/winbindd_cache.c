@@ -4641,7 +4641,6 @@ static void wcache_save_user_pwinfo(struct winbindd_domain *domain,
 NTSTATUS nss_get_info_cached( struct winbindd_domain *domain, 
 			      const struct dom_sid *user_sid,
 			      TALLOC_CTX *ctx,
-			      ADS_STRUCT *ads, LDAPMessage *msg,
 			      const char **homedir, const char **shell,
 			      const char **gecos, gid_t *p_gid)
 {

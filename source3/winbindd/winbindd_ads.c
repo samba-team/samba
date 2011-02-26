@@ -252,8 +252,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		 * the domain.
 		 */
 		status = nss_get_info_cached(domain, &info->user_sid, mem_ctx,
-					     ads_cached_connection(domain),
-					     msg, &info->homedir, &info->shell,
+					     &info->homedir, &info->shell,
 					     &gecos, &primary_gid);
 		if (!NT_STATUS_IS_OK(status)) {
 			/*
@@ -504,7 +503,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		info->acct_name = talloc_strdup(mem_ctx, user->base.account_name.string);
 		info->full_name = talloc_strdup(mem_ctx, user->base.full_name.string);
 
-		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
+		nss_get_info_cached( domain, sid, mem_ctx,
 			      &info->homedir, &info->shell, &info->full_name, 
 			      &gid );
 		info->primary_gid = gid;
@@ -530,7 +529,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 		/* Try to fill in what the nss_info backend can do */
 
-		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
+		nss_get_info_cached( domain, sid, mem_ctx,
 			      &info->homedir, &info->shell, &info->full_name, 
 			      &gid);
 		info->primary_gid = gid;
@@ -589,7 +588,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	ads_msgfree(ads, msg);
 	msg = NULL;
 
-	status = nss_get_info_cached( domain, sid, mem_ctx, ads, msg,
+	status = nss_get_info_cached( domain, sid, mem_ctx,
 		      &info->homedir, &info->shell, &info->full_name, 
 		      &gid);
 	info->primary_gid = gid;

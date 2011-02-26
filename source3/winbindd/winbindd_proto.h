@@ -134,7 +134,6 @@ struct ads_struct;
 NTSTATUS nss_get_info_cached( struct winbindd_domain *domain, 
 			      const struct dom_sid *user_sid,
 			      TALLOC_CTX *ctx,
-			      struct ads_struct *ads, LDAPMessage *msg,
 			      const char **homedir, const char **shell,
 			      const char **gecos, gid_t *p_gid);
 #endif
