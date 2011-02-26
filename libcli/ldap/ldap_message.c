@@ -1572,11 +1572,11 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 				return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 			}
 
-			if (!ldap_decode_control_wrapper(ctrl, data, ctrl[i], &value)) {
+			if (!ldap_decode_control_wrapper(ctrl[i], data, ctrl[i], &value)) {
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 			}
 			
-			if (!ldap_decode_control_value(ctrl, value,
+			if (!ldap_decode_control_value(ctrl[i], value,
 						       control_handlers,
 						       ctrl[i])) {
 				if (ctrl[i]->critical) {
