@@ -246,11 +246,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		const char *gecos = NULL;
 		gid_t primary_gid = (gid_t)-1;
 
-		/*
-		 * Don't use our variable "ads" in this call here, every call
-		 * to nss_get_info_cached can destroy the connection inside
-		 * the domain.
-		 */
 		status = nss_get_info_cached(domain, &info->user_sid, mem_ctx,
 					     &info->homedir, &info->shell,
 					     &gecos, &primary_gid);
