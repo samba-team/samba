@@ -145,7 +145,7 @@ static void _drepl_replica_sync_done_cb(struct dreplsrv_service *service,
 	struct drsuapi_DsReplicaSync *r = data->r;
 
 	/* store last bad result */
-	if (W_ERROR_IS_OK(werr)) {
+	if (!W_ERROR_IS_OK(werr)) {
 		data->werr_last_failure = werr;
 	}
 
