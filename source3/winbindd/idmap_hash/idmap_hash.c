@@ -277,8 +277,6 @@ static NTSTATUS nss_hash_init(struct nss_domain_entry *e )
 static NTSTATUS nss_hash_get_info(struct nss_domain_entry *e,
 				    const struct dom_sid *sid,
 				    TALLOC_CTX *ctx,
-				    ADS_STRUCT *ads,
-				    LDAPMessage *msg,
 				    const char **homedir,
 				    const char **shell,
 				    const char **gecos,

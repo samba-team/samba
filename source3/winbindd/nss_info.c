@@ -326,7 +326,7 @@ NTSTATUS nss_get_info( const char *domain, const struct dom_sid *user_sid,
 
 	m = p->backend->methods;
 
-	return m->get_nss_info( p, user_sid, ctx, ads, msg,
+	return m->get_nss_info( p, user_sid, ctx,
 				homedir, shell, gecos, p_gid );
 }
 
