@@ -938,13 +938,6 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 
 static NTSTATUS idmap_tdb_close(struct idmap_domain *dom)
 {
-	struct idmap_tdb_context *ctx;
-
-	if (dom->private_data) {
-		ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
-
-		TALLOC_FREE(ctx->db);
-	}
 	return NT_STATUS_OK;
 }
 
