@@ -4,17 +4,17 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001-2004
    Copyright (C) Volker Lendecke 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -714,7 +714,7 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 		   share_access, FILE_SHARE_WRITE);
 	CHECK_MASK(2, access_mask, FILE_WRITE_DATA | FILE_APPEND_DATA,
 		   entry->share_access, FILE_SHARE_WRITE);
-	
+
 	CHECK_MASK(3, entry->access_mask, FILE_READ_DATA | FILE_EXECUTE,
 		   share_access, FILE_SHARE_READ);
 	CHECK_MASK(4, access_mask, FILE_READ_DATA | FILE_EXECUTE,
@@ -842,7 +842,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	/*
 	 * Check if the share modes will give us access.
 	 */
-	
+
 #if defined(DEVELOPER)
 	for(i = 0; i < lck->num_share_modes; i++) {
 		validate_my_share_entries(conn->sconn, i,
@@ -868,7 +868,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -1312,7 +1312,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 		case OPENX_FILE_EXISTS_OPEN|OPENX_FILE_CREATE_IF_NOT_EXIST:
 			create_disposition = FILE_OPEN_IF;
 			break;
-       
+
 		case OPENX_FILE_EXISTS_TRUNCATE:
 			create_disposition = FILE_OVERWRITE;
 			break;
@@ -1331,7 +1331,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 				  "open_func 0x%x\n", (unsigned int)open_func));
 			return False;
 	}
- 
+
 	/* Create the NT compatible share modes. */
 	switch (GET_DENY_MODE(deny_mode)) {
 		case DENY_ALL:
@@ -2652,7 +2652,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 				info = FILE_WAS_OPENED;
 				status = NT_STATUS_OK;
 			}
-				
 			break;
 
 		case FILE_SUPERSEDE:
@@ -2712,7 +2711,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	/*
 	 * Setup the files_struct for it.
 	 */
-	
+
 	fsp->mode = smb_dname->st.st_ex_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_dname->st);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;

@@ -8,17 +8,17 @@
    Copyright (C) Jeremy Allison 2006
    Copyright (C) Simo Sorce 2003-2006
    Copyright (C) Michael Adam 2009-2010
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -342,7 +342,7 @@ done:
 /**********************************************************************
  IDMAP ALLOC TDB BACKEND
 **********************************************************************/
- 
+
 /**********************************
  Allocate a new id. 
 **********************************/
@@ -684,7 +684,7 @@ static NTSTATUS idmap_tdb_id_to_sid(struct idmap_domain *dom, struct id_map *map
 	case ID_TYPE_UID:
 		keystr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
 		break;
-		
+
 	case ID_TYPE_GID:
 		keystr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
 		break;
@@ -713,7 +713,7 @@ static NTSTATUS idmap_tdb_id_to_sid(struct idmap_domain *dom, struct id_map *map
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
-		
+
 	if (!string_to_sid(map->sid, (const char *)data.dptr)) {
 		DEBUG(10,("INVALID SID (%s) in record %s\n",
 			(const char *)data.dptr, keystr));
@@ -807,7 +807,7 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-	
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	for (i = 0; ids[i]; i++) {
@@ -821,7 +821,7 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
-			
+
 			/* some fatal error occurred, return immediately */
 			goto done;
 		}
@@ -912,7 +912,7 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-	
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	state.dom = dom;
