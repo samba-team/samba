@@ -1151,16 +1151,6 @@ done:
 
 static NTSTATUS idmap_ldap_close(struct idmap_domain *dom)
 {
-	struct idmap_ldap_context *ctx;
-
-	if (dom->private_data) {
-		ctx = talloc_get_type(dom->private_data,
-				      struct idmap_ldap_context);
-
-		talloc_free(ctx);
-		dom->private_data = NULL;
-	}
-
 	return NT_STATUS_OK;
 }
 
