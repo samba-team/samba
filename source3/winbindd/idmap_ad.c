@@ -672,7 +672,7 @@ again:
 
 	ret = NT_STATUS_OK;
 
-	/* mark all unknwoni/expired ones as unmapped */
+	/* mark all unknown/expired ones as unmapped */
 	for (i = 0; ids[i]; i++) {
 		if (ids[i]->status != ID_MAPPED) 
 			ids[i]->status = ID_UNMAPPED;
