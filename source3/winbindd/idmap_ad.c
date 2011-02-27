@@ -143,10 +143,11 @@ static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 	/* setup server affinity */
 
 	get_dc_name(dom->name, realm, dc_name, &dc_ip );
-	
+
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(1, ("ad_idmap_init: failed to connect to AD\n"));
+		DEBUG(1, ("ad_idmap_cached_connection_internal: failed to "
+			  "connect to AD\n"));
 		ads_destroy(&ads);
 		return status;
 	}
