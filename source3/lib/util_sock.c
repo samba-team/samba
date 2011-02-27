@@ -495,6 +495,11 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 	timeout.tv_usec = (long)(1000 * (time_out % 1000));
 
 	for (nread=0; nread < mincnt; ) {
+		if (fd < 0 || fd >= FD_SETSIZE) {
+			errno = EBADF;
+			return map_nt_error_from_unix(EBADF);
+		}
+
 		FD_ZERO(&fds);
 		FD_SET(fd,&fds);
 
@@ -1235,7 +1240,7 @@ bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 
 	for (i=0; i<num_addrs; i++) {
 		sockets[i] = socket(addrs[i].ss_family, SOCK_STREAM, 0);
-		if (sockets[i] < 0)
+		if (sockets[i] < 0 || sockets[i] >= FD_SETSIZE)
 			goto done;
 		set_blocking(sockets[i], false);
 	}
@@ -1284,8 +1289,10 @@ bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 	FD_ZERO(&r_fds);
 
 	for (i=0; i<num_addrs; i++) {
-		if (sockets[i] == -1)
+		if (sockets[i] < 0 || sockets[i] >= FD_SETSIZE) {
+			/* This cannot happen - ignore if so. */
 			continue;
+		}
 		FD_SET(sockets[i], &wr_fds);
 		FD_SET(sockets[i], &r_fds);
 		if (sockets[i]>maxfd)
@@ -1305,8 +1312,10 @@ bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 
 	for (i=0; i<num_addrs; i++) {
 
-		if (sockets[i] == -1)
+		if (sockets[i] < 0 || sockets[i] >= FD_SETSIZE) {
+			/* This cannot happen - ignore if so. */
 			continue;
+		}
 
 		/* Stevens, Network Programming says that if there's a
 		 * successful connect, the socket is only writable. Upon an

@@ -509,7 +509,7 @@ static bool closed_fd(int fd)
 	fd_set r_fds;
 	int selret;
 
-	if (fd == -1) {
+	if (fd < 0 || fd >= FD_SETSIZE) {
 		return true;
 	}
 

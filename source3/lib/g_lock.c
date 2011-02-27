@@ -391,7 +391,9 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 			r_fds = &_r_fds;
 			FD_ZERO(r_fds);
 			max_fd = ctdbd_conn_get_fd(conn);
-			FD_SET(max_fd, r_fds);
+			if (max_fd >= 0 && max_fd < FD_SETSIZE) {
+				FD_SET(max_fd, r_fds);
+			}
 		}
 #endif
 

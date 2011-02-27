@@ -4420,8 +4420,10 @@ static void readline_callback(void)
 
  again:
 
-	if (cli->fd == -1)
+	if (cli->fd < 0 || cli->fd >= FD_SETSIZE) {
+		errno = EBADF;
 		return;
+	}
 
 	FD_ZERO(&fds);
 	FD_SET(cli->fd,&fds);

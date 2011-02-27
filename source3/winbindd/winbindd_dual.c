@@ -1460,6 +1460,13 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		FD_ZERO(&r_fds);
 		FD_ZERO(&w_fds);
+
+		if (state.sock < 0 || state.sock >= FD_SETSIZE) {
+			TALLOC_FREE(frame);
+			perror("EBADF");
+			_exit(1);
+		}
+
 		FD_SET(state.sock, &r_fds);
 		maxfd = state.sock;
 
