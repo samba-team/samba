@@ -1683,7 +1683,7 @@ static bool create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_n
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
 		count++;
 
-	if((count*2) + 2 > FD_SETSIZE) {
+	if((count*2) + 2 >= FD_SETSIZE) {
 		DEBUG(0,("create_listen_fdset: Too many file descriptors needed (%d). We can \
 only use %d.\n", (count*2) + 2, FD_SETSIZE));
 		SAFE_FREE(pset);
@@ -1699,24 +1699,44 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 	FD_ZERO(pset);
 
 	/* Add in the broadcast socket on 137. */
+	if (ClientNMB < 0 || ClientNMB >= FD_SETSIZE) {
+		errno = EBADF;
+		SAFE_FREE(pset);
+		return True;
+	}
+
 	FD_SET(ClientNMB,pset);
 	sock_array[num++] = ClientNMB;
 	*maxfd = MAX( *maxfd, ClientNMB);
 
 	/* Add in the 137 sockets on all the interfaces. */
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		if (subrec->nmb_sock < 0 || subrec->nmb_sock >= FD_SETSIZE) {
+			/* We have to ignore sockets outside FD_SETSIZE. */
+			continue;
+		}
 		FD_SET(subrec->nmb_sock,pset);
 		sock_array[num++] = subrec->nmb_sock;
 		*maxfd = MAX( *maxfd, subrec->nmb_sock);
 	}
 
 	/* Add in the broadcast socket on 138. */
+	if (ClientDGRAM < 0 || ClientDGRAM >= FD_SETSIZE) {
+		errno = EBADF;
+		SAFE_FREE(pset);
+		return True;
+	}
+
 	FD_SET(ClientDGRAM,pset);
 	sock_array[num++] = ClientDGRAM;
 	*maxfd = MAX( *maxfd, ClientDGRAM);
 
 	/* Add in the 138 sockets on all the interfaces. */
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		if (subrec->dgram_sock < 0 || subrec->dgram_sock >= FD_SETSIZE) {
+			/* We have to ignore sockets outside FD_SETSIZE. */
+			continue;
+		}
 		FD_SET(subrec->dgram_sock,pset);
 		sock_array[num++] = subrec->dgram_sock;
 		*maxfd = MAX( *maxfd, subrec->dgram_sock);
@@ -1767,7 +1787,7 @@ bool listen_for_packets(bool run_election)
 
 #ifndef SYNC_DNS
 	dns_fd = asyncdns_fd();
-	if (dns_fd != -1) {
+	if (dns_fd >= 0 && dns_fd < FD_SETSIZE) {
 		FD_SET(dns_fd, &r_fds);
 		maxfd = MAX( maxfd, dns_fd);
 	}

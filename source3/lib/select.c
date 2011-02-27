@@ -75,6 +75,17 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 			return -1;
 		}
 
+		if (select_pipe[0] < 0 || select_pipe[0] >= FD_SETSIZE) {
+			DEBUG(0, ("sys_select: bad fd\n"));
+			if (readfds != NULL)
+				FD_ZERO(readfds);
+			if (writefds != NULL)
+				FD_ZERO(writefds);
+			if (errorfds != NULL)
+				FD_ZERO(errorfds);
+			errno = EBADF;
+			return -1;
+		}
 		/*
 		 * These next two lines seem to fix a bug with the Linux
 		 * 2.0.x kernel (and probably other UNIXes as well) where
@@ -101,6 +112,7 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 		readfds2 = &readfds_buf;
 		FD_ZERO(readfds2);
 	}
+
 	FD_SET(select_pipe[0], readfds2);
 
 	errno = 0;

@@ -134,6 +134,11 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
+	if (sock < 0 || sock >= FD_SETSIZE) {
+		errno = EBADF;
+		return -1;
+	}
+
 	FD_ZERO(&r_fds);
 	FD_SET(sock, &r_fds);
 

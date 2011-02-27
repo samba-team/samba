@@ -457,6 +457,11 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 
 	/* setup any fd events */
 	for (fde = std_ev->ev->fd_events; fde; fde = fde->next) {
+		if (fde->fd < 0 || fde->fd >= FD_SETSIZE) {
+			std_ev->exit_code = EBADF;
+			return -1;
+		}
+
 		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
