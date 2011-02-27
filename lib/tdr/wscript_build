@@ -3,7 +3,6 @@
 
 bld.SAMBA_SUBSYSTEM('TDR',
 	source='tdr.c',
-	autoproto='tdr_proto.h',
 	public_deps='talloc samba-util',
 	public_headers='tdr.h'
 	)
