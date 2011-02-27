@@ -698,7 +698,7 @@ static void async_processing(fd_set *pfds)
 
 static int select_on_fd(int fd, int maxfd, fd_set *fds)
 {
-	if (fd != -1) {
+	if (fd != -1 && fd < FD_SETSIZE) {
 		FD_SET(fd, fds);
 		maxfd = MAX(maxfd, fd);
 	}

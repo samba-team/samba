@@ -61,6 +61,11 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 		if (pipe(select_pipe) == -1)
 			smb_panic("Could not create select pipe");
 
+		if (select_pipe[0] < 0 || select_pipe[0] >= FD_SETSIZE) {
+			errno = EBADF;
+			return -1;
+		}
+
 		/*
 		 * These next two lines seem to fix a bug with the Linux
 		 * 2.0.x kernel (and probably other UNIXes as well) where
@@ -87,6 +92,7 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 		readfds2 = &readfds_buf;
 		FD_ZERO(readfds2);
 	}
+
 	FD_SET(select_pipe[0], readfds2);
 
 	errno = 0;

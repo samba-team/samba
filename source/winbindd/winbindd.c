@@ -836,7 +836,8 @@ static void process_loop(void)
 	listen_sock = open_winbindd_socket();
 	listen_priv_sock = open_winbindd_priv_socket();
 
-	if (listen_sock == -1 || listen_priv_sock == -1) {
+	if (listen_sock < 0 || listen_sock >= FD_SETSIZE ||
+			listen_priv_sock < 0 || listen_priv_sock >= FD_SETSIZE) {
 		perror("open_winbind_socket");
 		exit(1);
 	}
@@ -861,6 +862,9 @@ static void process_loop(void)
 
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
+
+	/* We check the range for listen_sock and
+	   listen_priv_sock above. */
 	FD_SET(listen_sock, &r_fds);
 	FD_SET(listen_priv_sock, &r_fds);
 
@@ -890,6 +894,12 @@ static void process_loop(void)
 	}
 
 	for (ev = fd_events; ev; ev = ev->next) {
+		if (ev->fd < 0 || ev->fd >= FD_SETSIZE) {
+			/* Ignore here - event_add_to_select_args
+			   should make this impossible. */
+			continue;
+		}
+
 		if (ev->flags & EVENT_FD_READ) {
 			FD_SET(ev->fd, &r_fds);
 			maxfd = MAX(ev->fd, maxfd);

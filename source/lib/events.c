@@ -140,6 +140,11 @@ struct fd_event *event_add_fd(struct event_context *event_ctx,
 {
 	struct fd_event *fde;
 
+	if (fd < 0 || fd >= FD_SETSIZE) {
+		errno = EBADF;
+		return NULL;
+	}
+
 	if (!(fde = TALLOC_P(mem_ctx, struct fd_event))) {
 		return NULL;
 	}
@@ -190,6 +195,14 @@ bool event_add_to_select_args(struct event_context *event_ctx,
 	bool ret = False;
 
 	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
+		if (fde->fd < 0 || fde->fd >= FD_SETSIZE) {
+			/* We ignore here, as it shouldn't be
+			   possible to add an invalid fde->fd
+			   but we don't want FD_SET to see an
+			   invalid fd. */
+			continue;
+		}
+
 		if (fde->flags & EVENT_FD_READ) {
 			FD_SET(fde->fd, read_fds);
 			ret = True;

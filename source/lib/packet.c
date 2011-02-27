@@ -106,6 +106,11 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx)
 	int res;
 	fd_set r_fds;
 
+	if (ctx->fd < 0 || ctx->fd >= FD_SETSIZE) {
+		errno = EBADF;
+		return map_nt_error_from_unix(errno);
+	}
+
 	FD_ZERO(&r_fds);
 	FD_SET(ctx->fd, &r_fds);
 

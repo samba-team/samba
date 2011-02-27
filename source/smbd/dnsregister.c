@@ -125,6 +125,9 @@ void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
 	 */
 	if (dns_state->srv_ref != NULL) {
 		mdnsd_conn_fd = DNSServiceRefSockFD(dns_state->srv_ref);
+		if (mdnsd_conn_fd < 0 || mdnsd_conn_fd >= FD_SETSIZE) {
+			return;
+		}
 		FD_SET(mdnsd_conn_fd, listen_set);
 		return;
 	}
@@ -156,6 +159,9 @@ void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
 	}
 
 	mdnsd_conn_fd = DNSServiceRefSockFD(dns_state->srv_ref);
+	if (mdnsd_conn_fd < 0 || mdnsd_conn_fd >= FD_SETSIZE) {
+		return;
+	}
 	FD_SET(mdnsd_conn_fd, listen_set);
 	*maxfd = MAX(*maxfd, mdnsd_conn_fd);
 	*timeout = timeval_zero();

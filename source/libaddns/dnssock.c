@@ -218,7 +218,11 @@ static DNS_ERROR read_all(int fd, uint8 *data, size_t len)
 	while (total < len) {
 		ssize_t ret;
 		int fd_ready;
-		
+
+		if (fd < 0 || fd >= FD_SETSIZE) {
+			return ERROR_DNS_SOCKET_ERROR;
+		}
+
 		FD_ZERO( &rfds );
 		FD_SET( fd, &rfds );
 

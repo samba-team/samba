@@ -162,8 +162,8 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 		int num;
 		
 		FD_ZERO(&fds);
-		if (s != -1) FD_SET(s, &fds);
-		if (c != -1) FD_SET(c, &fds);
+		if (s >= 0 && s < FD_SETSIZE) FD_SET(s, &fds);
+		if (c >= 0 && c < FD_SETSIZE) FD_SET(c, &fds);
 
 		num = sys_select_intr(MAX(s+1, c+1),&fds,NULL,NULL,NULL);
 		if (num <= 0) continue;
@@ -235,6 +235,10 @@ static void start_filter(char *desthost)
 		struct sockaddr_storage ss;
 		socklen_t in_addrlen = sizeof(ss);
 		
+		if (s < 0 || s >= FD_SETSIZE) {
+			break;
+		}
+
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);
 
