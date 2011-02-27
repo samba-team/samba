@@ -1064,6 +1064,12 @@ static void process_loop(void)
 	}
 
 	for (ev = fd_events; ev; ev = ev->next) {
+		if (ev->fd < 0 || ev->fd >= FD_SETSIZE) {
+			/* Ignore here - event_add_to_select_args
+			   should make this impossible. */
+			continue;
+		}
+
 		if (ev->flags & EVENT_FD_READ) {
 			FD_SET(ev->fd, &r_fds);
 			maxfd = MAX(ev->fd, maxfd);

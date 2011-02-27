@@ -120,7 +120,7 @@ static bool winbind_closed_fd(int fd)
 	struct timeval tv;
 	fd_set r_fds;
 
-	if (fd == -1) {
+	if (fd == -1 || fd >= FD_SETSIZE) {
 		return true;
 	}
 
@@ -219,6 +219,13 @@ static struct tevent_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 
 	wb_ctx->fd = make_safe_fd(socket(AF_UNIX, SOCK_STREAM, 0));
 	if (wb_ctx->fd == -1) {
+		wbc_err = map_wbc_err_from_errno(errno);
+		goto post_status;
+	}
+	if (wb_ctx->fd >= FD_SETSIZE) {
+		close(wb_ctx->fd);
+		wb_ctx->fd = -1;
+		errno = EBADF;
 		wbc_err = map_wbc_err_from_errno(errno);
 		goto post_status;
 	}
