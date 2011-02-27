@@ -35,7 +35,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "../lib/util/dlinklist.h"
-#include "../tdb/include/tdb.h"
+#include <tdb.h>
 
 /*
   this is used to catch debug messages from ldb

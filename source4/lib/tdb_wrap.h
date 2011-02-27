@@ -29,7 +29,7 @@
 #ifndef _TDB_WRAP_H_
 #define _TDB_WRAP_H_
 
-#include "../lib/tdb/include/tdb.h"
+#include <tdb.h>
 
 struct tdb_wrap {
 	struct tdb_context *tdb;

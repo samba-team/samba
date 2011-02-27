@@ -30,7 +30,7 @@
 #include "tdb_wrap.h"
 #include "../lib/util/unix_privs.h"
 #include "librpc/rpc/dcerpc.h"
-#include "../tdb/include/tdb.h"
+#include <tdb.h>
 #include "../lib/util/util_tdb.h"
 #include "cluster/cluster.h"
 #include "../lib/util/tevent_ntstatus.h"
