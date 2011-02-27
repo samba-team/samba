@@ -1666,7 +1666,7 @@ bool is_myname_or_ipaddr(const char *s)
 			return true;
 		}
 
-		if (is_zero_addr((struct sockaddr *)&ss) || 
+		if (is_zero_addr(&ss) ||
 			is_loopback_addr((struct sockaddr *)&ss)) {
 			return false;
 		}
