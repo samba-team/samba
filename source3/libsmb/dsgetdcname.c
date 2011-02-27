@@ -629,7 +629,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		 * back to netbios lookups is that our DNS server doesn't know
 		 * anything about the DC's   -- jerry */
 
-		if (!is_zero_addr((struct sockaddr *)(void *)&r->ss)) {
+		if (!is_zero_addr(&r->ss)) {
 			count++;
 			continue;
 		}

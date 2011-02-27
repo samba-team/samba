@@ -2490,7 +2490,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	struct sockaddr_storage rm_addr;
 	char addr[INET6_ADDRSTRLEN];
 
-	if ( is_zero_addr((struct sockaddr *)client_ss) ) {
+	if ( is_zero_addr(client_ss) ) {
 		DEBUG(2,("spoolss_connect_to_client: resolving %s\n",
 			remote_machine));
 		if ( !resolve_name( remote_machine, &rm_addr, 0x20, false) ) {

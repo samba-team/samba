@@ -1079,7 +1079,7 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 
 	/* one loop to remove duplicates */
 	for ( i=0; i<count; i++ ) {
-		if ( is_zero_addr((struct sockaddr *)&iplist[i].ss)) {
+		if ( is_zero_addr(&iplist[i].ss)) {
 			continue;
 		}
 
@@ -1094,7 +1094,7 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 	/* one loop to clean up any holes we left */
 	/* first ip should never be a zero_ip() */
 	for (i = 0; i<count; ) {
-		if (is_zero_addr((struct sockaddr *)&iplist[i].ss) ) {
+		if (is_zero_addr(&iplist[i].ss) ) {
 			if (i != count-1) {
 				memmove(&iplist[i], &iplist[i+1],
 					(count - i - 1)*sizeof(iplist[i]));
@@ -1921,7 +1921,7 @@ static NTSTATUS resolve_ads(const char *name,
 		 * for falling back to netbios lookups is that our DNS server
 		 * doesn't know anything about the DC's   -- jerry */
 
-		if (!is_zero_addr((struct sockaddr *)&r->ss)) {
+		if (!is_zero_addr(&r->ss)) {
 			(*return_count)++;
 		}
 	}
@@ -2151,7 +2151,7 @@ bool resolve_name(const char *name,
 
 		if (prefer_ipv4) {
 			for (i=0; i<count; i++) {
-				if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+				if (!is_zero_addr(&ss_list[i].ss) &&
 						!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss) &&
 						(ss_list[i].ss.ss_family == AF_INET)) {
 					*return_ss = ss_list[i].ss;
@@ -2164,7 +2164,7 @@ bool resolve_name(const char *name,
 
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
-			if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+			if (!is_zero_addr(&ss_list[i].ss) &&
 					!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
 				*return_ss = ss_list[i].ss;
 				SAFE_FREE(ss_list);
@@ -2228,7 +2228,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	/* only return valid addresses for TCP connections */
 	for (i=0, num_entries = 0; i<count; i++) {
-		if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+		if (!is_zero_addr(&ss_list[i].ss) &&
 				!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
 			num_entries++;
 		}
@@ -2247,7 +2247,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	}
 
 	for (i=0, num_entries = 0; i<count; i++) {
-		if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+		if (!is_zero_addr(&ss_list[i].ss) &&
 				!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
 			(*return_ss_arr)[num_entries++] = ss_list[i].ss;
 		}
