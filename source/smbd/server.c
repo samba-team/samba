@@ -209,7 +209,13 @@ static bool open_sockets_inetd(void)
 	/* Started from inetd. fd 0 is the socket. */
 	/* We will abort gracefully when the client or remote system 
 	   goes away */
-	smbd_set_server_fd(dup(0));
+	int fd = dup(0);
+
+	if (fd < 0 || fd >= FD_SETSIZE) {
+		return false;
+	}
+
+	smbd_set_server_fd(fd);
 	
 	/* close our standard file descriptors */
 	close_low_fds(False); /* Don't close stderr */
@@ -436,7 +442,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 							num_sockets == 0 ? 0 : 2,
 							ifss,
 							true);
-				if(s == -1) {
+				if(s < 0 || s >= FD_SETSIZE) {
+					close(s);
 					continue;
 				}
 
@@ -516,7 +523,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 						num_sockets == 0 ? 0 : 2,
 						&ss,
 						true);
-				if (s == -1) {
+				if (s < 0 || s >= FD_SETSIZE) {
 					continue;
 				}
 
@@ -709,6 +716,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			struct sockaddr addr;
 			socklen_t in_addrlen = sizeof(addr);
 			pid_t child = 0;
+			int fd;
 
 			s = -1;
 			for(i = 0; i < num_sockets; i++) {
@@ -721,16 +729,21 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				}
 			}
 
-			smbd_set_server_fd(accept(s,&addr,&in_addrlen));
-
-			if (smbd_server_fd() == -1 && errno == EINTR)
+			fd = accept(s,&addr,&in_addrlen);
+			if (fd == -1 && errno == EINTR)
 				continue;
-
-			if (smbd_server_fd() == -1) {
+			if (fd == -1) {
 				DEBUG(2,("open_sockets_smbd: accept: %s\n",
 					 strerror(errno)));
 				continue;
 			}
+			if (fd < 0 || fd >= FD_SETSIZE) {
+				DEBUG(2,("open_sockets_smbd: bad fd %d\n",
+					fd ));
+				continue;
+			}
+
+			smbd_set_server_fd(fd);
 
 			/* Ensure child is set to blocking mode */
 			set_blocking(smbd_server_fd(),True);

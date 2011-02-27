@@ -81,6 +81,11 @@ static void do_smb_resolve(struct mdns_smbsrv_result *browsesrv)
 			TALLOC_FREE(fdset);
 		}
 
+		if (mdnsfd < 0 || mdnsfd >= FD_SETSIZE) {
+			errno = EBADF;
+			break;
+		}
+
 		fdsetsz = howmany(mdnsfd + 1, NFDBITS) * sizeof(fd_mask);
 		fdset = TALLOC_ZERO(ctx, fdsetsz);
 		FD_SET(mdnsfd, fdset);
@@ -183,6 +188,13 @@ int do_smb_browse(void)
 
 		fdsetsz = howmany(mdnsfd + 1, NFDBITS) * sizeof(fd_mask);
 		fdset = TALLOC_ZERO(ctx, fdsetsz);
+
+		if (mdnsfd < 0 || mdnsfd >= FD_SETSIZE) {
+			errno = EBADF;
+			TALLOC_FREE(ctx);
+			return 1;
+		}
+
 		FD_SET(mdnsfd, fdset);
 
 		tv.tv_sec = 1;

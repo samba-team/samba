@@ -1097,6 +1097,11 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
 	struct timeval timeout;
 	int ret;
 
+	if (fd < 0 || fd >= FD_SETSIZE) {
+		errno = EBADF;
+		return NULL;
+	}
+
 	FD_ZERO(&fds);
 	FD_SET(fd,&fds);
 	timeout.tv_sec = t/1000;

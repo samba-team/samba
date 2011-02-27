@@ -1250,6 +1250,12 @@ static bool fork_domain_child(struct winbindd_child *child)
 		return False;
 	}
 
+	if (fdpair[0] < 0 || fdpair[0] >= FD_SETSIZE) {
+		DEBUG(0, ("fork_domain_child: bad fd range (%d)\n", fdpair[0]));
+		errno = EBADF;
+		return False;
+	}
+
 	ZERO_STRUCT(state);
 	state.pid = sys_getpid();
 
@@ -1405,6 +1411,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		message_dispatch(winbind_messaging_context());
 
 		FD_ZERO(&read_fds);
+		/* We check state.sock against FD_SETSIZE above. */
 		FD_SET(state.sock, &read_fds);
 
 		ret = sys_select(state.sock + 1, &read_fds, NULL, NULL, tp);

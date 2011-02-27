@@ -1407,6 +1407,11 @@ void start_background_queue(void)
 		exit(1);
 	}
 
+	if (pause_pipe[1] < 0 || pause_pipe[1] >= FD_SETSIZE) {
+		DEBUG(5,("start_background_queue: pipe fd out of range.\n"));
+		exit(1);
+	}
+
 	background_lpq_updater_pid = sys_fork();
 
 	if (background_lpq_updater_pid == -1) {
