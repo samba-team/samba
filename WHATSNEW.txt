@@ -1,4 +1,53 @@
                    ==============================
+                   Release Notes for Samba 3.4.12
+			  February 28 2011
+                   ==============================
+
+
+This is a security release in order to address CVE-2011-0719.
+
+
+o  CVE-2011-0719:
+   All current released versions of Samba are vulnerable to
+   a denial of service caused by memory corruption. Range
+   checks on file descriptors being used in the FD_SET macro
+   were not present allowing stack corruption. This can cause
+   the Samba code to crash or to loop attempting to select
+   on a bad file descriptor set.
+
+
+Changes since 3.4.11
+--------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7949: Fix DoS in Winbind and smbd with many file descriptors open.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.4 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older versions follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.4.11
 			  January 23 2011
                    ==============================
@@ -37,8 +86,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older versions follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.4.10
