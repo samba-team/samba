@@ -83,3 +83,5 @@ samba4.smb2.compound.*.invalid2
 samba4.ldap.acl.*.search.* # ACL search behaviour not enabled by default
 samba4.ldap.acl.*.ntSecurityDescriptor.* # ACL extended checks on search not enabled by default
 samba4.nbt.winsreplication.owned # fails sometimes, timing related
+samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
+#samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.*
