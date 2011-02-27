@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Helers used for upgrading between different database formats."""
+"""Helpers used for upgrading between different database formats."""
 
 import os
 import string
