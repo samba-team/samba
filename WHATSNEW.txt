@@ -1,20 +1,27 @@
                    =============================
                    Release Notes for Samba 3.5.7
-			  , 2010
+			  February 28, 2011
                    =============================
 
 
-This is the latest stable release of Samba 3.5.
+This is a security release in order to address CVE-2011-0719.
 
-Major enhancements in Samba 3.5.7 include:
 
-  o
+o  CVE-2011-0719:
+   All current released versions of Samba are vulnerable to
+   a denial of service caused by memory corruption. Range
+   checks on file descriptors being used in the FD_SET macro
+   were not present allowing stack corruption. This can cause
+   the Samba code to crash or to loop attempting to select
+   on a bad file descriptor set.
 
-Changes since 3.5.5
--------------------
+
+Changes since 3.5.6:
+--------------------
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 7949: Fix DoS in Winbind and smbd with many file descriptors open.
 
 
 ######################################################################
