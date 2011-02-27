@@ -55,6 +55,14 @@ bool event_add_to_select_args(struct tevent_context *ev,
 	bool ret = false;
 
 	for (fde = ev->fd_events; fde; fde = fde->next) {
+		if (fde->fd < 0 || fde->fd >= FD_SETSIZE) {
+			/* We ignore here, as it shouldn't be
+			   possible to add an invalid fde->fd
+			   but we don't want FD_SET to see an
+			   invalid fd. */
+			continue;
+		}
+
 		if (fde->flags & EVENT_FD_READ) {
 			FD_SET(fde->fd, read_fds);
 			ret = true;

@@ -244,6 +244,10 @@ static int winbind_named_pipe_sock(const char *dir)
 		switch (errno) {
 			case EINPROGRESS:
 				FD_ZERO(&w_fds);
+				if (fd < 0 || fd >= FD_SETSIZE) {
+					errno = EBADF;
+					goto error_out;
+				}
 				FD_SET(fd, &w_fds);
 				tv.tv_sec = CONNECT_TIMEOUT - wait_time;
 				tv.tv_usec = 0;
@@ -391,6 +395,11 @@ int winbind_write_sock(void *buffer, int count, int recursing, int need_priv)
 		   call would not block by calling select(). */
 
 		FD_ZERO(&r_fds);
+		if (winbindd_fd < 0 || winbindd_fd >= FD_SETSIZE) {
+			errno = EBADF;
+			winbind_close_sock();
+			return -1;
+		}
 		FD_SET(winbindd_fd, &r_fds);
 		ZERO_STRUCT(tv);
 
@@ -451,6 +460,11 @@ int winbind_read_sock(void *buffer, int count)
 		   call would not block by calling select(). */
 
 		FD_ZERO(&r_fds);
+		if (winbindd_fd < 0 || winbindd_fd >= FD_SETSIZE) {
+			errno = EBADF;
+			winbind_close_sock();
+			return -1;
+		}
 		FD_SET(winbindd_fd, &r_fds);
 		ZERO_STRUCT(tv);
 		/* Wait for 5 seconds for a reply. May need to parameterise this... */
