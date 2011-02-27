@@ -28,7 +28,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include <tevent.h>
-#include <tevent_unix.h>
+#include "../lib/util/tevent_unix.h"
 
 struct samba_runcmd_state {
 	int stdout_log_level;

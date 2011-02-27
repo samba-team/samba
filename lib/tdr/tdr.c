@@ -387,7 +387,7 @@ NTSTATUS tdr_push_to_fd(int fd, tdr_push_fn_t push_fn, const void *p)
 	return NT_STATUS_OK;
 }
 
-void tdr_print_debug_helper(struct tdr_print *tdr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+void tdr_print_debug_helper(struct tdr_print *tdr, const char *format, ...)
 {
 	va_list ap;
 	char *s = NULL;

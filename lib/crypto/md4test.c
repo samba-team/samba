@@ -26,7 +26,7 @@ struct torture_context;
 /*
  This uses the test values from rfc1320
 */
-bool torture_local_crypto_md4(struct torture_context *torture) 
+bool torture_local_crypto_md4(struct torture_context *torture)
 {
 	bool ret = true;
 	uint32_t i;
