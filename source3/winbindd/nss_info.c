@@ -205,6 +205,19 @@ static NTSTATUS nss_init(const char **nss_list)
 
 		nss_backend = nss_get_backend(backend);
 		if (nss_backend == NULL) {
+			/*
+			 * This is a freaking hack. We don't have proper
+			 * modules for nss_info backends. Right now we have
+			 * our standard nss_info backends in the ad backend.
+			 */
+			status = smb_probe_module("idmap", "ad");
+			if ( !NT_STATUS_IS_OK(status) ) {
+				continue;
+			}
+		}
+
+		nss_backend = nss_get_backend(backend);
+		if (nss_backend == NULL) {
 			/* attempt to register the backend */
 			status = smb_probe_module( "nss_info", backend );
 			if ( !NT_STATUS_IS_OK(status) ) {
