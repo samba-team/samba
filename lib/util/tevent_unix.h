@@ -24,7 +24,7 @@
 #ifndef _TEVENT_UNIX_H
 #define _TEVENT_UNIX_H
 
-#include "../tevent/tevent.h"
+#include <tevent.h>
 
 bool tevent_req_is_unix_error(struct tevent_req *req, int *perrno);
 
