@@ -145,8 +145,16 @@ def abi_process_file(fname, version, symmap):
             symmap[symname] = version
     f.close()
 
-def abi_write_vscript(vscript, libname, version, symmap, abi_match):
-    '''write a vscript file for a library in --version-script format'''
+def abi_write_vscript(vscript, libname, current_version, versions, symmap, abi_match):
+    '''write a vscript file for a library in --version-script format
+    
+    :param vscript: Path to the vscript file
+    :param libname: Name of the library, uppercased
+    :param current_version: Current version
+    :param versions: Versions to consider
+    :param symmap: Dictionary mapping symbols -> version
+    :param abi_match: List of symbols considered to be public in the current version
+    '''
 
     invmap = {}
     for s in symmap:
@@ -154,16 +162,18 @@ def abi_write_vscript(vscript, libname, version, symmap, abi_match):
 
     f = open(vscript, mode='w')
     last_key = ""
-    for k in sorted(invmap):
+    for k in sorted(versions):
         symver = "%s_%s" % (libname, k)
-        if symver == version:
+        if symver == current_version:
             break
-        f.write("%s {\n\tglobal: \n" % symver)
-        for s in invmap[k]:
-            f.write("\t\t%s;\n" % s);
+        f.write("%s {\n" % symver)
+        if k in invmap:
+            f.write("\tglobal: \n")
+            for s in invmap.get(k, []):
+                f.write("\t\t%s;\n" % s);
         f.write("}%s;\n\n" % last_key)
         last_key = " %s" % symver
-    f.write("%s {\n" % version)
+    f.write("%s {\n" % current_version)
     f.write("\tglobal:\n")
     for x in abi_match:
         f.write("\t\t%s;\n" % x)
@@ -179,13 +189,14 @@ def abi_build_vscript(task):
     tgt = task.outputs[0].bldpath(task.env)
 
     symmap = {}
-
+    versions = []
     for f in task.inputs:
         fname = f.abspath(task.env)
         basename = os.path.basename(fname)
         version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
+        versions.append(version)
         abi_process_file(fname, version, symmap)
-    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VERSION, symmap,
+    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VERSION, versions, symmap,
                       task.env.ABI_MATCH)
 
 
