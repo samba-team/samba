@@ -87,8 +87,8 @@ static struct {
  */
 
 static char *debugf = NULL;
-bool    debug_warn_unknown_class = True;
-bool    debug_auto_add_unknown_class = True;
+bool    debug_warn_unknown_class = true;
+bool    debug_auto_add_unknown_class = true;
 
 /*
    used to check if the user specified a
@@ -101,7 +101,7 @@ bool    override_logfile;
  * system has been initialized.
  */
 static int debug_all_class_hack = 1;
-static bool debug_all_class_isset_hack = True;
+static bool debug_all_class_isset_hack = true;
 
 static int debug_num_classes = 0;
 int     *DEBUGLEVEL_CLASS = &debug_all_class_hack;
@@ -128,7 +128,7 @@ int     DEBUGLEVEL = &debug_all_class_hack;
  *  format_pos      - Marks the first free byte of the format_bufr.
  * 
  *
- *  log_overflow    - When this variable is True, never attempt to check the
+ *  log_overflow    - When this variable is true, never attempt to check the
  *                    size of the log. This is a hack, so that we can write
  *                    a message using DEBUG, from open_logs() when we
  *                    are unable to open a new log file for some reason.
@@ -140,7 +140,7 @@ static int     syslog_level   = 0;
 #endif
 static char *format_bufr = NULL;
 static size_t     format_pos     = 0;
-static bool    log_overflow   = False;
+static bool    log_overflow   = false;
 
 /*
  * Define all the debug class selection names here. Names *MUST NOT* contain 
@@ -226,7 +226,7 @@ static char *debug_list_class_names_and_levels(void)
 	char **list;
 	char *buf = NULL;
 	char *b;
-	bool err = False;
+	bool err = false;
 
 	if (DEBUGLEVEL_CLASS == &debug_all_class_hack) {
 		return NULL;
@@ -244,7 +244,7 @@ static char *debug_list_class_names_and_levels(void)
 				classname_table[i],
 				DEBUGLEVEL_CLASS_ISSET[i]?DEBUGLEVEL_CLASS[i]:DEBUGLEVEL);
 		if (l < 0 || l > MAX_CLASS_NAME_SIZE) {
-			err = True;
+			err = true;
 			goto done;
 		}
 		dim += l;
@@ -253,7 +253,7 @@ static char *debug_list_class_names_and_levels(void)
 	/* create single string list - add space for newline */
 	b = buf = (char *)SMB_MALLOC(dim+1);
 	if (!buf) {
-		err = True;
+		err = true;
 		goto done;
 	}
 	for (i = 0; i < debug_num_classes; i++) {
@@ -353,7 +353,7 @@ int debug_add_class(const char *classname)
 	if (!new_ptr)
 		return -1;
 	DEBUGLEVEL_CLASS_ISSET = (bool *)new_ptr;
-	DEBUGLEVEL_CLASS_ISSET[ndx] = False;
+	DEBUGLEVEL_CLASS_ISSET[ndx] = false;
 
 	new_ptr = SMB_REALLOC_ARRAY(classname_table, char *, debug_num_classes + 1);
 	if (!new_ptr)
@@ -425,14 +425,14 @@ static bool debug_parse_params(char **params)
 	char *class_level;
 
 	if (!params)
-		return False;
+		return false;
 
 	/* Allow DBGC_ALL to be specified w/o requiring its class name e.g."10"  
 	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL 
 	 */
 	if (isdigit((int)params[0][0])) {
 		DEBUGLEVEL_CLASS[DBGC_ALL] = atoi(params[0]);
-		DEBUGLEVEL_CLASS_ISSET[DBGC_ALL] = True;
+		DEBUGLEVEL_CLASS_ISSET[DBGC_ALL] = true;
 		i = 1; /* start processing at the next params */
 	} else {
 		i = 0; /* DBGC_ALL not specified OR class name was included */
@@ -445,14 +445,14 @@ static bool debug_parse_params(char **params)
 			(class_level = strtok_r(NULL, "\0", &saveptr)) &&
             ((ndx = debug_lookup_classname(class_name)) != -1)) {
 				DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
-				DEBUGLEVEL_CLASS_ISSET[ndx] = True;
+				DEBUGLEVEL_CLASS_ISSET[ndx] = true;
 		} else {
 			DEBUG(0,("debug_parse_params: unrecognized debug class name or format [%s]\n", params[i]));
-			return False;
+			return false;
 		}
 	}
 
-	return True;
+	return true;
 }
 
 /****************************************************************************
@@ -473,10 +473,10 @@ bool debug_parse_levels(const char *params_str)
 	if (debug_parse_params(params)) {
 		debug_dump_status(5);
 		TALLOC_FREE(params);
-		return True;
+		return true;
 	} else {
 		TALLOC_FREE(params);
-		return False;
+		return false;
 	}
 }
 
@@ -635,7 +635,7 @@ bool reopen_logs(void)
 	mode_t oldumask;
 	int new_fd = 0;
 	int old_fd = 0;
-	bool ret = True;
+	bool ret = true;
 
 	char *fname = NULL;
 	if (state.reopening_logs) {
@@ -683,10 +683,10 @@ bool reopen_logs(void)
 	new_fd = open( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
 
 	if (new_fd == -1) {
-		log_overflow = True;
+		log_overflow = true;
 		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
-		log_overflow = False;
-		ret = False;
+		log_overflow = false;
+		ret = false;
 	} else {
 		old_fd = state.fd;
 		state.fd = new_fd;
@@ -702,7 +702,7 @@ bool reopen_logs(void)
 
 	/* Take over stderr to catch output into logs */
 	if (state.fd > 0 && dup2(state.fd, 2) == -1) {
-		close_low_fds(True); /* Close stderr too, if dup2 can't point it
+		close_low_fds(true); /* Close stderr too, if dup2 can't point it
 					at the logfile */
 	}
 
@@ -727,14 +727,14 @@ bool need_to_check_log_size( void )
 	int maxlog;
 
 	if( debug_count < 100 )
-		return( False );
+		return( false );
 
 	maxlog = lp_max_log_size() * 1024;
 	if ( state.fd > 0 || maxlog <= 0 ) {
 		debug_count = 0;
-		return(False);
+		return(false);
 	}
-	return( True );
+	return( true );
 }
 
 /**************************************************************************
@@ -996,7 +996,7 @@ void dbgflush( void )
          line  - line number of the call to dbghdr, assuming __LINE__
                  works.
 
-  Output: Always True.  This makes it easy to fudge a call to dbghdr()
+  Output: Always true.  This makes it easy to fudge a call to dbghdr()
           in a macro, since the function can be called as part of a test.
           Eg: ( (level <= DEBUGLEVEL) && (dbghdr(level,"",line)) )
 
@@ -1019,7 +1019,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		 * we'll work under the assumption that an incomplete line indicates
 		 * that a new header is *not* desired.
 		 */
-		return( True );
+		return( true );
 	}
 
 #ifdef WITH_SYSLOG
@@ -1029,7 +1029,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 
 	/* Don't print a header if we're logging to stdout. */
 	if ( state.logtype != DEBUG_FILE ) {
-		return( True );
+		return( true );
 	}
 
 	/* Print the header if timestamps are turned on.  If parameters are
@@ -1075,7 +1075,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	}
 
 	errno = old_errno;
-	return( True );
+	return( true );
 }
 
 bool dbghdr(int level, const char *location, const char *func)
@@ -1092,7 +1092,7 @@ bool dbghdr(int level, const char *location, const char *func)
 
   ..or..  va_alist    - Old style variable parameter list starting point.
 
-  Output: Always True.  See dbghdr() for more info, though this is not
+  Output: Always true.  See dbghdr() for more info, though this is not
           likely to be used in the same way.
 
 ***************************************************************************/
