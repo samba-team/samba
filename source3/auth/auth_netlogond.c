@@ -21,6 +21,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_schannel.h"
+#include "rpc_client/cli_pipe.h"
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
 #include "tldap.h"

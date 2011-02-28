@@ -22,6 +22,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../libcli/auth/schannel.h"
 #include "rpc_client/cli_netlogon.h"
+#include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
 

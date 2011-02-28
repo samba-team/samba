@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
+#include "rpc_client/cli_pipe.h"
 #include "rpc_client/cli_samr.h"
 
 /*************************************************************

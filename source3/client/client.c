@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "popt_common.h"
+#include "rpc_client/cli_pipe.h"
 #include "client/client_proto.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "../lib/util/select.h"

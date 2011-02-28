@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "torture/proto.h"
+#include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/ndr_echo_c.h"
 
 static void rpccli_sleep_done(struct tevent_req *req)

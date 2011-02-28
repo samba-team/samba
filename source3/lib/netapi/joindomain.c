@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/libnet_join.h"
 #include "libnet/libnet_join.h"
 #include "../librpc/gen_ndr/ndr_wkssvc_c.h"
+#include "rpc_client/cli_pipe.h"
 #include "secrets.h"
 
 /****************************************************************

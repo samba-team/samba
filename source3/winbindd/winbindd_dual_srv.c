@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
+#include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/srv_wbint.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "idmap.h"

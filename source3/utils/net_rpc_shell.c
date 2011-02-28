@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "utils/net.h"
+#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_net.h"

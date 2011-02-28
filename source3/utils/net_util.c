@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_dssetup_c.h"

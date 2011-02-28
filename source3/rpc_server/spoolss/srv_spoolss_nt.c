@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/srv_spoolss.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/init_spoolss.h"
+#include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"

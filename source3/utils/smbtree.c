@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "popt_common.h"
+#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 
 static int use_bcast;

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "lib/tsocket/tsocket.h"
 #include "libsmb/cli_np_tstream.h"
+#include "cli_pipe.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI

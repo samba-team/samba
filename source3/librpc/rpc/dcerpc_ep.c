@@ -21,6 +21,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_ep.h"
 #include "../librpc/gen_ndr/ndr_epmapper_c.h"
+#include "rpc_client/cli_pipe.h"
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 

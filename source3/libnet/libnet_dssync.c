@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libnet/libnet_dssync.h"
+#include "rpc_client/cli_pipe.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "../librpc/gen_ndr/ndr_drsuapi_c.h"
 

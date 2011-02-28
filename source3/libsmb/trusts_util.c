@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/cli_netlogon.h"
+#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "secrets.h"
 
