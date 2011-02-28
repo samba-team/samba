@@ -527,8 +527,8 @@ uint32 sysjob_to_jobid(int unix_jobid)
 ****************************************************************************/
 
 static const struct {
-	uint32 lpq_status;
-	uint32 spoolss_status;
+	uint32_t lpq_status;
+	uint32_t spoolss_status;
 } lpq_to_spoolss_status_map[] = {
 	{ LPQ_QUEUED, JOB_STATUS_QUEUED },
 	{ LPQ_PAUSED, JOB_STATUS_PAUSED },
@@ -541,7 +541,7 @@ static const struct {
 	{ LPQ_DELETED, JOB_STATUS_DELETED },
 	{ LPQ_BLOCKED, JOB_STATUS_BLOCKED_DEVQ },
 	{ LPQ_USER_INTERVENTION, JOB_STATUS_USER_INTERVENTION },
-	{ -1, 0 }
+	{ (uint32_t)-1, 0 }
 };
 
 /* Convert a lpq status value stored in printing.tdb into the
