@@ -73,7 +73,9 @@ def replace_refill_task_list(self):
         for f in files:
             p = root + '/' + f
             if os.path.islink(p):
-                p = os.readlink(p)
+                link = os.readlink(p)
+                if link[0:bin_base_len] == bin_base:
+                    p = link
             if f in ['config.h']:
                 continue
             if f[-2:] not in [ '.c', '.h' ]:
