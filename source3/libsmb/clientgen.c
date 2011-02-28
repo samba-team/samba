@@ -618,8 +618,8 @@ struct cli_state *cli_initialise_ex(int signing_state)
 
 #if defined(DEVELOPER)
 	/* just because we over-allocate, doesn't mean it's right to use it */
-	clobber_region(FUNCTION_MACRO, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
-	clobber_region(FUNCTION_MACRO, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
+	clobber_region(__FUNCTION__, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
+	clobber_region(__FUNCTION__, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
 #endif
 
 	/* initialise signing */

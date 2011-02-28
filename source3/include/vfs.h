@@ -471,14 +471,14 @@ typedef struct vfs_statvfs_struct {
 
 #define SMB_VFS_HANDLE_GET_DATA(handle, datap, type, ret) { \
 	if (!(handle)||((datap=(type *)(handle)->data)==NULL)) { \
-		DEBUG(0,("%s() failed to get vfs_handle->data!\n",FUNCTION_MACRO)); \
+		DEBUG(0,("%s() failed to get vfs_handle->data!\n",__FUNCTION__)); \
 		ret; \
 	} \
 }
 
 #define SMB_VFS_HANDLE_SET_DATA(handle, datap, free_fn, type, ret) { \
 	if (!(handle)) { \
-		DEBUG(0,("%s() failed to set handle->data!\n",FUNCTION_MACRO)); \
+		DEBUG(0,("%s() failed to set handle->data!\n",__FUNCTION__)); \
 		ret; \
 	} else { \
 		if ((handle)->free_data) { \
