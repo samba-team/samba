@@ -38,7 +38,7 @@ struct id {
 		uid_t uid;
 		gid_t gid;
 		struct dom_sid sid;
-	};
+	} id;
 	enum {UID, GID, SID} type;
 };
 
@@ -51,18 +51,18 @@ static bool parse_id(const char* str, struct id* id)
 	if (sscanf(str, "%cID %lu%c", &c, &ul, &trash) == 2) {
 		switch(c) {
 		case 'G':
-			id->gid = ul;
+			id->id.gid = ul;
 			id->type = GID;
 			return true;
 		case 'U':
-			id->uid = ul;
+			id->id.uid = ul;
 			id->type = UID;
 			return true;
 		default:
 			break;
 		}
 	} else if (string_to_sid(&sid, str)) {
-		id->sid = sid;
+		id->id.sid = sid;
 		id->type = SID;
 		return true;
 	}
@@ -117,11 +117,11 @@ static bool id_in_use(const struct user_struct* user, const struct id* id)
 {
 	switch(id->type) {
 	case UID:
-		return uid_in_use(user, id->uid);
+		return uid_in_use(user, id->id.uid);
 	case GID:
-		return gid_in_use(user, id->gid);
+		return gid_in_use(user, id->id.gid);
 	case SID:
-		return sid_in_use(user, &id->sid);
+		return sid_in_use(user, &id->id.sid);
 	default:
 		break;
 	}
@@ -132,16 +132,16 @@ static void delete_from_cache(const struct id* id)
 {
 	switch(id->type) {
 	case UID:
-		delete_uid_cache(id->uid);
-		idmap_cache_del_uid(id->uid);
+		delete_uid_cache(id->id.uid);
+		idmap_cache_del_uid(id->id.uid);
 		break;
 	case GID:
-		delete_gid_cache(id->gid);
-		idmap_cache_del_gid(id->gid);
+		delete_gid_cache(id->id.gid);
+		idmap_cache_del_gid(id->id.gid);
 		break;
 	case SID:
-		delete_sid_cache(&id->sid);
-		idmap_cache_del_sid(&id->sid);
+		delete_sid_cache(&id->id.sid);
+		idmap_cache_del_sid(&id->id.sid);
 		break;
 	default:
 		break;
