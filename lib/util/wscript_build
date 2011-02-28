@@ -18,7 +18,7 @@ bld.SAMBA_LIBRARY('samba-util-common',
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_LIBRARY('samba-util',
-                      source='''debug.c dprintf.c fault.c
+                      source='''debug_s4.c dprintf.c fault.c
                       ms_fnmatch.c parmlist.c substitute.c util_str.c
                       ''',
                       deps='samba-util-common',
