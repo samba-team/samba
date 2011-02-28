@@ -925,7 +925,9 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None):
                                 rule=symlink_header,
                                 source=h_name,
                                 target=target)
-
+            if not bld.env.public_headers_list:
+                bld.env.public_headers_list = []
+            bld.env.public_headers_list.append(os.path.join(inst_path, inst_name))
 
     return ret
 Build.BuildContext.PUBLIC_HEADERS = PUBLIC_HEADERS
