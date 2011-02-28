@@ -84,12 +84,15 @@ static void smb_conf_updated(struct messaging_context *msg,
 			     struct server_id server_id,
 			     DATA_BLOB *data)
 {
+	struct tevent_context *ev_ctx =
+		talloc_get_type_abort(private_data, struct tevent_context);
+
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
 	reload_services(msg, smbd_server_conn->sock, False);
 	if (am_parent) {
-		pcap_cache_reload(server_event_context(), msg,
+		pcap_cache_reload(ev_ctx, msg,
 				  &reload_pcap_change_notify);
 	}
 }
@@ -104,9 +107,12 @@ static void smb_pcap_updated(struct messaging_context *msg,
 			     struct server_id server_id,
 			     DATA_BLOB *data)
 {
+	struct tevent_context *ev_ctx =
+		talloc_get_type_abort(private_data, struct tevent_context);
+
 	DEBUG(10,("Got message saying pcap was updated. Reloading.\n"));
 	change_to_root_user();
-	reload_printers(server_event_context(), msg);
+	reload_printers(ev_ctx, msg);
 }
 
 /*******************************************************************
@@ -752,12 +758,13 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
 	messaging_register(msg_ctx, NULL, MSG_SMB_FILE_RENAME,
 			   msg_file_was_renamed);
-	messaging_register(msg_ctx, NULL, MSG_SMB_CONF_UPDATED,
+	messaging_register(msg_ctx, server_event_context(), MSG_SMB_CONF_UPDATED,
 			   smb_conf_updated);
 	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
 			   smb_stat_cache_delete);
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
-	messaging_register(msg_ctx, NULL, MSG_PRINTER_PCAP, smb_pcap_updated);
+	messaging_register(msg_ctx, server_event_context(), MSG_PRINTER_PCAP,
+			   smb_pcap_updated);
 	brl_register_msgs(msg_ctx);
 
 	msg_idmap_register_msgs(msg_ctx);
