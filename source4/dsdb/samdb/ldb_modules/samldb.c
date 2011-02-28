@@ -556,7 +556,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	int ret;
 
-	/* Add informations for the different account types */
+	/* Add information for the different account types */
 	if (strcmp(ac->type, "user") == 0) {
 		struct ldb_control *rodc_control = ldb_request_get_control(ac->req,
 									   LDB_CONTROL_RODC_DCPROMO_OID);
@@ -1074,7 +1074,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return LDB_SUCCESS;
 	}
 
-	/* Fetch informations from the existing object */
+	/* Fetch information from the existing object */
 
 	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
 				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
@@ -1467,7 +1467,7 @@ static int samldb_member_check(struct samldb_ctx *ac)
 	int cnt;
 	int ret;
 
-	/* Fetch informations from the existing object */
+	/* Fetch information from the existing object */
 
 	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
 				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
@@ -1581,7 +1581,7 @@ static int samldb_description_check(struct samldb_ctx *ac, bool *modified)
 	unsigned int i;
 	int ret;
 
-	/* Fetch informations from the existing object */
+	/* Fetch information from the existing object */
 	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
 				 DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED, ac->req,
 				 "(|(objectclass=user)(objectclass=group)(objectclass=samDomain)(objectclass=samServer))");
@@ -1717,7 +1717,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	}
 
 	if ((dns_hostname == NULL) && (sam_accountname == NULL)) {
-		/* Well, there are informations missing (old name(s)) or the
+		/* Well, there are information missing (old name(s)) or the
 		 * names didn't change. We've nothing to do and can exit here */
 		return LDB_SUCCESS;
 	}

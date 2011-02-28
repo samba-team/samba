@@ -156,7 +156,7 @@
                 could cause the helper to authenticate the
                 user). </para>
 
-		<para>Curently implemented parameters from the
+		<para>Currently implemented parameters from the
 		external program to the helper are:</para>
 		<variablelist>
 		  <varlistentry>

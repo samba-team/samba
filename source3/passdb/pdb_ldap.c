@@ -4814,7 +4814,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 			break;
 
 		default:
-			DEBUG(0,("unkown group type: %d\n", group_type));
+			DEBUG(0,("unknown group type: %d\n", group_type));
 			return False;
 	}
 
@@ -6625,7 +6625,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 			  "info, nor add one to the domain\n"));
 		DEBUGADD(2, ("pdb_init_ldapsam: Continuing on regardless, "
 			     "will be unable to allocate new users/groups, "
-			     "and will risk BDCs having inconsistant SIDs\n"));
+			     "and will risk BDCs having inconsistent SIDs\n"));
 		sid_copy(&ldap_state->domain_sid, get_global_sam_sid());
 		return NT_STATUS_OK;
 	}

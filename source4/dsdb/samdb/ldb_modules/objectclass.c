@@ -903,7 +903,7 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 	talloc_free(ares);
 
 	/* this looks up the real existing object for fetching some important
-	 * informations (objectclasses) */
+	 * information (objectclasses) */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, ac->req->op.mod.message->dn,
 				   LDB_SCOPE_BASE,
@@ -1220,7 +1220,7 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	}
 
 	/* this looks up the parent object for fetching some important
-	 * informations (objectclasses, DN normalisation...) */
+	 * information (objectclasses, DN normalisation...) */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, parent_dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
@@ -1272,7 +1272,7 @@ static int objectclass_do_rename(struct oc_context *ac)
 	ac->search_res = NULL;
 
 	/* this looks up the real existing object for fetching some important
-	 * informations (objectclasses) */
+	 * information (objectclasses) */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, ac->req->op.rename.olddn,
 				   LDB_SCOPE_BASE,
@@ -1451,7 +1451,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 	}
 
 	/* this looks up the entry object for fetching some important
-	 * informations (object classes, system flags...) */
+	 * information (object classes, system flags...) */
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, req->op.del.dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",

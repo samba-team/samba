@@ -63,7 +63,7 @@ static bool test_multibind(struct ldap_connection *conn, const char *userdn, con
 {
 	bool ret = true;
 
-	printf("Testing multiple binds on a single connnection as anonymous and user\n");
+	printf("Testing multiple binds on a single connection as anonymous and user\n");
 
 	ret = test_bind_simple(conn, NULL, NULL);
 	if (!ret) {

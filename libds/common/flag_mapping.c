@@ -152,7 +152,7 @@ enum lsa_SidType ds_atype_map(uint32_t atype)
 }
 
 /* get the default primary group RID for a given userAccountControl
- * (informations according to MS-SAMR 3.1.1.8.1) */
+ * (information according to MS-SAMR 3.1.1.8.1) */
 uint32_t ds_uf2prim_group_rid(uint32_t uf)
 {
 	uint32_t prim_group_rid = DOMAIN_RID_USERS;

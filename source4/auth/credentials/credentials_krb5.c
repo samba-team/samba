@@ -706,7 +706,7 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 
 	ret = principal_from_credentials(mem_ctx, cred, smb_krb5_context, &princ, &obtained, &error_string);
 	if (ret) {
-		DEBUG(1,("cli_credentials_get_server_gss_creds: makeing krb5 principal failed (%s)\n",
+		DEBUG(1,("cli_credentials_get_server_gss_creds: making krb5 principal failed (%s)\n",
 			 error_string));
 		talloc_free(mem_ctx);
 		return ret;

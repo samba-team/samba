@@ -123,7 +123,7 @@
 
 	<varlistentry>
 		<term>-f, --rcfile</term>
-		<listitem><para>Use specified rcfile. This will be loaded in the order it was specified - e.g. if you specify any options before this one, they might get overriden by the contents of the rcfile.</para></listitem>
+		<listitem><para>Use specified rcfile. This will be loaded in the order it was specified - e.g. if you specify any options before this one, they might get overridden by the contents of the rcfile.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>

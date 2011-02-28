@@ -77,7 +77,7 @@ static const char *cmd_spoolss_get_short_archi(const char *long_archi)
 {
         int i=-1;
 
-        DEBUG(107,("Getting architecture dependant directory\n"));
+        DEBUG(107,("Getting architecture dependent directory\n"));
         do {
                 i++;
         } while ( (archi_table[i].long_archi!=NULL ) &&
@@ -1722,7 +1722,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 
 	arch = cmd_spoolss_get_short_archi(argv[1]);
 	if (!arch) {
-		printf ("Error Unknown architechture [%s]\n", argv[1]);
+		printf ("Error Unknown architecture [%s]\n", argv[1]);
 		return WERR_INVALID_PARAM;
 	}
 

@@ -782,7 +782,7 @@ static bool torture_winbind_struct_show_sequence(struct torture_context *torture
 		uint32_t seq;
 
 		torture_assert(torture, s[i].netbios_name,
-			       "more domains recieved in second run");
+			       "more domains received in second run");
 		torture_assert_str_equal(torture, domlist[i].netbios_name,
 					 s[i].netbios_name,
 					 "inconsistent order of domain lists");

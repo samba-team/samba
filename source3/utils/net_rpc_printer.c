@@ -1333,7 +1333,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 			break;
 		default:
 			action_str = N_("unknown action");
-			printf(_("unkown action: %d\n"), action);
+			printf(_("unknown action: %d\n"), action);
 			break;
 		}
 
@@ -1498,7 +1498,7 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 				       sharename);
 				break;
 			default:
-				printf(_("unkown state: %d\n"), state);
+				printf(_("unknown state: %d\n"), state);
 				break;
 		}
 	}

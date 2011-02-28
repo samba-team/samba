@@ -557,7 +557,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 	} else {
 		DEBUG(1, ("smb_traffic_analyzer_send_data_socket: "
-			"error, unkown protocol given!\n"));
+			"error, unknown protocol given!\n"));
 		return;
 	}
 

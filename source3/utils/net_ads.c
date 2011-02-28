@@ -1830,7 +1830,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 					Undefined);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
-		d_fprintf(stderr, _("Unable to open a connnection to %s to "
+		d_fprintf(stderr, _("Unable to open a connection to %s to "
 			            "obtain data for %s\n"),
 			  servername, printername);
 		ads_destroy(&ads);
@@ -1879,7 +1879,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 
 	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_spoolss.syntax_id, &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_fprintf(stderr, _("Unable to open a connnection to the spoolss pipe on %s\n"),
+		d_fprintf(stderr, _("Unable to open a connection to the spoolss pipe on %s\n"),
 			 servername);
 		SAFE_FREE(prt_dn);
 		ads_destroy(&ads);

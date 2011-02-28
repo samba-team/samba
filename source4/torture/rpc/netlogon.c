@@ -590,7 +590,7 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	new_password.length = IVAL(password_buf.data, 512);
 
 	torture_comment(tctx, 
-		"Testing a third ServerPasswordSet2 on machine account, with a compleatly random password\n");
+		"Testing a third ServerPasswordSet2 on machine account, with a completely random password\n");
 
 	netlogon_creds_client_authenticator(creds, &credential);
 

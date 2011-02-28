@@ -1470,7 +1470,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			update_dns_hostname = false;
 		}
 
-		/* Gets host informations and put them into our directory */
+		/* Gets host information and put them into our directory */
 
 		new_msg = ldb_msg_new(mem_ctx);
 		NT_STATUS_HAVE_NO_MEMORY(new_msg);
@@ -1486,7 +1486,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		}
 
 		/*
-		 * Sets informations from "os_version". On an empty structure
+		 * Sets information from "os_version". On an empty structure
 		 * the values are cleared.
 		 */
 		if (r->in.query->workstation_info->os_version.os != NULL) {
@@ -1620,7 +1620,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			"msDS-SupportedEncryptionTypes",
 			default_supported_enc_types);
 
-		/* Other host domain informations */
+		/* Other host domain information */
 
 		lsa_policy_info = talloc(mem_ctx,
 			struct netr_LsaPolicyInformation);

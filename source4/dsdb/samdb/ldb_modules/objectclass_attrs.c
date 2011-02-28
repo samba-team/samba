@@ -299,7 +299,7 @@ static int attr_handler2(struct oc_context *ac)
 		}
 
 		/* We can use "str_list_check" with "strcmp" here since the
-		 * attribute informations from the schema are always equal
+		 * attribute information from the schema are always equal
 		 * up-down-cased. */
 		found = str_list_check(must_contain, attr->lDAPDisplayName);
 		if (found) {

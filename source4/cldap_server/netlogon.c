@@ -189,7 +189,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	}
 
         if (dom_res == NULL) {
-		DEBUG(2,(__location__ ": Unable to get domain informations with no inputs\n"));
+		DEBUG(2,(__location__ ": Unable to get domain information with no inputs\n"));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 

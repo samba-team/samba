@@ -3743,7 +3743,7 @@ WERROR _spoolss_RouterRefreshPrinterChangeNotify(struct pipes_struct *p,
 	 * 	We are now using the change value, and
 	 *	I should check for PRINTER_NOTIFY_OPTIONS_REFRESH but as
 	 *	I don't have a global notification system, I'm sending back all the
-	 *	informations even when _NOTHING_ has changed.
+	 *	information even when _NOTHING_ has changed.
 	 */
 
 	/* We need to keep track of the change value to send back in

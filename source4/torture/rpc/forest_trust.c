@@ -156,7 +156,7 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 		} else {
 			if (strcmp(info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
 				torture_comment(tctx,
-						"QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
+						"QueryTrustedDomainInfo returned inconsistent short name: %s != %s\n",
 						info->info_ex.netbios_name.string,
 						trustinfo.netbios_name.string);
 				ret = false;

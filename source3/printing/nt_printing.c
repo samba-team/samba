@@ -144,7 +144,7 @@ const char *get_short_archi(const char *long_archi)
 {
         int i=-1;
 
-        DEBUG(107,("Getting architecture dependant directory\n"));
+        DEBUG(107,("Getting architecture dependent directory\n"));
         do {
                 i++;
         } while ( (archi_table[i].long_archi!=NULL ) &&

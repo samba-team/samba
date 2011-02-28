@@ -996,7 +996,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 
 		/* This basic attribute existence check with the right errorcode
 		 * is needed since this module is the first one which requests
-		 * schema attribute informations.
+		 * schema attribute information.
 		 * The complete attribute checking is done in the
 		 * "objectclass_attrs" module behind this one.
 		 */

@@ -2021,7 +2021,7 @@ int samdb_set_password_callback(struct ldb_request *req, struct ldb_reply *ares)
  * Sets the user password using plaintext UTF16 (attribute "new_password") or
  * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
  * the old LM and/or NT hash (attributes "lmOldHash"/"ntOldHash") if it is a
- * user change or not. The "rejectReason" gives some more informations if the
+ * user change or not. The "rejectReason" gives some more information if the
  * change failed.
  *
  * Results: NT_STATUS_OK, NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
@@ -2203,7 +2203,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  * Sets the user password using plaintext UTF16 (attribute "new_password") or
  * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
  * the old LM and/or NT hash (attributes "lmOldHash"/"ntOldHash") if it is a
- * user change or not. The "rejectReason" gives some more informations if the
+ * user change or not. The "rejectReason" gives some more information if the
  * change failed.
  *
  * This wrapper function for "samdb_set_password" takes a SID as input rather
