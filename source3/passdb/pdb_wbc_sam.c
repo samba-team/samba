@@ -95,7 +95,7 @@ static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 						   struct samu *user,
 						   struct dom_sid **pp_sids,
 						   gid_t **pp_gids,
-						   size_t *p_num_groups)
+						   uint32_t *p_num_groups)
 {
 	size_t i;
 	const char *username = pdb_get_username(user);
