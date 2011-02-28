@@ -11,7 +11,7 @@ bld.SAMBA_MODULE('sys_notify_inotify',
 
 bld.SAMBA_SUBSYSTEM('sys_notify',
                     source='sys_notify.c',
-                    deps='talloc'
+                    deps='talloc tevent'
                     )
 
 

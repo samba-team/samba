@@ -2,7 +2,8 @@
 
 bld.SAMBA_SUBSYSTEM('pvfs_acl',
 	source='pvfs_acl.c',
-	autoproto='vfs_acl_proto.h'
+	autoproto='vfs_acl_proto.h',
+	deps='events',
 	)
 
 
@@ -10,7 +11,7 @@ bld.SAMBA_MODULE('pvfs_acl_xattr',
 	source='pvfs_acl_xattr.c',
 	subsystem='pvfs_acl',
 	init_function='pvfs_acl_xattr_init',
-	deps='NDR_XATTR'
+	deps='NDR_XATTR events'
 	)
 
 
@@ -18,7 +19,7 @@ bld.SAMBA_MODULE('pvfs_acl_nfs4',
 	source='pvfs_acl_nfs4.c',
 	subsystem='pvfs_acl',
 	init_function='pvfs_acl_nfs4_init',
-	deps='NDR_NFS4ACL samdb'
+	deps='NDR_NFS4ACL samdb events'
 	)
 
 
