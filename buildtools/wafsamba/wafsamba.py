@@ -726,6 +726,20 @@ def INSTALL_DIRS(bld, destdir, dirs):
 Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS
 
 
+def header_install_path(header, header_path):
+    '''find the installation path for a header, given a header_path option'''
+    if not header_path:
+        return ''
+    if not isinstance(header_path, list):
+        return header_path
+    for (p1, dir) in header_path:
+        for p2 in TO_LIST(p1):
+            if fnmatch.fnmatch(header, p2):
+                return dir
+    # default to current path
+    return ''
+
+
 re_header = re.compile('#include[ \t]*"([^"]+)"', re.I | re.M)
 class header_task(Task.Task):
     """
@@ -819,21 +833,7 @@ def make_public_headers(self):
 
     for x in self.to_list(self.headers):
 
-        # too complicated, but what was the original idea?
-        if isinstance(header_path, list):
-            add_dir = ''
-            for (p1, dir) in header_path:
-                lst = self.to_list(p1)
-                for p2 in lst:
-                    if fnmatch.fnmatch(x, p2):
-                        add_dir = dir
-                        break
-                else:
-                    continue
-                break
-            inst_path = add_dir
-        else:
-            inst_path = header_path
+        inst_path = header_install_path(x, header_path)
 
         dest = ''
         name = x
@@ -868,6 +868,20 @@ def make_public_headers(self):
         val = hash((val, k, self.bld.hnodemap[k]))
     self.bld.env.HEADER_DEPS = val
 
+
+
+def symlink_header(task):
+    '''symlink a header in the build tree'''
+    src = task.inputs[0].abspath(task.env)
+    tgt = task.outputs[0].bldpath(task.env)
+
+    if os.path.lexists(tgt):
+        if os.path.islink(tgt) and os.readlink(tgt) == src:
+            return
+        os.unlink(tgt)
+    os.symlink(src, tgt)
+
+
 def PUBLIC_HEADERS(bld, public_headers, header_path=None):
     '''install some headers
 
@@ -877,6 +891,31 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None):
     '''
     bld.SET_BUILD_GROUP('final')
     ret = bld(features=['pubh'], headers=public_headers, header_path=header_path)
+
+    if bld.env.build_public_headers:
+        # when build_public_headers is set, symlink the headers into the include/public
+        # directory
+        for h in TO_LIST(public_headers):
+            inst_path = header_install_path(h, header_path)
+            if h.find(':') != -1:
+                s = h.split(":")
+                h_name =  s[0]
+                inst_name = s[1]
+            else:
+                h_name =  h
+                inst_name = os.path.basename(h)
+            relpath1 = os_path_relpath(bld.srcnode.abspath(), bld.curdir)
+            relpath2 = os_path_relpath(bld.curdir, bld.srcnode.abspath())
+            targetdir = os.path.normpath(os.path.join(relpath1, bld.env.build_public_headers, inst_path))
+            if not os.path.exists(os.path.join(bld.curdir, targetdir)):
+                raise Utils.WafError("missing source directory %s for public header %s" % (targetdir, inst_name))
+            target = os.path.join(targetdir, inst_name)
+            bld.SAMBA_GENERATOR('HEADER_%s/%s' % (relpath2, inst_name),
+                                rule=symlink_header,
+                                source=h_name,
+                                target=target)
+
+
     return ret
 Build.BuildContext.PUBLIC_HEADERS = PUBLIC_HEADERS
 

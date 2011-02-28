@@ -17,6 +17,9 @@ bld.env.suffix3 = "3"
 bld.SETUP_BUILD_GROUPS()
 bld.AUTOCLEANUP_STALE_FILES()
 
+# enable building of public headers in the build tree
+bld.env.build_public_headers = 'include/public'
+
 samba_version.load_version(bld.env)
 bld.SAMBA_MKVERSION('version.h')
 
