@@ -137,7 +137,7 @@ def build_includes(self):
 
     includes.extend(self.samba_includes_extended)
 
-    if 'EXTRA_INCLUDES' in bld.env:
+    if 'EXTRA_INCLUDES' in bld.env and getattr(self, 'global_include', True):
         includes.extend(bld.env['EXTRA_INCLUDES'])
 
     includes.append('#')
@@ -958,7 +958,8 @@ def show_object_duplicates(bld, tgt_list):
 # this provides a way to save our dependency calculations between runs
 savedeps_version = 3
 savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags',
-                    'source', 'grouping_library', 'samba_ldflags', 'allow_undefined_symbols' ]
+                    'source', 'grouping_library', 'samba_ldflags', 'allow_undefined_symbols',
+                    'use_global_deps', 'global_include' ]
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags', 'ldflags', 'samba_deps_extended']
 savedeps_outenv  = ['INC_PATHS']
 savedeps_envvars = ['NONSHARED_BINARIES', 'GLOBAL_DEPENDENCIES', 'EXTRA_CFLAGS', 'EXTRA_LDFLAGS', 'EXTRA_INCLUDES' ]
