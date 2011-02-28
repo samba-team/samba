@@ -111,6 +111,11 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 							   struct select_event_context);
 	struct tevent_fd *fde;
 
+	if (fd < 0 || fd >= FD_SETSIZE) {
+		errno = EBADF;
+		return NULL;
+	}
+
 	fde = tevent_common_add_fd(ev, mem_ctx, fd, flags,
 				   handler, private_data,
 				   handler_name, location);
@@ -144,6 +149,11 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	/* setup any fd events */
 	for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
+		if (fde->fd < 0 || fde->fd >= FD_SETSIZE) {
+			errno = EBADF;
+			return -1;
+		}
+
 		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
