@@ -19,7 +19,7 @@
  */
 
 #include "includes.h"
-
+#include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/ndr_dfs.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
