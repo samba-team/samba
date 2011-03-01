@@ -1032,21 +1032,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	switch (transport) {
-		case NCACN_IP_TCP:
-			ncacn_conn->ep.port = port;
-			break;
-		case NCALRPC:
-		case NCACN_NP:
-			ncacn_conn->ep.name = talloc_strdup(ncacn_conn, name);
-			break;
-		default:
-			DEBUG(0, ("unknown dcerpc transport: %u!\n",
-				  transport));
-			talloc_free(ncacn_conn);
-			close(s);
-			return;
-	}
 	ncacn_conn->transport = transport;
 	ncacn_conn->syntax_id = syntax_id;
 	ncacn_conn->ev_ctx = ev_ctx;
@@ -1084,6 +1069,44 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		}
 	}
 
+	switch (transport) {
+		case NCACN_IP_TCP:
+			ncacn_conn->ep.port = port;
+
+			pipe_name = tsocket_address_string(ncacn_conn->client,
+							   ncacn_conn);
+			if (pipe_name == NULL) {
+				close(s);
+				talloc_free(ncacn_conn);
+				return;
+			}
+
+			break;
+		case NCALRPC:
+		case NCACN_NP:
+			ncacn_conn->ep.name = talloc_strdup(ncacn_conn, name);
+			if (ncacn_conn->ep.name == NULL) {
+				close(s);
+				talloc_free(ncacn_conn);
+				return;
+			}
+
+			pipe_name = talloc_strdup(ncacn_conn,
+						  name);
+			if (pipe_name == NULL) {
+				close(s);
+				talloc_free(ncacn_conn);
+				return;
+			}
+			break;
+		default:
+			DEBUG(0, ("unknown dcerpc transport: %u!\n",
+				  transport));
+			talloc_free(ncacn_conn);
+			close(s);
+			return;
+	}
+
 	rc = set_blocking(s, false);
 	if (rc < 0) {
 		DEBUG(2, ("Failed to set dcerpc socket to non-blocking\n"));
@@ -1102,20 +1125,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		talloc_free(ncacn_conn);
 		close(s);
 		return;
-	}
-
-	switch (ncacn_conn->transport) {
-		case NCACN_IP_TCP:
-			pipe_name = tsocket_address_string(ncacn_conn->client,
-							   ncacn_conn);
-			break;
-		case NCALRPC:
-			pipe_name = talloc_strdup(ncacn_conn,
-						  ncacn_conn->ep.name);
-			break;
-		default:
-			talloc_free(ncacn_conn);
-			return;
 	}
 
 	if (tsocket_address_is_inet(ncacn_conn->client, "ip")) {
