@@ -157,8 +157,6 @@ static void message_idmap_flush(struct messaging_context *msg_ctx,
 {
 	const char* msg = data ? (const char*)data->data : NULL;
 
-	DEBUG(0, ("Foo: idmap flush cache message(0x%.2x): %s\n", msg_type, msg ? msg : "<NULL>"));
-
 	if ((msg == NULL) || (msg[0] == '\0')) {
 		flush_gid_cache();
 		flush_uid_cache();
@@ -182,8 +180,6 @@ static void message_idmap_delete(struct messaging_context *msg_ctx,
 	bool do_kill = (msg_type == MSG_IDMAP_KILL);
 	struct user_struct* validated_users = smbd_server_conn->smb1.sessions.validated_users;
 	struct id id;
-
-	DEBUG(0, ("Foo: idmap delete message(0x%.2x): %s\n", msg_type, msg));
 
 	if (!parse_id(msg, &id)) {
 		DEBUG(0, ("Invalid ?ID: %s\n", msg));
