@@ -61,6 +61,14 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 	struct dsdb_schema *working_schema;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	int ret, pass_no;
+	uint32_t ignore_attids[] = {
+			DRSUAPI_ATTID_auxiliaryClass,
+			DRSUAPI_ATTID_mayContain,
+			DRSUAPI_ATTID_mustContain,
+			DRSUAPI_ATTID_possSuperiors,
+			DRSUAPI_ATTID_systemPossSuperiors,
+			DRSUAPI_ATTID_INVALID
+	};
 
 	/* make a copy of the iniatial_scheam so we don't mess with it */
 	working_schema = dsdb_schema_copy_shallow(mem_ctx, ldb, initial_schema);
@@ -111,6 +119,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 			 */
 			werr = dsdb_convert_object_ex(ldb, working_schema, pfm_remote,
 						      cur, gensec_skey,
+						      ignore_attids,
 						      tmp_ctx, &object);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
