@@ -59,6 +59,12 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 	krb5_principal principal;
 	const char *dns_name, *dnsHostName;
 
+	/* The service principal name shouldn't be NULL */
+	if (spn == NULL) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
 	/*
 	  get the objectSid of the DN that is being modified, and
 	  check it matches the user_sid in their token
