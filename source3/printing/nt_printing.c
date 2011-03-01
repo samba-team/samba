@@ -726,6 +726,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 	}
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
+		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
 	if (!NT_STATUS_IS_OK(*perr)) {
@@ -1130,6 +1131,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
+		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
 
@@ -1968,6 +1970,7 @@ bool delete_driver_files(const struct auth_serversupplied_info *session_info,
  err_out:
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
+		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
 	return ret;

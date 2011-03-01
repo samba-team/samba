@@ -2231,6 +2231,7 @@ error_exit:
 	}
 
 	if (conn) {
+		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
 
@@ -2374,6 +2375,7 @@ error_exit:
 	}
 
 	if (conn) {
+		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
 
