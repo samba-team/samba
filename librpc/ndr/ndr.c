@@ -1117,7 +1117,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, co
 
 		relative_offset = ndr->offset - ndr->relative_base_offset;
 
-		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+		if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
+			align = 1;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 			align = 2;
 		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
 			align = 4;
@@ -1196,7 +1198,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 	/* the reversed offset is at the end of the main buffer */
 	correct_offset = ndr->relative_end_offset - len;
 
-	if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+	if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
+		align = 1;
+	} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 		align = 2;
 	} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
 		align = 4;
