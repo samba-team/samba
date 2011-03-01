@@ -292,7 +292,7 @@ static bool idmap_cache_del_xid(char t, int xid)
 	bool ret = true;
 
 	if (!gencache_get(key, &sid_str, &timeout)) {
-		DEBUG(0, ("no entry: %s\n", key));
+		DEBUG(3, ("no entry: %s\n", key));
 		ret = false; //???
 		goto done;
 	}
@@ -300,19 +300,19 @@ static bool idmap_cache_del_xid(char t, int xid)
 	if (sid_str[0] != '-') {
 		const char* sid_key = key_sid2xid_str(mem_ctx, t, sid_str);
 		if (!gencache_del(sid_key)) {
-			DEBUG(0, ("failed to delete: %s\n", sid_key));
+			DEBUG(2, ("failed to delete: %s\n", sid_key));
 			ret = false;
 		} else {
-			DEBUG(0, ("delete: %s\n", sid_key));
+			DEBUG(5, ("delete: %s\n", sid_key));
 		}
 
 	}
 
 	if (!gencache_del(key)) {
-		DEBUG(0, ("failed to delete: %s\n", key));
+		DEBUG(1, ("failed to delete: %s\n", key));
 		ret = false;
 	} else {
-		DEBUG(0, ("delete: %s\n", key));
+		DEBUG(5, ("delete: %s\n", key));
 	}
 
 done:
@@ -343,18 +343,18 @@ static bool idmap_cache_del_sid2xid(TALLOC_CTX* mem_ctx, char t, const char* sid
 	if (atoi(xid_str) != -1) {
 		const char* xid_key = key_xid2sid_str(mem_ctx, t, xid_str);
 		if (!gencache_del(xid_key)) {
-			DEBUG(0, ("failed to delete: %s\n", xid_key));
+			DEBUG(2, ("failed to delete: %s\n", xid_key));
 			ret = false;
 		} else {
-			DEBUG(0, ("delete: %s\n", xid_key));
+			DEBUG(5, ("delete: %s\n", xid_key));
 		}
 	}
 
 	if (!gencache_del(sid_key)) {
-		DEBUG(0, ("failed to delete: %s\n", sid_key));
+		DEBUG(2, ("failed to delete: %s\n", sid_key));
 		ret = false;
 	} else {
-		DEBUG(0, ("delete: %s\n", sid_key));
+		DEBUG(5, ("delete: %s\n", sid_key));
 	}
 done:
 	return ret;
@@ -369,7 +369,7 @@ bool idmap_cache_del_sid(const struct dom_sid *sid)
 	if (!idmap_cache_del_sid2xid(mem_ctx, 'U', sid_str) &&
 	    !idmap_cache_del_sid2xid(mem_ctx, 'G', sid_str))
 	{
-		DEBUG(0, ("no entry: %s\n", key_xid2sid_str(mem_ctx, '?', sid_str)));
+		DEBUG(3, ("no entry: %s\n", key_xid2sid_str(mem_ctx, '?', sid_str)));
 		ret = false;
 	}
 
