@@ -257,13 +257,14 @@ static int kcctpl_sort_bridgeheads(const void *bridgehead1,
 				   const void *bridgehead2)
 {
 	const struct ldb_message *bh1, *bh2;
-	uint64_t bh1_opts, bh2_opts, cmp_gc;
+	uint32_t bh1_opts, bh2_opts;
+	int cmp_gc;
 
 	bh1 = (const struct ldb_message *) bridgehead1;
 	bh2 = (const struct ldb_message *) bridgehead2;
 
-	bh1_opts = ldb_msg_find_attr_as_int64(bh1, "options", 0);
-	bh2_opts = ldb_msg_find_attr_as_int64(bh2, "options", 0);
+	bh1_opts = ldb_msg_find_attr_as_uint(bh1, "options", 0);
+	bh2_opts = ldb_msg_find_attr_as_uint(bh2, "options", 0);
 
 	cmp_gc = (bh1_opts & NTDSDSA_OPT_IS_GC) -
 		 (bh2_opts & NTDSDSA_OPT_IS_GC);
@@ -619,7 +620,7 @@ static NTSTATUS kcctpl_create_edge(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	edge->repl_info.cost = ldb_msg_find_attr_as_int64(site_link, "cost", 0);
-	edge->repl_info.options = ldb_msg_find_attr_as_int64(site_link, "options", 0);
+	edge->repl_info.options = ldb_msg_find_attr_as_uint(site_link, "options", 0);
 	edge->repl_info.interval = ldb_msg_find_attr_as_int64(site_link,
 						      "replInterval", 0);
 	/* TODO: edge->repl_info.schedule = site_link!schedule */
@@ -795,7 +796,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	unsigned int i;
 	NTSTATUS status;
 	struct ldb_message *site;
-	uint64_t site_opts;
+	uint32_t site_opts;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -850,7 +851,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	site_opts = ldb_msg_find_attr_as_int64(site, "options", 0);
+	site_opts = ldb_msg_find_attr_as_uint(site, "options", 0);
 
 	transports_dn = kcctpl_transports_dn(ldb, tmp_ctx);
 	if (!transports_dn) {
@@ -878,7 +879,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		struct ldb_result *res_site_link;
 		struct GUID transport_guid;
 		unsigned int j;
-		uint64_t transport_opts;
+		uint32_t transport_opts;
 
 		transport = res->msgs[i];
 
@@ -918,7 +919,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			graph->edges.count++;
 		}
 
-		transport_opts = ldb_msg_find_attr_as_int64(transport, "options", 0);
+		transport_opts = ldb_msg_find_attr_as_uint(transport, "options", 0);
 		if (!(transport_opts & NTDSTRANSPORT_OPT_BRIDGES_REQUIRED) &&
 		    !(site_opts & NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED)) {
 			struct kcctpl_multi_edge_set *edge_set, *new_data;
@@ -1008,7 +1009,7 @@ static NTSTATUS kcctpl_bridgehead_dc_failed(struct ldb_context *ldb,
 	const char * const attrs[] = { "options", NULL };
 	int ret;
 	struct ldb_message *settings;
-	uint64_t settings_opts;
+	uint32_t settings_opts;
 	bool failed;
 
 	tmp_ctx = talloc_new(ldb);
@@ -1040,7 +1041,7 @@ static NTSTATUS kcctpl_bridgehead_dc_failed(struct ldb_context *ldb,
 
 	settings = res->msgs[0];
 
-	settings_opts = ldb_msg_find_attr_as_int64(settings, "options", 0);
+	settings_opts = ldb_msg_find_attr_as_uint(settings, "options", 0);
 	if (settings_opts & NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED) {
 		failed = false;
 	} else if (true) { /* TODO: how to get kCCFailedLinks and
@@ -1078,7 +1079,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 	struct ldb_message_element *el;
 	unsigned int i;
 	const char *transport_name, *transport_address_attr;
-	uint64_t site_opts;
+	uint32_t site_opts;
 
 	ZERO_STRUCT(bridgeheads);
 
@@ -1176,7 +1177,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	site_opts = ldb_msg_find_attr_as_int64(site, "options", 0);
+	site_opts = ldb_msg_find_attr_as_uint(site, "options", 0);
 
 	for (i = 0; i < res->count; i++) {
 		struct ldb_message *dc, *new_data;
@@ -2869,13 +2870,13 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 						    parent_dn) &&
 		    kcctpl_message_list_contains_dn(r_bridgeheads_all,
 						    from_server)) {
-			uint64_t conn_opts;
+			uint32_t conn_opts;
 			/* TODO: initialize conn_schedule from connection */
 			uint8_t conn_schedule[84];
 			struct ldb_dn *conn_transport_type;
 
-			conn_opts = ldb_msg_find_attr_as_int64(connection,
-						       "options", 0);
+			conn_opts = ldb_msg_find_attr_as_uint(connection,
+							      "options", 0);
 
 			conn_transport_type = samdb_result_dn(service->samdb, tmp_ctx,
 							      connection,
@@ -2982,11 +2983,11 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 						    parent_dn) &&
 		    kcctpl_message_list_contains_dn(r_bridgeheads_all,
 						    from_server)) {
-			uint64_t conn_opts;
+			uint32_t conn_opts;
 			struct ldb_dn *conn_transport_type;
 
-			conn_opts = ldb_msg_find_attr_as_int64(connection,
-						       "options", 0);
+			conn_opts = ldb_msg_find_attr_as_uint(connection,
+							      "options", 0);
 
 			conn_transport_type = samdb_result_dn(service->samdb, tmp_ctx,
 							      connection,

@@ -1862,7 +1862,8 @@ failed:
 bool samdb_is_gc(struct ldb_context *ldb)
 {
 	const char *attrs[] = { "options", NULL };
-	int ret, options;
+	uint32_t options;
+	int ret;
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx;
 
@@ -1883,7 +1884,7 @@ bool samdb_is_gc(struct ldb_context *ldb)
 		return false;
 	}
 
-	options = ldb_msg_find_attr_as_int(res->msgs[0], "options", 0);
+	options = ldb_msg_find_attr_as_uint(res->msgs[0], "options", 0);
 	talloc_free(tmp_ctx);
 
 	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */

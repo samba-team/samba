@@ -702,7 +702,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 						 LDB_SCOPE_BASE, attrs_ntds, "objectClass=nTDSDSA");
 			if (ret == LDB_SUCCESS && res_ntds->count == 1) {
 				ctr2->array[i].is_gc
-					= (ldb_msg_find_attr_as_int(res_ntds->msgs[0], "options", 0) == 1);
+					= (ldb_msg_find_attr_as_uint(res_ntds->msgs[0], "options", 0) == 1);
 				ctr2->array[i].ntds_guid 
 					= samdb_result_guid(res_ntds->msgs[0], "objectGUID");
 				ctr2->array[i].ntds_dn = ldb_dn_get_linearized(res_ntds->msgs[0]->dn);
