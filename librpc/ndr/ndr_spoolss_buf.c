@@ -480,13 +480,16 @@ enum ndr_err_code ndr_push_spoolss_EnumPrinterDataEx(struct ndr_push *ndr, int f
 		_r.out.result	= r->out.result;
 		_r.out.info 	= data_blob(NULL, 0);
 		if (r->in.offered >= *r->out.needed) {
+			struct ndr_push *_subndr_info;
 			struct __spoolss_EnumPrinterDataEx __r;
 			_ndr_info = ndr_push_init_ctx(ndr);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_info);
 			_ndr_info->flags= ndr->flags;
 			__r.in.count	= *r->out.count;
 			__r.out.info	= *r->out.info;
-			NDR_CHECK(ndr_push___spoolss_EnumPrinterDataEx(_ndr_info, flags, &__r));
+			NDR_CHECK(ndr_push_subcontext_start(_ndr_info, &_subndr_info, 0, r->in.offered));
+			NDR_CHECK(ndr_push___spoolss_EnumPrinterDataEx(_subndr_info, flags, &__r));
+			NDR_CHECK(ndr_push_subcontext_end(_ndr_info, _subndr_info, 0, r->in.offered));
 			if (r->in.offered > _ndr_info->offset) {
 				uint32_t _padding_len = r->in.offered - _ndr_info->offset;
 				NDR_CHECK(ndr_push_zero(_ndr_info, _padding_len));
