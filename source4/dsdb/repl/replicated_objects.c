@@ -163,11 +163,26 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+static bool dsdb_attid_in_list(const uint32_t attid_list[], uint32_t attid)
+{
+	const uint32_t *cur;
+	if (!attid_list) {
+		return false;
+	}
+	for (cur = attid_list; *cur != DRSUAPI_ATTID_INVALID; cur++) {
+		if (*cur == attid) {
+			return true;
+		}
+	}
+	return false;
+}
+
 WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			      const struct dsdb_schema *schema,
 			      const struct dsdb_schema_prefixmap *pfm_remote,
 			      const struct drsuapi_DsReplicaObjectListItemEx *in,
 			      const DATA_BLOB *gensec_skey,
+			      const uint32_t *ignore_attids,
 			      TALLOC_CTX *mem_ctx,
 			      struct dsdb_extended_replicated_object *out)
 {
@@ -189,6 +204,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	struct replPropertyMetaData1 *rdn_m = NULL;
 	struct dom_sid *sid = NULL;
 	uint32_t rid = 0;
+	uint32_t attr_count;
 	int ret;
 
 	if (!in->object.identifier) {
@@ -243,7 +259,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 					       md->ctr.ctr1.count + 1); /* +1 because of the RDN attribute */
 	W_ERROR_HAVE_NO_MEMORY(md->ctr.ctr1.array);
 
-	for (i=0; i < in->meta_data_ctr->count; i++) {
+	for (i=0, attr_count=0; i < in->meta_data_ctr->count; i++, attr_count++) {
 		struct drsuapi_DsReplicaAttribute *a;
 		struct drsuapi_DsReplicaMetaData *d;
 		struct replPropertyMetaData1 *m;
@@ -252,8 +268,13 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 		a = &in->object.attribute_ctr.attributes[i];
 		d = &in->meta_data_ctr->meta_data[i];
-		m = &md->ctr.ctr1.array[i];
-		e = &msg->elements[i];
+		m = &md->ctr.ctr1.array[attr_count];
+		e = &msg->elements[attr_count];
+
+		if (dsdb_attid_in_list(ignore_attids, a->attid)) {
+			attr_count--;
+			continue;
+		}
 
 		for (j=0; j<a->value_ctr.num_values; j++) {
 			status = drsuapi_decrypt_attribute(a->value_ctr.values[j].blob, gensec_skey, rid, a);
@@ -278,8 +299,13 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		if (a->attid == DRSUAPI_ATTID_name) {
 			name_a = a;
 			name_d = d;
-			rdn_m = &md->ctr.ctr1.array[md->ctr.ctr1.count];
 		}
+	}
+
+	msg->num_elements = attr_count;
+	md->ctr.ctr1.count = attr_count;
+	if (name_a) {
+		rdn_m = &md->ctr.ctr1.array[md->ctr.ctr1.count];
 	}
 
 	if (rdn_m) {
@@ -412,6 +438,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 
 		status = dsdb_convert_object_ex(ldb, schema, pfm_remote,
 						cur, gensec_skey,
+						NULL,
 						out->objects, &out->objects[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			talloc_free(out);
