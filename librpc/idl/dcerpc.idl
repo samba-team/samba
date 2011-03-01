@@ -179,7 +179,8 @@ interface dcerpc
 		DCERPC_AUTH_TYPE_MSN      = 18,
 		DCERPC_AUTH_TYPE_DIGEST   = 21,
 		DCERPC_AUTH_TYPE_SCHANNEL = 68,
-		DCERPC_AUTH_TYPE_MSMQ     = 100
+		DCERPC_AUTH_TYPE_MSMQ     = 100,
+		DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM = 200
 	} dcerpc_AuthType;
 
 	typedef [enum8bit] enum {

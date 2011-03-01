@@ -1194,6 +1194,12 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		}
 		break;
 
+	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
+		auth_token = data_blob_talloc(mem_ctx,
+					      "NCALRPC_AUTH_TOKEN",
+					      18);
+		break;
+
 	case DCERPC_AUTH_TYPE_NONE:
 		break;
 
@@ -1721,6 +1727,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	switch(pauth->auth_type) {
 
 	case DCERPC_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
 		tevent_req_done(req);
@@ -1759,6 +1766,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	switch(pauth->auth_type) {
 
 	case DCERPC_AUTH_TYPE_NONE:
+	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
 		tevent_req_done(req);
@@ -2241,6 +2249,30 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 	}
 	E_md4hash(cli->password ? cli->password : "", nt_hash);
 	return true;
+}
+
+NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
+				  struct pipe_auth_data **presult)
+{
+	struct pipe_auth_data *result;
+
+	result = talloc(mem_ctx, struct pipe_auth_data);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->auth_type = DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM;
+	result->auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	result->user_name = talloc_strdup(result, "");
+	result->domain = talloc_strdup(result, "");
+	if ((result->user_name == NULL) || (result->domain == NULL)) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
@@ -3259,6 +3291,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		sk = gse_get_session_key(mem_ctx, gse_ctx);
 		make_dup = false;
 		break;
+	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 	case DCERPC_AUTH_TYPE_NONE:
 		sk = data_blob_const(a->user_session_key.data,
 				     a->user_session_key.length);
