@@ -940,8 +940,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 }
 
 WERROR move_driver_to_download_area(struct pipes_struct *p,
-				    struct spoolss_AddDriverInfoCtr *r,
-				    WERROR *perr)
+				    struct spoolss_AddDriverInfoCtr *r)
 {
 	struct spoolss_AddDriverInfo3 *driver;
 	struct spoolss_AddDriverInfo3 converted_driver;
@@ -956,8 +955,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	char *oldcwd;
 	char *printdollar = NULL;
 	int printdollar_snum;
-
-	*perr = WERR_OK;
+	WERROR err = WERR_OK;
 
 	switch (r->level) {
 	case 3:
@@ -979,11 +977,9 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	printdollar_snum = find_service(ctx, "print$", &printdollar);
 	if (!printdollar) {
-		*perr = WERR_NOMEM;
 		return WERR_NOMEM;
 	}
 	if (printdollar_snum == -1) {
-		*perr = WERR_NO_SUCH_SHARE;
 		return WERR_NO_SUCH_SHARE;
 	}
 
@@ -993,8 +989,8 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
-		*perr = ntstatus_to_werror(nt_status);
-		return *perr;
+		err = ntstatus_to_werror(nt_status);
+		return err;
 	}
 
 	new_dir = talloc_asprintf(ctx,
@@ -1002,18 +998,25 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 				short_architecture,
 				driver->version);
 	if (!new_dir) {
-		*perr = WERR_NOMEM;
+		err = WERR_NOMEM;
 		goto err_exit;
 	}
 	nt_status = driver_unix_convert(conn, new_dir, &smb_dname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		*perr = WERR_NOMEM;
+		err = WERR_NOMEM;
 		goto err_exit;
 	}
 
 	DEBUG(5,("Creating first directory: %s\n", smb_dname->base_name));
 
-	create_directory(conn, NULL, smb_dname);
+	nt_status = create_directory(conn, NULL, smb_dname);
+	if (!NT_STATUS_IS_OK(nt_status)
+	 && !NT_STATUS_EQUAL(nt_status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		DEBUG(0, ("failed to create driver destination directory: %s\n",
+			  nt_errstr(nt_status)));
+		err = ntstatus_to_werror(nt_status);
+		goto err_exit;
+	}
 
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
 	 * listed for this driver which has already been moved, skip it (note:
@@ -1036,16 +1039,13 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	if (driver->driver_path && strlen(driver->driver_path)) {
 
-		*perr = move_driver_file_to_download_area(ctx,
-							  conn,
-							  driver->driver_path,
-							  short_architecture,
-							  driver->version,
-							  ver);
-		if (!W_ERROR_IS_OK(*perr)) {
-			if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
-				ver = -1;
-			}
+		err = move_driver_file_to_download_area(ctx,
+							conn,
+							driver->driver_path,
+							short_architecture,
+							driver->version,
+							ver);
+		if (!W_ERROR_IS_OK(err)) {
 			goto err_exit;
 		}
 	}
@@ -1053,16 +1053,13 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	if (driver->data_file && strlen(driver->data_file)) {
 		if (!strequal(driver->data_file, driver->driver_path)) {
 
-			*perr = move_driver_file_to_download_area(ctx,
-								  conn,
-								  driver->data_file,
-								  short_architecture,
-								  driver->version,
-								  ver);
-			if (!W_ERROR_IS_OK(*perr)) {
-				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
-					ver = -1;
-				}
+			err = move_driver_file_to_download_area(ctx,
+								conn,
+								driver->data_file,
+								short_architecture,
+								driver->version,
+								ver);
+			if (!W_ERROR_IS_OK(err)) {
 				goto err_exit;
 			}
 		}
@@ -1072,16 +1069,13 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		if (!strequal(driver->config_file, driver->driver_path) &&
 		    !strequal(driver->config_file, driver->data_file)) {
 
-			*perr = move_driver_file_to_download_area(ctx,
-								  conn,
-								  driver->config_file,
-								  short_architecture,
-								  driver->version,
-								  ver);
-			if (!W_ERROR_IS_OK(*perr)) {
-				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
-					ver = -1;
-				}
+			err = move_driver_file_to_download_area(ctx,
+								conn,
+								driver->config_file,
+								short_architecture,
+								driver->version,
+								ver);
+			if (!W_ERROR_IS_OK(err)) {
 				goto err_exit;
 			}
 		}
@@ -1092,16 +1086,13 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		    !strequal(driver->help_file, driver->data_file) &&
 		    !strequal(driver->help_file, driver->config_file)) {
 
-			*perr = move_driver_file_to_download_area(ctx,
-								  conn,
-								  driver->help_file,
-								  short_architecture,
-								  driver->version,
-								  ver);
-			if (!W_ERROR_IS_OK(*perr)) {
-				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
-					ver = -1;
-				}
+			err = move_driver_file_to_download_area(ctx,
+								conn,
+								driver->help_file,
+								short_architecture,
+								driver->version,
+								ver);
+			if (!W_ERROR_IS_OK(err)) {
 				goto err_exit;
 			}
 		}
@@ -1120,16 +1111,13 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 					}
 				}
 
-				*perr = move_driver_file_to_download_area(ctx,
-									  conn,
-									  driver->dependent_files->string[i],
-									  short_architecture,
-									  driver->version,
-									  ver);
-				if (!W_ERROR_IS_OK(*perr)) {
-					if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
-						ver = -1;
-					}
+				err = move_driver_file_to_download_area(ctx,
+									conn,
+									driver->dependent_files->string[i],
+									short_architecture,
+									driver->version,
+									ver);
+				if (!W_ERROR_IS_OK(err)) {
 					goto err_exit;
 				}
 			}
@@ -1137,6 +1125,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		}
 	}
 
+	err = WERR_OK;
   err_exit:
 	TALLOC_FREE(smb_dname);
 
@@ -1145,13 +1134,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		conn_free(conn);
 	}
 
-	if (W_ERROR_EQUAL(*perr, WERR_OK)) {
-		return WERR_OK;
-	}
-	if (ver == -1) {
-		return WERR_UNKNOWN_PRINTER_DRIVER;
-	}
-	return (*perr);
+	return err;
 }
 
 /****************************************************************************

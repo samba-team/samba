@@ -8001,8 +8001,8 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(p, r->in.info_ctr,
-							      &err)) ) {
+	err = move_driver_to_download_area(p, r->in.info_ctr);
+	if (!W_ERROR_IS_OK(err)) {
 		goto done;
 	}
 

@@ -170,8 +170,7 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 			 const struct spoolss_DriverInfo8 *r);
 
 WERROR move_driver_to_download_area(struct pipes_struct *p,
-				    struct spoolss_AddDriverInfoCtr *r,
-				    WERROR *perr);
+				    struct spoolss_AddDriverInfoCtr *r);
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 			      struct pipes_struct *rpc_pipe,
