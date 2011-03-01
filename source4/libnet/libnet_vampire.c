@@ -246,6 +246,14 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	int ret, pass_no;
 	bool ok;
 	uint64_t seq_num;
+	uint32_t ignore_attids[] = {
+			DRSUAPI_ATTID_auxiliaryClass,
+			DRSUAPI_ATTID_mayContain,
+			DRSUAPI_ATTID_mustContain,
+			DRSUAPI_ATTID_possSuperiors,
+			DRSUAPI_ATTID_systemPossSuperiors,
+			DRSUAPI_ATTID_INVALID
+	};
 
 	DEBUG(0,("Analyze and apply schema objects\n"));
 
@@ -349,6 +357,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 			 */
 			status = dsdb_convert_object_ex(s->ldb, working_schema, pfm_remote,
 							cur, c->gensec_skey,
+							ignore_attids,
 							tmp_ctx, &object);
 			if (!W_ERROR_IS_OK(status)) {
 				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
