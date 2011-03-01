@@ -70,6 +70,7 @@ struct ctdb_recoverd {
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
 #define MONITOR_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_interval, 0)
 
+static void ctdb_restart_recd(struct event_context *ev, struct timed_event *te, struct timeval t, void *private_data);
 
 /*
   ban a node for a period of time
@@ -3521,18 +3522,12 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 
 	if (kill(ctdb->recoverd_pid, 0) != 0) {
-		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Shutting down main daemon\n", (int)ctdb->recoverd_pid));
+		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Trying to restart recovery daemon.\n", (int)ctdb->recoverd_pid));
 
-		ctdb_stop_recoverd(ctdb);
-		ctdb_stop_keepalive(ctdb);
-		ctdb_stop_monitoring(ctdb);
-		ctdb_release_all_ips(ctdb);
-		if (ctdb->methods != NULL) {
-			ctdb->methods->shutdown(ctdb);
-		}
-		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
+		event_add_timed(ctdb->ev, ctdb, timeval_zero(), 
+				ctdb_restart_recd, ctdb);
 
-		exit(10);	
+		return;
 	}
 
 	event_add_timed(ctdb->ev, ctdb, 
@@ -3633,4 +3628,14 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb)
 
 	DEBUG(DEBUG_NOTICE,("Shutting down recovery daemon\n"));
 	kill(ctdb->recoverd_pid, SIGTERM);
+}
+
+static void ctdb_restart_recd(struct event_context *ev, struct timed_event *te, 
+		       struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+
+	DEBUG(DEBUG_ERR,("Restarting recovery daemon\n"));
+	ctdb_stop_recoverd(ctdb);
+	ctdb_start_recoverd(ctdb);
 }
