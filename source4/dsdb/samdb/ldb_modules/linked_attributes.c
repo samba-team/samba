@@ -975,6 +975,13 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 		ret_el->values[0] = data_blob_string_const(ldb_dn_get_extended_linearized(new_msg, ac->del_dn, 1));
 	}
 
+	/* a backlink should never be single valued. Unfortunately the
+	   exchange schema has a attribute
+	   msExchBridgeheadedLocalConnectorsDNBL which is single
+	   valued and a backlink. We need to cope with that by
+	   ignoring the single value flag */
+	ret_el->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
+
 #if 0
 	ldb_debug(ldb, LDB_DEBUG_WARNING,
 		  "link on %s %s: %s %s\n",
