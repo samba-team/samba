@@ -1012,8 +1012,11 @@ _PUBLIC_ void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_
 _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flags, DATA_BLOB blob)
 {
 	if (ndr->flags & LIBNDR_FLAG_REMAINING) {
+		/* nothing to do */
 	} else if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
-		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+		if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
+			blob.length = 0;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 			blob.length = NDR_ALIGN(ndr, 2);
 		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
 			blob.length = NDR_ALIGN(ndr, 4);
@@ -1022,7 +1025,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flag
 		}
 		NDR_PUSH_ALLOC_SIZE(ndr, blob.data, blob.length);
 		data_blob_clear(&blob);
-	} else if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
+	} else {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.length));
 	}
 	NDR_CHECK(ndr_push_bytes(ndr, blob.data, blob.length));
@@ -1039,7 +1042,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flag
 	if (ndr->flags & LIBNDR_FLAG_REMAINING) {
 		length = ndr->data_size - ndr->offset;
 	} else if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
-		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+		if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
+			length = 0;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 			length = NDR_ALIGN(ndr, 2);
 		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
 			length = NDR_ALIGN(ndr, 4);
