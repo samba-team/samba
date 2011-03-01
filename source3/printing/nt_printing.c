@@ -579,13 +579,12 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 				   const char *driverpath_in,
 				   WERROR *perr)
 {
-	int               cversion;
+	int cversion = -1;
 	NTSTATUS          nt_status;
 	struct smb_filename *smb_fname = NULL;
 	char *driverpath = NULL;
 	files_struct      *fsp = NULL;
 	connection_struct *conn = NULL;
-	NTSTATUS status;
 	char *oldcwd;
 	char *printdollar = NULL;
 	int printdollar_snum;
@@ -650,7 +649,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	status = SMB_VFS_CREATE_FILE(
+	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
@@ -668,7 +667,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		&fsp,					/* result */
 		NULL);					/* pinfo */
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = "
 			 "%d\n", smb_fname_str_dbg(smb_fname), errno));
 		*perr = WERR_ACCESS_DENIED;
@@ -679,12 +678,14 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		int    ret;
 
 		ret = get_file_version(fsp, smb_fname->base_name, &major, &minor);
-		if (ret == -1) goto error_exit;
-
-		if (!ret) {
+		if (ret == -1) {
+			*perr = WERR_INVALID_PARAM;
+			goto error_exit;
+		} else if (!ret) {
 			DEBUG(6,("get_correct_cversion: Version info not "
 				 "found [%s]\n",
 				 smb_fname_str_dbg(smb_fname)));
+			*perr = WERR_INVALID_PARAM;
 			goto error_exit;
 		}
 
@@ -716,12 +717,9 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 		  smb_fname_str_dbg(smb_fname), cversion));
-
-	goto done;
+	*perr = WERR_OK;
 
  error_exit:
-	cversion = -1;
- done:
 	TALLOC_FREE(smb_fname);
 	if (fsp != NULL) {
 		close_file(NULL, fsp, NORMAL_CLOSE);
@@ -730,9 +728,10 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		vfs_ChDir(conn, oldcwd);
 		conn_free(conn);
 	}
-	if (cversion != -1) {
-		*perr = WERR_OK;
+	if (!NT_STATUS_IS_OK(*perr)) {
+		cversion = -1;
 	}
+
 	return cversion;
 }
 
@@ -1908,7 +1907,8 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 
 	if ( !CAN_WRITE(conn) ) {
 		DEBUG(3,("delete_driver_files: Cannot delete print driver when [print$] is read-only\n"));
-		goto fail;
+		ret = false;
+		goto err_out;
 	}
 
 	/* now delete the files; must strip the '\print$' string from
@@ -1964,10 +1964,8 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 		}
 	}
 
-	goto done;
- fail:
-	ret = false;
- done:
+	ret = true;
+ err_out:
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
 		conn_free(conn);
