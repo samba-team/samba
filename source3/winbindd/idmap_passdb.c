@@ -29,7 +29,7 @@
  Initialise idmap database. 
 *****************************/
 
-static NTSTATUS idmap_pdb_init(struct idmap_domain *dom, const char *params)
+static NTSTATUS idmap_pdb_init(struct idmap_domain *dom)
 {	
 	return NT_STATUS_OK;
 }

@@ -431,8 +431,7 @@ static int idmap_ldap_close_destructor(struct idmap_ldap_context *ctx)
 static NTSTATUS idmap_ldap_set_mapping(struct idmap_domain *dom,
 				       const struct id_map *map);
 
-static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
-				   const char *params)
+static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_ldap_context *ctx = NULL;

@@ -104,8 +104,7 @@ static void separate_hashes(uint32_t id,
 /*********************************************************************
  ********************************************************************/
 
-static NTSTATUS be_init(struct idmap_domain *dom,
-			const char *params)
+static NTSTATUS be_init(struct idmap_domain *dom)
 {
 	struct sid_hash_table *hashed_domains;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -172,7 +171,7 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 		ids[i]->status = ID_UNKNOWN;
 	}
 
-	nt_status = be_init(dom, NULL);
+	nt_status = be_init(dom);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	if (!ids) {
@@ -222,7 +221,7 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 		ids[i]->status = ID_UNKNOWN;
 	}
 
-	nt_status = be_init(dom, NULL);
+	nt_status = be_init(dom);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	if (!ids) {
@@ -260,7 +259,7 @@ done:
 
 static NTSTATUS nss_hash_init(struct nss_domain_entry *e )
 {
-	return be_init(NULL, NULL);
+	return be_init(NULL);
 }
 
 /**********************************************************************
