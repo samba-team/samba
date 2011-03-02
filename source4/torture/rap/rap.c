@@ -1529,6 +1529,86 @@ static bool test_netservergetinfo(struct torture_context *tctx,
 	return res;
 }
 
+static enum ndr_err_code ndr_pull_rap_NetSessionEnum_data(struct ndr_pull *ndr, struct rap_NetSessionEnum *r)
+{
+	uint32_t cntr_info_0;
+	TALLOC_CTX *_mem_save_info_0;
+
+	NDR_PULL_ALLOC_N(ndr, r->out.info, r->out.count);
+	_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+	NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+		NDR_CHECK(ndr_pull_rap_session_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
+	}
+	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_rap_session_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+	}
+	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
+
+	return NDR_ERR_SUCCESS;
+}
+
+
+static NTSTATUS smbcli_rap_netsessionenum(struct smbcli_tree *tree,
+					  TALLOC_CTX *mem_ctx,
+					  struct rap_NetSessionEnum *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	int i;
+
+	call = new_rap_cli_call(tree, RAP_WsessionEnum);
+
+	if (call == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_rcvbuf(call, r->in.bufsize);
+	rap_cli_expect_multiple_entries(call);
+
+	switch(r->in.level) {
+	case 2:
+		rap_cli_expect_format(call, "zzWWWDDDz");
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetSessionEnum, r);
+	}
+
+	result = rap_cli_do_call(tree, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
+
+	call->ndr_pull_data->relative_rap_convert = r->out.convert;
+
+	NDR_GOTO(ndr_pull_rap_NetSessionEnum_data(call->ndr_pull_data, r));
+
+	r->out.info = talloc_steal(mem_ctx, r->out.info);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetSessionEnum, r);
+	}
+
+	result = NT_STATUS_OK;
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
 bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 {
 	int callno;
