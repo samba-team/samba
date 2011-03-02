@@ -513,9 +513,10 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 		goto done;
 	}
 
-	/* set the destructor on the context, so that resource are properly
-	   freed if the contexts is released */
-
+	/*
+	 * Set the destructor on the context, so that resources are
+	 * properly freed when the context is released.
+	 */
 	talloc_set_destructor(ctx, idmap_ldap_close_destructor);
 
 	dom->private_data = ctx;
