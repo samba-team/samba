@@ -795,6 +795,8 @@ static const nt_err_code_struct nt_err_desc[] =
 	{ N_("Duplicate name on network"), 		NT_STATUS_DUPLICATE_NAME },
 	{ N_("Print queue is full"), 		NT_STATUS_PRINT_QUEUE_FULL },
 	{ N_("No print spool space available"), 	NT_STATUS_NO_SPOOL_SPACE },
+	{ N_("The network name cannot be found"),   NT_STATUS_BAD_NETWORK_NAME },
+	{ N_("The connection was refused"),         NT_STATUS_CONNECTION_REFUSED },
 	{ N_("Too many names"), 			NT_STATUS_TOO_MANY_NAMES },
 	{ N_("Too many sessions"), 			NT_STATUS_TOO_MANY_SESSIONS },
 	{ N_("Invalid server state"), 		NT_STATUS_INVALID_SERVER_STATE },
@@ -835,6 +837,7 @@ static const nt_err_code_struct nt_err_desc[] =
 	{ N_("Insufficient logon information"), 	NT_STATUS_INSUFFICIENT_LOGON_INFO },
 
 	{ N_("License quota exceeded"), 		NT_STATUS_LICENSE_QUOTA_EXCEEDED },
+	{ N_("No more files"),			STATUS_NO_MORE_FILES },
 
 	{ NULL, NT_STATUS(0) }
 };
