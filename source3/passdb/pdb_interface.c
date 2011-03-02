@@ -26,6 +26,7 @@
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
 #include "../libcli/security/security.h"
+#include "../lib/util/util_pw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

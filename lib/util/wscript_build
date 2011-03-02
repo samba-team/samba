@@ -86,3 +86,8 @@ bld.SAMBA_SUBSYSTEM('UTIL_RUNCMD',
 	public_deps='tevent'
 	)
 
+bld.SAMBA_SUBSYSTEM('UTIL_PW',
+	source='util_pw.c',
+	local_include=False,
+	public_deps='talloc'
+	)

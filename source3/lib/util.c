@@ -25,6 +25,7 @@
 #include "popt_common.h"
 #include "secrets.h"
 #include "ctdbd_conn.h"
+#include "../lib/util/util_pw.h"
 
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)

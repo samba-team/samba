@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../lib/util/util_pw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA

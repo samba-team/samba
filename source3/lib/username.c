@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "memcache.h"
+#include "../lib/util/util_pw.h"
 
 /* internal functions */
 static struct passwd *uname_string_combinations(char *s, TALLOC_CTX *mem_ctx,
