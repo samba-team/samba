@@ -800,7 +800,7 @@ enum SyncStateEnum
 
 union netr_ChangeLogObject {
 	struct dom_sid object_sid;/* [case(NETR_CHANGELOG_SID_INCLUDED)] */
-	const char * object_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(NETR_CHANGELOG_NAME_INCLUDED)] */
+	const char * object_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2),case(NETR_CHANGELOG_NAME_INCLUDED)] */
 }/* [nodiscriminant] */;
 
 struct netr_ChangeLogEntry {
@@ -931,7 +931,7 @@ struct netr_OsVersionInfoEx {
 	uint32_t MinorVersion;
 	uint32_t BuildNumber;
 	uint32_t PlatformId;
-	const char * CSDVersion;/* [subcontext_size(256),subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * CSDVersion;/* [subcontext_size(256),subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint16_t ServicePackMajor;
 	uint16_t ServicePackMinor;
 	uint16_t SuiteMask;

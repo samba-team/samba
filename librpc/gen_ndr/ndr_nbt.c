@@ -1749,19 +1749,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_NT40(struct ndr_
 			NDR_CHECK(ndr_push_netlogon_command(ndr, NDR_SCALARS, r->command));
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->server));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->user_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain));
 				ndr->flags = _flags_save_string;
 			}
@@ -1787,19 +1787,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_NT40(struct ndr_
 			NDR_CHECK(ndr_pull_netlogon_command(ndr, NDR_SCALARS, &r->command));
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->server));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->user_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain));
 				ndr->flags = _flags_save_string;
 			}
@@ -1844,19 +1844,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE(struct ndr_push 
 			NDR_CHECK(ndr_push_netlogon_command(ndr, NDR_SCALARS, r->command));
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->pdc_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->user_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_name));
 				ndr->flags = _flags_save_string;
 			}
@@ -1889,19 +1889,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE(struct ndr_pull 
 			NDR_CHECK(ndr_pull_netlogon_command(ndr, NDR_SCALARS, &r->command));
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->pdc_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->user_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_name));
 				ndr->flags = _flags_save_string;
 			}
@@ -2082,7 +2082,7 @@ static enum ndr_err_code ndr_push_nbt_netlogon_query_for_pdc(struct ndr_push *nd
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->unicode_name));
 			ndr->flags = _flags_save_string;
 		}
@@ -2120,7 +2120,7 @@ static enum ndr_err_code ndr_pull_nbt_netlogon_query_for_pdc(struct ndr_pull *nd
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->unicode_name));
 			ndr->flags = _flags_save_string;
 		}
@@ -2170,13 +2170,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_netlogon_response_from_pdc(struct ndr_pu
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->unicode_pdc_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->domain_name));
 				ndr->flags = _flags_save_string;
 			}
@@ -2214,13 +2214,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_netlogon_response_from_pdc(struct ndr_pu
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->unicode_pdc_name));
 				ndr->flags = _flags_save_string;
 			}
 			{
 				uint32_t _flags_save_string = ndr->flags;
-				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->domain_name));
 				ndr->flags = _flags_save_string;
 			}
@@ -2323,13 +2323,13 @@ static enum ndr_err_code ndr_push_NETLOGON_DB_CHANGE(struct ndr_push *ndr, int n
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->unicode_pdc_name));
 			ndr->flags = _flags_save_string;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->unicode_domain));
 			ndr->flags = _flags_save_string;
 		}
@@ -2383,13 +2383,13 @@ static enum ndr_err_code ndr_pull_NETLOGON_DB_CHANGE(struct ndr_pull *ndr, int n
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->unicode_pdc_name));
 			ndr->flags = _flags_save_string;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->unicode_domain));
 			ndr->flags = _flags_save_string;
 		}

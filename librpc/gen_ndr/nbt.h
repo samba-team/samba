@@ -456,8 +456,8 @@ enum netlogon_command
 
 struct NETLOGON_SAM_LOGON_REQUEST {
 	uint16_t request_count;
-	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t acct_control;
 	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
@@ -470,9 +470,9 @@ struct NETLOGON_SAM_LOGON_REQUEST {
 
 struct NETLOGON_SAM_LOGON_RESPONSE_NT40 {
 	enum netlogon_command command;
-	const char * server;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * server;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
@@ -480,9 +480,9 @@ struct NETLOGON_SAM_LOGON_RESPONSE_NT40 {
 
 struct NETLOGON_SAM_LOGON_RESPONSE {
 	enum netlogon_command command;
-	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * user_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	struct GUID domain_uuid;
 	struct GUID zero_uuid;
 	const char * forest;
@@ -520,7 +520,7 @@ struct nbt_netlogon_query_for_pdc {
 	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * mailslot_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN2)] */
-	const char * unicode_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * unicode_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
@@ -530,8 +530,8 @@ struct nbt_netlogon_response_from_pdc {
 	enum netlogon_command command;
 	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN2)] */
-	const char * unicode_pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * unicode_pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * domain_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t nt_version;
 	uint16_t lmnt_token;
 	uint16_t lm20_token;
@@ -551,8 +551,8 @@ struct NETLOGON_DB_CHANGE {
 	const char * pdc_name;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * domain;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	DATA_BLOB _pad;/* [flag(LIBNDR_FLAG_ALIGN2)] */
-	const char * unicode_pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * unicode_domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * unicode_pdc_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * unicode_domain;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t db_count;
 	struct nbt_db_change_info *dbchange;
 	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */

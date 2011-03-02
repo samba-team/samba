@@ -638,14 +638,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2OtherInfo(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo2OtherInfo(r, ndr->iconv_convenience, ndr->flags)));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dns_name1));
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dns_name2));
 			ndr->flags = _flags_save_string;
 		}
@@ -656,7 +656,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2OtherInfo(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->dns_name1) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->dns_name1));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dns_name1));
@@ -666,7 +666,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo2OtherInfo(struct ndr_push *ndr, i
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->dns_name2) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->dns_name2));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dns_name2));
@@ -692,7 +692,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__ndr_size));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dns_name1));
 			if (_ptr_dns_name1) {
 				NDR_PULL_ALLOC(ndr, r->dns_name1);
@@ -705,7 +705,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dns_name2));
 			if (_ptr_dns_name2) {
 				NDR_PULL_ALLOC(ndr, r->dns_name2);
@@ -722,7 +722,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->dns_name1) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;
@@ -737,7 +737,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_repsFromTo2OtherInfo(struct ndr_pull *ndr, i
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->dns_name2) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;

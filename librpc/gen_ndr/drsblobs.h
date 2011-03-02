@@ -84,9 +84,9 @@ struct repsFromTo1 {
 
 struct repsFromTo2OtherInfo {
 	uint32_t __ndr_size;/* [value(ndr_size_repsFromTo2OtherInfo(this,ndr->iconv_convenience,ndr->flags))] */
-	const char * dns_name1;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * dns_name1;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t unknown1;
-	const char * dns_name2;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * dns_name2;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint64_t unknown2;
 }/* [relative_base,gensize,public] */;
 

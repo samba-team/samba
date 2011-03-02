@@ -84,10 +84,10 @@ enum winreg_Type
 ;
 
 union winreg_Data {
-	const char * string;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_SZ)] */
+	const char * string;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2),case(REG_SZ)] */
 	DATA_BLOB binary;/* [flag(LIBNDR_FLAG_REMAINING),case(REG_BINARY)] */
 	uint32_t value;/* [case(REG_DWORD)] */
-	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_MULTI_SZ)] */
+	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2),case(REG_MULTI_SZ)] */
 	DATA_BLOB data;/* [flag(LIBNDR_FLAG_REMAINING),default] */
 }/* [public,nodiscriminant,flag(LIBNDR_FLAG_LITTLE_ENDIAN)] */;
 

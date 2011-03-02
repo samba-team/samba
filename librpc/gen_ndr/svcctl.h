@@ -87,8 +87,8 @@ struct SERVICE_STATUS_PROCESS {
 }/* [public] */;
 
 struct ENUM_SERVICE_STATUSW {
-	const char * service_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * service_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	struct SERVICE_STATUS status;
 }/* [gensize,public] */;
 
@@ -246,7 +246,7 @@ enum svcctl_ConfigLevel
 ;
 
 struct SERVICE_DESCRIPTION {
-	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 }/* [gensize,public] */;
 
 enum SC_ACTION_TYPE
@@ -273,8 +273,8 @@ struct SC_ACTION {
 
 struct SERVICE_FAILURE_ACTIONS {
 	uint32_t reset_period;
-	const char * rebootmsg;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * command;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * rebootmsg;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * command;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t num_actions;/* [range(0,1024)] */
 	struct SC_ACTION *actions;/* [relative,size_is(num_actions)] */
 }/* [gensize,public] */;
