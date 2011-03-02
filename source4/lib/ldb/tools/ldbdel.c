@@ -113,7 +113,7 @@ int main(int argc, const char **argv)
 		dn = ldb_dn_new(ldb, ldb, options->argv[i]);
 		if ( ! ldb_dn_validate(dn)) {
 			printf("Invalid DN format\n");
-			return LDB_ERR_OPERATIONS_ERROR;
+			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 		if (options->recursive) {
 			ret = ldb_delete_recursive(ldb, dn,req_ctrls);

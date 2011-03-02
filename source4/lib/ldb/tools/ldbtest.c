@@ -264,8 +264,8 @@ static void start_test(struct ldb_context *ldb, unsigned int nrecords,
 
 	basedn = ldb_dn_new(ldb, ldb, options->basedn);
 	if ( ! ldb_dn_validate(basedn)) {
-		printf("Invalid base DN\n");
-		exit(LDB_ERR_OPERATIONS_ERROR);
+		printf("Invalid base DN format\n");
+		exit(LDB_ERR_INVALID_DN_SYNTAX);
 	}
 
 	printf("Adding %d records\n", nrecords);

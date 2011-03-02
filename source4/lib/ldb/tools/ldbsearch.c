@@ -299,7 +299,7 @@ int main(int argc, const char **argv)
 		basedn = ldb_dn_new(ldb, ldb, options->basedn);
 		if ( ! ldb_dn_validate(basedn)) {
 			fprintf(stderr, "Invalid Base DN format\n");
-			return LDB_ERR_OPERATIONS_ERROR;
+			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 	}
 
