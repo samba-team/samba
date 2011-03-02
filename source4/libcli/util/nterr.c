@@ -1,18 +1,18 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Luke Kenneth Casson Leighton 1997-2001.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -802,7 +802,7 @@ static const nt_err_code_struct nt_err_desc[] =
 	{ "Logon session collision", 		NT_STATUS_LOGON_SESSION_COLLISION },
 	{ "Invalid logon type", 		NT_STATUS_INVALID_LOGON_TYPE },
 	{ "Cancelled", 				NT_STATUS_CANCELLED },
-	{ "Invalid computer name", 		NT_STATUS_INVALID_COMPUTER_NAME },	
+	{ "Invalid computer name", 		NT_STATUS_INVALID_COMPUTER_NAME },
 	{ "Logon server conflict", 		NT_STATUS_LOGON_SERVER_CONFLICT },
 	{ "Time difference at domain controller", NT_STATUS_TIME_DIFFERENCE_AT_DC },
 	{ "Pipe broken", 			NT_STATUS_PIPE_BROKEN },
@@ -828,7 +828,7 @@ static const nt_err_code_struct nt_err_desc[] =
 	{ "User session deleted", 		NT_STATUS_USER_SESSION_DELETED },
 	{ "Insufficient server resources", 	NT_STATUS_INSUFF_SERVER_RESOURCES },
 	{ "Insufficient logon information", 	NT_STATUS_INSUFFICIENT_LOGON_INFO },
-	
+
 	{ "License quota exceeded", 		NT_STATUS_LICENSE_QUOTA_EXCEEDED },
 
 	{ NULL, NT_STATUS(0) }
@@ -843,7 +843,7 @@ const char *nt_errstr(NTSTATUS nt_code)
         int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
                     NT_STATUS_V(nt_code)) {
                         return nt_errs[idx].nt_errstr;
 		}
@@ -873,7 +873,7 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 		}
 		idx++;
 	}
-	
+
 	/* fall back to NT_STATUS_XXX string */
 	return nt_errstr(nt_code);
 }
@@ -887,7 +887,7 @@ const char *get_nt_error_c_code(NTSTATUS nt_code)
         int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
                     NT_STATUS_V(nt_code)) {
                         return nt_errs[idx].nt_errstr;
 		}
