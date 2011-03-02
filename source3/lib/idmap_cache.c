@@ -293,7 +293,7 @@ static bool idmap_cache_del_xid(char t, int xid)
 
 	if (!gencache_get(key, &sid_str, &timeout)) {
 		DEBUG(3, ("no entry: %s\n", key));
-		ret = false; //???
+		ret = false;
 		goto done;
 	}
 
