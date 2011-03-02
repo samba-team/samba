@@ -699,7 +699,8 @@ const char *nt_errstr(NTSTATUS nt_code)
 	}
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if (NT_STATUS_EQUAL(nt_errs[idx].nt_errcode, nt_code)) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
+		    NT_STATUS_V(nt_code)) {
 			return nt_errs[idx].nt_errstr;
 		}
 		idx++;
