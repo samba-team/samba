@@ -35,8 +35,7 @@ struct idmap_rid_context {
   we support multiple domains in the new idmap
  *****************************************************************************/
 
-static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom,
-				     const char *params)
+static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_rid_context *ctx;

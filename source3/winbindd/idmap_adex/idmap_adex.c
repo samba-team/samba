@@ -42,8 +42,7 @@ NTSTATUS init_module(void);
  it will be dropped from the idmap backend list.
  *******************************************************************/
 
-static NTSTATUS _idmap_adex_init(struct idmap_domain *dom,
-				     const char *params)
+static NTSTATUS _idmap_adex_init(struct idmap_domain *dom)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
@@ -168,7 +167,7 @@ static NTSTATUS _idmap_adex_get_sid_from_id(struct
 		ids[i]->status = ID_UNKNOWN;
 	}
 	
-	nt_status = _idmap_adex_init(dom, NULL);
+	nt_status = _idmap_adex_init(dom);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -221,7 +220,7 @@ static NTSTATUS _idmap_adex_get_id_from_sid(struct
 		ids[i]->status = ID_UNKNOWN;
 	}
 	
-	nt_status = _idmap_adex_init(dom, NULL);
+	nt_status = _idmap_adex_init(dom);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -264,7 +263,7 @@ static NTSTATUS _idmap_adex_get_id_from_sid(struct
 static NTSTATUS _nss_adex_init(struct nss_domain_entry
 				  *e)
 {
-	return _idmap_adex_init(NULL, NULL);
+	return _idmap_adex_init(NULL);
 }
 
 /**********************************************************************
@@ -281,7 +280,7 @@ static NTSTATUS _nss_adex_get_info(struct
 	NTSTATUS nt_status;
         struct likewise_cell *cell;
 
-	nt_status = _idmap_adex_init(NULL, NULL);
+	nt_status = _idmap_adex_init(NULL);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -303,7 +302,7 @@ static NTSTATUS _nss_adex_map_to_alias(TALLOC_CTX * mem_ctx,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
         struct likewise_cell *cell = NULL;
 
-	nt_status = _idmap_adex_init(NULL, NULL);
+	nt_status = _idmap_adex_init(NULL);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	if ((cell = cell_list_head()) == NULL) {
@@ -334,7 +333,7 @@ static NTSTATUS _nss_adex_map_from_alias(TALLOC_CTX * mem_ctx,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
         struct likewise_cell *cell = NULL;
 
-	nt_status = _idmap_adex_init(NULL, NULL);
+	nt_status = _idmap_adex_init(NULL);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	if ((cell = cell_list_head()) == NULL) {

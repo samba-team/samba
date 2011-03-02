@@ -427,8 +427,7 @@ static NTSTATUS idmap_autorid_saveconfig(struct autorid_global_config *cfg)
 	return status;
 }
 
-static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom,
-					 const char *params)
+static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 {
 	struct autorid_global_config *config;
 	struct autorid_global_config *storedconfig = NULL;

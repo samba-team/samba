@@ -486,7 +486,7 @@ static NTSTATUS idmap_tdb_get_new_id(struct idmap_domain *dom,
 static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom,
 				      const struct id_map *map);
 
-static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom, const char *params)
+static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_tdb_context *ctx;

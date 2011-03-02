@@ -282,7 +282,7 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	status = result->methods->init(result, params);
+	status = result->methods->init(result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("idmap initialization returned %s\n",
 			  nt_errstr(status)));

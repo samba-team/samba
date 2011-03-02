@@ -45,7 +45,7 @@ struct idmap_domain {
 struct idmap_methods {
 
 	/* Called when backend is first loaded */
-	NTSTATUS (*init)(struct idmap_domain *dom, const char *params);
+	NTSTATUS (*init)(struct idmap_domain *dom);
 
 	/* Map an array of uids/gids to SIDs.  The caller specifies
 	   the uid/gid and type. Gets back the SID. */

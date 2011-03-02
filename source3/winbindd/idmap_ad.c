@@ -210,8 +210,7 @@ static int idmap_ad_context_destructor(struct idmap_ad_context *ctx)
 /************************************************************************
  ***********************************************************************/
 
-static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom,
-				    const char *params)
+static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 {
 	struct idmap_ad_context *ctx;
 	char *config_option;

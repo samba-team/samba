@@ -273,8 +273,7 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom,
 /*
   Initialise idmap database. 
 */
-static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom,
-				   const char *params)
+static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_tdb2_context *ctx;
