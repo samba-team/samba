@@ -114,72 +114,27 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 
 #ifdef HAVE_NS_API_H
 
-/* Use our own create socket code so we don't recurse.... */
-
-static int wins_lookup_open_socket_in(void)
-{
-	struct sockaddr_in sock;
-	int val=1;
-	int res;
-
-	memset((char *)&sock,'\0',sizeof(sock));
-
-#ifdef HAVE_SOCK_SIN_LEN
-	sock.sin_len = sizeof(sock);
-#endif
-	sock.sin_port = 0;
-	sock.sin_family = AF_INET;
-	sock.sin_addr.s_addr = interpret_addr("0.0.0.0");
-	res = socket(AF_INET, SOCK_DGRAM, 0);
-	if (res == -1)
-		return -1;
-
-	if (setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val)) != 0) {
-		close(res);
-		return -1;
-	}
-#ifdef SO_REUSEPORT
-	if (setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) != 0) {
-		close(res);
-		return -1;
-	}
-#endif /* SO_REUSEPORT */
-
-	/* now we've got a socket - we need to bind it */
-
-	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) {
-		close(res);
-		return(-1);
-	}
-
-	set_socket_options(res,"SO_BROADCAST");
-
-	return res;
-}
-
 static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 {
-	int fd;
 	struct sockaddr_storage ss;
 	struct nmb_name nname;
-	struct node_status *status;
+	struct node_status *result;
+	NTSTATUS status;
 
 	if (!initialised) {
 		nss_wins_init();
 	}
 
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1)
-		return NULL;
-
 	make_nmb_name(&nname, "*", 0);
 	if (!interpret_string_addr(&ss, addr, AI_NUMERICHOST)) {
 		return NULL;
 	}
-	status = node_status_query(fd, &nname, &ss, count, NULL);
+	status = node_status_query(NULL, &nname, &ss, &result, count, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
 
-	close(fd);
-	return status;
+	return result;
 }
 
 /* IRIX version */
@@ -229,7 +184,7 @@ int lookup(nsd_file_t *rq)
 		if ( status = lookup_byaddr_backend(key, &count)) {
 		    size = strlen(key) + 1;
 		    if (size > len) {
-			free(status);
+			talloc_free(status);
 			return NSD_ERROR;
 		    }
 		    len -= size;
@@ -241,7 +196,7 @@ int lookup(nsd_file_t *rq)
 			if (status[i].type == 0x20) {
 				size = sizeof(status[i].name) + 1;
 				if (size > len) {
-				    free(status);
+				    talloc_free(status);
 				    return NSD_ERROR;
 				}
 				len -= size;
@@ -251,7 +206,7 @@ int lookup(nsd_file_t *rq)
 			}
 		    }
 		    response[strlen(response)-1] = '\n';
-		    free(status);
+		    talloc_free(status);
 		}
 	} else if (StrCaseCmp(map,"hosts.byname") == 0) {
 	    if (ip_list = lookup_byname_backend(key, &count)) {
