@@ -134,6 +134,8 @@ struct pipes_struct {
 
 	struct pipe_auth_data auth;
 
+	bool system_user;
+
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */

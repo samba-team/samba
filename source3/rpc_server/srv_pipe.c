@@ -987,6 +987,9 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 			break;
+		case DCERPC_AUTH_LEVEL_NONE:
+			p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
+			break;
 		default:
 			DEBUG(0, ("Unexpected auth level (%u).\n",
 				(unsigned int)auth_info.auth_level ));
@@ -1019,6 +1022,25 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		case DCERPC_AUTH_TYPE_KRB5:
 			if (!pipe_gssapi_auth_bind(p, pkt,
 						&auth_info, &auth_resp)) {
+				goto err_exit;
+			}
+			break;
+
+		case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
+			if (p->transport == NCALRPC && p->system_user) {
+				status = make_session_info_system(p,
+								  &p->session_info);
+				if (!NT_STATUS_IS_OK(status)) {
+					goto err_exit;
+				}
+
+				auth_resp = data_blob_talloc(pkt,
+							     "NCALRPC_AUTH_OK",
+							     15);
+
+				p->auth.auth_type = DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM;
+				p->pipe_bound = true;
+			} else {
 				goto err_exit;
 			}
 			break;

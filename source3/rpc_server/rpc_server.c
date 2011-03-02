@@ -77,6 +77,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    const char *pipe_name,
 				    const struct ndr_syntax_id id,
 				    enum dcerpc_transport_t transport,
+				    bool system_user,
 				    const char *client_address,
 				    const char *server_address,
 				    struct auth_session_info_transport *session_info,
@@ -96,6 +97,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	}
 	p->syntax = id;
 	p->transport = transport;
+	p->system_user = system_user;
 
 	p->mem_ctx = talloc_named(p, 0, "pipe %s %p", pipe_name, p);
 	if (!p->mem_ctx) {
@@ -466,7 +468,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 
 	ret = make_server_pipes_struct(npc,
 					npc->pipe_name, npc->pipe_id, NCACN_NP,
-					cli_addr, NULL, npc->session_info,
+					false, cli_addr, NULL, npc->session_info,
 					&npc->p, &error);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to create pipes_struct! (%s)\n",
@@ -1018,9 +1020,11 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	struct tevent_req *subreq;
 	const char *cli_str;
 	const char *srv_str = NULL;
+	bool system_user = false;
 	char *pipe_name;
 	NTSTATUS status;
 	int sys_errno;
+	uid_t uid;
 	int rc;
 
 	DEBUG(10, ("dcerpc_ncacn_accept\n"));
@@ -1083,6 +1087,14 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 			break;
 		case NCALRPC:
+			rc = sys_getpeereid(s, &uid);
+			if (rc < 0) {
+				DEBUG(2, ("Failed to get ncalrpc connecting uid!"));
+			} else {
+				if (uid == sec_initial_uid()) {
+					system_user = true;
+				}
+			}
 		case NCACN_NP:
 			ncacn_conn->ep.name = talloc_strdup(ncacn_conn, name);
 			if (ncacn_conn->ep.name == NULL) {
@@ -1157,6 +1169,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				      pipe_name,
 				      ncacn_conn->syntax_id,
 				      ncacn_conn->transport,
+				      system_user,
 				      cli_str,
 				      srv_str,
 				      ncacn_conn->session_info,
@@ -1211,6 +1224,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	status = dcerpc_read_ncacn_packet_recv(subreq, ncacn_conn, &pkt, &recv_buffer);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Failed to receive ncacn packet!\n"));
 		goto fail;
 	}
 
@@ -1250,6 +1264,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 		ncacn_conn->iov = talloc_zero(ncacn_conn, struct iovec);
 		if (ncacn_conn->iov == NULL) {
 			status = NT_STATUS_NO_MEMORY;
+			DEBUG(3, ("Out of memory!\n"));
 			goto fail;
 		}
 		ncacn_conn->count = 1;
@@ -1278,6 +1293,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 						 struct iovec,
 						 ncacn_conn->count + 1);
 		if (ncacn_conn->iov == NULL) {
+			DEBUG(3, ("Out of memory!\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
