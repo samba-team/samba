@@ -565,7 +565,7 @@ static const nt_err_code_struct nt_errs[] =
 
 /* These need sorting..... */
 
-nt_err_code_struct nt_err_desc[] =
+static const nt_err_code_struct nt_err_desc[] =
 {
 	{ N_("Success"), 				NT_STATUS_OK },
 	{ N_("Undetermined error"), 		NT_STATUS_UNSUCCESSFUL },
