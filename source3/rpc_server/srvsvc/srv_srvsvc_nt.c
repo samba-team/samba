@@ -30,6 +30,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "dbwrap.h"
 #include "session.h"
+#include "../lib/util/util_pw.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

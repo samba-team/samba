@@ -3,7 +3,12 @@
 
    Safe versions of getpw* calls
 
+   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison  1998-2005
    Copyright (C) Andrew Bartlett 2002
+   Copyright (C) Timur Bakeyev        2005
+   Copyright (C) Bjoern Jacke    2006-2007
+
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +25,51 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
+#include "lib/util/util_pw.h"
+
+/**************************************************************************
+ Wrappers for setpwent(), getpwent() and endpwent()
+****************************************************************************/
+
+void sys_setpwent(void)
+{
+	setpwent();
+}
+
+struct passwd *sys_getpwent(void)
+{
+	return getpwent();
+}
+
+void sys_endpwent(void)
+{
+	endpwent();
+}
+
+/**************************************************************************
+ Wrappers for getpwnam(), getpwuid(), getgrnam(), getgrgid()
+****************************************************************************/
+
+struct passwd *sys_getpwnam(const char *name)
+{
+	return getpwnam(name);
+}
+
+struct passwd *sys_getpwuid(uid_t uid)
+{
+	return getpwuid(uid);
+}
+
+struct group *sys_getgrnam(const char *name)
+{
+	return getgrnam(name);
+}
+
+struct group *sys_getgrgid(gid_t gid)
+{
+	return getgrgid(gid);
+}
 
 static struct passwd *alloc_copy_passwd(TALLOC_CTX *mem_ctx, 
 					const struct passwd *from) 

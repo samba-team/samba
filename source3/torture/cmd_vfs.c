@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "vfstest.h"
+#include "../lib/util/util_pw.h"
 
 static const char *null_string = "";
 

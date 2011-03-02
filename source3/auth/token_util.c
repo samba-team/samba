@@ -29,6 +29,7 @@
 #include "memcache.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
+#include "../lib/util/util_pw.h"
 
 /****************************************************************************
  Check for a SID in an struct security_token

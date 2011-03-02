@@ -773,7 +773,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 samba-util3 CHARSET3 UTIL_TDB SAMBA_VERSION krb5 flag_mapping util_reg',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 samba-util3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg',
                    private_library=True,
                    vars=locals())
 
