@@ -178,18 +178,6 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 #undef HAVE_LDAP
 #endif
 
-#if HAVE_GSSAPI_GSSAPI_H
-#include <gssapi/gssapi.h>
-#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
-#include <gssapi/gssapi_generic.h>
-#elif HAVE_GSSAPI_H
-#include <gssapi.h>
-#endif
-
-#if HAVE_COM_ERR_H
-#include <com_err.h>
-#endif
-
 #if HAVE_SYS_ATTRIBUTES_H
 #include <sys/attributes.h>
 #endif

@@ -22,6 +22,14 @@
 #include "includes.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
+#if HAVE_GSSAPI_GSSAPI_H
+#include <gssapi/gssapi.h>
+#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
+#include <gssapi/gssapi_generic.h>
+#elif HAVE_GSSAPI_H
+#include <gssapi.h>
+#endif
+
 /* This map was extracted by the ERRMAPEXTRACT smbtorture command. 
    The setup was a Samba HEAD (2002-01-03) PDC and an Win2k member 
    workstation.  The PDC was modified (by using the 'name_to_nt_status'
