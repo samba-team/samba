@@ -40,7 +40,7 @@ static struct passwd *alloc_copy_passwd(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name) 
+struct passwd *_getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 {
 	struct passwd *temp;
 
@@ -58,7 +58,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 	return alloc_copy_passwd(mem_ctx, temp);
 }
 
-struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) 
+struct passwd *_getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
 {
 	struct passwd *temp;
 
