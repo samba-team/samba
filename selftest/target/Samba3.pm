@@ -594,6 +594,7 @@ sub provision($$$$$$)
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
 
+	ncalrpc dir = $lockdir/ncalrpc
 	rpc_server:epmapper = embedded
 
 	# Begin extra options
