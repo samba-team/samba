@@ -30,7 +30,7 @@ static struct passwd *uname_string_combinations2(char *s, TALLOC_CTX *mem_ctx, i
 						 struct passwd * (*fn) (TALLOC_CTX *mem_ctx, const char *),
 						 int N);
 
-static struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
+static struct passwd *getpwnam_alloc_cached(TALLOC_CTX *mem_ctx, const char *name)
 {
 	struct passwd *pw, *for_cache;
 
@@ -147,7 +147,7 @@ static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
 	   common case on UNIX systems */
 	strlower_m(user2);
 	DEBUG(5,("Trying _Get_Pwnam(), username as lowercase is %s\n",user2));
-	ret = getpwnam_alloc(mem_ctx, user2);
+	ret = getpwnam_alloc_cached(mem_ctx, user2);
 	if(ret)
 		goto done;
 
@@ -155,7 +155,7 @@ static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",
 			 user));
-		ret = getpwnam_alloc(mem_ctx, user);
+		ret = getpwnam_alloc_cached(mem_ctx, user);
 		if(ret)
 			goto done;
 	}
@@ -165,7 +165,7 @@ static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n",
 			 user2));
-		ret = getpwnam_alloc(mem_ctx, user2);
+		ret = getpwnam_alloc_cached(mem_ctx, user2);
 		if(ret)
 			goto done;
 	}
@@ -174,7 +174,7 @@ static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
 	strlower_m(user2);
 	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n",
 		 lp_usernamelevel(), user2));
-	ret = uname_string_combinations(user2, mem_ctx, getpwnam_alloc,
+	ret = uname_string_combinations(user2, mem_ctx, getpwnam_alloc_cached,
 					lp_usernamelevel());
 
 done:
