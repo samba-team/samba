@@ -421,7 +421,9 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* get copy of parent DN */
 	parent_dn = ldb_dn_get_parent(ac, ac->req->op.add.message->dn);
 	if (parent_dn == NULL) {
-		return ldb_operr(ldb);
+		/* the DN itself might be wrong - therefore
+		 * "ERR_INVALID_DN_SYNTAX" fits better here. */
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	ret = ldb_build_search_req(&search_req, ldb,
