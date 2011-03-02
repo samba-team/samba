@@ -28,6 +28,7 @@
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
 				      uint16_t port,
+				      const char *ncalrpc,
 				      struct dcerpc_binding_vector **pbvec)
 {
 	struct dcerpc_binding_vector *bvec;
@@ -95,7 +96,20 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 
 				break;
 			case NCALRPC:
-				/* TODO */
+				if (ncalrpc == NULL) {
+					talloc_free(b);
+					continue;
+				}
+
+				b->endpoint = talloc_asprintf(b,
+							      "%s/%s",
+							      lp_ncalrpc_dir(),
+							      ncalrpc);
+				if (b->endpoint == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto done;
+				}
+				break;
 			default:
 				talloc_free(b);
 				continue;
