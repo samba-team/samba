@@ -98,7 +98,6 @@ int main(int argc, const char **argv)
 
 	if (options->argc < 1) {
 		usage(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
