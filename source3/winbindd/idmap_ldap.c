@@ -461,21 +461,15 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 		}
 	}
 
-	if (params != NULL) {
-		/* assume location is the only parameter */
-		ctx->url = talloc_strdup(ctx, params);
-	} else {
-		tmp = lp_parm_const_string(-1, config_option, "ldap_url", NULL);
+	tmp = lp_parm_const_string(-1, config_option, "ldap_url", NULL);
 
-		if ( ! tmp) {
-			DEBUG(1, ("ERROR: missing idmap ldap url\n"));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-
-		ctx->url = talloc_strdup(ctx, tmp);
+	if ( ! tmp) {
+		DEBUG(1, ("ERROR: missing idmap ldap url\n"));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
-	CHECK_ALLOC_DONE(ctx->url);
+
+	ctx->url = talloc_strdup(ctx, tmp);
 
 	trim_char(ctx->url, '\"', '\"');
 
