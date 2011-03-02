@@ -2551,7 +2551,7 @@ NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 NTSTATUS nt_status_squash(NTSTATUS nt_status);
 
 /* The following definitions come from libsmb/ntlmssp.c  */
-
+struct ntlmssp_state;
 NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
 NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
 			    const uint8_t lm_hash[16],

@@ -127,33 +127,6 @@ struct rpc_pipe_client {
 	struct netlogon_creds_CredentialState *dc;
 };
 
-/* Transport encryption state. */
-enum smb_trans_enc_type {
-		SMB_TRANS_ENC_NTLM
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-		, SMB_TRANS_ENC_GSS
-#endif
-};
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-struct smb_tran_enc_state_gss {
-        gss_ctx_id_t gss_ctx;
-        gss_cred_id_t creds;
-};
-#endif
-
-struct smb_trans_enc_state {
-        enum smb_trans_enc_type smb_enc_type;
-        uint16 enc_ctx_num;
-        bool enc_on;
-        union {
-                struct ntlmssp_state *ntlmssp_state;
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-                struct smb_tran_enc_state_gss *gss_state;
-#endif
-        } s;
-};
-
 struct cli_state_seqnum {
 	struct cli_state_seqnum *prev, *next;
 	uint16_t mid;

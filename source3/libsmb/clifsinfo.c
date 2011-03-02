@@ -22,6 +22,7 @@
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "async_smb.h"
+#include "smb_crypt.h"
 
 /****************************************************************************
  Get UNIX extensions version info.

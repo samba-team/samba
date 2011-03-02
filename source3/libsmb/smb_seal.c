@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "smb_crypt.h"
 
 /******************************************************************************
  Pull out the encryption context for this packet. 0 means global context.

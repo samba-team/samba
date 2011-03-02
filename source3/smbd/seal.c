@@ -22,6 +22,7 @@
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
+#include "smb_crypt.h"
 
 /******************************************************************************
  Server side encryption.
