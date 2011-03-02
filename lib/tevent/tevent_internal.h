@@ -162,7 +162,7 @@ struct tevent_fd {
 	const char *handler_name;
 	const char *location;
 	/* this is private for the events_ops implementation */
-	uint16_t additional_flags;
+	uint64_t additional_flags;
 	void *additional_data;
 };
 
