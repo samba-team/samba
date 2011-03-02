@@ -814,7 +814,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_time_t(struct ndr_pull *ndr, int ndr_flags, 
 */
 _PUBLIC_ enum ndr_err_code ndr_push_uid_t(struct ndr_push *ndr, int ndr_flags, uid_t u)
 {
-	return ndr_push_udlong(ndr, NDR_SCALARS, (uint64_t)u);
+	return ndr_push_hyper(ndr, NDR_SCALARS, (uint64_t)u);
 }
 
 /*
@@ -823,7 +823,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_uid_t(struct ndr_push *ndr, int ndr_flags, u
 _PUBLIC_ enum ndr_err_code ndr_pull_uid_t(struct ndr_pull *ndr, int ndr_flags, uid_t *u)
 {
 	uint64_t uu;
-	NDR_CHECK(ndr_pull_udlong(ndr, ndr_flags, &uu));
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &uu));
 	*u = (uid_t)uu;
 	if (unlikely(uu != *u)) {
 		DEBUG(0,(__location__ ": uid_t pull doesn't fit 0x%016llx\n",
@@ -839,7 +839,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uid_t(struct ndr_pull *ndr, int ndr_flags, u
 */
 _PUBLIC_ enum ndr_err_code ndr_push_gid_t(struct ndr_push *ndr, int ndr_flags, gid_t g)
 {
-	return ndr_push_udlong(ndr, NDR_SCALARS, (uint64_t)g);
+	return ndr_push_hyper(ndr, NDR_SCALARS, (uint64_t)g);
 }
 
 /*
@@ -848,7 +848,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_gid_t(struct ndr_push *ndr, int ndr_flags, g
 _PUBLIC_ enum ndr_err_code ndr_pull_gid_t(struct ndr_pull *ndr, int ndr_flags, gid_t *g)
 {
 	uint64_t gg;
-	NDR_CHECK(ndr_pull_udlong(ndr, ndr_flags, &gg));
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &gg));
 	*g = (gid_t)gg;
 	if (unlikely(gg != *g)) {
 		DEBUG(0,(__location__ ": gid_t pull doesn't fit 0x%016llx\n",
