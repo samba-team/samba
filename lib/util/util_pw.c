@@ -71,8 +71,8 @@ struct group *sys_getgrgid(gid_t gid)
 	return getgrgid(gid);
 }
 
-static struct passwd *alloc_copy_passwd(TALLOC_CTX *mem_ctx, 
-					const struct passwd *from) 
+struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx,
+			    const struct passwd *from)
 {
 	struct passwd *ret = talloc_zero(mem_ctx, struct passwd);
 
@@ -90,7 +90,7 @@ static struct passwd *alloc_copy_passwd(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct passwd *_getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
+struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 {
 	struct passwd *temp;
 
@@ -105,10 +105,14 @@ struct passwd *_getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		return NULL;
 	}
 
-	return alloc_copy_passwd(mem_ctx, temp);
+	return tcopy_passwd(mem_ctx, temp);
 }
 
-struct passwd *_getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
+/****************************************************************************
+ talloc'ed version of getpwuid.
+****************************************************************************/
+
+struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
 {
 	struct passwd *temp;
 
@@ -123,5 +127,5 @@ struct passwd *_getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
 		return NULL;
 	}
 
-	return alloc_copy_passwd(mem_ctx, temp);
+	return tcopy_passwd(mem_ctx, temp);
 }

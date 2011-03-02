@@ -984,9 +984,7 @@ bool nt_time_is_set(const NTTIME *nt);
 
 /* The following definitions come from lib/username.c  */
 
-struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from) ;
 void flush_pwnam_cache(void);
-struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) ;
 char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user);
 struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user);
 
