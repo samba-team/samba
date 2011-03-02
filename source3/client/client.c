@@ -1605,6 +1605,30 @@ static char *attr_str(TALLOC_CTX *mem_ctx, uint16_t mode)
 	int i = 0;
 
 	if (!(mode & FILE_ATTRIBUTE_NORMAL)) {
+		if (mode & FILE_ATTRIBUTE_ENCRYPTED) {
+			attrs[i++] = 'E';
+		}
+		if (mode & FILE_ATTRIBUTE_NONINDEXED) {
+			attrs[i++] = 'N';
+		}
+		if (mode & FILE_ATTRIBUTE_OFFLINE) {
+			attrs[i++] = 'O';
+		}
+		if (mode & FILE_ATTRIBUTE_COMPRESSED) {
+			attrs[i++] = 'C';
+		}
+		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+			attrs[i++] = 'r';
+		}
+		if (mode & FILE_ATTRIBUTE_SPARSE) {
+			attrs[i++] = 's';
+		}
+		if (mode & FILE_ATTRIBUTE_TEMPORARY) {
+			attrs[i++] = 'T';
+		}
+		if (mode & FILE_ATTRIBUTE_NORMAL) {
+			attrs[i++] = 'N';
+		}
 		if (mode & FILE_ATTRIBUTE_READONLY) {
 			attrs[i++] = 'R';
 		}
@@ -1672,7 +1696,7 @@ static int do_allinfo(const char *name)
 	unix_timespec_to_nt_time(&tmp, c_time);
 	d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
 
-	d_printf("attributes: %s\n", attr_str(talloc_tos(), mode));
+	d_printf("attributes: %s (%x)\n", attr_str(talloc_tos(), mode), mode);
 
 	status = cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
 				       &streams);
