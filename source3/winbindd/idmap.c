@@ -208,6 +208,8 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 {
 	struct idmap_domain *result;
 	NTSTATUS status;
+	char *config_option = NULL;
+	const char *range;
 
 	result = talloc_zero(mem_ctx, struct idmap_domain);
 	if (result == NULL) {
@@ -224,78 +226,34 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	/*
 	 * load ranges and read only information from the config
 	 */
-	if (strequal(result->name, "*")) {
-		/*
-		 * The default domain "*" is configured differently
-		 * from named domains.
-		 */
-		uid_t low_uid = 0;
-		uid_t high_uid = 0;
-		gid_t low_gid = 0;
-		gid_t high_gid = 0;
 
-		result->low_id = 0;
-		result->high_id = 0;
+	config_option = talloc_asprintf(result, "idmap config %s",
+					result->name);
+	if (config_option == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		goto fail;
+	}
 
-		if (!lp_idmap_uid(&low_uid, &high_uid)) {
-			DEBUG(1, ("'idmap uid' not set!\n"));
-			if (check_range) {
-				goto fail;
-			}
-		}
-
-		result->low_id = low_uid;
-		result->high_id = high_uid;
-
-		if (!lp_idmap_gid(&low_gid, &high_gid)) {
-			DEBUG(1, ("'idmap gid' not set!\n"));
-			if (check_range) {
-				goto fail;
-			}
-		}
-
-		if ((low_gid != low_uid) || (high_gid != high_uid)) {
-			DEBUG(1, ("Warning: 'idmap uid' and 'idmap gid'"
-			      " ranges do not agree -- building "
-			      "intersection\n"));
-			result->low_id = MAX(result->low_id, low_gid);
-			result->high_id = MIN(result->high_id, high_gid);
-		}
-
-		result->read_only = lp_idmap_read_only();
-	} else {
-		char *config_option = NULL;
-		const char *range;
-
-		config_option = talloc_asprintf(result, "idmap config %s",
-						result->name);
-		if (config_option == NULL) {
-			DEBUG(0, ("Out of memory!\n"));
+	range = lp_parm_const_string(-1, config_option, "range", NULL);
+	if (range == NULL) {
+		DEBUG(1, ("idmap range not specified for domain %s\n",
+			  result->name));
+		if (check_range) {
 			goto fail;
 		}
-
-		range = lp_parm_const_string(-1, config_option, "range", NULL);
-		if (range == NULL) {
-			DEBUG(1, ("idmap range not specified for domain %s\n",
-				  result ->name));
-			if (check_range) {
-				goto fail;
-			}
-		} else if (sscanf(range, "%u - %u", &result->low_id,
-				  &result->high_id) != 2)
-		{
-			DEBUG(1, ("invalid range '%s' specified for domain "
-				  "'%s'\n", range, result->name));
-			if (check_range) {
-				goto fail;
-			}
+	} else if (sscanf(range, "%u - %u", &result->low_id,
+			  &result->high_id) != 2)
+	{
+		DEBUG(1, ("invalid range '%s' specified for domain "
+			  "'%s'\n", range, result->name));
+		if (check_range) {
+			goto fail;
 		}
-
-		result->read_only = lp_parm_bool(-1, config_option, "read only",
-						 false);
-
-		talloc_free(config_option);
 	}
+
+	result->read_only = lp_parm_bool(-1, config_option, "read only", false);
+
+	talloc_free(config_option);
 
 	if (result->low_id > result->high_id) {
 		DEBUG(1, ("Error: invalid idmap range detected: %lu - %lu\n",
