@@ -1556,7 +1556,6 @@ static NTSTATUS smbcli_rap_netsessionenum(struct smbcli_tree *tree,
 {
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int i;
 
 	call = new_rap_cli_call(tree, RAP_WsessionEnum);
 
