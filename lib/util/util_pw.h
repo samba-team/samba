@@ -33,7 +33,7 @@ struct group *sys_getgrnam(const char *name);
 struct group *sys_getgrgid(gid_t gid);
 struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx,
 			    const struct passwd *from);
-struct passwd *_getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name);
-struct passwd *_getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid);
+struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name);
+struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid);
 
 #endif /* __LIB_UTIL_UTIL_PW_H__ */

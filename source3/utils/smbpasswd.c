@@ -19,6 +19,7 @@
 #include "includes.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
+#include "../lib/util/util_pw.h"
 
 /*
  * Next two lines needed for SunOS and don't

@@ -58,47 +58,12 @@ static struct passwd *getpwnam_alloc_cached(TALLOC_CTX *mem_ctx, const char *nam
 }
 
 /****************************************************************************
- talloc copy a struct passwd.
-****************************************************************************/
-
-struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from)
-{
-	struct passwd *ret = TALLOC_P(mem_ctx, struct passwd);
-	if (!ret) {
-		return NULL;
-	}
-	ret->pw_name = talloc_strdup(ret, from->pw_name);
-	ret->pw_passwd = talloc_strdup(ret, from->pw_passwd);
-	ret->pw_uid = from->pw_uid;
-	ret->pw_gid = from->pw_gid;
-	ret->pw_gecos = talloc_strdup(ret, from->pw_gecos);
-	ret->pw_dir = talloc_strdup(ret, from->pw_dir);
-	ret->pw_shell = talloc_strdup(ret, from->pw_shell);
-	return ret;
-}
-
-/****************************************************************************
  Flush all cached passwd structs.
 ****************************************************************************/
 
 void flush_pwnam_cache(void)
 {
         memcache_flush(NULL, GETPWNAM_CACHE);
-}
-
-/****************************************************************************
- talloc'ed version of getpwuid.
-****************************************************************************/
-
-struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
-{
-	struct passwd *temp = sys_getpwuid(uid);
-
-	if (!temp) {
-		return NULL;
-	}
-
-	return tcopy_passwd(mem_ctx, temp);
 }
 
 /****************************************************************************

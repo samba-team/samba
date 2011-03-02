@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "../libcli/security/security.h"
+#include "../lib/util/util_pw.h"
 
 #if defined(WITH_WINBIND)
 
