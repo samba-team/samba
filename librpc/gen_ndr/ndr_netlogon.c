@@ -6712,7 +6712,7 @@ static enum ndr_err_code ndr_push_netr_ChangeLogObject(struct ndr_push *ndr, int
 			case NETR_CHANGELOG_NAME_INCLUDED: {
 				{
 					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 					NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->object_name));
 					ndr->flags = _flags_save_string;
 				}
@@ -6754,7 +6754,7 @@ static enum ndr_err_code ndr_pull_netr_ChangeLogObject(struct ndr_pull *ndr, int
 			case NETR_CHANGELOG_NAME_INCLUDED: {
 				{
 					uint32_t _flags_save_string = ndr->flags;
-					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 					NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->object_name));
 					ndr->flags = _flags_save_string;
 				}
@@ -7519,7 +7519,7 @@ static enum ndr_err_code ndr_push_netr_OsVersionInfoEx(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->PlatformId));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			{
 				struct ndr_push *_ndr_CSDVersion;
 				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_CSDVersion, 0, 256));
@@ -7551,7 +7551,7 @@ static enum ndr_err_code ndr_pull_netr_OsVersionInfoEx(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->PlatformId));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			{
 				struct ndr_pull *_ndr_CSDVersion;
 				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_CSDVersion, 0, 256));

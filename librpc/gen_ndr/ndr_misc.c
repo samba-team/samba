@@ -226,7 +226,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_Data(struct ndr_push *ndr, int ndr_fl
 				case REG_SZ: {
 					{
 						uint32_t _flags_save_string = ndr->flags;
-						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 						NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
 						ndr->flags = _flags_save_string;
 					}
@@ -235,7 +235,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_Data(struct ndr_push *ndr, int ndr_fl
 				case REG_EXPAND_SZ: {
 					{
 						uint32_t _flags_save_string = ndr->flags;
-						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 						NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->string));
 						ndr->flags = _flags_save_string;
 					}
@@ -266,7 +266,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_winreg_Data(struct ndr_push *ndr, int ndr_fl
 				case REG_MULTI_SZ: {
 					{
 						uint32_t _flags_save_string_array = ndr->flags;
-						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 						NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->string_array));
 						ndr->flags = _flags_save_string_array;
 					}
@@ -333,7 +333,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_Data(struct ndr_pull *ndr, int ndr_fl
 				case REG_SZ: {
 					{
 						uint32_t _flags_save_string = ndr->flags;
-						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 						NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
 						ndr->flags = _flags_save_string;
 					}
@@ -342,7 +342,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_Data(struct ndr_pull *ndr, int ndr_fl
 				case REG_EXPAND_SZ: {
 					{
 						uint32_t _flags_save_string = ndr->flags;
-						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 						NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->string));
 						ndr->flags = _flags_save_string;
 					}
@@ -373,7 +373,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_winreg_Data(struct ndr_pull *ndr, int ndr_fl
 				case REG_MULTI_SZ: {
 					{
 						uint32_t _flags_save_string_array = ndr->flags;
-						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 						NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->string_array));
 						ndr->flags = _flags_save_string_array;
 					}

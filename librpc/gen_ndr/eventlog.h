@@ -59,13 +59,13 @@ struct eventlog_Record_tdb {
 	uint32_t data_length;/* [value(data.length)] */
 	uint32_t data_offset;
 	uint32_t source_name_len;/* [value(2*strlen_m_term(source_name))] */
-	const char * source_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * source_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t computer_name_len;/* [value(2*strlen_m_term(computer_name))] */
-	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint32_t sid_padding;
 	DATA_BLOB sid;
 	uint32_t strings_len;/* [value(2*ndr_size_string_array(strings,num_of_strings,LIBNDR_FLAG_STR_NULLTERM))] */
-	const char * *strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * *strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	DATA_BLOB data;
 	uint32_t padding;
 }/* [public,flag(LIBNDR_FLAG_NOALIGN|LIBNDR_PRINT_ARRAY_HEX)] */;
@@ -119,10 +119,10 @@ struct EVENTLOGRECORD {
 	uint32_t UserSidOffset;/* [value(56+2*(strlen_m_term(SourceName)+strlen_m_term(Computername)))] */
 	uint32_t DataLength;
 	uint32_t DataOffset;/* [value(56+2*(strlen_m_term(SourceName)+strlen_m_term(Computername))+UserSidLength+(2*ndr_size_string_array(Strings,NumStrings,LIBNDR_FLAG_STR_NULLTERM)))] */
-	const char * SourceName;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * Computername;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * SourceName;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
+	const char * Computername;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	struct dom_sid0 UserSid;/* [subcontext_size(UserSidLength),subcontext(0),flag(LIBNDR_FLAG_ALIGN4)] */
-	const char * *Strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * *Strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2)] */
 	uint8_t *Data;/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */
 	const char * Pad;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t Length2;/* [value(Length)] */

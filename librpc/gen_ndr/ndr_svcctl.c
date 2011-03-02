@@ -226,13 +226,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSW(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->service_name));
 			ndr->flags = _flags_save_string;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->display_name));
 			ndr->flags = _flags_save_string;
 		}
@@ -242,7 +242,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSW(struct ndr_push *ndr, i
 	if (ndr_flags & NDR_BUFFERS) {
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->service_name) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->service_name));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->service_name));
@@ -252,7 +252,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSW(struct ndr_push *ndr, i
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->display_name) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->display_name));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->display_name));
@@ -274,7 +274,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_service_name));
 			if (_ptr_service_name) {
 				NDR_PULL_ALLOC(ndr, r->service_name);
@@ -286,7 +286,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, i
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_display_name));
 			if (_ptr_display_name) {
 				NDR_PULL_ALLOC(ndr, r->display_name);
@@ -302,7 +302,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, i
 	if (ndr_flags & NDR_BUFFERS) {
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->service_name) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;
@@ -317,7 +317,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, i
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->display_name) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;
@@ -1016,7 +1016,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_DESCRIPTION(struct ndr_push *ndr, in
 		NDR_CHECK(ndr_push_align(ndr, 5));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->description));
 			ndr->flags = _flags_save_string;
 		}
@@ -1025,7 +1025,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_DESCRIPTION(struct ndr_push *ndr, in
 	if (ndr_flags & NDR_BUFFERS) {
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->description) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->description));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->description));
@@ -1045,7 +1045,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_DESCRIPTION(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_description));
 			if (_ptr_description) {
 				NDR_PULL_ALLOC(ndr, r->description);
@@ -1060,7 +1060,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_DESCRIPTION(struct ndr_pull *ndr, in
 	if (ndr_flags & NDR_BUFFERS) {
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->description) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;
@@ -1165,13 +1165,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_FAILURE_ACTIONS(struct ndr_push *ndr
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reset_period));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->rebootmsg));
 			ndr->flags = _flags_save_string;
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->command));
 			ndr->flags = _flags_save_string;
 		}
@@ -1182,7 +1182,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_FAILURE_ACTIONS(struct ndr_push *ndr
 	if (ndr_flags & NDR_BUFFERS) {
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->rebootmsg) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->rebootmsg));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->rebootmsg));
@@ -1192,7 +1192,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVICE_FAILURE_ACTIONS(struct ndr_push *ndr
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->command) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->command));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->command));
@@ -1227,7 +1227,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reset_period));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_rebootmsg));
 			if (_ptr_rebootmsg) {
 				NDR_PULL_ALLOC(ndr, r->rebootmsg);
@@ -1239,7 +1239,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_command));
 			if (_ptr_command) {
 				NDR_PULL_ALLOC(ndr, r->command);
@@ -1265,7 +1265,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 	if (ndr_flags & NDR_BUFFERS) {
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->rebootmsg) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;
@@ -1280,7 +1280,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_ALIGN2);
 			if (r->command) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;
