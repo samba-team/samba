@@ -625,6 +625,19 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		return -1;
 	}
 
+	nt_status = set_conn_force_user_group(conn, printdollar_snum);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("failed set force user / group\n"));
+		*perr = ntstatus_to_werror(nt_status);
+		goto error_free_conn;
+	}
+
+	if (!become_user(conn, get_current_vuid(conn))) {
+		DEBUG(0, ("failed to become user\n"));
+		*perr = WERR_ACCESS_DENIED;
+		goto error_free_conn;
+	}
+
 	/* Open the driver file (Portable Executable format) and determine the
 	 * deriver the cversion. */
 	driverpath = talloc_asprintf(talloc_tos(),
@@ -720,6 +733,8 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 	*perr = WERR_OK;
 
  error_exit:
+	unbecome_user();
+ error_free_conn:
 	TALLOC_FREE(smb_fname);
 	if (fsp != NULL) {
 		close_file(NULL, fsp, NORMAL_CLOSE);
@@ -993,6 +1008,19 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		return err;
 	}
 
+	nt_status = set_conn_force_user_group(conn, printdollar_snum);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("failed set force user / group\n"));
+		err = ntstatus_to_werror(nt_status);
+		goto err_free_conn;
+	}
+
+	if (!become_user(conn, get_current_vuid(conn))) {
+		DEBUG(0, ("failed to become user\n"));
+		err = WERR_ACCESS_DENIED;
+		goto err_free_conn;
+	}
+
 	new_dir = talloc_asprintf(ctx,
 				"%s/%d",
 				short_architecture,
@@ -1126,7 +1154,9 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	}
 
 	err = WERR_OK;
-  err_exit:
+ err_exit:
+	unbecome_user();
+ err_free_conn:
 	TALLOC_FREE(smb_dname);
 
 	if (conn != NULL) {
@@ -1907,6 +1937,19 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 		return false;
 	}
 
+	nt_status = set_conn_force_user_group(conn, printdollar_snum);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("failed set force user / group\n"));
+		ret = false;
+		goto err_free_conn;
+	}
+
+	if (!become_user(conn, get_current_vuid(conn))) {
+		DEBUG(0, ("failed to become user\n"));
+		ret = false;
+		goto err_free_conn;
+	}
+
 	if ( !CAN_WRITE(conn) ) {
 		DEBUG(3,("delete_driver_files: Cannot delete print driver when [print$] is read-only\n"));
 		ret = false;
@@ -1968,6 +2011,8 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 
 	ret = true;
  err_out:
+	unbecome_user();
+ err_free_conn:
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);
 		SMB_VFS_DISCONNECT(conn);

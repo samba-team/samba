@@ -5326,6 +5326,7 @@ void exit_server_fault(void);
 /* The following definitions come from smbd/service.c  */
 
 bool set_conn_connectpath(connection_struct *conn, const char *connectpath);
+NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum);
 bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir);
 void load_registry_shares(void);
 int add_home_service(const char *service, const char *username, const char *homedir);
