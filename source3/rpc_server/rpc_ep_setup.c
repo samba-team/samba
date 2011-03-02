@@ -59,15 +59,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 	uint32_t num_ifs = iface_count();
 	uint32_t i;
 	uint16_t p = 0;
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-	if (StrCaseCmp(rpcsrv_type, "none") == 0) {
-		return (uint16_t) -1;
-	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		/*
@@ -199,6 +190,12 @@ static bool epmapper_init_cb(void *ptr)
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
 	uint16_t port;
+	const char *rpcsrv_type;
+
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
 
 	port = _open_sockets(ep_ctx->ev_ctx,
 			     ep_ctx->msg_ctx,
@@ -215,20 +212,40 @@ static bool winreg_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_winreg.syntax_id;
+	const char *pipe_name = "winreg";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_winreg.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_winreg,
-						"winreg",
+						pipe_name,
 						port));
 }
 
@@ -241,20 +258,40 @@ static bool srvsvc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_srvsvc.syntax_id;
+	const char *pipe_name = "srvsvc";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_srvsvc.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_srvsvc,
-						"srvsvc",
+						pipe_name,
 						port));
 }
 
@@ -267,20 +304,40 @@ static bool lsarpc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_lsarpc.syntax_id;
+	const char *pipe_name = "lsarpc";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_lsarpc.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_lsarpc,
-						"lsarpc",
+						pipe_name,
 						port));
 }
 
@@ -293,20 +350,40 @@ static bool samr_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_samr.syntax_id;
+	const char *pipe_name = "samr";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_samr.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_samr,
-						"samr",
+						pipe_name,
 						port));
 }
 
@@ -319,20 +396,40 @@ static bool netlogon_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_netlogon.syntax_id;
+	const char *pipe_name = "netlogon";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_netlogon.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_netlogon,
-						"netlogon",
+						pipe_name,
 						port));
 }
 
@@ -493,20 +590,40 @@ static bool netdfs_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_netdfs.syntax_id;
+	const char *pipe_name = "netdfs";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_netdfs.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_netdfs,
-						"netdfs",
+						pipe_name,
 						port));
 }
 
@@ -518,14 +635,34 @@ static bool dssetup_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_dssetup.syntax_id;
+	const char *pipe_name = "dssetup";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_dssetup.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
@@ -543,14 +680,34 @@ static bool wkssvc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	struct ndr_syntax_id abstract_syntax = ndr_table_wkssvc.syntax_id;
+	const char *pipe_name = "wkssvc";
+	const char *rpcsrv_type;
 	uint16_t port;
 
-	port = _open_sockets(ep_ctx->ev_ctx,
-			     ep_ctx->msg_ctx,
-			     ndr_table_wkssvc.syntax_id,
-			     0);
-	if (port == 0) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
+	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		bool ok;
+
+		port = _open_sockets(ep_ctx->ev_ctx,
+				     ep_ctx->msg_ctx,
+				     abstract_syntax,
+				     0);
+		if (port == 0) {
+			return false;
+		}
+
+		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
+						 ep_ctx->msg_ctx,
+						 abstract_syntax,
+						 pipe_name);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
