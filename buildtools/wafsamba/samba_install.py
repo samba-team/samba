@@ -124,8 +124,12 @@ def install_library(self):
         install_link = None
         inst_name    = bld.make_libname(t.target)
 
-    if t.env.SONAME_ST and install_link:
-        t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_link)
+    if t.env.SONAME_ST:
+        # ensure we get the right names in the library
+        if install_link:
+            t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_link)
+        else:
+            t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_name)
         t.env.SONAME_ST = ''
 
     # tell waf to install the library
