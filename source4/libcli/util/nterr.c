@@ -741,6 +741,8 @@ static const nt_err_code_struct nt_errs[] =
 	{ NULL, NT_STATUS(0) }
 };
 
+/* These need sorting..... */
+
 static const nt_err_code_struct nt_err_desc[] =
 {
 	{ N_("Success"), 				NT_STATUS_OK },
@@ -843,8 +845,9 @@ static const nt_err_code_struct nt_err_desc[] =
 };
 
 /*****************************************************************************
- returns an NT error message.  not amazingly helpful, but better than a number.
+ Returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
+
 const char *nt_errstr(NTSTATUS nt_code)
 {
 	static char msg[40];
@@ -871,6 +874,7 @@ const char *nt_errstr(NTSTATUS nt_code)
 /************************************************************************
  Print friendler version fo NT error code
  ***********************************************************************/
+
 const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 {
 	int idx = 0;
@@ -883,12 +887,14 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 	}
 
 	/* fall back to NT_STATUS_XXX string */
+
 	return nt_errstr(nt_code);
 }
 
 /*****************************************************************************
- returns an NT_STATUS constant as a string for inclusion in autogen C code
+ Returns an NT_STATUS constant as a string for inclusion in autogen C code.
  *****************************************************************************/
+
 const char *get_nt_error_c_code(NTSTATUS nt_code)
 {
 	static char out[40];
@@ -908,8 +914,9 @@ const char *get_nt_error_c_code(NTSTATUS nt_code)
 }
 
 /*****************************************************************************
- returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
+ Returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
  *****************************************************************************/
+
 NTSTATUS nt_status_string_to_code(const char *nt_status_str)
 {
 	int idx = 0;
