@@ -10,7 +10,7 @@ import sys, os
 from optparse import SUPPRESS_HELP
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 sys.path.insert(0, "source3")
-import wafsamba, Options, Logs, Utils
+import wafsamba, Options, Logs, Utils, Scripting
 import build.charset
 import samba_utils, samba_version
 import samba3
@@ -1611,3 +1611,13 @@ def ctags(ctx):
     cmd = 'ctags $(find %s/.. -name "*.[ch]" | grep -v "*_proto\.h")' % source_root
     print("Running: %s" % cmd)
     os.system(cmd)
+
+if not os.getenv('TOPLEVEL_BUILD'):
+    def wildcard_cmd(cmd):
+        '''called on a unknown command'''
+        from samba_wildcard import run_named_build_task
+        run_named_build_task(cmd)
+    def main():
+        from samba_wildcard import wildcard_main
+        wildcard_main(wildcard_cmd)
+    Scripting.main = main
