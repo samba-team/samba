@@ -1609,6 +1609,29 @@ static NTSTATUS smbcli_rap_netsessionenum(struct smbcli_tree *tree,
 	return result;
 }
 
+static bool test_netsessionenum(struct torture_context *tctx,
+				struct smbcli_state *cli)
+{
+	struct rap_NetSessionEnum r;
+	int i;
+	uint16_t levels[] = { 2 };
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.level = levels[i];
+		r.in.bufsize = 8192;
+
+		torture_comment(tctx,
+			"Testing rap_NetSessionEnum level %d\n", r.in.level);
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netsessionenum(cli->tree, tctx, &r),
+			"smbcli_rap_netsessionenum failed");
+	}
+
+	return true;
+}
+
 bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 {
 	int callno;
@@ -1644,6 +1667,8 @@ NTSTATUS torture_rap_init(void)
 				    test_netshareenum);
 	torture_suite_add_1smb_test(suite_basic, "netservergetinfo",
 				    test_netservergetinfo);
+	torture_suite_add_1smb_test(suite_basic, "netsessionenum",
+				    test_netsessionenum);
 
 	torture_suite_add_1smb_test(suite, "scan", torture_rap_scan);
 
