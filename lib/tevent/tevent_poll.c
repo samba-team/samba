@@ -35,7 +35,7 @@ struct poll_event_context {
 	 */
 	struct pollfd *fds;
 	struct tevent_fd **fd_events;
-	int num_fds;
+	uint64_t num_fds;
 
 	/* information for exiting from the event loop */
 	int exit_code;
@@ -64,7 +64,7 @@ static int poll_event_fd_destructor(struct tevent_fd *fde)
 	struct tevent_context *ev = fde->event_ctx;
 	struct poll_event_context *poll_ev = NULL;
 	struct tevent_fd *moved_fde;
-	long del_idx;
+	uint64_t del_idx = fde->additional_flags;
 
 	if (ev == NULL) {
 		goto done;
@@ -73,15 +73,10 @@ static int poll_event_fd_destructor(struct tevent_fd *fde)
 	poll_ev = talloc_get_type_abort(
 		ev->additional_data, struct poll_event_context);
 
-	/*
-	 * Assume a void * can carry enough bits to hold num_fds.
-	 */
-	del_idx = (long)(fde->additional_data);
-
 	moved_fde = poll_ev->fd_events[poll_ev->num_fds-1];
 	poll_ev->fd_events[del_idx] = moved_fde;
 	poll_ev->fds[del_idx] = poll_ev->fds[poll_ev->num_fds-1];
-	moved_fde->additional_data = (void *)del_idx;
+	moved_fde->additional_flags = del_idx;
 
 	poll_ev->num_fds -= 1;
 done:
@@ -149,10 +144,7 @@ static struct tevent_fd *poll_event_add_fd(struct tevent_context *ev,
 		pfd->events |= (POLLOUT);
 	}
 
-	/*
-	 * Assume a void * can carry enough bits to hold num_fds.
-	 */
-	fde->additional_data = (void *)(long)poll_ev->num_fds;
+	fde->additional_flags = poll_ev->num_fds;
 	poll_ev->fd_events[poll_ev->num_fds] = fde;
 
 	poll_ev->num_fds += 1;
@@ -169,7 +161,7 @@ static void poll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	struct poll_event_context *poll_ev = talloc_get_type_abort(
 		fde->event_ctx->additional_data, struct poll_event_context);
-	long idx;
+	uint64_t idx = fde->additional_flags;
 	uint16_t pollflags = 0;
 
 	if (flags & TEVENT_FD_READ) {
@@ -179,7 +171,6 @@ static void poll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 		pollflags |= (POLLOUT);
 	}
 
-	idx = (long)(fde->additional_data);
 	poll_ev->fds[idx].events = pollflags;
 
 	fde->flags = flags;
@@ -237,10 +228,8 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		   the handler to remove itself when called */
 		for (fde = ev->fd_events; fde; fde = fde->next) {
 			struct pollfd *pfd;
-			long pfd_idx;
+			uint64_t pfd_idx = fde->additional_flags;
 			uint16_t flags = 0;
-
-			pfd_idx = (long)(fde->additional_data);
 
 			pfd = &poll_ev->fds[pfd_idx];
 
