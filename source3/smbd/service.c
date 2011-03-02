@@ -659,6 +659,72 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+/****************************************************************************
+  set relavent user and group settings corresponding to force user/group
+  configuration for the given snum.
+****************************************************************************/
+
+NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
+{
+	NTSTATUS status;
+
+	if (*lp_force_user(snum)) {
+
+		/*
+		 * Replace conn->session_info with a completely faked up one
+		 * from the username we are forced into :-)
+		 */
+
+		char *fuser;
+		struct auth_serversupplied_info *forced_serverinfo;
+
+		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
+					  lp_const_servicename(snum));
+		if (fuser == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = make_serverinfo_from_username(
+			conn, fuser, conn->session_info->guest,
+			&forced_serverinfo);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		TALLOC_FREE(conn->session_info);
+		conn->session_info = forced_serverinfo;
+
+		conn->force_user = true;
+		DEBUG(3,("Forced user %s\n", fuser));
+	}
+
+	/*
+	 * If force group is true, then override
+	 * any groupid stored for the connecting user.
+	 */
+
+	if (*lp_force_group(snum)) {
+
+		status = find_forced_group(
+			conn->force_user, snum, conn->session_info->unix_name,
+			&conn->session_info->security_token->sids[1],
+			&conn->session_info->utok.gid);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/*
+		 * We need to cache this gid, to use within
+		 * change_to_user() separately from the conn->session_info
+		 * struct. We only use conn->session_info directly if
+		 * "force_user" was set.
+		 */
+		conn->force_group_gid = conn->session_info->utok.gid;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
@@ -742,62 +808,11 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	conn->read_only = lp_readonly(SNUM(conn));
 
-	if (*lp_force_user(snum)) {
-
-		/*
-		 * Replace conn->session_info with a completely faked up one
-		 * from the username we are forced into :-)
-		 */
-
-		char *fuser;
-		struct auth_serversupplied_info *forced_serverinfo;
-
-		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
-					  lp_servicename(snum));
-		if (fuser == NULL) {
-			*pstatus = NT_STATUS_NO_MEMORY;
-			goto err_root_exit;
-		}
-
-		status = make_serverinfo_from_username(
-			conn, fuser, conn->session_info->guest,
-			&forced_serverinfo);
-		if (!NT_STATUS_IS_OK(status)) {
-			*pstatus = status;
-			goto err_root_exit;
-		}
-
-		TALLOC_FREE(conn->session_info);
-		conn->session_info = forced_serverinfo;
-
-		conn->force_user = True;
-		DEBUG(3,("Forced user %s\n", fuser));
-	}
-
-	/*
-	 * If force group is true, then override
-	 * any groupid stored for the connecting user.
-	 */
-
-	if (*lp_force_group(snum)) {
-
-		status = find_forced_group(
-			conn->force_user, snum, conn->session_info->unix_name,
-			&conn->session_info->security_token->sids[1],
-			&conn->session_info->utok.gid);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			*pstatus = status;
-			goto err_root_exit;
-		}
-
-		/*
-		 * We need to cache this gid, to use within
-		 * change_to_user() separately from the conn->session_info
-		 * struct. We only use conn->session_info directly if
- 		 * "force_user" was set.
- 		 */
-		conn->force_group_gid = conn->session_info->utok.gid;
+	status = set_conn_force_user_group(conn, snum);
+	if (!NT_STATUS_IS_OK(status)) {
+		conn_free(conn);
+		*pstatus = status;
+		return NULL;
 	}
 
 	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
