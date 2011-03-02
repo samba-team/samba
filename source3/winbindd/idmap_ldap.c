@@ -450,15 +450,11 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (strequal(dom->name, "*")) {
-		/* more specific configuration can go here */
-	} else {
-		config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
-		if ( ! config_option) {
-			DEBUG(0, ("Out of memory!\n"));
-			ret = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
+	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
+	if (!config_option) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	tmp = lp_parm_const_string(-1, config_option, "ldap_url", NULL);
