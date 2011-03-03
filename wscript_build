@@ -20,6 +20,10 @@ bld.AUTOCLEANUP_STALE_FILES()
 # enable building of public headers in the build tree
 bld.env.build_public_headers = 'include/public'
 
+# these are includes which appear in public headers, but with #ifdef conditional
+# compilation, so they are safe
+bld.env.public_headers_skip = ['param/param_proto.h', 'lib/ldb_compat.h']
+
 samba_version.load_version(bld.env)
 bld.SAMBA_MKVERSION('version.h')
 
