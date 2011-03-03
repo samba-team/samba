@@ -84,6 +84,7 @@ def build(bld):
                           abi_match='tevent_* _tevent_*',
                           vnum=VERSION,
                           public_headers='tevent.h',
+                          public_headers_install=not private_library,
                           private_library=private_library)
 
     bld.SAMBA_PYTHON('pytevent',

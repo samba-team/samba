@@ -98,6 +98,7 @@ def build(bld):
                           hide_symbols=True,
                           vnum=VERSION,
                           public_headers='talloc.h',
+                          public_headers_install=not private_library,
                           private_library=private_library,
                           manpages='talloc.3')
 
