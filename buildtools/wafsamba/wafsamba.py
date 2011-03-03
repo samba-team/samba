@@ -537,6 +537,7 @@ Build.BuildContext.SAMBA_SUBSYSTEM = SAMBA_SUBSYSTEM
 def SAMBA_GENERATOR(bld, name, rule, source='', target='',
                     group='generators', enabled=True,
                     public_headers=None,
+                    public_headers_install=True,
                     header_path=None,
                     vars=None,
                     always=False):
@@ -565,7 +566,8 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         t.always = True
 
     if public_headers is not None:
-        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
+        bld.PUBLIC_HEADERS(public_headers, header_path=header_path,
+                           public_headers_install=public_headers_install)
     return t
 Build.BuildContext.SAMBA_GENERATOR = SAMBA_GENERATOR
 
