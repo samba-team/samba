@@ -21,8 +21,8 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
-#include "../lib/util/charset/charset.h"
-#include "../lib/util/attr.h"
+#include "lib/util/charset/charset.h"
+#include "lib/util/attr.h"
 
 /* for TALLOC_CTX */
 #include <talloc.h>
@@ -37,11 +37,11 @@ struct smbsrv_tcon;
 extern const char *logfile;
 extern const char *panic_action;
 
-#include "../lib/util/time.h"
-#include "../lib/util/data_blob.h"
-#include "../lib/util/xfile.h"
-#include "../lib/util/byteorder.h"
-#include "../lib/util/talloc_stack.h"
+#include "lib/util/time.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/xfile.h"
+#include "lib/util/byteorder.h"
+#include "lib/util/talloc_stack.h"
 
 /**
  * assert macros 
@@ -61,7 +61,7 @@ extern const char *panic_action;
 #define ABS(a) ((a)>0?(a):(-(a)))
 #endif
 
-#include "../lib/util/memory.h"
+#include "lib/util/memory.h"
 
 /**
  * Write backtrace to debug log
