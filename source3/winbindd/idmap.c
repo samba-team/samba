@@ -295,47 +295,6 @@ fail:
 }
 
 /**
- * Initialize the default domain structure
- * @param[in] mem_ctx		memory context for the result
- * @result The default domain structure
- *
- * This routine takes the module name from the "idmap backend" parameter,
- * passing a possible parameter like ldap:ldap://ldap-url/ to the module.
- */
-
-static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
-{
-	struct idmap_domain *result;
-	char *modulename;
-	char *params;
-
-	idmap_init();
-
-	if (!parse_idmap_module(talloc_tos(), lp_idmap_backend(), &modulename,
-				&params)) {
-		DEBUG(1, ("parse_idmap_module failed\n"));
-		return NULL;
-	}
-
-	DEBUG(3, ("idmap_init: using '%s' as remote backend\n", modulename));
-
-	result = idmap_init_domain(mem_ctx, "*", modulename, true);
-	if (result == NULL) {
-		goto fail;
-	}
-
-	TALLOC_FREE(modulename);
-	TALLOC_FREE(params);
-	return result;
-
-fail:
-	TALLOC_FREE(modulename);
-	TALLOC_FREE(params);
-	TALLOC_FREE(result);
-	return NULL;
-}
-
-/**
  * Initialize a named domain structure
  * @param[in] mem_ctx		memory context for the result
  * @param[in] domname		the domain name
@@ -377,6 +336,20 @@ fail:
 	TALLOC_FREE(config_option);
 	TALLOC_FREE(result);
 	return NULL;
+}
+
+/**
+ * Initialize the default domain structure
+ * @param[in] mem_ctx		memory context for the result
+ * @result The default domain structure
+ *
+ * This routine takes the module name from the "idmap backend" parameter,
+ * passing a possible parameter like ldap:ldap://ldap-url/ to the module.
+ */
+
+static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
+{
+	return idmap_init_named_domain(mem_ctx, "*");
 }
 
 /**
