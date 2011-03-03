@@ -33,7 +33,7 @@
 #ifndef _LDB_MODULE_H_
 #define _LDB_MODULE_H_
 
-#include "ldb.h"
+#include <ldb.h>
 
 struct ldb_context;
 struct ldb_module;
