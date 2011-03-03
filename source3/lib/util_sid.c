@@ -34,9 +34,7 @@
 
 char *sid_to_fstring(fstring sidstr_out, const struct dom_sid *sid)
 {
-	char *str = sid_string_talloc(talloc_tos(), sid);
-	fstrcpy(sidstr_out, str);
-	TALLOC_FREE(str);
+	dom_sid_string_buf(sid, sidstr_out, sizeof(fstring));
 	return sidstr_out;
 }
 
