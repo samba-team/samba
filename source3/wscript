@@ -1493,6 +1493,12 @@ main() {
         # For sys/quota.h and linux/quota.h
         conf.CHECK_HEADERS('sys/quota.h')
 
+    conf.CHECK_CODE('__attribute__((destructor)) static void cleanup(void) { }',
+		    'HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR',
+		    addmain=False,
+		    link=False,
+		    msg='Checking whether we can compile with __attribute__((destructor))')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
