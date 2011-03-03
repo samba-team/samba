@@ -796,16 +796,12 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 	int s = -1;
 	int rc;
 
-	while (s == -1) {
-		s = accept(state->fd, (struct sockaddr *)(void *) &addr, &in_addrlen);
-		if (s == -1 && errno != EINTR) {
-			break;
-		}
-	}
-
+	s = accept(state->fd, (struct sockaddr *)(void *) &addr, &in_addrlen);
 	if (s == -1) {
-		DEBUG(0,("tcpip_listener accept: %s\n",
-			 strerror(errno)));
+		if (errno != EINTR) {
+			DEBUG(0,("tcpip_listener accept: %s\n",
+				 strerror(errno)));
+		}
 		return;
 	}
 
