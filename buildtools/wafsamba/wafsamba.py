@@ -593,6 +593,7 @@ def SETUP_BUILD_GROUPS(bld):
     bld.add_group('build_compilers')
     bld.add_group('build_source')
     bld.add_group('prototypes')
+    bld.add_group('headers')
     bld.add_group('main')
     bld.add_group('symbolcheck')
     bld.add_group('libraries')
