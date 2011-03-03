@@ -769,13 +769,15 @@ static void new_connection(int listen_sock, bool privileged)
 
 	len = sizeof(sunaddr);
 
-	do {
-		sock = accept(listen_sock, (struct sockaddr *)(void *)&sunaddr,
-			      &len);
-	} while (sock == -1 && errno == EINTR);
+	sock = accept(listen_sock, (struct sockaddr *)(void *)&sunaddr, &len);
 
-	if (sock == -1)
+	if (sock == -1) {
+		if (errno != EINTR) {
+			DEBUG(0, ("Faild to accept socket - %s\n",
+				  strerror(errno)));
+		}
 		return;
+	}
 
 	DEBUG(6,("accepted socket %d\n", sock));
 
