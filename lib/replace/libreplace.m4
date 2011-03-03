@@ -303,6 +303,29 @@ if test x$libreplace_cv_have_clock_gettime = xyes ; then
 	SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
 fi
 
+AC_CACHE_CHECK([for struct timespec type],libreplace_cv_struct_timespec, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+],[struct timespec ts;],
+	libreplace_cv_struct_timespec=yes,libreplace_cv_struct_timespec=no)])
+if test x"$libreplace_cv_struct_timespec" = x"yes"; then
+   AC_DEFINE(HAVE_STRUCT_TIMESPEC,1,[Whether we have struct timespec])
+fi
+
 AC_CHECK_FUNCS([printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"

@@ -290,8 +290,6 @@ __sys_llseek syslog _telldir __telldir telldir64 textdomain timegm
 utimensat vsyslog _write __write __xstat
 ''')
 
-    conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
-
     conf.CHECK_SAMBA3_CHARSET() # see build/charset.py
 
     # FIXME: these should be tests for features, but the old build system just

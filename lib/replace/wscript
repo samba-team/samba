@@ -219,6 +219,7 @@ def configure(conf):
 			    'HAVE_%s' % c,
 			    msg='Checking whether the clock_gettime clock ID %s is available' % c)
 
+    conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
 
     # these headers need to be tested as a group on freebsd
     conf.CHECK_HEADERS(headers='sys/socket.h net/if.h', together=True)

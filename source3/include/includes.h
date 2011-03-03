@@ -425,14 +425,6 @@ typedef long blksize_t;
 typedef long blkcnt_t;
 #endif
 
-#ifndef HAVE_STRUCT_TIMESPEC
-struct timespec {
-	time_t tv_sec;            /* Seconds.  */
-	long tv_nsec;           /* Nanoseconds.  */
-};
-#endif
-
-
 /*
  * Type for stat structure.
  */

@@ -46,6 +46,13 @@ struct utimbuf {
 };
 #endif
 
+#ifndef HAVE_STRUCT_TIMESPEC
+struct timespec {
+	time_t tv_sec;            /* Seconds.  */
+	long tv_nsec;           /* Nanoseconds.  */
+};
+#endif
+
 #ifndef HAVE_MKTIME
 /* define is in "replace.h" */
 time_t rep_mktime(struct tm *t);
