@@ -940,15 +940,11 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 
 	ZERO_STRUCT(sunaddr);
 
-	while (sd == -1) {
-		sd = accept(state->fd, addr, &len);
-		if (sd == -1 && errno != EINTR) {
-			break;
-		}
-	}
-
+	sd = accept(state->fd, addr, &len);
 	if (sd == -1) {
-		DEBUG(0, ("ncalrpc accept() failed: %s\n", strerror(errno)));
+		if (errno != EINTR) {
+			DEBUG(0, ("ncalrpc accept() failed: %s\n", strerror(errno)));
+		}
 		return;
 	}
 
