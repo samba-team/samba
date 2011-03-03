@@ -662,7 +662,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	nt_status = gensec_update(state->gensec_state, mem_ctx, in, &out);
 	
 	/* don't leak 'bad password'/'no such user' info to the network client */
-	nt_status = auth_nt_status_squash(nt_status);
+	nt_status = nt_status_squash(nt_status);
 
 	if (out.length) {
 		out_base64 = base64_encode_data_blob(mem_ctx, out);

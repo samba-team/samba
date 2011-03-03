@@ -81,7 +81,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 			errstr = talloc_asprintf(reply, "Simple Bind: Failed to advise ldb new credentials: %s", nt_errstr(status));
 		}
 	} else {
-		status = auth_nt_status_squash(status);
+		status = nt_status_squash(status);
 
 		result = LDAP_INVALID_CREDENTIALS;
 		errstr = talloc_asprintf(reply, "Simple Bind Failed: %s", nt_errstr(status));
@@ -311,7 +311,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		talloc_unlink(conn, conn->gensec);
 		conn->gensec = NULL;
 	} else {
-		status = auth_nt_status_squash(status);
+		status = nt_status_squash(status);
 		if (result == 0) {
 			result = LDAP_INVALID_CREDENTIALS;
 			errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));

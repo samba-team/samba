@@ -99,7 +99,7 @@ static void smb2srv_sesssetup_callback(struct tevent_req *subreq)
 done:
 	io->smb2.out.uid = smb_sess->vuid;
 failed:
-	req->status = auth_nt_status_squash(status);
+	req->status = nt_status_squash(status);
 	smb2srv_sesssetup_send(req, io);
 	if (!NT_STATUS_IS_OK(status) && !
 	    NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -213,7 +213,7 @@ nomem:
 	status = NT_STATUS_NO_MEMORY;
 failed:
 	talloc_free(smb_sess);
-	req->status = auth_nt_status_squash(status);
+	req->status = nt_status_squash(status);
 	smb2srv_sesssetup_send(req, io);
 }
 

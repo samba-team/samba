@@ -106,7 +106,7 @@ static void sesssetup_old_send(struct tevent_req *subreq)
 	sess->old.out.vuid = smb_sess->vuid;
 
 failed:
-	status = auth_nt_status_squash(status);
+	status = nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
 
@@ -246,7 +246,7 @@ static void sesssetup_nt1_send(struct tevent_req *subreq)
 done:
 	status = NT_STATUS_OK;
 failed:
-	status = auth_nt_status_squash(status);
+	status = nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
 
@@ -348,7 +348,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 nomem:
 	status = NT_STATUS_NO_MEMORY;
 failed:
-	status = auth_nt_status_squash(status);
+	status = nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
 
@@ -397,7 +397,7 @@ static void sesssetup_spnego_send(struct tevent_req *subreq)
 done:
 	sess->spnego.out.vuid = smb_sess->vuid;
 failed:
-	status = auth_nt_status_squash(status);
+	status = nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 	if (!NT_STATUS_IS_OK(status) && 
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -502,7 +502,7 @@ nomem:
 	status = NT_STATUS_NO_MEMORY;
 failed:
 	talloc_free(smb_sess);
-	status = auth_nt_status_squash(status);
+	status = nt_status_squash(status);
 	smbsrv_sesssetup_backend_send(req, sess, status);
 }
 
