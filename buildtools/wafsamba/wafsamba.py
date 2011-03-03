@@ -98,6 +98,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   public_deps='',
                   includes='',
                   public_headers=None,
+                  public_headers_install=True,
                   header_path=None,
                   pc_files=None,
                   vnum=None,
@@ -162,6 +163,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         public_deps    = public_deps,
                         includes       = includes,
                         public_headers = public_headers,
+                        public_headers_install = public_headers_install,
                         header_path    = header_path,
                         cflags         = cflags,
                         group          = subsystem_group,
@@ -459,6 +461,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     public_deps='',
                     includes='',
                     public_headers=None,
+                    public_headers_install=True,
                     header_path=None,
                     cflags='',
                     cflags_end=None,
@@ -527,7 +530,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source + TO_LIST(autoproto_extra_source))
     if public_headers is not None:
-        bld.PUBLIC_HEADERS(public_headers, header_path=header_path)
+        bld.PUBLIC_HEADERS(public_headers, header_path=header_path,
+                           public_headers_install=public_headers_install)
     return t
 
 
