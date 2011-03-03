@@ -20,6 +20,7 @@
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
+#undef strcasecmp
 
 #if !defined(N_)
 #define N_(string) string
@@ -764,7 +765,7 @@ NTSTATUS nt_status_string_to_code(const char *nt_status_str)
 	int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if (strcmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
+		if (strcasecmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
 			return nt_errs[idx].nt_errcode;
 		}
 		idx++;
