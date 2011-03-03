@@ -347,34 +347,59 @@ bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 }
 
 /*
-  convert a dom_sid to a string
+  Convert a dom_sid to a string, printing into a buffer. Return the
+  string length. If it overflows, return the string length that would
+  result (buflen needs to be +1 for the terminating 0).
 */
-char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
+int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen)
 {
-	int i, ofs, maxlen;
+	int i, ofs;
 	uint32_t ia;
-	char *ret;
 
 	if (!sid) {
-		return talloc_strdup(mem_ctx, "(NULL SID)");
+		strlcpy(buf, "(NULL SID)", buflen);
+		return 10;	/* strlen("(NULL SID)") */
 	}
-
-	maxlen = sid->num_auths * 11 + 25;
-	ret = talloc_array(mem_ctx, char, maxlen);
-	if (!ret) return talloc_strdup(mem_ctx, "(SID ERR)");
 
 	ia = (sid->id_auth[5]) +
 		(sid->id_auth[4] << 8 ) +
 		(sid->id_auth[3] << 16) +
 		(sid->id_auth[2] << 24);
 
-	ofs = snprintf(ret, maxlen, "S-%u-%lu",
+	ofs = snprintf(buf, buflen, "S-%u-%lu",
 		       (unsigned int)sid->sid_rev_num, (unsigned long)ia);
 
 	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu",
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "-%lu",
 				(unsigned long)sid->sub_auths[i]);
 	}
+	return ofs;
+}
 
-	return ret;
+/*
+  convert a dom_sid to a string
+*/
+char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
+{
+	char buf[DOM_SID_STR_BUFLEN];
+	char *result;
+	int len;
+
+	len = dom_sid_string_buf(sid, buf, sizeof(buf));
+
+	if (len+1 > sizeof(buf)) {
+		return talloc_strdup(mem_ctx, "(SID ERR)");
+	}
+
+	/*
+	 * Avoid calling strlen (via talloc_strdup), we already have
+	 * the length
+	 */
+	result = (char *)talloc_memdup(mem_ctx, buf, len+1);
+
+	/*
+	 * beautify the talloc_report output
+	 */
+	talloc_set_name_const(result, result);
+	return result;
 }
