@@ -120,6 +120,8 @@ struct pipes_struct {
 	struct client_address *client_id;
 	struct client_address *server_id;
 
+	enum dcerpc_transport_t transport;
+
 	struct auth_serversupplied_info *session_info;
 	struct messaging_context *msg_ctx;
 

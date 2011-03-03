@@ -76,6 +76,7 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    const char *pipe_name,
 				    const struct ndr_syntax_id id,
+				    enum dcerpc_transport_t transport,
 				    const char *client_address,
 				    const char *server_address,
 				    struct auth_session_info_transport *session_info,
@@ -94,6 +95,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 	p->syntax = id;
+	p->transport = transport;
 
 	p->mem_ctx = talloc_named(p, 0, "pipe %s %p", pipe_name, p);
 	if (!p->mem_ctx) {
@@ -540,7 +542,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	}
 
 	ret = make_server_pipes_struct(npc,
-					npc->pipe_name, npc->pipe_id,
+					npc->pipe_name, npc->pipe_id, NCACN_NP,
 					cli_addr, NULL, npc->session_info,
 					&npc->p, &error);
 	if (ret != 0) {
@@ -1218,6 +1220,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	rc = make_server_pipes_struct(ncacn_conn,
 				      pipe_name,
 				      ncacn_conn->syntax_id,
+				      ncacn_conn->transport,
 				      cli_str,
 				      srv_str,
 				      ncacn_conn->session_info,

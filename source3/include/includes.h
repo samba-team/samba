@@ -612,8 +612,8 @@ extern void *cmdline_lp_ctx;
 #include "msdfs.h"
 
 #include "auth.h"
-#include "ntdomain.h"
 #include "librpc/rpc/dcerpc.h"
+#include "ntdomain.h"
 #include "client.h"
 
 #include "module.h"

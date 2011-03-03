@@ -120,6 +120,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 					     struct epm_tower *tower);
 
 struct NL_AUTH_MESSAGE;
+struct pipe_auth_data;
 
 /* The following definitions come from librpc/rpc/dcerpc_helpers.c  */
 NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,

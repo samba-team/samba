@@ -166,6 +166,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	p->endian = RPC_LITTLE_ENDIAN;
 
 	p->syntax = *syntax;
+	p->transport = NCALRPC;
 
 	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
 		 get_pipe_name_from_syntax(talloc_tos(), syntax), pipes_open));
