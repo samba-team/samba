@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-#include "signal.h"
+#include <signal.h>
 
 /**
  * @defgroup tdb The tdb API
