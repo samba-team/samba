@@ -1197,18 +1197,10 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 		return;
 	}
 
-	DEBUG(DEBUG_ERR, ("Final timeout for recovery daemon ping. Shutting down ctdb daemon. (This can be caused if the cluster filesystem has hung)\n"));
+	DEBUG(DEBUG_ERR, ("Final timeout for recovery daemon ping. Restarting recovery daemon. (This can be caused if the cluster filesystem has hung)\n"));
 
 	ctdb_stop_recoverd(ctdb);
-	ctdb_stop_keepalive(ctdb);
-	ctdb_stop_monitoring(ctdb);
-	ctdb_release_all_ips(ctdb);
-	if (ctdb->methods != NULL) {
-		ctdb->methods->shutdown(ctdb);
-	}
-	ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
-	DEBUG(DEBUG_ERR, ("Recovery daemon ping timeout. Daemon has been shut down.\n"));
-	exit(0);
+	ctdb_start_recoverd(ctdb);
 }
 
 /* The recovery daemon will ping us at regular intervals.
