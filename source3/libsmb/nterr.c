@@ -539,7 +539,7 @@ static const nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_DS_NO_MORE_RIDS", NT_STATUS_DS_NO_MORE_RIDS },
 	{ "NT_STATUS_NOT_A_REPARSE_POINT", NT_STATUS_NOT_A_REPARSE_POINT },
 	{ "NT_STATUS_DOWNGRADE_DETECTED", NT_STATUS_DOWNGRADE_DETECTED },
-        { "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
+	{ "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
 	{ "STATUS_MORE_ENTRIES", STATUS_MORE_ENTRIES },
 	{ "STATUS_SOME_UNMAPPED", STATUS_SOME_UNMAPPED },
 	{ "STATUS_NO_MORE_FILES", STATUS_NO_MORE_FILES },
@@ -669,12 +669,12 @@ nt_err_code_struct nt_err_desc[] =
 
 const char *nt_errstr(NTSTATUS nt_code)
 {
-        int idx = 0;
+	int idx = 0;
 	char *result;
 
 #ifdef HAVE_LDAP
-        if (NT_STATUS_IS_LDAP(nt_code)) {
-                return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
+	if (NT_STATUS_IS_LDAP(nt_code)) {
+		return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
 	}
 #endif
 
@@ -685,7 +685,7 @@ const char *nt_errstr(NTSTATUS nt_code)
 
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_EQUAL(nt_errs[idx].nt_errcode, nt_code)) {
-                        return nt_errs[idx].nt_errstr;
+			return nt_errs[idx].nt_errstr;
 		}
 		idx++;
 	}
@@ -702,11 +702,11 @@ const char *nt_errstr(NTSTATUS nt_code)
 
 const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 {
-        int idx = 0;
+	int idx = 0;
 
 	while (nt_err_desc[idx].nt_errstr != NULL) {
 		if (NT_STATUS_V(nt_err_desc[idx].nt_errcode) == NT_STATUS_V(nt_code)) {
-                        return nt_err_desc[idx].nt_errstr;
+			return nt_err_desc[idx].nt_errstr;
 		}
 		idx++;
 	}
@@ -723,12 +723,12 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 const char *get_nt_error_c_code(NTSTATUS nt_code)
 {
 	char *result;
-        int idx = 0;
+	int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
-                    NT_STATUS_V(nt_code)) {
-                        return nt_errs[idx].nt_errstr;
+		    NT_STATUS_V(nt_code)) {
+			return nt_errs[idx].nt_errstr;
 		}
 		idx++;
 	}
@@ -745,11 +745,11 @@ const char *get_nt_error_c_code(NTSTATUS nt_code)
 
 NTSTATUS nt_status_string_to_code(const char *nt_status_str)
 {
-        int idx = 0;
+	int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (strcmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
-                        return nt_errs[idx].nt_errcode;
+			return nt_errs[idx].nt_errcode;
 		}
 		idx++;
 	}
