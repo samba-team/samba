@@ -441,8 +441,8 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SRVSVC',
 bld.SAMBA_SUBSYSTEM('RPC_NDR_SVCCTL',
 	source='gen_ndr/ndr_svcctl_c.c',
 	public_deps='dcerpc ndr-standard',
-	public_headers='gen_ndr/ndr_svcctl_c.h',
-        header_path='gen_ndr'
+	public_headers='gen_ndr/ndr_svcctl_c.h ndr/ndr_svcctl.h',
+        header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')]
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_EVENTLOG',
