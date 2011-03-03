@@ -153,44 +153,6 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 	return NT_STATUS_OK;
 }
 
-static bool parse_idmap_module(TALLOC_CTX *mem_ctx, const char *param,
-			       char **pmodulename, char **pargs)
-{
-	char *modulename;
-	char *args;
-
-	if (strncmp(param, "idmap_", 6) == 0) {
-		param += 6;
-		DEBUG(1, ("idmap_init: idmap backend uses deprecated "
-			  "'idmap_' prefix.  Please replace 'idmap_%s' by "
-			  "'%s'\n", param, param));
-	}
-
-	modulename = talloc_strdup(mem_ctx, param);
-	if (modulename == NULL) {
-		return false;
-	}
-
-	args = strchr(modulename, ':');
-	if (args == NULL) {
-		*pmodulename = modulename;
-		*pargs = NULL;
-		return true;
-	}
-
-	*args = '\0';
-
-	args = talloc_strdup(mem_ctx, args+1);
-	if (args == NULL) {
-		TALLOC_FREE(modulename);
-		return false;
-	}
-
-	*pmodulename = modulename;
-	*pargs = args;
-	return true;
-}
-
 /**
  * Initialize a domain structure
  * @param[in] mem_ctx		memory context for the result
