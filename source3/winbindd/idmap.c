@@ -196,14 +196,12 @@ static bool parse_idmap_module(TALLOC_CTX *mem_ctx, const char *param,
  * @param[in] mem_ctx		memory context for the result
  * @param[in] domainname	which domain is this for
  * @param[in] modulename	which backend module
- * @param[in] params		parameter to pass to the init function
  * @param[in] check_range	whether range checking should be done
  * @result The initialized structure
  */
 static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 					      const char *domainname,
 					      const char *modulename,
-					      const char *params,
 					      bool check_range)
 {
 	struct idmap_domain *result;
@@ -321,7 +319,7 @@ static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
 
 	DEBUG(3, ("idmap_init: using '%s' as remote backend\n", modulename));
 
-	result = idmap_init_domain(mem_ctx, "*", modulename, params, true);
+	result = idmap_init_domain(mem_ctx, "*", modulename, true);
 	if (result == NULL) {
 		goto fail;
 	}
@@ -367,7 +365,7 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	result = idmap_init_domain(mem_ctx, domname, backend, NULL, true);
+	result = idmap_init_domain(mem_ctx, domname, backend, true);
 	if (result == NULL) {
 		goto fail;
 	}
@@ -408,7 +406,7 @@ static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
 	}
 
 	passdb_idmap_domain = idmap_init_domain(NULL, get_global_sam_name(),
-						"passdb", NULL, false);
+						"passdb", false);
 	if (passdb_idmap_domain == NULL) {
 		DEBUG(1, ("Could not init passdb idmap domain\n"));
 	}
