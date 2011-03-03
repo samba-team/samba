@@ -946,7 +946,7 @@ bld.SAMBA3_SUBSYSTEM('CHARSET3',
 
 bld.SAMBA3_SUBSYSTEM('samba-util3',
                     source='',
-                    deps='talloc CHARSET3 LIBCRYPTO samba-util-common')
+                    deps='talloc CHARSET3 samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
                     source='lib/ldb_compat.c')
