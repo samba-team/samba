@@ -463,12 +463,8 @@ static bool wbinfo_get_sidaliases(const char *domain,
 	wbcFreeMemory(alias_rids);
 
 done:
-	if (domain_sid_str) {
-		wbcFreeMemory(domain_sid_str);
-	}
-	if (dinfo) {
-		wbcFreeMemory(dinfo);
-	}
+	wbcFreeMemory(domain_sid_str);
+	wbcFreeMemory(dinfo);
 	return (WBC_ERR_SUCCESS == wbc_status);
 }
 
@@ -1296,18 +1292,10 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 
 	ret = true;
 done:
-	if (dinfo) {
-		wbcFreeMemory(dinfo);
-	}
-	if (domain_name) {
-		wbcFreeMemory(domain_name);
-	}
-	if (names) {
-		wbcFreeMemory(names);
-	}
-	if (types) {
-		wbcFreeMemory(types);
-	}
+	wbcFreeMemory(dinfo);
+	wbcFreeMemory(domain_name);
+	wbcFreeMemory(names);
+	wbcFreeMemory(types);
 	TALLOC_FREE(mem_ctx);
 	return ret;
 }

@@ -1899,9 +1899,7 @@ static int winbind_auth_request(struct pwb_context *ctx,
 	}
 
  done:
-	if (logon.blobs) {
-		wbcFreeMemory(logon.blobs);
-	}
+	wbcFreeMemory(logon.blobs);
 	if (info && info->blobs && !p_info) {
 		wbcFreeMemory(info->blobs);
 	}

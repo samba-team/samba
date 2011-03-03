@@ -463,9 +463,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		params.blobs = &auth_blob;
 
 		wbc_status = wbcCredentialCache(&params, &info, &error);
-		if (error != NULL) {
-			wbcFreeMemory(error);
-		}
+		wbcFreeMemory(error);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			goto noccache;
 		}
