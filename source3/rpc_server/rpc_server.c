@@ -317,15 +317,14 @@ static void named_pipe_listener(struct tevent_context *ev,
 
 	len = sizeof(sunaddr);
 
-	while (sd == -1) {
-		sd = accept(state->fd,
-			    (struct sockaddr *)(void *)&sunaddr, &len);
-		if (errno != EINTR) break;
-	}
+	sd = accept(state->fd,
+		    (struct sockaddr *)(void *)&sunaddr, &len);
 
 	if (sd == -1) {
-		DEBUG(6, ("Failed to get a valid socket [%s]\n",
-			  strerror(errno)));
+		if (errno != EINTR) {
+			DEBUG(6, ("Failed to get a valid socket [%s]\n",
+				  strerror(errno)));
+		}
 		return;
 	}
 
