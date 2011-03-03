@@ -728,9 +728,7 @@ static bool check_dom_sid_to_level(const struct dom_sid *sid, int level)
  * This attempts to be as efficient as possible: It collects all SIDs
  * belonging to a domain and hands them in bulk to the appropriate lookup
  * function. In particular pdb_lookup_rids with ldapsam_trusted benefits
- * *hugely* from this. Winbind is going to be extended with a lookup_rids
- * interface as well, so on a DC we can do a bulk lsa_lookuprids to the
- * appropriate DC.
+ * *hugely* from this.
  */
 
 NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
