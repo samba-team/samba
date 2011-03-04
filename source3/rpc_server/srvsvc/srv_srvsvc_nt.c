@@ -2216,6 +2216,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
+	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
 	werr = WERR_OK;
 	goto done;
@@ -2360,6 +2361,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
+	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
 	werr = WERR_OK;
 	goto done;
