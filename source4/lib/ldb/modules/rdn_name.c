@@ -370,12 +370,23 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
+	const struct ldb_val *rdn_val_p;
 
 	ldb = ldb_module_get_ctx(module);
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
+	}
+
+	rdn_val_p = ldb_dn_get_rdn_val(req->op.mod.message->dn);
+	if (rdn_val_p == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if (rdn_val_p->length == 0) {
+		ldb_asprintf_errstring(ldb, "Empty RDN value on %s not permitted!",
+				       ldb_dn_get_linearized(req->op.mod.message->dn));
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	if (ldb_msg_find_element(req->op.mod.message, "distinguishedName")) {
@@ -400,11 +411,39 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+static int rdn_name_search(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+	const char *rdn_name;
+	const struct ldb_val *rdn_val_p;
+
+	ldb = ldb_module_get_ctx(module);
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.search.base)) {
+		return ldb_next_request(module, req);
+	}
+
+	rdn_name = ldb_dn_get_rdn_name(req->op.search.base);
+	rdn_val_p = ldb_dn_get_rdn_val(req->op.search.base);
+	if ((rdn_name != NULL) && (rdn_val_p == NULL)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	if ((rdn_val_p != NULL) && (rdn_val_p->length == 0)) {
+		ldb_asprintf_errstring(ldb, "Empty RDN value on %s not permitted!",
+				       ldb_dn_get_linearized(req->op.search.base));
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	return ldb_next_request(module, req);
+}
+
 static const struct ldb_module_ops ldb_rdn_name_module_ops = {
 	.name              = "rdn_name",
 	.add               = rdn_name_add,
 	.modify            = rdn_name_modify,
-	.rename            = rdn_name_rename
+	.rename            = rdn_name_rename,
+	.search            = rdn_name_search
 };
 
 int ldb_rdn_name_init(const char *version)
