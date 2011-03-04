@@ -23,6 +23,7 @@ failed=0
 
 SED_INVALID_PARAMS="{
 s/lock directory/;&/g
+s/lock dir/;&/g
 s/modules dir/;&/g
 s/logging/;&/g
 s/status/;&/g
