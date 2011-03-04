@@ -1077,12 +1077,11 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 				       char *sid_list_buffer,
 				       int sid_list_buffer_size)
 {
-	const char* sid_string = NULL;
-	char *sid_str = NULL;
+	char sid_string[WBC_SID_STRING_BUFLEN];
 
 	/* lookup name? */
 	if (IS_SID_STRING(name)) {
-		sid_string = name;
+		strlcpy(sid_string, name, sizeof(sid_string));
 	} else {
 		wbcErr wbc_status;
 		struct wbcDomainSid sid;
@@ -1098,21 +1097,13 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 			return false;
 		}
 
-		wbc_status = wbcSidToString(&sid, &sid_str);
-		if (!WBC_ERROR_IS_OK(wbc_status)) {
-			return false;
-		}
-
-		sid_string = sid_str;
+		wbcSidToStringBuf(&sid, sid_string, sizeof(sid_string));
 	}
 
 	if (!safe_append_string(sid_list_buffer, sid_string,
 				sid_list_buffer_size)) {
-		wbcFreeMemory(sid_str);
 		return false;
 	}
-
-	wbcFreeMemory(sid_str);
 	return true;
 }
 
