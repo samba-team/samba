@@ -179,7 +179,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_in',
 	init_function='ldb_extended_dn_in_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util'
+	deps='ldb talloc events samba-util'
 	)
 
 
