@@ -1121,7 +1121,7 @@ static WERROR check_ads_config( void )
 *******************************************************************/
 
 #if defined(WITH_DNS_UPDATES)
-#include "dns.h"
+#include "../lib/addns/dns.h"
 DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName, const char *pszHostName,
 		      const struct sockaddr_storage *sslist,

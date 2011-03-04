@@ -21,10 +21,9 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "dns.h"
+#include "../lib/addns/dns.h"
 
 #if defined(WITH_DNS_UPDATES)
-
 /*
  * Silly prototype to get rid of a warning
  */
