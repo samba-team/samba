@@ -42,8 +42,11 @@ size_t iconvert_talloc(const void* ctx,
 	dst = *pdst;
 
 	if (dst == NULL) {
-		/* dstlen = 2*srclen + 2; */
-		dstlen = srclen;
+		/*
+		 * Allocate an extra two bytes for the
+		 * terminating zero.
+		 */
+		dstlen = srclen + 2;
 		dst = (char *)talloc_size(ctx, dstlen);
 		if (dst == NULL) {
 			DEBUG(0,("iconver_talloc no mem\n"));
