@@ -890,11 +890,14 @@ int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *r
 int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace)
 {
 	struct ldb_message_element *el = ldb_msg_find_element(msg, attr);
+	int ret;
+
 	if (el == NULL) {
 		return LDB_SUCCESS;
 	}
-	if (ldb_msg_add(msg, el, 0) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	ret = ldb_msg_add(msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 	return ldb_msg_rename_attr(msg, attr, replace);
 }
