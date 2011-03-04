@@ -2659,6 +2659,20 @@ nTSecurityDescriptor:: """ + desc_base64
         self.assertEquals(len(res.controls), 1)
         self.assertEquals(res.controls[0].oid, "1.2.840.113556.1.4.319")
 
+    def test_operational(self):
+        """Tests operational attributes"""
+        print "Tests operational attributes"""
+
+        res = self.ldb.search(self.base_dn, scope=SCOPE_BASE,
+                              attrs=["createTimestamp", "modifyTimestamp",
+                                     "structuralObjectClass", "whenCreated",
+                                     "whenChanged"])
+        self.assertEquals(len(res), 1)
+        self.assertTrue("createTimestamp" in res[0])
+        self.assertTrue("modifyTimestamp" in res[0])
+        self.assertTrue("structuralObjectClass" in res[0])
+        self.assertTrue("whenCreated" in res[0])
+        self.assertTrue("whenChanged" in res[0])
 
 class BaseDnTests(unittest.TestCase):
 
