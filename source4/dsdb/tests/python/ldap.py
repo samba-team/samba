@@ -889,6 +889,30 @@ class BasicTests(unittest.TestCase):
         """Tests the RDN"""
         print "Tests the RDN"""
 
+        # Search
+
+        # empty RDN
+        try:
+            self.ldb.search("=,cn=users," + self.base_dn, scope=SCOPE_BASE)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # empty RDN name
+        try:
+            self.ldb.search("cn=,cn=users," + self.base_dn, scope=SCOPE_BASE)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        try:
+            self.ldb.search("=ldaptestgroup,cn=users," + self.base_dn, scope=SCOPE_BASE)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # Add
+
         # empty RDN
         try:
             self.ldb.add({
@@ -940,6 +964,29 @@ class BasicTests(unittest.TestCase):
         self.assertTrue("name" in res[0])
         self.assertTrue(res[0]["name"][0] == "ldaptestgroup")
 
+        # Modify
+
+        # empty RDN value
+        m = Message()
+        m.dn = Dn(ldb, "cn=,cn=users," + self.base_dn)
+        m["description"] = "test"
+        try:
+            self.ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # Delete
+
+        # empty RDN value
+        try:
+            self.ldb.delete("cn=,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # Rename
+
         # new empty RDN
         try:
             self.ldb.rename("cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -963,6 +1010,26 @@ class BasicTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NAMING_VIOLATION)
+
+        # new wrong RDN candidate
+        try:
+            self.ldb.rename("cn=ldaptestgroup,cn=users," + self.base_dn,
+                            "description=xyz,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
+
+        # old empty RDN value
+        try:
+            self.ldb.rename("cn=,cn=users," + self.base_dn,
+                            "cn=ldaptestgroup,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # names
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
