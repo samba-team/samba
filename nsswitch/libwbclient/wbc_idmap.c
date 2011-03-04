@@ -29,7 +29,6 @@ wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	char *sid_string = NULL;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
 	if (!sid || !puid) {
@@ -42,11 +41,7 @@ wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	wbc_status = wbcSidToString(sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
-	wbcFreeMemory(sid_string);
+	wbcSidToStringBuf(sid, request.data.sid, sizeof(request.data.sid));
 
 	/* Make request */
 
@@ -124,7 +119,6 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	char *sid_string = NULL;
 
 	if (!sid || !pgid) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
@@ -136,11 +130,7 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	wbc_status = wbcSidToString(sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
-	wbcFreeMemory(sid_string);
+        wbcSidToStringBuf(sid, request.data.sid, sizeof(request.data.sid));
 
 	/* Make request */
 

@@ -236,22 +236,18 @@ wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
 	struct winbindd_response response;
-	char * sid_string = NULL;
 
 	if (!pwd) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	wbc_status = wbcSidToString(sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
 	/* Initialize request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	strncpy(request.data.sid, sid_string, sizeof(request.data.sid));
+        wbcSidToStringBuf(sid, request.data.sid, sizeof(request.data.sid));
 
 	wbc_status = wbcRequestResponse(WINBINDD_GETPWSID,
 					&request,
@@ -262,7 +258,6 @@ wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
 	BAIL_ON_PTR_ERROR(*pwd, wbc_status);
 
  done:
-	wbcFreeMemory(sid_string);
 	return wbc_status;
 }
 

@@ -225,7 +225,6 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	char *sid_string = NULL;
 	char *domain, *name;
 
 	if (!sid) {
@@ -237,15 +236,7 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	/* dst is already null terminated from the memset above */
-
-	wbc_status = wbcSidToString(sid, &sid_string);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		return wbc_status;
-	}
-
-	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
-	wbcFreeMemory(sid_string);
+	wbcSidToStringBuf(sid, request.data.sid, sizeof(request.data.sid));
 
 	/* Make request */
 
@@ -301,7 +292,6 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	char *p;
 	struct winbindd_request request;
 	struct winbindd_response response;
-	char *sid_string = NULL;
 	char *domain_name = NULL;
 	const char **names = NULL;
 	enum wbcSidType *types = NULL;
@@ -317,11 +307,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	wbc_status = wbcSidToString(dom_sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
-	wbcFreeMemory(sid_string);
+	wbcSidToStringBuf(dom_sid, request.data.sid, sizeof(request.data.sid));
 
 	/* Even if all the Rids were of maximum 32bit values,
 	   we would only have 11 bytes per rid in the final array
@@ -426,7 +412,6 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 	const char *s;
 	struct winbindd_request request;
 	struct winbindd_response response;
-	char *sid_string = NULL;
 	struct wbcDomainSid *sids = NULL;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	int cmd;
@@ -441,11 +426,7 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	wbc_status = wbcSidToString(user_sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
-	wbcFreeMemory(sid_string);
+	wbcSidToStringBuf(user_sid, request.data.sid, sizeof(request.data.sid));
 
 	if (domain_groups_only) {
 		cmd = WINBINDD_GETUSERDOMGROUPS;
@@ -516,8 +497,6 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 	const char *s;
 	struct winbindd_request request;
 	struct winbindd_response response;
-	char *sid_string = NULL;
-	ssize_t sid_len;
 	ssize_t extra_data_len = 0;
 	char * extra_data = NULL;
 	ssize_t buflen = 0;
@@ -535,12 +514,7 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 		goto done;
 	}
 
-	wbc_status = wbcSidToString(dom_sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
-	wbcFreeMemory(sid_string);
-	sid_string = NULL;
+	wbcSidToStringBuf(dom_sid, request.data.sid, sizeof(request.data.sid));
 
 	/* Lets assume each sid is around 57 characters
 	 * S-1-5-21-AAAAAAAAAAA-BBBBBBBBBBB-CCCCCCCCCCC-DDDDDDDDDDD\n */
@@ -553,10 +527,10 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 
 	/* Build the sid list */
 	for (i=0; i<num_sids; i++) {
-		wbc_status = wbcSidToString(&sids[i], &sid_string);
-		BAIL_ON_WBC_ERROR(wbc_status);
+		char sid_str[WBC_SID_STRING_BUFLEN];
+		size_t sid_len;
 
-		sid_len = strlen(sid_string);
+		sid_len = wbcSidToStringBuf(&sids[i], sid_str, sizeof(sid_str));
 
 		if (buflen < extra_data_len + sid_len + 2) {
 			buflen *= 2;
@@ -567,13 +541,11 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 			}
 		}
 
-		strncpy(&extra_data[extra_data_len], sid_string,
+		strncpy(&extra_data[extra_data_len], sid_str,
 			buflen - extra_data_len);
 		extra_data_len += sid_len;
 		extra_data[extra_data_len++] = '\n';
 		extra_data[extra_data_len] = '\0';
-		wbcFreeMemory(sid_string);
-		sid_string = NULL;
 	}
 	extra_data_len += 1;
 
@@ -614,7 +586,6 @@ wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	wbcFreeMemory(sid_string);
 	free(extra_data);
 	winbindd_free_response(&response);
 	wbcFreeMemory(rids);
