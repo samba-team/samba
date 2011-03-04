@@ -465,11 +465,12 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		struct ldb_dirsync_control *control;
 		const char *p;
 		char cookie[1024];
-		int crit, flags, max_attrs, ret;
+		int crit, max_attrs, ret;
+		uint32_t flags;
 		
 		cookie[0] = '\0';
 		p = &(control_strings[sizeof(LDB_CONTROL_DIRSYNC_NAME)]);
-		ret = sscanf(p, "%d:%d:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
+		ret = sscanf(p, "%d:%u:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
 
 		if ((ret < 3) || (crit < 0) || (crit > 1) || (flags < 0) || (max_attrs < 0)) {
 			error_string = talloc_asprintf(mem_ctx, "invalid dirsync control syntax\n");
