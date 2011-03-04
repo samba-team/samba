@@ -621,8 +621,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	}
 
 	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req10->naming_context);
-	if (!req_dn ||
-	    !ldb_dn_validate(req_dn) ||
+	if (!ldb_dn_validate(req_dn) ||
 	    ldb_dn_compare(req_dn, rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
 		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
@@ -964,8 +963,7 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	 */
 
 	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req10->naming_context);
-	if (!req_dn ||
-	    !ldb_dn_validate(req_dn)) {
+	if (!ldb_dn_validate(req_dn)) {
 		/* that is not a valid dn */
 		DEBUG(0,(__location__ ": FSMO role transfer request for invalid DN %s\n",
 			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));

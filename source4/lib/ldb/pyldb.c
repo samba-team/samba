@@ -553,8 +553,7 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 	}
 
 	ret = ldb_dn_new(mem_ctx, ldb_ctx, str);
-
-	if (ret == NULL || !ldb_dn_validate(ret)) {
+	if (!ldb_dn_validate(ret)) {
 		talloc_free(mem_ctx);
 		PyErr_SetString(PyExc_ValueError, "unable to parse dn string");
 		return NULL;
