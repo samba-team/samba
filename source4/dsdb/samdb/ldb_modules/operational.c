@@ -25,11 +25,11 @@
  */
 
 /*
-  createTimestamp: HIDDEN, searchable, ldaptime, alias for whenCreated
-  modifyTimestamp: HIDDEN, searchable, ldaptime, alias for whenChanged
+  createTimeStamp: HIDDEN, searchable, ldaptime, alias for whenCreated
+  modifyTimeStamp: HIDDEN, searchable, ldaptime, alias for whenChanged
 
      for the above two, we do the search as normal, and if
-     createTimestamp or modifyTimestamp is asked for, then do
+     createTimeStamp or modifyTimeStamp is asked for, then do
      additional searches for whenCreated and whenChanged and fill in
      the resulting values
 
@@ -587,8 +587,8 @@ static const struct {
 	const char *attr;
 	const char *replace;
 } parse_tree_sub[] = {
-	{ "createTimestamp", "whenCreated" },
-	{ "modifyTimestamp", "whenChanged" }
+	{ "createTimeStamp", "whenCreated" },
+	{ "modifyTimeStamp", "whenChanged" }
 };
 
 
@@ -602,8 +602,8 @@ static const struct {
 	const char *extra_attr;
 	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *);
 } search_sub[] = {
-	{ "createTimestamp", "whenCreated", NULL , NULL },
-	{ "modifyTimestamp", "whenChanged", NULL , NULL },
+	{ "createTimeStamp", "whenCreated", NULL , NULL },
+	{ "modifyTimeStamp", "whenChanged", NULL , NULL },
 	{ "structuralObjectClass", "objectClass", NULL , NULL },
 	{ "canonicalName", NULL, NULL , construct_canonical_name },
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },

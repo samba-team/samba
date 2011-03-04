@@ -2664,12 +2664,12 @@ nTSecurityDescriptor:: """ + desc_base64
         print "Tests operational attributes"""
 
         res = self.ldb.search(self.base_dn, scope=SCOPE_BASE,
-                              attrs=["createTimestamp", "modifyTimestamp",
+                              attrs=["createTimeStamp", "modifyTimeStamp",
                                      "structuralObjectClass", "whenCreated",
                                      "whenChanged"])
         self.assertEquals(len(res), 1)
-        self.assertTrue("createTimestamp" in res[0])
-        self.assertTrue("modifyTimestamp" in res[0])
+        self.assertTrue("createTimeStamp" in res[0])
+        self.assertTrue("modifyTimeStamp" in res[0])
         self.assertTrue("structuralObjectClass" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("whenChanged" in res[0])
