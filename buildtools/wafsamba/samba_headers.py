@@ -136,6 +136,13 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None, public_headers_install
 
         header_map[src_path] = target_path
 
+        build_dir = os.path.join(bld.bldnode.abspath(),
+                                 'default',
+                                 bld.env.build_public_headers,
+                                 inst_path)
+        if not os.path.exists(build_dir):
+            mkdir_p(build_dir)
+
         t = bld.SAMBA_GENERATOR('HEADER_%s/%s/%s' % (relpath2, inst_path, inst_name),
                                 group='headers',
                                 rule=create_public_header,
