@@ -2682,7 +2682,7 @@ class BaseDnTests(unittest.TestCase):
 
     def test_rootdse_attrs(self):
         """Testing for all rootDSE attributes"""
-        res = self.ldb.search(scope=SCOPE_BASE, attrs=[])
+        res = self.ldb.search("", scope=SCOPE_BASE, attrs=[])
         self.assertEquals(len(res), 1)
 
     def test_highestcommittedusn(self):
