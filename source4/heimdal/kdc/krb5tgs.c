@@ -1179,6 +1179,7 @@ tgs_parse_request(krb5_context context,
 	kdc_log(context, config, 5, "Ticket-granting ticket account %s does not have secrets at this KDC, need to proxy", p);
 	if (ret == 0)
 	    free(p);
+	ret = HDB_ERR_NOT_FOUND_HERE;
 	goto out;
     } else if(ret){
 	const char *msg = krb5_get_error_message(context, ret);
@@ -2239,6 +2240,10 @@ _kdc_tgs_rep(krb5_context context,
 			    &auth_data,
 			    &replykey,
 			    &rk_is_subkey);
+    if (ret == HDB_ERR_NOT_FOUND_HERE) {
+	/* kdc_log() is called in tgs_parse_request() */
+	goto out;
+    }
     if (ret) {
 	kdc_log(context, config, 0,
 		"Failed parsing TGS-REQ from %s", from);
