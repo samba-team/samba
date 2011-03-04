@@ -73,6 +73,10 @@ conf_roundtrip()
     sed -e "$SED_INVALID_PARAMS" $1 >$DIR/conf_in
 
     conf_roundtrip_step $NET conf drop
+    test "x$?" = "x0" || {
+        return 1
+    }
+
     test -z "$($NET conf list)" 2>>$LOG
     if [ "$?" = "1" ]; then
 	echo "ERROR: conf drop failed" | tee -a $LOG
@@ -80,7 +84,14 @@ conf_roundtrip()
     fi
 
     conf_roundtrip_step $NET conf import $DIR/conf_in
+    test "x$?" = "x0" || {
+        return 1
+    }
+
     conf_roundtrip_step $NET conf list > $DIR/conf_exp
+    test "x$?" = "x0" || {
+        return 1
+    }
 
     grep "\[global\]" $DIR/conf_exp >/dev/null 2>>$LOG
     if [ "$?" = "1" ]; then
@@ -89,8 +100,15 @@ conf_roundtrip()
     fi
 
     conf_roundtrip_step $NET -d10 registry export $REGPATH $DIR/conf_exp.reg
+    test "x$?" = "x0" || {
+        return 1
+    }
 
     conf_roundtrip_step $NET conf drop
+    test "x$?" = "x0" || {
+        return 1
+    }
+
     test -z "$($NET conf list)" 2>>$LOG
     if [ "$?" = "1" ]; then
 	echo "ERROR: conf drop failed" | tee -a $LOG
@@ -98,8 +116,15 @@ conf_roundtrip()
     fi
 
     conf_roundtrip_step $NET registry import $DIR/conf_exp.reg
+    test "x$?" = "x0" || {
+        return 1
+    }
 
     conf_roundtrip_step $NET conf list >$DIR/conf_out
+    test "x$?" = "x0"  || {
+        return 1
+    }
+
     diff -q $DIR/conf_out $DIR/conf_exp  >> $LOG
     if [ "$?" = "1" ]; then
 	echo "ERROR: registry import => conf export failed"  | tee -a $LOG
@@ -107,6 +132,10 @@ conf_roundtrip()
     fi
 
     conf_roundtrip_step $NET registry export $REGPATH $DIR/conf_out.reg
+    test "x$?" = "x0" || {
+        return 1
+    }
+
     diff -q $DIR/conf_out.reg $DIR/conf_exp.reg >>$LOG
     if [ "$?" = "1" ]; then
 	echo "Error: registry import => registry export failed" | tee -a $LOG
