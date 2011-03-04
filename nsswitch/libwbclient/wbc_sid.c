@@ -27,23 +27,17 @@
 #include "libwbclient.h"
 #include "../winbind_client.h"
 
-/* Convert a binary SID to a character string */
-wbcErr wbcSidToString(const struct wbcDomainSid *sid,
-		      char **sid_string)
+/* Convert a sid to a string into a buffer. Return the string
+ * length. If buflen is too small, return the string length that would
+ * result if it was long enough. */
+int wbcSidToStringBuf(const struct wbcDomainSid *sid, char *buf, int buflen)
 {
 	uint32_t id_auth;
-	int i, ofs, maxlen;
-	char *result;
+	int i, ofs;
 
 	if (!sid) {
-		return WBC_ERR_INVALID_SID;
-	}
-
-	maxlen = sid->num_auths * 11 + 25;
-
-	result = (char *)wbcAllocateMemory(maxlen, 1, NULL);
-	if (result == NULL) {
-		return WBC_ERR_NO_MEMORY;
+		strlcpy(buf, "(NULL SID)", buflen);
+		return 10;	/* strlen("(NULL SID)") */
 	}
 
 	/*
@@ -56,13 +50,39 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 		(sid->id_auth[3] << 16) +
 		(sid->id_auth[2] << 24);
 
-	ofs = snprintf(result, maxlen, "S-%u-%lu",
+	ofs = snprintf(buf, buflen, "S-%u-%lu",
 		       (unsigned int)sid->sid_rev_num, (unsigned long)id_auth);
 
 	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(result + ofs, maxlen - ofs, "-%lu",
+		ofs += snprintf(buf + ofs, MAX(buflen - ofs, 0), "-%lu",
 				(unsigned long)sid->sub_auths[i]);
 	}
+	return ofs;
+}
+
+/* Convert a binary SID to a character string */
+wbcErr wbcSidToString(const struct wbcDomainSid *sid,
+		      char **sid_string)
+{
+	char buf[WBC_SID_STRING_BUFLEN];
+	char *result;
+	int len;
+
+	if (!sid) {
+		return WBC_ERR_INVALID_SID;
+	}
+
+	len = wbcSidToStringBuf(sid, buf, sizeof(buf));
+
+	if (len+1 > sizeof(buf)) {
+		return WBC_ERR_INVALID_SID;
+	}
+
+	result = (char *)wbcAllocateMemory(len+1, 1, NULL);
+	if (result == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+	memcpy(result, buf, len+1);
 
 	*sid_string = result;
 	return WBC_ERR_SUCCESS;

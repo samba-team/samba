@@ -66,9 +66,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.4: Added wbcSidTypeString()
  *  0.5: Added wbcChangeTrustCredentials()
  *  0.6: Made struct wbcInterfaceDetails char* members non-const
+ *  0.7: Added wbcSidToStringBuf()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 6
+#define WBCLIENT_MINOR_VERSION 7
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -528,6 +529,19 @@ void wbcFreeMemory(void*);
  * @return string representation of the SID type
  */
 const char* wbcSidTypeString(enum wbcSidType type);
+
+#define WBC_SID_STRING_BUFLEN (15*11+25)
+
+/*
+ * @brief Print a sid into a buffer
+ *
+ * @param sid		Binary Security Identifier
+ * @param buf		Target buffer
+ * @param buflen	Target buffer length
+ *
+ * @return Resulting string length.
+ */
+int wbcSidToStringBuf(const struct wbcDomainSid *sid, char *buf, int buflen);
 
 /**
  * @brief Convert a binary SID to a character string
