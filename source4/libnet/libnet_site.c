@@ -203,19 +203,19 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	}
 
 	rtn = ldb_msg_add_string(msg, "objectClass", "server");
-	if (rtn != 0) {
+	if (rtn != LDB_SUCCESS) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	rtn = ldb_msg_add_string(msg, "systemFlags", "50000000");
-	if (rtn != 0) {
+	if (rtn != LDB_SUCCESS) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	rtn = ldb_msg_add_string(msg, "serverReference", libnet_r->out.account_dn_str);
-	if (rtn != 0) {
+	if (rtn != LDB_SUCCESS) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -246,7 +246,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 		msg->dn = server_dn;
 
 		rtn = ldb_msg_add_string(msg, "serverReference",libnet_r->out.account_dn_str);
-		if (rtn != 0) {
+		if (rtn != LDB_SUCCESS) {
 			libnet_r->out.error_string = NULL;
 			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -259,7 +259,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 		}
 
 		rtn = ldb_modify(remote_ldb, msg);
-		if (rtn != 0) {
+		if (rtn != LDB_SUCCESS) {
 			libnet_r->out.error_string
 				= talloc_asprintf(libnet_r,
 						  "Failed to modify server entry %s: %s: %d",
@@ -268,7 +268,7 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-	} else if (rtn != 0) {
+	} else if (rtn != LDB_SUCCESS) {
 		libnet_r->out.error_string
 			= talloc_asprintf(libnet_r,
 				"Failed to add server entry %s: %s: %d",
