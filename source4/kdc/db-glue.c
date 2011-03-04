@@ -36,6 +36,13 @@
 #include "kdc/samba_kdc.h"
 #include "kdc/kdc-policy.h"
 
+#define SAMBA_KVNO_GET_KRBTGT(kvno) \
+	((uint16_t)(((uint32_t)kvno) >> 16))
+
+#define SAMBA_KVNO_AND_KRBTGT(kvno, krbtgt) \
+	((krb5_kvno)((((uint32_t)kvno) & 0xFFFF) | \
+	 ((((uint32_t)krbtgt) << 16) & 0xFFFF0000)))
+
 enum samba_kdc_ent_type
 { SAMBA_KDC_ENT_TYPE_CLIENT, SAMBA_KDC_ENT_TYPE_SERVER,
   SAMBA_KDC_ENT_TYPE_KRBTGT, SAMBA_KDC_ENT_TYPE_TRUST, SAMBA_KDC_ENT_TYPE_ANY };
@@ -206,6 +213,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	uint16_t i;
 	uint16_t allocated_keys = 0;
 	int rodc_krbtgt_number = 0;
+	int kvno = 0;
 	uint32_t supported_enctypes
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
@@ -245,14 +253,14 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 	}
 
-
 	entry_ex->entry.keys.val = NULL;
 	entry_ex->entry.keys.len = 0;
 
-	entry_ex->entry.kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
+	kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
 	if (is_rodc) {
-		entry_ex->entry.kvno |= (rodc_krbtgt_number << 16);
+		kvno = SAMBA_KVNO_AND_KRBTGT(kvno, rodc_krbtgt_number);
 	}
+	entry_ex->entry.kvno = kvno;
 
 	/* Get keys from the db */
 
@@ -1334,7 +1342,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	TALLOC_CTX *mem_ctx;
 	unsigned int krbtgt_number;
 	if (flags & HDB_F_KVNO_SPECIFIED) {
-		krbtgt_number = kvno >> 16;
+		krbtgt_number = SAMBA_KVNO_GET_KRBTGT(kvno);
 		if (kdc_db_ctx->rodc) {
 			if (krbtgt_number != kdc_db_ctx->my_krbtgt_number) {
 				return HDB_ERR_NOT_FOUND_HERE;
