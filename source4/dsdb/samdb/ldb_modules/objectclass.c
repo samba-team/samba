@@ -836,7 +836,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	}
 
 	/* MS-ADTS 3.1.1.5.3.5 - on a forest level < 2003 we do allow updates
-	 * only on application NCs - not on the standard DCs */
+	 * only on application NCs - not on the default ones */
 	if (oc_changes &&
 	    (dsdb_forest_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
 		struct ldb_dn *nc_root;
