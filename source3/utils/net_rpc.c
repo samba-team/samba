@@ -4617,7 +4617,7 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 	enum wbcSidType type;
 	fstring full_name;
 	struct wbcDomainSid wsid;
-	char *sid_str = NULL;
+	char sid_str[WBC_SID_STRING_BUFLEN];
 	struct dom_sid user_sid;
 	uint32_t num_groups;
 	gid_t *groups = NULL;
@@ -4636,13 +4636,9 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 		return false;
 	}
 
-	wbc_status = wbcSidToString(&wsid, &sid_str);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		return false;
-	}
+	wbcSidToStringBuf(&wsid, sid_str, sizeof(sid_str));
 
 	if (type != WBC_SID_NAME_USER) {
-		wbcFreeMemory(sid_str);
 		DEBUG(1, ("%s is not a user\n", full_name));
 		return false;
 	}
@@ -4651,9 +4647,6 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 		DEBUG(1,("Could not convert sid %s from string\n", sid_str));
 		return false;
 	}
-
-	wbcFreeMemory(sid_str);
-	sid_str = NULL;
 
 	init_user_token(token, &user_sid);
 
@@ -4678,18 +4671,11 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 			return false;
 		}
 
-		wbc_status = wbcSidToString(&wsid, &sid_str);
-		if (!WBC_ERROR_IS_OK(wbc_status)) {
-			wbcFreeMemory(groups);
-			return false;
-		}
+		wbcSidToStringBuf(&wsid, sid_str, sizeof(sid_str));
 
 		DEBUG(3, (" %s\n", sid_str));
 
 		string_to_sid(&sid, sid_str);
-		wbcFreeMemory(sid_str);
-		sid_str = NULL;
-
 		add_sid_to_token(token, &sid);
 	}
 	wbcFreeMemory(groups);
