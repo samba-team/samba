@@ -236,7 +236,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 
 	account_dn = ldb_dn_new(tmp_ctx, remote_ldb, account_dn_str);
-	if (! ldb_dn_validate(account_dn)) {
+	if (account_dn == NULL) {
 		r->out.error_string = talloc_asprintf(r, "Invalid account dn: %s",
 						      account_dn_str);
 		talloc_free(tmp_ctx);

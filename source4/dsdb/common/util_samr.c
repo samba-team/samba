@@ -507,7 +507,7 @@ NTSTATUS dsdb_lookup_rids(struct ldb_context *ldb,
 				    dom_sid_string(tmp_ctx,
 						   dom_sid_add_rid(tmp_ctx, domain_sid,
 								   rids[i])));
-		if (!dn || !ldb_dn_validate(dn)) {
+		if (dn == NULL) {
 			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}

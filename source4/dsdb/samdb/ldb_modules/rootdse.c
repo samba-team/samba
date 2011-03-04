@@ -103,7 +103,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	}
 
 	dn = ldb_dn_new(tmp_ctx, ldb, dn_string);
-	if (!ldb_dn_validate(dn)) {
+	if (dn == NULL) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}

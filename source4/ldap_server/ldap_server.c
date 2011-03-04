@@ -175,7 +175,7 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 	}
 
 	basedn = ldb_dn_new(tmp_ctx, conn->ldb, NULL);
-	if ( ! ldb_dn_validate(basedn)) {
+	if (basedn == NULL) {
 		goto failed;
 	}
 

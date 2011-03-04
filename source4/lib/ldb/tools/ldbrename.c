@@ -66,9 +66,8 @@ int main(int argc, const char **argv)
 
 	dn1 = ldb_dn_new(ldb, ldb, options->argv[0]);
 	dn2 = ldb_dn_new(ldb, ldb, options->argv[1]);
-	if ((!ldb_dn_validate(dn1)) || (!ldb_dn_validate(dn2))) {
-		printf("Invalid DN format(s)\n");
-		return LDB_ERR_INVALID_DN_SYNTAX;
+	if ((dn1 == NULL) || (dn2 == NULL)) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ldb_rename(ldb, dn1, dn2);

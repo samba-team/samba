@@ -3761,9 +3761,9 @@ int dsdb_search_by_dn_guid(struct ldb_context *ldb,
 	int ret;
 
 	dn = ldb_dn_new_fmt(tmp_ctx, ldb, "<GUID=%s>", GUID_string(tmp_ctx, guid));
-	if (!ldb_dn_validate(dn)) {
+	if (dn == NULL) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_INVALID_DN_SYNTAX;
+		return ldb_oom(ldb);
 	}
 
 	ret = dsdb_search_dn(ldb, mem_ctx, _res, dn, attrs, dsdb_flags);
