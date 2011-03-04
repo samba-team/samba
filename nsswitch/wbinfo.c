@@ -357,16 +357,9 @@ static bool wbinfo_get_usersids(const char *user_sid_str)
 	}
 
 	for (i = 0; i < num_sids; i++) {
-		char *str = NULL;
-		wbc_status = wbcSidToString(&sids[i], &str);
-		if (!WBC_ERROR_IS_OK(wbc_status)) {
-			d_fprintf(stderr, "failed to call wbcSidToString: "
-				  "%s\n", wbcErrorString(wbc_status));
-			wbcFreeMemory(sids);
-			return false;
-		}
+		char str[WBC_SID_STRING_BUFLEN];
+		wbcSidToStringBuf(&sids[i], str, sizeof(str));
 		d_printf("%s\n", str);
-		wbcFreeMemory(str);
 	}
 
 	wbcFreeMemory(sids);
@@ -398,16 +391,9 @@ static bool wbinfo_get_userdomgroups(const char *user_sid_str)
 	}
 
 	for (i = 0; i < num_sids; i++) {
-		char *str = NULL;
-		wbc_status = wbcSidToString(&sids[i], &str);
-		if (!WBC_ERROR_IS_OK(wbc_status)) {
-			d_fprintf(stderr, "failed to call wbcSidToString: "
-				  "%s\n", wbcErrorString(wbc_status));
-			wbcFreeMemory(sids);
-			return false;
-		}
+		char str[WBC_SID_STRING_BUFLEN];
+		wbcSidToStringBuf(&sids[i], str, sizeof(str));
 		d_printf("%s\n", str);
-		wbcFreeMemory(str);
 	}
 
 	wbcFreeMemory(sids);
@@ -424,7 +410,7 @@ static bool wbinfo_get_sidaliases(const char *domain,
 	struct wbcDomainSid user_sid;
 	uint32_t *alias_rids = NULL;
 	uint32_t num_alias_rids;
-	char *domain_sid_str = NULL;
+	char domain_sid_str[WBC_SID_STRING_BUFLEN];
 
 	/* Send request */
 	if ((domain == NULL) || (strequal(domain, ".")) ||
@@ -451,10 +437,7 @@ static bool wbinfo_get_sidaliases(const char *domain,
 		goto done;
 	}
 
-	wbc_status = wbcSidToString(&dinfo->sid, &domain_sid_str);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		goto done;
-	}
+	wbcSidToStringBuf(&dinfo->sid, domain_sid_str, sizeof(domain_sid_str));
 
 	for (i = 0; i < num_alias_rids; i++) {
 		d_printf("%s-%d\n", domain_sid_str, alias_rids[i]);
@@ -463,7 +446,6 @@ static bool wbinfo_get_sidaliases(const char *domain,
 	wbcFreeMemory(alias_rids);
 
 done:
-	wbcFreeMemory(domain_sid_str);
 	wbcFreeMemory(dinfo);
 	return (WBC_ERR_SUCCESS == wbc_status);
 }
@@ -647,7 +629,7 @@ static bool wbinfo_domain_info(const char *domain)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcDomainInfo *dinfo = NULL;
-	char *sid_str = NULL;
+	char sid_str[WBC_SID_STRING_BUFLEN];
 
 	if ((domain == NULL) || (strequal(domain, ".")) || (domain[0] == '\0')){
 		domain = get_winbind_domain();
@@ -662,13 +644,7 @@ static bool wbinfo_domain_info(const char *domain)
 		return false;
 	}
 
-	wbc_status = wbcSidToString(&dinfo->sid, &sid_str);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		d_fprintf(stderr, "failed to call wbcSidToString: %s\n",
-			  wbcErrorString(wbc_status));
-		wbcFreeMemory(dinfo);
-		return false;
-	}
+	wbcSidToStringBuf(&dinfo->sid, sid_str, sizeof(sid_str));
 
 	/* Display response */
 
@@ -687,7 +663,6 @@ static bool wbinfo_domain_info(const char *domain)
 		 (dinfo->domain_flags & WBC_DOMINFO_DOMAIN_PRIMARY) ?
 		 "Yes" : "No");
 
-	wbcFreeMemory(sid_str);
 	wbcFreeMemory(dinfo);
 
 	return true;
@@ -874,7 +849,7 @@ static bool wbinfo_uid_to_sid(uid_t uid)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcDomainSid sid;
-	char *sid_str = NULL;
+	char sid_str[WBC_SID_STRING_BUFLEN];
 
 	/* Send request */
 
@@ -885,18 +860,11 @@ static bool wbinfo_uid_to_sid(uid_t uid)
 		return false;
 	}
 
-	wbc_status = wbcSidToString(&sid, &sid_str);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		d_fprintf(stderr, "failed to call wbcSidToString: %s\n",
-			  wbcErrorString(wbc_status));
-		return false;
-	}
+	wbcSidToStringBuf(&sid, sid_str, sizeof(sid_str));
 
 	/* Display response */
 
 	d_printf("%s\n", sid_str);
-
-	wbcFreeMemory(sid_str);
 
 	return true;
 }
@@ -907,7 +875,7 @@ static bool wbinfo_gid_to_sid(gid_t gid)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcDomainSid sid;
-	char *sid_str = NULL;
+	char sid_str[WBC_SID_STRING_BUFLEN];
 
 	/* Send request */
 
@@ -918,18 +886,11 @@ static bool wbinfo_gid_to_sid(gid_t gid)
 		return false;
 	}
 
-	wbc_status = wbcSidToString(&sid, &sid_str);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		d_fprintf(stderr, "failed to call wbcSidToString: %s\n",
-			  wbcErrorString(wbc_status));
-		return false;
-	}
+	wbcSidToStringBuf(&sid, sid_str, sizeof(sid_str));
 
 	/* Display response */
 
 	d_printf("%s\n", sid_str);
-
-	wbcFreeMemory(sid_str);
 
 	return true;
 }
@@ -1306,7 +1267,7 @@ static bool wbinfo_lookupname(const char *full_name)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcDomainSid sid;
-	char *sid_str;
+	char sid_str[WBC_SID_STRING_BUFLEN];
 	enum wbcSidType type;
 	fstring domain_name;
 	fstring account_name;
@@ -1324,18 +1285,11 @@ static bool wbinfo_lookupname(const char *full_name)
 		return false;
 	}
 
-	wbc_status = wbcSidToString(&sid, &sid_str);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		d_fprintf(stderr, "failed to call wbcSidToString: %s\n",
-			  wbcErrorString(wbc_status));
-		return false;
-	}
+	wbcSidToStringBuf(&sid, sid_str, sizeof(sid_str));
 
 	/* Display response */
 
 	d_printf("%s %s (%d)\n", sid_str, wbcSidTypeString(type), type);
-
-	wbcFreeMemory(sid_str);
 
 	return true;
 }
