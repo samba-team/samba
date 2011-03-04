@@ -117,7 +117,7 @@ static int construct_primary_group_token(struct ldb_module *module,
 			return LDB_SUCCESS;
 		}
 
-		return samdb_msg_add_int(ldb, msg, msg, "primaryGroupToken",
+		return samdb_msg_add_uint(ldb, msg, msg, "primaryGroupToken",
 			primary_group_token);
 	} else {
 		return LDB_SUCCESS;
