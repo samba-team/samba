@@ -2668,7 +2668,6 @@ class BaseDnTests(unittest.TestCase):
 
         res3 = self.ldb.search(res2[0]["dsServiceName"][0], scope=SCOPE_BASE, attrs=["msDS-Behavior-Version"])
         self.assertEquals(len(res3), 1)
-        print res3[0]
         self.assertEquals(len(res3[0]["msDS-Behavior-Version"]), 1)
         self.assertEquals(int(res[0]["domainControllerFunctionality"][0]), int(res3[0]["msDS-Behavior-Version"][0]))
 
