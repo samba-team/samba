@@ -823,10 +823,21 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 	/* call the first module in the chain */
 	switch (req->operation) {
 	case LDB_SEARCH:
+		/* due to "ldb_build_search_req" base DN always != NULL */
+		if (!ldb_dn_validate(req->op.search.base)) {
+			ldb_asprintf_errstring(ldb, "ldb_search: invalid basedn '%s'",
+					       ldb_dn_get_linearized(req->op.search.base));
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
 		FIRST_OP(ldb, search);
 		ret = module->ops->search(module, req);
 		break;
 	case LDB_ADD:
+		if (!ldb_dn_validate(req->op.add.message->dn)) {
+			ldb_asprintf_errstring(ldb, "ldb_add: invalid dn '%s'",
+					       ldb_dn_get_linearized(req->op.add.message->dn));
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
 		/*
 		 * we have to normalize here, as so many places
 		 * in modules and backends assume we don't have two
@@ -838,14 +849,19 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		FIRST_OP(ldb, add);
 		ret = ldb_msg_check_element_flags(ldb, req->op.add.message);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		FIRST_OP(ldb, add);
 		ret = module->ops->add(module, req);
 		break;
 	case LDB_MODIFY:
+		if (!ldb_dn_validate(req->op.mod.message->dn)) {
+			ldb_asprintf_errstring(ldb, "ldb_modify: invalid dn '%s'",
+					       ldb_dn_get_linearized(req->op.mod.message->dn));
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
 		FIRST_OP(ldb, modify);
 		ret = ldb_msg_check_element_flags(ldb, req->op.mod.message);
 		if (ret != LDB_SUCCESS) {
@@ -854,6 +870,11 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		ret = module->ops->modify(module, req);
 		break;
 	case LDB_DELETE:
+		if (!ldb_dn_validate(req->op.del.dn)) {
+			ldb_asprintf_errstring(ldb, "ldb_delete: invalid dn '%s'",
+					       ldb_dn_get_linearized(req->op.del.dn));
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
 		FIRST_OP(ldb, del);
 		ret = module->ops->del(module, req);
 		break;
