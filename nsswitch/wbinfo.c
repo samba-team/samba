@@ -385,7 +385,7 @@ static bool wbinfo_get_userdomgroups(const char *user_sid_str)
 
 	wbc_status = wbcStringToSid(user_sid_str, &user_sid);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		d_fprintf(stderr, "failed to call wbcSidToString: %s\n",
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s\n",
 			  wbcErrorString(wbc_status));
 		return false;
 	}
