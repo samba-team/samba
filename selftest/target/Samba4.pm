@@ -1198,6 +1198,12 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
+	# we overwrite the kdc after the RODC join
+	# so that use the RODC as kdc and test
+	# the proxy code
+	$ctx->{kdc_ipv4} = $ret->{SERVER_IP};
+	$self->mk_krb5_conf($ctx);
+
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
 	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{RODC_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
