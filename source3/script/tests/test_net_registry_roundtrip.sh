@@ -35,6 +35,7 @@ s/timesync/;&/g
 s/sambaconf/;&/g
 s/logtype/;&/g
 s/servername/;&/g
+s/postscript/;&/g
 }"
 
 REGPATH="HKLM\Software\Samba"
