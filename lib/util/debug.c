@@ -255,6 +255,7 @@ int debug_add_class(const char *classname)
 	int ndx;
 	int *new_class_list;
 	char **new_name_list;
+	int default_level;
 
 	if (!classname)
 		return -1;
@@ -274,12 +275,14 @@ int debug_add_class(const char *classname)
 		new_class_list = DEBUGLEVEL_CLASS;
 	}
 
+	default_level = DEBUGLEVEL_CLASS[DBGC_ALL];
+
 	new_class_list = talloc_realloc(NULL, new_class_list, int, ndx + 1);
 	if (!new_class_list)
 		return -1;
 	DEBUGLEVEL_CLASS = new_class_list;
 
-	DEBUGLEVEL_CLASS[ndx] = DEBUGLEVEL_CLASS[DBGC_ALL];
+	DEBUGLEVEL_CLASS[ndx] = default_level;
 
 	new_name_list = talloc_realloc(NULL, classname_table, char *, ndx + 1);
 	if (!new_name_list)
