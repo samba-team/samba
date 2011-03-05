@@ -187,6 +187,13 @@ static int instancetype_mod(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message_element *el;
 
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "instancetype_mod\n");
+
 	el = ldb_msg_find_element(req->op.mod.message, "instanceType");
 	if (el != NULL) {
 		ldb_set_errstring(ldb, "instancetype: the 'instanceType' attribute can never be changed!");
