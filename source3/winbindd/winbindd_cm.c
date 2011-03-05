@@ -1431,7 +1431,8 @@ static void store_current_dc_in_gencache(const char *domain_name,
 					 struct cli_state *cli)
 {
 	char addr[INET6_ADDRSTRLEN];
-	char *key, *value;
+	char *key = NULL;
+	char *value = NULL;
 
 	if (cli == NULL) {
 		return;
