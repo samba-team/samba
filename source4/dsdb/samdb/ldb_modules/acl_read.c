@@ -192,6 +192,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				 bool to_remove = aclread_is_inaccessible(&msg->elements[i]);
 				 if (!to_remove) {
 					 ret_msg->elements[k] = msg->elements[i];
+					 talloc_steal(ret_msg->elements, msg->elements[i].name);
 					 talloc_steal(ret_msg->elements, msg->elements[i].values);
 					 k++;
 				 }
