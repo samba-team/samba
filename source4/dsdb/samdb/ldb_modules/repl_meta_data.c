@@ -993,6 +993,17 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+	/* current partition control is needed by "replmd_op_callback" */
+	if (ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID) == NULL) {
+		ret = ldb_request_add_control(down_req,
+					      DSDB_CONTROL_CURRENT_PARTITION_OID,
+					      false, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+	}
+
 	if (functional_level == DS_DOMAIN_FUNCTION_2000) {
 		ret = ldb_request_add_control(down_req, DSDB_CONTROL_APPLY_LINKS, false, NULL);
 		if (ret != LDB_SUCCESS) {
@@ -2246,6 +2257,17 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+	/* current partition control is needed by "replmd_op_callback" */
+	if (ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID) == NULL) {
+		ret = ldb_request_add_control(down_req,
+					      DSDB_CONTROL_CURRENT_PARTITION_OID,
+					      false, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+	}
+
 	/* If we are in functional level 2000, then
 	 * replmd_modify_handle_linked_attribs will have done
 	 * nothing */
@@ -2378,6 +2400,18 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 		talloc_free(ac);
 		return ret;
 	}
+
+	/* current partition control is needed by "replmd_op_callback" */
+	if (ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID) == NULL) {
+		ret = ldb_request_add_control(down_req,
+					      DSDB_CONTROL_CURRENT_PARTITION_OID,
+					      false, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+	}
+
 	talloc_steal(down_req, msg);
 
 	ret = add_time_element(msg, "whenChanged", t);
@@ -2949,6 +2983,12 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	LDB_REQ_SET_LOCATION(change_req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
+	/* current partition control needed by "repmd_op_callback" */
+	ret = ldb_request_add_control(change_req,
+				      DSDB_CONTROL_CURRENT_PARTITION_OID,
+				      false, NULL);
+	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+
 	return ldb_next_request(ar->module, change_req);
 }
 
@@ -3235,6 +3275,12 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 				replmd_op_callback,
 				ar->req);
 	LDB_REQ_SET_LOCATION(change_req);
+	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+
+	/* current partition control needed by "repmd_op_callback" */
+	ret = ldb_request_add_control(change_req,
+				      DSDB_CONTROL_CURRENT_PARTITION_OID,
+				      false, NULL);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
 	return ldb_next_request(ar->module, change_req);
