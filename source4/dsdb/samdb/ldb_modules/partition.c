@@ -149,7 +149,7 @@ static int partition_req_callback(struct ldb_request *req,
 	if (partition_ctrl && (ac->num_requests == 1 || ares->type == LDB_REPLY_ENTRY)) {
 		/* If we didn't fan this request out to mulitple partitions,
 		 * or this is an individual search result, we can
-		 * deterministily tell the caller what partition this was
+		 * deterministically tell the caller what partition this was
 		 * written to (repl_meta_data likes to know) */
 		ret = ldb_reply_add_control(ares,
 					    DSDB_CONTROL_CURRENT_PARTITION_OID,
