@@ -137,7 +137,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 		ac->module = module;
 		ac->req = req;
 		
-		ret = ldb_build_add_req(&ac->add_req, ldb_module_get_ctx(ac->module), ac,
+		ret = ldb_build_add_req(&ac->add_req, ldb, ac,
 					ac->req->op.add.message,
 					ac->req->controls,
 					ac, it_add_callback,
