@@ -848,13 +848,17 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (!partition_ctrl) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "entryuuid_sequence_number: no current partition control found");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+			      "entryuuid_sequence_number: no current partition control found!");
+		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
 	partition = talloc_get_type(partition_ctrl->data,
 				    struct dsdb_control_current_partition);
-	SMB_ASSERT(partition && partition->version == DSDB_CONTROL_CURRENT_PARTITION_VERSION);
+	if ((partition == NULL) || (partition->version != DSDB_CONTROL_CURRENT_PARTITION_VERSION)) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "entryuuid_sequence_number: current partition control with wrong data!");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
 
 	ret = ldb_build_search_req(&search_req, ldb, req,
 				   partition->dn, LDB_SCOPE_BASE,
