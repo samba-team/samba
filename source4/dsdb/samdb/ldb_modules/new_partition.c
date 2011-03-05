@@ -23,9 +23,9 @@
 /*
  *  Name: ldb
  *
- *  Component: ldb instancetype module
+ *  Component: ldb new partition module
  *
- *  Description: add an instanceType onto every new record
+ *  Description: Handle the add of new partitions
  *
  *  Author: Andrew Bartlett
  */
@@ -140,7 +140,7 @@ static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 
 	ldb = ldb_module_get_ctx(module);
 
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "instancetype_add_record\n");
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "new_partition_add\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
