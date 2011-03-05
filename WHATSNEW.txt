@@ -6,8 +6,12 @@
 
 This is the latest stable release of Samba 3.5.
 
+Major enhancements in Samba 3.5.8 include:
 
-o  
+o  Fix Winbind crash bug when no DC is available (bug #7730).
+o  Fix finding users on domain members (bug #7743).
+o  Fix memory leaks in Winbind (bug #7879).
+o  Fix printing with Windows 7 clients (bug #7567).
 
 
 Changes since 3.5.7:
@@ -16,11 +20,13 @@ Changes since 3.5.7:
 
 o   Michael Adam <obnox@samba.org>
     * BUG 7594: Fix "log=>ndr_pull_error" in 'wbinfo -u' and 'wbinfo -g'.
+    * BUG 7871: Fix 'net ads dns register' in cluster setups.
+    * BUG 7894: Fix sporadic Winbind panic in rpc query_user_list.
 
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 7409: Raise debug level for "reduce_name: couldn't get realpath"
-    messages.
+      messages.
     * BUG 7716: Store unmodified copies of security descriptors in acl_xattr and
       acl_tdb modules.
     * BUG 7733: Fix incorrect unix mode_t caused by invalid client DOS
@@ -37,6 +43,23 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 7835: vfs_fill_sparse() doesn't use posix_fallocate when strict
       allocate is on.
     * BUG 7843: Expand the local SAMs aliases.
+    * BUG 7892: Fix stale lock in open_file_fchmod().
+    * BUG 7950: Revalidate the pathname once re-constructed from a root fsp.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 7356: Fix 'net ads dns register' in Windows 2008 R2 domains.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 7875: Fix 'nmbd --port'.
+    * BUG 7880: Make 'rpcclient deldriver' delete drivers for all architectures.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7567: Fix printing with Windows 7 clients.
+    * BUG 7641: Handle Windows 9x adddriver calls without config file.
+    * BUG 7945: Let Winbind try to use samlogon validation level 6.
 
 
 o   Holger Hetterich <hhetter@novell.com>
@@ -44,7 +67,15 @@ o   Holger Hetterich <hhetter@novell.com>
       name.
 
 
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7821: Fix build of shared libraries on Tru64.
+
+
 o   Volker Lendecke <vl@samba.org>
+    * BUG 7066: Fix "Your Password expires today" message for users of trusted
+      domains.
+    * BUG 7262: Fix maintaining of users' groups via UsrMgr.
+    * BUG 7656: Fix scalability problem with hundreds of printers.
     * BUG 7665: Fix memory leak in the netapi routines.
     * BUG 7730: Fix Winbind crash bug when no DC is available.
     * BUG 7774: Fix a getgrent crash with many groups.
@@ -53,10 +84,38 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 7817: Fix "force group" with ntlmssp guest session setup.
     * BUG 7841: Make WINBINDD_LOOKUPRIDS asking the right domain.
     * BUG 7842: Make WINBINDD_LOOKUPRIDS returning the domain name.
+    * BUG 7855: ntlm_auth: Support clients which offer a spnego mechs we don't
+      support.
+    * BUG 7879: Fix memory leaks in Winbind.
+    * BUG 7881: Fix flaky Winbind against Windows 2008.
+    * BUG 7917: Fix connections from WinCE.
+    * BUG 7940: Fix opening MS Powerpoint files.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7567: Fix printing with Windows 7 clients.
+    * BUG 7855: ntlm_auth: Support clients which offer a spnego mechs we don't
+      support.
+    * BUG 7883: Fix SMB session setups with Kerberos against some closed source
+      SMB servers.
+    * BUG 7896: Don't set SAMR_FIELD_FULL_NAME if we just want to set the
+      account name.
+    * BUG 7899: Don't return "-1" on success in 'net rpc vampire keytab'.
+    * BUG 7942: Fix endless loops caused by inotify.
+    * BUG 7944: Catch lookup_names/sids schannel errors over ncacn_ip_tcp.
+
+
+o   Jonathan Nieder <jrnieder@gmail.com>
+    * BUG 6837:  Make "rlimit_max below minimum Windows limit" notification less
+      scary.
 
 
 o   olivier <olivier@virtscano.fakenet>
     * BUG 7789: vfs_scannedonly: Switch from mtime to ctime which is more reliable.
+
+
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * BUG 7498: Fix updating the time on close in vfs_gpfs.
 
 
 ######################################################################
