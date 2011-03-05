@@ -41,8 +41,8 @@ if os.getenv("SELFTEST_QUICK"):
     torture_options.append("--option=torture:quick=yes")
 smb4torture += " " + " ".join(torture_options)
 
-def plansmbtorturetestsuite(name, env, options):
-    modname = "samba3.posix_s3.%s" % name
+def plansmbtorturetestsuite(name, env, options, description=''):
+    modname = "samba3.posix_s3.%s %s" % (name, description)
     cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
@@ -194,3 +194,18 @@ if sub.returncode == 0:
 
         if t == "raw.chkpath":
             plansmbtorturetestsuite(t, "dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
+
+test = 'rpc.lsa.lookupsids'
+transports = ["ncacn_np", "ncacn_ip_tcp" ]
+auth_options = ["ntlm", "spnego", "connect" ]
+signseal_options = ["", ",sign", ",sign,seal"]
+smb_options = ["", ",smb2"]
+endianness_options = ["", ",bigendian"]
+for t in transports:
+    for z in smb_options:
+        for e in endianness_options:
+            for a in auth_options:
+                for s in signseal_options:
+                    binding_string = "%s:$SERVER_IP[%s%s%s%s]" % (t, a, s, z, e)
+                    options = binding_string + " -U$USERNAME%$PASSWORD"
+                    plansmbtorturetestsuite(test, "dc", options, 'over %s with [%s%s%s%s] ' % (t, a, s, z, e))
