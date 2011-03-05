@@ -239,6 +239,7 @@ static int partition_prep_request(struct partition_context *ac,
 {
 	int ret;
 	struct ldb_request *req;
+	struct ldb_control *partition_ctrl = NULL;
 
 	ac->part_req = talloc_realloc(ac, ac->part_req,
 					struct part_request,
@@ -316,20 +317,31 @@ static int partition_prep_request(struct partition_context *ac,
 	ac->part_req[ac->num_requests].req = req;
 
 	if (ac->req->controls) {
-		req->controls = talloc_memdup(req, ac->req->controls,
-					talloc_get_size(ac->req->controls));
-		if (req->controls == NULL) {
-			return ldb_oom(ldb_module_get_ctx(ac->module));
+		/* Duplicate everything beside the current partition control */
+		partition_ctrl = ldb_request_get_control(ac->req,
+							 DSDB_CONTROL_CURRENT_PARTITION_OID);
+		if (!ldb_save_controls(partition_ctrl, req, NULL)) {
+			return ldb_module_oom(ac->module);
 		}
 	}
 
 	if (partition) {
+		void *part_data = partition->ctrl;
+
 		ac->part_req[ac->num_requests].module = partition->module;
 
-		if (!ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID)) {
+		if (partition_ctrl != NULL) {
+			if (partition_ctrl->data != NULL) {
+				part_data = partition_ctrl->data;
+			}
+
+			/*
+			 * If the provided current partition control is without
+			 * data then use the calculated one.
+			 */
 			ret = ldb_request_add_control(req,
 						      DSDB_CONTROL_CURRENT_PARTITION_OID,
-						      false, partition->ctrl);
+						      false, part_data);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
