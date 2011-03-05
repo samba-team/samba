@@ -374,8 +374,16 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	partition_ctrl = ldb_reply_get_control(ares, DSDB_CONTROL_CURRENT_PARTITION_OID);
 
-	/* Remove the 'partition' control from what we pass up the chain */
-	controls = ldb_controls_except_specified(ares->controls, ares, partition_ctrl);
+	controls = ares->controls;
+	if (ldb_request_get_control(ac->req,
+				    DSDB_CONTROL_CURRENT_PARTITION_OID) == NULL) {
+		/*
+		 * Remove the current partition control from what we pass up
+		 * the chain if it hasn't been requested manually.
+		 */
+		controls = ldb_controls_except_specified(ares->controls, ares,
+							 partition_ctrl);
+	}
 
 	if (ares->error != LDB_SUCCESS) {
 		DEBUG(0,("%s failure. Error is: %s\n", __FUNCTION__, ldb_strerror(ares->error)));
