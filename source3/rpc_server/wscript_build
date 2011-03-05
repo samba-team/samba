@@ -41,6 +41,9 @@ bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
                     source='rpc_ep_setup.c ../librpc/rpc/dcerpc_ep.c')
 
+bld.SAMBA3_SUBSYSTEM('EPMD',
+		     source='epmd.c')
+
 bld.SAMBA3_SUBSYSTEM('RPC_SAMR',
                     source=RPC_SAMR_SRC,
                     deps='PLAINTEXT_AUTH',
