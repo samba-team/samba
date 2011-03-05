@@ -14,7 +14,49 @@ Changes since 3.5.7:
 --------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 7594: Fix "log=>ndr_pull_error" in 'wbinfo -u' and 'wbinfo -g'.
+
+
 o   Jeremy Allison <jra@samba.org>
+    * BUG 7409: Raise debug level for "reduce_name: couldn't get realpath"
+    messages.
+    * BUG 7716: Store unmodified copies of security descriptors in acl_xattr and
+      acl_tdb modules.
+    * BUG 7733: Fix incorrect unix mode_t caused by invalid client DOS
+      attributes on create.
+    * BUG 7734: Apply appropriate create masks when creating files with "inherit
+      ACLs" set to true.
+    * BUG 7743: Fix finding users on domain members.
+    * BUG 7744: Fix "dfree cache time" parameter.
+    * BUG 7777: Fix requesting lookups for BUILTIN sids.
+    * BUG 7785: Fix atime limit.
+    * BUG 7791: Fix copying files from a SMB share using Gnome vfs and SMB
+      signing.
+    * BUG 7812: ACL inheritance cannot be disabled in vfs_acl_xattr/vfs_acl_tdb.
+    * BUG 7835: vfs_fill_sparse() doesn't use posix_fallocate when strict
+      allocate is on.
+    * BUG 7843: Expand the local SAMs aliases.
+
+
+o   Holger Hetterich <hhetter@novell.com>
+    * BUG 3185: Fix 'testparm' return code when EOF in encountered in param
+      name.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7665: Fix memory leak in the netapi routines.
+    * BUG 7730: Fix Winbind crash bug when no DC is available.
+    * BUG 7774: Fix a getgrent crash with many groups.
+    * BUG 7779: Fix smbd crash caused by expand_msdfs.
+    * BUG 7800: Make Winbind recover from a signing error.
+    * BUG 7817: Fix "force group" with ntlmssp guest session setup.
+    * BUG 7841: Make WINBINDD_LOOKUPRIDS asking the right domain.
+    * BUG 7842: Make WINBINDD_LOOKUPRIDS returning the domain name.
+
+
+o   olivier <olivier@virtscano.fakenet>
+    * BUG 7789: vfs_scannedonly: Switch from mtime to ctime which is more reliable.
 
 
 ######################################################################
