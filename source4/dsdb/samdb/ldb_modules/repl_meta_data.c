@@ -452,8 +452,7 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 		 * common path.  Other cases will have it cleaned up
 		 * eventually with the ares */
 		talloc_free(partition_ctrl);
-		return ldb_module_done(ac->req,
-				       ldb_controls_except_specified(controls, ares, partition_ctrl),
+		return ldb_module_done(ac->req, controls,
 				       ares->response, LDB_SUCCESS);
 	}
 }
