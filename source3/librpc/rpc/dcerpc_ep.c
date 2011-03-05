@@ -215,6 +215,7 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 
 		h = cli->binding_handle;
 	} else {
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
 
