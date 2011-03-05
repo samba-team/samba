@@ -129,9 +129,6 @@ static void epmd_smb_conf_updated(struct messaging_context *msg,
 				  struct server_id server_id,
 				  DATA_BLOB *data)
 {
-	struct tevent_context *ev_ctx =
-		talloc_get_type_abort(private_data, struct tevent_context);
-
 	DEBUG(10, ("Got message saying smb.conf was updated. Reloading.\n"));
 	change_to_root_user();
 	epmd_reopen_logs();
@@ -168,9 +165,6 @@ static void epmd_sig_hup_handler(struct tevent_context *ev,
 				    void *siginfo,
 				    void *private_data)
 {
-	struct messaging_context *msg_ctx = talloc_get_type_abort(private_data,
-								  struct messaging_context);
-
 	change_to_root_user();
 
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
