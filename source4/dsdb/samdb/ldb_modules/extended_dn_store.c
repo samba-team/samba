@@ -345,7 +345,7 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		/* Re-calculate el */
 		el = &ac->new_req->op.add.message->elements[i];
 		for (j = 0; j < el->num_values; j++) {
-			ret = extended_store_replace(ac, ac->new_req->op.add.message->elements, &el->values[j],
+			ret = extended_store_replace(ac, ac->new_req, &el->values[j],
 						     false, schema_attr->syntax->ldap_oid);
 			if (ret != LDB_SUCCESS) {
 				return ret;
@@ -429,7 +429,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 			 * input of an extended DN */
 			bool is_delete = (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE);
 
-			ret = extended_store_replace(ac, req->op.mod.message->elements, &el->values[j],
+			ret = extended_store_replace(ac, ac->new_req, &el->values[j],
 						     is_delete, schema_attr->syntax->ldap_oid);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(ac);
