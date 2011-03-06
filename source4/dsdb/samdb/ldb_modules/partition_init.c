@@ -386,7 +386,7 @@ int partition_reload_if_required(struct ldb_module *module,
 	TALLOC_CTX *mem_ctx;
 
 	if (!data) {
-		/* Not initilised yet */
+		/* Not initialised yet */
 		return LDB_SUCCESS;
 	}
 
