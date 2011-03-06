@@ -404,7 +404,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 		return ldb_next_request(module, req);
 	}
 
-	if (req->operation != LDB_SEARCH && ldb_dn_is_special(dn)) {
+	if (ldb_dn_is_special(dn)) {
 		/* Is this a special DN, we need to replicate to every backend? */
 		for (i=0; data->replicate && data->replicate[i]; i++) {
 			if (ldb_dn_compare(data->replicate[i], 
