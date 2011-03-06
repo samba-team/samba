@@ -1160,15 +1160,17 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 /* extended */
 static int partition_extended(struct ldb_module *module, struct ldb_request *req)
 {
-	struct partition_private_data *data;
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
+							      struct partition_private_data);
 	struct partition_context *ac;
 	int ret;
 
-	data = talloc_get_type(ldb_module_get_private(module), struct partition_private_data);
+	/* if we aren't initialised yet go further */
 	if (!data) {
 		return ldb_next_request(module, req);
 	}
 
+	/* see if we are still up-to-date */
 	ret = partition_reload_if_required(module, data, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
