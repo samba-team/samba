@@ -398,6 +398,8 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	struct dsdb_partition *partition;
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
+
+	/* if we aren't initialised yet go further */
 	if (!data || !data->partitions) {
 		return ldb_next_request(module, req);
 	}
@@ -468,7 +470,8 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	unsigned int i, j;
 	int ret;
 	bool domain_scope = false, phantom_root = false;
-	
+
+	/* see if we are still up-to-date */
 	ret = partition_reload_if_required(module, data, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
