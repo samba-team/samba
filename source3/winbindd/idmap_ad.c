@@ -100,7 +100,6 @@ static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 			ads_destroy( &ads );
 			ads_kdestroy(WINBIND_CCACHE_NAME);
 			ctx->ads = NULL;
-			TALLOC_FREE( ctx->ad_schema );
 		}
 	}
 
@@ -187,7 +186,8 @@ static ADS_STATUS ad_idmap_cached_connection(struct idmap_domain *dom)
 	     (ctx->ad_map_type ==  WB_POSIX_MAP_SFU20) ||
 	     (ctx->ad_map_type ==  WB_POSIX_MAP_RFC2307) )
 	{
-		status = ads_check_posix_schema_mapping(NULL, ctx->ads, ctx->ad_map_type, &ctx->ad_schema);
+		status = ads_check_posix_schema_mapping(
+			ctx, ctx->ads, ctx->ad_map_type, &ctx->ad_schema);
 		if ( !ADS_ERR_OK(status) ) {
 			DEBUG(2,("ad_idmap_cached_connection: Failed to obtain schema details!\n"));
 		}
@@ -698,8 +698,6 @@ static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
 		ads_destroy( &ctx->ads );
 		ctx->ads = NULL;
 	}
-
-	TALLOC_FREE( ctx->ad_schema );
 
 	return NT_STATUS_OK;
 }
