@@ -71,22 +71,26 @@ struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid
 	return NULL;
 }
 
-/* saves the current controls list into the "saver" and replace the one in req with a new one excluding
-the "exclude" control */
-/* returns 0 on error */
+/*
+ * Saves the current controls list into the "saver" and replace the one in "req"
+ * with a new one excluding the "exclude" control (if it is NULL then the list
+ * remains the same)
+ *
+ * Returns 0 on error.
+ */
 int ldb_save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver)
 {
 	struct ldb_control **lcs;
 	unsigned int i, j;
 
 	*saver = req->controls;
-	for (i = 0; req->controls[i]; i++);
-	if (i == 1) {
+	for (i = 0; req->controls && req->controls[i]; i++);
+	if (i == 0) {
 		req->controls = NULL;
 		return 1;
 	}
 
-	lcs = talloc_array(req, struct ldb_control *, i);
+	lcs = talloc_array(req, struct ldb_control *, i + 1);
 	if (!lcs) {
 		return 0;
 	}
@@ -98,25 +102,32 @@ int ldb_save_controls(struct ldb_control *exclude, struct ldb_request *req, stru
 	}
 	lcs[j] = NULL;
 
-	req->controls = lcs;
+	req->controls = talloc_realloc(req, lcs, struct ldb_control *, j + 1);
+	if (req->controls == NULL) {
+		return 0;
+	}
 	return 1;
 }
 
-/* Returns a list of controls, except the one specified.  Included
- * controls become a child of returned list if they were children of
- * controls_in */
+/*
+ * Returns a list of controls, except the one specified with "exclude" (can
+ * also be NULL).  Included controls become a child of returned list if they
+ * were children of "controls_in".
+ *
+ * Returns NULL on error (OOM) or an empty control list.
+ */
 struct ldb_control **ldb_controls_except_specified(struct ldb_control **controls_in, 
 					       TALLOC_CTX *mem_ctx, 
 					       struct ldb_control *exclude)
 {
 	struct ldb_control **lcs = NULL;
-	unsigned int i, j;
+	unsigned int i, j, n;
 
 	for (i = 0; controls_in && controls_in[i]; i++);
-
 	if (i == 0) {
 		return NULL;
 	}
+	n = i;
 
 	for (i = 0, j = 0; controls_in && controls_in[i]; i++) {
 		if (exclude == controls_in[i]) continue;
@@ -126,7 +137,8 @@ struct ldb_control **ldb_controls_except_specified(struct ldb_control **controls
 			 * control, or there were no controls, we
 			 * don't allocate at all, and just return
 			 * NULL */
-			lcs = talloc_array(mem_ctx, struct ldb_control *, i);
+			lcs = talloc_array(mem_ctx, struct ldb_control *,
+					   n + 1);
 			if (!lcs) {
 				return NULL;
 			}
@@ -138,6 +150,8 @@ struct ldb_control **ldb_controls_except_specified(struct ldb_control **controls
 	}
 	if (lcs) {
 		lcs[j] = NULL;
+
+		lcs = talloc_realloc(mem_ctx, lcs, struct ldb_control *, j + 1);
 	}
 
 	return lcs;
