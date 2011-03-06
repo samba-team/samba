@@ -33,8 +33,6 @@ struct sid_hash_table {
 	struct dom_sid *sid;
 };
 
-struct sid_hash_table *hashed_domains = NULL;
-
 /*********************************************************************
  Hash a domain SID (S-1-5-12-aaa-bbb-ccc) to a 12bit number
  ********************************************************************/
@@ -109,6 +107,7 @@ static void separate_hashes(uint32_t id,
 static NTSTATUS be_init(struct idmap_domain *dom,
 			const char *params)
 {
+	struct sid_hash_table *hashed_domains;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
@@ -117,7 +116,7 @@ static NTSTATUS be_init(struct idmap_domain *dom,
 	/* If the domain SID hash table has been initialized, assume
 	   that we completed this function previously */
 
-	if ( hashed_domains ) {
+	if (dom->private_data != NULL) {
 		nt_status = NT_STATUS_OK;
 		goto done;
 	}
@@ -129,7 +128,7 @@ static NTSTATUS be_init(struct idmap_domain *dom,
 
 	/* Create the hash table of domain SIDs */
 
-	hashed_domains = TALLOC_ZERO_ARRAY(NULL, struct sid_hash_table, 4096);
+	hashed_domains = TALLOC_ZERO_ARRAY(dom, struct sid_hash_table, 4096);
 	BAIL_ON_PTR_NT_ERROR(hashed_domains, nt_status);
 
 	/* create the hash table of domain SIDs */
@@ -151,6 +150,8 @@ static NTSTATUS be_init(struct idmap_domain *dom,
 		sid_copy(hashed_domains[hash].sid, &dom_list[i].sid);
 	}
 
+	dom->private_data = hashed_domains;
+
 done:
 	return nt_status;
 }
@@ -161,6 +162,8 @@ done:
 static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 				struct id_map **ids)
 {
+	struct sid_hash_table *hashed_domains = talloc_get_type_abort(
+		dom->private_data, struct sid_hash_table);
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
@@ -257,9 +260,6 @@ done:
 
 static NTSTATUS be_close(struct idmap_domain *dom)
 {
-	if (hashed_domains)
-		talloc_free(hashed_domains);
-
 	return NT_STATUS_OK;
 }
 
