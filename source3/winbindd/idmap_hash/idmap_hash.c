@@ -258,14 +258,6 @@ done:
 /*********************************************************************
  ********************************************************************/
 
-static NTSTATUS be_close(struct idmap_domain *dom)
-{
-	return NT_STATUS_OK;
-}
-
-/*********************************************************************
- ********************************************************************/
-
 static NTSTATUS nss_hash_init(struct nss_domain_entry *e )
 {
 	return be_init(NULL, NULL);
@@ -359,7 +351,6 @@ static struct idmap_methods hash_idmap_methods = {
 	.init            = be_init,
 	.unixids_to_sids = unixids_to_sids,
 	.sids_to_unixids = sids_to_unixids,
-	.close_fn        = be_close
 };
 
 static struct nss_info_methods hash_nss_methods = {

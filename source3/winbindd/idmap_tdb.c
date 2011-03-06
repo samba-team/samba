@@ -936,17 +936,11 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
  Close the idmap tdb instance
 **********************************/
 
-static NTSTATUS idmap_tdb_close(struct idmap_domain *dom)
-{
-	return NT_STATUS_OK;
-}
-
 static struct idmap_methods db_methods = {
 	.init = idmap_tdb_db_init,
 	.unixids_to_sids = idmap_tdb_unixids_to_sids,
 	.sids_to_unixids = idmap_tdb_sids_to_unixids,
 	.allocate_id = idmap_tdb_get_new_id,
-	.close_fn = idmap_tdb_close
 };
 
 NTSTATUS idmap_tdb_init(void)

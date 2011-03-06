@@ -57,9 +57,6 @@ struct idmap_methods {
 
 	/* Allocate a Unix-ID. */
 	NTSTATUS (*allocate_id)(struct idmap_domain *dom, struct unixid *id);
-
-	/* Called when backend is unloaded */
-	NTSTATUS (*close_fn)(struct idmap_domain *dom);
 };
 
 #include "winbindd/idmap_proto.h"

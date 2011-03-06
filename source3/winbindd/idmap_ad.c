@@ -695,14 +695,6 @@ done:
 	return ret;
 }
 
-/************************************************************************
- ***********************************************************************/
-
-static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
-{
-	return NT_STATUS_OK;
-}
-
 /*
  * nss_info_{sfu,sfu20,rfc2307}
  */
@@ -1065,17 +1057,6 @@ done:
 	return nt_status;
 }
 
-
-/************************************************************************
- ***********************************************************************/
-
-static NTSTATUS nss_ad_close( void )
-{
-	/* nothing to do.  All memory is free()'d by the idmap close_fn() */
-
-	return NT_STATUS_OK;
-}
-
 /************************************************************************
  Function dispatch tables for the idmap and nss plugins
  ***********************************************************************/
@@ -1084,7 +1065,6 @@ static struct idmap_methods ad_methods = {
 	.init            = idmap_ad_initialize,
 	.unixids_to_sids = idmap_ad_unixids_to_sids,
 	.sids_to_unixids = idmap_ad_sids_to_unixids,
-	.close_fn        = idmap_ad_close
 };
 
 /* The SFU and RFC2307 NSS plugins share everything but the init
@@ -1095,7 +1075,6 @@ static struct nss_info_methods nss_rfc2307_methods = {
 	.get_nss_info   = nss_ad_get_info,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
-	.close_fn       = nss_ad_close
 };
 
 static struct nss_info_methods nss_sfu_methods = {
@@ -1103,7 +1082,6 @@ static struct nss_info_methods nss_sfu_methods = {
 	.get_nss_info   = nss_ad_get_info,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
-	.close_fn       = nss_ad_close
 };
 
 static struct nss_info_methods nss_sfu20_methods = {
@@ -1111,7 +1089,6 @@ static struct nss_info_methods nss_sfu20_methods = {
 	.get_nss_info   = nss_ad_get_info,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
-	.close_fn       = nss_ad_close
 };
 
 

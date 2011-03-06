@@ -182,16 +182,10 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS idmap_rid_close(struct idmap_domain *dom)
-{
-	return NT_STATUS_OK;
-}
-
 static struct idmap_methods rid_methods = {
 	.init = idmap_rid_initialize,
 	.unixids_to_sids = idmap_rid_unixids_to_sids,
 	.sids_to_unixids = idmap_rid_sids_to_unixids,
-	.close_fn = idmap_rid_close
 };
 
 NTSTATUS idmap_rid_init(void)

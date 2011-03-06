@@ -567,17 +567,10 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom,
 /*
   Close the idmap tdb instance
 */
-static NTSTATUS idmap_autorid_close(struct idmap_domain *dom)
-{
-	/* don't do anything */
-	return NT_STATUS_OK;
-}
-
 static struct idmap_methods autorid_methods = {
 	.init = idmap_autorid_initialize,
 	.unixids_to_sids = idmap_autorid_unixids_to_sids,
 	.sids_to_unixids = idmap_autorid_sids_to_unixids,
-	.close_fn = idmap_autorid_close
 };
 
 NTSTATUS idmap_autorid_init(void)

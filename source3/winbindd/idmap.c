@@ -153,18 +153,6 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 	return NT_STATUS_OK;
 }
 
-static int close_domain_destructor(struct idmap_domain *dom)
-{
-	NTSTATUS ret;
-
-	ret = dom->methods->close_fn(dom);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(3, ("Failed to close idmap domain [%s]!\n", dom->name));
-	}
-
-	return 0;
-}
-
 static bool parse_idmap_module(TALLOC_CTX *mem_ctx, const char *param,
 			       char **pmodulename, char **pargs)
 {
@@ -342,8 +330,6 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 			  nt_errstr(status)));
 		goto fail;
 	}
-
-	talloc_set_destructor(result, close_domain_destructor);
 
 	return result;
 

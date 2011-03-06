@@ -254,17 +254,6 @@ static NTSTATUS _idmap_adex_get_id_from_sid(struct
 	return NT_STATUS_OK;
 }
 
-/**********************************************************************
- *********************************************************************/
-
-static NTSTATUS _idmap_adex_close(struct idmap_domain
-				      *dom)
-{
-	/* FIXME!  need to do cleanup here */
-
-	return NT_STATUS_OK;
-}
-
 /*
  * IdMap NSS plugin
  */
@@ -383,7 +372,6 @@ static struct idmap_methods adex_idmap_methods = {
 	.init             = _idmap_adex_init,
 	.unixids_to_sids  = _idmap_adex_get_sid_from_id,
 	.sids_to_unixids  = _idmap_adex_get_id_from_sid,
-	.close_fn         = _idmap_adex_close
 };
 static struct nss_info_methods adex_nss_methods = {
 	.init           = _nss_adex_init,
