@@ -196,6 +196,17 @@ static ADS_STATUS ad_idmap_cached_connection(struct idmap_domain *dom)
 	return status;
 }
 
+static int idmap_ad_context_destructor(struct idmap_ad_context *ctx)
+{
+	if (ctx->ads != NULL) {
+		/* we own this ADS_STRUCT so make sure it goes away */
+		ctx->ads->is_mine = True;
+		ads_destroy( &ctx->ads );
+		ctx->ads = NULL;
+	}
+	return 0;
+}
+
 /************************************************************************
  ***********************************************************************/
 
@@ -211,6 +222,7 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom,
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_set_destructor(ctx, idmap_ad_context_destructor);
 
 	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
 	if (config_option == NULL) {
@@ -688,17 +700,6 @@ done:
 
 static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
 {
-	struct idmap_ad_context * ctx;
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
-
-	if (ctx->ads != NULL) {
-		/* we own this ADS_STRUCT so make sure it goes away */
-		ctx->ads->is_mine = True;
-		ads_destroy( &ctx->ads );
-		ctx->ads = NULL;
-	}
-
 	return NT_STATUS_OK;
 }
 
