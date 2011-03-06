@@ -102,7 +102,7 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 		help="The server role (domain controller | dc | member server | member | standalone). Default is standalone.")
 parser.add_option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
 		  choices=["2000", "2003", "2008", "2008_R2"],
-		help="The domain and forest function level (2003 | 2008 | 2008_R2). Default is (Windows) 2003 (Native).")
+		help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2003 Native.")
 parser.add_option("--next-rid", type="int", metavar="NEXTRID", default=1000,
 		help="The initial nextRid value (only needed for upgrades).  Default is 1000.")
 parser.add_option("--partitions-only", 
