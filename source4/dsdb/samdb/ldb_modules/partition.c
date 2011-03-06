@@ -500,6 +500,11 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
+	/* if we aren't initialised yet go further */
+	if (!data || !data->partitions) {
+		return ldb_next_request(module, req);
+	}
+
 	/* Locate the options */
 	domain_scope = (search_options
 		&& (search_options->search_options & LDB_SEARCH_OPTION_DOMAIN_SCOPE))
@@ -512,10 +517,6 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		search_options->search_options = search_options->search_options
 			& ~LDB_SEARCH_OPTION_DOMAIN_SCOPE
 			& ~LDB_SEARCH_OPTION_PHANTOM_ROOT;
-	}
-
-	if (!data || !data->partitions) {
-		return ldb_next_request(module, req);
 	}
 
 	ac = partition_init_ctx(module, req);
