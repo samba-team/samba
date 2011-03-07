@@ -88,6 +88,11 @@ bld.SAMBA_SUBSYSTEM('NDR_SPOOLSS_BUF',
         deps='talloc'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_PRINTCAP',
+	source='gen_ndr/ndr_printcap.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_EPMAPPER',
 	source='gen_ndr/ndr_epmapper.c',
 	public_deps='ndr'
