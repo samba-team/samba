@@ -1278,6 +1278,23 @@ as the password for the user DN used to bind to the ldap server.
 </refsect2>
 
 <refsect2>
+
+<title>IDMAP DELETE [-f] [--db=&lt;DB&gt;] &lt;ID&gt;</title>
+
+<para>
+Delete a mapping sid &lt;-&gt; gid or sid &lt;-&gt; uid from the IDMAP database.
+The mapping is given by &lt;ID&gt; which may either be a sid: S-x-..., a gid: "GID number" or a uid: "UID number".
+Use -f to delete an invalid partial mapping &lt;ID&gt; -&gt; xx
+</para>
+<para>
+  Use "smbcontrol all idmap ..." to notify running smbd instances.
+  See the <citerefentry><refentrytitle>smbcontrol</refentrytitle>
+  <manvolnum>1</manvolnum></citerefentry> manpage for details.
+</para>
+</refsect2>
+
+
+<refsect2>
 <title>USERSHARE</title>
 
 <para>Starting with version 3.0.23, a Samba server now supports the ability for
