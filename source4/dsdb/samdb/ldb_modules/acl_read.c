@@ -47,6 +47,7 @@ struct aclread_context {
 	bool sd;
 	bool instance_type;
 	bool object_sid;
+	bool indirsync;
 };
 
 struct aclread_private {
@@ -158,18 +159,41 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 							     access_mask,
 							     attr);
 
-			 if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-				 /* do not return this entry if attribute is
-				    part of the search filter */
-				 if (dsdb_attr_in_parse_tree(ac->req->op.search.tree,
-							     msg->elements[i].name)) {
-					 talloc_free(tmp_ctx);
-					 return LDB_SUCCESS;
-				 }
-				 aclread_mark_inaccesslible(&msg->elements[i]);
-			 } else if (ret != LDB_SUCCESS) {
-				 goto fail;
-			 }
+			/*
+			 * Dirsync control needs the replpropertymetadata attribute
+			 * so return it as it will be removed by the control
+			 * in anycase.
+			 */
+			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+				if (!ac->indirsync) {
+					/* do not return this entry if attribute is
+					part of the search filter */
+					if (dsdb_attr_in_parse_tree(ac->req->op.search.tree,
+								msg->elements[i].name)) {
+						talloc_free(tmp_ctx);
+						return LDB_SUCCESS;
+					}
+					aclread_mark_inaccesslible(&msg->elements[i]);
+				} else {
+					/*
+					 * We are doing dirysnc answers
+					 * and the object shouldn't be returned (normally)
+					 * but we will return it without replPropertyMetaData
+					 * so that the dirysync module will do what is needed
+					 * (remove the object if it is not deleted, or return
+					 * just the objectGUID if it's deleted).
+					 */
+					if (dsdb_attr_in_parse_tree(ac->req->op.search.tree,
+								msg->elements[i].name)) {
+						ldb_msg_remove_attr(msg, "replPropertyMetaData");
+						break;
+					} else {
+						aclread_mark_inaccesslible(&msg->elements[i]);
+					}
+				}
+			} else if (ret != LDB_SUCCESS) {
+				goto fail;
+			}
 		 }
 		 for (i=0; i < msg->num_elements; i++) {
 			 if (!aclread_is_inaccessible(&msg->elements[i])) {
@@ -224,6 +248,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	struct aclread_context *ac;
 	struct ldb_request *down_req;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
+	uint32_t flags = ldb_req_get_custom_flags(req);
 	struct ldb_result *res;
 	struct aclread_private *p;
 	bool is_untrusted = ldb_req_is_untrusted(req);
@@ -284,6 +309,11 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	ac->module = module;
 	ac->req = req;
 	ac->schema = dsdb_get_schema(ldb, req);
+	if (flags & DSDB_ACL_CHECKS_DIRSYNC_FLAG) {
+		ac->indirsync = true;
+	} else {
+		ac->indirsync = false;
+	}
 	if (!ac->schema) {
 		return ldb_operr(ldb);
 	}
