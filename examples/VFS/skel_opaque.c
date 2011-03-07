@@ -477,19 +477,19 @@ static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info, SEC_DESC **ppdesc)
+	uint32 security_info, struct security_descriptor **ppdesc)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
-	const char *name, uint32 security_info, SEC_DESC **ppdesc)
+	const char *name, uint32 security_info, struct security_descriptor **ppdesc)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info_sent, const SEC_DESC *psd)
+	uint32 security_info_sent, const struct security_descriptor *psd)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
