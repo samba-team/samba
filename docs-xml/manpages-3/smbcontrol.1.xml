@@ -272,6 +272,32 @@
 	</para></listitem>
 	</varlistentry>
 
+	<varlistentry>
+	<term>idmap</term>
+	<listitem><para>Notify about changes of id mapping. Can be sent
+	to <constant>smbd</constant> or (not implemented yet) <constant>winbindd</constant>.
+	</para></listitem>
+
+	<variablelist>
+	  <varlistentry>
+	    <term>flush [uid|gid]</term>
+	    <listitem><para>Flush caches for sid &lt;-&gt; gid and/or sid &lt;-&gt; uid mapping.
+	    </para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>delete &lt;ID&gt;</term>
+	    <listitem><para>Remove a mapping from cache. The mapping is given by &lt;ID&gt;
+	    which may either be a sid: S-x-..., a gid: "GID number" or a uid: "UID number".
+	    </para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>kill &lt;ID&gt;</term>
+	    <listitem><para>Remove a mapping from cache. Terminate <constant>smbd</constant> if
+	    the id is currently in use.</para></listitem>
+	  </varlistentry>
+	</variablelist>
+	</varlistentry>
+
 </variablelist>
 </refsect1>
 
