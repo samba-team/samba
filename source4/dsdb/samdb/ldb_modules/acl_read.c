@@ -88,7 +88,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 case LDB_REPLY_ENTRY:
 		 msg = ares->message;
 		 ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, msg, &sd);
-		 if (ret != LDB_SUCCESS) {
+		 if (ret != LDB_SUCCESS || sd == NULL ) {
 			 DEBUG(10, ("acl_read: cannot get descriptor\n"));
 			 ret = LDB_ERR_OPERATIONS_ERROR;
 			 goto fail;
