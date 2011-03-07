@@ -706,14 +706,14 @@ static bool skel_aio_force(struct vfs_handle_struct *handle, struct files_struct
         return SMB_VFS_NEXT_AIO_FORCE(handle, fsp);
 }
 
-static bool skel_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf)
+static bool skel_is_offline(struct vfs_handle_struct *handle, const struct smb_filename *fname, SMB_STRUCT_STAT *sbuf)
 {
-	return SMB_VFS_NEXT_IS_OFFLINE(handle, path, sbuf);
+	return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
 }
 
-static int skel_set_offline(struct vfs_handle_struct *handle, const char *path)
+static int skel_set_offline(struct vfs_handle_struct *handle, const struct smb_filename *fname)
 {
-	return SMB_VFS_NEXT_SET_OFFLINE(handle, path);
+	return SMB_VFS_NEXT_SET_OFFLINE(handle, fname);
 }
 
 /* VFS operations structure */
