@@ -838,6 +838,14 @@ NTSTATUS winbindd_pam_chng_pswd_auth_crap_recv(
 	struct tevent_req *req,
 	struct winbindd_response *response);
 
+struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct dom_sid *sids,
+				      uint32_t num_sids);
+NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    struct lsa_RefDomainList **domains,
+			    struct lsa_TransNameArray **names);
+
 /* The following definitions come from winbindd/winbindd_samr.c  */
 
 NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
