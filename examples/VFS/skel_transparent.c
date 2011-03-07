@@ -298,7 +298,7 @@ static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_
 }
 
 static int skel_fallocate(vfs_handle_struct *handle, files_struct *fsp,
-			enum vfs_fallocate_mode,
+			enum vfs_fallocate_mode mode,
 			SMB_OFF_T offset,
 			SMB_OFF_T len)
 {
@@ -468,19 +468,19 @@ static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info, SEC_DESC **ppdesc)
+	uint32 security_info, struct security_descriptor **ppdesc)
 {
 	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
 }
 
 static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
-	const char *name, uint32 security_info, SEC_DESC **ppdesc)
+	const char *name, uint32 security_info, struct security_descriptor **ppdesc)
 {
 	return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
 }
 
 static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info_sent, const SEC_DESC *psd)
+	uint32 security_info_sent, const struct security_descriptor *psd)
 {
 	return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 }
