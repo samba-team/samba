@@ -60,6 +60,8 @@ int dom_sid_compare_domain(const struct dom_sid *sid1,
 bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2);
 bool sid_append_rid(struct dom_sid *sid, uint32_t rid);
 bool string_to_sid(struct dom_sid *sidout, const char *sidstr);
+bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
+			const char **endp);
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret);
 struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr);
 struct dom_sid *dom_sid_parse_length(TALLOC_CTX *mem_ctx, const DATA_BLOB *sid);
