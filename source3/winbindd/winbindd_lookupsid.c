@@ -22,7 +22,6 @@
 #include "../libcli/security/security.h"
 
 struct winbindd_lookupsid_state {
-	struct tevent_context *ev;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	const char *domname;
@@ -44,7 +43,6 @@ struct tevent_req *winbindd_lookupsid_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ev = ev;
 
 	/* Ensure null termination */
 	request->data.sid[sizeof(request->data.sid)-1]='\0';
