@@ -1352,6 +1352,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_ndr.o \
 		winbindd/wb_ping.o \
 		winbindd/wb_lookupsid.o \
+		winbindd/wb_lookupsids.o \
 		winbindd/wb_lookupname.o \
 		winbindd/wb_sid2uid.o \
 		winbindd/wb_sid2gid.o \
