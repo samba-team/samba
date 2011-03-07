@@ -118,9 +118,11 @@ int dom_sid_compare_domain(const struct dom_sid *sid1,
 
 /*****************************************************************
  Convert a string to a SID. Returns True on success, False on fail.
+ Return the first character not parsed in endp.
 *****************************************************************/
 
-bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
+bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
+			const char **endp)
 {
 	const char *p;
 	char *q;
@@ -197,6 +199,9 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 		}
 		q += 1;
 	}
+	if (endp != NULL) {
+		*endp = q;
+	}
 	return true;
 
 format_error:
@@ -204,9 +209,14 @@ format_error:
 	return false;
 }
 
+bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
+{
+	return dom_sid_parse(sidstr, sidout);
+}
+
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 {
-	return string_to_sid(ret, sidstr);
+	return dom_sid_parse_endp(sidstr, ret, NULL);
 }
 
 /*
