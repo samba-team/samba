@@ -36,6 +36,7 @@ s/sambaconf/;&/g
 s/logtype/;&/g
 s/servername/;&/g
 s/postscript/;&/g
+s/setup directory/;&/g
 }"
 
 REGPATH="HKLM\Software\Samba"
