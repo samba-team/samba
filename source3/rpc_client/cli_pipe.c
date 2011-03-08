@@ -2515,6 +2515,12 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 		goto done;
 	}
 
+	if (ndr_syntax_id_equal(abstract_syntax,
+				&ndr_table_epmapper.syntax_id)) {
+		*pport = 135;
+		return NT_STATUS_OK;
+	}
+
 	/* open the connection to the endpoint mapper */
 	status = rpc_pipe_open_tcp_port(tmp_ctx, host, 135,
 					&ndr_table_epmapper.syntax_id,
