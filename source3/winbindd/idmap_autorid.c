@@ -273,16 +273,13 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 {
 	struct autorid_global_config *global;
 	struct autorid_domain_config *domaincfg;
-	struct dom_sid *domainsid;
 	struct winbindd_tdc_domain *domain;
-	uint32_t rid;
 	TALLOC_CTX *ctx;
 	NTSTATUS ret;
 	int i;
 
 	ctx = talloc_new(dom);
-	domainsid = talloc(ctx, struct dom_sid);
-	if (!ctx || !domainsid) {
+	if (!ctx) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto failure;
@@ -304,19 +301,21 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 				 struct autorid_global_config);
 
 	for (i = 0; ids[i]; i++) {
-		ZERO_STRUCTP(domainsid);
-		sid_copy(domainsid, ids[i]->sid);
-		if (!sid_split_rid(domainsid, &rid)) {
+		struct dom_sid domainsid;
+		uint32_t rid;
+
+		sid_copy(&domainsid, ids[i]->sid);
+		if (!sid_split_rid(&domainsid, &rid)) {
 			DEBUG(4, ("Could not determine domain SID from %s, "
 				  "ignoring mapping request\n",
 				  sid_string_dbg(ids[i]->sid)));
 			continue;
 		}
 
-		domain = wcache_tdc_fetch_domainbysid(ctx, domainsid);
+		domain = wcache_tdc_fetch_domainbysid(ctx, &domainsid);
 		if (domain == NULL) {
 			DEBUG(10, ("Ignoring unknown domain sid %s\n",
-				   sid_string_dbg(domainsid)));
+				   sid_string_dbg(&domainsid)));
 			continue;
 		}
 
