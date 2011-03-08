@@ -699,6 +699,7 @@ static int default_server_announce;
 static bool handle_include( int snum, const char *pszParmValue, char **ptr);
 static bool handle_copy( int snum, const char *pszParmValue, char **ptr);
 static bool handle_netbios_name( int snum, const char *pszParmValue, char **ptr);
+static bool handle_idmap_backend(int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_debug_list( int snum, const char *pszParmValue, char **ptr );
@@ -4547,9 +4548,9 @@ static struct parm_struct parm_table[] = {
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szIdmapBackend,
-		.special	= NULL,
+		.special	= handle_idmap_backend,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "idmap cache time",
@@ -4576,7 +4577,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.szIdmapUID,
 		.special	= handle_idmap_uid,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "winbind uid",
@@ -4594,7 +4595,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.szIdmapGID,
 		.special	= handle_idmap_gid,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "winbind gid",
@@ -7655,38 +7656,25 @@ bool lp_idmap_gid(gid_t *low, gid_t *high)
         return True;
 }
 
+static bool handle_idmap_backend(int snum, const char *pszParmValue, char **ptr)
+{
+	lp_do_parameter(snum, "idmap config * : backend", pszParmValue);
+
+	return true;
+}
+
 /* Do some simple checks on "idmap [ug]id" parameter values */
 
 static bool handle_idmap_uid(int snum, const char *pszParmValue, char **ptr)
 {
-	uint32 low, high;
-
-	if (sscanf(pszParmValue, "%u - %u", &low, &high) != 2 || high < low)
-		return False;
-
-	/* Parse OK */
-
-	string_set(ptr, pszParmValue);
-
-        idmap_uid_low = low;
-        idmap_uid_high = high;
+	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
 
 	return True;
 }
 
 static bool handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
 {
-	uint32 low, high;
-
-	if (sscanf(pszParmValue, "%u - %u", &low, &high) != 2 || high < low)
-		return False;
-
-	/* Parse OK */
-
-	string_set(ptr, pszParmValue);
-
-        idmap_gid_low = low;
-        idmap_gid_high = high;
+	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
 
 	return True;
 }
