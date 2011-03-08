@@ -348,7 +348,7 @@ static bool winreg_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_winreg,
 						pipe_name,
@@ -418,7 +418,7 @@ static bool srvsvc_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_srvsvc,
 					  pipe_name,
@@ -488,7 +488,7 @@ static bool lsarpc_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_lsarpc,
 					  pipe_name,
@@ -558,7 +558,7 @@ static bool samr_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_samr,
 					  pipe_name,
@@ -628,7 +628,7 @@ static bool netlogon_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_netlogon,
 					  pipe_name,
@@ -687,7 +687,7 @@ static bool spoolss_init_cb(void *ptr)
 	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status =_rpc_ep_register(ep_ctx->ev_ctx,
+		status =rpc_ep_setup_register(ep_ctx->ev_ctx,
 					 ep_ctx->msg_ctx,
 					 &ndr_table_spoolss,
 					 "spoolss",
@@ -748,7 +748,7 @@ static bool svcctl_init_cb(void *ptr)
 	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_svcctl,
 					  "svcctl",
@@ -799,7 +799,7 @@ static bool ntsvcs_init_cb(void *ptr)
 	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_ntsvcs,
 					  "ntsvcs",
@@ -855,7 +855,7 @@ static bool eventlog_init_cb(void *ptr)
 	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status =_rpc_ep_register(ep_ctx->ev_ctx,
+		status =rpc_ep_setup_register(ep_ctx->ev_ctx,
 					 ep_ctx->msg_ctx,
 					 &ndr_table_eventlog,
 					 "eventlog",
@@ -905,7 +905,7 @@ static bool initshutdown_init_cb(void *ptr)
 	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_initshutdown,
 					  "initshutdown",
@@ -964,7 +964,7 @@ static bool rpcecho_init_cb(void *ptr) {
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_rpcecho,
 					  "rpcecho",
@@ -1034,7 +1034,7 @@ static bool netdfs_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_netdfs,
 					  pipe_name,
@@ -1103,7 +1103,7 @@ static bool dssetup_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_dssetup,
 					  "dssetup",
@@ -1171,7 +1171,7 @@ static bool wkssvc_init_cb(void *ptr)
 			return false;
 		}
 
-		status = _rpc_ep_register(ep_ctx->ev_ctx,
+		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
 					  ep_ctx->msg_ctx,
 					  &ndr_table_wkssvc,
 					  "wkssvc",
