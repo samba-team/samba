@@ -54,15 +54,12 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 {
 	NTSTATUS ret;
 	uint32_t domainnum, hwm;
-	char *sidstr, *numstr;
+	fstring sidstr;
+	char *numstr;
 	struct autorid_domain_config *cfg;
 
 	cfg = (struct autorid_domain_config *)private_data;
-	sidstr = dom_sid_string(talloc_tos(), &(cfg->sid));
-
-	if (!sidstr) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	dom_sid_string_buf(&(cfg->sid), sidstr, sizeof(sidstr));
 
 	if (!dbwrap_fetch_uint32(db, sidstr, &domainnum)) {
 		DEBUG(10, ("Acquiring new range for domain %s\n", sidstr));
@@ -120,11 +117,9 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 	DEBUG(10, ("Using range #%d for domain %s\n", domainnum, sidstr));
 	cfg->domainnum = domainnum;
 
-	talloc_free(sidstr);
 	return NT_STATUS_OK;
 
       error:
-	talloc_free(sidstr);
 	return ret;
 
 }
