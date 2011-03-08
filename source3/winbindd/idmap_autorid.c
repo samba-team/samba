@@ -168,19 +168,20 @@ static NTSTATUS idmap_autorid_id_to_sid(TALLOC_CTX * memctx,
 		DEBUG(4, ("id %d belongs to range %d which does not have "
 			  "domain mapping, ignoring mapping request\n",
 			  map->xid.id, range));
-	} else {
-		string_to_sid(&sid, (const char *)data.dptr);
-
-		sid_compose(map->sid, &sid,
-			    (map->xid.id - cfg->minvalue -
-			     range * cfg->rangesize));
-
-		/* We **really** should have some way of validating
-		   the SID exists and is the correct type here.  But
-		   that is a deficiency in the idmap_rid design. */
-
-		map->status = ID_MAPPED;
+		return NT_STATUS_OK;
 	}
+
+	string_to_sid(&sid, (const char *)data.dptr);
+
+	sid_compose(map->sid, &sid,
+		    (map->xid.id - cfg->minvalue -
+		     range * cfg->rangesize));
+
+	/* We **really** should have some way of validating
+	   the SID exists and is the correct type here.  But
+	   that is a deficiency in the idmap_rid design. */
+
+	map->status = ID_MAPPED;
 	return NT_STATUS_OK;
 }
 
