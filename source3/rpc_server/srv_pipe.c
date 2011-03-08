@@ -990,6 +990,9 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		case DCERPC_AUTH_LEVEL_NONE:
 			p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 			break;
+		case DCERPC_AUTH_LEVEL_CONNECT:
+			p->auth.auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+			break;
 		default:
 			DEBUG(0, ("Unexpected auth level (%u).\n",
 				(unsigned int)auth_info.auth_level ));
