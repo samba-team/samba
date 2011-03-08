@@ -1130,7 +1130,7 @@ void tevent_req_received(struct tevent_req *req);
  *
  * Example:
  * @code
- *   static my_callback_wakeup_done(tevent_req *req)
+ *   static void my_callback_wakeup_done(tevent_req *subreq)
  *   {
  *     struct tevent_req *req = tevent_req_callback_data(subreq,
  *                              struct tevent_req);
