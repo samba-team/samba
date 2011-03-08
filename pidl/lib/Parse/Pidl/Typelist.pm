@@ -21,7 +21,8 @@ my %types = ();
 
 my @reference_scalars = (
 	"string", "string_array", "nbt_string", "dns_string",
-	"wrepl_nbt_name", "ipv4address", "ipv6address"
+	"wrepl_nbt_name", "dnsp_name", "dnsp_string",
+	"ipv4address", "ipv6address"
 );
 
 # a list of known scalar types
