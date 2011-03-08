@@ -107,13 +107,12 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 		ret = dbwrap_trans_store_bystring(db, numstr,
 						  string_term_tdb_data(sidstr),
 						  TDB_INSERT);
+		talloc_free(numstr);
 		if (!NT_STATUS_IS_OK(ret)) {
-			talloc_free(numstr);
 			DEBUG(1, ("Fatal error while storing "
 				  "new domain->range assignment!\n"));
 			goto error;
 		}
-		talloc_free(numstr);
 		DEBUG(5, ("Acquired new range #%d for domain %s\n",
 			  domainnum, sidstr));
 	}
