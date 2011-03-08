@@ -917,6 +917,7 @@ bld.SAMBA_SUBSYSTEM('PRINTBACKEND',
 
 bld.SAMBA_SUBSYSTEM('PRINTING',
                     source=PRINTING_SRC,
+                    deps='NDR_PRINTCAP',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PASSWD_UTIL',
