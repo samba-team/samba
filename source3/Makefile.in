@@ -1373,6 +1373,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_next_grent.o \
 		winbindd/wb_dsgetdcname.o \
 		winbindd/winbindd_lookupsid.o \
+		winbindd/winbindd_lookupsids.o \
 		winbindd/winbindd_lookupname.o \
 		winbindd/winbindd_sid_to_uid.o \
 		winbindd/winbindd_sid_to_gid.o \
