@@ -272,7 +272,6 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 					      struct id_map **ids)
 {
 	struct autorid_global_config *global;
-	struct autorid_domain_config *domaincfg;
 	struct winbindd_tdc_domain *domain;
 	TALLOC_CTX *ctx;
 	NTSTATUS ret;
@@ -280,13 +279,6 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 
 	ctx = talloc_new(dom);
 	if (!ctx) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto failure;
-	}
-
-	if ((domaincfg = TALLOC_ZERO_P(ctx,
-				       struct autorid_domain_config)) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto failure;
@@ -301,6 +293,7 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 				 struct autorid_global_config);
 
 	for (i = 0; ids[i]; i++) {
+		struct autorid_domain_config domaincfg;
 		struct dom_sid domainsid;
 		uint32_t rid;
 
@@ -319,12 +312,13 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 			continue;
 		}
 
-		ZERO_STRUCTP(domaincfg);
-		domaincfg->sid = domain->sid;
-		domaincfg->globalcfg = global;
+		ZERO_STRUCT(domaincfg);
+		domaincfg.sid = domain->sid;
+		domaincfg.globalcfg = global;
 
-		ret = dbwrap_trans_do(autorid_db, idmap_autorid_get_domainrange,
-				      domaincfg);
+		ret = dbwrap_trans_do(autorid_db,
+				      idmap_autorid_get_domainrange,
+				      &domaincfg);
 
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(3, ("Could not determine range for domain, "
@@ -332,7 +326,7 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 			goto failure;
 		}
 
-		ret = idmap_autorid_sid_to_id(ctx, global, domaincfg, ids[i]);
+		ret = idmap_autorid_sid_to_id(ctx, global, &domaincfg, ids[i]);
 
 		if ((!NT_STATUS_IS_OK(ret)) &&
 		    (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
