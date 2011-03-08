@@ -27,9 +27,6 @@ struct winbindd_getsidaliases_state {
 	uint32_t *aliases;
 };
 
-static bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
-			  struct dom_sid **sids, uint32_t *num_sids);
-
 static void winbindd_getsidaliases_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_getsidaliases_send(TALLOC_CTX *mem_ctx,
@@ -154,35 +151,4 @@ NTSTATUS winbindd_getsidaliases_recv(struct tevent_req *req,
 	response->length += talloc_get_size(sidlist);
 	response->data.num_entries = state->num_aliases;
 	return NT_STATUS_OK;
-}
-
-static bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
-			  struct dom_sid **sids, uint32_t *num_sids)
-{
-	const char *p;
-
-	p = sidstr;
-	if (p == NULL)
-		return False;
-
-	while (p[0] != '\0') {
-		struct dom_sid sid;
-		const char *q = NULL;
-
-		if (!dom_sid_parse_endp(p, &sid, &q)) {
-			DEBUG(1, ("Could not parse sid %s\n", p));
-			return false;
-		}
-		if ((q == NULL) || (q[0] != '\n')) {
-			DEBUG(1, ("Got invalid sidstr: %s\n", p));
-			return false;
-		}
-		if (!NT_STATUS_IS_OK(add_sid_to_array(mem_ctx, &sid, sids,
-						      num_sids)))
-		{
-			return False;
-		}
-		p = q+1;
-	}
-	return True;
 }
