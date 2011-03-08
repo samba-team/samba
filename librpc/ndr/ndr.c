@@ -453,6 +453,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 	va_list ap;
 	int ret;
 
+	if (ndr->flags & LIBNDR_FLAG_INCOMPLETE_BUFFER) {
+		switch (ndr_err) {
+		case NDR_ERR_BUFSIZE:
+			return NDR_ERR_INCOMPLETE_BUFFER;
+		default:
+			break;
+		}
+	}
+
 	va_start(ap, format);
 	ret = vasprintf(&s, format, ap);
 	va_end(ap);
@@ -1510,6 +1519,7 @@ const static struct {
 	{ NDR_ERR_INVALID_POINTER, "Invalid Pointer" },
 	{ NDR_ERR_UNREAD_BYTES, "Unread Bytes" },
 	{ NDR_ERR_NDR64, "NDR64 assertion error" },
+	{ NDR_ERR_INCOMPLETE_BUFFER, "Incomplete Buffer" },
 	{ 0, NULL }
 };
 
