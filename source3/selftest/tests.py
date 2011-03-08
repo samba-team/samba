@@ -195,17 +195,17 @@ if sub.returncode == 0:
         if t == "raw.chkpath":
             plansmbtorturetestsuite(t, "dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
 
-test = 'rpc.lsa.lookupsids'
-transports = ["ncacn_np", "ncacn_ip_tcp" ]
-auth_options = ["ntlm", "spnego", "connect" ]
-signseal_options = ["", ",sign", ",sign,seal"]
-smb_options = ["", ",smb2"]
-endianness_options = ["", ",bigendian"]
-for t in transports:
-    for z in smb_options:
-        for e in endianness_options:
-            for a in auth_options:
-                for s in signseal_options:
-                    binding_string = "%s:$SERVER_IP[%s%s%s%s]" % (t, a, s, z, e)
-                    options = binding_string + " -U$USERNAME%$PASSWORD"
-                    plansmbtorturetestsuite(test, "dc", options, 'over %s with [%s%s%s%s] ' % (t, a, s, z, e))
+    test = 'rpc.lsa.lookupsids'
+    transports = ["ncacn_np", "ncacn_ip_tcp" ]
+    auth_options = ["ntlm", "spnego", "connect" ]
+    signseal_options = ["", ",sign", ",sign,seal"]
+    smb_options = ["", ",smb2"]
+    endianness_options = ["", ",bigendian"]
+    for t in transports:
+        for z in smb_options:
+            for e in endianness_options:
+                for a in auth_options:
+                    for s in signseal_options:
+                        binding_string = "%s:$SERVER_IP[%s%s%s%s]" % (t, a, s, z, e)
+                        options = binding_string + " -U$USERNAME%$PASSWORD"
+                        plansmbtorturetestsuite(test, "dc", options, 'over %s with [%s%s%s%s] ' % (t, a, s, z, e))
