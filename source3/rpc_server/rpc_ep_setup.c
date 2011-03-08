@@ -176,6 +176,127 @@ static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 	return status;
 }
 
+static void rpc_ep_setup_register_loop(struct tevent_req *subreq);
+static NTSTATUS rpc_ep_setup_try_register(struct tevent_context *ev_ctx,
+					  struct messaging_context *msg_ctx,
+					  const struct ndr_interface_table *iface,
+					  const char *name,
+					  uint16_t port);
+
+struct rpc_ep_regsiter_state {
+	uint32_t wait_time;
+
+	struct tevent_context *ev_ctx;
+	struct messaging_context *msg_ctx;
+
+	const struct ndr_interface_table *iface;
+
+	const char *ncalrpc;
+	uint16_t port;
+};
+
+static NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
+				      struct messaging_context *msg_ctx,
+				      const struct ndr_interface_table *iface,
+				      const char *ncalrpc,
+				      uint16_t port)
+{
+	struct rpc_ep_regsiter_state *state;
+	struct tevent_req *req;
+
+	state = talloc(ev_ctx, struct rpc_ep_regsiter_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->wait_time = 1;
+	state->ev_ctx = ev_ctx;
+	state->msg_ctx = msg_ctx;
+	state->iface = iface;
+	state->ncalrpc = talloc_strdup(state, ncalrpc);
+	state->port = port;
+
+	req = tevent_wakeup_send(state, ev_ctx, timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(state, req)) {
+		talloc_free(state);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tevent_req_set_callback(req, rpc_ep_setup_register_loop, state);
+
+	return NT_STATUS_OK;
+}
+
+static void rpc_ep_setup_register_loop(struct tevent_req *req)
+{
+	struct rpc_ep_regsiter_state *state =
+		tevent_req_callback_data(req, struct rpc_ep_regsiter_state);
+	NTSTATUS status;
+	bool ok;
+
+	ok = tevent_wakeup_recv(req);
+	TALLOC_FREE(req);
+	if (!ok) {
+		return;
+	}
+
+	status = rpc_ep_setup_try_register(state->ev_ctx,
+					   state->msg_ctx,
+					   state->iface,
+					   state->ncalrpc,
+					   state->port);
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(state);
+		return;
+	}
+
+	state->wait_time = state->wait_time * 2;
+	if (state->wait_time > 16) {
+		talloc_free(state);
+		return;
+	}
+
+	req = tevent_wakeup_send(state,
+				 state->ev_ctx,
+				 timeval_current_ofs(state->wait_time, 0));
+	if (tevent_req_nomem(state, req)) {
+		talloc_free(state);
+		return;
+	}
+
+	tevent_req_set_callback(req, rpc_ep_setup_register_loop, state);
+	return;
+}
+
+static NTSTATUS rpc_ep_setup_try_register(struct tevent_context *ev_ctx,
+					  struct messaging_context *msg_ctx,
+					  const struct ndr_interface_table *iface,
+					  const char *name,
+					  uint16_t port)
+{
+	struct dcerpc_binding_vector *v = NULL;
+	NTSTATUS status;
+
+	status = dcerpc_binding_vector_create(talloc_tos(),
+					      iface,
+					      port,
+					      name,
+					      &v);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dcerpc_ep_register(iface,
+				    v,
+				    &iface->syntax_id.uuid,
+				    name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return status;
+}
+
 static bool epmapper_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
