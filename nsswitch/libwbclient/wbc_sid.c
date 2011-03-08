@@ -279,6 +279,189 @@ done:
 	return wbc_status;
 }
 
+static void wbcDomainInfosDestructor(void *ptr)
+{
+	struct wbcDomainInfo *i = (struct wbcDomainInfo *)ptr;
+
+	while (i->short_name != NULL) {
+		wbcFreeMemory(i->short_name);
+		wbcFreeMemory(i->dns_name);
+		i += 1;
+	}
+}
+
+static void wbcTranslatedNamesDestructor(void *ptr)
+{
+	struct wbcTranslatedName *n = (struct wbcTranslatedName *)ptr;
+
+	while (n->name != NULL) {
+		free(n->name);
+		n += 1;
+	}
+}
+
+wbcErr wbcLookupSids(const struct wbcDomainSid *sids, int num_sids,
+		     struct wbcDomainInfo **pdomains, int *pnum_domains,
+		     struct wbcTranslatedName **pnames)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	int buflen, i, extra_len, num_domains, num_names;
+	char *sidlist, *p, *q, *extra_data;
+	struct wbcDomainInfo *domains = NULL;
+	struct wbcTranslatedName *names = NULL;
+
+	buflen = num_sids * (WBC_SID_STRING_BUFLEN + 1) + 1;
+
+	sidlist = (char *)malloc(buflen);
+	if (sidlist == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+
+	p = sidlist;
+
+	for (i=0; i<num_sids; i++) {
+		int remaining;
+		int len;
+
+		remaining = buflen - (p - sidlist);
+
+		len = wbcSidToStringBuf(&sids[i], p, remaining);
+		if (len > remaining) {
+			free(sidlist);
+			return WBC_ERR_UNKNOWN_FAILURE;
+		}
+
+		p += len;
+		*p++ = '\n';
+	}
+	*p++ = '\0';
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.extra_data.data = sidlist;
+	request.extra_len = p - sidlist;
+
+	wbc_status = wbcRequestResponse(WINBINDD_LOOKUPSIDS,
+					&request, &response);
+	free(sidlist);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return wbc_status;
+	}
+
+	extra_len = response.length - sizeof(struct winbindd_response);
+	extra_data = (char *)response.extra_data.data;
+
+	if ((extra_len <= 0) || (extra_data[extra_len-1] != '\0')) {
+		goto wbc_err_invalid;
+	}
+
+	p = extra_data;
+
+	num_domains = strtoul(p, &q, 10);
+	if (*q != '\n') {
+		goto wbc_err_invalid;
+	}
+	p = q+1;
+
+	domains = (struct wbcDomainInfo *)wbcAllocateMemory(
+		num_domains+1, sizeof(struct wbcDomainInfo),
+		wbcDomainInfosDestructor);
+	if (domains == NULL) {
+		wbc_status = WBC_ERR_NO_MEMORY;
+		goto fail;
+	}
+
+	for (i=0; i<num_domains; i++) {
+
+		q = strchr(p, ' ');
+		if (q == NULL) {
+			goto wbc_err_invalid;
+		}
+		*q = '\0';
+		wbc_status = wbcStringToSid(p, &domains[i].sid);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			goto fail;
+		}
+		p = q+1;
+
+		q = strchr(p, '\n');
+		if (q == NULL) {
+			goto wbc_err_invalid;
+		}
+		*q = '\0';
+		domains[i].short_name = wbcStrDup(p);
+		if (domains[i].short_name == NULL) {
+			wbc_status = WBC_ERR_NO_MEMORY;
+			goto fail;
+		}
+		p = q+1;
+	}
+
+	num_names = strtoul(p, &q, 10);
+	if (*q != '\n') {
+		goto wbc_err_invalid;
+	}
+	p = q+1;
+
+	if (num_names != num_sids) {
+		goto wbc_err_invalid;
+	}
+
+	names = (struct wbcTranslatedName *)wbcAllocateMemory(
+		num_names+1, sizeof(struct wbcTranslatedName),
+		wbcTranslatedNamesDestructor);
+	if (names == NULL) {
+		wbc_status = WBC_ERR_NO_MEMORY;
+		goto fail;
+	}
+
+	for (i=0; i<num_names; i++) {
+
+		names[i].domain_index = strtoul(p, &q, 10);
+		if (*q != ' ') {
+			goto wbc_err_invalid;
+		}
+		p = q+1;
+
+		names[i].type = strtoul(p, &q, 10);
+		if (*q != ' ') {
+			goto wbc_err_invalid;
+		}
+		p = q+1;
+
+		q = strchr(p, '\n');
+		if (q == NULL) {
+			goto wbc_err_invalid;
+		}
+		*q = '\0';
+		names[i].name = wbcStrDup(p);
+		if (names[i].name == NULL) {
+			wbc_status = WBC_ERR_NO_MEMORY;
+			goto fail;
+		}
+		p = q+1;
+	}
+	if (*p != '\0') {
+		goto wbc_err_invalid;
+	}
+
+	*pdomains = domains;
+	*pnames = names;
+	winbindd_free_response(&response);
+	return WBC_ERR_SUCCESS;
+
+wbc_err_invalid:
+	wbc_status = WBC_ERR_INVALID_RESPONSE;
+fail:
+	winbindd_free_response(&response);
+	wbcFreeMemory(domains);
+	wbcFreeMemory(names);
+	return wbc_status;
+}
+
 /* Translate a collection of RIDs within a domain to names */
 
 wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
