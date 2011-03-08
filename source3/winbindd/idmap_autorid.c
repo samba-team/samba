@@ -272,7 +272,6 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 					      struct id_map **ids)
 {
 	struct autorid_global_config *global;
-	struct winbindd_tdc_domain *domain;
 	TALLOC_CTX *ctx;
 	NTSTATUS ret;
 	int i;
@@ -293,27 +292,32 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 				 struct autorid_global_config);
 
 	for (i = 0; ids[i]; i++) {
+		struct winbindd_tdc_domain *domain;
 		struct autorid_domain_config domaincfg;
-		struct dom_sid domainsid;
 		uint32_t rid;
 
-		sid_copy(&domainsid, ids[i]->sid);
-		if (!sid_split_rid(&domainsid, &rid)) {
+		ZERO_STRUCT(domaincfg);
+
+		sid_copy(&domaincfg.sid, ids[i]->sid);
+		if (!sid_split_rid(&domaincfg.sid, &rid)) {
 			DEBUG(4, ("Could not determine domain SID from %s, "
 				  "ignoring mapping request\n",
 				  sid_string_dbg(ids[i]->sid)));
 			continue;
 		}
 
-		domain = wcache_tdc_fetch_domainbysid(ctx, &domainsid);
+		/*
+		 * Check if the domain is around
+		 */
+		domain = wcache_tdc_fetch_domainbysid(talloc_tos(),
+						      &domaincfg.sid);
 		if (domain == NULL) {
 			DEBUG(10, ("Ignoring unknown domain sid %s\n",
-				   sid_string_dbg(&domainsid)));
+				   sid_string_dbg(&domaincfg.sid)));
 			continue;
 		}
+		TALLOC_FREE(domain);
 
-		ZERO_STRUCT(domaincfg);
-		domaincfg.sid = domain->sid;
 		domaincfg.globalcfg = global;
 
 		ret = dbwrap_trans_do(autorid_db,
