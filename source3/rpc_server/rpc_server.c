@@ -1215,7 +1215,6 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	status = dcerpc_read_ncacn_packet_recv(subreq, ncacn_conn, &pkt, &recv_buffer);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Failed to receive ncacn packet!\n"));
 		goto fail;
 	}
 
@@ -1337,9 +1336,8 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	return;
 
 fail:
-	DEBUG(2, ("Fatal error(%s). "
-		  "Terminating client(%s) connection!\n",
-		  nt_errstr(status), ncacn_conn->client_name));
+	DEBUG(3, ("Terminating client(%s) connection! - '%s'\n",
+		  ncacn_conn->client_name, nt_errstr(status)));
 
 	/* Terminate client connection */
 	talloc_free(ncacn_conn);
@@ -1350,6 +1348,7 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 {
 	struct dcerpc_ncacn_conn *ncacn_conn =
 		tevent_req_callback_data(subreq, struct dcerpc_ncacn_conn);
+	NTSTATUS status = NT_STATUS_OK;
 	int sys_errno;
 	int rc;
 
@@ -1357,6 +1356,7 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (rc < 0) {
 		DEBUG(2, ("Writev failed!\n"));
+		status = map_nt_error_from_unix(sys_errno);
 		goto fail;
 	}
 
@@ -1373,7 +1373,7 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 					       ncacn_conn->tstream);
 	if (subreq == NULL) {
 		DEBUG(2, ("Failed to start receving packets\n"));
-		sys_errno = ENOMEM;
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
@@ -1381,8 +1381,8 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 	return;
 
 fail:
-	DEBUG(2, ("Fatal error(%s). Terminating client(%s) connection!\n",
-		  strerror(sys_errno), ncacn_conn->client_name));
+	DEBUG(3, ("Terminating client(%s) connection! - '%s'\n",
+		  ncacn_conn->client_name, nt_errstr(status)));
 
 	/* Terminate client connection */
 	talloc_free(ncacn_conn);
