@@ -8,8 +8,8 @@ package Parse::Pidl::Typelist;
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(hasType getType resolveType mapTypeName scalar_is_reference expandAlias
-			    mapScalarType addType typeIs is_signed is_scalar enum_type_fn
-				bitmap_type_fn mapType typeHasBody
+	mapScalarType addType typeIs is_signed is_scalar enum_type_fn
+	bitmap_type_fn mapType typeHasBody is_fixed_size_scalar
 );
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -23,6 +23,11 @@ my @reference_scalars = (
 	"string", "string_array", "nbt_string", "dns_string",
 	"wrepl_nbt_name", "dnsp_name", "dnsp_string",
 	"ipv4address", "ipv6address"
+);
+
+my @non_fixed_size_scalars = (
+	"string", "string_array", "nbt_string", "dns_string",
+	"wrepl_nbt_name", "dnsp_name", "dnsp_string"
 );
 
 # a list of known scalar types
@@ -189,6 +194,15 @@ sub is_scalar($)
 	}
 
 	return 0;
+}
+
+sub is_fixed_size_scalar($)
+{
+	my $name = shift;
+
+	return 0 unless is_scalar($name);
+	return 0 if (grep(/^$name$/, @non_fixed_size_scalars));
+	return 1;
 }
 
 sub scalar_is_reference($)
