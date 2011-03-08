@@ -141,14 +141,13 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		struct group *gr;
 		enum lsa_SidType type;
-		const char *dom_name = NULL;
 		const char *name = NULL;
 		bool ret;
 
 		/* by default calls to winbindd are disabled
 		   the following call will not recurse so this is safe */
 		(void)winbind_on();
-		ret = winbind_lookup_sid(ctx, ids[i]->sid, &dom_name, &name, &type);
+		ret = winbind_lookup_sid(ctx, ids[i]->sid, NULL, &name, &type);
 		(void)winbind_off();
 
 		if (!ret) {
