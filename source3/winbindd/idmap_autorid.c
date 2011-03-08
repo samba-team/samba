@@ -225,7 +225,6 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 					      struct id_map **ids)
 {
 	struct autorid_global_config *globalcfg;
-	TALLOC_CTX *ctx;
 	NTSTATUS ret;
 	int i;
 
@@ -236,12 +235,6 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 
 	globalcfg = talloc_get_type(dom->private_data,
 				    struct autorid_global_config);
-
-	ctx = talloc_new(dom);
-	if (!ctx) {
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	for (i = 0; ids[i]; i++) {
 
@@ -255,14 +248,10 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 			goto failure;
 		}
 	}
-
-	talloc_free(ctx);
 	return NT_STATUS_OK;
 
       failure:
-	talloc_free(ctx);
 	return ret;
-
 }
 
 /**********************************
