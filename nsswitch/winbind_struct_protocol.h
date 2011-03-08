@@ -55,8 +55,9 @@ typedef char fstring[FSTRING_LEN];
  *     removed WINBINDD_SET_MAPPING
  *     removed WINBINDD_REMOVE_MAPPING
  * 26: added WINBINDD_DC_INFO
+ * 27: added WINBINDD_LOOKUPSIDS
  */
-#define WINBIND_INTERFACE_VERSION 26
+#define WINBIND_INTERFACE_VERSION 27
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -108,6 +109,7 @@ enum winbindd_cmd {
 	WINBINDD_LOOKUPSID,
 	WINBINDD_LOOKUPNAME,
 	WINBINDD_LOOKUPRIDS,
+	WINBINDD_LOOKUPSIDS,
 
 	/* Lookup functions */
 
