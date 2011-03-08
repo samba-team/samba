@@ -1370,3 +1370,34 @@ bool is_domain_offline(const struct winbindd_domain *domain)
 	}
 	return !domain->online;
 }
+
+bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
+		   struct dom_sid **sids, uint32_t *num_sids)
+{
+	const char *p;
+
+	p = sidstr;
+	if (p == NULL)
+		return False;
+
+	while (p[0] != '\0') {
+		struct dom_sid sid;
+		const char *q = NULL;
+
+		if (!dom_sid_parse_endp(p, &sid, &q)) {
+			DEBUG(1, ("Could not parse sid %s\n", p));
+			return false;
+		}
+		if ((q == NULL) || (q[0] != '\n')) {
+			DEBUG(1, ("Got invalid sidstr: %s\n", p));
+			return false;
+		}
+		if (!NT_STATUS_IS_OK(add_sid_to_array(mem_ctx, &sid, sids,
+						      num_sids)))
+		{
+			return False;
+		}
+		p = q+1;
+	}
+	return True;
+}
