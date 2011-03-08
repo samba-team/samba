@@ -1,6 +1,6 @@
 # specialist handling of header files for Samba
 
-import Build, re, Task, TaskGen, shutil, sys
+import Build, re, Task, TaskGen, shutil, sys, Logs
 from samba_utils import *
 
 
@@ -85,6 +85,11 @@ def create_public_header(task):
                 found = True
                 break
         if found:
+            continue
+
+        if task.env.public_headers_allow_broken:
+            Logs.warn("Broken public header include '%s' in '%s'" % (hpath, relsrc))
+            outfile.write(line)
             continue
 
         # try to be nice to the developer by suggesting an alternative
