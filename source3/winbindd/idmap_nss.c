@@ -124,7 +124,6 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 
 static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
 {
-	TALLOC_CTX *ctx;
 	int i;
 
 	/* initialize the status to avoid suprise */
@@ -132,22 +131,17 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		ids[i]->status = ID_UNKNOWN;
 	}
 
-	ctx = talloc_new(dom);
-	if ( ! ctx) {
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	for (i = 0; ids[i]; i++) {
 		struct group *gr;
 		enum lsa_SidType type;
-		const char *name = NULL;
+		char *name = NULL;
 		bool ret;
 
 		/* by default calls to winbindd are disabled
 		   the following call will not recurse so this is safe */
 		(void)winbind_on();
-		ret = winbind_lookup_sid(ctx, ids[i]->sid, NULL, &name, &type);
+		ret = winbind_lookup_sid(talloc_tos(), ids[i]->sid, NULL,
+					 (const char **)&name, &type);
 		(void)winbind_off();
 
 		if (!ret) {
@@ -189,9 +183,8 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 			ids[i]->status = ID_UNKNOWN;
 			break;
 		}
+		TALLOC_FREE(name);
 	}
-
-	talloc_free(ctx);
 	return NT_STATUS_OK;
 }
 
