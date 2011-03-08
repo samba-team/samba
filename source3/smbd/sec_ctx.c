@@ -168,11 +168,11 @@ static int get_current_groups(gid_t gid, uint32_t *p_ngroups, gid_t **p_groups)
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
 
-	DEBUG( 3, ( "get_current_groups: user is in %u groups: ", ngroups));
+	DEBUG( 4, ( "get_current_groups: user is in %u groups: ", ngroups));
 	for (i = 0; i < ngroups; i++ ) {
-		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
+		DEBUG( 4, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
 	}
-	DEBUG( 3, ( "\n" ) );
+	DEBUG( 4, ( "\n" ) );
 
 	return ngroups;
 
@@ -207,7 +207,7 @@ bool push_sec_ctx(void)
 	ctx_p->ut.uid = geteuid();
 	ctx_p->ut.gid = getegid();
 
- 	DEBUG(3, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
+ 	DEBUG(4, ("push_sec_ctx(%u, %u) : sec_ctx_stack_ndx = %d\n", 
  		  (unsigned int)ctx_p->ut.uid, (unsigned int)ctx_p->ut.gid, sec_ctx_stack_ndx ));
 
 	ctx_p->token = dup_nt_token(NULL,
@@ -307,7 +307,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct securi
 
 	/* Set the security context */
 
-	DEBUG(3, ("setting sec ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
+	DEBUG(4, ("setting sec ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
 		(unsigned int)uid, (unsigned int)gid, sec_ctx_stack_ndx));
 
 	security_token_debug(DBGC_CLASS, 5, token);
@@ -415,7 +415,7 @@ bool pop_sec_ctx(void)
 	current_user.ut.groups = prev_ctx_p->ut.groups;
 	current_user.nt_user_token = prev_ctx_p->token;
 
-	DEBUG(3, ("pop_sec_ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
+	DEBUG(4, ("pop_sec_ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
 		(unsigned int)geteuid(), (unsigned int)getegid(), sec_ctx_stack_ndx));
 
 	return True;

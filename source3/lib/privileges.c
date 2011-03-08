@@ -91,7 +91,7 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 	data = dbwrap_fetch_bystring( db, talloc_tos(), keystr );
 
 	if ( !data.dptr ) {
-		DEBUG(3, ("get_privileges: No privileges assigned to SID "
+		DEBUG(4, ("get_privileges: No privileges assigned to SID "
 			  "[%s]\n", sid_string_dbg(sid)));
 		return False;
 	}

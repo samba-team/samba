@@ -427,7 +427,7 @@ static void push_conn_ctx(void)
 	ctx_p->conn = current_user.conn;
 	ctx_p->vuid = current_user.vuid;
 
-	DEBUG(3, ("push_conn_ctx(%u) : conn_ctx_stack_ndx = %d\n",
+	DEBUG(4, ("push_conn_ctx(%u) : conn_ctx_stack_ndx = %d\n",
 		(unsigned int)ctx_p->vuid, conn_ctx_stack_ndx ));
 
 	conn_ctx_stack_ndx++;
