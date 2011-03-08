@@ -130,8 +130,7 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 
 }
 
-static NTSTATUS idmap_autorid_id_to_sid(TALLOC_CTX * memctx,
-					struct autorid_global_config *cfg,
+static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 					struct id_map *map)
 {
 	uint32_t range;
@@ -157,12 +156,13 @@ static NTSTATUS idmap_autorid_id_to_sid(TALLOC_CTX * memctx,
 	/* determine the range of this uid */
 	range = ((map->xid.id - cfg->minvalue) / cfg->rangesize);
 
-	keystr = talloc_asprintf(memctx, "%u", range);
+	keystr = talloc_asprintf(talloc_tos(), "%u", range);
 	if (!keystr) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	data = dbwrap_fetch_bystring(autorid_db, memctx, keystr);
+	data = dbwrap_fetch_bystring(autorid_db, talloc_tos(), keystr);
+	TALLOC_FREE(keystr);
 
 	if (!data.dptr) {
 		DEBUG(4, ("id %d belongs to range %d which does not have "
@@ -172,6 +172,7 @@ static NTSTATUS idmap_autorid_id_to_sid(TALLOC_CTX * memctx,
 	}
 
 	string_to_sid(&sid, (const char *)data.dptr);
+	TALLOC_FREE(data.dptr);
 
 	sid_compose(map->sid, &sid,
 		    (map->xid.id - cfg->minvalue -
@@ -244,7 +245,7 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 
 	for (i = 0; ids[i]; i++) {
 
-		ret = idmap_autorid_id_to_sid(ctx, globalcfg, ids[i]);
+		ret = idmap_autorid_id_to_sid(globalcfg, ids[i]);
 
 		if ((!NT_STATUS_IS_OK(ret)) &&
 		    (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
