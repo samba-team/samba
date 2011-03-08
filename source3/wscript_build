@@ -10,6 +10,9 @@ bld.env.build_public_headers = 'include/public'
 # compilation, so they are safe
 bld.env.public_headers_skip = ['lib/ldb_compat.h']
 
+# s3 public headers refer to non-public headers
+bld.env.public_headers_allow_broken = True
+
 TDB_LIB_SRC = '''
           lib/dbwrap.c lib/dbwrap_tdb.c
           lib/dbwrap_ctdb.c
