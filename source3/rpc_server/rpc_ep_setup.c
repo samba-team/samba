@@ -123,35 +123,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 	return p;
 }
 
-static NTSTATUS _rpc_ep_register(struct tevent_context *ev_ctx,
-				 struct messaging_context *msg_ctx,
-				 const struct ndr_interface_table *iface,
-				 const char *name,
-				 uint16_t port)
-{
-	struct dcerpc_binding_vector *v = NULL;
-	NTSTATUS status;
-
-	status = dcerpc_binding_vector_create(talloc_tos(),
-					      iface,
-					      port,
-					      name,
-					      &v);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = dcerpc_ep_register(iface,
-				    v,
-				    &iface->syntax_id.uuid,
-				    name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return status;
-}
-
 static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 {
 	struct dcerpc_binding_vector *v = NULL;
