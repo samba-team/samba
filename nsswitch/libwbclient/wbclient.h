@@ -636,6 +636,16 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 		    char **name,
 		    enum wbcSidType *name_type);
 
+struct wbcTranslatedName {
+	enum wbcSidType type;
+	char *name;
+	int domain_index;
+};
+
+wbcErr wbcLookupSids(const struct wbcDomainSid *sids, int num_sids,
+		     struct wbcDomainInfo **domains, int *num_domains,
+		     struct wbcTranslatedName **names);
+
 /**
  * @brief Translate a collection of RIDs within a domain to names
  */
