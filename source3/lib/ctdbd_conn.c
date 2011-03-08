@@ -818,6 +818,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	req.opcode           = opcode;
 	req.srvid            = srvid;
 	req.datalen          = data.dsize;
+	req.flags            = flags;
 
 	DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
 	ctdb_packet_dump(&req.hdr);
