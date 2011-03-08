@@ -842,6 +842,14 @@ ctdb_control_send(struct ctdb_context *ctdb,
  } \
  } while (0)
 
+#define CHECK_CONTROL_MIN_DATA_SIZE(size) do { \
+ if (indata.dsize < size) { \
+	 DEBUG(0,(__location__ " Invalid data size in opcode %u. Got %u expected >= %u\n", \
+		  opcode, (unsigned)indata.dsize, (unsigned)size));	\
+	 return -1; \
+ } \
+ } while (0)
+
 int ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
