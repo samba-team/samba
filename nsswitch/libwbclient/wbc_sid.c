@@ -152,8 +152,9 @@ wbcErr wbcStringToSid(const char *str,
 		}
 		sid->sub_auths[sid->num_auths++] = x;
 
-		if ((*q!='-') || (*q=='\0'))
+		if (*q != '-') {
 			break;
+		}
 		p = q + 1;
 	}
 
