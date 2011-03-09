@@ -1269,6 +1269,58 @@ done:
 	return ret;
 }
 
+static bool wbinfo_lookup_sids(const char *arg)
+{
+	char sidstr[WBC_SID_STRING_BUFLEN];
+	struct wbcDomainSid *sids;
+	struct wbcDomainInfo *domains;
+	struct wbcTranslatedName *names;
+	int num_domains;
+	int i, num_sids;
+	const char *p;
+	wbcErr wbc_status;
+
+
+	num_sids = 0;
+	sids = NULL;
+	p = arg;
+
+	while (next_token(&p, sidstr, LIST_SEP, sizeof(sidstr))) {
+		sids = talloc_realloc(talloc_tos(), sids, struct wbcDomainSid,
+				      num_sids+1);
+		if (sids == NULL) {
+			d_fprintf(stderr, "talloc failed\n");
+			return false;
+		}
+		wbc_status = wbcStringToSid(sidstr, &sids[num_sids]);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			d_fprintf(stderr, "wbcSidToString(%s) failed: %s\n",
+				  sidstr, wbcErrorString(wbc_status));
+			TALLOC_FREE(sids);
+			return false;
+		}
+		num_sids += 1;
+	}
+
+	wbc_status = wbcLookupSids(sids, num_sids, &domains, &num_domains,
+				   &names);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "wbcLookupSids failed: %s\n",
+			  wbcErrorString(wbc_status));
+		TALLOC_FREE(sids);
+		return false;
+	}
+
+	for (i=0; i<num_sids; i++) {
+		wbcSidToStringBuf(&sids[i], sidstr, sizeof(sidstr));
+
+		d_printf("%s -> %s\\%s %d\n", sidstr,
+			 domains[names[i].domain_index].short_name,
+			 names[i].name, names[i].type);
+	}
+	return true;
+}
+
 /* Convert string to sid */
 
 static bool wbinfo_lookupname(const char *full_name)
@@ -1900,6 +1952,7 @@ enum {
 	OPT_USERDOMGROUPS,
 	OPT_SIDALIASES,
 	OPT_USERSIDS,
+	OPT_LOOKUP_SIDS,
 	OPT_ALLOCATE_UID,
 	OPT_ALLOCATE_GID,
 	OPT_SET_UID_MAPPING,
@@ -1958,6 +2011,9 @@ int main(int argc, char **argv, char **envp)
 		{ "sid-to-fullname", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_SID_TO_FULLNAME, "Converts sid to fullname", "SID" },
 		{ "lookup-rids", 'R', POPT_ARG_STRING, &string_arg, 'R', "Converts RIDs to names", "RIDs" },
+		{ "lookup-sids", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_LOOKUP_SIDS, "Converts SIDs to types and names",
+		  "Sid-List"},
 		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U', "Converts uid to sid" , "UID" },
 		{ "gid-to-sid", 'G', POPT_ARG_INT, &int_arg, 'G', "Converts gid to sid", "GID" },
 		{ "sid-to-uid", 'S', POPT_ARG_STRING, &string_arg, 'S', "Converts sid to uid", "SID" },
@@ -2098,6 +2154,13 @@ int main(int argc, char **argv, char **envp)
 		case 'R':
 			if (!wbinfo_lookuprids(opt_domain_name, string_arg)) {
 				d_fprintf(stderr, "Could not lookup RIDs %s\n",
+					  string_arg);
+				goto done;
+			}
+			break;
+		case OPT_LOOKUP_SIDS:
+			if (!wbinfo_lookup_sids(string_arg)) {
+				d_fprintf(stderr, "Could not lookup SIDs %s\n",
 					  string_arg);
 				goto done;
 			}
