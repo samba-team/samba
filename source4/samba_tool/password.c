@@ -31,7 +31,7 @@
 
 static int net_password_change_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net_password_change_usage: TODO\n");
+	d_printf("samba-tool password change [options]\n");
 	return 0;
 }
 
@@ -81,7 +81,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 
 static int net_password_set_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net_password_set_usage: TODO\n");
+	d_printf("samba-tool password set <username> [<password>] [options]\n");
 	return 0;
 }
 
@@ -109,8 +109,8 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 			new_password = argv[1];
 			break;
 		default: /* too mayn args -> fail */
-			DEBUG(0,("net_password_set: too many args [%d]\n",argc));
-			return net_password_usage(ctx, argc, argv);
+			DEBUG(0,("samba-tool password set: too many args [%d]\n",argc));
+			return net_password_set_usage(ctx, argc, argv);
 	}
 
 	if ((p = strchr_m(tmp,'\\'))) {
@@ -167,5 +167,8 @@ int net_password(struct net_context *ctx, int argc, const char **argv)
 int net_password_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("samba-tool password <command> [options]\n");
+	d_printf("available commands:\n");
+	net_password_change_usage(ctx, argc, argv);
+	net_password_set_usage(ctx, argc, argv);
 	return 0;
 }
