@@ -1263,7 +1263,7 @@ int smbc_creat(const char *furl, mode_t mode);
  *
  * @param fd        Open file handle from smbc_open() or smbc_creat()
  *
- * @param buf       Pointer to buffer to recieve read data
+ * @param buf       Pointer to buffer to receive read data
  *
  * @param bufsize   Size of buf in bytes
  *
