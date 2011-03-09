@@ -712,7 +712,7 @@ static NTSTATUS ipv6_listen(struct socket_context *sock,
 
 static NTSTATUS ipv6_tcp_accept(struct socket_context *sock, struct socket_context **new_sock)
 {
-	struct sockaddr_in cli_addr;
+	struct sockaddr_in6 cli_addr;
 	socklen_t cli_addr_len = sizeof(cli_addr);
 	int new_fd;
 	
