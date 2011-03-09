@@ -160,6 +160,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 struct rpc_ep_regsiter_state {
 	struct dcerpc_binding_handle *h;
 
+	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 
@@ -185,6 +186,15 @@ static NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	state->mem_ctx = talloc_named(state,
+				      0,
+				      "ep %s %p",
+				      iface->name, state);
+	if (state->mem_ctx == NULL) {
+		talloc_free(state);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	state->wait_time = 1;
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
@@ -192,8 +202,10 @@ static NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
 	state->ncalrpc = talloc_strdup(state, ncalrpc);
 	state->port = port;
 
-	req = tevent_wakeup_send(state, ev_ctx, timeval_current_ofs(1, 0));
-	if (tevent_req_nomem(state, req)) {
+	req = tevent_wakeup_send(state->mem_ctx,
+				 state->ev_ctx,
+				 timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(state->mem_ctx, req)) {
 		talloc_free(state);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -217,7 +229,7 @@ static void rpc_ep_setup_register_loop(struct tevent_req *req)
 		return;
 	}
 
-	status = rpc_ep_setup_try_register(state,
+	status = rpc_ep_setup_try_register(state->mem_ctx,
 					   state->ev_ctx,
 					   state->msg_ctx,
 					   state->iface,
@@ -235,10 +247,10 @@ static void rpc_ep_setup_register_loop(struct tevent_req *req)
 		return;
 	}
 
-	req = tevent_wakeup_send(state,
+	req = tevent_wakeup_send(state->mem_ctx,
 				 state->ev_ctx,
 				 timeval_current_ofs(state->wait_time, 0));
-	if (tevent_req_nomem(state, req)) {
+	if (tevent_req_nomem(state->mem_ctx, req)) {
 		talloc_free(state);
 		return;
 	}
