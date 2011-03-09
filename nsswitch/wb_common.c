@@ -514,6 +514,10 @@ static int winbindd_read_reply(struct winbindd_response *response)
 		return -1;
 	}
 
+	if (response->length < sizeof(struct winbindd_response)) {
+		return -1;
+	}
+
 	/* We actually send the pointer value of the extra_data field from
 	   the server.  This has no meaning in the client's address space
 	   so we clear it out. */
