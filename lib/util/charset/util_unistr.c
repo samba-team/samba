@@ -61,52 +61,6 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 }
 
 /**
- * Get the next token from a string, return False if none found.
- * Handles double-quotes.
- * 
- * Based on a routine by GJC@VILLAGE.COM. 
- * Extensively modified by Andrew.Tridgell@anu.edu.au
- **/
-_PUBLIC_ bool next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
-{
-	const char *s;
-	bool quoted;
-	size_t len=1;
-
-	if (!ptr)
-		return false;
-
-	s = *ptr;
-
-	/* default to simple separators */
-	if (!sep)
-		sep = " \t\n\r";
-
-	/* find the first non sep char */
-	while (*s && strchr_m(sep,*s))
-		s++;
-	
-	/* nothing left? */
-	if (!*s)
-		return false;
-	
-	/* copy over the token */
-	for (quoted = false; len < bufsize && *s && (quoted || !strchr_m(sep,*s)); s++) {
-		if (*s == '\"') {
-			quoted = !quoted;
-		} else {
-			len++;
-			*buff++ = *s;
-		}
-	}
-	
-	*ptr = (*s) ? s+1 : s;  
-	*buff = 0;
-	
-	return true;
-}
-
-/**
  Case insensitive string compararison, length limited
 **/
 _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
