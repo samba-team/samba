@@ -1538,10 +1538,11 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->peername = sockaddr_dup(my_addr, len);
 
 	if (addr != NULL && addrlen != NULL) {
-	    *addrlen = len;
-	    if (*addrlen >= len)
-		memcpy(addr, my_addr, len);
-	    *addrlen = 0;
+		size_t copy_len = MIN(*addrlen, len);
+		if (copy_len > 0) {
+			memcpy(addr, my_addr, copy_len);
+		}
+		*addrlen = len;
 	}
 
 	ret = real_getsockname(fd, (struct sockaddr *)(void *)&un_my_addr,
