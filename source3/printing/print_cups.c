@@ -481,28 +481,21 @@ static void cups_async_callback(struct event_context *event_ctx,
 						 pcap_data.printers[i].info);
 		if (!ret_ok) {
 			DEBUG(0, ("failed to add to tmp pcap cache\n"));
-			break;
+			goto err_out;
 		}
 	}
 
+	/* replace the system-wide pcap cache with a (possibly empty) new one */
+	ret_ok = pcap_cache_replace(tmp_pcap_cache);
 	if (!ret_ok) {
-		DEBUG(0, ("failed to read a new printer list\n"));
-		pcap_cache_destroy_specific(&tmp_pcap_cache);
-	} else {
-		/*
-		 * replace the system-wide pcap cache with a (possibly empty)
-		 * new one.
-		 */
-		ret_ok = pcap_cache_replace(tmp_pcap_cache);
-		if (!ret_ok) {
-			DEBUG(0, ("failed to replace pcap cache\n"));
-		} else if (cb_args->post_cache_fill_fn != NULL) {
-			/* Caller requested post cache fill callback */
-			cb_args->post_cache_fill_fn(cb_args->event_ctx,
-						    cb_args->msg_ctx);
-		}
+		DEBUG(0, ("failed to replace pcap cache\n"));
+	} else if (cb_args->post_cache_fill_fn != NULL) {
+		/* Caller requested post cache fill callback */
+		cb_args->post_cache_fill_fn(cb_args->event_ctx,
+					    cb_args->msg_ctx);
 	}
 err_out:
+	pcap_cache_destroy_specific(&tmp_pcap_cache);
 	TALLOC_FREE(frame);
 	close(cb_args->pipe_fd);
 	TALLOC_FREE(cb_args);
