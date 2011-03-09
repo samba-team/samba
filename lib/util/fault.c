@@ -51,7 +51,7 @@ _PUBLIC_ void call_backtrace(void)
 #define BACKTRACE_STACK_SIZE 64
 #endif
 	void *backtrace_stack[BACKTRACE_STACK_SIZE];
-	size_t backtrace_size;
+	int backtrace_size;
 	char **backtrace_strings;
 
 	/* get the backtrace (stack frames) */
