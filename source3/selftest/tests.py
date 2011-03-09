@@ -196,8 +196,8 @@ if sub.returncode == 0:
             plansmbtorturetestsuite(t, "dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
 
     test = 'rpc.lsa.lookupsids'
-    auth_options = ["ntlm", "spnego", "connect" ]
-    signseal_options = ["", ",sign", ",sign,seal"]
+    auth_options = ["", "ntlm", "spnego" ]
+    signseal_options = ["", ",connect", ",sign", ",seal"]
     smb_options = ["", ",smb2"]
     endianness_options = ["", ",bigendian"]
     for z in smb_options:
