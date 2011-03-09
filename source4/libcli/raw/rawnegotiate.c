@@ -62,7 +62,10 @@ struct smbcli_request *smb_raw_negotiate_send(struct smbcli_transport *transport
 		return NULL;
 	}
 
-	flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+	if (transport->options.ntstatus_support) {
+		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+	}
+
 	if (unicode) {
 		flags2 |= FLAGS2_UNICODE_STRINGS;
 	}
