@@ -34,6 +34,8 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 /**
  * @brief Adds server address information in the local endpoint map.
  *
+ * @param[in]  mem_ctx  The memory context to use for the binding handle.
+ *
  * @param[in]  iface    The interface specification to register with the local
  *                      endpoint map.
  *
@@ -55,17 +57,25 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
  *                         supplied, including an empty annotation string,
  *                         replaces any existing annotation string.
  *
+ * @param[out] ph          A pointer to store the binding handle. The memory
+ *                         context will be the give one. If you free this handle
+ *                         then the connection will be closed.
+ *
  * @return                 An NTSTATUS error code.
  */
-NTSTATUS dcerpc_ep_register(const struct ndr_interface_table *iface,
+NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
+			    const struct ndr_interface_table *iface,
 			    const struct dcerpc_binding_vector *bind_vec,
 			    const struct GUID *object_guid,
-			    const char *annotation);
+			    const char *annotation,
+			    struct dcerpc_binding_handle **ph);
 
-NTSTATUS dcerpc_ep_register_noreplace(const struct ndr_interface_table *iface,
+NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
+				      const struct ndr_interface_table *iface,
 				      const struct dcerpc_binding_vector *bind_vec,
 				      const struct GUID *object_guid,
-				      const char *annotation);
+				      const char *annotation,
+				      struct dcerpc_binding_handle **ph);
 
 NTSTATUS dcerpc_ep_unregister(const struct ndr_interface_table *iface,
 			      const struct dcerpc_binding_vector *bind_vec,

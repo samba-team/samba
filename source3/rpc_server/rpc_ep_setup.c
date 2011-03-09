@@ -149,14 +149,16 @@ static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 }
 
 static void rpc_ep_setup_register_loop(struct tevent_req *subreq);
-static NTSTATUS rpc_ep_setup_try_register(struct tevent_context *ev_ctx,
+static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct ndr_interface_table *iface,
 					  const char *name,
-					  uint16_t port);
+					  uint16_t port,
+					  struct dcerpc_binding_handle **pbh);
 
 struct rpc_ep_regsiter_state {
-	uint32_t wait_time;
+	struct dcerpc_binding_handle *h;
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
@@ -165,6 +167,8 @@ struct rpc_ep_regsiter_state {
 
 	const char *ncalrpc;
 	uint16_t port;
+
+	uint32_t wait_time;
 };
 
 static NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
@@ -209,14 +213,17 @@ static void rpc_ep_setup_register_loop(struct tevent_req *req)
 	ok = tevent_wakeup_recv(req);
 	TALLOC_FREE(req);
 	if (!ok) {
+		talloc_free(state);
 		return;
 	}
 
-	status = rpc_ep_setup_try_register(state->ev_ctx,
+	status = rpc_ep_setup_try_register(state,
+					   state->ev_ctx,
 					   state->msg_ctx,
 					   state->iface,
 					   state->ncalrpc,
-					   state->port);
+					   state->port,
+					   &state->h);
 	if (NT_STATUS_IS_OK(status)) {
 		talloc_free(state);
 		return;
@@ -240,16 +247,18 @@ static void rpc_ep_setup_register_loop(struct tevent_req *req)
 	return;
 }
 
-static NTSTATUS rpc_ep_setup_try_register(struct tevent_context *ev_ctx,
+static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct ndr_interface_table *iface,
 					  const char *name,
-					  uint16_t port)
+					  uint16_t port,
+					  struct dcerpc_binding_handle **pbh)
 {
 	struct dcerpc_binding_vector *v = NULL;
 	NTSTATUS status;
 
-	status = dcerpc_binding_vector_create(talloc_tos(),
+	status = dcerpc_binding_vector_create(mem_ctx,
 					      iface,
 					      port,
 					      name,
@@ -258,10 +267,13 @@ static NTSTATUS rpc_ep_setup_try_register(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	status = dcerpc_ep_register(iface,
+	status = dcerpc_ep_register(mem_ctx,
+				    iface,
 				    v,
 				    &iface->syntax_id.uuid,
-				    name);
+				    name,
+				    pbh);
+	talloc_free(v);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

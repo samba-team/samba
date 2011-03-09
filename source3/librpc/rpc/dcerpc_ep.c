@@ -130,12 +130,14 @@ done:
 	return status;
 }
 
-static NTSTATUS ep_register(const struct ndr_interface_table *iface,
+static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
+			    const struct ndr_interface_table *iface,
 			    const struct dcerpc_binding_vector *bind_vec,
 			    const struct GUID *object_guid,
 			    const char *annotation,
 			    uint32_t replace,
-			    uint32_t unregister)
+			    uint32_t unregister,
+			    struct dcerpc_binding_handle **pbh)
 {
 	struct rpc_pipe_client *cli = NULL;
 	struct dcerpc_binding_handle *h;
@@ -285,33 +287,63 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 		goto done;
 	}
 
+	if (pbh != NULL) {
+		*pbh = talloc_move(mem_ctx, &h);
+		talloc_steal(mem_ctx, cli);
+	}
+
 done:
 	talloc_free(tmp_ctx);
 
 	return status;
 }
 
-NTSTATUS dcerpc_ep_register(const struct ndr_interface_table *iface,
+NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
+			    const struct ndr_interface_table *iface,
 			    const struct dcerpc_binding_vector *bind_vec,
 			    const struct GUID *object_guid,
-			    const char *annotation)
+			    const char *annotation,
+			    struct dcerpc_binding_handle **ph)
 {
-	return ep_register(iface, bind_vec, object_guid, annotation, 1, 0);
+	return ep_register(mem_ctx,
+			   iface,
+			   bind_vec,
+			   object_guid,
+			   annotation,
+			   1,
+			   0,
+			   ph);
 }
 
-NTSTATUS dcerpc_ep_register_noreplace(const struct ndr_interface_table *iface,
+NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
+				      const struct ndr_interface_table *iface,
 				      const struct dcerpc_binding_vector *bind_vec,
 				      const struct GUID *object_guid,
-				      const char *annotation)
+				      const char *annotation,
+				      struct dcerpc_binding_handle **ph)
 {
-	return ep_register(iface, bind_vec, object_guid, annotation, 0, 0);
+	return ep_register(mem_ctx,
+			   iface,
+			   bind_vec,
+			   object_guid,
+			   annotation,
+			   0,
+			   0,
+			   ph);
 }
 
 NTSTATUS dcerpc_ep_unregister(const struct ndr_interface_table *iface,
 			      const struct dcerpc_binding_vector *bind_vec,
 			      const struct GUID *object_guid)
 {
-	return ep_register(iface, bind_vec, object_guid, NULL, 0, 1);
+	return ep_register(NULL,
+			   iface,
+			   bind_vec,
+			   object_guid,
+			   NULL,
+			   0,
+			   1,
+			   NULL);
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
