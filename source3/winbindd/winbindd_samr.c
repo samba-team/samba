@@ -751,7 +751,7 @@ done:
 
 static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const struct dom_sid *sid,
+				  const struct dom_sid *domain_sid,
 				  uint32 *rids,
 				  size_t num_rids,
 				  char **pdomain_name,
@@ -772,13 +772,13 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	ZERO_STRUCT(lsa_policy);
 
 	/* Paranoia check */
-	if (!sid_check_is_builtin(sid) &&
-	    !sid_check_is_domain(sid) &&
-	    !sid_check_is_unix_users(sid) &&
-	    !sid_check_is_unix_groups(sid) &&
-	    !sid_check_is_in_wellknown_domain(sid)) {
+	if (!sid_check_is_builtin(domain_sid) &&
+	    !sid_check_is_domain(domain_sid) &&
+	    !sid_check_is_unix_users(domain_sid) &&
+	    !sid_check_is_unix_groups(domain_sid) &&
+	    !sid_check_is_in_wellknown_domain(domain_sid)) {
 		DEBUG(0, ("sam_rids_to_names: possible deadlock - trying to "
-			  "lookup SID %s\n", sid_string_dbg(sid)));
+			  "lookup SID %s\n", sid_string_dbg(domain_sid)));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -798,7 +798,7 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 				   lsa_pipe,
 				   &lsa_policy,
 				   domain,
-				   sid,
+				   domain_sid,
 				   rids,
 				   num_rids,
 				   &domain_name,
