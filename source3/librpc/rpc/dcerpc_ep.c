@@ -289,7 +289,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 
 	if (pbh != NULL) {
 		*pbh = talloc_move(mem_ctx, &h);
-		talloc_steal(mem_ctx, cli);
+		talloc_steal(*pbh, cli);
 	}
 
 done:
