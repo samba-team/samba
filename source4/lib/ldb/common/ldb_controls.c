@@ -72,18 +72,22 @@ struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid
 }
 
 /*
- * Saves the current controls list into the "saver" and replace the one in "req"
- * with a new one excluding the "exclude" control (if it is NULL then the list
- * remains the same)
+ * Saves the current controls list into the "saver" (can also be NULL) and
+ * replace the one in "req" with a new one excluding the "exclude" control
+ * (if it is NULL then the list remains the same)
  *
  * Returns 0 on error.
  */
 int ldb_save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver)
 {
-	struct ldb_control **lcs;
+	struct ldb_control **lcs, **lcs_old;
 	unsigned int i, j;
 
-	*saver = req->controls;
+	lcs_old = req->controls;
+	if (saver != NULL) {
+		*saver = lcs_old;
+	}
+
 	for (i = 0; req->controls && req->controls[i]; i++);
 	if (i == 0) {
 		req->controls = NULL;
@@ -95,9 +99,9 @@ int ldb_save_controls(struct ldb_control *exclude, struct ldb_request *req, stru
 		return 0;
 	}
 
-	for (i = 0, j = 0; (*saver)[i]; i++) {
-		if (exclude == (*saver)[i]) continue;
-		lcs[j] = (*saver)[i];
+	for (i = 0, j = 0; lcs_old[i]; i++) {
+		if (exclude == lcs_old[i]) continue;
+		lcs[j] = lcs_old[i];
 		j++;
 	}
 	lcs[j] = NULL;
