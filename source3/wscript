@@ -1209,7 +1209,7 @@ ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
 syscall(SYS_initgroups, 16, NULL, NULL, 0);
 		    ''',
 		    'HAVE_DARWIN_INITGROUPS',
-		    msg='Checking hether to use the Darwin-specific initgroups system call')
+		    msg='Checking whether to use the Darwin-specific initgroups system call')
 
     conf.CHECK_CODE('''struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));''',
 		    'HAVE_UTIMBUF',
