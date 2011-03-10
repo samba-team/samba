@@ -219,15 +219,15 @@ static NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
 #define MONITOR_WAIT_TIME 15
 static void rpc_ep_setup_monitor_loop(struct tevent_req *subreq);
 
-static void rpc_ep_setup_register_loop(struct tevent_req *req)
+static void rpc_ep_setup_register_loop(struct tevent_req *subreq)
 {
 	struct rpc_ep_regsiter_state *state =
-		tevent_req_callback_data(req, struct rpc_ep_regsiter_state);
+		tevent_req_callback_data(subreq, struct rpc_ep_regsiter_state);
 	NTSTATUS status;
 	bool ok;
 
-	ok = tevent_wakeup_recv(req);
-	TALLOC_FREE(req);
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!ok) {
 		talloc_free(state);
 		return;
@@ -242,15 +242,15 @@ static void rpc_ep_setup_register_loop(struct tevent_req *req)
 					   &state->h);
 	if (NT_STATUS_IS_OK(status)) {
 		/* endpoint registered, monitor the connnection. */
-		req = tevent_wakeup_send(state->mem_ctx,
-					 state->ev_ctx,
-					 timeval_current_ofs(MONITOR_WAIT_TIME, 0));
-		if (tevent_req_nomem(state->mem_ctx, req)) {
+		subreq = tevent_wakeup_send(state->mem_ctx,
+					    state->ev_ctx,
+					    timeval_current_ofs(MONITOR_WAIT_TIME, 0));
+		if (tevent_req_nomem(state->mem_ctx, subreq)) {
 			talloc_free(state);
 			return;
 		}
 
-		tevent_req_set_callback(req, rpc_ep_setup_monitor_loop, state);
+		tevent_req_set_callback(subreq, rpc_ep_setup_monitor_loop, state);
 		return;
 	}
 
@@ -260,15 +260,15 @@ static void rpc_ep_setup_register_loop(struct tevent_req *req)
 		return;
 	}
 
-	req = tevent_wakeup_send(state->mem_ctx,
-				 state->ev_ctx,
-				 timeval_current_ofs(state->wait_time, 0));
-	if (tevent_req_nomem(state->mem_ctx, req)) {
+	subreq = tevent_wakeup_send(state->mem_ctx,
+				    state->ev_ctx,
+				    timeval_current_ofs(state->wait_time, 0));
+	if (tevent_req_nomem(state->mem_ctx, subreq)) {
 		talloc_free(state);
 		return;
 	}
 
-	tevent_req_set_callback(req, rpc_ep_setup_register_loop, state);
+	tevent_req_set_callback(subreq, rpc_ep_setup_register_loop, state);
 	return;
 }
 
