@@ -160,7 +160,7 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 /* Lookup a list of sids
  *
  * internal version withOUT memory allocation of the target arrays.
- * this assumes suffciently sized arrays to store domains, names and types. */
+ * this assumes sufficiently sized arrays to store domains, names and types. */
 
 static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 					       TALLOC_CTX *mem_ctx,
