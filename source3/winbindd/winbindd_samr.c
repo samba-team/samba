@@ -772,11 +772,9 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	ZERO_STRUCT(lsa_policy);
 
 	/* Paranoia check */
-	if (!sid_check_is_in_builtin(sid) &&
-	    !sid_check_is_in_our_domain(sid) &&
-	    !sid_check_is_in_unix_users(sid) &&
+	if (!sid_check_is_builtin(sid) &&
+	    !sid_check_is_domain(sid) &&
 	    !sid_check_is_unix_users(sid) &&
-	    !sid_check_is_in_unix_groups(sid) &&
 	    !sid_check_is_unix_groups(sid) &&
 	    !sid_check_is_in_wellknown_domain(sid)) {
 		DEBUG(0, ("sam_rids_to_names: possible deadlock - trying to "
