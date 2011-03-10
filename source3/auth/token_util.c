@@ -849,8 +849,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		 * correct info. AD might prohibit winbind looking up that
 		 * information. */
 
-		uint32 dummy;
-
 		/* We must always assign the *uid. */
 		if (!sid_to_uid(&user_sid, uid)) {
 			DEBUG(1, ("winbindd case, sid_to_uid for %s (%s) failed\n",
@@ -868,7 +866,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		}
 
 		sid_copy(&group_sids[0], &user_sid);
-		sid_split_rid(&group_sids[0], &dummy);
+		sid_split_rid(&group_sids[0], NULL);
 		sid_append_rid(&group_sids[0], DOMAIN_RID_USERS);
 
 		if (!sid_to_gid(&group_sids[0], gid)) {

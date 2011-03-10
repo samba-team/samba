@@ -95,10 +95,9 @@ bool sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid)
 bool non_mappable_sid(struct dom_sid *sid)
 {
 	struct dom_sid dom;
-	uint32 rid;
 
 	sid_copy(&dom, sid);
-	sid_split_rid(&dom, &rid);
+	sid_split_rid(&dom, NULL);
 
 	if (dom_sid_equal(&dom, &global_sid_Builtin))
 		return True;

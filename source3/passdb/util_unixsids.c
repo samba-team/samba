@@ -28,10 +28,9 @@ bool sid_check_is_unix_users(const struct dom_sid *sid)
 bool sid_check_is_in_unix_users(const struct dom_sid *sid)
 {
 	struct dom_sid dom_sid;
-	uint32 rid;
 
 	sid_copy(&dom_sid, sid);
-	sid_split_rid(&dom_sid, &rid);
+	sid_split_rid(&dom_sid, NULL);
 
 	return sid_check_is_unix_users(&dom_sid);
 }
@@ -86,10 +85,9 @@ bool sid_check_is_unix_groups(const struct dom_sid *sid)
 bool sid_check_is_in_unix_groups(const struct dom_sid *sid)
 {
 	struct dom_sid dom_sid;
-	uint32 rid;
 
 	sid_copy(&dom_sid, sid);
-	sid_split_rid(&dom_sid, &rid);
+	sid_split_rid(&dom_sid, NULL);
 
 	return sid_check_is_unix_groups(&dom_sid);
 }
