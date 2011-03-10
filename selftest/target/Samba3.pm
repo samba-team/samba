@@ -565,8 +565,7 @@ sub provision($$$$$$)
 
 	winbindd:socket dir = $wbsockdir
 	nmbd:socket dir = $nmbdsockdir
-	idmap uid = 100000-200000
-	idmap gid = 100000-200000
+	idmap config * : range = 100000-200000
 	winbind enum users = yes
 	winbind enum groups = yes
 
