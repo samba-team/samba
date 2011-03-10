@@ -259,7 +259,6 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 	if (IS_DC && winbind_lookup_name("", name, &sid, &type)) {
 		struct dom_sid dom_sid;
-		uint32 tmp_rid;
 		enum lsa_SidType domain_type;
 		
 		if (type == SID_NAME_DOMAIN) {
@@ -273,7 +272,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		 * domain it figured out itself. Maybe fix that later... */
 
 		sid_copy(&dom_sid, &sid);
-		sid_split_rid(&dom_sid, &tmp_rid);
+		sid_split_rid(&dom_sid, NULL);
 
 		if (!winbind_lookup_sid(tmp_ctx, &dom_sid, &domain, NULL,
 					&domain_type) ||

@@ -3644,11 +3644,10 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 		 * domsid */
 
 		struct dom_sid domsid;
-		uint32 dummy_rid;
 
 		sid_copy(&domsid, &tmp_user_sid);
 
-		if (!sid_split_rid(&domsid, &dummy_rid)) {
+		if (!sid_split_rid(&domsid, NULL)) {
 			ads_msgfree(ads, res);
 			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 		}

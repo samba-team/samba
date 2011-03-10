@@ -115,11 +115,10 @@ bool sid_check_is_builtin(const struct dom_sid *sid)
 bool sid_check_is_in_builtin(const struct dom_sid *sid)
 {
 	struct dom_sid dom_sid;
-	uint32 rid;
 
 	sid_copy(&dom_sid, sid);
-	sid_split_rid(&dom_sid, &rid);
-	
+	sid_split_rid(&dom_sid, NULL);
+
 	return sid_check_is_builtin(&dom_sid);
 }
 
