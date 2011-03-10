@@ -176,7 +176,9 @@ rap = ["rap.basic", "rap.rpc", "rap.printing", "rap.sam"]
 
 unix = ["unix.info2", "unix.whoami"]
 
-tests= base + raw + smb2 + rpc + unix + local + winbind + rap
+nbt = ["nbt.dgram" ]
+
+tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt
 
 sub = subprocess.Popen("%s --version 2> /dev/null" % smb4torture, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
 sub.communicate("")
