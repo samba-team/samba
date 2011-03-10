@@ -273,6 +273,8 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 	char *config_option;
 	const char *backend;
 
+	idmap_init();
+
 	config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
 					domname);
 	if (config_option == NULL) {
@@ -371,6 +373,8 @@ static struct idmap_domain *idmap_find_domain(const char *domname)
 
 	DEBUG(10, ("idmap_find_domain called for domain '%s'\n",
 		   domname?domname:"NULL"));
+
+	idmap_init();
 
 	/*
 	 * Always init the default domain, we can't go without one
