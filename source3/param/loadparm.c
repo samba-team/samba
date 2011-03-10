@@ -9459,6 +9459,8 @@ static bool lp_load_ex(const char *pszFname,
 
 	free_param_opts(&Globals.param_opt);
 
+	lp_do_parameter(-1, "idmap config * : backend", Globals.szIdmapBackend);
+
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
 
