@@ -99,10 +99,12 @@ NTSTATUS ntvfs_cifs_init(void);
 #define CIFS_DOMAIN		"cifs:domain"
 #define CIFS_SHARE		"cifs:share"
 #define CIFS_USE_MACHINE_ACCT	"cifs:use-machine-account"
+#define CIFS_USE_S4U2PROXY	"cifs:use-s4u2proxy"
 #define CIFS_MAP_GENERIC	"cifs:map-generic"
 #define CIFS_MAP_TRANS2		"cifs:map-trans2"
 
 #define CIFS_USE_MACHINE_ACCT_DEFAULT	false
+#define CIFS_USE_S4U2PROXY_DEFAULT	false
 #define CIFS_MAP_GENERIC_DEFAULT	false
 #define CIFS_MAP_TRANS2_DEFAULT		true
 
@@ -150,6 +152,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	struct cli_credentials *credentials;
 	bool machine_account;
+	bool s4u2proxy;
 	const char* sharename;
 
 	switch (tcon->generic.level) {
@@ -187,6 +190,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	machine_account = share_bool_option(scfg, CIFS_USE_MACHINE_ACCT, CIFS_USE_MACHINE_ACCT_DEFAULT);
+	s4u2proxy = share_bool_option(scfg, CIFS_USE_S4U2PROXY, CIFS_USE_S4U2PROXY_DEFAULT);
 
 	p = talloc_zero(ntvfs, struct cvfs_private);
 	if (!p) {
@@ -226,6 +230,51 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	} else if (req->session_info->credentials) {
 		DEBUG(5, ("CIFS backend: Using delegated credentials\n"));
 		credentials = req->session_info->credentials;
+	} else if (s4u2proxy) {
+		struct ccache_container *ccc = NULL;
+		const char *err_str = NULL;
+		int ret;
+		char *impersonate_principal;
+		char *self_service;
+		char *target_service;
+
+		impersonate_principal = talloc_asprintf(req, "%s@%s",
+						req->session_info->info->account_name,
+						req->session_info->info->domain_name);
+
+		self_service = talloc_asprintf(req, "cifs/%s",
+					       lpcfg_netbios_name(ntvfs->ctx->lp_ctx));
+
+		target_service = talloc_asprintf(req, "cifs/%s", host);
+
+		DEBUG(5, ("CIFS backend: Using S4U2Proxy credentials\n"));
+
+		credentials = cli_credentials_init(p);
+		cli_credentials_set_conf(credentials, ntvfs->ctx->lp_ctx);
+		if (domain) {
+			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
+		}
+		status = cli_credentials_set_machine_account(credentials, ntvfs->ctx->lp_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+		cli_credentials_set_impersonate_principal(credentials,
+							  impersonate_principal,
+							  self_service);
+		cli_credentials_set_target_service(credentials, target_service);
+		ret = cli_credentials_get_ccache(credentials,
+						 ntvfs->ctx->event_ctx,
+						 ntvfs->ctx->lp_ctx,
+						 &ccc,
+						 &err_str);
+		if (ret != 0) {
+			status = NT_STATUS_CROSSREALM_DELEGATION_FAILURE;
+			DEBUG(1,("S4U2Proxy: cli_credentials_get_ccache() gave: ret[%d] str[%s] - %s\n",
+				ret, err_str, nt_errstr(status)));
+			return status;
+		}
+
 	} else {
 		DEBUG(1,("CIFS backend: NO delegated credentials found: You must supply server, user and password or the client must supply delegated credentials\n"));
 		return NT_STATUS_INTERNAL_ERROR;
