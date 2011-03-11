@@ -1318,7 +1318,7 @@ int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
 			       " Skipping the record.\n", hash));
 			return 0;
 		} else {
-			DEBUG(DEBUG_INFO,
+			DEBUG(DEBUG_DEBUG,
 			      ("schedule for deletetion: Overwriting entry for "
 			       "key with hash 0x%08x.\n", hash));
 		}
