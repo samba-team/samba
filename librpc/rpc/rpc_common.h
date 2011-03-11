@@ -1,8 +1,41 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   Copyright (C) Stefan Metzmacher 2010-2011
+   Copyright (C) Andrew Tridgell 2010-2011
+   Copyright (C) Simo Sorce 2010
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef __DEFAULT_LIBRPC_RPCCOMMON_H__
 #define __DEFAULT_LIBRPC_RPCCOMMON_H__
 
+struct dcerpc_binding_handle;
+struct GUID;
+struct ndr_interface_table;
+struct ndr_interface_call;
+struct ndr_push;
+struct ndr_pull;
+struct ncacn_packet;
+struct tevent_context;
+struct tstream_context;
+
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
+const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
+NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 
 /* The following definitions come from ../librpc/rpc/binding.c  */
 
@@ -52,6 +85,58 @@ NTSTATUS dcerpc_read_ncacn_packet_recv(struct tevent_req *req,
 
 /* The following definitions come from ../librpc/rpc/binding_handle.c  */
 
+struct dcerpc_binding_handle_ops {
+	const char *name;
+
+	bool (*is_connected)(struct dcerpc_binding_handle *h);
+	uint32_t (*set_timeout)(struct dcerpc_binding_handle *h,
+				uint32_t timeout);
+
+	struct tevent_req *(*raw_call_send)(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct dcerpc_binding_handle *h,
+					    const struct GUID *object,
+					    uint32_t opnum,
+					    uint32_t in_flags,
+					    const uint8_t *in_data,
+					    size_t in_length);
+	NTSTATUS (*raw_call_recv)(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  uint8_t **out_data,
+				  size_t *out_length,
+				  uint32_t *out_flags);
+
+	struct tevent_req *(*disconnect_send)(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct dcerpc_binding_handle *h);
+	NTSTATUS (*disconnect_recv)(struct tevent_req *req);
+
+	/* TODO: remove the following functions */
+	bool (*push_bigendian)(struct dcerpc_binding_handle *h);
+	bool (*ref_alloc)(struct dcerpc_binding_handle *h);
+	bool (*use_ndr64)(struct dcerpc_binding_handle *h);
+	void (*do_ndr_print)(struct dcerpc_binding_handle *h,
+			     int ndr_flags,
+			     const void *struct_ptr,
+			     const struct ndr_interface_call *call);
+	void (*ndr_push_failed)(struct dcerpc_binding_handle *h,
+				NTSTATUS error,
+				const void *struct_ptr,
+				const struct ndr_interface_call *call);
+	void (*ndr_pull_failed)(struct dcerpc_binding_handle *h,
+				NTSTATUS error,
+				const DATA_BLOB *blob,
+				const struct ndr_interface_call *call);
+	NTSTATUS (*ndr_validate_in)(struct dcerpc_binding_handle *h,
+				    TALLOC_CTX *mem_ctx,
+				    const DATA_BLOB *blob,
+				    const struct ndr_interface_call *call);
+	NTSTATUS (*ndr_validate_out)(struct dcerpc_binding_handle *h,
+				     struct ndr_pull *pull_in,
+				     const void *struct_ptr,
+				     const struct ndr_interface_call *call);
+};
+
 struct dcerpc_binding_handle *_dcerpc_binding_handle_create(TALLOC_CTX *mem_ctx,
 					const struct dcerpc_binding_handle_ops *ops,
 					const struct GUID *object,
@@ -60,12 +145,23 @@ struct dcerpc_binding_handle *_dcerpc_binding_handle_create(TALLOC_CTX *mem_ctx,
 					size_t psize,
 					const char *type,
 					const char *location);
+#define dcerpc_binding_handle_create(mem_ctx, ops, object, table, \
+				state, type, location) \
+	_dcerpc_binding_handle_create(mem_ctx, ops, object, table, \
+				state, sizeof(type), #type, location)
+
 void *_dcerpc_binding_handle_data(struct dcerpc_binding_handle *h);
-void dcerpc_binding_handle_set_sync_ev(struct dcerpc_binding_handle *h,
-				       struct tevent_context *ev);
+#define dcerpc_binding_handle_data(_h, _type) \
+	talloc_get_type_abort(_dcerpc_binding_handle_data(_h), _type)
+
+_DEPRECATED_ void dcerpc_binding_handle_set_sync_ev(struct dcerpc_binding_handle *h,
+						    struct tevent_context *ev);
+
 bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h);
+
 uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
 					   uint32_t timeout);
+
 struct tevent_req *dcerpc_binding_handle_raw_call_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct dcerpc_binding_handle *h,
@@ -79,10 +175,12 @@ NTSTATUS dcerpc_binding_handle_raw_call_recv(struct tevent_req *req,
 					     uint8_t **out_data,
 					     size_t *out_length,
 					     uint32_t *out_flags);
+
 struct tevent_req *dcerpc_binding_handle_disconnect_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct dcerpc_binding_handle *h);
 NTSTATUS dcerpc_binding_handle_disconnect_recv(struct tevent_req *req);
+
 struct tevent_req *dcerpc_binding_handle_call_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct dcerpc_binding_handle *h,
@@ -98,4 +196,5 @@ NTSTATUS dcerpc_binding_handle_call(struct dcerpc_binding_handle *h,
 				    uint32_t opnum,
 				    TALLOC_CTX *r_mem,
 				    void *r_ptr);
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */
