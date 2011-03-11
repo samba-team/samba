@@ -2466,7 +2466,7 @@ sub ParseGeneratePipeArray($$$)
 		$self->deindent;
 		$self->pidl("},");
 	}
-	$self->pidl("{ NULL, NULL, 0, NULL, NULL, NULL, NULL }");
+	$self->pidl("{ NULL, NULL, 0, NULL, NULL, NULL }");
 	$self->deindent;
 	$self->pidl("};");
 	$self->pidl("");
@@ -2523,11 +2523,11 @@ sub FunctionCallEntry($$)
 	my $out_pipes_ptr = "NULL";
 
 	if ($in_pipes) {
-		$in_pipes_ptr = "\&$d->{NAME}_in_pipes";
+		$in_pipes_ptr = "$d->{NAME}_in_pipes";
 	}
 
 	if ($out_pipes) {
-		$out_pipes_ptr = "\&$d->{NAME}_out_pipes";
+		$out_pipes_ptr = "$d->{NAME}_out_pipes";
 	}
 
 	$self->pidl("\t{");
