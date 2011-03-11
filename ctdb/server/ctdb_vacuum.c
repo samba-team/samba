@@ -1305,7 +1305,7 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 			return 0;
 		} else {
 			DEBUG(DEBUG_DEBUG,
-			      ("schedule for deletetion: Overwriting entry for "
+			      ("schedule for deletion: Overwriting entry for "
 			       "key with hash 0x%08x.\n", hash));
 		}
 	}
