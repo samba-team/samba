@@ -196,16 +196,6 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
 NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 
-/*
- * This is just a hack this should never be used in code,
- * but it's needed to build the compat stubs for now
- */
-struct __do_not_use_dcerpc_pipe {
-	struct dcerpc_binding_handle *binding_handle;
-};
-#define dcerpc_pipe __do_not_use_dcerpc_pipe
-
-
 struct dcerpc_binding_handle_ops {
 	const char *name;
 
