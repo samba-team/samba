@@ -59,6 +59,24 @@ NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	/*
+	 * This breaks the winbindd_domain->methods abstraction: This
+	 * is only called for remote domains, and both winbindd_msrpc
+	 * and winbindd_ad call into lsa_lookupsids anyway. Caching is
+	 * done at the wbint RPC layer.
+	 */
+	return rpc_lookup_sids(p->mem_ctx, domain, r->in.sids,
+			       &r->out.domains, &r->out.names);
+}
+
 NTSTATUS _wbint_LookupName(struct pipes_struct *p, struct wbint_LookupName *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
