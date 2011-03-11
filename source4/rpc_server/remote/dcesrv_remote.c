@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "rpc_server/dcerpc_server.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
@@ -177,7 +178,7 @@ static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CT
 	return NT_STATUS_OK;
 }
 
-static void remote_op_dispatch_done(struct rpc_request *rreq);
+static void remote_op_dispatch_done(struct tevent_req *subreq);
 
 static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
@@ -187,7 +188,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	const struct ndr_interface_call *call;
 	const char *name;
-	struct rpc_request *rreq;
+	struct tevent_req *subreq;
 
 	name = table->calls[opnum].name;
 	call = &table->calls[opnum];
@@ -199,21 +200,23 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	priv->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
 	/* we didn't use the return code of this function as we only check the last_fault_code */
-	rreq = dcerpc_ndr_request_send(priv->c_pipe, NULL, table, opnum, true, mem_ctx, r);
-	if (rreq == NULL) {
-		DEBUG(0,("dcesrv_remote: call[%s] dcerpc_ndr_request_send() failed!\n", name));
+	subreq = dcerpc_binding_handle_call_send(dce_call, dce_call->event_ctx,
+						 priv->c_pipe->binding_handle,
+						 NULL, table,
+						 opnum, mem_ctx, r);
+	if (subreq == NULL) {
+		DEBUG(0,("dcesrv_remote: call[%s] dcerpc_binding_handle_call_send() failed!\n", name));
 		return NT_STATUS_NO_MEMORY;
 	}
-	rreq->async.callback = remote_op_dispatch_done;
-	rreq->async.private_data = dce_call;
+	tevent_req_set_callback(subreq, remote_op_dispatch_done, dce_call);
 
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	return NT_STATUS_OK;
 }
 
-static void remote_op_dispatch_done(struct rpc_request *rreq)
+static void remote_op_dispatch_done(struct tevent_req *subreq)
 {
-	struct dcesrv_call_state *dce_call = talloc_get_type_abort(rreq->async.private_data,
+	struct dcesrv_call_state *dce_call = tevent_req_callback_data(subreq,
 					     struct dcesrv_call_state);
 	struct dcesrv_remote_private *priv = talloc_get_type_abort(dce_call->context->private_data,
 								   struct dcesrv_remote_private);
@@ -227,7 +230,8 @@ static void remote_op_dispatch_done(struct rpc_request *rreq)
 	call = &table->calls[opnum];
 
 	/* we didn't use the return code of this function as we only check the last_fault_code */
-	status = dcerpc_ndr_request_recv(rreq);
+	status = dcerpc_binding_handle_call_recv(subreq);
+	TALLOC_FREE(subreq);
 
 	dce_call->fault_code = priv->c_pipe->last_fault_code;
 	if (dce_call->fault_code != 0) {
