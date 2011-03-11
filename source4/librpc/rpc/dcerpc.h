@@ -44,20 +44,20 @@ enum dcerpc_transport_t {
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.
 */
-struct dcerpc_connection;
+struct dcecli_connection;
 struct gensec_settings;
 struct dcerpc_security {
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
 
 	/* get the session key */
-	NTSTATUS (*session_key)(struct dcerpc_connection *, DATA_BLOB *);
+	NTSTATUS (*session_key)(struct dcecli_connection *, DATA_BLOB *);
 };
 
 /*
   this holds the information that is not specific to a particular rpc context_id
 */
-struct dcerpc_connection {
+struct dcecli_connection {
 	uint32_t call_id;
 	uint32_t srv_max_xmit_frag;
 	uint32_t srv_max_recv_frag;
@@ -76,21 +76,21 @@ struct dcerpc_connection {
 		enum dcerpc_transport_t transport;
 		void *private_data;
 
-		NTSTATUS (*shutdown_pipe)(struct dcerpc_connection *, NTSTATUS status);
+		NTSTATUS (*shutdown_pipe)(struct dcecli_connection *, NTSTATUS status);
 
-		const char *(*peer_name)(struct dcerpc_connection *);
+		const char *(*peer_name)(struct dcecli_connection *);
 
-		const char *(*target_hostname)(struct dcerpc_connection *);
+		const char *(*target_hostname)(struct dcecli_connection *);
 
 		/* send a request to the server */
-		NTSTATUS (*send_request)(struct dcerpc_connection *, DATA_BLOB *, bool trigger_read);
+		NTSTATUS (*send_request)(struct dcecli_connection *, DATA_BLOB *, bool trigger_read);
 
 		/* send a read request to the server */
-		NTSTATUS (*send_read)(struct dcerpc_connection *);
+		NTSTATUS (*send_read)(struct dcecli_connection *);
 
 		/* a callback to the dcerpc code when a full fragment
 		   has been received */
-		void (*recv_data)(struct dcerpc_connection *, DATA_BLOB *, NTSTATUS status);
+		void (*recv_data)(struct dcecli_connection *, DATA_BLOB *, NTSTATUS status);
 	} transport;
 
 	/* Requests that have been sent, waiting for a reply */
@@ -116,7 +116,7 @@ struct dcerpc_pipe {
 	struct ndr_syntax_id syntax;
 	struct ndr_syntax_id transfer_syntax;
 
-	struct dcerpc_connection *conn;
+	struct dcecli_connection *conn;
 	struct dcerpc_binding *binding;
 
 	/** the last fault code from a DCERPC fault */
@@ -326,8 +326,8 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 				   uint8_t auth_level);
 struct tevent_context *dcerpc_event_context(struct dcerpc_pipe *p);
 NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx);
-struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c);
-uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c);
+struct smbcli_tree *dcerpc_smb_tree(struct dcecli_connection *c);
+uint16_t dcerpc_smb_fnum(struct dcecli_connection *c);
 NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
 				  struct dcerpc_pipe **pp2,
 				  const struct ndr_interface_table *table);

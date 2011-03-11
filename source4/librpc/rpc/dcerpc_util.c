@@ -533,7 +533,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	struct composite_context *auth_schannel_req;
 	struct composite_context *auth_req;
 	struct composite_context *auth_none_req;
-	struct dcerpc_connection *conn;
+	struct dcecli_connection *conn;
 	uint8_t auth_type;
 
 	/* composite context allocation and setup */
@@ -687,7 +687,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 }
 
 
-NTSTATUS dcerpc_generic_session_key(struct dcerpc_connection *c,
+NTSTATUS dcerpc_generic_session_key(struct dcecli_connection *c,
 				    DATA_BLOB *session_key)
 {
 	/* this took quite a few CPU cycles to find ... */
