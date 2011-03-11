@@ -23,6 +23,12 @@ interface wbint
 	[out,string,charset(UTF8)] char **name
 	);
 
+    NTSTATUS wbint_LookupSids(
+	[in] lsa_SidArray *sids,
+	[out,ref] lsa_RefDomainList *domains,
+	[out,ref] lsa_TransNameArray *names
+	);
+
     NTSTATUS wbint_LookupName(
 	[in,string,charset(UTF8)] char *domain,
 	[in,string,charset(UTF8)] char *name,
