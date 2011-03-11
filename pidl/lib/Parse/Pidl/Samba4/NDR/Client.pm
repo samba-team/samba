@@ -743,7 +743,7 @@ sub ParseFunction($$$)
 		$self->pidl_both(" * dcerpc_$fn->{NAME}()");
 		$self->pidl_both(" */");
 		$self->pidl_both("");
-		warning($fn, "$fn->{NAME}: dcerpc client does not support pipe yet");
+		warning($fn->{ORIGINAL}, "$fn->{NAME}: dcerpc client does not support pipe yet");
 		return;
 	}
 
