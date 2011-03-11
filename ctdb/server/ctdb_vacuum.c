@@ -1360,14 +1360,9 @@ int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 
 	if (ctdb_db->ctdb->ctdbd_pid == getpid()) {
 		/* main daemon - directly queue */
-		ret = insert_delete_record_data_into_tree(ctdb_db->ctdb,
-							  ctdb_db,
-							  ctdb_db->delete_queue,
-							  hdr, key);
-		if (ret != 0) {
-			return -1;
-		}
-		return 0;
+		ret = insert_record_into_delete_queue(ctdb_db, hdr, key);
+
+		return ret;
 	}
 
 	/* child process: send the main daemon a control */
