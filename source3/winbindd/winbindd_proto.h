@@ -54,6 +54,11 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 			       const char ***domains,
 			       struct dom_sid **sids,
 			       enum lsa_SidType **types);
+NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
+			 struct winbindd_domain *domain,
+			 struct lsa_SidArray *sids,
+			 struct lsa_RefDomainList **pdomains,
+			 struct lsa_TransNameArray **pnames);
 
 /* The following definitions come from winbindd/winbindd_cache.c  */
 

@@ -1032,3 +1032,101 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
+				     struct winbindd_domain *domain,
+				     struct lsa_SidArray *sids,
+				     struct lsa_RefDomainList **pdomains,
+				     struct lsa_TransNameArray **pnames)
+{
+	struct lsa_TransNameArray2 lsa_names2;
+	struct lsa_TransNameArray *names;
+	uint32_t i, count;
+	struct rpc_pipe_client *cli;
+	NTSTATUS status, result;
+
+	status = cm_connect_lsa_tcp(domain, talloc_tos(), &cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		domain->can_do_ncacn_ip_tcp = false;
+		return status;
+	}
+
+	ZERO_STRUCT(lsa_names2);
+	status = dcerpc_lsa_LookupSids3(cli->binding_handle,
+					mem_ctx,
+					sids,
+					pdomains,
+					&lsa_names2,
+					LSA_LOOKUP_NAMES_ALL,
+					&count,
+					LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES,
+					LSA_CLIENT_REVISION_2,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (NT_STATUS_IS_ERR(result)) {
+		return result;
+	}
+	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
+	if (names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	names->count = lsa_names2.count;
+	names->names = talloc_array(names, struct lsa_TranslatedName,
+				    names->count);
+	if (names->names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0; i<names->count; i++) {
+		names->names[i].sid_type = lsa_names2.names[i].sid_type;
+		names->names[i].name.string = talloc_move(
+			names->names, &lsa_names2.names[i].name.string);
+		names->names[i].sid_index = lsa_names2.names[i].sid_index;
+	}
+	*pnames = names;
+	return result;
+}
+
+NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
+			 struct winbindd_domain *domain,
+			 struct lsa_SidArray *sids,
+			 struct lsa_RefDomainList **pdomains,
+			 struct lsa_TransNameArray **pnames)
+{
+	struct lsa_TransNameArray *names;
+	struct rpc_pipe_client *cli = NULL;
+	struct policy_handle lsa_policy;
+	uint32_t count;
+	NTSTATUS status, result;
+
+	if (domain->can_do_ncacn_ip_tcp) {
+		status = rpc_try_lookup_sids3(mem_ctx, domain, sids,
+					      pdomains, pnames);
+		if (!NT_STATUS_IS_ERR(status)) {
+			return status;
+		}
+	}
+
+	status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
+	if (names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = dcerpc_lsa_LookupSids(cli->binding_handle, mem_ctx,
+				       &lsa_policy, sids, pdomains,
+				       names, LSA_LOOKUP_NAMES_ALL,
+				       &count, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (NT_STATUS_IS_ERR(result)) {
+		return result;
+	}
+	*pnames = names;
+	return result;
+}
