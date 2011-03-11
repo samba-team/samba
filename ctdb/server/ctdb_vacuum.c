@@ -1271,30 +1271,16 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 }
 
 /**
- * Schedule a record for deletetion.
- * Called from the parent context.
+ * Insert a record into the ctdb_db context's delete queue,
+ * handling hash collisions.
  */
-int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
-					   TDB_DATA indata)
+static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
+					   const struct ctdb_ltdb_header *hdr,
+					   TDB_DATA key)
 {
-	struct ctdb_control_schedule_for_deletion *dd;
-	struct ctdb_db_context *ctdb_db;
-	int ret;
-	TDB_DATA key;
-	uint32_t hash;
 	struct delete_record_data *kd;
-
-	dd = (struct ctdb_control_schedule_for_deletion *)indata.dptr;
-
-	ctdb_db = find_ctdb_db(ctdb, dd->db_id);
-	if (ctdb_db == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Unknown db id 0x%08x\n",
-				  dd->db_id));
-		return -1;
-	}
-
-	key.dsize = dd->keylen;
-	key.dptr = dd->key;
+	uint32_t hash;
+	int ret;
 
 	hash = (uint32_t)ctdb_hash(&key);
 
@@ -1303,10 +1289,10 @@ int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
 			   "key_hash[0x%08x] "
 			   "lmaster[%u] "
 			   "migrated_with_data[%s]\n",
-			    ctdb_db->db_name, dd->db_id,
+			    ctdb_db->db_name, ctdb_db->db_id,
 			    hash,
 			    ctdb_lmaster(ctdb_db->ctdb, &key),
-			    dd->hdr.flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA ? "yes" : "no"));
+			    hdr->flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA ? "yes" : "no"));
 
 	kd = (struct delete_record_data *)trbt_lookup32(ctdb_db->delete_queue, hash);
 	if (kd != NULL) {
@@ -1324,14 +1310,43 @@ int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
 		}
 	}
 
-	ret = insert_delete_record_data_into_tree(ctdb, ctdb_db,
+	ret = insert_delete_record_data_into_tree(ctdb_db->ctdb, ctdb_db,
 						  ctdb_db->delete_queue,
-						  &dd->hdr, key);
+						  hdr, key);
 	if (ret != 0) {
 		return -1;
 	}
 
 	return 0;
+}
+
+/**
+ * Schedule a record for deletetion.
+ * Called from the parent context.
+ */
+int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
+					   TDB_DATA indata)
+{
+	struct ctdb_control_schedule_for_deletion *dd;
+	struct ctdb_db_context *ctdb_db;
+	int ret;
+	TDB_DATA key;
+
+	dd = (struct ctdb_control_schedule_for_deletion *)indata.dptr;
+
+	ctdb_db = find_ctdb_db(ctdb, dd->db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Unknown db id 0x%08x\n",
+				  dd->db_id));
+		return -1;
+	}
+
+	key.dsize = dd->keylen;
+	key.dptr = dd->key;
+
+	ret = insert_record_into_delete_queue(ctdb_db, &dd->hdr, key);
+
+	return ret;
 }
 
 int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
