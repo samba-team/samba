@@ -266,14 +266,6 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 			     struct cli_credentials *credentials,
 			     struct tevent_context *ev,
 			     struct loadparm_context *lp_ctx);
-NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req);
-struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
-						const struct GUID *object,
-						const struct ndr_interface_table *table,
-						uint32_t opnum, 
-						bool async,
-						TALLOC_CTX *mem_ctx, 
-						void *r);
 const char *dcerpc_server_name(struct dcerpc_pipe *p);
 struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev);
 NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
@@ -375,13 +367,6 @@ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr
 
 enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower);
 const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
-
-NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
-			    const struct GUID *object,
-			    const struct ndr_interface_table *table,
-			    uint32_t opnum, 
-			    TALLOC_CTX *mem_ctx, 
-			    void *r);
 
 NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
 				   struct epm_tower *tower, 
