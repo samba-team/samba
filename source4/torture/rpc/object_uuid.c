@@ -49,7 +49,8 @@ static bool test_random_uuid(struct torture_context *torture)
 	uuid = GUID_random();
 
 	r1.in.level = DS_ROLE_BASIC_INFORMATION;
-	status = dcerpc_ndr_request(p1, &uuid,
+	status = dcerpc_binding_handle_call(p1->binding_handle,
+				    &uuid,
 				    &ndr_table_dssetup,
 				    NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION,
 				    torture, &r1);
@@ -64,7 +65,8 @@ static bool test_random_uuid(struct torture_context *torture)
 	r2.out.account_name = &account_name_p;
 	r2.out.authority_name = &authority_name_p;
 
-	status = dcerpc_ndr_request(p2, &uuid,
+	status = dcerpc_binding_handle_call(p2->binding_handle,
+				    &uuid,
 				    &ndr_table_lsarpc,
 				    NDR_LSA_GETUSERNAME,
 				    torture, &r2);
