@@ -162,7 +162,8 @@ def abi_write_vscript(vscript, libname, current_version, versions, symmap, abi_m
 
     f = open(vscript, mode='w')
     last_key = ""
-    for k in sorted(versions):
+    versions = sorted(versions, key=lambda x: map(int, x.split(".")))
+    for k in versions:
         symver = "%s_%s" % (libname, k)
         if symver == current_version:
             break
