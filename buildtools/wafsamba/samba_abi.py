@@ -10,6 +10,8 @@ abi_type_maps = {
     'struct __va_list_tag *' : 'va_list'
     }
 
+version_key = lambda x: map(int, x.split("."))
+
 def normalise_signature(sig):
     '''normalise a signature from gdb'''
     sig = sig.strip()
@@ -162,7 +164,7 @@ def abi_write_vscript(vscript, libname, current_version, versions, symmap, abi_m
 
     f = open(vscript, mode='w')
     last_key = ""
-    versions = sorted(versions, key=lambda x: map(int, x.split(".")))
+    versions = sorted(versions, key=version_key)
     for k in versions:
         symver = "%s_%s" % (libname, k)
         if symver == current_version:
@@ -205,7 +207,9 @@ def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None):
     '''generate a vscript file for our public libraries'''
     if abi_directory:
         source = bld.path.ant_glob('%s/%s-[0-9]*.sigs' % (abi_directory, libname))
-        source = sorted(source.split())
+        def abi_file_key(path):
+            return version_key(path[:-len(".sigs")].rsplit("-")[-1])
+        source = sorted(source.split(), key=abi_file_key)
     else:
         source = ''
 
