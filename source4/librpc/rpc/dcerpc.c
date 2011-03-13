@@ -45,6 +45,9 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 					       const struct GUID *object,
 					       uint16_t opnum,
 					       DATA_BLOB *stub_data);
+static NTSTATUS dcerpc_request_recv(struct rpc_request *req,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *stub_data);
 static NTSTATUS dcerpc_ndr_validate_in(struct dcecli_connection *c,
 				       TALLOC_CTX *mem_ctx,
 				       DATA_BLOB blob,
@@ -1508,9 +1511,9 @@ _PUBLIC_ struct tevent_context *dcerpc_event_context(struct dcerpc_pipe *p)
 /*
   perform the receive side of a async dcerpc request
 */
-NTSTATUS dcerpc_request_recv(struct rpc_request *req,
-			     TALLOC_CTX *mem_ctx,
-			     DATA_BLOB *stub_data)
+static NTSTATUS dcerpc_request_recv(struct rpc_request *req,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *stub_data)
 {
 	NTSTATUS status;
 
