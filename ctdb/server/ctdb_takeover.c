@@ -596,7 +596,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
 				  "but we have no interface assigned, has someone manually configured it? Ignore for now.\n",
 				 ctdb_addr_to_str(&vnn->public_address)));
-		return -1;
+		return 0;
 	}
 
 	if (vnn->pnn != ctdb->pnn && have_ip && vnn->pnn != -1) {
