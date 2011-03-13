@@ -51,7 +51,7 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	bvec->bindings = talloc_array(bvec, struct dcerpc_binding, ep_count);
+	bvec->bindings = talloc_zero_array(bvec, struct dcerpc_binding, ep_count);
 	if (bvec->bindings == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
