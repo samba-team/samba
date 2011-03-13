@@ -150,6 +150,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|O:request", 
 		discard_const_p(char *, kwnames), &opnum, &in_data, &in_length, &object)) {
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -159,6 +160,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	ZERO_STRUCT(data_out);
 
 	if (object != NULL && !PyString_AsGUID(object, &object_guid)) {
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
