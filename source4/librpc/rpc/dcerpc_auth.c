@@ -114,7 +114,7 @@ static void bind_auth_recv_alter(struct composite_context *creq);
 static void bind_auth_next_step(struct composite_context *c)
 {
 	struct bind_auth_state *state;
-	struct dcerpc_security *sec;
+	struct dcecli_security *sec;
 	struct composite_context *creq;
 	bool more_processing = false;
 
@@ -233,7 +233,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c, *creq;
 	struct bind_auth_state *state;
-	struct dcerpc_security *sec;
+	struct dcecli_security *sec;
 
 	struct ndr_syntax_id syntax, transfer_syntax;
 

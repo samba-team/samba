@@ -46,7 +46,7 @@ enum dcerpc_transport_t {
 */
 struct dcecli_connection;
 struct gensec_settings;
-struct dcerpc_security {
+struct dcecli_security {
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
 
@@ -62,7 +62,7 @@ struct dcecli_connection {
 	uint32_t srv_max_xmit_frag;
 	uint32_t srv_max_recv_frag;
 	uint32_t flags;
-	struct dcerpc_security security_state;
+	struct dcecli_security security_state;
 	const char *binding_string;
 	struct tevent_context *event_ctx;
 
