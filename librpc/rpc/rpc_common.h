@@ -195,6 +195,16 @@ NTSTATUS dcerpc_binding_handle_raw_call_recv(struct tevent_req *req,
 					     uint8_t **out_data,
 					     size_t *out_length,
 					     uint32_t *out_flags);
+NTSTATUS dcerpc_binding_handle_raw_call(struct dcerpc_binding_handle *h,
+					const struct GUID *object,
+					uint32_t opnum,
+					uint32_t in_flags,
+					const uint8_t *in_data,
+					size_t in_length,
+					TALLOC_CTX *mem_ctx,
+					uint8_t **out_data,
+					size_t *out_length,
+					uint32_t *out_flags);
 
 struct tevent_req *dcerpc_binding_handle_disconnect_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,

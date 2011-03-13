@@ -186,6 +186,66 @@ NTSTATUS dcerpc_binding_handle_raw_call_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcerpc_binding_handle_raw_call(struct dcerpc_binding_handle *h,
+					const struct GUID *object,
+					uint32_t opnum,
+					uint32_t in_flags,
+					const uint8_t *in_data,
+					size_t in_length,
+					TALLOC_CTX *mem_ctx,
+					uint8_t **out_data,
+					size_t *out_length,
+					uint32_t *out_flags)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *subreq;
+	NTSTATUS status;
+
+	/*
+	 * TODO: allow only one sync call
+	 */
+
+	if (h->sync_ev) {
+		ev = h->sync_ev;
+	} else {
+		ev = tevent_context_init(frame);
+	}
+	if (ev == NULL) {
+		talloc_free(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	subreq = dcerpc_binding_handle_raw_call_send(frame, ev,
+						     h, object, opnum,
+						     in_flags,
+						     in_data,
+						     in_length);
+	if (subreq == NULL) {
+		talloc_free(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!tevent_req_poll(subreq, ev)) {
+		status = map_nt_error_from_unix(errno);
+		talloc_free(frame);
+		return status;
+	}
+
+	status = dcerpc_binding_handle_raw_call_recv(subreq,
+						     mem_ctx,
+						     out_data,
+						     out_length,
+						     out_flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 struct dcerpc_binding_handle_disconnect_state {
 	const struct dcerpc_binding_handle_ops *ops;
 };
