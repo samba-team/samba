@@ -55,11 +55,20 @@ static bool test_num_calls(struct torture_context *tctx,
 	}
 
 	/* make null calls */
-	stub_in = data_blob(NULL, 1000);
+	stub_in = data_blob_talloc(mem_ctx, NULL, 1000);
 	memset(stub_in.data, 0xFF, stub_in.length);
 
 	for (i=0;i<200;i++) {
-		status = dcerpc_request(p, NULL, i, mem_ctx, &stub_in, &stub_out);
+		uint32_t out_flags = 0;
+		status = dcerpc_binding_handle_raw_call(p->binding_handle,
+							NULL, i,
+							0, /* in_flags */
+							stub_in.data,
+							stub_in.length,
+							mem_ctx,
+							&stub_out.data,
+							&stub_out.length,
+							&out_flags);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			break;
 		}
