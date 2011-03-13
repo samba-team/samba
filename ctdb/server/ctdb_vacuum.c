@@ -1261,7 +1261,8 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 	ctdb_db->vacuum_handle = talloc(ctdb_db, struct ctdb_vacuum_handle);
 	CTDB_NO_MEMORY(ctdb_db->ctdb, ctdb_db->vacuum_handle);
 
-	ctdb_db->vacuum_handle->ctdb_db = ctdb_db;
+	ctdb_db->vacuum_handle->ctdb_db         = ctdb_db;
+	ctdb_db->vacuum_handle->fast_path_count = 0;
 
 	event_add_timed(ctdb_db->ctdb->ev, ctdb_db->vacuum_handle, 
 			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0), 
