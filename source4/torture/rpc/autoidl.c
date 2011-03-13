@@ -124,13 +124,22 @@ static void try_expand(struct torture_context *tctx, const struct ndr_interface_
 
 	/* work out how much to expand to get a non fault */
 	for (n=0;n<2000;n++) {
+		uint32_t out_flags = 0;
+
 		stub_in = data_blob(NULL, base_in->length + n);
 		data_blob_clear(&stub_in);
 		memcpy(stub_in.data, base_in->data, insert_ofs);
 		memcpy(stub_in.data+insert_ofs+n, base_in->data+insert_ofs, base_in->length-insert_ofs);
 
-		status = dcerpc_request(p, NULL, opnum, tctx, &stub_in, &stub_out);
-
+		status = dcerpc_binding_handle_raw_call(p->binding_handle,
+							NULL, opnum,
+							0, /* in_flags */
+							stub_in.data,
+							stub_in.length,
+							tctx,
+							&stub_out.data,
+							&stub_out.length,
+							&out_flags);
 		if (NT_STATUS_IS_OK(status)) {
 			print_depth(depth);
 			printf("expand by %d gives %s\n", n, nt_errstr(status));
@@ -169,8 +178,19 @@ static void test_ptr_scan(struct torture_context *tctx, const struct ndr_interfa
 
 	/* work out which elements are pointers */
 	for (ofs=min_ofs;ofs<=max_ofs-4;ofs+=4) {
+		uint32_t out_flags = 0;
+
 		SIVAL(stub_in.data, ofs, 1);
-		status = dcerpc_request(p, NULL, opnum, tctx, &stub_in, &stub_out);
+
+		status = dcerpc_binding_handle_raw_call(p->binding_handle,
+							NULL, opnum,
+							0, /* in_flags */
+							stub_in.data,
+							stub_in.length,
+							tctx,
+							&stub_out.data,
+							&stub_out.length,
+							&out_flags);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			print_depth(depth);
@@ -208,11 +228,20 @@ static void test_scan_call(struct torture_context *tctx, const struct ndr_interf
 
 	/* work out the minimum amount of input data */
 	for (i=0;i<2000;i++) {
+		uint32_t out_flags = 0;
+
 		stub_in = data_blob(NULL, i);
 		data_blob_clear(&stub_in);
 
-
-		status = dcerpc_request(p, NULL, opnum, tctx, &stub_in, &stub_out);
+		status = dcerpc_binding_handle_raw_call(p->binding_handle,
+							NULL, opnum,
+							0, /* in_flags */
+							stub_in.data,
+							stub_in.length,
+							tctx,
+							&stub_out.data,
+							&stub_out.length,
+							&out_flags);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d\n", 
@@ -225,7 +254,15 @@ static void test_scan_call(struct torture_context *tctx, const struct ndr_interf
 
 		fill_blob_handle(&stub_in, tctx, &handle);
 
-		status = dcerpc_request(p, NULL, opnum, tctx, &stub_in, &stub_out);
+		status = dcerpc_binding_handle_raw_call(p->binding_handle,
+							NULL, opnum,
+							0, /* in_flags */
+							stub_in.data,
+							stub_in.length,
+							tctx,
+							&stub_out.data,
+							&stub_out.length,
+							&out_flags);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d (with handle)\n", 
