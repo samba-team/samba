@@ -23,15 +23,12 @@
  * If you remove any functions or change their signature, update 
  * the so version number. */
 
-#ifndef __DCERPC_H__
-#define __DCERPC_H__
+#ifndef _S3_DCERPC_H__
+#define _S3_DCERPC_H__
+
+#include "../librpc/rpc/rpc_common.h"
 
 #define SMB_RPC_INTERFACE_VERSION 1
-
-enum dcerpc_transport_t {
-	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
-	NCACN_VNS_SPP, NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, 
-	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX, NCACN_INTERNAL };
 
 /** this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
@@ -162,6 +159,4 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			   DATA_BLOB *raw_pkt,
 			   size_t *pad_len);
 
-#include "../librpc/rpc/rpc_common.h"
-
-#endif /* __DCERPC_H__ */
+#endif /* __S3_DCERPC_H__ */

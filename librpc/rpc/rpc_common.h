@@ -29,8 +29,14 @@ struct ndr_interface_call;
 struct ndr_push;
 struct ndr_pull;
 struct ncacn_packet;
+struct epm_floor;
 struct tevent_context;
 struct tstream_context;
+
+enum dcerpc_transport_t {
+	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
+	NCACN_VNS_SPP, NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, 
+	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX, NCACN_INTERNAL };
 
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 

@@ -24,22 +24,18 @@
  * If you remove any functions or change their signature, update 
  * the so version number. */
 
-#ifndef __DCERPC_H__
-#define __DCERPC_H__
+#ifndef __S4_DCERPC_H__
+#define __S4_DCERPC_H__
 
 #include "../lib/util/data_blob.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "../librpc/ndr/libndr.h"
+#include "../librpc/rpc/rpc_common.h"
 
 struct tevent_context;
 struct tevent_req;
 struct dcerpc_binding_handle;
 struct tstream_context;
-
-enum dcerpc_transport_t {
-	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
-	NCACN_VNS_SPP, NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, 
-	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX, NCACN_INTERNAL };
 
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.
@@ -383,6 +379,4 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 
-#include "../librpc/rpc/rpc_common.h"
-
-#endif /* __DCERPC_H__ */
+#endif /* __S4_DCERPC_H__ */
