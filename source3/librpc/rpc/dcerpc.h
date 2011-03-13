@@ -30,21 +30,6 @@
 
 #define SMB_RPC_INTERFACE_VERSION 1
 
-/** this describes a binding to a particular transport/pipe */
-struct dcerpc_binding {
-	enum dcerpc_transport_t transport;
-	struct ndr_syntax_id object;
-	const char *host;
-	const char *target_hostname;
-	const char *target_principal;
-	const char *endpoint;
-	const char **options;
-	const char *localaddress;
-	uint32_t flags;
-	uint32_t assoc_group_id;
-};
-
-
 /* dcerpc pipe flags */
 #define DCERPC_DEBUG_PRINT_IN          (1<<0)
 #define DCERPC_DEBUG_PRINT_OUT         (1<<1)

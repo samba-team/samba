@@ -180,21 +180,6 @@ struct dcerpc_pipe {
 /* specify binding interface */
 #define	DCERPC_LOCALADDRESS            (1<<22)
 
-/* this describes a binding to a particular transport/pipe */
-struct dcerpc_binding {
-	enum dcerpc_transport_t transport;
-	struct ndr_syntax_id object;
-	const char *host;
-	const char *target_hostname;
-	const char *target_principal;
-	const char *endpoint;
-	const char **options;
-	const char *localaddress;
-	uint32_t flags;
-	uint32_t assoc_group_id;
-};
-
-
 struct dcerpc_pipe_connect {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding *binding;

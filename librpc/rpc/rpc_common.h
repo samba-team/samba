@@ -38,6 +38,20 @@ enum dcerpc_transport_t {
 	NCACN_VNS_SPP, NCACN_AT_DSP, NCADG_AT_DDP, NCALRPC, NCACN_UNIX_STREAM, 
 	NCADG_UNIX_DGRAM, NCACN_HTTP, NCADG_IPX, NCACN_SPX, NCACN_INTERNAL };
 
+/** this describes a binding to a particular transport/pipe */
+struct dcerpc_binding {
+	enum dcerpc_transport_t transport;
+	struct ndr_syntax_id object;
+	const char *host;
+	const char *target_hostname;
+	const char *target_principal;
+	const char *endpoint;
+	const char **options;
+	const char *localaddress;
+	uint32_t flags;
+	uint32_t assoc_group_id;
+};
+
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
