@@ -146,6 +146,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	PyObject *object = NULL;
 	struct GUID object_guid;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	uint32_t out_flags = 0;
 	const char *kwnames[] = { "opnum", "data", "object", NULL };
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|O:request", 
@@ -164,9 +165,16 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 		return NULL;
 	}
 
-	status = dcerpc_request(iface->pipe, object?&object_guid:NULL,
-				opnum, mem_ctx, &data_in, &data_out);
-
+	status = dcerpc_binding_handle_raw_call(iface->binding_handle,
+						object?&object_guid:NULL,
+						opnum,
+						0, /* in_flags */
+						data_in.data,
+						data_in.length,
+						mem_ctx,
+						&data_out.data,
+						&data_out.length,
+						&out_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetDCERPCStatus(iface->pipe, status);
 		talloc_free(mem_ctx);
