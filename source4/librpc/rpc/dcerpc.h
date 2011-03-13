@@ -353,13 +353,6 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 				   struct epm_tower *tower, 
 				   struct dcerpc_binding **b_out);
 
-NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
-			struct GUID *object,
-			uint16_t opnum,
-			TALLOC_CTX *mem_ctx,
-			DATA_BLOB *stub_data_in,
-			DATA_BLOB *stub_data_out);
-
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);

@@ -1536,27 +1536,6 @@ static NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 }
 
 /*
-  perform a full request/response pair on a dcerpc pipe
-*/
-NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
-			struct GUID *object,
-			uint16_t opnum,
-			TALLOC_CTX *mem_ctx,
-			DATA_BLOB *stub_data_in,
-			DATA_BLOB *stub_data_out)
-{
-	struct rpc_request *req;
-
-	req = dcerpc_request_send(p, object, opnum, stub_data_in);
-	if (req == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return dcerpc_request_recv(req, mem_ctx, stub_data_out);
-}
-
-
-/*
   this is a paranoid NDR validator. For every packet we push onto the wire
   we pull it back again, then push it again. Then we compare the raw NDR data
   for that to the NDR we initially generated. If they don't match then we know
