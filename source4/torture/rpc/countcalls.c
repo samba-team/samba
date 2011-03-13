@@ -53,12 +53,22 @@ bool count_calls(struct torture_context *tctx,
 		return false;
 	}
 
-	stub_in = data_blob_talloc(p, mem_ctx, 0);
+	stub_in = data_blob_null;
 
 	printf("\nScanning pipe '%s'\n", iface->name);
 
 	for (i=0;i<500;i++) {
-		status = dcerpc_request(p, NULL, i, p, &stub_in, &stub_out);
+		uint32_t out_flags = 0;
+
+		status = dcerpc_binding_handle_raw_call(p->binding_handle,
+							NULL, i,
+							0, /* in_flags */
+							stub_in.data,
+							stub_in.length,
+							mem_ctx,
+							&stub_out.data,
+							&stub_out.length,
+							&out_flags);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			i--;
 			break;
