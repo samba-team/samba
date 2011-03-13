@@ -57,6 +57,7 @@ struct idmap_tdb2_context {
  */
 static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 {
+	NTSTATUS status;
 	uint32 low_id;
 	struct idmap_tdb2_context *ctx;
 
@@ -66,22 +67,22 @@ static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 
 	low_id = dbwrap_fetch_int32(ctx->db, HWM_USER);
 	if ((low_id == -1) || (low_id < dom->low_id)) {
-		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
-					     ctx->db, HWM_USER,
-					     dom->low_id))) {
+		status = dbwrap_trans_store_int32(ctx->db, HWM_USER,
+						  dom->low_id);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
-				  "database\n"));
+				  "database: %s\n", nt_errstr(status)));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
 	}
 
 	low_id = dbwrap_fetch_int32(ctx->db, HWM_GROUP);
 	if ((low_id == -1) || (low_id < dom->low_id)) {
-		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
-					     ctx->db, HWM_GROUP,
-					     dom->low_id))) {
+		status = dbwrap_trans_store_int32(ctx->db, HWM_GROUP,
+						  dom->low_id);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
-				  "database\n"));
+				  "database: %s\n", nt_errstr(status)));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
 	}
