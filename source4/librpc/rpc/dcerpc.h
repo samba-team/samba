@@ -53,6 +53,7 @@ struct dcecli_security {
 /*
   this holds the information that is not specific to a particular rpc context_id
 */
+struct rpc_request;
 struct dcecli_connection {
 	uint32_t call_id;
 	uint32_t srv_max_xmit_frag;
@@ -189,49 +190,6 @@ struct dcerpc_pipe_connect {
 	struct resolve_context *resolve_ctx;
 };
 
-
-enum rpc_request_state {
-	RPC_REQUEST_QUEUED,
-	RPC_REQUEST_PENDING,
-	RPC_REQUEST_DONE
-};
-
-/*
-  handle for an async dcerpc request
-*/
-struct rpc_request {
-	struct rpc_request *next, *prev;
-	struct dcerpc_pipe *p;
-	NTSTATUS status;
-	uint32_t call_id;
-	enum rpc_request_state state;
-	DATA_BLOB payload;
-	uint32_t flags;
-	uint32_t fault_code;
-
-	/* this is used to distinguish bind and alter_context requests
-	   from normal requests */
-	void (*recv_handler)(struct rpc_request *conn, 
-			     DATA_BLOB *blob, struct ncacn_packet *pkt);
-
-	const struct GUID *object;
-	uint16_t opnum;
-	DATA_BLOB request_data;
-	bool ignore_timeout;
-
-	/* use by the ndr level async recv call */
-	struct {
-		const struct ndr_interface_table *table;
-		uint32_t opnum;
-		void *struct_ptr;
-		TALLOC_CTX *mem_ctx;
-	} ndr;
-
-	struct {
-		void (*callback)(struct rpc_request *);
-		void *private_data;
-	} async;
-};
 
 struct epm_tower;
 struct epm_floor;
