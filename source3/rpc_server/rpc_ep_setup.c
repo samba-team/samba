@@ -45,6 +45,7 @@
 
 #include "rpc_server/rpc_ep_setup.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/epmapper/srv_epmapper.h"
 
 struct dcesrv_ep_context {
 	struct tevent_context *ev_ctx;
@@ -283,6 +284,13 @@ static bool epmapper_init_cb(void *ptr)
 	}
 
 	return false;
+}
+
+static bool epmapper_shutdown_cb(void *ptr)
+{
+	srv_epmapper_cleanup();
+
+	return true;
 }
 
 static bool winreg_init_cb(void *ptr)
@@ -1202,7 +1210,7 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 					   "none");
 	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
 		epmapper_cb.init         = epmapper_init_cb;
-		epmapper_cb.shutdown     = NULL;
+		epmapper_cb.shutdown     = epmapper_shutdown_cb;
 		epmapper_cb.private_data = ep_ctx;
 
 		if (!NT_STATUS_IS_OK(rpc_epmapper_init(&epmapper_cb))) {
