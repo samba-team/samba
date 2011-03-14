@@ -77,7 +77,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    const char *pipe_name,
 				    const struct ndr_syntax_id id,
 				    enum dcerpc_transport_t transport,
-				    bool system_user,
+				    bool ncalrpc_as_system,
 				    const char *client_address,
 				    const char *server_address,
 				    struct auth_session_info_transport *session_info,
@@ -97,7 +97,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	}
 	p->syntax = id;
 	p->transport = transport;
-	p->system_user = system_user;
+	p->ncalrpc_as_system = ncalrpc_as_system;
 
 	p->mem_ctx = talloc_named(p, 0, "pipe %s %p", pipe_name, p);
 	if (!p->mem_ctx) {
