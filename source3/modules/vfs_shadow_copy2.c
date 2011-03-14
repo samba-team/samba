@@ -675,7 +675,7 @@ static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 		copy[gmt - fname + 1] = '\0';
 
 		DEBUG(10, ("calling NEXT_REALPATH with %s\n", copy));
-		SHADOW2_NEXT(REALPATH, (handle, fname), char *,
+		SHADOW2_NEXT(REALPATH, (handle, name), char *,
 			     NULL);
 	}
         SHADOW2_NEXT(REALPATH, (handle, name), char *, NULL);
