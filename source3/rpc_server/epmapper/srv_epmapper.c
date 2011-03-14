@@ -23,6 +23,7 @@
 #include "../libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/srv_epmapper.h"
+#include "srv_epmapper.h"
 
 typedef uint32_t error_status_t;
 
@@ -217,6 +218,18 @@ static bool is_priviledged_pipe(struct auth_serversupplied_info *info) {
 	}
 
 	return true;
+}
+
+void srv_epmapper_cleanup(void)
+{
+	struct dcesrv_endpoint *ep;
+
+	for (ep = endpoint_table;
+	     ep != NULL;
+	     ep = endpoint_table) {
+		DLIST_REMOVE(endpoint_table, ep);
+		TALLOC_FREE(ep);
+	}
 }
 
 /*
