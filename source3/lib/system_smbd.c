@@ -27,6 +27,56 @@
 
 #ifndef HAVE_GETGROUPLIST
 
+#ifdef HAVE_GETGRSET
+static int getgrouplist_getgrset(const char *user, gid_t gid, gid_t *groups,
+				 int *grpcnt)
+{
+	char *grplist;
+	char *grp;
+	gid_t temp_gid;
+	int num_gids = 1;
+	int ret = 0;
+	long l;
+
+	grplist = getgrset(user);
+
+	DEBUG(10, ("getgrset returned %s\n", grplist));
+
+	if (grplist == NULL) {
+		return -1;
+	}
+
+	if (*grpcnt > 0) {
+		groups[0] = gid;
+	}
+
+	while ((grp = strsep(&grplist, ",")) != NULL) {
+		l = strtol(grp, NULL, 10);
+		temp_gid = (gid_t) l;
+		if (temp_gid == gid) {
+			continue;
+		}
+
+		if (num_gids + 1 > *grpcnt) {
+			num_gids++;
+			continue;
+		}
+		groups[num_gids++] = temp_gid;
+	}
+	free(grplist);
+
+	if (num_gids > *grpcnt) {
+		ret = -1;
+	}
+	*grpcnt = num_gids;
+
+	DEBUG(10, ("Found %d groups for user %s\n", *grpcnt, user));
+
+	return ret;
+}
+
+#else /* HAVE_GETGRSET */
+
 /*
   This is a *much* faster way of getting the list of groups for a user
   without changing the current supplementary group list. The old
@@ -112,7 +162,8 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 	free(gids_saved);
 	return ret;
 }
-#endif
+#endif /* HAVE_GETGRSET */
+#endif /* HAVE_GETGROUPLIST */
 
 static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
@@ -130,10 +181,14 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 #ifdef HAVE_GETGROUPLIST
 	retval = getgrouplist(user, gid, groups, grpcnt);
 #else
+#ifdef HAVE_GETGRSET
+	retval = getgrouplist_getgrset(user, gid, groups, grpcnt);
+#else
 	become_root();
 	retval = getgrouplist_internals(user, gid, groups, grpcnt);
 	unbecome_root();
-#endif
+#endif /* HAVE_GETGRSET */
+#endif /* HAVE_GETGROUPLIST */
 
 	/* allow winbindd lookups, but only if they were not already disabled */
 	if (!winbind_env) {
