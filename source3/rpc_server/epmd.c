@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/epmapper/srv_epmapper.h"
 
 #define DAEMON_NAME "epmd"
 
@@ -141,6 +142,8 @@ static void epmd_sig_term_handler(struct tevent_context *ev,
 				  void *siginfo,
 				  void *private_data)
 {
+	rpc_epmapper_shutdown();
+
 	exit_server_cleanly("termination signal");
 }
 
@@ -186,13 +189,24 @@ static void epmd_setup_sig_hup_handler(struct tevent_context *ev_ctx,
 	}
 }
 
+static bool epmapper_shutdown_cb(void *ptr) {
+	srv_epmapper_cleanup();
+
+	return true;
+}
+
 void start_epmd(struct tevent_context *ev_ctx,
 		struct messaging_context *msg_ctx)
 {
+	struct rpc_srv_callbacks epmapper_cb;
 	NTSTATUS status;
 	pid_t pid;
 	bool ok;
 	int rc;
+
+	epmapper_cb.init = NULL;
+	epmapper_cb.shutdown = epmapper_shutdown_cb;
+	epmapper_cb.private_data = NULL;
 
 	DEBUG(1, ("Forking Endpoint Mapper Daemon\n"));
 
@@ -239,7 +253,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 			   MSG_SMB_CONF_UPDATED,
 			   epmd_smb_conf_updated);
 
-	status = rpc_epmapper_init(NULL);
+	status = rpc_epmapper_init(&epmapper_cb);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to register epmd rpc inteface! (%s)\n",
 			  nt_errstr(status)));
