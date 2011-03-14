@@ -1030,7 +1030,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			break;
 
 		case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
-			if (p->transport == NCALRPC && p->system_user) {
+			if (p->transport == NCALRPC && p->ncalrpc_as_system) {
 				TALLOC_FREE(p->session_info);
 
 				status = make_session_info_system(p,
