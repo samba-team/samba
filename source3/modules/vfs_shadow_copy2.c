@@ -582,7 +582,7 @@ static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 					    const char *fname)
 {
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	TALLOC_CTX *tmp_ctx;
 	const char *snapdir, *baseoffset, *basedir, *gmt_start;
 	size_t baselen;
 	char *ret;
@@ -593,7 +593,14 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 		return handle->conn->connectpath;
 	}
 
-	fname = shadow_copy2_normalise_path(talloc_tos(), fname, gmt_start);
+        /*
+         * We have to create a real temporary context because we have
+         * to put our result on talloc_tos(). Thus we can't use a
+         * talloc_stackframe() here.
+         */
+	tmp_ctx = talloc_new(talloc_tos());
+
+	fname = shadow_copy2_normalise_path(tmp_ctx, fname, gmt_start);
 	if (fname == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NULL;
