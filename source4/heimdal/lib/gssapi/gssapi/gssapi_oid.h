@@ -125,6 +125,13 @@ extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_netlogon_set_sign_algorithm_x_oid_
 extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_netlogon_nt_netbios_dns_name_oid_desc;
 #define GSS_NETLOGON_NT_NETBIOS_DNS_NAME (&__gss_netlogon_nt_netbios_dns_name_oid_desc)
 
+/* GSS_KRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT_X.128 */
+extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_inq_win2k_pac_x_oid_desc;
+#define GSS_C_INQ_WIN2K_PAC_X (&__gss_c_inq_win2k_pac_x_oid_desc)
+
+extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_inq_sspi_session_key_oid_desc;
+#define GSS_C_INQ_SSPI_SESSION_KEY (&__gss_c_inq_sspi_session_key_oid_desc)
+
 /*
  * "Standard" mechs
  */

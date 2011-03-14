@@ -4,7 +4,6 @@ HEIMDAL_X509_1.2 {
 	global:
 		_hx509_cert_assign_key;
 		_hx509_cert_private_key;
-		_hx509_cert_public_encrypt;
 		_hx509_certs_keys_free;
 		_hx509_certs_keys_get;
 		_hx509_expr_eval;
@@ -17,24 +16,12 @@ HEIMDAL_X509_1.2 {
 		_hx509_generate_private_key_is_ca;
 		_hx509_map_file_os;
 		_hx509_name_from_Name;
-		_hx509_parse_private_key;
-		_hx509_private_key_assign_rsa;
-		_hx509_private_key2SPKI;
-		_hx509_private_key_free;
-		_hx509_private_key_init;
-		_hx509_private_key_private_decrypt;
 		_hx509_private_key_ref;
 		_hx509_request_add_dns_name;
 		_hx509_request_add_email;
-		_hx509_request_free;
-		_hx509_request_get_SubjectPublicKeyInfo;
-		_hx509_request_get_name;
-		_hx509_request_init;
 		_hx509_request_parse;
 		_hx509_request_print;
-		_hx509_request_set_SubjectPublicKeyInfo;
 		_hx509_request_set_email;
-		_hx509_request_set_name;
 		_hx509_request_to_pkcs10;
 		_hx509_request_to_pkcs10;
 		_hx509_unmap_file_os;
@@ -87,6 +74,7 @@ HEIMDAL_X509_1.2 {
 		hx509_cert_init;
 		hx509_cert_init_data;
 		hx509_cert_keyusage_print;
+		hx509_cert_public_encrypt;
 		hx509_cert_ref;
 		hx509_cert_set_friendly_name;
 		hx509_certs_add;
@@ -180,6 +168,7 @@ HEIMDAL_X509_1.2 {
 		hx509_oid_print;
 		hx509_oid_sprint;
 		hx509_parse_name;
+		hx509_parse_private_key;
 		hx509_peer_info_add_cms_alg;
 		hx509_peer_info_alloc;
 		hx509_peer_info_free;
@@ -192,6 +181,11 @@ HEIMDAL_X509_1.2 {
 		hx509_pem_write;
 		hx509_print_stdout;
 		hx509_print_cert;
+		hx509_private_key_assign_rsa;
+		hx509_private_key_free;
+		hx509_private_key_private_decrypt;
+		hx509_private_key_init;
+		hx509_private_key2SPKI;
 		hx509_prompt_hidden;
 		hx509_query_alloc;
 		hx509_query_free;
@@ -203,6 +197,12 @@ HEIMDAL_X509_1.2 {
 		hx509_query_match_option;
 		hx509_query_statistic_file;
 		hx509_query_unparse_stats;
+		hx509_request_get_name;
+		hx509_request_get_SubjectPublicKeyInfo;
+		hx509_request_free;
+		hx509_request_init;
+		hx509_request_set_name;
+		hx509_request_set_SubjectPublicKeyInfo;
 		hx509_revoke_add_crl;
 		hx509_revoke_add_ocsp;
 		hx509_revoke_free;

@@ -989,6 +989,55 @@ gss_display_mech_attr(OM_uint32 * minor_status,
 		      gss_buffer_t short_desc,
 		      gss_buffer_t long_desc);
 
+/*
+ * Naming extensions
+ */
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_display_name_ext (
+    OM_uint32 *,	/* minor_status */
+    gss_name_t,		/* name */
+    gss_OID,		/* display_as_name_type */
+    gss_buffer_t	/* display_name */
+    );
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_inquire_name (
+    OM_uint32 *,	/* minor_status */
+    gss_name_t,		/* name */
+    int *,		/* name_is_MN */
+    gss_OID *,		/* MN_mech */
+    gss_buffer_set_t *	/* attrs */
+    );
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_get_name_attribute (
+    OM_uint32 *,	/* minor_status */
+    gss_name_t,		/* name */
+    gss_buffer_t,	/* attr */
+    int *,		/* authenticated */
+    int *,		/* complete */
+    gss_buffer_t,	/* value */
+    gss_buffer_t,	/* display_value */
+    int *		/* more */
+    );
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_set_name_attribute (
+    OM_uint32 *,	/* minor_status */
+    gss_name_t,		/* name */
+    int,		/* complete */
+    gss_buffer_t,	/* attr */
+    gss_buffer_t	/* value */
+    );
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_delete_name_attribute (
+    OM_uint32 *,	/* minor_status */
+    gss_name_t,		/* name */
+    gss_buffer_t	/* attr */
+    );
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_export_name_composite (
+    OM_uint32 *,	/* minor_status */
+    gss_name_t,		/* name */
+    gss_buffer_t	/* exp_composite_name */
+    );
 
 /*
  *

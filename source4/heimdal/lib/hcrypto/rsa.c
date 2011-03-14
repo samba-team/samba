@@ -60,7 +60,7 @@
  *   operation performed each eteration sign, verify, encrypt, decrypt on a random bit pattern
  *
  * name		1024	2048	4098
- * =================================
+ * =================================	
  * gmp: 	 0.73	  6.60	 44.80
  * tfm: 	 2.45	    --	    --
  * ltm:		 3.79	 20.74	105.41	(default in hcrypto)

@@ -272,7 +272,7 @@ krb5_kdc_pkinit_config(krb5_context context, krb5_kdc_configuration *config)
 
     if (config->pkinit_kdc_identity == NULL) {
 	if (config->pkinit_kdc_friendly_name == NULL)
-	    config->pkinit_kdc_friendly_name =
+	    config->pkinit_kdc_friendly_name = 
 		strdup("O=System Identity,CN=com.apple.kerberos.kdc");
 	config->pkinit_kdc_identity = strdup("KEYCHAIN:");
     }
@@ -284,7 +284,7 @@ krb5_kdc_pkinit_config(krb5_context context, krb5_kdc_configuration *config)
     if (config->enable_pkinit) {
 	if (config->pkinit_kdc_identity == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no identity");
-
+ 
 	if (config->pkinit_kdc_anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
@@ -298,4 +298,4 @@ krb5_kdc_pkinit_config(krb5_context context, krb5_kdc_configuration *config)
 
     return 0;
 #endif /* PKINIT */
-}
+}   

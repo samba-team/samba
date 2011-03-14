@@ -87,7 +87,7 @@ HMAC_MD5_any_checksum(krb5_context context,
 		      unsigned usage,
 		      Checksum *result)
 {
-    struct key_data local_key;
+    struct _krb5_key_data local_key;
     krb5_error_code ret;
 
     memset(&local_key, 0, sizeof(local_key));
@@ -106,7 +106,7 @@ HMAC_MD5_any_checksum(krb5_context context,
     ret = _krb5_HMAC_MD5_checksum(context, &local_key, data, len, usage, result);
     if (ret)
 	krb5_data_free(&result->checksum);
-
+    
     krb5_free_keyblock(context, local_key.key);
     return ret;
 }

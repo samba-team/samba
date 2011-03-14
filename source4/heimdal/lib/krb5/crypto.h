@@ -35,21 +35,18 @@
 #define DES3_OLD_ENCTYPE 1
 #endif
 
-struct key_data {
+struct _krb5_key_data {
     krb5_keyblock *key;
     krb5_data *schedule;
 };
 
-struct key_usage {
-    unsigned usage;
-    struct key_data key;
-};
+struct _krb5_key_usage;
 
 struct krb5_crypto_data {
-    struct encryption_type *et;
-    struct key_data key;
+    struct _krb5_encryption_type *et;
+    struct _krb5_key_data key;
     int num_key_usage;
-    struct key_usage *key_usage;
+    struct _krb5_key_usage *key_usage;
 };
 
 #define CRYPTO_ETYPE(C) ((C)->et->type)
@@ -71,50 +68,50 @@ struct salt_type {
 				     krb5_salt, krb5_data, krb5_keyblock*);
 };
 
-struct key_type {
+struct _krb5_key_type {
     krb5_keytype type; /* XXX */
     const char *name;
     size_t bits;
     size_t size;
     size_t schedule_size;
     void (*random_key)(krb5_context, krb5_keyblock*);
-    void (*schedule)(krb5_context, struct key_type *, struct key_data *);
+    void (*schedule)(krb5_context, struct _krb5_key_type *, struct _krb5_key_data *);
     struct salt_type *string_to_key;
     void (*random_to_key)(krb5_context, krb5_keyblock*, const void*, size_t);
-    void (*cleanup)(krb5_context, struct key_data *);
+    void (*cleanup)(krb5_context, struct _krb5_key_data *);
     const EVP_CIPHER *(*evp)(void);
 };
 
-struct checksum_type {
+struct _krb5_checksum_type {
     krb5_cksumtype type;
     const char *name;
     size_t blocksize;
     size_t checksumsize;
     unsigned flags;
     krb5_error_code (*checksum)(krb5_context context,
-				struct key_data *key,
+				struct _krb5_key_data *key,
 				const void *buf, size_t len,
 				unsigned usage,
 				Checksum *csum);
     krb5_error_code (*verify)(krb5_context context,
-			      struct key_data *key,
+			      struct _krb5_key_data *key,
 			      const void *buf, size_t len,
 			      unsigned usage,
 			      Checksum *csum);
 };
 
-struct encryption_type {
+struct _krb5_encryption_type {
     krb5_enctype type;
     const char *name;
     size_t blocksize;
     size_t padsize;
     size_t confoundersize;
-    struct key_type *keytype;
-    struct checksum_type *checksum;
-    struct checksum_type *keyed_checksum;
+    struct _krb5_key_type *keytype;
+    struct _krb5_checksum_type *checksum;
+    struct _krb5_checksum_type *keyed_checksum;
     unsigned flags;
     krb5_error_code (*encrypt)(krb5_context context,
-			       struct key_data *key,
+			       struct _krb5_key_data *key,
 			       void *data, size_t len,
 			       krb5_boolean encryptp,
 			       int usage,
@@ -130,20 +127,20 @@ struct encryption_type {
 
 /* Checksums */
 
-extern struct checksum_type _krb5_checksum_none;
-extern struct checksum_type _krb5_checksum_crc32;
-extern struct checksum_type _krb5_checksum_rsa_md4;
-extern struct checksum_type _krb5_checksum_rsa_md4_des;
-extern struct checksum_type _krb5_checksum_rsa_md5_des;
-extern struct checksum_type _krb5_checksum_rsa_md5_des3;
-extern struct checksum_type _krb5_checksum_rsa_md5;
-extern struct checksum_type _krb5_checksum_hmac_sha1_des3;
-extern struct checksum_type _krb5_checksum_hmac_sha1_aes128;
-extern struct checksum_type _krb5_checksum_hmac_sha1_aes256;
-extern struct checksum_type _krb5_checksum_hmac_md5;
-extern struct checksum_type _krb5_checksum_sha1;
+extern struct _krb5_checksum_type _krb5_checksum_none;
+extern struct _krb5_checksum_type _krb5_checksum_crc32;
+extern struct _krb5_checksum_type _krb5_checksum_rsa_md4;
+extern struct _krb5_checksum_type _krb5_checksum_rsa_md4_des;
+extern struct _krb5_checksum_type _krb5_checksum_rsa_md5_des;
+extern struct _krb5_checksum_type _krb5_checksum_rsa_md5_des3;
+extern struct _krb5_checksum_type _krb5_checksum_rsa_md5;
+extern struct _krb5_checksum_type _krb5_checksum_hmac_sha1_des3;
+extern struct _krb5_checksum_type _krb5_checksum_hmac_sha1_aes128;
+extern struct _krb5_checksum_type _krb5_checksum_hmac_sha1_aes256;
+extern struct _krb5_checksum_type _krb5_checksum_hmac_md5;
+extern struct _krb5_checksum_type _krb5_checksum_sha1;
 
-extern struct checksum_type *_krb5_checksum_types[];
+extern struct _krb5_checksum_type *_krb5_checksum_types[];
 extern int _krb5_num_checksums;
 
 /* Salts */
@@ -156,27 +153,27 @@ extern struct salt_type _krb5_des3_salt_derived[];
 
 /* Encryption types */
 
-extern struct encryption_type _krb5_enctype_aes256_cts_hmac_sha1;
-extern struct encryption_type _krb5_enctype_aes128_cts_hmac_sha1;
-extern struct encryption_type _krb5_enctype_des3_cbc_sha1;
-extern struct encryption_type _krb5_enctype_des3_cbc_md5;
-extern struct encryption_type _krb5_enctype_des3_cbc_none;
-extern struct encryption_type _krb5_enctype_arcfour_hmac_md5;
-extern struct encryption_type _krb5_enctype_des_cbc_md5;
-extern struct encryption_type _krb5_enctype_old_des3_cbc_sha1;
-extern struct encryption_type _krb5_enctype_des_cbc_crc;
-extern struct encryption_type _krb5_enctype_des_cbc_md4;
-extern struct encryption_type _krb5_enctype_des_cbc_md5;
-extern struct encryption_type _krb5_enctype_des_cbc_none;
-extern struct encryption_type _krb5_enctype_des_cfb64_none;
-extern struct encryption_type _krb5_enctype_des_pcbc_none;
-extern struct encryption_type _krb5_enctype_null;
+extern struct _krb5_encryption_type _krb5_enctype_aes256_cts_hmac_sha1;
+extern struct _krb5_encryption_type _krb5_enctype_aes128_cts_hmac_sha1;
+extern struct _krb5_encryption_type _krb5_enctype_des3_cbc_sha1;
+extern struct _krb5_encryption_type _krb5_enctype_des3_cbc_md5;
+extern struct _krb5_encryption_type _krb5_enctype_des3_cbc_none;
+extern struct _krb5_encryption_type _krb5_enctype_arcfour_hmac_md5;
+extern struct _krb5_encryption_type _krb5_enctype_des_cbc_md5;
+extern struct _krb5_encryption_type _krb5_enctype_old_des3_cbc_sha1;
+extern struct _krb5_encryption_type _krb5_enctype_des_cbc_crc;
+extern struct _krb5_encryption_type _krb5_enctype_des_cbc_md4;
+extern struct _krb5_encryption_type _krb5_enctype_des_cbc_md5;
+extern struct _krb5_encryption_type _krb5_enctype_des_cbc_none;
+extern struct _krb5_encryption_type _krb5_enctype_des_cfb64_none;
+extern struct _krb5_encryption_type _krb5_enctype_des_pcbc_none;
+extern struct _krb5_encryption_type _krb5_enctype_null;
 
-extern struct encryption_type *_krb5_etypes[];
+extern struct _krb5_encryption_type *_krb5_etypes[];
 extern int _krb5_num_etypes;
 
 /* Interface to the EVP crypto layer provided by hcrypto */
-struct evp_schedule {
+struct _krb5_evp_schedule {
     EVP_CIPHER_CTX ectx;
     EVP_CIPHER_CTX dctx;
 };

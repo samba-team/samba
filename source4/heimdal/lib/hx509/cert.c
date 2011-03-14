@@ -310,7 +310,7 @@ int
 _hx509_cert_assign_key(hx509_cert cert, hx509_private_key private_key)
 {
     if (cert->private_key)
-	_hx509_private_key_free(&cert->private_key);
+	hx509_private_key_free(&cert->private_key);
     cert->private_key = _hx509_private_key_ref(private_key);
     return 0;
 }
@@ -341,7 +341,7 @@ hx509_cert_free(hx509_cert cert)
 	(cert->release)(cert, cert->ctx);
 
     if (cert->private_key)
-	_hx509_private_key_free(&cert->private_key);
+	hx509_private_key_free(&cert->private_key);
 
     free_Certificate(cert->data);
     free(cert->data);
@@ -1607,7 +1607,7 @@ _hx509_cert_private_decrypt(hx509_context context,
 	return HX509_PRIVATE_KEY_MISSING;
     }
 
-    return _hx509_private_key_private_decrypt(context,
+    return hx509_private_key_private_decrypt(context,
 					      ciphertext,
 					      encryption_oid,
 					      p->private_key,
@@ -1615,7 +1615,7 @@ _hx509_cert_private_decrypt(hx509_context context,
 }
 
 int
-_hx509_cert_public_encrypt(hx509_context context,
+hx509_cert_public_encrypt(hx509_context context,
 			   const heim_octet_string *cleartext,
 			   const hx509_cert p,
 			   heim_oid *encryption_oid,

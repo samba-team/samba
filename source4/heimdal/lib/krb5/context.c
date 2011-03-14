@@ -317,7 +317,7 @@ kt_ops_copy(krb5_context context, const krb5_context src_context)
     return 0;
 }
 
-static const char *sysplugin_dirs[] =  {
+static const char *sysplugin_dirs[] =  { 
     LIBDIR "/plugin/krb5",
 #ifdef __APPLE__
     "/Library/KerberosPlugins/KerberosFrameworkPlugins",
@@ -332,7 +332,7 @@ init_context_once(void *ctx)
     krb5_context context = ctx;
 
     _krb5_load_plugins(context, "krb5", sysplugin_dirs);
-
+    
     bindtextdomain(HEIMDAL_TEXTDOMAIN, HEIMDAL_LOCALEDIR);
 }
 

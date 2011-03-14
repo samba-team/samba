@@ -241,6 +241,8 @@ typedef enum krb5_key_usage {
     /* Encryption of the SAM-NONCE-OR-SAD field */
     KRB5_KU_PA_PKINIT_KX = 44,
     /* Encryption type of the kdc session contribution in pk-init */
+    KRB5_KU_AS_REQ = 56,
+    /* Checksum of over the AS-REQ send by the KDC in PA-REQ-ENC-PA-REP */
     KRB5_KU_DIGEST_ENCRYPT = -18,
     /* Encryption key usage used in the digest encryption field */
     KRB5_KU_DIGEST_OPAQUE = -19,

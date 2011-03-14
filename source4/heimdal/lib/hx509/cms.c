@@ -656,7 +656,7 @@ hx509_cms_envelope_1(hx509_context context,
 	ri->version = 2;
 	cmsidflag = CMS_ID_SKI;
     }
-
+	
     ret = fill_CMSIdentifier(cert, cmsidflag, &ri->rid);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
@@ -665,7 +665,7 @@ hx509_cms_envelope_1(hx509_context context,
 	goto out;
     }
 
-    ret = _hx509_cert_public_encrypt(context,
+    ret = hx509_cert_public_encrypt(context,
 				     &key, cert,
 				     &ri->keyEncryptionAlgorithm.algorithm,
 				     &ri->encryptedKey);

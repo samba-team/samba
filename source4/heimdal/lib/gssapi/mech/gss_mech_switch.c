@@ -242,6 +242,8 @@ _gss_load_mech(void)
 	rk_cloexec_file(fp);
 
 	while (fgets(buf, sizeof(buf), fp)) {
+		_gss_mo_init *mi;
+
 		if (*buf == '#')
 			continue;
 		p = buf;
@@ -341,6 +343,22 @@ _gss_load_mech(void)
 		OPTSYM(wrap_iov);
 		OPTSYM(unwrap_iov);
 		OPTSYM(wrap_iov_length);
+		OPTSYM(display_name_ext);
+		OPTSYM(inquire_name);
+		OPTSYM(get_name_attribute);
+		OPTSYM(set_name_attribute);
+		OPTSYM(delete_name_attribute);
+		OPTSYM(export_name_composite);
+
+		mi = dlsym(so, "gss_mo_init");
+		if (mi != NULL) {
+			major_status = mi(&minor_status,
+					  &mech_oid,
+					  &m->gm_mech.gm_mo,
+					  &m->gm_mech.gm_mo_num);
+			if (GSS_ERROR(major_status))
+				goto bad;
+		}
 
 		HEIM_SLIST_INSERT_HEAD(&_gss_mechs, m, gm_link);
 		continue;

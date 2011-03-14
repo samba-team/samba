@@ -37,12 +37,12 @@
  * AES
  */
 
-static struct key_type keytype_aes128 = {
+static struct _krb5_key_type keytype_aes128 = {
     KEYTYPE_AES128,
     "aes-128",
     128,
     16,
-    sizeof(struct evp_schedule),
+    sizeof(struct _krb5_evp_schedule),
     NULL,
     _krb5_evp_schedule,
     _krb5_AES_salt,
@@ -51,12 +51,12 @@ static struct key_type keytype_aes128 = {
     EVP_aes_128_cbc
 };
 
-static struct key_type keytype_aes256 = {
+static struct _krb5_key_type keytype_aes256 = {
     KEYTYPE_AES256,
     "aes-256",
     256,
     32,
-    sizeof(struct evp_schedule),
+    sizeof(struct _krb5_evp_schedule),
     NULL,
     _krb5_evp_schedule,
     _krb5_AES_salt,
@@ -65,7 +65,7 @@ static struct key_type keytype_aes256 = {
     EVP_aes_256_cbc
 };
 
-struct checksum_type _krb5_checksum_hmac_sha1_aes128 = {
+struct _krb5_checksum_type _krb5_checksum_hmac_sha1_aes128 = {
     CKSUMTYPE_HMAC_SHA1_96_AES_128,
     "hmac-sha1-96-aes128",
     64,
@@ -75,7 +75,7 @@ struct checksum_type _krb5_checksum_hmac_sha1_aes128 = {
     NULL
 };
 
-struct checksum_type _krb5_checksum_hmac_sha1_aes256 = {
+struct _krb5_checksum_type _krb5_checksum_hmac_sha1_aes256 = {
     CKSUMTYPE_HMAC_SHA1_96_AES_256,
     "hmac-sha1-96-aes256",
     64,
@@ -91,7 +91,7 @@ AES_PRF(krb5_context context,
 	const krb5_data *in,
 	krb5_data *out)
 {
-    struct checksum_type *ct = crypto->et->checksum;
+    struct _krb5_checksum_type *ct = crypto->et->checksum;
     krb5_error_code ret;
     Checksum result;
     krb5_keyblock *derived;
@@ -139,7 +139,7 @@ AES_PRF(krb5_context context,
     return ret;
 }
 
-struct encryption_type _krb5_enctype_aes128_cts_hmac_sha1 = {
+struct _krb5_encryption_type _krb5_enctype_aes128_cts_hmac_sha1 = {
     ETYPE_AES128_CTS_HMAC_SHA1_96,
     "aes128-cts-hmac-sha1-96",
     16,
@@ -154,7 +154,7 @@ struct encryption_type _krb5_enctype_aes128_cts_hmac_sha1 = {
     AES_PRF
 };
 
-struct encryption_type _krb5_enctype_aes256_cts_hmac_sha1 = {
+struct _krb5_encryption_type _krb5_enctype_aes256_cts_hmac_sha1 = {
     ETYPE_AES256_CTS_HMAC_SHA1_96,
     "aes256-cts-hmac-sha1-96",
     16,

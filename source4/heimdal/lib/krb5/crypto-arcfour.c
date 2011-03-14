@@ -37,12 +37,12 @@
 
 #include "krb5_locl.h"
 
-static struct key_type keytype_arcfour = {
+static struct _krb5_key_type keytype_arcfour = {
     KEYTYPE_ARCFOUR,
     "arcfour",
     128,
     16,
-    sizeof(struct evp_schedule),
+    sizeof(struct _krb5_evp_schedule),
     NULL,
     _krb5_evp_schedule,
     _krb5_arcfour_salt,
@@ -57,17 +57,17 @@ static struct key_type keytype_arcfour = {
 
 krb5_error_code
 _krb5_HMAC_MD5_checksum(krb5_context context,
-			struct key_data *key,
+			struct _krb5_key_data *key,
 			const void *data,
 			size_t len,
 			unsigned usage,
 			Checksum *result)
 {
     EVP_MD_CTX *m;
-    struct checksum_type *c = _krb5_find_checksum (CKSUMTYPE_RSA_MD5);
+    struct _krb5_checksum_type *c = _krb5_find_checksum (CKSUMTYPE_RSA_MD5);
     const char signature[] = "signaturekey";
     Checksum ksign_c;
-    struct key_data ksign;
+    struct _krb5_key_data ksign;
     krb5_keyblock kb;
     unsigned char t[4];
     unsigned char tmp[16];
@@ -105,7 +105,7 @@ _krb5_HMAC_MD5_checksum(krb5_context context,
     return 0;
 }
 
-struct checksum_type _krb5_checksum_hmac_md5 = {
+struct _krb5_checksum_type _krb5_checksum_hmac_md5 = {
     CKSUMTYPE_HMAC_MD5,
     "hmac-md5",
     64,
@@ -123,16 +123,16 @@ struct checksum_type _krb5_checksum_hmac_md5 = {
 
 static krb5_error_code
 ARCFOUR_subencrypt(krb5_context context,
-		   struct key_data *key,
+		   struct _krb5_key_data *key,
 		   void *data,
 		   size_t len,
 		   unsigned usage,
 		   void *ivec)
 {
     EVP_CIPHER_CTX ctx;
-    struct checksum_type *c = _krb5_find_checksum (CKSUMTYPE_RSA_MD5);
+    struct _krb5_checksum_type *c = _krb5_find_checksum (CKSUMTYPE_RSA_MD5);
     Checksum k1_c, k2_c, k3_c, cksum;
-    struct key_data ke;
+    struct _krb5_key_data ke;
     krb5_keyblock kb;
     unsigned char t[4];
     unsigned char *cdata = data;
@@ -190,16 +190,16 @@ ARCFOUR_subencrypt(krb5_context context,
 
 static krb5_error_code
 ARCFOUR_subdecrypt(krb5_context context,
-		   struct key_data *key,
+		   struct _krb5_key_data *key,
 		   void *data,
 		   size_t len,
 		   unsigned usage,
 		   void *ivec)
 {
     EVP_CIPHER_CTX ctx;
-    struct checksum_type *c = _krb5_find_checksum (CKSUMTYPE_RSA_MD5);
+    struct _krb5_checksum_type *c = _krb5_find_checksum (CKSUMTYPE_RSA_MD5);
     Checksum k1_c, k2_c, k3_c, cksum;
-    struct key_data ke;
+    struct _krb5_key_data ke;
     krb5_keyblock kb;
     unsigned char t[4];
     unsigned char *cdata = data;
@@ -290,7 +290,7 @@ _krb5_usage2arcfour(krb5_context context, unsigned *usage)
 
 static krb5_error_code
 ARCFOUR_encrypt(krb5_context context,
-		struct key_data *key,
+		struct _krb5_key_data *key,
 		void *data,
 		size_t len,
 		krb5_boolean encryptp,
@@ -309,7 +309,7 @@ ARCFOUR_encrypt(krb5_context context,
 	return ARCFOUR_subdecrypt (context, key, data, len, keyusage, ivec);
 }
 
-struct encryption_type _krb5_enctype_arcfour_hmac_md5 = {
+struct _krb5_encryption_type _krb5_enctype_arcfour_hmac_md5 = {
     ETYPE_ARCFOUR_HMAC_MD5,
     "arcfour-hmac-md5",
     1,

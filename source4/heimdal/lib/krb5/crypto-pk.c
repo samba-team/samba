@@ -44,7 +44,7 @@ _krb5_pk_octetstring2key(krb5_context context,
 			 const heim_octet_string *k_n,
 			 krb5_keyblock *key)
 {
-    struct encryption_type *et = _krb5_find_enctype(type);
+    struct _krb5_encryption_type *et = _krb5_find_enctype(type);
     krb5_error_code ret;
     size_t keylen, offset;
     void *keydata;
@@ -205,7 +205,7 @@ _krb5_pk_kdf(krb5_context context,
 	     const Ticket *ticket,
 	     krb5_keyblock *key)
 {
-    struct encryption_type *et;
+    struct _krb5_encryption_type *et;
     krb5_error_code ret;
     krb5_data other;
     size_t keylen, offset;

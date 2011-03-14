@@ -457,7 +457,7 @@ static DATA_BLOB *encrypt_blob_pk(struct torture_context *tctx,
 
 	secretdata.data = to_encrypt->data;
 	secretdata.length = to_encrypt->length;
-	hret = _hx509_cert_public_encrypt(hctx, &secretdata,
+	hret = hx509_cert_public_encrypt(hctx, &secretdata,
 					  cert, &encryption_oid,
 					  &encrypted);
 	hx509_cert_free(cert);

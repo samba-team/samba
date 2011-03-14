@@ -37,7 +37,7 @@
 #define DES3_OLD_ENCTYPE 1
 #endif
 
-struct checksum_type *_krb5_checksum_types[] = {
+struct _krb5_checksum_type *_krb5_checksum_types[] = {
     &_krb5_checksum_none,
 #ifdef HEIM_WEAK_CRYPTO
     &_krb5_checksum_crc32,
@@ -63,7 +63,7 @@ int _krb5_num_checksums
  * these should currently be in reverse preference order.
  * (only relevant for !F_PSEUDO) */
 
-struct encryption_type *_krb5_etypes[] = {
+struct _krb5_encryption_type *_krb5_etypes[] = {
     &_krb5_enctype_aes256_cts_hmac_sha1,
     &_krb5_enctype_aes128_cts_hmac_sha1,
     &_krb5_enctype_des3_cbc_sha1,

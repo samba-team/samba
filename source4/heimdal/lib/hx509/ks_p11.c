@@ -613,7 +613,7 @@ collect_private_key(hx509_context context,
     localKeyId.data = query[0].pValue;
     localKeyId.length = query[0].ulValueLen;
 
-    ret = _hx509_private_key_init(&key, NULL, NULL);
+    ret = hx509_private_key_init(&key, NULL, NULL);
     if (ret)
 	return ret;
 
@@ -648,7 +648,7 @@ collect_private_key(hx509_context context,
     if (ret != 1)
 	_hx509_abort("RSA_set_app_data");
 
-    _hx509_private_key_assign_rsa(key, rsa);
+    hx509_private_key_assign_rsa(key, rsa);
 
     ret = _hx509_collector_private_key_add(context,
 					   collector,
@@ -658,7 +658,7 @@ collect_private_key(hx509_context context,
 					   &localKeyId);
 
     if (ret) {
-	_hx509_private_key_free(&key);
+	hx509_private_key_free(&key);
 	return ret;
     }
     return 0;

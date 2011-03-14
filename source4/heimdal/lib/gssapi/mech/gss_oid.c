@@ -118,6 +118,12 @@ gss_OID_desc GSSAPI_LIB_VARIABLE __gss_netlogon_set_sign_algorithm_x_oid_desc = 
 /* GSS_NETLOGON_NT_NETBIOS_DNS_NAME - 1.2.752.43.14.5 */
 gss_OID_desc GSSAPI_LIB_VARIABLE __gss_netlogon_nt_netbios_dns_name_oid_desc = { 6, "\x2a\x85\x70\x2b\x0e\x05" };
 
+/* GSS_C_INQ_WIN2K_PAC_X - 1.2.752.43.13.3.128 */
+gss_OID_desc GSSAPI_LIB_VARIABLE __gss_c_inq_win2k_pac_x_oid_desc = { 8, "\x2a\x85\x70\x2b\x0d\x03\x81\x00" };
+
+/* GSS_C_INQ_SSPI_SESSION_KEY - 1.2.840.113554.1.2.2.5.5 */
+gss_OID_desc GSSAPI_LIB_VARIABLE __gss_c_inq_sspi_session_key_oid_desc = { 11, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x05" };
+
 /* GSS_KRB5_MECHANISM - 1.2.840.113554.1.2.2 */
 gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_mechanism_oid_desc = { 9, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02" };
 
@@ -251,3 +257,4 @@ struct _gss_oid_name_table _gss_ont_mech[] = {
   { GSS_NTLM_MECHANISM, "GSS_NTLM_MECHANISM", "NTLM", "Heimdal NTLM mechanism" },
   { NULL }
 };
+

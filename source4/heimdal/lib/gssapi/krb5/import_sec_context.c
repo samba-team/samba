@@ -202,6 +202,8 @@ _gsskrb5_import_sec_context (
 
     krb5_storage_free (sp);
 
+    _gsskrb5i_is_cfx(context, ctx, (ctx->more_flags & LOCAL) == 0);
+
     *context_handle = (gss_ctx_id_t)ctx;
 
     return GSS_S_COMPLETE;

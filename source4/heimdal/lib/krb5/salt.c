@@ -39,7 +39,7 @@ krb5_salttype_to_string (krb5_context context,
 			 krb5_salttype stype,
 			 char **string)
 {
-    struct encryption_type *e;
+    struct _krb5_encryption_type *e;
     struct salt_type *st;
 
     e = _krb5_find_enctype (etype);
@@ -71,7 +71,7 @@ krb5_string_to_salttype (krb5_context context,
 			 const char *string,
 			 krb5_salttype *salttype)
 {
-    struct encryption_type *e;
+    struct _krb5_encryption_type *e;
     struct salt_type *st;
 
     e = _krb5_find_enctype (etype);
@@ -187,7 +187,7 @@ krb5_string_to_key_data_salt_opaque (krb5_context context,
 				     krb5_data opaque,
 				     krb5_keyblock *key)
 {
-    struct encryption_type *et =_krb5_find_enctype(enctype);
+    struct _krb5_encryption_type *et =_krb5_find_enctype(enctype);
     struct salt_type *st;
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
@@ -247,9 +247,9 @@ krb5_string_to_key_derived(krb5_context context,
 			   krb5_enctype etype,
 			   krb5_keyblock *key)
 {
-    struct encryption_type *et = _krb5_find_enctype(etype);
+    struct _krb5_encryption_type *et = _krb5_find_enctype(etype);
     krb5_error_code ret;
-    struct key_data kd;
+    struct _krb5_key_data kd;
     size_t keylen;
     u_char *tmp;
 

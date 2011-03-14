@@ -23,16 +23,20 @@ HEIMDAL_GSS_2.0 {
 		gss_create_empty_buffer_set;
 		gss_create_empty_oid_set;
 		gss_decapsulate_token;
+		gss_delete_name_attribute;
 		gss_delete_sec_context;
 		gss_display_name;
+		gss_display_name_ext;
 		gss_display_status;
 		gss_duplicate_name;
 		gss_duplicate_oid;
 		gss_encapsulate_token;
 		gss_export_cred;
 		gss_export_name;
+		gss_export_name_composite;
 		gss_export_sec_context;
 		gss_get_mic;
+		gss_get_name_attribute;
 		gss_import_cred;
 		gss_import_name;
 		gss_import_sec_context;
@@ -43,6 +47,7 @@ HEIMDAL_GSS_2.0 {
 		gss_inquire_cred_by_mech;
 		gss_inquire_cred_by_oid;
 		gss_inquire_mechs_for_name;
+		gss_inquire_name;
 		gss_inquire_names_for_mech;
 		gss_inquire_sec_context_by_oid;
 		gss_inquire_sec_context_by_oid;
@@ -67,6 +72,7 @@ HEIMDAL_GSS_2.0 {
 		gss_release_oid_set;
 		gss_seal;
 		gss_set_cred_option;
+		gss_set_name_attribute;
 		gss_set_sec_context_option;
 		gss_sign;
 		gss_test_oid_set_member;

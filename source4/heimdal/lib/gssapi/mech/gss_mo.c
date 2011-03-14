@@ -374,7 +374,7 @@ gss_inquire_attrs_for_mech(OM_uint32 * minor_status,
 	    return major;
 
 	add_all_mo(m, mech_attr, GSS_MO_MA);
-    }
+    }    
 
     if (known_mech_attrs) {
 	struct _gss_mech_switch *m;

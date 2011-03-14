@@ -99,6 +99,7 @@ _gsskrb5i_is_cfx(krb5_context context, gsskrb5_ctx ctx, int acceptor)
     case ETYPE_DES_CBC_MD4:
     case ETYPE_DES_CBC_MD5:
     case ETYPE_DES3_CBC_MD5:
+    case ETYPE_OLD_DES3_CBC_SHA1:
     case ETYPE_DES3_CBC_SHA1:
     case ETYPE_ARCFOUR_HMAC_MD5:
     case ETYPE_ARCFOUR_HMAC_MD5_56:

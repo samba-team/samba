@@ -41,6 +41,7 @@
 #ifndef __KDC_H__
 #define __KDC_H__
 
+#include <hdb.h>
 #include <krb5.h>
 
 enum krb5_kdc_trpolicy {

@@ -305,7 +305,7 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (_hx509_private_key_init(pk, ops, NULL) != 0) {
+	if (hx509_private_key_init(pk, ops, NULL) != 0) {
 		hx509_context_free(&hctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -365,7 +365,7 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	_hx509_private_key_assign_rsa(*pk, rsa);
+	hx509_private_key_assign_rsa(*pk, rsa);
 
 	hx509_context_free(&hctx);
 	return NT_STATUS_OK;
@@ -617,7 +617,7 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 		reversed_secret.data = talloc_array(mem_ctx, uint8_t,
 						    uncrypt_request.encrypted_secret_len);
 		if (reversed_secret.data == NULL) {
-			_hx509_private_key_free(&pk);
+			hx509_private_key_free(&pk);
 			return WERR_NOMEM;
 		}
 
@@ -634,11 +634,11 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 		 * we have the private key ...
 		 */
 		hx509_context_init(&hctx);
-		res = _hx509_private_key_private_decrypt(hctx, &reversed_secret,
+		res = hx509_private_key_private_decrypt(hctx, &reversed_secret,
 							 &alg.algorithm, pk,
 							 &uncrypted_secret);
 		hx509_context_free(&hctx);
-		_hx509_private_key_free(&pk);
+		hx509_private_key_free(&pk);
 		if (res != 0) {
 			/* We are not able to decrypt the secret, looks like something is wrong */
 			return WERR_INVALID_DATA;
@@ -803,7 +803,7 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 	 * To dump the key we can use :
 	 * rk_dumpdata("h5lkey", p0, len);
 	 */
-	ret = _hx509_parse_private_key(*hctx, &_hx509_signature_rsa_with_var_num ,
+	ret = hx509_parse_private_key(*hctx, &_hx509_signature_rsa_with_var_num ,
 				       p0, len, HX509_KEY_FORMAT_DER, pk);
 	memset(p0, 0, len);
 	talloc_free(p0);
@@ -835,12 +835,12 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 
 	memset(&spki, 0, sizeof(spki));
 
-	ret = _hx509_request_get_name(*hctx, *req, &subject);
+	ret = hx509_request_get_name(*hctx, *req, &subject);
 	if (ret !=0) {
 		talloc_free(uniqueid.data);
 		return WERR_INTERNAL_ERROR;
 	}
-	ret = _hx509_request_get_SubjectPublicKeyInfo(*hctx, *req, &spki);
+	ret = hx509_request_get_SubjectPublicKeyInfo(*hctx, *req, &spki);
 	if (ret !=0) {
 		talloc_free(uniqueid.data);
 		hx509_name_free(&subject);
@@ -923,39 +923,39 @@ static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *re
 		return w_err;
 	}
 
-	_hx509_request_init(*hctx, req);
+	hx509_request_init(*hctx, req);
 	ret = hx509_parse_name(*hctx, dn, &name);
 	if (ret != 0) {
 		RSA_free(*rsa);
-		_hx509_private_key_free(signer);
-		_hx509_request_free(req);
+		hx509_private_key_free(signer);
+		hx509_request_free(req);
 		hx509_name_free(&name);
 		return WERR_INTERNAL_ERROR;
 	}
 
-	ret = _hx509_request_set_name(*hctx, *req, name);
+	ret = hx509_request_set_name(*hctx, *req, name);
 	if (ret != 0) {
 		RSA_free(*rsa);
-		_hx509_private_key_free(signer);
-		_hx509_request_free(req);
+		hx509_private_key_free(signer);
+		hx509_request_free(req);
 		hx509_name_free(&name);
 		return WERR_INTERNAL_ERROR;
 	}
 	hx509_name_free(&name);
 
-	ret = _hx509_private_key2SPKI(*hctx, *signer, &key);
+	ret = hx509_private_key2SPKI(*hctx, *signer, &key);
 	if (ret != 0) {
 		RSA_free(*rsa);
-		_hx509_private_key_free(signer);
-		_hx509_request_free(req);
+		hx509_private_key_free(signer);
+		hx509_request_free(req);
 		return WERR_INTERNAL_ERROR;
 	}
-	ret = _hx509_request_set_SubjectPublicKeyInfo(*hctx, *req, &key);
+	ret = hx509_request_set_SubjectPublicKeyInfo(*hctx, *req, &key);
 	if (ret != 0) {
 		RSA_free(*rsa);
-		_hx509_private_key_free(signer);
+		hx509_private_key_free(signer);
 		free_SubjectPublicKeyInfo(&key);
-		_hx509_request_free(req);
+		hx509_request_free(req);
 		return WERR_INTERNAL_ERROR;
 	}
 
@@ -998,14 +998,14 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	status = GUID_to_ndr_blob(&guid, ctx, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		hx509_context_free(&hctx);
-		_hx509_private_key_free(&pk);
+		hx509_private_key_free(&pk);
 		RSA_free(rsa);
 		return WERR_INVALID_DATA;
 	}
 
 	w_err = self_sign_cert(ctx, &hctx, &req, nb_days_validity, &pk, &cert, &blob);
 	if (!W_ERROR_IS_OK(w_err)) {
-		_hx509_private_key_free(&pk);
+		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
 		return WERR_INVALID_DATA;
 	}
@@ -1013,7 +1013,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	ret = hx509_cert_binary(hctx, cert, &data);
 	if (ret !=0) {
 		hx509_cert_free(cert);
-		_hx509_private_key_free(&pk);
+		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
 		return WERR_INVALID_DATA;
 	}
@@ -1101,7 +1101,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	if (ok == false) {
 		der_free_octet_string(&data);
 		hx509_cert_free(cert);
-		_hx509_private_key_free(&pk);
+		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
 		RSA_free(rsa);
 		return WERR_INVALID_DATA;
@@ -1111,7 +1111,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		der_free_octet_string(&data);
 		hx509_cert_free(cert);
-		_hx509_private_key_free(&pk);
+		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
 		RSA_free(rsa);
 		return WERR_INVALID_DATA;
@@ -1121,7 +1121,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	if (secret_name == NULL) {
 		der_free_octet_string(&data);
 		hx509_cert_free(cert);
-		_hx509_private_key_free(&pk);
+		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
 		RSA_free(rsa);
 		return WERR_OUTOFMEMORY;
@@ -1141,7 +1141,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 
 	der_free_octet_string(&data);
 	hx509_cert_free(cert);
-	_hx509_private_key_free(&pk);
+	hx509_private_key_free(&pk);
 	hx509_context_free(&hctx);
 	RSA_free(rsa);
 	return WERR_OK;

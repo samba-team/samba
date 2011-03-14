@@ -120,7 +120,7 @@ heim_dict_create(size_t size)
 	heim_release(dict);
 	return NULL;
     }
-
+    
     dict->tab = calloc(dict->size, sizeof(dict->tab[0]));
     if (dict->tab == NULL) {
 	dict->size = 0;

@@ -105,7 +105,7 @@ free_private_key(struct private_key *key)
 {
     free_AlgorithmIdentifier(&key->alg);
     if (key->private_key)
-	_hx509_private_key_free(&key->private_key);
+	hx509_private_key_free(&key->private_key);
     der_free_octet_string(&key->localKeyId);
     free(key);
 }
@@ -143,7 +143,7 @@ _hx509_collector_private_key_add(hx509_context context,
     if (private_key) {
 	key->private_key = private_key;
     } else {
-	ret = _hx509_parse_private_key(context, alg,
+	ret = hx509_parse_private_key(context, alg,
 				       key_data->data, key_data->length,
 				       HX509_KEY_FORMAT_DER,
 				       &key->private_key);

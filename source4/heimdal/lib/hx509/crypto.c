@@ -1715,7 +1715,7 @@ _hx509_public_encrypt(hx509_context context,
 }
 
 int
-_hx509_private_key_private_decrypt(hx509_context context,
+hx509_private_key_private_decrypt(hx509_context context,
 				   const heim_octet_string *ciphertext,
 				   const heim_oid *encryption_oid,
 				   hx509_private_key p,
@@ -1758,7 +1758,7 @@ _hx509_private_key_private_decrypt(hx509_context context,
 
 
 int
-_hx509_parse_private_key(hx509_context context,
+hx509_parse_private_key(hx509_context context,
 			 const AlgorithmIdentifier *keyai,
 			 const void *data,
 			 size_t len,
@@ -1776,7 +1776,7 @@ _hx509_parse_private_key(hx509_context context,
 	return HX509_SIG_ALG_NO_SUPPORTED;
     }
 
-    ret = _hx509_private_key_init(private_key, ops, NULL);
+    ret = hx509_private_key_init(private_key, ops, NULL);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "out of memory");
 	return ret;
@@ -1784,7 +1784,7 @@ _hx509_parse_private_key(hx509_context context,
 
     ret = (*ops->import)(context, keyai, data, len, format, *private_key);
     if (ret)
-	_hx509_private_key_free(private_key);
+	hx509_private_key_free(private_key);
 
     return ret;
 }
@@ -1794,7 +1794,7 @@ _hx509_parse_private_key(hx509_context context,
  */
 
 int
-_hx509_private_key2SPKI(hx509_context context,
+hx509_private_key2SPKI(hx509_context context,
 			hx509_private_key private_key,
 			SubjectPublicKeyInfo *spki)
 {
@@ -1871,7 +1871,7 @@ _hx509_generate_private_key(hx509_context context,
 	return HX509_SIG_ALG_NO_SUPPORTED;
     }
 
-    ret = _hx509_private_key_init(private_key, ops, NULL);
+    ret = hx509_private_key_init(private_key, ops, NULL);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "out of memory");
 	return ret;
@@ -1879,7 +1879,7 @@ _hx509_generate_private_key(hx509_context context,
 
     ret = (*ops->generate_private_key)(context, ctx, *private_key);
     if (ret)
-	_hx509_private_key_free(private_key);
+	hx509_private_key_free(private_key);
 
     return ret;
 }
@@ -1976,7 +1976,7 @@ const AlgorithmIdentifier * _hx509_crypto_default_secret_alg =
  */
 
 int
-_hx509_private_key_init(hx509_private_key *key,
+hx509_private_key_init(hx509_private_key *key,
 			hx509_private_key_ops *ops,
 			void *keydata)
 {
@@ -2007,7 +2007,7 @@ _hx509_private_pem_name(hx509_private_key key)
 }
 
 int
-_hx509_private_key_free(hx509_private_key *key)
+hx509_private_key_free(hx509_private_key *key)
 {
     if (key == NULL || *key == NULL)
 	return 0;
@@ -2033,7 +2033,7 @@ _hx509_private_key_free(hx509_private_key *key)
 }
 
 void
-_hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
+hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
 {
     if (key->private_key.rsa)
 	RSA_free(key->private_key.rsa);

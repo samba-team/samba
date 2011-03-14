@@ -781,6 +781,6 @@ _hx509_certs_keys_free(hx509_context context,
 {
     int i;
     for (i = 0; keys[i]; i++)
-	_hx509_private_key_free(&keys[i]);
+	hx509_private_key_free(&keys[i]);
     free(keys);
 }

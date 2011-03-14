@@ -734,7 +734,7 @@ get_cred_kdc_capath_worker(krb5_context context,
                            krb5_creds *in_creds,
                            krb5_const_realm try_realm,
                            krb5_principal impersonate_principal,
-                           Ticket *second_ticket,
+                           Ticket *second_ticket,			
                            krb5_creds **out_creds,
                            krb5_creds ***ret_tgts)
 {
@@ -860,7 +860,7 @@ get_cred_kdc_capath_worker(krb5_context context,
     }
     krb5_free_creds(context, tgt);
     return ret;
-}
+}                           
 
 /*
 get_cred(server)
@@ -883,7 +883,7 @@ get_cred_kdc_capath(krb5_context context,
 		    krb5_ccache ccache,
 		    krb5_creds *in_creds,
 		    krb5_principal impersonate_principal,
-		    Ticket *second_ticket,
+		    Ticket *second_ticket,			
 		    krb5_creds **out_creds,
 		    krb5_creds ***ret_tgts)
 {

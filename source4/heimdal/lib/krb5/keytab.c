@@ -78,8 +78,9 @@
  *   and/or temporary data not to be stored on disk. The type's name
  *   is MEMORY. Each MEMORY keytab is referenced counted by and
  *   opened by the residual name, so two handles can point to the
- *   same memory area.  When the last user closes the entry, it
- *   disappears.
+ *   same memory area.  When the last user closes using krb5_kt_close()
+ *   the keytab, the keys in they keytab is memset() to zero and freed
+ *   and can no longer be looked up by name.
  *
  *
  * @subsection krb5_keytab_example Keytab example

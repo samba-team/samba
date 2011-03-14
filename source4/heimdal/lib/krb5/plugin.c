@@ -379,7 +379,7 @@ _krb5_plugin_free(struct krb5_plugin *list)
 /*
  * module - dict of {
  *      ModuleName = [
- *          plugin = object{
+ *          plugin = object{ 
  *              array = { ptr, ctx }
  *          }
  *      ]
@@ -556,7 +556,7 @@ search_modules(void *ctx, heim_object_t key, heim_object_t value)
 	    return;
 
 	pl = heim_alloc(sizeof(*pl), "struct-plug", plug_free);
-
+		
 	cpm = pl->dataptr = dlsym(p->dsohandle, s->name);
 	if (cpm) {
 	    int ret;
@@ -569,10 +569,10 @@ search_modules(void *ctx, heim_object_t key, heim_object_t value)
     } else {
 	cpm = pl->dataptr;
     }
-
+	    
     if (cpm && cpm->version >= s->min_version)
 	heim_array_append_value(s->result, pl);
-
+    
     heim_release(pl);
 }
 
@@ -619,11 +619,11 @@ _krb5_plugin_run_f(krb5_context context,
     s.userctx = userctx;
 
     heim_dict_iterate_f(dict, search_modules, &s);
-
+    
     heim_release(dict);
-
+    
     HEIMDAL_MUTEX_unlock(&plugin_mutex);
-
+    
     s.ret = KRB5_PLUGIN_NO_HANDLE;
 
     heim_array_iterate_f(s.result, eval_results, &s);
