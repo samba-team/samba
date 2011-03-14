@@ -158,6 +158,7 @@ struct auth_critical_sizes {
 
 #include "auth/session.h"
 #include "auth/system_session_proto.h"
+#include "libcli/security/security.h"
 
 struct ldb_message;
 struct ldb_context;

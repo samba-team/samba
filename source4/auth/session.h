@@ -21,7 +21,7 @@
 #ifndef _SAMBA_AUTH_SESSION_H
 #define _SAMBA_AUTH_SESSION_H
 
-#include "libcli/security/security.h"
+#include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/auth.h"
 
