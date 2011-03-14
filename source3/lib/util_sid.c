@@ -121,7 +121,7 @@ char *sid_binstring_hex(const struct dom_sid *sid)
 	if (!buf)
 		return NULL;
 	sid_linearize(buf, len, sid);
-	s = binary_string(buf, len);
+	hex_encode(buf, len, &s);
 	free(buf);
 	return s;
 }
