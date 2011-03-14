@@ -1435,8 +1435,6 @@ size_t strlen_m_ext_term(const char *s, const charset_t src_charset,
 size_t strlen_m(const char *s);
 size_t strlen_m_term(const char *s);
 size_t strlen_m_term_null(const char *s);
-char *binary_string_rfc2254(TALLOC_CTX *mem_ctx, const uint8_t *buf, int len);
-char *binary_string(char *buf, int len);
 int fstr_sprintf(fstring s, const char *fmt, ...);
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );
