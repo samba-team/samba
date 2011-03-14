@@ -2203,46 +2203,62 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	const char *attrs[4] = { "objectClass", "samAccountType",
+				 "uidNumber", "gidNumber" };
 	struct tldap_message **msg;
-	char *sidstr;
-	uint32_t rid;
+	char *sidstr, *base;
+	uint32_t atype;
 	int rc;
+	bool ret = false;
 
-	/*
-	 * This is a big, big hack: Just hard-code the rid as uid/gid.
-	 */
-
-	sid_peek_rid(sid, &rid);
-
-	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), sid);
+	sidstr = sid_binstring_hex(sid);
 	if (sidstr == NULL) {
 		return false;
 	}
+	base = talloc_asprintf(talloc_tos(), "<SID=%s>", sidstr);
+	SAFE_FREE(sidstr);
 
 	rc = pdb_ads_search_fmt(
-		state, state->domaindn, TLDAP_SCOPE_SUB,
-		NULL, 0, 0, talloc_tos(), &msg,
-		"(&(objectsid=%s)(objectclass=user))", sidstr);
-	if ((rc == TLDAP_SUCCESS) && (talloc_array_length(msg) > 0)) {
-		id->uid = rid;
+		state, base, TLDAP_SCOPE_BASE,
+		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &msg,
+		"(objectclass=*)");
+	TALLOC_FREE(base);
+
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("pdb_ads_search_fmt failed: %s\n",
+			   tldap_errstr(talloc_tos(), state->ld, rc)));
+		return false;
+	}
+	if (talloc_array_length(msg) != 1) {
+		DEBUG(10, ("Got %d objects, expected 1\n",
+			   talloc_array_length(msg)));
+		goto fail;
+	}
+	if (!tldap_pull_uint32(msg[0], "samAccountType", &atype)) {
+		DEBUG(10, ("samAccountType not found\n"));
+		goto fail;
+	}
+	if (atype == ATYPE_ACCOUNT) {
+		uint32_t uid;
 		*type = SID_NAME_USER;
-		TALLOC_FREE(sidstr);
-		return true;
-	}
-
-	rc = pdb_ads_search_fmt(
-		state, state->domaindn, TLDAP_SCOPE_SUB,
-		NULL, 0, 0, talloc_tos(), &msg,
-		"(&(objectsid=%s)(objectclass=group))", sidstr);
-	if ((rc == TLDAP_SUCCESS) && (talloc_array_length(msg) > 0)) {
-		id->gid = rid;
+		if (!tldap_pull_uint32(msg[0], "uidNumber", &uid)) {
+			DEBUG(10, ("Did not find uidNumber\n"));
+			goto fail;
+		}
+		id->uid = uid;
+	} else {
+		uint32_t gid;
 		*type = SID_NAME_DOM_GRP;
-		TALLOC_FREE(sidstr);
-		return true;
+		if (!tldap_pull_uint32(msg[0], "gidNumber", &gid)) {
+			DEBUG(10, ("Did not find gidNumber\n"));
+			goto fail;
+		}
+		id->gid = gid;
 	}
-
-	TALLOC_FREE(sidstr);
-	return false;
+	ret = true;
+fail:
+	TALLOC_FREE(msg);
+	return ret;
 }
 
 static uint32_t pdb_ads_capabilities(struct pdb_methods *m)
