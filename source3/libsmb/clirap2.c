@@ -210,7 +210,7 @@ static size_t rap_getstringp(TALLOC_CTX *ctx, char *p, char **dest, char *r, uin
 		}
 	}
 	pull_string_talloc(ctx,src,0,dest,src,len,STR_ASCII);
-	return len;
+	return 4;
 }
 
 static char *make_header(char *param, uint16 apinum, const char *reqfmt, const char *datafmt)
