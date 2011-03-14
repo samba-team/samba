@@ -263,7 +263,8 @@ void start_epmd(struct tevent_context *ev_ctx,
 	ok = setup_dcerpc_ncalrpc_socket(ev_ctx,
 					 msg_ctx,
 					 ndr_table_epmapper.syntax_id,
-					 "EPMAPPER");
+					 "EPMAPPER",
+					 NULL);
 	if (!ok) {
 		DEBUG(0, ("Failed to open epmd ncalrpc pipe!\n"));
 		exit(1);
