@@ -451,7 +451,8 @@ static bool winreg_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}
@@ -520,7 +521,8 @@ static bool srvsvc_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}
@@ -590,7 +592,8 @@ static bool lsarpc_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}
@@ -660,7 +663,8 @@ static bool samr_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}
@@ -730,7 +734,8 @@ static bool netlogon_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}
@@ -1136,7 +1141,8 @@ static bool netdfs_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}
@@ -1205,7 +1211,8 @@ static bool dssetup_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}
@@ -1273,7 +1280,8 @@ static bool wkssvc_init_cb(void *ptr)
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
 						 abstract_syntax,
-						 pipe_name);
+						 pipe_name,
+						 NULL);
 		if (!ok) {
 			return false;
 		}

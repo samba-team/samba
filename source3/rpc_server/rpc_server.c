@@ -232,6 +232,7 @@ struct dcerpc_ncacn_listen_state {
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	dcerpc_ncacn_disconnect_fn disconnect_fn;
 };
 
 static void named_pipe_listener(struct tevent_context *ev,
@@ -681,7 +682,8 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				uint16_t port,
 				struct tsocket_address *cli_addr,
 				struct tsocket_address *srv_addr,
-				int s);
+				int s,
+				dcerpc_ncacn_disconnect_fn fn);
 
 /********************************************************************
  * Start listening on the tcp/ip socket
@@ -711,6 +713,7 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 	state->syntax_id = syntax_id;
 	state->fd = -1;
 	state->ep.port = port;
+	state->disconnect_fn = NULL;
 
 	if (state->ep.port == 0) {
 		uint16_t i;
@@ -839,7 +842,8 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 			    state->ep.port,
 			    cli_addr,
 			    srv_addr,
-			    s);
+			    s,
+			    NULL);
 }
 
 /********************************************************************
@@ -854,7 +858,8 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
 				 struct ndr_syntax_id syntax_id,
-				 const char *name)
+				 const char *name,
+				 dcerpc_ncacn_disconnect_fn fn)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
@@ -867,6 +872,7 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 
 	state->syntax_id = syntax_id;
 	state->fd = -1;
+	state->disconnect_fn = fn;
 
 	if (name == NULL) {
 		name = "DEFAULT";
@@ -962,7 +968,8 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 			    state->msg_ctx,
 			    state->syntax_id, NCALRPC,
 			    state->ep.name, 0,
-			    cli_addr, NULL, sd);
+			    cli_addr, NULL, sd,
+			    state->disconnect_fn);
 }
 
 struct dcerpc_ncacn_conn {
@@ -978,6 +985,7 @@ struct dcerpc_ncacn_conn {
 	int sock;
 
 	struct pipes_struct *p;
+	dcerpc_ncacn_disconnect_fn disconnect_fn;
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
@@ -1006,7 +1014,8 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				uint16_t port,
 				struct tsocket_address *cli_addr,
 				struct tsocket_address *srv_addr,
-				int s) {
+				int s,
+				dcerpc_ncacn_disconnect_fn fn) {
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	struct tevent_req *subreq;
 	const char *cli_str;
@@ -1032,6 +1041,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	ncacn_conn->ev_ctx = ev_ctx;
 	ncacn_conn->msg_ctx = msg_ctx;
 	ncacn_conn->sock = s;
+	ncacn_conn->disconnect_fn = fn;
 
 	ncacn_conn->client = talloc_move(ncacn_conn, &cli_addr);
 	if (tsocket_address_is_inet(ncacn_conn->client, "ip")) {
@@ -1215,6 +1225,12 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	status = dcerpc_read_ncacn_packet_recv(subreq, ncacn_conn, &pkt, &recv_buffer);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (ncacn_conn->disconnect_fn != NULL) {
+			ok = ncacn_conn->disconnect_fn(ncacn_conn->p);
+			if (!ok) {
+				DEBUG(3, ("Failed to call disconnect function\n"));
+			}
+		}
 		goto fail;
 	}
 
