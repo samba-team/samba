@@ -108,8 +108,9 @@ int tldap_search(struct tldap_context *ld,
 		 TALLOC_CTX *mem_ctx, struct tldap_message ***entries,
 		 struct tldap_message ***refs);
 bool tldap_entry_dn(struct tldap_message *msg, char **dn);
-bool tldap_entry_attributes(struct tldap_message *msg, int *num_attributes,
-			    struct tldap_attribute **attributes);
+bool tldap_entry_attributes(struct tldap_message *msg,
+			    struct tldap_attribute **attributes,
+			    int *num_attributes);
 
 struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,

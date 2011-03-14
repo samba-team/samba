@@ -1958,8 +1958,9 @@ bool tldap_entry_dn(struct tldap_message *msg, char **dn)
 	return true;
 }
 
-bool tldap_entry_attributes(struct tldap_message *msg, int *num_attributes,
-			    struct tldap_attribute **attributes)
+bool tldap_entry_attributes(struct tldap_message *msg,
+			    struct tldap_attribute **attributes,
+			    int *num_attributes)
 {
 	if ((msg->dn == NULL) && (!tldap_parse_search_entry(msg))) {
 		return false;

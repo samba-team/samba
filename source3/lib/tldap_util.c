@@ -28,7 +28,7 @@ bool tldap_entry_values(struct tldap_message *msg, const char *attribute,
 	struct tldap_attribute *attributes;
 	int i, num_attributes;
 
-	if (!tldap_entry_attributes(msg, &num_attributes, &attributes)) {
+	if (!tldap_entry_attributes(msg, &attributes, &num_attributes)) {
 		return false;
 	}
 
