@@ -269,7 +269,7 @@ _fork __fork fremoveea fremovexattr fseek64 fseeko64 fsetea
 fsetproplist fsetxattr _fstat __fstat fstat64 _fstat64 __fstat64 fsync
 ftell64 ftello64 ftruncate64 futimens futimes __fxstat getauthuid
 getcwd _getcwd __getcwd getdents __getdents getdents64 getdirentries
-getgrent getgrnam getgrouplist getmntent getpagesize
+getgrent getgrnam getgrouplist getgrset getmntent getpagesize
 getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
 glob grantpt hstrerror initgroups innetgr
 inotify_init lgetea lgetxattr listea listxattr llistea llistxattr
