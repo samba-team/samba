@@ -1225,6 +1225,7 @@ bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t ret;
+	size_t ucs2_align_len = 0;
 
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
@@ -1242,6 +1243,7 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 		src = (const void *)((const char *)src + 1);
 		if (src_len != (size_t)-1)
 			src_len--;
+		ucs2_align_len = 1;
 	}
 
 	if (flags & STR_TERMINATE) {
@@ -1277,7 +1279,7 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 		dest[0] = 0;
 	}
 
-	return src_len;
+	return src_len + ucs2_align_len;
 }
 
 /**
@@ -1303,6 +1305,7 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 {
 	char *dest;
 	size_t dest_len;
+	size_t ucs2_align_len = 0;
 
 	*ppdest = NULL;
 
@@ -1321,6 +1324,7 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 		src = (const void *)((const char *)src + 1);
 		if (src_len != (size_t)-1)
 			src_len--;
+		ucs2_align_len = 1;
 	}
 
 	if (flags & STR_TERMINATE) {
@@ -1386,7 +1390,7 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 	}
 
 	*ppdest = dest;
-	return src_len;
+	return src_len + ucs2_align_len;
 }
 
 size_t pull_ucs2_fstring(char *dest, const void *src)
