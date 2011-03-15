@@ -538,7 +538,7 @@ NTSTATUS dcerpc_winreg_set_binary(TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *data,
 				  WERROR *pwerr)
 {
-	struct winreg_String wvalue;
+	struct winreg_String wvalue = { 0, };
 	WERROR result = WERR_OK;
 	NTSTATUS status;
 
