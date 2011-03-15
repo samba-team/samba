@@ -3149,7 +3149,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
-	struct winreg_String wvalue;
+	struct winreg_String wvalue = { 0, };
 	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);
 	uint32_t i;
 	WERROR result = WERR_OK;
