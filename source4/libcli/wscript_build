@@ -91,3 +91,4 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RAW',
 	)
 
 bld.RECURSE('smb2')
+bld.RECURSE('rap')
