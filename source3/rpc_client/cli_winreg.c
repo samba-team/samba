@@ -379,7 +379,7 @@ NTSTATUS dcerpc_winreg_set_dword(TALLOC_CTX *mem_ctx,
 				 uint32_t data,
 				 WERROR *pwerr)
 {
-	struct winreg_String wvalue;
+	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
