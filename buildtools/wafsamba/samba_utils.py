@@ -473,6 +473,8 @@ def CHECK_MAKEFLAGS(bld):
     if not 'WAF_MAKE' in os.environ:
         return
     makeflags = os.environ.get('MAKEFLAGS')
+    if makeflags is None:
+        return
     jobs_set = False
     # we need to use shlex.split to cope with the escaping of spaces
     # in makeflags
