@@ -156,7 +156,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	WERROR werr;
 	struct policy_handle handle, key_handle;
-	struct winreg_String key_name;
+	struct winreg_String key_name = { 0, };
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	struct QueryMultipleValue *values_in, *values_out;
