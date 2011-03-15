@@ -20,6 +20,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifndef _ACCESS_CHECK_H_
+#define _ACCESS_CHECK_H_
 
 #include "librpc/gen_ndr/security.h"
 
@@ -76,3 +78,4 @@ struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
 /* Change the granted access per each ACE */
 void object_tree_modify_access(struct object_tree *root,
 			       uint32_t access_mask);
+#endif
