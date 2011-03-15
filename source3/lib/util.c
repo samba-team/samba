@@ -1899,17 +1899,8 @@ const char *tab_depth(int level, int depth)
 
 int str_checksum(const char *s)
 {
-	int res = 0;
-	int c;
-	int i=0;
-
-	while(*s) {
-		c = *s;
-		res ^= (c << (i % 15)) ^ (c >> (15-(i%15)));
-		s++;
-		i++;
-	}
-	return(res);
+	TDB_DATA key = string_tdb_data(s);
+	return tdb_jenkins_hash(&key);
 }
 
 /*****************************************************************
