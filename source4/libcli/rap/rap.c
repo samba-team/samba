@@ -25,7 +25,6 @@
 #include "../librpc/gen_ndr/ndr_rap.h"
 #include "libcli/rap/rap.h"
 #include "librpc/ndr/libndr.h"
-#include "param/param.h"
 
 struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16_t callno)
 {
@@ -1227,7 +1226,6 @@ NTSTATUS smbcli_rap_netprintdestgetinfo(struct smbcli_tree *tree,
 }
 
 NTSTATUS smbcli_rap_netuserpasswordset2(struct smbcli_tree *tree,
-					struct smb_iconv_convenience *iconv_convenience,
 					TALLOC_CTX *mem_ctx,
 					struct rap_NetUserPasswordSet2 *r)
 {
@@ -1282,7 +1280,6 @@ NTSTATUS smbcli_rap_netuserpasswordset2(struct smbcli_tree *tree,
 }
 
 NTSTATUS smbcli_rap_netoemchangepassword(struct smbcli_tree *tree,
-					 struct smb_iconv_convenience *iconv_convenience,
 					 TALLOC_CTX *mem_ctx,
 					 struct rap_NetOEMChangePassword *r)
 {

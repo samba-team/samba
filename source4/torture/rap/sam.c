@@ -26,7 +26,6 @@
 #include "torture/util.h"
 #include "libcli/rap/rap.h"
 #include "torture/rap/proto.h"
-#include "param/param.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "torture/rpc/torture_rpc.h"
@@ -61,7 +60,7 @@ static bool test_userpasswordset2_args(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetUserPasswordSet2(%s)\n", r.in.UserName);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netuserpasswordset2(cli->tree, lpcfg_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netuserpasswordset2(cli->tree, tctx, &r),
 		"smbcli_rap_netuserpasswordset2 failed");
 	if (!W_ERROR_IS_OK(W_ERROR(r.out.status))) {
 		torture_warning(tctx, "RAP NetUserPasswordSet2 gave: %s\n",
@@ -92,7 +91,7 @@ static bool test_userpasswordset2_crypt_args(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetUserPasswordSet2(%s)\n", r.in.UserName);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netuserpasswordset2(cli->tree, lpcfg_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netuserpasswordset2(cli->tree, tctx, &r),
 		"smbcli_rap_netuserpasswordset2 failed");
 	if (!W_ERROR_IS_OK(W_ERROR(r.out.status))) {
 		torture_warning(tctx, "RAP NetUserPasswordSet2 gave: %s\n",
@@ -151,7 +150,7 @@ static bool test_oemchangepassword_args(struct torture_context *tctx,
 	torture_comment(tctx, "Testing rap_NetOEMChangePassword(%s)\n", r.in.UserName);
 
 	torture_assert_ntstatus_ok(tctx,
-		smbcli_rap_netoemchangepassword(cli->tree, lpcfg_iconv_convenience(tctx->lp_ctx), tctx, &r),
+		smbcli_rap_netoemchangepassword(cli->tree, tctx, &r),
 		"smbcli_rap_netoemchangepassword failed");
 	if (!W_ERROR_IS_OK(W_ERROR(r.out.status))) {
 		torture_warning(tctx, "RAP NetOEMChangePassword gave: %s\n",
