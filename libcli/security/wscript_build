@@ -4,8 +4,6 @@
 bld.SAMBA_LIBRARY('security',
                   source='dom_sid.c display_sec.c secace.c secacl.c security_descriptor.c sddl.c privileges.c security_token.c access_check.c object_tree.c create_descriptor.c util_sid.c session.c',
                   private_library=True,
-                  public_headers='security.h dom_sid.h secace.h secacl.h security_descriptor.h security_token.h sddl.h privileges.h access_check.h session.h',
-                  header_path='security',
                   deps='talloc ndr NDR_SECURITY'
                   )
 
