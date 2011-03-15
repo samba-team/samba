@@ -569,7 +569,7 @@ static WERROR winreg_printer_delete_subkeys(TALLOC_CTX *mem_ctx,
 	const char **subkeys = NULL;
 	uint32_t num_subkeys = 0;
 	struct policy_handle key_hnd;
-	struct winreg_String wkey;
+	struct winreg_String wkey = { 0, };
 	WERROR result = WERR_OK;
 	NTSTATUS status;
 	uint32_t i;
