@@ -3481,24 +3481,8 @@ libnetapi_examples: libnetapi
 clean_libnetapi_examples:
 	$(MAKE) -C lib/netapi/examples clean
 
-WAF_BINARY=buildtools/bin/waf
-WAF=$(WAF_BINARY)
-WAF_BUILD=WAF_MAKE=1 $(WAF_BINARY)
-SAMBA4_BINARIES="smbtorture,ndrdump"
+bin/smbtorture4: $(BINARY_PREREQS)
+	$(MAKE) -f Makefile-smbtorture4 bin/smbtorture4
 
-samba4-configure:
-	@(cd .. && \
-		CFLAGS='' $(WAF) reconfigure || \
-		CFLAGS='' $(WAF) configure --enable-developer --nonshared-binary=$(SAMBA4_BINARIES) --enable-auto-reconfigure )
-
-.PHONY: samba4-configure
-
-bin/smbtorture4: $(BINARY_PREREQS) samba4-configure
-	cd .. && $(WAF_BUILD) --targets=smbtorture
-	cp ../bin/smbtorture bin/smbtorture4
-
-bin/ndrdump4: $(BINARY_PREREQS) samba4-configure
-	cd .. && $(WAF_BUILD) --targets=ndrdump
-	cp ../bin/ndrdump bin/ndrdump4
-
-.PHONY: bin/smbtorture4
+bin/ndrdump4: $(BINARY_PREREQS)
+	$(MAKE) -f Makefile-smbtorture4 bin/ndrdump4
