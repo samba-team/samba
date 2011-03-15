@@ -1612,7 +1612,7 @@ static bool test_netsessionenum(struct torture_context *tctx,
 				struct smbcli_state *cli)
 {
 	struct rap_NetSessionEnum r;
-	int i;
+	int i,n;
 	uint16_t levels[] = { 2 };
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
@@ -1626,6 +1626,25 @@ static bool test_netsessionenum(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 			smbcli_rap_netsessionenum(cli->tree, tctx, &r),
 			"smbcli_rap_netsessionenum failed");
+
+		for (n=0; n < r.out.count; n++) {
+			switch (r.in.level) {
+			case 2:
+				torture_comment(tctx, "ComputerName: %s\n",
+					r.out.info[n].info2.ComputerName);
+
+				torture_comment(tctx, "UserName: %s\n",
+					r.out.info[n].info2.UserName);
+
+				torture_assert(tctx, r.out.info[n].info2.ComputerName,
+					"ComputerName empty");
+				torture_assert(tctx, r.out.info[n].info2.UserName,
+					"UserName empty");
+				break;
+			default:
+				break;
+			}
+		}
 	}
 
 	return true;
