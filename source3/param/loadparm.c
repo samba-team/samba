@@ -749,7 +749,7 @@ static const struct enum_list enum_printing[] = {
 	{PRINT_IPRINT, "iprint"},
 	{PRINT_LPRNT, "nt"},
 	{PRINT_LPROS2, "os2"},
-#ifdef DEVELOPER
+#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
 	{PRINT_TEST, "test"},
 	{PRINT_VLP, "vlp"},
 #endif /* DEVELOPER */
@@ -4857,7 +4857,8 @@ static void init_printer_values(struct service *pService)
 			string_set(&pService->szPrintcommand, "lp -r -P%p %s");
 			break;
 
-#ifdef DEVELOPER
+#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
+
 	case PRINT_TEST:
 	case PRINT_VLP:
 		string_set(&pService->szPrintcommand, "vlp print %p %s");
