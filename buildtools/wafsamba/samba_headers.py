@@ -104,6 +104,24 @@ def create_public_header(task):
     outfile.close()
 
 
+def public_headers_simple(bld, public_headers, header_path=None, public_headers_install=True):
+    '''install some headers - simple version, no munging needed
+    '''
+    if not public_headers_install:
+        return
+    for h in TO_LIST(public_headers):
+        inst_path = header_install_path(h, header_path)
+        if h.find(':') != -1:
+            s = h.split(":")
+            h_name =  s[0]
+            inst_name = s[1]
+        else:
+            h_name =  h
+            inst_name = os.path.basename(h)
+        bld.INSTALL_FILES('${INCLUDEDIR}', h_name, destname=inst_name)
+        
+
+
 def PUBLIC_HEADERS(bld, public_headers, header_path=None, public_headers_install=True):
     '''install some headers
 
@@ -112,8 +130,12 @@ def PUBLIC_HEADERS(bld, public_headers, header_path=None, public_headers_install
     directories relative to INCLUDEDIR
     '''
     bld.SET_BUILD_GROUP('final')
+
     if not bld.env.build_public_headers:
-        bld.env.build_public_headers = ''
+        # in this case no header munging neeeded. Used for tdb, talloc etc
+        public_headers_simple(bld, public_headers, header_path=header_path,
+                              public_headers_install=public_headers_install)
+        return
 
     # create the public header in the given path
     # in the build tree
