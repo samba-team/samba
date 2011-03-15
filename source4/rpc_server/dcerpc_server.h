@@ -393,5 +393,10 @@ _PUBLIC_ struct cli_credentials *dcesrv_call_credentials(struct dcesrv_call_stat
  */
 _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call);
 
+/**
+ * retrieve account_name for a dce_call
+ */
+_PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call);
+
 
 #endif /* SAMBA_DCERPC_SERVER_H */

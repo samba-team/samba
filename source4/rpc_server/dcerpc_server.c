@@ -1737,3 +1737,11 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call)
 	level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
 	return level >= SECURITY_USER;
 }
+
+/**
+ * retrieve account_name for a dce_call
+ */
+_PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call)
+{
+	return dce_call->context->conn->auth_state.session_info->info->account_name;
+}
