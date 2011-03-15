@@ -787,6 +787,10 @@ wbcErr wbcAddNamedBlob(size_t *num_blobs,
 		*num_blobs + 2, sizeof(struct wbcNamedBlob),
 		wbcNamedBlobDestructor);
 
+	if (blobs == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+
 	if (*pblobs != NULL) {
 		struct wbcNamedBlob *old = *pblobs;
 		memcpy(blobs, old, sizeof(struct wbcNamedBlob) * (*num_blobs));
