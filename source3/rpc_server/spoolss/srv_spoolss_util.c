@@ -2517,7 +2517,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
-	struct winreg_String wvalue;
+	struct winreg_String wvalue = { 0, };
 	char *path;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
