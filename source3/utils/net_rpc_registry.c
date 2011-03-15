@@ -1782,7 +1782,7 @@ static WERROR import_delete_key(struct import_ctx* ctx,
 	WERROR werr;
 	NTSTATUS status;
 	void* mem_ctx = talloc_new(ctx->mem_ctx);
-	struct winreg_String  keyname;
+	struct winreg_String  keyname = { 0, };
 	struct policy_handle  hive;
 	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
