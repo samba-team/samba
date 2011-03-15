@@ -197,7 +197,7 @@ bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
 
 	{
 		enum winreg_CreateAction action = REG_ACTION_NONE;
-		struct winreg_String wkey;
+		struct winreg_String wkey = { 0, };
 		struct winreg_String wkeyclass;
 
 		wkey.name = talloc_asprintf(tmp_ctx, "%s\\Security", key);
