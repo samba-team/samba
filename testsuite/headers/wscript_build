@@ -24,10 +24,13 @@ bld.SAMBA_GENERATOR('test_headers.h',
                     target='test_headers.h')
 
 cflags=''
-for lib in ['talloc', 'tevent', 'tdb', 'ldb' ]:
+for lib in ['talloc', 'tevent', 'tdb', 'ldb', 'popt' ]:
     ename = 'CPPPATH_%s' % lib.upper()
     for p in bld.env[ename]:
         cflags += bld.env.CPPPATH_ST % p + ' '
+
+if not bld.env.USING_SYSTEM_POPT:
+    cflags += bld.env.CPPPATH_ST % '../lib/popt'
 
 if bld.env.DEVELOPER_MODE:
     bld.SAMBA_BINARY('test_headers',
