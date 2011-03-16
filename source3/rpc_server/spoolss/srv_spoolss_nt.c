@@ -3647,7 +3647,9 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	if ( !option )
 		return WERR_BADFID;
 
-	get_printer_snum(p, hnd, &snum, NULL);
+	if (!get_printer_snum(p, hnd, &snum, NULL)) {
+		return WERR_BADFID;
+	}
 
 	/* Maybe we should use the SYSTEM session_info here... */
 	result = winreg_get_printer(mem_ctx,
