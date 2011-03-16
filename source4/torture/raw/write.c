@@ -188,11 +188,6 @@ static bool test_write(struct torture_context *tctx,
 		goto done;
 	}
 
-	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
-		torture_comment(tctx, "skipping large file tests - CAP_LARGE_FILES not set\n");
-		goto done;
-	}
-
 	torture_comment(tctx, "Trying 2^32 offset\n");
 	setup_buffer(buf, seed, maxsize);
 	io.write.in.file.fnum = fnum;
