@@ -1160,9 +1160,8 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	if (info != NULL) {
-		*info = NULL;
-	}
+	*info = NULL;
+
 	if (error != NULL) {
 		*error = NULL;
 	}
