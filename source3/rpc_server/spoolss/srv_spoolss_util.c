@@ -776,7 +776,7 @@ static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 					const char *value,
 					NTTIME data)
 {
-	struct winreg_String wvalue;
+	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
