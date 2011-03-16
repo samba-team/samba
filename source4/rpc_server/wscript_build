@@ -9,8 +9,6 @@ bld.SAMBA_SUBSYSTEM('DCERPC_SHARE',
 bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
 	source='common/forward.c common/reply.c dcesrv_auth.c',
 	autoproto='common/proto.h',
-	public_headers='common/common.h common/proto.h',
-	header_path='dcerpc_server',
 	deps='ldb DCERPC_SHARE samba_server_gensec'
 	)
 
