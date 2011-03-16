@@ -490,7 +490,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	status = NT_STATUS_OK;
 
  out:
-	if (h && is_valid_policy_hnd(&pol)) {
+	if (is_valid_policy_hnd(&pol)) {
 		dcerpc_lsa_Close(h, p->mem_ctx, &pol, &result);
 	}
 
