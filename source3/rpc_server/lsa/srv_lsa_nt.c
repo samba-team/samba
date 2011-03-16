@@ -1598,7 +1598,7 @@ NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
 static NTSTATUS add_trusted_domain_user(TALLOC_CTX *mem_ctx,
 					const char *netbios_name,
 					const char *domain_name,
-					struct trustDomainPasswords auth_struct)
+					const struct trustDomainPasswords *auth_struct)
 {
 	NTSTATUS status;
 	struct samu *sam_acct;
@@ -1638,14 +1638,14 @@ static NTSTATUS add_trusted_domain_user(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	for (i = 0; i < auth_struct.incoming.count; i++) {
-		switch (auth_struct.incoming.current.array[i].AuthType) {
+	for (i = 0; i < auth_struct->incoming.count; i++) {
+		switch (auth_struct->incoming.current.array[i].AuthType) {
 			case TRUST_AUTH_TYPE_CLEAR:
 				if (!convert_string_talloc(mem_ctx,
 							   CH_UTF16LE,
 							   CH_UNIX,
-							   auth_struct.incoming.current.array[i].AuthInfo.clear.password,
-							   auth_struct.incoming.current.array[i].AuthInfo.clear.size,
+							   auth_struct->incoming.current.array[i].AuthInfo.clear.password,
+							   auth_struct->incoming.current.array[i].AuthInfo.clear.size,
 							   &dummy,
 							   &dummy_size,
 							   false)) {
@@ -1785,7 +1785,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		status = add_trusted_domain_user(p->mem_ctx,
 						 r->in.info->netbios_name.string,
 						 r->in.info->domain_name.string,
-						 auth_struct);
+						 &auth_struct);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
