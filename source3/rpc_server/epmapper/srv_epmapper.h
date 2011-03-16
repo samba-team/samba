@@ -27,6 +27,8 @@
  */
 void srv_epmapper_cleanup(void);
 
+bool srv_epmapper_delete_endpoints(struct pipes_struct *p);
+
 #endif /*_SRV_EPMAPPER_H_ */
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
