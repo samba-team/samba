@@ -450,7 +450,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	}
 
 	if (pnum_names) {
-		pnum_names = 0;
+		*pnum_names = 0;
 	}
 
 	tmp_ctx = talloc_stackframe();
