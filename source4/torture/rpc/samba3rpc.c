@@ -2384,48 +2384,43 @@ bool try_tcon(struct torture_context *tctx,
 
 static bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx;
-	bool ret = true;
 	struct smbcli_state *cli;
 	struct security_descriptor *sd;
 	struct dom_sid *user_sid;
 
-	if (!(mem_ctx = talloc_new(torture))) {
-		return false;
-	}
-
 	if (!(torture_open_connection_share(
-		      mem_ctx, &cli, torture, torture_setting_string(torture, "host", NULL),
+		      torture, &cli, torture, torture_setting_string(torture, "host", NULL),
 		      "IPC$", torture->ev))) {
-		torture_comment(torture, "IPC$ connection failed\n");
-		talloc_free(mem_ctx);
-		return false;
+		torture_fail(torture, "IPC$ connection failed\n");
 	}
 
-	if (!(user_sid = whoami(torture, mem_ctx, cli->tree))) {
-		torture_comment(torture, "whoami failed\n");
-		talloc_free(mem_ctx);
-		return false;
+	if (!(user_sid = whoami(torture, torture, cli->tree))) {
+		torture_fail(torture, "whoami failed\n");
 	}
 
-	sd = get_sharesec(torture, mem_ctx, cli->session,
+	sd = get_sharesec(torture, torture, cli->session,
 			  torture_setting_string(torture, "share", NULL));
 
-	ret &= try_tcon(torture, mem_ctx, sd, cli->session,
+	torture_assert(torture, try_tcon(
+			torture, torture, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
-			user_sid, 0, NT_STATUS_ACCESS_DENIED, NT_STATUS_OK);
+			user_sid, 0, NT_STATUS_ACCESS_DENIED, NT_STATUS_OK),
+			"failed to test tcon with 0 access_mask");
 
-	ret &= try_tcon(torture, mem_ctx, sd, cli->session,
+	torture_assert(torture, try_tcon(
+			torture, torture, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
 			user_sid, SEC_FILE_READ_DATA, NT_STATUS_OK,
-			NT_STATUS_MEDIA_WRITE_PROTECTED);
+			NT_STATUS_MEDIA_WRITE_PROTECTED),
+			"failed to test tcon with SEC_FILE_READ_DATA access_mask");
 
-	ret &= try_tcon(torture, mem_ctx, sd, cli->session,
+	torture_assert(torture, try_tcon(
+			torture, torture, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
-			user_sid, SEC_FILE_ALL, NT_STATUS_OK, NT_STATUS_OK);
+			user_sid, SEC_FILE_ALL, NT_STATUS_OK, NT_STATUS_OK),
+			"failed to test tcon with SEC_FILE_ALL access_mask")
 
-	talloc_free(mem_ctx);
-	return ret;
+	return true;
 }
 
 static bool torture_samba3_rpc_lsa(struct torture_context *torture)
