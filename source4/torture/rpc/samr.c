@@ -7421,7 +7421,6 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 	uint32_t num_disp = 0;
 	uint32_t num_created = 0;
 	uint32_t num_anounced = 0;
-	bool ret = true;
 	uint32_t i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -7465,15 +7464,21 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		switch (ctx->choice) {
 		case TORTURE_SAMR_MANY_ACCOUNTS:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_ACCOUNT_NAME, i);
-			ret &= test_CreateUser(p, tctx, domain_handle, name, &handles[i], domain_sid, 0, NULL, false);
+			torture_assert(tctx,
+				test_CreateUser(p, tctx, domain_handle, name, &handles[i], domain_sid, 0, NULL, false),
+				"failed to create user");
 			break;
 		case TORTURE_SAMR_MANY_GROUPS:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_GROUPNAME, i);
-			ret &= test_CreateDomainGroup(b, tctx, domain_handle, name, &handles[i], domain_sid, false);
+			torture_assert(tctx,
+				test_CreateDomainGroup(b, tctx, domain_handle, name, &handles[i], domain_sid, false),
+				"failed to create group");
 			break;
 		case TORTURE_SAMR_MANY_ALIASES:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_ALIASNAME, i);
-			ret &= test_CreateAlias(b, tctx, domain_handle, name, &handles[i], domain_sid, false);
+			torture_assert(tctx,
+				test_CreateAlias(b, tctx, domain_handle, name, &handles[i], domain_sid, false),
+				"failed to create alias");
 			break;
 		default:
 			return false;
@@ -7487,13 +7492,19 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	switch (ctx->choice) {
 	case TORTURE_SAMR_MANY_ACCOUNTS:
-		ret &= test_EnumDomainUsers(b, tctx, domain_handle, &num_enum);
+		torture_assert(tctx,
+			test_EnumDomainUsers(b, tctx, domain_handle, &num_enum),
+			"failed to enum users");
 		break;
 	case TORTURE_SAMR_MANY_GROUPS:
-		ret &= test_EnumDomainGroups(b, tctx, domain_handle, &num_enum);
+		torture_assert(tctx,
+			test_EnumDomainGroups(b, tctx, domain_handle, &num_enum),
+			"failed to enum groups");
 		break;
 	case TORTURE_SAMR_MANY_ALIASES:
-		ret &= test_EnumDomainAliases(b, tctx, domain_handle, &num_enum);
+		torture_assert(tctx,
+			test_EnumDomainAliases(b, tctx, domain_handle, &num_enum),
+			"failed to enum aliases");
 		break;
 	default:
 		return false;
@@ -7503,10 +7514,14 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	switch (ctx->choice) {
 	case TORTURE_SAMR_MANY_ACCOUNTS:
-		ret &= test_QueryDisplayInfo_level(b, tctx, domain_handle, 1, &num_disp);
+		torture_assert(tctx,
+			test_QueryDisplayInfo_level(b, tctx, domain_handle, 1, &num_disp),
+			"failed to query display info");
 		break;
 	case TORTURE_SAMR_MANY_GROUPS:
-		ret &= test_QueryDisplayInfo_level(b, tctx, domain_handle, 3, &num_disp);
+		torture_assert(tctx,
+			test_QueryDisplayInfo_level(b, tctx, domain_handle, 3, &num_disp),
+			"failed to query display info");
 		break;
 	case TORTURE_SAMR_MANY_ALIASES:
 		/* no aliases in dispinfo */
@@ -7524,17 +7539,25 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		}
 
 		if (torture_setting_bool(tctx, "samba3", false)) {
-			ret &= test_samr_handle_Close(b, tctx, &handles[i]);
+			torture_assert(tctx,
+				test_samr_handle_Close(b, tctx, &handles[i]),
+				"failed to close handle");
 		} else {
 			switch (ctx->choice) {
 			case TORTURE_SAMR_MANY_ACCOUNTS:
-				ret &= test_DeleteUser(b, tctx, &handles[i]);
+				torture_assert(tctx,
+					test_DeleteUser(b, tctx, &handles[i]),
+					"failed to delete user");
 				break;
 			case TORTURE_SAMR_MANY_GROUPS:
-				ret &= test_DeleteDomainGroup(b, tctx, &handles[i]);
+				torture_assert(tctx,
+					test_DeleteDomainGroup(b, tctx, &handles[i]),
+					"failed to delete group");
 				break;
 			case TORTURE_SAMR_MANY_ALIASES:
-				ret &= test_DeleteAlias(b, tctx, &handles[i]);
+				torture_assert(tctx,
+					test_DeleteAlias(b, tctx, &handles[i]),
+					"failed to delete alias");
 				break;
 			default:
 				return false;
@@ -7553,7 +7576,8 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 				"unexpected number of results (%u) returned in dispinfo, call, expected %u\n",
 				num_disp, num_anounced + num_created);
 	}
-	return ret;
+
+	return true;
 }
 
 static bool test_Connect(struct dcerpc_binding_handle *b,
