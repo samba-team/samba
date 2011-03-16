@@ -851,7 +851,7 @@ static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
 				       const char *value,
 				       uint64_t data)
 {
-	struct winreg_String wvalue;
+	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
