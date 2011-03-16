@@ -990,7 +990,7 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
 	 */
 	while ((da_ctx = ctdb->deferred_attach) != NULL) {
 		DLIST_REMOVE(ctdb->deferred_attach, da_ctx);
-		event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1,0), ctdb_deferred_attach_callback, da_ctx);
+		event_add_timed(ctdb->ev, da_ctx, timeval_current_ofs(1,0), ctdb_deferred_attach_callback, da_ctx);
 	}
 
 	return 0;
