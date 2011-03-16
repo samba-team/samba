@@ -499,7 +499,7 @@ NTSTATUS dcerpc_winreg_set_multi_sz(TALLOC_CTX *mem_ctx,
 				    const char **data,
 				    WERROR *pwerr)
 {
-	struct winreg_String wvalue;
+	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
