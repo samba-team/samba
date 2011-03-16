@@ -23,12 +23,12 @@
 
 #define _GNU_SOURCE 1
 
+#include <Python.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <Python.h>
 
 /* pre-include some of the public headers to avoid ordering issues */
 #include "core/ntstatus.h"
