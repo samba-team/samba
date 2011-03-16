@@ -2509,7 +2509,7 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 
 	state->configdn = tldap_talloc_single_attribute(
 		rootdse, "configurationNamingContext", state);
-	if (state->domaindn == NULL) {
+	if (state->configdn == NULL) {
 		DEBUG(10, ("Could not get configurationNamingContext\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
