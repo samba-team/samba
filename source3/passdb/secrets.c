@@ -445,9 +445,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 {
 	struct list_trusted_domains_state state;
 
-	secrets_init();
-
-	if (db_ctx == NULL) {
+	if (!secrets_init()) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
