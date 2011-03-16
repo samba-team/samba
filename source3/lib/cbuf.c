@@ -116,8 +116,10 @@ cbuf* cbuf_takeover(cbuf* b1, cbuf* b2)
 
 cbuf* cbuf_swapptr(cbuf* b, char** ptr, size_t len)
 {
+	void* p = talloc_parent(*ptr);
 	SWAP(b->buf, *ptr, char*);
 	talloc_steal(b, b->buf);
+	talloc_steal(p, *ptr);
 	b->size = talloc_get_size(b->buf);
 	b->pos  = (len == -1) ? strlen(b->buf) : len;
 
