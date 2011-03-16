@@ -488,9 +488,11 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 				   "ignoring it\n", sid_string_dbg(sid)));
 			continue;
 		}
-		add_gid_to_array_unique(server_info, gid,
-					&server_info->utok.groups,
-					&server_info->utok.ngroups);
+		if (!add_gid_to_array_unique(server_info, gid,
+					     &server_info->utok.groups,
+					     &server_info->utok.ngroups)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	/*
