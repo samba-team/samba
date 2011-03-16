@@ -617,10 +617,10 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 	}
 
  out:
-	if (b && is_valid_policy_hnd(&domain_handle)) {
+	if (is_valid_policy_hnd(&domain_handle)) {
 		dcerpc_samr_Close(b, mem_ctx, &domain_handle, &result);
 	}
-	if (b && is_valid_policy_hnd(&connect_handle)) {
+	if (is_valid_policy_hnd(&connect_handle)) {
 		dcerpc_samr_Close(b, mem_ctx, &connect_handle, &result);
 	}
 
