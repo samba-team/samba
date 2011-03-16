@@ -95,6 +95,6 @@ struct tdr_push *tdr_push_init(TALLOC_CTX *mem_ctx);
 struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx);
 
 NTSTATUS tdr_push_to_fd(int fd, tdr_push_fn_t push_fn, const void *p);
-void tdr_print_debug_helper(struct tdr_print *tdr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3);
+void tdr_print_debug_helper(struct tdr_print *tdr, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 
 #endif /* __TDR_H__ */
