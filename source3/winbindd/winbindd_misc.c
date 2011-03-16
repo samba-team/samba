@@ -319,7 +319,7 @@ void winbindd_dc_info(struct winbindd_cli_state *cli)
 	struct winbindd_domain *domain;
 	char *dc_name, *dc_ip;
 
-	cli->request->domain_name[sizeof(cli->request->domain_name-1)] = '\0';
+	cli->request->domain_name[sizeof(cli->request->domain_name)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)cli->pid,
 		  cli->request->domain_name));
