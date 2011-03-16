@@ -1179,6 +1179,7 @@ void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
 const char *tab_depth(int level, int depth);
 int str_checksum(const char *s);
+unsigned int jenkins_hash(TDB_DATA *key);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 int smb_mkstemp(char *name_template);
