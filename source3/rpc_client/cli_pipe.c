@@ -3256,7 +3256,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key)
 {
-	struct pipe_auth_data *a = cli->auth;
+	struct pipe_auth_data *a;
 	struct schannel_state *schannel_auth;
 	struct auth_ntlmssp_state *ntlmssp_ctx;
 	struct spnego_context *spnego_ctx;
@@ -3268,7 +3268,9 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!cli->auth) {
+	a = cli->auth;
+
+	if (a == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
