@@ -416,6 +416,36 @@ NTSTATUS dbwrap_trans_do(struct db_context *db,
 	return NT_STATUS_INTERNAL_DB_CORRUPTION;
 }
 
+struct dbwrap_trans_traverse_action_ctx {
+	int (*f)(struct db_record* rec, void* private_data);
+	void* private_data;
+};
+
+
+static NTSTATUS dbwrap_trans_traverse_action(struct db_context* db, void* private_data)
+{
+	struct dbwrap_trans_traverse_action_ctx* ctx =
+		(struct dbwrap_trans_traverse_action_ctx*)private_data;
+
+	int ret = db->traverse(db, ctx->f, ctx->private_data);
+
+	return (ret == -1) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
+}
+
+NTSTATUS dbwrap_trans_traverse(struct db_context *db,
+			       int (*f)(struct db_record*, void*),
+			       void *private_data)
+{
+	struct dbwrap_trans_traverse_action_ctx ctx = {
+		.f = f,
+		.private_data = private_data,
+	};
+	return dbwrap_trans_do(db, dbwrap_trans_traverse_action, &ctx);
+}
+
+
+
+
 NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key)
 {
 	char *key_upper;
