@@ -62,8 +62,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 					    const char *server_name,
 					    struct client_ipc_connection **pp)
 {
-	struct libnetapi_private_ctx *priv_ctx =
-		(struct libnetapi_private_ctx *)ctx->private_data;
+	struct libnetapi_private_ctx *priv_ctx;
 	struct user_auth_info *auth_info = NULL;
 	struct cli_state *cli_ipc = NULL;
 	struct client_ipc_connection *p;
@@ -71,6 +70,8 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAM;
 	}
+
+	priv_ctx = (struct libnetapi_private_ctx *)ctx->private_data;
 
 	p = ipc_cm_find(priv_ctx, server_name);
 	if (p) {
