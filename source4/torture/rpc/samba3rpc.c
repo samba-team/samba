@@ -1296,7 +1296,6 @@ static bool leave(struct torture_context *tctx,
 static bool torture_netlogon_samba3(struct torture_context *torture)
 {
 	NTSTATUS status;
-	bool ret = false;
 	struct smbcli_state *cli;
 	struct cli_credentials *anon_creds;
 	struct cli_credentials *wks_creds;
@@ -1311,8 +1310,7 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 	}
 
 	if (!(anon_creds = cli_credentials_init_anon(torture))) {
-		torture_comment(torture, "create_anon_creds failed\n");
-		goto done;
+		torture_fail(torture, "create_anon_creds failed\n");
 	}
 
 	lpcfg_smbcli_options(torture->lp_ctx, &options);
@@ -1327,16 +1325,11 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 					lpcfg_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "smbcli_full_connection failed: %s\n",
-			 nt_errstr(status));
-		goto done;
-	}
+	torture_assert_ntstatus_ok(torture, status, "smbcli_full_connection failed\n");
 
 	wks_creds = cli_credentials_init(torture);
 	if (wks_creds == NULL) {
-		torture_comment(torture, "cli_credentials_init failed\n");
-		goto done;
+		torture_fail(torture, "cli_credentials_init failed\n");
 	}
 
 	cli_credentials_set_conf(wks_creds, torture->lp_ctx);
@@ -1347,10 +1340,9 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 				     generate_random_password(wks_creds, 8, 255),
 				     CRED_SPECIFIED);
 
-	if (!join3(torture, cli, false, cmdline_credentials, wks_creds)) {
-		torture_comment(torture, "join failed\n");
-		goto done;
-	}
+	torture_assert(torture,
+		join3(torture, cli, false, cmdline_credentials, wks_creds),
+		"join failed");
 
 	cli_credentials_set_domain(
 		cmdline_credentials, cli_credentials_get_domain(wks_creds),
@@ -1364,28 +1356,22 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 
 		int j;
 
-		if (!auth2(torture, cli, wks_creds)) {
-			torture_comment(torture, "auth2 failed\n");
-			goto done;
-		}
+		torture_assert(torture,
+			auth2(torture, cli, wks_creds),
+			"auth2 failed");
 
 		for (j=0; j<2; j++) {
-			if (!schan(torture, cli, wks_creds, cmdline_credentials)) {
-				torture_comment(torture, "schan failed\n");
-				goto done;
-			}
+			torture_assert(torture,
+				schan(torture, cli, wks_creds, cmdline_credentials),
+				"schan failed");
 		}
 	}
 
-	if (!leave(torture, cli, cmdline_credentials, wks_creds)) {
-		torture_comment(torture, "leave failed\n");
-		goto done;
-	}
+	torture_assert(torture,
+		leave(torture, cli, cmdline_credentials, wks_creds),
+		"leave failed");
 
-	ret = true;
-
- done:
-	return ret;
+	return true;
 }
 
 /*
