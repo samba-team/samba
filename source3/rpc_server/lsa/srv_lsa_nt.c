@@ -184,7 +184,7 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 		int dom_idx;
 		const char *full_name;
 		const char *domain;
-		enum lsa_SidType type = SID_NAME_UNKNOWN;
+		enum lsa_SidType type;
 
 		/* Split name into domain and user component */
 
@@ -199,11 +199,10 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 
 		DEBUG(5, ("lookup_lsa_rids: looking up name %s\n", full_name));
 
-		/* We can ignore the result of lookup_name, it will not touch
-		   "type" if it's not successful */
-
-		lookup_name(mem_ctx, full_name, flags, &domain, NULL,
-			    &sid, &type);
+		if (!lookup_name(mem_ctx, full_name, flags, &domain, NULL,
+				 &sid, &type)) {
+			type = SID_NAME_UNKNOWN;
+		}
 
 		switch (type) {
 		case SID_NAME_USER:
