@@ -109,6 +109,8 @@ struct pipe_auth_data {
 	DATA_BLOB user_session_key;
 };
 
+struct dcesrv_ep_entry_list;
+
 /*
  * DCE/RPC-specific samba-internal-specific handling of data on
  * NamedPipes.
@@ -126,6 +128,7 @@ struct pipes_struct {
 	struct messaging_context *msg_ctx;
 
 	struct ndr_syntax_id syntax;
+	struct dcesrv_ep_entry_list *ep_entries;
 
 	/* linked list of rpc dispatch tables associated 
 	   with the open rpc contexts */

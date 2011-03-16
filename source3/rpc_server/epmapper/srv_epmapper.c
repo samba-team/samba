@@ -59,6 +59,13 @@ struct dcesrv_endpoint {
 	struct dcesrv_iface_list *iface_list;
 };
 
+struct dcesrv_ep_entry_list {
+	struct dcesrv_ep_entry_list *next, *prev;
+
+	uint32_t num_ents;
+	struct epm_entry_t *entries;
+};
+
 struct rpc_eps {
 	struct dcesrv_ep_iface *e;
 	uint32_t count;
@@ -220,6 +227,37 @@ static bool is_priviledged_pipe(struct auth_serversupplied_info *info) {
 	return true;
 }
 
+bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
+{
+	struct epm_Delete r;
+	struct dcesrv_ep_entry_list *el;
+	error_status_t result;
+
+	if (p->ep_entries == NULL) {
+		return true;
+	}
+
+	for (el = p->ep_entries;
+	     el != NULL;
+	     el = p->ep_entries) {
+		r.in.num_ents = el->num_ents;
+		r.in.entries = el->entries;
+
+		DEBUG(10, ("Delete_endpoints for: %s\n",
+			   el->entries[0].annotation));
+
+		result = _epm_Delete(p, &r);
+		if (result != EPMAPPER_STATUS_OK) {
+			return false;
+		}
+
+		DLIST_REMOVE(p->ep_entries, el);
+		TALLOC_FREE(el);
+	}
+
+	return true;
+}
+
 void srv_epmapper_cleanup(void)
 {
 	struct dcesrv_endpoint *ep;
@@ -336,6 +374,20 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 		if (add_ep) {
 			DLIST_ADD(endpoint_table, ep);
 		}
+	}
+
+	if (r->in.num_ents > 0) {
+		struct dcesrv_ep_entry_list *el;
+
+		el = talloc_zero(p->mem_ctx, struct dcesrv_ep_entry_list);
+		if (el == NULL) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+		el->num_ents = r->in.num_ents;
+		el->entries = talloc_move(el, &r->in.entries);
+
+		DLIST_ADD(p->ep_entries, el);
 	}
 
 	rc = EPMAPPER_STATUS_OK;
