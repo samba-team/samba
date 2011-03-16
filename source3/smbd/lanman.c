@@ -2005,7 +2005,7 @@ static bool api_RNetShareGetInfo(struct smbd_server_connection *sconn,
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	int snum;
 
-	if (!str1 || !str2 || !netname || !p) {
+	if (!str1 || !str2 || !netname_in || !p) {
 		return False;
 	}
 
