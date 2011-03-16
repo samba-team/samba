@@ -1295,7 +1295,6 @@ static bool leave(struct torture_context *tctx,
 
 static bool torture_netlogon_samba3(struct torture_context *torture)
 {
-	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	bool ret = false;
 	struct smbcli_state *cli;
@@ -1311,14 +1310,7 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 		wks_name = get_myname(torture);
 	}
 
-	mem_ctx = talloc_init("torture_netlogon_samba3");
-
-	if (mem_ctx == NULL) {
-		torture_comment(torture, "talloc_init failed\n");
-		return false;
-	}
-
-	if (!(anon_creds = cli_credentials_init_anon(mem_ctx))) {
+	if (!(anon_creds = cli_credentials_init_anon(torture))) {
 		torture_comment(torture, "create_anon_creds failed\n");
 		goto done;
 	}
@@ -1326,7 +1318,7 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 	lpcfg_smbcli_options(torture->lp_ctx, &options);
 	lpcfg_smbcli_session_options(torture->lp_ctx, &session_options);
 
-	status = smbcli_full_connection(mem_ctx, &cli,
+	status = smbcli_full_connection(torture, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lpcfg_smb_ports(torture->lp_ctx),
 					"IPC$", NULL,
@@ -1341,7 +1333,7 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 		goto done;
 	}
 
-	wks_creds = cli_credentials_init(mem_ctx);
+	wks_creds = cli_credentials_init(torture);
 	if (wks_creds == NULL) {
 		torture_comment(torture, "cli_credentials_init failed\n");
 		goto done;
@@ -1393,7 +1385,6 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 	ret = true;
 
  done:
-	talloc_free(mem_ctx);
 	return ret;
 }
 
