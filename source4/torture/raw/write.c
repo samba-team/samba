@@ -111,7 +111,7 @@ static bool test_write(struct torture_context *tctx,
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
+		torture_fail(tctx, "failed to setup basedir");
 	}
 
 	torture_comment(tctx, "Testing RAW_WRITE_WRITE\n");
@@ -119,9 +119,9 @@ static bool test_write(struct torture_context *tctx,
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		torture_comment(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done,
+			talloc_asprintf(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree)));
 	}
 
 	torture_comment(tctx, "Trying zero write\n");
@@ -146,9 +146,8 @@ static bool test_write(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf+4, seed, 9);
 	CHECK_VALUE(IVAL(buf,0), 0);
@@ -165,9 +164,8 @@ static bool test_write(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
@@ -201,9 +199,8 @@ static bool test_write(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.write.in.offset, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
@@ -245,7 +242,7 @@ static bool test_writex(struct torture_context *tctx,
 	}
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
+		torture_fail(tctx, "failed to setup basedir");
 	}
 
 	torture_comment(tctx, "Testing RAW_WRITE_WRITEX\n");
@@ -253,9 +250,8 @@ static bool test_writex(struct torture_context *tctx,
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		torture_comment(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree)));
 	}
 
 	torture_comment(tctx, "Trying zero write\n");
@@ -281,9 +277,8 @@ static bool test_writex(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf+4, seed, 9);
 	CHECK_VALUE(IVAL(buf,0), 0);
@@ -300,9 +295,8 @@ static bool test_writex(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
@@ -333,9 +327,8 @@ static bool test_writex(struct torture_context *tctx,
 	torture_comment(tctx, "Trying locked region\n");
 	cli->session->pid++;
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 3, 1, 0, WRITE_LOCK))) {
-		torture_comment(tctx, "Failed to lock file at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "Failed to lock file at %s\n", __location__));
 	}
 	cli->session->pid--;
 	io.writex.in.wmode = 0;
@@ -349,8 +342,7 @@ static bool test_writex(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
-		torture_comment(tctx, "skipping large file tests - CAP_LARGE_FILES not set\n");
-		goto done;
+		torture_skip(tctx, "skipping large file tests - CAP_LARGE_FILES not set\n");
 	}
 
 	torture_comment(tctx, "Trying 2^32 offset\n");
@@ -366,9 +358,8 @@ static bool test_writex(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
@@ -390,9 +381,8 @@ static bool test_writex(struct torture_context *tctx,
 
 		memset(buf, 0, maxsize);
 		if (smbcli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
-			torture_comment(tctx, "read failed at %s\n", __location__);
 			ret = false;
-			goto done;
+			torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 		}
 		CHECK_BUFFER(buf, seed+1, 4000);
 	}
@@ -427,12 +417,11 @@ static bool test_writeunlock(struct torture_context *tctx,
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!cli->transport->negotiate.lockread_supported) {
-		torture_comment(tctx, "Server does not support writeunlock - skipping\n");
-		return true;
+		torture_skip(tctx, "Server does not support writeunlock - skipping\n");
 	}
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
+		torture_fail(tctx, "failed to setup basedir");
 	}
 
 	torture_comment(tctx, "Testing RAW_WRITE_WRITEUNLOCK\n");
@@ -440,9 +429,8 @@ static bool test_writeunlock(struct torture_context *tctx,
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		torture_comment(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree)));
 	}
 
 	torture_comment(tctx, "Trying zero write\n");
@@ -464,9 +452,8 @@ static bool test_writeunlock(struct torture_context *tctx,
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf+4, seed, 9);
 	CHECK_VALUE(IVAL(buf,0), 0);
@@ -480,9 +467,8 @@ static bool test_writeunlock(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf+4, seed, 9);
 	CHECK_VALUE(IVAL(buf,0), 0);
@@ -504,9 +490,8 @@ static bool test_writeunlock(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
@@ -523,8 +508,7 @@ static bool test_writeunlock(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
-		torture_comment(tctx, "skipping large file tests - CAP_LARGE_FILES not set\n");
-		goto done;
+		torture_skip(tctx, "skipping large file tests - CAP_LARGE_FILES not set\n");
 	}
 
 	torture_comment(tctx, "Trying 2^32 offset\n");
@@ -542,9 +526,8 @@ static bool test_writeunlock(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.writeunlock.in.offset, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
@@ -575,12 +558,11 @@ static bool test_writeclose(struct torture_context *tctx,
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
 	if (!torture_setting_bool(tctx, "writeclose_support", true)) {
-		torture_comment(tctx, "Server does not support writeclose - skipping\n");
-		return true;
+		torture_skip(tctx, "Server does not support writeclose - skipping\n");
 	}
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
+		torture_fail(tctx, "failed to setup basedir");
 	}
 
 	torture_comment(tctx, "Testing RAW_WRITE_WRITECLOSE\n");
@@ -588,9 +570,8 @@ static bool test_writeclose(struct torture_context *tctx,
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		torture_comment(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree)));
 	}
 
 	torture_comment(tctx, "Trying zero write\n");
@@ -623,9 +604,8 @@ static bool test_writeclose(struct torture_context *tctx,
 	io.writeclose.in.file.fnum = fnum;
 
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf+4, seed, 9);
 	CHECK_VALUE(IVAL(buf,0), 0);
@@ -640,9 +620,8 @@ static bool test_writeclose(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf+4, seed, 9);
 	CHECK_VALUE(IVAL(buf,0), 0);
@@ -665,9 +644,8 @@ static bool test_writeclose(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
@@ -684,8 +662,7 @@ static bool test_writeclose(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
-		torture_comment(tctx, "skipping large file tests - CAP_LARGE_FILES not set\n");
-		goto done;
+		torture_skip(tctx, "skipping large file tests - CAP_LARGE_FILES not set\n");
 	}
 
 	torture_comment(tctx, "Trying 2^32 offset\n");
@@ -704,9 +681,8 @@ static bool test_writeclose(struct torture_context *tctx,
 
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.writeclose.in.offset, 4000) != 4000) {
-		torture_comment(tctx, "read failed at %s\n", __location__);
 		ret = false;
-		goto done;
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "read failed at %s\n", __location__));
 	}
 	CHECK_BUFFER(buf, seed, 4000);
 
