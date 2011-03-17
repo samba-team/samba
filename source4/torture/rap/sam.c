@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    test suite for RAP sam operations
 
-   Copyright (C) Guenther Deschner 2010
+   Copyright (C) Guenther Deschner 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -235,6 +235,70 @@ static bool test_usergetinfo(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_useradd(struct torture_context *tctx,
+			 struct smbcli_state *cli)
+{
+
+	struct rap_NetUserAdd r;
+	struct rap_NetUserInfo1 info1;
+	int i;
+	uint16_t levels[] = { 1 };
+	const char *username = TEST_RAP_USER;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		const char *pwd;
+
+		pwd = generate_random_password(tctx, 9, 16);
+
+		r.in.level = levels[i];
+		r.in.bufsize = 0xffff;
+		r.in.pwdlength = strlen(pwd);
+		r.in.unknown = 0;
+
+		switch (r.in.level) {
+		case 1:
+			ZERO_STRUCT(info1);
+
+			info1.Name = username;
+			memcpy(info1.Password, pwd, MIN(strlen(pwd), 16));
+			info1.Priv = USER_PRIV_USER;
+			info1.Flags = 0x21;
+			info1.HomeDir = "home_dir";
+			info1.Comment = "comment";
+			info1.ScriptPath = "logon_script";
+
+			r.in.info.info1 = info1;
+			break;
+		}
+
+		torture_comment(tctx,
+			"Testing rap_NetUserAdd(%s) level %d\n", username, r.in.level);
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netuseradd(cli->tree, tctx, &r),
+			"smbcli_rap_netuseradd failed");
+		torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+			"smbcli_rap_netuseradd failed");
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netuseradd(cli->tree, tctx, &r),
+			"2nd smbcli_rap_netuseradd failed");
+		torture_assert_werr_equal(tctx, W_ERROR(r.out.status), WERR_USEREXISTS,
+			"2nd smbcli_rap_netuseradd failed");
+
+		{
+			struct rap_NetUserDelete d;
+
+			d.in.UserName = username;
+
+			smbcli_rap_netuserdelete(cli->tree, tctx, &d);
+		}
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "sam");
@@ -242,6 +306,7 @@ struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "userpasswordset2", test_userpasswordset2);
 	torture_suite_add_1smb_test(suite, "oemchangepassword", test_oemchangepassword);
 	torture_suite_add_1smb_test(suite, "usergetinfo", test_usergetinfo);
+	torture_suite_add_1smb_test(suite, "useradd", test_useradd);
 
 	return suite;
 }
