@@ -22,7 +22,6 @@
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "nt_printing.h"
-#include "registry.h"
 #include "registry/reg_objects.h"
 #include "../libcli/security/security.h"
 

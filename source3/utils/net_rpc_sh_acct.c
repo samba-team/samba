@@ -17,7 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "popt_common.h"
 #include "utils/net.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "../libcli/security/security.h"
