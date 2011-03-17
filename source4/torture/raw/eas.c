@@ -45,7 +45,7 @@ static bool check_ea(struct smbcli_state *cli,
 	return NT_STATUS_IS_OK(status);
 }
 
-static bool test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	union smb_setfileinfo setfile;
@@ -70,7 +70,7 @@ static bool test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -80,7 +80,7 @@ static bool test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.in.file.fnum = fnum;
 	setfile.ea_set.in.num_eas = 2;
-	setfile.ea_set.in.eas = talloc_array(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas = talloc_array(tctx, struct ea_struct, 2);
 	setfile.ea_set.in.eas[0].flags = 0;
 	setfile.ea_set.in.eas[0].name.s = "EAONE";
 	setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE1");
@@ -362,7 +362,7 @@ done:
 /*
   test using NTTRANS CREATE to create a file with an initial EA set
 */
-static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -407,7 +407,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntcreatex.in.ea_list = &ea_list;
 	io.ntcreatex.in.sec_desc = NULL;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
@@ -427,7 +427,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	eas[0].name.s = "Fourth EA";
 	eas[0].value = data_blob_string_const("Value Four");
 
-	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
