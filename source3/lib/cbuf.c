@@ -286,3 +286,36 @@ int cbuf_print_quoted_string(cbuf* ost, const char* s)
 		s++;
 	}
 }
+
+
+int cbuf_print_quoted(cbuf* ost, const char* s, size_t len)
+{
+	int n = 1;
+	int ret;
+	cbuf_reserve(ost, len+2);
+
+	cbuf_putc(ost,'"');
+
+	while(len--) {
+		switch (*s) {
+		case '"':
+		case '\\':
+			ret = cbuf_printf(ost, "\\%c", *s);
+			break;
+		default:
+			if (isprint(*s) && ((*s == ' ') || !isspace(*s))) {
+				ret = cbuf_putc(ost, *s);
+			} else {
+				ret = cbuf_printf(ost, "\\%02x", *s);
+			}
+		}
+		s++;
+		if (ret == -1) {
+			return -1;
+		}
+		n += ret;
+	}
+	ret = cbuf_putc(ost,'"');
+
+	return (ret == -1) ? -1 : (n + ret);
+}
