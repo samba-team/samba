@@ -25,7 +25,6 @@
 #include "regfio.h"
 #include "reg_util_internal.h"
 #include "reg_dispatcher.h"
-#include "reg_objects.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

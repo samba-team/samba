@@ -24,7 +24,6 @@
 #include "registry.h"
 #include "reg_cachehook.h"
 #include "reg_backend_db.h"
-#include "reg_perfcount.h"
 #include "reg_init_basic.h"
 #include "reg_init_full.h"
 
