@@ -29,12 +29,8 @@
 #define BASEDIR "\\testeas"
 
 #define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+	torture_assert_ntstatus_equal_goto(tctx, status, correct, ret, done, "Incorrect status"); \
+	} while (0)
 
 static	bool maxeadebug; /* need that here, to allow no file delete in debug case */
 
@@ -54,7 +50,7 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	bool ret = true;
 	int fnum = -1;
 
-	printf("TESTING SETFILEINFO EA_SET\n");
+	torture_comment(tctx, "TESTING SETFILEINFO EA_SET\n");
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -76,7 +72,7 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 
-	printf("Adding first two EAs\n");
+	torture_comment(tctx, "Adding first two EAs\n");
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.in.file.fnum = fnum;
 	setfile.ea_set.in.num_eas = 2;
@@ -94,7 +90,7 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	ret &= check_ea(cli, fname, "EAONE", "VALUE1");
 	ret &= check_ea(cli, fname, "SECONDEA", "ValueTwo");
 
-	printf("Modifying 2nd EA\n");
+	torture_comment(tctx, "Modifying 2nd EA\n");
 	setfile.ea_set.in.num_eas = 1;
 	setfile.ea_set.in.eas[0].name.s = "SECONDEA";
 	setfile.ea_set.in.eas[0].value = data_blob_string_const(" Changed Value");
@@ -104,7 +100,7 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	ret &= check_ea(cli, fname, "EAONE", "VALUE1");
 	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
 
-	printf("Setting a NULL EA\n");
+	torture_comment(tctx, "Setting a NULL EA\n");
 	setfile.ea_set.in.eas[0].value = data_blob(NULL, 0);
 	setfile.ea_set.in.eas[0].name.s = "NULLEA";
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
@@ -114,7 +110,7 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
 	ret &= check_ea(cli, fname, "NULLEA", NULL);
 
-	printf("Deleting first EA\n");
+	torture_comment(tctx, "Deleting first EA\n");
 	setfile.ea_set.in.eas[0].flags = 0;
 	setfile.ea_set.in.eas[0].name.s = "EAONE";
 	setfile.ea_set.in.eas[0].value = data_blob(NULL, 0);
@@ -124,7 +120,7 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 	ret &= check_ea(cli, fname, "SECONDEA", " Changed Value");
 
-	printf("Deleting second EA\n");
+	torture_comment(tctx, "Deleting second EA\n");
 	setfile.ea_set.in.eas[0].flags = 0;
 	setfile.ea_set.in.eas[0].name.s = "SECONDEA";
 	setfile.ea_set.in.eas[0].value = data_blob(NULL, 0);
@@ -143,7 +139,8 @@ done:
 /*
  * Helper function to retrieve the max. ea size for one ea name
  */
-static int test_one_eamax(struct smbcli_state *cli, const int fnum,
+static int test_one_eamax(struct torture_context *tctx,
+			  struct smbcli_state *cli, const int fnum,
 			  const char *eaname, DATA_BLOB eablob,
 			  const int eastart, const int eadebug)
 {
@@ -167,7 +164,7 @@ static int test_one_eamax(struct smbcli_state *cli, const int fnum,
 
 	do {
 		if (eadebug) {
-			printf ("Testing EA size: %d\n", i);
+			torture_comment(tctx, "Testing EA size: %d\n", i);
 		}
 		setfile.ea_set.in.eas->value.length = i;
 
@@ -175,33 +172,33 @@ static int test_one_eamax(struct smbcli_state *cli, const int fnum,
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 			if (eadebug) {
-				printf ("[%s] EA size %d succeeded! "
+				torture_comment(tctx, "[%s] EA size %d succeeded! "
 					"(high=%d low=%d)\n",
 					eaname, i, high, low);
 			}
 			low = i;
 			if (low == maxeasize) {
-				printf ("Max. EA size for \"%s\"=%d "
+				torture_comment(tctx, "Max. EA size for \"%s\"=%d "
 					"[but could be possibly larger]\n",
 					eaname, low);
 				break;
 			}
 			if (high - low == 1 && high != maxeasize) {
-				printf ("Max. EA size for \"%s\"=%d\n",
+				torture_comment(tctx, "Max. EA size for \"%s\"=%d\n",
 					eaname, low);
 				break;
 			}
 			i += (high - low + 1) / 2;
 		} else {
 			if (eadebug) {
-				printf ("[%s] EA size %d failed!    "
+				torture_comment(tctx, "[%s] EA size %d failed!    "
 					"(high=%d low=%d) [%s]\n",
 					eaname, i, high, low,
 					nt_errstr(status));
 			}
 			high = i;
 			if (high - low <= 1) {
-				printf ("Max. EA size for \"%s\"=%d\n",
+				torture_comment(tctx, "Max. EA size for \"%s\"=%d\n",
 					eaname, low);
 				break;
 			}
@@ -244,7 +241,7 @@ static bool test_max_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	int       maxeanames;
 	int       maxeastart;
 
-	printf("TESTING SETFILEINFO MAX. EA_SET\n");
+	torture_comment(tctx, "TESTING SETFILEINFO MAX. EA_SET\n");
 
 	maxeasize  = torture_setting_int(tctx, "maxeasize", 65536);
 	maxeanames = torture_setting_int(tctx, "maxeanames", 101);
@@ -253,31 +250,31 @@ static bool test_max_eas(struct smbcli_state *cli, struct torture_context *tctx)
 
 	/* Do some sanity check on possibly passed parms */
 	if (maxeasize <= 0) {
-		printf("Invalid parameter 'maxeasize=%d'",maxeasize);
+		torture_comment(tctx, "Invalid parameter 'maxeasize=%d'",maxeasize);
 		err = true;
 	}
 	if (maxeanames <= 0) {
-		printf("Invalid parameter 'maxeanames=%d'",maxeanames);
+		torture_comment(tctx, "Invalid parameter 'maxeanames=%d'",maxeanames);
 		err = true;
 	}
 	if (maxeastart <= 0) {
-		printf("Invalid parameter 'maxeastart=%d'",maxeastart);
+		torture_comment(tctx, "Invalid parameter 'maxeastart=%d'",maxeastart);
 		err = true;
 	}
 	if (maxeadebug < 0) {
-		printf("Invalid parameter 'maxeadebug=%d'",maxeadebug);
+		torture_comment(tctx, "Invalid parameter 'maxeadebug=%d'",maxeadebug);
 		err = true;
 	}
 	if (err) {
-	  printf("\n\n");
+	  torture_comment(tctx, "\n\n");
 	  goto done;
 	}
 	if (maxeastart > maxeasize) {
 		maxeastart = maxeasize;
-		printf ("'maxeastart' outside range - corrected to %d\n",
+		torture_comment(tctx, "'maxeastart' outside range - corrected to %d\n",
 			maxeastart);
 	}
-	printf("MAXEA parms: maxeasize=%d maxeanames=%d maxeastart=%d"
+	torture_comment(tctx, "MAXEA parms: maxeasize=%d maxeanames=%d maxeastart=%d"
 	       " maxeadebug=%d\n", maxeasize, maxeanames, maxeastart,
 	       maxeadebug);
 
@@ -339,7 +336,7 @@ static bool test_max_eas(struct smbcli_state *cli, struct torture_context *tctx)
 		if(eaname == NULL) {
 			goto done;
 		}
-		j = test_one_eamax(cli, fnum, eaname, eablob, last, maxeadebug);
+		j = test_one_eamax(tctx, cli, fnum, eaname, eablob, last, maxeadebug);
 		if (j <= 0) {
 			break;
 		}
@@ -347,9 +344,9 @@ static bool test_max_eas(struct smbcli_state *cli, struct torture_context *tctx)
 		last = j;
 	}
 
-	printf("Total EA size:%d\n", total);
+	torture_comment(tctx, "Total EA size:%d\n", total);
 	if (i == maxeanames) {
-		printf ("NOTE: More EAs could be available!\n");
+		torture_comment(tctx, "NOTE: More EAs could be available!\n");
 	}
 	if (total == 0) {
 		ret = false;
@@ -372,7 +369,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 	struct ea_struct eas[3];
 	struct smb_ea_list ea_list;
 
-	printf("TESTING NTTRANS CREATE WITH EAS\n");
+	torture_comment(tctx, "TESTING NTTRANS CREATE WITH EAS\n");
 
 	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -418,7 +415,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 
 	smbcli_close(cli->tree, fnum);
 
-	printf("Trying to add EAs on non-create\n");
+	torture_comment(tctx, "Trying to add EAs on non-create\n");
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	io.ntcreatex.in.fname = fname;
 
