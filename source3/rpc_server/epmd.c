@@ -264,7 +264,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 					 msg_ctx,
 					 ndr_table_epmapper.syntax_id,
 					 "EPMAPPER",
-					 NULL);
+					 srv_epmapper_delete_endpoints);
 	if (!ok) {
 		DEBUG(0, ("Failed to open epmd ncalrpc pipe!\n"));
 		exit(1);
