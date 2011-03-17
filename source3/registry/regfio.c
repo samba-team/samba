@@ -18,9 +18,7 @@
  */
 
 #include "includes.h"
-#include "reg_parse_prs.h"
 #include "regfio.h"
-#include "reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
