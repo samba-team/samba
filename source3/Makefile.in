@@ -3481,6 +3481,8 @@ libnetapi_examples: libnetapi
 clean_libnetapi_examples:
 	$(MAKE) -C lib/netapi/examples clean
 
+.PHONY: bin/smbtorture4 bin/ndrdump4
+
 bin/smbtorture4: $(BINARY_PREREQS)
 	$(MAKE) -f Makefile-smbtorture4 bin/smbtorture4
 
