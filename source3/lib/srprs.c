@@ -183,3 +183,43 @@ bool srprs_line(const char** ptr, cbuf* str)
 		;
 	return true;
 }
+
+bool srprs_quoted(const char** ptr, cbuf* str)
+{
+	const char* pos = *ptr;
+	const size_t spos = cbuf_getpos(str);
+
+	if (!srprs_char(&pos, '"')) {
+		goto fail;
+	}
+
+	while (true) {
+		while (srprs_charsetinv(&pos, "\\\"", str))
+			;
+
+		switch (*pos) {
+		case '\0':
+			goto fail;
+		case '"':
+			*ptr  = pos+1;
+			return true;
+
+		case '\\':
+			pos++;
+			if (!srprs_charset(&pos, "\\\"", str)) {
+				unsigned u;
+				if (!srprs_hex(&pos, 2, &u)) {
+					goto fail;
+				}
+				cbuf_putc(str, u);
+			}
+			break;
+		default:
+			assert(false);
+		}
+	}
+
+fail:
+	cbuf_setpos(str, spos);
+	return false;
+}
