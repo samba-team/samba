@@ -825,7 +825,7 @@ static int rap_user_add(struct net_context *c, int argc, const char **argv)
                 return -1;
 
 	safe_strcpy((char *)userinfo.user_name, argv[0], sizeof(userinfo.user_name)-1);
-	if (c->opt_flags == -1)
+	if (c->opt_flags == 0)
                 c->opt_flags = 0x21;
 
 	userinfo.userflags = c->opt_flags;
