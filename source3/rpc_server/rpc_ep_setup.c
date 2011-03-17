@@ -1060,6 +1060,10 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		if (!NT_STATUS_IS_OK(rpc_epmapper_init(&epmapper_cb))) {
 			return false;
 		}
+	} else if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		if (!NT_STATUS_IS_OK(rpc_epmapper_init(NULL))) {
+			return false;
+		}
 	}
 
 	winreg_cb.init         = winreg_init_cb;
