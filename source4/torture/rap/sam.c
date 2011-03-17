@@ -299,6 +299,54 @@ static bool test_useradd(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_userdelete(struct torture_context *tctx,
+			    struct smbcli_state *cli)
+{
+
+	struct rap_NetUserDelete r;
+
+	{
+		struct rap_NetUserAdd a;
+		const char *pwd;
+
+		ZERO_STRUCT(a.in.info.info1);
+
+		pwd = generate_random_password(tctx, 9, 16);
+
+		a.in.level = 1;
+		a.in.bufsize = 0xffff;
+		a.in.pwdlength = strlen(pwd);
+		a.in.unknown = 0;
+		a.in.info.info1.Name = TEST_RAP_USER;
+		a.in.info.info1.Priv = USER_PRIV_USER;
+
+		memcpy(a.in.info.info1.Password, pwd, MIN(strlen(pwd), 16));
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netuseradd(cli->tree, tctx, &a),
+			"smbcli_rap_netuseradd failed");
+	}
+
+	r.in.UserName = TEST_RAP_USER;
+
+	torture_comment(tctx,
+		"Testing rap_NetUserDelete(%s)\n", r.in.UserName);
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netuserdelete(cli->tree, tctx, &r),
+		"smbcli_rap_netuserdelete failed");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+		"smbcli_rap_netuserdelete failed");
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netuserdelete(cli->tree, tctx, &r),
+		"2nd smbcli_rap_netuserdelete failed");
+	torture_assert_werr_equal(tctx, W_ERROR(r.out.status), WERR_USER_NOT_FOUND,
+		"2nd smbcli_rap_netuserdelete failed");
+
+	return true;
+}
+
 struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "sam");
@@ -307,6 +355,7 @@ struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "oemchangepassword", test_oemchangepassword);
 	torture_suite_add_1smb_test(suite, "usergetinfo", test_usergetinfo);
 	torture_suite_add_1smb_test(suite, "useradd", test_useradd);
+	torture_suite_add_1smb_test(suite, "userdelete", test_userdelete);
 
 	return suite;
 }
