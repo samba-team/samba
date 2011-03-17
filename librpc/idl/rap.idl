@@ -948,6 +948,13 @@ interface rap
 		[out] uint16 convert
 	);
 
+	/* not documented in MS-RAP */
+	[public] void rap_NetUserDelete(
+		[in] astring UserName,
+		[out] rap_status status,
+		[out] uint16 convert
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
