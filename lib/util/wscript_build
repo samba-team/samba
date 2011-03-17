@@ -6,7 +6,7 @@ bld.SAMBA_LIBRARY('samba-util-common',
                   source='''talloc_stack.c smb_threads.c xfile.c
                   util_file.c time.c rbtree.c rfc1738.c select.c
                   genrand.c fsusage.c blocking.c become_daemon.c
-                  data_blob.c signal.c system.c params.c util.c util_id.c util_net.c
+                  signal.c system.c params.c util.c util_id.c util_net.c
                   util_strlist.c idtree.c debug.c''',
                   public_deps='talloc pthread LIBCRYPTO',
                   # until we get all the dependencies in this library in common
@@ -20,7 +20,7 @@ bld.SAMBA_LIBRARY('samba-util-common',
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_LIBRARY('samba-util',
-                      source='''dprintf.c fault.c
+                      source='''dprintf.c fault.c data_blob.c
                       ms_fnmatch.c parmlist.c substitute.c util_str.c
                       ''',
                       deps='samba-util-common',
