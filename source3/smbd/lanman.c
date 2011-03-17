@@ -5667,7 +5667,7 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 		PACKS(&desc, "z", info_ctr.ctr.ctr1->array[i].client);
 		PACKS(&desc, "z", info_ctr.ctr.ctr1->array[i].user);
 		PACKI(&desc, "W", 1); /* num conns */
-		PACKI(&desc, "W", 0); /* num opens */
+		PACKI(&desc, "W", info_ctr.ctr.ctr1->array[i].num_open);
 		PACKI(&desc, "W", 1); /* num users */
 		PACKI(&desc, "D", 0); /* session time */
 		PACKI(&desc, "D", 0); /* idle time */
