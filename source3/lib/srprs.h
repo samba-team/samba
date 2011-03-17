@@ -113,9 +113,10 @@ bool srprs_charsetinv(const char** ptr, const char* set, struct cbuf* oss);
  * assert(*cont == false);
  * assert(strcmp(cbuf_gets(out, 0), "start...continued...end")==0);
  * @endcode
+ * @see cbuf_print_quoted_string
  *
  * @param[in,out] ptr parse position
- * @param[out] str output buffer where to put the match, may be NULL
+ * @param[out] str output buffer where to put the match
  * @param[in,out] cont
  *
  * @return true if matched
@@ -177,5 +178,15 @@ bool srprs_eol(const char** ptr, struct cbuf* nl);
  */
 bool srprs_line(const char** ptr, struct cbuf* str);
 
+/**
+ * Match a quoted string with escaped characters.
+ * @see cbuf_print_quoted
+ *
+ * @param[in,out] ptr parse position
+ * @param[out] str output buffer where to put the match
+ *
+ * @return true if matched
+ */
+bool srprs_quoted(const char** ptr, struct cbuf* str);
 
 #endif /* __SRPRS_H */
