@@ -964,7 +964,7 @@ bld.SAMBA3_SUBSYSTEM('CHARSET3',
                     deps='DYNCONFIG')
 
 bld.SAMBA3_SUBSYSTEM('samba-util3',
-                    source='',
+                    source='../lib/util/data_blob.c',
                     deps='talloc CHARSET3 samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
