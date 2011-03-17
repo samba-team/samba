@@ -560,11 +560,6 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
         conf.CHECK_FUNCS_IN('ber_scanf ber_sockbuf_add_io', 'lber')
         conf.CHECK_VARIABLE('LDAP_OPT_SOCKBUF', headers='ldap.h')
-        # if ber_sockbuf_add_io() and LDAP_OPT_SOCKBUF are available, we can add
-        # SASL wrapping hooks
-        if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
-                conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
-            conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
 
         # if we LBER_OPT_LOG_PRINT_FN we can intercept ldap logging and print it out
         # for the samba logs
@@ -588,6 +583,11 @@ msg.msg_acctrightslen = sizeof(fd);
             conf.DEFINE('HAVE_LDAP', '1')
             conf.DEFINE('LDAP_DEPRECATED', '1')
             conf.env['HAVE_LDAP'] = '1'
+            # if ber_sockbuf_add_io() and LDAP_OPT_SOCKBUF are available, we can add
+            # SASL wrapping hooks
+            if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
+                    conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
+                conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
     else:
         conf.SET_TARGET_TYPE('ldap', 'EMPTY')
         conf.SET_TARGET_TYPE('lber', 'EMPTY')
