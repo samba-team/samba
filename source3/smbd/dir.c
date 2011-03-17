@@ -122,14 +122,14 @@ bool make_dir_struct(TALLOC_CTX *ctx,
 
 bool init_dptrs(struct smbd_server_connection *sconn)
 {
-	if (sconn->smb1.searches.dptr_bmap) {
+	if (sconn->searches.dptr_bmap) {
 		return true;
 	}
 
-	sconn->smb1.searches.dptr_bmap = bitmap_talloc(
+	sconn->searches.dptr_bmap = bitmap_talloc(
 		sconn, MAX_DIRECTORY_HANDLES);
 
-	if (sconn->smb1.searches.dptr_bmap == NULL) {
+	if (sconn->searches.dptr_bmap == NULL) {
 		return false;
 	}
 
@@ -159,7 +159,7 @@ static void dptr_idleoldest(struct smbd_server_connection *sconn)
 	/*
 	 * Go to the end of the list.
 	 */
-	dptr = DLIST_TAIL(sconn->smb1.searches.dirptrs);
+	dptr = DLIST_TAIL(sconn->searches.dirptrs);
 
 	if(!dptr) {
 		DEBUG(0,("No dptrs available to idle ?\n"));
@@ -187,10 +187,10 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 {
 	struct dptr_struct *dptr;
 
-	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = dptr->next) {
+	for(dptr = sconn->searches.dirptrs; dptr; dptr = dptr->next) {
 		if(dptr->dnum == key) {
 			if (!forclose && !dptr->dir_hnd) {
-				if (sconn->smb1.searches.dirhandles_open >= MAX_OPEN_DIRECTORIES)
+				if (sconn->searches.dirhandles_open >= MAX_OPEN_DIRECTORIES)
 					dptr_idleoldest(sconn);
 				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
 				if (!(dptr->dir_hnd = OpenDir(
@@ -201,7 +201,7 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 					return False;
 				}
 			}
-			DLIST_PROMOTE(sconn->smb1.searches.dirptrs,dptr);
+			DLIST_PROMOTE(sconn->searches.dirptrs,dptr);
 			return dptr;
 		}
 	}
@@ -258,19 +258,19 @@ static void dptr_close_internal(struct dptr_struct *dptr)
 		goto done;
 	}
 
-	DLIST_REMOVE(sconn->smb1.searches.dirptrs, dptr);
+	DLIST_REMOVE(sconn->searches.dirptrs, dptr);
 
 	/*
 	 * Free the dnum in the bitmap. Remember the dnum value is always 
 	 * biased by one with respect to the bitmap.
 	 */
 
-	if (!bitmap_query(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1)) {
+	if (!bitmap_query(sconn->searches.dptr_bmap, dptr->dnum - 1)) {
 		DEBUG(0,("dptr_close_internal : Error - closing dnum = %d and bitmap not set !\n",
 			dptr->dnum ));
 	}
 
-	bitmap_clear(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1);
+	bitmap_clear(sconn->searches.dptr_bmap, dptr->dnum - 1);
 
 done:
 	TALLOC_FREE(dptr->dir_hnd);
@@ -295,7 +295,7 @@ void dptr_close(struct smbd_server_connection *sconn, int *key)
 	/* OS/2 seems to use -1 to indicate "close all directories" */
 	if (*key == -1) {
 		struct dptr_struct *next;
-		for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = next) {
+		for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
 			next = dptr->next;
 			dptr_close_internal(dptr);
 		}
@@ -328,7 +328,7 @@ void dptr_closecnum(connection_struct *conn)
 		return;
 	}
 
-	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = next) {
+	for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
 		next = dptr->next;
 		if (dptr->conn == conn) {
 			dptr_close_internal(dptr);
@@ -349,7 +349,7 @@ void dptr_idlecnum(connection_struct *conn)
 		return;
 	}
 
-	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = dptr->next) {
+	for(dptr = sconn->searches.dirptrs; dptr; dptr = dptr->next) {
 		if (dptr->conn == conn && dptr->dir_hnd) {
 			dptr_idle(dptr);
 		}
@@ -364,7 +364,7 @@ void dptr_closepath(struct smbd_server_connection *sconn,
 		    char *path,uint16 spid)
 {
 	struct dptr_struct *dptr, *next;
-	for(dptr = sconn->smb1.searches.dirptrs; dptr; dptr = next) {
+	for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
 		next = dptr->next;
 		if (spid == dptr->spid && strequal(dptr->path,path))
 			dptr_close_internal(dptr);
@@ -385,7 +385,7 @@ static void dptr_close_oldest(struct smbd_server_connection *sconn,
 	/*
 	 * Go to the end of the list.
 	 */
-	for(dptr = sconn->smb1.searches.dirptrs; dptr && dptr->next; dptr = dptr->next)
+	for(dptr = sconn->searches.dirptrs; dptr && dptr->next; dptr = dptr->next)
 		;
 
 	if(!dptr) {
@@ -455,7 +455,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (sconn->smb1.searches.dirhandles_open >= MAX_OPEN_DIRECTORIES) {
+	if (sconn->searches.dirhandles_open >= MAX_OPEN_DIRECTORIES) {
 		dptr_idleoldest(sconn);
 	}
 
@@ -475,7 +475,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 		 * value we return will fit in the range 1-255.
 		 */
 
-		dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 0);
+		dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 0);
 
 		if(dptr->dnum == -1 || dptr->dnum > 254) {
 
@@ -488,7 +488,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 			dptr_close_oldest(sconn, true);
 
 			/* Now try again... */
-			dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 0);
+			dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 0);
 			if(dptr->dnum == -1 || dptr->dnum > 254) {
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
@@ -503,7 +503,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 		 * a range that will return 256 - MAX_DIRECTORY_HANDLES.
 		 */
 
-		dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 255);
+		dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 255);
 
 		if(dptr->dnum == -1 || dptr->dnum < 255) {
 
@@ -517,7 +517,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 			dptr_close_oldest(sconn, false);
 
 			/* Now try again... */
-			dptr->dnum = bitmap_find(sconn->smb1.searches.dptr_bmap, 255);
+			dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 255);
 
 			if(dptr->dnum == -1 || dptr->dnum < 255) {
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
@@ -528,7 +528,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 		}
 	}
 
-	bitmap_set(sconn->smb1.searches.dptr_bmap, dptr->dnum);
+	bitmap_set(sconn->searches.dptr_bmap, dptr->dnum);
 
 	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
 
@@ -539,7 +539,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	dptr->expect_close = expect_close;
 	dptr->wcard = SMB_STRDUP(wcard);
 	if (!dptr->wcard) {
-		bitmap_clear(sconn->smb1.searches.dptr_bmap, dptr->dnum - 1);
+		bitmap_clear(sconn->searches.dptr_bmap, dptr->dnum - 1);
 		SAFE_FREE(dptr);
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
@@ -552,7 +552,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 	dptr->attr = attr;
 
-	DLIST_ADD(sconn->smb1.searches.dirptrs, dptr);
+	DLIST_ADD(sconn->searches.dirptrs, dptr);
 
 	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
 		dptr->dnum,path,expect_close));  
@@ -1326,7 +1326,7 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
 		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
 	}
 	if (dirp->conn->sconn) {
-		dirp->conn->sconn->smb1.searches.dirhandles_open--;
+		dirp->conn->sconn->searches.dirhandles_open--;
 	}
 	return 0;
 }
@@ -1357,7 +1357,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	}
 
 	if (sconn) {
-		sconn->smb1.searches.dirhandles_open++;
+		sconn->searches.dirhandles_open++;
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 
@@ -1401,7 +1401,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	}
 
 	if (sconn) {
-		sconn->smb1.searches.dirhandles_open++;
+		sconn->searches.dirhandles_open++;
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 

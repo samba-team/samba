@@ -475,6 +475,13 @@ struct smbd_server_connection {
 	/* number of open connections (tcons) */
 	int num_tcons_open;
 
+	/* open directory handles. */
+	struct {
+		struct bitmap *dptr_bmap;
+		struct dptr_struct *dirptrs;
+		int dirhandles_open;
+	} searches;
+
 	struct {
 		struct fd_event *fde;
 
@@ -548,11 +555,6 @@ struct smbd_server_connection {
 
 		struct notify_mid_map *notify_mid_maps;
 
-		struct {
-			struct bitmap *dptr_bmap;
-			struct dptr_struct *dirptrs;
-			int dirhandles_open;
-		} searches;
 		struct {
 			/* dlink list we store pending lock records on. */
 			struct blocking_lock_record *blocking_lock_queue;
