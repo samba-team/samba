@@ -1374,7 +1374,6 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 		return False;
 	}
 
-	e->op_mid = 0;
 	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		/*
 		 * Going from exclusive or batch,
