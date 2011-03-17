@@ -2231,7 +2231,7 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 	}
 	if (talloc_array_length(msg) != 1) {
 		DEBUG(10, ("Got %d objects, expected 1\n",
-			   talloc_array_length(msg)));
+			   (int)talloc_array_length(msg)));
 		goto fail;
 	}
 	if (!tldap_pull_uint32(msg[0], "samAccountType", &atype)) {
