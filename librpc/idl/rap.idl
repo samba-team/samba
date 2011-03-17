@@ -937,6 +937,17 @@ interface rap
 		[out,switch_is(level)] rap_session_info info[count]
 	);
 
+	/* not documented in MS-RAP */
+	[public] void rap_NetUserAdd(
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[in] uint16 pwdlength,
+		[in] uint16 unknown,
+		[in,switch_is(level)] rap_netuser_info info,
+		[out] rap_status status,
+		[out] uint16 convert
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
