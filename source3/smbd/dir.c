@@ -575,7 +575,9 @@ void dptr_CloseDir(files_struct *fsp)
  * present. I hate Solaris. JRA.
  */
 #ifdef HAVE_DIRFD
-		if (fsp->fh->fd == dirfd(fsp->dptr->dir_hnd->dir)) {
+		if (fsp->fh->fd != -1 &&
+				fsp->dptr->dir_hnd &&
+				dirfd(fsp->dptr->dir_hnd->dir)) {
 			/* The call below closes the underlying fd. */
 			fsp->fh->fd = -1;
 		}
@@ -1311,6 +1313,16 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 static int smb_Dir_destructor(struct smb_Dir *dirp)
 {
 	if (dirp->dir) {
+#ifdef HAVE_DIRFD
+		if (dirp->conn->sconn) {
+			files_struct *fsp = file_find_fd(dirp->conn->sconn,
+						dirfd(dirp->dir));
+			if (fsp) {
+				/* The call below closes the underlying fd. */
+				fsp->fh->fd = -1;
+			}
+		}
+#endif
 		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
 	}
 	if (dirp->conn->sconn) {
