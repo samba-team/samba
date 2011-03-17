@@ -225,11 +225,26 @@ char* cbuf_gets(cbuf* b, size_t idx);
  * @see srprs_quoted_string
  *
  * @param[out] ost outstream
- * @param[in]  s string
+ * @param[in]  s '\0' terminated string of printable characters.
  *
  * @return numner of bytes written, -1 on error
  */
 int cbuf_print_quoted_string(cbuf* ost, const char* s);
+
+/**
+ * Print quoted string to stream.
+ * Escapes nonprintable characters.
+ *
+ * @todo check for ssputc failure
+ * @see srprs_quoted
+ *
+ * @param[out] ost outstream
+ * @param[in]  s string of bytes
+ * @param[in]  len number of bytes
+ *
+ * @return numner of bytes written, -1 on error
+ */
+int cbuf_print_quoted(cbuf* ost, const char* s, size_t len);
 
 
 #endif /*__CBUF_H*/
