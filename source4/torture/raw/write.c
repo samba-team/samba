@@ -27,16 +27,16 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		torture_comment(tctx, "(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
+		torture_fail(tctx, talloc_asprintf(tctx, "(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct))); \
 		ret = false; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		torture_comment(tctx, "(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, v, correct); \
+		torture_fail(tctx, talloc_asprintf(tctx, "(%s) Incorrect value %s=%d - should be %d\n", \
+		       __location__, #v, v, correct)); \
 		ret = false; \
 		goto done; \
 	}} while (0)
@@ -84,8 +84,8 @@ static bool check_buffer(struct torture_context *tctx,
 	for (i=0;i<len;i++) {
 		uint8_t v = random();
 		if (buf[i] != v) {
-			torture_comment(tctx, "Buffer incorrect at %s! ofs=%d buf=0x%x correct=0x%x\n",
-			       location, i, buf[i], v);
+			torture_fail(tctx, talloc_asprintf(tctx, "Buffer incorrect at %s! ofs=%d buf=0x%x correct=0x%x\n",
+			       location, i, buf[i], v));
 			return false;
 		}
 	}
