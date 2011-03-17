@@ -4,7 +4,7 @@
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Tim Potter 2005
    Copyright (C) Jelmer Vernooij 2007
-   Copyright (C) Guenther Deschner 2010
+   Copyright (C) Guenther Deschner 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1466,6 +1466,63 @@ NTSTATUS smbcli_rap_netsessionenum(struct smbcli_tree *tree,
 	}
 
 	result = NT_STATUS_OK;
+
+ done:
+	talloc_free(call);
+	return result;
+}
+
+NTSTATUS smbcli_rap_netuseradd(struct smbcli_tree *tree,
+			       TALLOC_CTX *mem_ctx,
+			       struct rap_NetUserAdd *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(call = new_rap_cli_call(mem_ctx, RAP_WUserAdd2))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_word(call, r->in.level);
+	rap_cli_push_sendbuf(call, r->in.bufsize);
+	rap_cli_push_word(call, r->in.pwdlength);
+	rap_cli_push_word(call, r->in.unknown);
+
+	switch (r->in.level) {
+	case 1:
+		rap_cli_expect_format(call, "B21BB16DWzzWz");
+		break;
+	default:
+		result = NT_STATUS_INVALID_PARAMETER;
+		break;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetUserAdd, r);
+	}
+
+	NDR_GOTO(ndr_push_set_switch_value(call->ndr_push_data, &r->in.info, r->in.level));
+	NDR_GOTO(ndr_push_rap_netuser_info(call->ndr_push_data, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+
+	result = rap_cli_do_call(tree, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+
+	result = NT_STATUS_OK;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetUserAdd, r);
+	}
 
  done:
 	talloc_free(call);
