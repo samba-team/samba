@@ -1763,7 +1763,7 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
  Unlock the record.
 ********************************************************************/
 
-static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
+static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 {
 	if (br_lck->read_only) {
 		SMB_ASSERT(!br_lck->modified);
@@ -1798,8 +1798,16 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 
  done:
 
-	SAFE_FREE(br_lck->lock_data);
+	br_lck->read_only = true;
+	br_lck->modified = false;
+
 	TALLOC_FREE(br_lck->record);
+}
+
+static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
+{
+	byte_range_lock_flush(br_lck);
+	SAFE_FREE(br_lck->lock_data);
 	return 0;
 }
 
@@ -1814,6 +1822,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 {
 	TDB_DATA key, data;
 	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
+	bool do_read_only = read_only;
 
 	if (br_lck == NULL) {
 		return NULL;
@@ -1830,18 +1839,17 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	if (!fsp->lockdb_clean) {
 		/* We must be read/write to clean
 		   the dead entries. */
-		read_only = False;
+		do_read_only = false;
 	}
 
-	if (read_only) {
+	if (do_read_only) {
 		if (brlock_db->fetch(brlock_db, br_lck, key, &data) == -1) {
 			DEBUG(3, ("Could not fetch byte range lock record\n"));
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
 		br_lck->record = NULL;
-	}
-	else {
+	} else {
 		br_lck->record = brlock_db->fetch_locked(brlock_db, br_lck, key);
 
 		if (br_lck->record == NULL) {
@@ -1853,7 +1861,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		data = br_lck->record->value;
 	}
 
-	br_lck->read_only = read_only;
+	br_lck->read_only = do_read_only;
 	br_lck->lock_data = NULL;
 
 	talloc_set_destructor(br_lck, byte_range_lock_destructor);
@@ -1905,6 +1913,15 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 			print_lock_struct(i, &locks[i]);
 		}
 	}
+
+	if (do_read_only != read_only) {
+		/*
+		 * this stores the record and gets rid of
+		 * the write lock that is needed for a cleanup
+		 */
+		byte_range_lock_flush(br_lck);
+	}
+
 	return br_lck;
 }
 
