@@ -1946,34 +1946,15 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 
 	TALLOC_FREE(fsp->brlock_rec);
 
-	br_lock = brl_get_locks_internal(talloc_tos(), fsp, false);
+	br_lock = brl_get_locks_internal(talloc_tos(), fsp, true);
 	if (br_lock == NULL) {
 		return NULL;
 	}
 	fsp->brlock_seqnum = brlock_db->get_seqnum(brlock_db);
 
-	fsp->brlock_rec = talloc_zero(fsp, struct byte_range_lock);
-	if (fsp->brlock_rec == NULL) {
-		goto fail;
-	}
-	fsp->brlock_rec->fsp = fsp;
-	fsp->brlock_rec->num_locks = br_lock->num_locks;
-	fsp->brlock_rec->read_only = true;
-	fsp->brlock_rec->key = br_lock->key;
+	fsp->brlock_rec = talloc_move(fsp, &br_lock);
 
-	fsp->brlock_rec->lock_data = (struct lock_struct *)
-		talloc_memdup(fsp->brlock_rec, br_lock->lock_data,
-			      sizeof(struct lock_struct) * br_lock->num_locks);
-	if (fsp->brlock_rec->lock_data == NULL) {
-		goto fail;
-	}
-
-	TALLOC_FREE(br_lock);
 	return fsp->brlock_rec;
-fail:
-	TALLOC_FREE(br_lock);
-	TALLOC_FREE(fsp->brlock_rec);
-	return NULL;
 }
 
 struct brl_revalidate_state {
