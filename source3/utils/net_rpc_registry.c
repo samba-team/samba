@@ -18,13 +18,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
  
 #include "includes.h"
-#include "popt_common.h"
 #include "registry.h"
 #include "utils/net.h"
 #include "utils/net_registry_util.h"
 #include "registry/regfio.h"
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
-#include "registry/reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "registry/reg_format.h"
 #include "registry/reg_import.h"
