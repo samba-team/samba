@@ -125,30 +125,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 	return p;
 }
 
-static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
-{
-	struct dcerpc_binding_vector *v = NULL;
-	NTSTATUS status;
-
-	status = dcerpc_binding_vector_create(talloc_tos(),
-					      iface,
-					      0,
-					      NULL,
-					      &v);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = dcerpc_ep_unregister(iface,
-				      v,
-				      &iface->syntax_id.uuid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return status;
-}
-
 static void rpc_ep_setup_register_loop(struct tevent_req *subreq);
 static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev_ctx,
@@ -477,28 +453,6 @@ static bool winreg_init_cb(void *ptr)
 	return true;
 }
 
-static bool winreg_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_winreg);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 static bool srvsvc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
@@ -540,28 +494,6 @@ static bool srvsvc_init_cb(void *ptr)
 					  &ndr_table_srvsvc,
 					  pipe_name,
 					  port);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static bool srvsvc_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status =_rpc_ep_unregister(&ndr_table_srvsvc);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -619,28 +551,6 @@ static bool lsarpc_init_cb(void *ptr)
 	return true;
 }
 
-static bool lsarpc_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_lsarpc);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 static bool samr_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
@@ -682,28 +592,6 @@ static bool samr_init_cb(void *ptr)
 					  &ndr_table_samr,
 					  pipe_name,
 					  port);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static bool samr_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_samr);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -761,28 +649,6 @@ static bool netlogon_init_cb(void *ptr)
 	return true;
 }
 
-static bool netlogon_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_netlogon);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 static bool spoolss_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
@@ -822,24 +688,7 @@ static bool spoolss_init_cb(void *ptr)
 
 static bool spoolss_shutdown_cb(void *ptr)
 {
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
 	srv_spoolss_cleanup();
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_spoolss);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
 
 	return true;
 }
@@ -883,23 +732,7 @@ static bool svcctl_init_cb(void *ptr)
 
 static bool svcctl_shutdown_cb(void *ptr)
 {
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
 	shutdown_service_op_table();
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_svcctl);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
 
 	return true;
 }
@@ -924,28 +757,6 @@ static bool ntsvcs_init_cb(void *ptr)
 					  &ndr_table_ntsvcs,
 					  "ntsvcs",
 					  0);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static bool ntsvcs_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_ntsvcs);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -988,28 +799,6 @@ static bool eventlog_init_cb(void *ptr)
 	return true;
 }
 
-static bool eventlog_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_eventlog);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 static bool initshutdown_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
@@ -1030,28 +819,6 @@ static bool initshutdown_init_cb(void *ptr)
 					  &ndr_table_initshutdown,
 					  "initshutdown",
 					  0);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static bool initshutdown_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_initshutdown);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -1097,27 +864,6 @@ static bool rpcecho_init_cb(void *ptr) {
 	return true;
 }
 
-static bool rpcecho_shutdown_cb(void *ptr)
-{
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_rpcecho);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
 #endif
 
 static bool netdfs_init_cb(void *ptr)
@@ -1160,27 +906,6 @@ static bool netdfs_init_cb(void *ptr)
 					  &ndr_table_netdfs,
 					  pipe_name,
 					  port);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static bool netdfs_shutdown_cb(void *ptr) {
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_netdfs);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -1238,27 +963,6 @@ static bool dssetup_init_cb(void *ptr)
 	return true;
 }
 
-static bool dssetup_shutdown_cb(void *ptr) {
-	const char *rpcsrv_type;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-		NTSTATUS status;
-
-		status = _rpc_ep_unregister(&ndr_table_dssetup);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 static bool wkssvc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
@@ -1305,10 +1009,6 @@ static bool wkssvc_init_cb(void *ptr)
 	}
 
 	return true;
-}
-
-static bool wkssvc_shutdown_cb(void *ptr) {
-	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_wkssvc));
 }
 
 bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
@@ -1363,14 +1063,14 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 	}
 
 	winreg_cb.init         = winreg_init_cb;
-	winreg_cb.shutdown     = winreg_shutdown_cb;
+	winreg_cb.shutdown     = NULL;
 	winreg_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_winreg_init(&winreg_cb))) {
 		return false;
 	}
 
 	srvsvc_cb.init         = srvsvc_init_cb;
-	srvsvc_cb.shutdown     = srvsvc_shutdown_cb;
+	srvsvc_cb.shutdown     = NULL;
 	srvsvc_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_srvsvc_init(&srvsvc_cb))) {
 		return false;
@@ -1378,21 +1078,21 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 
 
 	lsarpc_cb.init         = lsarpc_init_cb;
-	lsarpc_cb.shutdown     = lsarpc_shutdown_cb;
+	lsarpc_cb.shutdown     = NULL;
 	lsarpc_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_lsarpc_init(&lsarpc_cb))) {
 		return false;
 	}
 
 	samr_cb.init         = samr_init_cb;
-	samr_cb.shutdown     = samr_shutdown_cb;
+	samr_cb.shutdown     = NULL;
 	samr_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_samr_init(&samr_cb))) {
 		return false;
 	}
 
 	netlogon_cb.init         = netlogon_init_cb;
-	netlogon_cb.shutdown     = netlogon_shutdown_cb;
+	netlogon_cb.shutdown     = NULL;
 	netlogon_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_netlogon_init(&netlogon_cb))) {
 		return false;
@@ -1414,36 +1114,36 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 	}
 
 	ntsvcs_cb.init         = ntsvcs_init_cb;
-	ntsvcs_cb.shutdown     = ntsvcs_shutdown_cb;
+	ntsvcs_cb.shutdown     = NULL;
 	ntsvcs_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_ntsvcs_init(&ntsvcs_cb))) {
 		return false;
 	}
 
 	eventlog_cb.init         = eventlog_init_cb;
-	eventlog_cb.shutdown     = eventlog_shutdown_cb;
+	eventlog_cb.shutdown     = NULL;
 	eventlog_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_eventlog_init(&eventlog_cb))) {
 		return false;
 	}
 
 	initshutdown_cb.init         = initshutdown_init_cb;
-	initshutdown_cb.shutdown     = initshutdown_shutdown_cb;
+	initshutdown_cb.shutdown     = NULL;
 	initshutdown_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_initshutdown_init(&initshutdown_cb))) {
 		return false;
 	}
 
 	netdfs_cb.init         = netdfs_init_cb;
-	netdfs_cb.shutdown     = netdfs_shutdown_cb;
+	netdfs_cb.shutdown     = NULL;
 	netdfs_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_netdfs_init(&netdfs_cb))) {
 		return false;
 	}
-#ifdef DEVELOPER
 
+#ifdef DEVELOPER
 	rpcecho_cb.init         = rpcecho_init_cb;
-	rpcecho_cb.shutdown     = rpcecho_shutdown_cb;
+	rpcecho_cb.shutdown     = NULL;
 	rpcecho_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_rpcecho_init(&rpcecho_cb))) {
 		return false;
@@ -1451,14 +1151,14 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 #endif
 
 	dssetup_cb.init         = dssetup_init_cb;
-	dssetup_cb.shutdown     = dssetup_shutdown_cb;
+	dssetup_cb.shutdown     = NULL;
 	dssetup_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_dssetup_init(&dssetup_cb))) {
 		return false;
 	}
 
 	wkssvc_cb.init         = wkssvc_init_cb;
-	wkssvc_cb.shutdown     = wkssvc_shutdown_cb;
+	wkssvc_cb.shutdown     = NULL;
 	wkssvc_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_wkssvc_init(&wkssvc_cb))) {
 		return false;
