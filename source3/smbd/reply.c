@@ -2599,10 +2599,6 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 							fname_dir,
 							fname_mask);
 		}
-		smb_fname->base_name = talloc_asprintf(smb_fname,
-						       "%s/%s",
-						       fname_dir,
-						       fname_mask);
 		if (!smb_fname->base_name) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
