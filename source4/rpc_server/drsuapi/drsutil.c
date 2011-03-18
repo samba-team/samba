@@ -26,6 +26,7 @@
 #include "libcli/security/session.h"
 #include "param/param.h"
 #include "auth/session.h"
+#include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 
 int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    TALLOC_CTX *mem_ctx,

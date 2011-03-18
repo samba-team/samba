@@ -39,6 +39,7 @@
 #include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "smbd/process_model.h"
 
+NTSTATUS server_service_rpc_init(void);
 
 /*
   open the dcerpc server sockets

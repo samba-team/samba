@@ -22,6 +22,7 @@
 #include "ntvfs/ntvfs.h"
 #include "rpc_server/dcerpc_server.h"
 #include "param/param.h"
+#include "rpc_server/srvsvc/proto.h"
 
 struct srvsvc_ntvfs_ctx {
 	struct ntvfs_context *ntvfs;

@@ -29,6 +29,7 @@
 #include "auth/auth.h"
 #include "libcli/auth/libcli_auth.h"
 #include "../lib/util/util_ldb.h"
+#include "rpc_server/samr/proto.h"
 
 /*
   samr_ChangePasswordUser
