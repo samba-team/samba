@@ -23,6 +23,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "param/param.h"
+#include "kdc/kdc-policy.h"
 
 void kdc_get_policy(struct loadparm_context *lp_ctx, 
 		    struct smb_krb5_context *smb_krb5_context, 

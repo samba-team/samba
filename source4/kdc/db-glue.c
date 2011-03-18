@@ -34,7 +34,9 @@
 #include "auth/kerberos/kerberos.h"
 #include <hdb.h>
 #include "kdc/samba_kdc.h"
+#include "kdc/kdc-glue.h"
 #include "kdc/kdc-policy.h"
+#include "kdc/db-glue.h"
 
 #define SAMBA_KVNO_GET_KRBTGT(kvno) \
 	((uint16_t)(((uint32_t)kvno) >> 16))

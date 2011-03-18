@@ -39,7 +39,8 @@ bld.SAMBA_LIBRARY('pac',
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
 	deps='ldb auth4_sam auth_sam_reply credentials hdb samba-hostconfig com_err kdc-policy',
-	private_library=True
+	private_library=True,
+	includes='../heimdal/kdc',
 	)
 
 bld.SAMBA_LIBRARY('kdc-policy',

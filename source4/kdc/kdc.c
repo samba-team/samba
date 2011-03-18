@@ -35,6 +35,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/session.h"
 
+NTSTATUS server_service_kdc_init(void);
+
 extern struct krb5plugin_windc_ftable windc_plugin_table;
 extern struct hdb_method hdb_samba4;
 
