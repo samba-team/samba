@@ -24,6 +24,8 @@
 #include "lib/talloc/pytalloc.h"
 #include "dynconfig/dynconfig.h"
 
+void initparam(void);
+
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
 typedef int Py_ssize_t;
@@ -36,7 +38,7 @@ typedef inquiry lenfunc;
 extern PyTypeObject PyLoadparmContext;
 extern PyTypeObject PyLoadparmService;
 
-PyObject *PyLoadparmService_FromService(struct loadparm_service *service)
+static PyObject *PyLoadparmService_FromService(struct loadparm_service *service)
 {
 	return py_talloc_reference(&PyLoadparmService, service);
 }

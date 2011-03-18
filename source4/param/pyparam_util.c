@@ -20,6 +20,7 @@
 #include <Python.h>
 #include "includes.h"
 #include "param/param.h"
+#include "param/pyparam.h"
 #include "param/loadparm.h"
 #include "lib/talloc/pytalloc.h"
 

@@ -27,6 +27,8 @@
 #include "param/share.h"
 #include "param/param.h"
 
+NTSTATUS share_ldb_init(void);
+
 static NTSTATUS sldb_init(TALLOC_CTX *mem_ctx, const struct share_ops *ops, 
 			  struct tevent_context *ev_ctx,
 			  struct loadparm_context *lp_ctx,

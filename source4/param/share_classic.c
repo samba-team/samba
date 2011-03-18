@@ -23,6 +23,8 @@
 #include "param/share.h"
 #include "param/param.h"
 
+NTSTATUS share_classic_init(void);
+
 static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, 
 			      const struct share_ops *ops, 
 			      struct tevent_context *event_ctx,
