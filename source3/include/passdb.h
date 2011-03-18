@@ -23,6 +23,8 @@
 #ifndef _PASSDB_H
 #define _PASSDB_H
 
+#include "mapping.h"
+
 /**********************************************************************
  * Masks for mappings between unix uid and gid types and
  * NT RIDS.
