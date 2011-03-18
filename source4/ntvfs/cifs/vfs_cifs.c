@@ -63,6 +63,8 @@ struct async_info {
 	void *parms;
 };
 
+NTSTATUS ntvfs_cifs_init(void);
+
 #define CHECK_UPSTREAM_OPEN do { \
 	if (! p->transport->socket->sock) { \
 		req->async_states->state|=NTVFS_ASYNC_STATE_CLOSE; \

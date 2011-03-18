@@ -39,6 +39,8 @@
 #endif
 
 
+NTSTATUS ntvfs_unixuid_init(void);
+
 struct unixuid_private {
 	struct wbc_context *wbc_ctx;
 	struct unix_sec_ctx *last_sec_ctx;

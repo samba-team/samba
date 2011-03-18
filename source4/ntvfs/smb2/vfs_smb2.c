@@ -41,6 +41,8 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
+NTSTATUS ntvfs_smb2_init(void);
+
 struct cvfs_file {
 	struct cvfs_file *prev, *next;
 	uint16_t fnum;

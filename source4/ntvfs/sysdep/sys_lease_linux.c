@@ -30,6 +30,8 @@
 #include "../lib/util/dlinklist.h"
 #include "cluster/cluster.h"
 
+NTSTATUS sys_lease_linux_init(void);
+
 #define LINUX_LEASE_RT_SIGNAL (SIGRTMIN+1)
 
 struct linux_lease_pending {

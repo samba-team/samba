@@ -27,6 +27,8 @@
 #include "ntvfs/ntvfs.h"
 #include "system/filesys.h"
 
+NTSTATUS ntvfs_nbench_init(void);
+
 /* this is stored in ntvfs_private */
 struct nbench_private {
 	int log_fd;

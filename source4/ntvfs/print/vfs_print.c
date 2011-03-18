@@ -26,6 +26,8 @@
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 
+NTSTATUS ntvfs_print_init(void);
+
 /*
   connect to a share - used when a tree_connect operation comes
   in. For printing shares this should check that the spool directory
