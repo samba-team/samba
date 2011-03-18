@@ -216,6 +216,12 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		if (file_info_level == SMB_FILE_RENAME_INFORMATION) {
 			/* SMB2_FILE_RENAME_INFORMATION_INTERNAL == 0xFF00 + in_file_info_class */
 			file_info_level = SMB2_FILE_RENAME_INFORMATION_INTERNAL;
+			if (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK &&
+			    fsp->oplock_type != NO_OPLOCK) {
+				/* No break, but error. */
+				tevent_req_nterror(req, NT_STATUS_SHARING_VIOLATION);
+				return tevent_req_post(req, ev);
+			}
 		}
 
 		if (fsp->fh->fd == -1) {
