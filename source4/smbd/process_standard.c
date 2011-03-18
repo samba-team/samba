@@ -42,6 +42,8 @@ static int none_setproctitle(const char *fmt, ...)
 }
 #endif
 
+NTSTATUS process_model_standard_init(void);
+
 /* we hold a pipe open in the parent, and the any child
    processes wait for EOF on that pipe. This ensures that
    children die when the parent dies */

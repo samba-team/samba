@@ -45,6 +45,8 @@ static int none_setproctitle(const char *fmt, ...)
 }
 #endif
 
+NTSTATUS process_model_onefork_init(void);
+
 /*
   called when the process model is selected
 */
