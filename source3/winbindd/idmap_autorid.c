@@ -162,6 +162,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		DEBUG(4, ("id %d belongs to range %d which does not have "
 			  "domain mapping, ignoring mapping request\n",
 			  map->xid.id, range));
+		map->status = ID_UNKNOWN;
 		return NT_STATUS_OK;
 	}
 
