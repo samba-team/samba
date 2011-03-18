@@ -128,9 +128,9 @@ bool smb_register_charset(const struct charset_functions *funcs_in)
 
 static void lazy_initialize_iconv(void)
 {
-	static bool initialized;
-
 #ifdef static_init_charset
+	static bool initialized = false;
+
 	if (!initialized) {
 		static_init_charset;
 		initialized = true;

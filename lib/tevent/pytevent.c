@@ -25,6 +25,8 @@
 #include <Python.h>
 #include <tevent.h>
 
+void init_tevent(void);
+
 typedef struct {
 	PyObject_HEAD
 	struct tevent_context *ev;
@@ -86,7 +88,7 @@ static void py_set_fd_close_fn(struct tevent_fd *fde,
 	/* FIXME */
 }
 
-uint16_t py_get_fd_flags(struct tevent_fd *fde)
+static uint16_t py_get_fd_flags(struct tevent_fd *fde)
 {
 	/* FIXME */
 	return 0;
