@@ -156,6 +156,7 @@ def cmd_testonly(opt):
     # tell build system where to find config.h
     os.environ['CONFIG_H'] = 'bin/default/source3/include/config.h'
     os.environ['VFSLIBDIR'] = os.path.abspath('bin/modules/vfs')
+    os.environ['NSS_WRAPPER_WINBIND_SO_PATH'] = os.path.abspath('bin/default/nsswitch/libnss-winbind.so')
 
     st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')
     if os.path.exists(st_done):
