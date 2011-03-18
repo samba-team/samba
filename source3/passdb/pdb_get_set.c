@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "passdb.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/security/security.h"
 

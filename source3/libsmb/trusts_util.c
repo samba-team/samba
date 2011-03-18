@@ -26,6 +26,7 @@
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "secrets.h"
+#include "passdb.h"
 
 /*********************************************************
  Change the domain password on the PDC.

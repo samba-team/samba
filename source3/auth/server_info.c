@@ -23,6 +23,7 @@
 #include "../libcli/security/security.h"
 #include "rpc_client/util_netlogon.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

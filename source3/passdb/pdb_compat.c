@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "passdb.h"
 #include "../libcli/security/security.h"
 
 #undef DBGC_CLASS

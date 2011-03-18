@@ -23,6 +23,7 @@
    such as the local SID and machine trust password */
 
 #include "includes.h"
+#include "passdb.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "secrets.h"
 #include "dbwrap.h"

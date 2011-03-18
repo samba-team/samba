@@ -41,6 +41,7 @@
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

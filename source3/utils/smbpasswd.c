@@ -21,6 +21,7 @@
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../lib/util/util_pw.h"
+#include "passdb.h"
 
 /*
  * Next two lines needed for SunOS and don't

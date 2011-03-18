@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "rpc_server/samr/srv_samr_util.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

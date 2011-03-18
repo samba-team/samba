@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "passdb.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "secrets.h"
 #include "memcache.h"
