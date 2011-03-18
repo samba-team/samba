@@ -32,6 +32,7 @@
 #include "torture/util.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "torture/raw/proto.h"
 
 #define BASEDIR "\\composite"
 

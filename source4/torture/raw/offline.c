@@ -29,6 +29,7 @@
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "torture/raw/proto.h"
 
 #define BASEDIR "\\testoffline"
 

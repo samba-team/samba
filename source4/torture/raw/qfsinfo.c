@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/basic/proto.h"
+#include "torture/raw/proto.h"
 
 
 static struct {

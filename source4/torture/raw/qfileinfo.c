@@ -25,6 +25,7 @@
 #include "torture/util.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
+#include "torture/raw/proto.h"
 
 static struct {
 	const char *name;

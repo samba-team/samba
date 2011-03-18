@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/raw/proto.h"
 
 /* enum for whether reads/writes are possible on a file */
 enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};

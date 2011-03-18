@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/raw/proto.h"
 
 static void init_unixinfo_nochange(union smb_setfileinfo *info)
 {

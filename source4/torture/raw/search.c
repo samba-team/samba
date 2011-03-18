@@ -24,6 +24,7 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "lib/util/tsort.h"
+#include "torture/raw/proto.h"
 
 
 #define BASEDIR "\\testsearch"

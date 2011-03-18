@@ -22,6 +22,7 @@
 #include "torture/smbtorture.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/raw/proto.h"
 
 #define BASEDIR "\\lookuprate"
 #define MISSINGNAME BASEDIR "\\foo"

@@ -27,6 +27,7 @@
 #include "torture/util.h"
 #include "lib/events/events.h"
 #include "param/param.h"
+#include "torture/raw/proto.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \

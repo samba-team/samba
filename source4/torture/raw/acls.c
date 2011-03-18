@@ -28,6 +28,7 @@
 #include "libcli/security/security.h"
 #include "torture/util.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "torture/raw/proto.h"
 
 #define BASEDIR "\\testsd"
 

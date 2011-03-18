@@ -33,6 +33,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "torture/raw/proto.h"
 
 #define BASEDIR "\\benchopen"
 

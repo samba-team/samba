@@ -26,6 +26,7 @@
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/resolve/resolve.h"
+#include "torture/raw/proto.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \

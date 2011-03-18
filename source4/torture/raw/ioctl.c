@@ -24,6 +24,7 @@
 #include "libcli/raw/raw_proto.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/raw/proto.h"
 
 #define BASEDIR "\\rawioctl"
 

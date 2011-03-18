@@ -26,6 +26,7 @@
 
 #include "system/filesys.h"
 #include "system/shmem.h"
+#include "torture/raw/proto.h"
 
 #define TIME_LIMIT_SECS 30
 #define usec_to_sec(s) ((s) / 1000000)
