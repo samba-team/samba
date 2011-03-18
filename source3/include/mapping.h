@@ -30,3 +30,4 @@ typedef struct _GROUP_MAP {
 	fstring comment;
 } GROUP_MAP;
 
+#include "groupdb/proto.h"
