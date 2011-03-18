@@ -24,6 +24,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "torture/rpc/drsuapi.h"
 #include "../lib/util/asn1.h"
+#include "torture/drs/proto.h"
 
 /**
  * Decode Attribute OID based on MS documentation

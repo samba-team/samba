@@ -29,6 +29,8 @@
 #include "torture/rpc/drsuapi.h"
 #include "librpc/ndr/libndr.h"
 #include "param/param.h"
+#include "torture/drs/proto.h"
+#include "torture/drs/proto.h"
 
 
 /**

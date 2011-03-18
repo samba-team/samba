@@ -34,6 +34,7 @@
 #include "param/param.h"
 #include "libcli/security/security.h"
 #include "libcli/util/clilsa.h"
+#include "torture/util.h"
 
 
 /**

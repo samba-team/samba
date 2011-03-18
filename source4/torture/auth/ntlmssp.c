@@ -23,6 +23,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
 #include "param/param.h"
+#include "torture/auth/proto.h"
 
 static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 {
