@@ -22,6 +22,8 @@
 #include "policy.h"
 #include "libcli/util/pyerrors.h"
 
+void initpolicy(void);
+
 static PyObject *py_get_gpo_flags(PyObject *self, PyObject *args)
 {
 	int flags;

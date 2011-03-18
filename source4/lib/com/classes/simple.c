@@ -22,6 +22,8 @@
 #include "lib/com/com.h"
 #include "librpc/gen_ndr/com_dcom.h"
 
+NTSTATUS com_simple_init(void);
+
 static struct IClassFactory_vtable simple_classobject_vtable;
 static struct IStream_vtable simple_IStream_vtable;
 

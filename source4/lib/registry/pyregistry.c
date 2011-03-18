@@ -31,6 +31,8 @@ extern PyTypeObject PyRegistryKey;
 extern PyTypeObject PyRegistry;
 extern PyTypeObject PyHiveKey;
 
+void initregistry(void);
+
 /*#define PyRegistryKey_AsRegistryKey(obj) py_talloc_get_type(obj, struct registry_key)*/
 #define PyRegistry_AsRegistryContext(obj) ((struct registry_context *)py_talloc_get_ptr(obj))
 #define PyHiveKey_AsHiveKey(obj) ((struct hive_key*)py_talloc_get_ptr(obj))

@@ -23,6 +23,8 @@
 #include "librpc/ndr/libndr.h"
 #include "libcli/util/pyerrors.h"
 
+void initcom(void);
+
 static struct com_context *py_com_ctx = NULL; /* FIXME: evil global */
 
 static PyObject *py_get_class_object(PyObject *self, PyObject *args)

@@ -25,6 +25,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 
+_PUBLIC_ const struct socket_ops *socket_unixdom_ops(enum socket_type type);
 
 
 /*

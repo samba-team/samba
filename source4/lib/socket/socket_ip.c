@@ -27,6 +27,9 @@
 #include "system/network.h"
 #include "lib/util/util_net.h"
 
+_PUBLIC_ const struct socket_ops *socket_ipv4_ops(enum socket_type type);
+_PUBLIC_ const struct socket_ops *socket_ipv6_ops(enum socket_type type);
+
 static NTSTATUS ipv4_init(struct socket_context *sock)
 {
 	int type;
