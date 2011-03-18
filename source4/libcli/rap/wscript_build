@@ -2,6 +2,6 @@
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_RAP',
 	source='rap.c',
-	public_deps='LIBCLI_RAW',
+	public_deps='LIBCLI_RAW NDR_RAP',
 	autoproto='proto.h'
 	)
