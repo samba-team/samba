@@ -474,6 +474,7 @@ struct service {
 	bool bAdministrative_share;
 	bool bGuest_ok;
 	bool bPrint_ok;
+	bool bPrintNotifyBackchannel;
 	bool bMap_system;
 	bool bMap_hidden;
 	bool bMap_archive;
@@ -618,6 +619,7 @@ static struct service sDefault = {
 	False,			/* bAdministrative_share */
 	False,			/* bGuest_ok */
 	False,			/* bPrint_ok */
+	True,			/* bPrintNotifyBackchannel */
 	False,			/* bMap_system */
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
@@ -2711,6 +2713,15 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_PRINT,
+	},
+	{
+		.label		= "print notify backchannel",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.ptr		= &sDefault.bPrintNotifyBackchannel,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "print ok",
@@ -5918,6 +5929,7 @@ FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
 FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
 FN_LOCAL_BOOL(lp_administrative_share, bAdministrative_share)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
+FN_LOCAL_BOOL(lp_print_notify_backchannel, bPrintNotifyBackchannel)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)

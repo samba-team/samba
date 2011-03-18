@@ -2736,6 +2736,12 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 	DEBUG(10,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
 		"client_address is %s\n", p->client_id->addr));
 
+	if (!lp_print_notify_backchannel(snum)) {
+		DEBUG(10, ("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
+			"backchannel disabled\n"));
+		return WERR_SERVER_UNAVAILABLE;
+	}
+
 	if (!interpret_string_addr(&client_ss, p->client_id->addr,
 				   AI_NUMERICHOST)) {
 		return WERR_SERVER_UNAVAILABLE;

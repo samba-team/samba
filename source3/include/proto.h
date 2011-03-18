@@ -3199,6 +3199,7 @@ bool lp_guest_ok(int );
 bool lp_guest_only(int );
 bool lp_administrative_share(int );
 bool lp_print_ok(int );
+bool lp_print_notify_backchannel(int );
 bool lp_map_hidden(int );
 bool lp_map_archive(int );
 bool lp_store_dos_attributes(int );
