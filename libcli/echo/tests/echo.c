@@ -26,6 +26,8 @@
 #include "libcli/util/ntstatus.h"
 #include "libcli/echo/libecho.h"
 
+NTSTATUS torture_libcli_echo_init(void);
+
 /* Basic test function that sends an echo request and checks the reply */
 static bool echo_udp_basic(struct torture_context *tctx, const char *address)
 {
