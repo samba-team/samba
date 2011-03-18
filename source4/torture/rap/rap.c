@@ -123,6 +123,8 @@ static bool test_netsessionenum(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 			smbcli_rap_netsessionenum(cli->tree, tctx, &r),
 			"smbcli_rap_netsessionenum failed");
+		torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+			"smbcli_rap_netsessionenum failed");
 
 		for (n=0; n < r.out.count; n++) {
 			switch (r.in.level) {
