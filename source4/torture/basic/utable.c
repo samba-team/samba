@@ -23,6 +23,7 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "param/param.h"
+#include "torture/basic/proto.h"
 
 bool torture_utable(struct torture_context *tctx, 
 					struct smbcli_state *cli)

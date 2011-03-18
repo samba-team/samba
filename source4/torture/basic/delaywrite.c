@@ -29,6 +29,7 @@
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/basic/proto.h"
 
 #define W2K8R2_TIMEDELAY_SECS 1
 #define W2K3_TIMEDELAY_SECS 2

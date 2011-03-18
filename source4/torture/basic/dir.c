@@ -23,6 +23,7 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "system/filesys.h"
+#include "torture/basic/proto.h"
 
 static void list_fn(struct clilist_file_info *finfo, const char *name, void *state)
 {

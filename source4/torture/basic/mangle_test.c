@@ -24,6 +24,7 @@
 #include "../lib/util/util_tdb.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/basic/proto.h"
 
 static TDB_CONTEXT *tdb;
 

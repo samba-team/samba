@@ -33,6 +33,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/composite/composite.h"
 #include "param/param.h"
+#include "torture/basic/proto.h"
 
 extern struct cli_credentials *cmdline_credentials;
 	

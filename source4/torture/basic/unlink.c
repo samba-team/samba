@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "torture/basic/proto.h"
 
 #define BASEDIR "\\unlinktest"
 

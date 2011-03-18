@@ -23,6 +23,7 @@
 #include "libcli/security/security.h"
 #include "torture/util.h"
 #include "cxd_known.h"
+#include "torture/basic/proto.h"
 
 extern int torture_failures;
 

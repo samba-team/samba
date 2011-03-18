@@ -24,6 +24,7 @@
 #include "torture/util.h"
 #include "system/filesys.h"
 #include "libcli/security/secace.h"
+#include "torture/basic/proto.h"
 
 extern int torture_failures;
 

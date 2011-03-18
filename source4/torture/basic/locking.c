@@ -25,6 +25,7 @@
 #include "torture/util.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "torture/basic/proto.h"
 
 #define BASEDIR "\\locktest"
 

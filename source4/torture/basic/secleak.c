@@ -28,6 +28,7 @@
 #include "libcli/smb_composite/smb_composite.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
+#include "torture/basic/proto.h"
 
 static bool try_failed_login(struct torture_context *tctx, struct smbcli_state *cli)
 {
