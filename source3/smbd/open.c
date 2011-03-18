@@ -3140,7 +3140,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	if (lp_acl_check_permissions(SNUM(conn))
 	    && (create_disposition != FILE_CREATE)
-	    && (share_access & FILE_SHARE_DELETE)
 	    && (access_mask & DELETE_ACCESS)
 	    && (!(can_delete_file_in_directory(conn, smb_fname) ||
 		 can_access_file_acl(conn, smb_fname, DELETE_ACCESS)))) {
