@@ -486,4 +486,6 @@ struct pdb_init_function_entry {
 	struct pdb_init_function_entry *prev, *next;
 };
 
+#include "passdb/proto.h"
+
 #endif /* _PASSDB_H */
