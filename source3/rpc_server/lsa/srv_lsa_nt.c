@@ -41,6 +41,7 @@
 #include "../lib/crypto/arcfour.h"
 #include "../libcli/security/dom_sid.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

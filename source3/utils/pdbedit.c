@@ -24,6 +24,7 @@
 #include "popt_common.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../libcli/security/security.h"
+#include "passdb.h"
 
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008

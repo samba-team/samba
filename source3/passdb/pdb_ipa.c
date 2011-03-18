@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "passdb.h"
 #include "libcli/security/dom_sid.h"
 
 #include "smbldap.h"

@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "passdb.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
 #include "../librpc/gen_ndr/samr.h"

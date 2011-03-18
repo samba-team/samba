@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "passdb.h"
 
 #include <lber.h>
 #include <ldap.h>

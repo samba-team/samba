@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "passdb.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_secrets.h"
 #include "secrets.h"

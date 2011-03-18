@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "passdb.h"
 #include "tldap.h"
 #include "tldap_util.h"
 #include "../libds/common/flags.h"

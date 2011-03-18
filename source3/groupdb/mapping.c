@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "passdb.h"
 #include "groupdb/mapping.h"
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"

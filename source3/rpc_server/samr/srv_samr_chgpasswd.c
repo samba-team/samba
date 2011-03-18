@@ -52,6 +52,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_server/samr/srv_samr_util.h"
+#include "passdb.h"
 
 #ifndef ALLOW_CHANGE_PASSWORD
 #if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))

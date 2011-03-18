@@ -37,6 +37,7 @@
  */
 
 #include "includes.h"
+#include "passdb.h"
 #include "lib/winbind_util.h"
 
 /***************************************************************************

@@ -25,6 +25,7 @@
 #include "smbldap.h"
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"
+#include "passdb.h"
 
 /*
  * Set a user's data

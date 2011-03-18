@@ -44,6 +44,7 @@
 */
 
 #include "includes.h"
+#include "passdb.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "secrets.h"
 #include "idmap_cache.h"
