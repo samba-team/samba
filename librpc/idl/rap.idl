@@ -938,6 +938,17 @@ interface rap
 	);
 
 	/* not documented in MS-RAP */
+	[public] void rap_NetSessionGetInfo(
+		[in] astring SessionName,
+		[in] uint16 level,
+		[in] uint16 bufsize,
+		[out] rap_status status,
+		[out] uint16 convert,
+		[out] uint16 available,
+		[out,switch_is(level)] rap_session_info info
+	);
+
+	/* not documented in MS-RAP */
 	[public] void rap_NetUserAdd(
 		[in] uint16 level,
 		[in] uint16 bufsize,
