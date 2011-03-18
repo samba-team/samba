@@ -26,6 +26,8 @@
 #include "librpc/gen_ndr/ndr_nfs4acl.h"
 #include "libcli/security/security.h"
 
+NTSTATUS pvfs_acl_nfs4_init(void);
+
 #define ACE4_IDENTIFIER_GROUP 0x40
 
 /*

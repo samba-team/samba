@@ -23,6 +23,8 @@
 #include "librpc/ndr/libndr.h"
 #include "lib/util/wrap_xattr.h"
 
+void initxattr_native(void);
+
 static PyObject *py_is_xattr_supported(PyObject *self)
 {
 #if !defined(HAVE_XATTR_SUPPORT)

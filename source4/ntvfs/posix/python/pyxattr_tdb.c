@@ -27,6 +27,8 @@
 #include "ntvfs/posix/vfs_posix.h"
 #include "libcli/util/pyerrors.h"
 
+void initxattr_tdb(void);
+
 static PyObject *py_is_xattr_supported(PyObject *self)
 {
 	return Py_True;
