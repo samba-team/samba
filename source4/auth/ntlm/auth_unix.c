@@ -28,6 +28,8 @@
 #include "../libcli/auth/pam_errors.h"
 #include "param/param.h"
 
+_PUBLIC_ NTSTATUS auth_unix_init(void);
+
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info
  * except in case USER_INFO_DONT_CHECK_UNIX_ACCOUNT is set
  */

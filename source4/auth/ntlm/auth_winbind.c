@@ -31,6 +31,8 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "libcli/security/security.h"
 
+_PUBLIC_ NTSTATUS auth_winbind_init(void);
+
 static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					       struct wbcAuthUserInfo *info,
 					       struct netr_SamInfo3 *info3)

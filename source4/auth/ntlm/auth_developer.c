@@ -24,6 +24,8 @@
 #include "auth/ntlm/auth_proto.h"
 #include "libcli/security/security.h"
 
+_PUBLIC_ NTSTATUS auth_developer_init(void);
+
 static NTSTATUS name_to_ntstatus_want_check(struct auth_method_context *ctx,
 			      		    TALLOC_CTX *mem_ctx,
 					    const struct auth_usersupplied_info *user_info)

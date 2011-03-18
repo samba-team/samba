@@ -25,6 +25,7 @@
 #include "auth/auth.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
+#include "auth/ntlm/auth_proto.h"
 
 /* this default function can be used by mostly all backends
  * which don't want to set a challenge

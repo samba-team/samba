@@ -24,6 +24,8 @@
 #include "auth/ntlm/auth_proto.h"
 #include "param/param.h"
 
+_PUBLIC_ NTSTATUS auth_anonymous_init(void);
+
 /**
  * Return a anonymous logon for anonymous users (username = "")
  *

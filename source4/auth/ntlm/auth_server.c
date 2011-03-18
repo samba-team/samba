@@ -27,6 +27,8 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
+_PUBLIC_ NTSTATUS auth_server_init(void);
+
 /* This version of 'security=server' rewirtten from scratch for Samba4
  * libraries in 2008 */
 

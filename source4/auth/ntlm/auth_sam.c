@@ -34,6 +34,8 @@
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "lib/messaging/irpc.h"
 
+NTSTATUS auth_sam_init(void);
+
 extern const char *user_attrs[];
 extern const char *domain_ref_attrs[];
 
