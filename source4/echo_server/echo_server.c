@@ -32,6 +32,8 @@
 /* tsocket-related functions */
 #include "lib/tsocket/tsocket.h"
 
+NTSTATUS server_service_echo_init(void);
+
 /* Structure to hold an echo server socket */
 struct echo_socket {
 	/* This can come handy for the task struct in there */

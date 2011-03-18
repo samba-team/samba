@@ -40,6 +40,8 @@
 #include "rpc_server/common/common.h"
 #include "param/param.h"
 
+NTSTATUS ntptr_simple_ldb_init(void);
+
 /*
   connect to the SPOOLSS database
   return a ldb_context pointer on success, or NULL on failure

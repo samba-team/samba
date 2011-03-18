@@ -39,6 +39,8 @@
 #include "libcli/security/dom_sid.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 
+NTSTATUS server_service_dnsupdate_init(void);
+
 struct dnsupdate_service {
 	struct task_server *task;
 	struct auth_session_info *system_session_info;

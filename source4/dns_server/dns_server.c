@@ -43,6 +43,8 @@
 #include "auth/session.h"
 #include "lib/util/dlinklist.h"
 
+NTSTATUS server_service_dns_init(void);
+
 /* hold information about one dns socket */
 struct dns_socket {
 	struct dns_server *dns;

@@ -28,6 +28,8 @@
 #include "dynconfig/dynconfig.h"
 #include "smbd/process_model.h"
 
+NTSTATUS server_service_samba3_smb_init(void);
+
 /*
   initialise a server_context from a open socket and register a event handler
   for reading from that socket

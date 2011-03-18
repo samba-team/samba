@@ -28,6 +28,8 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 
+NTSTATUS server_service_web_init(void);
+
 /* don't allow connections to hang around forever */
 #define HTTP_TIMEOUT 120
 

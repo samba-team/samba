@@ -41,6 +41,8 @@
 #include "system/network.h"
 #include "system/passwd.h"
 
+NTSTATUS server_service_ntp_signd_init(void);
+
 /*
   top level context structure for the ntp_signd server
 */

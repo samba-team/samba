@@ -28,6 +28,7 @@
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "libcli/finddc.h"
 
 struct finddcs_nbt_state {
 	struct tevent_context *ev;

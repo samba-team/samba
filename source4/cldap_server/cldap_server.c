@@ -35,6 +35,8 @@
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 
+NTSTATUS server_service_cldapd_init(void);
+
 /*
   handle incoming cldap requests
 */

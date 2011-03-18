@@ -30,6 +30,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 
+NTSTATUS server_service_nbtd_init(void);
+
 /*
   startup the nbtd task
 */
