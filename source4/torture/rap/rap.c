@@ -149,6 +149,64 @@ static bool test_netsessionenum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netsessiongetinfo_bysession(struct torture_context *tctx,
+					     struct smbcli_state *cli,
+					     const char *session)
+{
+	struct rap_NetSessionGetInfo r;
+	int i;
+	uint16_t levels[] = { 2 };
+
+	if (session && session[0] == '\\' && session[1] == '\\') {
+		r.in.SessionName = session;
+	} else {
+		r.in.SessionName = talloc_asprintf(tctx, "\\\\%s", session);
+	}
+	r.in.bufsize = 0xffff;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.level = levels[i];
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netsessiongetinfo(cli->tree, tctx, &r),
+			"rap_netsessiongetinfo failed");
+		torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+			"rap_netsessiongetinfo failed");
+	}
+
+	return true;
+}
+
+static bool test_netsessiongetinfo(struct torture_context *tctx,
+				   struct smbcli_state *cli)
+{
+	struct rap_NetSessionEnum r;
+	int i,n;
+	uint16_t levels[] = { 2 };
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.level = levels[i];
+		r.in.bufsize = 8192;
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_rap_netsessionenum(cli->tree, tctx, &r),
+			"smbcli_rap_netsessionenum failed");
+		torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+			"smbcli_rap_netsessionenum failed");
+
+		for (n=0; n < r.out.count; n++) {
+			torture_assert(tctx,
+				test_netsessiongetinfo_bysession(tctx, cli, r.out.info[n].info2.ComputerName),
+				"failed to query sessioninfo");
+		}
+	}
+
+	return true;
+}
+
+
 bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 {
 	int callno;
@@ -186,6 +244,8 @@ NTSTATUS torture_rap_init(void)
 				    test_netservergetinfo);
 	torture_suite_add_1smb_test(suite_basic, "netsessionenum",
 				    test_netsessionenum);
+	torture_suite_add_1smb_test(suite_basic, "netsessiongetinfo",
+				    test_netsessiongetinfo);
 
 	torture_suite_add_1smb_test(suite, "scan", torture_rap_scan);
 
