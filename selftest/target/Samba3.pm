@@ -532,6 +532,7 @@ sub provision($$$$$$)
 	lock directory = $lockdir
 	log file = $logdir/log.\%m
 	log level = 0
+	debug pid = yes
 
 	name resolve order = bcast
 
