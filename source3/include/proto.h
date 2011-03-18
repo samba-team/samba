@@ -123,6 +123,7 @@ NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
                                       const char *client_domain, 
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp);
 bool make_user_info_guest(struct auth_usersupplied_info **user_info) ;
+struct samu;
 NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 			      struct samu *sampass);
 NTSTATUS create_local_token(struct auth_serversupplied_info *server_info);
@@ -133,6 +134,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    struct security_token **token);
 bool user_in_group_sid(const char *username, const struct dom_sid *group_sid);
 bool user_in_group(const char *username, const char *groupname);
+struct passwd;
 NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
                              char *unix_username,
 			     struct passwd *pwd);
