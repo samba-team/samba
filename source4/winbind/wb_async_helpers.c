@@ -29,6 +29,8 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
+#include "winbind/wb_helper.h"
+
 
 struct lsa_lookupsids_state {
 	struct composite_context *ctx;

@@ -22,6 +22,8 @@
 #ifndef __WB_ASYNC_HELPERS_H__
 #define __WB_ASYNC_HELPERS_H__
 
+struct dcerpc_pipe;
+
 #include "librpc/gen_ndr/lsa.h"
 
 struct wb_sid_object {

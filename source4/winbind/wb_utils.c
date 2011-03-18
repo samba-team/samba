@@ -21,6 +21,9 @@
 
 #include "includes.h"
 #include "param/param.h"
+#include "libcli/security/dom_sid.h"
+#include "winbind/wb_async_helpers.h"
+#include "winbind/wb_helper.h"
 
 
 /* Split a domain\\user string into it's parts, because the client supplies it
