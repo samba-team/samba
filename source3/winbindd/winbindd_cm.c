@@ -1117,7 +1117,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	ip_list.ss = *pss;
 	ip_list.port = 0;
 
-#ifdef WITH_ADS
+#ifdef HAVE_ADS
 	/* For active directory servers, try to get the ldap server name.
 	   None of these failures should be considered critical for now */
 
