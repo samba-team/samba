@@ -362,7 +362,7 @@ WERROR NetGetJoinInformation_l(struct libnetapi_ctx *ctx,
 WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 			   struct NetGetJoinableOUs *r)
 {
-#ifdef WITH_ADS
+#ifdef HAVE_ADS
 	NTSTATUS status;
 	ADS_STATUS ads_status;
 	ADS_STRUCT *ads = NULL;
