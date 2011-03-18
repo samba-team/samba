@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_ntlmssp.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t ntlmssp_NEGOTIATE_MESSAGE_data[] = {
 	0x4e, 0x54, 0x4c, 0x4d, 0x53, 0x53, 0x50, 0x00, 0x01, 0x00, 0x00, 0x00,

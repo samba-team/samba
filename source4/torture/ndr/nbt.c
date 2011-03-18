@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t netlogon_logon_request_req_data[] = {
 	0x00, 0x00, 0x57, 0x49, 0x4e, 0x39, 0x38, 0x00, 0x47, 0x44, 0x00, 0x5c,

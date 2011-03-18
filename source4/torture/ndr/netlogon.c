@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t netrserverauthenticate3_in_data[] = {
   0xb0, 0x2e, 0x0a, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

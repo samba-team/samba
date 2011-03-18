@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t map_in_data[] = {
   0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

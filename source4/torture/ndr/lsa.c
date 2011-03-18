@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t lsarlookupnames_in_data[] = {
   0x00, 0x00, 0x00, 0x00, 0x2a, 0xab, 0xb8, 0x84, 0x36, 0xc6, 0xed, 0x4f,

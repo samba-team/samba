@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t openprinterex_req_data[] = {
   0xf0, 0xa8, 0x39, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

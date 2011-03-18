@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/ndr_winreg.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t closekey_in_data[] = { 
         0x00, 0x00, 0x00, 0x00, 0x1d, 0xd8, 0xd7, 0xaa, 0x8d, 0x6c, 0x3f, 0x48, 

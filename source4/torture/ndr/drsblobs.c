@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t forest_trust_info_data_out[] = {
 	0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00,

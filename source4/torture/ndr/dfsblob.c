@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
+#include "torture/ndr/proto.h"
 #include "librpc/gen_ndr/dfsblobs.h"
 
 DATA_BLOB blob;

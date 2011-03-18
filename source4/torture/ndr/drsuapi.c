@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t DsAddEntry_req1_dat[] = {
   0x00, 0x00, 0x00, 0x00, 0x52, 0xd7, 0x26, 0x47, 0x58, 0xd3, 0xd4, 0x45,

@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "torture/ndr/proto.h"
 
 static const uint8_t samr_connect5_in_data[] = {
   0xa8, 0x71, 0x0e, 0x00, 0x1a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

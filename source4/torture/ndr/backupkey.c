@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_backupkey.h"
+#include "torture/ndr/proto.h"
 
 
 static const uint8_t exported_rsa_ndr[] = {
