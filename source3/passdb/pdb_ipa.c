@@ -27,6 +27,7 @@
 #include "smbldap.h"
 
 #define IPA_KEYTAB_SET_OID "2.16.840.1.113730.3.8.3.1"
+#define IPA_MAGIC_ID_STR "999"
 
 #define LDAP_TRUST_CONTAINER "ou=system"
 #define LDAP_ATTRIBUTE_CN "cn"
@@ -49,11 +50,20 @@
 #define LDAP_OBJ_IPAHOST "ipaHost"
 #define LDAP_OBJ_POSIXACCOUNT "posixAccount"
 
+#define LDAP_OBJ_GROUPOFNAMES "groupOfNames"
+#define LDAP_OBJ_NESTEDGROUP "nestedGroup"
+#define LDAP_OBJ_IPAUSERGROUP "ipaUserGroup"
+#define LDAP_OBJ_POSIXGROUP "posixGroup"
+
 #define HAS_KRB_PRINCIPAL (1<<0)
 #define HAS_KRB_PRINCIPAL_AUX (1<<1)
 #define HAS_IPAOBJECT (1<<2)
 #define HAS_IPAHOST (1<<3)
 #define HAS_POSIXACCOUNT (1<<4)
+#define HAS_GROUPOFNAMES (1<<5)
+#define HAS_NESTEDGROUP (1<<6)
+#define HAS_IPAUSERGROUP (1<<7)
+#define HAS_POSIXGROUP (1<<8)
 
 struct ipasam_privates {
 	bool server_is_ipa;
@@ -64,6 +74,10 @@ struct ipasam_privates {
 	NTSTATUS (*ldapsam_create_user)(struct pdb_methods *my_methods,
 					TALLOC_CTX *tmp_ctx, const char *name,
 					uint32_t acb_info, uint32_t *rid);
+	NTSTATUS (*ldapsam_create_dom_group)(struct pdb_methods *my_methods,
+					     TALLOC_CTX *tmp_ctx,
+					     const char *name,
+					     uint32_t *rid);
 };
 
 static bool ipasam_get_trusteddom_pw(struct pdb_methods *methods,
@@ -821,6 +835,14 @@ static NTSTATUS ipasam_get_objectclasses(struct ldapsam_privates *ldap_state,
 			*has_objectclass |= HAS_IPAHOST;
 		} else if (strequal(objectclasses[c], LDAP_OBJ_POSIXACCOUNT)) {
 			*has_objectclass |= HAS_POSIXACCOUNT;
+		} else if (strequal(objectclasses[c], LDAP_OBJ_GROUPOFNAMES)) {
+			*has_objectclass |= HAS_GROUPOFNAMES;
+		} else if (strequal(objectclasses[c], LDAP_OBJ_NESTEDGROUP)) {
+			*has_objectclass |= HAS_NESTEDGROUP;
+		} else if (strequal(objectclasses[c], LDAP_OBJ_IPAUSERGROUP)) {
+			*has_objectclass |= HAS_IPAUSERGROUP;
+		} else if (strequal(objectclasses[c], LDAP_OBJ_POSIXGROUP)) {
+			*has_objectclass |= HAS_POSIXGROUP;
 		}
 	}
 	ldap_value_free(objectclasses);
@@ -828,8 +850,15 @@ static NTSTATUS ipasam_get_objectclasses(struct ldapsam_privates *ldap_state,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS find_user(struct ldapsam_privates *ldap_state, const char *name,
-			  char **_dn, uint32_t *_has_objectclass)
+enum obj_type {
+	IPA_NO_OBJ = 0,
+	IPA_USER_OBJ,
+	IPA_GROUP_OBJ
+};
+
+static NTSTATUS find_obj(struct ldapsam_privates *ldap_state, const char *name,
+			 enum obj_type type, char **_dn,
+			 uint32_t *_has_objectclass)
 {
 	int ret;
 	char *username;
@@ -840,13 +869,26 @@ static NTSTATUS find_user(struct ldapsam_privates *ldap_state, const char *name,
 	char *dn;
 	uint32_t has_objectclass;
 	NTSTATUS status;
+	const char *obj_class = NULL;
+
+	switch (type) {
+		case IPA_USER_OBJ:
+			obj_class = LDAP_OBJ_POSIXACCOUNT;
+			break;
+		case IPA_GROUP_OBJ:
+			obj_class = LDAP_OBJ_POSIXGROUP;
+			break;
+		default:
+			DEBUG(0, ("Unsupported IPA object.\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	username = escape_ldap_string(talloc_tos(), name);
 	if (username == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	filter = talloc_asprintf(talloc_tos(), "(&(uid=%s)(objectClass=%s))",
-				 username, LDAP_OBJ_POSIXACCOUNT);
+				 username, obj_class);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -863,9 +905,18 @@ static NTSTATUS find_user(struct ldapsam_privates *ldap_state, const char *name,
 
 	if (num_result != 1) {
 		if (num_result == 0) {
-			status = NT_STATUS_NO_SUCH_USER;
+			switch (type) {
+				case IPA_USER_OBJ:
+					status = NT_STATUS_NO_SUCH_USER;
+					break;
+				case IPA_GROUP_OBJ:
+					status = NT_STATUS_NO_SUCH_GROUP;
+					break;
+				default:
+					status = NT_STATUS_INVALID_PARAMETER;
+			}
 		} else {
-			DEBUG (0, ("find_user: More than one user with name [%s] ?!\n",
+			DEBUG (0, ("find_user: More than one object with name [%s] ?!\n",
 				   name));
 			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -902,6 +953,18 @@ done:
 	return status;
 }
 
+static NTSTATUS find_user(struct ldapsam_privates *ldap_state, const char *name,
+			  char **_dn, uint32_t *_has_objectclass)
+{
+	return find_obj(ldap_state, name, IPA_USER_OBJ, _dn, _has_objectclass);
+}
+
+static NTSTATUS find_group(struct ldapsam_privates *ldap_state, const char *name,
+			   char **_dn, uint32_t *_has_objectclass)
+{
+	return find_obj(ldap_state, name, IPA_GROUP_OBJ, _dn, _has_objectclass);
+}
+
 static NTSTATUS ipasam_add_posix_account_objectclass(struct ldapsam_privates *ldap_state,
 						     int ldap_op,
 						     const char *dn,
@@ -915,6 +978,8 @@ static NTSTATUS ipasam_add_posix_account_objectclass(struct ldapsam_privates *ld
 			"objectclass", "posixAccount");
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			"cn", username);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD,
+			"uidNumber", IPA_MAGIC_ID_STR);
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			"gidNumber", "12345");
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
@@ -935,6 +1000,62 @@ static NTSTATUS ipasam_add_posix_account_objectclass(struct ldapsam_privates *ld
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ipasam_add_ipa_group_objectclasses(struct ldapsam_privates *ldap_state,
+						   const char *dn,
+						   const char *name,
+						   uint32_t has_objectclass)
+{
+	LDAPMod **mods = NULL;
+	NTSTATUS status;
+	int ret;
+
+	if (!(has_objectclass & HAS_GROUPOFNAMES)) {
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				LDAP_ATTRIBUTE_OBJECTCLASS,
+				LDAP_OBJ_GROUPOFNAMES);
+	}
+
+	if (!(has_objectclass & HAS_NESTEDGROUP)) {
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				LDAP_ATTRIBUTE_OBJECTCLASS,
+				LDAP_OBJ_NESTEDGROUP);
+	}
+
+	if (!(has_objectclass & HAS_IPAUSERGROUP)) {
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				LDAP_ATTRIBUTE_OBJECTCLASS,
+				LDAP_OBJ_IPAUSERGROUP);
+	}
+
+	if (!(has_objectclass & HAS_IPAOBJECT)) {
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				LDAP_ATTRIBUTE_OBJECTCLASS,
+				LDAP_OBJ_IPAOBJECT);
+	}
+
+	if (!(has_objectclass & HAS_POSIXGROUP)) {
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				LDAP_ATTRIBUTE_OBJECTCLASS,
+				LDAP_OBJ_POSIXGROUP);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				LDAP_ATTRIBUTE_CN,
+				name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				LDAP_ATTRIBUTE_GIDNUMBER,
+				IPA_MAGIC_ID_STR);
+	}
+
+	ret = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+	ldap_mods_free(mods, 1);
+	if (ret != LDAP_SUCCESS) {
+		DEBUG(1, ("failed to modify/add group %s (dn = %s)\n",
+			  name, dn));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS ipasam_add_ipa_objectclasses(struct ldapsam_privates *ldap_state,
 					     const char *dn, const char *name,
 					     const char *domain,
@@ -946,18 +1067,18 @@ static NTSTATUS ipasam_add_ipa_objectclasses(struct ldapsam_privates *ldap_state
 	int ret;
 	char *princ;
 
-	if (!(has_objectclass & HAS_KRB_PRINCIPAL)); {
+	if (!(has_objectclass & HAS_KRB_PRINCIPAL)) {
 		smbldap_set_mod(&mods, LDAP_MOD_ADD,
 				LDAP_ATTRIBUTE_OBJECTCLASS,
 				LDAP_OBJ_KRB_PRINCIPAL);
-	}
 
-	princ = talloc_asprintf(talloc_tos(), "%s@%s", name, lp_realm());
-	if (princ == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+		princ = talloc_asprintf(talloc_tos(), "%s@%s", name, lp_realm());
+		if (princ == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, LDAP_ATTRIBUTE_KRB_PRINCIPAL, princ);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, LDAP_ATTRIBUTE_KRB_PRINCIPAL, princ);
+	}
 
 	if (!(has_objectclass & HAS_KRB_PRINCIPAL_AUX)); {
 		smbldap_set_mod(&mods, LDAP_MOD_ADD,
@@ -978,32 +1099,36 @@ static NTSTATUS ipasam_add_ipa_objectclasses(struct ldapsam_privates *ldap_state
 			smbldap_set_mod(&mods, LDAP_MOD_ADD,
 					LDAP_ATTRIBUTE_OBJECTCLASS,
 					LDAP_OBJ_IPAHOST);
-		}
 
-		if (domain == NULL) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+			if (domain == NULL) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 
-		smbldap_set_mod(&mods, LDAP_MOD_ADD,
-				"fqdn", domain);
+			smbldap_set_mod(&mods, LDAP_MOD_ADD,
+					"fqdn", domain);
+		}
 	}
 
 	if (!(has_objectclass & HAS_POSIXACCOUNT)) {
 		smbldap_set_mod(&mods, LDAP_MOD_ADD,
 				"objectclass", "posixAccount");
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", name);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				"uidNumber", IPA_MAGIC_ID_STR);
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				"gidNumber", "12345");
+		smbldap_set_mod(&mods, LDAP_MOD_ADD,
+				"homeDirectory", "/dev/null");
 	}
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "cn", name);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD,
-			"gidNumber", "12345");
-	smbldap_set_mod(&mods, LDAP_MOD_ADD,
-			"homeDirectory", "/dev/null");
 
-	ret = smbldap_modify(ldap_state->smbldap_state, dn, mods);
-	ldap_mods_free(mods, 1);
-	if (ret != LDAP_SUCCESS) {
-		DEBUG(1, ("failed to modify/add user with uid = %s (dn = %s)\n",
-			  name, dn));
-		return status;
+	if (mods != NULL) {
+		ret = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+		ldap_mods_free(mods, 1);
+		if (ret != LDAP_SUCCESS) {
+			DEBUG(1, ("failed to modify/add user with uid = %s (dn = %s)\n",
+				  name, dn));
+			return status;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -1017,8 +1142,21 @@ static NTSTATUS pdb_ipasam_add_sam_account(struct pdb_methods *pdb_methods,
 	const char *name;
 	char *dn;
 	uint32_t has_objectclass;
+	uint32_t rid;
+	struct dom_sid user_sid;
 
 	ldap_state = (struct ldapsam_privates *)(pdb_methods->private_data);
+
+	if (IS_SAM_SET(sampass, PDB_USERSID) ||
+	    IS_SAM_CHANGED(sampass, PDB_USERSID)) {
+		if (!pdb_new_rid(&rid)) {
+			return NT_STATUS_DS_NO_MORE_RIDS;
+		}
+		sid_compose(&user_sid, get_global_sam_sid(), rid);
+		if (!pdb_set_user_sid(sampass, &user_sid, PDB_SET)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
 
 	status = ldap_state->ipasam_privates->ldapsam_add_sam_account(pdb_methods,
 								      sampass);
@@ -1090,6 +1228,50 @@ static NTSTATUS pdb_ipasam_update_sam_account(struct pdb_methods *pdb_methods,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ipasam_create_dom_group(struct pdb_methods *pdb_methods,
+					TALLOC_CTX *tmp_ctx, const char *name,
+					uint32_t *rid)
+{
+	NTSTATUS status;
+	struct ldapsam_privates *ldap_state;
+	int ldap_op = LDAP_MOD_REPLACE;
+	char *dn;
+	uint32_t has_objectclass = 0;
+
+	ldap_state = (struct ldapsam_privates *)(pdb_methods->private_data);
+
+	if (name == NULL || *name == '\0') {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = find_group(ldap_state, name, &dn, &has_objectclass);
+	if (NT_STATUS_IS_OK(status)) {
+		ldap_op = LDAP_MOD_REPLACE;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		ldap_op = LDAP_MOD_ADD;
+	} else {
+		return status;
+	}
+
+	if (!(has_objectclass & HAS_POSIXGROUP)) {
+		status = ipasam_add_ipa_group_objectclasses(ldap_state, dn,
+							    name,
+							    has_objectclass);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	status = ldap_state->ipasam_privates->ldapsam_create_dom_group(pdb_methods,
+								       tmp_ctx,
+								       name,
+								       rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
 static NTSTATUS ipasam_create_user(struct pdb_methods *pdb_methods,
 				   TALLOC_CTX *tmp_ctx, const char *name,
 				   uint32_t acb_info, uint32_t *rid)
@@ -1121,6 +1303,7 @@ static NTSTATUS ipasam_create_user(struct pdb_methods *pdb_methods,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		has_objectclass |= HAS_POSIXACCOUNT;
 	}
 
 	status = ldap_state->ipasam_privates->ldapsam_create_user(pdb_methods,
@@ -1164,6 +1347,7 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 	ldap_state->ipasam_privates->ldapsam_add_sam_account = (*pdb_method)->add_sam_account;
 	ldap_state->ipasam_privates->ldapsam_update_sam_account = (*pdb_method)->update_sam_account;
 	ldap_state->ipasam_privates->ldapsam_create_user = (*pdb_method)->create_user;
+	ldap_state->ipasam_privates->ldapsam_create_dom_group = (*pdb_method)->create_dom_group;
 
 	(*pdb_method)->add_sam_account = pdb_ipasam_add_sam_account;
 	(*pdb_method)->update_sam_account = pdb_ipasam_update_sam_account;
@@ -1171,6 +1355,7 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 	if (lp_parm_bool(-1, "ldapsam", "trusted", False)) {
 		if (lp_parm_bool(-1, "ldapsam", "editposix", False)) {
 			(*pdb_method)->create_user = ipasam_create_user;
+			(*pdb_method)->create_dom_group = ipasam_create_dom_group;
 		}
 	}
 
