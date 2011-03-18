@@ -128,7 +128,7 @@ size_t strlen_m_term_null(const char *s);
 size_t strlen_m(const char *s);
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
 void string_replace_m(char *s, char oldc, char newc);
-bool strcsequal_m(const char *s1,const char *s2);
+bool strcsequal(const char *s1,const char *s2);
 bool strequal_m(const char *s1, const char *s2);
 int strncasecmp_m(const char *s1, const char *s2, size_t n);
 bool next_token(const char **ptr,char *buff, const char *sep, size_t bufsize);

@@ -69,14 +69,14 @@ static bool test_strequal_m(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_strcsequal_m(struct torture_context *tctx)
+static bool test_strcsequal(struct torture_context *tctx)
 {
-	torture_assert(tctx, !strcsequal_m("foo", "bar"), "different strings");
-	torture_assert(tctx, strcsequal_m("foo", "foo"), "same case strings");
-	torture_assert(tctx, !strcsequal_m("foo", "Foo"), "different case strings");
-	torture_assert(tctx, !strcsequal_m(NULL, "Foo"), "one NULL");
-	torture_assert(tctx, !strcsequal_m("foo", NULL), "other NULL");
-	torture_assert(tctx, strcsequal_m(NULL, NULL), "both NULL");
+	torture_assert(tctx, !strcsequal("foo", "bar"), "different strings");
+	torture_assert(tctx, strcsequal("foo", "foo"), "same case strings");
+	torture_assert(tctx, !strcsequal("foo", "Foo"), "different case strings");
+	torture_assert(tctx, !strcsequal(NULL, "Foo"), "one NULL");
+	torture_assert(tctx, !strcsequal("foo", NULL), "other NULL");
+	torture_assert(tctx, strcsequal(NULL, NULL), "both NULL");
 	return true;
 }
 
@@ -253,7 +253,7 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "codepoint_cmpi", test_codepoint_cmpi);
 	torture_suite_add_simple_test(suite, "strcasecmp_m", test_strcasecmp_m);
 	torture_suite_add_simple_test(suite, "strequal_m", test_strequal_m);
-	torture_suite_add_simple_test(suite, "strcsequal_m", test_strcsequal_m);
+	torture_suite_add_simple_test(suite, "strcsequal", test_strcsequal);
 	torture_suite_add_simple_test(suite, "string_replace_m", test_string_replace_m);
 	torture_suite_add_simple_test(suite, "strncasecmp_m", test_strncasecmp_m);
 	torture_suite_add_simple_test(suite, "next_token", test_next_token);
