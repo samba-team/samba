@@ -736,9 +736,10 @@ sub provision($$$$$$$$$)
 
 	max xmit = 32K
 	server max protocol = SMB2
-        $extra_smbconf_options
 	host msdfs = $msdfs
 	lanman auth = yes
+
+	$extra_smbconf_options
 
 [tmp]
 	path = $ctx->{tmpdir}
@@ -766,8 +767,10 @@ sub provision($$$$$$$$$)
 	ntvfs handler = cifs
 	cifs:server = $ctx->{netbiosname}
 	cifs:share = tmp
-#There is no username specified here, instead the client is expected
-#to log in with kerberos, and the serverwill use delegated credentials.
+	cifs:use-s4u2proxy = yes
+	# There is no username specified here, instead the client is expected
+	# to log in with kerberos, and the serverwill use delegated credentials.
+	# Or the server tries s4u2self/s4u2proxy to impersonate the client
 
 [simple]
 	path = $ctx->{tmpdir}
@@ -877,9 +880,23 @@ sub provision_rpc_proxy($$$)
 	my ($self, $prefix, $dcvars) = @_;
 	print "PROVISIONING RPC PROXY...";
 
-	my $extra_smbconf_options = "dcerpc_remote:binding = ncacn_ip_tcp:$dcvars->{SERVER}
-       dcerpc endpoint servers = epmapper, remote
-       dcerpc_remote:interfaces = rpcecho
+	my $extra_smbconf_options = "
+
+	# rpc_proxy
+	dcerpc_remote:binding = ncacn_ip_tcp:$dcvars->{SERVER}
+	dcerpc endpoint servers = epmapper, remote
+	dcerpc_remote:interfaces = rpcecho
+
+[cifs_to_dc]
+	read only = no
+	ntvfs handler = cifs
+	cifs:server = $dcvars->{SERVER}
+	cifs:share = cifs
+	cifs:use-s4u2proxy = yes
+	# There is no username specified here, instead the client is expected
+	# to log in with kerberos, and the serverwill use delegated credentials.
+	# Or the server tries s4u2self/s4u2proxy to impersonate the client
+
 ";
 
 	my $ret = $self->provision($prefix,
@@ -898,6 +915,8 @@ sub provision_rpc_proxy($$$)
 	}
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+
+	# The joind runs in the context of the rpc_proxy/member for now
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -906,6 +925,30 @@ sub provision_rpc_proxy($$$)
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
+		return undef;
+	}
+
+	# Setting up delegation runs in the context of the DC for now
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
+	$cmd .= "$samba_tool delegation for-any-protocol '$ret->{NETBIOSNAME}\$' on";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} $dcvars->{CONFIGURATION}";
+
+	unless (system($cmd) == 0) {
+		warn("Delegation failed\n$cmd");
+		return undef;
+	}
+
+	# Setting up delegation runs in the context of the DC for now
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
+	$cmd .= "$samba_tool delegation add-service '$ret->{NETBIOSNAME}\$' cifs/$dcvars->{SERVER}";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} $dcvars->{CONFIGURATION}";
+
+	unless (system($cmd) == 0) {
+		warn("Delegation failed\n$cmd");
 		return undef;
 	}
 

@@ -244,7 +244,13 @@ for t in smb4torture_testsuites("rap."):
 
 # Tests against the NTVFS CIFS backend
 for t in base + raw:
-    plantestsuite_loadlist("samba4.ntvfs.cifs.%s" % t, "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/cifs', '-U$USERNAME%$PASSWORD'] + ntvfsargs + [t])
+    plantestsuite_loadlist("samba4.ntvfs.cifs.krb5.%s" % t, "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/cifs', '-U$USERNAME%$PASSWORD', '--kerberos=yes'] + ntvfsargs + [t])
+
+# Test NTVFS CIFS backend with S4U2Self and S4U2Proxy
+t = "base.unlink"
+plantestsuite_loadlist("samba4.ntvfs.cifs.ntlm.%s" % t, "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/cifs', '-U$USERNAME%$PASSWORD', '--kerberos=no'] + ntvfsargs + [t])
+plantestsuite_loadlist("samba4.ntvfs.cifs.krb5.%s" % t, "rpc_proxy", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/cifs_to_dc', '-U$DC_USERNAME%$DC_PASSWORD', '--kerberos=yes'] + ntvfsargs + [t])
+plantestsuite_loadlist("samba4.ntvfs.cifs.ntlm.%s" % t, "rpc_proxy", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/cifs_to_dc', '-U$DC_USERNAME%$DC_PASSWORD', '--kerberos=no'] + ntvfsargs + [t])
 
 plansmbtorturetestsuite('echo.udp', 'dc:local', '//$SERVER/whatever')
 
