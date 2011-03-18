@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _KRB5_INIT_CONTEXT_H_
+#define _KRB5_INIT_CONTEXT_H_
+
 struct smb_krb5_context {
 	krb5_context krb5_context;
 	krb5_log_facility *logf;
@@ -41,3 +44,5 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 					    time_t timeout,
 					    const krb5_data *send_buf,
 					    krb5_data *recv_buf);
+
+#endif /* _KRB5_INIT_CONTEXT_H_ */

@@ -31,6 +31,8 @@
 #include <tevent.h>
 #include "librpc/rpc/pyrpc_util.h"
 
+void initauth(void);
+
 staticforward PyTypeObject PyAuthContext;
 
 /* There's no Py_ssize_t in 2.4, apparently */

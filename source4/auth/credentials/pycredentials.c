@@ -26,6 +26,8 @@
 #include "param/pyparam.h"
 #include <tevent.h>
 
+void initcredentials(void);
+
 static PyObject *PyString_FromStringOrNULL(const char *str)
 {
 	if (str == NULL)
@@ -267,7 +269,7 @@ static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *
 	Py_RETURN_NONE;
 }
 
-PyObject *PyCredentialCacheContainer_from_ccache_container(struct ccache_container *ccc)
+static PyObject *PyCredentialCacheContainer_from_ccache_container(struct ccache_container *ccc)
 {
 	PyCredentialCacheContainerObject *py_ret;
 

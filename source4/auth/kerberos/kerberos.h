@@ -18,6 +18,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _AUTH_KERBEROS_H_
+#define _AUTH_KERBEROS_H_
+
 #if defined(HAVE_KRB5)
 
 #include "auth/kerberos/krb5_init_context.h"
@@ -157,3 +160,5 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 #include "auth/kerberos/proto.h"
 
 #endif /* HAVE_KRB5 */
+
+#endif /* _AUTH_KERBEROS_H_ */
