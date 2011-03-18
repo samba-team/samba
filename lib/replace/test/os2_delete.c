@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#include "replace-test.h"
 
 #define NUM_FILES 700
 #define READDIR_SIZE 100

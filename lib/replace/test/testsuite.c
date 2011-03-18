@@ -48,6 +48,9 @@
 
 #define TESTFILE "testfile.dat"
 
+struct torture_context;
+bool torture_local_replace(struct torture_context *ctx);
+
 /*
   test ftruncate() function
  */
@@ -1052,7 +1055,6 @@ static int test_memmem(void)
 }
 
 
-struct torture_context;
 bool torture_local_replace(struct torture_context *ctx)
 {
 	bool ret = true;
