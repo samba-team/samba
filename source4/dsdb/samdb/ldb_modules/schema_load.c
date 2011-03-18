@@ -38,7 +38,7 @@ struct schema_load_private_data {
 static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_dn, uint64_t current_usn,
 			       struct dsdb_schema **schema);
 
-struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema)
+static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema)
 {
 	uint64_t current_usn;
 	int ret;

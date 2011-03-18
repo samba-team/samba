@@ -60,7 +60,7 @@ struct descriptor_context {
 	int (*step_fn)(struct descriptor_context *);
 };
 
-struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
+static struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			       struct ldb_dn *dn,
 			       struct security_token *token,
 			       struct ldb_context *ldb)

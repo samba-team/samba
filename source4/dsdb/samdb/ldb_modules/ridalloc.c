@@ -34,6 +34,7 @@
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "dsdb/samdb/ldb_modules/ridalloc.h"
 
 /*
   Note: the RID allocation attributes in AD are very badly named. Here

@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "util.h"
 #include "libcli/security/security.h"
+#include "dsdb/samdb/ldb_modules/schema.h"
 
 
 const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element,
