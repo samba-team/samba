@@ -23,6 +23,8 @@
 #include "libcli/security/security.h"
 #include "pytalloc.h"
 
+void initsecurity(void);
+
 static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS nt_status;

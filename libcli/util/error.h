@@ -51,4 +51,6 @@ convert a Unix error code to a WERROR
 *********************************************************************/
 WERROR unix_to_werror(int unix_error);
 
+NTSTATUS nt_status_squash(NTSTATUS nt_status);
+
 #endif /* _SAMBA_ERROR_H */
