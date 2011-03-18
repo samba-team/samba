@@ -998,18 +998,14 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	tmp_ctx = talloc_new(mem_ctx);
 	ntds_settings_dn = samdb_ntds_settings_dn(ldb);
 	if (!ntds_settings_dn) {
-		DEBUG(0, (__location__ ": Failed to find NTDS settings DN\n"));
-		ret = LDB_ERR_OPERATIONS_ERROR;
 		talloc_free(tmp_ctx);
-		return ret;
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "Failed to find NTDS settings DN");
 	}
 
 	ntds_settings_dn = ldb_dn_copy(tmp_ctx, ntds_settings_dn);
 	if (!ntds_settings_dn) {
-		DEBUG(0, (__location__ ": Failed to copy NTDS settings DN\n"));
-		ret = LDB_ERR_OPERATIONS_ERROR;
 		talloc_free(tmp_ctx);
-		return ret;
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "Failed to copy NTDS settings DN");
 	}
 
 	msg = ldb_msg_new(tmp_ctx);
@@ -1204,11 +1200,11 @@ static int rootdse_become_master(struct ldb_module *module,
 
 	status_call = dcerpc_drepl_takeFSMORole_r(irpc_handle, tmp_ctx, &r);
 	if (!NT_STATUS_IS_OK(status_call)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, nt_errstr(status_call));
 	}
 	status_fn = r.out.result;
 	if (!W_ERROR_IS_OK(status_fn)) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, win_errstr(status_fn));
 	}
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
