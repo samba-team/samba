@@ -910,6 +910,8 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
             conf.DEFINE('HAVE_KRB5', '1')
             if have_gssapi:
                 conf.DEFINE('HAVE_GSSAPI', '1')
+            if conf.CONFIG_SET('HAVE_LDAP'):
+                conf.env['HAVE_ADS'] = '1'
         else:
             Logs.warn("krb5 libs don't have all features required for Active Directory support")
             conf.undefine('HAVE_KRB5_H')

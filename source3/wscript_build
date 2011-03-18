@@ -819,9 +819,10 @@ bld.SAMBA3_SUBSYSTEM('SMBLDAP',
 
 bld.SAMBA3_LIBRARY('ads',
                    source=LIBADS_SRC,
-                   deps='LIBCLI_LDAP_NDR krb5',
+                   deps='LIBCLI_LDAP_NDR krb5 gssapi gssapi_krb5 ldap lber',
                    private_library=True,
-                   vars=locals())
+                   vars=locals(),
+                   enabled=bld.env.HAVE_ADS)
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
