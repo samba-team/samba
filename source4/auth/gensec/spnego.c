@@ -30,6 +30,8 @@
 #include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
 
+_PUBLIC_ NTSTATUS gensec_spnego_init(void);
+
 enum spnego_state_position {
 	SPNEGO_SERVER_START,
 	SPNEGO_CLIENT_START,

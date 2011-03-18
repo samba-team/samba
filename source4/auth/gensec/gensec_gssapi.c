@@ -42,6 +42,8 @@
 #include "auth/gensec/gensec_gssapi.h"
 #include "lib/util/util_net.h"
 
+_PUBLIC_ NTSTATUS gensec_gssapi_init(void);
+
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
 

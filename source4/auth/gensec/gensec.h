@@ -274,7 +274,6 @@ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 			     struct gensec_security **gensec_security);
 NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
 			     struct auth_session_info **session_info);
-NTSTATUS nt_status_squash(NTSTATUS nt_status);
 struct netlogon_creds_CredentialState;
 NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 			       TALLOC_CTX *mem_ctx,

@@ -26,6 +26,8 @@
 #include "auth/gensec/gensec_proto.h"
 #include <sasl/sasl.h>
 
+NTSTATUS gensec_sasl_init(void);
+
 struct gensec_sasl_state {
 	sasl_conn_t *conn;
 	int step;

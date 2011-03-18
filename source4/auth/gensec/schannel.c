@@ -30,6 +30,8 @@
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 
+_PUBLIC_ NTSTATUS gensec_schannel_init(void);
+
 static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
 	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;

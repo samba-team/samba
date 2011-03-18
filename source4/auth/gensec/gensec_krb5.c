@@ -39,6 +39,8 @@
 #include "auth/auth_sam_reply.h"
 #include "lib/util/util_net.h"
 
+_PUBLIC_ NTSTATUS gensec_krb5_init(void);
+
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,
 	GENSEC_KRB5_CLIENT_START,
