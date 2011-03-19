@@ -251,9 +251,9 @@ static bool $name\__op_interface_by_name(struct dcesrv_interface *iface, const c
 		return true;
 	}
 
-	return false;	
+	return false;
 }
-	
+
 NTSTATUS dcerpc_server_$name\_init(void)
 {
 	NTSTATUS ret;
@@ -288,6 +288,9 @@ sub ParseInterface($)
 {
 	my($interface) = shift;
 	my $count = 0;
+
+	$res .= "NTSTATUS dcerpc_server_$interface->{NAME}\_init(void);\n";
+	$res .= "\n";
 
 	if (!defined $interface->{PROPERTIES}->{uuid}) {
 		return $res;
