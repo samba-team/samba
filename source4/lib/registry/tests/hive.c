@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "param/param.h"
 #include "libcli/security/security.h"
+#include "lib/registry/tests/proto.h"
 
 static bool test_del_nonexistant_key(struct torture_context *tctx,
 				     const void *test_data)

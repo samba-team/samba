@@ -24,10 +24,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "param/param.h"
-
-struct torture_suite *torture_registry_hive(TALLOC_CTX *mem_ctx);
-struct torture_suite *torture_registry_registry(TALLOC_CTX *mem_ctx);
-struct torture_suite *torture_registry_diff(TALLOC_CTX *mem_ctx);
+#include "lib/registry/tests/proto.h"
 
 static bool test_str_regtype(struct torture_context *ctx)
 {

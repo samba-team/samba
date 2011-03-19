@@ -25,6 +25,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "param/param.h"
+#include "lib/registry/tests/proto.h"
 
 struct diff_tcase_data {
 	struct registry_context *r1_ctx;

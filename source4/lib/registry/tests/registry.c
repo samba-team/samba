@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/winreg.h"
 #include "libcli/security/security.h"
 #include "system/filesys.h"
+#include "lib/registry/tests/proto.h"
 
 /**
  * Test obtaining a predefined key.
