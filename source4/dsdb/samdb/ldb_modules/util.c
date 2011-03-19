@@ -109,39 +109,23 @@ int dsdb_module_search_dn(struct ldb_module *module,
 	return ret;
 }
 
-/*
-  search for attrs in the modules below
- */
-int dsdb_module_search(struct ldb_module *module,
+int dsdb_module_search_tree(struct ldb_module *module,
 		       TALLOC_CTX *mem_ctx,
 		       struct ldb_result **_res,
-		       struct ldb_dn *basedn, enum ldb_scope scope, 
+		       struct ldb_dn *basedn,
+		       enum ldb_scope scope,
+		       struct ldb_parse_tree *tree,
 		       const char * const *attrs,
-		       int dsdb_flags, 
-		       struct ldb_request *parent,
-		       const char *format, ...) _PRINTF_ATTRIBUTE(9, 10)
+		       int dsdb_flags,
+		       struct ldb_request *parent)
 {
 	int ret;
 	struct ldb_request *req;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
-	va_list ap;
-	char *expression;
 
 	tmp_ctx = talloc_new(mem_ctx);
 
-	if (format) {
-		va_start(ap, format);
-		expression = talloc_vasprintf(tmp_ctx, format, ap);
-		va_end(ap);
-
-		if (!expression) {
-			talloc_free(tmp_ctx);
-			return ldb_oom(ldb_module_get_ctx(module));
-		}
-	} else {
-		expression = NULL;
-	}
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
@@ -149,10 +133,10 @@ int dsdb_module_search(struct ldb_module *module,
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
-	ret = ldb_build_search_req(&req, ldb_module_get_ctx(module), tmp_ctx,
+	ret = ldb_build_search_req_ex(&req, ldb_module_get_ctx(module), tmp_ctx,
 				   basedn,
 				   scope,
-				   expression,
+				   tree,
 				   attrs,
 				   NULL,
 				   res,
@@ -191,6 +175,61 @@ int dsdb_module_search(struct ldb_module *module,
 	if (ret == LDB_SUCCESS) {
 		*_res = talloc_steal(mem_ctx, res);
 	}
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/*
+  search for attrs in the modules below
+ */
+int dsdb_module_search(struct ldb_module *module,
+		       TALLOC_CTX *mem_ctx,
+		       struct ldb_result **_res,
+		       struct ldb_dn *basedn, enum ldb_scope scope,
+		       const char * const *attrs,
+		       int dsdb_flags,
+		       struct ldb_request *parent,
+		       const char *format, ...) _PRINTF_ATTRIBUTE(9, 10)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx;
+	va_list ap;
+	char *expression;
+	struct ldb_parse_tree *tree;
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	if (format) {
+		va_start(ap, format);
+		expression = talloc_vasprintf(tmp_ctx, format, ap);
+		va_end(ap);
+
+		if (!expression) {
+			talloc_free(tmp_ctx);
+			return ldb_oom(ldb_module_get_ctx(module));
+		}
+	} else {
+		expression = NULL;
+	}
+
+	tree = ldb_parse_tree(tmp_ctx, expression);
+	if (tree == NULL) {
+		talloc_free(tmp_ctx);
+		ldb_set_errstring(ldb_module_get_ctx(module),
+				"Unable to parse search expression");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_module_search_tree(module,
+		       mem_ctx,
+		       _res,
+		       basedn,
+		       scope,
+		       tree,
+		       attrs,
+		       dsdb_flags,
+		       parent);
+
 	talloc_free(tmp_ctx);
 	return ret;
 }
