@@ -28,6 +28,7 @@
 #include "librpc/ndr/ndr_table.h"
 #include "param/param.h"
 
+NTSTATUS dcerpc_server_remote_init(void);
 
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
