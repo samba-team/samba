@@ -1703,11 +1703,11 @@ static void tldap_search_done(struct tevent_req *subreq)
 	switch (state->result->type) {
 	case TLDAP_RES_SEARCH_ENTRY:
 	case TLDAP_RES_SEARCH_REFERENCE:
-		tevent_req_notify_callback(req);
 		if (!tldap_msg_set_pending(subreq)) {
 			tevent_req_nomem(NULL, req);
 			return;
 		}
+		tevent_req_notify_callback(req);
 		break;
 	case TLDAP_RES_SEARCH_RESULT:
 		TALLOC_FREE(subreq);
