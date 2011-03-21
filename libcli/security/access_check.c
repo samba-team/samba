@@ -112,9 +112,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	unsigned i;
 
 	if (security_token_has_sid(token, sd->owner_sid)) {
-		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
-	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		granted |= SEC_STD_DELETE;
+		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
 	}
 
 	if (sd->dacl == NULL) {
@@ -171,7 +169,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		access_desired |= access_check_max_allowed(sd, token);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 		*access_granted = access_desired;
-		bits_remaining = access_desired & ~SEC_STD_DELETE;
+		bits_remaining = access_desired;
 
 		DEBUG(10,("se_access_check: MAX desired = 0x%x, granted = 0x%x, remaining = 0x%x\n",
 			orig_access_desired,
@@ -190,21 +188,13 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		}
 	}
 
-	/* a NULL dacl allows access */
-	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
-		*access_granted = access_desired;
-		return NT_STATUS_OK;
+	/* the owner always gets SEC_STD_WRITE_DAC and SEC_STD_READ_CONTROL */
+	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
+	    security_token_has_sid(token, sd->owner_sid)) {
+		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
 	}
 
-	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
-	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
-	    security_token_has_sid(token, sd->owner_sid)) {
-		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
-	}
-	if ((bits_remaining & SEC_STD_DELETE) &&
-	    (security_token_has_privilege(token, SEC_PRIV_RESTORE))) {
-		bits_remaining &= ~SEC_STD_DELETE;
-	}
+	/* TODO: remove this, as it is file server specific */
 	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
 	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
 		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
@@ -212,6 +202,12 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
 	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
 		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
+	}
+
+	/* a NULL dacl allows access */
+	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
+		*access_granted = access_desired;
+		return NT_STATUS_OK;
 	}
 
 	if (sd->dacl == NULL) {
@@ -295,7 +291,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
                 access_desired |= access_check_max_allowed(sd, token);
                 access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
                 *access_granted = access_desired;
-                bits_remaining = access_desired & ~SEC_STD_DELETE;
+		bits_remaining = access_desired;
         }
 
         if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
@@ -307,21 +303,27 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
                 }
         }
 
+	/* the owner always gets SEC_STD_WRITE_DAC and SEC_STD_READ_CONTROL */
+	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
+	    security_token_has_sid(token, sd->owner_sid)) {
+		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
+	}
+
+	/* TODO: remove this, as it is file server specific */
+	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
+	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
+	}
+	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
+	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
+	}
+
         /* a NULL dacl allows access */
         if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
                 *access_granted = access_desired;
                 talloc_free(ps_sid);
                 return NT_STATUS_OK;
-        }
-
-        /* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
-        if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
-            security_token_has_sid(token, sd->owner_sid)) {
-                bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
-        }
-        if ((bits_remaining & SEC_STD_DELETE) &&
-            security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-                bits_remaining &= ~SEC_STD_DELETE;
         }
 
         if (sd->dacl == NULL) {
