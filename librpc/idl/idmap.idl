@@ -19,7 +19,7 @@ interface idmap
 		id_type type;
 	} unixid;
 
-	typedef[public]  enum {
+	typedef [public] enum {
 		ID_UNKNOWN,
 		ID_MAPPED,
 		ID_UNMAPPED,
