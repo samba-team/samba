@@ -35,6 +35,9 @@ _PUBLIC_ struct loadparm_context *lpcfg_from_py_object(TALLOC_CTX *mem_ctx, PyOb
 
 	if (PyString_Check(py_obj)) {
 		lp_ctx = loadparm_init_global(false);
+		if (lp_ctx == NULL) {
+			return NULL;
+		}
 		if (!lpcfg_load(lp_ctx, PyString_AsString(py_obj))) {
 			PyErr_Format(PyExc_RuntimeError, "Unable to load %s", 
 				     PyString_AsString(py_obj));

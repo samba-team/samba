@@ -113,6 +113,11 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 		}
 
 		settings->lp_ctx = loadparm_init_global(true);
+		if (settings->lp_ctx == NULL) {
+			PyErr_NoMemory();
+			PyObject_DEL(self);
+			return NULL;
+		}
 	}
 
 	ev = tevent_context_init(self->talloc_ctx);
@@ -181,6 +186,11 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 		}
 
 		settings->lp_ctx = loadparm_init_global(true);
+		if (settings->lp_ctx == NULL) {
+			PyErr_NoMemory();
+			PyObject_DEL(self);
+			return NULL;
+		}
 	}
 
 	ev = tevent_context_init(self->talloc_ctx);

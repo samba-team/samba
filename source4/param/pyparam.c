@@ -335,6 +335,10 @@ static PyObject *py_lp_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 		return NULL;
 	}
 	ret->ptr = loadparm_init_global(false);
+	if (ret->ptr == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	return (PyObject *)ret;
 }
 
