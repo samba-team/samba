@@ -509,10 +509,10 @@ static bool pvfs_group_member(struct pvfs_state *pvfs, gid_t gid)
 
   If name is NULL then treat as a new file creation
 */
-NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs, 
-				struct ntvfs_request *req,
-				struct pvfs_filename *name,
-				uint32_t *access_mask)
+static NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
+				       struct ntvfs_request *req,
+				       struct pvfs_filename *name,
+				       uint32_t *access_mask)
 {
 	uid_t uid = geteuid();
 	uint32_t max_bits = SEC_RIGHTS_FILE_READ | SEC_FILE_ALL;
@@ -592,6 +592,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	struct xattr_NTACL *acl;
 	NTSTATUS status;
 	struct security_descriptor *sd;
+	bool allow_delete = false;
 
 	/* on SMB2 a blank access mask is always denied */
 	if (pvfs->ntvfs->ctx->protocol == PROTOCOL_SMB2 &&
@@ -601,6 +602,16 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 
 	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (*access_mask & SEC_FLAG_MAXIMUM_ALLOWED ||
+	    *access_mask & SEC_STD_DELETE) {
+		status = pvfs_access_check_parent(pvfs, req,
+						  name, SEC_DIR_DELETE_CHILD);
+		if (NT_STATUS_IS_OK(status)) {
+			allow_delete = true;
+			*access_mask &= ~SEC_STD_DELETE;
+		}
 	}
 
 	acl = talloc(req, struct xattr_NTACL);
@@ -617,7 +628,8 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	status = pvfs_acl_load(pvfs, name, -1, acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		talloc_free(acl);
-		return pvfs_access_check_unix(pvfs, req, name, access_mask);
+		status = pvfs_access_check_unix(pvfs, req, name, access_mask);
+		goto done;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -633,15 +645,18 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 
 	/* check the acl against the required access mask */
 	status = se_access_check(sd, token, *access_mask, access_mask);
-
+	talloc_free(acl);
+done:
 	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
 		/* on SMB, this bit is always granted, even if not
 		   asked for */
 		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
 	}
 
-	talloc_free(acl);
-	
+	if (allow_delete) {
+		*access_mask |= SEC_STD_DELETE;
+	}
+
 	return status;
 }
 
@@ -673,6 +688,8 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 {
 	struct pvfs_filename *parent;
 	NTSTATUS status;
+	uint32_t parent_mask;
+	bool allow_delete = false;
 
 	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -681,8 +698,35 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		parent_mask = SEC_DIR_ADD_SUBDIR;
+	} else {
+		parent_mask = SEC_DIR_ADD_FILE;
+	}
+	if (*access_mask & SEC_FLAG_MAXIMUM_ALLOWED ||
+	    *access_mask & SEC_STD_DELETE) {
+		parent_mask |= SEC_DIR_DELETE_CHILD;
+	}
+
+	status = pvfs_access_check(pvfs, req, parent, &parent_mask);
+	if (NT_STATUS_IS_OK(status)) {
+		if (parent_mask & SEC_DIR_DELETE_CHILD) {
+			allow_delete = true;
+		}
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		/*
+		 * on ACCESS_DENIED we get the rejected bits
+		 * remove the non critical SEC_DIR_DELETE_CHILD
+		 * and check if something else was rejected.
+		 */
+		parent_mask &= ~SEC_DIR_DELETE_CHILD;
+		if (parent_mask != 0) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		status = NT_STATUS_OK;
+	} else {
+		return status;
+	}
 
 	if (*sd == NULL) {
 		status = pvfs_acl_inherited_sd(pvfs, req, req, parent, container, sd);
@@ -705,6 +749,10 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 		/* on SMB, this bit is always granted, even if not
 		   asked for */
 		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+	}
+
+	if (allow_delete) {
+		*access_mask |= SEC_STD_DELETE;
 	}
 
 	return NT_STATUS_OK;
