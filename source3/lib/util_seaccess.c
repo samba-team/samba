@@ -112,9 +112,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	unsigned i;
 
 	if (is_sid_in_token(token, sd->owner_sid)) {
-		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
-	} else if (user_has_privileges(token, &se_restore)) {
-		granted |= SEC_STD_DELETE;
+		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
 	}
 
 	if (sd->dacl == NULL) {
@@ -171,7 +169,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		access_desired |= access_check_max_allowed(sd, token);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 		*access_granted = access_desired;
-		bits_remaining = access_desired & ~SEC_STD_DELETE;
+		bits_remaining = access_desired;
 
 		DEBUG(10,("se_access_check: MAX desired = 0x%x, granted = 0x%x, remaining = 0x%x\n",
 			orig_access_desired,
@@ -187,20 +185,20 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		}
 	}
 
-	/* a NULL dacl allows access */
-	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
-		*access_granted = access_desired;
-		return NT_STATUS_OK;
-	}
-
-	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
-	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
+	/* the owner always gets SEC_STD_WRITE_DAC and SEC_STD_READ_CONTROL */
+	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
 	    is_sid_in_token(token, sd->owner_sid)) {
-		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
+		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
 	}
 	if ((bits_remaining & SEC_STD_DELETE) &&
 	    user_has_privileges(token, &se_restore)) {
 		bits_remaining &= ~SEC_STD_DELETE;
+	}
+
+	/* a NULL dacl allows access */
+	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
+		*access_granted = access_desired;
+		return NT_STATUS_OK;
 	}
 
 	if (sd->dacl == NULL) {
