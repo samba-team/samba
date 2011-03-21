@@ -22,7 +22,7 @@ import samba.getopt as options
 
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 from samba.netcmd import Command, CommandError, Option
-from samba.dcerpc.misc import SEC_CHAN_WKSTA, SEC_CHAN_BDC
+from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.join import join_RODC, join_DC
 
 class cmd_join(Command):
@@ -39,12 +39,13 @@ class cmd_join(Command):
     takes_options = [
         Option("--server", help="DC to join", type=str),
         Option("--site", help="site to join", type=str),
+        Option("--targetdir", help="where to store provision", type=str),
         ]
 
     takes_args = ["domain", "role?"]
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
-            versionopts=None, server=None, site=None):
+            versionopts=None, server=None, site=None, targetdir=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -61,11 +62,11 @@ class cmd_join(Command):
             secure_channel_type = SEC_CHAN_WKSTA
         elif role == "DC":
             join_DC(server=server, creds=creds, lp=lp, domain=domain,
-                    site=site, netbios_name=netbios_name)
+                    site=site, netbios_name=netbios_name, targetdir=targetdir)
             return
         elif role == "RODC":
             join_RODC(server=server, creds=creds, lp=lp, domain=domain,
-                      site=site, netbios_name=netbios_name)
+                      site=site, netbios_name=netbios_name, targetdir=targetdir)
             return
         else:
             raise CommandError("Invalid role %s (possible values: MEMBER, BDC, RODC)" % role)
