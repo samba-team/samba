@@ -232,8 +232,9 @@ static void rpc_ep_setup_register_loop(struct tevent_req *subreq)
 
 	state->wait_time = state->wait_time * 2;
 	if (state->wait_time > 16) {
-		talloc_free(state);
-		return;
+		DEBUG(0, ("Failed to register endpoint '%s'!\n",
+			   state->iface->name));
+		state->wait_time = 16;
 	}
 
 	subreq = tevent_wakeup_send(state->mem_ctx,
