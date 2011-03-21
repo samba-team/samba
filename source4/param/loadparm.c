@@ -2533,6 +2533,9 @@ struct loadparm_context *loadparm_init_global(bool load_default)
 	if (global_loadparm_context == NULL) {
 		global_loadparm_context = loadparm_init(NULL);
 	}
+	if (global_loadparm_context == NULL) {
+		return NULL;
+	}
 	if (load_default && !global_loadparm_context->loaded) {
 		lpcfg_load_default(global_loadparm_context);
 	}
