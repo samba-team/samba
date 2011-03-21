@@ -268,6 +268,8 @@ static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 	struct auth_user_info_dc *user_info_dc = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
 	nt_status = auth_domain_admin_user_info_dc(mem_ctx, lpcfg_netbios_name(lp_ctx),
 						  lpcfg_workgroup(lp_ctx), domain_sid,
 						  &user_info_dc);
