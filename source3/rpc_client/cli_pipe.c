@@ -2262,7 +2262,7 @@ NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	result->auth_type = DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM;
-	result->auth_level = DCERPC_AUTH_LEVEL_NONE;
+	result->auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 
 	result->user_name = talloc_strdup(result, "");
 	result->domain = talloc_strdup(result, "");

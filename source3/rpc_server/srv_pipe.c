@@ -987,9 +987,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		case DCERPC_AUTH_LEVEL_PRIVACY:
 			p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 			break;
-		case DCERPC_AUTH_LEVEL_NONE:
-			p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
-			break;
 		case DCERPC_AUTH_LEVEL_CONNECT:
 			p->auth.auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 			break;
