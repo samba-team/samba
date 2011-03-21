@@ -204,11 +204,6 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 		close(fd[0]);
 
 		debug_extra = talloc_asprintf(NULL, "freeze_lock-%u:", priority);
-		if (tdb_reopen_all(true) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to reopen databases\n"));
-			_exit(0);
-		}
-
 		ret = ctdb_lock_all_databases(ctdb, priority);
 		if (ret != 0) {
 			_exit(0);
