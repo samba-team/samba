@@ -421,6 +421,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 			DEBUG(DEBUG_ERR,("ctdb_req_dmaster from non-master. Force a recovery.\n"));
 
 			ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+			ctdb_ltdb_unlock(ctdb_db, key);
 			return;
 		}
 	}
