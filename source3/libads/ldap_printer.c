@@ -47,33 +47,25 @@
 		return status;
 	}
 	if (ads_count_replies(ads, *res) != 1) {
-		if (res) {
-			ads_msgfree(ads, *res);
-			*res = NULL;
-		}
+		ads_msgfree(ads, *res);
+		*res = NULL;
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 	srv_dn = ldap_get_dn(ads->ldap.ld, *res);
 	if (srv_dn == NULL) {
-		if (res) {
-			ads_msgfree(ads, *res);
-			*res = NULL;
-		}
+		ads_msgfree(ads, *res);
+		*res = NULL;
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 	if (srv_cn == NULL) {
 		ldap_memfree(srv_dn);
-		if (res) {
-			ads_msgfree(ads, *res);
-			*res = NULL;
-		}
-		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
-	}
-	if (res) {
 		ads_msgfree(ads, *res);
 		*res = NULL;
+		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
 	}
+	ads_msgfree(ads, *res);
+	*res = NULL;
 
 	if (asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer) == -1) {
 		ldap_memfree(srv_dn);
