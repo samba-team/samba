@@ -150,12 +150,7 @@ static void wb_child_request_trigger(struct tevent_req *req,
 		return;
 	}
 	tevent_req_set_callback(subreq, wb_child_request_done, req);
-
-	if (!tevent_req_set_endtime(req, state->ev,
-				    timeval_current_ofs(300, 0))) {
-		tevent_req_nomem(NULL, req);
-                return;
-        }
+	tevent_req_set_endtime(req, state->ev, timeval_current_ofs(300, 0));
 }
 
 static void wb_child_request_done(struct tevent_req *subreq)
