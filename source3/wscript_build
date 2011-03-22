@@ -245,7 +245,7 @@ OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c
 
 NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c'''
 
-FNAME_UTIL_SRC = '''smbd/filename_util.c'''
+FNAME_UTIL_SRC = '''lib/filename_util.c'''
 
 
 PLAINTEXT_AUTH_SRC = '''auth/pampass.c auth/pass_check.c'''
