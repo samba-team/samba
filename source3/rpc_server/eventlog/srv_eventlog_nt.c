@@ -28,7 +28,7 @@
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "rpc_client/cli_winreg_int.h"
 #include "rpc_client/cli_winreg.h"
-
+#include "smbd/smbd.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

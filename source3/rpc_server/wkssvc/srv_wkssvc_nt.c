@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 #include "../libcli/security/security.h"
 #include "session.h"
+#include "smbd/smbd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

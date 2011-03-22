@@ -38,6 +38,7 @@
 #include "dcesrv_spnego.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"
+#include "smbd/smbd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
