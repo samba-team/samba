@@ -41,6 +41,7 @@
 #include "../libcli/security/security.h"
 #include "libsmb/clirap.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "passdb.h"
 
 static int net_mode_share;
 static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask);

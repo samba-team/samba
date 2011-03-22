@@ -74,6 +74,7 @@
 #include "ads.h"
 #include "secrets.h"
 #include "../libcli/security/security.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

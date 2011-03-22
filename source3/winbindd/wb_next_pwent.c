@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_wbint_c.h"
+#include "passdb/machine_sid.h"
 
 struct wb_next_pwent_state {
 	struct tevent_context *ev;

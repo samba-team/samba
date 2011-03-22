@@ -29,6 +29,7 @@
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
 #include "lib/winbind_util.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

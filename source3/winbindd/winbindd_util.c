@@ -25,6 +25,7 @@
 #include "secrets.h"
 #include "../libcli/security/security.h"
 #include "../libcli/auth/pam_errors.h"
+#include "passdb/machine_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

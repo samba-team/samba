@@ -35,6 +35,7 @@
 #include "../libcli/security/security.h"
 #include "ads.h"
 #include "../librpc/gen_ndr/krb5pac.h"
+#include "passdb/machine_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

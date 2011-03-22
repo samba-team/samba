@@ -24,6 +24,8 @@
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
 
+struct samu;
+
 void copy_id2_to_sam_passwd(struct samu *to,
 			    struct samr_UserInfo2 *from);
 void copy_id4_to_sam_passwd(struct samu *to,

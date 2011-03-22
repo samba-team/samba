@@ -32,6 +32,7 @@
 #include "ads.h"
 #include "nss_info.h"
 #include "../libcli/security/security.h"
+#include "passdb/machine_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

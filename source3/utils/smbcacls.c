@@ -28,6 +28,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "../libcli/security/security.h"
 #include "libsmb/clirap.h"
+#include "passdb/machine_sid.h"
 
 static int test_args;
 

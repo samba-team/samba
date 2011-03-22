@@ -24,6 +24,7 @@
 #include "fake_file.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "passdb/lookup_sid.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
