@@ -489,5 +489,7 @@ struct pdb_init_function_entry {
 };
 
 #include "passdb/proto.h"
+#include "passdb/machine_sid.h"
+#include "passdb/lookup_sid.h"
 
 #endif /* _PASSDB_H */
