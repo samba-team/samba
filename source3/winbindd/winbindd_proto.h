@@ -429,6 +429,7 @@ void winbindd_set_locator_kdc_envs(const struct winbindd_domain *domain);
 void winbindd_unset_locator_kdc_env(const struct winbindd_domain *domain);
 void set_auth_errors(struct winbindd_response *resp, NTSTATUS result);
 bool is_domain_offline(const struct winbindd_domain *domain);
+bool is_domain_online(const struct winbindd_domain *domain);
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   struct dom_sid **sids, uint32_t *num_sids);
 
