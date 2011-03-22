@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Translate unix-defined names to SIDs and vice versa
    Copyright (C) Volker Lendecke 2005
@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "passdb.h"
 #include "system/passwd.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"

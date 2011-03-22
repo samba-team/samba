@@ -228,7 +228,7 @@ PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
 
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c
                 lib/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
-                passdb/util_unixsids.c passdb/lookup_sid.c
+                lib/util_unixsids.c passdb/lookup_sid.c
                 passdb/login_cache.c
                 passdb/account_pol.c ${PRIVILEGES_SRC}
                 lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}
