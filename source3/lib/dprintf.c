@@ -29,6 +29,7 @@
 */
 
 #include "includes.h"
+#include "intl/lang_tdb.h"
 
  int d_vfprintf(FILE *f, const char *format, va_list ap)
 {

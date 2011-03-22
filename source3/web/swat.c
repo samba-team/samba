@@ -34,6 +34,7 @@
 #include "printing/pcap.h"
 #include "printing/load.h"
 #include "passdb.h"
+#include "intl/lang_tdb.h"
 
 static int demo_mode = False;
 static int passwd_only = False;

@@ -21,6 +21,7 @@
 #include "system/passwd.h"
 #include "system/filesys.h"
 #include "web/swat_proto.h"
+#include "intl/lang_tdb.h"
 
 #define MAX_VARIABLES 10000
 
