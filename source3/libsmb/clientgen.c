@@ -615,13 +615,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	memset(cli->outbuf, 0, cli->bufsize);
 	memset(cli->inbuf, 0, cli->bufsize);
 
-
-#if defined(DEVELOPER)
-	/* just because we over-allocate, doesn't mean it's right to use it */
-	clobber_region(__FUNCTION__, __LINE__, cli->outbuf+cli->bufsize, SAFETY_MARGIN);
-	clobber_region(__FUNCTION__, __LINE__, cli->inbuf+cli->bufsize, SAFETY_MARGIN);
-#endif
-
 	/* initialise signing */
 	cli->signing_state = smb_signing_init(cli,
 					      allow_smb_signing,

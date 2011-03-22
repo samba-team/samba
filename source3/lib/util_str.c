@@ -500,23 +500,15 @@ bool strhaslower(const char *s)
  include the terminating zero.
 **/
 
-char *safe_strcpy_fn(const char *fn,
-		int line,
-		char *dest,
-		const char *src,
-		size_t maxlength)
+char *safe_strcpy_fn(char *dest,
+		     const char *src,
+		     size_t maxlength)
 {
 	size_t len;
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcpy, "
-			"called from [%s][%d]\n", fn, line));
-		return NULL;
+		smb_panic("ERROR: NULL dest in safe_strcpy");
 	}
-
-#ifdef DEVELOPER
-	clobber_region(fn,line,dest, maxlength+1);
-#endif
 
 	if (!src) {
 		*dest = 0;
@@ -542,18 +534,14 @@ char *safe_strcpy_fn(const char *fn,
  Safe string cat into a string. maxlength does not
  include the terminating zero.
 **/
-char *safe_strcat_fn(const char *fn,
-		int line,
-		char *dest,
-		const char *src,
-		size_t maxlength)
+char *safe_strcat_fn(char *dest,
+		     const char *src,
+		     size_t maxlength)
 {
 	size_t src_len, dest_len;
 
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcat, "
-			"called from [%s][%d]\n", fn, line));
-		return NULL;
+		smb_panic("ERROR: NULL dest in safe_strcat");
 	}
 
 	if (!src)
@@ -561,10 +549,6 @@ char *safe_strcat_fn(const char *fn,
 
 	src_len = strnlen(src, maxlength + 1);
 	dest_len = strnlen(dest, maxlength + 1);
-
-#ifdef DEVELOPER
-	clobber_region(fn, line, dest + dest_len, maxlength + 1 - dest_len);
-#endif
 
 	if (src_len + dest_len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %d "
@@ -589,23 +573,15 @@ char *safe_strcat_fn(const char *fn,
  characters. Don't change it !
 **/
 
-char *alpha_strcpy_fn(const char *fn,
-		int line,
-		char *dest,
-		const char *src,
-		const char *other_safe_chars,
-		size_t maxlength)
+char *alpha_strcpy_fn(char *dest,
+		      const char *src,
+		      const char *other_safe_chars,
+		      size_t maxlength)
 {
 	size_t len, i;
 
-#ifdef DEVELOPER
-	clobber_region(fn, line, dest, maxlength);
-#endif
-
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in alpha_strcpy, "
-			"called from [%s][%d]\n", fn, line));
-		return NULL;
+		smb_panic("ERROR: NULL dest in alpha_strcpy");
 	}
 
 	if (!src) {
@@ -638,18 +614,12 @@ char *alpha_strcpy_fn(const char *fn,
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
 **/
-char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
+char *StrnCpy_fn(char *dest,const char *src,size_t n)
 {
 	char *d = dest;
 
-#ifdef DEVELOPER
-	clobber_region(fn, line, dest, n+1);
-#endif
-
 	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in StrnCpy, "
-			"called from [%s][%d]\n", fn, line));
-		return(NULL);
+		smb_panic("ERROR: NULL dest in StrnCpy");
 	}
 
 	if (!src) {
@@ -677,9 +647,6 @@ static char *strncpyn(char *dest, const char *src, size_t n, char c)
 	char *p;
 	size_t str_len;
 
-#ifdef DEVELOPER
-	clobber_region(dest, n+1);
-#endif
 	p = strchr_m(src, c);
 	if (p == NULL) {
 		DEBUG(5, ("strncpyn: separator character (%c) not found\n", c));

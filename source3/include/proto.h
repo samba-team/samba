@@ -449,25 +449,19 @@ bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
 		      size_t *converted_size);
 bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 		       size_t *converted_size);
-size_t push_string_check_fn(const char *function, unsigned int line,
-			    void *dest, const char *src,
+size_t push_string_check_fn(void *dest, const char *src,
 			    size_t dest_len, int flags);
-size_t push_string_base(const char *function, unsigned int line,
-			const char *base, uint16 flags2, 
+size_t push_string_base(const char *base, uint16 flags2,
 			void *dest, const char *src,
 			size_t dest_len, int flags);
-size_t pull_string_fn(const char *function,
-			unsigned int line,
-			const void *base_ptr,
+size_t pull_string_fn(const void *base_ptr,
 			uint16 smb_flags2,
 			char *dest,
 			const void *src,
 			size_t dest_len,
 			size_t src_len,
 			int flags);
-size_t pull_string_talloc_fn(const char *function,
-			unsigned int line,
-			TALLOC_CTX *ctx,
+size_t pull_string_talloc_fn(TALLOC_CTX *ctx,
 			const void *base_ptr,
 			uint16 smb_flags2,
 			char **ppdest,
@@ -478,10 +472,6 @@ size_t align_string(const void *base_ptr, const char *p, int flags);
 codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 			       size_t *bytes_consumed);
 codepoint_t next_codepoint(const char *str, size_t *size);
-
-/* The following definitions come from lib/clobber.c  */
-
-void clobber_region(const char *fn, unsigned int line, char *dest, size_t len);
 
 /* The following definitions come from lib/conn_tdb.c  */
 
@@ -1356,23 +1346,17 @@ size_t str_ascii_charnum(const char *s);
 bool trim_char(char *s,char cfront,char cback);
 bool strhasupper(const char *s);
 bool strhaslower(const char *s);
-char *safe_strcpy_fn(const char *fn,
-		int line,
-		char *dest,
+char *safe_strcpy_fn(char *dest,
 		const char *src,
 		size_t maxlength);
-char *safe_strcat_fn(const char *fn,
-		int line,
-		char *dest,
+char *safe_strcat_fn(char *dest,
 		const char *src,
 		size_t maxlength);
-char *alpha_strcpy_fn(const char *fn,
-		int line,
-		char *dest,
+char *alpha_strcpy_fn(char *dest,
 		const char *src,
 		const char *other_safe_chars,
 		size_t maxlength);
-char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n);
+char *StrnCpy_fn(char *dest,const char *src,size_t n);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);
 bool string_set(char **dest,const char *src);
@@ -2333,24 +2317,18 @@ bool spnego_mech_list_blob(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from libsmb/clistr.c  */
 
-size_t clistr_push_fn(const char *function,
-			unsigned int line,
-			struct cli_state *cli,
+size_t clistr_push_fn(struct cli_state *cli,
 			void *dest,
 			const char *src,
 			int dest_len,
 			int flags);
-size_t clistr_pull_fn(const char *function,
-			unsigned int line,
-			const char *inbuf,
+size_t clistr_pull_fn(const char *inbuf,
 			char *dest,
 			const void *src,
 			int dest_len,
 			int src_len,
 			int flags);
-size_t clistr_pull_talloc_fn(const char *function,
-				unsigned int line,
-				TALLOC_CTX *ctx,
+size_t clistr_pull_talloc_fn(TALLOC_CTX *ctx,
 				const char *base,
 				uint16_t flags2,
 				char **pp_dest,
@@ -5024,8 +5002,7 @@ bool is_share_read_only_for_token(const char *username,
 
 /* The following definitions come from smbd/srvstr.c  */
 
-size_t srvstr_push_fn(const char *function, unsigned int line,
-		      const char *base_ptr, uint16 smb_flags2, void *dest,
+size_t srvstr_push_fn(const char *base_ptr, uint16 smb_flags2, void *dest,
 		      const char *src, int dest_len, int flags);
 ssize_t message_push_string(uint8 **outbuf, const char *str, int flags);
 

@@ -1297,11 +1297,11 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 **/
 
 size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
-			const void *base_ptr,
-			char **ppdest,
-			const void *src,
-			size_t src_len,
-			int flags)
+			     const void *base_ptr,
+			     char **ppdest,
+			     const void *src,
+			     size_t src_len,
+			     int flags)
 {
 	char *dest;
 	size_t dest_len;
@@ -1476,24 +1476,9 @@ bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
  is -1 then no maxiumum is used.
 **/
 
-size_t push_string_check_fn(const char *function, unsigned int line,
-			    void *dest, const char *src,
-			    size_t dest_len, int flags)
+size_t push_string_check_fn(void *dest, const char *src,
+			 size_t dest_len, int flags)
 {
-#ifdef DEVELOPER
-	/* We really need to zero fill here, not clobber
-	 * region, as we want to ensure that valgrind thinks
-	 * all of the outgoing buffer has been written to
-	 * so a send() or write() won't trap an error.
-	 * JRA.
-	 */
-#if 0
-	clobber_region(function, line, dest, dest_len);
-#else
-	memset(dest, '\0', dest_len);
-#endif
-#endif
-
 	if (!(flags & STR_ASCII) && (flags & STR_UNICODE)) {
 		return push_ucs2(NULL, dest, src, dest_len, flags);
 	}
@@ -1515,24 +1500,10 @@ size_t push_string_check_fn(const char *function, unsigned int line,
  is -1 then no maxiumum is used.
 **/
 
-size_t push_string_base(const char *function, unsigned int line,
-			const char *base, uint16 flags2, 
+size_t push_string_base(const char *base, uint16 flags2,
 			void *dest, const char *src,
 			size_t dest_len, int flags)
 {
-#ifdef DEVELOPER
-	/* We really need to zero fill here, not clobber
-	 * region, as we want to ensure that valgrind thinks
-	 * all of the outgoing buffer has been written to
-	 * so a send() or write() won't trap an error.
-	 * JRA.
-	 */
-#if 0
-	clobber_region(function, line, dest, dest_len);
-#else
-	memset(dest, '\0', dest_len);
-#endif
-#endif
 
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
@@ -1559,15 +1530,6 @@ size_t push_string_base(const char *function, unsigned int line,
 ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t ret;
-#ifdef DEVELOPER
-	/* We really need to zero fill here, not clobber
-	 * region, as we want to ensure that valgrind thinks
-	 * all of the outgoing buffer has been written to
-	 * so a send() or write() won't trap an error.
-	 * JRA.
-	 */
-	memset(dest, '\0', dest_len);
-#endif
 
 	if (!(flags & STR_ASCII) && \
 	    (flags & STR_UNICODE)) {
@@ -1595,20 +1557,14 @@ ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_string_fn(const char *function,
-			unsigned int line,
-			const void *base_ptr,
-			uint16 smb_flags2,
-			char *dest,
-			const void *src,
-			size_t dest_len,
-			size_t src_len,
-			int flags)
+size_t pull_string_fn(const void *base_ptr,
+		   uint16 smb_flags2,
+		   char *dest,
+		   const void *src,
+		   size_t dest_len,
+		   size_t src_len,
+		   int flags)
 {
-#ifdef DEVELOPER
-	clobber_region(function, line, dest, dest_len);
-#endif
-
 	if ((base_ptr == NULL) && ((flags & (STR_ASCII|STR_UNICODE)) == 0)) {
 		smb_panic("No base ptr to get flg2 and neither ASCII nor "
 			  "UNICODE defined");
@@ -1637,15 +1593,13 @@ size_t pull_string_fn(const char *function,
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_string_talloc_fn(const char *function,
-			unsigned int line,
-			TALLOC_CTX *ctx,
-			const void *base_ptr,
-			uint16 smb_flags2,
-			char **ppdest,
-			const void *src,
-			size_t src_len,
-			int flags)
+size_t pull_string_talloc(TALLOC_CTX *ctx,
+			  const void *base_ptr,
+			  uint16 smb_flags2,
+			  char **ppdest,
+			  const void *src,
+			  size_t src_len,
+			  int flags)
 {
 	if ((base_ptr == NULL) && ((flags & (STR_ASCII|STR_UNICODE)) == 0)) {
 		smb_panic("No base ptr to get flg2 and neither ASCII nor "

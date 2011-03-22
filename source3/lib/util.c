@@ -26,9 +26,6 @@
 #include "secrets.h"
 #include "ctdbd_conn.h"
 
-extern char *global_clobber_region_function;
-extern unsigned int global_clobber_region_line;
-
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)
 
@@ -1348,17 +1345,6 @@ void smb_panic_s3(const char *why)
 {
 	char *cmd;
 	int result;
-
-#ifdef DEVELOPER
-	{
-
-		if (global_clobber_region_function) {
-			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]\n",
-					 global_clobber_region_function,
-					 global_clobber_region_line));
-		} 
-	}
-#endif
 
 	DEBUG(0,("PANIC (pid %llu): %s\n",
 		    (unsigned long long)sys_getpid(), why));

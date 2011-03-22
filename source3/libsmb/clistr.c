@@ -20,9 +20,7 @@
 
 #include "includes.h"
 
-size_t clistr_push_fn(const char *function,
-			unsigned int line,
-			struct cli_state *cli,
+size_t clistr_push_fn(struct cli_state *cli,
 			void *dest,
 			const char *src,
 			int dest_len,
@@ -32,42 +30,35 @@ size_t clistr_push_fn(const char *function,
 	if (dest_len == -1) {
 		if (((ptrdiff_t)dest < (ptrdiff_t)cli->outbuf) || (buf_used > cli->bufsize)) {
 			DEBUG(0, ("Pushing string of 'unlimited' length into non-SMB buffer!\n"));
-			return push_string_base(function, line,
-						cli->outbuf,
+			return push_string_base(cli->outbuf,
 						(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
 						dest, src, -1, flags);
 		}
-		return push_string_base(function, line, 
-					cli->outbuf,
+		return push_string_base(cli->outbuf,
 					(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
 					dest, src, cli->bufsize - buf_used,
 					flags);
 	}
 
 	/* 'normal' push into size-specified buffer */
-	return push_string_base(function, line, 
-				cli->outbuf,
+	return push_string_base(cli->outbuf,
 				(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
 				dest, src, dest_len, flags);
 }
 
-size_t clistr_pull_fn(const char *function,
-			unsigned int line,
-			const char *inbuf,
+size_t clistr_pull_fn(const char *inbuf,
 			char *dest,
 			const void *src,
 			int dest_len,
 			int src_len,
 			int flags)
 {
-	return pull_string_fn(function, line, inbuf,
+	return pull_string_fn(inbuf,
 			      SVAL(inbuf, smb_flg2), dest, src, dest_len,
 			      src_len, flags);
 }
 
-size_t clistr_pull_talloc_fn(const char *function,
-				unsigned int line,
-				TALLOC_CTX *ctx,
+size_t clistr_pull_talloc_fn(TALLOC_CTX *ctx,
 				const char *base,
 				uint16_t flags2,
 				char **pp_dest,
@@ -75,9 +66,7 @@ size_t clistr_pull_talloc_fn(const char *function,
 				int src_len,
 				int flags)
 {
-	return pull_string_talloc_fn(function,
-					line,
-					ctx,
+	return pull_string_talloc_fn(ctx,
 					base,
 					flags2,
 					pp_dest,

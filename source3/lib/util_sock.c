@@ -1380,10 +1380,6 @@ const char *get_peer_name(int fd, bool force_lookup)
 		}
 	}
 
-	/* can't pass the same source and dest strings in when you
-	   use --enable-developer or the clobber_region() call will
-	   get you */
-
 	strlcpy(tmp_name, name_buf, sizeof(tmp_name));
 	alpha_strcpy(name_buf, tmp_name, "_-.", sizeof(name_buf));
 	if (strstr(name_buf,"..")) {
