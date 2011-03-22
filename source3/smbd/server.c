@@ -987,7 +987,7 @@ extern void build_options(bool screen);
 	gain_root_group_privilege();
 
 	fault_setup();
-	dump_core_setup("smbd");
+	dump_core_setup("smbd", lp_logfile());
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);

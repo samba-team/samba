@@ -1230,7 +1230,7 @@ int main(int argc, char **argv, char **envp)
  	CatchSignal(SIGUSR2, SIG_IGN);
 
 	fault_setup();
-	dump_core_setup("winbindd");
+	dump_core_setup("winbindd", lp_logfile());
 
 	load_case_tables();
 

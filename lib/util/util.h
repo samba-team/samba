@@ -73,13 +73,14 @@ _PUBLIC_ void call_backtrace(void);
 **/
 _PUBLIC_ _NORETURN_ void smb_panic(const char *why);
 
-#if _SAMBA_BUILD_ == 4
-/**
-setup our fault handlers
-**/
-_PUBLIC_ void fault_setup(const char *pname);
+typedef void (*smb_panic_handler_t)(const char *why);
+
+_PUBLIC_ void fault_configure(smb_panic_handler_t panic_handler);
+_PUBLIC_ void fault_setup(void);
 _PUBLIC_ void fault_setup_disable(void);
-#endif
+_PUBLIC_ void dump_core_setup(const char *progname, const char *logfile);
+_PUBLIC_ void smb_panic(const char *reason);
+
 
 /**
   register a fault handler. 

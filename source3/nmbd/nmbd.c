@@ -812,7 +812,7 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 	
 	fault_setup();
-	dump_core_setup("nmbd");
+	dump_core_setup("nmbd", lp_logfile());
 	
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't receive them. */

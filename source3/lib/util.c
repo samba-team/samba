@@ -1344,7 +1344,7 @@ gid_t nametogid(const char *name)
  Something really nasty happened - panic !
 ********************************************************************/
 
-void smb_panic(const char *const why)
+void smb_panic_s3(const char *why)
 {
 	char *cmd;
 	int result;

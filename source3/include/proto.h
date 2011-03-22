@@ -515,10 +515,6 @@ void display_set_stderr(void);
 NTSTATUS map_nt_error_from_unix(int unix_error);
 int map_errno_from_nt_status(NTSTATUS status);
 
-/* The following definitions come from lib/fault.c  */
-void fault_setup(void);
-void dump_core_setup(const char *progname);
-
 /* The following definitions come from lib/file_id.c  */
 
 struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf);
@@ -1095,7 +1091,7 @@ const char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);
 gid_t nametogid(const char *name);
-void smb_panic(const char *const why);
+void smb_panic_s3(const char *why);
 void log_stack_trace(void);
 const char *readdirname(SMB_STRUCT_DIR *p);
 bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive);

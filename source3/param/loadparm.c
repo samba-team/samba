@@ -9541,6 +9541,8 @@ static bool lp_load_ex(const char *pszFname,
 
 	init_iconv();
 
+	fault_configure(smb_panic_s3);
+
 	bAllowIncludeRegistry = true;
 
 	return (bRetval);
