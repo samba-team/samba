@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 /****************************************************************************
 Reflect connection status in utmp/wtmp files.

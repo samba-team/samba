@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 
 extern userdom_struct current_user_info;

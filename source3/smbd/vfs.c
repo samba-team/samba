@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "memcache.h"
 #include "transfer_file.h"

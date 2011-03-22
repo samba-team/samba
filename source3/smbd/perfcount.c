@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 static struct smb_perfcount_handlers *g_smb_perfcount_handlers = NULL;
 

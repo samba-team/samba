@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 #include <avahi-client/client.h>
 #include <avahi-client/publish.h>

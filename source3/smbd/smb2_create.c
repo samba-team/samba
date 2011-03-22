@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"

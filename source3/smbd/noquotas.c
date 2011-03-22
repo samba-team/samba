@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 /*
  * Needed for auto generation of proto.h.

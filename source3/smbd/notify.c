@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/ndr_notify.h"
 

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "fake_file.h"
 #include "../libcli/security/security.h"

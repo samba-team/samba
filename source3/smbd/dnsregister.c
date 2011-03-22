@@ -18,6 +18,7 @@
 */
 
 #include <includes.h>
+#include "smbd/smbd.h"
 
 /* Uses DNS service discovery (libdns_sd) to
  * register the SMB service. SMB service is registered

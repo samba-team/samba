@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "../lib/util/util_pw.h"
 #include "system/passwd.h"
 #include "passdb/lookup_sid.h"
