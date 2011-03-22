@@ -275,7 +275,7 @@ done:
 static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				struct acct_info **info)
+				struct wb_acct_info **info)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
@@ -349,7 +349,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*info) = TALLOC_ZERO_ARRAY(mem_ctx, struct acct_info, count);
+	(*info) = TALLOC_ZERO_ARRAY(mem_ctx, struct wb_acct_info, count);
 	if (!*info) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -397,7 +397,7 @@ done:
 static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				struct acct_info **info)
+				struct wb_acct_info **info)
 {
 	/*
 	 * This is a stub function only as we returned the domain 

@@ -101,11 +101,11 @@ done:
 static NTSTATUS msrpc_enum_dom_groups(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
 				      uint32_t *pnum_info,
-				      struct acct_info **pinfo)
+				      struct wb_acct_info **pinfo)
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	struct acct_info *info = NULL;
+	struct wb_acct_info *info = NULL;
 	uint32_t num_info = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
@@ -160,11 +160,11 @@ done:
 static NTSTATUS msrpc_enum_local_groups(struct winbindd_domain *domain,
 					TALLOC_CTX *mem_ctx,
 					uint32_t *pnum_info,
-					struct acct_info **pinfo)
+					struct wb_acct_info **pinfo)
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	struct acct_info *info = NULL;
+	struct wb_acct_info *info = NULL;
 	uint32_t num_info = 0;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;

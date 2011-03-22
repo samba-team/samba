@@ -148,9 +148,9 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *samr_pipe,
 			     struct policy_handle *samr_policy,
 			     uint32_t *pnum_info,
-			     struct acct_info **pinfo)
+			     struct wb_acct_info **pinfo)
 {
-	struct acct_info *info = NULL;
+	struct wb_acct_info *info = NULL;
 	uint32_t start = 0;
 	uint32_t num_info = 0;
 	NTSTATUS status, result;
@@ -185,7 +185,7 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 
 		info = TALLOC_REALLOC_ARRAY(mem_ctx,
 					    info,
-					    struct acct_info,
+					    struct wb_acct_info,
 					    num_info + count);
 		if (info == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -211,9 +211,9 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 			       struct rpc_pipe_client *samr_pipe,
 			       struct policy_handle *samr_policy,
 			       uint32_t *pnum_info,
-			       struct acct_info **pinfo)
+			       struct wb_acct_info **pinfo)
 {
-	struct acct_info *info = NULL;
+	struct wb_acct_info *info = NULL;
 	uint32_t num_info = 0;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
@@ -245,7 +245,7 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 
 		info = TALLOC_REALLOC_ARRAY(mem_ctx,
 					    info,
-					    struct acct_info,
+					    struct wb_acct_info,
 					    num_info + count);
 		if (info == NULL) {
 			return  NT_STATUS_NO_MEMORY;
