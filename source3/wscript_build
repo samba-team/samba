@@ -226,7 +226,7 @@ PRIVILEGES_SRC = '''lib/privileges.c'''
 PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
 
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c
-                passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
+                lib/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
                 passdb/util_unixsids.c passdb/lookup_sid.c
                 passdb/login_cache.c
                 passdb/account_pol.c ${PRIVILEGES_SRC}

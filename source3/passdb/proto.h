@@ -309,15 +309,6 @@ bool sid_check_is_in_unix_groups(const struct dom_sid *sid);
 const char *unix_groups_domain_name(void);
 bool lookup_unix_group_name(const char *name, struct dom_sid *sid);
 
-/* The following definitions come from passdb/util_wellknown.c  */
-
-bool sid_check_is_wellknown_domain(const struct dom_sid *sid, const char **name);
-bool sid_check_is_in_wellknown_domain(const struct dom_sid *sid);
-bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
-			  const char **domain, const char **name);
-bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
-			   struct dom_sid *sid, const char **domain);
-
 /* The following definitions come from passdb/pdb_util.c  */
 
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
