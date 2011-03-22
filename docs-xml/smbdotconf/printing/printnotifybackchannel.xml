@@ -13,6 +13,7 @@
 	and treat corresponding requests as if the connection back to
 	the client failed. The default setting of <constant>yes</constant>
 	causes smbd to attempt this connection.
+</para>
 </description>
 <value type="default">yes</value>
 </samba:parameter>
