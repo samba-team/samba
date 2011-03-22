@@ -265,13 +265,6 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
 
-/* The following definitions come from intl/lang_tdb.c  */
-
-bool lang_tdb_init(const char *lang);
-const char *lang_msg(const char *msgid);
-void lang_msg_free(const char *msgstr);
-char *lang_tdb_current(void);
-
 /* The following definitions come from lib/access.c  */
 
 bool client_match(const char *tok, const void *item);
