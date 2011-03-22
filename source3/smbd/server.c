@@ -986,7 +986,7 @@ extern void build_options(bool screen);
 	gain_root_privilege();
 	gain_root_group_privilege();
 
-	fault_setup((void (*)(void *))exit_server_fault);
+	fault_setup();
 	dump_core_setup("smbd");
 
 	/* we are never interested in SIGPIPE */

@@ -29,7 +29,6 @@
 #include <sys/prctl.h>
 #endif
 
-static void (*cont_fn)(void *);
 static char *corepath;
 
 /*******************************************************************
@@ -51,19 +50,7 @@ static void fault_report(int sig)
   
 	smb_panic("internal error");
 
-	if (cont_fn) {
-		cont_fn(NULL);
-#ifdef SIGSEGV
-		CatchSignal(SIGSEGV, SIG_DFL);
-#endif
-#ifdef SIGBUS
-		CatchSignal(SIGBUS, SIG_DFL);
-#endif
-#ifdef SIGABRT
-		CatchSignal(SIGABRT, SIG_DFL);
-#endif
-		return; /* this should cause a core dump */
-	}
+	/* smb_panic() never returns, so this is really redundent */
 	exit(1);
 }
 
@@ -78,10 +65,8 @@ static void sig_fault(int sig)
 /*******************************************************************
 setup our fault handlers
 ********************************************************************/
-void fault_setup(void (*fn)(void *))
+void fault_setup(void)
 {
-	cont_fn = fn;
-
 #ifdef SIGSEGV
 	CatchSignal(SIGSEGV, sig_fault);
 #endif

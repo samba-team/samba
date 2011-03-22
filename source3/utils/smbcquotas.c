@@ -598,7 +598,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	setlinebuf(stdout);
 
-	fault_setup(NULL);
+	fault_setup();
 
 	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();

@@ -86,15 +86,6 @@ static bool reload_services_file(const char *lfile)
 }
 
 
-/**************************************************************************** **
- Handle a fault..
- **************************************************************************** */
-
-static void fault_quit(void)
-{
-	dump_core();
-}
-
 static void winbindd_status(void)
 {
 	struct winbindd_cli_state *tmp;
@@ -1238,7 +1229,7 @@ int main(int argc, char **argv, char **envp)
  	CatchSignal(SIGUSR1, SIG_IGN);
  	CatchSignal(SIGUSR2, SIG_IGN);
 
-	fault_setup((void (*)(void *))fault_quit );
+	fault_setup();
 	dump_core_setup("winbindd");
 
 	load_case_tables();

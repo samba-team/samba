@@ -1403,7 +1403,7 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	fault_setup(NULL);
+	fault_setup();
 	umask(S_IWGRP | S_IWOTH);
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)

@@ -204,8 +204,3 @@ void exit_server_cleanly(const char *const explanation)
 {
 	exit_server_common(SERVER_EXIT_NORMAL, explanation);
 }
-
-void exit_server_fault(void)
-{
-	exit_server("critical server fault");
-}

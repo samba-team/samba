@@ -516,7 +516,7 @@ NTSTATUS map_nt_error_from_unix(int unix_error);
 int map_errno_from_nt_status(NTSTATUS status);
 
 /* The following definitions come from lib/fault.c  */
-void fault_setup(void (*fn)(void *));
+void fault_setup(void);
 void dump_core_setup(const char *progname);
 
 /* The following definitions come from lib/file_id.c  */

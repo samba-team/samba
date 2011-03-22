@@ -161,15 +161,6 @@ static void nmbd_terminate(struct messaging_context *msg,
 }
 
 /**************************************************************************** **
- Possibly continue after a fault.
- **************************************************************************** */
-
-static void fault_continue(void)
-{
-	dump_core();
-}
-
-/**************************************************************************** **
  Expire old names from the namelist and server list.
  **************************************************************************** */
 
@@ -820,7 +811,7 @@ static bool open_sockets(bool isdaemon, int port)
 		SAFE_FREE(lfile);
 	}
 	
-	fault_setup((void (*)(void *))fault_continue );
+	fault_setup();
 	dump_core_setup("nmbd");
 	
 	/* POSIX demands that signals are inherited. If the invoking process has
