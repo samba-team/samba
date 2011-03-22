@@ -1371,6 +1371,11 @@ bool is_domain_offline(const struct winbindd_domain *domain)
 	return !domain->online;
 }
 
+bool is_domain_online(const struct winbindd_domain *domain)
+{
+	return !is_domain_offline(domain);
+}
+
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   struct dom_sid **sids, uint32_t *num_sids)
 {
