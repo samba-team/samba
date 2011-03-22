@@ -69,7 +69,7 @@ LIB_SRC = '''
           lib/util_transfer_file.c
           lib/addrchange.c
           ${TDB_LIB_SRC}
-          ../lib/util/debug_s3.c lib/fault.c
+          ../lib/util/debug_s3.c ../lib/util/fault.c
           lib/interface.c lib/pidfile.c
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
