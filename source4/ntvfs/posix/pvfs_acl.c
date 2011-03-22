@@ -698,7 +698,7 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 	status = pvfs_resolve_parent(pvfs, req, name, &parent);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+	if (container) {
 		parent_mask = SEC_DIR_ADD_SUBDIR;
 	} else {
 		parent_mask = SEC_DIR_ADD_FILE;
