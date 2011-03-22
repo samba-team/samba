@@ -21,6 +21,7 @@
 #include "printing.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/security/security.h"
 

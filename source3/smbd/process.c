@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/messaging.h"

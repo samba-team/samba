@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "smbd/smbd.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS

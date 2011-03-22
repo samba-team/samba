@@ -25,6 +25,7 @@
 
 #if HAVE_ONEFS
 #include "oplock_onefs.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 
 #include <ifs/ifs_syscalls.h>

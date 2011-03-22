@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 
 /* The connections bitmap is expanded in increments of BITMAP_BLOCK_SZ. The

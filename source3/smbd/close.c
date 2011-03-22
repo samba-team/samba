@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "printing.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "fake_file.h"
 #include "transfer_file.h"

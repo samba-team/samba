@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "fake_file.h"
+#include "smbd/smbd.h"
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,

@@ -26,6 +26,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "memcache.h"
 #include "globals.h"
 #include "../libcli/security/dom_sid.h"

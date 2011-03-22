@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "fake_file.h"
 
 struct fake_file_type {

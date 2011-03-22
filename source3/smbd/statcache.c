@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "memcache.h"
+#include "smbd/smbd.h"
 
 /****************************************************************************
  Stat cache code used in unix_convert.

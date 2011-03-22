@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "../libcli/security/security.h"
 #include "trans2.h"
