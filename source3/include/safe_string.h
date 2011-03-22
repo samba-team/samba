@@ -144,6 +144,17 @@ size_t __unsafe_string_function_usage_here_char__(void);
     ? __unsafe_string_function_usage_here_size_t__() \
     : srvstr_push_fn(base_ptr, smb_flags2, dest, src, dest_len, flags))
 
+/* This allows the developer to choose to check the arguments to
+   strlcpy.  if the compiler will optimize out function calls, then
+   use this to tell if we are have the correct size buffer (this works only
+   where sizeof() returns the size of the buffer, not the size of the
+   pointer), so stack and static variables only */
+
+#define checked_strlcpy(dest, src, size) \
+    (sizeof(dest) != (size) \
+    ? __unsafe_string_function_usage_here_size_t__() \
+     : strlcpy(dest, src, size))
+
 #else
 
 #define safe_strcpy safe_strcpy_fn
@@ -153,6 +164,7 @@ size_t __unsafe_string_function_usage_here_char__(void);
 #define clistr_push clistr_push_fn
 #define clistr_pull clistr_pull_fn
 #define srvstr_push srvstr_push_fn
+#define checked_strlcpy strlcpy
 
 #endif
 

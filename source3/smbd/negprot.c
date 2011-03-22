@@ -238,7 +238,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 
 	memset(blob_out.data, '\0', 16);
 
-	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
+	checked_strlcpy(unix_name, global_myname(), sizeof(unix_name));
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
 	safe_strcpy((char *)blob_out.data, dos_name, 16);
