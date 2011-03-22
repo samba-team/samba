@@ -30,6 +30,7 @@
 #include "libnet/libnet_samsync.h"
 #include "libnet/libnet_dssync.h"
 #include "../libcli/security/security.h"
+#include "passdb/machine_sid.h"
 
 static void parse_samsync_partial_replication_objects(TALLOC_CTX *mem_ctx,
 						      int argc,

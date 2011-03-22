@@ -33,6 +33,7 @@
 #include "secrets.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
+#include "passdb/machine_sid.h"
 
 /* Map generic permissions to printer object specific permissions */
 

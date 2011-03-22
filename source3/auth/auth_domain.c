@@ -24,6 +24,7 @@
 #include "rpc_client/cli_pipe.h"
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
+#include "passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

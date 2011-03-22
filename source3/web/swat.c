@@ -33,6 +33,7 @@
 #include "web/swat_proto.h"
 #include "printing/pcap.h"
 #include "printing/load.h"
+#include "passdb.h"
 
 static int demo_mode = False;
 static int passwd_only = False;

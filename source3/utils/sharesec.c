@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "../libcli/security/security.h"
+#include "passdb/machine_sid.h"
 
 static TALLOC_CTX *ctx;
 

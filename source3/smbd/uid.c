@@ -22,6 +22,7 @@
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "libcli/security/security.h"
+#include "passdb/lookup_sid.h"
 
 /* what user is current? */
 extern struct current_user current_user;

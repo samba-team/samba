@@ -30,6 +30,7 @@
 #include "../libcli/ldap/ldap_ndr.h"
 #include "../libcli/security/security.h"
 #include "../libds/common/flag_mapping.h"
+#include "passdb.h"
 
 #ifdef HAVE_ADS
 

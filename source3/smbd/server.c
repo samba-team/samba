@@ -37,6 +37,7 @@
 #include "printing/pcap.h"
 #include "printing.h"
 #include "serverid.h"
+#include "passdb.h"
 
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);

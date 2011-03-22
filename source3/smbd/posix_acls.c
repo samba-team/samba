@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "../libcli/security/security.h"
 #include "trans2.h"
+#include "passdb/lookup_sid.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

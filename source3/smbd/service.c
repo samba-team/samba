@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 #include "printing/pcap.h"
+#include "passdb/lookup_sid.h"
 
 extern userdom_struct current_user_info;
 

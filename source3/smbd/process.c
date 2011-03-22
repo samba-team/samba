@@ -28,6 +28,7 @@
 #include "../lib/util/select.h"
 #include "printing/pcap.h"
 #include "system/select.h"
+#include "passdb.h"
 
 extern bool global_machine_password_needs_changing;
 

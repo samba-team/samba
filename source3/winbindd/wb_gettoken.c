@@ -21,6 +21,7 @@
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_wbint_c.h"
 #include "../libcli/security/security.h"
+#include "passdb/machine_sid.h"
 
 struct wb_gettoken_state {
 	struct tevent_context *ev;

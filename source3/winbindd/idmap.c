@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "idmap.h"
+#include "passdb/machine_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

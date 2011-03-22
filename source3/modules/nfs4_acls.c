@@ -24,6 +24,7 @@
 #include "../libcli/security/security.h"
 #include "include/dbwrap.h"
 #include "system/filesys.h"
+#include "passdb/lookup_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
