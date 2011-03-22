@@ -87,7 +87,7 @@ static void popt_samba_callback(poptContext con,
 
 		/* Hook for 'almost the first thing to do in a samba program' here */
 		/* setup for panics */
-		fault_setup(poptGetInvocationName(con));
+		fault_setup();
 
 		/* and logging */
 		setup_logging(pname, DEBUG_STDOUT);
