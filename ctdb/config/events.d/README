@@ -71,7 +71,7 @@ monitor
 	The interval can be configured using the MonitorInterval tunable
 	but defaults to 15 seconds.
 
-	This event is triggered by ctdb to continously monitor that all
+	This event is triggered by ctdb to continuously monitor that all
 	managed services are healthy.
 	When invoked, the event script will check that the service is healthy
 	and return 0 if so. If the service is not healthy the event script

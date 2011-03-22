@@ -191,7 +191,7 @@ Send all log messages to syslog instead of to the ctdb logfile\&.
 .RS 4
 In addition to the normal loggign to a log file, CTDBD also keeps a in\-memory ringbuffer containing the most recent log entries for all log levels (except DEBUG)\&.
 .sp
-This is useful since it allows for keeping continous logs to a file at a reasonable non\-verbose level, but shortly after an incident has occured, a much more detailed log can be pulled from memory\&. This can allow you to avoid having to reproduce an issue due to the on\-disk logs being of insufficient detail\&.
+This is useful since it allows for keeping continuous logs to a file at a reasonable non\-verbose level, but shortly after an incident has occured, a much more detailed log can be pulled from memory\&. This can allow you to avoid having to reproduce an issue due to the on\-disk logs being of insufficient detail\&.
 .sp
 This in\-memory ringbuffer contains a fixed number of the most recent entries\&. This is settable at startup either through the \-\-log\-ringbuf\-size argument, or preferably by using CTDB_LOG_RINGBUF_SIZE in the sysconfig file\&.
 .sp
@@ -426,7 +426,7 @@ Note: you can use LVS and public addresses at the same time\&.
 .PP
 To activate LVS on a CTDB node you must specify CTDB_PUBLIC_INTERFACE and CTDB_LVS_PUBLIC_ADDRESS in /etc/sysconfig/ctdb\&.
 .PP
-You must also specify the "\-\-lvs" command line argument to ctdbd to activete LVS as a capability of the node\&. This should be done automatically for you by the /etc/init\&.d/ctdb script\&.
+You must also specify the "\-\-lvs" command line argument to ctdbd to activate LVS as a capability of the node\&. This should be done automatically for you by the /etc/init\&.d/ctdb script\&.
 .PP
 Example:
 .sp

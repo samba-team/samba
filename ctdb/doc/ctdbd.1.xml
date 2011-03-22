@@ -349,7 +349,7 @@
 	    log entries for all log levels (except DEBUG).
           </para>
           <para>
-	    This is useful since it allows for keeping continous logs to a file
+	    This is useful since it allows for keeping continuous logs to a file
 	    at a reasonable non-verbose level, but shortly after an incident has
 	    occured, a much more detailed log can be pulled from memory. This
 	    can allow you to avoid having to reproduce an issue due to the
@@ -737,7 +737,7 @@ ctdb will try to reassign public IP addresses onto the new node as a way to dist
 	</para>
 
 	<para>
-You must also specify the "--lvs" command line argument to ctdbd to activete LVS as a capability of the node. This should be done automatically for you by the /etc/init.d/ctdb script.
+You must also specify the "--lvs" command line argument to ctdbd to activate LVS as a capability of the node. This should be done automatically for you by the /etc/init.d/ctdb script.
 	</para>
 
 	<para>

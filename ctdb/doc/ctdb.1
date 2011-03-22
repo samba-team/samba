@@ -786,7 +786,7 @@ This command can be used to remove all content of a database\&.
 .PP
 In addition to the normal loggign to a log file, CTDBD also keeps a in\-memory ringbuffer containing the most recent log entries for all log levels (except DEBUG)\&.
 .PP
-This is useful since it allows for keeping continous logs to a file at a reasonable non\-verbose level, but shortly after an incident has occured, a much more detailed log can be pulled from memory\&. This can allow you to avoid having to reproduce an issue due to the on\-disk logs being of insufficient detail\&.
+This is useful since it allows for keeping continuous logs to a file at a reasonable non\-verbose level, but shortly after an incident has occured, a much more detailed log can be pulled from memory\&. This can allow you to avoid having to reproduce an issue due to the on\-disk logs being of insufficient detail\&.
 .PP
 This command extracts all messages of level or lower log level from memory and prints it to the screen\&.
 .SS "clearlog"
@@ -909,7 +909,7 @@ This command will dump a clustered TDB database to the screen\&. This is a debug
 This command will dump the content of database backup to the screen (similar to ctdb catdb)\&. This is a debugging command\&.
 .SS "getmonmode"
 .PP
-This command returns the monutoring mode of a node\&. The monitoring mode is either ACTIVE or DISABLED\&. Normally a node will continously monitor that all other nodes that are expected are in fact connected and that they respond to commands\&.
+This command returns the monutoring mode of a node\&. The monitoring mode is either ACTIVE or DISABLED\&. Normally a node will continuously monitor that all other nodes that are expected are in fact connected and that they respond to commands\&.
 .PP
 ACTIVE \- This is the normal mode\&. The node is actively monitoring all other nodes, both that the transport is connected and also that the node responds to commands\&. If a node becomes unavailable, it will be marked as DISCONNECTED and a recovery is initiated to restore the cluster\&.
 .PP

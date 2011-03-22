@@ -874,7 +874,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 
 		/*
 		 * re-calc new vacuum interval:
-		 * in case no limit was reached we continously increase the interval
+		 * in case no limit was reached we continuously increase the interval
 		 * until vacuum_max_interval is reached
 		 * in case a limit was reached we divide the current interval by 2
 		 * unless vacuum_min_interval is reached

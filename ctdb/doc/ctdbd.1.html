@@ -131,7 +131,7 @@
 	    CTDBD also keeps a in-memory ringbuffer containing the most recent
 	    log entries for all log levels (except DEBUG).
           </p><p>
-	    This is useful since it allows for keeping continous logs to a file
+	    This is useful since it allows for keeping continuous logs to a file
 	    at a reasonable non-verbose level, but shortly after an incident has
 	    occured, a much more detailed log can be pulled from memory. This
 	    can allow you to avoid having to reproduce an issue due to the
@@ -373,7 +373,7 @@ ctdb will try to reassign public IP addresses onto the new node as a way to dist
     To activate LVS on a CTDB node you must specify CTDB_PUBLIC_INTERFACE and 
     CTDB_LVS_PUBLIC_ADDRESS in /etc/sysconfig/ctdb.
 	</p><p>
-You must also specify the "--lvs" command line argument to ctdbd to activete LVS as a capability of the node. This should be done automatically for you by the /etc/init.d/ctdb script.
+You must also specify the "--lvs" command line argument to ctdbd to activate LVS as a capability of the node. This should be done automatically for you by the /etc/init.d/ctdb script.
 	</p><p>
 	Example:
     </p><pre class="screen">

@@ -595,7 +595,7 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
 	CTDBD also keeps a in-memory ringbuffer containing the most recent
 	log entries for all log levels (except DEBUG).
       </p><p>
-	This is useful since it allows for keeping continous logs to a file
+	This is useful since it allows for keeping continuous logs to a file
 	at a reasonable non-verbose level, but shortly after an incident has
 	occured, a much more detailed log can be pulled from memory. This
 	can allow you to avoid having to reproduce an issue due to the
@@ -678,7 +678,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
 	This command will dump the content of database backup to the screen
 	(similar to ctdb catdb). This is a debugging command.
       </p></div><div class="refsect2" title="getmonmode"><a name="id541247"></a><h3>getmonmode</h3><p>
-        This command returns the monutoring mode of a node. The monitoring mode is either ACTIVE or DISABLED. Normally a node will continously monitor that all other nodes that are expected are in fact connected and that they respond to commands.
+        This command returns the monutoring mode of a node. The monitoring mode is either ACTIVE or DISABLED. Normally a node will continuously monitor that all other nodes that are expected are in fact connected and that they respond to commands.
       </p><p>
         ACTIVE - This is the normal mode. The node is actively monitoring all other nodes, both that the transport is connected and also that the node responds to commands. If a node becomes unavailable, it will be marked as DISCONNECTED and a recovery is initiated to restore the cluster.
       </p><p>
