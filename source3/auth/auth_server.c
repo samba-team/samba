@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "smbd/smbd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

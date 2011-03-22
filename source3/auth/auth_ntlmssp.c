@@ -24,6 +24,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/netlogon.h"
+#include "smbd/smbd.h"
 
 NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
 					struct auth_ntlmssp_state *auth_ntlmssp_state,
