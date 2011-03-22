@@ -517,9 +517,6 @@ enum timestamp_set_resolution {
 typedef char fstring[FSTRING_LEN];
 #endif
 
-/* Samba 3 doesn't use iconv_convenience: */
-extern void *cmdline_lp_ctx;
-
 /* Lists, trees, caching, database... */
 #include "../lib/util/util.h"
 #include "../lib/util/util_net.h"
