@@ -71,8 +71,6 @@ _PUBLIC_ void call_backtrace(void);
 /**
  Something really nasty happened - panic !
 **/
-_PUBLIC_ _NORETURN_ void smb_panic(const char *why);
-
 typedef void (*smb_panic_handler_t)(const char *why);
 
 _PUBLIC_ void fault_configure(smb_panic_handler_t panic_handler);
