@@ -151,7 +151,6 @@ smb.conf changes
    client use spnego principal	       New	       No
    ctdb locktime warn threshold	       New	       0
    idmap alloc backend		       Removed
-   idmap read only		       New	       No
    log writeable files on exit	       New	       No
    multicast dns register	       New	       Yes
    ncalrpc dir			       New
