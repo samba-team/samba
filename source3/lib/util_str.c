@@ -573,10 +573,10 @@ char *safe_strcat_fn(char *dest,
  characters. Don't change it !
 **/
 
-char *alpha_strcpy_fn(char *dest,
-		      const char *src,
-		      const char *other_safe_chars,
-		      size_t maxlength)
+char *alpha_strcpy(char *dest,
+		   const char *src,
+		   const char *other_safe_chars,
+		   size_t maxlength)
 {
 	size_t len, i;
 
@@ -614,7 +614,7 @@ char *alpha_strcpy_fn(char *dest,
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
 **/
-char *StrnCpy_fn(char *dest,const char *src,size_t n)
+char *StrnCpy(char *dest,const char *src,size_t n)
 {
 	char *d = dest;
 

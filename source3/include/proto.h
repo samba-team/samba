@@ -1352,11 +1352,11 @@ char *safe_strcpy_fn(char *dest,
 char *safe_strcat_fn(char *dest,
 		const char *src,
 		size_t maxlength);
-char *alpha_strcpy_fn(char *dest,
+char *alpha_strcpy(char *dest,
 		const char *src,
 		const char *other_safe_chars,
 		size_t maxlength);
-char *StrnCpy_fn(char *dest,const char *src,size_t n);
+char *StrnCpy(char *dest,const char *src,size_t n);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);
 bool string_set(char **dest,const char *src);
@@ -2328,13 +2328,13 @@ size_t clistr_pull_fn(const char *inbuf,
 			int dest_len,
 			int src_len,
 			int flags);
-size_t clistr_pull_talloc_fn(TALLOC_CTX *ctx,
-				const char *base,
-				uint16_t flags2,
-				char **pp_dest,
-				const void *src,
-				int src_len,
-				int flags);
+size_t clistr_pull_talloc(TALLOC_CTX *ctx,
+			  const char *base,
+			  uint16_t flags2,
+			  char **pp_dest,
+			  const void *src,
+			  int src_len,
+			  int flags);
 size_t clistr_align_out(struct cli_state *cli, const void *p, int flags);
 
 /* The following definitions come from libsmb/clitrans.c  */

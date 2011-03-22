@@ -105,84 +105,54 @@ size_t __unsafe_string_function_usage_here_char__(void);
 #define overmalloc_safe_strcpy(dest,src,maxlength) \
 	safe_strcpy_fn(dest,src,maxlength)
 
-#define safe_strcpy(dest,src,maxlength) \
-	safe_strcpy_fn2(dest,src,maxlength)
-
-#define safe_strcat(dest,src,maxlength) \
-	safe_strcat_fn2(dest,src,maxlength)
-
-#define push_string_check(dest, src, dest_len, flags) \
-	push_string_check_fn2(dest, src, dest_len, flags)
-
-#define pull_string_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
-	pull_string_talloc_fn2(ctx, base_ptr, smb_flags2, dest, src, src_len, flags)
-
-#define clistr_push(cli, dest, src, dest_len, flags) \
-	clistr_push_fn2(cli, dest, src, dest_len, flags)
-
-#define clistr_pull(inbuf, dest, src, dest_len, src_len, flags) \
-	clistr_pull_fn2(inbuf, dest, src, dest_len, src_len, flags)
-
-#define clistr_pull_talloc(ctx, base, flags2, pp_dest, src, src_len, flags) \
-	clistr_pull_talloc_fn(ctx, base, flags2, pp_dest, src, src_len, flags)
-
-#define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags) \
-	srvstr_push_fn2(base_ptr, smb_flags2, dest, src, dest_len, flags)
-
-#define alpha_strcpy(dest,src,other_safe_chars,maxlength) \
-	alpha_strcpy_fn(dest,src,other_safe_chars,maxlength)
-
-#define StrnCpy(dest,src,n) \
-	StrnCpy_fn(dest,src,n)
-
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
 /* if the compiler will optimize out function calls, then use this to tell if we are 
    have the correct types (this works only where sizeof() returns the size of the buffer, not
    the size of the pointer). */
 
-#define safe_strcpy_fn2(d, s, max_len) \
+#define safe_strcpy(d, s, max_len) \
     (CHECK_STRING_SIZE(d, max_len+1) \
     ? __unsafe_string_function_usage_here__() \
     : safe_strcpy_fn((d), (s), (max_len)))
 
-#define safe_strcat_fn2(d, s, max_len) \
+#define safe_strcat(d, s, max_len) \
     (CHECK_STRING_SIZE(d, max_len+1) \
     ? __unsafe_string_function_usage_here__() \
     : safe_strcat_fn((d), (s), (max_len)))
 
-#define push_string_check_fn2(dest, src, dest_len, flags) \
+#define push_string_check(dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
     : push_string_check_fn(dest, src, dest_len, flags))
 
-#define pull_string_talloc_fn2(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
+#define pull_string_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
     pull_string_talloc_fn(ctx, base_ptr, smb_flags2, dest, src, src_len, flags)
 
-#define clistr_push_fn2(cli, dest, src, dest_len, flags) \
+#define clistr_push(cli, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_push_fn(cli, dest, src, dest_len, flags))
 
-#define clistr_pull_fn2(inbuf, dest, src, dest_len, srclen, flags) \
+#define clistr_pull(inbuf, dest, src, dest_len, srclen, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_pull_fn(inbuf, dest, src, dest_len, srclen, flags))
 
-#define srvstr_push_fn2(base_ptr, smb_flags2, dest, src, dest_len, flags) \
+#define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
     : srvstr_push_fn(base_ptr, smb_flags2, dest, src, dest_len, flags))
 
 #else
 
-#define safe_strcpy_fn2 safe_strcpy_fn
-#define safe_strcat_fn2 safe_strcat_fn
-#define push_string_check_fn2 push_string_check_fn
-#define pull_string_talloc_fn2 pull_string_talloc_fn
-#define clistr_push_fn2 clistr_push_fn
-#define clistr_pull_fn2 clistr_pull_fn
-#define srvstr_push_fn2 srvstr_push_fn
+#define safe_strcpy safe_strcpy_fn
+#define safe_strcat safe_strcat_fn
+#define push_string_check push_string_check_fn
+#define pull_string_talloc pull_string_talloc_fn
+#define clistr_push clistr_push_fn
+#define clistr_pull clistr_pull_fn
+#define srvstr_push srvstr_push_fn
 
 #endif
 

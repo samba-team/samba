@@ -58,21 +58,21 @@ size_t clistr_pull_fn(const char *inbuf,
 			      src_len, flags);
 }
 
-size_t clistr_pull_talloc_fn(TALLOC_CTX *ctx,
-				const char *base,
-				uint16_t flags2,
-				char **pp_dest,
-				const void *src,
-				int src_len,
-				int flags)
+size_t clistr_pull_talloc(TALLOC_CTX *ctx,
+			  const char *base,
+			  uint16_t flags2,
+			  char **pp_dest,
+			  const void *src,
+			  int src_len,
+			  int flags)
 {
 	return pull_string_talloc_fn(ctx,
-					base,
-					flags2,
-					pp_dest,
-					src,
-					src_len,
-					flags);
+				     base,
+				     flags2,
+				     pp_dest,
+				     src,
+				     src_len,
+				     flags);
 }
 
 size_t clistr_align_out(struct cli_state *cli, const void *p, int flags)
