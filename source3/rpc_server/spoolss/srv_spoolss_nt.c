@@ -46,6 +46,7 @@
 #include "printing/notify.h"
 #include "serverid.h"
 #include "../libcli/registry/util_reg.h"
+#include "smbd/smbd.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
