@@ -22,7 +22,7 @@
 static void delete_key(void);
 
 
-static void help()
+static void help(void)
 {
 printf("-h 		print this help message.\n");
 printf("-f <file>	install the key from a file and activate\n");
@@ -34,7 +34,7 @@ printf("-s		check if a key is installed, and print the key to stdout.\n");
 printf("\n");
 }
 
-static void check_key()
+static void check_key(void)
 {	size_t size;
 	char *akey;
 	if (!secrets_init()) {
