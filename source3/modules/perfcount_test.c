@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 #define PARM_PC_TEST_TYPE		"pc_test"
 #define PARM_DUMPON_COUNT		"count"

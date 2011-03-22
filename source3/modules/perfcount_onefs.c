@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include <sys/isi_stats_protocol.h>
 #include <sys/isi_stats_client.h>
 #include <sys/isi_stats_cifs.h>

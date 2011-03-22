@@ -68,6 +68,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA

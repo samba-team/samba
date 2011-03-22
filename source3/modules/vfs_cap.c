@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 /* cap functions */
 static char *capencode(TALLOC_CTX *ctx, const char *from);

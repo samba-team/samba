@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "librpc/gen_ndr/notify.h"
 
 #include <fam.h>

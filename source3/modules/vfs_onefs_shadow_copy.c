@@ -22,6 +22,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "onefs_shadow_copy.h"
 
 static int vfs_onefs_shadow_copy_debug_level = DBGC_VFS;

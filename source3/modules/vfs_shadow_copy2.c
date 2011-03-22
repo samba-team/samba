@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "system/filesys.h"
 
 /*

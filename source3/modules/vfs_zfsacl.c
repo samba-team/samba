@@ -23,6 +23,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "nfs4_acls.h"
 
 #if HAVE_FREEBSD_SUNACL_H

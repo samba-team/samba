@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "nfs4_acls.h"
 
 #undef DBGC_CLASS

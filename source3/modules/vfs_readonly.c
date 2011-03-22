@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "getdate.h"
 
 /*

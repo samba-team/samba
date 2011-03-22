@@ -39,6 +39,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 #ifndef USE_DMAPI
 #error "This module requires DMAPI support!"
