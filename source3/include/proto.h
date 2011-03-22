@@ -4701,4 +4701,13 @@ void map_max_allowed_access(const struct security_token *nt_token,
 			    const struct security_unix_token *unix_token,
 			    uint32_t *pacc_requested);
 
+/* The following definitions come from lib/util_wellknown.c  */
+
+bool sid_check_is_wellknown_domain(const struct dom_sid *sid, const char **name);
+bool sid_check_is_in_wellknown_domain(const struct dom_sid *sid);
+bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
+			  const char **domain, const char **name);
+bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
+			   struct dom_sid *sid, const char **domain);
+
 #endif /*  _PROTO_H_  */
