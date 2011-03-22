@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Critical Fault handling
    Copyright (C) Andrew Tridgell 1992-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -58,9 +58,9 @@ _PUBLIC_ void call_backtrace(void)
 	backtrace_size = backtrace(backtrace_stack,BACKTRACE_STACK_SIZE);
 	backtrace_strings = backtrace_symbols(backtrace_stack, backtrace_size);
 
-	DEBUG(0, ("BACKTRACE: %lu stack frames:\n", 
+	DEBUG(0, ("BACKTRACE: %lu stack frames:\n",
 		  (unsigned long)backtrace_size));
-	
+
 	if (backtrace_strings) {
 		int i;
 
@@ -156,7 +156,7 @@ report a fault
 _NORETURN_ static void fault_report(int sig)
 {
 	static int counter;
-	
+
 	if (counter) _exit(1);
 
 	DEBUG(0,("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"));
@@ -215,15 +215,15 @@ _PUBLIC_ void fault_setup_disable(void)
 
 
 /**
-  register a fault handler. 
+  register a fault handler.
   Should only be called once in the execution of smbd.
 */
-_PUBLIC_ bool register_fault_handler(const char *name, 
+_PUBLIC_ bool register_fault_handler(const char *name,
 				     void (*fault_handler)(int sig))
 {
 	if (fault_handlers.name != NULL) {
 		/* it's already registered! */
-		DEBUG(2,("fault handler '%s' already registered - failed '%s'\n", 
+		DEBUG(2,("fault handler '%s' already registered - failed '%s'\n",
 			 fault_handlers.name, name));
 		return false;
 	}
