@@ -3756,26 +3756,6 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			bool *ppath_contains_wcard,
 			struct smb_filename **pp_smb_fname);
 
-/* The following definitions come from smbd/filename_utils.c */
-
-NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
-			      char **full_name);
-NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
-				    const char *stream_name,
-				    const SMB_STRUCT_STAT *psbuf,
-				    struct smb_filename **smb_fname_out);
-NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
-					  const char *fname,
-					  const SMB_STRUCT_STAT *psbuf,
-					  struct smb_filename **smb_fname_out);
-const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
-const char *fsp_str_dbg(const struct files_struct *fsp);
-NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
-			   const struct smb_filename *smb_fname_in,
-			   struct smb_filename **smb_fname_out);
-bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
-bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
-
 /* The following definitions come from smbd/files.c  */
 
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
@@ -4746,5 +4726,25 @@ bool sid_check_is_unix_groups(const struct dom_sid *sid);
 bool sid_check_is_in_unix_groups(const struct dom_sid *sid);
 const char *unix_groups_domain_name(void);
 bool lookup_unix_group_name(const char *name, struct dom_sid *sid);
+
+/* The following definitions come from lib/filename_util.c */
+
+NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
+			      char **full_name);
+NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
+				    const char *stream_name,
+				    const SMB_STRUCT_STAT *psbuf,
+				    struct smb_filename **smb_fname_out);
+NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
+					  const char *fname,
+					  const SMB_STRUCT_STAT *psbuf,
+					  struct smb_filename **smb_fname_out);
+const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
+const char *fsp_str_dbg(const struct files_struct *fsp);
+NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
+			   const struct smb_filename *smb_fname_in,
+			   struct smb_filename **smb_fname_out);
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
+bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 
 #endif /*  _PROTO_H_  */
