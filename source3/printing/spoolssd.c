@@ -18,6 +18,7 @@
 */
 #include "includes.h"
 #include "serverid.h"
+#include "smbd/smbd.h"
 
 #include "librpc/gen_ndr/messaging.h"
 #include "include/printing.h"
