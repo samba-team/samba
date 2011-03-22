@@ -93,7 +93,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				struct acct_info **info)
+				struct wb_acct_info **info)
 {
 	NTSTATUS result;
 
@@ -111,7 +111,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  uint32 *num_entries, 
-				  struct acct_info **info)
+				  struct wb_acct_info **info)
 {
 	NTSTATUS result;
 

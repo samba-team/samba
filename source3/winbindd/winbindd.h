@@ -219,6 +219,12 @@ struct winbindd_domain {
 	struct winbindd_domain *prev, *next;
 };
 
+struct wb_acct_info {
+	fstring acct_name; /* account name */
+	fstring acct_desc; /* account name */
+	uint32_t rid; /* domain-relative RID */
+};
+
 /* per-domain methods. This is how LDAP vs RPC is selected
  */
 struct winbindd_methods {
@@ -236,13 +242,13 @@ struct winbindd_methods {
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *num_entries, 
-				    struct acct_info **info);
+				    struct wb_acct_info **info);
 
 	/* get a list of domain local groups */
 	NTSTATUS (*enum_local_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    uint32 *num_entries, 
-				    struct acct_info **info);
+				    struct wb_acct_info **info);
 
 	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,

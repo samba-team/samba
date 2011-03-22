@@ -38,14 +38,14 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *samr_pipe,
 			     struct policy_handle *sam_policy,
 			     uint32_t *pnum_info,
-			     struct acct_info **pinfo);
+			     struct wb_acct_info **pinfo);
 
 /* List all domain groups */
 NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 			       struct rpc_pipe_client *samr_pipe,
 			       struct policy_handle *samr_policy,
 			       uint32_t *pnum_info,
-			       struct acct_info **pinfo);
+			       struct wb_acct_info **pinfo);
 
 /* Convert a single name to a sid in a domain */
 NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,

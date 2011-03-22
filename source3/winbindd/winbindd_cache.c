@@ -1560,7 +1560,7 @@ skip_save:
 static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				struct acct_info **info)
+				struct wb_acct_info **info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1582,7 +1582,7 @@ do_fetch_cache:
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
+	(*info) = TALLOC_ARRAY(mem_ctx, struct wb_acct_info, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("enum_dom_groups out of memory");
 	}
@@ -1655,7 +1655,7 @@ skip_save:
 static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 *num_entries, 
-				struct acct_info **info)
+				struct wb_acct_info **info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1677,7 +1677,7 @@ do_fetch_cache:
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = TALLOC_ARRAY(mem_ctx, struct acct_info, *num_entries);
+	(*info) = TALLOC_ARRAY(mem_ctx, struct wb_acct_info, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("enum_dom_groups out of memory");
 	}
