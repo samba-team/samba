@@ -30,6 +30,7 @@
 #include "printing/notify.h"
 #include "printing/pcap.h"
 #include "serverid.h"
+#include "smbd/smbd.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
