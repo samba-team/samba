@@ -296,19 +296,6 @@ NTSTATUS pdb_wbc_sam_init(void);
 
 NTSTATUS pdb_tdbsam_init(void);
 
-/* The following definitions come from passdb/util_unixsids.c  */
-
-bool sid_check_is_unix_users(const struct dom_sid *sid);
-bool sid_check_is_in_unix_users(const struct dom_sid *sid);
-void uid_to_unix_users_sid(uid_t uid, struct dom_sid *sid);
-void gid_to_unix_groups_sid(gid_t gid, struct dom_sid *sid);
-const char *unix_users_domain_name(void);
-bool lookup_unix_user_name(const char *name, struct dom_sid *sid);
-bool sid_check_is_unix_groups(const struct dom_sid *sid);
-bool sid_check_is_in_unix_groups(const struct dom_sid *sid);
-const char *unix_groups_domain_name(void);
-bool lookup_unix_group_name(const char *name, struct dom_sid *sid);
-
 /* The following definitions come from passdb/pdb_util.c  */
 
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
