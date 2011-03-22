@@ -1339,14 +1339,6 @@ ssize_t tstream_read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 /* The following definitions come from lib/util_str.c  */
 
 bool next_token(const char **ptr, char *buff, const char *sep, size_t bufsize);
-bool next_token_talloc(TALLOC_CTX *ctx,
-			const char **ptr,
-			char **pp_buff,
-			const char *sep);
-bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
-			const char **ptr,
-			char **pp_buff,
-			const char *sep);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, size_t len);
 bool strnequal(const char *s1,const char *s2,size_t n);
@@ -1429,15 +1421,12 @@ int fstr_sprintf(fstring s, const char *fmt, ...);
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );
 bool str_list_substitute(char **list, const char *pattern, const char *insert);
-bool str_list_check(const char **list, const char *s);
-bool str_list_check_ci(const char **list, const char *s);
 
 char *ipstr_list_make(char **ipstr_list,
 			const struct ip_service *ip_list,
 			int ip_count);
 int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list);
 void ipstr_list_free(char* ipstr_list);
-void rfc1738_unescape(char *buf);
 DATA_BLOB base64_decode_data_blob(const char *s);
 void base64_decode_inplace(char *s);
 char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data);
