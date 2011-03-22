@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/syslog.h"
+#include "smbd/smbd.h"
 
 static int vfs_extd_audit_debug_level = DBGC_VFS;
 

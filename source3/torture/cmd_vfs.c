@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
 #include "vfstest.h"

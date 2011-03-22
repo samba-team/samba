@@ -16,6 +16,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 /* Cache priming module.
  *

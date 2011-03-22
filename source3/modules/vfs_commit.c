@@ -17,6 +17,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 /* Commit data module.
  *

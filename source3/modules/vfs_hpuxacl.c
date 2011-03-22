@@ -47,6 +47,7 @@
 
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 /* 
  * including standard header <sys/aclv.h> 

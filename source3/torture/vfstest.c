@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "popt_common.h"
 #include "vfstest.h"
 #include "../libcli/smbreadline/smbreadline.h"

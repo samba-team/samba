@@ -27,6 +27,7 @@
 
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 #define GLOBAL_SNUM     0xFFFFFFF
 #define MAP_SIZE        0xFF

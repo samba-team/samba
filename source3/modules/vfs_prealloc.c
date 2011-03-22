@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 /* Extent preallocation module.
  *

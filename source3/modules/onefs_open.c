@@ -33,6 +33,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "onefs.h"
 #include "onefs_config.h"
 #include "oplock_onefs.h"

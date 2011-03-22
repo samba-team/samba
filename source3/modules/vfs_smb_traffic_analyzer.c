@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "../smbd/globals.h"
 #include "../lib/crypto/crypto.h"
 #include "vfs_smb_traffic_analyzer.h"

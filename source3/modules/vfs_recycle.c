@@ -23,6 +23,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 

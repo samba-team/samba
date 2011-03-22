@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 {

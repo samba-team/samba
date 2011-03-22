@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 
 #undef DBGC_CLASS

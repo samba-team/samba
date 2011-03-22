@@ -19,6 +19,7 @@
 
 
 #include "includes.h"
+#include "smbd/smbd.h"
 
 
 /* typedef struct acl SOLARIS_ACE_T; */
