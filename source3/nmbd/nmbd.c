@@ -851,7 +851,7 @@ static bool open_sockets(bool isdaemon, int port)
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
 	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
-		DEBUG(0, ("error opening config file\n"));
+		DEBUG(0, ("error opening config file '%s'\n", get_dyn_CONFIGFILE()));
 		exit(1);
 	}
 
