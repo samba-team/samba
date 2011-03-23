@@ -67,9 +67,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.5: Added wbcChangeTrustCredentials()
  *  0.6: Made struct wbcInterfaceDetails char* members non-const
  *  0.7: Added wbcSidToStringBuf()
+ *  0.8: Added wbcSidsToUnixIds() and wbcLookupSids()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 7
+#define WBCLIENT_MINOR_VERSION 8
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -791,6 +792,35 @@ wbcErr wbcGidToSid(gid_t gid,
  **/
 wbcErr wbcQueryGidToSid(gid_t gid,
 			struct wbcDomainSid *sid);
+
+enum wbcIdType {
+	WBC_ID_TYPE_NOT_SPECIFIED,
+	WBC_ID_TYPE_UID,
+	WBC_ID_TYPE_GID
+};
+
+union wbcUnixIdContainer {
+	uid_t uid;
+	gid_t gid;
+};
+
+struct wbcUnixId {
+	enum wbcIdType type;
+	union wbcUnixIdContainer id;
+};
+
+/**
+ * @brief Convert a list of sids to unix ids
+ *
+ * @param sids        Pointer to an array of SIDs to convert
+ * @param num_sids    Number of SIDs
+ * @param ids         Preallocated output array for translated IDs
+ *
+ * @return #wbcErr
+ *
+ **/
+wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
+			struct wbcUnixId *ids);
 
 /**
  * @brief Obtain a new uid from Winbind
