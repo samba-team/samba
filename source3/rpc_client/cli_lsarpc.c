@@ -144,12 +144,13 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	status = dcerpc_lsa_open_policy(cli->binding_handle,
-					mem_ctx,
-					sec_qos,
-					des_access,
-					pol,
-					&result);
+	status = dcerpc_lsa_open_policy2(cli->binding_handle,
+					 cli->srv_name_slash,
+					 mem_ctx,
+					 sec_qos,
+					 des_access,
+					 pol,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
