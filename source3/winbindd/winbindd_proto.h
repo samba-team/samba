@@ -855,6 +855,14 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			    struct lsa_RefDomainList **domains,
 			    struct lsa_TransNameArray **names);
 
+struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct winbindd_cli_state *cli,
+					      struct winbindd_request *request);
+NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
+				    struct winbindd_response *response);
+
+
 /* The following definitions come from winbindd/winbindd_samr.c  */
 
 NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,

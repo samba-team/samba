@@ -1380,6 +1380,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_sid_to_gid.o \
 		winbindd/winbindd_uid_to_sid.o \
 		winbindd/winbindd_gid_to_sid.o \
+		winbindd/winbindd_sids_to_xids.o \
 		winbindd/winbindd_allocate_uid.o \
 		winbindd/winbindd_allocate_gid.o \
 		winbindd/winbindd_getpwsid.o \
