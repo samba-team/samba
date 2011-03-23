@@ -444,9 +444,11 @@ static NTSTATUS log_nt_token(struct security_token *token)
 
 NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 {
+	struct security_token *t;
 	NTSTATUS status;
 	size_t i;
 	struct dom_sid tmp_sid;
+	struct wbcUnixId *ids;
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -481,18 +483,30 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 	server_info->utok.ngroups = 0;
 	server_info->utok.groups = NULL;
 
+	t = server_info->security_token;
+
+	ids = TALLOC_ARRAY(talloc_tos(), struct wbcUnixId,
+			   t->num_sids);
+	if (ids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!sids_to_unix_ids(t->sids, t->num_sids, ids)) {
+		TALLOC_FREE(ids);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Start at index 1, where the groups start. */
 
-	for (i=1; i<server_info->security_token->num_sids; i++) {
-		gid_t gid;
-		struct dom_sid *sid = &server_info->security_token->sids[i];
+	for (i=1; i<t->num_sids; i++) {
 
-		if (!sid_to_gid(sid, &gid)) {
+		if (ids[i].type != WBC_ID_TYPE_GID) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
-				   "ignoring it\n", sid_string_dbg(sid)));
+				   "ignoring it\n",
+				   sid_string_dbg(&t->sids[i])));
 			continue;
 		}
-		if (!add_gid_to_array_unique(server_info, gid,
+		if (!add_gid_to_array_unique(server_info, ids[i].id.gid,
 					     &server_info->utok.groups,
 					     &server_info->utok.ngroups)) {
 			return NT_STATUS_NO_MEMORY;
