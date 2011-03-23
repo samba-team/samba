@@ -1340,6 +1340,7 @@ WINBINDD_OBJ1 = \
 		librpc/gen_ndr/ndr_wbint_c.o \
 		librpc/gen_ndr/srv_wbint.o \
 		librpc/gen_ndr/ndr_wbint.o \
+		librpc/gen_ndr/ndr_idmap.o \
 		winbindd/winbindd_async.o \
 		winbindd/winbindd_creds.o \
 		winbindd/winbindd_cred_cache.o \
