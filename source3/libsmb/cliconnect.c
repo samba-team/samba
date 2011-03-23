@@ -27,6 +27,7 @@
 #include "libads/kerberos_proto.h"
 #include "krb5_env.h"
 #include "async_smb.h"
+#include "libsmb/nmblib.h"
 
 static const struct {
 	int prot;

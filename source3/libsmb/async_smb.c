@@ -21,6 +21,7 @@
 #include "../lib/async_req/async_sock.h"
 #include "async_smb.h"
 #include "smb_crypt.h"
+#include "libsmb/nmblib.h"
 
 /*
  * Read an smb packet asynchronously, discard keepalives

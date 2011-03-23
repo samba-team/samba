@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "system/select.h"
 #include "../lib/util/select.h"
+#include "libsmb/nmblib.h"
 
 #define SECURITY_MASK 0
 #define SECURITY_SET  0

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/nmblib.h"
 
 static const struct opcode_names {
 	const char *nmb_opcode_name;

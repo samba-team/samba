@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../lib/async_req/async_sock.h"
 #include "async_smb.h"
+#include "libsmb/nmblib.h"
 
 struct nb_connect_state {
 	struct tevent_context *ev;

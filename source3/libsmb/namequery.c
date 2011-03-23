@@ -24,6 +24,7 @@
 #include "../libcli/netlogon/netlogon.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "lib/async_req/async_sock.h"
+#include "libsmb/nmblib.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;

@@ -24,6 +24,7 @@
 #include "smb_krb5.h"
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "../lib/util/asn1.h"
+#include "libsmb/nmblib.h"
 
 #ifndef KRB5_AUTHDATA_WIN2K_PAC
 #define KRB5_AUTHDATA_WIN2K_PAC 128

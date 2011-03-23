@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "lib/async_req/async_sock.h"
+#include "libsmb/nmblib.h"
 
 static const char *nmbd_socket_dir(void)
 {
