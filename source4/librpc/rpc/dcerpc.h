@@ -163,7 +163,6 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 struct composite_context;
 NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 					  struct dcerpc_pipe **p2);
-NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out);
 
 struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 						     struct dcerpc_binding *binding,
@@ -189,7 +188,6 @@ NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
 			  struct loadparm_context *lp_ctx);
-char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
 NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
 				     struct dcerpc_pipe **p2,
 				     struct dcerpc_binding *b);
@@ -244,18 +242,7 @@ void dcerpc_log_packet(const char *lockdir,
 		       const struct ndr_interface_table *ndr,
 		       uint32_t opnum, uint32_t flags,
 		       const DATA_BLOB *pkt);
-NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
-				    const struct dcerpc_binding *binding,
-				    struct epm_tower *tower);
 
-NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
-
-enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower);
-const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
-
-NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
-				   struct epm_tower *tower, 
-				   struct dcerpc_binding **b_out);
 
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
