@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Translate BUILTIN names to SIDs and vice versa
    Copyright (C) Volker Lendecke 2005
@@ -93,7 +93,7 @@ bool lookup_builtin_name(const char *name, uint32 *rid)
 
 /*****************************************************************
  Return the name of the BUILTIN domain
-*****************************************************************/  
+*****************************************************************/
 
 const char *builtin_domain_name(void)
 {
@@ -102,7 +102,7 @@ const char *builtin_domain_name(void)
 
 /*****************************************************************
  Check if the SID is the builtin SID (S-1-5-32).
-*****************************************************************/  
+*****************************************************************/
 
 bool sid_check_is_builtin(const struct dom_sid *sid)
 {
@@ -111,7 +111,7 @@ bool sid_check_is_builtin(const struct dom_sid *sid)
 
 /*****************************************************************
  Check if the SID is one of the builtin SIDs (S-1-5-32-a).
-*****************************************************************/  
+*****************************************************************/
 
 bool sid_check_is_in_builtin(const struct dom_sid *sid)
 {
@@ -122,4 +122,3 @@ bool sid_check_is_in_builtin(const struct dom_sid *sid)
 
 	return sid_check_is_builtin(&dom_sid);
 }
-
