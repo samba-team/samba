@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "locking/proto.h"
 
 static fstring password[2];
 static fstring username[2];
