@@ -134,11 +134,6 @@ _PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
 
-	if (allow_badcharcnv) {
-		/* Not implemented yet */
-		return false;
-	}
-
 	if (srclen == (size_t)-1)
 		srclen = strlen(inbuf)+1;
 
