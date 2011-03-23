@@ -213,3 +213,5 @@ from samba.netcmd.gpo import cmd_gpo
 commands["gpo2"] = cmd_gpo()
 from samba.netcmd.ldapcmp import cmd_ldapcmp
 commands["ldapcmp"] = cmd_ldapcmp()
+from samba.netcmd.testparm import cmd_testparm
+commands["testparm"] =  cmd_testparm()
