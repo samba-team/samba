@@ -361,7 +361,8 @@ def check_syslib_dependencies(bld, t):
 
     features = TO_LIST(t.features)
     if 'pyembed' in features or 'pyext' in features:
-        t.unsatisfied_symbols = t.unsatisfied_symbols.difference(bld.env.public_symbols['python'])
+        if 'python' in bld.env.public_symbols:
+            t.unsatisfied_symbols = t.unsatisfied_symbols.difference(bld.env.public_symbols['python'])
 
     needed = {}
     for sym in t.unsatisfied_symbols:
