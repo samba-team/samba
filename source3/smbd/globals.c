@@ -121,6 +121,7 @@ struct messaging_context *smbd_messaging_context(void)
 		return msg_ctx;
 	}
 	smb_panic("Could not init smbd's messaging context.\n");
+	return NULL;
 }
 
 struct memcache *smbd_memcache(void)
