@@ -218,13 +218,13 @@ static char *get_corepath(const char *logbase, const char *progname)
 make all the preparations to safely dump a core file
 ********************************************************************/
 
-void dump_core_setup(const char *progname, const char *logfile)
+void dump_core_setup(const char *progname, const char *log_file)
 {
 	char *logbase = NULL;
 	char *end = NULL;
 
-	if (logfile && *logfile) {
-		if (asprintf(&logbase, "%s", logfile) < 0) {
+	if (log_file && *log_file) {
+		if (asprintf(&logbase, "%s", log_file) < 0) {
 			return;
 		}
 		if ((end = strrchr_m(logbase, '/'))) {
