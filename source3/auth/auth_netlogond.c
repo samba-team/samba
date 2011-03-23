@@ -205,7 +205,7 @@ static NTSTATUS get_ldapi_ctx(TALLOC_CTX *mem_ctx, struct tldap_context **pld)
 static NTSTATUS mymachinepw(uint8_t pwd[16])
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct tldap_context *ld;
+	struct tldap_context *ld = NULL;
 	struct tldap_message *rootdse, **msg;
 	const char *attrs[1] = { "unicodePwd" };
 	char *default_nc, *myname;
