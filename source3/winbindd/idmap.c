@@ -367,7 +367,7 @@ static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
  * add_trusted_domain.
  */
 
-static struct idmap_domain *idmap_find_domain(const char *domname)
+struct idmap_domain *idmap_find_domain(const char *domname)
 {
 	struct idmap_domain *result;
 	int i;
