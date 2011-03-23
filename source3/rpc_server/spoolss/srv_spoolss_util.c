@@ -789,6 +789,9 @@ static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 	} else {
 		t = nt_time_to_unix(data);
 		tm = localtime(&t);
+		if (tm == NULL) {
+			return map_werror_from_unix(errno);
+		}
 		str = talloc_asprintf(mem_ctx, "%02d/%02d/%04d",
 				      tm->tm_mon + 1, tm->tm_mday, tm->tm_year + 1900);
 	}
