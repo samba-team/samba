@@ -475,9 +475,6 @@ size_t pull_string_talloc_fn(const char *function,
 			size_t src_len,
 			int flags);
 size_t align_string(const void *base_ptr, const char *p, int flags);
-codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
-			       size_t *bytes_consumed);
-codepoint_t next_codepoint(const char *str, size_t *size);
 
 /* The following definitions come from lib/clobber.c  */
 
@@ -613,9 +610,6 @@ bool revoke_privilege_set(const struct dom_sid *sid, struct lsa_PrivilegeSet *se
 bool revoke_privilege_by_name(const struct dom_sid *sid, const char *name);
 NTSTATUS privilege_create_account(const struct dom_sid *sid );
 NTSTATUS privilege_delete_account(const struct dom_sid *sid);
-NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set);
-NTSTATUS privilege_set_init_by_ctx(TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set);
-void privilege_set_free(PRIVILEGE_SET *priv_set);
 bool is_privileged_sid( const struct dom_sid *sid );
 bool grant_all_privileges( const struct dom_sid *sid );
 
@@ -953,9 +947,6 @@ void register_msg_pool_usage(struct messaging_context *msg_ctx);
 void push_dos_date(uint8_t *buf, int offset, time_t unixdate, int zone_offset);
 void push_dos_date2(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
 void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
-time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset);
-time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset);
-time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset);
 uint32_t convert_time_t_to_uint32_t(time_t t);
 time_t convert_uint32_t_to_time_t(uint32_t u);
 bool nt_time_is_zero(const NTTIME *nt);
@@ -977,7 +968,6 @@ time_t make_unix_date3(const void *date_ptr, int zone_offset);
 time_t srv_make_unix_date(const void *date_ptr);
 time_t srv_make_unix_date2(const void *date_ptr);
 time_t srv_make_unix_date3(const void *date_ptr);
-time_t convert_timespec_to_time_t(struct timespec ts);
 struct timespec convert_time_t_to_timespec(time_t t);
 struct timespec convert_timeval_to_timespec(const struct timeval tv);
 struct timeval convert_timespec_to_timeval(const struct timespec ts);
@@ -1410,10 +1400,6 @@ char *strnrchr_m(const char *s, char c, unsigned int n);
 char *strstr_m(const char *src, const char *findstr);
 void strlower_m(char *s);
 void strupper_m(char *s);
-size_t strlen_m_ext(const char *s, const charset_t src_charset,
-		    const charset_t dst_charset);
-size_t strlen_m_ext_term(const char *s, const charset_t src_charset,
-			 const charset_t dst_charset);
 size_t strlen_m(const char *s);
 size_t strlen_m_term(const char *s);
 size_t strlen_m_term_null(const char *s);
@@ -1676,7 +1662,6 @@ bool cli_state_seqnum_persistent(struct cli_state *cli,
 bool cli_state_seqnum_remove(struct cli_state *cli,
 			     uint16_t mid);
 bool cli_receive_smb(struct cli_state *cli);
-bool cli_receive_smb_readX_header(struct cli_state *cli);
 bool cli_send_smb(struct cli_state *cli);
 bool cli_send_smb_direct_writeX(struct cli_state *cli,
 				const char *p,
@@ -2240,7 +2225,6 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  void *priv, SMB_OFF_T *received);
 ssize_t cli_read(struct cli_state *cli, uint16_t fnum, char *buf,
 		 off_t offset, size_t size);
-ssize_t cli_readraw(struct cli_state *cli, uint16_t fnum, char *buf, off_t offset, size_t size);
 ssize_t cli_write(struct cli_state *cli,
     	         uint16_t fnum, uint16 write_mode,
 		 const char *buf, off_t offset, size_t size);
@@ -2383,7 +2367,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 /* The following definitions come from libsmb/conncache.c  */
 
-NTSTATUS check_negative_conn_cache_timeout( const char *domain, const char *server, unsigned int failed_cache_timeout );
 NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
 void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) ;
 void flush_negative_conn_cache_for_domain(const char *domain);
@@ -2411,7 +2394,6 @@ NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor);
 
 /* The following definitions come from libsmb/namecache.c  */
 
-bool namecache_enable(void);
 bool namecache_store(const char *name,
 			int name_type,
 			int num_names,
@@ -2556,7 +2538,6 @@ void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *featur
 void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature);
 NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) ;
-DATA_BLOB ntlmssp_weaken_keys(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx);
 NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 			      bool is_standalone,
 			      const char *netbios_name,
@@ -3719,7 +3700,6 @@ NTSTATUS pdb_wbc_sam_init(void);
 
 /* The following definitions come from passdb/pdb_tdb.c  */
 
-bool init_sam_from_buffer_v2(struct samu *sampass, uint8_t *buf, uint32_t buflen);
 NTSTATUS pdb_tdbsam_init(void);
 
 /* The following definitions come from passdb/util_builtin.c  */
@@ -4688,7 +4668,6 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req);
 void reply_pipe_write(struct smb_request *req);
 void reply_pipe_write_and_X(struct smb_request *req);
 void reply_pipe_read_and_X(struct smb_request *req);
-void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 
 /* The following definitions come from smbd/posix_acls.c  */
 

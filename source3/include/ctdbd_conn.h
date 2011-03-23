@@ -66,10 +66,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 
 NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn);
 
-NTSTATUS ctdbd_persistent_store(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data);
-NTSTATUS ctdbd_start_persistent_update(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data);
-NTSTATUS ctdbd_cancel_persistent_update(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data);
-
 NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32 opcode, 
 			     uint64_t srvid, uint32_t flags, TDB_DATA data, 
 			     TALLOC_CTX *mem_ctx, TDB_DATA *outdata,

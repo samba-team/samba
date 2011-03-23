@@ -4,7 +4,6 @@
 
 void ads_msgfree(ADS_STRUCT *ads, LDAPMessage *msg);
 char *ads_get_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, LDAPMessage *msg);
-char *ads_get_dn_canonical(ADS_STRUCT *ads, LDAPMessage *msg);
 
 char *ads_pull_string(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, LDAPMessage *msg,
 		      const char *field);
