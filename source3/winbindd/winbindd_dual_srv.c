@@ -118,6 +118,98 @@ NTSTATUS _wbint_Sid2Gid(struct pipes_struct *p, struct wbint_Sid2Gid *r)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
+			     struct wbint_Sids2UnixIDs *r)
+{
+	uint32_t i, j;
+	struct id_map *ids = NULL;
+	struct id_map **id_ptrs = NULL;
+	struct dom_sid *sids = NULL;
+	uint32_t *id_idx = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<r->in.domains->count; i++) {
+		struct lsa_DomainInfo *d = &r->in.domains->domains[i];
+		struct idmap_domain *dom;
+		uint32_t num_ids;
+
+		dom = idmap_find_domain(d->name.string);
+		if (dom == NULL) {
+			DEBUG(10, ("idmap domain %s not found\n",
+				   d->name.string));
+			continue;
+		}
+
+		num_ids = 0;
+
+		for (j=0; j<r->in.ids->num_ids; j++) {
+			if (r->in.ids->ids[j].domain_index == i) {
+				num_ids += 1;
+			}
+		}
+
+		ids = TALLOC_REALLOC_ARRAY(talloc_tos(), ids,
+					   struct id_map, num_ids);
+		if (ids == NULL) {
+			goto nomem;
+		}
+		id_ptrs = TALLOC_REALLOC_ARRAY(talloc_tos(), id_ptrs,
+					       struct id_map *, num_ids+1);
+		if (id_ptrs == NULL) {
+			goto nomem;
+		}
+		id_idx = TALLOC_REALLOC_ARRAY(talloc_tos(), id_idx,
+					      uint32_t, num_ids);
+		if (id_idx == NULL) {
+			goto nomem;
+		}
+		sids = TALLOC_REALLOC_ARRAY(talloc_tos(), sids,
+					    struct dom_sid, num_ids);
+		if (sids == NULL) {
+			goto nomem;
+		}
+
+		num_ids = 0;
+
+		for (j=0; j<r->in.ids->num_ids; j++) {
+			struct wbint_TransID *id = &r->in.ids->ids[j];
+
+			if (id->domain_index != i) {
+				continue;
+			}
+			id_idx[num_ids] = j;
+			id_ptrs[num_ids] = &ids[num_ids];
+
+			ids[num_ids].sid = &sids[num_ids];
+			sid_compose(ids[num_ids].sid, d->sid, id->rid);
+			ids[num_ids].xid.type = id->type;
+			ids[num_ids].status = ID_UNKNOWN;
+			num_ids += 1;
+		}
+		id_ptrs[num_ids] = NULL;
+
+		status = dom->methods->sids_to_unixids(dom, id_ptrs);
+		DEBUG(10, ("sids_to_unixids returned %s\n",
+			   nt_errstr(status)));
+
+		for (j=0; j<num_ids; j++) {
+			struct wbint_TransID *id = &r->in.ids->ids[id_idx[j]];
+
+			if (ids[j].status != ID_MAPPED) {
+				continue;
+			}
+			id->unix_id = ids[j].xid.id;
+		}
+	}
+	status = NT_STATUS_OK;
+nomem:
+	TALLOC_FREE(ids);
+	TALLOC_FREE(id_ptrs);
+	TALLOC_FREE(id_idx);
+	TALLOC_FREE(sids);
+	return status;
+}
+
 NTSTATUS _wbint_Uid2Sid(struct pipes_struct *p, struct wbint_Uid2Sid *r)
 {
 	return idmap_uid_to_sid(r->in.dom_name ? r->in.dom_name : "",
