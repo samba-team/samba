@@ -963,6 +963,74 @@ static bool wbinfo_sid_to_gid(const char *sid_str)
 	return true;
 }
 
+static bool wbinfo_sids_to_unix_ids(const char *arg)
+{
+	char sidstr[WBC_SID_STRING_BUFLEN];
+	struct wbcDomainSid *sids;
+	struct wbcUnixId *unix_ids;
+	int i, num_sids;
+	const char *p;
+	wbcErr wbc_status;
+
+
+	num_sids = 0;
+	sids = NULL;
+	p = arg;
+
+	while (next_token(&p, sidstr, LIST_SEP, sizeof(sidstr))) {
+		sids = talloc_realloc(talloc_tos(), sids, struct wbcDomainSid,
+				      num_sids+1);
+		if (sids == NULL) {
+			d_fprintf(stderr, "talloc failed\n");
+			return false;
+		}
+		wbc_status = wbcStringToSid(sidstr, &sids[num_sids]);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			d_fprintf(stderr, "wbcSidToString(%s) failed: %s\n",
+				  sidstr, wbcErrorString(wbc_status));
+			TALLOC_FREE(sids);
+			return false;
+		}
+		num_sids += 1;
+	}
+
+	unix_ids = talloc_array(talloc_tos(), struct wbcUnixId, num_sids);
+	if (unix_ids == NULL) {
+		TALLOC_FREE(sids);
+		return false;
+	}
+
+	wbc_status = wbcSidsToUnixIds(sids, num_sids, unix_ids);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "wbcSidsToUnixIds failed: %s\n",
+			  wbcErrorString(wbc_status));
+		TALLOC_FREE(sids);
+		return false;
+	}
+
+	for (i=0; i<num_sids; i++) {
+
+		wbcSidToStringBuf(&sids[i], sidstr, sizeof(sidstr));
+
+		switch(unix_ids[i].type) {
+		case WBC_ID_TYPE_UID:
+			d_printf("%s -> uid %d\n", sidstr, unix_ids[i].id.uid);
+			break;
+		case WBC_ID_TYPE_GID:
+			d_printf("%s -> gid %d\n", sidstr, unix_ids[i].id.gid);
+			break;
+		default:
+			d_printf("%s -> unmapped\n", sidstr);
+			break;
+		}
+	}
+
+	TALLOC_FREE(sids);
+	TALLOC_FREE(unix_ids);
+
+	return true;
+}
+
 static bool wbinfo_allocate_uid(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -1959,6 +2027,7 @@ enum {
 	OPT_SET_GID_MAPPING,
 	OPT_REMOVE_UID_MAPPING,
 	OPT_REMOVE_GID_MAPPING,
+	OPT_SIDS_TO_XIDS,
 	OPT_SEPARATOR,
 	OPT_LIST_ALL_DOMAINS,
 	OPT_LIST_OWN_DOMAIN,
@@ -2026,6 +2095,8 @@ int main(int argc, char **argv, char **envp)
 		{ "set-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_SET_GID_MAPPING, "Create or modify gid to sid mapping in idmap", "GID,SID" },
 		{ "remove-uid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_UID_MAPPING, "Remove uid to sid mapping in idmap", "UID,SID" },
 		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
+		{ "sids-to-unix-ids", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_SIDS_TO_XIDS, "Translate SIDs to Unix IDs", "Sid-List" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "change-secret", 'c', POPT_ARG_NONE, 0, 'c', "Change shared secret" },
 		{ "ping-dc", 'P', POPT_ARG_NONE, 0, 'P',
@@ -2271,6 +2342,13 @@ int main(int argc, char **argv, char **envp)
 			{
 				d_fprintf(stderr, "Could not remove gid to sid "
 				    "mapping\n");
+				goto done;
+			}
+			break;
+		case OPT_SIDS_TO_XIDS:
+			if (!wbinfo_sids_to_unix_ids(string_arg)) {
+				d_fprintf(stderr, "wbinfo_sids_to_unix_ids "
+					  "failed\n");
 				goto done;
 			}
 			break;
