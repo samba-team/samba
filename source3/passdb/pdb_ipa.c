@@ -1292,7 +1292,25 @@ static NTSTATUS ipasam_create_user(struct pdb_methods *pdb_methods,
 	if (NT_STATUS_IS_OK(status)) {
 		ldap_op = LDAP_MOD_REPLACE;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		char *escape_username;
 		ldap_op = LDAP_MOD_ADD;
+		escape_username = escape_rdn_val_string_alloc(name);
+		if (!escape_username) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		if (name[strlen(name)-1] == '$') {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s",
+					     escape_username,
+					     lp_ldap_machine_suffix());
+		} else {
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s",
+					     escape_username,
+					     lp_ldap_user_suffix());
+		}
+		SAFE_FREE(escape_username);
+		if (!dn) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	} else {
 		return status;
 	}
