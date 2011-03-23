@@ -31,6 +31,10 @@
 #include <sys/sysctl.h>
 #endif
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 static char *corepath;
 
 /**
