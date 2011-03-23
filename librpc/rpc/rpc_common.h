@@ -30,6 +30,7 @@ struct ndr_push;
 struct ndr_pull;
 struct ncacn_packet;
 struct epm_floor;
+struct epm_tower;
 struct tevent_context;
 struct tstream_context;
 
@@ -116,6 +117,17 @@ NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
+NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
+				    const struct dcerpc_binding *binding,
+				    struct epm_tower *tower);
+NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
+				   struct epm_tower *tower,
+				   struct dcerpc_binding **b_out);
+NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out);
+char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
+NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
+const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
+enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower);
 
 /* The following definitions come from ../librpc/rpc/dcerpc_util.c  */
 
