@@ -211,15 +211,14 @@ bool strnequal(const char *s1,const char *s2,size_t n)
 /**
  Compare 2 strings (case sensitive).
 **/
-
-bool strcsequal(const char *s1,const char *s2)
+_PUBLIC_ bool strcsequal(const char *s1,const char *s2)
 {
 	if (s1 == s2)
-		return(true);
+		return true;
 	if (!s1 || !s2)
-		return(false);
+		return false;
 
-	return(strcmp(s1,s2)==0);
+	return strcmp(s1,s2) == 0;
 }
 
 /**
@@ -446,53 +445,51 @@ bool trim_char(char *s,char cfront,char cback)
 }
 
 /**
- Does a string have any uppercase chars in it?
-**/
-
-bool strhasupper(const char *s)
+  return True if any (multi-byte) character is upper case
+*/
+_PUBLIC_ bool strhasupper(const char *string)
 {
-	smb_ucs2_t *tmp, *p;
-	bool ret;
-	size_t converted_size;
+	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	while (*string) {
+		size_t c_size;
+		codepoint_t s;
+		codepoint_t t;
 
-	if (!push_ucs2_talloc(talloc_tos(), &tmp, s, &converted_size)) {
-		return false;
-	}
+		s = next_codepoint_convenience(ic, string, &c_size);
+		string += c_size;
 
-	for(p = tmp; *p != 0; p++) {
-		if(isupper_m(*p)) {
-			break;
+		t = tolower_m(s);
+
+		if (s != t) {
+			return true; /* that means it has upper case chars */
 		}
 	}
 
-	ret = (*p != 0);
-	TALLOC_FREE(tmp);
-	return ret;
+	return false;
 }
 
 /**
- Does a string have any lowercase chars in it?
-**/
-
-bool strhaslower(const char *s)
+  return True if any (multi-byte) character is lower case
+*/
+_PUBLIC_ bool strhaslower(const char *string)
 {
-	smb_ucs2_t *tmp, *p;
-	bool ret;
-	size_t converted_size;
+	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	while (*string) {
+		size_t c_size;
+		codepoint_t s;
+		codepoint_t t;
 
-	if (!push_ucs2_talloc(talloc_tos(), &tmp, s, &converted_size)) {
-		return false;
-	}
+		s = next_codepoint_convenience(ic, string, &c_size);
+		string += c_size;
 
-	for(p = tmp; *p != 0; p++) {
-		if(islower_m(*p)) {
-			break;
+		t = toupper_m(s);
+
+		if (s != t) {
+			return true; /* that means it has lower case chars */
 		}
 	}
 
-	ret = (*p != 0);
-	TALLOC_FREE(tmp);
-	return ret;
+	return false;
 }
 
 /**
@@ -1107,19 +1104,15 @@ char *string_truncate(char *s, unsigned int length)
 }
 
 /**
- Strchr and strrchr_m are very hard to do on general multi-byte strings.
- We convert via ucs2 for now.
+ Strchr and strrchr_m are a bit complex on general multi-byte strings.
 **/
-
-char *strchr_m(const char *src, char c)
+_PUBLIC_ char *strchr_m(const char *src, char c)
 {
-	smb_ucs2_t *ws = NULL;
-	char *s2 = NULL;
-	smb_ucs2_t *p;
 	const char *s;
-	char *ret;
-	size_t converted_size;
-
+	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	if (src == NULL) {
+		return NULL;
+	}
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
 	if ((c & 0xC0) == 0) {
@@ -1144,29 +1137,30 @@ char *strchr_m(const char *src, char c)
 	s = src;
 #endif
 
-	if (!push_ucs2_talloc(talloc_tos(), &ws, s, &converted_size)) {
-		/* Wrong answer, but what can we do... */
-		return strchr(src, c);
+	while (*s) {
+		size_t size;
+		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
+		if (c2 == c) {
+			return discard_const_p(char, s);
+		}
+		s += size;
 	}
-	p = strchr_w(ws, UCS2_CHAR(c));
-	if (!p) {
-		TALLOC_FREE(ws);
-		return NULL;
-	}
-	*p = 0;
-	if (!pull_ucs2_talloc(talloc_tos(), &s2, ws, &converted_size)) {
-		SAFE_FREE(ws);
-		/* Wrong answer, but what can we do... */
-		return strchr(src, c);
-	}
-	ret = (char *)(s+strlen(s2));
-	TALLOC_FREE(ws);
-	TALLOC_FREE(s2);
-	return ret;
+
+	return NULL;
 }
 
-char *strrchr_m(const char *s, char c)
+/**
+ * Multibyte-character version of strrchr
+ */
+_PUBLIC_ char *strrchr_m(const char *s, char c)
 {
+	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	char *ret = NULL;
+
+	if (s == NULL) {
+		return NULL;
+	}
+
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
 	if ((c & 0xC0) == 0) {
@@ -1193,48 +1187,30 @@ char *strrchr_m(const char *s, char c)
 		do {
 			if (c == *cp) {
 				/* Could be a match. Part of a multibyte ? */
-			       	if ((cp > s) &&
+				if ((cp > s) &&
 					(((unsigned char)cp[-1]) & 0x80)) {
 					/* Yep - go slow :-( */
 					got_mb = true;
 					break;
 				}
 				/* No - we have a match ! */
-			       	return (char *)cp;
+				return (char *)cp;
 			}
 		} while (cp-- != s);
 		if (!got_mb)
 			return NULL;
 	}
 
-	/* String contained a non-ascii char. Slow path. */
-	{
-		smb_ucs2_t *ws = NULL;
-		char *s2 = NULL;
-		smb_ucs2_t *p;
-		char *ret;
-		size_t converted_size;
-
-		if (!push_ucs2_talloc(talloc_tos(), &ws, s, &converted_size)) {
-			/* Wrong answer, but what can we do. */
-			return strrchr(s, c);
+	while (*s) {
+		size_t size;
+		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
+		if (c2 == c) {
+			ret = discard_const_p(char, s);
 		}
-		p = strrchr_w(ws, UCS2_CHAR(c));
-		if (!p) {
-			TALLOC_FREE(ws);
-			return NULL;
-		}
-		*p = 0;
-		if (!pull_ucs2_talloc(talloc_tos(), &s2, ws, &converted_size)) {
-			TALLOC_FREE(ws);
-			/* Wrong answer, but what can we do. */
-			return strrchr(s, c);
-		}
-		ret = (char *)(s+strlen(s2));
-		TALLOC_FREE(ws);
-		TALLOC_FREE(s2);
-		return ret;
+		s += size;
 	}
+
+	return ret;
 }
 
 /***********************************************************************
@@ -1426,11 +1402,10 @@ void strupper_m(char *s)
  * string which is expected to be in in src_charset encoding to the
  * destination charset (which should be a unicode charset).
  */
-
-size_t strlen_m_ext(const char *s, const charset_t src_charset,
-		    const charset_t dst_charset)
+_PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset)
 {
 	size_t count = 0;
+	struct smb_iconv_convenience *ic = get_iconv_convenience();
 
 	if (!s) {
 		return 0;
@@ -1447,7 +1422,7 @@ size_t strlen_m_ext(const char *s, const charset_t src_charset,
 
 	while (*s) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_ext(s, src_charset, &c_size);
+		codepoint_t c = next_codepoint_convenience_ext(ic, s, src_charset, &c_size);
 		s += c_size;
 
 		switch (dst_charset) {
@@ -1490,8 +1465,8 @@ size_t strlen_m_ext(const char *s, const charset_t src_charset,
 	return count;
 }
 
-size_t strlen_m_ext_term(const char *s, const charset_t src_charset,
-			 const charset_t dst_charset)
+_PUBLIC_ size_t strlen_m_ext_term(const char *s, const charset_t src_charset,
+				  const charset_t dst_charset)
 {
 	if (!s) {
 		return 0;
@@ -1500,28 +1475,27 @@ size_t strlen_m_ext_term(const char *s, const charset_t src_charset,
 }
 
 /**
- * Calculate the number of 16-bit units that would bee needed to convert
+ * Calculate the number of 16-bit units that would be needed to convert
  * the input string which is expected to be in CH_UNIX encoding to UTF16.
  *
  * This will be the same as the number of bytes in a string for single
  * byte strings, but will be different for multibyte.
  */
-
-size_t strlen_m(const char *s)
+_PUBLIC_ size_t strlen_m(const char *s)
 {
 	return strlen_m_ext(s, CH_UNIX, CH_UTF16LE);
 }
 
 /**
- Count the number of UCS2 characters in a string including the null
- terminator.
+   Work out the number of multibyte chars in a string, including the NULL
+   terminator.
 **/
-
-size_t strlen_m_term(const char *s)
+_PUBLIC_ size_t strlen_m_term(const char *s)
 {
 	if (!s) {
 		return 0;
 	}
+
 	return strlen_m(s) + 1;
 }
 
@@ -1530,7 +1504,7 @@ size_t strlen_m_term(const char *s)
  * if a string is there, include the terminator.
  */
 
-size_t strlen_m_term_null(const char *s)
+_PUBLIC_ size_t strlen_m_term_null(const char *s)
 {
 	size_t len;
 	if (!s) {
