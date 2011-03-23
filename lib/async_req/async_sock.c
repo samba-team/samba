@@ -104,7 +104,8 @@ static void sendto_handler(struct tevent_context *ev,
 		tevent_req_data(req, struct sendto_state);
 
 	state->sent = sendto(state->fd, state->buf, state->len, state->flags,
-			     (struct sockaddr *)state->addr, state->addr_len);
+			     (const struct sockaddr *)state->addr,
+			     state->addr_len);
 	if ((state->sent == -1) && (errno == EINTR)) {
 		/* retry */
 		return;
