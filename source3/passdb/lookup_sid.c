@@ -1395,6 +1395,109 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 	return;
 }
 
+bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
+		      struct wbcUnixId *ids)
+{
+	struct wbcDomainSid *wbc_sids = NULL;
+	struct wbcUnixId *wbc_ids = NULL;
+	uint32_t i, num_not_cached;
+	wbcErr err;
+	bool ret = false;
+
+	wbc_sids = TALLOC_ARRAY(talloc_tos(), struct wbcDomainSid, num_sids);
+	if (wbc_sids == NULL) {
+		return false;
+	}
+
+	num_not_cached = 0;
+
+	for (i=0; i<num_sids; i++) {
+		bool expired;
+		uint32_t rid;
+
+		if (fetch_uid_from_cache(&ids[i].id.uid, &sids[i])) {
+			ids[i].type = WBC_ID_TYPE_UID;
+			continue;
+		}
+		if (fetch_gid_from_cache(&ids[i].id.gid, &sids[i])) {
+			ids[i].type = WBC_ID_TYPE_GID;
+			continue;
+		}
+		if (sid_peek_check_rid(&global_sid_Unix_Users,
+				       &sids[i], &rid)) {
+			ids[i].type = WBC_ID_TYPE_UID;
+			ids[i].id.uid = rid;
+			continue;
+		}
+		if (sid_peek_check_rid(&global_sid_Unix_Groups,
+				       &sids[i], &rid)) {
+			ids[i].type = WBC_ID_TYPE_GID;
+			ids[i].id.gid = rid;
+			continue;
+		}
+		if (idmap_cache_find_sid2uid(&sids[i], &ids[i].id.uid,
+					     &expired)
+		    && !expired) {
+			ids[i].type = WBC_ID_TYPE_UID;
+			continue;
+		}
+		if (idmap_cache_find_sid2gid(&sids[i], &ids[i].id.gid,
+					     &expired)
+		    && !expired) {
+			ids[i].type = WBC_ID_TYPE_GID;
+			continue;
+		}
+		ids[i].type = WBC_ID_TYPE_NOT_SPECIFIED;
+		memcpy(&wbc_sids[num_not_cached], &sids[i],
+		       ndr_size_dom_sid(&sids[i], 0));
+		num_not_cached += 1;
+	}
+	if (num_not_cached == 0) {
+		goto done;
+	}
+	wbc_ids = TALLOC_ARRAY(talloc_tos(), struct wbcUnixId, num_not_cached);
+	if (wbc_ids == NULL) {
+		goto fail;
+	}
+	for (i=0; i<num_not_cached; i++) {
+		wbc_ids[i].type = WBC_ID_TYPE_NOT_SPECIFIED;
+	}
+	err = wbcSidsToUnixIds(wbc_sids, num_not_cached, wbc_ids);
+	if (!WBC_ERROR_IS_OK(err)) {
+		DEBUG(10, ("wbcSidsToUnixIds returned %s\n",
+			   wbcErrorString(err)));
+	}
+
+	num_not_cached = 0;
+
+	for (i=0; i<num_sids; i++) {
+		if (ids[i].type == WBC_ID_TYPE_NOT_SPECIFIED) {
+			ids[i] = wbc_ids[num_not_cached];
+			num_not_cached += 1;
+		}
+	}
+
+	for (i=0; i<num_sids; i++) {
+		if (ids[i].type != WBC_ID_TYPE_NOT_SPECIFIED) {
+			continue;
+		}
+		if (legacy_sid_to_gid(&sids[i], &ids[i].id.gid)) {
+			ids[i].type = WBC_ID_TYPE_GID;
+			continue;
+		}
+		if (legacy_sid_to_uid(&sids[i], &ids[i].id.uid)) {
+			ids[i].type = WBC_ID_TYPE_UID;
+			continue;
+		}
+	}
+done:
+	ret = true;
+fail:
+	TALLOC_FREE(wbc_ids);
+	TALLOC_FREE(wbc_sids);
+	return ret;
+}
+
 /*****************************************************************
  *THE CANONICAL* convert SID to uid function.
 *****************************************************************/  
