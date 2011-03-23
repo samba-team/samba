@@ -317,6 +317,7 @@ NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
 
 void init_idmap_child(void);
 struct winbindd_child *idmap_child(void);
+struct idmap_domain *idmap_find_domain(const char *domname);
 
 /* The following definitions come from winbindd/winbindd_locator.c  */
 
