@@ -157,8 +157,6 @@ NTSTATUS get_sid_type(ADS_STRUCT *ads,
 
 NTSTATUS cell_locate_membership(ADS_STRUCT * ads);
 NTSTATUS cell_lookup_settings(struct likewise_cell * cell);
-NTSTATUS cell_follow_links(struct likewise_cell *cell);
-NTSTATUS cell_set_local_provider(void);
 
 /* likewise_cell.c */
 
