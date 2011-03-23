@@ -13,7 +13,7 @@ start_nfs() {
 
 loadconfig nfs
 
-[ "$NFS_SERVER_MODE" == "GANESHA" ] || exit 0
+[ "$NFS_SERVER_MODE" = "GANESHA" ] || exit 0
 
 service_name="nfs-ganesha-gpfs"
 
