@@ -22,5 +22,6 @@
 #include "smb_acls.h"
 #include "vfs.h"
 #include "smbd/proto.h"
+#include "locking/proto.h"
 
 #endif /* _SMBD_SMBD_H */
