@@ -201,9 +201,6 @@ _PUBLIC_ bool convert_string_talloc_convenience(TALLOC_CTX *ctx,
 	smb_iconv_t descriptor;
 	ssize_t ret;
 
-	if (allow_badcharcnv)
-		return false; /* Not implemented yet */
-
 	*dest = NULL;
 
 	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
