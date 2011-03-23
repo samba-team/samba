@@ -539,7 +539,6 @@ typedef char fstring[FSTRING_LEN];
 #include "locking.h"
 #include "smb_perfcount.h"
 #include "smb.h"
-#include "nameserv.h"
 #include "../lib/util/byteorder.h"
 
 #include "auth.h"

@@ -23,6 +23,7 @@
 #include "libsmb/clirap.h"
 #include "msdfs.h"
 #include "trans2.h"
+#include "libsmb/nmblib.h"
 
 /********************************************************************
  Important point.

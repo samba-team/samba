@@ -33,6 +33,7 @@
 #include "async_smb.h"
 #include "libsmb/clirap.h"
 #include "trans2.h"
+#include "libsmb/nmblib.h"
 
 extern char *optarg;
 extern int optind;

@@ -28,6 +28,7 @@
 #include "libsmb_internal.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
+#include "libsmb/nmblib.h"
 
 /*
  * Routine to open a directory

@@ -30,6 +30,7 @@
 #include "rpc_client/cli_pipe.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "libcli/security/security.h"
+#include "libsmb/nmblib.h"
 
 /* 
  * Check a server for being alive and well.

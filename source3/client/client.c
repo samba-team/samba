@@ -34,6 +34,7 @@
 #include "system/select.h"
 #include "libsmb/clirap.h"
 #include "trans2.h"
+#include "libsmb/nmblib.h"
 
 #ifndef REGISTER
 #define REGISTER 0

@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/spoolss.h"
 #include "nt_printing.h"
 #include "printing/notify.h"
+#include "libsmb/nmblib.h"
 
 #if HAVE_LIBUNWIND_H
 #include <libunwind.h>
