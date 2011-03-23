@@ -596,8 +596,7 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 				   &in_buffer[512 - byte_len],
 				   byte_len,
 				   (void *)pp_new_pwrd,
-				   new_pw_len,
-				   false)) {
+				   new_pw_len)) {
 		DEBUG(0, ("decode_pw_buffer: failed to convert incoming password\n"));
 		return false;
 	}

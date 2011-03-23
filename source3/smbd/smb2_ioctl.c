@@ -303,7 +303,7 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					   in_file_name_buffer.data,
 					   in_file_name_buffer.length,
 					   &in_file_name_string,
-					   &in_file_name_string_size, false);
+					   &in_file_name_string_size);
 		if (!ok) {
 			tevent_req_nterror(req, NT_STATUS_ILLEGAL_CHARACTER);
 			return tevent_req_post(req, ev);

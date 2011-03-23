@@ -65,7 +65,7 @@ again:
 		goto out;
 	}
 
-	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen, True);
+	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
 	if (clen == -1) {
 		ret = -1;
 		goto out;

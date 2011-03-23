@@ -207,14 +207,14 @@ void cgi_load_variables(void)
 
 		convert_string_talloc(frame, CH_UTF8, CH_UNIX,
 			       variables[i].name, strlen(variables[i].name),
-			       &dest, &dest_len, True);
+			       &dest, &dest_len);
 		SAFE_FREE(variables[i].name);
 		variables[i].name = SMB_STRDUP(dest ? dest : "");
 
 		dest = NULL;
 		convert_string_talloc(frame, CH_UTF8, CH_UNIX,
 			       variables[i].value, strlen(variables[i].value),
-			       &dest, &dest_len, True);
+			       &dest, &dest_len);
 		SAFE_FREE(variables[i].value);
 		variables[i].value = SMB_STRDUP(dest ? dest : "");
 		TALLOC_FREE(frame);
@@ -359,11 +359,11 @@ static bool cgi_handle_authorization(char *line)
 
 	convert_string(CH_UTF8, CH_UNIX, 
 		       line, -1, 
-		       user, sizeof(user), True);
+		       user, sizeof(user));
 
 	convert_string(CH_UTF8, CH_UNIX, 
 		       p+1, -1, 
-		       user_pass, sizeof(user_pass), True);
+		       user_pass, sizeof(user_pass));
 
 	/*
 	 * Try and get the user from the UNIX password file.

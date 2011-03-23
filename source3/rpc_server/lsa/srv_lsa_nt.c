@@ -1647,8 +1647,7 @@ static NTSTATUS add_trusted_domain_user(TALLOC_CTX *mem_ctx,
 							   auth_struct->incoming.current.array[i].AuthInfo.clear.password,
 							   auth_struct->incoming.current.array[i].AuthInfo.clear.size,
 							   &dummy,
-							   &dummy_size,
-							   false)) {
+							   &dummy_size)) {
 					return NT_STATUS_UNSUCCESSFUL;
 				}
 				if (!pdb_set_plaintext_passwd(sam_acct, dummy)) {

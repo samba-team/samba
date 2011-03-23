@@ -81,7 +81,7 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 				   in_path_buffer.data,
 				   in_path_buffer.length,
 				   &in_path_string,
-				   &in_path_string_size, false);
+				   &in_path_string_size);
 	if (!ok) {
 		return smbd_smb2_request_error(req, NT_STATUS_ILLEGAL_CHARACTER);
 	}

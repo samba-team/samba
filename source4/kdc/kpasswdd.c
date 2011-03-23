@@ -242,7 +242,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 					       CH_UTF8, CH_UTF16,
 					       (const char *)input->data,
 					       input->length,
-					       (void **)&password.data, &pw_len, false)) {
+					       (void **)&password.data, &pw_len)) {
 			return false;
 		}
 		password.length = pw_len;
@@ -282,7 +282,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 					       CH_UTF8, CH_UTF16,
 					       (const char *)chpw.newpasswd.data,
 					       chpw.newpasswd.length,
-					       (void **)&password.data, &pw_len, false)) {
+					       (void **)&password.data, &pw_len)) {
 			free_ChangePasswdDataMS(&chpw);
 			return false;
 		}

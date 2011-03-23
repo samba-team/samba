@@ -479,7 +479,7 @@ static bool test_plaintext(enum ntlm_break break_which)
 				   CH_DOS, password,
 				   strlen(password)+1, 
 				   &lm_response.data,
-				   &lm_response.length, True)) {
+				   &lm_response.length)) {
 		DEBUG(0, ("convert_string_talloc failed!\n"));
 		exit(1);
 	}

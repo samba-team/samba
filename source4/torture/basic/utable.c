@@ -52,7 +52,7 @@ bool torture_utable(struct torture_context *tctx,
 		p = fname+strlen(fname);
 		len = convert_string(CH_UTF16, CH_UNIX, 
 				     c2, 2, 
-				     p, sizeof(fname)-strlen(fname), false);
+				     p, sizeof(fname)-strlen(fname));
 		p[len] = 0;
 		strncat(fname,"_a_long_extension",sizeof(fname)-1);
 
@@ -111,7 +111,7 @@ static char *form_name(int c)
 
 	len = convert_string(CH_UTF16, CH_UNIX, 
 			     c2, 2, 
-			     p, sizeof(fname)-strlen(fname), false);
+			     p, sizeof(fname)-strlen(fname));
 	if (len == -1)
 		return NULL;
 	p[len] = 0;

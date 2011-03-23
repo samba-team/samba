@@ -58,7 +58,7 @@ static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
 	if (!convert_string_talloc(talloc_tos(), CH_UNIX,
 				   ucs2 ? CH_UTF16LE : CH_DOS,
 				   str, str_len, &converted,
-				   &converted_size, true)) {
+				   &converted_size)) {
 		return NULL;
 	}
 
@@ -445,8 +445,7 @@ NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
 				state->data,
 				state->num_data,
 				&converted,
-				&converted_size,
-				true)) {
+				&converted_size)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -5417,7 +5416,7 @@ NTSTATUS cli_shadow_copy_data_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		ret = convert_string_talloc(
 			names, CH_UTF16LE, CH_UNIX,
 			src, 2 * sizeof(SHADOW_COPY_LABEL),
-			&names[i], &converted_size, True);
+			&names[i], &converted_size);
 		if (!ret) {
 			TALLOC_FREE(names);
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;

@@ -73,7 +73,7 @@ static void msg_deliver(struct msg_state *state)
 
 	if (!convert_string_talloc(talloc_tos(), CH_DOS, CH_UNIX, state->msg,
 				   talloc_get_size(state->msg), (void *)&msg,
-				   &len, true)) {
+				   &len)) {
 		DEBUG(3, ("Conversion failed, delivering message in DOS "
 			  "codepage format\n"));
 		msg = state->msg;

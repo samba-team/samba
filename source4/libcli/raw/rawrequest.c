@@ -586,7 +586,7 @@ static size_t smbcli_req_pull_ucs2(struct request_bufinfo *bufinfo, TALLOC_CTX *
 		return 0;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)dest, &ret_size, false);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)dest, &ret_size);
 	if (!ret) {
 		*dest = NULL;
 		return 0;
@@ -629,7 +629,7 @@ size_t smbcli_req_pull_ascii(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ct
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)dest, &ret_size, false);
+	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)dest, &ret_size);
 
 	if (!ret) {
 		*dest = NULL;
@@ -783,7 +783,7 @@ size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 
 	src_len2 = utf16_len_n(src, src_len);
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2, &ret_size, false);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2, &ret_size);
 	if (!ret) {
 		*dest = NULL;
 		return 0;
@@ -830,7 +830,7 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2, &ret_size, false);
+	ret = convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2, &ret_size);
 
 	if (!ret) {
 		*dest = NULL;

@@ -1192,7 +1192,7 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	if (!convert_string_talloc(samlogon_state->mem_ctx,
 				   CH_UNIX, CH_DOS,
 				   password, strlen(password)+1,
-				   (void**)&dospw, NULL, false)) {
+				   (void**)&dospw, NULL)) {
 		DEBUG(0, ("convert_string_talloc failed!\n"));
 		exit(1);
 	}

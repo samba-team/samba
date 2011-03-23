@@ -109,7 +109,7 @@ static void _print_drsuapi_DsAttributeValue_str(struct ndr_print *ndr, const cha
 	                           CH_UTF16, CH_UNIX,
 	                           r->blob->data,
 	                           r->blob->length,
-	                           (void **)&str, NULL, false)) {
+	                           (void **)&str, NULL)) {
 		ndr_print_string(ndr, "string", "INVALID CONVERSION");
 	} else {
 		ndr_print_string(ndr, "string", str);

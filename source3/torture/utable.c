@@ -51,7 +51,7 @@ bool torture_utable(int dummy)
 		p = fname+strlen(fname);
 		len = convert_string(CH_UTF16LE, CH_UNIX, 
 				     &c2, 2, 
-				     p, sizeof(fname)-strlen(fname), True);
+				     p, sizeof(fname)-strlen(fname));
 		p[len] = 0;
 		fstrcat(fname,"_a_long_extension");
 
@@ -113,7 +113,7 @@ static char *form_name(int c)
 
 	len = convert_string(CH_UTF16LE, CH_UNIX, 
 			     &c2, 2, 
-			     p, sizeof(fname)-strlen(fname), True);
+			     p, sizeof(fname)-strlen(fname));
 	p[len] = 0;
 	return fname;
 }

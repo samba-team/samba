@@ -335,7 +335,7 @@ found:
 				   CH_UNIX, CH_UTF16,
 				   newpass, strlen(newpass),
 				   (void *)&newpass_utf16.data,
-				   &newpass_utf16.length, false)) {
+				   &newpass_utf16.length)) {
 		ldb_asprintf_errstring(ldb,
 				       "samldb_rodc_add: "
 				       "failed to generate UTF16 password from random password");

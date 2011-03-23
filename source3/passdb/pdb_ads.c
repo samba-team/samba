@@ -388,7 +388,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 		ret &= convert_string_talloc(talloc_tos(),
 					     CH_UNIX, CH_UTF16LE,
 					     pw_quote, strlen(pw_quote),
-					     &pw_utf16, &pw_utf16_len, false);
+					     &pw_utf16, &pw_utf16_len);
 		if (!ret) {
 			goto fail;
 		}
@@ -1652,8 +1652,7 @@ static bool pdb_ads_dnblob2sid(struct pdb_ads_state *state, DATA_BLOB *dnblob,
 	bool ret;
 
 	if (!convert_string_talloc(talloc_tos(), CH_UTF8, CH_UNIX,
-				   dnblob->data, dnblob->length, &dn, &len,
-				   false)) {
+				   dnblob->data, dnblob->length, &dn, &len)) {
 		return false;
 	}
 	rc = pdb_ads_search_fmt(state, dn, TLDAP_SCOPE_BASE,

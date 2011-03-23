@@ -162,7 +162,7 @@ static bool act_val_sz(struct reg_parse* p, cbuf* value, bool cont)
 
 		if (convert_string_talloc(p->valblob, CH_UNIX, CH_UTF16LE,
 					  src, strlen(src)+1,
-					  &dst, &dlen, true))
+					  &dst, &dlen))
 		{
 			cbuf_swapptr(p->valblob, &dst, dlen);
 		} else {

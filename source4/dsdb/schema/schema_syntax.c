@@ -1484,7 +1484,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_syntax_ctx *c
 					   CH_UTF16, CH_UNIX,
 					   in->value_ctr.values[i].blob->data,
 					   in->value_ctr.values[i].blob->length,
-					   (void **)&str, NULL, false)) {
+					   (void **)&str, NULL)) {
 			return WERR_FOOBAR;
 		}
 
@@ -1524,7 +1524,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_syntax_ctx *c
 		if (!convert_string_talloc(blobs,
 					   CH_UNIX, CH_UTF16,
 					   in->values[i].data, in->values[i].length,
-					   (void **)&blobs[i].data, &blobs[i].length, false)) {
+					   (void **)&blobs[i].data, &blobs[i].length)) {
 			return WERR_FOOBAR;
 		}
 	}
@@ -1549,7 +1549,7 @@ static WERROR dsdb_syntax_UNICODE_validate_one_val(const struct dsdb_syntax_ctx 
 				   val->data,
 				   val->length,
 				   (void **)&dst,
-				   &size, false);
+				   &size);
 	TALLOC_FREE(dst);
 	if (!ok) {
 		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
@@ -2246,7 +2246,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(const struct dsdb_
 		if (!convert_string_talloc(out->values, CH_UTF16, CH_UNIX,
 					   in->value_ctr.values[i].blob->data+4,
 					   in->value_ctr.values[i].blob->length-4,
-					   (void **)&str, NULL, false)) {
+					   (void **)&str, NULL)) {
 			return WERR_FOOBAR;
 		}
 
@@ -2289,7 +2289,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(const struct dsdb_
 		if (!convert_string_talloc(blobs, CH_UNIX, CH_UTF16,
 					   in->values[i].data,
 					   in->values[i].length,
-					   (void **)&data, &ret, false)) {
+					   (void **)&data, &ret)) {
 			return WERR_FOOBAR;
 		}
 

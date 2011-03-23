@@ -212,7 +212,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 				   in_name_buffer.data,
 				   in_name_buffer.length,
 				   &in_name_string,
-				   &in_name_string_size, false);
+				   &in_name_string_size);
 	if (!ok) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_ILLEGAL_CHARACTER);
 	}

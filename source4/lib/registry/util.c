@@ -37,7 +37,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 			convert_string_talloc(mem_ctx,
 					      CH_UTF16, CH_UNIX,
 					      data.data, data.length,
-					      (void **)&ret, NULL, false);
+					      (void **)&ret, NULL);
 			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
@@ -162,7 +162,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 						     CH_UNIX, CH_UTF16,
 						     data_str, strlen(data_str)+1,
 						     (void **)&data->data,
-						     &data->length, false);
+						     &data->length);
 			break;
 		case REG_MULTI_SZ:
 		case REG_EXPAND_SZ:

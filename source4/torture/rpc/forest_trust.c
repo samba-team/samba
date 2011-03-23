@@ -436,8 +436,7 @@ static bool get_trust_domain_passwords_auth_blob(TALLOC_CTX *mem_ctx,
 	if (!convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, password,
 				  strlen(password),
 				  &auth_info_array[0].AuthInfo.clear.password,
-				  &converted_size,
-				  false)) {
+				  &converted_size)) {
 		return false;
 	}
 

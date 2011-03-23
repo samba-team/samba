@@ -384,7 +384,7 @@ struct tevent_req *cli_trans_send(
 				       cli_ucs2(cli) ? CH_UTF16LE : CH_DOS,
 				       pipe_name, strlen(pipe_name) + 1,
 				       &state->pipe_name_conv,
-				       &state->pipe_name_conv_len, true))) {
+				       &state->pipe_name_conv_len))) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return tevent_req_post(req, ev);
 	}

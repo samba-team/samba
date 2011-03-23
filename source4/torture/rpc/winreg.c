@@ -2771,8 +2771,7 @@ static bool test_symlink_keys(struct torture_context *tctx,
 		convert_string_talloc(tctx, CH_UNIX, CH_UTF16,
 				      kernel_mode_path,
 				      strlen(kernel_mode_path), /* not NULL terminated */
-				      &blob.data, &blob.length,
-				      false),
+				      &blob.data, &blob.length),
 		"failed to convert");
 
 	torture_assert(tctx,

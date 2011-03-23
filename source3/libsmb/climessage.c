@@ -47,12 +47,12 @@ static struct tevent_req *cli_message_start_send(TALLOC_CTX *mem_ctx,
 
 	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_DOS,
 				   username, strlen(username)+1,
-				   &utmp, &ulen, true)) {
+				   &utmp, &ulen)) {
 		goto fail;
 	}
 	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_DOS,
 				   host, strlen(host)+1,
-				   &htmp, &hlen, true)) {
+				   &htmp, &hlen)) {
 		goto fail;
 	}
 
@@ -154,7 +154,7 @@ static struct tevent_req *cli_message_text_send(TALLOC_CTX *mem_ctx,
 	SSVAL(&state->vwv, 0, grp);
 
 	if (convert_string_talloc(talloc_tos(), CH_UNIX, CH_DOS, msg, msglen,
-				  &tmp, &tmplen, true)) {
+				  &tmp, &tmplen)) {
 		msg = tmp;
 		msglen = tmplen;
 	} else {

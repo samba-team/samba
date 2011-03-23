@@ -123,10 +123,9 @@ convert:
  * @returns the number of bytes occupied in the destination
  **/
 _PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
-				charset_t from, charset_t to,
-				void const *src, size_t srclen, 
-				void *dest, size_t destlen, size_t *converted_size,
-				bool allow_badcharcnv)
+					 charset_t from, charset_t to,
+					 void const *src, size_t srclen, 
+					 void *dest, size_t destlen, size_t *converted_size)
 {
 	size_t i_len, o_len;
 	size_t retval;
@@ -191,11 +190,10 @@ _PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
  **/
 
 _PUBLIC_ bool convert_string_talloc_convenience(TALLOC_CTX *ctx, 
-				       struct smb_iconv_convenience *ic, 
-				       charset_t from, charset_t to, 
-				       void const *src, size_t srclen, 
-				       void *dst, size_t *converted_size, 
-					   bool allow_badcharcnv)
+						struct smb_iconv_convenience *ic, 
+						charset_t from, charset_t to, 
+						void const *src, size_t srclen, 
+						void *dst, size_t *converted_size)
 {
 	void **dest = (void **)dst;
 	smb_iconv_t descriptor;

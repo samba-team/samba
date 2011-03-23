@@ -1039,7 +1039,7 @@ static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 		tmp_buf[nlen+1] = 0;
 
 		if (!convert_string_talloc(streams, CH_UTF16, CH_UNIX, tmp_buf,
-					   nlen+2, &vstr, &size, false))
+					   nlen+2, &vstr, &size))
 		{
 			TALLOC_FREE(tmp_buf);
 			goto fail;
@@ -1285,8 +1285,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 				   rdata + 4,
 				   len,
 				   &converted,
-				   &converted_size,
-				   true)) {
+				   &converted_size)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	fstrcpy(alt_name, converted);

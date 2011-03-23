@@ -264,7 +264,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 					size_t pull_len;
 					if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
 								   blob->data + ptr, len1, 
-								   ps, &pull_len, false)) {
+								   ps, &pull_len)) {
 						ret = false;
 						goto cleanup;
 					}
@@ -300,7 +300,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 
 					if (!convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
 								   blob->data + ptr, len1, 
-								   ps, &pull_len, false)) {
+								   ps, &pull_len)) {
 						ret = false;
 						goto cleanup;
 					}

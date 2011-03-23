@@ -322,7 +322,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		if (lm_response->length && 
 		    (convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
 					  lm_response->data, lm_response->length, 
-					   (void *)&unix_pw, NULL, false))) {
+					   (void *)&unix_pw, NULL))) {
 			if (E_deshash(unix_pw, client_lm.hash)) {
 				lm_ok = true;
 			} else {

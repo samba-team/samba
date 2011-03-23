@@ -79,8 +79,8 @@ static char *reg_val_dotreg_string(TALLOC_CTX *mem_ctx, uint32_t type,
 		case REG_EXPAND_SZ:
 		case REG_SZ:
 			convert_string_talloc(mem_ctx,
-							  CH_UTF16, CH_UNIX, data.data, data.length,
-							  (void **)&ret, NULL, false);
+					      CH_UTF16, CH_UNIX, data.data, data.length,
+					      (void **)&ret, NULL);
 			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
