@@ -219,8 +219,8 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
-	struct ndr_interface_call_pipes *in_pipes = NULL;
-	struct ndr_interface_call_pipes *out_pipes = NULL;
+	const struct ndr_interface_call_pipes *in_pipes = NULL;
+	const struct ndr_interface_call_pipes *out_pipes = NULL;
 
 	ndr_table_init();
 
