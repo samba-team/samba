@@ -447,10 +447,12 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *session_key,
 			    struct auth_serversupplied_info **session_info_out)
 {
+	struct security_token *t;
 	NTSTATUS status;
 	size_t i;
 	struct dom_sid tmp_sid;
 	struct auth_serversupplied_info *session_info;
+	struct wbcUnixId *ids;
 
 	/* Ensure we can't possible take a code path leading to a
 	 * null defref. */
@@ -516,18 +518,30 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	session_info->utok.ngroups = 0;
 	session_info->utok.groups = NULL;
 
+	t = session_info->security_token;
+
+	ids = TALLOC_ARRAY(talloc_tos(), struct wbcUnixId,
+			   t->num_sids);
+	if (ids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!sids_to_unix_ids(t->sids, t->num_sids, ids)) {
+		TALLOC_FREE(ids);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Start at index 1, where the groups start. */
 
-	for (i=1; i<session_info->security_token->num_sids; i++) {
-		gid_t gid;
-		struct dom_sid *sid = &session_info->security_token->sids[i];
+	for (i=1; i<t->num_sids; i++) {
 
-		if (!sid_to_gid(sid, &gid)) {
+		if (ids[i].type != WBC_ID_TYPE_GID) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
-				   "ignoring it\n", sid_string_dbg(sid)));
+				   "ignoring it\n",
+				   sid_string_dbg(&t->sids[i])));
 			continue;
 		}
-		if (!add_gid_to_array_unique(session_info, gid,
+		if (!add_gid_to_array_unique(session_info, ids[i].id.gid,
 					     &session_info->utok.groups,
 					     &session_info->utok.ngroups)) {
 			return NT_STATUS_NO_MEMORY;
