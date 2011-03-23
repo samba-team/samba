@@ -1035,6 +1035,9 @@ static int inherit(struct cli_state *cli, const char *filename,
 			}
 			string_replace(parentname, '/', '\\');
 			parent = get_secdesc(cli,parentname);
+			if (parent == NULL) {
+				return EXIT_FAILED;
+			}
 			for (i=0;i<parent->dacl->num_aces;i++) {
 				struct security_ace *ace=&parent->dacl->aces[i];
 				/* Add inherited flag to all aces */
