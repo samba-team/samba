@@ -27,6 +27,10 @@
 
 #include "includes.h"
 
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
+
 static char *corepath;
 
 /**
