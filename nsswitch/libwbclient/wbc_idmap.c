@@ -23,6 +23,7 @@
 
 #include "replace.h"
 #include "libwbclient.h"
+#include "../winbind_client.h"
 
 /* Convert a Windows SID to a Unix uid, allocating an uid if needed */
 wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
@@ -295,4 +296,96 @@ wbcErr wbcSetUidHwm(uid_t uid_hwm)
 wbcErr wbcSetGidHwm(gid_t gid_hwm)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
+}
+
+/* Convert a list of SIDs */
+wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
+			struct wbcUnixId *ids)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	int buflen, extra_len;
+	uint32_t i;
+	char *sidlist, *p, *extra_data;
+
+	buflen = num_sids * (WBC_SID_STRING_BUFLEN + 1) + 1;
+
+	sidlist = (char *)malloc(buflen);
+	if (sidlist == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+
+	p = sidlist;
+
+	for (i=0; i<num_sids; i++) {
+		int remaining;
+		int len;
+
+		remaining = buflen - (p - sidlist);
+
+		len = wbcSidToStringBuf(&sids[i], p, remaining);
+		if (len > remaining) {
+			free(sidlist);
+			return WBC_ERR_UNKNOWN_FAILURE;
+		}
+
+		p += len;
+		*p++ = '\n';
+	}
+	*p++ = '\0';
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	request.extra_data.data = sidlist;
+	request.extra_len = p - sidlist;
+
+	wbc_status = wbcRequestResponse(WINBINDD_SIDS_TO_XIDS,
+					&request, &response);
+	free(sidlist);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return wbc_status;
+	}
+
+	extra_len = response.length - sizeof(struct winbindd_response);
+	extra_data = (char *)response.extra_data.data;
+
+	if ((extra_len <= 0) || (extra_data[extra_len-1] != '\0')) {
+		goto wbc_err_invalid;
+	}
+
+	p = extra_data;
+
+	for (i=0; i<num_sids; i++) {
+		struct wbcUnixId *id = &ids[i];
+		char *q;
+
+		switch (p[0]) {
+		case 'U':
+			id->type = WBC_ID_TYPE_UID;
+			id->id.uid = strtoul(p+1, &q, 10);
+			break;
+		case 'G':
+			id->type = WBC_ID_TYPE_GID;
+			id->id.gid = strtoul(p+1, &q, 10);
+			break;
+		default:
+			id->type = WBC_ID_TYPE_NOT_SPECIFIED;
+			q = p;
+			break;
+		};
+		if (q[0] != '\n') {
+			goto wbc_err_invalid;
+		}
+		p = q+1;
+	}
+	wbc_status = WBC_ERR_SUCCESS;
+	goto done;
+
+wbc_err_invalid:
+	wbc_status = WBC_ERR_INVALID_RESPONSE;
+done:
+	winbindd_free_response(&response);
+	return wbc_status;
 }
