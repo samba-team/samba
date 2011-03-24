@@ -31,6 +31,7 @@
 #include "smbd/globals.h"
 #include "dbwrap.h"
 #include "session.h"
+#include "auth.h"
 
 /********************************************************************
  called when a session is created

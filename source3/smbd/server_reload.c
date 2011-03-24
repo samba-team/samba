@@ -28,6 +28,7 @@
 #include "nt_printing.h"
 #include "printing/pcap.h"
 #include "printing/load.h"
+#include "auth.h"
 
 /****************************************************************************
  purge stale printers and reload from pre-populated pcap cache

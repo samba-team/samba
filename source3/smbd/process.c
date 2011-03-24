@@ -30,6 +30,7 @@
 #include "printing/pcap.h"
 #include "system/select.h"
 #include "passdb.h"
+#include "auth.h"
 
 extern bool global_machine_password_needs_changing;
 

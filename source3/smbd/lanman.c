@@ -43,6 +43,7 @@
 #include "../libcli/security/security.h"
 #include "printing.h"
 #include "passdb/machine_sid.h"
+#include "auth.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

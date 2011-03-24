@@ -21,6 +21,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "dbwrap.h"
+#include "auth.h"
 
 /****************************************************************************
  Delete a connection record.

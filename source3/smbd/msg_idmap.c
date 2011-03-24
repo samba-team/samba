@@ -34,6 +34,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "idmap_cache.h"
 #include "passdb/lookup_sid.h"
+#include "auth.h"
 
 struct id {
 	union {

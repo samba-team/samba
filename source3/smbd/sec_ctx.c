@@ -21,6 +21,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "libcli/security/security_token.h"
+#include "auth.h"
 
 extern struct current_user current_user;
 

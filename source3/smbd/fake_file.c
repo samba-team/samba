@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "fake_file.h"
+#include "auth.h"
 
 struct fake_file_type {
 	const char *name;

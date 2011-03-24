@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "libads/kerberos_proto.h"
 #include "../lib/util/asn1.h"
+#include "auth.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_session_id,
