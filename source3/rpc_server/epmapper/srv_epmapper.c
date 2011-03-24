@@ -196,7 +196,8 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			description->object = iface->iface->syntax_id;
 			if (description->transport == NCACN_IP_TCP &&
 			    srv_addr != NULL &&
-			    strequal(description->host, "0.0.0.0")) {
+			    (strcmp(description->host, "0.0.0.0") == 0 ||
+			     strcmp(description->host, "::") == 0)) {
 				description->host = srv_addr;
 			}
 
