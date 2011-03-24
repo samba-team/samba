@@ -4214,7 +4214,7 @@ static bool parse_ea_blob(TALLOC_CTX *ctx, const uint8_t *rdata,
 
 		ea->flags = CVAL(p,0);
 		unix_ea_name[0] = '\0';
-		pull_ascii_fstring(unix_ea_name, p + 4);
+		pull_ascii(unix_ea_name, p + 4, sizeof(unix_ea_name), rdata_len - PTR_DIFF(p+4, rdata), STR_TERMINATE);
 		ea->name = talloc_strdup(ea_list, unix_ea_name);
 		if (!ea->name) {
 			goto fail;
