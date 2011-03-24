@@ -192,7 +192,10 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 							iface->iface->name);
 			eps[total].syntax_id = iface->iface->syntax_id;
 
-			description = d->ep_description;
+			description = dcerpc_binding_dup(mem_ctx, d->ep_description);
+			if (description == NULL) {
+				return 0;
+			}
 			description->object = iface->iface->syntax_id;
 			if (description->transport == NCACN_IP_TCP &&
 			    srv_addr != NULL &&
@@ -204,6 +207,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			status = dcerpc_binding_build_tower(eps,
 							    description,
 							    &eps[total].ep);
+			TALLOC_FREE(description);
 			if (NT_STATUS_IS_ERR(status)) {
 				DEBUG(1, ("Unable to build tower for %s\n",
 					  iface->iface->name));
