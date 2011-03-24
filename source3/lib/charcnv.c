@@ -750,15 +750,15 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 		return 0;
 	}
 
+	if (src_len == (size_t)-1) {
+		smb_panic("sec_len == -1 in pull_ascii_base_talloc");
+	}
+
 	if (flags & STR_TERMINATE) {
-		if (src_len == (size_t)-1) {
-			src_len = strlen((const char *)src) + 1;
-		} else {
-			size_t len = strnlen((const char *)src, src_len);
-			if (len < src_len)
-				len++;
-			src_len = len;
-		}
+		size_t len = strnlen((const char *)src, src_len);
+		if (len < src_len)
+			len++;
+		src_len = len;
 		/* Ensure we don't use an insane length from the client. */
 		if (src_len >= 1024*1024) {
 			char *msg = talloc_asprintf(ctx,
@@ -766,14 +766,6 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 					"pull_ascii_base_talloc",
 					(unsigned int)src_len);
 			smb_panic(msg);
-		}
-	} else {
-		/* Can't have an unlimited length
- 		 * non STR_TERMINATE'd.
- 		 */
-		if (src_len == (size_t)-1) {
-			errno = EINVAL;
-			return 0;
 		}
 	}
 
@@ -1038,43 +1030,30 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 		return 0;
 	}
 
+	if (src_len == (size_t)-1) {
+		/* no longer used anywhere, but worth checking */
+		smb_panic("sec_len == -1 in pull_ucs2_base_talloc");
+	}
+
 	if (ucs2_align(base_ptr, src, flags)) {
 		src = (const void *)((const char *)src + 1);
-		if (src_len != (size_t)-1)
-			src_len--;
+		src_len--;
 		ucs2_align_len = 1;
 	}
 
 	if (flags & STR_TERMINATE) {
 		/* src_len -1 is the default for null terminated strings. */
-		if (src_len != (size_t)-1) {
-			size_t len = strnlen_w((const smb_ucs2_t *)src,
-						src_len/2);
-			if (len < src_len/2)
-				len++;
-			src_len = len*2;
-		} else {
-			/*
-			 * src_len == -1 - alloc interface won't take this
-			 * so we must calculate.
-			 */
-			src_len = (strlen_w((const smb_ucs2_t *)src)+1)*sizeof(smb_ucs2_t);
-		}
+		size_t len = strnlen_w((const smb_ucs2_t *)src,
+				       src_len/2);
+		if (len < src_len/2)
+			len++;
+		src_len = len*2;
+
 		/* Ensure we don't use an insane length from the client. */
 		if (src_len >= 1024*1024) {
 			smb_panic("Bad src length in pull_ucs2_base_talloc\n");
 		}
-	} else {
-		/* Can't have an unlimited length
-		 * non STR_TERMINATE'd.
-		 */
-		if (src_len == (size_t)-1) {
-			errno = EINVAL;
-			return 0;
-		}
 	}
-
-	/* src_len != -1 here. */
 
 	/* ucs2 is always a multiple of 2 bytes */
 	src_len &= ~1;
