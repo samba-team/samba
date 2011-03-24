@@ -384,7 +384,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 	if (r->in.num_ents > 0) {
 		struct dcesrv_ep_entry_list *el;
 
-		el = talloc_zero(p->mem_ctx, struct dcesrv_ep_entry_list);
+		el = talloc_zero(p, struct dcesrv_ep_entry_list);
 		if (el == NULL) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;
