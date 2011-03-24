@@ -550,6 +550,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
                         cli_shutdown(cli);
 
 			if (!workgroup || !server) {
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
+				}
 				errno = ENOMEM;
 				TALLOC_FREE(frame);
 				return NULL;
