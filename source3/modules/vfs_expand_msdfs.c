@@ -22,6 +22,7 @@
 #include "smbd/smbd.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "smbd/globals.h"
+#include "auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
