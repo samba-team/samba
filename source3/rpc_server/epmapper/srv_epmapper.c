@@ -231,16 +231,12 @@ static bool is_priviledged_pipe(struct auth_serversupplied_info *info) {
 bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
 {
 	struct epm_Delete r;
-	struct dcesrv_ep_entry_list *el;
+	struct dcesrv_ep_entry_list *el = p->ep_entries;
 	error_status_t result;
 
-	if (p->ep_entries == NULL) {
-		return true;
-	}
+	while (el) {
+		struct dcesrv_ep_entry_list *next = el->next;
 
-	for (el = p->ep_entries;
-	     el != NULL;
-	     el = p->ep_entries) {
 		r.in.num_ents = el->num_ents;
 		r.in.entries = el->entries;
 
@@ -254,6 +250,8 @@ bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
 
 		DLIST_REMOVE(p->ep_entries, el);
 		TALLOC_FREE(el);
+
+		el = next;
 	}
 
 	return true;
@@ -261,13 +259,15 @@ bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
 
 void srv_epmapper_cleanup(void)
 {
-	struct dcesrv_endpoint *ep;
+	struct dcesrv_endpoint *ep = endpoint_table;
 
-	for (ep = endpoint_table;
-	     ep != NULL;
-	     ep = endpoint_table) {
+	while (ep) {
+		struct dcesrv_endpoint *next = ep->next;
+
 		DLIST_REMOVE(endpoint_table, ep);
 		TALLOC_FREE(ep);
+
+		ep = next;
 	}
 }
 
