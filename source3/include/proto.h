@@ -250,8 +250,6 @@ bool nt_token_check_domain_rid( struct security_token *token, uint32 rid );
 struct security_token *get_root_nt_token( void );
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct security_token *token);
-NTSTATUS create_builtin_users(const struct dom_sid *sid);
-NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
 struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const struct dom_sid *user_sid,
 					    bool is_guest,
@@ -3649,6 +3647,11 @@ NTSTATUS pdb_wbc_sam_init(void);
 /* The following definitions come from passdb/pdb_tdb.c  */
 
 NTSTATUS pdb_tdbsam_init(void);
+
+/* The following definitions come from passdb/pdb_util.c  */
+
+NTSTATUS create_builtin_users(const struct dom_sid *sid);
+NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
 
 /* The following definitions come from passdb/util_builtin.c  */
 
