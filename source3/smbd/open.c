@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "auth.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

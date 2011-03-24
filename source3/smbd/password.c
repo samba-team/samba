@@ -23,6 +23,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/netlogon.h"
+#include "auth.h"
 
 /* Fix up prototypes for OSX 10.4, where they're missing */
 #ifndef HAVE_SETNETGRENT_PROTOTYPE

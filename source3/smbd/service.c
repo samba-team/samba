@@ -25,6 +25,7 @@
 #include "../libcli/security/security.h"
 #include "printing/pcap.h"
 #include "passdb/lookup_sid.h"
+#include "auth.h"
 
 extern userdom_struct current_user_info;
 

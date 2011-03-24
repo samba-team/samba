@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 #include "trans2.h"
+#include "auth.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 

@@ -26,6 +26,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "msdfs.h"
+#include "auth.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath

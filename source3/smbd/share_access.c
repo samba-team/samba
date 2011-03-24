@@ -22,6 +22,7 @@
 #include "smbd/globals.h"
 #include "../libcli/security/security.h"
 #include "passdb/lookup_sid.h"
+#include "auth.h"
 
 /*
  * No prefix means direct username
