@@ -5364,7 +5364,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!init_ldap_from_sam(ldap_state, NULL, &mods, user, element_is_set_or_changed)) {
+	if (!init_ldap_from_sam(ldap_state, entry, &mods, user, element_is_set_or_changed)) {
 		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
