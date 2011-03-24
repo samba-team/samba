@@ -45,7 +45,6 @@ char lp_failed_convert_char(void)
  */
 
 
-static bool conv_silent; /* Should we do a debug if the conversion fails ? */
 static bool initialized;
 
 void lazy_initialize_conv(void)
@@ -119,8 +118,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		if (!conv_silent)
-			DEBUG(0,("convert_string_internal: Conversion not supported.\n"));
+		DEBUG(0,("convert_string_internal: Conversion not supported.\n"));
 		return (size_t)-1;
 	}
 
@@ -133,31 +131,26 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				if (!conv_silent)
-					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
+				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				return (size_t)-1;
 			case E2BIG:
 				reason="No more room"; 
-				if (!conv_silent) {
-					if (from == CH_UNIX) {
-						DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s'\n",
-							 charset_name(ic, from), charset_name(ic, to),
-							(unsigned int)srclen, (unsigned int)destlen, (const char *)src));
-					} else {
-						DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u\n",
-							 charset_name(ic, from), charset_name(ic, to),
-							(unsigned int)srclen, (unsigned int)destlen));
-					}
+				if (from == CH_UNIX) {
+					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s'\n",
+						 charset_name(ic, from), charset_name(ic, to),
+						 (unsigned int)srclen, (unsigned int)destlen, (const char *)src));
+				} else {
+					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u\n",
+						 charset_name(ic, from), charset_name(ic, to),
+						 (unsigned int)srclen, (unsigned int)destlen));
 				}
 				break;
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
-				if (!conv_silent)
-					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
+				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				return (size_t)-1;
 			default:
-				if (!conv_silent)
-					DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
+				DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				return (size_t)-1;
 		}
 		/* smb_panic(reason); */
@@ -435,8 +428,7 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	descriptor = get_conv_handle(ic, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		if (!conv_silent)
-			DEBUG(0,("convert_string_talloc: Conversion not supported.\n"));
+		DEBUG(0,("convert_string_talloc: Conversion not supported.\n"));
 		errno = EOPNOTSUPP;
 		return false;
 	}
@@ -446,8 +438,7 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	/* +2 is for ucs2 null termination. */
 	if ((destlen*2)+2 < destlen) {
 		/* wrapped ! abort. */
-		if (!conv_silent)
-			DEBUG(0, ("convert_string_talloc: destlen wrapped !\n"));
+		DEBUG(0, ("convert_string_talloc: destlen wrapped !\n"));
 		TALLOC_FREE(outbuf);
 		errno = EOPNOTSUPP;
 		return false;
@@ -475,19 +466,16 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				if (!conv_silent)
-					DEBUG(3,("convert_string_talloc: Conversion error: %s(%s)\n",reason,inbuf));
+				DEBUG(3,("convert_string_talloc: Conversion error: %s(%s)\n",reason,inbuf));
 				break;
 			case E2BIG:
 				goto convert;
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
-				if (!conv_silent)
-					DEBUG(3,("convert_string_talloc: Conversion error: %s(%s)\n",reason,inbuf));
+				DEBUG(3,("convert_string_talloc: Conversion error: %s(%s)\n",reason,inbuf));
 				break;
 		}
-		if (!conv_silent)
-			DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
 		/* smb_panic(reason); */
 		TALLOC_FREE(ob);
 		return false;
