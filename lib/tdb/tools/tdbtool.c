@@ -693,7 +693,7 @@ static int do_command(void)
 	return 0;
 }
 
-static char *convert_string(char *instring, size_t *sizep)
+static char *tdb_convert_string(char *instring, size_t *sizep)
 {
 	size_t length = 0;
 	char *outp, *inp;
@@ -759,15 +759,15 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-			if (arg1) arg1 = convert_string(arg1,&arg1len);
-			if (arg2) arg2 = convert_string(arg2,&arg2len);
+			if (arg1) arg1 = tdb_convert_string(arg1,&arg1len);
+			if (arg2) arg2 = tdb_convert_string(arg2,&arg2len);
 			if (do_command()) break;
 		}
 		break;
 	case 5:
-		arg2 = convert_string(argv[4],&arg2len);
+		arg2 = tdb_convert_string(argv[4],&arg2len);
 	case 4:
-		arg1 = convert_string(argv[3],&arg1len);
+		arg1 = tdb_convert_string(argv[3],&arg1len);
 	case 3:
 		cmdname = argv[2];
 	default:
