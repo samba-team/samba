@@ -29,6 +29,7 @@
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
 #include "../libds/common/flag_mapping.h"
+#include "rpc_client/cli_pipe.h"
 
 /****************************************************************
 ****************************************************************/
@@ -377,6 +378,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	uint32_t rid = 0;
 	struct USER_INFO_X uX;
 	struct dcerpc_binding_handle *b = NULL;
+	DATA_BLOB session_key;
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
@@ -481,10 +483,16 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	status = cli_get_session_key(ctx, pipe_cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
 	uX.usriX_flags |= ACB_NORMAL;
 
 	status = set_user_info_USER_INFO_X(ctx, pipe_cli,
-					   &pipe_cli->auth->user_session_key,
+					   &session_key,
 					   &user_handle,
 					   &uX);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1850,6 +1858,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	struct USER_INFO_X uX;
 	struct dcerpc_binding_handle *b = NULL;
+	DATA_BLOB session_key;
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
@@ -1980,8 +1989,14 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	status = cli_get_session_key(ctx, pipe_cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
 	status = set_user_info_USER_INFO_X(ctx, pipe_cli,
-					   &pipe_cli->auth->user_session_key,
+					   &session_key,
 					   &user_handle,
 					   &uX);
 	if (!NT_STATUS_IS_OK(status)) {
