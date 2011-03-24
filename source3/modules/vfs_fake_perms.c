@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "system/filesys.h"
+#include "auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

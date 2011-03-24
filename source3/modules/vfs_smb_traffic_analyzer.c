@@ -27,6 +27,7 @@
 #include "../libcli/security/security.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "auth.h"
 
 /* abstraction for the send_over_network function */
 enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
