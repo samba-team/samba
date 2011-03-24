@@ -702,6 +702,86 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ struct dcerpc_binding *dcerpc_binding_dup(TALLOC_CTX *mem_ctx,
+						   const struct dcerpc_binding *b)
+{
+	struct dcerpc_binding *n;
+	uint32_t count;
+
+	n = talloc_zero(mem_ctx, struct dcerpc_binding);
+	if (n == NULL) {
+		return NULL;
+	}
+
+	n->transport = b->transport;
+	n->object = b->object;
+	n->flags = b->flags;
+	n->assoc_group_id = b->assoc_group_id;
+
+	if (b->host != NULL) {
+		n->host = talloc_strdup(n, b->host);
+		if (n->host == NULL) {
+			talloc_free(n);
+			return NULL;
+		}
+	}
+
+	if (b->target_hostname != NULL) {
+		n->target_hostname = talloc_strdup(n, b->target_hostname);
+		if (n->target_hostname == NULL) {
+			talloc_free(n);
+			return NULL;
+		}
+	}
+
+	if (b->target_principal != NULL) {
+		n->target_principal = talloc_strdup(n, b->target_principal);
+		if (n->target_principal == NULL) {
+			talloc_free(n);
+			return NULL;
+		}
+	}
+
+	if (b->localaddress != NULL) {
+		n->localaddress = talloc_strdup(n, b->localaddress);
+		if (n->localaddress == NULL) {
+			talloc_free(n);
+			return NULL;
+		}
+	}
+
+	if (b->endpoint != NULL) {
+		n->endpoint = talloc_strdup(n, b->endpoint);
+		if (n->endpoint == NULL) {
+			talloc_free(n);
+			return NULL;
+		}
+	}
+
+	for (count = 0; b->options && b->options[count]; count++);
+
+	if (count > 0) {
+		uint32_t i;
+
+		n->options = talloc_array(n, const char *, count + 1);
+		if (n->options == NULL) {
+			talloc_free(n);
+			return NULL;
+		}
+
+		for (i = 0; i < count; i++) {
+			n->options[i] = talloc_strdup(n->options, b->options[i]);
+			if (n->options[i] == NULL) {
+				talloc_free(n);
+				return NULL;
+			}
+		}
+		n->options[count] = NULL;
+	}
+
+	return n;
+}
+
 _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 					     const struct dcerpc_binding *binding,
 					     struct epm_tower *tower)
