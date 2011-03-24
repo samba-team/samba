@@ -287,6 +287,11 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 	error_status_t rc;
 	NTSTATUS status;
 	uint32_t i;
+	struct dcerpc_binding *b;
+	struct dcesrv_endpoint *ep;
+	struct dcesrv_iface_list *iflist;
+	struct dcesrv_iface *iface;
+	bool add_ep;
 
 	/* If this is not a priviledged users, return */
 	if (p->transport != NCALRPC ||
@@ -303,17 +308,18 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 		  r->in.num_ents));
 
 	for (i = 0; i < r->in.num_ents; i++) {
-		struct dcerpc_binding *b = NULL;
-		struct dcesrv_endpoint *ep;
-		struct dcesrv_iface_list *iflist;
-		struct dcesrv_iface *iface;
-		bool add_ep = false;
+		add_ep = false;
+		b = NULL;
 
 		status = dcerpc_binding_from_tower(tmp_ctx,
 						   &r->in.entries[i].tower->tower,
 						   &b);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			rc = EPMAPPER_STATUS_CANT_PERFORM_OP;
 			goto done;
 		}
 
@@ -327,7 +333,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 			/* No entry found, create it */
 			ep = talloc_zero(NULL, struct dcesrv_endpoint);
 			if (ep == NULL) {
-				rc = EPMAPPER_STATUS_CANT_PERFORM_OP;
+				rc = EPMAPPER_STATUS_NO_MEMORY;
 				goto done;
 			}
 			add_ep = true;
@@ -415,6 +421,10 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 	error_status_t rc;
 	NTSTATUS status;
 	uint32_t i;
+	struct dcerpc_binding *b;
+	struct dcesrv_endpoint *ep;
+	struct dcesrv_iface iface;
+	struct dcesrv_iface_list *iflist;
 
 	DEBUG(3, ("_epm_Delete: Trying to delete %u entries.\n",
 		  r->in.num_ents));
@@ -431,10 +441,7 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 	}
 
 	for (i = 0; i < r->in.num_ents; i++) {
-		struct dcerpc_binding *b = NULL;
-		struct dcesrv_endpoint *ep;
-		struct dcesrv_iface iface;
-		struct dcesrv_iface_list *iflist;
+		b = NULL;
 
 		status = dcerpc_binding_from_tower(tmp_ctx,
 						   &r->in.entries[i].tower->tower,
