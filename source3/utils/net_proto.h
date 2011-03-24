@@ -464,4 +464,7 @@ char *get_pass( const char *prompt, bool stdin_get);
 /* The following definitions come from utils/net_g_lock.c  */
 int net_g_lock(struct net_context *c, int argc, const char **argv);
 
+/* The following definitions come from utils/net_rpc_trust.c  */
+int net_rpc_trust(struct net_context *c, int argc, const char **argv);
+
 #endif /*  _NET_PROTO_H_  */

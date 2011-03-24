@@ -7997,6 +7997,14 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 			N_("net rpc shell\n"
 			   "    Open interactive shell on remote server")
 		},
+		{
+			"trust",
+			net_rpc_trust,
+			NET_TRANSPORT_RPC,
+			N_("Manage trusts"),
+			N_("net rpc trust\n"
+			   "    Manage trusts")
+		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
