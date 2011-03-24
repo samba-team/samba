@@ -24,6 +24,8 @@
 #ifndef SVC_WINREG_GLUE_H
 #define SVC_WINREG_GLUE_H
 
+struct auth_serversupplied_info;
+
 struct security_descriptor* svcctl_gen_service_sd(TALLOC_CTX *mem_ctx);
 
 struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,

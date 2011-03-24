@@ -22,6 +22,7 @@
 #include "rpc_server/dcesrv_gssapi.h"
 #include "../librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/crypto/gse.h"
+#include "auth.h"
 
 NTSTATUS gssapi_server_auth_start(TALLOC_CTX *mem_ctx,
 				  bool do_sign,

@@ -22,6 +22,8 @@
 #ifndef CLI_WINREG_INT_H
 #define CLI_WINREG_INT_H
 
+struct auth_serversupplied_info;
+
 /**
  * @brief Connect to the interal winreg server and open the given key.
  *

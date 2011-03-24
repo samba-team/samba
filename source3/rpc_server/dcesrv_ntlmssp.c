@@ -22,6 +22,7 @@
 #include "rpc_server/dcesrv_ntlmssp.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
+#include "auth.h"
 
 NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   bool do_sign,

@@ -29,6 +29,7 @@
 #include "rpc_client/cli_winreg_int.h"
 #include "rpc_client/cli_winreg.h"
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
+#include "auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
