@@ -113,6 +113,7 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	unsigned int old_timeout = 0;
 	struct dcerpc_binding_handle *b;
+	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server,
 				   &ndr_table_wkssvc.syntax_id,
@@ -124,9 +125,16 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 	b = pipe_cli->binding_handle;
 
 	if (r->in.password) {
+
+		status = cli_get_session_key(ctx, pipe_cli, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &pipe_cli->auth->user_session_key,
+						   &session_key,
 						   &encrypted_password);
 	}
 
@@ -246,6 +254,7 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	unsigned int old_timeout = 0;
 	struct dcerpc_binding_handle *b;
+	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_wkssvc.syntax_id,
@@ -257,9 +266,16 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 	b = pipe_cli->binding_handle;
 
 	if (r->in.password) {
+
+		status = cli_get_session_key(ctx, pipe_cli, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &pipe_cli->auth->user_session_key,
+						   &session_key,
 						   &encrypted_password);
 	}
 
@@ -436,6 +452,7 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 	struct dcerpc_binding_handle *b;
+	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_wkssvc.syntax_id,
@@ -447,9 +464,16 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 	b = pipe_cli->binding_handle;
 
 	if (r->in.password) {
+
+		status = cli_get_session_key(ctx, pipe_cli, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &pipe_cli->auth->user_session_key,
+						   &session_key,
 						   &encrypted_password);
 	}
 
@@ -481,6 +505,7 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 	struct dcerpc_binding_handle *b;
+	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_wkssvc.syntax_id,
@@ -492,9 +517,16 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 	b = pipe_cli->binding_handle;
 
 	if (r->in.password) {
+
+		status = cli_get_session_key(ctx, pipe_cli, &session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &pipe_cli->auth->user_session_key,
+						   &session_key,
 						   &encrypted_password);
 	}
 
