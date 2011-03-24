@@ -509,14 +509,14 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 		return EPMAPPER_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3, ("_epm_Lookup: Trying to lookup max. %u entries.\n",
+	DEBUG(5, ("_epm_Lookup: Trying to lookup max. %u entries.\n",
 		  r->in.max_ents));
 
 	if (r->in.entry_handle == NULL ||
 	    policy_handle_empty(r->in.entry_handle)) {
 		struct GUID *obj;
 
-		DEBUG(5, ("_epm_Lookup: No entry_handle found, creating it.\n"));
+		DEBUG(7, ("_epm_Lookup: No entry_handle found, creating it.\n"));
 
 		eps = talloc_zero(tmp_ctx, struct rpc_eps);
 		if (eps == NULL) {
@@ -600,7 +600,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 		}
 		entry_handle = r->out.entry_handle;
 	} else {
-		DEBUG(5, ("_epm_Lookup: Trying to find entry_handle.\n"));
+		DEBUG(7, ("_epm_Lookup: Trying to find entry_handle.\n"));
 
 		ok = find_policy_by_hnd(p, r->in.entry_handle, (void **)(void*) &eps);
 		if (!ok) {
@@ -621,7 +621,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 		count = eps->count;
 	}
 
-	DEBUG(3, ("_epm_Lookup: Find %u entries\n", count));
+	DEBUG(5, ("_epm_Lookup: Find %u entries\n", count));
 
 	if (count == 0) {
 		close_policy_hnd(p, entry_handle);
@@ -846,7 +846,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 
 	ZERO_STRUCTP(r->out.entry_handle);
 
-	DEBUG(3, ("_epm_Map: Trying to map max. %u towers.\n",
+	DEBUG(5, ("_epm_Map: Trying to map max. %u towers.\n",
 		  r->in.max_towers));
 
 	/*
@@ -897,7 +897,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	    policy_handle_empty(r->in.entry_handle)) {
 		struct GUID *obj;
 
-		DEBUG(5, ("_epm_Map: No entry_handle found, creating it.\n"));
+		DEBUG(7, ("_epm_Map: No entry_handle found, creating it.\n"));
 
 		eps = talloc_zero(tmp_ctx, struct rpc_eps);
 		if (eps == NULL) {
@@ -986,7 +986,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 		}
 		entry_handle = r->out.entry_handle;
 	} else {
-		DEBUG(5, ("_epm_Map: Trying to find entry_handle.\n"));
+		DEBUG(7, ("_epm_Map: Trying to find entry_handle.\n"));
 
 		ok = find_policy_by_hnd(p, r->in.entry_handle, (void **)(void*) &eps);
 		if (!ok) {
@@ -1022,7 +1022,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	}
 
 	for (i = 0; i < count; i++) {
-		DEBUG(5, ("_epm_Map: Map tower for '%s'\n",
+		DEBUG(7, ("_epm_Map: Map tower for '%s'\n",
 			   eps->e[i].name));
 
 		r->out.towers[num_towers].twr = talloc(r->out.towers,
