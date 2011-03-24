@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../libcli/security/security.h"
+#include "messages.h"
 
 /**
  * Fix up the delta, dealing with encryption issues so that the final

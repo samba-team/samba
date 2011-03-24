@@ -619,6 +619,8 @@ struct pending_message_list {
 
 #define SHARE_MODE_FLAG_POSIX_OPEN	0x1
 
+#include "librpc/gen_ndr/server_id.h"
+
 /* struct returned by get_share_modes */
 struct share_mode_entry {
 	struct server_id pid;

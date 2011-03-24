@@ -34,6 +34,7 @@
 #include "../lib/util/util_pw.h"
 #include "smbd/smbd.h"
 #include "auth.h"
+#include "messages.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

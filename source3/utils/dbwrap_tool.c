@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "dbwrap.h"
+#include "messages.h"
 
 typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS } dbwrap_op;
 

@@ -45,6 +45,7 @@
 #include "../libcli/registry/util_reg.h"
 #include "passdb.h"
 #include "auth.h"
+#include "messages.h"
 
 extern userdom_struct current_user_info;
 

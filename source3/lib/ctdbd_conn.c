@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_messaging.h"
 #include "ctdbd_conn.h"
 #include "packet.h"
+#include "messages.h"
 
 /* paths to these include files come from --with-ctdb= in configure */
 #include "ctdb.h"

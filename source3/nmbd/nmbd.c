@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "nmbd/nmbd.h"
 #include "serverid.h"
+#include "messages.h"
 
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;

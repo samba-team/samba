@@ -28,6 +28,7 @@
 #include "fake_file.h"
 #include "transfer_file.h"
 #include "auth.h"
+#include "messages.h"
 
 /****************************************************************************
  Run a file if it is a magic script.

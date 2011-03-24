@@ -28,6 +28,7 @@
 #include "secrets.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
+#include "messages.h"
 
 extern char *global_clobber_region_function;
 extern unsigned int global_clobber_region_line;

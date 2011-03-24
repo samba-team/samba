@@ -535,7 +535,6 @@ typedef char fstring[FSTRING_LEN];
 #include "dynconfig.h"
 #include "debugparse.h"
 #include "../libcli/security/privileges.h"
-#include "messages.h"
 #include "locking.h"
 #include "smb_perfcount.h"
 #include "smb.h"

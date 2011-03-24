@@ -24,6 +24,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "messages.h"
 
 /****************************************************************************
  Get the number of current exclusive oplocks.

@@ -33,6 +33,7 @@
 #include "libads/kerberos_proto.h"
 #include "../lib/util/asn1.h"
 #include "auth.h"
+#include "messages.h"
 
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {

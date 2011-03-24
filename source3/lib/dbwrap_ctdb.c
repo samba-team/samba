@@ -25,6 +25,7 @@
 #include "ctdb_private.h"
 #include "ctdbd_conn.h"
 #include "g_lock.h"
+#include "messages.h"
 
 struct db_ctdb_transaction_handle {
 	struct db_ctdb_ctx *ctx;

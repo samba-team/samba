@@ -31,6 +31,8 @@ enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
 
 #define IS_PENDING_LOCK(type) ((type) == PENDING_READ_LOCK || (type) == PENDING_WRITE_LOCK)
 
+#include "librpc/gen_ndr/server_id.h"
+
 /* This contains elements that differentiate locks. The smbpid is a
    client supplied pid, and is essentially the locking context for
    this client */

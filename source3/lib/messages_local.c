@@ -46,6 +46,7 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/ndr_messaging.h"
+#include "messages.h"
 
 struct messaging_tdb_context {
 	struct messaging_context *msg_ctx;

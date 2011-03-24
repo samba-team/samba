@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "messages.h"
 
 #ifdef CLUSTER_SUPPORT
 
