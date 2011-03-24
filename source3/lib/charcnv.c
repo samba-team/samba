@@ -118,7 +118,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		DEBUG(0,("convert_string_internal: Conversion not supported.\n"));
+		errno = EINVAL;
 		return (size_t)-1;
 	}
 
@@ -126,36 +126,9 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 	o_len=destlen;
 
 	retval = smb_iconv(descriptor, &inbuf, &i_len, &outbuf, &o_len);
-	if(retval==(size_t)-1) {
-	    	const char *reason="unknown error";
-		switch(errno) {
-			case EINVAL:
-				reason="Incomplete multibyte sequence";
-				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
-				return (size_t)-1;
-			case E2BIG:
-				reason="No more room"; 
-				if (from == CH_UNIX) {
-					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s'\n",
-						 charset_name(ic, from), charset_name(ic, to),
-						 (unsigned int)srclen, (unsigned int)destlen, (const char *)src));
-				} else {
-					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u\n",
-						 charset_name(ic, from), charset_name(ic, to),
-						 (unsigned int)srclen, (unsigned int)destlen));
-				}
-				break;
-			case EILSEQ:
-				reason="Illegal multibyte sequence";
-				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
-				return (size_t)-1;
-			default:
-				DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
-				return (size_t)-1;
-		}
-		/* smb_panic(reason); */
-	}
-	return destlen-o_len;
+	if (converted_size != NULL)
+		*converted_size = destlen-o_len;
+	return retval;
 }
 
 /**
