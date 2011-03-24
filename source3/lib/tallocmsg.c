@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "messages.h"
 
 /**
  * @file tallocmsg.c

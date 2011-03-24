@@ -47,6 +47,7 @@
 #include "lib/netapi/netapi.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
+#include "messages.h"
 
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"

@@ -31,6 +31,7 @@
 #include "system/select.h"
 #include "passdb.h"
 #include "auth.h"
+#include "messages.h"
 
 extern bool global_machine_password_needs_changing;
 

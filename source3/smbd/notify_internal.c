@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "dbwrap.h"
 #include "smbd/smbd.h"
+#include "messages.h"
 
 struct notify_context {
 	struct db_context *db_recursive;

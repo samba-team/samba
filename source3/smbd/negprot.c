@@ -24,6 +24,7 @@
 #include "../libcli/auth/spnego.h"
 #include "serverid.h"
 #include "auth.h"
+#include "messages.h"
 
 extern fstring remote_proto;
 

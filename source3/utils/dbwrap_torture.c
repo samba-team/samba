@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "popt_common.h"
 #include "dbwrap.h"
+#include "messages.h"
 
 #if 0
 #include "lib/events/events.h"

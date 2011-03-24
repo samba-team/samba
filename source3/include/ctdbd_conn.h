@@ -21,6 +21,8 @@
 #define _CTDBD_CONN_H
 
 struct ctdbd_connection;
+struct messaging_context;
+struct messaging_rec;
 
 NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 				    struct ctdbd_connection **pconn);

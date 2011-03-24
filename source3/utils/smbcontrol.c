@@ -31,6 +31,7 @@
 #include "nt_printing.h"
 #include "printing/notify.h"
 #include "libsmb/nmblib.h"
+#include "messages.h"
 
 #if HAVE_LIBUNWIND_H
 #include <libunwind.h>

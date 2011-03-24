@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "messages.h"
 
 #ifdef WITH_PROFILE
 #define IPC_PERMS ((S_IRUSR | S_IWUSR) | S_IRGRP | S_IROTH)

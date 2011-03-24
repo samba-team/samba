@@ -35,6 +35,7 @@
 #include "idmap_cache.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
+#include "messages.h"
 
 struct id {
 	union {

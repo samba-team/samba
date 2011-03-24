@@ -35,6 +35,7 @@
 #include "../lib/util/select.h"
 #include "../libcli/security/security.h"
 #include "system/select.h"
+#include "messages.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "messages.h"
 
 struct tevent_context *server_event_ctx = NULL;
 

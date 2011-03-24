@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/spoolss.h"
 #include "nt_printing.h"
 #include "printing/notify.h"
+#include "messages.h"
 
 static TALLOC_CTX *send_ctx;
 

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "net.h"
 #include "g_lock.h"
+#include "messages.h"
 
 static bool net_g_lock_init(TALLOC_CTX *mem_ctx,
 			    struct tevent_context **pev,

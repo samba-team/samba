@@ -28,6 +28,7 @@
 #include "secrets.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
+#include "messages.h"
 
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)

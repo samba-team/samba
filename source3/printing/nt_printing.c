@@ -36,6 +36,7 @@
 #include "passdb/machine_sid.h"
 #include "smbd/smbd.h"
 #include "auth.h"
+#include "messages.h"
 
 /* Map generic permissions to printer object specific permissions */
 

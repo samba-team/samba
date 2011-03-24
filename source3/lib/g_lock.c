@@ -24,6 +24,7 @@
 #include "ctdbd_conn.h"
 #include "../lib/util/select.h"
 #include "system/select.h"
+#include "messages.h"
 
 static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 				    struct server_id pid);

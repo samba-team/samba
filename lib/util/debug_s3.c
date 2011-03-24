@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "messages.h"
 
 /* This is the Samba3-specific implementation of reopen_logs(), which
  * calls out to the s3 loadparm code, and means that we don't depend

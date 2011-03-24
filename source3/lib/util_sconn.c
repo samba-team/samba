@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "messages.h"
 
 struct server_id sconn_server_id(const struct smbd_server_connection *sconn)
 {
