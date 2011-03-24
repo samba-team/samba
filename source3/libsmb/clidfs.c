@@ -738,7 +738,8 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			clistr_pull_talloc(ctx, cli->inbuf,
 					   SVAL(cli->inbuf, smb_flg2),
 					   &referrals[i].dfspath,
-					   p+node_offset, -1,
+					   p+node_offset,
+					   cli->bufsize - ((p+node_offset)-cli->inbuf),
 					   STR_TERMINATE|STR_UNICODE);
 
 			if (!referrals[i].dfspath) {
