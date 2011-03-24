@@ -383,16 +383,16 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
 	if (!context || !context->internal->initialized) {
 	        DEBUG(4, ("no valid context\n"));
-		errno = EINVAL + 8192;
 		TALLOC_FREE(frame);
+		errno = EINVAL + 8192;
 		return NULL;
 
 	}
 
 	if (!fname) {
 		DEBUG(4, ("no valid fname\n"));
-		errno = EINVAL + 8193;
 		TALLOC_FREE(frame);
+		errno = EINVAL + 8193;
 		return NULL;
 	}
 
@@ -407,8 +407,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
                             &password,
                             &options)) {
 	        DEBUG(4, ("no valid path\n"));
-		errno = EINVAL + 8194;
 		TALLOC_FREE(frame);
+		errno = EINVAL + 8194;
 		return NULL;
 	}
 
@@ -419,16 +419,16 @@ SMBC_opendir_ctx(SMBCCTX *context,
         /* Ensure the options are valid */
         if (SMBC_check_options(server, share, path, options)) {
                 DEBUG(4, ("unacceptable options (%s)\n", options));
-                errno = EINVAL + 8195;
 		TALLOC_FREE(frame);
+                errno = EINVAL + 8195;
                 return NULL;
         }
 
 	if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
-			errno = ENOMEM;
 			TALLOC_FREE(frame);
+			errno = ENOMEM;
 			return NULL;
 		}
 	}
@@ -436,8 +436,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
 	dir = SMB_MALLOC_P(SMBCFILE);
 
 	if (!dir) {
-		errno = ENOMEM;
 		TALLOC_FREE(frame);
+		errno = ENOMEM;
 		return NULL;
 	}
 
@@ -461,12 +461,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
 
-			errno = EINVAL + 8196;
 			if (dir) {
 				SAFE_FREE(dir->fname);
 				SAFE_FREE(dir);
 			}
 			TALLOC_FREE(frame);
+			errno = EINVAL + 8196;
 			return NULL;
 		}
 
@@ -509,16 +509,16 @@ SMBC_opendir_ctx(SMBCCTX *context,
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
 				}
-                                errno = ENOENT;
 				TALLOC_FREE(frame);
+                                errno = ENOENT;
                                 return NULL;
                         }
 
 			ip_list = (struct ip_service *)memdup(
 				&server_addr, sizeof(server_addr));
 			if (ip_list == NULL) {
-				errno = ENOMEM;
 				TALLOC_FREE(frame);
+				errno = ENOMEM;
 				return NULL;
 			}
                         count = 1;
@@ -554,8 +554,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
 				}
-				errno = ENOMEM;
 				TALLOC_FREE(frame);
+				errno = ENOMEM;
 				return NULL;
 			}
 
@@ -599,12 +599,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			if (*path != '\0') {
 
                                 /* Should not have empty share with path */
-				errno = EINVAL + 8197;
 				if (dir) {
 					SAFE_FREE(dir->fname);
 					SAFE_FREE(dir);
 				}
 				TALLOC_FREE(frame);
+				errno = EINVAL + 8197;
 				return NULL;
 
 			}
@@ -662,8 +662,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
 					}
-					errno = EPERM;
 					TALLOC_FREE(frame);
+					errno = EPERM;
 					return NULL;
 
 				}
@@ -863,8 +863,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                         }
                                 }
 
-                                errno = saved_errno;
 				TALLOC_FREE(frame);
+                                errno = saved_errno;
 				return NULL;
 			}
 		}
