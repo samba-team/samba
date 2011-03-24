@@ -461,7 +461,7 @@ size_t pull_string_fn(const void *base_ptr,
 			size_t dest_len,
 			size_t src_len,
 			int flags);
-size_t pull_string_talloc_fn(TALLOC_CTX *ctx,
+size_t pull_string_talloc(TALLOC_CTX *ctx,
 			const void *base_ptr,
 			uint16 smb_flags2,
 			char **ppdest,

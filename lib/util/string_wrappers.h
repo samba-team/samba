@@ -29,8 +29,6 @@ char * __unsafe_string_function_usage_here__(void);
 
 size_t __unsafe_string_function_usage_here_size_t__(void);
 
-size_t __unsafe_string_function_usage_here_char__(void);
-
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
 /* if the compiler will optimize out function calls, then use this to tell if we are
@@ -87,9 +85,6 @@ size_t __unsafe_string_function_usage_here_char__(void);
     ? __unsafe_string_function_usage_here_size_t__() \
     : push_string_check_fn(dest, src, dest_len, flags))
 
-#define pull_string_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
-    pull_string_talloc_fn(ctx, base_ptr, smb_flags2, dest, src, src_len, flags)
-
 #define clistr_push(cli, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
@@ -121,7 +116,6 @@ size_t __unsafe_string_function_usage_here_char__(void);
 #define safe_strcpy safe_strcpy_fn
 #define safe_strcat safe_strcat_fn
 #define push_string_check push_string_check_fn
-#define pull_string_talloc pull_string_talloc_fn
 #define clistr_push clistr_push_fn
 #define clistr_pull clistr_pull_fn
 #define srvstr_push srvstr_push_fn
