@@ -442,7 +442,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/util_transfer_file.o ../lib/async_req/async_sock.o \
 	  lib/addrchange.o \
 	  $(TDB_LIB_OBJ) \
-	  $(VERSION_OBJ) lib/charcnv.o ../lib/util/debug.o ../lib/util/debug_s3.o ../lib/util/fault.o \
+	  $(VERSION_OBJ) lib/charcnv.o lib/fstring.o ../lib/util/debug.o ../lib/util/debug_s3.o ../lib/util/fault.o \
 	  lib/interface.o lib/pidfile.o lib/dumpcore.o \
 	  lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
 	  lib/username.o \
