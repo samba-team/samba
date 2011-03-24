@@ -26,6 +26,7 @@
 #include "msdfs.h"
 #include "smbd/smbd.h"
 #include "auth.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_MSDFS

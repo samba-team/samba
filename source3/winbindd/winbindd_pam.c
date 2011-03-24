@@ -37,6 +37,7 @@
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "passdb/machine_sid.h"
 #include "auth.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

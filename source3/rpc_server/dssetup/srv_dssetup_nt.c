@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_dssetup.h"
 #include "secrets.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

@@ -35,6 +35,7 @@
 #include "../libcli/security/security.h"
 #include "system/select.h"
 #include "messages.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

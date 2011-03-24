@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
+#include "ntdomain.h"
 
 /**********************************************************************
  convencience wrapper around rpccli_spoolss_OpenPrinterEx

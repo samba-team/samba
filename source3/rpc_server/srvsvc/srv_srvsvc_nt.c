@@ -34,6 +34,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "messages.h"
+#include "ntdomain.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

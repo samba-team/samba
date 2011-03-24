@@ -541,7 +541,6 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/byteorder.h"
 
 #include "librpc/rpc/dcerpc.h"
-#include "ntdomain.h"
 #include "client.h"
 
 #include "module.h"

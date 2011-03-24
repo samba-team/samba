@@ -43,6 +43,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "passdb.h"
 #include "auth.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

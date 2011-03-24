@@ -45,6 +45,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
+#include "ntdomain.h"
 
 extern userdom_struct current_user_info;
 
