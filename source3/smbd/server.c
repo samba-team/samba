@@ -26,7 +26,6 @@
 #include "popt_common.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "registry.h"
 #include "registry/reg_init_full.h"
 #include "libcli/auth/schannel.h"

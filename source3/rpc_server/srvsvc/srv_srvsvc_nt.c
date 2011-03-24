@@ -26,7 +26,6 @@
 #include "includes.h"
 #include "system/passwd.h"
 #include "../librpc/gen_ndr/srv_srvsvc.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "dbwrap.h"

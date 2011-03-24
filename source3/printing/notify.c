@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "printing.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/spoolss.h"
 #include "nt_printing.h"
 #include "printing/notify.h"

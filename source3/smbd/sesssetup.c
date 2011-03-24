@@ -28,7 +28,6 @@
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "libads/kerberos_proto.h"
 #include "../lib/util/asn1.h"

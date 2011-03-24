@@ -23,7 +23,6 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "messages.h"
 
 struct smbd_smb2_lock_element {

@@ -22,7 +22,6 @@
 #include "libads/sitename_cache.h"
 #include "libads/dns.h"
 #include "../libcli/netlogon/netlogon.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "lib/async_req/async_sock.h"
 #include "libsmb/nmblib.h"
 

@@ -20,7 +20,6 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "printing/pcap.h"
 #include "printing/nt_printing_tdb.h"
 #include "printing/nt_printing_migrate.h"
