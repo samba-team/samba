@@ -1839,13 +1839,46 @@ const char *get_mydnsfullname(void)
 }
 
 /************************************************************
+ Is this my ip address ?
+************************************************************/
+
+static bool is_my_ipaddr(const char *ipaddr_str)
+{
+	struct sockaddr_storage ss;
+	struct iface_struct *nics;
+	int i, n;
+
+	if (!interpret_string_addr(&ss, ipaddr_str, AI_NUMERICHOST)) {
+		return false;
+	}
+
+	if (ismyaddr((struct sockaddr *)&ss)) {
+		return true;
+	}
+
+	if (is_zero_addr((struct sockaddr *)&ss) ||
+		is_loopback_addr((struct sockaddr *)&ss)) {
+		return false;
+	}
+
+	n = get_interfaces(talloc_tos(), &nics);
+	for (i=0; i<n; i++) {
+		if (sockaddr_equal((struct sockaddr *)&nics[i].ip, (struct sockaddr *)&ss)) {
+			TALLOC_FREE(nics);
+			return true;
+		}
+	}
+	TALLOC_FREE(nics);
+	return false;
+}
+
+/************************************************************
  Is this my name ?
 ************************************************************/
 
 bool is_myname_or_ipaddr(const char *s)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	char addr[INET6_ADDRSTRLEN];
 	char *name = NULL;
 	const char *dnsname;
 	char *servername = NULL;
@@ -1893,45 +1926,38 @@ bool is_myname_or_ipaddr(const char *s)
 		return true;
 	}
 
-	/* Handle possible CNAME records - convert to an IP addr. */
+	/* Handle possible CNAME records - convert to an IP addr. list. */
 	if (!is_ipaddress(servername)) {
-		/* Use DNS to resolve the name, but only the first address */
-		struct sockaddr_storage ss;
-		if (interpret_string_addr(&ss, servername, 0)) {
+		/* Use DNS to resolve the name, check all addresses. */
+		struct addrinfo *p = NULL;
+		struct addrinfo *res = NULL;
+
+		if (!interpret_string_addr_internal(&res,
+				servername,
+				AI_ADDRCONFIG)) {
+			return false;
+		}
+
+		for (p = res; p; p = p->ai_next) {
+			char addr[INET6_ADDRSTRLEN];
+			struct sockaddr_storage ss;
+
+			ZERO_STRUCT(ss);
+			memcpy(&ss, p->ai_addr, p->ai_addrlen);
 			print_sockaddr(addr,
 					sizeof(addr),
 					&ss);
-			servername = addr;
+			if (is_my_ipaddr(addr)) {
+				freeaddrinfo(res);
+				return true;
+			}
 		}
+		freeaddrinfo(res);
 	}
 
 	/* Maybe its an IP address? */
 	if (is_ipaddress(servername)) {
-		struct sockaddr_storage ss;
-		struct iface_struct *nics;
-		int i, n;
-
-		if (!interpret_string_addr(&ss, servername, AI_NUMERICHOST)) {
-			return false;
-		}
-
-		if (ismyaddr((struct sockaddr *)&ss)) {
-			return true;
-		}
-
-		if (is_zero_addr((struct sockaddr *)&ss) || 
-			is_loopback_addr((struct sockaddr *)&ss)) {
-			return false;
-		}
-
-		n = get_interfaces(talloc_tos(), &nics);
-		for (i=0; i<n; i++) {
-			if (sockaddr_equal((struct sockaddr *)&nics[i].ip, (struct sockaddr *)&ss)) {
-				TALLOC_FREE(nics);
-				return true;
-			}
-		}
-		TALLOC_FREE(nics);
+		return is_my_ipaddr(servername);
 	}
 
 	/* No match */
