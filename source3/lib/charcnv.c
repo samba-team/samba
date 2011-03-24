@@ -61,7 +61,7 @@ void lazy_initialize_conv(void)
  **/
 void gfree_charcnv(void)
 {
-	TALLOC_FREE(global_iconv_convenience);
+	TALLOC_FREE(global_iconv_handle);
 	initialized = false;
 }
 
@@ -74,9 +74,9 @@ void gfree_charcnv(void)
  **/
 void init_iconv(void)
 {
-	global_iconv_convenience = smb_iconv_convenience_reinit(NULL, lp_dos_charset(),
+	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
 								lp_unix_charset(), lp_display_charset(),
-								true, global_iconv_convenience);
+								true, global_iconv_handle);
 }
 
 /**
@@ -102,10 +102,10 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 	const char* inbuf = (const char*)src;
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
-	struct smb_iconv_convenience *ic;
+	struct smb_iconv_handle *ic;
 
 	lazy_initialize_conv();
-	ic = get_iconv_convenience();
+	ic = get_iconv_handle();
 	descriptor = get_conv_handle(ic, from, to);
 
 	if (srclen == (size_t)-1) {
@@ -372,7 +372,7 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	char *outbuf = NULL, *ob = NULL;
 	smb_iconv_t descriptor;
 	void **dest = (void **)dst;
-	struct smb_iconv_convenience *ic;
+	struct smb_iconv_handle *ic;
 
 	*dest = NULL;
 
@@ -397,7 +397,7 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	}
 
 	lazy_initialize_conv();
-	ic = get_iconv_convenience();
+	ic = get_iconv_handle();
 	descriptor = get_conv_handle(ic, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {

@@ -175,7 +175,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
 			tevent_context_init(ads),
 			&options,
 			&session_options,
-			lp_iconv_convenience(lp_ctx),
+			lp_iconv_handle(lp_ctx),
 			lp_gensec_settings(ads, lp_ctx));
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("failed to connect: %s\n",

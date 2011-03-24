@@ -124,7 +124,7 @@ convert:
  * @returns the number of bytes occupied in the destination
  * on error, returns -1, and sets errno
  **/
-_PUBLIC_ ssize_t convert_string_error(struct smb_iconv_convenience *ic,
+_PUBLIC_ ssize_t convert_string_error(struct smb_iconv_handle *ic,
 				      charset_t from, charset_t to,
 				      void const *src, size_t srclen,
 				      void *dest, size_t destlen, size_t *converted_size)
@@ -167,7 +167,7 @@ _PUBLIC_ ssize_t convert_string_error(struct smb_iconv_convenience *ic,
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-_PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
+_PUBLIC_ bool convert_string_handle(struct smb_iconv_handle *ic,
 					 charset_t from, charset_t to,
 					 void const *src, size_t srclen,
 					 void *dest, size_t destlen, size_t *converted_size)
@@ -214,8 +214,8 @@ _PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
-_PUBLIC_ bool convert_string_talloc_convenience(TALLOC_CTX *ctx, 
-						struct smb_iconv_convenience *ic, 
+_PUBLIC_ bool convert_string_talloc_handle(TALLOC_CTX *ctx,
+						struct smb_iconv_handle *ic,
 						charset_t from, charset_t to, 
 						void const *src, size_t srclen, 
 						void *dst, size_t *converted_size)

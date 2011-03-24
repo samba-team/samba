@@ -103,7 +103,7 @@ typedef struct smb_iconv_s {
 #define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
 
 struct loadparm_context;
-struct smb_iconv_convenience;
+struct smb_iconv_handle;
 
 /* replace some string functions with multi-byte
    versions */
@@ -159,11 +159,11 @@ ssize_t iconv_talloc(TALLOC_CTX *mem_ctx,
 				       void const *src, size_t srclen, 
 				       void *dest);
 
-extern struct smb_iconv_convenience *global_iconv_convenience;
-struct smb_iconv_convenience *get_iconv_convenience(void);
-smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
+extern struct smb_iconv_handle *global_iconv_handle;
+struct smb_iconv_handle *get_iconv_handle(void);
+smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			    charset_t from, charset_t to);
-const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch);
+const char *charset_name(struct smb_iconv_handle *ic, charset_t ch);
 
 codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 			       size_t *size);
@@ -171,12 +171,12 @@ codepoint_t next_codepoint(const char *str, size_t *size);
 ssize_t push_codepoint(char *str, codepoint_t c);
 
 /* codepoints */
-codepoint_t next_codepoint_convenience_ext(struct smb_iconv_convenience *ic,
+codepoint_t next_codepoint_handle_ext(struct smb_iconv_handle *ic,
 			    const char *str, charset_t src_charset,
 			    size_t *size);
-codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic, 
+codepoint_t next_codepoint_handle(struct smb_iconv_handle *ic,
 			    const char *str, size_t *size);
-ssize_t push_codepoint_convenience(struct smb_iconv_convenience *ic, 
+ssize_t push_codepoint_handle(struct smb_iconv_handle *ic,
 				char *str, codepoint_t c);
 
 codepoint_t toupper_m(codepoint_t val);
@@ -186,19 +186,19 @@ bool isupper_m(codepoint_t val);
 int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 
 /* Iconv convenience functions */
-struct smb_iconv_convenience *smb_iconv_convenience_reinit(TALLOC_CTX *mem_ctx,
+struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 							   const char *dos_charset,
 							   const char *unix_charset,
 							   const char *display_charset,
 							   bool native_iconv,
-							   struct smb_iconv_convenience *old_ic);
+							   struct smb_iconv_handle *old_ic);
 
-bool convert_string_convenience(struct smb_iconv_convenience *ic,
+bool convert_string_handle(struct smb_iconv_handle *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen, size_t *converted_size);
-bool convert_string_talloc_convenience(TALLOC_CTX *ctx, 
-				       struct smb_iconv_convenience *ic, 
+bool convert_string_talloc_handle(TALLOC_CTX *ctx,
+				       struct smb_iconv_handle *ic,
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
 				       void *dest, size_t *converted_size);

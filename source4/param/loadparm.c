@@ -519,7 +519,7 @@ struct loadparm_context {
 	struct loadparm_global *globals;
 	struct loadparm_service **services;
 	struct loadparm_service *sDefault;
-	struct smb_iconv_convenience *iconv_convenience;
+	struct smb_iconv_handle *iconv_handle;
 	int iNumServices;
 	struct loadparm_service *currentService;
 	bool bInGlobalSection;
@@ -2782,22 +2782,22 @@ int lpcfg_maxprintjobs(struct loadparm_service *service, struct loadparm_service
 	return maxjobs;
 }
 
-struct smb_iconv_convenience *lpcfg_iconv_convenience(struct loadparm_context *lp_ctx)
+struct smb_iconv_handle *lpcfg_iconv_handle(struct loadparm_context *lp_ctx)
 {
 	if (lp_ctx == NULL) {
-		return get_iconv_convenience();
+		return get_iconv_handle();
 	}
-	return lp_ctx->iconv_convenience;
+	return lp_ctx->iconv_handle;
 }
 
 _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 {
-	struct smb_iconv_convenience *old_ic = lp_ctx->iconv_convenience;
+	struct smb_iconv_handle *old_ic = lp_ctx->iconv_handle;
 	if (old_ic == NULL) {
-		old_ic = global_iconv_convenience;
+		old_ic = global_iconv_handle;
 	}
-	lp_ctx->iconv_convenience = smb_iconv_convenience_reinit_lp(lp_ctx, lp_ctx, old_ic);
-	global_iconv_convenience = lp_ctx->iconv_convenience;
+	lp_ctx->iconv_handle = smb_iconv_handle_reinit_lp(lp_ctx, lp_ctx, old_ic);
+	global_iconv_handle = lp_ctx->iconv_handle;
 }
 
 void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,

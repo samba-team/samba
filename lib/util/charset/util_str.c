@@ -34,7 +34,7 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
-	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -42,8 +42,8 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 	if (s2 == NULL) return 1;
 
 	while (*s1 && *s2) {
-		c1 = next_codepoint_convenience(iconv_convenience, s1, &size1);
-		c2 = next_codepoint_convenience(iconv_convenience, s2, &size2);
+		c1 = next_codepoint_handle(iconv_handle, s1, &size1);
+		c2 = next_codepoint_handle(iconv_handle, s2, &size2);
 
 		s1 += size1;
 		s2 += size2;
@@ -73,7 +73,7 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
-	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -83,8 +83,8 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 	while (*s1 && *s2 && n) {
 		n--;
 
-		c1 = next_codepoint_convenience(iconv_convenience, s1, &size1);
-		c2 = next_codepoint_convenience(iconv_convenience, s2, &size2);
+		c1 = next_codepoint_handle(iconv_handle, s1, &size1);
+		c2 = next_codepoint_handle(iconv_handle, s2, &size2);
 
 		s1 += size1;
 		s2 += size2;
@@ -143,7 +143,7 @@ _PUBLIC_ bool strcsequal(const char *s1,const char *s2)
 _PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset)
 {
 	size_t count = 0;
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	struct smb_iconv_handle *ic = get_iconv_handle();
 
 	if (!s) {
 		return 0;
@@ -160,7 +160,7 @@ _PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst
 
 	while (*s) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_convenience_ext(ic, s, src_charset, &c_size);
+		codepoint_t c = next_codepoint_handle_ext(ic, s, src_charset, &c_size);
 		s += c_size;
 
 		switch (dst_charset) {
@@ -262,7 +262,7 @@ _PUBLIC_ size_t strlen_m_term_null(const char *s)
 _PUBLIC_ char *strchr_m(const char *src, char c)
 {
 	const char *s;
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	struct smb_iconv_handle *ic = get_iconv_handle();
 	if (src == NULL) {
 		return NULL;
 	}
@@ -292,7 +292,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
+		codepoint_t c2 = next_codepoint_handle(ic, s, &size);
 		if (c2 == c) {
 			return discard_const_p(char, s);
 		}
@@ -307,7 +307,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
  */
 _PUBLIC_ char *strrchr_m(const char *s, char c)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	struct smb_iconv_handle *ic = get_iconv_handle();
 	char *ret = NULL;
 
 	if (s == NULL) {
@@ -356,7 +356,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
+		codepoint_t c2 = next_codepoint_handle(ic, s, &size);
 		if (c2 == c) {
 			ret = discard_const_p(char, s);
 		}
@@ -371,13 +371,13 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 */
 _PUBLIC_ bool strhaslower(const char *string)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	struct smb_iconv_handle *ic = get_iconv_handle();
 	while (*string) {
 		size_t c_size;
 		codepoint_t s;
 		codepoint_t t;
 
-		s = next_codepoint_convenience(ic, string, &c_size);
+		s = next_codepoint_handle(ic, string, &c_size);
 		string += c_size;
 
 		t = toupper_m(s);
@@ -395,13 +395,13 @@ _PUBLIC_ bool strhaslower(const char *string)
 */
 _PUBLIC_ bool strhasupper(const char *string)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	struct smb_iconv_handle *ic = get_iconv_handle();
 	while (*string) {
 		size_t c_size;
 		codepoint_t s;
 		codepoint_t t;
 
-		s = next_codepoint_convenience(ic, string, &c_size);
+		s = next_codepoint_handle(ic, string, &c_size);
 		string += c_size;
 
 		t = tolower_m(s);

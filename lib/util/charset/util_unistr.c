@@ -74,10 +74,10 @@ _PUBLIC_ bool next_token(const char **ptr,char *buff, const char *sep, size_t bu
 **/
 _PUBLIC_ void string_replace_m(char *s, char oldc, char newc)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	struct smb_iconv_handle *ic = get_iconv_handle();
 	while (s && *s) {
 		size_t size;
-		codepoint_t c = next_codepoint_convenience(ic, s, &size);
+		codepoint_t c = next_codepoint_handle(ic, s, &size);
 		if (c == oldc) {
 			*s = newc;
 		}
@@ -138,7 +138,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
-	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	if(src == NULL) {
 		return NULL;
@@ -153,12 +153,12 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 	while (*src) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_convenience(iconv_convenience, src, &c_size);
+		codepoint_t c = next_codepoint_handle(iconv_handle, src, &c_size);
 		src += c_size;
 
 		c = tolower_m(c);
 
-		c_size = push_codepoint_convenience(iconv_convenience, dest+size, c);
+		c_size = push_codepoint_handle(iconv_handle, dest+size, c);
 		if (c_size == -1) {
 			talloc_free(dest);
 			return NULL;
@@ -184,7 +184,7 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 {
 	size_t size=0;
 	char *dest;
-	struct smb_iconv_convenience *iconv_convenience = get_iconv_convenience();
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	if (!src) {
 		return NULL;
@@ -199,12 +199,12 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 
 	while (n-- && *src) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_convenience(iconv_convenience, src, &c_size);
+		codepoint_t c = next_codepoint_handle(iconv_handle, src, &c_size);
 		src += c_size;
 
 		c = toupper_m(c);
 
-		c_size = push_codepoint_convenience(iconv_convenience, dest+size, c);
+		c_size = push_codepoint_handle(iconv_handle, dest+size, c);
 		if (c_size == -1) {
 			talloc_free(dest);
 			return NULL;
@@ -244,7 +244,7 @@ _PUBLIC_ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src)
 _PUBLIC_ void strlower_m(char *s)
 {
 	char *d;
-	struct smb_iconv_convenience *iconv_convenience;
+	struct smb_iconv_handle *iconv_handle;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -258,14 +258,14 @@ _PUBLIC_ void strlower_m(char *s)
 	if (!*s)
 		return;
 
-	iconv_convenience = get_iconv_convenience();
+	iconv_handle = get_iconv_handle();
 
 	d = s;
 
 	while (*s) {
 		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint_convenience(iconv_convenience, s, &c_size);
-		c_size2 = push_codepoint_convenience(iconv_convenience, d, tolower_m(c));
+		codepoint_t c = next_codepoint_handle(iconv_handle, s, &c_size);
+		c_size2 = push_codepoint_handle(iconv_handle, d, tolower_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
 				 c, tolower_m(c), (int)c_size, (int)c_size2));
@@ -283,7 +283,7 @@ _PUBLIC_ void strlower_m(char *s)
 _PUBLIC_ void strupper_m(char *s)
 {
 	char *d;
-	struct smb_iconv_convenience *iconv_convenience;
+	struct smb_iconv_handle *iconv_handle;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -297,14 +297,14 @@ _PUBLIC_ void strupper_m(char *s)
 	if (!*s)
 		return;
 
-	iconv_convenience = get_iconv_convenience();
+	iconv_handle = get_iconv_handle();
 
 	d = s;
 
 	while (*s) {
 		size_t c_size, c_size2;
-		codepoint_t c = next_codepoint_convenience(iconv_convenience, s, &c_size);
-		c_size2 = push_codepoint_convenience(iconv_convenience, d, toupper_m(c));
+		codepoint_t c = next_codepoint_handle(iconv_handle, s, &c_size);
+		c_size2 = push_codepoint_handle(iconv_handle, d, toupper_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
 				 c, toupper_m(c), (int)c_size, (int)c_size2));
@@ -322,12 +322,12 @@ _PUBLIC_ void strupper_m(char *s)
 **/
 _PUBLIC_ size_t count_chars_m(const char *s, char c)
 {
-	struct smb_iconv_convenience *ic = get_iconv_convenience();
+	struct smb_iconv_handle *ic = get_iconv_handle();
 	size_t count = 0;
 
 	while (*s) {
 		size_t size;
-		codepoint_t c2 = next_codepoint_convenience(ic, s, &size);
+		codepoint_t c2 = next_codepoint_handle(ic, s, &size);
 		if (c2 == c) count++;
 		s += size;
 	}
@@ -669,7 +669,7 @@ _PUBLIC_ size_t convert_string(charset_t from, charset_t to,
 			       void *dest, size_t destlen)
 {
 	size_t ret;
-	if (!convert_string_convenience(get_iconv_convenience(), from, to, 
+	if (!convert_string_handle(get_iconv_handle(), from, to,
 					src, srclen,
 					dest, destlen, &ret))
 		return -1;
@@ -692,7 +692,7 @@ _PUBLIC_ bool convert_string_talloc(TALLOC_CTX *ctx,
 				    void const *src, size_t srclen, 
 				    void *dest, size_t *converted_size)
 {
-	return convert_string_talloc_convenience(ctx, get_iconv_convenience(),
+	return convert_string_talloc_handle(ctx, get_iconv_handle(),
 						 from, to, src, srclen, dest,
 						 converted_size);
 }

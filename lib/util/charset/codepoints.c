@@ -153,7 +153,7 @@ _PUBLIC_ int codepoint_cmpi(codepoint_t c1, codepoint_t c2)
 }
 
 
-struct smb_iconv_convenience {
+struct smb_iconv_handle {
 	TALLOC_CTX *child_ctx;
 	const char *unix_charset;
 	const char *dos_charset;
@@ -162,20 +162,20 @@ struct smb_iconv_convenience {
 	smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 };
 
-struct smb_iconv_convenience *global_iconv_convenience = NULL;
+struct smb_iconv_handle *global_iconv_handle = NULL;
 
-struct smb_iconv_convenience *get_iconv_convenience(void)
+struct smb_iconv_handle *get_iconv_handle(void)
 {
-	if (global_iconv_convenience == NULL)
-		global_iconv_convenience = smb_iconv_convenience_reinit(talloc_autofree_context(),
+	if (global_iconv_handle == NULL)
+		global_iconv_handle = smb_iconv_handle_reinit(talloc_autofree_context(),
 									"ASCII", "UTF-8", "ASCII", true, NULL);
-	return global_iconv_convenience;
+	return global_iconv_handle;
 }
 
 /**
  * Return the name of a charset to give to iconv().
  **/
-const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch)
+const char *charset_name(struct smb_iconv_handle *ic, charset_t ch)
 {
 	switch (ch) {
 	case CH_UTF16: return "UTF-16LE";
@@ -193,7 +193,7 @@ const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch)
 /**
  re-initialize iconv conversion descriptors
 **/
-static int close_iconv_convenience(struct smb_iconv_convenience *data)
+static int close_iconv_handle(struct smb_iconv_handle *data)
 {
 	unsigned c1, c2;
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
@@ -242,31 +242,31 @@ static const char *map_locale(const char *charset)
 }
 
 /*
-  the old_ic is passed in here as the smb_iconv_convenience structure
+  the old_ic is passed in here as the smb_iconv_handle structure
   is used as a global pointer in some places (eg. python modules). We
   don't want to invalidate those global pointers, but we do want to
   update them with the right charset information when loadparm
   runs. To do that we need to re-use the structure pointer, but
   re-fill the elements in the structure with the updated values
  */
-_PUBLIC_ struct smb_iconv_convenience *smb_iconv_convenience_reinit(TALLOC_CTX *mem_ctx,
+_PUBLIC_ struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 								    const char *dos_charset,
 								    const char *unix_charset,
 								    const char *display_charset,
 								    bool native_iconv,
-								    struct smb_iconv_convenience *old_ic)
+								    struct smb_iconv_handle *old_ic)
 {
-	struct smb_iconv_convenience *ret;
+	struct smb_iconv_handle *ret;
 
 	display_charset = map_locale(display_charset);
 
 	if (old_ic != NULL) {
 		ret = old_ic;
-		close_iconv_convenience(ret);
+		close_iconv_handle(ret);
 		talloc_free(ret->child_ctx);
 		ZERO_STRUCTP(ret);
 	} else {
-		ret = talloc_zero(mem_ctx, struct smb_iconv_convenience);
+		ret = talloc_zero(mem_ctx, struct smb_iconv_handle);
 	}
 	if (ret == NULL) {
 		return NULL;
@@ -279,7 +279,7 @@ _PUBLIC_ struct smb_iconv_convenience *smb_iconv_convenience_reinit(TALLOC_CTX *
 		return NULL;
 	}
 
-	talloc_set_destructor(ret, close_iconv_convenience);
+	talloc_set_destructor(ret, close_iconv_handle);
 
 	ret->dos_charset = talloc_strdup(ret->child_ctx, dos_charset);
 	ret->unix_charset = talloc_strdup(ret->child_ctx, unix_charset);
@@ -292,7 +292,7 @@ _PUBLIC_ struct smb_iconv_convenience *smb_iconv_convenience_reinit(TALLOC_CTX *
 /*
   on-demand initialisation of conversion handles
 */
-smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
+smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			    charset_t from, charset_t to)
 {
 	const char *n1, *n2;
@@ -344,8 +344,8 @@ smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
  *
  * Return INVALID_CODEPOINT if the next character cannot be converted.
  */
-_PUBLIC_ codepoint_t next_codepoint_convenience_ext(
-			struct smb_iconv_convenience *ic,
+_PUBLIC_ codepoint_t next_codepoint_handle_ext(
+			struct smb_iconv_handle *ic,
 			const char *str, charset_t src_charset,
 			size_t *bytes_consumed)
 {
@@ -421,10 +421,10 @@ _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 
   return INVALID_CODEPOINT if the next character cannot be converted
 */
-_PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic,
+_PUBLIC_ codepoint_t next_codepoint_handle(struct smb_iconv_handle *ic,
 				    const char *str, size_t *size)
 {
-	return next_codepoint_convenience_ext(ic, str, CH_UNIX, size);
+	return next_codepoint_handle_ext(ic, str, CH_UNIX, size);
 }
 
 /*
@@ -437,7 +437,7 @@ _PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic
   return the number of bytes occupied by the CH_UNIX character, or
   -1 on failure
 */
-_PUBLIC_ ssize_t push_codepoint_convenience(struct smb_iconv_convenience *ic,
+_PUBLIC_ ssize_t push_codepoint_handle(struct smb_iconv_handle *ic,
 				char *str, codepoint_t c)
 {
 	smb_iconv_t descriptor;
@@ -489,16 +489,16 @@ _PUBLIC_ ssize_t push_codepoint_convenience(struct smb_iconv_convenience *ic,
 _PUBLIC_ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 					size_t *size)
 {
-	return next_codepoint_convenience_ext(get_iconv_convenience(), str,
+	return next_codepoint_handle_ext(get_iconv_handle(), str,
 					      src_charset, size);
 }
 
 _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 {
-	return next_codepoint_convenience(get_iconv_convenience(), str, size);
+	return next_codepoint_handle(get_iconv_handle(), str, size);
 }
 
 _PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 {
-	return push_codepoint_convenience(get_iconv_convenience(), str, c);
+	return push_codepoint_handle(get_iconv_handle(), str, c);
 }
