@@ -1487,7 +1487,7 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(dc_list, context);
 
 			for(j=0; j<set[i]->count; j++) {
-				dc_list[num_dcs + j] = talloc_move(context, &set[i]->names[j]);
+				dc_list[num_dcs + j] = talloc_steal(context, set[i]->names[j]);
 			}
 			num_dcs = num_dcs + set[i]->count;
 			TALLOC_FREE(set[i]);
