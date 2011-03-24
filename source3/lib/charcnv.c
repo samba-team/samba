@@ -127,8 +127,6 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 	i_len=srclen;
 	o_len=destlen;
 
- again:
-
 	retval = smb_iconv(descriptor, &inbuf, &i_len, &outbuf, &o_len);
 	if(retval==(size_t)-1) {
 	    	const char *reason="unknown error";
@@ -416,8 +414,6 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	i_len = srclen;
 	o_len = destlen;
 
- again:
-
 	retval = smb_iconv(descriptor,
 			   &inbuf, &i_len,
 			   &outbuf, &o_len);
@@ -443,8 +439,6 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		TALLOC_FREE(ob);
 		return false;
 	}
-
-  out:
 
 	destlen = destlen - o_len;
 	/* Don't shrink unless we're reclaiming a lot of
