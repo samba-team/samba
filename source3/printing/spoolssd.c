@@ -17,6 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
+#include "serverid.h"
+
 #include "librpc/gen_ndr/messaging.h"
 #include "include/printing.h"
 #include "printing/nt_printing_migrate.h"
