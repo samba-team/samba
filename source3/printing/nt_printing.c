@@ -35,6 +35,7 @@
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 #include "smbd/smbd.h"
+#include "auth.h"
 
 /* Map generic permissions to printer object specific permissions */
 

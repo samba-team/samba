@@ -27,6 +27,7 @@
 #include "secrets.h"
 #include "krb5_env.h"
 #include "../libcli/registry/util_reg.h"
+#include "auth.h"
 
 #ifdef HAVE_ADS
 /*****************************************************************
