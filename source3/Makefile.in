@@ -1160,6 +1160,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_serverid.o \
 	   utils/net_eventlog.o \
 	   utils/net_printing.o \
+	   utils/net_rpc_trust.o \
 	   $(LIBNDR_NTPRINTING_OBJ) \
 	   $(LIBNDR_PREG_OBJ) \
 	   $(LIBCLI_SPOOLSS_OBJ) \

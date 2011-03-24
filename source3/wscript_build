@@ -543,6 +543,7 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_serverid.c
               utils/net_eventlog.c
               utils/net_printing.c
+              utils/net_rpc_trust.c
               registry/reg_parse.c registry/reg_format.c
               registry/reg_parse_internal.c registry/reg_import.c
               lib/cbuf.c lib/srprs.c'''
