@@ -294,6 +294,7 @@ sub Parse($$$)
 	pidl " */";
 	pidl "";
 	pidl "#include \"includes.h\"";
+	pidl "#include \"ntdomain.h\"";
 	pidl "#include \"$header\"";
 	pidl_hdr "#include \"$ndr_header\"";
 	pidl "";
