@@ -1014,12 +1014,12 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
  The resulting string in "dest" is always null terminated.
 **/
 
-size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
-			     const void *base_ptr,
-			     char **ppdest,
-			     const void *src,
-			     size_t src_len,
-			     int flags)
+static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
+				    const void *base_ptr,
+				    char **ppdest,
+				    const void *src,
+				    size_t src_len,
+				    int flags)
 {
 	char *dest;
 	size_t dest_len;
