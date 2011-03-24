@@ -474,6 +474,34 @@ static int db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
 	return 0;
 }
 
+/**
+ * Fetch a record from a persistent database
+ * without record locking and without an active transaction.
+ *
+ * This just fetches from the local database copy.
+ * Since the databases are kept in syc cluster-wide,
+ * there is no point in doing a ctdb call to fetch the
+ * record from the lmaster. It does even harm since migration
+ * of records bump their RSN and hence render the persistent
+ * database inconsistent.
+ */
+static int db_ctdb_fetch_persistent(struct db_ctdb_ctx *db,
+				    TALLOC_CTX *mem_ctx,
+				    TDB_DATA key, TDB_DATA *data)
+{
+	NTSTATUS status;
+	bool found;
+
+	status = db_ctdb_ltdb_fetch(db, key, NULL, mem_ctx, data);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		*data = tdb_null;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	return 0;
+}
 
 static NTSTATUS db_ctdb_store_transaction(struct db_record *rec, TDB_DATA data, int flag);
 static NTSTATUS db_ctdb_delete_transaction(struct db_record *rec);
@@ -1075,6 +1103,10 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		return db_ctdb_transaction_fetch(ctx, mem_ctx, key, data);
 	}
 
+	if (db->persistent) {
+		return db_ctdb_fetch_persistent(ctx, mem_ctx, key, data);
+	}
+
 	/* try a direct fetch */
 	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
 
@@ -1085,8 +1117,8 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	 */
 	if ((ctdb_data.dptr != NULL) &&
 	    (ctdb_data.dsize >= sizeof(struct ctdb_ltdb_header)) &&
-	    (db->persistent ||
-	     ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster == get_my_vnn())) {
+	    ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster == get_my_vnn())
+	{
 		/* we are the dmaster - avoid the ctdb protocol op */
 
 		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
