@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "idmap.h"
 #include "../libcli/security/security.h"
+#include "ntdomain.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {

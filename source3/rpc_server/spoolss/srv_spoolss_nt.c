@@ -48,6 +48,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "messages.h"
+#include "ntdomain.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \

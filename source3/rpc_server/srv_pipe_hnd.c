@@ -28,6 +28,7 @@
 #include "fake_file.h"
 #include "rpc_dce.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

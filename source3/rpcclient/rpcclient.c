@@ -31,6 +31,7 @@
 #include "../libcli/smbreadline/smbreadline.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
+#include "ntdomain.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,

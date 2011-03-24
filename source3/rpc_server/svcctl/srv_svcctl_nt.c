@@ -29,6 +29,7 @@
 #include "services/services.h"
 #include "services/svc_winreg_glue.h"
 #include "auth.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

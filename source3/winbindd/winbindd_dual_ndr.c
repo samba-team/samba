@@ -30,6 +30,7 @@
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
 #include "librpc/gen_ndr/srv_wbint.h"
+#include "ntdomain.h"
 
 struct wbint_bh_state {
 	struct winbindd_domain *domain;

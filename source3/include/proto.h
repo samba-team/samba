@@ -2814,6 +2814,7 @@ struct rpc_srv_callbacks {
 	void *private_data;
 };
 
+struct api_struct;
 NTSTATUS rpc_srv_register(int version, const char *clnt,
 			  const char *srv,
 			  const struct ndr_interface_table *iface,

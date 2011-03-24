@@ -40,6 +40,7 @@
 #include "rpc_dce.h"
 #include "smbd/smbd.h"
 #include "auth.h"
+#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

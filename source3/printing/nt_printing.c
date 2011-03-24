@@ -36,6 +36,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "messages.h"
+#include "ntdomain.h"
 
 /* Map generic permissions to printer object specific permissions */
 
