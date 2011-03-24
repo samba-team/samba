@@ -31,41 +31,21 @@ size_t push_ascii_fstring(void *dest, const char *src)
 }
 
 /********************************************************************
- Push an nstring - ensure null terminated. Written by
- moriyama@miraclelinux.com (MORIYAMA Masayuki).
+ Push an nstring (a netbios string)
+ this function uses convert_string_error() to avoid common debug
+ warnings where is unable to convert strings to CH_DOS. The target
+ string is truncated at the first character that cannot be converted
+ The target is always null terminated. The resulting string size,
+ without the null termination, it returned
 ********************************************************************/
 
 size_t push_ascii_nstring(void *dest, const char *src)
 {
-	size_t i, buffer_len, dest_len;
-	smb_ucs2_t *buffer;
-
-	conv_silent = True;
-	if (!push_ucs2_talloc(talloc_tos(), &buffer, src, &buffer_len)) {
-		smb_panic("failed to create UCS2 buffer");
-	}
-
-	/* We're using buffer_len below to count ucs2 characters, not bytes. */
-	buffer_len /= sizeof(smb_ucs2_t);
-
-	dest_len = 0;
-	for (i = 0; buffer[i] != 0 && (i < buffer_len); i++) {
-		unsigned char mb[10];
-		/* Convert one smb_ucs2_t character at a time. */
-		size_t mb_len = convert_string(CH_UTF16LE, CH_DOS, buffer+i, sizeof(smb_ucs2_t), mb, sizeof(mb));
-		if ((mb_len != (size_t)-1) && (dest_len + mb_len <= MAX_NETBIOSNAME_LEN - 1)) {
-			memcpy((char *)dest + dest_len, mb, mb_len);
-			dest_len += mb_len;
-		} else {
-			errno = E2BIG;
-			break;
-		}
-	}
-	((char *)dest)[dest_len] = '\0';
-
-	conv_silent = False;
-	TALLOC_FREE(buffer);
-	return dest_len;
+	ssize_t ret;
+	size_t converted_size;
+	ret = convert_string_error(CH_UNIX, CH_DOS, src, -1, dest, sizeof(nstring)-1, &converted_size);
+	SCVAL(dest, converted_size, 0);
+	return converted_size;
 }
 
 size_t pull_ascii_fstring(char *dest, const void *src)
