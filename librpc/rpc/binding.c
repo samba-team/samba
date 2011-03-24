@@ -646,9 +646,9 @@ _PUBLIC_ const char *derpc_transport_string_by_transport(enum dcerpc_transport_t
 	return NULL;
 }
 
-_PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
-				   struct epm_tower *tower, 
-				   struct dcerpc_binding **b_out)
+_PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
+					    struct epm_tower *tower,
+					    struct dcerpc_binding **b_out)
 {
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
@@ -677,7 +677,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &binding->object);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Error pulling object uuid and version: %s", nt_errstr(status)));	
+		DEBUG(1, ("Error pulling object uuid and version: %s", nt_errstr(status)));
 		return status;
 	}
 
