@@ -122,14 +122,15 @@ convert:
  * @param dest pointer to destination string (multibyte or singlebyte)
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
+ * on error, returns -1, and sets errno
  **/
-_PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
-					 charset_t from, charset_t to,
-					 void const *src, size_t srclen, 
-					 void *dest, size_t destlen, size_t *converted_size)
+_PUBLIC_ ssize_t convert_string_error(struct smb_iconv_convenience *ic,
+				      charset_t from, charset_t to,
+				      void const *src, size_t srclen,
+				      void *dest, size_t destlen, size_t *converted_size)
 {
 	size_t i_len, o_len;
-	size_t retval;
+	ssize_t retval;
 	const char* inbuf = (const char*)src;
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
@@ -138,45 +139,68 @@ _PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
 		srclen = strlen(inbuf)+1;
 
 	descriptor = get_conv_handle(ic, from, to);
-
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		/* conversion not supported, use as is */
-		size_t len = MIN(srclen,destlen);
-		memcpy(dest,src,len);
-		*converted_size = len;
-		return true;
+		if (converted_size) {
+			*converted_size = 0;
+		}
+		errno = EINVAL;
+		return -1;
 	}
 
 	i_len=srclen;
 	o_len=destlen;
+
 	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
+
+	if (converted_size != NULL)
+		*converted_size = destlen-o_len;
+	return retval;
+}
+
+
+/**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @returns the number of bytes occupied in the destination
+ **/
+_PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
+					 charset_t from, charset_t to,
+					 void const *src, size_t srclen,
+					 void *dest, size_t destlen, size_t *converted_size)
+{
+	ssize_t retval;
+
+	retval = convert_string_error(ic, from, to, src, srclen, dest, destlen, converted_size);
 	if(retval==(size_t)-1) {
 	    	const char *reason;
 		switch(errno) {
-			case EINVAL:
-				reason="Incomplete multibyte sequence";
-				return false;
-			case E2BIG:
-				reason="No more room"; 
-				if (from == CH_UNIX) {
-					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
-						 charset_name(ic, from), charset_name(ic, to),
-						 (int)srclen, (int)destlen, 
-						 (const char *)src));
-				} else {
-					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
-						 charset_name(ic, from), charset_name(ic, to),
-						 (int)srclen, (int)destlen));
-				}
-			       return false;
-			case EILSEQ:
-			       reason="Illegal multibyte sequence";
-			       return false;
+		case EINVAL:
+			reason="Incomplete multibyte sequence";
+			return false;
+		case E2BIG:
+			reason="No more room";
+			if (from == CH_UNIX) {
+				DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
+					 charset_name(ic, from), charset_name(ic, to),
+					 (int)srclen, (int)destlen,
+					 (const char *)src));
+			} else {
+				DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
+					 charset_name(ic, from), charset_name(ic, to),
+					 (int)srclen, (int)destlen));
+			}
+			return false;
+		case EILSEQ:
+			reason="Illegal multibyte sequence";
+			return false;
+		default:
+			return false;
 		}
-		/* smb_panic(reason); */
 	}
-	if (converted_size != NULL)
-		*converted_size = destlen-o_len;
 	return true;
 }
 	
