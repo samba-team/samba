@@ -22,8 +22,6 @@
 
 #ifdef CLUSTER_SUPPORT
 
-#include "librpc/gen_ndr/messaging.h"
-#include "librpc/gen_ndr/ndr_messaging.h"
 #include "ctdbd_conn.h"
 #include "packet.h"
 #include "messages.h"

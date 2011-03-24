@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "libsmb/clidgram.h"
 #include "libsmb/nmblib.h"
 #include "messages.h"

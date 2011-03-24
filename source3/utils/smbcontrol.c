@@ -26,7 +26,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "popt_common.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/spoolss.h"
 #include "nt_printing.h"
 #include "printing/notify.h"

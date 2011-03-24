@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "popt_common.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "nmbd/nmbd.h"
 #include "serverid.h"
 #include "messages.h"

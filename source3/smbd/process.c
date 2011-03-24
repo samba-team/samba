@@ -23,7 +23,6 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/netlogon.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "../lib/async_req/async_sock.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/select.h"

@@ -46,8 +46,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/messaging.h"
-#include "librpc/gen_ndr/ndr_messaging.h"
 #include "dbwrap.h"
 #include "serverid.h"
 #include "messages.h"

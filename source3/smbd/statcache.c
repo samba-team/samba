@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/messaging.h"
 #include "memcache.h"
 #include "smbd/smbd.h"
 #include "messages.h"

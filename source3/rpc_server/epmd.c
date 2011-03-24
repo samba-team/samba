@@ -22,7 +22,6 @@
 #include "includes.h"
 
 #include "serverid.h"
-#include "../librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"

@@ -147,4 +147,6 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 			    struct messaging_rec *rec);
 
+#include "librpc/gen_ndr/ndr_messaging.h"
+
 #endif

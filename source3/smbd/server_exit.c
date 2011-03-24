@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "librpc/gen_ndr/messaging.h"
 
 #include "../librpc/gen_ndr/srv_dfs.h"
 #include "../librpc/gen_ndr/srv_dssetup.h"
