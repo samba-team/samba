@@ -22,6 +22,7 @@
 #ifndef _SRV_SPOOLSS_UITL_H
 #define _SRV_SPOOLSS_UITL_H
 
+struct auth_serversupplied_info;
 
 enum spoolss_PrinterInfo2Mask {
 	SPOOLSS_PRINTER_INFO_ATTRIBUTES      = (int)(0x00000001),

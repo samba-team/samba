@@ -25,6 +25,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "libcli/named_pipe_auth/npa_tstream.h"
 #include "../auth/auth_sam_reply.h"
+#include "auth.h"
 
 #define SERVER_TCP_LOW_PORT  1024
 #define SERVER_TCP_HIGH_PORT 1300

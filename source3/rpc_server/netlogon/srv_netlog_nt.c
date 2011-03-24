@@ -44,6 +44,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "../libcli/registry/util_reg.h"
 #include "passdb.h"
+#include "auth.h"
 
 extern userdom_struct current_user_info;
 
