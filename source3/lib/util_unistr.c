@@ -30,6 +30,15 @@
 static uint8 *valid_table;
 static bool initialized;
 
+/* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
+#define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
+				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
+
+
+/* return an ascii version of a ucs2 character */
+#define UCS2_TO_CHAR(c) (((c) >> UCS2_SHIFT) & 0xff)
+
+
 /**
  * Destroy global objects allocated by load_case_tables()
  **/
