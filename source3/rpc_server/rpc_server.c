@@ -22,7 +22,6 @@
 #include "rpc_dce.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/auth.h"
-#include "registry/reg_parse_prs.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/named_pipe_auth/npa_tstream.h"
 #include "../auth/auth_sam_reply.h"
