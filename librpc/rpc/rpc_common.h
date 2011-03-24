@@ -117,6 +117,8 @@ NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
+struct dcerpc_binding *dcerpc_binding_dup(TALLOC_CTX *mem_ctx,
+					  const struct dcerpc_binding *b);
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 				    const struct dcerpc_binding *binding,
 				    struct epm_tower *tower);
