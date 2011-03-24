@@ -653,6 +653,15 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 
+	/*
+	 * A tower needs to have at least 4 floors to carry useful
+	 * information. Floor 3 is the transport identifier which defines
+	 * how many floors are required at least.
+	 */
+	if (tower->num_floors < 4) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	binding = talloc_zero(mem_ctx, struct dcerpc_binding);
 	NT_STATUS_HAVE_NO_MEMORY(binding);
 
@@ -667,10 +676,6 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 
 	if (binding->transport == (unsigned int)-1) {
 		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	if (tower->num_floors < 1) {
-		return NT_STATUS_OK;
 	}
 
 	/* Set object uuid */
