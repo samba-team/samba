@@ -402,14 +402,14 @@ const char *talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIB
  *
  * @param[in]  new_ctx  The new parent context.
  *
- * @param[in]  ptr      Pointer to the talloc chunk to move.
+ * @param[in]  pptr     Pointer to the talloc chunk to move.
  *
  * @return              The pointer of the talloc chunk it has been moved to,
  *                      NULL on error.
  */
-void *talloc_move(const void *new_ctx, const void *ptr);
+void *talloc_move(const void *new_ctx, void **pptr);
 #else
-#define talloc_move(ctx, ptr) (_TALLOC_TYPEOF(*(ptr)))_talloc_move((ctx),(void *)(ptr))
+#define talloc_move(ctx, pptr) (_TALLOC_TYPEOF(*(pptr)))_talloc_move((ctx),(void *)(pptr))
 void *_talloc_move(const void *new_ctx, const void *pptr);
 #endif
 
