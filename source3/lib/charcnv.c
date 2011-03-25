@@ -22,13 +22,6 @@
 */
 #include "includes.h"
 
-/* We can parameterize this if someone complains.... JRA. */
-
-char lp_failed_convert_char(void)
-{
-	return '_';
-}
-
 /**
  * @file
  *

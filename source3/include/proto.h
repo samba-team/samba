@@ -409,7 +409,6 @@ int bitmap_find(struct bitmap *bm, unsigned ofs);
 
 /* The following definitions come from lib/charcnv.c  */
 
-char lp_failed_convert_char(void);
 void lazy_initialize_conv(void);
 void gfree_charcnv(void);
 void init_iconv(void);
