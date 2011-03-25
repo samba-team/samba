@@ -136,4 +136,6 @@ struct auth_ntlmssp_state;
 /* Changed from 2 -> 3 when we reworked many auth structures to use IDL or be in common with Samba4 */
 #define AUTH_INTERFACE_VERSION 3
 
+#include "auth/proto.h"
+
 #endif /* _SMBAUTH_H_ */
