@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "ntioctl.h"
 
 /*
     Please read the VFS module Samba-HowTo-Collection.

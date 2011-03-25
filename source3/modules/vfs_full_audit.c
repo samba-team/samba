@@ -63,6 +63,7 @@
 #include "smbd/smbd.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "auth.h"
+#include "ntioctl.h"
 
 static int vfs_full_audit_debug_level = DBGC_VFS;
 

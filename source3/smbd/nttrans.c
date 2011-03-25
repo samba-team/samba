@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
+#include "ntioctl.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
