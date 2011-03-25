@@ -752,7 +752,7 @@ ssize_t readahead(int fd, off64_t offset, size_t count);
 #endif
 
 #ifndef CONST_DISCARD
-#define CONST_DISCARD(type, ptr)      discard_const_p(type, ptr)
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
 #endif
 
 void dump_core(void) _NORETURN_;
