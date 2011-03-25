@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "lib/privileges.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

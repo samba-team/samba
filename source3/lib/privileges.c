@@ -22,6 +22,7 @@
 
 
 #include "includes.h"
+#include "lib/privileges.h"
 #include "dbwrap.h"
 #include "libcli/security/privileges_private.h"
 #include "../libcli/security/security.h"
