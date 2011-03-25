@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 #include "smbd/globals.h"
 
 #undef DBGC_CLASS

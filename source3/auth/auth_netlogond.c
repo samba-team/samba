@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_schannel.h"

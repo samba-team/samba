@@ -36,6 +36,7 @@
 #include "rpc_server/rpc_ncacn_np.h"
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
+#include "auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

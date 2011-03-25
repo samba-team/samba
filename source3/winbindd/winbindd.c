@@ -34,6 +34,7 @@
 #include "idmap.h"
 #include "lib/addrchange.h"
 #include "serverid.h"
+#include "auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

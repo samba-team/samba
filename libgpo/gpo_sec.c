@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "libcli/security/security.h"
 #include "../libgpo/gpo.h"
+#include "auth.h"
 #if _SAMBA_BUILD_ == 4
 #include "libgpo/ads_convenience.h"
 #include "librpc/gen_ndr/security.h"

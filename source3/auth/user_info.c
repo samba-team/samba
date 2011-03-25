@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 #include "librpc/gen_ndr/samr.h"
 
 #undef DBGC_CLASS

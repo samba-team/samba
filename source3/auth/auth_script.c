@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 
 #undef malloc
 
