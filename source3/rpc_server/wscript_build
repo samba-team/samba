@@ -44,13 +44,17 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
 bld.SAMBA3_SUBSYSTEM('EPMD',
 		     source='epmd.c')
 
+bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
+                    source='srv_access_check.c')
+
 bld.SAMBA3_SUBSYSTEM('RPC_SAMR',
                     source=RPC_SAMR_SRC,
-                    deps='PLAINTEXT_AUTH',
+                    deps='PLAINTEXT_AUTH SRV_ACCESS_CHECK',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_LSARPC',
                     source=RPC_LSARPC_SRC,
+                    deps='SRV_ACCESS_CHECK',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_WINREG',

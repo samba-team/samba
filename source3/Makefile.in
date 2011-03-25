@@ -714,7 +714,7 @@ NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o \
 		  ../auth/auth_sam_reply.o librpc/gen_ndr/ndr_auth.o
 
 RPC_NCACN_NP = rpc_server/srv_pipe_register.o rpc_server/rpc_ncacn_np.o \
-	       rpc_server/rpc_handles.o
+	       rpc_server/rpc_handles.o rpc_server/srv_access_check.o
 
 RPC_SERVICE = rpc_server/rpc_server.o
 
