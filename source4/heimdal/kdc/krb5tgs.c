@@ -282,8 +282,9 @@ check_PAC(krb5_context context,
 	  hdb_entry_ex *client,
 	  hdb_entry_ex *server,
 	  hdb_entry_ex *krbtgt,
-	  const EncryptionKey *server_key,
+	  const EncryptionKey *server_check_key,
 	  const EncryptionKey *krbtgt_check_key,
+	  const EncryptionKey *server_sign_key,
 	  const EncryptionKey *krbtgt_sign_key,
 	  EncTicketPart *tkt,
 	  krb5_data *rspac,
@@ -328,7 +329,7 @@ check_PAC(krb5_context context,
 
 		ret = krb5_pac_verify(context, pac, tkt->authtime,
 				      client_principal,
-				      krbtgt_check_key, NULL);
+				      server_check_key, krbtgt_check_key);
 		if (ret) {
 		    krb5_pac_free(context, pac);
 		    return ret;
@@ -351,7 +352,7 @@ check_PAC(krb5_context context,
 		    *signedpath = 1;
 		    ret = _krb5_pac_sign(context, pac, tkt->authtime,
 					 client_principal,
-					 server_key, krbtgt_sign_key, rspac);
+					 server_sign_key, krbtgt_sign_key, rspac);
 		}
 		krb5_pac_free(context, pac);
 		
@@ -1789,7 +1790,9 @@ server_lookup:
     }
 
     ret = check_PAC(context, config, cp,
-		    client, server, krbtgt, ekey, &tkey_check->key, &tkey_sign->key,
+		    client, server, krbtgt,
+		    &tkey_check->key, &tkey_check->key,
+		    ekey, &tkey_sign->key,
 		    tgt, &rspac, &signedpath);
     if (ret) {
 	const char *msg = krb5_get_error_message(context, ret);
