@@ -456,14 +456,24 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		errno = EINVAL;
 		return false;
 	}
+
 	if (srclen == 0) {
-		ob = talloc_strdup(ctx, "");
+		/* We really should treat this as an error, but
+		   there are too many callers that need this to
+		   return a NULL terminated string in the correct
+		   character set. */
+		if (to == CH_UTF16LE|| to == CH_UTF16BE || to == CH_UTF16MUNGED) {
+			destlen = 2;
+		} else {
+			destlen = 1;
+		}
+		ob = talloc_zero_array(ctx, char, destlen);
 		if (ob == NULL) {
 			errno = ENOMEM;
 			return false;
 		}
+		*converted_size = destlen;
 		*dest = ob;
-		*converted_size = 0;
 		return true;
 	}
 
@@ -559,6 +569,16 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	/* Must ucs2 null terminate in the extra space we allocated. */
 	ob[destlen] = '\0';
 	ob[destlen+1] = '\0';
+
+	/* Ensure we can never return a *converted_size of zero. */
+	if (destlen == 0) {
+		/* This can happen from a bad iconv "use_as_is:" call. */
+		if (to == CH_UTF16LE|| to == CH_UTF16BE || to == CH_UTF16MUNGED) {
+			destlen = 2;
+		} else {
+			destlen = 1;
+		}
+	}
 
 	*converted_size = destlen;
 	return true;
