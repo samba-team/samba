@@ -302,6 +302,10 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 
+	if (cli_credentials_get_impersonate_principal(creds)) {
+		gensec_gssapi_state->want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
+	}
+
 	gensec_gssapi_state->target_principal = gensec_get_target_principal(gensec_security);
 	if (gensec_gssapi_state->target_principal) {
 		name_type = GSS_C_NULL_OID;
