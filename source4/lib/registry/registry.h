@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Registry interface
    Copyright (C) Gerald Carter                        2002.
-   Copyright (C) Jelmer Vernooij					  2003-2007.
+   Copyright (C) Jelmer Vernooij			2003-2007.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
