@@ -534,7 +534,6 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/charset/charset.h"
 #include "dynconfig.h"
 #include "debugparse.h"
-#include "../libcli/security/privileges.h"
 #include "locking.h"
 #include "smb_perfcount.h"
 #include "smb.h"

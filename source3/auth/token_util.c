@@ -33,6 +33,7 @@
 #include "../lib/util/util_pw.h"
 #include "lib/winbind_util.h"
 #include "passdb.h"
+#include "lib/privileges.h"
 
 /****************************************************************************
  Check for a SID in an struct security_token

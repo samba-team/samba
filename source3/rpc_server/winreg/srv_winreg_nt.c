@@ -29,6 +29,7 @@
 #include "rpc_misc.h"
 #include "auth.h"
 #include "ntdomain.h"
+#include "lib/privileges.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

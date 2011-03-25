@@ -24,6 +24,8 @@
 #include "passdb.h"
 #include "dbwrap.h"
 #include "../libcli/security/security.h"
+#include "lib/privileges.h"
+
 static struct db_context *db;
 
 /* cache all entries for 60 seconds for to save ldap-queries (cache is updated
