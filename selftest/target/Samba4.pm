@@ -969,6 +969,13 @@ sub provision_rpc_proxy($$$)
 	$ret->{RPC_PROXY_USERNAME} = $ret->{USERNAME};
 	$ret->{RPC_PROXY_PASSWORD} = $ret->{PASSWORD};
 
+	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
+	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
+	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+
 	return $ret;
 }
 
