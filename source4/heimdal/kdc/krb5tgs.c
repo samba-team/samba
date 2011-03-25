@@ -1465,10 +1465,9 @@ tgs_build_reply(krb5_context context,
 		const struct sockaddr *from_addr)
 {
     krb5_error_code ret;
-    krb5_principal cp = NULL, sp = NULL;
-    krb5_principal client_principal = NULL;
+    krb5_principal cp = NULL, sp = NULL, tp = NULL;
     krb5_principal krbtgt_principal = NULL;
-    char *spn = NULL, *cpn = NULL;
+    char *spn = NULL, *cpn = NULL, *tpn = NULL;
     hdb_entry_ex *server = NULL, *client = NULL, *s4u2self_impersonated_client = NULL;
     HDB *clientdb, *s4u2self_impersonated_clientdb;
     krb5_realm ref_realm = NULL;
@@ -1720,16 +1719,16 @@ server_lookup:
     krb5_free_principal(context, krbtgt_principal);
     if (ret) {
 	krb5_error_code ret2;
-	char *tpn, *tpn2;
-	ret = krb5_unparse_name(context, krbtgt->entry.principal, &tpn);
-	ret2 = krb5_unparse_name(context, krbtgt->entry.principal, &tpn2);
+	char *ktpn, *ktpn2;
+	ret = krb5_unparse_name(context, krbtgt->entry.principal, &ktpn);
+	ret2 = krb5_unparse_name(context, krbtgt_principal, &ktpn2);
 	kdc_log(context, config, 0,
 		"Request with wrong krbtgt: %s, %s not found in our database",
-		(ret == 0) ? tpn : "<unknown>", (ret2 == 0) ? tpn2 : "<unknown>");
+		(ret == 0) ? ktpn : "<unknown>", (ret2 == 0) ? ktpn2 : "<unknown>");
 	if(ret == 0)
-	    free(tpn);
+	    free(ktpn);
 	if(ret2 == 0)
-	    free(tpn2);
+	    free(ktpn2);
 	ret = KRB5KRB_AP_ERR_NOT_US;
 	goto out;
     }
@@ -1741,13 +1740,13 @@ server_lookup:
      * this) before the strcmp() */
     if (strcmp(krb5_principal_get_realm(context, server->entry.principal),
 	       krb5_principal_get_realm(context, krbtgt_out->entry.principal)) != 0) {
-	char *tpn;
-	ret = krb5_unparse_name(context, krbtgt_out->entry.principal, &tpn);
+	char *ktpn;
+	ret = krb5_unparse_name(context, krbtgt_out->entry.principal, &ktpn);
 	kdc_log(context, config, 0,
 		"Request with wrong krbtgt: %s",
-		(ret == 0) ? tpn : "<unknown>");
+		(ret == 0) ? ktpn : "<unknown>");
 	if(ret == 0)
-	    free(tpn);
+	    free(ktpn);
 	ret = KRB5KRB_AP_ERR_NOT_US;
     }
 
@@ -1824,7 +1823,9 @@ server_lookup:
      * Process request
      */
 
-    client_principal = cp;
+    /* by default the tgt principal matches the client principal */
+    tp = cp;
+    tpn = cpn;
 
     if (client) {
 	const PA_DATA *sdata;
@@ -1835,7 +1836,6 @@ server_lookup:
 	    krb5_crypto crypto;
 	    krb5_data datack;
 	    PA_S4U2Self self;
-	    char *selfcpn = NULL;
 	    const char *str;
 
 	    ret = decode_PA_S4U2Self(sdata->padata_value.data,
@@ -1878,14 +1878,14 @@ server_lookup:
 	    }
 
 	    ret = _krb5_principalname2krb5_principal(context,
-						     &client_principal,
+						     &tp,
 						     self.name,
 						     self.realm);
 	    free_PA_S4U2Self(&self);
 	    if (ret)
 		goto out;
 
-	    ret = krb5_unparse_name(context, client_principal, &selfcpn);	
+	    ret = krb5_unparse_name(context, tp, &tpn);
 	    if (ret)
 		goto out;
 
@@ -1893,7 +1893,7 @@ server_lookup:
 	    if(rspac.data) {
 		krb5_pac p = NULL;
 		krb5_data_free(&rspac);
-		ret = _kdc_db_fetch(context, config, client_principal, HDB_F_GET_CLIENT | HDB_F_CANON,
+		ret = _kdc_db_fetch(context, config, tp, HDB_F_GET_CLIENT | HDB_F_CANON,
 				    NULL, &s4u2self_impersonated_clientdb, &s4u2self_impersonated_client);
 		if (ret) {
 		    const char *msg;
@@ -1907,14 +1907,16 @@ server_lookup:
 		    if (ret == HDB_ERR_NOENTRY)
 			ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 		    msg = krb5_get_error_message(context, ret);
-		    kdc_log(context, config, 1, "S2U4Self principal to impersonate %s not found in database: %s", cpn, msg);
+		    kdc_log(context, config, 1,
+			    "S2U4Self principal to impersonate %s not found in database: %s",
+			    tpn, msg);
 		    krb5_free_error_message(context, msg);
 		    goto out;
 		}
 		ret = _kdc_pac_generate(context, s4u2self_impersonated_client, &p);
 		if (ret) {
 		    kdc_log(context, config, 0, "PAC generation failed for -- %s",
-			    selfcpn);
+			    tpn);
 		    goto out;
 		}
 		if (p != NULL) {
@@ -1925,7 +1927,7 @@ server_lookup:
 		    krb5_pac_free(context, p);
 		    if (ret) {
 			kdc_log(context, config, 0, "PAC signing failed for -- %s",
-				selfcpn);
+				tpn);
 			goto out;
 		    }
 		}
@@ -1940,8 +1942,7 @@ server_lookup:
 		kdc_log(context, config, 0, "S4U2Self: %s is not allowed "
 			"to impersonate to service "
 			"(tried for user %s to service %s)",
-			cpn, selfcpn, spn);
-		free(selfcpn);
+			cpn, tpn, spn);
 		goto out;
 	    }
 
@@ -1957,8 +1958,7 @@ server_lookup:
 		str = "";
 	    }
 	    kdc_log(context, config, 0, "s4u2self %s impersonating %s to "
-		    "service %s %s", cpn, selfcpn, spn, str);
-	    free(selfcpn);
+		    "service %s %s", cpn, tpn, spn, str);
 	}
     }
 
@@ -1974,7 +1974,6 @@ server_lookup:
 	int ad_signedpath = 0;
 	Key *clientkey;
 	Ticket *t;
-	char *str;
 
 	/*
 	 * Require that the KDC have issued the service's krbtgt (not
@@ -2024,19 +2023,18 @@ server_lookup:
 	}
 
 	ret = _krb5_principalname2krb5_principal(context,
-						 &client_principal,
+						 &tp,
 						 adtkt.cname,
 						 adtkt.crealm);
 	if (ret)
 	    goto out;
 
-	ret = krb5_unparse_name(context, client_principal, &str);
+	ret = krb5_unparse_name(context, tp, &tpn);
 	if (ret)
 	    goto out;
 
-	ret = verify_flags(context, config, &adtkt, str);
+	ret = verify_flags(context, config, &adtkt, tpn);
 	if (ret) {
-	    free(str);
 	    goto out;
 	}
 
@@ -2046,7 +2044,7 @@ server_lookup:
 	ret = check_KRB5SignedPath(context,
 				   config,
 				   krbtgt,
-				   cp,
+				   tp,
 				   &adtkt,
 				   NULL,
 				   &ad_signedpath);
@@ -2058,15 +2056,13 @@ server_lookup:
 		    "KRB5SignedPath check from service %s failed "
 		    "for delegation to %s for client %s "
 		    "from %s failed with %s",
-		    spn, str, cpn, from, msg);
+		    spn, tpn, cpn, from, msg);
 	    krb5_free_error_message(context, msg);
-	    free(str);
 	    goto out;
 	}
 
 	kdc_log(context, config, 0, "constrained delegation for %s "
-		"from %s to %s", str, cpn, spn);
-	free(str);
+		"from %s to %s", tpn, cpn, spn);
     }
 
     /*
@@ -2137,7 +2133,7 @@ server_lookup:
     ret = tgs_make_reply(context,
 			 config,
 			 b,
-			 client_principal,
+			 tp,
 			 tgt,
 			 replykey,
 			 rk_is_subkey,
@@ -2159,6 +2155,8 @@ server_lookup:
 			 reply);
 	
 out:
+    if (tpn != cpn)
+	    free(tpn);
     free(spn);
     free(cpn);
 	
@@ -2173,8 +2171,8 @@ out:
     if(s4u2self_impersonated_client)
 	_kdc_free_ent(context, s4u2self_impersonated_client);
 
-    if (client_principal && client_principal != cp)
-	krb5_free_principal(context, client_principal);
+    if (tp && tp != cp)
+	krb5_free_principal(context, tp);
     if (cp)
 	krb5_free_principal(context, cp);
     if (sp)
