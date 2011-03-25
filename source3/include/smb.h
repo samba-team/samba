@@ -175,21 +175,6 @@ typedef union unid_t {
 #include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/gen_ndr/security.h"
 
-struct lsa_dom_info {
-	bool valid;
-	struct dom_sid sid;
-	const char *name;
-	int num_idxs;
-	int *idxs;
-};
-
-struct lsa_name_info {
-	uint32 rid;
-	enum lsa_SidType type;
-	const char *name;
-	int dom_idx;
-};
-
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.

@@ -1,3 +1,19 @@
+#include "../librpc/gen_ndr/lsa.h"
+
+struct lsa_dom_info {
+	bool valid;
+	struct dom_sid sid;
+	const char *name;
+	int num_idxs;
+	int *idxs;
+};
+
+struct lsa_name_info {
+	uint32 rid;
+	enum lsa_SidType type;
+	const char *name;
+	int dom_idx;
+};
 
 /* The following definitions come from passdb/lookup_sid.c  */
 
