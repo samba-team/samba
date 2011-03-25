@@ -483,7 +483,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = cli_get_session_key(ctx, pipe_cli, &session_key);
+	status = cli_get_session_key(talloc_tos(), pipe_cli, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
@@ -1989,7 +1989,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = cli_get_session_key(ctx, pipe_cli, &session_key);
+	status = cli_get_session_key(talloc_tos(), pipe_cli, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
 		goto done;
