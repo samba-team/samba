@@ -3015,7 +3015,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 				pdata, flags2,
 				pdata+l2_vol_szVolLabel, vname,
 				PTR_DIFF(end_data, pdata+l2_vol_szVolLabel),
-				STR_NOALIGN);
+				STR_NOALIGN|STR_TERMINATE);
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
 			DEBUG(5,("smbd_do_qfsinfo : time = %x, namelen = %d, name = %s\n",
