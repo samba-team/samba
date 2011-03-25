@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "rpc_client/init_lsa.h"
+#include "../librpc/gen_ndr/lsa.h"
 
 /*******************************************************************
  inits a structure.
