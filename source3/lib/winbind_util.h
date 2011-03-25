@@ -21,6 +21,8 @@
 #ifndef __LIB__WINBIND_UTIL_H__
 #define __LIB__WINBIND_UTIL_H__
 
+#include "../librpc/gen_ndr/lsa.h"
+
 /* needed for wbcErr below */
 #include "nsswitch/libwbclient/wbclient.h"
 

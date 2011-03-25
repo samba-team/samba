@@ -23,6 +23,8 @@
 #ifndef _PASSDB_H
 #define _PASSDB_H
 
+#include "../librpc/gen_ndr/lsa.h"
+
 #include "mapping.h"
 
 /**********************************************************************
