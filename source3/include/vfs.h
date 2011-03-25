@@ -182,6 +182,7 @@ enum vfs_fallocate_mode {
     In particular, if new operations are added to vfs_ops, appropriate constants
     should be added to vfs_op_type so that order of them kept same as in vfs_ops.
 */
+struct shadow_copy_data;
 
 struct vfs_fn_pointers {
 	/* Disk operations */
@@ -192,7 +193,7 @@ struct vfs_fn_pointers {
 			      uint64_t *dfree, uint64_t *dsize);
 	int (*get_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 	int (*set_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
-	int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels);
+	int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, struct shadow_copy_data *shadow_copy_data, bool labels);
 	int (*statvfs)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
 	uint32_t (*fs_capabilities)(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res);
 
@@ -522,7 +523,7 @@ int smb_vfs_call_set_quota(struct vfs_handle_struct *handle,
 			   SMB_DISK_QUOTA *qt);
 int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
-				      SHADOW_COPY_DATA *shadow_copy_data,
+				      struct shadow_copy_data *shadow_copy_data,
 				      bool labels);
 int smb_vfs_call_statvfs(struct vfs_handle_struct *handle, const char *path,
 			 struct vfs_statvfs_struct *statbuf);
