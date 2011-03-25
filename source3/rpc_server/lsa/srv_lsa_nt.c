@@ -45,6 +45,7 @@
 #include "auth.h"
 #include "ntdomain.h"
 #include "lib/privileges.h"
+#include "rpc_server/srv_access_check.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
