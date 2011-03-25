@@ -187,17 +187,21 @@ size_t convert_string_error(charset_t from, charset_t to,
 #else
 				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
 				if (converted_size) {
-					*converted_size += retval;
+					*converted_size = ret + retval;
 				}
 				return ret;
 #endif
 			}
+		}
+		if (converted_size) {
+			*converted_size = retval;
 		}
 		if (!dlen) {
 			/* Even if we fast path we should note if we ran out of room. */
 			if (((slen != (size_t)-1) && slen) ||
 					((slen == (size_t)-1) && lastp)) {
 				errno = E2BIG;
+				return (size_t)-1;
 			}
 		}
 		return retval;
@@ -227,17 +231,21 @@ size_t convert_string_error(charset_t from, charset_t to,
 #else
 				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
 				if (converted_size) {
-					*converted_size += retval;
+					*converted_size = ret + retval;
 				}
 				return ret;
 #endif
 			}
+		}
+		if (converted_size) {
+			*converted_size = retval;
 		}
 		if (!dlen) {
 			/* Even if we fast path we should note if we ran out of room. */
 			if (((slen != (size_t)-1) && slen) ||
 					((slen == (size_t)-1) && lastp)) {
 				errno = E2BIG;
+				return (size_t)-1;
 			}
 		}
 		return retval;
@@ -267,24 +275,24 @@ size_t convert_string_error(charset_t from, charset_t to,
 #else
 				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
 				if (converted_size) {
-					*converted_size += retval;
+					*converted_size = ret + retval;
 				}
 				return ret;
 #endif
 			}
 		}
 		if (converted_size) {
-			*converted_size += retval;
+			*converted_size = retval;
 		}
 		if (!dlen) {
 			/* Even if we fast path we should note if we ran out of room. */
 			if (((slen != (size_t)-1) && slen) ||
 					((slen == (size_t)-1) && lastp)) {
 				errno = E2BIG;
-				return -1;
+				return (size_t)-1;
 			}
 		}
-		return 0;
+		return retval;
 	}
 
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
@@ -303,7 +311,8 @@ size_t convert_string(charset_t from, charset_t to,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,src));
+				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",
+					 reason, (const char *)src));
 				return (size_t)-1;
 			case E2BIG:
 			{
@@ -325,10 +334,12 @@ size_t convert_string(charset_t from, charset_t to,
 			}
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
-				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,src));
+				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",
+					 reason, (const char *)src));
 				return (size_t)-1;
 			default:
-				DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",reason,src));
+				DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",
+					 reason, (const char *)src));
 				return (size_t)-1;
 		}
 		/* smb_panic(reason); */
