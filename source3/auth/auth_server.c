@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 #include "system/passwd.h"
 #include "smbd/smbd.h"
 

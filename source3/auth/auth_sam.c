@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 #include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS

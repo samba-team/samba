@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/netlogon.h"

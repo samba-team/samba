@@ -25,6 +25,7 @@
 /* functions moved from auth/auth_util.c to minimize linker deps */
 
 #include "includes.h"
+#include "auth.h"
 #include "secrets.h"
 #include "memcache.h"
 #include "../librpc/gen_ndr/netlogon.h"

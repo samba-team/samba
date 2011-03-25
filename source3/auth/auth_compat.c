@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 
 extern struct auth_context *negprot_global_auth_context;
 extern bool global_encrypted_passwords_negotiated;
