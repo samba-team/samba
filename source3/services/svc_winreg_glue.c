@@ -153,7 +153,8 @@ bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
 {
 	struct dcerpc_binding_handle *h = NULL;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct policy_handle hive_hnd, key_hnd;
+	struct policy_handle hive_hnd;
+	struct policy_handle key_hnd = { 0, };
 	char *key = NULL;
 	bool ok = false;
 	TALLOC_CTX *tmp_ctx;
