@@ -896,10 +896,19 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	}
 
 	if (extrapath && strlen(extrapath) > 0) {
-		*pp_targetpath = talloc_asprintf(ctx,
-						"%s%s",
-						extrapath,
-						*pp_targetpath);
+		/* EMC Celerra NAS version 5.6.50 (at least) doesn't appear to */
+		/* put the trailing \ on the path, so to be save we put one in if needed */
+		if (extrapath[strlen(extrapath)-1] != '\\' && **pp_targetpath != '\\') {
+			*pp_targetpath = talloc_asprintf(ctx,
+						  "%s\\%s",
+						  extrapath,
+						  *pp_targetpath);
+		} else {
+			*pp_targetpath = talloc_asprintf(ctx,
+						  "%s%s",
+						  extrapath,
+						  *pp_targetpath);
+		}
 		if (!*pp_targetpath) {
 			return false;
 		}
