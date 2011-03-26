@@ -665,7 +665,7 @@ static struct tevent_req *cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 		MIN(cli->max_xmit - BASE_SESSSETUP_BLOB_PACKET_SIZE, 0xFFFF);
 
 	if (!cli_sesssetup_blob_next(state, &subreq)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_sesssetup_blob_done, req);
