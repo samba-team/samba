@@ -520,6 +520,7 @@ static const char *create_pai_v2_entries(struct pai_val *paiv,
 		paie->ace_flags = CVAL(entry_offset,0);
 
 		if (!get_pai_owner_type(paie, entry_offset+1)) {
+			SAFE_FREE(paie);
 			return NULL;
 		}
 		if (!def_entry) {
