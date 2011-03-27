@@ -234,7 +234,7 @@ wbcErr wbcDcInfo(const char *domain, size_t *num_dcs,
 	BAIL_ON_PTR_ERROR(names, wbc_status);
 
 	ips = wbcAllocateStringArray(response.data.num_entries);
-	BAIL_ON_PTR_ERROR(names, wbc_status);
+	BAIL_ON_PTR_ERROR(ips, wbc_status);
 
 	wbc_status = WBC_ERR_INVALID_RESPONSE;
 
