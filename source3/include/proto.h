@@ -2205,8 +2205,8 @@ ssize_t cli_read(struct cli_state *cli, uint16_t fnum, char *buf,
 ssize_t cli_write(struct cli_state *cli,
     	         uint16_t fnum, uint16 write_mode,
 		 const char *buf, off_t offset, size_t size);
-ssize_t cli_smbwrite(struct cli_state *cli,
-		     uint16_t fnum, char *buf, off_t offset, size_t size1);
+NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
+		      off_t offset, size_t size1, size_t *ptotal);
 struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev,
 					 struct cli_state *cli, uint16_t fnum,
