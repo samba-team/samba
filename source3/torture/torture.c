@@ -1394,8 +1394,8 @@ static bool run_tcon2_test(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("tcon2 failed : %s\n", nt_errstr(status));
 	} else {
-		printf("tcon OK : max_xmit=%d cnum=%d tid=%d\n", 
-		       (int)max_xmit, (int)cnum, SVAL(cli->inbuf, smb_tid));
+		printf("tcon OK : max_xmit=%d cnum=%d\n",
+		       (int)max_xmit, (int)cnum);
 	}
 
 	if (!torture_close_connection(cli)) {
