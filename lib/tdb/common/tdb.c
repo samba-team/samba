@@ -993,7 +993,7 @@ _PUBLIC_ int tdb_repack(struct tdb_context *tdb)
 bool tdb_write_all(int fd, const void *buf, size_t count)
 {
 	while (count) {
-		size_t ret;
+		ssize_t ret;
 		ret = write(fd, buf, count);
 		if (ret < 0)
 			return false;
