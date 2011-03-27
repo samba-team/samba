@@ -443,6 +443,7 @@ static bool dcerpc_floor_pack_rhs_if_version_data(
 {
 	DATA_BLOB blob;
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
+	enum ndr_err_code ndr_err;
 
 	if (ndr == NULL) {
 		return false;
@@ -450,7 +451,10 @@ static bool dcerpc_floor_pack_rhs_if_version_data(
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
-	ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version >> 16);
+	ndr_err = ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version >> 16);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
 
 	blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob.data);
