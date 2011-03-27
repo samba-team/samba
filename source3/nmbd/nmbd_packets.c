@@ -1826,6 +1826,7 @@ static bool store_processed_packet(struct processed_packet **pp_processed_packet
 	} else if (packet->packet_type == DGRAM_PACKET) {
 		p->packet_id = packet->packet.dgram.header.dgm_id;
 	} else {
+		SAFE_FREE(p);
 		return false;
 	}
 
