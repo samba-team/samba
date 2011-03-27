@@ -3491,7 +3491,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 					   size_t *p_num_entries,
 					   bool unix_only)
 {
-	GROUP_MAP map;
+	GROUP_MAP map = { 0, };
 	size_t entries = 0;
 
 	*p_num_entries = 0;
