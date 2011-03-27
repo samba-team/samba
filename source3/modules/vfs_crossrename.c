@@ -80,7 +80,7 @@ static int copy_reg(const char *source, const char *dest)
 #endif
 		goto err;
 
-	if (transfer_file(ifd, ofd, (size_t)-1) == -1)
+	if (transfer_file(ifd, ofd, source_stats.st_ex_size) == -1)
 		goto err;
 
 	/*
