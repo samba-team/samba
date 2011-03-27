@@ -2777,7 +2777,7 @@ static void rand_buf(char *buf, int len)
 static bool run_negprot_nowait(int dummy)
 {
 	int i;
-	static struct cli_state *cli;
+	struct cli_state *cli;
 	bool correct = True;
 
 	printf("starting negprot nowait test\n");
