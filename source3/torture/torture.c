@@ -1390,7 +1390,7 @@ static bool run_tcon2_test(int dummy)
 	status = cli_raw_tcon(cli, service, password, "?????", &max_xmit, &cnum);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("tcon2 failed : %s\n", cli_errstr(cli));
+		printf("tcon2 failed : %s\n", nt_errstr(status));
 	} else {
 		printf("tcon OK : max_xmit=%d cnum=%d tid=%d\n", 
 		       (int)max_xmit, (int)cnum, SVAL(cli->inbuf, smb_tid));
