@@ -3661,6 +3661,8 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 				ex_rule = false;
 				tname = trec->data.info.dns_name.string;
 				tlen = trec->data.info.dns_name.size;
+			default:
+				return NT_STATUS_INVALID_PARAMETER;
 			}
 			ret = dns_cmp(dns_name, dns_len, tname, tlen);
 			switch (ret) {
