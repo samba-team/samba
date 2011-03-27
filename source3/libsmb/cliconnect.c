@@ -1913,41 +1913,6 @@ fail:
  Send a negprot command.
 ****************************************************************************/
 
-void cli_negprot_sendsync(struct cli_state *cli)
-{
-	char *p;
-	int numprots;
-
-	if (cli->protocol < PROTOCOL_NT1)
-		cli->use_spnego = False;
-
-	memset(cli->outbuf,'\0',smb_size);
-
-	/* setup the protocol strings */
-	cli_set_message(cli->outbuf,0,0,True);
-
-	p = smb_buf(cli->outbuf);
-	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
-		if (prots[numprots].prot > cli->protocol) {
-			break;
-		}
-		*p++ = 2;
-		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
-	}
-
-	SCVAL(cli->outbuf,smb_com,SMBnegprot);
-	cli_setup_bcc(cli, p);
-	cli_setup_packet(cli);
-
-	SCVAL(smb_buf(cli->outbuf),0,2);
-
-	cli_send_smb(cli);
-}
-
-/****************************************************************************
- Send a negprot command.
-****************************************************************************/
-
 struct cli_negprot_state {
 	struct cli_state *cli;
 };

@@ -2776,21 +2776,41 @@ static void rand_buf(char *buf, int len)
 /* send smb negprot commands, not reading the response */
 static bool run_negprot_nowait(int dummy)
 {
+	struct tevent_context *ev;
 	int i;
 	struct cli_state *cli;
 	bool correct = True;
 
 	printf("starting negprot nowait test\n");
 
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		return false;
+	}
+
 	if (!(cli = open_nbt_connection())) {
+		TALLOC_FREE(ev);
 		return False;
 	}
 
 	for (i=0;i<50000;i++) {
-		cli_negprot_sendsync(cli);
+		struct tevent_req *req;
+
+		req = cli_negprot_send(ev, ev, cli);
+		if (req == NULL) {
+			TALLOC_FREE(ev);
+			return false;
+		}
+		if (!tevent_req_poll(req, ev)) {
+			d_fprintf(stderr, "tevent_req_poll failed: %s\n",
+				  strerror(errno));
+			TALLOC_FREE(ev);
+			return false;
+		}
+		TALLOC_FREE(req);
 	}
 
-	if (!torture_close_connection(cli)) {
+	if (torture_close_connection(cli)) {
 		correct = False;
 	}
 
