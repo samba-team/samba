@@ -442,6 +442,7 @@ static const char *create_pai_v1_entries(struct pai_val *paiv,
 
 		paie->ace_flags = SEC_ACE_FLAG_INHERITED_ACE;
 		if (!get_pai_owner_type(paie, entry_offset)) {
+			SAFE_FREE(paie);
 			return NULL;
 		}
 
