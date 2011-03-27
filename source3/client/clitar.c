@@ -1206,16 +1206,19 @@ static void do_tarput(void)
 				DEBUG(0, ("Skipping %s...\n", finfo.name));
 				if ((next_block(tarbuf, &buffer_p, tbufsiz) <= 0) && !skip_file(finfo.size)) {
 					DEBUG(0, ("Short file, bailing out...\n"));
+					SAFE_FREE(longfilename);
 					return;
 				}
 				break;
 
 			case -1:
 				DEBUG(0, ("abandoning restore, -1 from read tar header\n"));
+				SAFE_FREE(longfilename);
 				return;
 
 			case 0: /* chksum is zero - looks like an EOF */
 				DEBUG(0, ("tar: restored %d files and directories\n", ntarf));
+				SAFE_FREE(longfilename);
 				return;        /* Hmmm, bad here ... */
 
 			default: 
