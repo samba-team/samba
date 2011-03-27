@@ -2708,7 +2708,10 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
 		      uint16 *max_xmit, uint16 *tid)
 {
-	char *p;
+	struct tevent_req *req;
+	uint16_t *ret_vwv;
+	uint8_t *bytes;
+	NTSTATUS status;
 
 	if (!lp_client_plaintext_auth() && (*pass)) {
 		DEBUG(1, ("Server requested plaintext password but 'client "
@@ -2716,31 +2719,26 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   service, strlen(service)+1, NULL);
+	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   pass, strlen(pass)+1, NULL);
+	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   dev, strlen(dev)+1, NULL);
 
-	cli_set_message(cli->outbuf, 0, 0, True);
-	SCVAL(cli->outbuf,smb_com,SMBtcon);
-	cli_setup_packet(cli);
-
-	p = smb_buf(cli->outbuf);
-	*p++ = 4; p += clistr_push(cli, p, service, -1, STR_TERMINATE | STR_NOALIGN);
-	*p++ = 4; p += clistr_push(cli, p, pass, -1, STR_TERMINATE | STR_NOALIGN);
-	*p++ = 4; p += clistr_push(cli, p, dev, -1, STR_TERMINATE | STR_NOALIGN);
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	status = cli_smb(talloc_tos(), cli, SMBtcon, 0, 0, NULL,
+			 talloc_get_size(bytes), bytes, &req,
+			 2, NULL, &ret_vwv, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if (cli_is_error(cli)) {
-		return cli_nt_error(cli);
-	}
-
-	*max_xmit = SVAL(cli->inbuf, smb_vwv0);
-	*tid = SVAL(cli->inbuf, smb_vwv1);
+	*max_xmit = SVAL(ret_vwv + 0, 0);
+	*tid = SVAL(ret_vwv + 1, 0);
 
 	return NT_STATUS_OK;
 }
