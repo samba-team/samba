@@ -399,6 +399,7 @@ use this machine as the password server.\n"));
 			user_info->password.plaintext,
 			strlen(user_info->password.plaintext),
 			NULL, 0, user_info->mapped.domain_name);
+		break;
 
 	/* currently the hash values include a challenge-response as well */
 	case AUTH_PASSWORD_HASH:
@@ -410,6 +411,7 @@ use this machine as the password server.\n"));
 			(char *)user_info->password.response.nt.data,
 			user_info->password.response.nt.length,
 			user_info->mapped.domain_name);
+		break;
 	default:
 		DEBUG(0,("user_info constructed for user '%s' was invalid - password_state=%u invalid.\n",user_info->mapped.account_name, user_info->password_state));
 		nt_status = NT_STATUS_INTERNAL_ERROR;
