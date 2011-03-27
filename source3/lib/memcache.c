@@ -385,10 +385,6 @@ void memcache_flush(struct memcache *cache, enum memcache_number n)
 		node = next;
 	}
 
-	if (node == NULL) {
-		return;
-	}
-
 	/*
 	 * Then, find the leftmost element with number n
 	 */
