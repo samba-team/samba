@@ -225,6 +225,9 @@ creating file %s\n", pfile));
 				lock_type = F_WRLCK;
 				break;
 			}
+		default:
+			DEBUG(10, ("Invalid open mode: %d\n", type));
+			return NULL;
 	}
 
 	for(race_loop = 0; race_loop < 5; race_loop++) {
