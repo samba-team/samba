@@ -581,6 +581,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			" found, encrypting data!\n"));
 		output = smb_traffic_analyzer_encrypt( talloc_tos(),
 						akey, str, &len);
+		SAFE_FREE(akey);
 		header = smb_traffic_analyzer_create_header( talloc_tos(),
 						state_flags, len);
 
