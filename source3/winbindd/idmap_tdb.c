@@ -799,7 +799,6 @@ done:
 
 static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
 {
-	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
 	int i;
 
@@ -807,8 +806,6 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	for (i = 0; ids[i]; i++) {
 		ret = idmap_tdb_id_to_sid(dom, ids[i]);
