@@ -961,7 +961,7 @@ static bool run_readwritelarge_internal(int max_xmit_k)
 
 	cli1->max_xmit = 4*1024;
 
-	cli_smbwrite(cli1, fnum1, buf, 0, sizeof(buf));
+	cli_smbwrite(cli1, fnum1, buf, 0, sizeof(buf), NULL);
 
 	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
 				     cli1, fnum1, NULL, &fsize, NULL, NULL,
