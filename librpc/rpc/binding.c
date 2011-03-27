@@ -437,10 +437,16 @@ static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct nd
 	return blob;
 }
 
-static DATA_BLOB dcerpc_floor_pack_rhs_if_version_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
+static bool dcerpc_floor_pack_rhs_if_version_data(
+	TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax,
+	DATA_BLOB *pblob)
 {
 	DATA_BLOB blob;
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
+
+	if (ndr == NULL) {
+		return false;
+	}
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
@@ -449,7 +455,8 @@ static DATA_BLOB dcerpc_floor_pack_rhs_if_version_data(TALLOC_CTX *mem_ctx, cons
 	blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob.data);
 	talloc_free(ndr);
-	return blob;
+	*pblob = blob;
+	return true;
 }
 
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
@@ -817,7 +824,11 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 
 	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(tower->floors, &binding->object);
 
-	tower->floors[0].rhs.uuid.unknown = dcerpc_floor_pack_rhs_if_version_data(tower->floors, &binding->object);
+	if (!dcerpc_floor_pack_rhs_if_version_data(
+		    tower->floors, &binding->object,
+		    &tower->floors[0].rhs.uuid.unknown)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Floor 1 */
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
