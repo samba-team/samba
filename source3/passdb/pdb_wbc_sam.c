@@ -50,7 +50,7 @@ static NTSTATUS _pdb_wbc_sam_getsampw(struct pdb_methods *methods,
 	if (pwd == NULL)
 		return NT_STATUS_NO_SUCH_USER;
 
-	memset(user, 0, sizeof(user));
+	ZERO_STRUCTP(user);
 
         /* Can we really get away with this little of information */
 	user->methods = methods;
