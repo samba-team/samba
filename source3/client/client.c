@@ -1814,12 +1814,15 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	if (reput) {
 		status = cli_open(targetcli, targetname, O_RDWR|O_CREAT, DENY_NONE, &fnum);
 		if (NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
+			if (!NT_STATUS_IS_OK(status = cli_qfileinfo_basic(
 						     targetcli, fnum, NULL,
 						     &start, NULL, NULL,
 						     NULL, NULL, NULL)) &&
-			    !NT_STATUS_IS_OK(cli_getattrE(targetcli, fnum, NULL, &start, NULL, NULL, NULL))) {
-				d_printf("getattrib: %s\n",cli_errstr(cli));
+			    !NT_STATUS_IS_OK(status = cli_getattrE(
+						     targetcli, fnum, NULL,
+						     &start, NULL, NULL,
+						     NULL))) {
+				d_printf("getattrib: %s\n", nt_errstr(status));
 				return 1;
 			}
 		}
@@ -1828,7 +1831,8 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("%s opening remote file %s\n",cli_errstr(targetcli),rname);
+		d_printf("%s opening remote file %s\n", nt_errstr(status),
+			 rname);
 		return 1;
 	}
 
