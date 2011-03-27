@@ -154,6 +154,7 @@ static void load_key_from_file_and_activate( char *filename)
 	if (akey != NULL) {
 		printf("Removing the old key.\n");
 		delete_key();
+		SAFE_FREE(akey);
 	}
 	printf("Installing the key from file %s\n",filename);
 	secrets_store("smb_traffic_analyzer_key", key, strlen(key)+1);
