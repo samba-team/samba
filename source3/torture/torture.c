@@ -1389,6 +1389,8 @@ static bool run_tcon2_test(int dummy)
 
 	status = cli_raw_tcon(cli, service, password, "?????", &max_xmit, &cnum);
 
+	SAFE_FREE(service);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("tcon2 failed : %s\n", nt_errstr(status));
 	} else {
