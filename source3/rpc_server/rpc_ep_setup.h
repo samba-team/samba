@@ -22,6 +22,30 @@
 #ifndef _SMBD_RPC_CALLBACKS_H
 #define _SMBD_RPC_CALLBACKS_H
 
+/**
+ * @brief Register an endpoint at the endpoint mapper.
+ *
+ * This just sets up a register and monitor loop to try to regsiter the
+ * endpoint at the endpoint mapper.
+ *
+ * @param[in] ev_ctx    The event context to setup the loop.
+ *
+ * @param[in] msg_ctx   The messaging context to use for the connnection.
+ *
+ * @param[in] iface     The interface table to register.
+ *
+ * @param[in] ncalrpc   The name of the ncalrpc pipe or NULL.
+ *
+ * @param[in] port      The tcpip port or 0.
+ *
+ * @return              NT_STATUS_OK on success or a corresponding error code.
+ */
+NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
+			       struct messaging_context *msg_ctx,
+			       const struct ndr_interface_table *iface,
+			       const char *ncalrpc,
+			       uint16_t port);
+
 bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx);
 
