@@ -68,7 +68,6 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-done:
 	if (samr_pipe) {
 		*samr_pipe = cli;
 	}
@@ -146,7 +145,6 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-done:
 	if (lsa_pipe) {
 		*lsa_pipe = cli;
 	}
