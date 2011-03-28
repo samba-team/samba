@@ -88,7 +88,12 @@ all=all of the above"""),
                 "becomeSchemaMaster")
         else:
             raise CommandError("Invalid FSMO role.")
-        samdb.modify(m)
+        try:
+            samdb.modify(m)
+        except LdbError, (num, msg):
+            raise CommandError("Failed to initiate transfer: %s" % msg)
+        print("Scheduled FSMO transfer - use 'fsmo show' and 'drs showrepl' for result")
+
 
     def seize_role(self, role, samdb, force):
         res = samdb.search("",
@@ -116,19 +121,21 @@ all=all of the above"""),
                 self.transfer_role(role, samdb)
             except LdbError, (num, _):
             #transfer failed, use the big axe...
-                self.message("Transfer unsuccessfull, seizing...")
+                self.message("Transfer unsuccessful, seizing...")
                 m["fSMORoleOwner"]= ldb.MessageElement(
                     serviceName, ldb.FLAG_MOD_REPLACE,
                     "fSMORoleOwner")
-                samdb.modify(m)
-            else:
-                self.message("Transfer succeeded.")
         else:
             self.message("Will not attempt transfer, seizing...")
             m["fSMORoleOwner"]= ldb.MessageElement(
                 serviceName, ldb.FLAG_MOD_REPLACE,
                 "fSMORoleOwner")
+        try:
             samdb.modify(m)
+        except LdbError, (num, msg):
+            raise CommandError("Failed to initiate role seize: %s" % msg)
+        print("Scheduled FSMO transfer - use 'fsmo show' and 'drs showrepl' for result")
+
 
     def run(self, subcommand, force=None, url=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
