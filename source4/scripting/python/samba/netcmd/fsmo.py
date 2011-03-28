@@ -92,7 +92,7 @@ all=all of the above"""),
             samdb.modify(m)
         except LdbError, (num, msg):
             raise CommandError("Failed to initiate transfer: %s" % msg)
-        print("Scheduled FSMO transfer - use 'fsmo show' and 'drs showrepl' for result")
+        print("FSMO transfer successful")
 
 
     def seize_role(self, role, samdb, force):
@@ -134,7 +134,7 @@ all=all of the above"""),
             samdb.modify(m)
         except LdbError, (num, msg):
             raise CommandError("Failed to initiate role seize: %s" % msg)
-        print("Scheduled FSMO transfer - use 'fsmo show' and 'drs showrepl' for result")
+        print("FSMO transfer successful")
 
 
     def run(self, subcommand, force=None, url=None, role=None,
