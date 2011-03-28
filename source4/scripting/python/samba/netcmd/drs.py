@@ -415,7 +415,7 @@ class cmd_drs_options(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = ["DC"]
+    takes_args = ["DC?"]
 
     takes_options = [
         Option("--dsa-option", help="DSA option to enable/disable", type="str"),
@@ -426,7 +426,7 @@ class cmd_drs_options(Command):
                   "DISABLE_OUTBOUND_REPL": 0x00000004,
                   "DISABLE_NTDSCONN_XLATE": 0x00000008}
 
-    def run(self, DC, dsa_option=None,
+    def run(self, DC=None, dsa_option=None,
             sambaopts=None, credopts=None, versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
