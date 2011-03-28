@@ -563,7 +563,7 @@ options {
             return True
 
     def set_noexpire(self, child, username):
-        '''Ensure this user's password does not expire'''
+        """Ensure this user's password does not expire"""
         child.sendline('wmic useraccount where name="%s" set PasswordExpires=FALSE' % username)
         child.expect("update successful")
         child.expect("C:")
