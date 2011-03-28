@@ -54,6 +54,7 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	const char *domain = ntlmssp_state->domain;
 	const char *workstation = cli_credentials_get_workstation(gensec_security->credentials);
+	NTSTATUS status;
 
 	/* These don't really matter in the initial packet, so don't panic if they are not set */
 	if (!domain) {
@@ -75,13 +76,17 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 	}
 
 	/* generate the ntlmssp negotiate packet */
-	msrpc_gen(out_mem_ctx, 
+	status = msrpc_gen(out_mem_ctx, 
 		  out, "CddAA",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
 		  domain, 
 		  workstation);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
@@ -269,7 +274,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
 	/* this generates the actual auth packet */
-	if (!msrpc_gen(mem_ctx, 
+	nt_status = msrpc_gen(mem_ctx, 
 		       out, auth_gen_string, 
 		       "NTLMSSP", 
 		       NTLMSSP_AUTH, 
@@ -279,9 +284,10 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		       user, 
 		       cli_credentials_get_workstation(gensec_security->credentials),
 		       encrypted_session_key.data, encrypted_session_key.length,
-		       ntlmssp_state->neg_flags)) {
+		       ntlmssp_state->neg_flags);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
+		return nt_status;
 	}
 
 	ntlmssp_state->session_key = session_key;

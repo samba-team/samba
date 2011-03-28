@@ -11,7 +11,7 @@
 
 /* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/msrpc_parse.c  */
 
-bool msrpc_gen(TALLOC_CTX *mem_ctx, 
+NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx, 
 	       DATA_BLOB *blob,
 	       const char *format, ...);
 

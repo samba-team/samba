@@ -144,12 +144,15 @@ NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
 	{
-		msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
+		status = msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
 			  MsvAvNbDomainName, target_name,
 			  MsvAvNbComputerName, ntlmssp_state->server.netbios_name,
 			  MsvAvDnsDomainName, ntlmssp_state->server.dns_domain,
 			  MsvAvDnsComputerName, ntlmssp_state->server.dns_name,
 			  MsvAvEOL, "");
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else {
 		struct_blob = data_blob_null;
 	}
@@ -187,7 +190,7 @@ NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			gen_string = "CdAdbddBb";
 		}
 
-		msrpc_gen(out_mem_ctx, reply, gen_string,
+		status = msrpc_gen(out_mem_ctx, reply, gen_string,
 			"NTLMSSP",
 			NTLMSSP_CHALLENGE,
 			target_name,
@@ -196,6 +199,12 @@ NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			0, 0,
 			struct_blob.data, struct_blob.length,
 			version_blob.data, version_blob.length);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			data_blob_free(&version_blob);
+			data_blob_free(&struct_blob);
+			return status;
+		}
 
 		data_blob_free(&version_blob);
 
