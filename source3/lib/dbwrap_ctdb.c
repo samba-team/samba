@@ -492,7 +492,6 @@ static int db_ctdb_fetch_persistent(struct db_ctdb_ctx *db,
 				    TDB_DATA key, TDB_DATA *data)
 {
 	NTSTATUS status;
-	bool found;
 
 	status = db_ctdb_ltdb_fetch(db, key, NULL, mem_ctx, data);
 
