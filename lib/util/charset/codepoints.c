@@ -296,11 +296,6 @@ smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			    charset_t from, charset_t to)
 {
 	const char *n1, *n2;
-	static bool initialised;
-
-	if (initialised == false) {
-		initialised = true;
-	}
 
 	if (ic->conv_handles[from][to]) {
 		return ic->conv_handles[from][to];
