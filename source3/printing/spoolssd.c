@@ -37,13 +37,22 @@ static void spoolss_reopen_logs(void)
 	char *lfile = lp_logfile();
 	int rc;
 
-	if (strstr(lfile, DAEMON_NAME) == NULL) {
-		rc = asprintf(&lfile, "%s.%s", lp_logfile(), DAEMON_NAME);
+	if (lfile == NULL || lfile[0] == '\0') {
+		rc = asprintf(&lfile, "%s/log.%s", get_dyn_LOGFILEBASE(), DAEMON_NAME);
 		if (rc > 0) {
 			lp_set_logfile(lfile);
 			SAFE_FREE(lfile);
 		}
+	} else {
+		if (strstr(lfile, DAEMON_NAME) == NULL) {
+			rc = asprintf(&lfile, "%s.%s", lp_logfile(), DAEMON_NAME);
+			if (rc > 0) {
+				lp_set_logfile(lfile);
+				SAFE_FREE(lfile);
+			}
+		}
 	}
+
 	reopen_logs();
 }
 
