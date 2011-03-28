@@ -1173,6 +1173,14 @@ static int rootdse_become_master(struct ldb_module *module,
 	bool am_rodc;
 	struct dcerpc_binding_handle *irpc_handle;
 	int ret;
+	struct auth_session_info *session_info;
+	enum security_user_level level;
+
+	session_info = (struct auth_session_info *)ldb_get_opaque(ldb_module_get_ctx(module), "sessionInfo");
+	level = security_session_user_level(session_info, NULL);
+	if (level < SECURITY_ADMINISTRATOR) {
+		return ldb_error(ldb, LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS, "Denied rootDSE modify for non-administrator");
+	}
 
 	ret = samdb_rodc(ldb, &am_rodc);
 	if (ret != LDB_SUCCESS) {
