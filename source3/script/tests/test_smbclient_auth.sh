@@ -17,10 +17,8 @@ SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient}"
 shift 4
 ADDARGS="$*"
 
-test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
-}
 
 failed=0
 

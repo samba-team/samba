@@ -9,10 +9,8 @@ fi
 
 ADDARGS="$*"
 
-test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
-}
 
 testit "wbinfo" $VALGRIND $BINDIR/wbinfo $ADDARGS || failed=`expr $failed + 1`
 

@@ -4,12 +4,8 @@
 #
 # Copyright (C) 2011 Michael Adam <obnox@samba.org>
 
-# include the blackbox subunit infrastructure
-# if not run from classical s3 test script:
-test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
-	incdir=`dirname $0`/../../../testprogs/blackbox
-	. $incdir/subunit.sh
-}
+incdir=`dirname $0`/../../../testprogs/blackbox
+. $incdir/subunit.sh
 
 failed=0
 
