@@ -9,10 +9,14 @@
     disk storage blocks when a file is extended to the Windows behaviour
     of actually forcing the disk system to allocate real storage blocks
     when a file is created or extended to be a given size. In UNIX
-    terminology this means that Samba will stop creating sparse files.
-    This can be slow on some systems. When you work with large files like
-    >100MB or so you may even run into problems with clients running into
-    timeouts.</para>
+    terminology this means that Samba will stop creating sparse files.</para>
+
+    <para>This option is really desgined for file systems that support
+    fast allocation of large numbers of blocks such as extent-based file systems.
+    On file systems that don't support extents (most notably ext3) this can
+    make Samba slower. When you work with large files over >100MB on file
+    systems without extents you may even run into problems with clients
+    running into timeouts.</para>
 
     <para>When you have an extent based filesystem it's likely that we can make
     use of unwritten extents which allows Samba to allocate even large amounts
