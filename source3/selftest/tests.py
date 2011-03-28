@@ -161,7 +161,9 @@ raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "
        "raw.sfileinfo.base", "raw.sfileinfo.bug", "raw.streams", "raw.unlink", "raw.write",
        "raw.samba3hide", "raw.samba3badpath", "raw.sfileinfo.rename",
        "raw.samba3caseinsensitive", "raw.samba3posixtimedlock",
-       "raw.samba3rootdirfid", "raw.sfileinfo.end-of-file"]
+       "raw.samba3rootdirfid", "raw.sfileinfo.end-of-file",
+       "raw.bench-oplock", "raw.bench-lock", "raw.bench-open", "raw.bench-tcon",
+       "raw.samba3checkfsp", "raw.samba3closeerr", "raw.samba3oplocklogoff"]
 
 smb2 = ["smb2.lock", "smb2.read", "smb2.compound", "smb2.connect", "smb2.scan", "smb2.scanfind",
         "smb2.bench-oplock"]
