@@ -1667,7 +1667,7 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 
 	if (conn->lsa_pipe_tcp != NULL) {
 		if (is_valid_policy_hnd(&conn->lsa_policy)) {
-			dcerpc_lsa_Close(conn->lsa_pipe->binding_handle,
+			dcerpc_lsa_Close(conn->lsa_pipe_tcp->binding_handle,
 					 talloc_tos(),
 					 &conn->lsa_policy,
 					 &result);
