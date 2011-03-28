@@ -1159,22 +1159,53 @@ static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_NAMING_VIOLATION;
 }
 
+struct fsmo_transfer_state {
+	struct ldb_context *ldb;
+	struct ldb_request *req;
+};
+
+/*
+  called when a FSMO transfer operation has completed
+ */
+static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
+{
+	struct fsmo_transfer_state *fsmo = tevent_req_callback_data(treq, struct fsmo_transfer_state);
+	NTSTATUS status;
+	WERROR werr;
+	struct ldb_request *req = fsmo->req;
+	struct ldb_context *ldb = fsmo->ldb;
+
+	status = dcerpc_drepl_takeFSMORole_recv(treq, fsmo, &werr);
+	talloc_free(fsmo);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed FSMO transfer: %s", nt_errstr(status));
+		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
+		return;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		ldb_asprintf_errstring(ldb, "Failed FSMO transfer: %s", win_errstr(werr));
+		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
+		return;
+	}
+
+	ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
 static int rootdse_become_master(struct ldb_module *module,
 				 struct ldb_request *req,
 				 enum drepl_role_master role)
 {
-	struct drepl_takeFSMORole r;
 	struct messaging_context *msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
-	NTSTATUS status_call;
-	WERROR status_fn;
 	bool am_rodc;
 	struct dcerpc_binding_handle *irpc_handle;
 	int ret;
 	struct auth_session_info *session_info;
 	enum security_user_level level;
+	struct fsmo_transfer_state *fsmo;
+	struct tevent_req *treq;
 
 	session_info = (struct auth_session_info *)ldb_get_opaque(ldb_module_get_ctx(module), "sessionInfo");
 	level = security_session_user_level(session_info, NULL);
@@ -1204,17 +1235,24 @@ static int rootdse_become_master(struct ldb_module *module,
 	if (irpc_handle == NULL) {
 		return ldb_oom(ldb);
 	}
-	r.in.role = role;
+	fsmo = talloc_zero(req, struct fsmo_transfer_state);
+	if (fsmo == NULL) {
+		return ldb_oom(ldb);
+	}
+	fsmo->ldb = ldb;
+	fsmo->req = req;
 
-	status_call = dcerpc_drepl_takeFSMORole_r(irpc_handle, tmp_ctx, &r);
-	if (!NT_STATUS_IS_OK(status_call)) {
-		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, nt_errstr(status_call));
+	/* we send the call asynchronously, as the ldap client is
+	 * expecting to get an error back if the role transfer fails
+	 */
+
+	treq = dcerpc_drepl_takeFSMORole_send(req, ldb_get_event_context(ldb), irpc_handle, role);
+	if (treq == NULL) {
+		return ldb_oom(ldb);
 	}
-	status_fn = r.out.result;
-	if (!W_ERROR_IS_OK(status_fn)) {
-		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, win_errstr(status_fn));
-	}
-	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+
+	tevent_req_set_callback(treq, rootdse_fsmo_transfer_callback, fsmo);
+	return LDB_SUCCESS;
 }
 
 static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
