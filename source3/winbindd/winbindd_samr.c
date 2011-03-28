@@ -128,10 +128,6 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	struct auth_serversupplied_info *session_info = NULL;
 	NTSTATUS status;
 
-	if (cli != NULL) {
-		goto done;
-	}
-
 	if (session_info == NULL) {
 		status = make_session_info_system(mem_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
