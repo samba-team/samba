@@ -657,6 +657,7 @@ def test_howto(t):
         test_join_as_rodc(t, "W2K8R2A")
 
     if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
+        t.start_winvm("W2K3A")
         prep_join_as_dc(t, "W2K3A")
         t.run_dcpromo_as_first_dc("W2K3A", func_level='2003')
         join_as_dc(t, "W2K3A")
