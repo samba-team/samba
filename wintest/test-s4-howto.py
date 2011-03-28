@@ -422,6 +422,9 @@ def test_join_as_dc(t, vm):
         t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${WIN_REALM} ${WIN_HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
         t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${WIN_REALM} ${HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
 
+    child.sendline("ipconfig /flushdns")
+    child.expect("Successfully flushed")
+
     retries = 10
     i = 1
     while i == 1 and retries > 0:
