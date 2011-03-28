@@ -102,6 +102,11 @@ sub setup_env($$$)
 		return $self->setup_dc("$path/dc");
 	} elsif ($envname eq "secshare") {
 		return $self->setup_secshare("$path/secshare");
+	} elsif ($envname eq "secserver") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_secserver("$path/secserver", $self->{vars}->{dc});
 	} elsif ($envname eq "member") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -214,6 +219,40 @@ sub setup_secshare($$)
 	$self->{vars}->{secshare} = $vars;
 
 	return $vars;
+}
+
+sub setup_secserver($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+
+	print "PROVISIONING server with security=server...";
+
+	my $secserver_options = "
+	security = server
+        password server = $dcvars->{SERVER_IP}
+";
+
+	my $ret = $self->provision($prefix,
+				   "LOCALSERVER5",
+				   5,
+				   "localserver5pass",
+				   $secserver_options);
+
+	$ret or die("Unable to provision");
+
+	$self->check_or_start($ret,
+			      ($ENV{SMBD_MAXTIME} or 2700),
+			       "yes", "no", "yes");
+
+	$self->wait_for_start($ret);
+
+	$ret->{DC_SERVER} = $dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
+	return $ret;
 }
 
 sub stop_sig_term($$) {
