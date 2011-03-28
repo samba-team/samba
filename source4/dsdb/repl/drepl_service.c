@@ -352,15 +352,6 @@ static NTSTATUS dreplsrv_refresh(struct irpc_message *msg,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
-				     struct drepl_takeFSMORole *r)
-{
-	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
-							   struct dreplsrv_service);
-	r->out.result = dreplsrv_fsmo_role_check(service, r->in.role);
-	return NT_STATUS_OK;
-}
-
 /**
  * Called when the auth code wants us to try and replicate
  * a users secrets
