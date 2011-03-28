@@ -149,11 +149,11 @@ struct rpc_ep_regsiter_state {
 	uint32_t wait_time;
 };
 
-static NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
-				      struct messaging_context *msg_ctx,
-				      const struct ndr_interface_table *iface,
-				      const char *ncalrpc,
-				      uint16_t port)
+NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
+			       struct messaging_context *msg_ctx,
+			       const struct ndr_interface_table *iface,
+			       const char *ncalrpc,
+			       uint16_t port)
 {
 	struct rpc_ep_regsiter_state *state;
 	struct tevent_req *req;
