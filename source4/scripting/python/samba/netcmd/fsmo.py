@@ -43,7 +43,7 @@ class cmd_fsmo(Command):
         }
 
     takes_options = [
-        Option("--host", help="LDB URL for database or target server", type=str),
+        Option("--url", help="LDB URL for database or target server", type=str),
         Option("--force", help="Force seizing of the role without attempting to transfer first.", action="store_true"),
         Option("--role", type="choice", choices=["rid", "pdc", "infrastructure","schema","naming","all"],
                help="""The FSMO role to seize or transfer.\n
@@ -130,12 +130,12 @@ all=all of the above"""),
                 "fSMORoleOwner")
             samdb.modify(m)
 
-    def run(self, subcommand, force=None, host=None, role=None,
+    def run(self, subcommand, force=None, url=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
-        samdb = SamDB(url=host, session_info=system_session(),
+        samdb = SamDB(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
