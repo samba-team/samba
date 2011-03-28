@@ -40,7 +40,7 @@
   d = word (4 bytes)
   C = constant ascii string
  */
-bool msrpc_gen(TALLOC_CTX *mem_ctx, 
+NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx, 
 	       DATA_BLOB *blob,
 	       const char *format, ...)
 {
@@ -57,7 +57,13 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *pointers;
 
 	pointers = talloc_array(mem_ctx, DATA_BLOB, strlen(format));
+	if (!pointers) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	intargs = talloc_array(pointers, int, strlen(format));
+	if (!intargs) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);
@@ -72,7 +78,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 				s, &n);
 			if (!ret) {
 				va_end(ap);
-				return false;
+				return map_nt_error_from_unix(errno);
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 2;
@@ -86,7 +92,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 				s, &n);
 			if (!ret) {
 				va_end(ap);
-				return false;
+				return map_nt_error_from_unix(errno);
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 1;
@@ -102,7 +108,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 				s, &n);
 			if (!ret) {
 				va_end(ap);
-				return false;
+				return map_nt_error_from_unix(errno);
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 2;
@@ -132,13 +138,22 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			pointers[i].length = strlen(s)+1;
 			head_size += pointers[i].length;
 			break;
+		default:
+			va_end(ap);
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 	va_end(ap);
 
+	if (head_size + data_size == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* allocate the space, then scan the format again to fill in the values */
 	*blob = data_blob_talloc(mem_ctx, NULL, head_size + data_size);
-
+	if (!blob->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	head_ofs = 0;
 	data_ofs = head_size;
 
@@ -185,13 +200,16 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			memcpy(blob->data + head_ofs, pointers[i].data, n);
 			head_ofs += n;
 			break;
+		default:
+			va_end(ap);
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 	va_end(ap);
 	
 	talloc_free(pointers);
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 
@@ -230,6 +248,10 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 	size_t p_len = 1024;
 	char *p = talloc_array(mem_ctx, char, p_len);
 	bool ret = true;
+
+	if (!p) {
+		return false;
+	}
 
 	va_start(ap, format);
 	for (i=0; format[i]; i++) {
