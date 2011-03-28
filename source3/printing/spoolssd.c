@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_spoolss.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/rpc_ep_setup.h"
 
 #define SPOOLSS_PIPE_NAME "spoolss"
 #define DAEMON_NAME "spoolssd"
@@ -219,6 +220,13 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 	}
 
 	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, ev_ctx)) {
+		exit(1);
+	}
+
+	status = rpc_ep_setup_register(ev_ctx, msg_ctx, &ndr_table_spoolss, NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to register spoolss endpoint! (%s)\n",
+			  nt_errstr(status)));
 		exit(1);
 	}
 
