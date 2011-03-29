@@ -281,6 +281,21 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1,
 		msgs2[count2++] = ldif->msg;
 	}
 
+	/* the feof() test works here, even for the last line of the
+	 * file, as we parse ldif files character by character, and
+	 * feof() is only true if we have failed to read a character
+	 * from the file. So if the last line is bad, we don't get
+	 * feof() set, so we know the record was bad. Only if we
+	 * attempt to go to the next record will we get feof() and
+	 * thus consider that the ldif has ended without errors
+	 */
+	if (!feof(f)) {
+		fprintf(stderr, "Error parsing ldif - aborting\n");
+		fclose(f);
+		unlink(file_template);
+		return -1;
+	}
+
 	fclose(f);
 	unlink(file_template);
 

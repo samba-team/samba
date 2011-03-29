@@ -87,6 +87,11 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 		ldb_ldif_read_free(ldb, ldif);
 	}
 
+	if (!feof(f)) {
+		fprintf(stderr, "Failed to parse ldif\n");
+		return -1;
+	}
+
 	return ret;
 }
 
