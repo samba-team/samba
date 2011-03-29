@@ -187,7 +187,7 @@ size_t convert_string_error(charset_t from, charset_t to,
 #else
 				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
 				if (converted_size) {
-					*converted_size = ret + retval;
+					*converted_size += retval;
 				}
 				return ret;
 #endif
@@ -231,7 +231,7 @@ size_t convert_string_error(charset_t from, charset_t to,
 #else
 				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
 				if (converted_size) {
-					*converted_size = ret + retval;
+					*converted_size += retval;
 				}
 				return ret;
 #endif
@@ -275,7 +275,7 @@ size_t convert_string_error(charset_t from, charset_t to,
 #else
 				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
 				if (converted_size) {
-					*converted_size = ret + retval;
+					*converted_size += retval;
 				}
 				return ret;
 #endif
