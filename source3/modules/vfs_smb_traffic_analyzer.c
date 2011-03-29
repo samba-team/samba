@@ -748,6 +748,44 @@ static int smb_traffic_analyzer_mkdir(vfs_handle_struct *handle, \
 	return s_data.result;
 }
 
+static ssize_t smb_traffic_analyzer_sendfile(vfs_handle_struct *handle,
+				int tofd,
+				files_struct *fromfsp,
+				const DATA_BLOB *hdr,
+				SMB_OFF_T offset,
+				size_t n)
+{
+	struct rw_data s_data;
+	s_data.len = SMB_VFS_NEXT_SENDFILE(handle,
+			tofd, fromfsp, hdr, offset, n);
+	s_data.filename = fromfsp->fsp_name->base_name;
+	DEBUG(10, ("smb_traffic_analyzer_sendfile: sendfile(r): %s\n",
+		fsp_str_dbg(fromfsp)));
+	smb_traffic_analyzer_send_data(handle,
+		&s_data,
+		vfs_id_read);
+	return s_data.len;
+}
+
+static ssize_t smb_traffic_analyzer_recvfile(vfs_handle_struct *handle,
+				int fromfd,
+				files_struct *tofsp,
+				SMB_OFF_T offset,
+				size_t n)
+{
+	struct rw_data s_data;
+	s_data.len = SMB_VFS_NEXT_RECVFILE(handle,
+			fromfd, tofsp, offset, n);
+	s_data.filename = tofsp->fsp_name->base_name;
+	DEBUG(10, ("smb_traffic_analyzer_recvfile: recvfile(w): %s\n",
+		fsp_str_dbg(tofsp)));
+	smb_traffic_analyzer_send_data(handle,
+		&s_data,
+		vfs_id_write);
+	return s_data.len;
+}
+
+
 static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 				files_struct *fsp, void *data, size_t n)
 {
@@ -857,7 +895,9 @@ static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
 	.chdir = smb_traffic_analyzer_chdir,
 	.open = smb_traffic_analyzer_open,
 	.rmdir = smb_traffic_analyzer_rmdir,
-	.close_fn = smb_traffic_analyzer_close
+	.close_fn = smb_traffic_analyzer_close,
+	.sendfile = smb_traffic_analyzer_sendfile,
+	.recvfile = smb_traffic_analyzer_recvfile
 };
 
 /* Module initialization */
