@@ -40,7 +40,7 @@
 
 static bool initialized;
 
-void lazy_initialize_conv(void)
+static void lazy_initialize_conv(void)
 {
 	if (!initialized) {
 		load_case_tables_library();
