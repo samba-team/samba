@@ -1253,7 +1253,7 @@ extern void build_options(bool screen);
 		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 						   "rpc_server", "spoolss",
 						   "embedded");
-		if (StrCaseCmp(rpcsrv_type, "embedded") != 0) {
+		if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
 			start_spoolssd(smbd_event_context(),
 				       smbd_messaging_context());
 		}
