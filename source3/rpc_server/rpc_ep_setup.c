@@ -1103,13 +1103,23 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	spoolss_cb.init         = spoolss_init_cb;
-	spoolss_cb.shutdown     = spoolss_shutdown_cb;
-	spoolss_cb.private_data = ep_ctx;
-	if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
-		return false;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "spoolss",
+					   "embedded");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
+		spoolss_cb.init         = spoolss_init_cb;
+		spoolss_cb.shutdown     = spoolss_shutdown_cb;
+		spoolss_cb.private_data = ep_ctx;
+		if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
+			return false;
+		}
+	} else if (StrCaseCmp(rpcsrv_type, "daemon") == 0 ||
+		   StrCaseCmp(rpcsrv_type, "external") == 0) {
+		if (!NT_STATUS_IS_OK(rpc_spoolss_init(NULL))) {
+			return false;
+		}
 	}
-
 
 	svcctl_cb.init         = svcctl_init_cb;
 	svcctl_cb.shutdown     = svcctl_shutdown_cb;
