@@ -875,7 +875,8 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-	} else {
+	} else if (StrCaseCmp(server_type, "daemon") == 0 ||
+		   StrCaseCmp(server_type, "external") == 0) {
 		/* It would be nice to just use rpc_pipe_open_ncalrpc() but
 		 * for now we need to use the special proxy setup to connect
 		 * to spoolssd. */
@@ -887,7 +888,12 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-	}
+	} else {
+		status = NT_STATUS_NOT_IMPLEMENTED;
+		DEBUG(0, ("Wrong servertype specified in config file: %s",
+			  nt_errstr(status)));
+		goto done;
+        }
 
 	status = NT_STATUS_OK;
 done:
