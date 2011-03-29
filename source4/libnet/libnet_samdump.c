@@ -181,13 +181,14 @@ NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 	for (t=samdump_state->trusted_domains; t; t=t->next) {
 		char *secret_name = talloc_asprintf(mem_ctx, "G$$%s", t->name);
 		for (s=samdump_state->secrets; s; s=s->next) {
+			size_t converted_size = 0;
 			char *secret_string;
 			if (strcasecmp_m(s->name, secret_name) != 0) {
 				continue;
 			}
 			if (!convert_string_talloc_handle(mem_ctx, lpcfg_iconv_handle(ctx->lp_ctx), CH_UTF16, CH_UNIX,
 						  s->secret.data, s->secret.length, 
-						  (void **)&secret_string, NULL)) {
+						  (void **)&secret_string, &converted_size)) {
 				r->out.error_string = talloc_asprintf(mem_ctx, 
 								      "Could not convert secret for domain %s to a string",
 								      t->name);

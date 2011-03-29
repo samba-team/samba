@@ -1470,6 +1470,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_syntax_ctx *c
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
+		size_t converted_size = 0;
 		char *str;
 
 		if (in->value_ctr.values[i].blob == NULL) {
@@ -1484,7 +1485,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_syntax_ctx *c
 					   CH_UTF16, CH_UNIX,
 					   in->value_ctr.values[i].blob->data,
 					   in->value_ctr.values[i].blob->length,
-					   (void **)&str, NULL)) {
+					   (void **)&str, &converted_size)) {
 			return WERR_FOOBAR;
 		}
 
@@ -2227,6 +2228,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(const struct dsdb_
 
 	for (i=0; i < out->num_values; i++) {
 		size_t len;
+		size_t converted_size = 0;
 		char *str;
 
 		if (in->value_ctr.values[i].blob == NULL) {
@@ -2246,7 +2248,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(const struct dsdb_
 		if (!convert_string_talloc(out->values, CH_UTF16, CH_UNIX,
 					   in->value_ctr.values[i].blob->data+4,
 					   in->value_ctr.values[i].blob->length-4,
-					   (void **)&str, NULL)) {
+					   (void **)&str, &converted_size)) {
 			return WERR_FOOBAR;
 		}
 

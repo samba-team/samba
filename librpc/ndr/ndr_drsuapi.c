@@ -102,6 +102,7 @@ static void _print_drsuapi_DsAttributeValue_str(struct ndr_print *ndr, const cha
 						const struct drsuapi_DsAttributeValue *r)
 {
 	char *str;
+	size_t converted_size = 0;
 
 	ndr_print_struct(ndr, name, "drsuapi_DsAttributeValue");
 	ndr->depth++;
@@ -109,7 +110,7 @@ static void _print_drsuapi_DsAttributeValue_str(struct ndr_print *ndr, const cha
 	                           CH_UTF16, CH_UNIX,
 	                           r->blob->data,
 	                           r->blob->length,
-	                           (void **)&str, NULL)) {
+	                           (void **)&str, &converted_size)) {
 		ndr_print_string(ndr, "string", "INVALID CONVERSION");
 	} else {
 		ndr_print_string(ndr, "string", str);

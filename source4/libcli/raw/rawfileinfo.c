@@ -51,6 +51,8 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 		uint32_t nlen, len;
 		bool ret;
 		void *vstr;
+		size_t converted_size = 0;
+
 		io->streams = 
 			talloc_realloc(mem_ctx, io->streams, struct stream_struct, n+1);
 		if (!io->streams) {
@@ -64,7 +66,7 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 		}
 		ret = convert_string_talloc(io->streams, 
 					     CH_UTF16, CH_UNIX,
-					     blob.data+ofs+24, nlen, &vstr, NULL);
+					     blob.data+ofs+24, nlen, &vstr, &converted_size);
 		if (!ret) {
 			return NT_STATUS_ILLEGAL_CHARACTER;
 		}

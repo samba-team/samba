@@ -70,6 +70,7 @@ static char *dotreg_data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *b
 static char *reg_val_dotreg_string(TALLOC_CTX *mem_ctx, uint32_t type,
 				   const DATA_BLOB data)
 {
+	size_t converted_size = 0;
 	char *ret = NULL;
 
 	if (data.length == 0)
@@ -80,7 +81,7 @@ static char *reg_val_dotreg_string(TALLOC_CTX *mem_ctx, uint32_t type,
 		case REG_SZ:
 			convert_string_talloc(mem_ctx,
 					      CH_UTF16, CH_UNIX, data.data, data.length,
-					      (void **)&ret, NULL);
+					      (void **)&ret, &converted_size);
 			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:

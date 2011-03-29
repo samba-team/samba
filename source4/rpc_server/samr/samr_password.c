@@ -181,6 +181,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	uint8_t new_lm_hash[16];
 	struct samr_Password lm_verifier;
 	size_t unicode_pw_len;
+	size_t converted_size = 0;
 
 	if (pwbuf == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -238,7 +239,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 				  CH_DOS, CH_UNIX,
 				  (const char *)new_password.data,
 				  new_password.length,
-				  (void **)&new_pass, NULL)) {
+				  (void **)&new_pass, &converted_size)) {
 		DEBUG(3,("samr: failed to convert incoming password buffer to unix charset\n"));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -397,11 +398,13 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	 * this) */
 	if (lm_pwd && r->in.lm_verifier != NULL) {
 		char *new_pass;
+		size_t converted_size = 0;
+
 		if (!convert_string_talloc_handle(mem_ctx, lpcfg_iconv_handle(dce_call->conn->dce_ctx->lp_ctx),
 					  CH_UTF16, CH_UNIX,
 					  (const char *)new_password.data,
 					  new_password.length,
-					  (void **)&new_pass, NULL)) {
+					  (void **)&new_pass, &converted_size)) {
 			E_deshash(new_pass, new_lm_hash);
 			E_old_pw_hash(new_nt_hash, lm_pwd->hash, lm_verifier.hash);
 			if (memcmp(lm_verifier.hash, r->in.lm_verifier->hash, 16) != 0) {
