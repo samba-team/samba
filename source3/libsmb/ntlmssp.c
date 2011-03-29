@@ -406,7 +406,6 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 		struct NEGOTIATE_MESSAGE *negotiate = talloc(
 			talloc_tos(), struct NEGOTIATE_MESSAGE);
 		if (negotiate != NULL) {
-			NTSTATUS status;
 			status = ntlmssp_pull_NEGOTIATE_MESSAGE(
 				next_request, negotiate, negotiate);
 			if (NT_STATUS_IS_OK(status)) {
