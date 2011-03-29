@@ -34,7 +34,6 @@
 
 struct smbsrv_tcon;
 
-extern const char *logfile;
 extern const char *panic_action;
 
 #include "lib/util/time.h"
