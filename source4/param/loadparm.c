@@ -650,6 +650,7 @@ FN_GLOBAL_INTEGER(krb5_port, krb5_port)
 FN_GLOBAL_INTEGER(kpasswd_port, kpasswd_port)
 FN_GLOBAL_INTEGER(web_port, web_port)
 FN_GLOBAL_BOOL(tls_enabled, tls_enabled)
+FN_GLOBAL_STRING(logfile, logfile)
 FN_GLOBAL_STRING(share_backend, szShareBackend)
 FN_GLOBAL_STRING(sam_url, szSAM_URL)
 FN_GLOBAL_STRING(idmap_url, szIDMAP_URL)
@@ -2326,6 +2327,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	char *myname;
 	struct loadparm_context *lp_ctx;
 	struct parmlist_entry *parm;
+	char *logfile;
 
 	lp_ctx = talloc_zero(mem_ctx, struct loadparm_context);
 	if (lp_ctx == NULL)
@@ -2365,6 +2367,9 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		}
 	}
 
+	logfile = talloc_asprintf(lp_ctx, "%s/log.samba", dyn_LOGFILEBASE);
+	lpcfg_do_global_parameter(lp_ctx, "log file", logfile);
+	talloc_free(logfile);
 
 	lpcfg_do_global_parameter(lp_ctx, "log level", "0");
 
