@@ -493,6 +493,10 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 
 void debug_set_logfile(const char *name)
 {
+	if (name == NULL || *name == 0) {
+		/* this copes with calls when smb.conf is not loaded yet */
+		return;
+	}
 	TALLOC_FREE(state.debugf);
 	state.debugf = talloc_strdup(NULL, name);
 }
@@ -564,7 +568,7 @@ bool reopen_logs_internal(void)
 
 	if (new_fd == -1) {
 		log_overflow = true;
-		DEBUG(0, ("Unable to open new log file %s: %s\n", state.debugf, strerror(errno)));
+		DEBUG(0, ("Unable to open new log file '%s': %s\n", state.debugf, strerror(errno)));
 		log_overflow = false;
 		ret = false;
 	} else {
