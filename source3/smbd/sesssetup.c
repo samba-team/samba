@@ -671,9 +671,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	}
 #endif
 
-	if (*auth_ntlmssp_state) {
-		TALLOC_FREE(*auth_ntlmssp_state);
-	}
+	TALLOC_FREE(*auth_ntlmssp_state);
 
 	if (kerb_mech) {
 		data_blob_free(&secblob);
