@@ -705,17 +705,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 	required = byte_mul * length;
 	
 	NDR_PUSH_NEED_BYTES(ndr, required);
-	ret = convert_string(CH_UNIX, chset, 
+
+	if (required) {
+		ret = convert_string(CH_UNIX, chset,
 			     var, strlen(var),
 			     ndr->data+ndr->offset, required, false);
-	if (ret == -1) {
-		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
-				      "Bad character conversion");
-	}
+		if (ret == -1) {
+			return ndr_push_error(ndr, NDR_ERR_CHARCNV,
+					      "Bad character conversion");
+		}
 
-	/* Make sure the remaining part of the string is filled with zeroes */
-	if (ret < required) {
-		memset(ndr->data+ndr->offset+ret, 0, required-ret);
+		/* Make sure the remaining part of the string is filled with zeroes */
+		if (ret < required) {
+			memset(ndr->data+ndr->offset+ret, 0, required-ret);
+		}
 	}
 
 	ndr->offset += required;
