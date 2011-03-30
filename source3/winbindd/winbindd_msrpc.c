@@ -522,9 +522,7 @@ static NTSTATUS msrpc_lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 cached:
-	if (pnum_groups) {
-		*pnum_groups = num_groups;
-	}
+	*pnum_groups = num_groups;
 
 	if (puser_grpsids) {
 		*puser_grpsids = talloc_move(mem_ctx, &user_grpsids);
