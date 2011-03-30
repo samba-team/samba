@@ -1026,9 +1026,6 @@ char *ipstr_list_make(char **ipstr_list,
 			int ip_count);
 int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list);
 void ipstr_list_free(char* ipstr_list);
-DATA_BLOB base64_decode_data_blob(const char *s);
-void base64_decode_inplace(char *s);
-char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data);
 uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 SMB_OFF_T conv_str_size(const char * str);
 void string_append(char **left, const char *right);

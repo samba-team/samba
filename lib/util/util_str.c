@@ -320,5 +320,3 @@ _PUBLIC_ void string_replace(char *s, char oldc, char newc)
 		s++;
 	}
 }
-
-

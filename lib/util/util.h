@@ -410,6 +410,19 @@ _PUBLIC_ int strwicmp(const char *psz1, const char *psz2);
 _PUBLIC_ void string_replace(char *s, char oldc, char newc);
 
 /**
+ Base64 decode a string, place into a data blob.  Caller to data_blob_free() the result.
+**/
+_PUBLIC_ DATA_BLOB base64_decode_data_blob(const char *s);
+/**
+ Base64 decode a string, inplace
+**/
+_PUBLIC_ void base64_decode_inplace(char *s);
+/**
+ Base64 encode a binary data blob into a string
+**/
+_PUBLIC_ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data);
+
+/**
  * Compare 2 strings.
  *
  * @note The comparison is case-insensitive.
