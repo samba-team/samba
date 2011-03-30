@@ -10,6 +10,7 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../../lib/util/tests/asn1_tests.c ../../../lib/util/tests/data_blob.c
 	../../../lib/util/tests/file.c ../../../lib/util/tests/genrand.c
 	../../../lib/compression/testsuite.c ../../../lib/util/charset/tests/charset.c
+        ../../../lib/util/charset/tests/convert_string.c
 	../../libcli/security/tests/sddl.c ../../../lib/tdr/testsuite.c
 	../../../lib/tevent/testsuite.c ../../param/tests/share.c
 	../../param/tests/loadparm.c ../../auth/credentials/tests/simple.c local.c

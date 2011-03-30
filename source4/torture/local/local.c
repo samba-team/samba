@@ -60,6 +60,7 @@
 	torture_local_share,
 	torture_local_loadparm,
 	torture_local_charset,
+	torture_local_convert_string,
 	torture_local_compression,
 	torture_local_event, 
 	torture_local_torture,
