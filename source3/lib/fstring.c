@@ -75,7 +75,8 @@ size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src)
 static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len = 0;
-	size_t ret;
+	size_t size = 0;
+	bool ret;
 	char *tmpbuf = NULL;
 
 	if (dest_len == (size_t)-1) {
@@ -97,9 +98,9 @@ static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 		src_len++;
 	}
 
-	ret = convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len);
+	ret = convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len, &size);
 	TALLOC_FREE(tmpbuf);
-	return ret;
+	return ret ? size : (size_t)-1;
 }
 
 size_t push_utf8_fstring(void *dest, const char *src)

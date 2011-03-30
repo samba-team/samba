@@ -345,6 +345,7 @@ static bool cgi_handle_authorization(char *line)
 	struct passwd *pass = NULL;
 	const char *rhost;
 	char addr[INET6_ADDRSTRLEN];
+	size_t size = 0;
 
 	if (!strnequal(line,"Basic ", 6)) {
 		goto err;
@@ -361,13 +362,17 @@ static bool cgi_handle_authorization(char *line)
 	}
 	*p = 0;
 
-	convert_string(CH_UTF8, CH_UNIX, 
+	if (!convert_string(CH_UTF8, CH_UNIX,
 		       line, -1, 
-		       user, sizeof(user));
+		       user, sizeof(user), &size)) {
+		goto err;
+	}
 
-	convert_string(CH_UTF8, CH_UNIX, 
+	if (!convert_string(CH_UTF8, CH_UNIX,
 		       p+1, -1, 
-		       user_pass, sizeof(user_pass));
+		       user_pass, sizeof(user_pass), &size)) {
+		goto err;
+	}
 
 	/*
 	 * Try and get the user from the UNIX password file.

@@ -696,7 +696,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 
 _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
-	ssize_t ret, required;
+	ssize_t required;
 
 	if (NDR_BE(ndr) && chset == CH_UTF16) {
 		chset = CH_UTF16BE;
@@ -707,17 +707,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 	NDR_PUSH_NEED_BYTES(ndr, required);
 
 	if (required) {
-		ret = convert_string(CH_UNIX, chset, 
+		size_t size = 0;
+		if (!convert_string(CH_UNIX, chset,
 			     var, strlen(var),
-			     ndr->data+ndr->offset, required);
-		if (ret == -1) {
+			     ndr->data+ndr->offset, required, &size)) {
 			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
 		}
 
 		/* Make sure the remaining part of the string is filled with zeroes */
-		if (ret < required) {
-			memset(ndr->data+ndr->offset+ret, 0, required-ret);
+		if (size < required) {
+			memset(ndr->data+ndr->offset+size, 0, required-size);
 		}
 	}
 

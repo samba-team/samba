@@ -174,7 +174,8 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 
 NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length, uint32_t el_size, charset_t chset)
 {
-	size_t ret, required;
+	size_t required, size = 0;
+	bool ret;
 
 	if (length == -1) {
 		length = strlen(*v) + 1; /* Extra element for null character */
@@ -183,14 +184,14 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
-	if (ret == -1) {
+	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required, &size);
+	if (ret == false) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Make sure the remaining part of the string is filled with zeroes */
-	if (ret < required) {
-		memset(tdr->data.data+tdr->data.length+ret, 0, required-ret);
+	if (size < required) {
+		memset(tdr->data.data+tdr->data.length+size, 0, required-size);
 	}
 	
 	tdr->data.length += required;

@@ -150,9 +150,10 @@ bool convert_string_talloc(TALLOC_CTX *ctx,
 			   void const *src, size_t srclen, 
 			   void *dest, size_t *converted_size);
 
-size_t convert_string(charset_t from, charset_t to,
+bool convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
-		      void *dest, size_t destlen);
+		      void *dest, size_t destlen,
+		      size_t *converted_size);
 
 ssize_t iconv_talloc(TALLOC_CTX *mem_ctx, 
 				       smb_iconv_t cd,

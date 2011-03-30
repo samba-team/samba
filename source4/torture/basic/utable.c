@@ -50,9 +50,15 @@ bool torture_utable(struct torture_context *tctx,
 		SSVAL(c2, 0, c);
 		strncpy(fname, "\\utable\\x", sizeof(fname)-1);
 		p = fname+strlen(fname);
-		len = convert_string(CH_UTF16, CH_UNIX, 
+		len = 0;
+		if (!convert_string(CH_UTF16, CH_UNIX,
 				     c2, 2, 
-				     p, sizeof(fname)-strlen(fname));
+				     p, sizeof(fname)-strlen(fname), &len)) {
+			torture_comment(tctx, "convert_string failed [%s]\n",
+				fname);
+			continue;
+		}
+
 		p[len] = 0;
 		strncat(fname,"_a_long_extension",sizeof(fname)-1);
 
@@ -103,17 +109,17 @@ static char *form_name(int c)
 	static char fname[256];
 	uint8_t c2[4];
 	char *p;
-	size_t len;
+	size_t len = 0;
 
 	strncpy(fname, "\\utable\\", sizeof(fname)-1);
 	p = fname+strlen(fname);
 	SSVAL(c2, 0, c);
 
-	len = convert_string(CH_UTF16, CH_UNIX, 
+	if (!convert_string(CH_UTF16, CH_UNIX,
 			     c2, 2, 
-			     p, sizeof(fname)-strlen(fname));
-	if (len == -1)
+			     p, sizeof(fname)-strlen(fname), &len)) {
 		return NULL;
+	}
 	p[len] = 0;
 	return fname;
 }

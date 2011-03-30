@@ -45,14 +45,19 @@ bool torture_utable(int dummy)
 	cli_unlink(cli, "\\utable\\*", aSYSTEM | aHIDDEN);
 
 	for (c=1; c < 0x10000; c++) {
+		size_t size = 0;
 		char *p;
 
 		SSVAL(&c2, 0, c);
 		fstrcpy(fname, "\\utable\\x");
 		p = fname+strlen(fname);
-		len = convert_string(CH_UTF16LE, CH_UNIX, 
+		if (!convert_string(CH_UTF16LE, CH_UNIX,
 				     &c2, 2, 
-				     p, sizeof(fname)-strlen(fname));
+				     p, sizeof(fname)-strlen(fname),&size)) {
+			d_printf("convert_string %s failed !\n", fname);
+			continue;
+		}
+		len = size;
 		p[len] = 0;
 		fstrcat(fname,"_a_long_extension");
 
@@ -106,15 +111,19 @@ static char *form_name(int c)
 	static fstring fname;
 	smb_ucs2_t c2;
 	char *p;
-	int len;
+	size_t len = 0;
 
 	fstrcpy(fname, "\\utable\\");
 	p = fname+strlen(fname);
 	SSVAL(&c2, 0, c);
 
-	len = convert_string(CH_UTF16LE, CH_UNIX, 
+	if (!convert_string(CH_UTF16LE, CH_UNIX,
 			     &c2, 2, 
-			     p, sizeof(fname)-strlen(fname));
+			     p, sizeof(fname)-strlen(fname), &len)) {
+		d_printf("form_name: convert string %s failed\n",
+			fname);
+		return NULL;
+	}
 	p[len] = 0;
 	return fname;
 }

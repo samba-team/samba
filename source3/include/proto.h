@@ -74,17 +74,18 @@ int bitmap_find(struct bitmap *bm, unsigned ofs);
 
 void gfree_charcnv(void);
 void init_iconv(void);
-size_t convert_string(charset_t from, charset_t to,
+bool convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
-		      void *dest, size_t destlen);
+		      void *dest, size_t destlen,
+		      size_t *converted_size);
 bool convert_string_error(charset_t from, charset_t to,
 			    void const *src, size_t srclen,
 			    void *dest, size_t destlen,
 			    size_t *converted_size);
-size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen);
+bool unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen);
 char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s);
 char *strupper_talloc(TALLOC_CTX *ctx, const char *s);
-size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen);
+bool unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen);
 char *talloc_strdup_lower(TALLOC_CTX *ctx, const char *s);
 char *strlower_talloc(TALLOC_CTX *ctx, const char *s);
 size_t ucs2_align(const void *base_ptr, const void *p, int flags);

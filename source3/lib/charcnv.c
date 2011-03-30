@@ -299,12 +299,12 @@ bool convert_string_error(charset_t from, charset_t to,
 	return convert_string_internal(from, to, src, srclen, dest, destlen, converted_size);
 }
 
-size_t convert_string(charset_t from, charset_t to,
+bool convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen,
-		      void *dest, size_t destlen)
+		      void *dest, size_t destlen,
+		      size_t *converted_size)
 {
-	size_t converted_size;
-	bool ret = convert_string_error(from, to, src, srclen, dest, destlen, &converted_size);
+	bool ret = convert_string_error(from, to, src, srclen, dest, destlen, converted_size);
 
 	if(ret==false) {
 		const char *reason="unknown error";
@@ -344,7 +344,7 @@ size_t convert_string(charset_t from, charset_t to,
 		}
 		/* smb_panic(reason); */
 	}
-	return ret ? converted_size : (size_t)-1;
+	return ret;
 }
 
 
@@ -500,10 +500,11 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	return true;
 }
 
-size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
+bool unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;
 	smb_ucs2_t *buffer;
+	bool ret;
 
 	if (!push_ucs2_talloc(talloc_tos(), &buffer, src, &size)) {
 		return (size_t)-1;
@@ -514,9 +515,9 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 		return srclen;
 	}
 
-	size = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen);
+	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
 	TALLOC_FREE(buffer);
-	return size;
+	return ret;
 }
 
 /**
@@ -584,10 +585,11 @@ char *strupper_talloc(TALLOC_CTX *ctx, const char *s) {
 }
 
 
-size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
+bool unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;
 	smb_ucs2_t *buffer = NULL;
+	bool ret;
 
 	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16LE, src, srclen,
 				   (void **)(void *)&buffer, &size))
@@ -598,9 +600,9 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 		TALLOC_FREE(buffer);
 		return srclen;
 	}
-	size = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen);
+	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
 	TALLOC_FREE(buffer);
-	return size;
+	return ret;
 }
 
 
@@ -656,7 +658,8 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len = strlen(src);
 	char *tmpbuf = NULL;
-	size_t ret;
+	size_t size;
+	bool ret;
 
 	/* No longer allow a length of -1. */
 	if (dest_len == (size_t)-1) {
@@ -676,14 +679,14 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 		src_len++;
 	}
 
-	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
-	if (ret == (size_t)-1 &&
+	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, &size);
+	if (ret == false &&
 			(flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 			&& dest_len > 0) {
 		((char *)dest)[0] = '\0';
 	}
 	SAFE_FREE(tmpbuf);
-	return ret;
+	return ret ? size : (size_t)-1;
 }
 
 /********************************************************************
@@ -716,7 +719,8 @@ bool push_ascii_talloc(TALLOC_CTX *mem_ctx, char **dest, const char *src, size_t
  **/
 size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
-	size_t ret;
+	bool ret;
+	size_t size = 0;
 
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
@@ -734,16 +738,16 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 		}
 	}
 
-	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
-	if (ret == (size_t)-1) {
-		ret = 0;
+	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len, &size);
+	if (ret == false) {
+		size = 0;
 		dest_len = 0;
 	}
 
-	if (dest_len && ret) {
+	if (dest_len && size) {
 		/* Did we already process the terminating zero ? */
-		if (dest[MIN(ret-1, dest_len-1)] != 0) {
-			dest[MIN(ret, dest_len-1)] = 0;
+		if (dest[MIN(size-1, dest_len-1)] != 0) {
+			dest[MIN(size, dest_len-1)] = 0;
 		}
 	} else  {
 		dest[0] = 0;
@@ -858,7 +862,8 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 {
 	size_t len=0;
 	size_t src_len;
-	size_t ret;
+	size_t size = 0;
+	bool ret;
 
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
@@ -881,8 +886,8 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	ret =  convert_string(CH_UNIX, CH_UTF16LE, src, src_len, dest, dest_len);
-	if (ret == (size_t)-1) {
+	ret = convert_string(CH_UNIX, CH_UTF16LE, src, src_len, dest, dest_len, &size);
+	if (ret == false) {
 		if ((flags & STR_TERMINATE) &&
 				dest &&
 				dest_len) {
@@ -891,7 +896,7 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 		return len;
 	}
 
-	len += ret;
+	len += size;
 
 	if (flags & STR_UPPER) {
 		smb_ucs2_t *dest_ucs2 = (smb_ucs2_t *)dest;
@@ -968,8 +973,9 @@ bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 
 size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
-	size_t ret;
+	size_t size = 0;
 	size_t ucs2_align_len = 0;
+	bool ret;
 
 	if (dest_len == (size_t)-1) {
 		/* No longer allow dest_len of -1. */
@@ -1005,19 +1011,19 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	if (src_len != (size_t)-1)
 		src_len &= ~1;
 
-	ret = convert_string(CH_UTF16LE, CH_UNIX, src, src_len, dest, dest_len);
-	if (ret == (size_t)-1) {
-		ret = 0;
+	ret = convert_string(CH_UTF16LE, CH_UNIX, src, src_len, dest, dest_len, &size);
+	if (ret == false) {
+		size = 0;
 		dest_len = 0;
 	}
 
 	if (src_len == (size_t)-1)
-		src_len = ret*2;
+		src_len = size*2;
 
-	if (dest_len && ret) {
+	if (dest_len && size) {
 		/* Did we already process the terminating zero ? */
-		if (dest[MIN(ret-1, dest_len-1)] != 0) {
-			dest[MIN(ret, dest_len-1)] = 0;
+		if (dest[MIN(size-1, dest_len-1)] != 0) {
+			dest[MIN(size, dest_len-1)] = 0;
 		}
 	} else {
 		dest[0] = 0;

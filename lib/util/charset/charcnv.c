@@ -184,12 +184,12 @@ _PUBLIC_ bool convert_string_handle(struct smb_iconv_handle *ic,
 		case E2BIG:
 			reason="No more room";
 			if (from == CH_UNIX) {
-				DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
+				DEBUG(0,("E2BIG: convert_string_handle(%s,%s): srclen=%d destlen=%d - '%s'\n",
 					 charset_name(ic, from), charset_name(ic, to),
 					 (int)srclen, (int)destlen,
 					 (const char *)src));
 			} else {
-				DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
+				DEBUG(0,("E2BIG: convert_string_handle(%s,%s): srclen=%d destlen=%d\n",
 					 charset_name(ic, from), charset_name(ic, to),
 					 (int)srclen, (int)destlen));
 			}
@@ -233,7 +233,7 @@ _PUBLIC_ bool convert_string_talloc_handle(TALLOC_CTX *ctx,
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
-		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
+		DEBUG(3, ("convert_string_talloc_handle: conversion from %s to %s not supported!\n",
 			  charset_name(ic, from), 
 			  charset_name(ic, to)));
 		return false;
