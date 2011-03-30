@@ -21,6 +21,7 @@
 #include "ads.h"
 #include "libads/ldap_schema.h"
 #include "../libcli/security/secace.h"
+#include "../librpc/ndr/libndr.h"
 
 /* for ADS */
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff
