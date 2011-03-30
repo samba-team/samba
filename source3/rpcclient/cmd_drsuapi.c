@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_drsuapi_c.h"
 
 static WERROR cracknames(struct rpc_pipe_client *cli,

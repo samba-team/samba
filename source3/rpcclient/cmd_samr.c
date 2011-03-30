@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "rpc_client/cli_pipe.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"

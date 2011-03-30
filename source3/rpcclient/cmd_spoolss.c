@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
