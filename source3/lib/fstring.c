@@ -41,11 +41,11 @@ size_t push_ascii_fstring(void *dest, const char *src)
 
 size_t push_ascii_nstring(void *dest, const char *src)
 {
-	ssize_t ret;
-	size_t converted_size;
-	ret = convert_string_error(CH_UNIX, CH_DOS, src, -1, dest, sizeof(nstring)-1, &converted_size);
-	SCVAL(dest, converted_size, 0);
-	return converted_size;
+	size_t converted_size = 0;
+	size_t ret;
+	ret = convert_string_error(CH_UNIX, CH_DOS, src, -1, dest, sizeof(nstring), &converted_size);
+	SCVAL(dest, sizeof(nstring)-1, 0);
+	return ret;
 }
 
 size_t pull_ascii_fstring(char *dest, const void *src)
@@ -57,7 +57,7 @@ size_t pull_ascii_fstring(char *dest, const void *src)
 
 size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src)
 {
-	return pull_ascii(dest, src, dest_len, sizeof(nstring)-1, STR_TERMINATE);
+	return pull_ascii(dest, src, dest_len, sizeof(nstring), STR_TERMINATE);
 }
 
 /**
