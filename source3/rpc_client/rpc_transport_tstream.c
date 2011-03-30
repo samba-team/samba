@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "rpc_client/rpc_transport.h"
 #include "lib/tsocket/tsocket.h"
 #include "libsmb/cli_np_tstream.h"
 #include "cli_pipe.h"
