@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "passdb/lookup_sid.h" /* only for LOOKUP_NAME_NO_NSS flag */
 
 struct winbindd_getgroups_state {
 	struct tevent_context *ev;
