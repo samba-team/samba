@@ -1148,9 +1148,7 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 		subcntarr[i] = num_jobs;
 		subcnt += subcntarr[i];
 
-		if (b && is_valid_policy_hnd(&handle)) {
-			dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
-		}
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	if (init_package(&desc,queuecnt,subcnt)) {
