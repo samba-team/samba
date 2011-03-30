@@ -41,6 +41,35 @@
 #define GROUP_RID_TYPE 		1
 
 /*
+ * Flags for local user manipulation.
+ */
+
+#define LOCAL_ADD_USER 0x1
+#define LOCAL_DELETE_USER 0x2
+#define LOCAL_DISABLE_USER 0x4
+#define LOCAL_ENABLE_USER 0x8
+#define LOCAL_TRUST_ACCOUNT 0x10
+#define LOCAL_SET_NO_PASSWORD 0x20
+#define LOCAL_SET_PASSWORD 0x40
+#define LOCAL_SET_LDAP_ADMIN_PW 0x80
+#define LOCAL_INTERDOM_ACCOUNT 0x100
+#define LOCAL_AM_ROOT 0x200  /* Act as root */
+
+/*
+ * Size of new password account encoding string.  This is enough space to
+ * hold 11 ACB characters, plus the surrounding [] and a terminating null.
+ * Do not change unless you are adding new ACB bits!
+ */
+
+#define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
+
+/* Password history contants. */
+#define PW_HISTORY_SALT_LEN 16
+#define SALTED_MD5_HASH_LEN 16
+#define PW_HISTORY_ENTRY_LEN (PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN)
+#define MAX_PW_HISTORY_LEN 24
+
+/*
  * bit flags representing initialized fields in struct samu
  */
 enum pdb_elements {
