@@ -18,8 +18,8 @@
 */
 
 #include "includes.h"
-#include "smbd/smbd.h"
 #include "system/filesys.h"
+#include "smbd/smbd.h"
 
 
 /* prototypes for static functions first - for clarity */

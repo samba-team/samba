@@ -23,6 +23,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "nfs4_acls.h"
 
