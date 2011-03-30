@@ -768,8 +768,8 @@ wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 		wbcFreeMemory(name);
 
 		name = wbcStrDup(pwd->pw_gecos);
-		BAIL_ON_PTR_ERROR(name, wbc_status);
 		wbcFreeMemory(pwd);
+		BAIL_ON_PTR_ERROR(name, wbc_status);
 	}
 
 	wbc_status = WBC_ERR_SUCCESS;
