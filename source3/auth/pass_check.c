@@ -21,6 +21,7 @@
    password database. The SMB encrypted password support is elsewhere */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "auth.h"
 
 #undef DBGC_CLASS
