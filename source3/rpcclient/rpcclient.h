@@ -21,6 +21,8 @@
 #ifndef RPCCLIENT_H
 #define RPCCLIENT_H
 
+#include "rpc_client/cli_pipe.h"
+
 typedef enum {
         RPC_RTYPE_NTSTATUS = 0,
         RPC_RTYPE_WERROR,
