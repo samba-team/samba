@@ -98,16 +98,6 @@ void prs_mem_free(prs_struct *ps)
 }
 
 /*******************************************************************
- Clear the memory in a parse structure.
- ********************************************************************/
-
-void prs_mem_clear(prs_struct *ps)
-{
-	if (ps->buffer_size)
-		memset(ps->data_p, '\0', (size_t)ps->buffer_size);
-}
-
-/*******************************************************************
  Allocate memory when unmarshalling... Always zero clears.
  ********************************************************************/
 
@@ -134,55 +124,6 @@ char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count)
 TALLOC_CTX *prs_get_mem_context(prs_struct *ps)
 {
 	return ps->mem_ctx;
-}
-
-/*******************************************************************
- Hand some already allocated memory to a prs_struct.
- If "is_dynamic" is true, this is a talloc_steal.
- If "is_dynamic" is false, just make ps->data_p a pointer to
- the unwritable memory.
- ********************************************************************/
-
-void prs_give_memory(prs_struct *ps, char *buf, uint32 size, bool is_dynamic)
-{
-	ps->is_dynamic = is_dynamic;
-	if (ps->is_dynamic && buf) {
-		talloc_steal(ps->mem_ctx, buf);
-	}
-	ps->data_p = buf;
-	ps->buffer_size = size;
-}
-
-/*******************************************************************
- Set a prs_struct to exactly a given size. Will grow or tuncate if neccessary.
- ********************************************************************/
-
-bool prs_set_buffer_size(prs_struct *ps, uint32 newsize)
-{
-	if (newsize > ps->buffer_size)
-		return prs_force_grow(ps, newsize - ps->buffer_size);
-
-	if (newsize < ps->buffer_size) {
-		ps->buffer_size = newsize;
-
-		/* newsize == 0 acts as a free and set pointer to NULL */
-		if (newsize == 0) {
-			TALLOC_FREE(ps->data_p);
-		} else {
-			ps->data_p = talloc_realloc(ps->mem_ctx,
-						ps->data_p,
-						char,
-						newsize);
-
-			if (ps->data_p == NULL) {
-				DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
-					(unsigned int)newsize));
-				return False;
-			}
-		}
-	}
-
-	return True;
 }
 
 /*******************************************************************
@@ -256,39 +197,6 @@ bool prs_grow(prs_struct *ps, uint32 extra_space)
 }
 
 /*******************************************************************
- Attempt to force a data buffer to grow by len bytes.
- This is only used when appending more data onto a prs_struct
- when reading an rpc reply, before unmarshalling it.
- ********************************************************************/
-
-bool prs_force_grow(prs_struct *ps, uint32 extra_space)
-{
-	uint32 new_size = ps->buffer_size + extra_space;
-
-	if(!UNMARSHALLING(ps) || !ps->is_dynamic) {
-		DEBUG(0,("prs_force_grow: Buffer overflow - unable to expand buffer by %u bytes.\n",
-				(unsigned int)extra_space));
-		return False;
-	}
-
-	ps->data_p = (char *)talloc_realloc(ps->mem_ctx,
-					ps->data_p,
-					char,
-					new_size);
-	if(ps->data_p == NULL) {
-		DEBUG(0,("prs_force_grow: Realloc failure for size %u.\n",
-			(unsigned int)new_size));
-		return False;
-	}
-
-	memset(&ps->data_p[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
-
-	ps->buffer_size = new_size;
-
-	return True;
-}
-
-/*******************************************************************
  Get the data pointer (external interface).
 ********************************************************************/
 
@@ -331,50 +239,6 @@ bool prs_set_offset(prs_struct *ps, uint32 offset)
 }
 
 /*******************************************************************
- Append the data from one parse_struct into another.
- ********************************************************************/
-
-bool prs_append_prs_data(prs_struct *dst, prs_struct *src)
-{
-	if (prs_offset(src) == 0)
-		return True;
-
-	if(!prs_grow(dst, prs_offset(src)))
-		return False;
-
-	memcpy(&dst->data_p[dst->data_offset], src->data_p, (size_t)prs_offset(src));
-	dst->data_offset += prs_offset(src);
-
-	return True;
-}
-
-/*******************************************************************
- Append some data from one parse_struct into another.
- ********************************************************************/
-
-bool prs_append_some_data(prs_struct *dst, void *src_base, uint32_t start,
-			  uint32_t len)
-{
-	if (len == 0) {
-		return true;
-	}
-
-	if(!prs_grow(dst, len)) {
-		return false;
-	}
-
-	memcpy(&dst->data_p[dst->data_offset], ((char *)src_base) + start, (size_t)len);
-	dst->data_offset += len;
-	return true;
-}
-
-bool prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start,
-			      uint32 len)
-{
-	return prs_append_some_data(dst, src->data_p, start, len);
-}
-
-/*******************************************************************
  Append the data from a buffer into a parse_struct.
  ********************************************************************/
 
@@ -390,48 +254,6 @@ bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len)
 	dst->data_offset += len;
 
 	return True;
-}
-
-/*******************************************************************
- Copy some data from a parse_struct into a buffer.
- ********************************************************************/
-
-bool prs_copy_data_out(char *dst, prs_struct *src, uint32 len)
-{
-	if (len == 0)
-		return True;
-
-	if(!prs_mem_get(src, len))
-		return False;
-
-	memcpy(dst, &src->data_p[src->data_offset], (size_t)len);
-	src->data_offset += len;
-
-	return True;
-}
-
-/*******************************************************************
- Copy all the data from a parse_struct into a buffer.
- ********************************************************************/
-
-bool prs_copy_all_data_out(char *dst, prs_struct *src)
-{
-	uint32 len = prs_offset(src);
-
-	if (!len)
-		return True;
-
-	prs_set_offset(src, 0);
-	return prs_copy_data_out(dst, src, len);
-}
-
-/*******************************************************************
- Set the data as X-endian (external interface).
- ********************************************************************/
-
-void prs_set_endian_data(prs_struct *ps, bool endian)
-{
-	ps->bigendian_data = endian;
 }
 
 /*******************************************************************
@@ -455,22 +277,6 @@ bool prs_align(prs_struct *ps)
 }
 
 /******************************************************************
- Align on a 2 byte boundary
- *****************************************************************/
-
-bool prs_align_uint16(prs_struct *ps)
-{
-	bool ret;
-	uint8 old_align = ps->align;
-
-	ps->align = 2;
-	ret = prs_align(ps);
-	ps->align = old_align;
-
-	return ret;
-}
-
-/******************************************************************
  Align on a 8 byte boundary
  *****************************************************************/
 
@@ -484,36 +290,6 @@ bool prs_align_uint64(prs_struct *ps)
 	ps->align = old_align;
 
 	return ret;
-}
-
-/******************************************************************
- Align on a specific byte boundary
- *****************************************************************/
-
-bool prs_align_custom(prs_struct *ps, uint8 boundary)
-{
-	bool ret;
-	uint8 old_align = ps->align;
-
-	ps->align = boundary;
-	ret = prs_align(ps);
-	ps->align = old_align;
-
-	return ret;
-}
-
-
-
-/*******************************************************************
- Align only if required (for the unistr2 string mainly)
- ********************************************************************/
-
-bool prs_align_needed(prs_struct *ps, uint32 needed)
-{
-	if (needed==0)
-		return True;
-	else
-		return prs_align(ps);
 }
 
 /*******************************************************************
@@ -634,35 +410,6 @@ bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 }
 
 /*******************************************************************
- Stream an int32.
- ********************************************************************/
-
-bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32)
-{
-	char *q = prs_mem_get(ps, sizeof(int32));
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (ps->bigendian_data)
-			*data32 = RIVALS(q,0);
-		else
-			*data32 = IVALS(q,0);
-	} else {
-		if (ps->bigendian_data)
-			RSIVALS(q,0,*data32);
-		else
-			SIVALS(q,0,*data32);
-	}
-
-	DEBUGADD(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
-
-	ps->data_offset += sizeof(int32);
-
-	return True;
-}
-
-/*******************************************************************
  Stream a uint64_struct
  ********************************************************************/
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
@@ -684,36 +431,6 @@ bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
 		return prs_uint32(name, ps, depth+1, &low) &&
 			   prs_uint32(name, ps, depth+1, &high);
 	}
-}
-
-/*******************************************************************
- Stream a DCE error code
- ********************************************************************/
-
-bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
-{
-	char *q = prs_mem_get(ps, sizeof(uint32));
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (ps->bigendian_data)
-			*status = NT_STATUS(RIVAL(q,0));
-		else
-			*status = NT_STATUS(IVAL(q,0));
-	} else {
-		if (ps->bigendian_data)
-			RSIVAL(q,0,NT_STATUS_V(*status));
-		else
-			SIVAL(q,0,NT_STATUS_V(*status));
-	}
-
-	DEBUGADD(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name,
-		 dcerpc_errstr(talloc_tos(), NT_STATUS_V(*status))));
-
-	ps->data_offset += sizeof(uint32);
-
-	return True;
 }
 
 /******************************************************************
@@ -745,124 +462,6 @@ bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint
 	DEBUGADD(5,("\n"));
 
 	ps->data_offset += len;
-
-	return True;
-}
-
-/******************************************************************
- Stream an array of uint16s. Length is number of uint16s.
- ********************************************************************/
-
-bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
-{
-	int i;
-	char *q = prs_mem_get(ps, len * sizeof(uint16));
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (ps->bigendian_data) {
-			for (i = 0; i < len; i++)
-				data16s[i] = RSVAL(q, 2*i);
-		} else {
-			for (i = 0; i < len; i++)
-				data16s[i] = SVAL(q, 2*i);
-		}
-	} else {
-		if (ps->bigendian_data) {
-			for (i = 0; i < len; i++)
-				RSSVAL(q, 2*i, data16s[i]);
-		} else {
-			for (i = 0; i < len; i++)
-				SSVAL(q, 2*i, data16s[i]);
-		}
-	}
-
-	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
-	if (charmode)
-		print_asc(5, (unsigned char*)data16s, 2*len);
-	else {
-		for (i = 0; i < len; i++)
-			DEBUGADD(5,("%04x ", data16s[i]));
-	}
-	DEBUGADD(5,("\n"));
-
-	ps->data_offset += (len * sizeof(uint16));
-
-	return True;
-}
-
-/******************************************************************
- Stream an array of uint32s. Length is number of uint32s.
- ********************************************************************/
-
-bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
-{
-	int i;
-	char *q = prs_mem_get(ps, len * sizeof(uint32));
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (ps->bigendian_data) {
-			for (i = 0; i < len; i++)
-				data32s[i] = RIVAL(q, 4*i);
-		} else {
-			for (i = 0; i < len; i++)
-				data32s[i] = IVAL(q, 4*i);
-		}
-	} else {
-		if (ps->bigendian_data) {
-			for (i = 0; i < len; i++)
-				RSIVAL(q, 4*i, data32s[i]);
-		} else {
-			for (i = 0; i < len; i++)
-				SIVAL(q, 4*i, data32s[i]);
-		}
-	}
-
-	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
-	if (charmode)
-		print_asc(5, (unsigned char*)data32s, 4*len);
-	else {
-		for (i = 0; i < len; i++)
-			DEBUGADD(5,("%08x ", data32s[i]));
-	}
-	DEBUGADD(5,("\n"));
-
-	ps->data_offset += (len * sizeof(uint32));
-
-	return True;
-}
-
-/*******************************************************************
-creates a new prs_struct containing a DATA_BLOB
-********************************************************************/
-bool prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
-{
-	if (!prs_init( prs, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL ))
-		return False;
-
-
-	if (!prs_copy_data_in(prs, (char *)blob->data, blob->length))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-return the contents of a prs_struct in a DATA_BLOB
-********************************************************************/
-bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
-{
-	blob->length = prs_data_size(prs);
-	blob->data = (uint8 *)TALLOC_ZERO_SIZE(mem_ctx, blob->length);
-
-	/* set the pointer at the end of the buffer */
-	prs_set_offset( prs, prs_data_size(prs) );
-
-	if (!prs_copy_all_data_out((char *)blob->data, prs))
-		return False;
 
 	return True;
 }
