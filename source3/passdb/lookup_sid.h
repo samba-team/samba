@@ -1,4 +1,50 @@
+/*
+   Unix SMB/CIFS implementation.
+   uid/user handling
+   Copyright (C) Andrew Tridgell         1992-1998
+   Copyright (C) Gerald (Jerry) Carter   2003
+   Copyright (C) Volker Lendecke	 2005
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+#ifndef _PASSDB_LOOKUP_SID_H_
+#define _PASSDB_LOOKUP_SID_H_
+
 #include "../librpc/gen_ndr/lsa.h"
+
+#define LOOKUP_NAME_NONE		0x00000000
+#define LOOKUP_NAME_ISOLATED             0x00000001  /* Look up unqualified names */
+#define LOOKUP_NAME_REMOTE               0x00000002  /* Ask others */
+#define LOOKUP_NAME_GROUP                0x00000004  /* (unused) This is a NASTY hack for
+							valid users = @foo where foo also
+							exists in as user. */
+#define LOOKUP_NAME_NO_NSS		 0x00000008  /* no NSS calls to avoid
+							winbind recursions */
+#define LOOKUP_NAME_BUILTIN		0x00000010 /* builtin names */
+#define LOOKUP_NAME_WKN			0x00000020 /* well known names */
+#define LOOKUP_NAME_DOMAIN		0x00000040 /* only lookup own domain */
+#define LOOKUP_NAME_LOCAL		(LOOKUP_NAME_ISOLATED\
+					|LOOKUP_NAME_BUILTIN\
+					|LOOKUP_NAME_WKN\
+					|LOOKUP_NAME_DOMAIN)
+#define LOOKUP_NAME_ALL			(LOOKUP_NAME_ISOLATED\
+					|LOOKUP_NAME_REMOTE\
+					|LOOKUP_NAME_BUILTIN\
+					|LOOKUP_NAME_WKN\
+					|LOOKUP_NAME_DOMAIN)
 
 struct lsa_dom_info {
 	bool valid;
@@ -47,3 +93,5 @@ bool delete_gid_cache(gid_t gid);
 bool delete_sid_cache(const struct dom_sid* psid);
 void flush_uid_cache(void);
 void flush_gid_cache(void);
+
+#endif /* _PASSDB_LOOKUP_SID_H_ */
