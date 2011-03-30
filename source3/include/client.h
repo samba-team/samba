@@ -48,61 +48,7 @@ struct print_job_info {
 	time_t t;
 };
 
-/**
- * rpc_cli_transport defines a transport mechanism to ship rpc requests
- * asynchronously to a server and receive replies
- */
-
-struct rpc_cli_transport {
-
-	enum dcerpc_transport_t transport;
-
-	/**
-	 * Trigger an async read from the server. May return a short read.
-	 */
-	struct tevent_req *(*read_send)(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
-					uint8_t *data, size_t size,
-					void *priv);
-	/**
-	 * Get the result from the read_send operation.
-	 */
-	NTSTATUS (*read_recv)(struct tevent_req *req, ssize_t *preceived);
-
-	/**
-	 * Trigger an async write to the server. May return a short write.
-	 */
-	struct tevent_req *(*write_send)(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
-					 const uint8_t *data, size_t size,
-					 void *priv);
-	/**
-	 * Get the result from the read_send operation.
-	 */
-	NTSTATUS (*write_recv)(struct tevent_req *req, ssize_t *psent);
-
-	/**
-	 * This is an optimization for the SMB transport. It models the
-	 * TransactNamedPipe API call: Send and receive data in one round
-	 * trip. The transport implementation is free to set this to NULL,
-	 * cli_pipe.c will fall back to the explicit write/read routines.
-	 */
-	struct tevent_req *(*trans_send)(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
-					 uint8_t *data, size_t data_len,
-					 uint32_t max_rdata_len,
-					 void *priv);
-	/**
-	 * Get the result from the trans_send operation.
-	 */
-	NTSTATUS (*trans_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			       uint8_t **prdata, uint32_t *prdata_len);
-
-	bool (*is_connected)(void *priv);
-	unsigned int (*set_timeout)(void *priv, unsigned int timeout);
-
-	void *priv;
-};
+#include "rpc_client/rpc_transport.h"
 
 struct dcerpc_binding_handle;
 
