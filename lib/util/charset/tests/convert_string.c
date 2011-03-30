@@ -180,6 +180,25 @@ static bool test_gd_iso8859_cp850(struct torture_context *tctx)
 						    (void *)&gd_output.data, &gd_output.length), 
 		       "conversion from (dos charset) ISO8859-1 to UTF16LE");
 	torture_assert_data_blob_equal(tctx, gd_output, gd_utf16le, "conversion from (dos charset) ISO8859-1 to UTF16LE");
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext_handle(iconv_handle,
+						     (const char *)gd_iso8859_1.data,
+						     CH_DOS, CH_UTF16LE),
+				 gd_output.length / 2,
+				 "checking strlen_m_ext of round trip conversion of UTF16 latin charset greek to display charset UTF8 and back again");
+
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
+						    CH_DOS, CH_UTF8,
+						    gd_iso8859_1.data, gd_iso8859_1.length,
+						    (void *)&gd_output.data, &gd_output.length),
+		       "conversion from (dos charset) ISO8859-1 to UTF8");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf8, "conversion from (dos charset) ISO8859-1 to UTF8");
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext_handle(iconv_handle,
+						     (const char *)gd_iso8859_1.data,
+						     CH_DOS, CH_UTF8),
+				 gd_output.length,
+				 "checking strlen_m_ext of conversion from (dos charset) ISO8859-1 to UTF8");
 	return true;
 }
 
@@ -292,6 +311,41 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 	torture_assert(tctx, iconv_handle, "creating iconv handle");
 		
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
+						    CH_UTF8, CH_UTF16LE,
+						    plato_utf8.data, plato_utf8.length,
+						    (void *)&plato_output.data, &plato_output.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf16le, "conversion from UTF8 to UTF16LE incorrect");
+
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext_handle(iconv_handle,
+						     (const char *)plato_utf8.data,
+						     CH_UTF8, CH_UTF16LE),
+				 plato_output.length / 2,
+				 "checking strlen_m_ext of conversion of UTF8 to UTF16LE");
+
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
+						    CH_UTF16LE, CH_UTF8,
+						    plato_output.data, plato_output.length,
+						    (void *)&plato_output2.data, &plato_output2.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output2, plato_utf8, "conversion from UTF8 to UTF16LE incorrect");
+
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
+							  CH_UTF8, CH_UTF8,
+							  plato_utf8.data, plato_utf8.length,
+							  (void *)&plato_output.data, &plato_output.length),
+		       "conversion of UTF8 to UTF8");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8,
+				       "conversion of UTF8 to UTF8");
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext_handle(iconv_handle,
+						     (const char *)plato_utf8.data,
+						     CH_UTF8, CH_UTF8),
+				 plato_output.length,
+				 "checking strlen_m_ext of conversion of UTF8 to UTF8");
+
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
 						    CH_UTF8, CH_DOS, 
 						    plato_utf8.data, plato_utf8.length, 
 						    (void *)&plato_output.data, &plato_output.length) == false, 
@@ -322,8 +376,13 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 						    plato_utf16le.data, plato_utf16le.length, 
 						    (void *)&plato_output.data, &plato_output.length), 	
 		       "conversion of UTF16 ancient greek to unix charset UTF8 failed");
-	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8, "conversion from UTF16LE to (unix charset) CP850 incorrect");
-	
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8, "conversion from UTF16LE to (unix charset) UTF8 incorrect");
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
+						    CH_UTF16LE, CH_UTF8,
+						    plato_utf16le.data, plato_utf16le.length,
+						    (void *)&plato_output.data, &plato_output.length),
+		       "conversion of UTF16 ancient greek to UTF8 failed");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8, "conversion from UTF16LE to UTF8 incorrect");
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
 							  CH_UTF16LE, CH_DISPLAY, 
 							  plato_utf16le.data, plato_utf16le.length, 
@@ -338,6 +397,26 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 		       "round trip conversion of UTF16 ancient greek to display charset UTF8 and back again failed");
 	torture_assert_data_blob_equal(tctx, plato_output2, plato_utf16le,
 				       "round trip conversion of UTF16 ancient greek to display charset UTF8 and back again failed");
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext_handle(iconv_handle,
+						     (const char *)plato_output.data,
+						     CH_DISPLAY, CH_UTF16LE),
+				 plato_output2.length / 2,
+				 "checking strlen_m_ext of round trip conversion of UTF16 latin charset greek to display charset UTF8 and back again");
+
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
+							  CH_DISPLAY, CH_UTF8,
+							  plato_output.data, plato_output.length,
+							  (void *)&plato_output2.data, &plato_output2.length),
+		       "conversion of display charset UTF8 to UTF8");
+	torture_assert_data_blob_equal(tctx, plato_output2, plato_utf8,
+				       "conversion of display charset UTF8 to UTF8");
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext_handle(iconv_handle,
+						     (const char *)plato_output.data,
+						     CH_DISPLAY, CH_UTF8),
+				 plato_output2.length,
+				 "checking strlen_m_ext of conversion of display charset UTF8 to UTF8");
 	return true;
 }
 
@@ -402,6 +481,12 @@ static bool test_plato_latin_cp850_utf8(struct torture_context *tctx)
 		       "round trip conversion of UTF16 latin charset greek to display charset UTF8 and back again failed");
 	torture_assert_data_blob_equal(tctx, plato_latin_output2, plato_latin_utf16le,
 				       "round trip conversion of UTF16 latin charset greek to display charset UTF8 and back again failed");
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext_handle(iconv_handle,
+						     (const char *)plato_latin_output.data,
+						     CH_DISPLAY, CH_UTF16LE),
+				 plato_latin_output2.length / 2,
+				 "checking strlen_m_ext of round trip conversion of UTF16 latin charset greek to display charset UTF8 and back again");
 	return true;
 }
 
