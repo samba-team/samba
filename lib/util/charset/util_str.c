@@ -145,6 +145,24 @@ _PUBLIC_ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
 {
 	size_t count = 0;
 
+#ifdef DEVELOPER
+	switch (dst_charset) {
+	case CH_DOS:
+	case CH_UNIX:
+	case CH_DISPLAY:
+		smb_panic("cannot call strlen_m_ext() with a variable dest charset (must be UTF16* or UTF8)");
+	default:
+		break;
+	}
+
+	switch (src_charset) {
+	case CH_UTF16LE:
+	case CH_UTF16BE:
+		smb_panic("cannot call strlen_m_ext() with a UTF16 src charset (must be DOS, UNIX, DISPLAY or UTF8)");
+	default:
+		break;
+	}
+#endif
 	if (!s) {
 		return 0;
 	}
