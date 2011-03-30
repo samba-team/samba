@@ -397,7 +397,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 			status = NT_STATUS_NO_MEMORY;
 			break;
 		}
-		num_pollfds = 1;
+		num_pollfds = 0;
 
 #ifdef CLUSTER_SUPPORT
 		if (lp_clustering()) {
