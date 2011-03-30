@@ -35,17 +35,19 @@ size_t push_ascii_fstring(void *dest, const char *src)
  this function uses convert_string_error() to avoid common debug
  warnings where is unable to convert strings to CH_DOS. The target
  string is truncated at the first character that cannot be converted
- The target is always null terminated. The resulting string size,
- without the null termination, it returned
+ The target is always null terminated.
 ********************************************************************/
 
 size_t push_ascii_nstring(void *dest, const char *src)
 {
 	size_t converted_size = 0;
-	size_t ret;
-	ret = convert_string_error(CH_UNIX, CH_DOS, src, -1, dest, sizeof(nstring), &converted_size);
-	SCVAL(dest, sizeof(nstring)-1, 0);
-	return ret;
+	bool ret = convert_string_error(CH_UNIX, CH_DOS, src, -1, dest, sizeof(nstring), &converted_size);
+	if (ret) {
+		SCVAL(dest, sizeof(nstring)-1, 0);
+	} else {
+		SCVAL(dest, 0, 0);
+	}
+	return ret ? converted_size : (size_t)-1;
 }
 
 size_t pull_ascii_fstring(char *dest, const void *src)

@@ -77,7 +77,7 @@ void init_iconv(void);
 size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen);
-size_t convert_string_error(charset_t from, charset_t to,
+bool convert_string_error(charset_t from, charset_t to,
 			    void const *src, size_t srclen,
 			    void *dest, size_t destlen,
 			    size_t *converted_size);

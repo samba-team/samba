@@ -80,13 +80,15 @@ void init_iconv(void)
  * @param srclen length of the source string in bytes
  * @param dest pointer to destination string (multibyte or singlebyte)
  * @param destlen maximal length allowed for string
- * @returns the number of bytes occupied in the destination
+ * @param converted size is the number of bytes occupied in the destination
+ *
+ * @returns false and sets errno on fail, true on success.
  *
  * Ensure the srclen contains the terminating zero.
  *
  **/
 
-static size_t convert_string_internal(charset_t from, charset_t to,
+static bool convert_string_internal(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen, size_t *converted_size)
 {
@@ -112,16 +114,18 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		errno = EINVAL;
-		return (size_t)-1;
+		return false;
 	}
 
 	i_len=srclen;
 	o_len=destlen;
 
 	retval = smb_iconv(descriptor, &inbuf, &i_len, &outbuf, &o_len);
-	if (converted_size != NULL)
-		*converted_size = destlen-o_len;
-	return retval;
+	if (retval == (size_t)-1) {
+		return false;
+	}
+	*converted_size = destlen-o_len;
+	return true;
 }
 
 /**
@@ -132,7 +136,9 @@ static size_t convert_string_internal(charset_t from, charset_t to,
  * @param srclen length of the source string in bytes, or -1 for nul terminated.
  * @param dest pointer to destination string (multibyte or singlebyte)
  * @param destlen maximal length allowed for string - *NEVER* -1.
- * @returns the number of bytes occupied in the destination
+ * @param converted size is the number of bytes occupied in the destination
+ *
+ * @returns false and sets errno on fail, true on success.
  *
  * Ensure the srclen contains the terminating zero.
  *
@@ -140,7 +146,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
  * Don't change unless you really know what you are doing. JRA.
  **/
 
-size_t convert_string_error(charset_t from, charset_t to,
+bool convert_string_error(charset_t from, charset_t to,
 			    void const *src, size_t srclen,
 			    void *dest, size_t destlen,
 			    size_t *converted_size)
@@ -155,12 +161,10 @@ size_t convert_string_error(charset_t from, charset_t to,
 	SMB_ASSERT(destlen != (size_t)-1);
 #endif
 
-	if (converted_size) {
+	if (srclen == 0) {
 		*converted_size = 0;
+		return true;
 	}
-
-	if (srclen == 0)
-		return 0;
 
 	if (from != CH_UTF16LE && from != CH_UTF16BE && to != CH_UTF16LE && to != CH_UTF16BE) {
 		const unsigned char *p = (const unsigned char *)src;
@@ -185,26 +189,24 @@ size_t convert_string_error(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
-				if (converted_size) {
-					*converted_size += retval;
-				}
+				bool ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
+				*converted_size += retval;
 				return ret;
 #endif
 			}
 		}
-		if (converted_size) {
-			*converted_size = retval;
-		}
+
+		*converted_size = retval;
+
 		if (!dlen) {
 			/* Even if we fast path we should note if we ran out of room. */
 			if (((slen != (size_t)-1) && slen) ||
 					((slen == (size_t)-1) && lastp)) {
 				errno = E2BIG;
-				return (size_t)-1;
+				return false;
 			}
 		}
-		return retval;
+		return true;
 	} else if (from == CH_UTF16LE && to != CH_UTF16LE) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
@@ -229,26 +231,24 @@ size_t convert_string_error(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
-				if (converted_size) {
-					*converted_size += retval;
-				}
+				bool ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
+				*converted_size += retval;
 				return ret;
 #endif
 			}
 		}
-		if (converted_size) {
-			*converted_size = retval;
-		}
+
+		*converted_size = retval;
+
 		if (!dlen) {
 			/* Even if we fast path we should note if we ran out of room. */
 			if (((slen != (size_t)-1) && slen) ||
 					((slen == (size_t)-1) && lastp)) {
 				errno = E2BIG;
-				return (size_t)-1;
+				return false;
 			}
 		}
-		return retval;
+		return true;
 	} else if (from != CH_UTF16LE && from != CH_UTF16BE && to == CH_UTF16LE) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
@@ -273,26 +273,24 @@ size_t convert_string_error(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
-				if (converted_size) {
-					*converted_size += retval;
-				}
+				bool ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
+				*converted_size += retval;
 				return ret;
 #endif
 			}
 		}
-		if (converted_size) {
-			*converted_size = retval;
-		}
+
+		*converted_size = retval;
+
 		if (!dlen) {
 			/* Even if we fast path we should note if we ran out of room. */
 			if (((slen != (size_t)-1) && slen) ||
 					((slen == (size_t)-1) && lastp)) {
 				errno = E2BIG;
-				return (size_t)-1;
+				return false;
 			}
 		}
-		return retval;
+		return true;
 	}
 
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
@@ -303,17 +301,19 @@ size_t convert_string_error(charset_t from, charset_t to,
 
 size_t convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen,
-		      void *dest, size_t destlen) {
+		      void *dest, size_t destlen)
+{
 	size_t converted_size;
-	size_t retval = convert_string_error(from, to, src, srclen, dest, destlen, &converted_size);
-	if(retval==(size_t)-1) {
+	bool ret = convert_string_error(from, to, src, srclen, dest, destlen, &converted_size);
+
+	if(ret==false) {
 		const char *reason="unknown error";
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
 				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",
 					 reason, (const char *)src));
-				return (size_t)-1;
+				break;
 			case E2BIG:
 			{
 				struct smb_iconv_handle *ic;
@@ -336,15 +336,15 @@ size_t convert_string(charset_t from, charset_t to,
 				reason="Illegal multibyte sequence";
 				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",
 					 reason, (const char *)src));
-				return (size_t)-1;
+				break;
 			default:
 				DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",
 					 reason, (const char *)src));
-				return (size_t)-1;
+				break;
 		}
 		/* smb_panic(reason); */
 	}
-	return converted_size;
+	return ret ? converted_size : (size_t)-1;
 }
 
 
@@ -379,11 +379,6 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	struct smb_iconv_handle *ic;
 
 	*dest = NULL;
-
-	if (!converted_size) {
-		errno = EINVAL;
-		return false;
-	}
 
 	if (src == NULL || srclen == (size_t)-1) {
 		errno = EINVAL;
