@@ -2755,8 +2755,6 @@ NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
 				struct rpc_cli_transport **presult);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 
-/* The following definitions come from rpc_server/srv_eventlog_nt.c  */
-
 /* The following definitions come from rpc_server/rpc_handles.c  */
 
 size_t num_pipe_handles(struct pipes_struct *p);
@@ -2860,59 +2858,6 @@ char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname);
 
 bool init_service_op_table( void );
 bool shutdown_service_op_table(void);
-
-/* The following definitions come from rpcclient/cmd_dfs.c  */
-
-
-/* The following definitions come from rpcclient/cmd_dssetup.c  */
-
-
-/* The following definitions come from rpcclient/cmd_echo.c  */
-
-
-/* The following definitions come from rpcclient/cmd_lsarpc.c  */
-
-
-/* The following definitions come from rpcclient/cmd_netlogon.c  */
-
-
-/* The following definitions come from rpcclient/cmd_ntsvcs.c  */
-
-
-/* The following definitions come from rpcclient/cmd_samr.c  */
-
-
-/* The following definitions come from rpcclient/cmd_shutdown.c  */
-
-
-/* The following definitions come from rpcclient/cmd_spoolss.c  */
-
-
-/* The following definitions come from rpcclient/cmd_srvsvc.c  */
-
-
-/* The following definitions come from rpcclient/cmd_test.c  */
-
-
-/* The following definitions come from rpcclient/cmd_wkssvc.c  */
-
-
-/* The following definitions come from rpcclient/rpcclient.c  */
-
-
-/* The following definitions come from services/svc_netlogon.c  */
-
-
-/* The following definitions come from services/svc_rcinit.c  */
-
-
-/* The following definitions come from services/svc_spoolss.c  */
-
-
-/* The following definitions come from services/svc_winreg.c  */
-
-
-/* The following definitions come from services/svc_wins.c  */
 
 /* The following definitions come from lib/server_contexts.c  */
 struct tevent_context *server_event_context(void);
