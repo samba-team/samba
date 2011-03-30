@@ -26,6 +26,8 @@
 #ifndef _S3_DCERPC_H__
 #define _S3_DCERPC_H__
 
+#include "librpc/gen_ndr/dcerpc.h"
+#include "../librpc/ndr/libndr.h"
 #include "../librpc/rpc/rpc_common.h"
 
 #define SMB_RPC_INTERFACE_VERSION 1
