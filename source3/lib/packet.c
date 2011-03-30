@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../lib/util/select.h"
+#include "system/filesys.h"
 #include "system/select.h"
 #include "packet.h"
 
