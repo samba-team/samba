@@ -1715,7 +1715,11 @@ static int do_allinfo(const char *name)
 			 (unsigned long long)streams[i].size);
 	}
 
-	status = cli_open(cli, name, O_RDONLY, DENY_NONE, &fnum);
+	status = cli_ntcreate(cli, name, 0,
+			      CREATE_ACCESS_READ, 0,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE
+			      |FILE_SHARE_DELETE,
+			      FILE_OPEN, 0x0, 0x0, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Ignore failure, it does not hurt if we can't list
