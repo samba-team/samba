@@ -21,10 +21,10 @@
 #include "includes.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #if defined(WITH_WINBIND)
 
-#include "nsswitch/libwbclient/wbclient.h"
 #include "lib/winbind_util.h"
 
 struct passwd * winbind_getpwnam(const char * name)
