@@ -159,30 +159,30 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 	if (!ret)
 		goto unlock;
 
-	sprintf(ret, SUMMARY_FORMAT,
-		tdb->map_size, keys.total+data.total,
-		keys.num,
-		keys.min, tally_mean(&keys), keys.max,
-		data.min, tally_mean(&data), data.max,
-		extra.min, tally_mean(&extra), extra.max,
-		dead.num,
-		dead.min, tally_mean(&dead), dead.max,
-		freet.num,
-		freet.min, tally_mean(&freet), freet.max,
-		hash.num,
-		hash.min, tally_mean(&hash), hash.max,
-		uncoal.total,
-		uncoal.min, tally_mean(&uncoal), uncoal.max,
-		keys.total * 100.0 / tdb->map_size,
-		data.total * 100.0 / tdb->map_size,
-		extra.total * 100.0 / tdb->map_size,
-		freet.total * 100.0 / tdb->map_size,
-		dead.total * 100.0 / tdb->map_size,
-		(keys.num + freet.num + dead.num)
-		* (sizeof(struct tdb_record) + sizeof(uint32_t))
-		* 100.0 / tdb->map_size,
-		tdb->header.hash_size * sizeof(tdb_off_t)
-		* 100.0 / tdb->map_size);
+	snprintf(ret, len, SUMMARY_FORMAT,
+		 tdb->map_size, keys.total+data.total,
+		 keys.num,
+		 keys.min, tally_mean(&keys), keys.max,
+		 data.min, tally_mean(&data), data.max,
+		 extra.min, tally_mean(&extra), extra.max,
+		 dead.num,
+		 dead.min, tally_mean(&dead), dead.max,
+		 freet.num,
+		 freet.min, tally_mean(&freet), freet.max,
+		 hash.num,
+		 hash.min, tally_mean(&hash), hash.max,
+		 uncoal.total,
+		 uncoal.min, tally_mean(&uncoal), uncoal.max,
+		 keys.total * 100.0 / tdb->map_size,
+		 data.total * 100.0 / tdb->map_size,
+		 extra.total * 100.0 / tdb->map_size,
+		 freet.total * 100.0 / tdb->map_size,
+		 dead.total * 100.0 / tdb->map_size,
+		 (keys.num + freet.num + dead.num)
+		 * (sizeof(struct tdb_record) + sizeof(uint32_t))
+		 * 100.0 / tdb->map_size,
+		 tdb->header.hash_size * sizeof(tdb_off_t)
+		 * 100.0 / tdb->map_size);
 
 unlock:
 	if (locked) {
