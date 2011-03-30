@@ -187,6 +187,8 @@ static bool wbinfo_get_userinfo(char *user)
 		 pwd->pw_dir,
 		 pwd->pw_shell);
 
+	wbcFreeMemory(pwd);
+
 	return true;
 }
 
