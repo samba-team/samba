@@ -214,6 +214,8 @@ static bool wbinfo_get_uidinfo(int uid)
 		 pwd->pw_dir,
 		 pwd->pw_shell);
 
+	wbcFreeMemory(pwd);
+
 	return true;
 }
 
