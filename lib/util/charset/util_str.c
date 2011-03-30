@@ -184,7 +184,7 @@ _PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst
 				count += 1;
 			} else if (c < 0x800) {
 				count += 2;
-			} else if (c < 0x1000) {
+			} else if (c < 0x10000) {
 				count += 3;
 			} else {
 				count += 4;
