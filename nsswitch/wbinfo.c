@@ -567,6 +567,8 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 		d_printf("\n");
 	}
 
+	wbcFreeMemory(domain_list);
+
 	return true;
 }
 
