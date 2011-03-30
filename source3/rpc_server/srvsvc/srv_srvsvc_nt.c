@@ -494,16 +494,20 @@ static void init_srv_share_info_1007(struct pipes_struct *p,
  ********************************************************************/
 
 static void init_srv_share_info_1501(struct pipes_struct *p,
-				     struct sec_desc_buf *r,
+				     struct sec_desc_buf **r,
 				     int snum)
 {
 	struct security_descriptor *sd;
+	struct sec_desc_buf *sd_buf = NULL;
 	size_t sd_size;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
 	sd = get_share_security(ctx, lp_servicename(snum), &sd_size);
+	if (sd) {
+		sd_buf = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
+	}
 
-	r = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
+	*r = sd_buf;
 }
 
 /*******************************************************************
@@ -749,7 +753,9 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		for (snum = 0; snum < num_services; snum++) {
 			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
-				init_srv_share_info_1501(p, &ctr.ctr1501->array[i++], snum);
+				struct sec_desc_buf *sd_buf = NULL;
+				init_srv_share_info_1501(p, &sd_buf, snum);
+				ctr.ctr1501->array[i++] = *sd_buf;
 			}
 		}
 
@@ -1483,7 +1489,7 @@ WERROR _srvsvc_NetShareGetInfo(struct pipes_struct *p,
 			init_srv_share_info_1007(p, info->info1007, snum);
 			break;
 		case 1501:
-			init_srv_share_info_1501(p, info->info1501, snum);
+			init_srv_share_info_1501(p, &info->info1501, snum);
 			break;
 		default:
 			DEBUG(5,("_srvsvc_NetShareGetInfo: unsupported switch value %d\n",
