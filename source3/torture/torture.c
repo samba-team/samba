@@ -7259,6 +7259,103 @@ static bool run_local_rbtree(int dummy)
 	return ret;
 }
 
+
+/*
+  local test for character set functions
+
+  This is a very simple test for the functionality in convert_string_error()
+ */
+static bool run_local_convert_string(int dummy)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	const char *test_strings[2] = { "March", "M\303\244rz" };
+	char dst[7];
+	int i;
+
+	for (i=0; i<2; i++) {
+		const char *str = test_strings[i];
+		int len = strlen(str);
+		size_t converted_size;
+		bool ret;
+
+		memset(dst, 'X', sizeof(dst));
+
+		/* first try with real source length */
+		ret = convert_string_error(CH_UNIX, CH_UTF8,
+					   str, len,
+					   dst, sizeof(dst),
+					   &converted_size);
+		if (ret != true) {
+			d_fprintf(stderr, "Failed to convert '%s' to CH_DISPLAY\n", str);
+			goto failed;
+		}
+
+		if (converted_size != len) {
+			d_fprintf(stderr, "Converted size of '%s' should be %d - got %d\n",
+				  str, len, (int)converted_size);
+			goto failed;
+		}
+
+		if (strncmp(str, dst, converted_size) != 0) {
+			d_fprintf(stderr, "Expected '%s' to match '%s'\n", str, dst);
+			goto failed;
+		}
+
+		if (strlen(str) != converted_size) {
+			d_fprintf(stderr, "Expected '%s' length %d - got %d\n", str,
+				  (int)strlen(str), (int)converted_size);
+			goto failed;
+		}
+
+		if (dst[converted_size] != 'X') {
+			d_fprintf(stderr, "Expected no termination of '%s'\n", dst);
+			goto failed;
+		}
+
+		/* now with srclen==-1, this causes the nul to be
+		 * converted too */
+		ret = convert_string_error(CH_UNIX, CH_UTF8,
+					   str, -1,
+					   dst, sizeof(dst),
+					   &converted_size);
+		if (ret != true) {
+			d_fprintf(stderr, "Failed to convert '%s' to CH_DISPLAY\n", str);
+			goto failed;
+		}
+
+		if (converted_size != len+1) {
+			d_fprintf(stderr, "Converted size of '%s' should be %d - got %d\n",
+				  str, len, (int)converted_size);
+			goto failed;
+		}
+
+		if (strncmp(str, dst, converted_size) != 0) {
+			d_fprintf(stderr, "Expected '%s' to match '%s'\n", str, dst);
+			goto failed;
+		}
+
+		if (len+1 != converted_size) {
+			d_fprintf(stderr, "Expected '%s' length %d - got %d\n", str,
+				  len+1, (int)converted_size);
+			goto failed;
+		}
+
+		if (dst[converted_size] != 'X') {
+			d_fprintf(stderr, "Expected no termination of '%s'\n", dst);
+			goto failed;
+		}
+
+	}
+
+
+	TALLOC_FREE(tmp_ctx);
+	return true;
+failed:
+	TALLOC_FREE(tmp_ctx);
+	return false;
+}
+
+
 struct talloc_dict_test {
 	int content;
 };
@@ -8176,6 +8273,7 @@ static struct {
 	{ "LOCAL-binary_to_sid", run_local_binary_to_sid, 0},
 	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
 	{ "LOCAL-TEVENT-SELECT", run_local_tevent_select, 0},
+	{ "LOCAL-CONVERT-STRING", run_local_convert_string, 0},
 	{NULL, NULL, 0}};
 
 

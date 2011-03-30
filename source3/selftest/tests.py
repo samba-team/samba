@@ -59,7 +59,7 @@ tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7",
         "TCON2", "IOCTL", "CHKPATH", "FDSESS", "LOCAL-SUBSTITUTE", "CHAIN1",
         "GETADDRINFO", "POSIX", "UID-REGRESSION-TEST", "SHORTNAME-TEST",
         "LOCAL-BASE64", "LOCAL-GENCACHE", "POSIX-APPEND",
-        "LOCAL-string_to_sid" ]
+        "LOCAL-string_to_sid", "LOCAL-CONVERT-STRING" ]
 
 for t in tests:
     plantestsuite("samba3.smbtorture_s3.plain(dc).%s" % t, "dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', "", "-l $LOCAL_PATH"])
