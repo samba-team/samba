@@ -619,6 +619,8 @@ static bool wbinfo_show_onlinestatus(const char *domain)
 			 is_offline ? "offline" : "online" );
 	}
 
+	wbcFreeMemory(domain_list);
+
 	return true;
 }
 
