@@ -2731,31 +2731,6 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 				  uint32 *pneg_flags,
 				  struct rpc_pipe_client **presult);
 
-/* The following definitions come from rpc_client/rpc_transport_np.c  */
-
-struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
-					      struct cli_state *cli,
-					      const struct ndr_syntax_id *abstract_syntax);
-NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
-				    TALLOC_CTX *mem_ctx,
-				    struct rpc_cli_transport **presult);
-NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
-			       const struct ndr_syntax_id *abstract_syntax,
-			       struct rpc_cli_transport **presult);
-
-/* The following definitions come from rpc_client/rpc_transport_sock.c  */
-
-NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
-				 struct rpc_cli_transport **presult);
-
-/* The following definitions come from rpc_client/rpc_transport_tstream.c  */
-
-NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
-				struct tstream_context **stream,
-				struct rpc_cli_transport **presult);
-struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
-
 /* The following definitions come from rpc_server/rpc_handles.c  */
 
 size_t num_pipe_handles(struct pipes_struct *p);

@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "rpc_client/rpc_transport.h"
 #include "libsmb/cli_np_tstream.h"
 
 #undef DBGC_CLASS
