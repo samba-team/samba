@@ -59,43 +59,23 @@ typedef struct _prs_struct {
 void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
 bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io);
 void prs_mem_free(prs_struct *ps);
-void prs_mem_clear(prs_struct *ps);
 char *prs_alloc_mem_(prs_struct *ps, size_t size, unsigned int count);
 char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count);
 TALLOC_CTX *prs_get_mem_context(prs_struct *ps);
-void prs_give_memory(prs_struct *ps, char *buf, uint32 size, bool is_dynamic);
-bool prs_set_buffer_size(prs_struct *ps, uint32 newsize);
 bool prs_grow(prs_struct *ps, uint32 extra_space);
-bool prs_force_grow(prs_struct *ps, uint32 extra_space);
 char *prs_data_p(prs_struct *ps);
 uint32 prs_data_size(prs_struct *ps);
 uint32 prs_offset(prs_struct *ps);
 bool prs_set_offset(prs_struct *ps, uint32 offset);
-bool prs_append_prs_data(prs_struct *dst, prs_struct *src);
-bool prs_append_some_data(prs_struct *dst, void *src_base, uint32_t start,
-			  uint32_t len);
-bool prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len);
 bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len);
-bool prs_copy_data_out(char *dst, prs_struct *src, uint32 len);
-bool prs_copy_all_data_out(char *dst, prs_struct *src);
-void prs_set_endian_data(prs_struct *ps, bool endian);
 bool prs_align(prs_struct *ps);
-bool prs_align_uint16(prs_struct *ps);
 bool prs_align_uint64(prs_struct *ps);
-bool prs_align_custom(prs_struct *ps, uint8 boundary);
-bool prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, bool io);
 bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8);
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
 bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
-bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32);
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
 bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
-bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
-bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-bool prs_init_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
-bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 
 #endif
