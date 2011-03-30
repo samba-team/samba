@@ -19,6 +19,7 @@
 
 #define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
+#include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
