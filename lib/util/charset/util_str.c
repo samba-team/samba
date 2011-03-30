@@ -140,10 +140,10 @@ _PUBLIC_ bool strcsequal(const char *s1,const char *s2)
  * string which is expected to be in in src_charset encoding to the
  * destination charset (which should be a unicode charset).
  */
-_PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset)
+_PUBLIC_ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
+				    const char *s, charset_t src_charset, charset_t dst_charset)
 {
 	size_t count = 0;
-	struct smb_iconv_handle *ic = get_iconv_handle();
 
 	if (!s) {
 		return 0;
@@ -201,6 +201,18 @@ _PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst
 	}
 
 	return count;
+}
+
+/**
+ * Calculate the number of units (8 or 16-bit, depending on the
+ * destination charset), that would be needed to convert the input
+ * string which is expected to be in in src_charset encoding to the
+ * destination charset (which should be a unicode charset).
+ */
+_PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset)
+{
+	struct smb_iconv_handle *ic = get_iconv_handle();
+	return strlen_m_ext_handle(ic, s, src_charset, dst_charset);
 }
 
 _PUBLIC_ size_t strlen_m_ext_term(const char *s, const charset_t src_charset,

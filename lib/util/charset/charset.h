@@ -111,6 +111,14 @@ struct smb_iconv_handle;
 #define strupper(s) strupper_m(s)
 
 char *strchr_m(const char *s, char c);
+/**
+ * Calculate the number of units (8 or 16-bit, depending on the
+ * destination charset), that would be needed to convert the input
+ * string which is expected to be in in src_charset encoding to the
+ * destination charset (which should be a unicode charset).
+ */
+size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
+			   const char *s, charset_t src_charset, charset_t dst_charset);
 size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset);
 size_t strlen_m_ext_term(const char *s, charset_t src_charset,
 			 charset_t dst_charset);
