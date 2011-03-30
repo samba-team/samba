@@ -20,8 +20,9 @@
  */
 
 #include "includes.h"
-#include "smbd/smbd.h"
+#include "system/filesys.h"
 #include "system/shmem.h"
+#include "smbd/smbd.h"
 
 struct mmap_area {
 	size_t size;
