@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "passdb.h"
 #include "libcli/security/dom_sid.h"
+#include "../librpc/ndr/libndr.h"
 
 #include "smbldap.h"
 
