@@ -45,7 +45,6 @@ struct la_op_store {
 	enum la_op {LA_OP_ADD, LA_OP_DEL} op;
 	struct GUID guid;
 	char *name;
-	char *value;
 };
 
 struct replace_context {
@@ -59,8 +58,7 @@ struct la_context {
 	const struct dsdb_schema *schema;
 	struct ldb_module *module;
 	struct ldb_request *req;
-	struct ldb_dn *add_dn;
-	struct ldb_dn *del_dn;
+	struct ldb_dn *mod_dn;
 	struct replace_context *rc;
 	struct la_op_store *ops;
 	struct ldb_extended *op_response;
@@ -319,7 +317,7 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 						LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ac->add_dn = ac->del_dn = talloc_steal(ac, ares->message->dn);
+		ac->mod_dn = talloc_steal(ac, ares->message->dn);
 
 		/* We don't populate 'rc' for ADD - it can't be deleting elements anyway */
 		for (i = 0; rc && i < rc->num_elements; i++) {
@@ -572,9 +570,9 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 
 		/* We need to figure out our own extended DN, to fill in as the backlink target */
 		if (ret == LDB_SUCCESS) {
-			ret = ldb_request_add_control(search_req,
-						      LDB_CONTROL_EXTENDED_DN_OID,
-						      false, NULL);
+			ret = dsdb_request_add_controls(search_req,
+							DSDB_SEARCH_SHOW_DELETED |
+							DSDB_SEARCH_SHOW_EXTENDED_DN);
 		}
 		if (ret == LDB_SUCCESS) {
 			talloc_steal(search_req, attrs);
@@ -867,9 +865,9 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 		LDB_REQ_SET_LOCATION(search_req);
 
 		if (ret == LDB_SUCCESS) {
-			ret = ldb_request_add_control(search_req,
-						      LDB_CONTROL_EXTENDED_DN_OID,
-						      false, NULL);
+			ret = dsdb_request_add_controls(search_req,
+							DSDB_SEARCH_SHOW_DELETED |
+							DSDB_SEARCH_SHOW_EXTENDED_DN);
 		}
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL,
@@ -941,6 +939,11 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 	struct ldb_context *ldb;
 	int ret;
 
+	if (ac->mod_dn == NULL) {
+		/* we didn't find the DN that we searched for */
+		return LDB_SUCCESS;
+	}
+
 	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Create the modify request */
@@ -969,11 +972,7 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 		return ldb_oom(ldb);
 	}
 	ret_el->num_values = 1;
-	if (op->op == LA_OP_ADD) {
-		ret_el->values[0] = data_blob_string_const(ldb_dn_get_extended_linearized(new_msg, ac->add_dn, 1));
-	} else {
-		ret_el->values[0] = data_blob_string_const(ldb_dn_get_extended_linearized(new_msg, ac->del_dn, 1));
-	}
+	ret_el->values[0] = data_blob_string_const(ldb_dn_get_extended_linearized(new_msg, ac->mod_dn, 1));
 
 	/* a backlink should never be single valued. Unfortunately the
 	   exchange schema has a attribute
@@ -996,7 +995,7 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 
 	ret = dsdb_module_modify(module, new_msg, DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
+		ldb_debug(ldb, LDB_DEBUG_WARNING, __location__ ": failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
 			  ldb_ldif_message_string(ldb, op, LDB_CHANGETYPE_MODIFY, new_msg));
 	}
