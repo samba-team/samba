@@ -34,6 +34,11 @@
 #define ARG_OTHERNETBIOSDOMAIN "other_netbios_domain="
 #define ARG_TRUSTPW "trustpw="
 
+enum trust_op {
+	TRUST_CREATE,
+	TRUST_DELETE
+};
+
 struct other_dom_data {
 	char *host;
 	char *user_name;
@@ -65,6 +70,32 @@ static NTSTATUS close_handle(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("lsa close failed with error [%s].\n",
 			  nt_errstr(result)));
 		return result;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS delete_trust(TALLOC_CTX *mem_ctx,
+			     struct dcerpc_binding_handle *bind_hnd,
+			     struct policy_handle *pol_hnd,
+			     struct dom_sid *domsid)
+{
+	NTSTATUS status;
+	struct lsa_DeleteTrustedDomain dr;
+
+	dr.in.handle = pol_hnd;
+	dr.in.dom_sid = domsid;
+
+	status = dcerpc_lsa_DeleteTrustedDomain_r(bind_hnd, mem_ctx, &dr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dcerpc_lsa_DeleteTrustedDomain_r failed with [%s]\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(dr.out.result)) {
+		DEBUG(0, ("DeleteTrustedDomain returned [%s]\n",
+			  nt_errstr(dr.out.result)));
+		return dr.out.result;
 	}
 
 	return NT_STATUS_OK;
@@ -336,6 +367,22 @@ failed:
 	return ret;
 }
 
+static void print_trust_delete_usage(void)
+{
+	d_printf(  "%s\n"
+		   "net rpc trust delete [options]\n"
+		   "\nOptions:\n"
+		   "\totherserver=DC in other domain\n"
+		   "\totheruser=Admin user in other domain\n"
+		   "\totherdomainsid=SID of other domain\n"
+		   "\nExamples:\n"
+		   "\tnet rpc trust delete otherserver=oname otheruser=ouser -S lname -U luser\n"
+		   "\tnet rpc trust delete otherdomainsid=S-... -S lname -U luser\n"
+		   "  %s\n",
+		 _("Usage:"),
+		 _("Remove trust between two domains"));
+}
+
 static void print_trust_usage(void)
 {
 	d_printf(  "%s\n"
@@ -355,8 +402,8 @@ static void print_trust_usage(void)
 		 _("Create trust between two domains"));
 }
 
-static int rpc_trust_create(struct net_context *net_ctx, int argc,
-			    const char **argv)
+static int rpc_trust_common(struct net_context *net_ctx, int argc,
+			    const char **argv, enum trust_op op)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -373,11 +420,21 @@ static int rpc_trust_create(struct net_context *net_ctx, int argc,
 	struct dom_data dom_data[2];
 
 	if (net_ctx->display_usage) {
-		print_trust_usage();
+		switch (op) {
+			case TRUST_CREATE:
+				print_trust_usage();
+				break;
+			case TRUST_DELETE:
+				print_trust_delete_usage();
+				break;
+			default:
+				DEBUG(0, ("Unsupported trust operation.\n"));
+				return -1;
+		}
 		return 0;
 	}
 
-	mem_ctx = talloc_init("trust create");
+	mem_ctx = talloc_init("trust op");
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_init failed.\n"));
 		return -1;
@@ -409,8 +466,9 @@ static int rpc_trust_create(struct net_context *net_ctx, int argc,
 		dom_data[1].dns_domain_name = other_dom_data->dns_domain_name;
 
 		if (dom_data[1].domsid == NULL ||
-		    dom_data[1].domain_name == NULL ||
-		    dom_data[1].dns_domain_name == NULL) {
+		    (op == TRUST_CREATE &&
+		     (dom_data[1].domain_name == NULL ||
+		      dom_data[1].dns_domain_name == NULL))) {
 			DEBUG(0, ("Missing required argument.\n"));
 			print_trust_usage();
 			goto done;
@@ -436,52 +494,31 @@ static int rpc_trust_create(struct net_context *net_ctx, int argc,
 		}
 	}
 
-	if (trust_pw == NULL) {
-		if (other_net_ctx == NULL) {
-			DEBUG(0, ("Missing either trustpw or otherhost.\n"));
-			goto done;
-		}
-
-		DEBUG(0, ("Using random trust password.\n"));
-/* FIXME: why only 8 characters work? Would it be possible to use a random
- * binary password? */
-		trust_pw = generate_random_str(mem_ctx, 8);
+	if (op == TRUST_CREATE) {
 		if (trust_pw == NULL) {
-			DEBUG(0, ("generate_random_str failed.\n"));
+			if (other_net_ctx == NULL) {
+				DEBUG(0, ("Missing either trustpw or otherhost.\n"));
+				goto done;
+			}
+
+			DEBUG(0, ("Using random trust password.\n"));
+	/* FIXME: why only 8 characters work? Would it be possible to use a
+	 * random binary password? */
+			trust_pw = generate_random_str(mem_ctx, 8);
+			if (trust_pw == NULL) {
+				DEBUG(0, ("generate_random_str failed.\n"));
+				goto done;
+			}
+		} else {
+			DEBUG(0, ("Using user provided password.\n"));
+		}
+
+		if (!get_trust_domain_passwords_auth_blob(mem_ctx, trust_pw,
+							  &auth_blob)) {
+			DEBUG(0, ("get_trust_domain_passwords_auth_blob failed\n"));
 			goto done;
 		}
-	} else {
-		DEBUG(0, ("Using user provided password.\n"));
-	}
 
-	if (!get_trust_domain_passwords_auth_blob(mem_ctx, trust_pw,
-						  &auth_blob)) {
-		DEBUG(0, ("get_trust_domain_passwords_auth_blob failed\n"));
-		goto done;
-	}
-
-	authinfo.auth_blob.data = talloc_memdup(mem_ctx, auth_blob.data,
-						auth_blob.length);
-	if (authinfo.auth_blob.data == NULL) {
-		goto done;
-	}
-	authinfo.auth_blob.size = auth_blob.length;
-
-	arcfour_crypt_blob(authinfo.auth_blob.data, authinfo.auth_blob.size,
-			   &cli[0]->user_session_key);
-
-	status = create_trust(mem_ctx, pipe_hnd[0]->binding_handle, &pol_hnd[0],
-			      dom_data[1].domain_name,
-			      dom_data[1].dns_domain_name, dom_data[1].domsid,
-			      &authinfo);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("create_trust failed with error [%s].\n",
-		nt_errstr(status)));
-		goto done;
-	}
-
-	if (other_net_ctx != NULL) {
-		talloc_free(authinfo.auth_blob.data);
 		authinfo.auth_blob.data = talloc_memdup(mem_ctx, auth_blob.data,
 							auth_blob.length);
 		if (authinfo.auth_blob.data == NULL) {
@@ -489,17 +526,66 @@ static int rpc_trust_create(struct net_context *net_ctx, int argc,
 		}
 		authinfo.auth_blob.size = auth_blob.length;
 
-		arcfour_crypt_blob(authinfo.auth_blob.data, authinfo.auth_blob.size,
-				   &cli[1]->user_session_key);
+		arcfour_crypt_blob(authinfo.auth_blob.data,
+				   authinfo.auth_blob.size,
+				   &cli[0]->user_session_key);
 
-		status = create_trust(mem_ctx, pipe_hnd[1]->binding_handle,
-				      &pol_hnd[1], dom_data[0].domain_name,
-				      dom_data[0].dns_domain_name,
-				      dom_data[0].domsid, &authinfo);
+		status = create_trust(mem_ctx, pipe_hnd[0]->binding_handle,
+				      &pol_hnd[0],
+				      dom_data[1].domain_name,
+				      dom_data[1].dns_domain_name,
+				      dom_data[1].domsid,
+				      &authinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("create_trust failed with error [%s].\n",
 			nt_errstr(status)));
 			goto done;
+		}
+
+		if (other_net_ctx != NULL) {
+			talloc_free(authinfo.auth_blob.data);
+			authinfo.auth_blob.data = talloc_memdup(mem_ctx,
+								auth_blob.data,
+								auth_blob.length);
+			if (authinfo.auth_blob.data == NULL) {
+				goto done;
+			}
+			authinfo.auth_blob.size = auth_blob.length;
+
+			arcfour_crypt_blob(authinfo.auth_blob.data,
+					   authinfo.auth_blob.size,
+					   &cli[1]->user_session_key);
+
+			status = create_trust(mem_ctx,
+					      pipe_hnd[1]->binding_handle,
+					      &pol_hnd[1],
+					      dom_data[0].domain_name,
+					      dom_data[0].dns_domain_name,
+					      dom_data[0].domsid, &authinfo);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("create_trust failed with error [%s].\n",
+				nt_errstr(status)));
+				goto done;
+			}
+		}
+	} else if (op == TRUST_DELETE) {
+		status = delete_trust(mem_ctx, pipe_hnd[0]->binding_handle,
+				      &pol_hnd[0], dom_data[1].domsid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("delete_trust failed with [%s].\n",
+				  nt_errstr(status)));
+			goto done;
+		}
+
+		if (other_net_ctx != NULL) {
+			status = delete_trust(mem_ctx,
+					      pipe_hnd[1]->binding_handle,
+					      &pol_hnd[1], dom_data[0].domsid);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("delete_trust failed with [%s].\n",
+					  nt_errstr(status)));
+				goto done;
+			}
 		}
 	}
 
@@ -530,6 +616,18 @@ done:
 	return success;
 }
 
+static int rpc_trust_create(struct net_context *net_ctx, int argc,
+			    const char **argv)
+{
+	return rpc_trust_common(net_ctx, argc, argv, TRUST_CREATE);
+}
+
+static int rpc_trust_delete(struct net_context *net_ctx, int argc,
+			    const char **argv)
+{
+	return rpc_trust_common(net_ctx, argc, argv, TRUST_DELETE);
+}
+
 int net_rpc_trust(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -540,6 +638,14 @@ int net_rpc_trust(struct net_context *c, int argc, const char **argv)
 			N_("Create trusts"),
 			N_("net rpc trust create\n"
 			   "    Create trusts")
+		},
+		{
+			"delete",
+			rpc_trust_delete,
+			NET_TRANSPORT_RPC,
+			N_("Remove trusts"),
+			N_("net rpc trust delete\n"
+			   "    Remove trusts")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
