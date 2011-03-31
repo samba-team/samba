@@ -190,13 +190,19 @@ _PUBLIC_ size_t smb_iconv(smb_iconv_t cd,
 
 			if (cd->pull(cd->cd_pull,
 				     inbuf, inbytesleft, &bufp1, &bufsize) == -1
-			    && errno != E2BIG) return -1;
+			    && errno != E2BIG) {
+				talloc_free(cvtbuf);
+				return -1;
+			}
 
 			bufsize = SMB_ICONV_BUFSIZE - bufsize;
 
 			if (cd->push(cd->cd_push,
 				     &bufp2, &bufsize,
-				     outbuf, outbytesleft) == -1) return -1;
+				     outbuf, outbytesleft) == -1) {
+				talloc_free(cvtbuf);
+				return -1;
+			}
 		}
 		talloc_free(cvtbuf);
 	}
