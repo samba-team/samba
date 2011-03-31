@@ -1123,6 +1123,7 @@ static bool test_pool(void)
 {
 	void *pool;
 	void *p1, *p2, *p3, *p4;
+	void *p2_2;
 
 	pool = talloc_pool(NULL, 1024);
 
@@ -1130,6 +1131,60 @@ static bool test_pool(void)
 	p2 = talloc_size(pool, 20);
 	p3 = talloc_size(p1, 50);
 	p4 = talloc_size(p3, 1000);
+
+#if 1 /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
+	p2_2 = talloc_realloc_size(pool, p2, 20+1);
+	torture_assert("pool realloc 20+1", p2_2 == p2, "failed: pointer changed");
+	p2_2 = talloc_realloc_size(pool, p2, 20-1);
+	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+	p2_2 = talloc_realloc_size(pool, p2, 20-1);
+	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+
+	talloc_free(p3);
+
+	/* this should reclaim the memory of p4 and p3 */
+	p2_2 = talloc_realloc_size(pool, p2, 400);
+	torture_assert("pool realloc 400", p2_2 == p2, "failed: pointer changed");
+
+	talloc_free(p1);
+
+	/* this should reclaim the memory of p1 */
+	p2_2 = talloc_realloc_size(pool, p2, 800);
+	torture_assert("pool realloc 800", p2_2 == p1, "failed: pointer not changed");
+	p2 = p2_2;
+
+	/* this should do a malloc */
+	p2_2 = talloc_realloc_size(pool, p2, 1800);
+	torture_assert("pool realloc 1800", p2_2 != p2, "failed: pointer not changed");
+	p2 = p2_2;
+
+	/* this should reclaim the memory from the pool */
+	p3 = talloc_size(pool, 80);
+	torture_assert("pool alloc 80", p3 == p1, "failed: pointer changed");
+
+	talloc_free(p2);
+	talloc_free(p3);
+
+	p1 = talloc_size(pool, 80);
+	p2 = talloc_size(pool, 20);
+
+	talloc_free(p1);
+
+	p2_2 = talloc_realloc_size(pool, p2, 20-1);
+	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+	p2_2 = talloc_realloc_size(pool, p2, 20-1);
+	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+
+	/* this should do a malloc */
+	p2_2 = talloc_realloc_size(pool, p2, 1800);
+	torture_assert("pool realloc 1800", p2_2 != p2, "failed: pointer not changed");
+	p2 = p2_2;
+
+	/* this should reclaim the memory from the pool */
+	p3 = talloc_size(pool, 800);
+	torture_assert("pool alloc 800", p3 == p1, "failed: pointer changed");
+
+#endif /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 
 	talloc_free(pool);
 
