@@ -5499,8 +5499,12 @@ if test "x$have_cluster_support" = "xyes" ; then
 	])
 	if test x"$ac_cv_have_CTDB_CONTROL_SCHEDULE_FOR_DELETION_decl" != x"yes"
 	then
-		ctdb_broken="support for SCHEDULE_FOR_DELETION control missing"
-		have_cluster_support=no
+		if test "x$enable_old_ctdb" = "xyes" ; then
+			AC_MSG_WARN([ignoring missing SCHEDULE_FOR_DELETION (--enable-old-ctdb)])
+		else
+			ctdb_broken="support for SCHEDULE_FOR_DELETION control missing"
+			have_cluster_support=no
+		fi
 	fi
 fi
 
