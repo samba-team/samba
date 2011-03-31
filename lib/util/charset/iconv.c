@@ -164,32 +164,41 @@ _PUBLIC_ size_t smb_iconv(smb_iconv_t cd,
 		 const char **inbuf, size_t *inbytesleft,
 		 char **outbuf, size_t *outbytesleft)
 {
-	char cvtbuf[2048];
-	size_t bufsize;
-
 	/* in many cases we can go direct */
 	if (cd->direct) {
 		return cd->direct(cd->cd_direct, 
 				  inbuf, inbytesleft, outbuf, outbytesleft);
 	}
 
-
 	/* otherwise we have to do it chunks at a time */
-	while (*inbytesleft > 0) {
-		char *bufp1 = cvtbuf;
-		const char *bufp2 = cvtbuf;
+	{
+#ifndef SMB_ICONV_BUFSIZE
+#define SMB_ICONV_BUFSIZE 2048
+#endif
+		size_t bufsize;
+		char *cvtbuf = talloc_array(cd, char, SMB_ICONV_BUFSIZE);
 
-		bufsize = sizeof(cvtbuf);
-		
-		if (cd->pull(cd->cd_pull, 
-			     inbuf, inbytesleft, &bufp1, &bufsize) == -1
-		    && errno != E2BIG) return -1;
+		if (!cvtbuf) {
+			return (size_t)-1;
+		}
 
-		bufsize = sizeof(cvtbuf) - bufsize;
+		while (*inbytesleft > 0) {
+			char *bufp1 = cvtbuf;
+			const char *bufp2 = cvtbuf;
 
-		if (cd->push(cd->cd_push, 
-			     &bufp2, &bufsize, 
-			     outbuf, outbytesleft) == -1) return -1;
+			bufsize = SMB_ICONV_BUFSIZE;
+
+			if (cd->pull(cd->cd_pull,
+				     inbuf, inbytesleft, &bufp1, &bufsize) == -1
+			    && errno != E2BIG) return -1;
+
+			bufsize = SMB_ICONV_BUFSIZE - bufsize;
+
+			if (cd->push(cd->cd_push,
+				     &bufp2, &bufsize,
+				     outbuf, outbytesleft) == -1) return -1;
+		}
+		talloc_free(cvtbuf);
 	}
 
 	return 0;
