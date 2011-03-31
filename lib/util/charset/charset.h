@@ -130,17 +130,29 @@ void string_replace_m(char *s, char oldc, char newc);
 bool strcsequal(const char *s1,const char *s2);
 bool strequal_m(const char *s1, const char *s2);
 int strncasecmp_m(const char *s1, const char *s2, size_t n);
+int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
+			 const char *s1, const char *s2, size_t n);
 bool next_token(const char **ptr,char *buff, const char *sep, size_t bufsize);
+int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
+			const char *s1, const char *s2);
 int strcasecmp_m(const char *s1, const char *s2);
 size_t count_chars_m(const char *s, char c);
 void strupper_m(char *s);
 void strlower_m(char *s);
 char *strupper_talloc(TALLOC_CTX *ctx, const char *src);
 char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src);
+char *strupper_talloc_n_handle(struct smb_iconv_handle *iconv_handle,
+				TALLOC_CTX *ctx, const char *src, size_t n);
 char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n);
+ char *strlower_talloc_handle(struct smb_iconv_handle *iconv_handle,
+			      TALLOC_CTX *ctx, const char *src);
 char *strlower_talloc(TALLOC_CTX *ctx, const char *src);
 bool strhasupper(const char *string);
+bool strhaslower_handle(struct smb_iconv_handle *ic,
+			const char *string);
 bool strhaslower(const char *string);
+bool strhasupper_handle(struct smb_iconv_handle *ic,
+			const char *string);
 char *strrchr_m(const char *s, char c);
 char *strchr_m(const char *s, char c);
 

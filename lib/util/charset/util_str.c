@@ -28,13 +28,13 @@
 #endif
 
 /**
- Case insensitive string compararison
+ Case insensitive string compararison, handle specified for testing
 **/
-_PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
+_PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
+				 const char *s1, const char *s2)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
-	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -67,13 +67,22 @@ _PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
 }
 
 /**
- Case insensitive string compararison, length limited
+ Case insensitive string compararison
 **/
-_PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
+_PUBLIC_ int strcasecmp_m(const char *s1, const char *s2)
+{
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
+	return strcasecmp_m_handle(iconv_handle, s1, s2);
+}
+
+/**
+ Case insensitive string compararison, length limited, handle specified for testing
+**/
+_PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
+				  const char *s1, const char *s2, size_t n)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
-	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	/* handle null ptr comparisons to simplify the use in qsort */
 	if (s1 == s2) return 0;
@@ -109,6 +118,15 @@ _PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
 	}
 
 	return *s1 - *s2;
+}
+
+/**
+ Case insensitive string compararison, length limited
+**/
+_PUBLIC_ int strncasecmp_m(const char *s1, const char *s2, size_t n)
+{
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
+	return strncasecmp_m_handle(iconv_handle, s1, s2, n);
 }
 
 /**
@@ -399,9 +417,9 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 /**
   return True if any (multi-byte) character is lower case
 */
-_PUBLIC_ bool strhaslower(const char *string)
+_PUBLIC_ bool strhaslower_handle(struct smb_iconv_handle *ic,
+				 const char *string)
 {
-	struct smb_iconv_handle *ic = get_iconv_handle();
 	while (*string) {
 		size_t c_size;
 		codepoint_t s;
@@ -420,12 +438,18 @@ _PUBLIC_ bool strhaslower(const char *string)
 	return false;
 }
 
+_PUBLIC_ bool strhaslower(const char *string)
+{
+	struct smb_iconv_handle *ic = get_iconv_handle();
+	return strhaslower_handle(ic, string);
+}
+
 /**
   return True if any (multi-byte) character is upper case
 */
-_PUBLIC_ bool strhasupper(const char *string)
+_PUBLIC_ bool strhasupper_handle(struct smb_iconv_handle *ic,
+				 const char *string)
 {
-	struct smb_iconv_handle *ic = get_iconv_handle();
 	while (*string) {
 		size_t c_size;
 		codepoint_t s;
@@ -444,3 +468,8 @@ _PUBLIC_ bool strhasupper(const char *string)
 	return false;
 }
 
+_PUBLIC_ bool strhasupper(const char *string)
+{
+	struct smb_iconv_handle *ic = get_iconv_handle();
+	return strhasupper_handle(ic, string);
+}

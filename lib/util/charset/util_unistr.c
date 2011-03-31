@@ -134,11 +134,11 @@ _PUBLIC_ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_
 /**
  Convert a string to lower case, allocated with talloc
 **/
-_PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
+_PUBLIC_ char *strlower_talloc_handle(struct smb_iconv_handle *iconv_handle,
+				      TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
-	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	if(src == NULL) {
 		return NULL;
@@ -176,15 +176,21 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 	return dest;
 }
 
+_PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
+{
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
+	return strlower_talloc_handle(iconv_handle, ctx, src);
+}
+
 /**
  Convert a string to UPPER case, allocated with talloc
- source length limited to n bytes
+ source length limited to n bytes, iconv handle supplied
 **/
-_PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
+_PUBLIC_ char *strupper_talloc_n_handle(struct smb_iconv_handle *iconv_handle,
+					TALLOC_CTX *ctx, const char *src, size_t n)
 {
 	size_t size=0;
 	char *dest;
-	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
 
 	if (!src) {
 		return NULL;
@@ -222,6 +228,15 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 	return dest;
 }
 
+/**
+ Convert a string to UPPER case, allocated with talloc
+ source length limited to n bytes
+**/
+_PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
+{
+	struct smb_iconv_handle *iconv_handle = get_iconv_handle();
+	return strupper_talloc_n_handle(iconv_handle, ctx, src, n);
+}
 /**
  Convert a string to UPPER case, allocated with talloc
 **/

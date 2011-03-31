@@ -490,6 +490,166 @@ static bool test_plato_latin_cp850_utf8(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_gd_case_utf8(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle;
+	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
+	char *gd_lower, *gd_upper;
+	talloc_steal(tctx, gd_utf8.data);
+
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8", "UTF8");
+	torture_assert(tctx, iconv_handle, "getting utf8 iconv handle");
+
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, (const char *)gd_utf8.data),
+		       "GD's name has an upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, (const char *)gd_utf8.data),
+		       "GD's name has an lower case character");
+	gd_lower = strlower_talloc_handle(iconv_handle, tctx, (const char *)gd_utf8.data);
+	torture_assert(tctx, gd_lower, "failed to convert GD's name into lower case");
+	gd_upper = strupper_talloc_n_handle(iconv_handle, tctx, (const char *)gd_utf8.data, gd_utf8.length);
+	torture_assert(tctx, gd_lower, "failed to convert GD's name into upper case");
+
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, gd_upper),
+		       "upper case name has an upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, gd_lower),
+		       "lower case name has an lower case character");
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, gd_lower) == false,
+		       "lower case name has no upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, gd_upper) == false,
+		       "upper case name has no lower case character");
+
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, (const char *)gd_utf8.data,
+						 gd_upper) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, (const char *)gd_utf8.data,
+						 gd_lower) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, gd_upper,
+						 gd_lower) == 0,
+		       "case insensitive comparison upper/lower");
+
+	/* This string isn't different in length upper/lower */
+	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, (const char *)gd_utf8.data,
+						  gd_upper, gd_utf8.length) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, (const char *)gd_utf8.data,
+						 gd_lower, gd_utf8.length) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, gd_upper,
+						 gd_lower, gd_utf8.length) == 0,
+		       "case insensitive comparison upper/lower");
+	return true;
+}
+
+static bool test_gd_case_cp850(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle;
+	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
+	char *gd_lower, *gd_upper;
+	talloc_steal(tctx, gd_cp850.data);
+
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "CP850", "CP850");
+	torture_assert(tctx, iconv_handle, "getting cp850 iconv handle");
+
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, (const char *)gd_cp850.data),
+		       "GD's name has an upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, (const char *)gd_cp850.data),
+		       "GD's name has an lower case character");
+	gd_lower = strlower_talloc_handle(iconv_handle, tctx, (const char *)gd_cp850.data);
+	torture_assert(tctx, gd_lower, "failed to convert GD's name into lower case");
+	gd_upper = strupper_talloc_n_handle(iconv_handle, tctx, (const char *)gd_cp850.data, gd_cp850.length);
+	torture_assert(tctx, gd_lower, "failed to convert GD's name into upper case");
+
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, gd_upper),
+		       "upper case name has an upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, gd_lower),
+		       "lower case name has an lower case character");
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, gd_lower) == false,
+		       "lower case name has no upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, gd_upper) == false,
+		       "upper case name has no lower case character");
+
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, (const char *)gd_cp850.data,
+						 gd_upper) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, (const char *)gd_cp850.data,
+						 gd_lower) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, gd_upper,
+						 gd_lower) == 0,
+		       "case insensitive comparison upper/lower");
+
+	/* This string isn't different in length upper/lower */
+	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, (const char *)gd_cp850.data,
+						 gd_upper, gd_cp850.length) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, (const char *)gd_cp850.data,
+						 gd_lower, gd_cp850.length) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, gd_upper,
+						 gd_lower, gd_cp850.length) == 0,
+		       "case insensitive comparison upper/lower");
+	return true;
+}
+
+static bool test_plato_case_utf8(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle;
+	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
+	char *plato_lower, *plato_upper;
+	talloc_steal(tctx, plato_utf8.data);
+
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8", "UTF8");
+	torture_assert(tctx, iconv_handle, "getting utf8 iconv handle");
+
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, (const char *)plato_utf8.data),
+		       "PLATO's apology has an upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, (const char *)plato_utf8.data),
+		       "PLATO's apology has an lower case character");
+	plato_lower = strlower_talloc_handle(iconv_handle, tctx, (const char *)plato_utf8.data);
+	torture_assert(tctx, plato_lower, "failed to convert PLATO's apology into lower case");
+	plato_upper = strupper_talloc_n_handle(iconv_handle, tctx, (const char *)plato_utf8.data, plato_utf8.length);
+	torture_assert(tctx, plato_lower, "failed to convert PLATO's apology into upper case");
+
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, plato_upper),
+		       "upper case string has an upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, plato_lower),
+		       "lower case string has an lower case character");
+	torture_assert(tctx,
+		       strhasupper_handle(iconv_handle, plato_lower) == false,
+		       "lower case string has no upper case character");
+	torture_assert(tctx,
+		       strhaslower_handle(iconv_handle, plato_upper) == false,
+		       "upper case string has no lower case character");
+
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, (const char *)plato_utf8.data,
+						 plato_upper) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, (const char *)plato_utf8.data,
+						 plato_lower) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strcasecmp_m_handle(iconv_handle, plato_upper,
+						 plato_lower) == 0,
+		       "case insensitive comparison upper/lower");
+	return true;
+}
+
 struct torture_suite *torture_local_convert_string(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string_talloc");
@@ -499,5 +659,15 @@ struct torture_suite *torture_local_convert_string(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "plato_cp850_utf8", test_plato_cp850_utf8);
 	torture_suite_add_simple_test(suite, "plato_latin_cp850_utf8", test_plato_latin_cp850_utf8);
 	torture_suite_add_simple_test(suite, "plato_ascii_cp850_utf8", test_plato_latin_cp850_utf8);
+	return suite;
+}
+
+struct torture_suite *torture_local_string_case(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "string_case");
+
+	torture_suite_add_simple_test(suite, "gd_case_utf8", test_gd_case_utf8);
+	torture_suite_add_simple_test(suite, "gd_case_cp850", test_gd_case_cp850);
+	torture_suite_add_simple_test(suite, "plato_case_utf8", test_plato_case_utf8);
 	return suite;
 }
