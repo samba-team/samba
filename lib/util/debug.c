@@ -643,7 +643,12 @@ void check_log_size( void )
 	 *  loop check do a new check as root.
 	 */
 
-	if( geteuid() != 0) {
+#if _SAMBA_BUILD_ == 3
+	if (geteuid() != sec_initial_uid())
+#else
+	if( geteuid() != 0)
+#endif
+	{
 		/* We don't check sec_initial_uid() here as it isn't
 		 * available in common code and we don't generally
 		 * want to rotate and the possibly lose logs in
