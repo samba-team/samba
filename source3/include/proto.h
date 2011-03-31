@@ -6752,6 +6752,7 @@ uint32_t map_canon_ace_perms(int snum,
                                 mode_t perms,
                                 bool directory_ace);
 NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
+bool current_user_in_group(gid_t gid);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   SEC_DESC **ppdesc);
