@@ -793,6 +793,28 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		unixmode |= (smb_fname->st.st_ex_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
 	}
 
+	/*
+	 * From the chmod 2 man page:
+	 *
+	 * "If the calling process is not privileged, and the group of the file
+	 * does not match the effective group ID of the process or one of its
+	 * supplementary group IDs, the S_ISGID bit will be turned off, but
+	 * this will not cause an error to be returned."
+	 *
+	 * Simply refuse to do the chmod in this case.
+	 */
+
+	if (S_ISDIR(smb_fname->st.st_ex_mode) && (unixmode & S_ISGID) &&
+			geteuid() != sec_initial_uid() &&
+			!current_user_in_group(smb_fname->st.st_ex_gid)) {
+		DEBUG(3,("file_set_dosmode: setgid bit cannot be "
+			"set for directory %s\n",
+			smb_fname_str_dbg(smb_fname)));
+		errno = EPERM;
+		return -1;
+	}
+
+
 	ret = SMB_VFS_CHMOD(conn, smb_fname->base_name, unixmode);
 	if (ret == 0) {
 		if(!newfile || (lret != -1)) {
