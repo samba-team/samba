@@ -147,7 +147,8 @@ struct talloc_chunk {
 };
 
 /* 16 byte alignment seems to keep everyone happy */
-#define TC_HDR_SIZE ((sizeof(struct talloc_chunk)+15)&~15)
+#define TC_ALIGN16(s) (((s)+15)&~15)
+#define TC_HDR_SIZE TC_ALIGN16(sizeof(struct talloc_chunk))
 #define TC_PTR_FROM_CHUNK(tc) ((void *)(TC_HDR_SIZE + (char*)tc))
 
 _PUBLIC_ int talloc_version_major(void)
@@ -370,7 +371,7 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 	/*
 	 * Align size to 16 bytes
 	 */
-	chunk_size = ((size + 15) & ~15);
+	chunk_size = TC_ALIGN16(size);
 
 	if (space_left < chunk_size) {
 		return NULL;
