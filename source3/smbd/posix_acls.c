@@ -2656,7 +2656,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
  Check if the current user group list contains a given group.
 ****************************************************************************/
 
-static bool current_user_in_group(connection_struct *conn, gid_t gid)
+bool current_user_in_group(connection_struct *conn, gid_t gid)
 {
 	int i;
 	const struct security_unix_token *utok = get_current_utok(conn);
