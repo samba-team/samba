@@ -5480,6 +5480,25 @@ if test "x$have_cluster_support" = "xyes" ; then
 fi
 
 if test "x$have_cluster_support" = "xyes" ; then
+	AC_HAVE_DECL(CTDB_CONTROL_SCHEDULE_FOR_DELETION,[
+	#include "confdefs.h"
+	#define NO_CONFIG_H
+	#include "replace.h"
+	#include "system/wait.h"
+	#include "system/network.h"
+	#include <talloc.h>
+	#include <tdb.h>
+	#include <ctdb.h>
+	#include <ctdb_private.h>
+	])
+	if test x"$ac_cv_have_CTDB_CONTROL_SCHEDULE_FOR_DELETION_decl" != x"yes"
+	then
+		ctdb_broken="support for SCHEDULE_FOR_DELETION control missing"
+		have_cluster_support=no
+	fi
+fi
+
+if test "x$have_cluster_support" = "xyes" ; then
 	# In ctdb 1.0.57, ctdb_control_tcp was temporarily renamed
 	# to ctdb_tcp_client.
 	AC_CHECK_TYPE(struct ctdb_tcp_client,[
