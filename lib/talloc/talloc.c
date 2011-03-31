@@ -333,6 +333,10 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 
 #define TALLOC_POOL_HDR_SIZE 16
 
+#define TC_POOL_SPACE_LEFT(_pool_tc) \
+	PTR_DIFF(TC_HDR_SIZE + (_pool_tc)->size + (char *)(_pool_tc), \
+		 (_pool_tc)->pool)
+
 static unsigned int *talloc_pool_objectcount(struct talloc_chunk *tc)
 {
 	return (unsigned int *)((char *)tc + TC_HDR_SIZE);
@@ -365,8 +369,7 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 		return NULL;
 	}
 
-	space_left = ((char *)pool_ctx + TC_HDR_SIZE + pool_ctx->size)
-		- ((char *)pool_ctx->pool);
+	space_left = TC_POOL_SPACE_LEFT(pool_ctx);
 
 	/*
 	 * Align size to 16 bytes
