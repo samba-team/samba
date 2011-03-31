@@ -173,18 +173,11 @@ void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
  * destructors. Likewise, if "ptr" is NULL, then the function will make
  * no modifications and return -1.
  *
- * If this pointer has an additional parent when talloc_free() is called
- * then the memory is not actually released, but instead the most
- * recently established parent is destroyed. See talloc_reference() for
- * details on establishing additional parents.
- *
- * For more control on which parent is removed, see talloc_unlink()
- *
- * talloc_free() operates recursively on its children.
- *
- * From the 2.0 version of talloc, as a special case, talloc_free() is
- * refused on pointers that have more than one parent, as talloc would
- * have no way of knowing which parent should be removed. To free a
+ * From version 2.0 and onwards, as a special case, talloc_free() is
+ * refused on pointers that have more than one parent associated, as talloc
+ * would have no way of knowing which parent should be removed. This is
+ * different from older versions in the sense that always the reference to
+ * the most recently established parent has been destroyed. Hence to free a
  * pointer that has more than one parent please use talloc_unlink().
  *
  * To help you find problems in your code caused by this behaviour, if
@@ -200,6 +193,8 @@ void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
  * Please see the documentation for talloc_set_log_fn() and
  * talloc_set_log_stderr() for more information on talloc logging
  * functions.
+ *
+ * talloc_free() operates recursively on its children.
  *
  * @param[in]  ptr      The chunk to be freed.
  *
@@ -233,7 +228,10 @@ int _talloc_free(void *ptr, const char *location);
  * The function walks along the list of all children of a talloc context and
  * talloc_free()s only the children, not the context itself.
  *
- * @param[in]  ptr      The chunk that you want to free the children of.
+ * A NULL argument is handled as no-op.
+ *
+ * @param[in]  ptr      The chunk that you want to free the children of
+ *                      (NULL is allowed too)
  */
 void talloc_free_children(void *ptr);
 
@@ -702,9 +700,9 @@ void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name
 /**
  * @brief Assign a type to a talloc chunk.
  *
- * This macro allows you to force the name of a pointer to be a particular type.
- * This can be used in conjunction with talloc_get_type() to do type checking on
- * void* pointers.
+ * This macro allows you to force the name of a pointer to be of a particular
+ * type. This can be used in conjunction with talloc_get_type() to do type
+ * checking on void* pointers.
  *
  * It is equivalent to this:
  *
@@ -905,9 +903,9 @@ size_t talloc_reference_count(const void *ptr);
  *   will reduce the number of parents of this pointer by 1, and will
  *   cause this pointer to be freed if it runs out of parents.
  *
- * - you can talloc_free() the pointer itself. That will destroy the
- *   most recently established parent to the pointer and leave the
- *   pointer as a child of its current parent.
+ * - you can talloc_free() the pointer itself if it has at maximum one
+ *   parent. This behaviour has been changed since the release of version
+ *   2.0. Further informations in the description of "talloc_free".
  *
  * For more control on which parent to remove, see talloc_unlink()
  * @param[in]  ctx      The additional parent.
@@ -942,9 +940,10 @@ void *_talloc_reference_loc(const void *context, const void *ptr, const char *lo
  * either be a context used in talloc_reference() with this pointer, or must be
  * a direct parent of ptr.
  *
- * Usually you can just use talloc_free() instead of talloc_unlink(), but
- * sometimes it is useful to have the additional control on which parent is
- * removed.
+ * You can just use talloc_free() instead of talloc_unlink() if there
+ * is at maximum one parent. This behaviour has been changed since the
+ * release of version 2.0. Further informations in the description of
+ * "talloc_free".
  *
  * @param[in]  context  The talloc parent to remove.
  *
@@ -992,7 +991,7 @@ void *talloc_autofree_context(void);
 /**
  * @brief Get the size of a talloc chunk.
  *
- * This function lets you know the amount of memory alloced so far by
+ * This function lets you know the amount of memory allocated so far by
  * this context. It does NOT account for subcontext memory.
  * This can be used to calculate the size of an array.
  *
@@ -1453,7 +1452,7 @@ char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3)
  * @brief Append a formatted string to another string.
  *
  * This function appends the given formatted string to the given string. Use
- * this varient when the string in the current talloc buffer may have been
+ * this variant when the string in the current talloc buffer may have been
  * truncated in length.
  *
  * This functions sets the name of the new pointer to the new
@@ -1551,7 +1550,7 @@ void talloc_report_depth_file(const void *ptr, int depth, int max_depth, FILE *f
  * @brief Print a summary report of all memory used by ptr.
  *
  * This provides a more detailed report than talloc_report(). It will
- * recursively print the ensire tree of memory referenced by the
+ * recursively print the entire tree of memory referenced by the
  * pointer. References in the tree are shown by giving the name of the
  * pointer that is referenced.
  *

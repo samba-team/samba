@@ -26,7 +26,7 @@ you can do this::
   X->name = talloc_strdup(X, "foo");
 
 and the pointer X->name would be a "child" of the talloc context "X"
-which is itself a child of mem_ctx. So if you do talloc_free(mem_ctx)
+which is itself a child of "mem_ctx". So if you do talloc_free(mem_ctx)
 then it is all destroyed, whereas if you do talloc_free(X) then just X
 and X->name are destroyed, and if you do talloc_free(X->name) then
 just the name element of X is destroyed.
@@ -64,7 +64,7 @@ Multi-threading
 talloc itself does not deal with threads. It is thread-safe (assuming  
 the underlying "malloc" is), as long as each thread uses different  
 memory contexts.
-If two threads uses the same context then they need to synchronize in  
+If two threads use the same context then they need to synchronize in
 order to be safe. In particular:
 - when using talloc_enable_leak_report(), giving directly NULL as a  
 parent context implicitly refers to a hidden "null context" global  
@@ -136,18 +136,11 @@ returned -1. See talloc_set_destructor() for details on
 destructors. Likewise, if "ptr" is NULL, then the function will make
 no modifications and returns -1.
 
-If this pointer has an additional parent when talloc_free() is called
-then the memory is not actually released, but instead the most
-recently established parent is destroyed. See talloc_reference() for
-details on establishing additional parents.
-
-For more control on which parent is removed, see talloc_unlink()
-
-talloc_free() operates recursively on its children.
-
-From the 2.0 version of talloc, as a special case, talloc_free() is
-refused on pointers that have more than one parent, as talloc would
-have no way of knowing which parent should be removed. To free a
+From version 2.0 and onwards, as a special case, talloc_free() is
+refused on pointers that have more than one parent associated, as talloc
+would have no way of knowing which parent should be removed. This is
+different from older versions in the sense that always the reference to
+the most recently established parent has been destroyed. Hence to free a
 pointer that has more than one parent please use talloc_unlink().
 
 To help you find problems in your code caused by this behaviour, if
@@ -162,13 +155,16 @@ Please see the documentation for talloc_set_log_fn() and
 talloc_set_log_stderr() for more information on talloc logging
 functions.
 
+talloc_free() operates recursively on its children.
+
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-int talloc_free_children(void *ptr);
+void talloc_free_children(void *ptr);
 
 The talloc_free_children() walks along the list of all children of a
 talloc context and talloc_free()s only the children, not the context
 itself.
 
+A NULL argument is handled as no-op.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void *talloc_reference(const void *context, const void *ptr);
@@ -190,9 +186,9 @@ ways:
     will reduce the number of parents of this pointer by 1, and will
     cause this pointer to be freed if it runs out of parents.
 
-  - you can talloc_free() the pointer itself. That will destroy the
-    most recently established parent to the pointer and leave the
-    pointer as a child of its current parent.
+  - you can talloc_free() the pointer itself if it has at maximum one
+    parent. This behaviour has been changed since the release of version
+    2.0. Further informations in the description of "talloc_free".
 
 For more control on which parent to remove, see talloc_unlink()
 
@@ -208,10 +204,10 @@ Note that if the parent has already been removed using talloc_free()
 then this function will fail and will return -1.  Likewise, if "ptr"
 is NULL, then the function will make no modifications and return -1.
 
-Usually you can just use talloc_free() instead of talloc_unlink(), but
-sometimes it is useful to have the additional control on which parent
-is removed.
-
+You can just use talloc_free() instead of talloc_unlink() if there
+is at maximum one parent. This behaviour has been changed since the
+release of version 2.0. Further informations in the description of
+"talloc_free".
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
@@ -483,7 +479,7 @@ been called.
 void talloc_report_full(const void *ptr, FILE *f);
 
 This provides a more detailed report than talloc_report(). It will
-recursively print the ensire tree of memory referenced by the
+recursively print the entire tree of memory referenced by the
 pointer. References in the tree are shown by giving the name of the
 pointer that is referenced.
 
@@ -642,7 +638,7 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...);
 
 The talloc_asprintf_append() function appends the given formatted
 string to the given string.
-Use this varient when the string in the current talloc buffer may
+Use this variant when the string in the current talloc buffer may
 have been truncated in length.
 
 This functions sets the name of the new pointer to the new
@@ -656,7 +652,7 @@ char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...);
 
 The talloc_asprintf_append() function appends the given formatted 
 string to the end of the currently allocated talloc buffer.
-Use this varient when the string in the current talloc buffer has
+Use this variant when the string in the current talloc buffer has
 not been changed.
 
 This functions sets the name of the new pointer to the new
@@ -730,7 +726,7 @@ this::
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 talloc_set_type(const void *ptr, type);
 
-This macro allows you to force the name of a pointer to be a
+This macro allows you to force the name of a pointer to be of a
 particular type. This can be used in conjunction with
 talloc_get_type() to do type checking on void* pointers.
 
@@ -741,7 +737,7 @@ It is equivalent to this::
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 talloc_get_size(const void *ctx);
 
-This function lets you know the amount of memory alloced so far by
+This function lets you know the amount of memory allocated so far by
 this context. It does NOT account for subcontext memory.
 This can be used to calculate the size of an array.
 
@@ -768,4 +764,4 @@ errors.
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_set_log_stderr(void)
 
-This sets the talloc log function to write log messages to stderr
+This sets the talloc log function to write log messages to stderr.
