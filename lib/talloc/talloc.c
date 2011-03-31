@@ -334,7 +334,7 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 
 static unsigned int *talloc_pool_objectcount(struct talloc_chunk *tc)
 {
-	return (unsigned int *)((char *)tc + sizeof(struct talloc_chunk));
+	return (unsigned int *)((char *)tc + TC_HDR_SIZE);
 }
 
 /*
