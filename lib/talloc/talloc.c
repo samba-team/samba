@@ -340,6 +340,12 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 #define TC_POOL_FIRST_CHUNK(_pool_tc) \
 	((void *)(TC_HDR_SIZE + TALLOC_POOL_HDR_SIZE + (char *)(_pool_tc)))
 
+#define TC_POOLMEM_CHUNK_SIZE(_tc) \
+	TC_ALIGN16(TC_HDR_SIZE + (_tc)->size)
+
+#define TC_POOLMEM_NEXT_CHUNK(_tc) \
+	((void *)(TC_POOLMEM_CHUNK_SIZE(tc) + (char*)(_tc)))
+
 static unsigned int *talloc_pool_objectcount(struct talloc_chunk *tc)
 {
 	return (unsigned int *)((char *)tc + TC_HDR_SIZE);
@@ -690,25 +696,45 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 
 	if (tc->flags & (TALLOC_FLAG_POOL|TALLOC_FLAG_POOLMEM)) {
 		struct talloc_chunk *pool;
+		void *next_tc = NULL;
 		unsigned int *pool_object_count;
 
-		pool = (tc->flags & TALLOC_FLAG_POOL)
-			? tc : (struct talloc_chunk *)tc->pool;
+		if (unlikely(tc->flags & TALLOC_FLAG_POOL)) {
+			pool = tc;
+		} else {
+			pool = (struct talloc_chunk *)tc->pool;
+			next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
+		}
 
 		pool_object_count = talloc_pool_objectcount(pool);
 
-		if (*pool_object_count == 0) {
+		if (unlikely(*pool_object_count == 0)) {
 			talloc_abort("Pool object count zero!");
 			return 0;
 		}
 
 		*pool_object_count -= 1;
 
-		if (*pool_object_count == 0) {
+		if (unlikely(*pool_object_count == 1)) {
+			/*
+			 * if there is just object left in the pool
+			 * it means this is the pool itself and
+			 * the rest is available for new objects
+			 * again.
+			 */
+			pool->pool = TC_POOL_FIRST_CHUNK(pool);
+		} else if (unlikely(*pool_object_count == 0)) {
 			if (talloc_fill.enabled) {
 				memset(TC_PTR_FROM_CHUNK(pool), talloc_fill.fill_value, pool->size);
 			}
 			free(pool);
+		} else if (pool->pool == next_tc) {
+			/*
+			 * if pool->pool still points to end of
+			 * 'tc' (which is stored in the 'next_tc' variable),
+			 * we can reclaim the memory of 'tc'.
+			 */
+			pool->pool = tc;
 		}
 	}
 	else {
@@ -1115,15 +1141,6 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 			_talloc_steal_internal(new_parent, child);
 		}
 	}
-
-	if ((tc->flags & TALLOC_FLAG_POOL)
-	    && (*talloc_pool_objectcount(tc) == 1)) {
-		tc->pool = TC_POOL_FIRST_CHUNK(tc);
-#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
-		VALGRIND_MAKE_MEM_NOACCESS(
-			tc->pool, tc->size - TALLOC_POOL_HDR_SIZE);
-#endif
-	}
 }
 
 /* 
@@ -1204,6 +1221,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 	struct talloc_chunk *tc;
 	void *new_ptr;
 	bool malloced = false;
+	struct talloc_chunk *pool_tc = NULL;
 
 	/* size zero is equivalent to free() */
 	if (unlikely(size == 0)) {
@@ -1232,27 +1250,42 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		return NULL;
 	}
 
+	/* don't let anybody try to realloc a talloc_pool */
+	if (unlikely(tc->flags & TALLOC_FLAG_POOLMEM)) {
+		pool_tc = (struct talloc_chunk *)tc->pool;
+	}
+
+#if (ALWAYS_REALLOC == 0)
 	/* don't shrink if we have less than 1k to gain */
-	if ((size < tc->size) && ((tc->size - size) < 1024)) {
-		tc->size = size;
+	if (size < tc->size) {
+		if (pool_tc) {
+			void *next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
+			tc->size = size;
+			if (next_tc == pool_tc->pool) {
+				pool_tc->pool = TC_POOLMEM_NEXT_CHUNK(tc);
+			}
+			return ptr;
+		} else if ((tc->size - size) < 1024) {
+			/* do not shrink if we have less than 1k to gain */
+			tc->size = size;
+			return ptr;
+		}
+	} else if (tc->size == size) {
+		/*
+		 * do not change the pointer if it is exactly
+		 * the same size.
+		 */
 		return ptr;
 	}
+#endif
 
 	/* by resetting magic we catch users of the old memory */
 	tc->flags |= TALLOC_FLAG_FREE;
 
 #if ALWAYS_REALLOC
-	new_ptr = malloc(size + TC_HDR_SIZE);
-	if (new_ptr) {
-		memcpy(new_ptr, tc, MIN(tc->size, size) + TC_HDR_SIZE);
-		free(tc);
-	}
-#else
-	if (tc->flags & TALLOC_FLAG_POOLMEM) {
-
+	if (pool_tc) {
 		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE);
-		*talloc_pool_objectcount((struct talloc_chunk *)
-					 (tc->pool)) -= 1;
+		*talloc_pool_objectcount(pool_tc) -= 1;
 
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
@@ -1262,10 +1295,93 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
 		}
+	} else {
+		new_ptr = malloc(size + TC_HDR_SIZE);
+		if (new_ptr) {
+			memcpy(new_ptr, tc, MIN(tc->size, size) + TC_HDR_SIZE);
+			free(tc);
+		}
+	}
+#else
+	if (pool_tc) {
+		void *next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
+		size_t old_chunk_size = TC_POOLMEM_CHUNK_SIZE(tc);
+		size_t new_chunk_size = TC_ALIGN16(TC_HDR_SIZE + size);
+		size_t space_needed;
+		size_t space_left;
+
+		if (*talloc_pool_objectcount(pool_tc) == 2) {
+			/*
+			 * optimize for the case where 'tc' is the only
+			 * chunk in the pool.
+			 */
+			space_needed = new_chunk_size;
+			space_left = pool_tc->size - TALLOC_POOL_HDR_SIZE;
+
+			if (space_left >= space_needed) {
+				size_t old_used = TC_HDR_SIZE + tc->size;
+				pool_tc->pool = TC_POOL_FIRST_CHUNK(pool_tc);
+				memmove(pool_tc->pool, tc, old_used);
+				new_ptr = pool_tc->pool;
+
+				pool_tc->pool = new_chunk_size + (char *)new_ptr;
+				goto got_new_ptr;
+			}
+
+			next_tc = NULL;
+		}
+
+		if (new_chunk_size == old_chunk_size) {
+			tc->flags &= ~TALLOC_FLAG_FREE;
+			tc->size = size;
+			return ptr;
+		}
+
+		if (next_tc == pool_tc->pool) {
+			/*
+			 * optimize for the case where 'tc' is the last
+			 * chunk in the pool.
+			 */
+			space_needed = new_chunk_size - old_chunk_size;
+			space_left = TC_POOL_SPACE_LEFT(pool_tc);
+
+			if (space_left >= space_needed) {
+				tc->flags &= ~TALLOC_FLAG_FREE;
+				tc->size = size;
+				pool_tc->pool = TC_POOLMEM_NEXT_CHUNK(tc);
+				return ptr;
+			}
+		}
+
+		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE);
+		*talloc_pool_objectcount(pool_tc) -= 1;
+
+		if (new_ptr == NULL) {
+			new_ptr = malloc(TC_HDR_SIZE+size);
+			malloced = true;
+		}
+
+		if (new_ptr) {
+			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
+
+			if (*talloc_pool_objectcount(pool_tc) == 1) {
+				/*
+				 * If the pool is empty now reclaim everything.
+				 */
+				pool_tc->pool = TC_POOL_FIRST_CHUNK(pool_tc);
+			} else if (next_tc == pool_tc->pool) {
+				/*
+				 * If it was reallocated and tc was the last
+				 * chunk, we can reclaim the memory of tc.
+				 */
+				pool_tc->pool = tc;
+			}
+		}
 	}
 	else {
 		new_ptr = realloc(tc, size + TC_HDR_SIZE);
 	}
+got_new_ptr:
 #endif
 	if (unlikely(!new_ptr)) {	
 		tc->flags &= ~TALLOC_FLAG_FREE; 
