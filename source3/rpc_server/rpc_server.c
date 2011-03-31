@@ -484,7 +484,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		goto fail;
 	}
 
-	/* And now start receaving and processing packets */
+	/* And now start receiving and processing packets */
 	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
 	if (!subreq) {
 		DEBUG(2, ("Failed to start receving packets\n"));
