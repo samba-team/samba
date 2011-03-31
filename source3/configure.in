@@ -5402,8 +5402,6 @@ AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 #################################################
 # check for cluster extensions
 
-CTDB_CFLAGS=""
-AC_SUBST(CTDB_CFLAGS)
 AC_ARG_WITH(ctdb,
 [AS_HELP_STRING([--with-ctdb=DIR], [Where to find ctdb sources])],
 [ case "$withval" in
