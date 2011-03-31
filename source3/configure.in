@@ -5424,6 +5424,12 @@ AC_ARG_WITH(ctdb,
     ;;
   esac])
 
+AC_ARG_ENABLE(old-ctdb,
+	[AS_HELP_STRING([--enable-old-ctdb],
+		[Enable build against (too) old ctdb version (default=no)])],,
+		[enable_old_ctdb=no])
+
+
 if test "$with_cluster_support" != "no" ; then
 
 AC_MSG_NOTICE(checking whether cluster support is available)
