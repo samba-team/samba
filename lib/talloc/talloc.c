@@ -337,6 +337,9 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 	PTR_DIFF(TC_HDR_SIZE + (_pool_tc)->size + (char *)(_pool_tc), \
 		 (_pool_tc)->pool)
 
+#define TC_POOL_FIRST_CHUNK(_pool_tc) \
+	((void *)(TC_HDR_SIZE + TALLOC_POOL_HDR_SIZE + (char *)(_pool_tc)))
+
 static unsigned int *talloc_pool_objectcount(struct talloc_chunk *tc)
 {
 	return (unsigned int *)((char *)tc + TC_HDR_SIZE);
@@ -465,7 +468,7 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 	tc = talloc_chunk_from_ptr(result);
 
 	tc->flags |= TALLOC_FLAG_POOL;
-	tc->pool = (char *)result + TALLOC_POOL_HDR_SIZE;
+	tc->pool = TC_POOL_FIRST_CHUNK(tc);
 
 	*talloc_pool_objectcount(tc) = 1;
 
@@ -1115,7 +1118,7 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 
 	if ((tc->flags & TALLOC_FLAG_POOL)
 	    && (*talloc_pool_objectcount(tc) == 1)) {
-		tc->pool = ((char *)tc + TC_HDR_SIZE + TALLOC_POOL_HDR_SIZE);
+		tc->pool = TC_POOL_FIRST_CHUNK(tc);
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
 		VALGRIND_MAKE_MEM_NOACCESS(
 			tc->pool, tc->size - TALLOC_POOL_HDR_SIZE);
