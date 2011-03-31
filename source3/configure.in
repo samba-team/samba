@@ -5448,7 +5448,7 @@ else
 	ctdb_broken="ctdb transaction support missing or too old"
 fi
 
-# in ctdb 1.0.57 ctdb_control_tcp was temparary renamed to ctdb_tcp_client
+# In ctdb 1.0.57, ctdb_control_tcp was temporarily renamed to ctdb_tcp_client.
 AC_CHECK_TYPE(struct ctdb_tcp_client,[
 	AC_DEFINE([ctdb_control_tcp],[ctdb_tcp_client],[ctdb ipv4 support])
 ],,[
