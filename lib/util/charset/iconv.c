@@ -175,8 +175,16 @@ _PUBLIC_ size_t smb_iconv(smb_iconv_t cd,
 #ifndef SMB_ICONV_BUFSIZE
 #define SMB_ICONV_BUFSIZE 2048
 #endif
+		TALLOC_CTX *mem_ctx;
 		size_t bufsize;
-		char *cvtbuf = talloc_array(cd, char, SMB_ICONV_BUFSIZE);
+		char *cvtbuf;
+
+#if _SAMBA_BUILD_ == 3
+		mem_ctx = talloc_tos();
+#else
+		mem_ctx = cd;
+#endif
+		cvtbuf = talloc_array(mem_ctx, char, SMB_ICONV_BUFSIZE);
 
 		if (!cvtbuf) {
 			return (size_t)-1;
