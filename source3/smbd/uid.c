@@ -528,6 +528,23 @@ bool become_user(connection_struct *conn, uint16 vuid)
 	return True;
 }
 
+bool become_user_by_session(connection_struct *conn,
+			    const struct auth_serversupplied_info *session_info)
+{
+	if (!push_sec_ctx())
+		return false;
+
+	push_conn_ctx();
+
+	if (!change_to_user_by_session(conn, session_info)) {
+		pop_sec_ctx();
+		pop_conn_ctx();
+		return false;
+	}
+
+	return true;
+}
+
 bool unbecome_user(void)
 {
 	pop_sec_ctx();
