@@ -637,38 +637,6 @@ void gfree_all( void );
 const char *my_netbios_names(int i);
 bool set_netbios_aliases(const char **str_array);
 bool init_names(void);
-struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
-const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info);
-void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
-				    const char *username);
-const char *get_cmdline_auth_info_domain(const struct user_auth_info *auth_info);
-void set_cmdline_auth_info_domain(struct user_auth_info *auth_info,
-				  const char *domain);
-void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
-				    const char *password);
-const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info);
-bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
-					 const char *arg);
-int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info);
-void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info,
-				      bool b);
-bool get_cmdline_auth_info_use_ccache(const struct user_auth_info *auth_info);
-void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
-					bool b);
-bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info);
-void set_cmdline_auth_info_fallback_after_kerberos(struct user_auth_info *auth_info,
-					bool b);
-bool get_cmdline_auth_info_fallback_after_kerberos(const struct user_auth_info *auth_info);
-void set_cmdline_auth_info_use_krb5_ticket(struct user_auth_info *auth_info);
-void set_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info);
-void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info);
-bool get_cmdline_auth_info_got_pass(const struct user_auth_info *auth_info);
-bool get_cmdline_auth_info_smb_encrypt(const struct user_auth_info *auth_info);
-bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth_info);
-struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
-						 const struct user_auth_info *info);
-bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
-void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
 		     bool fake_dir_create_times);
 bool socket_exist(const char *fname);
@@ -781,6 +749,41 @@ bool tevent_req_poll_ntstatus(struct tevent_req *req,
 			      NTSTATUS *status);
 bool any_nt_status_not_ok(NTSTATUS err1, NTSTATUS err2, NTSTATUS *result);
 int timeval_to_msec(struct timeval t);
+
+/* The following definitions come from lib/util_cmdline.c  */
+
+struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
+const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
+				    const char *username);
+const char *get_cmdline_auth_info_domain(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_domain(struct user_auth_info *auth_info,
+				  const char *domain);
+void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
+				    const char *password);
+const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info);
+bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
+					 const char *arg);
+int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info,
+				      bool b);
+bool get_cmdline_auth_info_use_ccache(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
+					bool b);
+bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_fallback_after_kerberos(struct user_auth_info *auth_info,
+					bool b);
+bool get_cmdline_auth_info_fallback_after_kerberos(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_krb5_ticket(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_got_pass(const struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_smb_encrypt(const struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth_info);
+struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
+						 const struct user_auth_info *info);
+bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
 
 /* The following definitions come from lib/util_builtin.c  */
 
