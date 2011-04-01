@@ -1568,6 +1568,10 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 		if (!composite_is_ok(c)) return;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		drsuapi->binding->flags |= DCERPC_DEBUG_PRINT_BOTH;
+	}
+
 	creq = dcerpc_pipe_connect_b_send(s, drsuapi->binding, &ndr_table_drsuapi,
 					  s->libnet->cred, s->libnet->event_ctx,
 					  s->libnet->lp_ctx);
@@ -2435,6 +2439,10 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 	talloc_free(binding_str);
 	if (!composite_is_ok(c)) return;
 
+	if (DEBUGLEVEL >= 10) {
+		s->drsuapi2.binding->flags |= DCERPC_DEBUG_PRINT_BOTH;
+	}
+
 	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
 	s->drsuapi2.binding->assoc_group_id	= s->drsuapi1.pipe->assoc_group_id;
 
@@ -2500,6 +2508,10 @@ static void becomeDC_drsuapi2_bind_recv(struct tevent_req *subreq)
 	c->status = dcerpc_parse_binding(s, binding_str, &s->drsuapi3.binding);
 	talloc_free(binding_str);
 	if (!composite_is_ok(c)) return;
+
+	if (DEBUGLEVEL >= 10) {
+		s->drsuapi3.binding->flags |= DCERPC_DEBUG_PRINT_BOTH;
+	}
 
 	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
 	s->drsuapi3.binding->assoc_group_id	= s->drsuapi1.pipe->assoc_group_id;
