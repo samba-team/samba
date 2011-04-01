@@ -24,6 +24,7 @@ from samba.net import Net
 
 from samba.netcmd import (
     Command,
+    CommandError,
     SuperCommand,
     )
 
@@ -64,7 +65,10 @@ class cmd_user_delete(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         net = Net(creds, lp, server=credopts.ipaddress)
-        net.delete_user(name)
+        try:
+            net.delete_user(name)
+        except RuntimeError, msg:
+            raise CommandError("Failed to delete user %s: %s" % (name, msg))
 
 
 class cmd_user(SuperCommand):
