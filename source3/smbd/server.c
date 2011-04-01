@@ -677,6 +677,13 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 					continue;
 				}
 
+				/* Keep the first port for mDNS service
+				 * registration.
+				 */
+				if (dns_port == 0) {
+					dns_port = port;
+				}
+
 				if (!smbd_open_one_socket(parent, ifss, port)) {
 					return false;
 				}
