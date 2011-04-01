@@ -985,9 +985,7 @@ static NTSTATUS dcesrv_samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TA
 		DEBUG(1,("Failed to modify record %s: %s\n",
 			 ldb_dn_get_linearized(d_state->domain_dn),
 			 ldb_errstring(sam_ctx)));
-
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	return NT_STATUS_OK;
@@ -1921,8 +1919,7 @@ static NTSTATUS dcesrv_samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TAL
 	/* modify the samdb record */
 	ret = ldb_modify(g_state->sam_ctx, msg);
 	if (ret != LDB_SUCCESS) {
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	return NT_STATUS_OK;
@@ -1988,7 +1985,7 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 	ret = samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, mod, "member",
 								memberdn);
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	ret = ldb_modify(a_state->sam_ctx, mod);
@@ -2000,7 +1997,7 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
 	default:
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 }
 
@@ -2023,7 +2020,7 @@ static NTSTATUS dcesrv_samr_DeleteDomainGroup(struct dcesrv_call_state *dce_call
 
 	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	talloc_free(h);
@@ -2104,7 +2101,7 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
 	default:
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 }
 
@@ -2371,8 +2368,7 @@ static NTSTATUS dcesrv_samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TAL
 	/* modify the samdb record */
 	ret = ldb_modify(a_state->sam_ctx, msg);
 	if (ret != LDB_SUCCESS) {
-		/* we really need samdb.c to return NTSTATUS */
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	return NT_STATUS_OK;
@@ -2397,7 +2393,7 @@ static NTSTATUS dcesrv_samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, T
 
 	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	talloc_free(h);
@@ -2461,7 +2457,7 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 	ret = samdb_msg_add_addval(d_state->sam_ctx, mem_ctx, mod, "member",
 				 ldb_dn_alloc_linearized(mem_ctx, memberdn));
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	ret = ldb_modify(a_state->sam_ctx, mod);
@@ -2473,7 +2469,7 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
 	default:
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 }
 
@@ -2513,7 +2509,7 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 	ret = samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod, "member",
 								 memberdn);
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	ret = ldb_modify(a_state->sam_ctx, mod);
@@ -2525,7 +2521,7 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
 	default:
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 }
 
@@ -2676,7 +2672,7 @@ static NTSTATUS dcesrv_samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLO
 		DEBUG(1, ("Failed to delete user: %s: %s\n",
 			  ldb_dn_get_linearized(a_state->account_dn),
 			  ldb_errstring(a_state->sam_ctx)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return dsdb_ldb_err_to_ntstatus(ret);
 	}
 
 	talloc_free(h);
@@ -3534,8 +3530,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 				 ldb_dn_get_linearized(a_state->account_dn),
 				 ldb_errstring(a_state->sam_ctx)));
 
-			/* we really need samdb.c to return NTSTATUS */
-			return NT_STATUS_UNSUCCESSFUL;
+			return dsdb_ldb_err_to_ntstatus(ret);
 		}
 	}
 
@@ -3934,6 +3929,7 @@ static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_sta
 
 	for (i=0; i<count; i++) {
 		struct ldb_message *mod;
+		int ret;
 
 		mod = ldb_msg_new(mem_ctx);
 		if (mod == NULL) {
@@ -3946,10 +3942,11 @@ static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_sta
 					 "member", memberdn) != LDB_SUCCESS)
 			return NT_STATUS_NO_MEMORY;
 
-		if (ldb_modify(d_state->sam_ctx, mod) != LDB_SUCCESS)
-			return NT_STATUS_UNSUCCESSFUL;
-
+		ret = ldb_modify(d_state->sam_ctx, mod);
 		talloc_free(mod);
+		if (ret != LDB_SUCCESS) {
+			return dsdb_ldb_err_to_ntstatus(ret);
+		}
 	}
 
 	return NT_STATUS_OK;

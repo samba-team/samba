@@ -2440,7 +2440,7 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
 				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	/* TODO: check r->in.server_name is our name */

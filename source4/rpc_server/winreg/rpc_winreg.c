@@ -42,7 +42,7 @@ static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call,
 
 	if (!W_ERROR_IS_OK(err)) {
 		DEBUG(0, ("Error opening registry: %s\n", win_errstr(err)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return werror_to_ntstatus(err);
 	}
 
 	dce_call->context->private_data = ctx;
