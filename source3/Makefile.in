@@ -452,7 +452,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/wins_srv.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o \
 	  lib/util_unistr.o ../lib/util/charset/codepoints.o lib/util_file.o \
-	  lib/util.o lib/util_names.o \
+	  lib/util.o lib/util_cmdline.o lib/util_names.o \
 	  lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/substitute.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/errmap_unix.o \
