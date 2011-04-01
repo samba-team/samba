@@ -91,7 +91,8 @@ static struct {
 } state = {
 	.settings = {
 		.timestamp_logs = true
-	}
+	},
+	.fd = 2 /* stderr by default */
 };
 
 /* -------------------------------------------------------------------------- **
