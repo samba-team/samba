@@ -1059,6 +1059,8 @@ bool unbecome_authenticated_pipe_user(void);
 void become_root(void);
 void unbecome_root(void);
 bool become_user(connection_struct *conn, uint16 vuid);
+bool become_user_by_session(connection_struct *conn,
+			    const struct auth_serversupplied_info *session_info);
 bool unbecome_user(void);
 uid_t get_current_uid(connection_struct *conn);
 gid_t get_current_gid(connection_struct *conn);
