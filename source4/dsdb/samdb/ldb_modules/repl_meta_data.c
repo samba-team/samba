@@ -2884,6 +2884,361 @@ static int replmd_replicated_request_werror(struct replmd_replicated_request *ar
 	return ret;
 }
 
+
+static struct replPropertyMetaData1 *
+replmd_replPropertyMetaData1_find_attid(struct replPropertyMetaDataBlob *md_blob,
+                                        enum drsuapi_DsAttributeId attid)
+{
+	uint32_t i;
+	struct replPropertyMetaDataCtr1 *rpmd_ctr = &md_blob->ctr.ctr1;
+
+	for (i = 0; i < rpmd_ctr->count; i++) {
+		if (rpmd_ctr->array[i].attid == attid) {
+			return &rpmd_ctr->array[i];
+		}
+	}
+	return NULL;
+}
+
+
+/*
+   return true if an update is newer than an existing entry
+   see section 5.11 of MS-ADTS
+*/
+static bool replmd_update_is_newer(const struct GUID *current_invocation_id,
+				   const struct GUID *update_invocation_id,
+				   uint32_t current_version,
+				   uint32_t update_version,
+				   NTTIME current_change_time,
+				   NTTIME update_change_time)
+{
+	if (update_version != current_version) {
+		return update_version > current_version;
+	}
+	if (update_change_time != current_change_time) {
+		return update_change_time > current_change_time;
+	}
+	return GUID_compare(update_invocation_id, current_invocation_id) > 0;
+}
+
+static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *cur_m,
+						  struct replPropertyMetaData1 *new_m)
+{
+	return replmd_update_is_newer(&cur_m->originating_invocation_id,
+				      &new_m->originating_invocation_id,
+				      cur_m->version,
+				      new_m->version,
+				      cur_m->originating_change_time,
+				      new_m->originating_change_time);
+}
+
+
+/*
+  form a conflict DN
+ */
+static struct ldb_dn *replmd_conflict_dn(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct GUID *guid)
+{
+	const struct ldb_val *rdn_val;
+	const char *rdn_name;
+	struct ldb_dn *new_dn;
+
+	rdn_val = ldb_dn_get_rdn_val(dn);
+	rdn_name = ldb_dn_get_rdn_name(dn);
+	if (!rdn_val || !rdn_name) {
+		return NULL;
+	}
+
+	new_dn = ldb_dn_copy(mem_ctx, dn);
+	if (!new_dn) {
+		return NULL;
+	}
+
+	if (!ldb_dn_remove_child_components(new_dn, 1)) {
+		return NULL;
+	}
+
+	if (!ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ACNF:%s",
+				  rdn_name,
+				  ldb_dn_escape_value(new_dn, *rdn_val),
+				  GUID_string(new_dn, guid))) {
+		return NULL;
+	}
+
+	return new_dn;
+}
+
+
+/*
+  perform a modify operation which sets the rDN and name attributes to
+  their current values. This has the effect of changing these
+  attributes to have been last updated by the current DC. This is
+  needed to ensure that renames performed as part of conflict
+  resolution are propogated to other DCs
+ */
+static int replmd_name_modify(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn)
+{
+	struct ldb_message *msg;
+	const char *rdn_name;
+	const struct ldb_val *rdn_val;
+	int ret;
+
+	msg = ldb_msg_new(req);
+	if (msg == NULL) {
+		goto failed;
+	}
+	msg->dn = dn;
+
+	rdn_name = ldb_dn_get_rdn_name(dn);
+	if (rdn_name == NULL) {
+		goto failed;
+	}
+
+	rdn_val = ldb_dn_get_rdn_val(dn);
+	if (rdn_val == NULL) {
+		goto failed;
+	}
+
+	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		goto failed;
+	}
+	if (ldb_msg_add_value(msg, rdn_name, rdn_val, NULL) != 0) {
+		goto failed;
+	}
+	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		goto failed;
+	}
+	if (ldb_msg_add_value(msg, "name", rdn_val, NULL) != 0) {
+		goto failed;
+	}
+
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE, req);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to modify rDN/name of conflict DN '%s' - %s",
+			 ldb_dn_get_linearized(dn), ldb_errstring(ldb_module_get_ctx(module))));
+		return ret;
+	}
+
+	talloc_free(msg);
+
+	return LDB_SUCCESS;
+
+failed:
+	talloc_free(msg);
+	DEBUG(0,(__location__ ": Failed to setup modify rDN/name of conflict DN '%s'",
+		 ldb_dn_get_linearized(dn)));
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
+
+/*
+  callback for conflict DN handling where we have renamed the incoming
+  record. After renaming it, we need to ensure the change of name and
+  rDN for the incoming record is seen as an originating update by this DC.
+ */
+static int replmd_op_name_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct replmd_replicated_request *ar =
+		talloc_get_type_abort(req->context, struct replmd_replicated_request);
+	int ret;
+
+	if (ares->error != LDB_SUCCESS) {
+		/* call the normal callback for everything except success */
+		return replmd_op_callback(req, ares);
+	}
+
+	/* perform a modify of the rDN and name of the record */
+	ret = replmd_name_modify(ar->module, req, req->op.add.message->dn);
+	if (ret != LDB_SUCCESS) {
+		ares->error = ret;
+		return replmd_op_callback(req, ares);
+	}
+
+	return replmd_op_callback(req, ares);
+}
+
+/*
+  callback for replmd_replicated_apply_add()
+  This copes with the creation of conflict records in the case where
+  the DN exists, but with a different objectGUID
+ */
+static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct ldb_dn *conflict_dn;
+	struct replmd_replicated_request *ar =
+		talloc_get_type_abort(req->context, struct replmd_replicated_request);
+	struct ldb_result *res;
+	const char *attrs[] = { "replPropertyMetaData", "objectGUID", NULL };
+	int ret;
+	const struct ldb_val *rmd_value, *omd_value;
+	struct replPropertyMetaDataBlob omd, rmd;
+	enum ndr_err_code ndr_err;
+	bool rename_incoming_record;
+	struct replPropertyMetaData1 *rmd_name, *omd_name;
+
+	if (ares->error != LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		/* call the normal callback for everything except
+		   conflicts */
+		return replmd_op_callback(req, ares);
+	}
+
+	/*
+	 * we have a conflict, and need to decide if we will keep the
+	 * new record or the old record
+	 */
+	conflict_dn = req->op.add.message->dn;
+
+	/*
+	 * first we need the replPropertyMetaData attribute from the
+	 * old record
+	 */
+	ret = dsdb_module_search_dn(ar->module, req, &res, conflict_dn,
+				    attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_DELETED |
+				    DSDB_SEARCH_SHOW_RECYCLED, req);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Unable to find object for conflicting record '%s'\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
+	if (omd_value == NULL) {
+		DEBUG(0,(__location__ ": Unable to find replPropertyMetaData for conflicting record '%s'\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	ndr_err = ndr_pull_struct_blob(omd_value, res->msgs[0], &omd,
+				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,(__location__ ": Failed to parse old replPropertyMetaData for %s\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	/*
+	 * and the replPropertyMetaData attribute from the
+	 * new record
+	 */
+	rmd_value = ldb_msg_find_ldb_val(req->op.add.message, "replPropertyMetaData");
+	if (rmd_value == NULL) {
+		DEBUG(0,(__location__ ": Unable to find replPropertyMetaData for new record '%s'\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	ndr_err = ndr_pull_struct_blob(rmd_value, req, &rmd,
+				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,(__location__ ": Failed to parse new replPropertyMetaData for %s\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	/* we decide which is newer based on the RPMD on the name
+	   attribute.  See [MS-DRSR] ResolveNameConflict */
+	rmd_name = replmd_replPropertyMetaData1_find_attid(&rmd, DRSUAPI_ATTID_name);
+	omd_name = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTID_name);
+	if (!rmd_name || !omd_name) {
+		DEBUG(0,(__location__ ": Failed to find name attribute in replPropertyMetaData for %s\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	rename_incoming_record = !replmd_replPropertyMetaData1_is_newer(omd_name, rmd_name);
+
+	if (rename_incoming_record) {
+		struct GUID guid;
+		struct ldb_dn *new_dn;
+		struct ldb_message *new_msg;
+
+		guid = samdb_result_guid(req->op.add.message, "objectGUID");
+		if (GUID_all_zero(&guid)) {
+			DEBUG(0,(__location__ ": Failed to find objectGUID for conflicting incoming record %s\n",
+				 ldb_dn_get_linearized(conflict_dn)));
+			goto failed;
+		}
+		new_dn = replmd_conflict_dn(req, conflict_dn, &guid);
+		if (new_dn == NULL) {
+			DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
+				 ldb_dn_get_linearized(conflict_dn)));
+			goto failed;
+		}
+
+		DEBUG(1,(__location__ ": Resolving conflict record via incoming rename '%s' -> '%s'\n",
+			 ldb_dn_get_linearized(conflict_dn), ldb_dn_get_linearized(new_dn)));
+
+		/* re-submit the request, but with a different
+		   callback, so we don't loop forever. */
+		new_msg = ldb_msg_copy_shallow(req, req->op.add.message);
+		if (!new_msg) {
+			goto failed;
+			DEBUG(0,(__location__ ": Failed to copy conflict DN message for %s\n",
+				 ldb_dn_get_linearized(conflict_dn)));
+		}
+		new_msg->dn = new_dn;
+		req->op.add.message = new_msg;
+		req->callback = replmd_op_name_modify_callback;
+
+		return ldb_next_request(ar->module, req);
+	} else {
+		/* we are renaming the existing record */
+		struct GUID guid;
+		struct ldb_dn *new_dn;
+
+		guid = samdb_result_guid(res->msgs[0], "objectGUID");
+		if (GUID_all_zero(&guid)) {
+			DEBUG(0,(__location__ ": Failed to find objectGUID for existing conflict record %s\n",
+				 ldb_dn_get_linearized(conflict_dn)));
+			goto failed;
+		}
+
+		new_dn = replmd_conflict_dn(req, conflict_dn, &guid);
+		if (new_dn == NULL) {
+			DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
+				 ldb_dn_get_linearized(conflict_dn)));
+			goto failed;
+		}
+
+		DEBUG(1,(__location__ ": Resolving conflict record via existing rename '%s' -> '%s'\n",
+			 ldb_dn_get_linearized(conflict_dn), ldb_dn_get_linearized(new_dn)));
+
+		ret = dsdb_module_rename(ar->module, conflict_dn, new_dn,
+					 DSDB_FLAG_OWN_MODULE, req);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to rename conflict dn '%s' to '%s' - %s\n",
+				 ldb_dn_get_linearized(conflict_dn),
+				 ldb_dn_get_linearized(new_dn),
+				 ldb_errstring(ldb_module_get_ctx(ar->module))));
+			goto failed;
+		}
+
+		/*
+		 * now we need to ensure that the rename is seen as an
+		 * originating update. We do that with a modify.
+		 */
+		ret = replmd_name_modify(ar->module, req, new_dn);
+		if (ret != LDB_SUCCESS) {
+			goto failed;
+		}
+
+		req->callback = replmd_op_callback;
+
+		return ldb_next_request(ar->module, req);
+	}
+
+failed:
+	/* on failure do the original callback. This means replication
+	 * will stop with an error, but there is not much else we can
+	 * do
+	 */
+	return replmd_op_callback(req, ares);
+}
+
+/*
+  this is called when a new object comes in over DRS
+ */
 static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 {
 	struct ldb_context *ldb;
@@ -2978,7 +3333,7 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 				msg,
 				ar->controls,
 				ar,
-				replmd_op_callback,
+				replmd_op_add_callback,
 				ar->req);
 	LDB_REQ_SET_LOCATION(change_req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
@@ -2991,53 +3346,6 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 	return ldb_next_request(ar->module, change_req);
 }
-
-/*
-   return true if an update is newer than an existing entry
-   see section 5.11 of MS-ADTS
-*/
-static bool replmd_update_is_newer(const struct GUID *current_invocation_id,
-				   const struct GUID *update_invocation_id,
-				   uint32_t current_version,
-				   uint32_t update_version,
-				   NTTIME current_change_time,
-				   NTTIME update_change_time)
-{
-	if (update_version != current_version) {
-		return update_version > current_version;
-	}
-	if (update_change_time != current_change_time) {
-		return update_change_time > current_change_time;
-	}
-	return GUID_compare(update_invocation_id, current_invocation_id) > 0;
-}
-
-static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *cur_m,
-						  struct replPropertyMetaData1 *new_m)
-{
-	return replmd_update_is_newer(&cur_m->originating_invocation_id,
-				      &new_m->originating_invocation_id,
-				      cur_m->version,
-				      new_m->version,
-				      cur_m->originating_change_time,
-				      new_m->originating_change_time);
-}
-
-static struct replPropertyMetaData1 *
-replmd_replPropertyMetaData1_find_attid(struct replPropertyMetaDataBlob *md_blob,
-                                        enum drsuapi_DsAttributeId attid)
-{
-	uint32_t i;
-	struct replPropertyMetaDataCtr1 *rpmd_ctr = &md_blob->ctr.ctr1;
-
-	for (i = 0; i < rpmd_ctr->count; i++) {
-		if (rpmd_ctr->array[i].attid == attid) {
-			return &rpmd_ctr->array[i];
-		}
-	}
-	return NULL;
-}
-
 
 /*
   handle renames that come in over DRS replication
