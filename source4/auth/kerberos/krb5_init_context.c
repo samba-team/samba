@@ -104,7 +104,7 @@ static void smb_krb5_socket_recv(struct smb_krb5_socket *smb_krb5)
 		return;
 	}
 
-	DEBUG(2,("Received smb_krb5 packet of length %d\n",
+	DEBUG(4,("Received smb_krb5 packet of length %d\n",
 		 (int)blob.length));
 
 	talloc_steal(smb_krb5, blob.data);
