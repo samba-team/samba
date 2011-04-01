@@ -736,7 +736,7 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	 */
 	ctrl = get_pam_winbind_config();
 
-	if (ctrl | WINBIND_KRB5_AUTH) {
+	if (ctrl & WINBIND_KRB5_AUTH) {
 		wb_request.flags |= WBFLAG_PAM_CONTACT_TRUSTDOM;
 	}
 
