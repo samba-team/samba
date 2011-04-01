@@ -636,7 +636,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		goto error_free_conn;
 	}
 
-	if (!become_user(conn, get_current_vuid(conn))) {
+	if (!become_user_by_session(conn, p->session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_free_conn;
@@ -1019,7 +1019,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		goto err_free_conn;
 	}
 
-	if (!become_user(conn, get_current_vuid(conn))) {
+	if (!become_user_by_session(conn, p->session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		err = WERR_ACCESS_DENIED;
 		goto err_free_conn;
@@ -1948,7 +1948,7 @@ bool delete_driver_files(const struct auth_serversupplied_info *session_info,
 		goto err_free_conn;
 	}
 
-	if (!become_user(conn, get_current_vuid(conn))) {
+	if (!become_user_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		ret = false;
 		goto err_free_conn;
