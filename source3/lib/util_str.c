@@ -586,7 +586,9 @@ char *safe_strcat_fn(const char *fn,
  Paranoid strcpy into a buffer of given length (includes terminating
  zero. Strips out all but 'a-Z0-9' and the character in other_safe_chars
  and replaces with '_'. Deliberately does *NOT* check for multibyte
- characters. Don't change it !
+ characters. Treats src as an array of bytes, not as a multibyte
+ string. Any byte >0x7f is automatically converted to '_'.
+ other_safe_chars must also contain an ascii string (bytes<0x7f).
 **/
 
 char *alpha_strcpy_fn(const char *fn,
@@ -622,8 +624,12 @@ char *alpha_strcpy_fn(const char *fn,
 
 	for(i = 0; i < len; i++) {
 		int val = (src[i] & 0xff);
-		if (isupper_ascii(val) || islower_ascii(val) ||
-				isdigit(val) || strchr_m(other_safe_chars, val))
+		if (val > 0x7f) {
+			dest[i] = '_';
+			continue;
+		}
+		if (isupper(val) || islower(val) ||
+				isdigit(val) || strchr(other_safe_chars, val))
 			dest[i] = src[i];
 		else
 			dest[i] = '_';
