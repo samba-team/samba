@@ -2047,7 +2047,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 
 	/* check for multiple global sections */
 	if (lp_ctx->bInGlobalSection) {
-		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
+		DEBUG(4, ("Processing section \"[%s]\"\n", pszSectionName));
 		return true;
 	}
 
@@ -2061,7 +2061,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 	if (bRetval) {
 		/* We put this here to avoid an odd message order if messages are */
 		/* issued by the post-processing of a previous section. */
-		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
+		DEBUG(4, ("Processing section \"[%s]\"\n", pszSectionName));
 
 		if ((lp_ctx->currentService = lpcfg_add_service(lp_ctx, lp_ctx->sDefault,
 								   pszSectionName))
