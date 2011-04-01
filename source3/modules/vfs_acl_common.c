@@ -1018,3 +1018,43 @@ static int unlink_acl_common(struct vfs_handle_struct *handle,
 					smb_fname->base_name,
 					false);
 }
+
+static int chmod_acl_module_common(struct vfs_handle_struct *handle,
+			const char *path, mode_t mode)
+{
+	if (lp_posix_pathnames()) {
+		/* Only allow this on POSIX pathnames. */
+		return SMB_VFS_NEXT_CHMOD(handle, path, mode);
+	}
+	return 0;
+}
+
+static int fchmod_acl_module_common(struct vfs_handle_struct *handle,
+			struct files_struct *fsp, mode_t mode)
+{
+	if (fsp->posix_open) {
+		/* Only allow this on POSIX opens. */
+		return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
+	}
+	return 0;
+}
+
+static int chmod_acl_acl_module_common(struct vfs_handle_struct *handle,
+			const char *name, mode_t mode)
+{
+	if (lp_posix_pathnames()) {
+		/* Only allow this on POSIX pathnames. */
+		return SMB_VFS_NEXT_CHMOD_ACL(handle, name, mode);
+	}
+	return 0;
+}
+
+static int fchmod_acl_acl_module_common(struct vfs_handle_struct *handle,
+			struct files_struct *fsp, mode_t mode)
+{
+	if (fsp->posix_open) {
+		/* Only allow this on POSIX opens. */
+		return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
+	}
+	return 0;
+}

@@ -207,9 +207,13 @@ static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.open = open_acl_common,
 	.create_file = create_file_acl_common,
 	.unlink = unlink_acl_common,
+	.chmod = chmod_acl_module_common,
+	.fchmod = fchmod_acl_module_common,
 	.fget_nt_acl = fget_nt_acl_common,
 	.get_nt_acl = get_nt_acl_common,
 	.fset_nt_acl = fset_nt_acl_common,
+	.chmod_acl = chmod_acl_acl_module_common,
+	.fchmod_acl = fchmod_acl_acl_module_common,
 	.sys_acl_set_file = sys_acl_set_file_xattr,
 	.sys_acl_set_fd = sys_acl_set_fd_xattr
 };
