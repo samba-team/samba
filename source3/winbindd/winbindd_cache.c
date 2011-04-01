@@ -246,7 +246,7 @@ static uint16 centry_uint16(struct cache_entry *centry)
 	if (!centry_check_bytes(centry, 2)) {
 		smb_panic_fn("centry_uint16");
 	}
-	ret = CVAL(centry->data, centry->ofs);
+	ret = SVAL(centry->data, centry->ofs);
 	centry->ofs += 2;
 	return ret;
 }
@@ -757,7 +757,7 @@ static void centry_put_uint32(struct cache_entry *centry, uint32 v)
 static void centry_put_uint16(struct cache_entry *centry, uint16 v)
 {
 	centry_expand(centry, 2);
-	SIVAL(centry->data, centry->ofs, v);
+	SSVAL(centry->data, centry->ofs, v);
 	centry->ofs += 2;
 }
 
