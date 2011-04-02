@@ -387,20 +387,19 @@ NTSTATUS net_copy_file(struct net_context *c,
 	while (is_file) {
 
 		/* copying file */
-		int n, ret;
+		int n;
 		n = cli_read(cli_share_src, fnum_src, data, nread,
 				read_size);
 
 		if (n <= 0)
 			break;
 
-		ret = cli_write(cli_share_dst, fnum_dst, 0, data,
-			nread, n);
+		nt_status = cli_writeall(cli_share_dst, fnum_dst, 0,
+					 (uint8_t *)data, nread, n, NULL);
 
-		if (n != ret) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr, _("Error writing file: %s\n"),
-				cli_errstr(cli_share_dst));
-			nt_status = cli_nt_error(cli_share_dst);
+				  nt_errstr(nt_status));
 			goto out;
 		}
 

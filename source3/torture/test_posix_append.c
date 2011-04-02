@@ -32,9 +32,8 @@ bool run_posix_append(int dummy)
 	const char *fname = "append";
 	NTSTATUS status;
 	uint16_t fnum;
-	ssize_t written;
 	SMB_OFF_T size;
-	char c = '\0';
+	uint8_t c = '\0';
 	bool ret = false;
 
 	printf("Starting POSIX_APPEND\n");
@@ -69,14 +68,14 @@ bool run_posix_append(int dummy)
 	 * with a file of 2 byte length.
 	 */
 
-	written = cli_write(cli, fnum, 0, &c, 0, sizeof(c));
-	if (written != sizeof(c)) {
-		printf("cli_write failed\n");
+	status = cli_writeall(cli, fnum, 0, &c, 0, sizeof(c), NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_write failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
-	written = cli_write(cli, fnum, 0, &c, 0, sizeof(c));
-	if (written != sizeof(c)) {
-		printf("cli_write failed\n");
+	status = cli_writeall(cli, fnum, 0, &c, 0, sizeof(c), NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_write failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
 

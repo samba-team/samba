@@ -578,6 +578,7 @@ static bool rw_torture(struct cli_state *c)
 
 	for (i=0;i<torture_numops;i++) {
 		unsigned n = (unsigned)sys_random()%10;
+
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
 		}
@@ -593,16 +594,20 @@ static bool rw_torture(struct cli_state *c)
 			break;
 		}
 
-		if (cli_write(c, fnum, 0, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
-			printf("write failed (%s)\n", cli_errstr(c));
+		status = cli_writeall(c, fnum, 0, (uint8_t *)&pid, 0,
+				      sizeof(pid), NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("write failed (%s)\n", nt_errstr(status));
 			correct = False;
 		}
 
 		for (j=0;j<50;j++) {
-			if (cli_write(c, fnum, 0, (char *)buf, 
-				      sizeof(pid)+(j*sizeof(buf)), 
-				      sizeof(buf)) != sizeof(buf)) {
-				printf("write failed (%s)\n", cli_errstr(c));
+			status = cli_writeall(c, fnum, 0, (uint8_t *)buf,
+					      sizeof(pid)+(j*sizeof(buf)),
+					      sizeof(buf), NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("write failed (%s)\n",
+				       nt_errstr(status));
 				correct = False;
 			}
 		}
@@ -728,8 +733,11 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 				sent = sizeof(buf) - count;
 			}
 
-			if (cli_write(c, fnum, 0, buf+count, count, (size_t)sent) != sent) {
-				printf("write failed (%s)\n", cli_errstr(c));
+			status = cli_writeall(c, fnum, 0, (uint8_t *)buf+count,
+					      count, (size_t)sent, NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("write failed (%s)\n",
+				       nt_errstr(status));
 				correct = False;
 			}
 		}
@@ -798,6 +806,7 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 
 	for (i=0;i<torture_numops;i++)
 	{
+		NTSTATUS status;
 		size_t buf_size = ((unsigned)sys_random()%(sizeof(buf)-1))+ 1;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
@@ -805,8 +814,10 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 
 		generate_random_buffer((unsigned char *)buf, buf_size);
 
-		if (cli_write(c1, fnum1, 0, buf, 0, buf_size) != buf_size) {
-			printf("write failed (%s)\n", cli_errstr(c1));
+		status = cli_writeall(c1, fnum1, 0, (uint8_t *)buf, 0,
+				      buf_size, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("write failed (%s)\n", nt_errstr(status));
 			correct = False;
 			break;
 		}
@@ -929,7 +940,7 @@ static bool run_readwritelarge_internal(int max_xmit_k)
 		return False;
 	}
 
-	cli_write(cli1, fnum1, 0, buf, 0, sizeof(buf));
+	cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 0, sizeof(buf), NULL);
 
 	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
 				     cli1, fnum1, NULL, &fsize, NULL, NULL,
@@ -1293,8 +1304,9 @@ static bool run_tcon_test(int dummy)
 	cnum1 = cli->cnum;
 	vuid1 = cli->vuid;
 
-	if (cli_write(cli, fnum1, 0, buf, 130, 4) != 4) {
-		printf("initial write failed (%s)", cli_errstr(cli));
+	status = cli_writeall(cli, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("initial write failed (%s)", nt_errstr(status));
 		return False;
 	}
 
@@ -1314,33 +1326,39 @@ static bool run_tcon_test(int dummy)
 	/* try a write with the wrong tid */
 	cli->cnum = cnum2;
 
-	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
+	status = cli_writeall(cli, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("* server allows write with wrong TID\n");
 		ret = False;
 	} else {
-		printf("server fails write with wrong TID : %s\n", cli_errstr(cli));
+		printf("server fails write with wrong TID : %s\n",
+		       nt_errstr(status));
 	}
 
 
 	/* try a write with an invalid tid */
 	cli->cnum = cnum3;
 
-	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
+	status = cli_writeall(cli, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("* server allows write with invalid TID\n");
 		ret = False;
 	} else {
-		printf("server fails write with invalid TID : %s\n", cli_errstr(cli));
+		printf("server fails write with invalid TID : %s\n",
+		       nt_errstr(status));
 	}
 
 	/* try a write with an invalid vuid */
 	cli->vuid = vuid2;
 	cli->cnum = cnum1;
 
-	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
+	status = cli_writeall(cli, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("* server allows write with invalid VUID\n");
 		ret = False;
 	} else {
-		printf("server fails write with invalid VUID : %s\n", cli_errstr(cli));
+		printf("server fails write with invalid VUID : %s\n",
+		       nt_errstr(status));
 	}
 
 	cli->cnum = cnum1;
@@ -1793,6 +1811,7 @@ static bool run_locktest4(int dummy)
 	bool ret;
 	char buf[1000];
 	bool correct = True;
+	NTSTATUS status;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -1810,8 +1829,10 @@ static bool run_locktest4(int dummy)
 
 	memset(buf, 0, sizeof(buf));
 
-	if (cli_write(cli1, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
-		printf("Failed to create file\n");
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 0, sizeof(buf),
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to create file: %s\n", nt_errstr(status));
 		correct = False;
 		goto fail;
 	}
@@ -1883,8 +1904,12 @@ static bool run_locktest4(int dummy)
 	EXPECTED(ret, False);
 	printf("this server %s strict write locking\n", ret?"doesn't do":"does");
 
-	ret = cli_lock(cli1, fnum1, 130, 4, 0, READ_LOCK) &&
-	      (cli_write(cli2, fnum2, 0, buf, 130, 4) == 4);
+	ret = cli_lock(cli1, fnum1, 130, 4, 0, READ_LOCK);
+	if (ret) {
+		status = cli_writeall(cli2, fnum2, 0, (uint8_t *)buf, 130, 4,
+				      NULL);
+		ret = NT_STATUS_IS_OK(status);
+	}
 	EXPECTED(ret, False);
 	printf("this server %s strict read locking\n", ret?"doesn't do":"does");
 
@@ -1901,21 +1926,24 @@ static bool run_locktest4(int dummy)
 	      cli_lock(cli1, fnum1, 150, 4, 0, READ_LOCK) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 150, 4)) &&
 	      (cli_read(cli2, fnum2, buf, 150, 4) == 4) &&
-	      !(cli_write(cli2, fnum2, 0, buf, 150, 4) == 4) &&
+	      !(NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
+					     150, 4, NULL))) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 150, 4));
 	EXPECTED(ret, True);
 	printf("this server %s do recursive lock overlays\n", ret?"does":"doesn't");
 
 	ret = cli_lock(cli1, fnum1, 160, 4, 0, READ_LOCK) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 160, 4)) &&
-	      (cli_write(cli2, fnum2, 0, buf, 160, 4) == 4) &&		
+	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
+					   160, 4, NULL)) &&
 	      (cli_read(cli2, fnum2, buf, 160, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
 
 	ret = cli_lock(cli1, fnum1, 170, 4, 0, WRITE_LOCK) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 170, 4)) &&
-	      (cli_write(cli2, fnum2, 0, buf, 170, 4) == 4) &&		
+	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
+					   170, 4, NULL)) &&
 	      (cli_read(cli2, fnum2, buf, 170, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove a write lock using read locking\n", ret?"can":"cannot");
@@ -1923,7 +1951,8 @@ static bool run_locktest4(int dummy)
 	ret = cli_lock(cli1, fnum1, 190, 4, 0, WRITE_LOCK) &&
 	      cli_lock(cli1, fnum1, 190, 4, 0, READ_LOCK) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 190, 4)) &&
-	      !(cli_write(cli2, fnum2, 0, buf, 190, 4) == 4) &&		
+	      !NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
+					    190, 4, NULL)) &&
 	      (cli_read(cli2, fnum2, buf, 190, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove the first lock first\n", ret?"does":"doesn't");
@@ -1964,6 +1993,7 @@ static bool run_locktest5(int dummy)
 	bool ret;
 	char buf[1000];
 	bool correct = True;
+	NTSTATUS status;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -1982,8 +2012,10 @@ static bool run_locktest5(int dummy)
 
 	memset(buf, 0, sizeof(buf));
 
-	if (cli_write(cli1, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
-		printf("Failed to create file\n");
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 0, sizeof(buf),
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to create file: %s\n", nt_errstr(status));
 		correct = False;
 		goto fail;
 	}
@@ -2127,6 +2159,7 @@ static bool run_locktest7(int dummy)
 	uint16_t fnum1;
 	char buf[200];
 	bool correct = False;
+	NTSTATUS status;
 
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
@@ -2142,8 +2175,10 @@ static bool run_locktest7(int dummy)
 
 	memset(buf, 0, sizeof(buf));
 
-	if (cli_write(cli1, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
-		printf("Failed to create file\n");
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 0, sizeof(buf),
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to create file: %s\n", nt_errstr(status));
 		goto fail;
 	}
 
@@ -2163,9 +2198,11 @@ static bool run_locktest7(int dummy)
 		printf("pid1 successfully read the range 130:4\n");
 	}
 
-	if (cli_write(cli1, fnum1, 0, buf, 130, 4) != 4) {
-		printf("pid1 unable to write to the range 130:4, error was %s\n", cli_errstr(cli1));
-		if (NT_STATUS_V(cli_nt_error(cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid1 unable to write to the range 130:4, error was "
+		       "%s\n", nt_errstr(status));
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
 			goto fail;
 		}
@@ -2182,9 +2219,11 @@ static bool run_locktest7(int dummy)
 		printf("pid2 successfully read the range 130:4\n");
 	}
 
-	if (cli_write(cli1, fnum1, 0, buf, 130, 4) != 4) {
-		printf("pid2 unable to write to the range 130:4, error was %s\n", cli_errstr(cli1));
-		if (NT_STATUS_V(cli_nt_error(cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid2 unable to write to the range 130:4, error was "
+		       "%s\n", nt_errstr(status));
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
 			goto fail;
 		}
@@ -2210,8 +2249,10 @@ static bool run_locktest7(int dummy)
 		printf("pid1 successfully read the range 130:4\n");
 	}
 
-	if (cli_write(cli1, fnum1, 0, buf, 130, 4) != 4) {
-		printf("pid1 unable to write to the range 130:4, error was %s\n", cli_errstr(cli1));
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid1 unable to write to the range 130:4, error was "
+		       "%s\n", nt_errstr(status));
 		goto fail;
 	} else {
 		printf("pid1 successfully wrote to the range 130:4\n");
@@ -2230,9 +2271,11 @@ static bool run_locktest7(int dummy)
 		goto fail;
 	}
 
-	if (cli_write(cli1, fnum1, 0, buf, 130, 4) != 4) {
-		printf("pid2 unable to write to the range 130:4, error was %s\n", cli_errstr(cli1));
-		if (NT_STATUS_V(cli_nt_error(cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid2 unable to write to the range 130:4, error was "
+		       "%s\n", nt_errstr(status));
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
 			goto fail;
 		}
@@ -2540,6 +2583,7 @@ static bool run_fdpasstest(int dummy)
 	const char *fname = "\\fdpass.tst";
 	uint16_t fnum1;
 	char buf[1024];
+	NTSTATUS status;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -2556,8 +2600,10 @@ static bool run_fdpasstest(int dummy)
 		return False;
 	}
 
-	if (cli_write(cli1, fnum1, 0, "hello world\n", 0, 13) != 13) {
-		printf("write failed (%s)\n", cli_errstr(cli1));
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)"hello world\n", 0,
+			      13, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("write failed (%s)\n", nt_errstr(status));
 		return False;
 	}
 
@@ -2594,6 +2640,7 @@ static bool run_fdsesstest(int dummy)
 	uint16_t fnum2;
 	char buf[1024];
 	bool ret = True;
+	NTSTATUS status;
 
 	if (!torture_open_connection(&cli, 0))
 		return False;
@@ -2618,8 +2665,10 @@ static bool run_fdsesstest(int dummy)
 		return False;
 	}
 
-	if (cli_write(cli, fnum1, 0, "hello world\n", 0, 13) != 13) {
-		printf("write failed (%s)\n", cli_errstr(cli));
+	status = cli_writeall(cli, fnum1, 0, (uint8_t *)"hello world\n", 0, 13,
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("write failed (%s)\n", nt_errstr(status));
 		return False;
 	}
 
@@ -3121,7 +3170,7 @@ static bool run_trans2test(int dummy)
 
 	cli_open(cli, fname2, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
-	cli_write(cli, fnum,  0, (char *)&fnum, 0, sizeof(fnum));
+	cli_writeall(cli, fnum,  0, (uint8_t *)&fnum, 0, sizeof(fnum), NULL);
 	cli_close(cli, fnum);
 	status = cli_qpathinfo2(cli, "\\trans2\\", &c_time_ts, &a_time_ts,
 				&w_time_ts, &m_time2_ts, &size, NULL, NULL);
@@ -3356,13 +3405,6 @@ static bool run_oplock2(int dummy)
 
 	cli_read(cli1, fnum1, buf, 0, 4);
 
-#if 0
-	if (cli_write(cli1, fnum1, 0, buf, 0, 4) != 4) {
-		printf("write on fnum1 failed (%s)\n", cli_errstr(cli1));
-		correct = False;
-	}
-#endif
-
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
@@ -3421,7 +3463,7 @@ static bool run_oplock3(int dummy)
 		sleep(2);
 		/* try to trigger a oplock break in parent */
 		cli_open(cli, fname, O_RDWR, DENY_NONE, &fnum);
-		cli_write(cli, fnum, 0, buf, 0, 4);
+		cli_writeall(cli, fnum, 0, (uint8_t *)buf, 0, 4, NULL);
 		exit(0);
 	}
 
@@ -3433,7 +3475,7 @@ static bool run_oplock3(int dummy)
 	}
 	cli_oplock_handler(cli, oplock3_handler);
 	cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE, &fnum);
-	cli_write(cli, fnum, 0, buf, 0, 4);
+	cli_writeall(cli, fnum, 0, (uint8_t *)buf, 0, 4, NULL);
 	cli_close(cli, fnum);
 	cli_open(cli, fname, O_RDWR, DENY_NONE, &fnum);
 	cli->timeout = 20000;
@@ -4548,8 +4590,9 @@ static bool run_opentest(int dummy)
 
 	memset(buf, '\0', 20);
 
-	if (cli_write(cli1, fnum1, 0, buf, 0, 20) != 20) {
-		printf("write failed (%s)\n", cli_errstr(cli1));
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)buf, 0, 20, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("write failed (%s)\n", nt_errstr(status));
 		correct = False;
 	}
 
@@ -4817,8 +4860,10 @@ static bool run_opentest(int dummy)
 	}
 
 	/* Write to ensure we have to update the file time. */
-	if (cli_write(cli1, fnum1, 0, "TEST DATA\n", 0, 10) != 10) {
-		printf("TEST #8 cli_write failed: %s\n", cli_errstr(cli1));
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)"TEST DATA\n", 0, 10,
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("TEST #8 cli_write failed: %s\n", nt_errstr(status));
 		correct = false;
 		goto out;
 	}
@@ -4990,8 +5035,10 @@ static bool run_simple_posix_open_test(int dummy)
 	}
 
 	/* Write some data into it. */
-	if (cli_write(cli1, fnum1, 0, "TEST DATA\n", 0, 10) != 10) {
-		printf("cli_write failed: %s\n", cli_errstr(cli1));
+	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)"TEST DATA\n", 0, 10,
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_write failed: %s\n", nt_errstr(status));
 		goto out;
 	}
 
@@ -6510,14 +6557,15 @@ static bool run_windows_write(int dummy)
 	start_time = timeval_current();
 
 	for (i=0; i<torture_numops; i++) {
-		char c = 0;
+		uint8_t c = 0;
 		off_t start = i * torture_blocksize;
 		NTSTATUS status;
 		size_t to_pull = torture_blocksize - 1;
 
-		if (cli_write(cli1, fnum, 0, &c,
-			      start + torture_blocksize - 1, 1) != 1) {
-			printf("cli_write failed: %s\n", cli_errstr(cli1));
+		status = cli_writeall(cli1, fnum, 0, &c,
+				      start + torture_blocksize - 1, 1, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("cli_write failed: %s\n", nt_errstr(status));
 			goto fail;
 		}
 

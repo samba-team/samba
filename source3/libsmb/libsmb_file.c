@@ -318,13 +318,13 @@ SMBC_write_ctx(SMBCCTX *context,
                const void *buf,
                size_t count)
 {
-	int ret;
         off_t offset;
 	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
 	char *path = NULL;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	/* First check all pointers before dereferencing them */
 
@@ -377,18 +377,18 @@ SMBC_write_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>write: resolved path as %s\n", targetpath);*/
 
-	ret = cli_write(targetcli, file->cli_fd,
-                        0, (char *)buf, offset, count);
-	if (ret <= 0) {
-		errno = SMBC_errno(context, targetcli);
+	status = cli_writeall(targetcli, file->cli_fd,
+			      0, (uint8_t *)buf, offset, count, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	file->offset += ret;
+	file->offset += count;
 
 	TALLOC_FREE(frame);
-	return ret;  /* Success, 0 bytes of data ... */
+	return count;  /* Success, 0 bytes of data ... */
 }
 
 /*
