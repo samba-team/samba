@@ -350,82 +350,168 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
  Do a NT1 plaintext session setup.
 ****************************************************************************/
 
-static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
-					    const char *user, const char *pass,
-					    const char *workgroup)
+struct cli_session_setup_plain_state {
+	struct cli_state *cli;
+	uint16_t vwv[13];
+	const char *user;
+};
+
+static void cli_session_setup_plain_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_session_setup_plain_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *user, const char *pass, const char *workgroup)
 {
-	uint32 capabilities = cli_session_setup_capabilities(cli);
-	char *p;
+	struct tevent_req *req, *subreq;
+	struct cli_session_setup_plain_state *state;
+	uint16_t *vwv;
+	uint8_t *bytes;
+	size_t passlen;
+	char *version;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_session_setup_plain_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+	state->user = user;
+	vwv = state->vwv;
+
+	SCVAL(vwv+0, 0, 0xff);
+	SCVAL(vwv+0, 1, 0);
+	SSVAL(vwv+1, 0, 0);
+	SSVAL(vwv+2, 0, CLI_BUFFER_SIZE);
+	SSVAL(vwv+3, 0, 2);
+	SSVAL(vwv+4, 0, cli->pid);
+	SIVAL(vwv+5, 0, cli->sesskey);
+	SSVAL(vwv+7, 0, 0);
+	SSVAL(vwv+8, 0, 0);
+	SSVAL(vwv+9, 0, 0);
+	SSVAL(vwv+10, 0, 0);
+	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli));
+
+	bytes = talloc_array(state, uint8_t, 0);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), pass, strlen(pass)+1,
+				   &passlen);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+	SSVAL(vwv + (cli_ucs2(cli) ? 8 : 7), 0, passlen);
+
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   user, strlen(user)+1, NULL);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   workgroup, strlen(workgroup)+1, NULL);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   "Unix", 5, NULL);
+
+	version = talloc_asprintf(talloc_tos(), "Samba %s",
+				  samba_version_string());
+	if (tevent_req_nomem(version, req)){
+		return tevent_req_post(req, ev);
+	}
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   version, strlen(version)+1, NULL);
+	TALLOC_FREE(version);
+
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 13, vwv,
+			      talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_plain_done, req);
+	return req;
+}
+
+static void cli_session_setup_plain_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_session_setup_plain_state *state = tevent_req_data(
+		req, struct cli_session_setup_plain_state);
+	struct cli_state *cli = state->cli;
+	uint32_t num_bytes;
+	uint8_t *in;
+	char *inbuf;
+	uint8_t *bytes;
+	uint8_t *p;
 	NTSTATUS status;
-	fstring lanman;
 
-	fstr_sprintf( lanman, "Samba %s", samba_version_string());
-
-	memset(cli->outbuf, '\0', smb_size);
-	cli_set_message(cli->outbuf,13,0,True);
-	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
-	cli_setup_packet(cli);
-
-	SCVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
-	SSVAL(cli->outbuf,smb_vwv3,2);
-	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
-	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv8,0);
-	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
-	p = smb_buf(cli->outbuf);
-
-	/* check wether to send the ASCII or UNICODE version of the password */
-
-	if ( (capabilities & CAP_UNICODE) == 0 ) {
-		p += clistr_push(cli, p, pass, -1, STR_TERMINATE); /* password */
-		SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
-	}
-	else {
-		/* For ucs2 passwords clistr_push calls ucs2_align, which causes
-		 * the space taken by the unicode password to be one byte too
-		 * long (as we're on an odd byte boundary here). Reduce the
-		 * count by 1 to cope with this. Fixes smbclient against NetApp
-		 * servers which can't cope. Fix from
-		 * bryan.kolodziej@allenlund.com in bug #3840.
-		 */
-		p += clistr_push(cli, p, pass, -1, STR_UNICODE|STR_TERMINATE); /* unicode password */
-		SSVAL(cli->outbuf,smb_vwv8,PTR_DIFF(p, smb_buf(cli->outbuf))-1);	
+	status = cli_smb_recv(subreq, state, &in, 0, NULL, NULL,
+			      &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
-	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
-	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
-	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, lanman, -1, STR_TERMINATE);
-	cli_setup_bcc(cli, p);
+	inbuf = (char *)in;
+	p = bytes;
 
-	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
-		return cli_nt_error(cli);
-	}
+	cli->vuid = SVAL(inbuf, smb_uid);
 
-	show_msg(cli->inbuf);
+	p += clistr_pull(inbuf, cli->server_os, (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(inbuf, cli->server_type, (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(inbuf, cli->server_domain, (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
 
-	if (cli_is_error(cli)) {
-		return cli_nt_error(cli);
-	}
-
-	cli->vuid = SVAL(cli->inbuf,smb_uid);
-	p = smb_buf(cli->inbuf);
-	p += clistr_pull(cli->inbuf, cli->server_os, p, sizeof(fstring),
-			 -1, STR_TERMINATE);
-	p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
-			 -1, STR_TERMINATE);
-	p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
-			 -1, STR_TERMINATE);
-	status = cli_set_username(cli, user);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	status = cli_set_username(cli, state->user);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
 	}
+	tevent_req_done(req);
+}
 
-	return NT_STATUS_OK;
+static NTSTATUS cli_session_setup_plain_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static NTSTATUS cli_session_setup_plain(struct cli_state *cli,
+					const char *user, const char *pass,
+					const char *workgroup)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_session_setup_plain_send(frame, ev, cli, user, pass,
+					   workgroup);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_session_setup_plain_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -1420,7 +1506,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
            connect */
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) 
-		return cli_session_setup_plaintext(cli, user, "", workgroup);
+		return cli_session_setup_plain(cli, user, "", workgroup);
 
 	/* if the server doesn't support encryption then we have to use 
 	   plaintext. The second password is ignored */
@@ -1431,7 +1517,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 				  " or 'client ntlmv2 auth = yes'\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		return cli_session_setup_plaintext(cli, user, pass, workgroup);
+		return cli_session_setup_plain(cli, user, pass, workgroup);
 	}
 
 	/* if the server supports extended security then use SPNEGO */
