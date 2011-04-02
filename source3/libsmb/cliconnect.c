@@ -176,7 +176,7 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 
 struct cli_session_setup_guest_state {
 	struct cli_state *cli;
-	uint16_t vwv[16];
+	uint16_t vwv[13];
 	struct iovec bytes;
 };
 
