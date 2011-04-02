@@ -60,6 +60,16 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('automount')
     opt.SAMBA3_ADD_OPTION('aio-support')
 
+    opt.SAMBA3_ADD_OPTION('cluster-support')
+
+    opt.add_option('--with-ctdb-dir',
+                   help=("Directory under which ctdb is installed"),
+                   action="store", dest='ctdb_dir', default=None)
+    opt.add_option('--enable-old-ctdb',
+                  help=("enable building against (too) old version of ctdb (default=false)"),
+                  action="store_true", dest='enable_old_ctdb', default=False)
+
+
 
 def configure(conf):
     from samba_utils import TO_LIST
@@ -1495,6 +1505,192 @@ main() {
         conf.CHECK_HEADERS('linux/dqblk_xfs.h')
         # For sys/quota.h and linux/quota.h
         conf.CHECK_HEADERS('sys/quota.h')
+
+
+    #
+    # checking for clustering extensions (CTDB)
+    #
+    if not Options.options.with_cluster_support:
+        have_cluster_support = False
+
+    else:
+
+        if Options.options.ctdb_dir:
+            conf.ADD_EXTRA_INCLUDES(Options.options.ctdb_dir + '/include')
+
+        srcdir = os.path.realpath(conf.srcdir)
+        if 'EXTRA_INCLUDES' in conf.env:
+            includes = ' '.join(conf.env['EXTRA_INCLUDES']).replace('#', srcdir + '/')
+        else:
+            includes = ''
+
+        have_cluster_support = True
+        ctdb_broken = ""
+
+        conf.CHECK_CODE('''
+            #define NO_CONFIG_H
+            #include "replace.h"
+            #include "system/wait.h"
+            #include "system/network.h"
+            #define private #error __USED_RESERVED_WORD_private__
+            #include <talloc.h>
+            #include <tdb.h>
+            #include <ctdb.h>
+
+            int main(void)
+            {
+                return 0;
+            }
+            ''',
+            'HAVE_CTDB_H',
+            addmain=False,
+            includes=includes,
+            msg='Checking for header ctdb.h')
+
+        if not conf.CONFIG_SET('HAVE_CTDB_H'):
+            have_cluster_support = False
+            ctdb_broken = "ctdb.h is required for cluster support"
+
+        if have_cluster_support:
+            conf.CHECK_CODE('''
+                #define NO_CONFIG_H
+                #include "replace.h"
+                #include "system/wait.h"
+                #include "system/network.h"
+                #define private #error __USED_RESERVED_WORD_private__
+                #include <talloc.h>
+                #include <tdb.h>
+                #include <ctdb.h>
+                #include <ctdb_private.h>
+
+                int main(void)
+                {
+                    return 0;
+                }
+                ''',
+                'HAVE_CTDB_PRIVATE_H',
+                addmain=False,
+                includes=includes,
+                msg='Checking for header ctdb_private.h')
+
+            if not conf.CONFIG_SET('HAVE_CTDB_PRIVATE_H'):
+                have_cluster_support = False
+                ctdb_broken = "ctdb_private.h is required for cluster support"
+
+        if have_cluster_support:
+            conf.CHECK_CODE('''
+                #define NO_CONFIG_H
+                #include "replace.h"
+                #include "system/wait.h"
+                #include "system/network.h"
+                #include <talloc.h>
+                #include <tdb.h>
+                #include <ctdb.h>
+                #include <ctdb_private.h>
+
+                int main(void)
+                {
+                   int i = (int)CTDB_CONTROL_TRANS3_COMMIT;
+                   return 0;
+                }
+                ''',
+                'HAVE_CTDB_CONTROL_TRANS3_COMMIT_DECL',
+                addmain=False,
+                includes=includes,
+                msg='Checking for transaction support (TRANS3_COMMIT control)')
+
+            if not conf.CONFIG_SET('HAVE_CTDB_CONTROL_TRANS3_COMMIT_DECL'):
+                have_cluster_support = False
+                ctdb_broken = "ctdb transaction support missing or too old"
+
+        if have_cluster_support:
+            conf.CHECK_CODE('''
+                #define NO_CONFIG_H
+                #include "replace.h"
+                #include "system/wait.h"
+                #include "system/network.h"
+                #include <talloc.h>
+                #include <tdb.h>
+                #include <ctdb.h>
+                #include <ctdb_private.h>
+
+                int main(void)
+                {
+                    int i = (int)CTDB_CONTROL_SCHEDULE_FOR_DELETION;
+                    return 0;
+                }
+                ''',
+                'HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL',
+                addmain=False,
+                includes=includes,
+                msg='Checking for SCHEDULE_FOR_DELETION control')
+
+            if not conf.CONFIG_SET('HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL'):
+                if not Options.optinons.enable_old_ctdb:
+                    have_cluster_support = False
+                    ctdb_broken = "SCHEDULE_FOR_DELETION control missing"
+                else:
+                    Logs.warn("ignoring missing SCHEDULE_FOR_DELETION control (--enable-old-ctdb)")
+
+        if have_cluster_support:
+            conf.CHECK_CODE('''
+                #define NO_CONFIG_H
+                #include "replace.h"
+                #include "system/wait.h"
+                #include "system/network.h"
+                #include <talloc.h>
+                #include <tdb.h>
+                #include <ctdb.h>
+                #include <ctdb_private.h>
+
+                int main(void)
+                {
+                    struct ctdb_control_tcp _x;
+                    return 0;
+                }
+                ''',
+                'HAVE_STRUCT_CTDB_CONTROL_TCP',
+                addmain=False,
+                includes=includes,
+                msg='Checking for ctdb ipv4 support')
+
+            if not conf.CONFIG_SET('HAVE_STRUCT_CTDB_CONTROL_TCP'):
+                have_cluster_support = False
+                ctdb_broken = "missing struct ctdb_control_tcp"
+
+        if have_cluster_support:
+            conf.CHECK_CODE('''
+                #define NO_CONFIG_H
+                #include "replace.h"
+                #include "system/wait.h"
+                #include "system/network.h"
+                #include <talloc.h>
+                #include <tdb.h>
+                #include <ctdb.h>
+                #include <ctdb_private.h>
+
+                int main(void)
+                {
+                    struct ctdb_control_tcp_addr _x;
+                    return 0;
+                }
+                ''',
+                'HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR',
+                addmain=False,
+                includes=includes,
+                msg='Checking for ctdb ipv6 support')
+
+    if have_cluster_support:
+        Logs.info("building with cluster support")
+        conf.DEFINE('CLUSTER_SUPPORT', 1);
+    else:
+        if not Options.options.with_cluster_support:
+            Logs.info("building without cluster support")
+        else:
+            Logs.warn("building without cluster support: " + ctdb_broken)
+        conf.undefine('CLUSTER_SUPPORT')
+
+
 
     conf.CHECK_CODE('__attribute__((destructor)) static void cleanup(void) { }',
 		    'HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR',
