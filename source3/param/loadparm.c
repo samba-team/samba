@@ -4863,15 +4863,62 @@ static void init_printer_values(struct service *pService)
 #if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
 
 	case PRINT_TEST:
-	case PRINT_VLP:
-		string_set(&pService->szPrintcommand, "vlp print %p %s");
-		string_set(&pService->szLpqcommand, "vlp lpq %p");
-		string_set(&pService->szLprmcommand, "vlp lprm %p %j");
-		string_set(&pService->szLppausecommand, "vlp lppause %p %j");
-		string_set(&pService->szLpresumecommand, "vlp lpresume %p %j");
-		string_set(&pService->szQueuepausecommand, "vlp queuepause %p");
-		string_set(&pService->szQueueresumecommand, "vlp queueresume %p");
+	case PRINT_VLP: {
+		const char *tdbfile;
+		char *tmp;
+
+		tdbfile = talloc_asprintf(
+			talloc_tos(), "tdbfile=%s",
+			lp_parm_const_string(-1, "vlp", "tdbfile",
+					     "/tmp/vlp.tdb"));
+		if (tdbfile == NULL) {
+			tdbfile="tdbfile=/tmp/vlp.tdb";
+		}
+
+		tmp = talloc_asprintf(talloc_tos(), "vlp %s print %%p %%s",
+				      tdbfile);
+		string_set(&pService->szPrintcommand,
+			   tmp ? tmp : "vlp print %p %s");
+		TALLOC_FREE(tmp);
+
+		tmp = talloc_asprintf(talloc_tos(), "vlp %s lpq %%p",
+				      tdbfile);
+		string_set(&pService->szLpqcommand,
+			   tmp ? tmp : "vlp lpq %p");
+		TALLOC_FREE(tmp);
+
+		tmp = talloc_asprintf(talloc_tos(), "vlp %s lprm %%p %%j",
+				      tdbfile);
+		string_set(&pService->szLprmcommand,
+			   tmp ? tmp : "vlp lprm %p %j");
+		TALLOC_FREE(tmp);
+
+		tmp = talloc_asprintf(talloc_tos(), "vlp %s lppause %%p %%j",
+				      tdbfile);
+		string_set(&pService->szLppausecommand,
+			   tmp ? tmp : "vlp lppause %p %j");
+		TALLOC_FREE(tmp);
+
+		tmp = talloc_asprintf(talloc_tos(), "vlp %s lpresume %%p %%j",
+				      tdbfile);
+		string_set(&pService->szLpresumecommand,
+			   tmp ? tmp : "vlp lpresume %p %j");
+		TALLOC_FREE(tmp);
+
+		tmp = talloc_asprintf(talloc_tos(), "vlp %s queuepause %%p",
+				      tdbfile);
+		string_set(&pService->szQueuepausecommand,
+			   tmp ? tmp : "vlp queuepause %p");
+		TALLOC_FREE(tmp);
+
+		tmp = talloc_asprintf(talloc_tos(), "vlp %s queueresume %%p",
+				      tdbfile);
+		string_set(&pService->szQueueresumecommand,
+			   tmp ? tmp : "vlp queueresume %p");
+		TALLOC_FREE(tmp);
+
 		break;
+	}
 #endif /* DEVELOPER */
 
 	}
