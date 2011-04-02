@@ -276,18 +276,6 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type)
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
 
-	status = rpc_pipe_open_interface(fsp->conn,
-					 &ndr_table_spoolss.syntax_id,
-					 fsp->conn->session_info,
-					 &fsp->conn->sconn->client_id,
-					 fsp->conn->sconn->msg_ctx,
-					 &fsp->conn->spoolss_pipe);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("print_spool_end: "
-			  "Failed to get spoolss pipe [%s]\n",
-			  nt_errstr(status)));
-		return;
-	}
 	b = fsp->conn->spoolss_pipe->binding_handle;
 
 	switch (close_type) {
