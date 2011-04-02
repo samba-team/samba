@@ -189,13 +189,17 @@ void nb_createx(const char *fname,
 void nb_writex(int handle, int offset, int size, int ret_size)
 {
 	int i;
+	NTSTATUS status;
 
 	if (buf[0] == 0) memset(buf, 1, sizeof(buf));
 
 	i = find_handle(handle);
-	if (cli_write(c, ftable[i].fd, 0, buf, offset, size) != ret_size) {
-		printf("(%d) ERROR: write failed on handle %d, fd %d \
-errno %d (%s)\n", line_count, handle, ftable[i].fd, errno, strerror(errno));
+	status = cli_writeall(c, ftable[i].fd, 0, (uint8_t *)buf, offset, size,
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%d) ERROR: write failed on handle %d, fd %d "
+		       "error %s\n", line_count, handle, ftable[i].fd,
+		       nt_errstr(status));
 		exit(1);
 	}
 
