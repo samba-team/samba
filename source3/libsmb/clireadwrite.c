@@ -148,8 +148,7 @@ struct tevent_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 	}
 
 	status = cli_smb_req_send(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 	return req;
@@ -282,8 +281,7 @@ static void cli_readall_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_read_andx_recv(subreq, &received, &buf);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -569,8 +567,7 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 
 		status = state->sink((char *)top_subreq->buf,
 				     top_subreq->received, state->priv);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(state->req, status);
+		if (tevent_req_nterror(state->req, status)) {
 			return;
 		}
 		state->pushed += top_subreq->received;
@@ -1013,8 +1010,7 @@ struct tevent_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
 	}
 
 	status = cli_smb_req_send(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 	return req;
@@ -1114,8 +1110,7 @@ static void cli_writeall_written(struct tevent_req *subreq)
 
 	status = cli_write_andx_recv(subreq, &written);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -1313,8 +1308,7 @@ static void cli_push_written(struct tevent_req *subreq)
 	status = cli_writeall_recv(subreq);
 	TALLOC_FREE(subreq);
 	TALLOC_FREE(substate);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
