@@ -1045,8 +1045,12 @@ static int get_file(file_info2 finfo)
 		dsize = MIN(dsize, rsize);  /* Should be only what is left */
 		DEBUG(5, ("writing %i bytes, bpos = %i ...\n", dsize, bpos));
 
-		if (cli_write(cli, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
-			DEBUG(0, ("Error writing remote file\n"));
+		status = cli_writeall(cli, fnum, 0,
+				      (uint8_t *)(buffer_p + bpos), pos,
+				      dsize, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Error writing remote file: %s\n",
+				  nt_errstr(status)));
 			return 0;
 		}
 

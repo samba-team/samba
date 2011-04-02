@@ -198,7 +198,8 @@ bool torture_casetable(int dummy)
 			fflush(stdout);
 		}
 
-		cli_write(cli, fnum, 0, (char *)&c, size, sizeof(c));
+		cli_writeall(cli, fnum, 0, (uint8_t *)&c, size, sizeof(c),
+			     NULL);
 		cli_close(cli, fnum);
 	}
 

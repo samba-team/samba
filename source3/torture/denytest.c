@@ -1423,7 +1423,8 @@ bool torture_denytest1(int dummy)
 	for (i=0;i<2;i++) {
 		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
 		cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
-		cli_write(cli1, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
+		cli_writeall(cli1, fnum1, 0, (uint8_t *)fnames[i], 0,
+			     strlen(fnames[i]), NULL);
 		cli_close(cli1, fnum1);
 	}
 
@@ -1452,7 +1453,9 @@ bool torture_denytest1(int dummy)
 			if (cli_read(cli1, fnum2, (char *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (cli_write(cli1, fnum2, 0, (char *)&x, 0, 1) == 1) {
+			if (NT_STATUS_IS_OK(cli_writeall(cli1, fnum2, 0,
+							 (uint8_t *)&x, 0, 1,
+							 NULL))) {
 				res += A_W;
 			}
 		}
@@ -1514,7 +1517,8 @@ bool torture_denytest2(int dummy)
 	for (i=0;i<2;i++) {
 		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
 		cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
-		cli_write(cli1, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
+		cli_writeall(cli1, fnum1, 0, (uint8_t *)fnames[i], 0,
+			     strlen(fnames[i]), NULL);
 		cli_close(cli1, fnum1);
 	}
 
@@ -1541,7 +1545,9 @@ bool torture_denytest2(int dummy)
 			if (cli_read(cli2, fnum2, (char *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (cli_write(cli2, fnum2, 0, (char *)&x, 0, 1) == 1) {
+			if (NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0,
+							 (uint8_t *)&x, 0, 1,
+							 NULL))) {
 				res += A_W;
 			}
 		}
