@@ -1267,9 +1267,6 @@ bool cli_state_seqnum_remove(struct cli_state *cli,
 			     uint16_t mid);
 bool cli_receive_smb(struct cli_state *cli);
 bool cli_send_smb(struct cli_state *cli);
-bool cli_send_smb_direct_writeX(struct cli_state *cli,
-				const char *p,
-				size_t extradata);
 void cli_setup_packet_buf(struct cli_state *cli, char *buf);
 void cli_setup_packet(struct cli_state *cli);
 void cli_setup_bcc(struct cli_state *cli, void *p);
@@ -1829,9 +1826,6 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  void *priv, SMB_OFF_T *received);
 ssize_t cli_read(struct cli_state *cli, uint16_t fnum, char *buf,
 		 off_t offset, size_t size);
-ssize_t cli_write(struct cli_state *cli,
-    	         uint16_t fnum, uint16 write_mode,
-		 const char *buf, off_t offset, size_t size);
 NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
 		      off_t offset, size_t size1, size_t *ptotal);
 struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
