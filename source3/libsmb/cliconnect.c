@@ -68,7 +68,6 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 					  const char *pass, size_t passlen,
 					  const char *workgroup)
 {
-	DATA_BLOB session_key = data_blob_null;
 	DATA_BLOB lm_response = data_blob_null;
 	NTSTATUS status;
 	fstring pword;
@@ -143,12 +142,6 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	if (session_key.data) {
-		/* Have plaintext orginal */
-		cli_set_session_key(cli, session_key);
-	}
-
 	return NT_STATUS_OK;
 }
 
