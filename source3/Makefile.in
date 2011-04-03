@@ -1213,6 +1213,7 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/test_async_echo.o \
 		torture/test_smbsock_any_connect.o \
 		torture/test_addrchange.o \
+		torture/test_case_insensitive.o \
 		torture/test_posix_append.o
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) $(TLDAP_OBJ) \

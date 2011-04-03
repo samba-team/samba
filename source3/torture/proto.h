@@ -81,6 +81,7 @@ bool torture_casetable(int dummy);
  */
 
 bool run_posix_append(int dummy);
+bool run_case_insensitive_create(int dummy);
 
 bool run_nbench2(int dummy);
 bool run_async_echo(int dummy);

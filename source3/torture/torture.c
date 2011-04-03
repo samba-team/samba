@@ -8224,6 +8224,7 @@ static struct {
 	{"OPEN", run_opentest, 0},
 	{"POSIX", run_simple_posix_open_test, 0},
 	{"POSIX-APPEND", run_posix_append, 0},
+	{"CASE-INSENSITIVE-CREATE", run_case_insensitive_create, 0},
 	{"ASYNC-ECHO", run_async_echo, 0},
 	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
 	{ "SHORTNAME-TEST", run_shortname_test, 0},
