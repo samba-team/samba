@@ -572,6 +572,7 @@ sub provision($$$$$$)
 	log file = $logdir/log.\%m
 	log level = 0
 	debug pid = yes
+        max log size = 0
 
 	name resolve order = bcast
 
