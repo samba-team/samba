@@ -29,6 +29,7 @@
 #include "param/param.h"
 #include "auth/session.h"
 #include "system/network.h"
+#include <com_err.h>
 #include <hx509.h>
 #include <hcrypto/rsa.h>
 #include <hcrypto/bn.h>

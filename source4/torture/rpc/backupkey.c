@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
+#include <com_err.h>
 #include <hcrypto/sha.h>
 #include <system/network.h>
 #include <hx509.h>
