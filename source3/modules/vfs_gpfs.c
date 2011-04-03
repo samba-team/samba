@@ -1164,7 +1164,7 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 					"leases", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
-				NULL, struct syncops_config_data,
+				NULL, struct gpfs_config_data,
 				return -1);
 
 	return 0;
