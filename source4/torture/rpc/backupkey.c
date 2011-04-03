@@ -25,7 +25,11 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
-#include "heimdal/lib/hx509/hx_locl.h"
+#include <hcrypto/sha.h>
+#include <system/network.h>
+#include <hx509.h>
+#include <der.h>
+
 
 /* Our very special and valued secret */
 /* No need to put const as we cast the array in uint8_t
