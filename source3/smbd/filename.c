@@ -504,6 +504,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					}
 				}
 
+				/* Stat failed - ensure we don't use it. */
+				SET_STAT_INVALID(smb_fname->st);
+
 				/*
 				 * Missing last component is ok - new file.
 				 * Also deal with permission denied elsewhere.
