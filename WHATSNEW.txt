@@ -118,7 +118,7 @@ ID Mapping Changes
 ------------------
 
 The id mapping configuration has been a source of much grief in the past.
-For this release, id mapping has ben rewritten yet again with the goal
+For this release, id mapping has been rewritten yet again with the goal
 of making the configuration more simple and more coherent while keeping
 the needed flexibility and even adding to the flexibility in some respects.
 
@@ -152,7 +152,7 @@ deprecated in favour of the systematic "idmap config * : range"
 and "idmap config * : backend" parameters. The reason for this change
 is that the old options only provided an incomplete and hence deceiving
 backwards compatibility, which was a source of many problems with
-updgrades. By introducing this change in configuration, it should be
+upgrades. By introducing this change in configuration, it should be
 brought to the conciousness of the users that even the simple
 id mapping is not working exactly as in Samba 3.0 versions any more.
 
