@@ -1321,6 +1321,18 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			if (space_left >= space_needed) {
 				size_t old_used = TC_HDR_SIZE + tc->size;
 				pool_tc->pool = TC_POOL_FIRST_CHUNK(pool_tc);
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
+				/*
+				 * we need to prepare the memmove into
+				 * the unaccessable area.
+				 */
+				{
+					size_t diff = PTR_DIFF(tc, pool_tc->pool);
+					size_t flen = MIN(diff, old_used);
+					char *fptr = (char *)pool_tc->pool;
+					VALGRIND_MAKE_MEM_UNDEFINED(fptr, flen);
+				}
+#endif
 				memmove(pool_tc->pool, tc, old_used);
 				new_ptr = pool_tc->pool;
 
