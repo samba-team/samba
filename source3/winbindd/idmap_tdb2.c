@@ -32,6 +32,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "winbindd.h"
 #include "idmap.h"
 #include "idmap_rw.h"
