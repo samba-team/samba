@@ -254,6 +254,10 @@ static WERROR dsdb_syntax_BOOL_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 	for (i=0; i < in->num_values; i++) {
 		int t, f;
 
+		if (in->values[i].length == 0) {
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
 		t = strncmp("TRUE",
 			    (const char *)in->values[i].data,
 			    in->values[i].length);
@@ -1378,6 +1382,11 @@ static WERROR _dsdb_syntax_OID_validate_numericoid(const struct dsdb_syntax_ctx 
 		DATA_BLOB blob;
 		char *oid_out;
 		const char *oid = (const char*)in->values[i].data;
+
+		if (in->values[i].length == 0) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+		}
 
 		if (!ber_write_OID_String(tmp_ctx, &blob, oid)) {
 			DEBUG(0,("ber_write_OID_String() failed for %s\n", oid));
