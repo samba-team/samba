@@ -144,7 +144,7 @@ conf_roundtrip()
     rm -r $DIR
 }
 
-CONF_FILES=${CONF_FILES:-$(find $SRCDIR/ -name '*.conf' | grep -v examples/logon | xargs grep -l "\[global\]")}
+CONF_FILES=${CONF_FILES:-$(find $SRCDIR/source3 -name '*.conf' | grep -v examples/logon | xargs grep -l "\[global\]")}
 
 # remove old logs:
 for OLDDIR in $(find ${PREFIX} -type d -name "${LOGDIR_PREFIX}_*") ; do
