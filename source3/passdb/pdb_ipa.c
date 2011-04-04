@@ -49,24 +49,24 @@ struct ipasam_privates {
 };
 
 static bool ipasam_get_trusteddom_pw(struct pdb_methods *methods,
-				     const char *domain,
-				     char** pwd,
-				     struct dom_sid *sid,
-				     time_t *pass_last_set_time)
+				      const char *domain,
+				      char** pwd,
+				      struct dom_sid *sid,
+				      time_t *pass_last_set_time)
 {
 	return false;
 }
 
 static bool ipasam_set_trusteddom_pw(struct pdb_methods *methods,
-				     const char* domain,
-				     const char* pwd,
-				     const struct dom_sid *sid)
+				      const char* domain,
+				      const char* pwd,
+				      const struct dom_sid *sid)
 {
 	return false;
 }
 
 static bool ipasam_del_trusteddom_pw(struct pdb_methods *methods,
-				     const char *domain)
+				      const char *domain)
 {
 	return false;
 }
@@ -554,7 +554,7 @@ static NTSTATUS ipasam_set_trusted_domain(struct pdb_methods *methods,
 }
 
 static NTSTATUS ipasam_del_trusted_domain(struct pdb_methods *methods,
-					  const char *domain)
+					   const char *domain)
 {
 	int ret;
 	struct ldapsam_privates *ldap_state =
@@ -663,9 +663,9 @@ static NTSTATUS ipasam_enum_trusted_domains(struct pdb_methods *methods,
 }
 
 static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
-					TALLOC_CTX *mem_ctx,
-					uint32_t *num_domains,
-					struct trustdom_info ***domains)
+					 TALLOC_CTX *mem_ctx,
+					 uint32_t *num_domains,
+					 struct trustdom_info ***domains)
 {
 	NTSTATUS status;
 	struct pdb_trusted_domain **td;
@@ -734,7 +734,6 @@ static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pd
 	}
 	strlower_m(info->dns_domain);
 	info->dns_forest = talloc_strdup(info, info->dns_domain);
-
 	sid_copy(&info->sid, &ldap_state->domain_sid);
 
 	status = GUID_from_string("testguid", &info->guid);
