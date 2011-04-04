@@ -112,7 +112,7 @@ static NTSTATUS check_for_dot_component(const struct smb_filename *smb_fname)
 static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool posix_pathnames,
-				struct smb_filename *smb_fname,
+				const struct smb_filename *smb_fname,
 				char **pp_dirpath,
 				char **pp_start)
 {
