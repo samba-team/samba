@@ -207,12 +207,23 @@ if sub.returncode == 0:
     smb_options = ["", ",smb2"]
     endianness_options = ["", ",bigendian"]
     for z in smb_options:
-        for e in endianness_options:
-            for a in auth_options:
-                for s in signseal_options:
-                    binding_string = "ncacn_np:$SERVER_IP[%s%s%s%s]" % (a, s, z, e)
+        for s in signseal_options:
+            for e in endianness_options:
+                for a in auth_options:
+                    binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
                     options = binding_string + " -U$USERNAME%$PASSWORD"
                     plansmbtorturetestsuite(test, "dc", options, 'over ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+
+            # We should try more combinations in future, but this is all
+            # the pre-calculated credentials cache supports at the moment
+            e = ""
+            a = ""
+            binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
+            options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache"
+            plansmbtorturetestsuite(test, "ktest", options, 'over kerberos ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+
+
+
     for e in endianness_options:
         for a in auth_options:
             for s in signseal_options:

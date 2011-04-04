@@ -102,6 +102,8 @@ sub setup_env($$$)
 		return $self->setup_dc("$path/dc");
 	} elsif ($envname eq "secshare") {
 		return $self->setup_secshare("$path/secshare");
+	} elsif ($envname eq "ktest") {
+		return $self->setup_ktest("$path/ktest");
 	} elsif ($envname eq "secserver") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -252,6 +254,69 @@ sub setup_secserver($$$)
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
+	return $ret;
+}
+
+sub setup_ktest($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+
+	print "PROVISIONING server with security=ads...";
+
+	my $ktest_options = "
+        workgroup = KTEST
+        realm = ktest.samba.example.com
+	security = ads
+        username map = $prefix/lib/username.map
+";
+
+	my $ret = $self->provision($prefix,
+				   "LOCALKTEST6",
+				   5,
+				   "localktest6pass",
+				   $ktest_options);
+
+	$ret or die("Unable to provision");
+
+	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
+	print USERMAP "
+$ret->{USERNAME} = KTEST\\Administrator
+";
+	close(USERMAP);
+
+#This is the secrets.tdb created by 'net ads join' from Samba3 to a
+#Samba4 DC with the same parameters as are being used here.  The
+#domain SID is S-1-5-21-1071277805-689288055-3486227160
+
+	system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb $prefix/private/secrets.tdb");
+	chmod 0600, "$prefix/private/secrets.tdb";
+
+#This uses a pre-calculated krb5 credentials cache, obtained by running Samba4 with:
+# "--option=kdc:service ticket lifetime=239232" "--option=kdc:user ticket lifetime=239232" "--option=kdc:renewal lifetime=239232"
+#
+#and having in krb5.conf:
+# ticket_lifetime = 799718400
+# renew_lifetime = 799718400
+#
+# The commands run were:
+# kinit administrator@KTEST.SAMBA.EXAMPLE.COM
+# kvno host/localktest6@KTEST.SAMBA.EXAMPLE.COM
+# kvno cifs/localktest6@KTEST.SAMBA.EXAMPLE.COM
+# kvno host/LOCALKTEST6@KTEST.SAMBA.EXAMPLE.COM
+# kvno cifs/LOCALKTEST6@KTEST.SAMBA.EXAMPLE.COM
+#
+# This creates a credential cache with a very long lifetime (2036 at at 2011-04)
+
+	$ret->{KRB5_CCACHE}="FILE:$prefix/krb5_ccache";
+
+	system("cp $self->{srcdir}/source3/selftest/ktest-krb5_ccache $prefix/krb5_ccache");
+	chmod 0600, "$prefix/krb5_ccache";
+
+	$self->check_or_start($ret,
+			      ($ENV{SMBD_MAXTIME} or 2700),
+			       "yes", "no", "yes");
+
+	$self->wait_for_start($ret);
 	return $ret;
 }
 
