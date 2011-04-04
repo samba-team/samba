@@ -25,6 +25,8 @@
 
 #include "smbldap.h"
 
+#define IPA_KEYTAB_SET_OID "2.16.840.1.113730.3.8.3.1"
+
 #define LDAP_TRUST_CONTAINER "ou=system"
 #define LDAP_ATTRIBUTE_CN "cn"
 #define LDAP_ATTRIBUTE_TRUST_TYPE "sambaTrustType"
@@ -42,6 +44,7 @@
 #define LDAP_ATTRIBUTE_KRB_PRINCIPAL "krbPrincipalName"
 
 struct ipasam_privates {
+	bool server_is_ipa;
 	NTSTATUS (*ldapsam_add_sam_account)(struct pdb_methods *,
 					    struct samu *sampass);
 	NTSTATUS (*ldapsam_update_sam_account)(struct pdb_methods *,
@@ -908,7 +911,10 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 	if (ldap_state->ipasam_privates == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ldap_state->is_ipa_ldap = true;
+	ldap_state->is_ipa_ldap = True;
+
+	ldap_state->ipasam_privates->server_is_ipa = smbldap_has_extension(
+					priv2ld(ldap_state), IPA_KEYTAB_SET_OID);
 	ldap_state->ipasam_privates->ldapsam_add_sam_account = (*pdb_method)->add_sam_account;
 	ldap_state->ipasam_privates->ldapsam_update_sam_account = (*pdb_method)->update_sam_account;
 
