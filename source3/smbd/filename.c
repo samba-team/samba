@@ -352,6 +352,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			goto done;
 		}
 
+		/* Stat failed - ensure we don't use it. */
+		SET_STAT_INVALID(smb_fname->st);
+
 		/*
 		 * A special case - if we don't have any wildcards or mangling chars and are case
 		 * sensitive or the underlying filesystem is case insentive then searching
