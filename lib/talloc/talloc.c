@@ -169,6 +169,23 @@ static struct {
 	TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size); \
 } while (0)
 
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
+/* Mark the new bytes as undefined */
+#define TC_UNDEFINE_GROW_VALGRIND_CHUNK(_tc, _new_size) do { \
+	size_t _old_used = TC_HDR_SIZE + (_tc)->size; \
+	size_t _new_used = TC_HDR_SIZE + (_new_size); \
+	size_t _flen = _new_used - _old_used; \
+	char *_fptr = _old_used + (char *)(_tc); \
+	VALGRIND_MAKE_MEM_UNDEFINED(_fptr, _flen); \
+} while (0)
+#else
+#define TC_UNDEFINE_GROW_VALGRIND_CHUNK(_tc, _new_size) do { } while (0)
+#endif
+
+#define TC_UNDEFINE_GROW_CHUNK(_tc, _new_size) do { \
+	TC_UNDEFINE_GROW_VALGRIND_CHUNK(_tc, _new_size); \
+} while (0)
+
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
 	void *ptr;
@@ -1387,6 +1404,8 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 				memmove(pool_tc->pool, tc, old_used);
 				new_ptr = pool_tc->pool;
 
+				TC_UNDEFINE_GROW_CHUNK(tc, size);
+
 				pool_tc->pool = new_chunk_size + (char *)new_ptr;
 				goto got_new_ptr;
 			}
@@ -1395,6 +1414,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		}
 
 		if (new_chunk_size == old_chunk_size) {
+			TC_UNDEFINE_GROW_CHUNK(tc, size);
 			tc->flags &= ~TALLOC_FLAG_FREE;
 			tc->size = size;
 			return ptr;
@@ -1409,6 +1429,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			space_left = TC_POOL_SPACE_LEFT(pool_tc);
 
 			if (space_left >= space_needed) {
+				TC_UNDEFINE_GROW_CHUNK(tc, size);
 				tc->flags &= ~TALLOC_FLAG_FREE;
 				tc->size = size;
 				pool_tc->pool = TC_POOLMEM_NEXT_CHUNK(tc);
