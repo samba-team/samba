@@ -637,9 +637,8 @@ static WERROR dsdb_syntax_NTTIME_UTC_validate_ldb(const struct dsdb_syntax_ctx *
 		}
 		memcpy(buf, in->values[i].data, in->values[i].length);
 
-		errno = 0;
 		t = ldb_string_utc_to_time(buf);
-		if (errno != 0) {
+		if (t == 0) {
 			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 		}
 
