@@ -52,7 +52,7 @@ static void usage(struct ldb_context *ldb)
 static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 {
 	struct ldb_ldif *ldif;
-	int ret = LDB_SUCCESS;
+	int fun_ret = LDB_SUCCESS, ret;
 	struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
 
 	if (options->controls != NULL &&  req_ctrls== NULL) {
@@ -78,6 +78,7 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 				ldb_strerror(ret),
 				ldb_errstring(ldb), ldb_dn_get_linearized(ldif->msg->dn));
 			failures++;
+			fun_ret = ret;
 		} else {
 			(*count)++;
 			if (options->verbose) {
@@ -89,10 +90,10 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 
 	if (!feof(f)) {
 		fprintf(stderr, "Failed to parse ldif\n");
-		return -1;
+		fun_ret = LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return ret;
+	return fun_ret;
 }
 
 int main(int argc, const char **argv)
