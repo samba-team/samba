@@ -354,7 +354,7 @@ static int fix_dn(struct ldb_context *ldb,
 #endif
 
 
-	/* And replace it with CN=foo (we need the attribute in upper case */
+	/* And replace it with CN=foo (we need the attribute in upper case) */
 	return ldb_dn_set_component(*fixed_dn, 0, upper_rdn_attr, *rdn_val);
 }
 
