@@ -115,6 +115,34 @@ static struct {
 
 #define TALLOC_FILL_ENV "TALLOC_FREE_FILL"
 
+/*
+ * do not wipe the header, to allow the
+ * double-free logic to still work
+ */
+#define TC_INVALIDATE_FULL_FILL_CHUNK(_tc) do { \
+	if (unlikely(talloc_fill.enabled)) { \
+		size_t _flen = (_tc)->size; \
+		char *_fptr = TC_PTR_FROM_CHUNK(_tc); \
+		memset(_fptr, talloc_fill.fill_value, _flen); \
+	} \
+} while (0)
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
+/* Mark the whole chunk as not accessable */
+#define TC_INVALIDATE_FULL_VALGRIND_CHUNK(_tc) do { \
+	size_t _flen = TC_HDR_SIZE + (_tc)->size; \
+	char *_fptr = (char *)(_tc); \
+	VALGRIND_MAKE_MEM_NOACCESS(_fptr, _flen); \
+} while(0)
+#else
+#define TC_INVALIDATE_FULL_VALGRIND_CHUNK(_tc) do { } while (0)
+#endif
+
+#define TC_INVALIDATE_FULL_CHUNK(_tc) do { \
+	TC_INVALIDATE_FULL_FILL_CHUNK(_tc); \
+	TC_INVALIDATE_FULL_VALGRIND_CHUNK(_tc); \
+} while (0)
+
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
 	void *ptr;
@@ -592,7 +620,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	}
 
 	/* possibly initialised the talloc fill value */
-	if (!talloc_fill.initialised) {
+	if (unlikely(!talloc_fill.initialised)) {
 		const char *fill = getenv(TALLOC_FILL_ENV);
 		if (fill != NULL) {
 			talloc_fill.enabled = true;
@@ -704,6 +732,8 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 		} else {
 			pool = (struct talloc_chunk *)tc->pool;
 			next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
+
+			TC_INVALIDATE_FULL_CHUNK(tc);
 		}
 
 		pool_object_count = talloc_pool_objectcount(pool);
@@ -724,9 +754,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 			 */
 			pool->pool = TC_POOL_FIRST_CHUNK(pool);
 		} else if (unlikely(*pool_object_count == 0)) {
-			if (talloc_fill.enabled) {
-				memset(TC_PTR_FROM_CHUNK(pool), talloc_fill.fill_value, pool->size);
-			}
+			TC_INVALIDATE_FULL_CHUNK(pool);
 			free(pool);
 		} else if (pool->pool == next_tc) {
 			/*
@@ -736,14 +764,8 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 			 */
 			pool->pool = tc;
 		}
-	}
-	else {
-		if (talloc_fill.enabled) {
-			/* don't wipe the header, to allow the
-			   double-free logic to still work
-			*/
-			memset(TC_PTR_FROM_CHUNK(tc), talloc_fill.fill_value, tc->size);
-		}
+	} else {
+		TC_INVALIDATE_FULL_CHUNK(tc);
 		free(tc);
 	}
 	return 0;
@@ -1294,6 +1316,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
+			TC_INVALIDATE_FULL_CHUNK(tc);
 		}
 	} else {
 		new_ptr = malloc(size + TC_HDR_SIZE);
@@ -1375,6 +1398,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
+			TC_INVALIDATE_FULL_CHUNK(tc);
 
 			if (*talloc_pool_objectcount(pool_tc) == 1) {
 				/*
