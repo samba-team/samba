@@ -438,6 +438,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			goto done;
 		}
 
+		/* Stat failed - ensure we don't use it. */
+		SET_STAT_INVALID(smb_fname->st);
+
 		if (errno == ENOENT) {
 			/* Optimization when creating a new file - only
 			   the last component doesn't exist. */
@@ -503,9 +506,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						goto fail;
 					}
 				}
-
-				/* Stat failed - ensure we don't use it. */
-				SET_STAT_INVALID(smb_fname->st);
 
 				/*
 				 * Missing last component is ok - new file.
