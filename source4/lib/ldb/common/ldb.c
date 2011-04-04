@@ -104,6 +104,10 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	}
 
 	ldb = talloc_zero(mem_ctx, struct ldb_context);
+	if (ldb == NULL) {
+		return NULL;
+	}
+
 	/* A new event context so that callers who don't want ldb
 	 * operating on thier global event context can work without
 	 * having to provide their own private one explicitly */

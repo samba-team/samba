@@ -200,6 +200,9 @@ int ldb_module_connect_backend(struct ldb_context *ldb,
 		/* Default to tdb */
 		backend = talloc_strdup(ldb, "tdb");
 	}
+	if (backend == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	be = ldb_find_backend(backend);
 
