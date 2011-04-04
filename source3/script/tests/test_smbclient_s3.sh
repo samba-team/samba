@@ -131,7 +131,7 @@ EOF
 # Test creating a good symlink and deleting it by path.
 test_good_symlink()
 {
-    tmpfile=/tmp/smbclient.in.$$
+    tmpfile=$PREFIX/smbclient.in.$$
     slink_name="$LOCAL_PATH/slink"
     slink_target="$LOCAL_PATH/slink_target"
 
@@ -181,7 +181,7 @@ EOF
 test_read_only_dir()
 {
     prompt="NT_STATUS_ACCESS_DENIED making remote directory"
-    tmpfile=/tmp/smbclient.in.$$
+    tmpfile=$PREFIX/smbclient.in.$$
 
 ##
 ## We can't do this as non-root. We always have rights to
@@ -238,7 +238,7 @@ EOF
 test_owner_only_file()
 {
     prompt="NT_STATUS_ACCESS_DENIED opening remote file"
-    tmpfile=/tmp/smbclient.in.$$
+    tmpfile=$PREFIX/smbclient.in.$$
 
 ##
 ## We can't do this as non-root. We always have rights to
@@ -294,7 +294,7 @@ EOF
 # Test accessing an msdfs path.
 test_msdfs_link()
 {
-    tmpfile=/tmp/smbclient.in.$$
+    tmpfile=$PREFIX/smbclient.in.$$
     prompt="  msdfs-target  "
 
     cat > $tmpfile <<EOF
