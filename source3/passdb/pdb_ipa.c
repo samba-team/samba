@@ -416,23 +416,6 @@ static bool smbldap_make_mod_uint32_t(LDAP *ldap_struct, LDAPMessage *entry,
 	return true;
 }
 
-static bool _smbldap_make_mod_blob(LDAP *ldap_struct, LDAPMessage *entry,
-				  LDAPMod ***mods, const char *attribute,
-				  DATA_BLOB blob)
-{
-	char *dummy;
-
-	dummy = base64_encode_data_blob(talloc_tos(), blob);
-	if (dummy == NULL) {
-		return false;
-	}
-
-	smbldap_make_mod(ldap_struct, entry, mods, attribute, dummy);
-	TALLOC_FREE(dummy);
-
-	return true;
-}
-
 static NTSTATUS ipasam_set_trusted_domain(struct pdb_methods *methods,
 					  const char* domain,
 					  const struct pdb_trusted_domain *td)
@@ -505,33 +488,21 @@ static NTSTATUS ipasam_set_trusted_domain(struct pdb_methods *methods,
 	}
 
 	if (td->trust_auth_outgoing.data != NULL) {
-		res = _smbldap_make_mod_blob(priv2ld(ldap_state), entry,
-					    &mods,
-					    LDAP_ATTRIBUTE_TRUST_AUTH_OUTGOING,
-					    td->trust_auth_outgoing);
-		if (!res) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		smbldap_make_mod_blob(priv2ld(ldap_state), entry, &mods,
+				      LDAP_ATTRIBUTE_TRUST_AUTH_OUTGOING,
+				      &td->trust_auth_outgoing);
 	}
 
 	if (td->trust_auth_incoming.data != NULL) {
-		res = _smbldap_make_mod_blob(priv2ld(ldap_state), entry,
-					    &mods,
-					    LDAP_ATTRIBUTE_TRUST_AUTH_INCOMING,
-					    td->trust_auth_incoming);
-		if (!res) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		smbldap_make_mod_blob(priv2ld(ldap_state), entry, &mods,
+				      LDAP_ATTRIBUTE_TRUST_AUTH_INCOMING,
+				      &td->trust_auth_incoming);
 	}
 
 	if (td->trust_forest_trust_info.data != NULL) {
-		res = _smbldap_make_mod_blob(priv2ld(ldap_state), entry,
-					    &mods,
-					    LDAP_ATTRIBUTE_TRUST_FOREST_TRUST_INFO,
-					    td->trust_forest_trust_info);
-		if (!res) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		smbldap_make_mod_blob(priv2ld(ldap_state), entry, &mods,
+				      LDAP_ATTRIBUTE_TRUST_FOREST_TRUST_INFO,
+				      &td->trust_forest_trust_info);
 	}
 
 	talloc_autofree_ldapmod(talloc_tos(), mods);
