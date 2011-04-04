@@ -417,6 +417,31 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 #define TC_POOLMEM_NEXT_CHUNK(_tc) \
 	((void *)(TC_POOLMEM_CHUNK_SIZE(tc) + (char*)(_tc)))
 
+/* Mark the whole remaining pool as not accessable */
+#define TC_INVALIDATE_FILL_POOL(_pool_tc) do { \
+	if (unlikely(talloc_fill.enabled)) { \
+		size_t _flen = TC_POOL_SPACE_LEFT(_pool_tc); \
+		char *_fptr = (_pool_tc)->pool; \
+		memset(_fptr, talloc_fill.fill_value, _flen); \
+	} \
+} while(0)
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
+/* Mark the whole remaining pool as not accessable */
+#define TC_INVALIDATE_VALGRIND_POOL(_pool_tc) do { \
+	size_t _flen = TC_POOL_SPACE_LEFT(_pool_tc); \
+	char *_fptr = (_pool_tc)->pool; \
+	VALGRIND_MAKE_MEM_NOACCESS(_fptr, _flen); \
+} while(0)
+#else
+#define TC_INVALIDATE_VALGRIND_POOL(_pool_tc) do { } while (0)
+#endif
+
+#define TC_INVALIDATE_POOL(_pool_tc) do { \
+	TC_INVALIDATE_FILL_POOL(_pool_tc); \
+	TC_INVALIDATE_VALGRIND_POOL(_pool_tc); \
+} while (0)
+
 static unsigned int *talloc_pool_objectcount(struct talloc_chunk *tc)
 {
 	return (unsigned int *)((char *)tc + TC_HDR_SIZE);
@@ -549,9 +574,7 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 
 	*talloc_pool_objectcount(tc) = 1;
 
-#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
-	VALGRIND_MAKE_MEM_NOACCESS(tc->pool, size);
-#endif
+	TC_INVALIDATE_POOL(tc);
 
 	return result;
 }
@@ -796,6 +819,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 			 * again.
 			 */
 			pool->pool = TC_POOL_FIRST_CHUNK(pool);
+			TC_INVALIDATE_POOL(pool);
 		} else if (unlikely(*pool_object_count == 0)) {
 			TC_INVALIDATE_FULL_CHUNK(pool);
 			free(pool);
@@ -1388,6 +1412,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 			if (space_left >= space_needed) {
 				size_t old_used = TC_HDR_SIZE + tc->size;
+				size_t new_used = TC_HDR_SIZE + size;
 				pool_tc->pool = TC_POOL_FIRST_CHUNK(pool_tc);
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
 				/*
@@ -1406,6 +1431,15 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 				TC_UNDEFINE_GROW_CHUNK(tc, size);
 
+				/*
+				 * first we do not align the pool pointer
+				 * because we want to invalidate the padding
+				 * too.
+				 */
+				pool_tc->pool = new_used + (char *)new_ptr;
+				TC_INVALIDATE_POOL(pool_tc);
+
+				/* now the aligned pointer */
 				pool_tc->pool = new_chunk_size + (char *)new_ptr;
 				goto got_new_ptr;
 			}
@@ -1454,6 +1488,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 				 * If the pool is empty now reclaim everything.
 				 */
 				pool_tc->pool = TC_POOL_FIRST_CHUNK(pool_tc);
+				TC_INVALIDATE_POOL(pool_tc);
 			} else if (next_tc == pool_tc->pool) {
 				/*
 				 * If it was reallocated and tc was the last
