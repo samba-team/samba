@@ -281,14 +281,15 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 
 	entry = talloc(talloc_autofree_context(), struct ops_list_entry);
-	if (entry == NULL)
-		return -1;
+	if (entry == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	entry->ops = ops;
 	entry->next = registered_modules;
 	registered_modules = entry;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -363,7 +364,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_new(ldb);
 	if (!mem_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(ldb);
 	}
 
 	/* find out which modules we are requested to activate */
@@ -385,7 +386,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		mods_dn = ldb_dn_new(mem_ctx, ldb, "@MODULES");
 		if (mods_dn == NULL) {
 			talloc_free(mem_ctx);
-			return -1;
+			return ldb_oom(ldb);
 		}
 
 		ret = ldb_search(ldb, mods_dn, &res, mods_dn, LDB_SCOPE_BASE, attrs, "@LIST=*");
@@ -403,7 +404,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			} else if (res->count > 1) {
 				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out", res->count);
 				talloc_free(mem_ctx);
-				return -1;
+				return LDB_ERR_OPERATIONS_ERROR;
 			} else {
 				module_list = ldb_msg_find_attr_as_string(res->msgs[0], "@LIST", NULL);
 				if (!module_list) {
