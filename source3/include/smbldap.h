@@ -138,13 +138,13 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
 const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key );
 const char** get_attr_list( TALLOC_CTX *mem_ctx, ATTRIB_MAP_ENTRY table[] );
 void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
-void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, DATA_BLOB *newblob);
+void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, const DATA_BLOB *newblob);
 void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval);
 void smbldap_make_mod_blob(LDAP *ldap_struct, LDAPMessage *existing,
 			   LDAPMod ***mods,
-			   const char *attribute, DATA_BLOB *newblob);
+			   const char *attribute, const DATA_BLOB *newblob);
 bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				   const char *attribute, char *value,
 				   int max_len);

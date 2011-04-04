@@ -506,7 +506,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
  manage memory used by the array, by each struct, and values
  ***********************************************************************/
 
-static void smbldap_set_mod_internal(LDAPMod *** modlist, int modop, const char *attribute, const char *value, DATA_BLOB *blob)
+static void smbldap_set_mod_internal(LDAPMod *** modlist, int modop, const char *attribute, const char *value, const DATA_BLOB *blob)
 {
 	LDAPMod **mods;
 	int i;
@@ -611,7 +611,7 @@ static void smbldap_set_mod_internal(LDAPMod *** modlist, int modop, const char 
 	smbldap_set_mod_internal(modlist, modop, attribute, value, NULL);
 }
 
- void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, DATA_BLOB *value)
+ void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, const DATA_BLOB *value)
 {
 	smbldap_set_mod_internal(modlist, modop | LDAP_MOD_BVALUES, attribute, NULL, value);
 }
@@ -625,7 +625,7 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 				      LDAPMod ***mods,
 				      const char *attribute, int op,
 				      const char *newval,
-				      DATA_BLOB *newblob)
+				      const DATA_BLOB *newblob)
 {
 	char oldval[2048]; /* current largest allowed value is mungeddial */
 	bool existed;
@@ -712,7 +712,7 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 
  void smbldap_make_mod_blob(LDAP *ldap_struct, LDAPMessage *existing,
 			    LDAPMod ***mods,
-			    const char *attribute, DATA_BLOB *newblob)
+			    const char *attribute, const DATA_BLOB *newblob)
 {
 	smbldap_make_mod_internal(ldap_struct, existing, mods, attribute,
 				  LDAP_MOD_BVALUES, NULL, newblob);
