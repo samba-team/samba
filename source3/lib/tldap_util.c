@@ -237,7 +237,7 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 		/* Believe it or not, but LDAP will deny a delete and
 		   an add at the same time if the values are the
 		   same... */
-		DEBUG(10,("smbldap_make_mod_blob: attribute |%s| not "
+		DEBUG(10,("tldap_make_mod_blob_int: attribute |%s| not "
 			  "changed.\n", attrib));
 		return true;
 	}
@@ -251,7 +251,7 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 		 * Novell NDS. In NDS you have to first remove attribute and
 		 * then you could add new value */
 
-		DEBUG(10, ("smbldap_make_mod_blob: deleting attribute |%s|\n",
+		DEBUG(10, ("tldap_make_mod_blob_int: deleting attribute |%s|\n",
 			   attrib));
 		if (!tldap_add_mod_blobs(mem_ctx, pmods, pnum_mods,
 					 TLDAP_MOD_DELETE,
@@ -265,7 +265,7 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 	   the old value, should it exist. */
 
 	if (newval.data != NULL) {
-		DEBUG(10, ("smbldap_make_mod: adding attribute |%s| value len "
+		DEBUG(10, ("tldap_make_mod_blob_int: adding attribute |%s| value len "
 			   "%d\n", attrib, (int)newval.length));
 	        if (!tldap_add_mod_blobs(mem_ctx, pmods, pnum_mods,
 					 TLDAP_MOD_ADD,
