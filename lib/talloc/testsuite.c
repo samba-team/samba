@@ -1302,6 +1302,6 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_autofree();
 
 	test_reset();
-
+	talloc_disable_null_tracking();
 	return ret;
 }
