@@ -762,11 +762,6 @@ static int objectclass_do_add(struct oc_context *ac)
 		}
 	}
 
-	ret = ldb_msg_sanity_check(ldb, msg);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	ret = ldb_build_add_req(&add_req, ldb, ac,
 				msg,
 				ac->req->controls,
