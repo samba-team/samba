@@ -143,6 +143,32 @@ static struct {
 	TC_INVALIDATE_FULL_VALGRIND_CHUNK(_tc); \
 } while (0)
 
+#define TC_INVALIDATE_SHRINK_FILL_CHUNK(_tc, _new_size) do { \
+	if (unlikely(talloc_fill.enabled)) { \
+		size_t _flen = (_tc)->size - (_new_size); \
+		char *_fptr = TC_PTR_FROM_CHUNK(_tc); \
+		_fptr += (_new_size); \
+		memset(_fptr, talloc_fill.fill_value, _flen); \
+	} \
+} while (0)
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
+/* Mark the unused bytes not accessable */
+#define TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { \
+	size_t _flen = (_tc)->size - (_new_size); \
+	char *_fptr = TC_PTR_FROM_CHUNK(_tc); \
+	_fptr += (_new_size); \
+	VALGRIND_MAKE_MEM_NOACCESS(_fptr, _flen); \
+} while (0)
+#else
+#define TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { } while (0)
+#endif
+
+#define TC_INVALIDATE_SHRINK_CHUNK(_tc, _new_size) do { \
+	TC_INVALIDATE_SHRINK_FILL_CHUNK(_tc, _new_size); \
+	TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size); \
+} while (0)
+
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
 	void *ptr;
@@ -1282,12 +1308,14 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 	if (size < tc->size) {
 		if (pool_tc) {
 			void *next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
+			TC_INVALIDATE_SHRINK_CHUNK(tc, size);
 			tc->size = size;
 			if (next_tc == pool_tc->pool) {
 				pool_tc->pool = TC_POOLMEM_NEXT_CHUNK(tc);
 			}
 			return ptr;
 		} else if ((tc->size - size) < 1024) {
+			TC_INVALIDATE_SHRINK_CHUNK(tc, size);
 			/* do not shrink if we have less than 1k to gain */
 			tc->size = size;
 			return ptr;
