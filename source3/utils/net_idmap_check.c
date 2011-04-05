@@ -25,6 +25,7 @@
 
 #include "net_idmap_check.h"
 #include "includes.h"
+#include "system/filesys.h"
 #include "dbwrap.h"
 #include "net.h"
 #include "../libcli/security/dom_sid.h"
