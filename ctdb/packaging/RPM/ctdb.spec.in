@@ -14,7 +14,6 @@ Source: ctdb-%{version}.tar.gz
 
 Prereq: /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d
-Prereq: /usr/bin/tdbdump /usr/bin/tdbtool
 
 Provides: ctdb = %{version}
 
