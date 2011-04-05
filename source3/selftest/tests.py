@@ -219,7 +219,10 @@ if sub.returncode == 0:
             e = ""
             a = ""
             binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
-            options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache"
+            options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
+            plansmbtorturetestsuite(test, "ktest", options, 'over kerberos with old ccache ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+
+            options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
             plansmbtorturetestsuite(test, "ktest", options, 'over kerberos ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
 
 

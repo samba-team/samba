@@ -298,19 +298,29 @@ $ret->{USERNAME} = KTEST\\Administrator
 # ticket_lifetime = 799718400
 # renew_lifetime = 799718400
 #
-# The commands run were:
+# The commands for the -2 keytab where were:
 # kinit administrator@KTEST.SAMBA.EXAMPLE.COM
 # kvno host/localktest6@KTEST.SAMBA.EXAMPLE.COM
 # kvno cifs/localktest6@KTEST.SAMBA.EXAMPLE.COM
 # kvno host/LOCALKTEST6@KTEST.SAMBA.EXAMPLE.COM
 # kvno cifs/LOCALKTEST6@KTEST.SAMBA.EXAMPLE.COM
 #
-# This creates a credential cache with a very long lifetime (2036 at at 2011-04)
+# and then for the -3 keytab, I did
+#
+# net changetrustpw; kdestroy and the same again.
+#
+# This creates a credential cache with a very long lifetime (2036 at
+# at 2011-04), and shows that running 'net changetrustpw' does not
+# break existing logins (for the secrets.tdb method at least).
+#
 
 	$ret->{KRB5_CCACHE}="FILE:$prefix/krb5_ccache";
 
-	system("cp $self->{srcdir}/source3/selftest/ktest-krb5_ccache $prefix/krb5_ccache");
-	chmod 0600, "$prefix/krb5_ccache";
+	system("cp $self->{srcdir}/source3/selftest/ktest-krb5_ccache-2 $prefix/krb5_ccache-2");
+	chmod 0600, "$prefix/krb5_ccache-2";
+
+	system("cp $self->{srcdir}/source3/selftest/ktest-krb5_ccache-3 $prefix/krb5_ccache-3");
+	chmod 0600, "$prefix/krb5_ccache-3";
 
 	$self->check_or_start($ret,
 			      ($ENV{SMBD_MAXTIME} or 2700),
