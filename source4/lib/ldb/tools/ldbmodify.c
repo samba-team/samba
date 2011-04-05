@@ -61,6 +61,11 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 	}
 
 	while ((ldif = ldb_ldif_read_file(ldb, f))) {
+		struct ldb_dn *olddn;
+		bool deleteoldrdn = false;
+		struct ldb_dn *newdn;
+		const char *errstr = NULL;
+
 		switch (ldif->changetype) {
 		case LDB_CHANGETYPE_NONE:
 		case LDB_CHANGETYPE_ADD:
@@ -72,11 +77,28 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 		case LDB_CHANGETYPE_MODIFY:
 			ret = ldb_modify_ctrl(ldb, ldif->msg,req_ctrls);
 			break;
+		case LDB_CHANGETYPE_MODRDN:
+			ret = ldb_ldif_parse_modrdn(ldb, ldif, ldif, &olddn,
+						    NULL, &deleteoldrdn,
+						    NULL, &newdn);
+			if (ret == LDB_SUCCESS) {
+				if (deleteoldrdn) {
+					ret = ldb_rename(ldb, olddn, newdn);
+				} else {
+					errstr = "modrdn: deleteoldrdn=0 "
+						 "not supported.";
+					ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				}
+			}
+			break;
 		}
 		if (ret != LDB_SUCCESS) {
+			if (errstr == NULL) {
+				errstr = ldb_errstring(ldb);
+			}
 			fprintf(stderr, "ERR: (%s) \"%s\" on DN %s\n",
 				ldb_strerror(ret),
-				ldb_errstring(ldb), ldb_dn_get_linearized(ldif->msg->dn));
+				errstr, ldb_dn_get_linearized(ldif->msg->dn));
 			failures++;
 			fun_ret = ret;
 		} else {
