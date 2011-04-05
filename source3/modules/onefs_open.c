@@ -1310,7 +1310,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		new_file_created = True;
 	}
 
-	set_share_mode(lck, fsp, conn->session_info->utok.uid, 0,
+	set_share_mode(lck, fsp, get_current_uid(conn), 0,
 		       fsp->oplock_type);
 
 	/* Handle strange delete on close create semantics. */
@@ -1666,7 +1666,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	set_share_mode(lck, fsp, conn->session_info->utok.uid, 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, get_current_uid(conn), 0, NO_OPLOCK);
 
 	/*
 	 * For directories the delete on close bit at open time seems
