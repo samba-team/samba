@@ -64,7 +64,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	session_info = talloc(tmp_ctx, struct auth_session_info);
+	session_info = talloc_zero(tmp_ctx, struct auth_session_info);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(session_info, tmp_ctx);
 
 	session_info->info = talloc_reference(session_info, user_info_dc->info);
