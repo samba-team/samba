@@ -1050,6 +1050,8 @@ void reply_transs2(struct smb_request *req);
 bool change_to_guest(void);
 void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid);
 bool change_to_user(connection_struct *conn, uint16 vuid);
+bool change_to_user_by_session(connection_struct *conn,
+			       const struct auth_serversupplied_info *session_info);
 bool change_to_root_user(void);
 bool become_authenticated_pipe_user(struct pipes_struct *p);
 bool unbecome_authenticated_pipe_user(void);

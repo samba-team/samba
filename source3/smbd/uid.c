@@ -231,75 +231,29 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
  stack, but modify the current_user entries.
 ****************************************************************************/
 
-bool change_to_user(connection_struct *conn, uint16 vuid)
+static bool change_to_user_internal(connection_struct *conn,
+				    const struct auth_serversupplied_info *session_info,
+				    uint16_t vuid)
 {
-	const struct auth_serversupplied_info *session_info = NULL;
-	user_struct *vuser;
 	int snum;
 	gid_t gid;
 	uid_t uid;
 	char group_c;
 	int num_groups = 0;
 	gid_t *group_list = NULL;
-
-	if (!conn) {
-		DEBUG(2,("change_to_user: Connection not open\n"));
-		return(False);
-	}
-
-	vuser = get_valid_user_struct(conn->sconn, vuid);
-
-	/*
-	 * We need a separate check in security=share mode due to vuid
-	 * always being UID_FIELD_INVALID. If we don't do this then
-	 * in share mode security we are *always* changing uid's between
-	 * SMB's - this hurts performance - Badly.
-	 */
-
-	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
-	   (current_user.ut.uid == conn->session_info->utok.uid)) {
-		DEBUG(4,("change_to_user: Skipping user change - already "
-			 "user\n"));
-		return(True);
-	} else if ((current_user.conn == conn) && 
-		   (vuser != NULL) && (current_user.vuid == vuid) &&
-		   (current_user.ut.uid == vuser->session_info->utok.uid)) {
-		DEBUG(4,("change_to_user: Skipping user change - already "
-			 "user\n"));
-		return(True);
-	}
+	bool ok;
 
 	snum = SNUM(conn);
 
-	session_info = vuser ? vuser->session_info : conn->session_info;
-
-	if (!session_info) {
-		/* Invalid vuid sent - even with security = share. */
-		DEBUG(2,("change_to_user: Invalid vuid %d used on "
-			 "share %s.\n",vuid, lp_servicename(snum) ));
-		return false;
-	}
-
-	if (!check_user_ok(conn, vuid, session_info, snum)) {
-		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
+	ok = check_user_ok(conn, vuid, session_info, snum);
+	if (!ok) {
+		DEBUG(2,("SMB user %s (unix user %s) "
 			 "not permitted access to share %s.\n",
 			 session_info->sanitized_username,
-			 session_info->unix_name, vuid,
+			 session_info->unix_name,
 			 lp_servicename(snum)));
 		return false;
 	}
-
-	/* security = share sets force_user. */
-	if (!conn->force_user && !vuser) {
-		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
-			"share %s.\n",vuid, lp_servicename(snum) ));
-		return False;
-	}
-
-	/*
-	 * conn->session_info is now correctly set up with a copy we can mess
-	 * with for force_group etc.
-	 */
 
 	uid = conn->session_info->utok.uid;
 	gid = conn->session_info->utok.gid;
@@ -307,28 +261,24 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	group_list  = conn->session_info->utok.groups;
 
 	/*
-	 * See if we should force group for this service.
-	 * If so this overrides any group set in the force
-	 * user code.
+	 * See if we should force group for this service. If so this overrides
+	 * any group set in the force user code.
 	 */
-
 	if((group_c = *lp_force_group(snum))) {
 
 		SMB_ASSERT(conn->force_group_gid != (gid_t)-1);
 
-		if(group_c == '+') {
+		if (group_c == '+') {
+			int i;
 
 			/*
-			 * Only force group if the user is a member of
-			 * the service group. Check the group memberships for
-			 * this user (we already have this) to
-			 * see if we should force the group.
+			 * Only force group if the user is a member of the
+			 * service group. Check the group memberships for this
+			 * user (we already have this) to see if we should force
+			 * the group.
 			 */
-
-			int i;
 			for (i = 0; i < num_groups; i++) {
-				if (group_list[i]
-				    == conn->force_group_gid) {
+				if (group_list[i] == conn->force_group_gid) {
 					conn->session_info->utok.gid =
 						conn->force_group_gid;
 					gid = conn->force_group_gid;
@@ -345,22 +295,94 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 		}
 	}
 
-	/* Now set current_user since we will immediately also call
-	   set_sec_ctx() */
-
+	/*Set current_user since we will immediately also call set_sec_ctx() */
 	current_user.ut.ngroups = num_groups;
 	current_user.ut.groups  = group_list;
 
-	set_sec_ctx(uid, gid, current_user.ut.ngroups, current_user.ut.groups,
+	set_sec_ctx(uid,
+		    gid,
+		    current_user.ut.ngroups,
+		    current_user.ut.groups,
 		    conn->session_info->security_token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
 
-	DEBUG(5,("change_to_user uid=(%d,%d) gid=(%d,%d)\n",
-		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
+	DEBUG(5, ("Impersonated user: uid=(%d,%d), gid=(%d,%d)\n",
+		 (int)getuid(),
+		 (int)geteuid(),
+		 (int)getgid(),
+		 (int)getegid()));
 
-	return(True);
+	return true;
+}
+
+bool change_to_user(connection_struct *conn, uint16_t vuid)
+{
+	const struct auth_serversupplied_info *session_info = NULL;
+	user_struct *vuser;
+	int snum = SNUM(conn);
+
+	if (!conn) {
+		DEBUG(2,("Connection not open\n"));
+		return(False);
+	}
+
+	vuser = get_valid_user_struct(conn->sconn, vuid);
+
+	/*
+	 * We need a separate check in security=share mode due to vuid
+	 * always being UID_FIELD_INVALID. If we don't do this then
+	 * in share mode security we are *always* changing uid's between
+	 * SMB's - this hurts performance - Badly.
+	 */
+
+	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
+	   (current_user.ut.uid == conn->session_info->utok.uid)) {
+		DEBUG(4,("Skipping user change - already "
+			 "user\n"));
+		return(True);
+	} else if ((current_user.conn == conn) &&
+		   (vuser != NULL) && (current_user.vuid == vuid) &&
+		   (current_user.ut.uid == vuser->session_info->utok.uid)) {
+		DEBUG(4,("Skipping user change - already "
+			 "user\n"));
+		return(True);
+	}
+
+	session_info = vuser ? vuser->session_info : conn->session_info;
+
+	if (session_info == NULL) {
+		/* Invalid vuid sent - even with security = share. */
+		DEBUG(2,("Invalid vuid %d used on "
+			 "share %s.\n", vuid, lp_servicename(snum) ));
+		return false;
+	}
+
+	/* security = share sets force_user. */
+	if (!conn->force_user && vuser == NULL) {
+		DEBUG(2,("Invalid vuid used %d in accessing "
+			"share %s.\n", vuid, lp_servicename(snum) ));
+		return False;
+	}
+
+	return change_to_user_internal(conn, session_info, vuid);
+}
+
+bool change_to_user_by_session(connection_struct *conn,
+			       const struct auth_serversupplied_info *session_info)
+{
+	SMB_ASSERT(conn != NULL);
+	SMB_ASSERT(session_info != NULL);
+
+	if ((current_user.conn == conn) &&
+	    (current_user.ut.uid == session_info->utok.uid)) {
+		DEBUG(7, ("Skipping user change - already user\n"));
+
+		return true;
+	}
+
+	return change_to_user_internal(conn, session_info, UID_FIELD_INVALID);
 }
 
 /****************************************************************************
