@@ -114,8 +114,6 @@ build_ctdb_options () {
 check_tdb () {
 	local PDBASE=$1
 
-	local TDBTOOL_HAS_CHECK=`echo "help" | /usr/bin/tdbtool | grep check | wc -l`
-
 	test x"$TDBTOOL_HAS_CHECK" = x"1" && {
 		#
 		# Note tdbtool always exits with 0
@@ -146,6 +144,32 @@ check_persistent_databases () {
     test x"$ERRCOUNT" != x"0" && {
 	return 0;
     }
+
+    if test -x /usr/bin/tdbtool ; then
+        HAVE_TDBTOOL=1
+    else
+        HAVE_TDBTOOL=0
+    fi
+
+    if test x"$HAVE_TDBTOOL" = x"1" ; then
+        TDBTOOL_HAS_CHECK=`echo "help" | /usr/bin/tdbtool | grep check | wc -l`
+    else
+        TDBTOOL_HAS_CHECK=0
+    fi
+
+    if test -x /usr/bin/tdbdump ; then
+        HAVE_TDBDUMP=1
+    else
+        HAVE_TDBDUMP=0
+    fi
+
+    if test x"$HAVE_TDBDUMP" = x"0" -a x"$TDBTOOL_HAS_CHECK" = x"0" ; then
+        echo "WARNING: Cannot check persistent databases since"
+        echo "neither 'tdbdump' nor 'tdbtool check' is available."
+        echo "Consider installing tdbtool or at least tdbdump!"
+        return 0
+    fi
+
     for PDBASE in `ls $PERSISTENT_DB_DIR/*.tdb.[0-9] 2>/dev/null`; do
 	check_tdb $PDBASE || {
 	    echo "Persistent database $PDBASE is corrupted! CTDB will not start."
