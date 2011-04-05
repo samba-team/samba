@@ -181,7 +181,15 @@ $(TEXINFODIR)/%.info: $(TEXINFODIR)/%.texi
 	$(MAKEINFO) --no-validate --force -o $@ "$<"
 
 # Manpages
-$(MANPAGEDIR3)/smb.conf.5.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
+$(MANPAGEDIR3)/smb.conf.5.xml: parameters
+
+# The phony parameters target exists in order to always create the
+# the parameters xml files. Otherwise, when parameters.*.xml does not exist
+# yet, the parameters are not generated when smb.conf.5.xml is newer than
+# any smbdotconf/*/*.xml file ...
+.PHONY: parameters
+
+parameters: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/parameters.global.xml
 
 $(SMBDOTCONFDOC)/parameters.all.xml: $(wildcard $(SMBDOTCONFDOC)/*/*.xml) $(SMBDOTCONFDOC)/generate-file-list.sh
 	$(SMBDOTCONFDOC)/generate-file-list.sh $(SMBDOTCONFDOC) > $@
