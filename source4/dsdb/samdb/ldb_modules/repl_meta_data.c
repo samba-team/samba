@@ -3455,6 +3455,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		ni++;
 	}
 
+	ar->seq_num = 0;
 	/* now merge in the new meta data */
 	for (i=0; i < rmd->ctr.ctr1.count; i++) {
 		bool found = false;
@@ -3471,6 +3472,13 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 			if (cmp) {
 				/* replace the entry */
 				nmd.ctr.ctr1.array[j] = rmd->ctr.ctr1.array[i];
+				if (ar->seq_num == 0) {
+					ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &ar->seq_num);
+					if (ret != LDB_SUCCESS) {
+						return replmd_replicated_request_error(ar, ret);
+					}
+				}
+				nmd.ctr.ctr1.array[j].local_usn = ar->seq_num;
 				found = true;
 				break;
 			}
@@ -3493,6 +3501,13 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		if (found) continue;
 
 		nmd.ctr.ctr1.array[ni] = rmd->ctr.ctr1.array[i];
+		if (ar->seq_num == 0) {
+			ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &ar->seq_num);
+			if (ret != LDB_SUCCESS) {
+				return replmd_replicated_request_error(ar, ret);
+			}
+		}
+		nmd.ctr.ctr1.array[ni].local_usn = ar->seq_num;
 		ni++;
 	}
 
@@ -3526,15 +3541,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: replace %u attributes\n",
 		  ar->index_current, msg->num_elements);
-
-	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &ar->seq_num);
-	if (ret != LDB_SUCCESS) {
-		return replmd_replicated_request_error(ar, ret);
-	}
-
-	for (i=0; i<ni; i++) {
-		nmd.ctr.ctr1.array[i].local_usn = ar->seq_num;
-	}
 
 	/* create the meta data value */
 	ndr_err = ndr_push_struct_blob(&nmd_value, msg, &nmd,
