@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
-   Samba utility functions
-   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+
+   Helper routines for marshalling the internal 'auth.idl'
+
+   Copyright (C) Andrew Bartlett 2011
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,13 +19,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _PYAUTH_H_
-#define _PYAUTH_H_
+/*
+  cli_credentials does not have a network representation, just pull/push a NULL pointer
+*/
 
-#include <pytalloc.h>
-#include "auth/session.h"
+#include "librpc/gen_ndr/ndr_auth.h"
 
-#define PyAuthSession_AsSession(obj) py_talloc_get_type(obj, struct auth_session_info)
-struct auth_session_info *PyObject_AsSession(PyObject *obj);
+struct cli_credentials;
+_PUBLIC_ enum ndr_err_code ndr_pull_cli_credentials(struct ndr_pull *ndr, int ndr_flags, struct cli_credentials *v);
+_PUBLIC_ enum ndr_err_code ndr_push_cli_credentials(struct ndr_push *ndr, int ndr_flags, struct cli_credentials *v);
 
-#endif /* _PYAUTH_H */
+_PUBLIC_ void ndr_print_cli_credentials(struct ndr_print *ndr, const char *name, struct cli_credentials *v);

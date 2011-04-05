@@ -607,6 +607,7 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev;
 	struct tevent_req *subreq;
 	struct auth_session_info_transport *session_info_t;
+	struct auth_session_info *session_info_npa;
 	struct auth_user_info_dc *user_info_dc;
 	union netr_Validation val;
 	NTSTATUS status;
@@ -651,20 +652,20 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	session_info_t = talloc_zero(talloc_tos(), struct auth_session_info_transport);
-	if (session_info_t == NULL) {
+	session_info_npa = talloc_zero(talloc_tos(), struct auth_session_info);
+	if (session_info_npa == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
 
 	/* Send the named_pipe_auth server the user's full token */
-	session_info_t->security_token = session_info->security_token;
-	session_info_t->session_key = session_info->session_key;
+	session_info_npa->security_token = session_info->security_token;
+	session_info_npa->session_key = session_info->session_key;
 
 	val.sam3 = session_info->info3;
 
 	/* Convert into something we can build a struct
-	 * auth_session_info_transport from.  Most of the work here
+	 * auth_session_info from.  Most of the work here
 	 * will be to convert the SIDS, which we will then ignore, but
 	 * this is the easier way to handle it */
 	status = make_user_info_dc_netlogon_validation(talloc_tos(), "", 3, &val, &user_info_dc);
@@ -673,8 +674,16 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	session_info_t->info = talloc_move(session_info_t, &user_info_dc->info);
+	session_info_npa->info = talloc_move(session_info_npa, &user_info_dc->info);
 	talloc_free(user_info_dc);
+
+	session_info_t = talloc_zero(talloc_tos(), struct auth_session_info_transport);
+	if (session_info_npa == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		goto fail;
+	}
+
+	session_info_t->session_info = talloc_steal(session_info_t, session_info_npa);
 
 	become_root();
 	subreq = tstream_npa_connect_send(talloc_tos(), ev,
@@ -689,8 +698,8 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		unbecome_root();
 		DEBUG(0, ("tstream_npa_connect_send to %s for pipe %s and "
 			  "user %s\\%s failed\n",
-			  socket_np_dir, pipe_name, session_info_t->info->domain_name,
-			  session_info_t->info->account_name));
+			  socket_np_dir, pipe_name, session_info_t->session_info->info->domain_name,
+			  session_info_t->session_info->info->account_name));
 		goto fail;
 	}
 	ok = tevent_req_poll(subreq, ev);
@@ -698,8 +707,8 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	if (!ok) {
 		DEBUG(0, ("tevent_req_poll to %s for pipe %s and user %s\\%s "
 			  "failed for tstream_npa_connect: %s\n",
-			  socket_np_dir, pipe_name, session_info_t->info->domain_name,
-			  session_info_t->info->account_name,
+			  socket_np_dir, pipe_name, session_info_t->session_info->info->domain_name,
+			  session_info_t->session_info->info->account_name,
 			  strerror(errno)));
 		goto fail;
 
@@ -714,8 +723,8 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		DEBUG(0, ("tstream_npa_connect_recv  to %s for pipe %s and "
 			  "user %s\\%s failed: %s\n",
-			  socket_np_dir, pipe_name, session_info_t->info->domain_name,
-			  session_info_t->info->account_name,
+			  socket_np_dir, pipe_name, session_info_t->session_info->info->domain_name,
+			  session_info_t->session_info->info->account_name,
 			  strerror(sys_errno)));
 		goto fail;
 	}

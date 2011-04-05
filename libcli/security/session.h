@@ -35,16 +35,7 @@ struct cli_credentials;
 struct security_token;
 struct auth_user_info;
 struct auth_user_info_torture;
-
-struct auth_session_info {
-	struct security_token *security_token;
-	struct security_unix_token *unix_token;
-	struct auth_user_info *info;
-	struct auth_user_info_unix *unix_info;
-	struct auth_user_info_torture *torture;
-	DATA_BLOB session_key;
-	struct cli_credentials *credentials;
-};
+struct auth_session_info;
 
 enum security_user_level security_session_user_level(struct auth_session_info *session_info,
 						     const struct dom_sid *domain_sid);

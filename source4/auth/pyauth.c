@@ -46,72 +46,9 @@ typedef intargfunc ssizeargfunc;
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-static PyObject *py_auth_session_get_security_token(PyObject *self, void *closure)
+static PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
 {
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
-	PyObject *py_security_token;
-	py_security_token = py_return_ndr_struct("samba.dcerpc.security", "token",
-						 session->security_token, session->security_token);
-	return py_security_token;
-}
-
-static int py_auth_session_set_security_token(PyObject *self, PyObject *value, void *closure)
-{
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
-	session->security_token = talloc_reference(session, py_talloc_get_ptr(value));
-	return 0;
-}
-
-static PyObject *py_auth_session_get_session_key(PyObject *self, void *closure)
-{
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
-	return PyString_FromStringAndSize((char *)session->session_key.data, session->session_key.length);
-}
-
-static int py_auth_session_set_session_key(PyObject *self, PyObject *value, void *closure)
-{
-	DATA_BLOB val;
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
-	val.data = (uint8_t *)PyString_AsString(value);
-	val.length = PyString_Size(value);
-
-	session->session_key = data_blob_talloc(session, val.data, val.length);
-	return 0;
-}
-
-static PyObject *py_auth_session_get_credentials(PyObject *self, void *closure)
-{
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
-	PyObject *py_credentials;
-	/* This is evil, as the credentials are not IDL structures */
-	py_credentials = py_return_ndr_struct("samba.credentials", "Credentials", session->credentials, session->credentials);
-	return py_credentials;
-}
-
-static int py_auth_session_set_credentials(PyObject *self, PyObject *value, void *closure)
-{
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
-	session->credentials = talloc_reference(session, PyCredentials_AsCliCredentials(value));
-	return 0;
-}
-
-static PyGetSetDef py_auth_session_getset[] = {
-	{ discard_const_p(char, "security_token"), (getter)py_auth_session_get_security_token, (setter)py_auth_session_set_security_token, NULL },
-	{ discard_const_p(char, "session_key"), (getter)py_auth_session_get_session_key, (setter)py_auth_session_set_session_key, NULL },
-	{ discard_const_p(char, "credentials"), (getter)py_auth_session_get_credentials, (setter)py_auth_session_set_credentials, NULL },
-	{ NULL }
-};
-
-static PyTypeObject PyAuthSession = {
-	.tp_name = "AuthSession",
-	.tp_basicsize = sizeof(py_talloc_Object),
-	.tp_flags = Py_TPFLAGS_DEFAULT,
-	.tp_getset = py_auth_session_getset,
-};
-
-PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
-{
-	return py_talloc_reference(&PyAuthSession, session);
+	return py_return_ndr_struct("samba.dcerpc.auth", "session_info", session, session);
 }
 
 static PyObject *py_system_session(PyObject *module, PyObject *args)
@@ -378,13 +315,6 @@ void initauth(void)
 {
 	PyObject *m;
 
-	PyAuthSession.tp_base = PyTalloc_GetObjectType();
-	if (PyAuthSession.tp_base == NULL)
-		return;
-
-	if (PyType_Ready(&PyAuthSession) < 0)
-		return;
-
 	PyAuthContext.tp_base = PyTalloc_GetObjectType();
 	if (PyAuthContext.tp_base == NULL)
 		return;
@@ -397,8 +327,6 @@ void initauth(void)
 	if (m == NULL)
 		return;
 
-	Py_INCREF(&PyAuthSession);
-	PyModule_AddObject(m, "AuthSession", (PyObject *)&PyAuthSession);
 	Py_INCREF(&PyAuthContext);
 	PyModule_AddObject(m, "AuthContext", (PyObject *)&PyAuthContext);
 

@@ -199,6 +199,17 @@ bld.SAMBA_PYTHON('python_echo',
 	realname='samba/dcerpc/echo.so'
 	)
 
+bld.SAMBA_PYTHON('python_auth',
+	source='../../librpc/gen_ndr/py_auth.c',
+	deps='NDR_AUTH pytalloc-util pyrpc_util',
+	realname='samba/dcerpc/auth.so'
+	)
+
+bld.SAMBA_PYTHON('python_krb5pac',
+	source='../../librpc/gen_ndr/py_krb5pac.c',
+	deps='ndr-krb5pac pytalloc-util pyrpc_util',
+	realname='samba/dcerpc/krb5pac.so'
+	)
 
 bld.SAMBA_PYTHON('python_winreg',
 	source='../../librpc/gen_ndr/py_winreg.c',

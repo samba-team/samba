@@ -711,7 +711,7 @@ RPC_EVENTLOG_OBJ = rpc_server/eventlog/srv_eventlog_nt.o \
 
 NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o \
 		  librpc/gen_ndr/ndr_named_pipe_auth.o \
-		  ../auth/auth_sam_reply.o librpc/gen_ndr/ndr_auth.o
+		  ../auth/auth_sam_reply.o librpc/gen_ndr/ndr_auth.o ../librpc/ndr/ndr_auth.o
 
 RPC_NCACN_NP = rpc_server/srv_pipe_register.o rpc_server/rpc_ncacn_np.o \
 	       rpc_server/rpc_handles.o rpc_server/srv_access_check.o

@@ -155,9 +155,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* Create a session_info structure from the
- * auth_session_info_transport we were forwarded over named pipe
- * forwarding.
+/* Fill out the auth_session_info with a cli_credentials based on the
+ * auth_session_info we were forwarded over named pipe forwarding.
  *
  * NOTE: The stucture members of session_info_transport are stolen
  * with talloc_move() into auth_session_info for long term use
@@ -168,16 +167,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 							   const char **reason)
 {
 	struct auth_session_info *session_info;
-	session_info = talloc_zero(mem_ctx, struct auth_session_info);
-	if (!session_info) {
-		*reason = "failed to allocate session_info";
-		return NULL;
-	}
-
-	session_info->security_token = talloc_move(session_info, &session_info_transport->security_token);
-	session_info->info = talloc_move(session_info, &session_info_transport->info);
-	session_info->session_key = session_info_transport->session_key;
-	session_info->session_key.data = talloc_move(session_info, &session_info_transport->session_key.data);
+	session_info = talloc_steal(mem_ctx, session_info_transport->session_info);
 
 	if (session_info_transport->exported_gssapi_credentials.length) {
 		struct cli_credentials *creds;
@@ -236,9 +226,8 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 
 /* Create a auth_session_info_transport from an auth_session_info.
  *
- * NOTE: Members of the auth_session_info_transport structure are not talloc_referenced, but simply assigned.  They are only valid for the lifetime of the struct auth_session_info
- *
- * This isn't normally an issue, as the auth_session_info has a very long typical life
+ * NOTE: Members of the auth_session_info_transport structure are
+ * talloc_referenced() into this structure, and should not be changed.
  */
 NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
 						  struct auth_session_info *session_info,
@@ -247,18 +236,15 @@ NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
 						  struct auth_session_info_transport **transport_out)
 {
 
-	struct auth_session_info_transport *session_info_transport = talloc_zero(mem_ctx, struct auth_session_info_transport);
-	session_info_transport->security_token = talloc_reference(session_info, session_info->security_token);
-	NT_STATUS_HAVE_NO_MEMORY(session_info_transport->security_token);
-
-	session_info_transport->info = talloc_reference(session_info, session_info->info);
-	NT_STATUS_HAVE_NO_MEMORY(session_info_transport->info);
-
-	session_info_transport->session_key = session_info->session_key;
-	session_info_transport->session_key.data = talloc_reference(session_info, session_info->session_key.data);
-	if (!session_info_transport->session_key.data && session_info->session_key.length) {
+	struct auth_session_info_transport *session_info_transport
+		= talloc_zero(mem_ctx, struct auth_session_info_transport);
+	if (!session_info_transport) {
 		return NT_STATUS_NO_MEMORY;
-	}
+	};
+	session_info_transport->session_info = talloc_reference(session_info_transport, session_info);
+	if (!session_info_transport->session_info) {
+		return NT_STATUS_NO_MEMORY;
+	};
 
 	if (session_info->credentials) {
 		struct gssapi_creds_container *gcc;

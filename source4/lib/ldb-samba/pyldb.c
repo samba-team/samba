@@ -174,11 +174,11 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 	PyObject *PyAuthSession_Type;
 	bool ret;
 
-	mod_samba_auth = PyImport_ImportModule("samba.auth");
+	mod_samba_auth = PyImport_ImportModule("samba.dcerpc.auth");
 	if (mod_samba_auth == NULL)
 		return NULL;
 
-	PyAuthSession_Type = PyObject_GetAttrString(mod_samba_auth, "AuthSession");
+	PyAuthSession_Type = PyObject_GetAttrString(mod_samba_auth, "session_info");
 	if (PyAuthSession_Type == NULL)
 		return NULL;
 

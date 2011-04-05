@@ -32,15 +32,15 @@
 #define SERVER_TCP_HIGH_PORT 1300
 
 static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
-					    struct auth_session_info_transport **session_info)
+					    struct auth_session_info **session_info)
 {
-	struct auth_session_info_transport *i;
+	struct auth_session_info *i;
 	struct auth_serversupplied_info *s;
 	struct auth_user_info_dc *u;
 	union netr_Validation val;
 	NTSTATUS status;
 
-	i = talloc_zero(mem_ctx, struct auth_session_info_transport);
+	i = talloc_zero(mem_ctx, struct auth_session_info);
 	if (i == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -81,7 +81,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    bool ncalrpc_as_system,
 				    const char *client_address,
 				    const char *server_address,
-				    struct auth_session_info_transport *session_info,
+				    struct auth_session_info *session_info,
 				    struct pipes_struct **_p,
 				    int *perrno)
 {
@@ -355,7 +355,7 @@ struct named_pipe_client {
 	char *client_name;
 	struct tsocket_address *server;
 	char *server_name;
-	struct auth_session_info_transport *session_info;
+	struct auth_session_info *session_info;
 
 	struct pipes_struct *p;
 
@@ -433,6 +433,7 @@ static void named_pipe_packet_done(struct tevent_req *subreq);
 
 static void named_pipe_accept_done(struct tevent_req *subreq)
 {
+	struct auth_session_info_transport *session_info_transport;
 	struct named_pipe_client *npc =
 		tevent_req_callback_data(subreq, struct named_pipe_client);
 	const char *cli_addr;
@@ -445,7 +446,10 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 						&npc->client_name,
 						&npc->server,
 						&npc->server_name,
-						&npc->session_info);
+						&session_info_transport);
+
+	npc->session_info = talloc_move(npc, &session_info_transport->session_info);
+
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to accept named pipe connection! (%s)\n",
@@ -996,7 +1000,7 @@ struct dcerpc_ncacn_conn {
 	char *client_name;
 	struct tsocket_address *server;
 	char *server_name;
-	struct auth_session_info_transport *session_info;
+	struct auth_session_info *session_info;
 
 	struct iovec *iov;
 	size_t count;

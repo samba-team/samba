@@ -271,7 +271,7 @@ static PyObject *py_gensec_session_info(PyObject *self)
 		return NULL;
 	}
 
-	py_session_info = py_return_ndr_struct("samba.auth", "AuthSession",
+	py_session_info = py_return_ndr_struct("samba.dcerpc.auth", "session_info",
 						 info, info);
 	return py_session_info;
 }
