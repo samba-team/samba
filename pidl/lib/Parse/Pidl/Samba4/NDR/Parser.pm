@@ -685,6 +685,9 @@ sub ParsePtrPush($$$$$)
 		$self->pidl("NDR_CHECK(ndr_push_unique_ptr($ndr, $var_name));");
 	} elsif ($l->{POINTER_TYPE} eq "full") {
 		$self->pidl("NDR_CHECK(ndr_push_full_ptr($ndr, $var_name));");
+	} elsif ($l->{POINTER_TYPE} eq "ignore") {
+	        # We don't want this pointer to appear on the wire at all
+		$self->pidl("NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));");
 	} else {
 		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
@@ -1209,6 +1212,10 @@ sub ParsePtrPull($$$$$)
 		$self->pidl("NDR_CHECK(ndr_pull_generic_ptr($ndr, &_ptr_$e->{NAME}));");
 	} elsif ($l->{POINTER_TYPE} eq "relative_short") {
 		$self->pidl("NDR_CHECK(ndr_pull_relative_ptr_short($ndr, &_ptr_$e->{NAME}));");
+	} elsif ($l->{POINTER_TYPE} eq "ignore") {
+                #We want to consume the pointer bytes, but ignore the pointer value
+	        $self->pidl("NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &_ptr_$e->{NAME}));");
+		$self->pidl("_ptr_$e->{NAME} = NULL;");
 	} else {
 		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
@@ -1216,16 +1223,22 @@ sub ParsePtrPull($$$$$)
 	$self->pidl("if (_ptr_$e->{NAME}) {");
 	$self->indent;
 
-	# Don't do this for arrays, they're allocated at the actual level 
-	# of the array
-	unless ($next_is_array or $next_is_string) { 
-		$self->pidl("NDR_PULL_ALLOC($ndr, $var_name);"); 
+	if ($l->{POINTER_TYPE} eq "ignore") {
+	        # Don't do anything, we don't want to do the
+	        # allocation, as we forced it to NULL just above, and
+	        # we may not know the declared type anyway.
 	} else {
-		# FIXME: Yes, this is nasty.
-		# We allocate an array twice
-		# - once just to indicate that it's there,
-		# - then the real allocation...
-		$self->pidl("NDR_PULL_ALLOC($ndr, $var_name);");
+	        # Don't do this for arrays, they're allocated at the actual level 
+	        # of the array
+	        unless ($next_is_array or $next_is_string) { 
+		       $self->pidl("NDR_PULL_ALLOC($ndr, $var_name);"); 
+		} else {
+		       # FIXME: Yes, this is nasty.
+		       # We allocate an array twice
+		       # - once just to indicate that it's there,
+		       # - then the real allocation...
+		       $self->pidl("NDR_PULL_ALLOC($ndr, $var_name);");
+		}
 	}
 
 	#$self->pidl("memset($var_name, 0, sizeof($var_name));");
