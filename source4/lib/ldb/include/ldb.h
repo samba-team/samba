@@ -183,7 +183,8 @@ enum ldb_changetype {
 	LDB_CHANGETYPE_NONE=0,
 	LDB_CHANGETYPE_ADD,
 	LDB_CHANGETYPE_DELETE,
-	LDB_CHANGETYPE_MODIFY
+	LDB_CHANGETYPE_MODIFY,
+	LDB_CHANGETYPE_MODRDN
 };
 
 /**
@@ -1619,6 +1620,31 @@ struct ldb_ldif *ldb_ldif_read_file(struct ldb_context *ldb, FILE *f);
    version of this function.
 */
 struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char **s);
+
+/**
+   Parse a modrdn LDIF message from a struct ldb_message
+
+   \param ldb the ldb context (from ldb_init())
+   \param ldif the preparsed LDIF chunk (from ldb_ldif_read())
+
+   \param mem_ctx the memory context that's used for return values
+
+   \param olddn the old dn as struct ldb_dn, if not needed pass NULL
+   \param newrdn the new rdn as struct ldb_dn, if not needed pass NULL
+   \param deleteoldrdn the deleteoldrdn value as bool, if not needed pass NULL
+   \param newsuperior the newsuperior dn as struct ldb_dn, if not needed pass NULL
+                      *newsuperior can be NULL as it is optional in the LDIF
+   \param newdn the full constructed new dn as struct ldb_dn, if not needed pass NULL
+
+*/
+int ldb_ldif_parse_modrdn(struct ldb_context *ldb,
+			  const struct ldb_ldif *ldif,
+			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn **olddn,
+			  struct ldb_dn **newrdn,
+			  bool *deleteoldrdn,
+			  struct ldb_dn **newsuperior,
+			  struct ldb_dn **newdn);
 
 /**
    Write an LDIF message to a file

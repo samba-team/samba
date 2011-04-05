@@ -261,6 +261,8 @@ static const struct {
 	{"add",    LDB_CHANGETYPE_ADD},
 	{"delete", LDB_CHANGETYPE_DELETE},
 	{"modify", LDB_CHANGETYPE_MODIFY},
+	{"modrdn", LDB_CHANGETYPE_MODRDN},
+	{"moddn",  LDB_CHANGETYPE_MODRDN},
 	{NULL, 0}
 };
 
@@ -526,6 +528,193 @@ void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *ldif)
 	talloc_free(ldif);
 }
 
+int ldb_ldif_parse_modrdn(struct ldb_context *ldb,
+			  const struct ldb_ldif *ldif,
+			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn **_olddn,
+			  struct ldb_dn **_newrdn,
+			  bool *_deleteoldrdn,
+			  struct ldb_dn **_newsuperior,
+			  struct ldb_dn **_newdn)
+{
+	struct ldb_message *msg = ldif->msg;
+	struct ldb_val *newrdn_val = NULL;
+	struct ldb_val *deleteoldrdn_val = NULL;
+	struct ldb_val *newsuperior_val = NULL;
+	struct ldb_dn *olddn = NULL;
+	struct ldb_dn *newrdn = NULL;
+	bool deleteoldrdn = true;
+	struct ldb_dn *newsuperior = NULL;
+	struct ldb_dn *newdn = NULL;
+	struct ldb_val tmp_false;
+	struct ldb_val tmp_true;
+	bool ok;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	if (tmp_ctx == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "Error: talloc_new() failed");
+		goto err_op;
+	}
+
+	if (ldif->changetype != LDB_CHANGETYPE_MODRDN) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: invalid changetype '%d'",
+			  ldif->changetype);
+		goto err_other;
+	}
+
+	if (msg->num_elements < 2) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: num_elements[%u] < 2",
+			  msg->num_elements);
+		goto err_other;
+	}
+
+	if (msg->num_elements > 3) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: num_elements[%u] > 3",
+			  msg->num_elements);
+		goto err_other;
+	}
+
+#define CHECK_ELEMENT(i, _name, v, needed) do { \
+	v = NULL; \
+	if (msg->num_elements < (i + 1)) { \
+		if (needed) { \
+			ldb_debug(ldb, LDB_DEBUG_ERROR, \
+				  "Error: num_elements[%u] < (%u + 1)", \
+				  msg->num_elements, i); \
+			goto err_other; \
+		} \
+	} else if (ldb_attr_cmp(msg->elements[i].name, _name) != 0) { \
+		ldb_debug(ldb, LDB_DEBUG_ERROR, \
+			  "Error: elements[%u].name[%s] != [%s]", \
+			  i, msg->elements[i].name, _name); \
+		goto err_other; \
+	} else if (msg->elements[i].flags != 0) { \
+		ldb_debug(ldb, LDB_DEBUG_ERROR, \
+			  "Error: elements[%u].flags[0x%X} != [0x0]", \
+			  i, msg->elements[i].flags); \
+		goto err_other; \
+	} else if (msg->elements[i].num_values != 1) { \
+		ldb_debug(ldb, LDB_DEBUG_ERROR, \
+			  "Error: elements[%u].num_values[%u] != 1", \
+			  i, msg->elements[i].num_values); \
+		goto err_other; \
+	} else { \
+		v = &msg->elements[i].values[0]; \
+	} \
+} while (0)
+
+	CHECK_ELEMENT(0, "newrdn", newrdn_val, true);
+	CHECK_ELEMENT(1, "deleteoldrdn", deleteoldrdn_val, true);
+	CHECK_ELEMENT(2, "newsuperior", newsuperior_val, false);
+
+#undef CHECK_ELEMENT
+
+	olddn = ldb_dn_copy(tmp_ctx, msg->dn);
+	if (olddn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: failed to copy olddn '%s'",
+			  ldb_dn_get_linearized(msg->dn));
+		goto err_op;
+	}
+
+	newrdn = ldb_dn_from_ldb_val(tmp_ctx, ldb, newrdn_val);
+	if (!ldb_dn_validate(newrdn)) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: Unable to parse dn '%s'",
+			  (char *)newrdn_val->data);
+		goto err_dn;
+	}
+
+	tmp_false.length = 1;
+	tmp_false.data = discard_const_p(uint8_t, "0");
+	tmp_true.length = 1;
+	tmp_true.data = discard_const_p(uint8_t, "1");
+	if (ldb_val_equal_exact(deleteoldrdn_val, &tmp_false) == 1) {
+		deleteoldrdn = false;
+	} else if (ldb_val_equal_exact(deleteoldrdn_val, &tmp_true) == 1) {
+		deleteoldrdn = true;
+	} else {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: deleteoldrdn value invalid '%s' not '0'/'1'",
+			  (char *)deleteoldrdn_val->data);
+		goto err_attr;
+	}
+
+	if (newsuperior_val) {
+		newsuperior = ldb_dn_from_ldb_val(tmp_ctx, ldb, newsuperior_val);
+		if (!ldb_dn_validate(newsuperior)) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Error: Unable to parse dn '%s'",
+				  (char *)newsuperior_val->data);
+			goto err_dn;
+		}
+	} else {
+		newsuperior = ldb_dn_get_parent(tmp_ctx, msg->dn);
+		if (newsuperior == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Error: Unable to get parent dn '%s'",
+				  ldb_dn_get_linearized(msg->dn));
+			goto err_dn;
+		}
+	}
+
+	newdn = ldb_dn_copy(tmp_ctx, newrdn);
+	if (newdn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: failed to copy newrdn '%s'",
+			  ldb_dn_get_linearized(newrdn));
+		goto err_op;
+	}
+
+	ok = ldb_dn_add_base(newdn, newsuperior);
+	if (!ok) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: failed to base '%s' to newdn '%s'",
+			  ldb_dn_get_linearized(newsuperior),
+			  ldb_dn_get_linearized(newdn));
+		goto err_op;
+	}
+
+	if (_olddn) {
+		*_olddn = talloc_move(mem_ctx, &olddn);
+	}
+	if (_newrdn) {
+		*_newrdn = talloc_move(mem_ctx, &newrdn);
+	}
+	if (_deleteoldrdn) {
+		*_deleteoldrdn = deleteoldrdn;
+	}
+	if (_newsuperior) {
+		if (newsuperior_val) {
+			*_newrdn = talloc_move(mem_ctx, &newrdn);
+		} else {
+			*_newrdn = NULL;
+		}
+	}
+	if (_newdn) {
+		*_newdn = talloc_move(mem_ctx, &newdn);
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+err_other:
+	talloc_free(tmp_ctx);
+	return LDB_ERR_OTHER;
+err_op:
+	talloc_free(tmp_ctx);
+	return LDB_ERR_OPERATIONS_ERROR;
+err_attr:
+	talloc_free(tmp_ctx);
+	return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+err_dn:
+	talloc_free(tmp_ctx);
+	return LDB_ERR_INVALID_DN_SYNTAX;
+}
+
 /*
  read from a LDIF source, creating a ldb_message
 */
@@ -679,6 +868,16 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 				talloc_steal(el->values, el->values[0].data);
 			}
 			msg->num_elements++;
+		}
+	}
+
+	if (ldif->changetype == LDB_CHANGETYPE_MODRDN) {
+		int ret;
+
+		ret = ldb_ldif_parse_modrdn(ldb, ldif, ldif,
+					    NULL, NULL, NULL, NULL, NULL);
+		if (ret != LDB_SUCCESS) {
+			goto failed;
 		}
 	}
 
