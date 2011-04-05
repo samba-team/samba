@@ -102,7 +102,7 @@ struct samu;
 NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 			      struct samu *sampass);
 NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
-			    struct auth_serversupplied_info *server_info,
+			    const struct auth_serversupplied_info *server_info,
 			    DATA_BLOB *session_key,
 			    struct auth_serversupplied_info **session_info_out);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,

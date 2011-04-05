@@ -443,7 +443,7 @@ static NTSTATUS log_nt_token(struct security_token *token)
  */
 
 NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
-			    struct auth_serversupplied_info *server_info,
+			    const struct auth_serversupplied_info *server_info,
 			    DATA_BLOB *session_key,
 			    struct auth_serversupplied_info **session_info_out)
 {
@@ -527,9 +527,9 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 				   "ignoring it\n", sid_string_dbg(sid)));
 			continue;
 		}
-		if (!add_gid_to_array_unique(server_info, gid,
-					&session_info->utok.groups,
-					&session_info->utok.ngroups)) {
+		if (!add_gid_to_array_unique(session_info, gid,
+					     &session_info->utok.groups,
+					     &session_info->utok.ngroups)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
