@@ -1002,9 +1002,19 @@ static krb5_error_code samba_kdc_lookup_trust(krb5_context context, struct ldb_c
 	const char * const *attrs = trust_attrs;
 
 	struct ldb_result *res = NULL;
-	filter = talloc_asprintf(mem_ctx, "(&(objectClass=trustedDomain)(|(flatname=%s)(trustPartner=%s)))", realm, realm);
+	char *realm_encoded = ldb_binary_encode_string(mem_ctx, realm);
+	if (!realm_encoded) {
+		if (!filter) {
+			ret = ENOMEM;
+			krb5_set_error_message(context, ret, "talloc_asprintf: out of memory");
+			return ret;
+		}
+	}
+	filter = talloc_asprintf(mem_ctx, "(&(objectClass=trustedDomain)(|(flatname=%s)(trustPartner=%s)))", 
+				 realm_encoded, realm_encoded);
 
 	if (!filter) {
+		talloc_free(realm_encoded);
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "talloc_asprintf: out of memory");
 		return ret;
