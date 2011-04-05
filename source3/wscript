@@ -1626,7 +1626,7 @@ main() {
                 msg='Checking for SCHEDULE_FOR_DELETION control')
 
             if not conf.CONFIG_SET('HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL'):
-                if not Options.optinons.enable_old_ctdb:
+                if not Options.options.enable_old_ctdb:
                     have_cluster_support = False
                     ctdb_broken = "SCHEDULE_FOR_DELETION control missing"
                 else:
