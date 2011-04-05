@@ -170,6 +170,18 @@ check_persistent_databases () {
         return 0
     fi
 
+    if test x"$HAVE_TDBDUMP" = x"1" -a x"$TDBTOOL_HAS_CHECK" = x"0" ; then
+        if test x"$HAVE_TDBTOOL" = x"0"; then
+            echo "WARNING: 'tdbtool' is not available. Using 'tdbdump' to"
+            echo "check the persistent databases."
+            echo "Consider installing a recent 'tdbtool' for better checks!"
+        else
+            echo "WARNING: The installed 'tdbtool' does not offer the 'check'"
+            echo "subcommand. Using 'tdbdump' for persistent database checks."
+            echo "Consider updating 'tdbtool' for better checks!"
+        fi
+    fi
+
     for PDBASE in `ls $PERSISTENT_DB_DIR/*.tdb.[0-9] 2>/dev/null`; do
 	check_tdb $PDBASE || {
 	    echo "Persistent database $PDBASE is corrupted! CTDB will not start."
