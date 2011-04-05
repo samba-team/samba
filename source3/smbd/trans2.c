@@ -3203,7 +3203,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			fsp.fnum = -1;
 
 			/* access check */
-			if (conn->session_info->utok.uid != sec_initial_uid()) {
+			if (get_current_uid(conn) != 0) {
 				DEBUG(0,("set_user_quota: access_denied "
 					 "service [%s] user [%s]\n",
 					 lp_servicename(SNUM(conn)),
@@ -3698,8 +3698,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				ZERO_STRUCT(quotas);
 
 				/* access check */
-				if ((conn->session_info->utok.uid != sec_initial_uid())
-				    ||!CAN_WRITE(conn)) {
+				if ((get_current_uid(conn) != 0) || !CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 						 lp_servicename(SNUM(conn)),
 						 conn->session_info->unix_name));
