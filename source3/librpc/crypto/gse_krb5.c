@@ -280,7 +280,7 @@ static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
 		goto out;
 	}
 
-	pwd_old = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	pwd_old = secrets_fetch_prev_machine_password(lp_workgroup());
 	if (!pwd_old) {
 		DEBUG(10, (__location__ ": no prev machine password\n"));
 	} else {
