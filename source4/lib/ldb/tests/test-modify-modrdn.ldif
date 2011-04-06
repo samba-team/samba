@@ -1,0 +1,12 @@
+dn: cn=Ursula Hampster,ou=Alumni Association,ou=People,o=University of Michiga
+ n,c=TEST
+changetype: moddn
+newrdn: cn=Hampster Ursula
+deleteoldrdn: 1
+newsuperior: ou=Alumni Association,ou=People,o=University of Michigan,c=TEST
+
+dn: cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michiga
+ n,c=TEST
+changetype: modrdn
+newrdn: cn=Ursula Hampster
+deleteoldrdn: 1

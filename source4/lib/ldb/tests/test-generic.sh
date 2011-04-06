@@ -22,7 +22,10 @@ $VALGRIND ldbmodify$EXEEXT $LDBDIR/tests/test-modify.ldif || exit 1
 echo "Showing modified record"
 $VALGRIND ldbsearch$EXEEXT '(uid=uham)'  || exit 1
 
-echo "Rename entry"
+echo "Rename entry with ldbmodify - modrdn"
+$VALGRIND ldbmodify$EXEEXT $LDBDIR/tests/test-modify-modrdn.ldif || exit 1
+
+echo "Rename entry with ldbrename"
 OLDDN="cn=Ursula Hampster,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST"
 NEWDN="cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST"
 $VALGRIND ldbrename$EXEEXT "$OLDDN" "$NEWDN"  || exit 1
