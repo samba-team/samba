@@ -1126,6 +1126,7 @@ static uint64_t find_max_local_usn(struct replPropertyMetaDataBlob omd)
 static int replmd_update_rpmd(struct ldb_module *module,
 			      const struct dsdb_schema *schema,
 			      struct ldb_request *req,
+			      const char * const *rename_attrs,
 			      struct ldb_message *msg, uint64_t *seq_num,
 			      time_t t,
 			      bool *is_urgent)
@@ -1137,13 +1138,20 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	NTTIME now;
 	const struct GUID *our_invocation_id;
 	int ret;
-	const char *attrs[] = { "replPropertyMetaData", "*", NULL };
-	const char *attrs2[] = { "uSNChanged", "objectClass", NULL };
+	const char * const *attrs = NULL;
+	const char * const attrs1[] = { "replPropertyMetaData", "*", NULL };
+	const char * const attrs2[] = { "uSNChanged", "objectClass", NULL };
 	struct ldb_result *res;
 	struct ldb_context *ldb;
 	struct ldb_message_element *objectclass_el;
 	enum urgent_situation situation;
 	bool rodc, rmd_is_provided;
+
+	if (rename_attrs) {
+		attrs = rename_attrs;
+	} else {
+		attrs = attrs1;
+	}
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1167,6 +1175,8 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	 * otherwise we consider we are updating */
 	if (ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")) {
 		situation = REPL_URGENT_ON_DELETE;
+	} else if (rename_attrs) {
+		situation = REPL_URGENT_ON_CREATE | REPL_URGENT_ON_DELETE;
 	} else {
 		situation = REPL_URGENT_ON_UPDATE;
 	}
@@ -1185,7 +1195,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 				"a specified replPropertyMetaData attribute or with others\n"));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (situation == REPL_URGENT_ON_DELETE) {
+		if (situation != REPL_URGENT_ON_UPDATE) {
 			DEBUG(0,(__location__ ": changereplmetada control can't be called when deleting an object\n"));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -2218,7 +2228,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	ldb_msg_remove_attr(msg, "whenChanged");
 	ldb_msg_remove_attr(msg, "uSNChanged");
 
-	ret = replmd_update_rpmd(module, ac->schema, req, msg, &ac->seq_num, t, &is_urgent);
+	ret = replmd_update_rpmd(module, ac->schema, req, NULL,
+				 msg, &ac->seq_num, t, &is_urgent);
 	if (ret == LDB_ERR_REFERRAL) {
 		referral = talloc_asprintf(req,
 					   "ldap://%s/%s",
