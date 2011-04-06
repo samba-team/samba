@@ -85,15 +85,15 @@ static bool getdns_hosts_fileent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, cha
 			++count;
 		if (next_token_talloc(ctx, &ptr, &name, NULL))
 			++count;
-		if (strcasecmp(name_type, "A") == 0) {
+		if (name_type && strcasecmp(name_type, "A") == 0) {
 			if (next_token_talloc(ctx, &ptr, &ip, NULL))
 				++count;
-		} else if (strcasecmp(name_type, "SRV") == 0) {
+		} else if (name_type && strcasecmp(name_type, "SRV") == 0) {
 			if (next_token_talloc(ctx, &ptr, &next_name, NULL))
 				++count;
 			if (next_token_talloc(ctx, &ptr, &port, NULL))
 				++count;
-		} else if (strcasecmp(name_type, "CNAME") == 0) {
+		} else if (name_type && strcasecmp(name_type, "CNAME") == 0) {
 			if (next_token_talloc(ctx, &ptr, &next_name, NULL))
 				++count;
 		}
