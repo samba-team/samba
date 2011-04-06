@@ -81,11 +81,18 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 	}
 
 	if (!is_valid_policy_hnd(connect_handle)) {
-		status = rpccli_try_samr_connects(pipe_cli, mem_ctx,
+		NTSTATUS result;
+		status = dcerpc_try_samr_connects(pipe_cli->binding_handle, mem_ctx,
+						  pipe_cli->srv_name_slash,
 						  connect_mask,
-						  connect_handle);
+						  connect_handle,
+						  &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			werr = ntstatus_to_werror(result);
 			goto done;
 		}
 	}
@@ -215,11 +222,18 @@ WERROR libnetapi_samr_open_builtin_domain(struct libnetapi_ctx *mem_ctx,
 	}
 
 	if (!is_valid_policy_hnd(connect_handle)) {
-		status = rpccli_try_samr_connects(pipe_cli, mem_ctx,
+		NTSTATUS result;
+		status = dcerpc_try_samr_connects(pipe_cli->binding_handle, mem_ctx,
+						  pipe_cli->srv_name_slash,
 						  connect_mask,
-						  connect_handle);
+						  connect_handle,
+						  &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			werr = ntstatus_to_werror(result);
 			goto done;
 		}
 	}
