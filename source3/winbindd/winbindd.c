@@ -1013,7 +1013,6 @@ bool winbindd_use_cache(void)
 
 void winbindd_register_handlers(void)
 {
-	struct tevent_timer *te;
 	/* Setup signal handlers */
 
 	if (!winbindd_setup_sig_term_handler(true))
@@ -1095,11 +1094,12 @@ void winbindd_register_handlers(void)
 	smb_nscd_flush_user_cache();
 	smb_nscd_flush_group_cache();
 
-	te = tevent_add_timer(winbind_event_context(), NULL, timeval_zero(),
-			      rescan_trusted_domains, NULL);
-	if (te == NULL) {
-		DEBUG(0, ("Could not trigger rescan_trusted_domains()\n"));
-		exit(1);
+	if (lp_allow_trusted_domains()) {
+		if (tevent_add_timer(winbind_event_context(), NULL, timeval_zero(),
+			      rescan_trusted_domains, NULL) == NULL) {
+			DEBUG(0, ("Could not trigger rescan_trusted_domains()\n"));
+			exit(1);
+		}
 	}
 
 }
