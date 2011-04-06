@@ -84,8 +84,8 @@ struct hc_sha256state {
 
 typedef struct hc_sha256state SHA256_CTX;
 
-void SHA256_Init (SHA256_CTX *);
-void SHA256_Update (SHA256_CTX *, const void *, size_t);
-void SHA256_Final (void *, SHA256_CTX *);
+void samba_SHA256_Init (SHA256_CTX *);
+void samba_SHA256_Update (SHA256_CTX *, const void *, size_t);
+void samba_SHA256_Final (void *, SHA256_CTX *);
 
 #endif /* HEIM_SHA_H */

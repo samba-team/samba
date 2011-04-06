@@ -61,9 +61,9 @@ static NTSTATUS hash_sd_sha256(struct security_descriptor *psd,
 		return status;
 	}
 
-	SHA256_Init(&tctx);
-	SHA256_Update(&tctx, blob.data, blob.length);
-	SHA256_Final(hash, &tctx);
+	samba_SHA256_Init(&tctx);
+	samba_SHA256_Update(&tctx, blob.data, blob.length);
+	samba_SHA256_Final(hash, &tctx);
 
 	return NT_STATUS_OK;
 }

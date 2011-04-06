@@ -42,9 +42,9 @@ _PUBLIC_ void hmac_sha256_init(const uint8_t *key, size_t key_len, struct HMACSH
 	{
                 SHA256_CTX tctx;
 
-                SHA256_Init(&tctx);
-                SHA256_Update(&tctx, key, key_len);
-                SHA256_Final(tk, &tctx);
+                samba_SHA256_Init(&tctx);
+                samba_SHA256_Update(&tctx, key, key_len);
+                samba_SHA256_Final(tk, &tctx);
 
                 key = tk;
                 key_len = SHA256_DIGEST_LENGTH;
@@ -63,8 +63,8 @@ _PUBLIC_ void hmac_sha256_init(const uint8_t *key, size_t key_len, struct HMACSH
                 ctx->k_opad[i] ^= 0x5c;
         }
 
-        SHA256_Init(&ctx->ctx);
-        SHA256_Update(&ctx->ctx, ctx->k_ipad, 64);  
+        samba_SHA256_Init(&ctx->ctx);
+        samba_SHA256_Update(&ctx->ctx, ctx->k_ipad, 64);
 }
 
 /***********************************************************************
@@ -72,7 +72,7 @@ _PUBLIC_ void hmac_sha256_init(const uint8_t *key, size_t key_len, struct HMACSH
 ***********************************************************************/
 _PUBLIC_ void hmac_sha256_update(const uint8_t *data, size_t data_len, struct HMACSHA256Context *ctx)
 {
-        SHA256_Update(&ctx->ctx, data, data_len); /* then text of datagram */
+        samba_SHA256_Update(&ctx->ctx, data, data_len); /* then text of datagram */
 }
 
 /***********************************************************************
@@ -82,10 +82,10 @@ _PUBLIC_ void hmac_sha256_final(uint8_t digest[SHA256_DIGEST_LENGTH], struct HMA
 {
         SHA256_CTX ctx_o;
 
-        SHA256_Final(digest, &ctx->ctx);
+        samba_SHA256_Final(digest, &ctx->ctx);
 
-        SHA256_Init(&ctx_o);
-        SHA256_Update(&ctx_o, ctx->k_opad, 64);
-        SHA256_Update(&ctx_o, digest, SHA256_DIGEST_LENGTH);
-        SHA256_Final(digest, &ctx_o);
+        samba_SHA256_Init(&ctx_o);
+        samba_SHA256_Update(&ctx_o, ctx->k_opad, 64);
+        samba_SHA256_Update(&ctx_o, digest, SHA256_DIGEST_LENGTH);
+        samba_SHA256_Final(digest, &ctx_o);
 }

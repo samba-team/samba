@@ -80,7 +80,7 @@ static const uint32_t constant_256[64] = {
 };
 
 void
-SHA256_Init (SHA256_CTX *m)
+samba_SHA256_Init (SHA256_CTX *m)
 {
     m->sz[0] = 0;
     m->sz[1] = 0;
@@ -187,7 +187,7 @@ struct x32{
 };
 
 void
-SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
+samba_SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
 {
     const unsigned char *p = (const unsigned char *)v;
     size_t old_sz = m->sz[0];
@@ -222,7 +222,7 @@ SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
 }
 
 void
-SHA256_Final (void *res, SHA256_CTX *m)
+samba_SHA256_Final (void *res, SHA256_CTX *m)
 {
     unsigned char zeros[72];
     unsigned offset = (m->sz[0] / 8) % 64;
@@ -238,7 +238,7 @@ SHA256_Final (void *res, SHA256_CTX *m)
     zeros[dstart+2] = (m->sz[1] >> 8) & 0xff;
     zeros[dstart+1] = (m->sz[1] >> 16) & 0xff;
     zeros[dstart+0] = (m->sz[1] >> 24) & 0xff;
-    SHA256_Update (m, zeros, dstart + 8);
+    samba_SHA256_Update (m, zeros, dstart + 8);
     {
 	int i;
 	unsigned char *r = (unsigned char*)res;

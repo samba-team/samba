@@ -392,9 +392,9 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 		MSG_ADD_STRING("governsID", s);
 	}
 
-	SHA256_Init(&sha256_context);
-	SHA256_Update(&sha256_context, (uint8_t*)s, strlen(s));
-	SHA256_Final(digest, &sha256_context);
+	samba_SHA256_Init(&sha256_context);
+	samba_SHA256_Update(&sha256_context, (uint8_t*)s, strlen(s));
+	samba_SHA256_Final(digest, &sha256_context);
 
 	memcpy(&guid, digest, sizeof(struct GUID));
 
