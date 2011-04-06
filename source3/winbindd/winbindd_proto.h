@@ -334,7 +334,7 @@ void winbindd_netbios_name(struct winbindd_cli_state *state);
 void winbindd_priv_pipe_dir(struct winbindd_cli_state *state);
 
 /* The following definitions come from winbindd/winbindd_ndr.c  */
-
+struct ndr_print;
 void ndr_print_winbindd_child(struct ndr_print *ndr,
 			      const char *name,
 			      const struct winbindd_child *r);

@@ -2723,7 +2723,7 @@ void set_profile_level(int level, struct server_id src);
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly);
 
 /* The following definitions come from librpc/rpc/rpc_common.c  */
-
+struct ndr_interface_table;
 bool smb_register_ndr_interface(const struct ndr_interface_table *interface);
 const struct ndr_interface_table *get_iface_from_syntax(
 	const struct ndr_syntax_id *syntax);
@@ -2737,6 +2737,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      struct client_address *client_id,
 					      const struct auth_serversupplied_info *session_info,
 					      struct messaging_context *msg_ctx);
+struct dcerpc_binding_handle;
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
 			       struct client_address *client_id,
@@ -2809,7 +2810,7 @@ NTSTATUS rpc_srv_register(int version, const char *clnt,
 NTSTATUS rpc_srv_unregister(const struct ndr_interface_table *iface);
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
-
+struct ncacn_packet;
 bool create_next_pdu(struct pipes_struct *p);
 bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
 bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
