@@ -802,6 +802,11 @@ domusers:X:$gid_domusers:
 
 	print "DONE\n";
 
+	open(HOSTS, ">>$ENV{SELFTEST_PREFIX}/dns_host_file") or die("Unable to open $ENV{SELFTEST_PREFIX}/dns_host_file");
+	print HOSTS "A $server $server_ip
+";
+	close(HOSTS);
+
 	$ret{SERVER_IP} = $server_ip;
 	$ret{NMBD_TEST_LOG} = "$prefix/nmbd_test.log";
 	$ret{NMBD_TEST_LOG_POS} = 0;
