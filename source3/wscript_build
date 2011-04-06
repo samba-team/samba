@@ -860,7 +860,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY3 REGFIO
                     LIB_SMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
-                    RPC_NDR_SRVSVC NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON INIT_SAMR
+                    RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
                     LIBCLI_SMB_COMMON RPC_SERVER
                     ''',
                     private_library=True,
@@ -1030,7 +1030,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON
-                 RPC_NDR_DSSETUP NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON
+                 RPC_NDR_DSSETUP npa_tstream INIT_NETLOGON
                  RPC_NCACN_NP RPC_PIPE_REGISTER RPC_SAMR RPC_LSARPC
                  PAM_ERRORS WB_REQTRANS AUTH_COMMON
                  ''',

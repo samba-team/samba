@@ -3,7 +3,7 @@
 bld.SAMBA_LIBRARY('service',
 	source='service.c service_stream.c service_named_pipe.c service_task.c',
 	autoproto='service_proto.h',
-	deps='tevent MESSAGING samba_socket RPC_NDR_IRPC NDR_NAMED_PIPE_AUTH NAMED_PIPE_AUTH_TSTREAM gssapi credentials LIBTSOCKET LIBSAMBA_TSOCKET process_model',
+	deps='tevent MESSAGING samba_socket RPC_NDR_IRPC NDR_NAMED_PIPE_AUTH npa_tstream gssapi credentials LIBTSOCKET LIBSAMBA_TSOCKET process_model',
 	private_library=True
 	)
 

@@ -52,7 +52,7 @@ bld.SAMBA_MODULE('ntvfs_ipc',
 	autoproto='ipc/proto.h',
 	subsystem='ntvfs',
 	init_function='ntvfs_ipc_init',
-	deps='NDR_NAMED_PIPE_AUTH NAMED_PIPE_AUTH_TSTREAM gssapi credentials DCERPC_SHARE'
+	deps='NDR_NAMED_PIPE_AUTH npa_tstream gssapi credentials DCERPC_SHARE'
 	)
 
 
