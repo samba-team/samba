@@ -776,7 +776,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 samba-util3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg',
                    private_library=True,
                    vars=locals())
 
@@ -965,10 +965,6 @@ bld.SAMBA3_SUBSYSTEM('CHARSET3',
                     source='''lib/util_str.c lib/util_unistr.c lib/charcnv.c lib/fstring.c''',
                     public_deps='ICONV_WRAPPER CODEPOINTS',
                     deps='DYNCONFIG')
-
-bld.SAMBA3_SUBSYSTEM('samba-util3',
-                    source='../lib/util/data_blob.c',
-                    deps='talloc CHARSET3 samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
                     source='lib/ldb_compat.c')
@@ -1317,7 +1313,7 @@ if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('POPT_SAMBA', source='', deps='POPT_SAMBA3')
     bld.SAMBA3_SUBSYSTEM('tdb-wrap', source='', deps='tdb-wrap3')
     bld.SAMBA3_SUBSYSTEM('errors', source='', deps='errors3')
-    bld.SAMBA3_SUBSYSTEM('samba-util', source='', deps='samba-util3')
+    bld.SAMBA3_SUBSYSTEM('samba-util', source='')
     bld.SAMBA3_SUBSYSTEM('CHARSET', source='', deps='CHARSET3')
     bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
     bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
