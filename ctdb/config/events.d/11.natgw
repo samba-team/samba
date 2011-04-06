@@ -24,8 +24,6 @@ delete_all() {
 	[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] || {
 	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits 2>/dev/null
 	}
-	delete_ip_from_iface lo $_ip 32
-
 	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
 
 	# Delete the masquerading setup from a previous iteration where we
@@ -47,8 +45,6 @@ case "$1" in
 		exit 1
 	}
 
-	# do not respond to ARPs that are for ip addresses with scope 'host'
-	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
 	# do not send out arp requests from loopback addresses
 	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
 	;;
