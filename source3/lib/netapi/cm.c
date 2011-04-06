@@ -253,3 +253,26 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 
 	return WERR_OK;
 }
+
+/********************************************************************
+********************************************************************/
+
+WERROR libnetapi_get_binding_handle(struct libnetapi_ctx *ctx,
+				    const char *server_name,
+				    const struct ndr_syntax_id *interface,
+				    struct dcerpc_binding_handle **binding_handle)
+{
+	struct rpc_pipe_client *pipe_cli;
+	WERROR result;
+
+	*binding_handle = NULL;
+
+	result = libnetapi_open_pipe(ctx, server_name, interface, &pipe_cli);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*binding_handle = pipe_cli->binding_handle;
+
+	return WERR_OK;
+}
