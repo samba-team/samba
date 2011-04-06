@@ -182,7 +182,6 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
 	struct dcerpc_binding_handle *b;
 
@@ -200,14 +199,12 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = map_SHARE_INFO_buffer_to_srvsvc_share_info(ctx,
 							    r->in.buffer,
@@ -254,21 +251,18 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	struct dcerpc_binding_handle *b;
 
 	if (!r->in.net_name) {
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = dcerpc_srvsvc_NetShareDel(b, talloc_tos(),
 					   r->in.server_name,
@@ -301,7 +295,6 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 ctr0;
 	struct srvsvc_NetShareCtr1 ctr1;
@@ -327,14 +320,12 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 
 	ZERO_STRUCT(info_ctr);
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	info_ctr.level = r->in.level;
 	switch (r->in.level) {
@@ -414,7 +405,6 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
 	uint32_t num_entries = 0;
 	struct dcerpc_binding_handle *b;
@@ -437,14 +427,12 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = dcerpc_srvsvc_NetShareGetInfo(b, talloc_tos(),
 					       r->in.server_name,
@@ -491,7 +479,6 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
 	struct dcerpc_binding_handle *b;
 
@@ -514,14 +501,12 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = map_SHARE_INFO_buffer_to_srvsvc_share_info(ctx,
 							    r->in.buffer,

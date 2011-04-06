@@ -33,17 +33,14 @@ WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	struct dcerpc_binding_handle *b;
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = dcerpc_srvsvc_NetFileClose(b, talloc_tos(),
 					    r->in.server_name,
@@ -116,7 +113,6 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetFileInfo info;
 	uint32_t num_entries = 0;
 	struct dcerpc_binding_handle *b;
@@ -133,14 +129,12 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = dcerpc_srvsvc_NetFileGetInfo(b, talloc_tos(),
 					      r->in.server_name,
@@ -187,7 +181,6 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	struct srvsvc_NetFileInfoCtr info_ctr;
 	struct srvsvc_NetFileCtr2 ctr2;
 	struct srvsvc_NetFileCtr3 ctr3;
@@ -207,14 +200,12 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	ZERO_STRUCT(info_ctr);
 
