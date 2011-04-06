@@ -236,7 +236,7 @@ class dc_join(object):
     def drsuapi_connect(ctx):
         '''make a DRSUAPI connection to the server'''
         binding_options = "seal"
-        if ctx.lp.get("log level") >= 5:
+        if int(ctx.lp.get("log level")) >= 5:
             binding_options += ",print"
         binding_string = "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options)
         ctx.drsuapi = drsuapi.drsuapi(binding_string, ctx.lp, ctx.creds)
@@ -455,7 +455,7 @@ class dc_join(object):
                 repl_creds = ctx.creds
 
             binding_options = "seal"
-            if ctx.lp.get("debug level") >= 5:
+            if int(ctx.lp.get("log level")) >= 5:
                 binding_options += ",print"
             repl = drs_utils.drs_Replicate(
                 "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),

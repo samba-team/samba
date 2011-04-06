@@ -38,7 +38,7 @@ import common
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
     binding_options = "seal"
-    if ctx.lp.get("log level") >= 5:
+    if int(ctx.lp.get("log level")) >= 5:
         binding_options += ",print"
     binding_string = "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options)
     try:
