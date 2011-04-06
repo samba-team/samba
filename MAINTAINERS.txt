@@ -72,21 +72,6 @@ policy:
          Other non-trivial (typo, etc) commits require pre- or post-push review by the
          maintainer or one of the maintainers of the containing subsystem.
 
-directory: source3/auth
-maintainers:
-         Günther Deschner <gd@samba.org>
-         Jeremy Allison <jra@samba.org>
-         Stefan Metzmacher <metze@samba.org>
-         Volker Lendecke <vl@samba.org>
-policy:
-         All commits require review by a maintainer.
-
-         If no maintainer is available for longer than a week
-         discussion on the samba-technical list and review by 2
-         Samba-Team members is needed.
-
-         Larger changes need also discussion on the samba-technical list
-         and review by all maintainers.
 
 =======================================================================
 
