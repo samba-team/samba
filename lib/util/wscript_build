@@ -33,10 +33,11 @@ if bld.env._SAMBA_BUILD_ == 4:
                       )
 
 
-bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
-                    source='asn1.c',
-                    deps='talloc',
-                    local_include=False)
+bld.SAMBA_LIBRARY('asn1util',
+                  source='asn1.c',
+                  deps='talloc samba-util-common',
+                  private_library=True,
+                  local_include=False)
 
 
 bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',

@@ -37,4 +37,4 @@ bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
 
 bld.SAMBA_SUBSYSTEM('SPNEGO_PARSE',
                     source='spnego_parse.c',
-                    deps='ASN1_UTIL')
+                    deps='asn1util')

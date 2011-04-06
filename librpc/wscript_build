@@ -282,7 +282,7 @@ bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSUAPI',
 	source='ndr/ndr_drsuapi.c gen_ndr/ndr_drsuapi.c',
-	public_deps='ndr NDR_COMPRESSION NDR_SECURITY ndr-standard ASN1_UTIL'
+	public_deps='ndr NDR_COMPRESSION NDR_SECURITY ndr-standard asn1util'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',

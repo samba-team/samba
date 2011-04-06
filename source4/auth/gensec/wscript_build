@@ -41,7 +41,7 @@ bld.SAMBA_MODULE('gensec_spnego',
 	autoproto='spnego_proto.h',
 	subsystem='gensec',
 	init_function='gensec_spnego_init',
-	deps='ASN1_UTIL credentials SPNEGO_PARSE'
+	deps='asn1util credentials SPNEGO_PARSE'
 	)
 
 

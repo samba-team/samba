@@ -4,7 +4,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_LDAP_MESSAGE',
 	source='ldap_message.c',
 	public_deps='errors talloc ldb',
 	public_headers='ldap_message.h ldap_errors.h',
-	deps='samba-util ASN1_UTIL'
+	deps='samba-util asn1util'
 	)
 
 
