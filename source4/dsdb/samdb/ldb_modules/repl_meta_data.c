@@ -2364,8 +2364,13 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	struct replmd_replicated_request *ac;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
+	const struct dsdb_attribute *rdn_attr;
+	const char *rdn_name;
+	const struct ldb_val *rdn_val;
+	const char *attrs[4] = { NULL, };
 	time_t t = time(NULL);
 	int ret;
+	bool is_urgent = false;
 
 	ac = talloc_get_type(req->context, struct replmd_replicated_request);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -2383,12 +2388,6 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	/* Get a sequence number from the backend */
-	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &ac->seq_num);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	/* TODO:
 	 * - replace the old object with the newly constructed one
 	 */
@@ -2400,6 +2399,123 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	}
 
 	msg->dn = ac->req->op.rename.newdn;
+
+	rdn_name = ldb_dn_get_rdn_name(msg->dn);
+	if (rdn_name == NULL) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_operr(ldb));
+	}
+
+	/* normalize the rdn attribute name */
+	rdn_attr = dsdb_attribute_by_lDAPDisplayName(ac->schema, rdn_name);
+	if (rdn_attr == NULL) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_operr(ldb));
+	}
+	rdn_name = rdn_attr->lDAPDisplayName;
+
+	rdn_val = ldb_dn_get_rdn_val(msg->dn);
+	if (rdn_val == NULL) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_operr(ldb));
+	}
+
+	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_oom(ldb));
+	}
+	if (ldb_msg_add_value(msg, rdn_name, rdn_val, NULL) != 0) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_oom(ldb));
+	}
+	if (ldb_msg_add_empty(msg, "name", LDB_FLAG_MOD_REPLACE, NULL) != 0) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_oom(ldb));
+	}
+	if (ldb_msg_add_value(msg, "name", rdn_val, NULL) != 0) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_oom(ldb));
+	}
+
+	/*
+	 * here we let replmd_update_rpmd() only search for
+	 * the existing "replPropertyMetaData" and rdn_name attributes.
+	 *
+	 * We do not want the existing "name" attribute as
+	 * the "name" attribute needs to get the version
+	 * updated on rename even if the rdn value hasn't changed.
+	 *
+	 * This is the diff of the meta data, for a moved user
+	 * on a w2k8r2 server:
+	 *
+	 * # record 1
+	 * -dn: CN=sdf df,CN=Users,DC=bla,DC=base
+	 * +dn: CN=sdf df,OU=TestOU,DC=bla,DC=base
+	 *  replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
+	 *         version                  : 0x00000001 (1)
+	 *         reserved                 : 0x00000000 (0)
+	 * @@ -66,11 +66,11 @@ replPropertyMetaData:     NDR: struct re
+	 *                      local_usn                : 0x00000000000037a5 (14245)
+	 *                 array: struct replPropertyMetaData1
+	 *                      attid                    : DRSUAPI_ATTID_name (0x90001)
+	 * -                    version                  : 0x00000001 (1)
+	 * -                    originating_change_time  : Wed Feb  9 17:20:49 2011 CET
+	 * +                    version                  : 0x00000002 (2)
+	 * +                    originating_change_time  : Wed Apr  6 15:21:01 2011 CEST
+	 *                      originating_invocation_id: 0d36ca05-5507-4e62-aca3-354bab0d39e1
+	 * -                    originating_usn          : 0x00000000000037a5 (14245)
+	 * -                    local_usn                : 0x00000000000037a5 (14245)
+	 * +                    originating_usn          : 0x0000000000003834 (14388)
+	 * +                    local_usn                : 0x0000000000003834 (14388)
+	 *                 array: struct replPropertyMetaData1
+	 *                      attid                    : DRSUAPI_ATTID_userAccountControl (0x90008)
+	 *                      version                  : 0x00000004 (4)
+	 */
+	attrs[0] = "replPropertyMetaData";
+	attrs[1] = "objectClass";
+	attrs[2] = rdn_name;
+	attrs[3] = NULL;
+
+	ret = replmd_update_rpmd(ac->module, ac->schema, req, attrs,
+				 msg, &ac->seq_num, t, &is_urgent);
+	if (ret == LDB_ERR_REFERRAL) {
+		struct ldb_dn *olddn = ac->req->op.rename.olddn;
+		struct loadparm_context *lp_ctx;
+		const char *referral;
+
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
+
+		referral = talloc_asprintf(req,
+					   "ldap://%s/%s",
+					   lpcfg_dnsdomain(lp_ctx),
+					   ldb_dn_get_linearized(olddn));
+		ret = ldb_module_send_referral(req, referral);
+		talloc_free(ac);
+		return ldb_module_done(req, NULL, NULL, ret);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_error(ldb, ret,
+					"failed to call replmd_update_rpmd()"));
+	}
+
+	if (ac->seq_num == 0) {
+		talloc_free(ares);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       ldb_error(ldb, ret,
+					"internal error seq_num == 0"));
+	}
+	ac->is_urgent = is_urgent;
 
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
 				msg,
