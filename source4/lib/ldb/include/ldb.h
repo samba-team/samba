@@ -532,7 +532,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://www.ietf.org/rfc/rfc2696.txt">RFC 2696</a>.
 */
 #define LDB_CONTROL_PAGED_RESULTS_OID	"1.2.840.113556.1.4.319"
-#define LDB_CONTROL_PAGED_RESULTS_NAME	"paged_result"
+#define LDB_CONTROL_PAGED_RESULTS_NAME	"paged_results"
 
 /**
    OID for specifying the returned elements of the ntSecurityDescriptor

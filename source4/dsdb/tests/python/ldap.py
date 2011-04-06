@@ -2655,7 +2655,7 @@ nTSecurityDescriptor:: """ + desc_base64
         """Testing that if we request a control that return a control it
            really return something"""
         res = self.ldb.search(attrs=["cn"],
-                              controls=["paged_result:1:10"])
+                              controls=["paged_results:1:10"])
         self.assertEquals(len(res.controls), 1)
         self.assertEquals(res.controls[0].oid, "1.2.840.113556.1.4.319")
         try:
