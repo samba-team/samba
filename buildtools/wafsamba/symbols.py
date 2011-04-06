@@ -17,6 +17,7 @@ from samba_utils import *
 #
 # bld.env.syslib_symbols: dictionary mapping system library name to set of symbols
 #                         for that library
+# bld.env.library_dict  : dictionary mapping built library paths to subsystem names
 #
 # LOCAL_CACHE(bld, 'TARGET_TYPE') : dictionary mapping subsystem name to target type
 
@@ -30,11 +31,11 @@ def symbols_extract(objfiles, dynamic=False):
     if dynamic:
         # needed for some .so files
         cmd.append("-D")
-    cmd.extend(objfiles)
+    cmd.extend(list(objfiles))
 
     nmpipe = subprocess.Popen(cmd, stdout=subprocess.PIPE).stdout
     if len(objfiles) == 1:
-        filename = objfiles[0]
+        filename = list(objfiles)[0]
         ret[filename] = { "PUBLIC": set(), "UNDEFINED" : set()}
 
     for line in nmpipe:
@@ -66,6 +67,35 @@ def real_name(name):
     if name.find(".objlist") != -1:
         name = name[:-8]
     return name
+
+
+def get_ldd_libs(bld, binname):
+    '''find the list of linked libraries for any binary or library
+    binname is the path to the binary/library on disk
+    '''
+    ret = set()
+    lddpipe = subprocess.Popen(['ldd', binname], stdout=subprocess.PIPE).stdout
+    for line in lddpipe:
+        line = line.strip()
+        cols = line.split(" ")
+        if len(cols) < 3 or cols[1] != "=>" or cols[2] == '':
+            continue
+        ret.add(os.path.realpath(cols[2]))
+    return ret
+
+
+def get_ldd_libs_recursive(bld, binname, seen=set()):
+    '''find the recursive list of linked libraries for any binary or library
+    binname is the path to the binary/library on disk. seen is a set used
+    to prevent loops
+    '''
+    if binname in seen:
+        return set()
+    ret = get_ldd_libs(bld, binname)
+    seen.add(binname)
+    for lib in ret:
+        ret = ret.union(get_ldd_libs_recursive(bld, lib, seen))
+    return ret
 
 
 def find_syslib_path(bld, libname, deps):
@@ -158,6 +188,20 @@ def build_symbol_sets(bld, tgt_list):
                 t2 = bld.name_to_obj(dep, bld.env)
                 bld.ASSERT(t2 is not None, "Library '%s' has unknown dependency '%s'" % (name, dep))
                 bld.env.used_symbols[name] = bld.env.used_symbols[name].union(t2.used_symbols)
+
+
+def build_library_dict(bld, tgt_list):
+    '''build the library_dict dictionary'''
+
+    if bld.env.library_dict:
+        return
+
+    bld.env.library_dict = {}
+
+    for t in tgt_list:
+        if t.samba_type in [ 'LIBRARY', 'PYTHON' ]:
+            linkpath = os.path.realpath(t.link_task.outputs[0].abspath(bld.env))
+            bld.env.library_dict[linkpath] = t.sname
 
 
 def build_syslib_sets(bld, tgt_list):
@@ -444,6 +488,37 @@ def symbols_whyneeded(task):
         Logs.info("target '%s' uses symbols %s from '%s'" % (target, overlap, subsystem))
 
 
+def report_duplicate(bld, binname, sym, libs):
+    '''report duplicated symbols'''
+    if sym in ['_init', '_fini']:
+        return
+    libnames = []
+    for lib in libs:
+        if lib in bld.env.library_dict:
+            libnames.append(bld.env.library_dict[lib])
+        else:
+            libnames.append(lib)
+    print("%s: Symbol %s linked in multiple libraries %s" % (binname, sym, libnames))
+
+
+def symbols_dupcheck_binary(bld, binname):
+    '''check for duplicated symbols in one binary'''
+    libs = get_ldd_libs_recursive(bld, binname)
+
+    symlist = symbols_extract(libs, dynamic=True)
+
+    symmap = {}
+    for libpath in symlist:
+        for sym in symlist[libpath]['PUBLIC']:
+            if not sym in symmap:
+                symmap[sym] = set()
+            symmap[sym].add(libpath)
+    for sym in symmap:
+        if len(symmap[sym]) > 1:
+            for libpath in symmap[sym]:
+                if libpath in bld.env.library_dict:
+                    report_duplicate(bld, binname, sym, symmap[sym])
+                    break
 
 def symbols_dupcheck(task):
     '''check for symbols defined in two different subsystems'''
@@ -452,25 +527,12 @@ def symbols_dupcheck(task):
 
     targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
 
-    Logs.info("Checking for duplicate symbols")
-    for sym in bld.env.symbol_map:
-        subsystems = set(bld.env.symbol_map[sym])
-        if len(subsystems) == 1:
-            continue
+    build_library_dict(bld, tgt_list)
+    for t in tgt_list:
+        if t.samba_type == 'BINARY':
+            binname = os_path_relpath(t.link_task.outputs[0].abspath(bld.env), os.getcwd())
+            symbols_dupcheck_binary(bld, binname)
 
-        if sym in ['main', '_init', '_fini', 'init_samba_module', 'samba_init_module', 'ldb_init_module' ]:
-            # these are expected to be in many subsystems
-            continue
-
-        # if all of them are in system libraries, we can ignore them. This copes
-        # with the duplication between libc, libpthread and libattr
-        all_syslib = True
-        for s in subsystems:
-            if s != 'c' and (not s in targets or targets[s] != 'SYSLIB'):
-                all_syslib = False
-        if all_syslib:
-            continue
-        Logs.info("symbol %s appears in %s" % (sym, subsystems))
 
 
 def SYMBOL_CHECK(bld):
