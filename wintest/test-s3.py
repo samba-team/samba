@@ -99,7 +99,6 @@ def test_smbclient(t):
     child.sendline("cd ..")
     child.sendline("rmdir testdir")
 
-
 def create_shares(t):
     t.info("Adding test shares")
     t.chdir('${PREFIX}')
@@ -156,11 +155,9 @@ def join_as_member(t, vm):
     t.cmd_contains("host -t A ${HOSTNAME}.${WIN_REALM}",
                  ['${HOSTNAME}.${WIN_REALM} has address'])
 
-
-def test_join_as_member(t, vm):
-    '''test the domain join'''
+def create_root_account(t, vm):
     t.setwinvars(vm)
-    t.info('Testing join as member')
+    t.info("Creating 'root' account for testing Samba3 member server")
     t.chdir('${PREFIX}')
     t.run_cmd('bin/net ads user add root -Uadministrator%${WIN_PASS}')
     child = t.pexpect_spawn('bin/net ads password root -Uadministrator%${WIN_PASS}')
@@ -172,6 +169,12 @@ def test_join_as_member(t, vm):
     child.expect("net rpc>")
     child.sendline("user edit disabled root no")
     child.expect("Set root's disabled flag")
+
+def test_join_as_member(t, vm):
+    '''test the domain join'''
+    t.setwinvars(vm)
+    t.info('Testing join as member')
+    t.chdir('${PREFIX}')
     test_wbinfo(t)
     test_smbclient(t)
 
@@ -208,6 +211,7 @@ def test_s3(t):
         join_as_member(t, "W2K8R2A")
         create_shares(t)
         start_s3(t)
+        create_root_account(t, "W2K8R2A")
         test_join_as_member(t, "W2K8R2A")
 
     if t.have_var('WINDOWS7_VM') and t.have_var('W2K8R2A_VM') and not t.skip("join_windows7_2008r2"):
@@ -228,6 +232,7 @@ def test_s3(t):
         t.test_remote_smbclient('WINDOWS7', dom_username, dom_password, args='--option=clientntlmv2auth=no')
         t.test_remote_smbclient('WINDOWS7', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k")
         t.test_remote_smbclient('WINDOWS7', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k --option=clientusespnegoprincipal=yes")
+        t.test_net_use('WINDOWS7', t.getvar("W2K8R2A_DOMAIN"), 'root', '${PASSWORD2}')
 
     if t.have_var('WINXP_VM') and t.have_var('W2K8R2A_VM') and not t.skip("join_winxp_2008r2"):
         if not dc_started:
@@ -246,6 +251,7 @@ def test_s3(t):
         t.test_remote_smbclient('WINXP', dom_username, dom_password, args='--option=clientntlmv2auth=no')
         t.test_remote_smbclient('WINXP', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k")
         t.test_remote_smbclient('WINXP', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k --clientusespnegoprincipal=yes")
+        t.test_net_use('WINXP', t.getvar("W2K8R2A_DOMAIN"), 'root', '${PASSWORD2}')
 
     t.info("S3 test: All OK")
 
