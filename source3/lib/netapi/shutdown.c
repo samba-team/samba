@@ -34,18 +34,15 @@ WERROR NetShutdownInit_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	struct lsa_StringLarge message;
 	struct dcerpc_binding_handle *b;
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_initshutdown.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_initshutdown.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	init_lsa_StringLarge(&message, r->in.message);
 
@@ -82,17 +79,14 @@ WERROR NetShutdownAbort_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct rpc_pipe_client *pipe_cli = NULL;
 	struct dcerpc_binding_handle *b;
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_initshutdown.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_initshutdown.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = dcerpc_initshutdown_Abort(b, talloc_tos(),
 					   NULL,

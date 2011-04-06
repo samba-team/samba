@@ -480,7 +480,6 @@ static NTSTATUS map_server_info_to_SERVER_INFO_buffer(TALLOC_CTX *mem_ctx,
 WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 			  struct NetServerGetInfo *r)
 {
-	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
@@ -503,14 +502,12 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 			return WERR_UNKNOWN_LEVEL;
 	}
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = dcerpc_srvsvc_NetSrvGetInfo(b, talloc_tos(),
 					     r->in.server_name,
@@ -601,20 +598,17 @@ WERROR NetServerSetInfo_l(struct libnetapi_ctx *ctx,
 WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 			  struct NetServerSetInfo *r)
 {
-	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
 	struct dcerpc_binding_handle *b;
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	switch (r->in.level) {
 		case 1005:
@@ -646,20 +640,17 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r)
 {
-	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 	struct srvsvc_NetRemoteTODInfo *info = NULL;
 	struct dcerpc_binding_handle *b;
 
-	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_srvsvc.syntax_id,
-				   &pipe_cli);
+	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
+					    &ndr_table_srvsvc.syntax_id,
+					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
-
-	b = pipe_cli->binding_handle;
 
 	status = dcerpc_srvsvc_NetRemoteTOD(b, talloc_tos(),
 					    r->in.server_name,
