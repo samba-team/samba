@@ -7208,14 +7208,14 @@ bool service_ok(int iService)
 
 static struct smbconf_ctx *lp_smbconf_ctx(void)
 {
-	WERROR werr;
+	sbcErr err;
 	static struct smbconf_ctx *conf_ctx = NULL;
 
 	if (conf_ctx == NULL) {
-		werr = smbconf_init(NULL, &conf_ctx, "registry:");
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_init(NULL, &conf_ctx, "registry:");
+		if (!SBC_ERROR_IS_OK(err)) {
 			DEBUG(1, ("error initializing registry configuration: "
-				  "%s\n", win_errstr(werr)));
+				  "%s\n", sbcErrorString(err)));
 			conf_ctx = NULL;
 		}
 	}

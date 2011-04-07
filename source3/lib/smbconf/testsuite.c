@@ -204,6 +204,7 @@ static bool create_conf_file(const char *filename)
 static bool torture_smbconf_txt(void)
 {
 	WERROR werr;
+	sbcErr err;
 	bool ret = true;
 	const char *filename = "/tmp/smb.conf.smbconf_testsuite";
 	struct smbconf_ctx *conf_ctx = NULL;
@@ -217,9 +218,9 @@ static bool torture_smbconf_txt(void)
 	}
 
 	printf("TEST: init\n");
-	werr = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
-	if (!W_ERROR_IS_OK(werr)) {
-		printf("FAIL: text backend failed: %s\n", win_errstr(werr));
+	err = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
+	if (!SBC_ERROR_IS_OK(err)) {
+		printf("FAIL: text backend failed: %s\n", sbcErrorString(err));
 		ret = false;
 		goto done;
 	}
@@ -246,6 +247,7 @@ done:
 static bool torture_smbconf_reg(void)
 {
 	WERROR werr;
+	sbcErr err;
 	bool ret = true;
 	struct smbconf_ctx *conf_ctx = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -253,9 +255,9 @@ static bool torture_smbconf_reg(void)
 	printf("test: registry backend\n");
 
 	printf("TEST: init\n");
-	werr = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
-	if (!W_ERROR_IS_OK(werr)) {
-		printf("FAIL: init failed: %s\n", win_errstr(werr));
+	err = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
+	if (!SBC_ERROR_IS_OK(err)) {
+		printf("FAIL: init failed: %s\n", sbcErrorString(err));
 		ret = false;
 		goto done;
 	}
