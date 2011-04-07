@@ -813,7 +813,7 @@ domusers:X:$gid_domusers:
 	print "DONE\n";
 
 	open(HOSTS, ">>$ENV{SELFTEST_PREFIX}/dns_host_file") or die("Unable to open $ENV{SELFTEST_PREFIX}/dns_host_file");
-	print HOSTS "A $server $server_ip
+	print HOSTS "A $server. $server_ip
 ";
 	close(HOSTS);
 

@@ -596,7 +596,7 @@ sub write_clientconf($$$)
 	private dir = $clientdir/private
 	lock dir = $clientdir/lockdir
 	ncalrpc dir = $clientdir/ncalrpcdir
-	name resolve order = bcast file
+	name resolve order = file bcast
 	panic action = $RealBin/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false
