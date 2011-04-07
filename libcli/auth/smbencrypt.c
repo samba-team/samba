@@ -385,11 +385,18 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 	DATA_BLOB names_blob = data_blob_talloc(mem_ctx, NULL, 0);
 
 	/* Deliberately ignore return here.. */
-	(void)msrpc_gen(mem_ctx, &names_blob,
-		  "aaa",
-		  MsvAvNbDomainName, domain,
-		  MsvAvNbComputerName, hostname,
-		  MsvAvEOL, "");
+	if (hostname != NULL) {
+		(void)msrpc_gen(mem_ctx, &names_blob,
+			  "aaa",
+			  MsvAvNbDomainName, domain,
+			  MsvAvNbComputerName, hostname,
+			  MsvAvEOL, "");
+	} else {
+		(void)msrpc_gen(mem_ctx, &names_blob,
+			  "aa",
+			  MsvAvNbDomainName, domain,
+			  MsvAvEOL, "");
+	}
 	return names_blob;
 }
 
