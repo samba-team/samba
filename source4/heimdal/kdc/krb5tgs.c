@@ -2004,24 +2004,6 @@ server_lookup:
 	    goto out;
 	}
 
-	/* check that ticket is valid */
-	if (adtkt.flags.forwardable == 0) {
-	    kdc_log(context, config, 0,
-		    "Missing forwardable flag on ticket for "
-		    "constrained delegation from %s to %s ", cpn, spn);
-	    ret = KRB5KDC_ERR_BADOPTION;
-	    goto out;
-	}
-
-	ret = check_constrained_delegation(context, config, clientdb, 
-					   client, sp);
-	if (ret) {
-	    kdc_log(context, config, 0,
-		    "constrained delegation from %s to %s not allowed",
-		    cpn, spn);
-	    goto out;
-	}
-
 	ret = _krb5_principalname2krb5_principal(context,
 						 &tp,
 						 adtkt.cname,
@@ -2033,8 +2015,51 @@ server_lookup:
 	if (ret)
 	    goto out;
 
+	/* check that ticket is valid */
+	if (adtkt.flags.forwardable == 0) {
+	    kdc_log(context, config, 0,
+		    "Missing forwardable flag on ticket for "
+		    "constrained delegation from %s as %s to %s ",
+		    cpn, tpn, spn);
+	    ret = KRB5KDC_ERR_BADOPTION;
+	    goto out;
+	}
+
+	ret = check_constrained_delegation(context, config, clientdb, 
+					   client, sp);
+	if (ret) {
+	    kdc_log(context, config, 0,
+		    "constrained delegation from %s as %s to %s not allowed",
+		    cpn, tpn, spn);
+	    goto out;
+	}
+
 	ret = verify_flags(context, config, &adtkt, tpn);
 	if (ret) {
+	    goto out;
+	}
+
+	krb5_data_free(&rspac);
+	/*
+	 * generate the PAC for the user.
+	 *
+	 * TODO: pass in t->sname and t->realm and build
+	 * a S4U_DELEGATION_INFO blob to the PAC.
+	 */
+	ret = check_PAC(context, config, tp,
+			client, server, krbtgt,
+			&clientkey->key, &tkey_check->key,
+			ekey, &tkey_sign->key,
+			&adtkt, &rspac, &ad_signedpath);
+	if (ret == 0 && !ad_signedpath)
+	    ret = KRB5KDC_ERR_BADOPTION;
+	if (ret) {
+	    const char *msg = krb5_get_error_message(context, ret);
+	    kdc_log(context, config, 0,
+		    "Verify delegated PAC failed to %s for client"
+		    "%s as %s from %s with %s",
+		    spn, cpn, tpn, from, msg);
+	    krb5_free_error_message(context, msg);
 	    goto out;
 	}
 
