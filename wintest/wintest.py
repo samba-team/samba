@@ -577,7 +577,7 @@ options {
     def disable_firewall(self, child):
         '''remove the annoying firewall'''
         child.sendline('netsh advfirewall set allprofiles state off')
-        i = child.expect(["Ok", "The following command was not found: advfirewall set allprofiles state off"])
+        i = child.expect(["Ok", "The following command was not found: advfirewall set allprofiles state off", "The requested operation requires elevation"])
         child.expect("C:")
         if i == 1:
             child.sendline('netsh firewall set opmode mode = DISABLE profile = ALL')
