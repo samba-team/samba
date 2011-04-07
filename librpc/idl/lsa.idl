@@ -1053,7 +1053,7 @@ import "misc.idl", "security.idl";
 		[in]  policy_handle               *policy_handle,
 		[in]  lsa_TrustDomainInfoInfoEx   *info,
 		[in]  lsa_TrustDomainInfoAuthInfoInternal *auth_info,
-		[in]  uint32 access_mask,
+		[in]  lsa_TrustedAccessMask access_mask,
 		[out] policy_handle               *trustdom_handle
 		);
 
@@ -1112,7 +1112,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_OpenTrustedDomainByName(
 		[in]     policy_handle *handle,
 		[in]         lsa_String     name,
-		[in]         uint32         access_mask,
+		[in]     lsa_TrustedAccessMask access_mask,
 		[out]    policy_handle *trustdom_handle
 		);
 
@@ -1187,7 +1187,7 @@ import "misc.idl", "security.idl";
 		[in]  policy_handle               *policy_handle,
 		[in]  lsa_TrustDomainInfoInfoEx   *info,
 		[in]  lsa_TrustDomainInfoAuthInfoInternal *auth_info,
-		[in]  uint32                       access_mask,
+		[in]  lsa_TrustedAccessMask access_mask,
 		[out] policy_handle               *trustdom_handle
 		);
 
