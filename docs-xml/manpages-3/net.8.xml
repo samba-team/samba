@@ -1293,6 +1293,98 @@ Use -f to delete an invalid partial mapping &lt;ID&gt; -&gt; xx
 </para>
 </refsect2>
 
+<refsect2>
+
+<title>IDMAP CHECK [-v] [-r] [-a] [-T] [-f] [-l] [--db=&lt;DB&gt;]</title>
+
+<para>
+  Check and repair the IDMAP database. If no option is given a read only check
+  of the database is done. Among others an interactive or automatic repair mode
+  may be chosen with one of the following options:
+
+  <variablelist>
+    <varlistentry><term>-r|--repair</term>
+    <listitem><para>
+      Interactive repair mode, ask a lot of questions.
+    </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>-a|--auto</term>
+    <listitem><para>
+      Noninteractive repair mode, use default answers.
+    </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>-v|--verbose</term>
+      <listitem><para>
+	Produce more output.
+      </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>-f|--force</term>
+      <listitem><para>
+	Try to apply changes, even if they do not apply cleanly.
+      </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>-T|--test</term>
+      <listitem><para>
+	Dry run, show what changes would be made but don't touch anything.
+      </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>-l|--lock</term>
+      <listitem><para>
+	Lock the database while doing the check.
+      </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>--db &lt;DB&gt;</term>
+      <listitem><para>
+	Check the specified database.
+      </para></listitem>
+    </varlistentry>
+    <varlistentry><term></term>
+      <listitem><para>
+      </para></listitem>
+    </varlistentry>
+  </variablelist>
+
+  It reports about the finding of the following errors:
+
+  <variablelist>
+    <varlistentry><term>Missing reverse mapping:</term>
+    <listitem><para>
+      A record with mapping A-&gt;B where there is no B-&gt;A. Default action
+      in repair mode is to "fix" this by adding the reverse mapping.
+    </para></listitem>
+    </varlistentry>
+
+    <varlistentry><term>Invalid mapping:</term>
+    <listitem><para>
+      A record with mapping A-&gt;B where B-&gt;C. Default action
+      is to "delete" this record.
+    </para></listitem>
+  </varlistentry>
+
+  <varlistentry><term>Missing or invalid HWM:</term>
+    <listitem><para>
+      A high water mark is not at least equal to the largest ID in the
+      database. Default action is to "fix" this by setting it to the
+      largest ID found +1.
+    </para></listitem>
+  </varlistentry>
+
+  <varlistentry><term>Invalid record:</term>
+    <listitem><para>
+      Something we failed to parse. Default action is to "edit" it
+      in interactive and "delete" it in automatic mode.
+    </para></listitem>
+  </varlistentry>
+</variablelist>
+</para>
+</refsect2>
+
 
 <refsect2>
 <title>USERSHARE</title>
