@@ -772,7 +772,6 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 
 	/* basic check on DN */
 	if (msg->dn == NULL) {
-		/* TODO: return also an error string */
 		ldb_set_errstring(ldb, "ldb message lacks a DN!");
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
@@ -781,13 +780,10 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 	for (i = 0; i < msg->num_elements; i++) {
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			if (msg->elements[i].values[j].length == 0) {
-				TALLOC_CTX *mem_ctx = talloc_new(ldb);
 				/* an attribute cannot be empty */
-				/* TODO: return also an error string */
 				ldb_asprintf_errstring(ldb, "Element %s has empty attribute in ldb message (%s)!",
 							    msg->elements[i].name, 
 							    ldb_dn_get_linearized(msg->dn));
-				talloc_free(mem_ctx);
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
 		}
