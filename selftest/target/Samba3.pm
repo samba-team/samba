@@ -858,11 +858,23 @@ sub wait_for_start($$)
 	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
 	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
 	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} $envvars->{SERVER}");
+
 	# make sure smbd is also up set
 	print "wait for smbd\n";
-	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
-	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
 
+	my $count = 0;
+	my $ret;
+	do {
+	    $ret = system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
+	    if ($ret != 0) {
+		sleep(2);
+	    }
+	    $count++
+	} while ($ret != 0 && $count < 10);
+	if ($count == 10) {
+	    print "SMBD failed to start up in a reasonable time (20sec)\n";
+	    exit 1;
+	}
 	# Ensure we have domain users mapped.
 	system($self->binpath("net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
 
