@@ -189,7 +189,7 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 	}
 
 	if (ret != false) {
-		fti.in.handle = &trustdom_handle;
+		fti.in.handle = handle;
 		fti.in.trusted_domain_name = talloc_zero(tctx, struct lsa_StringLarge);
 		fti.in.trusted_domain_name->string = trust_name_dns;
 		fti.in.highest_record_type = 2;
