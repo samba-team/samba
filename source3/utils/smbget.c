@@ -74,9 +74,11 @@ static void change_columns(int sig)
 
 static void human_readable(off_t s, char *buffer, int l)
 {
-	if(s > 1024 * 1024 * 1024) snprintf(buffer, l, "%.2fGb", 1.0 * s / (1024 * 1024 * 1024));
-	else if(s > 1024 * 1024) snprintf(buffer, l, "%.2fMb", 1.0 * s / (1024 * 1024));
-	else if(s > 1024) snprintf(buffer, l, "%.2fkb", 1.0 * s / 1024);
+	if(s > 1024 * 1024 * 1024) snprintf(buffer, l, "%.2fGB",
+					    1.0 * s / (1024 * 1024 * 1024));
+	else if(s > 1024 * 1024) snprintf(buffer, l, "%.2fMB",
+					  1.0 * s / (1024 * 1024));
+	else if(s > 1024) snprintf(buffer, l, "%.2fkB", 1.0 * s / 1024);
 	else snprintf(buffer, l, OFF_T_FORMAT"b", (OFF_T_FORMAT_CAST)s);
 }
 
