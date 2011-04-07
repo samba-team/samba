@@ -42,6 +42,41 @@ static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
  *
  **********************************************************************/
 
+const char *sbcErrorString(sbcErr error)
+{
+	switch (error) {
+		case SBC_ERR_OK:
+			return "SBC_ERR_OK";
+		case SBC_ERR_NOT_IMPLEMENTED:
+			return "SBC_ERR_NOT_IMPLEMENTED";
+		case SBC_ERR_NOT_SUPPORTED:
+			return "SBC_ERR_NOT_SUPPORTED";
+		case SBC_ERR_UNKNOWN_FAILURE:
+			return "SBC_ERR_UNKNOWN_FAILURE";
+		case SBC_ERR_NOMEM:
+			return "SBC_ERR_NOMEM";
+		case SBC_ERR_INVALID_PARAM:
+			return "SBC_ERR_INVALID_PARAM";
+		case SBC_ERR_BADFILE:
+			return "SBC_ERR_BADFILE";
+		case SBC_ERR_NO_SUCH_SERVICE:
+			return "SBC_ERR_NO_SUCH_SERVICE";
+		case SBC_ERR_IO_FAILURE:
+			return "SBC_ERR_IO_FAILURE";
+		case SBC_ERR_CAN_NOT_COMPLETE:
+			return "SBC_ERR_CAN_NOT_COMPLETE";
+		case SBC_ERR_NO_MORE_ITEMS:
+			return "SBC_ERR_NO_MORE_ITEMS";
+		case SBC_ERR_FILE_EXISTS:
+			return "SBC_ERR_FILE_EXISTS";
+		case SBC_ERR_ACCESS_DENIED:
+			return "SBC_ERR_ACCESS_DENIED";
+	}
+
+	return "unknown sbcErr value";
+}
+
+
 /**
  * Tell whether the backend requires messaging to be set up
  * for the backend to work correctly.
