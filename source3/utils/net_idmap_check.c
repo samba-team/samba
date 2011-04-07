@@ -258,7 +258,7 @@ typedef struct {
 
 static TDB_DATA pack_diff(TDB_DATA_diff* diff) {
 	return (TDB_DATA) {
-		.dptr = (void*)diff,
+		.dptr = (uint8_t *)diff,
 		.dsize = sizeof(TDB_DATA_diff),
 	};
 }
@@ -397,7 +397,7 @@ static bool check_version(struct check_ctx* ctx) {
 	case 'f':
 		SIVAL(&version, 0, 2);
 		add_record(ctx, string_term_tdb_data(key),
-			   make_tdb_data((void*)&version, sizeof(uint32_t)));
+			   make_tdb_data((uint8_t *)&version, sizeof(uint32_t)));
 		break;
 	case 'a':
 		return false;
@@ -422,7 +422,7 @@ static void check_hwm(struct check_ctx* ctx, const char* key, uint32_t target) {
 	if (action == 'f') {
 		SIVAL(&hwm, 0, target);
 		add_record(ctx, string_term_tdb_data(key),
-			   make_tdb_data((void*)&hwm, sizeof(uint32_t)));
+			   make_tdb_data((uint8_t *)&hwm, sizeof(uint32_t)));
 	}
 }
 
@@ -530,7 +530,7 @@ void adjust_hwm(struct check_ctx* ctx, const struct record* r) {
 
 TDB_DATA talloc_copy(TALLOC_CTX* mem_ctx, TDB_DATA data) {
 	TDB_DATA ret = {
-		.dptr  = talloc_size(mem_ctx, data.dsize+1),
+		.dptr  = (uint8_t *)talloc_size(mem_ctx, data.dsize+1),
 		.dsize = data.dsize
 	};
 	if (ret.dptr == NULL) {
@@ -683,7 +683,7 @@ TDB_DATA parse_data(TALLOC_CTX* mem_ctx, const char** ptr) {
 	srprs_skipws(ptr);
 	if (srprs_quoted(ptr, ost)) {
 		ret.dsize = cbuf_getpos(ost);
-		ret.dptr = (void*)talloc_steal(mem_ctx, cbuf_gets(ost,0));
+		ret.dptr = (uint8_t *)talloc_steal(mem_ctx, cbuf_gets(ost,0));
 	}
 	talloc_free(ost);
 	return ret;
