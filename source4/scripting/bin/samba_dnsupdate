@@ -259,20 +259,19 @@ def call_nsupdate(d):
     f.write("send\n")
     f.close()
 
+    global error_count
     os.environ["KRB5CCNAME"] = ccachename
     try:
         cmd = nsupdate_cmd[:]
         cmd.append(tmpfile)
         ret = subprocess.call(cmd, shell=False)
         if ret != 0:
-            global error_count
             if opts.fail_immediately:
                 sys.exit(1)
             error_count = error_count + 1
             if opts.verbose:
                 print("Failed nsupdate: %d" % ret)
     except Exception, estr:
-        global error_count
         if opts.fail_immediately:
             sys.exit(1)
         error_count = error_count + 1
