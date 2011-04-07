@@ -718,7 +718,8 @@ static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pd
 {
 	struct pdb_domain_info *info;
 	NTSTATUS status;
-	struct ldapsam_privates *ldap_state = pdb_methods->private_data;
+	struct ldapsam_privates *ldap_state =
+			(struct ldapsam_privates *)pdb_methods->private_data;
 
 	info = talloc(mem_ctx, struct pdb_domain_info);
 	if (info == NULL) {
