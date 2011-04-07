@@ -543,13 +543,14 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 	if ( argc > 1 || c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net idmap check [-f] [-a] [-T] [-v] [--auto] [[--db=]<TDB>]\n"
+			 _("net idmap check  [-v] [-r] [-a] [-T] [-f] [-l] [[--db=]<TDB>]\n"
 			   "  Check an idmap database.\n"
+			   "    --verbose,-v\tverbose\n"
 			   "    --repair,-r\trepair\n"
-			   "    --fore,-f\tforce\n"
 			   "    --auto,-a\tnoninteractive mode\n"
 			   "    --test,-T\tdry run\n"
-			   "    --lock\tlock db while doing the check\n"
+			   "    --fore,-f\tforce\n"
+			   "    --lock,-l\tlock db while doing the check\n"
 			   "    TDB\tidmap database\n"));
 		return c->display_usage ? 0 : -1;
 	}
@@ -561,7 +562,7 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 	d_fprintf(stderr, _("check database: %s\n"), dbfile);
 
 	opts = (struct check_options) {
-		.lock = c->opt_lock,
+		.lock = c->opt_lock || c->opt_long_list_entries,
 		.test = c->opt_testmode,
 		.automatic = c->opt_auto,
 		.verbose = c->opt_verbose,
