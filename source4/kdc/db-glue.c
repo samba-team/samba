@@ -159,6 +159,20 @@ static HDBFlags uf2HDBFlags(krb5_context context, uint32_t userAccountControl, e
 	if (userAccountControl & UF_TRUSTED_FOR_DELEGATION) {
 		flags.ok_as_delegate = 1;
 	}
+	if (userAccountControl & UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION) {
+		/*
+		 * this is confusing...
+		 *
+		 * UF_TRUSTED_FOR_DELEGATION
+		 * => ok_as_delegate
+		 *
+		 * and
+		 *
+		 * UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
+		 * => trusted_for_delegation
+		 */
+		flags.trusted_for_delegation = 1;
+	}
 	if (!(userAccountControl & UF_NOT_DELEGATED)) {
 		flags.forwardable = 1;
 		flags.proxiable = 1;
