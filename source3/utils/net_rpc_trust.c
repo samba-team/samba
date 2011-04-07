@@ -519,7 +519,9 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 			goto done;
 		}
 
-		authinfo.auth_blob.data = talloc_memdup(mem_ctx, auth_blob.data,
+		authinfo.auth_blob.data = (uint8_t *)talloc_memdup(
+							mem_ctx,
+							auth_blob.data,
 							auth_blob.length);
 		if (authinfo.auth_blob.data == NULL) {
 			goto done;
@@ -544,7 +546,8 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 
 		if (other_net_ctx != NULL) {
 			talloc_free(authinfo.auth_blob.data);
-			authinfo.auth_blob.data = talloc_memdup(mem_ctx,
+			authinfo.auth_blob.data = (uint8_t *)talloc_memdup(
+								mem_ctx,
 								auth_blob.data,
 								auth_blob.length);
 			if (authinfo.auth_blob.data == NULL) {
