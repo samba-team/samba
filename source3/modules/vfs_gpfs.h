@@ -34,4 +34,5 @@ int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
 int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs);
 int get_gpfs_winattrs(char * pathname,struct gpfs_winattr *attrs);
 int set_gpfs_winattrs(char * pathname,int flags,struct gpfs_winattr *attrs);
+int smbd_gpfs_ftrunctate(int fd, gpfs_off64_t length);
 void init_gpfs(void);
