@@ -1301,6 +1301,42 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 	return 0;
 }
 
+static void remove_record_from_delete_queue(struct ctdb_db_context *ctdb_db,
+					    const struct ctdb_ltdb_header *hdr,
+					    const TDB_DATA key)
+{
+	struct delete_record_data *kd;
+	uint32_t hash;
+
+	hash = (uint32_t)ctdb_hash(&key);
+
+	DEBUG(DEBUG_DEBUG, (__location__
+			    " remove_record_from_delete_queue: db[%s] "
+			    "db_id[0x%08x] "
+			    "key_hash[0x%08x] "
+			    "lmaster[%u] "
+			    "migrated_with_data[%s]\n",
+			     ctdb_db->db_name, ctdb_db->db_id,
+			     hash,
+			     ctdb_lmaster(ctdb_db->ctdb, &key),
+			     hdr->flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA ? "yes" : "no"));
+
+	kd = (struct delete_record_data *)trbt_lookup32(ctdb_db->delete_queue, hash);
+	if (kd == NULL) {
+		return;
+	}
+	if (kd->key.dsize != key.dsize) {
+		return;
+	}
+	if (memcmp(kd->key.dptr, key.dptr, key.dsize) != 0) {
+		return;
+	}
+
+	talloc_free(kd);
+
+	return;
+}
+
 /**
  * Insert a record into the ctdb_db context's delete queue,
  * handling hash collisions.
@@ -1434,4 +1470,21 @@ int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 	}
 
 	return ret;
+}
+
+void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
+					 const struct ctdb_ltdb_header *hdr,
+					 const TDB_DATA key)
+{
+	if (ctdb_db->ctdb->ctdbd_pid != getpid()) {
+		/*
+		 * Only remove the record from the delete queue if called
+		 * in the main daemon.
+		 */
+		return;
+	}
+
+	remove_record_from_delete_queue(ctdb_db, hdr, key);
+
+	return;
 }
