@@ -1156,7 +1156,7 @@ struct smbconf_ops smbconf_ops_reg = {
  * initialize the smbconf registry backend
  * the only function that is exported from this module
  */
-WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+sbcErr smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			const char *path)
 {
 	return smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_reg);

@@ -165,7 +165,7 @@ static void smbconf_txt_flush_cache(struct smbconf_ctx *ctx)
 	pd(ctx)->cache = NULL;
 }
 
-static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_init_cache(struct smbconf_ctx *ctx)
 {
 	if (pd(ctx)->cache != NULL) {
 		smbconf_txt_flush_cache(ctx);
@@ -174,40 +174,40 @@ static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
 	pd(ctx)->cache = talloc_zero(pd(ctx), struct txt_cache);
 
 	if (pd(ctx)->cache == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
-static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_load_file(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
+	sbcErr err;
 	uint64_t new_csn;
 
 	if (!file_exist(ctx->path)) {
-		return WERR_BADFILE;
+		return SBC_ERR_BADFILE;
 	}
 
 	new_csn = (uint64_t)file_modtime(ctx->path);
 	if (new_csn == pd(ctx)->csn) {
-		return WERR_OK;
+		return SBC_ERR_OK;
 	}
 
-	werr = smbconf_txt_init_cache(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_init_cache(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	if (!pm_process(ctx->path, smbconf_txt_do_section,
 			smbconf_txt_do_parameter, pd(ctx)))
 	{
-		return WERR_CAN_NOT_COMPLETE;
+		return SBC_ERR_CAN_NOT_COMPLETE;
 	}
 
 	pd(ctx)->csn = new_csn;
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 
@@ -220,24 +220,24 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 /**
  * initialize the text based smbconf backend
  */
-static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
+static sbcErr smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
 {
 	if (path == NULL) {
-		return WERR_BADFILE;
+		return SBC_ERR_BADFILE;
 	}
 	ctx->path = talloc_strdup(ctx, path);
 	if (ctx->path == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
 	ctx->data = talloc_zero(ctx, struct txt_private_data);
 	if (ctx->data == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
 	pd(ctx)->verbatim = true;
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 static int smbconf_txt_shutdown(struct smbconf_ctx *ctx)
@@ -258,7 +258,14 @@ static bool smbconf_txt_is_writeable(struct smbconf_ctx *ctx)
 
 static WERROR smbconf_txt_open(struct smbconf_ctx *ctx)
 {
-	return smbconf_txt_load_file(ctx);
+	sbcErr err;
+
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	return WERR_OK;
 }
 
 static int smbconf_txt_close(struct smbconf_ctx *ctx)
@@ -302,6 +309,7 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 	uint32_t added_count = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR werr = WERR_OK;
+	sbcErr err = SBC_ERR_OK;
 	char **tmp_share_names = NULL;
 
 	if ((num_shares == NULL) || (share_names == NULL)) {
@@ -309,9 +317,9 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -371,10 +379,10 @@ done:
 static bool smbconf_txt_share_exists(struct smbconf_ctx *ctx,
 				     const char *servicename)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		return false;
 	}
 
@@ -401,14 +409,15 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				    struct smbconf_service **service)
 {
 	WERROR werr;
+	sbcErr err;
 	uint32_t sidx, count;
 	bool found;
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct smbconf_service *tmp_service = NULL;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
 
 	found = smbconf_find_in_array(servicename,
@@ -489,13 +498,13 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 					const char *param,
 					char **valstr)
 {
-	WERROR werr;
+	sbcErr err;
 	bool found;
 	uint32_t share_index, param_index;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
 
 	found = smbconf_find_in_array(service,
@@ -541,15 +550,16 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 				       char ***includes)
 {
 	WERROR werr;
+	sbcErr err;
 	bool found;
 	uint32_t sidx, count;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint32_t tmp_num_includes = 0;
 	char **tmp_includes = NULL;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
 
 	found = smbconf_find_in_array(service,
@@ -654,15 +664,15 @@ static struct smbconf_ops smbconf_ops_txt = {
  * initialize the smbconf text backend
  * the only function that is exported from this module
  */
-WERROR smbconf_init_txt(TALLOC_CTX *mem_ctx,
+sbcErr smbconf_init_txt(TALLOC_CTX *mem_ctx,
 			struct smbconf_ctx **conf_ctx,
 			const char *path)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	return smbconf_txt_load_file(*conf_ctx);

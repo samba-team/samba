@@ -39,36 +39,36 @@ static int smbconf_destroy_ctx(struct smbconf_ctx *ctx)
  * After the work with the configuration is completed, smbconf_shutdown()
  * should be called.
  */
-WERROR smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+sbcErr smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			     const char *path, struct smbconf_ops *ops)
 {
-	WERROR werr = WERR_OK;
+	sbcErr err = SBC_ERR_OK;
 	struct smbconf_ctx *ctx;
 
 	if (conf_ctx == NULL) {
-		return WERR_INVALID_PARAM;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
 	ctx = talloc_zero(mem_ctx, struct smbconf_ctx);
 	if (ctx == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
 	ctx->ops = ops;
 
-	werr = ctx->ops->init(ctx, path);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = ctx->ops->init(ctx, path);
+	if (!SBC_ERROR_IS_OK(err)) {
 		goto fail;
 	}
 
 	talloc_set_destructor(ctx, smbconf_destroy_ctx);
 
 	*conf_ctx = ctx;
-	return werr;
+	return err;
 
 fail:
 	talloc_free(ctx);
-	return werr;
+	return err;
 }
 
 

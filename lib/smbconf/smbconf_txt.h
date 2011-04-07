@@ -26,7 +26,7 @@ struct smbconf_ctx;
  * initialization functions for the text/file backend modules
  */
 
-WERROR smbconf_init_txt(TALLOC_CTX *mem_ctx,
+sbcErr smbconf_init_txt(TALLOC_CTX *mem_ctx,
 			struct smbconf_ctx **conf_ctx,
 			const char *path);
 

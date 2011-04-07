@@ -27,7 +27,7 @@
 #include "lib/smbconf/smbconf.h"
 
 struct smbconf_ops {
-	WERROR (*init)(struct smbconf_ctx *ctx, const char *path);
+	sbcErr (*init)(struct smbconf_ctx *ctx, const char *path);
 	int (*shutdown)(struct smbconf_ctx *ctx);
 	bool (*requires_messaging)(struct smbconf_ctx *ctx);
 	bool (*is_writeable)(struct smbconf_ctx *ctx);
@@ -79,7 +79,7 @@ struct smbconf_ctx {
 	void *data; /* private data for use in backends */
 };
 
-WERROR smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+sbcErr smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			     const char *path, struct smbconf_ops *ops);
 
 WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,

@@ -26,7 +26,7 @@ struct smbconf_ctx;
  * initialization functions for the registry backend modules
  */
 
-WERROR smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
+sbcErr smbconf_init_reg(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 			const char *path);
 
 
