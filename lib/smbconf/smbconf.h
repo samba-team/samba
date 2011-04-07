@@ -20,6 +20,29 @@
 #ifndef __LIBSMBCONF_H__
 #define __LIBSMBCONF_H__
 
+/**
+ * @brief Status codes returned from smbconf functions
+ */
+enum _sbcErrType {
+	SBC_ERR_OK = 0,          /**< Successful completion **/
+	SBC_ERR_NOT_IMPLEMENTED, /**< Function not implemented **/
+	SBC_ERR_NOT_SUPPORTED,   /**< Function not supported **/
+	SBC_ERR_UNKNOWN_FAILURE, /**< General failure **/
+	SBC_ERR_NOMEM,           /**< Memory allocation error **/
+	SBC_ERR_INVALID_PARAM,   /**< An Invalid parameter was supplied **/
+	SBC_ERR_BADFILE,         /**< A bad file was supplied **/
+	SBC_ERR_NO_SUCH_SERVICE, /**< There is no such service provided **/
+	SBC_ERR_IO_FAILURE,      /**< There was an IO error **/
+	SBC_ERR_CAN_NOT_COMPLETE,/**< Can not complete action **/
+	SBC_ERR_NO_MORE_ITEMS,   /**< No more items left **/
+	SBC_ERR_FILE_EXISTS,     /**< File already exists **/
+	SBC_ERR_ACCESS_DENIED,   /**< Access has been denied **/
+};
+
+typedef enum _sbcErrType sbcErr;
+
+#define SBC_ERROR_IS_OK(x) ((x) == SBC_ERR_OK)
+
 struct smbconf_ctx;
 
 /* the change sequence number */
