@@ -57,6 +57,15 @@ struct smbconf_service {
 	char **param_values;
 };
 
+/**
+ * @brief Translate an error value into a string
+ *
+ * @param error
+ *
+ * @return a pointer to a static string
+ **/
+const char *sbcErrorString(sbcErr error);
+
 /*
  * the smbconf API functions
  */
