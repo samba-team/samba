@@ -330,10 +330,10 @@ static int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 		return ret;
 	}
 
-	ret = samba_kdc_check_identical_client_and_server(ctx->context,
-							  ctx->db_ctx,
-							  entry,
-							  target_principal);
+	ret = samba_kdc_check_s4u2proxy(ctx->context,
+					ctx->db_ctx,
+					entry,
+					target_principal);
 
 	krb5_free_principal(ctx->context, target_principal);
 
