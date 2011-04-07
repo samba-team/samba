@@ -12,3 +12,4 @@ samba3.posix_s3.nbt.dgram.*netlogon2
 samba3.*rap.sam.*.useradd # Not provided by Samba 3
 samba3.*rap.sam.*.userdelete # Not provided by Samba 3
 samba3.*rap.basic.*.netsessiongetinfo # Not provided by Samba 3
+samba3.*ktest # ktest is currently flakey due to name resolution issues
