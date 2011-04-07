@@ -316,6 +316,7 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	TALLOC_CTX *mem_ctx;
 	struct smbconf_ctx *txt_ctx;
 	WERROR werr;
+	sbcErr err;
 
 	if (c->display_usage)
 		return net_conf_import_usage(c, argc, argv);
@@ -347,10 +348,11 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	werr = smbconf_init(mem_ctx, &txt_ctx, conf_source);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_init(mem_ctx, &txt_ctx, conf_source);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error loading file '%s': %s\n"), filename,
-			 win_errstr(werr));
+			 sbcErrorString(err));
+		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
 
@@ -1140,14 +1142,13 @@ static int net_conf_wrap_function(struct net_context *c,
 					    int, const char **),
 				  int argc, const char **argv)
 {
-	WERROR werr;
+	sbcErr err;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct smbconf_ctx *conf_ctx;
 	int ret = -1;
 
-	werr = smbconf_init(mem_ctx, &conf_ctx, "registry:");
-
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_init(mem_ctx, &conf_ctx, "registry:");
+	if (!SBC_ERROR_IS_OK(err)) {
 		return -1;
 	}
 

@@ -1455,10 +1455,12 @@ done:
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
+	sbcErr err;
 	struct smbconf_ctx *ctx;
 
-	werr = smbconf_init_reg(r, &ctx, NULL);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_init_reg(r, &ctx, NULL);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
 
@@ -1501,10 +1503,12 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 {
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	struct smbconf_ctx *ctx;
 
-	werr = smbconf_init_reg(r, &ctx, NULL);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_init_reg(r, &ctx, NULL);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
 
