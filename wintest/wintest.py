@@ -571,7 +571,7 @@ options {
     def run_tlntadmn(self, child):
         '''remove the annoying telnet restrictions'''
         child.sendline('tlntadmn config maxconn=1024')
-        child.expect("The settings were successfully updated")
+        child.expect(["The settings were successfully updated", "Access is denied"])
         child.expect("C:")
 
     def disable_firewall(self, child):
