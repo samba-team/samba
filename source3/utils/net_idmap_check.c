@@ -225,8 +225,13 @@ static char get_action(struct check_action* a, struct record* r, TDB_DATA* v) {
 			d_printf("%s: %s ", a->name, print_data(r, r->key));
 			if (is_map(r)) {
 				d_printf("-> %s\n", print_data(r, r->val));
-			} else {
+			} else if (r->key_type == DT_HWM ||
+				   r->key_type == DT_VER ||
+				   r->key_type == DT_SEQ)
+			{
 				d_printf(": %ld\n", r->id);
+			} else {
+				d_printf("\n");
 			}
 		} else {
 			d_printf(a->fmt, a->name,
