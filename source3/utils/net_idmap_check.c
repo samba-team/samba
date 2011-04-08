@@ -52,7 +52,7 @@ static bool is_empty(TDB_DATA data) {
 enum DT {
 	DT_INV = 0,
 	DT_SID,	DT_UID,	DT_GID,
-	DT_HWM,	DT_VER
+	DT_HWM,	DT_VER, DT_SEQ,
 };
 
 struct record {
@@ -620,6 +620,12 @@ parse_record(TALLOC_CTX* mem_ctx, TDB_DATA key, TDB_DATA val)
 		if (val.dsize == 4) {
 			ret->id = IVAL(val.dptr,0);
 			ret->val_type = DT_VER;
+		}
+	} else if (strcmp((const char*)key.dptr, "__db_sequence_number__") == 0) {
+		ret->key_type = DT_SEQ;
+		if (val.dsize == 8) {
+			ret->id = *(uint64_t*)val.dptr;
+			ret->val_type = DT_SEQ;
 		}
 	}
 
