@@ -1063,7 +1063,6 @@ static NTSTATUS ipasam_add_ipa_objectclasses(struct ldapsam_privates *ldap_state
 					     uint32_t has_objectclass)
 {
 	LDAPMod **mods = NULL;
-	NTSTATUS status;
 	int ret;
 	char *princ;
 
@@ -1127,7 +1126,7 @@ static NTSTATUS ipasam_add_ipa_objectclasses(struct ldapsam_privates *ldap_state
 		if (ret != LDAP_SUCCESS) {
 			DEBUG(1, ("failed to modify/add user with uid = %s (dn = %s)\n",
 				  name, dn));
-			return status;
+			return NT_STATUS_LDAP(ret);
 		}
 	}
 
