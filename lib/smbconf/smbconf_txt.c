@@ -394,12 +394,11 @@ static sbcErr smbconf_txt_create_share(struct smbconf_ctx *ctx,
 /**
  * get a definition of a share (service) from configuration.
  */
-static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *servicename,
 				    struct smbconf_service **service)
 {
-	WERROR werr;
 	sbcErr err;
 	uint32_t sidx, count;
 	bool found;
@@ -408,7 +407,7 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 
 	err = smbconf_txt_load_file(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
 
 	found = smbconf_find_in_array(servicename,
@@ -416,21 +415,21 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				      pd(ctx)->cache->num_shares,
 				      &sidx);
 	if (!found) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	tmp_ctx = talloc_stackframe();
 
 	tmp_service = talloc_zero(tmp_ctx, struct smbconf_service);
 	if (tmp_service == NULL) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 
 	if (servicename != NULL) {
 		tmp_service->name = talloc_strdup(tmp_service, servicename);
 		if (tmp_service->name == NULL) {
-			werr = WERR_NOMEM;
+			err = SBC_ERR_NOMEM;
 			goto done;
 		}
 	}
@@ -441,7 +440,6 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				count,
 				pd(ctx)->cache->param_names[sidx][count]);
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NOMEM;
 			goto done;
 		}
 		err = smbconf_add_string_to_array(tmp_service,
@@ -449,7 +447,6 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				count,
 				pd(ctx)->cache->param_values[sidx][count]);
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NOMEM;
 			goto done;
 		}
 	}
@@ -459,7 +456,7 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 /**
