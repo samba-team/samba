@@ -35,7 +35,7 @@ struct smbconf_ops {
 	int (*close_conf)(struct smbconf_ctx *ctx);
 	void (*get_csn)(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 			const char *service, const char *param);
-	WERROR (*drop)(struct smbconf_ctx *ctx);
+	sbcErr (*drop)(struct smbconf_ctx *ctx);
 	WERROR (*get_share_names)(struct smbconf_ctx *ctx,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t *num_shares,
