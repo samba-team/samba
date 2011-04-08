@@ -698,10 +698,11 @@ static void smbconf_reg_get_csn(struct smbconf_ctx *ctx,
 /**
  * Drop the whole configuration (restarting empty) - registry version
  */
-static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
+static sbcErr smbconf_reg_drop(struct smbconf_ctx *ctx)
 {
 	char *path, *p;
 	WERROR werr = WERR_OK;
+	sbcErr err = SBC_ERR_OK;
 	struct registry_key *parent_key = NULL;
 	struct registry_key *new_key = NULL;
 	TALLOC_CTX* mem_ctx = talloc_stackframe();
@@ -711,39 +712,44 @@ static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
 	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Error creating admin token\n"));
+		err = SBC_ERR_UNKNOWN_FAILURE;
 		goto done;
 	}
 
 	path = talloc_strdup(mem_ctx, ctx->path);
 	if (path == NULL) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 	p = strrchr(path, '\\');
 	if (p == NULL) {
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 	*p = '\0';
 	werr = reg_open_path(mem_ctx, path, REG_KEY_WRITE, token,
 			     &parent_key);
-
 	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_IO_FAILURE;
 		goto done;
 	}
 
 	werr = reg_deletekey_recursive(parent_key, p+1);
-
 	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_IO_FAILURE;
 		goto done;
 	}
 
 	werr = reg_createkey(mem_ctx, parent_key, p+1, REG_KEY_WRITE,
 			     &new_key, &action);
+	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_IO_FAILURE;
+		goto done;
+	}
 
 done:
 	talloc_free(mem_ctx);
-	return werr;
+	return err;
 }
 
 /**

@@ -285,9 +285,9 @@ static void smbconf_txt_get_csn(struct smbconf_ctx *ctx,
 /**
  * Drop the whole configuration (restarting empty)
  */
-static WERROR smbconf_txt_drop(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_drop(struct smbconf_ctx *ctx)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**
