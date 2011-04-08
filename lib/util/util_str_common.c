@@ -52,3 +52,10 @@ _PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
 	}
 	return (*psz1 - *psz2);
 }
+
+_PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
+{
+	if (flags & (STR_NOALIGN|STR_ASCII))
+		return 0;
+	return PTR_DIFF(p, base_ptr) & 1;
+}

@@ -249,13 +249,6 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2)
 	return strcasecmp(s1,s2) == 0;
 }
 
-_PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
-{
-	if (flags & (STR_NOALIGN|STR_ASCII))
-		return 0;
-	return PTR_DIFF(p, base_ptr) & 1;
-}
-
 /**
  String replace.
 **/

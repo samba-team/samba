@@ -632,13 +632,6 @@ char *strlower_talloc(TALLOC_CTX *ctx, const char *s) {
 	return talloc_strdup_lower(ctx, s);
 }
 
-size_t ucs2_align(const void *base_ptr, const void *p, int flags)
-{
-	if (flags & (STR_NOALIGN|STR_ASCII))
-		return 0;
-	return PTR_DIFF(p, base_ptr) & 1;
-}
-
 
 /**
  * Copy a string from a char* unix src to a dos codepage string destination.
