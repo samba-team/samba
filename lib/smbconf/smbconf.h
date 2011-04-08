@@ -79,7 +79,7 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,
 			  struct smbconf_service ***services);
-WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       TALLOC_CTX *mem_ctx,
 			       uint32_t *num_shares,
 			       char ***share_names);

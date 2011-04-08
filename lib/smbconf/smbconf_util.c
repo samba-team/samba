@@ -75,7 +75,7 @@ fail:
 /**
  * add a string to a talloced array of strings.
  */
-WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
+sbcErr smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 				   char ***array,
 				   uint32_t count,
 				   const char *string)
@@ -83,12 +83,12 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	char **new_array = NULL;
 
 	if (array == NULL) {
-		return WERR_INVALID_PARAM;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
 	new_array = talloc_realloc(mem_ctx, *array, char *, count + 1);
 	if (new_array == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
 	if (string == NULL) {
@@ -97,13 +97,13 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 		new_array[count] = talloc_strdup(new_array, string);
 		if (new_array[count] == NULL) {
 			talloc_free(new_array);
-			return WERR_NOMEM;
+			return SBC_ERR_NOMEM;
 		}
 	}
 
 	*array = new_array;
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 bool smbconf_find_in_array(const char *string, char **list,
