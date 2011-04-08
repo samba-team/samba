@@ -973,7 +973,6 @@ static NTSTATUS ipasam_add_posix_account_objectclass(struct ldapsam_privates *ld
 {
 	int ret;
 	LDAPMod **mods = NULL;
-	NTSTATUS status;
 
 	smbldap_set_mod(&mods, LDAP_MOD_ADD,
 			"objectclass", "posixAccount");
@@ -995,7 +994,7 @@ static NTSTATUS ipasam_add_posix_account_objectclass(struct ldapsam_privates *ld
 	if (ret != LDAP_SUCCESS) {
 		DEBUG(1, ("failed to modify/add user with uid = %s (dn = %s)\n",
 			  username, dn));
-		return status;
+		return NT_STATUS_LDAP(ret);
 	}
 
 	return NT_STATUS_OK;
