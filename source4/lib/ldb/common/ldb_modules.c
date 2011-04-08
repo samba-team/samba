@@ -402,7 +402,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			if (res->count == 0) {
 				ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
 			} else if (res->count > 1) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out", res->count);
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%u), bailing out", res->count);
 				talloc_free(mem_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			} else {
@@ -783,7 +783,7 @@ int ldb_module_done(struct ldb_request *req,
 	if ((req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) &&
 	    req->handle->nesting == 0) {
 		ldb_debug_add(req->handle->ldb, "ldb_trace_response: DONE\n");
-		ldb_debug_add(req->handle->ldb, "error: %u\n", error);
+		ldb_debug_add(req->handle->ldb, "error: %d\n", error);
 		if (ldb_errstring(req->handle->ldb)) {
 			ldb_debug_add(req->handle->ldb, "msg: %s\n",
 				  ldb_errstring(req->handle->ldb));
