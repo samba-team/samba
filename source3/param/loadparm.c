@@ -7255,7 +7255,7 @@ static bool process_smbconf_service(struct smbconf_service *service)
  */
 bool process_registry_service(const char *service_name)
 {
-	WERROR werr;
+	sbcErr err;
 	struct smbconf_service *service = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
@@ -7276,8 +7276,8 @@ bool process_registry_service(const char *service_name)
 		goto done;
 	}
 
-	werr = smbconf_get_share(conf_ctx, mem_ctx, service_name, &service);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_share(conf_ctx, mem_ctx, service_name, &service);
+	if (!SBC_ERROR_IS_OK(err)) {
 		goto done;
 	}
 

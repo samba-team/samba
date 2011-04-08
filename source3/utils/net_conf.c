@@ -366,10 +366,10 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	if (servicename != NULL) {
 		struct smbconf_service *service = NULL;
 
-		werr = smbconf_get_share(txt_ctx, mem_ctx,
-					 servicename,
-					 &service);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_get_share(txt_ctx, mem_ctx,
+					servicename,
+					&service);
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto cancel;
 		}
 
@@ -528,7 +528,7 @@ static int net_conf_showshare(struct net_context *c,
 			      const char **argv)
 {
 	int ret = -1;
-	WERROR werr = WERR_OK;
+	sbcErr err;
 	const char *sharename = NULL;
 	TALLOC_CTX *mem_ctx;
 	uint32_t count;
@@ -547,10 +547,10 @@ static int net_conf_showshare(struct net_context *c,
 		goto done;
 	}
 
-	werr = smbconf_get_share(conf_ctx, mem_ctx, sharename, &service);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_share(conf_ctx, mem_ctx, sharename, &service);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error getting share parameters: %s\n"),
-			 win_errstr(werr));
+			 sbcErrorString(err));
 		goto done;
 	}
 
