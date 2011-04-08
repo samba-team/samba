@@ -466,7 +466,7 @@ static int net_conf_listshares(struct net_context *c,
 			       struct smbconf_ctx *conf_ctx, int argc,
 			       const char **argv)
 {
-	WERROR werr = WERR_OK;
+	sbcErr err;
 	int ret = -1;
 	uint32_t count, num_shares = 0;
 	char **share_names = NULL;
@@ -479,9 +479,9 @@ static int net_conf_listshares(struct net_context *c,
 		goto done;
 	}
 
-	werr = smbconf_get_share_names(conf_ctx, mem_ctx, &num_shares,
-				       &share_names);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_share_names(conf_ctx, mem_ctx, &num_shares,
+				      &share_names);
+	if (!SBC_ERROR_IS_OK(err)) {
 		goto done;
 	}
 
