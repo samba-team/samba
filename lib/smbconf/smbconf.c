@@ -177,10 +177,11 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 	}
 
 	for (count = 0; count < tmp_num_shares; count++) {
-		werr = smbconf_get_share(ctx, tmp_services,
-					 tmp_share_names[count],
-					 &tmp_services[count]);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_get_share(ctx, tmp_services,
+					tmp_share_names[count],
+					&tmp_services[count]);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_GENERAL_FAILURE;
 			goto done;
 		}
 	}
@@ -236,7 +237,7 @@ sbcErr smbconf_create_share(struct smbconf_ctx *ctx,
 /**
  * get a definition of a share (service) from configuration.
  */
-WERROR smbconf_get_share(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
 			 const char *servicename,
 			 struct smbconf_service **service)
