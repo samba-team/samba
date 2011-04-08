@@ -249,13 +249,3 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2)
 	return strcasecmp(s1,s2) == 0;
 }
 
-/**
- String replace.
-**/
-_PUBLIC_ void string_replace(char *s, char oldc, char newc)
-{
-	while (*s) {
-		if (*s == oldc) *s = newc;
-		s++;
-	}
-}

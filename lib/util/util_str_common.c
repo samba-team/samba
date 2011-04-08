@@ -59,3 +59,46 @@ _PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 		return 0;
 	return PTR_DIFF(p, base_ptr) & 1;
 }
+
+/**
+ String replace.
+ NOTE: oldc and newc must be 7 bit characters
+**/
+void string_replace( char *s, char oldc, char newc )
+{
+	char *p;
+
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	for (p = s; *p; p++) {
+		if (*p & 0x80) /* mb string - slow path. */
+			break;
+		if (*p == oldc) {
+			*p = newc;
+		}
+	}
+
+	if (!*p)
+		return;
+
+	/* Slow (mb) path. */
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+	/* With compose characters we must restart from the beginning. JRA. */
+	p = s;
+#endif
+
+	while (*p) {
+		size_t c_size;
+		next_codepoint(p, &c_size);
+
+		if (c_size == 1) {
+			if (*p == oldc) {
+				*p = newc;
+			}
+		}
+		p += c_size;
+	}
+}
