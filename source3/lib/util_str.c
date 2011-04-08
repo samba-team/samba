@@ -209,36 +209,6 @@ bool strnequal(const char *s1,const char *s2,size_t n)
 }
 
 /**
-Do a case-insensitive, whitespace-ignoring string compare.
-**/
-
-int strwicmp(const char *psz1, const char *psz2)
-{
-	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
-	/* appropriate value. */
-	if (psz1 == psz2)
-		return (0);
-	else if (psz1 == NULL)
-		return (-1);
-	else if (psz2 == NULL)
-		return (1);
-
-	/* sync the strings on first non-whitespace */
-	while (1) {
-		while (isspace((int)*psz1))
-			psz1++;
-		while (isspace((int)*psz2))
-			psz2++;
-		if (toupper_ascii(*psz1) != toupper_ascii(*psz2) ||
-				*psz1 == '\0' || *psz2 == '\0')
-			break;
-		psz1++;
-		psz2++;
-	}
-	return (*psz1 - *psz2);
-}
-
-/**
  Convert a string to "normal" form.
 **/
 
@@ -1633,25 +1603,6 @@ void string_append(char **left, const char *right)
 	}
 
 	safe_strcat(*left, right, new_len-1);
-}
-
-bool add_string_to_array(TALLOC_CTX *mem_ctx,
-			 const char *str, const char ***strings,
-			 int *num)
-{
-	char *dup_str = talloc_strdup(mem_ctx, str);
-
-	*strings = TALLOC_REALLOC_ARRAY(mem_ctx, *strings,
-			const char *, (*num)+1);
-
-	if ((*strings == NULL) || (dup_str == NULL)) {
-		*num = 0;
-		return false;
-	}
-
-	(*strings)[*num] = dup_str;
-	*num += 1;
-	return true;
 }
 
 /* Append an sprintf'ed string. Double buffer size on demand. Usable without

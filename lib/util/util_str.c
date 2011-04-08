@@ -148,30 +148,6 @@ _PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 }
 
 /**
- * Add a string to an array of strings.
- *
- * num should be a pointer to an integer that holds the current 
- * number of elements in strings. It will be updated by this function.
- */
-_PUBLIC_ bool add_string_to_array(TALLOC_CTX *mem_ctx,
-			 const char *str, const char ***strings, int *num)
-{
-	char *dup_str = talloc_strdup(mem_ctx, str);
-
-	*strings = talloc_realloc(mem_ctx,
-				    *strings,
-				    const char *, ((*num)+1));
-
-	if ((*strings == NULL) || (dup_str == NULL))
-		return false;
-
-	(*strings)[*num] = dup_str;
-	*num += 1;
-
-	return true;
-}
-
-/**
  * Parse a string containing a boolean value.
  *
  * val will be set to the read value.
@@ -256,36 +232,6 @@ _PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val)
 
 	*val = (uint64_t)lval;
 	return true;
-}
-
-/**
-Do a case-insensitive, whitespace-ignoring string compare.
-**/
-_PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
-{
-	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
-	/* appropriate value. */
-	if (psz1 == psz2)
-		return (0);
-	else if (psz1 == NULL)
-		return (-1);
-	else if (psz2 == NULL)
-		return (1);
-
-	/* sync the strings on first non-whitespace */
-	while (1) {
-		while (isspace((int)*psz1))
-			psz1++;
-		while (isspace((int)*psz2))
-			psz2++;
-		if (toupper((unsigned char)*psz1) != toupper((unsigned char)*psz2) 
-		    || *psz1 == '\0'
-		    || *psz2 == '\0')
-			break;
-		psz1++;
-		psz2++;
-	}
-	return (*psz1 - *psz2);
 }
 
 /**

@@ -447,6 +447,32 @@ _PUBLIC_ const char **str_list_append_const(const char **list1,
 }
 
 /**
+ * Add a string to an array of strings.
+ *
+ * num should be a pointer to an integer that holds the current
+ * number of elements in strings. It will be updated by this function.
+ */
+_PUBLIC_ bool add_string_to_array(TALLOC_CTX *mem_ctx,
+			 const char *str, const char ***strings, int *num)
+{
+	char *dup_str = talloc_strdup(mem_ctx, str);
+
+	*strings = talloc_realloc(mem_ctx,
+				    *strings,
+				    const char *, ((*num)+1));
+
+	if ((*strings == NULL) || (dup_str == NULL)) {
+		*num = 0;
+		return false;
+	}
+
+	(*strings)[*num] = dup_str;
+	*num += 1;
+
+	return true;
+}
+
+/**
   add an entry to a string list
   this assumes s will not change
 */
