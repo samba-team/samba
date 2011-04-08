@@ -27,12 +27,13 @@
  *
  **********************************************************************/
 
-static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
+static sbcErr smbconf_global_check(struct smbconf_ctx *ctx)
 {
 	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
 		return smbconf_create_share(ctx, GLOBAL_NAME);
 	}
-	return WERR_OK;
+
+	return SBC_ERR_OK;
 }
 
 
@@ -222,11 +223,11 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx,
 /**
  * Add a service if it does not already exist.
  */
-WERROR smbconf_create_share(struct smbconf_ctx *ctx,
+sbcErr smbconf_create_share(struct smbconf_ctx *ctx,
 			    const char *servicename)
 {
 	if ((servicename != NULL) && smbconf_share_exists(ctx, servicename)) {
-		return WERR_FILE_EXISTS;
+		return SBC_ERR_FILE_EXISTS;
 	}
 
 	return ctx->ops->create_share(ctx, servicename);
@@ -275,12 +276,14 @@ WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
 WERROR smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val)
 {
-	WERROR werr;
+	WERROR werr = WERR_OK;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
+	werr = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
 
 	return werr;
 }
@@ -312,12 +315,15 @@ WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    char **valstr)
 {
 	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param,
-					     valstr);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
+
+	werr = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param,
+				     valstr);
 
 	return werr;
 }
@@ -340,11 +346,13 @@ WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 				       const char *param)
 {
 	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
+	werr = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
 
 	return werr;
 }
@@ -363,12 +371,14 @@ WERROR smbconf_get_global_includes(struct smbconf_ctx *ctx,
 				   uint32_t *num_includes, char ***includes)
 {
 	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_get_includes(ctx, mem_ctx, GLOBAL_NAME,
-					    num_includes, includes);
+	err = smbconf_global_check(ctx);
+	if (SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
+	werr = smbconf_get_includes(ctx, mem_ctx, GLOBAL_NAME,
+				    num_includes, includes);
 
 	return werr;
 }
@@ -385,12 +395,14 @@ WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
 				   const char **includes)
 {
 	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_set_includes(ctx, GLOBAL_NAME,
-					    num_includes, includes);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
+	werr = smbconf_set_includes(ctx, GLOBAL_NAME,
+				    num_includes, includes);
 
 	return werr;
 }
@@ -404,11 +416,13 @@ WERROR smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service)
 WERROR smbconf_delete_global_includes(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_delete_includes(ctx, GLOBAL_NAME);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return WERR_GENERAL_FAILURE;
 	}
+	werr = smbconf_delete_includes(ctx, GLOBAL_NAME);
 
 	return werr;
 }

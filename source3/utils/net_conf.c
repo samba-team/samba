@@ -180,6 +180,7 @@ static WERROR import_process_service(struct net_context *c,
 {
 	uint32_t idx;
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	uint32_t num_includes = 0;
 	char **includes = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -205,8 +206,9 @@ static WERROR import_process_service(struct net_context *c,
 			goto done;
 		}
 	}
-	werr = smbconf_create_share(conf_ctx, service->name);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_create_share(conf_ctx, service->name);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_GENERAL_FAILURE;
 		goto done;
 	}
 
@@ -578,6 +580,7 @@ static int net_conf_addshare(struct net_context *c,
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	char *sharename = NULL;
 	const char *path = NULL;
 	const char *comment = NULL;
@@ -714,10 +717,10 @@ static int net_conf_addshare(struct net_context *c,
 	 * create the share
 	 */
 
-	werr = smbconf_create_share(conf_ctx, sharename);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_create_share(conf_ctx, sharename);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error creating share %s: %s\n"),
-			  sharename, win_errstr(werr));
+			  sharename, sbcErrorString(err));
 		goto cancel;
 	}
 
@@ -820,6 +823,7 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	char *service = NULL;
 	char *param = NULL;
 	const char *value_str = NULL;
@@ -855,10 +859,10 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	}
 
 	if (!smbconf_share_exists(conf_ctx, service)) {
-		werr = smbconf_create_share(conf_ctx, service);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_create_share(conf_ctx, service);
+		if (!SBC_ERROR_IS_OK(err)) {
 			d_fprintf(stderr, _("Error creating share '%s': %s\n"),
-				  service, win_errstr(werr));
+				  service, sbcErrorString(err));
 			goto cancel;
 		}
 	}

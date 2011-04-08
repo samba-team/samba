@@ -41,7 +41,7 @@ struct smbconf_ops {
 				  uint32_t *num_shares,
 				  char ***share_names);
 	bool (*share_exists)(struct smbconf_ctx *ctx, const char *service);
-	WERROR (*create_share)(struct smbconf_ctx *ctx, const char *service);
+	sbcErr (*create_share)(struct smbconf_ctx *ctx, const char *service);
 	WERROR (*get_share)(struct smbconf_ctx *ctx,
 			    TALLOC_CTX *mem_ctx,
 			    const char *servicename,
