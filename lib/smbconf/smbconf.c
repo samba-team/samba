@@ -146,6 +146,7 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 			  struct smbconf_service ***services)
 {
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint32_t tmp_num_shares;
 	char **tmp_share_names;
@@ -159,9 +160,10 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 
 	tmp_ctx = talloc_stackframe();
 
-	werr = smbconf_get_share_names(ctx, tmp_ctx, &tmp_num_shares,
-				       &tmp_share_names);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_share_names(ctx, tmp_ctx, &tmp_num_shares,
+				      &tmp_share_names);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_GENERAL_FAILURE;
 		goto done;
 	}
 
@@ -199,7 +201,7 @@ done:
 /**
  * get the list of share names defined in the configuration.
  */
-WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       TALLOC_CTX *mem_ctx,
 			       uint32_t *num_shares,
 			       char ***share_names)

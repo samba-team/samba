@@ -348,6 +348,7 @@ static WERROR smbconf_reg_get_includes_internal(TALLOC_CTX *mem_ctx,
 						char ***includes)
 {
 	WERROR werr;
+	sbcErr err;
 	uint32_t count;
 	struct registry_value *value = NULL;
 	char **tmp_includes = NULL;
@@ -378,11 +379,12 @@ static WERROR smbconf_reg_get_includes_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	for (count = 0; array[count] != NULL; count++) {
-		werr = smbconf_add_string_to_array(tmp_ctx,
+		err = smbconf_add_string_to_array(tmp_ctx,
 					&tmp_includes,
 					count,
 					array[count]);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NOMEM;
 			goto done;
 		}
 	}
@@ -416,6 +418,7 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	uint32_t count;
 	struct registry_value *valvalue = NULL;
 	char *valname = NULL;
@@ -445,17 +448,19 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		werr = smbconf_add_string_to_array(tmp_ctx,
-						   &tmp_valnames,
-						   tmp_num_values, valname);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_add_string_to_array(tmp_ctx,
+						  &tmp_valnames,
+						  tmp_num_values, valname);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NOMEM;
 			goto done;
 		}
 
 		valstring = smbconf_format_registry_value(tmp_ctx, valvalue);
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_valstrings,
-						   tmp_num_values, valstring);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_valstrings,
+						  tmp_num_values, valstring);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NOMEM;
 			goto done;
 		}
 		tmp_num_values++;
@@ -471,16 +476,18 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 	for (count = 0; count < num_includes; count++) {
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_valnames,
-						   tmp_num_values, "include");
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_valnames,
+						  tmp_num_values, "include");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NOMEM;
 			goto done;
 		}
 
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_valstrings,
-						   tmp_num_values,
-						   includes[count]);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_valstrings,
+						  tmp_num_values,
+						  includes[count]);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NOMEM;
 			goto done;
 		}
 
@@ -756,7 +763,7 @@ done:
  * get the list of share names defined in the configuration.
  * registry version.
  */
-static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 					  TALLOC_CTX *mem_ctx,
 					  uint32_t *num_shares,
 					  char ***share_names)
@@ -764,13 +771,13 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 	uint32_t count;
 	uint32_t added_count = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
-	WERROR werr = WERR_OK;
+	WERROR werr;
+	sbcErr err = SBC_ERR_OK;
 	char *subkey_name = NULL;
 	char **tmp_share_names = NULL;
 
 	if ((num_shares == NULL) || (share_names == NULL)) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -778,9 +785,9 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 	/* if there are values in the base key, return NULL as share name */
 
 	if (smbconf_reg_key_has_values(rpd(ctx)->base_key)) {
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
 						   0, NULL);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 		added_count++;
@@ -788,9 +795,9 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 
 	/* make sure "global" is always listed first */
 	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
-						   added_count, GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+						  added_count, GLOBAL_NAME);
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 		added_count++;
@@ -806,19 +813,20 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 			continue;
 		}
 
-		werr = smbconf_add_string_to_array(tmp_ctx,
+		err = smbconf_add_string_to_array(tmp_ctx,
 						   &tmp_share_names,
 						   added_count,
 						   subkey_name);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 		added_count++;
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+		err = SBC_ERR_NO_MORE_ITEMS;
 		goto done;
 	}
-	werr = WERR_OK;
+	err = SBC_ERR_OK;
 
 	*num_shares = added_count;
 	if (added_count > 0) {
@@ -829,7 +837,7 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 /**
