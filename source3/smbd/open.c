@@ -2266,7 +2266,18 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 * but we don't have to store this - just ignore it on access check.
 	 */
-	fsp->access_mask = access_mask;
+	if (conn->sconn->using_smb2) {
+		/*
+		 * SMB2 doesn't return it (according to Microsoft tests).
+		 * Test Case: TestSuite_ScenarioNo009GrantedAccessTestS0
+		 * File created with access = 0x7 (Read, Write, Delete)
+		 * Query Info on file returns 0x87 (Read, Write, Delete, Read Attributes)
+		 */
+		fsp->access_mask = access_mask;
+	} else {
+		/* But SMB1 does. */
+		fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
+	}
 
 	if (file_existed) {
 		/* stat opens on existing files don't get oplocks. */
