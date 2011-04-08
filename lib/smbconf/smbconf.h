@@ -74,7 +74,7 @@ bool smbconf_is_writeable(struct smbconf_ctx *ctx);
 void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);
-WERROR smbconf_drop(struct smbconf_ctx *ctx);
+sbcErr smbconf_drop(struct smbconf_ctx *ctx);
 WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,

@@ -393,8 +393,7 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			goto cancel;
 		}
 		if (!c->opt_testmode) {
-			werr = smbconf_drop(conf_ctx);
-			if (!W_ERROR_IS_OK(werr)) {
+			if (!SBC_ERROR_IS_OK(smbconf_drop(conf_ctx))) {
 				goto cancel;
 			}
 		}
@@ -502,17 +501,17 @@ static int net_conf_drop(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			 int argc, const char **argv)
 {
 	int ret = -1;
-	WERROR werr;
+	sbcErr err;
 
 	if (argc != 0 || c->display_usage) {
 		net_conf_drop_usage(c, argc, argv);
 		goto done;
 	}
 
-	werr = smbconf_drop(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_drop(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error deleting configuration: %s\n"),
-			  win_errstr(werr));
+			  sbcErrorString(err));
 		goto done;
 	}
 

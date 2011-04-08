@@ -126,7 +126,7 @@ bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 /**
  * Drop the whole configuration (restarting empty).
  */
-WERROR smbconf_drop(struct smbconf_ctx *ctx)
+sbcErr smbconf_drop(struct smbconf_ctx *ctx)
 {
 	return ctx->ops->drop(ctx);
 }
