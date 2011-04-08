@@ -808,7 +808,7 @@ bld.SAMBA3_SUBSYSTEM('LIBDRSUAPI',
 
 bld.SAMBA3_SUBSYSTEM('CLDAP',
                     source='libads/cldap.c',
-                    deps='LIBCLI_LDAP_MESSAGE LIBCLI_LDAP_NDR LIBCLI_CLDAP LIBTSOCKET',
+                    deps='cli-ldap-common LIBCLI_CLDAP LIBTSOCKET',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SECRETS3',
@@ -824,7 +824,7 @@ bld.SAMBA3_SUBSYSTEM('SMBLDAP',
 
 bld.SAMBA3_LIBRARY('ads',
                    source=LIBADS_SRC,
-                   deps='LIBCLI_LDAP_NDR krb5 gssapi gssapi_krb5 ldap lber',
+                   deps='cli-ldap-common krb5 gssapi gssapi_krb5 ldap lber',
                    private_library=True,
                    vars=locals(),
                    enabled=bld.env.HAVE_ADS)
@@ -1136,7 +1136,7 @@ bld.SAMBA3_BINARY('pdbedit',
                  source=PDBEDIT_SRC,
                  deps='''talloc tdb tevent cap resolv wbclient param LIB_NONSMBD
                  LIBNTLMSSP LIBSMB_ERR POPT_SAMBA3 passdb SMBLDAP
-                 PASSWD_UTIL LIBCLI_LDAP_NDR''',
+                 PASSWD_UTIL cli-ldap-common''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbget',
@@ -1262,7 +1262,7 @@ bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err wbclient param LIB_NONSMBD
                  samba3core LIBNTLMSSP POPT_SAMBA3 asn1util LIBTSOCKET
                  passdb SMBLDAP winbind-client LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSA NDR_NETLOGON LIBCLI_LDAP_NDR LIBNMB SLCACHE SPNEGO_PARSE KRBCLIENT''',
+                 NDR_SAMR NDR_LSA NDR_NETLOGON cli-ldap-common LIBNMB SLCACHE SPNEGO_PARSE KRBCLIENT''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('timelimit',

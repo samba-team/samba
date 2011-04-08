@@ -28,7 +28,7 @@ bld.SAMBA3_MODULE('pdb_ldap',
 bld.SAMBA3_MODULE('pdb_ads',
                  subsystem='pdb',
                  source=PDB_ADS_SRC,
-                 deps='LIBCLI_LDAP_NDR TLDAP',
+                 deps='cli-ldap-common TLDAP',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ads'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_ads'))
