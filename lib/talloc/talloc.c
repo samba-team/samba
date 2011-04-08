@@ -1291,7 +1291,7 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 		}
-		if (unlikely(talloc_free(child) == -1)) {
+		if (unlikely(_talloc_free_internal(child, __location__) == -1)) {
 			if (new_parent == null_context) {
 				struct talloc_chunk *p = talloc_parent_chunk(ptr);
 				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
