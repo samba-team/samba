@@ -569,9 +569,10 @@ done:
 /**
  * initialize the registry smbconf backend
  */
-static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
+static sbcErr smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 {
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	struct security_token *token;
 
 	if (path == NULL) {
@@ -588,17 +589,19 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Error creating admin token\n"));
+		err = SBC_ERR_UNKNOWN_FAILURE;
 		goto done;
 	}
 	rpd(ctx)->open = false;
 
 	werr = registry_init_smbconf(path);
 	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_BADFILE;
 		goto done;
 	}
 
-	werr = ctx->ops->open_conf(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = ctx->ops->open_conf(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		DEBUG(1, ("Error opening the registry.\n"));
 		goto done;
 	}
@@ -607,11 +610,12 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 			     KEY_ENUMERATE_SUB_KEYS | REG_KEY_WRITE,
 			     token, &rpd(ctx)->base_key);
 	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_UNKNOWN_FAILURE;
 		goto done;
 	}
 
 done:
-	return werr;
+	return err;
 }
 
 static int smbconf_reg_shutdown(struct smbconf_ctx *ctx)
@@ -640,19 +644,21 @@ static bool smbconf_reg_is_writeable(struct smbconf_ctx *ctx)
 	return true;
 }
 
-static WERROR smbconf_reg_open(struct smbconf_ctx *ctx)
+static sbcErr smbconf_reg_open(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
 
 	if (rpd(ctx)->open) {
-		return WERR_OK;
+		return SBC_ERR_OK;
 	}
 
 	werr = regdb_open();
-	if (W_ERROR_IS_OK(werr)) {
-		rpd(ctx)->open = true;
+	if (!W_ERROR_IS_OK(werr)) {
+		return SBC_ERR_BADFILE;
 	}
-	return werr;
+
+	rpd(ctx)->open = true;
+	return SBC_ERR_OK;
 }
 
 static int smbconf_reg_close(struct smbconf_ctx *ctx)
@@ -682,7 +688,7 @@ static void smbconf_reg_get_csn(struct smbconf_ctx *ctx,
 		return;
 	}
 
-	if (!W_ERROR_IS_OK(ctx->ops->open_conf(ctx))) {
+	if (!SBC_ERROR_IS_OK(ctx->ops->open_conf(ctx))) {
 		return;
 	}
 

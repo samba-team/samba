@@ -203,7 +203,6 @@ static bool create_conf_file(const char *filename)
 
 static bool torture_smbconf_txt(void)
 {
-	WERROR werr;
 	sbcErr err;
 	bool ret = true;
 	const char *filename = "/tmp/smb.conf.smbconf_testsuite";
@@ -246,7 +245,6 @@ done:
 
 static bool torture_smbconf_reg(void)
 {
-	WERROR werr;
 	sbcErr err;
 	bool ret = true;
 	struct smbconf_ctx *conf_ctx = NULL;

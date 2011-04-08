@@ -256,16 +256,9 @@ static bool smbconf_txt_is_writeable(struct smbconf_ctx *ctx)
 	return false;
 }
 
-static WERROR smbconf_txt_open(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_open(struct smbconf_ctx *ctx)
 {
-	sbcErr err;
-
-	err = smbconf_txt_load_file(ctx);
-	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
-	}
-
-	return WERR_OK;
+	return smbconf_txt_load_file(ctx);
 }
 
 static int smbconf_txt_close(struct smbconf_ctx *ctx)
