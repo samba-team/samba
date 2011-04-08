@@ -84,7 +84,7 @@ sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       uint32_t *num_shares,
 			       char ***share_names);
 bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
-WERROR smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
+sbcErr smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
 WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
 			 const char *servicename,

@@ -127,12 +127,13 @@ static bool smbconf_value_exists(struct registry_key *key, const char *param)
 /**
  * create a subkey of the base key (i.e. a service...)
  */
-static WERROR smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
+static sbcErr smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 					     struct smbconf_ctx *ctx,
 					     const char * subkeyname,
 					     struct registry_key **newkey)
 {
-	WERROR werr = WERR_OK;
+	WERROR werr;
+	sbcErr err = SBC_ERR_OK;
 	TALLOC_CTX *create_ctx;
 	enum winreg_CreateAction action = REG_ACTION_NONE;
 
@@ -145,15 +146,16 @@ static WERROR smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 			     REG_KEY_WRITE, newkey, &action);
 	if (W_ERROR_IS_OK(werr) && (action != REG_CREATED_NEW_KEY)) {
 		DEBUG(10, ("Key '%s' already exists.\n", subkeyname));
-		werr = WERR_FILE_EXISTS;
+		err = SBC_ERR_FILE_EXISTS;
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error creating key %s: %s\n",
 			 subkeyname, win_errstr(werr)));
+		err = SBC_ERR_UNKNOWN_FAILURE;
 	}
 
 	talloc_free(create_ctx);
-	return werr;
+	return err;
 }
 
 /**
@@ -864,21 +866,21 @@ static bool smbconf_reg_share_exists(struct smbconf_ctx *ctx,
 /**
  * Add a service if it does not already exist - registry version
  */
-static WERROR smbconf_reg_create_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_create_share(struct smbconf_ctx *ctx,
 				       const char *servicename)
 {
-	WERROR werr;
+	sbcErr err;
 	struct registry_key *key = NULL;
 
 	if (servicename == NULL) {
-		return WERR_OK;
+		return SBC_ERR_OK;
 	}
 
-	werr = smbconf_reg_create_service_key(talloc_tos(), ctx,
-					      servicename, &key);
+	err = smbconf_reg_create_service_key(talloc_tos(), ctx,
+					     servicename, &key);
 
 	talloc_free(key);
-	return werr;
+	return err;
 }
 
 /**

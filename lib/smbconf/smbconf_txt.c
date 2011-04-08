@@ -385,10 +385,10 @@ static bool smbconf_txt_share_exists(struct smbconf_ctx *ctx,
 /**
  * Add a service if it does not already exist
  */
-static WERROR smbconf_txt_create_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_create_share(struct smbconf_ctx *ctx,
 				       const char *servicename)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**
