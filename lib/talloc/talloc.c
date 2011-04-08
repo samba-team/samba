@@ -1287,13 +1287,28 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 		   final choice is the null context. */
 		void *child = TC_PTR_FROM_CHUNK(tc->child);
 		const void *new_parent = null_context;
+		struct talloc_chunk *old_parent = NULL;
 		if (unlikely(tc->child->refs)) {
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 		}
+		/* finding the parent here is potentially quite
+		   expensive, but the alternative, which is to change
+		   talloc to always have a valid tc->parent pointer,
+		   makes realloc more expensive where there are a
+		   large number of children.
+
+		   The reason we need the parent pointer here is that
+		   if _talloc_free_internal() fails due to references
+		   or a failing destructor we need to re-parent, but
+		   the free call can invalidate the prev pointer.
+		*/
+		if (new_parent == null_context && (tc->child->refs || tc->child->destructor)) {
+			old_parent = talloc_parent_chunk(ptr);
+		}
 		if (unlikely(_talloc_free_internal(child, __location__) == -1)) {
 			if (new_parent == null_context) {
-				struct talloc_chunk *p = talloc_parent_chunk(ptr);
+				struct talloc_chunk *p = old_parent;
 				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 			}
 			_talloc_steal_internal(new_parent, child);
