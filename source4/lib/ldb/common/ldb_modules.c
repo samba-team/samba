@@ -1089,7 +1089,7 @@ int ldb_modules_load(const char *modules_path, const char *version)
 char *ldb_module_call_chain(struct ldb_request *req, TALLOC_CTX *mem_ctx)
 {
 	char *ret;
-	int i=0;
+	unsigned int i = 0;
 
 	ret = talloc_strdup(mem_ctx, "");
 	if (ret == NULL) {
