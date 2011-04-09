@@ -21,6 +21,7 @@
 #ifndef _REG_BACKEND_DB_H
 #define _REG_BACKEND_DB_H
 
+#include "registry.h"
 
 WERROR init_registry_key(const char *add_path);
 WERROR init_registry_data(void);
