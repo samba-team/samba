@@ -304,7 +304,7 @@ static void start_test_index(struct ldb_context **ldb)
 	struct ldb_dn *indexlist;
 	struct ldb_dn *basedn;
 	int ret;
-	int flags = 0;
+	unsigned int flags = 0;
 	const char *specials;
 
 	specials = getenv("LDB_SPECIALS");

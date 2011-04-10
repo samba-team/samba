@@ -101,7 +101,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 	poptContext pc;
 	int num_options = 0;
 	int opt;
-	int flags = 0;
+	unsigned int flags = 0;
 	int rc;
 	struct poptOption **popt_options;
 
