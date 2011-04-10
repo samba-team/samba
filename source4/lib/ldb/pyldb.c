@@ -48,7 +48,7 @@ static PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
 static struct ldb_message_element *PyObject_AsMessageElement(
 						      TALLOC_CTX *mem_ctx,
 						      PyObject *set_obj,
-						      int flags,
+						      unsigned int flags,
 						      const char *attr_name);
 
 /* There's no Py_ssize_t in 2.4, apparently */
@@ -737,11 +737,11 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 	char *url = NULL;
 	PyObject *py_options = Py_None;
 	const char **options;
-	int flags = 0;
+	unsigned int flags = 0;
 	int ret;
 	struct ldb_context *ldb;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ziO:Ldb.__init__",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|zIO:Ldb.__init__",
 					 discard_const_p(char *, kwnames),
 					 &url, &flags, &py_options))
 		return -1;
@@ -792,13 +792,13 @@ static PyObject *py_ldb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	char *url;
-	int flags = 0;
+	unsigned int flags = 0;
 	PyObject *py_options = Py_None;
 	int ret;
 	const char **options;
 	const char * const kwnames[] = { "url", "flags", "options", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ziO",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|zIO",
 					 discard_const_p(char *, kwnames),
 					 &url, &flags, &py_options))
 		return NULL;
@@ -2031,7 +2031,7 @@ static PyTypeObject PyLdbModule = {
 static struct ldb_message_element *PyObject_AsMessageElement(
 						      TALLOC_CTX *mem_ctx,
 						      PyObject *set_obj,
-						      int flags,
+						      unsigned int flags,
 						      const char *attr_name)
 {
 	struct ldb_message_element *me;
@@ -2122,9 +2122,9 @@ static PyObject *py_ldb_msg_element_flags(PyLdbMessageElementObject *self, PyObj
 
 static PyObject *py_ldb_msg_element_set_flags(PyLdbMessageElementObject *self, PyObject *args)
 {
-	int flags;
+	unsigned int flags;
 	struct ldb_message_element *el;
-	if (!PyArg_ParseTuple(args, "i", &flags))
+	if (!PyArg_ParseTuple(args, "I", &flags))
 		return NULL;
 
 	el = PyLdbMessageElement_AsMessageElement(self);
@@ -2192,13 +2192,13 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 {
 	PyObject *py_elements = NULL;
 	struct ldb_message_element *el;
-	int flags = 0;
+	unsigned int flags = 0;
 	char *name = NULL;
 	const char * const kwnames[] = { "elements", "flags", "name", NULL };
 	PyLdbMessageElementObject *ret;
 	TALLOC_CTX *mem_ctx;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Ois",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OIs",
 					 discard_const_p(char *, kwnames),
 					 &py_elements, &flags, &name))
 		return NULL;
