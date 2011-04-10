@@ -297,7 +297,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 	}
 
 	/* now connect to the ldb */
-	if (ldb_connect(ldb, ret->url, flags, ret->options) != 0) {
+	if (ldb_connect(ldb, ret->url, flags, ret->options) != LDB_SUCCESS) {
 		fprintf(stderr, "Failed to connect to %s - %s\n", 
 			ret->url, ldb_errstring(ldb));
 		goto failed;

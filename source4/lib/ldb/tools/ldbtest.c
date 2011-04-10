@@ -356,7 +356,7 @@ static void start_test_index(struct ldb_context **ldb)
 	(*ldb) = ldb_init(options, NULL);
 
 	ret = ldb_connect(*ldb, options->url, flags, NULL);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		printf("failed to connect to %s\n", options->url);
 		exit(LDB_ERR_OPERATIONS_ERROR);
 	}
