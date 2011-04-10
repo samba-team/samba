@@ -38,13 +38,12 @@ monitor_interfaces()
 	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
 
 	local fail=0
-	local force_fail=0
 	local ok=0
 	for IFACE in $INTERFACES ; do
 
-	    local OLDLINK=`echo -n "$IFACES" | grep "^:$IFACE:" | cut -d ':' -f3 | xargs`
-	    test -z "$OLDLINK" && {
-		force_fail=1
+	    ip addr show $IFACE 2>/dev/null >/dev/null || {
+		echo Interface $IFACE does not exist but it is used by public addresses.
+		exit 1
 	    }
 
 	    # These interfaces are sometimes bond devices
@@ -55,44 +54,34 @@ monitor_interfaces()
 		grep -q 'Currently Active Slave: None' /proc/net/bonding/$REALIFACE && {
 			echo "ERROR: No active slaves for bond device $REALIFACE"
 			fail=1
-			test -n "$OLDLINK" && {
-				ctdb setifacelink $IFACE down
-			}
+			ctdb setifacelink $IFACE down
 			continue;
 		}
 		grep -q '^MII Status: up' /proc/net/bonding/$REALIFACE || {
 			echo "ERROR: public network interface $REALIFACE is down"
 			fail=1
-			test -n "$OLDLINK" && {
-				ctdb setifacelink $IFACE down
-			}
+			ctdb setifacelink $IFACE down
 			continue;
 		}
-		test -n "$OLDLINK" && {
-			ok=1 # we only set ok for interfaces known to ctdbd
-			ctdb setifacelink $IFACE up
-		}
+		ok=1 # we only set ok for interfaces known to ctdbd
+		ctdb setifacelink $IFACE up
 		continue;
 	    }
 
 	    case $IFACE in
 	    lo*)
 		# loopback is always working
-		test -n "$OLDLINK" && {
-		    ok=1 # we only set ok for interfaces known to ctdbd
-		    ctdb setifacelink $IFACE up
-		}
+		ok=1 # we only set ok for interfaces known to ctdbd
+		ctdb setifacelink $IFACE up
 		;;
 	    ib*)
 		# we dont know how to test ib links
-		test -n "$OLDLINK" && {
-		    ok=1 # we only set ok for interfaces known to ctdbd
-		    ctdb setifacelink $IFACE up
-		}
+		ok=1 # we only set ok for interfaces known to ctdbd
+		ctdb setifacelink $IFACE up
 		;;
 	    *)
 		[ -z "$IFACE" ] || {
-		    [ "$(basename $(readlink /sys/class/net/$IFACE/device/driver))" = virtio_net ] ||
+		    [ "$(basename $(readlink /sys/class/net/$IFACE/device/driver) 2>/dev/null)" = virtio_net ] ||
 		    ethtool $IFACE | grep -q 'Link detected: yes' || {
 			# On some systems, this is not successful when a
 			# cable is plugged but the interface has not been
@@ -102,16 +91,12 @@ monitor_interfaces()
 			ethtool $IFACE | grep -q 'Link detected: yes' || {
 			    echo "ERROR: No link on the public network interface $IFACE"
 			    fail=1
-			    test -n "$OLDLINK" && {
-				ctdb setifacelink $IFACE down
-			    }
+			    ctdb setifacelink $IFACE down
 			    continue
 			}
 		    }
-		    test -n "$OLDLINK" && {
-			ok=1 # we only set ok for interfaces known to ctdbd
-			ctdb setifacelink $IFACE up
-		    }
+		    ok=1 # we only set ok for interfaces known to ctdbd
+		    ctdb setifacelink $IFACE up
 		}
 		;;
 	    esac
@@ -120,10 +105,6 @@ monitor_interfaces()
 
 	test x"$fail" = x"0" && {
 		return 0;
-	}
-
-	test x"$force_fail" != x"0" && {
-		return 1;
 	}
 
 	test x"$ok" = x"1" && {
@@ -148,6 +129,13 @@ case "$1" in
      # called after ctdbd has done its initial recovery
      # and we start the services to become healthy
      startup)
+	# Assume all links are good initially
+	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
+
+	for IFACE in $INTERFACES ; do
+		ctdb setifacelink $IFACE down
+	done
+	
 	monitor_interfaces
 
 	;;

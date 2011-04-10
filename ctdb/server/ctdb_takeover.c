@@ -334,6 +334,8 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 	TDB_DATA data;
 
 	if (status != 0) {
+		struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
+	
 		if (status == -ETIME) {
 			ctdb_ban_self(ctdb);
 		}
@@ -341,6 +343,8 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 				 ctdb_addr_to_str(&state->vnn->public_address),
 				 ctdb_vnn_iface_string(state->vnn)));
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+
+		node->flags |= NODE_FLAGS_UNHEALTHY;
 		talloc_free(state);
 		return;
 	}
