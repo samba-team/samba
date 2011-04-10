@@ -152,8 +152,9 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 		return 1;
 	}
 
-	if (tdb_transaction_start(tdb_new) != 0) {
-		printf("Failed to start transaction on new tdb\n");
+	/* lock the backup tdb so that nobody else can change it */
+	if (tdb_lockall(tdb_new) != 0) {
+		printf("Failed to lock backup tdb\n");
 		tdb_close(tdb);
 		tdb_close(tdb_new);
 		unlink(tmp_name);
@@ -177,12 +178,16 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 	/* close the old tdb */
 	tdb_close(tdb);
 
-	if (tdb_transaction_commit(tdb_new) != 0) {
-		fprintf(stderr, "Failed to commit new tdb\n");
-		tdb_close(tdb_new);
-		unlink(tmp_name);
-		free(tmp_name);		
-		return 1;
+	/* copy done, unlock the backup tdb */
+	tdb_unlockall(tdb_new);
+
+#ifdef HAVE_FDATASYNC
+	if (fdatasync(tdb_fd(tdb_new)) != 0) {
+#else
+	if (fsync(tdb_fd(tdb_new)) != 0) {
+#endif
+		/* not fatal */
+		fprintf(stderr, "failed to fsync backup file\n");
 	}
 
 	/* close the new tdb and re-open read-only */
