@@ -96,7 +96,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev_ctx,
 				  struct loadparm_context *lp_ctx,
 				  struct auth_session_info *session_info,
-				  int flags)
+				  unsigned int flags)
 {
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;

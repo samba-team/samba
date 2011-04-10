@@ -177,7 +177,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 				   struct loadparm_context *lp_ctx,
 				   struct auth_session_info *session_info,
 				   struct cli_credentials *credentials,
-				   int flags)
+				   unsigned int flags)
 {
 	struct ldb_wrap *w;
 	/* see if we can re-use an existing ldb */
@@ -195,7 +195,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 }
 
 int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
-		      const char *url, int flags)
+		      const char *url, unsigned int flags)
 {
 	int ret;
 	char *real_url = NULL;
@@ -230,7 +230,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 		   struct loadparm_context *lp_ctx,
 		   struct auth_session_info *session_info,
 		   struct cli_credentials *credentials,
-		   int flags,
+		   unsigned int flags,
 		   struct ldb_context *ldb)
 {
 	struct ldb_wrap *w;
