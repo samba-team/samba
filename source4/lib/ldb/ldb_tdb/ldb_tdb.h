@@ -21,11 +21,6 @@ struct ltdb_private {
 		struct ldb_message *attributes;
 		bool one_level_indexes;
 		bool attribute_indexes;
-
-		struct {
-			char *name;
-			int flags;
-		} last_attribute;
 	} *cache;
 
 	int in_transaction;
