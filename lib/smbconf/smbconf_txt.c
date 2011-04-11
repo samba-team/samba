@@ -482,7 +482,7 @@ static sbcErr smbconf_txt_set_parameter(struct smbconf_ctx *ctx,
 /**
  * get the value of a configuration parameter as a string
  */
-static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 					TALLOC_CTX *mem_ctx,
 					const char *service,
 					const char *param,
@@ -494,7 +494,7 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 
 	err = smbconf_txt_load_file(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
 
 	found = smbconf_find_in_array(service,
@@ -502,7 +502,7 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 				      pd(ctx)->cache->num_shares,
 				      &share_index);
 	if (!found) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	found = smbconf_reverse_find_in_array(param,
@@ -510,17 +510,17 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 				pd(ctx)->cache->num_params[share_index],
 				&param_index);
 	if (!found) {
-		return WERR_INVALID_PARAM;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
 	*valstr = talloc_strdup(mem_ctx,
 			pd(ctx)->cache->param_values[share_index][param_index]);
 
 	if (*valstr == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 /**
