@@ -526,11 +526,11 @@ static sbcErr smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 /**
  * delete a parameter from configuration
  */
-static WERROR smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
 					   const char *service,
 					   const char *param)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,

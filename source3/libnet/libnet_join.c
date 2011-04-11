@@ -1540,8 +1540,11 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 			goto done;
 		}
 
-		werr = smbconf_delete_global_parameter(ctx, "workgroup");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_delete_global_parameter(ctx, "workgroup");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
 		smbconf_delete_global_parameter(ctx, "realm");
 	}
