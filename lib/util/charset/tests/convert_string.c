@@ -115,6 +115,82 @@ static bool test_gd_iso8859_cp850(struct torture_context *tctx)
 		       "conversion from UTF8 to (dos charset) ISO8859-1");
 	torture_assert_data_blob_equal(tctx, gd_output, gd_iso8859_1, "conversion from UTF8 to (dos charset) ISO8859-1 incorrect");
 	
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length),
+		       "conversion from UTF8 to (dos charset) ISO8859-1");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_iso8859_1, "conversion from UTF8 to (dos charset) ISO8859-1 incorrect");
+
+	/* Short output handling confirmation */
+	gd_output.length = 1;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ISO8859-1 should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to (dos charset) ISO8859-1 should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+	torture_assert_data_blob_equal(tctx, gd_output, data_blob_string_const("G"), "conversion from UTF8 to (dos charset) ISO8859-1 incorrect");
+
+	/* Short output handling confirmation */
+	gd_output.length = 2;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ISO8859-1 should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to (dos charset) ISO8859-1 should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 2, "Should only get 2 char of output");
+
+	/* Short input handling confirmation */
+	gd_output.length = gd_iso8859_1.length;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, 2,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ISO8859-1 should fail due to too short");
+	torture_assert_errno_equal(tctx, EILSEQ, "conversion from short UTF8 to (dos charset) ISO8859-1 should fail EINVAL");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+
+	/* Short output handling confirmation */
+	gd_output.length = 1;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 gd_utf16le.data, gd_utf16le.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF16 to UTF8 should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16 to (utf8 charset) ISO8859-1 should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+	torture_assert_data_blob_equal(tctx, gd_output, data_blob_string_const("G"), "conversion from UTF16 to UTF8 incorrect");
+
+	/* Short output handling confirmation */
+	gd_output.length = 3;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 gd_utf16le.data, gd_utf16le.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF16 to UTF8 should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16 to (utf8 charset) ISO8859-1 should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 3, "Should get 3 bytes output for UTF8");
+
+	/* Short input handling confirmation */
+	gd_output.length = gd_utf8.length;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 gd_utf16le.data, 3,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF16 to UTF8 should fail due to too short");
+	torture_assert_errno_equal(tctx, EINVAL, "conversion from short UTF16 to UTF8 should fail EINVAL");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
 						    CH_UTF8, CH_UNIX, 
 						    gd_utf8.data, gd_utf8.length, 
@@ -257,6 +333,31 @@ static bool test_plato_english_iso8859_cp850(struct torture_context *tctx)
 	torture_assert_data_blob_equal(tctx, plato_english_output2, plato_english_utf16le,  "round trip conversion from (dos charset) ISO8859-1 back to UTF16LE");
 	
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
+						    CH_UTF16LE, CH_UTF8,
+						    plato_english_utf16le.data, plato_english_utf16le.length,
+						    (void *)&plato_english_output.data, &plato_english_output.length),
+		       "conversion from UTF16LE to UTF8");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf8, "conversion from UTF16LE to UTF8 incorrect");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_english_utf16le.data, plato_english_utf16le.length,
+							 (void *)plato_english_output.data, plato_english_output.length,
+							 &plato_english_output.length),
+		       "conversion from UTF16LE to UTF8");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf8, "conversion from UTF16LE to UTF8 incorrect");
+
+	plato_english_output.length = 5;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_english_utf16le.data, plato_english_utf16le.length,
+							 (void *)plato_english_output.data, plato_english_output.length,
+							 &plato_english_output.length) == false,
+		       "conversion from UTF16LE to UTF8 should fail due to short output");
+	torture_assert_data_blob_equal(tctx, plato_english_output, data_blob_string_const("What "), "conversion from UTF16LE to UTF8 incorrect");
+	torture_assert_int_equal(tctx, plato_english_output.length, 5, "short conversion failed");
+
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
 						    CH_UTF16LE, CH_UNIX, 
 						    plato_english_utf16le.data, plato_english_utf16le.length, 
 						    (void *)&plato_english_output.data, &plato_english_output.length),
