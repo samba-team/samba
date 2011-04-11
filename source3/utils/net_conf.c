@@ -174,13 +174,12 @@ static int net_conf_delincludes_usage(struct net_context *c, int argc,
 /**
  * This functions process a service previously loaded with libsmbconf.
  */
-static WERROR import_process_service(struct net_context *c,
+static sbcErr import_process_service(struct net_context *c,
 				     struct smbconf_ctx *conf_ctx,
 				     struct smbconf_service *service)
 {
 	uint32_t idx;
-	WERROR werr = WERR_OK;
-	sbcErr err;
+	sbcErr err = SBC_ERR_OK;
 	uint32_t num_includes = 0;
 	char **includes = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -203,13 +202,11 @@ static WERROR import_process_service(struct net_context *c,
 	if (smbconf_share_exists(conf_ctx, service->name)) {
 		err = smbconf_delete_share(conf_ctx, service->name);
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_GENERAL_FAILURE;
 			goto done;
 		}
 	}
 	err = smbconf_create_share(conf_ctx, service->name);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_GENERAL_FAILURE;
 		goto done;
 	}
 
@@ -220,13 +217,13 @@ static WERROR import_process_service(struct net_context *c,
 							char *,
 							num_includes+1);
 			if (includes == NULL) {
-				werr = WERR_NOMEM;
+				err = SBC_ERR_NOMEM;
 				goto done;
 			}
 			includes[num_includes] = talloc_strdup(includes,
 						service->param_values[idx]);
 			if (includes[num_includes] == NULL) {
-				werr = WERR_NOMEM;
+				err = SBC_ERR_NOMEM;
 				goto done;
 			}
 			num_includes++;
@@ -240,7 +237,6 @@ static WERROR import_process_service(struct net_context *c,
 					  _("Error in section [%s], parameter \"%s\": %s\n"),
 					  service->name, service->param_names[idx],
 					  sbcErrorString(err));
-				werr = WERR_NOMEM;
 				goto done;
 			}
 		}
@@ -249,14 +245,13 @@ static WERROR import_process_service(struct net_context *c,
 	err = smbconf_set_includes(conf_ctx, service->name, num_includes,
 				   (const char **)includes);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NOMEM;
 		goto done;
 	}
 
-	werr = WERR_OK;
+	err = SBC_ERR_OK;
 done:
 	TALLOC_FREE(mem_ctx);
-	return werr;
+	return err;
 }
 
 
@@ -269,7 +264,7 @@ done:
 static int net_conf_list(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			 int argc, const char **argv)
 {
-	WERROR werr = WERR_OK;
+	sbcErr err;
 	int ret = -1;
 	TALLOC_CTX *mem_ctx;
 	uint32_t num_shares;
@@ -283,10 +278,10 @@ static int net_conf_list(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	werr = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &shares);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &shares);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error getting config: %s\n"),
-			  win_errstr(werr));
+			  sbcErrorString(err));
 		goto done;
 	}
 
@@ -324,7 +319,6 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	char *conf_source = NULL;
 	TALLOC_CTX *mem_ctx;
 	struct smbconf_ctx *txt_ctx;
-	WERROR werr;
 	sbcErr err;
 
 	if (c->display_usage)
@@ -361,7 +355,6 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error loading file '%s': %s\n"), filename,
 			 sbcErrorString(err));
-		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
 
@@ -383,22 +376,22 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		err = smbconf_transaction_start(conf_ctx);
 		if (!SBC_ERROR_IS_OK(err)) {
 			d_printf(_("error starting transaction: %s\n"),
-				 win_errstr(werr));
+				 sbcErrorString(err));
 			goto done;
 		}
 
-		werr = import_process_service(c, conf_ctx, service);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = import_process_service(c, conf_ctx, service);
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto cancel;
 		}
 	} else {
 		struct smbconf_service **services = NULL;
 		uint32_t num_shares, sidx;
 
-		werr = smbconf_get_config(txt_ctx, mem_ctx,
+		err = smbconf_get_config(txt_ctx, mem_ctx,
 					  &num_shares,
 					  &services);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto cancel;
 		}
 		if (!c->opt_testmode) {
@@ -423,9 +416,9 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		}
 
 		for (sidx = 0; sidx < num_shares; sidx++) {
-			werr = import_process_service(c, conf_ctx,
-						      services[sidx]);
-			if (!W_ERROR_IS_OK(werr)) {
+			err = import_process_service(c, conf_ctx,
+						     services[sidx]);
+			if (!SBC_ERROR_IS_OK(err)) {
 				goto cancel;
 			}
 

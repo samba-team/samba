@@ -141,12 +141,11 @@ sbcErr smbconf_drop(struct smbconf_ctx *ctx)
  *  param_names  : list of lists of parameter names for each share
  *  param_values : list of lists of parameter values for each share
  */
-WERROR smbconf_get_config(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,
 			  struct smbconf_service ***services)
 {
-	WERROR werr = WERR_OK;
 	sbcErr err;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint32_t tmp_num_shares;
@@ -155,7 +154,7 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 	uint32_t count;
 
 	if ((num_shares == NULL) || (services == NULL)) {
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
@@ -164,15 +163,13 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 	err = smbconf_get_share_names(ctx, tmp_ctx, &tmp_num_shares,
 				      &tmp_share_names);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_GENERAL_FAILURE;
 		goto done;
 	}
 
 	tmp_services = talloc_array(tmp_ctx, struct smbconf_service *,
 				    tmp_num_shares);
-
 	if (tmp_services == NULL) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 
@@ -181,12 +178,11 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 					tmp_share_names[count],
 					&tmp_services[count]);
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_GENERAL_FAILURE;
 			goto done;
 		}
 	}
 
-	werr = WERR_OK;
+	err = SBC_ERR_OK;
 
 	*num_shares = tmp_num_shares;
 	if (tmp_num_shares > 0) {
@@ -197,7 +193,7 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 /**
