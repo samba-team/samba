@@ -1036,37 +1036,39 @@ done:
 /**
  * delete a parameter from configuration
  */
-static WERROR smbconf_reg_delete_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_delete_parameter(struct smbconf_ctx *ctx,
 					   const char *service,
 					   const char *param)
 {
 	struct registry_key *key = NULL;
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	sbcErr err;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	err = smbconf_reg_open_service_key(mem_ctx, ctx, service,
 					   REG_KEY_ALL, &key);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NOMEM;
 		goto done;
 	}
 
 	if (!smbconf_reg_valname_valid(param)) {
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
 	if (!smbconf_value_exists(key, param)) {
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_CAN_NOT_COMPLETE;
 		goto done;
 	}
 
 	werr = reg_deletevalue(key, param);
+	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_ACCESS_DENIED;
+	}
 
 done:
 	talloc_free(mem_ctx);
-	return werr;
+	return err;
 }
 
 static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,

@@ -107,9 +107,9 @@ sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *param,
 				    char **valstr);
-WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param);
-WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 				       const char *param);
 WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
 			    TALLOC_CTX *mem_ctx,
