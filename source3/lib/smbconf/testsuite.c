@@ -40,17 +40,17 @@ static void print_strings(const char *prefix,
 
 static bool test_get_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
+	sbcErr err;
 	bool ret = false;
 	uint32_t num_includes = 0;
 	char **includes = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	printf("TEST: get_includes\n");
-	werr = smbconf_get_global_includes(ctx, mem_ctx,
-					   &num_includes, &includes);
-	if (!W_ERROR_IS_OK(werr)) {
-		printf("FAIL: get_includes - %s\n", win_errstr(werr));
+	err = smbconf_get_global_includes(ctx, mem_ctx,
+					  &num_includes, &includes);
+	if (!SBC_ERROR_IS_OK(err)) {
+		printf("FAIL: get_includes - %s\n", sbcErrorString(err));
 		goto done;
 	}
 
@@ -69,6 +69,7 @@ done:
 static bool test_set_get_includes(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
+	sbcErr err;
 	uint32_t count;
 	bool ret = false;
 	const char *set_includes[] = {
@@ -89,11 +90,11 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 		goto done;
 	}
 
-	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
-					   &get_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
+					  &get_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: get_set_includes (getting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
@@ -126,6 +127,7 @@ done:
 static bool test_delete_includes(struct smbconf_ctx *ctx)
 {
 	WERROR werr;
+	sbcErr err;
 	bool ret = false;
 	const char *set_includes[] = {
 		"/path/to/include",
@@ -151,11 +153,11 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 		goto done;
 	}
 
-	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
-					   &get_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
+					  &get_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (getting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 

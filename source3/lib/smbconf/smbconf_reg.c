@@ -394,7 +394,6 @@ static sbcErr smbconf_reg_get_includes_internal(TALLOC_CTX *mem_ctx,
 					count,
 					array[count]);
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NOMEM;
 			goto done;
 		}
 	}
@@ -411,6 +410,7 @@ static sbcErr smbconf_reg_get_includes_internal(TALLOC_CTX *mem_ctx,
 		*includes = NULL;
 	}
 
+	err = SBC_ERR_OK;
 done:
 	talloc_free(tmp_ctx);
 	return err;
@@ -1071,13 +1071,12 @@ done:
 	return err;
 }
 
-static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_get_includes(struct smbconf_ctx *ctx,
 				       TALLOC_CTX *mem_ctx,
 				       const char *service,
 				       uint32_t *num_includes,
 				       char ***includes)
 {
-	WERROR werr;
 	sbcErr err;
 	struct registry_key *key = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -1085,20 +1084,18 @@ static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
 	err = smbconf_reg_open_service_key(tmp_ctx, ctx, service,
 					   REG_KEY_READ, &key);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NOMEM;
 		goto done;
 	}
 
 	err = smbconf_reg_get_includes_internal(mem_ctx, key, num_includes,
 						 includes);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NOMEM;
 		goto done;
 	}
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 static WERROR smbconf_reg_set_includes(struct smbconf_ctx *ctx,
