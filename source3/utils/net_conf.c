@@ -1102,7 +1102,7 @@ static int net_conf_delincludes(struct net_context *c,
 				struct smbconf_ctx *conf_ctx,
 				int argc, const char **argv)
 {
-	WERROR werr;
+	sbcErr err;
 	char *service;
 	int ret = -1;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -1118,9 +1118,9 @@ static int net_conf_delincludes(struct net_context *c,
 		goto done;
 	}
 
-	werr = smbconf_delete_includes(conf_ctx, service);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_printf(_("error deleting includes: %s\n"), win_errstr(werr));
+	err = smbconf_delete_includes(conf_ctx, service);
+	if (!SBC_ERROR_IS_OK(err)) {
+		d_printf(_("error deleting includes: %s\n"), sbcErrorString(err));
 		goto done;
 	}
 
