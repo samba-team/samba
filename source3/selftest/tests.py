@@ -92,6 +92,10 @@ for t in tests:
     plantestsuite("samba3.wbinfo_s3.(dc:local).%s" % t, "dc:local", [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
     plantestsuite("samba3.wbinfo_s3.(member:local).%s" % t, "member:local", [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
 
+plantestsuite(
+    "samba3.wbinfo_sids2xids.(member:local)", "member:local",
+    [os.path.join(samba3srcdir, "script/tests/test_wbinfo_sids2xids.sh")])
+
 plantestsuite("samba3.ntlm_auth.(dc:local)", "dc:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, configuration])
 
 for env in ["dc", "member"]:
