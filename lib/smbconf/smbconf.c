@@ -248,10 +248,10 @@ sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 /**
  * delete a service from configuration
  */
-WERROR smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
+sbcErr smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
 {
 	if (!smbconf_share_exists(ctx, servicename)) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	return ctx->ops->delete_share(ctx, servicename);

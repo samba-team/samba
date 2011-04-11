@@ -538,9 +538,10 @@ static bool smbconf_reg_key_has_values(struct registry_key *key)
 /**
  * delete all values from a key
  */
-static WERROR smbconf_reg_delete_values(struct registry_key *key)
+static sbcErr smbconf_reg_delete_values(struct registry_key *key)
 {
 	WERROR werr;
+	sbcErr err;
 	char *valname;
 	struct registry_value *valvalue;
 	uint32_t count;
@@ -553,6 +554,7 @@ static WERROR smbconf_reg_delete_values(struct registry_key *key)
 	{
 		werr = reg_deletevalue(key, valname);
 		if (!W_ERROR_IS_OK(werr)) {
+			err = SBC_ERR_ACCESS_DENIED;
 			goto done;
 		}
 	}
@@ -561,14 +563,15 @@ static WERROR smbconf_reg_delete_values(struct registry_key *key)
 			  "Error enumerating values of %s: %s\n",
 			  key->key->name,
 			  win_errstr(werr)));
+		err = SBC_ERR_ACCESS_DENIED;
 		goto done;
 	}
 
-	werr = WERR_OK;
+	err = SBC_ERR_OK;
 
 done:
 	talloc_free(mem_ctx);
-	return werr;
+	return err;
 }
 
 /**********************************************************************
@@ -934,20 +937,24 @@ done:
 /**
  * delete a service from configuration
  */
-static WERROR smbconf_reg_delete_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_delete_share(struct smbconf_ctx *ctx,
 				       const char *servicename)
 {
-	WERROR werr = WERR_OK;
+	WERROR werr;
+	sbcErr err = SBC_ERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (servicename != NULL) {
 		werr = reg_deletekey_recursive(rpd(ctx)->base_key, servicename);
+		if (!W_ERROR_IS_OK(werr)) {
+			err = SBC_ERR_ACCESS_DENIED;
+		}
 	} else {
-		werr = smbconf_reg_delete_values(rpd(ctx)->base_key);
+		err = smbconf_reg_delete_values(rpd(ctx)->base_key);
 	}
 
 	talloc_free(mem_ctx);
-	return werr;
+	return err;
 }
 
 /**
