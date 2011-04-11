@@ -380,8 +380,8 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			goto cancel;
 		}
 
-		werr = smbconf_transaction_start(conf_ctx);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_transaction_start(conf_ctx);
+		if (!SBC_ERROR_IS_OK(err)) {
 			d_printf(_("error starting transaction: %s\n"),
 				 win_errstr(werr));
 			goto done;
@@ -415,10 +415,10 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		 * imported shares, the MAX_TALLOC_SIZE of 256 MB
 		 * was exceeded.
 		 */
-		werr = smbconf_transaction_start(conf_ctx);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_transaction_start(conf_ctx);
+		if (!SBC_ERROR_IS_OK(err)) {
 			d_printf(_("error starting transaction: %s\n"),
-				 win_errstr(werr));
+				 sbcErrorString(err));
 			goto done;
 		}
 
@@ -433,26 +433,26 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 				continue;
 			}
 
-			werr = smbconf_transaction_commit(conf_ctx);
-			if (!W_ERROR_IS_OK(werr)) {
+			err = smbconf_transaction_commit(conf_ctx);
+			if (!SBC_ERROR_IS_OK(err)) {
 				d_printf(_("error committing transaction: "
 					   "%s\n"),
-					 win_errstr(werr));
+					 sbcErrorString(err));
 				goto done;
 			}
-			werr = smbconf_transaction_start(conf_ctx);
-			if (!W_ERROR_IS_OK(werr)) {
+			err = smbconf_transaction_start(conf_ctx);
+			if (!SBC_ERROR_IS_OK(err)) {
 				d_printf(_("error starting transaction: %s\n"),
-					 win_errstr(werr));
+					 sbcErrorString(err));
 				goto done;
 			}
 		}
 	}
 
-	werr = smbconf_transaction_commit(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_commit(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error committing transaction: %s\n"),
-			 win_errstr(werr));
+			 sbcErrorString(err));
 	} else {
 		ret = 0;
 	}
@@ -460,10 +460,10 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	goto done;
 
 cancel:
-	werr = smbconf_transaction_cancel(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_cancel(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error cancelling transaction: %s\n"),
-			 win_errstr(werr));
+			 sbcErrorString(err));
 	}
 
 done:
@@ -586,7 +586,6 @@ static int net_conf_addshare(struct net_context *c,
 			     const char **argv)
 {
 	int ret = -1;
-	WERROR werr = WERR_OK;
 	sbcErr err;
 	char *sharename = NULL;
 	const char *path = NULL;
@@ -713,10 +712,10 @@ static int net_conf_addshare(struct net_context *c,
 	 * start a transaction
 	 */
 
-	werr = smbconf_transaction_start(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_start(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf("error starting transaction: %s\n",
-			 win_errstr(werr));
+			 sbcErrorString(err));
 		goto done;
 	}
 
@@ -771,10 +770,10 @@ static int net_conf_addshare(struct net_context *c,
 	 * commit the whole thing
 	 */
 
-	werr = smbconf_transaction_commit(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_commit(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf("error committing transaction: %s\n",
-			 win_errstr(werr));
+			 sbcErrorString(err));
 	} else {
 		ret = 0;
 	}
@@ -782,10 +781,10 @@ static int net_conf_addshare(struct net_context *c,
 	goto done;
 
 cancel:
-	werr = smbconf_transaction_cancel(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_cancel(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf("error cancelling transaction: %s\n",
-			 win_errstr(werr));
+			 sbcErrorString(err));
 	}
 
 done:
@@ -829,7 +828,6 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			    int argc, const char **argv)
 {
 	int ret = -1;
-	WERROR werr = WERR_OK;
 	sbcErr err;
 	char *service = NULL;
 	char *param = NULL;
@@ -858,10 +856,10 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	}
 	value_str = argv[2];
 
-	werr = smbconf_transaction_start(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_start(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error starting transaction: %s\n"),
-			 win_errstr(werr));
+			 sbcErrorString(err));
 		goto done;
 	}
 
@@ -881,10 +879,10 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		goto cancel;
 	}
 
-	werr = smbconf_transaction_commit(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_commit(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error committing transaction: %s\n"),
-			 win_errstr(werr));
+			 sbcErrorString(err));
 	} else {
 		ret = 0;
 	}
@@ -892,10 +890,10 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	goto done;
 
 cancel:
-	werr = smbconf_transaction_cancel(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_transaction_cancel(conf_ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_printf(_("error cancelling transaction: %s\n"),
-			 win_errstr(werr));
+			 sbcErrorString(err));
 	}
 
 done:
