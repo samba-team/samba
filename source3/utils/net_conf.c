@@ -960,7 +960,7 @@ static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			    int argc, const char **argv)
 {
 	int ret = -1;
-	WERROR werr = WERR_OK;
+	sbcErr err;
 	char *service = NULL;
 	char *param = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -986,21 +986,20 @@ static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	werr = smbconf_delete_parameter(conf_ctx, service, param);
-
-	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
+	err = smbconf_delete_parameter(conf_ctx, service, param);
+	if (SBC_ERROR_EQUAL(err, SBC_ERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
 			  _("Error: given service '%s' does not exist.\n"),
 			  service);
 		goto done;
-	} else if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAM)) {
+	} else if (SBC_ERROR_EQUAL(err, SBC_ERR_INVALID_PARAM)) {
 		d_fprintf(stderr,
 			  _("Error: given parameter '%s' is not set.\n"),
 			  param);
 		goto done;
-	} else if (!W_ERROR_IS_OK(werr)) {
+	} else if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error deleting value '%s': %s.\n"),
-			  param, win_errstr(werr));
+			  param, sbcErrorString(err));
 		goto done;
 	}
 

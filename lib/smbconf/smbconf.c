@@ -330,7 +330,7 @@ sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 /**
  * delete a parameter from configuration
  */
-WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param)
 {
 	return ctx->ops->delete_parameter(ctx, service, param);
@@ -341,19 +341,18 @@ WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
  *
  * Create [global] if it does not exist.
  */
-WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 				       const char *param)
 {
-	WERROR werr;
 	sbcErr err;
 
 	err = smbconf_global_check(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
-	werr = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
+	err = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
 
-	return werr;
+	return err;
 }
 
 WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
