@@ -471,12 +471,12 @@ static sbcErr smbconf_txt_delete_share(struct smbconf_ctx *ctx,
 /**
  * set a configuration parameter to the value provided.
  */
-static WERROR smbconf_txt_set_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_set_parameter(struct smbconf_ctx *ctx,
 					const char *service,
 					const char *param,
 					const char *valstr)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**

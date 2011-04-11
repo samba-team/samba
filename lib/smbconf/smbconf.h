@@ -91,11 +91,11 @@ sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 struct smbconf_service **service);
 sbcErr smbconf_delete_share(struct smbconf_ctx *ctx,
 			    const char *servicename);
-WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *service,
 			     const char *param,
 			     const char *valstr);
-WERROR smbconf_set_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val);
 WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     TALLOC_CTX *mem_ctx,
