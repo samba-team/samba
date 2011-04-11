@@ -166,7 +166,7 @@ bool event_add_to_poll_args(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 		return true;
 	}
 	if (ev->timer_events == NULL) {
-		*ptimeout = INT_MAX;
+		*ptimeout = MIN(*ptimeout, INT_MAX);
 		return true;
 	}
 
