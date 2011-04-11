@@ -193,14 +193,15 @@ _PUBLIC_ size_t smb_iconv(smb_iconv_t cd,
 		while (*inbytesleft > 0) {
 			char *bufp1 = cvtbuf;
 			const char *bufp2 = cvtbuf;
-
+			int saved_errno = errno;
+			bool pull_failed = false;
 			bufsize = SMB_ICONV_BUFSIZE;
 
 			if (cd->pull(cd->cd_pull,
 				     inbuf, inbytesleft, &bufp1, &bufsize) == -1
 			    && errno != E2BIG) {
-				talloc_free(cvtbuf);
-				return -1;
+				saved_errno = errno;
+				pull_failed = true;
 			}
 
 			bufsize = SMB_ICONV_BUFSIZE - bufsize;
@@ -209,6 +210,10 @@ _PUBLIC_ size_t smb_iconv(smb_iconv_t cd,
 				     &bufp2, &bufsize,
 				     outbuf, outbytesleft) == -1) {
 				talloc_free(cvtbuf);
+				return -1;
+			} else if (pull_failed) {
+				/* We want the pull errno if possible */
+				errno = saved_errno;
 				return -1;
 			}
 		}
