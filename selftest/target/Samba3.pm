@@ -106,12 +106,16 @@ sub setup_env($$$)
 		return $self->setup_ktest("$path/ktest");
 	} elsif ($envname eq "secserver") {
 		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+			if (not defined($self->setup_dc("$path/dc"))) {
+			        return undef;
+			}
 		}
 		return $self->setup_secserver("$path/secserver", $self->{vars}->{dc});
 	} elsif ($envname eq "member") {
 		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+			if (not defined($self->setup_dc("$path/dc"))) {
+			        return undef;
+			}
 		}
 		return $self->setup_member("$path/member", $self->{vars}->{dc});
 	} else {
@@ -137,11 +141,15 @@ sub setup_dc($$)
 				    "localdc2pass",
 				    $dc_options);
 
+	$vars or return undef;
+
 	$self->check_or_start($vars,
 			      ($ENV{SMBD_MAXTIME} or 2700),
 			       "yes", "yes", "yes");
 
-	$self->wait_for_start($vars);
+	if (not $self->wait_for_start($vars)) {
+	       return undef;
+	}
 
 	$vars->{DC_SERVER} = $vars->{SERVER};
 	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
@@ -170,7 +178,7 @@ sub setup_member($$$)
 				   "localmember3pass",
 				   $member_options);
 
-	$ret or die("Unable to provision");
+	$ret or return undef;
 
 	my $net = $self->binpath("net");
 	my $cmd = "";
@@ -184,7 +192,9 @@ sub setup_member($$$)
 			      ($ENV{SMBD_MAXTIME} or 2700),
 			       "yes", "yes", "yes");
 
-	$self->wait_for_start($ret);
+	if (not $self->wait_for_start($ret)) {
+	       return undef;
+	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
@@ -212,11 +222,15 @@ sub setup_secshare($$)
 				    "local4pass",
 				    $secshare_options);
 
+	$vars or return undef;
+
 	$self->check_or_start($vars,
 			      ($ENV{SMBD_MAXTIME} or 2700),
 			       "yes", "no", "yes");
 
-	$self->wait_for_start($vars);
+	if (not $self->wait_for_start($vars)) {
+	       return undef;
+	}
 
 	$self->{vars}->{secshare} = $vars;
 
@@ -240,13 +254,15 @@ sub setup_secserver($$$)
 				   "localserver5pass",
 				   $secserver_options);
 
-	$ret or die("Unable to provision");
+	$ret or return undef;
 
 	$self->check_or_start($ret,
 			      ($ENV{SMBD_MAXTIME} or 2700),
 			       "yes", "no", "yes");
 
-	$self->wait_for_start($ret);
+	if (not $self->wait_for_start($ret)) {
+	       return undef;
+	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
@@ -276,7 +292,7 @@ sub setup_ktest($$$)
 				   "localktest6pass",
 				   $ktest_options);
 
-	$ret or die("Unable to provision");
+	$ret or return undef;
 
 	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
 	print USERMAP "
@@ -326,7 +342,9 @@ $ret->{USERNAME} = KTEST\\Administrator
 			      ($ENV{SMBD_MAXTIME} or 2700),
 			       "yes", "no", "yes");
 
-	$self->wait_for_start($ret);
+	if (not $self->wait_for_start($ret)) {
+	       return undef;
+	}
 	return $ret;
 }
 
@@ -873,12 +891,18 @@ sub wait_for_start($$)
 	} while ($ret != 0 && $count < 10);
 	if ($count == 10) {
 	    print "SMBD failed to start up in a reasonable time (20sec)\n";
-	    exit 1;
+	    teardown_env($self, $envvars);
+	    return 0;
 	}
 	# Ensure we have domain users mapped.
-	system($self->binpath("net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
+	$ret = system($self->binpath("net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
+	if ($ret != 0) {
+	    return 1;
+	}
 
 	print $self->getlog_env($envvars);
+
+	return 1;
 }
 
 1;
