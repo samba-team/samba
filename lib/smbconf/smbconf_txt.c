@@ -533,13 +533,12 @@ static sbcErr smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
 	return SBC_ERR_NOT_SUPPORTED;
 }
 
-static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 				       TALLOC_CTX *mem_ctx,
 				       const char *service,
 				       uint32_t *num_includes,
 				       char ***includes)
 {
-	WERROR werr;
 	sbcErr err;
 	bool found;
 	uint32_t sidx, count;
@@ -549,7 +548,7 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 
 	err = smbconf_txt_load_file(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
 
 	found = smbconf_find_in_array(service,
@@ -557,7 +556,7 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 				      pd(ctx)->cache->num_shares,
 				      &sidx);
 	if (!found) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -571,7 +570,6 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 				tmp_num_includes,
 				pd(ctx)->cache->param_values[sidx][count]);
 			if (!SBC_ERROR_IS_OK(err)) {
-				werr = WERR_NOMEM;
 				goto done;
 			}
 			tmp_num_includes++;
@@ -582,18 +580,18 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 	if (*num_includes > 0) {
 		*includes = talloc_move(mem_ctx, &tmp_includes);
 		if (*includes == NULL) {
-			werr = WERR_NOMEM;
+			err = SBC_ERR_NOMEM;
 			goto done;
 		}
 	} else {
 		*includes = NULL;
 	}
 
-	werr = WERR_OK;
+	err = SBC_ERR_OK;
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 static WERROR smbconf_txt_set_includes(struct smbconf_ctx *ctx,

@@ -1014,7 +1014,7 @@ static int net_conf_getincludes(struct net_context *c,
 				struct smbconf_ctx *conf_ctx,
 				int argc, const char **argv)
 {
-	WERROR werr;
+	sbcErr err;
 	uint32_t num_includes;
 	uint32_t count;
 	char *service;
@@ -1033,10 +1033,10 @@ static int net_conf_getincludes(struct net_context *c,
 		goto done;
 	}
 
-	werr = smbconf_get_includes(conf_ctx, mem_ctx, service,
+	err = smbconf_get_includes(conf_ctx, mem_ctx, service,
 				    &num_includes, &includes);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_printf(_("error getting includes: %s\n"), win_errstr(werr));
+	if (!SBC_ERROR_IS_OK(err)) {
+		d_printf(_("error getting includes: %s\n"), sbcErrorString(err));
 		goto done;
 	}
 
