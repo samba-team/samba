@@ -834,15 +834,14 @@ static bool test_plato_case_utf8(struct torture_context *tctx)
 	return true;
 }
 
-struct torture_suite *torture_local_convert_string(TALLOC_CTX *mem_ctx)
+struct torture_suite *torture_local_convert_string_handle(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string_talloc");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string_handle");
 
 	torture_suite_add_simple_test(suite, "gd_iso8859_cp850", test_gd_iso8859_cp850);
 	torture_suite_add_simple_test(suite, "plato_english_iso8859_cp850", test_plato_english_iso8859_cp850);
 	torture_suite_add_simple_test(suite, "plato_cp850_utf8", test_plato_cp850_utf8);
 	torture_suite_add_simple_test(suite, "plato_latin_cp850_utf8", test_plato_latin_cp850_utf8);
-	torture_suite_add_simple_test(suite, "plato_ascii_cp850_utf8", test_plato_latin_cp850_utf8);
 	return suite;
 }
 
