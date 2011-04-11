@@ -222,6 +222,12 @@ bool convert_string_handle(struct smb_iconv_handle *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen, size_t *converted_size);
+bool convert_string_error_handle(struct smb_iconv_handle *ic,
+				 charset_t from, charset_t to,
+				 void const *src, size_t srclen,
+				 void *dest, size_t destlen,
+				 size_t *converted_size);
+
 bool convert_string_talloc_handle(TALLOC_CTX *ctx,
 				       struct smb_iconv_handle *ic,
 				       charset_t from, charset_t to, 

@@ -124,10 +124,11 @@ convert:
  * @returns the number of bytes occupied in the destination
  * on error, returns -1, and sets errno
  **/
-_PUBLIC_ ssize_t convert_string_error_handle(struct smb_iconv_handle *ic,
-					     charset_t from, charset_t to,
-					     void const *src, size_t srclen,
-					     void *dest, size_t destlen, size_t *converted_size)
+_PUBLIC_ bool convert_string_error_handle(struct smb_iconv_handle *ic,
+					  charset_t from, charset_t to,
+					  void const *src, size_t srclen,
+					  void *dest, size_t destlen,
+					  size_t *converted_size)
 {
 	size_t i_len, o_len;
 	ssize_t retval;
@@ -154,7 +155,7 @@ _PUBLIC_ ssize_t convert_string_error_handle(struct smb_iconv_handle *ic,
 
 	if (converted_size != NULL)
 		*converted_size = destlen-o_len;
-	return retval;
+	return (retval != (ssize_t)-1);
 }
 
 
@@ -172,10 +173,10 @@ _PUBLIC_ bool convert_string_handle(struct smb_iconv_handle *ic,
 					 void const *src, size_t srclen,
 					 void *dest, size_t destlen, size_t *converted_size)
 {
-	ssize_t retval;
+	bool retval;
 
 	retval = convert_string_error_handle(ic, from, to, src, srclen, dest, destlen, converted_size);
-	if(retval==(size_t)-1) {
+	if(retval==false) {
 	    	const char *reason;
 		switch(errno) {
 		case EINVAL:
