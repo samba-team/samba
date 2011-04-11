@@ -602,10 +602,10 @@ static sbcErr smbconf_txt_set_includes(struct smbconf_ctx *ctx,
 	return SBC_ERR_NOT_SUPPORTED;
 }
 
-static WERROR smbconf_txt_delete_includes(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_delete_includes(struct smbconf_ctx *ctx,
 					  const char *service)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 static WERROR smbconf_txt_transaction_start(struct smbconf_ctx *ctx)

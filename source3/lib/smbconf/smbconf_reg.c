@@ -1059,7 +1059,7 @@ static sbcErr smbconf_reg_delete_parameter(struct smbconf_ctx *ctx,
 	}
 
 	if (!smbconf_value_exists(key, param)) {
-		err = SBC_ERR_CAN_NOT_COMPLETE;
+		err = SBC_ERR_OK;
 		goto done;
 	}
 
@@ -1136,10 +1136,10 @@ done:
 	return err;
 }
 
-static WERROR smbconf_reg_delete_includes(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_delete_includes(struct smbconf_ctx *ctx,
 					  const char *service)
 {
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	sbcErr err;
 	struct registry_key *key = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -1147,20 +1147,24 @@ static WERROR smbconf_reg_delete_includes(struct smbconf_ctx *ctx,
 	err = smbconf_reg_open_service_key(tmp_ctx, ctx, service,
 					   REG_KEY_ALL, &key);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NOMEM;
 		goto done;
 	}
 
 	if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
+		err = SBC_ERR_OK;
 		goto done;
 	}
 
 	werr = reg_deletevalue(key, INCLUDES_VALNAME);
+	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_ACCESS_DENIED;
+		goto done;
+	}
 
-
+	err = SBC_ERR_OK;
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 static WERROR smbconf_reg_transaction_start(struct smbconf_ctx *ctx)
