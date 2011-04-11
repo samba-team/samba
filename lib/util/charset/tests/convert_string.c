@@ -328,10 +328,27 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 				 plato_output.length / 2,
 				 "checking strlen_m_ext of conversion of UTF8 to UTF16LE");
 
+	memset(plato_output.data, '\0', plato_output.length);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_UTF16LE,
+							 plato_utf8.data, plato_utf8.length,
+							 (void *)plato_output.data, plato_output.length,
+							 &plato_output.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf16le, "conversion from UTF8 to UTF16LE incorrect");
+
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
 						    CH_UTF16LE, CH_UTF8,
 						    plato_output.data, plato_output.length,
 						    (void *)&plato_output2.data, &plato_output2.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output2, plato_utf8, "conversion from UTF8 to UTF16LE incorrect");
+
+	memset(plato_output2.data, '\0', plato_output2.length);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+						   CH_UTF16LE, CH_UTF8,
+						   plato_output.data, plato_output.length,
+						   (void *)plato_output2.data, plato_output2.length, &plato_output2.length),
 		       "conversion of UTF8 ancient greek to UTF16 failed");
 	torture_assert_data_blob_equal(tctx, plato_output2, plato_utf8, "conversion from UTF8 to UTF16LE incorrect");
 
@@ -348,6 +365,13 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 						     CH_UTF8, CH_UTF8),
 				 plato_output.length,
 				 "checking strlen_m_ext of conversion of UTF8 to UTF8");
+	memset(plato_output.data, '\0', plato_output.length);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_UTF8,
+							 plato_utf8.data, plato_utf8.length,
+							 (void *)plato_output.data, plato_output.length,
+							 &plato_output.length),
+		       "conversion of UTF8 to UTF8");
 
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
 						    CH_UTF8, CH_DOS, 
@@ -362,6 +386,15 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 		       "conversion of UTF16 ancient greek to unix charset UTF8 failed");
 	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8, "conversion from UTF8 to (unix charset) UTF8 incorrect");
 	
+	memset(plato_output.data, '\0', plato_output.length);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_UNIX,
+							 plato_utf8.data, plato_utf8.length,
+							 (void *)plato_output.data, plato_output.length,
+							 &plato_output.length),
+		       "conversion of UTF16 ancient greek to unix charset UTF8 failed");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8, "conversion from UTF8 to (unix charset) UTF8 incorrect");
+
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
 						    CH_UTF8, CH_DISPLAY, 
 						    plato_utf8.data, plato_utf8.length, 
@@ -374,7 +407,41 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 						    plato_utf16le.data, plato_utf16le.length, 
 						    (void *)&plato_output.data, &plato_output.length) == false, 	
 		       "conversion of UTF16 ancient greek to DOS charset CP850 should fail");
-	
+
+	/* Allocate enough space, if it were possible do do the conversion */
+	plato_output = data_blob_talloc(tctx, NULL, plato_utf16le.length);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_DOS,
+							 plato_utf16le.data, plato_utf16le.length,
+							 (void *)plato_output.data, plato_output.length,
+							 &plato_output.length) == false,
+		       "conversion of UTF16 ancient greek to DOS charset CP850 should fail");
+	torture_assert_errno_equal(tctx,  EILSEQ, "conversion of UTF16 ancient greek to DOS charset CP850 should fail");
+
+	/* Allocate only enough space for a partial conversion */
+	plato_output = data_blob_talloc(tctx, NULL, 9);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_utf16le.data, plato_utf16le.length,
+							 (void *)plato_output.data, plato_output.length,
+							 &plato_output.length) == false,
+		       "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_errno_equal(tctx,  E2BIG, "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_int_equal(tctx, plato_output.length, 8,
+				 "conversion of UTF16 ancient greek to UTF8 should stop on multibyte boundary");
+
+	plato_output = data_blob_talloc(tctx, NULL, 2);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_utf16le.data, plato_utf16le.length,
+							 (void *)plato_output.data, plato_output.length,
+							 &plato_output.length) == false,
+		       "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_errno_equal(tctx,  E2BIG, "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_int_equal(tctx, plato_output.length, 0,
+				 "conversion of UTF16 ancient greek to UTF8 should stop on multibyte boundary");
+
+
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
 						    CH_UTF16LE, CH_UNIX, 
 						    plato_utf16le.data, plato_utf16le.length, 
