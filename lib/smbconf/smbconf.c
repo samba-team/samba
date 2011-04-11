@@ -404,23 +404,22 @@ sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
 }
 
 
-WERROR smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service)
+sbcErr smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service)
 {
 	return ctx->ops->delete_includes(ctx, service);
 }
 
-WERROR smbconf_delete_global_includes(struct smbconf_ctx *ctx)
+sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
 	sbcErr err;
 
 	err = smbconf_global_check(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
-	werr = smbconf_delete_includes(ctx, GLOBAL_NAME);
+	err = smbconf_delete_includes(ctx, GLOBAL_NAME);
 
-	return werr;
+	return err;
 }
 
 WERROR smbconf_transaction_start(struct smbconf_ctx *ctx)

@@ -125,7 +125,6 @@ done:
 
 static bool test_delete_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
 	sbcErr err;
 	bool ret = false;
 	const char *set_includes[] = {
@@ -145,10 +144,10 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 		goto done;
 	}
 
-	werr = smbconf_delete_global_includes(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_delete_global_includes(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (deleting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
@@ -165,10 +164,10 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 		goto done;
 	}
 
-	werr = smbconf_delete_global_includes(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_delete_global_includes(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (delete empty includes) - "
-		       "%s\n", win_errstr(werr));
+		       "%s\n", sbcErrorString(err));
 		goto done;
 	}
 
