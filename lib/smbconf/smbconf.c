@@ -380,28 +380,27 @@ sbcErr smbconf_get_global_includes(struct smbconf_ctx *ctx,
 	return err;
 }
 
-WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_includes(struct smbconf_ctx *ctx,
 			    const char *service,
 			    uint32_t num_includes, const char **includes)
 {
 	return ctx->ops->set_includes(ctx, service, num_includes, includes);
 }
 
-WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
 				   uint32_t num_includes,
 				   const char **includes)
 {
-	WERROR werr;
 	sbcErr err;
 
 	err = smbconf_global_check(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
-	werr = smbconf_set_includes(ctx, GLOBAL_NAME,
-				    num_includes, includes);
+	err = smbconf_set_includes(ctx, GLOBAL_NAME,
+				   num_includes, includes);
 
-	return werr;
+	return err;
 }
 
 
