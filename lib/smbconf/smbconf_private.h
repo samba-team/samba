@@ -63,7 +63,7 @@ struct smbconf_ops {
 			       TALLOC_CTX *mem_ctx,
 			       const char *service,
 			       uint32_t *num_includes, char ***includes);
-	WERROR (*set_includes)(struct smbconf_ctx *ctx,
+	sbcErr (*set_includes)(struct smbconf_ctx *ctx,
 			       const char *service,
 			       uint32_t num_includes, const char **includes);
 	WERROR (*delete_includes)(struct smbconf_ctx *ctx,

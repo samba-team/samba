@@ -68,7 +68,6 @@ done:
 
 static bool test_set_get_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
 	sbcErr err;
 	uint32_t count;
 	bool ret = false;
@@ -83,10 +82,10 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 
 	printf("TEST: set_get_includes\n");
 
-	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: get_set_includes (setting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
@@ -139,10 +138,10 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 
 	printf("TEST: delete_includes\n");
 
-	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (setting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 

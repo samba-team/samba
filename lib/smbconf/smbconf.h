@@ -118,10 +118,10 @@ sbcErr smbconf_get_includes(struct smbconf_ctx *ctx,
 sbcErr smbconf_get_global_includes(struct smbconf_ctx *ctx,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t *num_includes, char ***includes);
-WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_includes(struct smbconf_ctx *ctx,
 			    const char *service,
 			    uint32_t num_includes, const char **includes);
-WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
 				   uint32_t num_includes,
 				   const char **includes);
 WERROR smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service);

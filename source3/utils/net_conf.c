@@ -246,9 +246,14 @@ static WERROR import_process_service(struct net_context *c,
 		}
 	}
 
-	werr = smbconf_set_includes(conf_ctx, service->name, num_includes,
-				    (const char **)includes);
+	err = smbconf_set_includes(conf_ctx, service->name, num_includes,
+				   (const char **)includes);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
 
+	werr = WERR_OK;
 done:
 	TALLOC_FREE(mem_ctx);
 	return werr;
@@ -1055,7 +1060,7 @@ static int net_conf_setincludes(struct net_context *c,
 				struct smbconf_ctx *conf_ctx,
 				int argc, const char **argv)
 {
-	WERROR werr;
+	sbcErr err;
 	char *service;
 	uint32_t num_includes;
 	const char **includes;
@@ -1080,9 +1085,9 @@ static int net_conf_setincludes(struct net_context *c,
 		includes = argv + 1;
 	}
 
-	werr = smbconf_set_includes(conf_ctx, service, num_includes, includes);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_printf(_("error setting includes: %s\n"), win_errstr(werr));
+	err = smbconf_set_includes(conf_ctx, service, num_includes, includes);
+	if (!SBC_ERROR_IS_OK(err)) {
+		d_printf(_("error setting includes: %s\n"), sbcErrorString(err));
 		goto done;
 	}
 
