@@ -220,7 +220,7 @@ function main
 	/bin/rm -f source4/ldap_server/devdocs/ldapext-ldapv3-vlv-04.txt
     fi
 
-    /bin/rm -f Makefile configure
+    /bin/rm -f Makefile configure configure.developer
 
     packaging/bin/update-pkginfo ${version} 1 ""
 
