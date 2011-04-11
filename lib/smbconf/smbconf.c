@@ -260,7 +260,7 @@ sbcErr smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
 /**
  * set a configuration parameter to the value provided.
  */
-WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *service,
 			     const char *param,
 			     const char *valstr)
@@ -274,19 +274,18 @@ WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
  *
  * This also creates [global] when it does not exist.
  */
-WERROR smbconf_set_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val)
 {
-	WERROR werr = WERR_OK;
 	sbcErr err;
 
 	err = smbconf_global_check(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
-	werr = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
+	err = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
 
-	return werr;
+	return err;
 }
 
 /**

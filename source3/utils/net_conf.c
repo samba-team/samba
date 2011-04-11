@@ -231,15 +231,16 @@ static WERROR import_process_service(struct net_context *c,
 			}
 			num_includes++;
 		} else {
-			werr = smbconf_set_parameter(conf_ctx,
+			err = smbconf_set_parameter(conf_ctx,
 						     service->name,
 						     service->param_names[idx],
 						     service->param_values[idx]);
-			if (!W_ERROR_IS_OK(werr)) {
+			if (!SBC_ERROR_IS_OK(err)) {
 				d_fprintf(stderr,
 					  _("Error in section [%s], parameter \"%s\": %s\n"),
 					  service->name, service->param_names[idx],
-					  win_errstr(werr));
+					  sbcErrorString(err));
+				werr = WERR_NOMEM;
 				goto done;
 			}
 		}
@@ -729,35 +730,35 @@ static int net_conf_addshare(struct net_context *c,
 	 * fill the share with parameters
 	 */
 
-	werr = smbconf_set_parameter(conf_ctx, sharename, "path", path);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_parameter(conf_ctx, sharename, "path", path);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
-			  "path", win_errstr(werr));
+			  "path", sbcErrorString(err));
 		goto cancel;
 	}
 
 	if (comment != NULL) {
-		werr = smbconf_set_parameter(conf_ctx, sharename, "comment",
-					     comment);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_set_parameter(conf_ctx, sharename, "comment",
+					    comment);
+		if (!SBC_ERROR_IS_OK(err)) {
 			d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
-				  "comment", win_errstr(werr));
+				  "comment", sbcErrorString(err));
 			goto cancel;
 		}
 	}
 
-	werr = smbconf_set_parameter(conf_ctx, sharename, "guest ok", guest_ok);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_parameter(conf_ctx, sharename, "guest ok", guest_ok);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
-			  "'guest ok'", win_errstr(werr));
+			  "'guest ok'", sbcErrorString(err));
 		goto cancel;
 	}
 
-	werr = smbconf_set_parameter(conf_ctx, sharename, "writeable",
-				     writeable);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_parameter(conf_ctx, sharename, "writeable",
+				    writeable);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error setting parameter %s: %s\n"),
-			  "writeable", win_errstr(werr));
+			  "writeable", sbcErrorString(err));
 		goto cancel;
 	}
 
@@ -868,11 +869,10 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		}
 	}
 
-	werr = smbconf_set_parameter(conf_ctx, service, param, value_str);
-
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_parameter(conf_ctx, service, param, value_str);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error setting value '%s': %s\n"),
-			  param, win_errstr(werr));
+			  param, sbcErrorString(err));
 		goto cancel;
 	}
 

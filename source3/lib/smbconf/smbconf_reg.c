@@ -163,12 +163,13 @@ static sbcErr smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 /**
  * add a value to a key.
  */
-static WERROR smbconf_reg_set_value(struct registry_key *key,
+static sbcErr smbconf_reg_set_value(struct registry_key *key,
 				    const char *valname,
 				    const char *valstr)
 {
 	struct registry_value val;
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	char *subkeyname;
 	const char *canon_valname;
 	const char *canon_valstr;
@@ -184,14 +185,14 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 			DEBUG(5, ("invalid value '%s' given for "
 				  "parameter '%s'\n", valstr, valname));
 		}
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
 	if (smbconf_reg_valname_forbidden(canon_valname)) {
 		DEBUG(5, ("Parameter '%s' not allowed in registry.\n",
 			  canon_valname));
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
@@ -199,7 +200,7 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 	if ((subkeyname == NULL) || (*(subkeyname +1) == '\0')) {
 		DEBUG(5, ("Invalid registry key '%s' given as "
 			  "smbconf section.\n", key->key->name));
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 	subkeyname++;
@@ -209,7 +210,7 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 		DEBUG(5, ("Global parameter '%s' not allowed in "
 			  "service definition ('%s').\n", canon_valname,
 			  subkeyname));
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
@@ -217,7 +218,7 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 
 	val.type = REG_SZ;
 	if (!push_reg_sz(talloc_tos(), &val.data, canon_valstr)) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 
@@ -226,10 +227,13 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 		DEBUG(5, ("Error adding value '%s' to "
 			  "key '%s': %s\n",
 			  canon_valname, key->key->name, win_errstr(werr)));
+		err = SBC_ERR_NOMEM;
+		goto done;
 	}
 
+	err = SBC_ERR_OK;
 done:
-	return werr;
+	return err;
 }
 
 static WERROR smbconf_reg_set_multi_sz_value(struct registry_key *key,
@@ -960,12 +964,11 @@ static sbcErr smbconf_reg_delete_share(struct smbconf_ctx *ctx,
 /**
  * set a configuration parameter to the value provided.
  */
-static WERROR smbconf_reg_set_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_set_parameter(struct smbconf_ctx *ctx,
 					const char *service,
 					const char *param,
 					const char *valstr)
 {
-	WERROR werr;
 	sbcErr err;
 	struct registry_key *key = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -973,15 +976,14 @@ static WERROR smbconf_reg_set_parameter(struct smbconf_ctx *ctx,
 	err = smbconf_reg_open_service_key(mem_ctx, ctx, service,
 					   REG_KEY_WRITE, &key);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NOMEM;
 		goto done;
 	}
 
-	werr = smbconf_reg_set_value(key, param, valstr);
+	err = smbconf_reg_set_value(key, param, valstr);
 
 done:
 	talloc_free(mem_ctx);
-	return werr;
+	return err;
 }
 
 /**

@@ -1467,30 +1467,49 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
-		werr = smbconf_set_global_parameter(ctx, "security", "user");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "security", "user");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
-		werr = smbconf_set_global_parameter(ctx, "workgroup",
-						    r->in.domain_name);
+		err = smbconf_set_global_parameter(ctx, "workgroup",
+						   r->in.domain_name);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
 		smbconf_delete_global_parameter(ctx, "realm");
 		goto done;
 	}
 
-	werr = smbconf_set_global_parameter(ctx, "security", "domain");
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	err = smbconf_set_global_parameter(ctx, "security", "domain");
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
+	}
 
-	werr = smbconf_set_global_parameter(ctx, "workgroup",
-					    r->out.netbios_domain_name);
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	err = smbconf_set_global_parameter(ctx, "workgroup",
+					   r->out.netbios_domain_name);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
+	}
 
 	if (r->out.domain_is_ad) {
-		werr = smbconf_set_global_parameter(ctx, "security", "ads");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "security", "ads");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
-		werr = smbconf_set_global_parameter(ctx, "realm",
-						    r->out.dns_domain_name);
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "realm",
+						   r->out.dns_domain_name);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 	}
 
  done:
@@ -1515,8 +1534,11 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		werr = smbconf_set_global_parameter(ctx, "security", "user");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "security", "user");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
 		werr = smbconf_delete_global_parameter(ctx, "workgroup");
 		W_ERROR_NOT_OK_GOTO_DONE(werr);

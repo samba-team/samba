@@ -573,8 +573,15 @@ static WERROR NetServerSetInfo_l_1005(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	werr = smbconf_set_global_parameter(conf_ctx, "server string",
+	err = smbconf_set_global_parameter(conf_ctx, "server string",
 					    info1005->comment);
+	if (!SBC_ERROR_IS_OK(err)) {
+		libnetapi_set_error_string(ctx,
+			"Could not set global parameter: %s",
+			sbcErrorString(err));
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
+	}
 
  done:
 	smbconf_shutdown(conf_ctx);
