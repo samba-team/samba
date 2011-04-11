@@ -46,7 +46,7 @@ struct smbconf_ops {
 			    TALLOC_CTX *mem_ctx,
 			    const char *servicename,
 			    struct smbconf_service **service);
-	WERROR (*delete_share)(struct smbconf_ctx *ctx,
+	sbcErr (*delete_share)(struct smbconf_ctx *ctx,
 				    const char *servicename);
 	WERROR (*set_parameter)(struct smbconf_ctx *ctx,
 				const char *service,
