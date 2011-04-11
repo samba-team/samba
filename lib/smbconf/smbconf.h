@@ -127,8 +127,8 @@ sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
 sbcErr smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service);
 sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx);
 
-WERROR smbconf_transaction_start(struct smbconf_ctx *ctx);
-WERROR smbconf_transaction_commit(struct smbconf_ctx *ctx);
-WERROR smbconf_transaction_cancel(struct smbconf_ctx *ctx);
+sbcErr smbconf_transaction_start(struct smbconf_ctx *ctx);
+sbcErr smbconf_transaction_commit(struct smbconf_ctx *ctx);
+sbcErr smbconf_transaction_cancel(struct smbconf_ctx *ctx);
 
 #endif /*  _LIBSMBCONF_H_  */

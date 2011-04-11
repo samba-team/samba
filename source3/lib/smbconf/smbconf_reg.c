@@ -1167,19 +1167,40 @@ done:
 	return err;
 }
 
-static WERROR smbconf_reg_transaction_start(struct smbconf_ctx *ctx)
+static sbcErr smbconf_reg_transaction_start(struct smbconf_ctx *ctx)
 {
-	return regdb_transaction_start();
+	WERROR werr;
+
+	werr = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(werr)) {
+		return SBC_ERR_IO_FAILURE;
+	}
+
+	return SBC_ERR_OK;
 }
 
-static WERROR smbconf_reg_transaction_commit(struct smbconf_ctx *ctx)
+static sbcErr smbconf_reg_transaction_commit(struct smbconf_ctx *ctx)
 {
-	return regdb_transaction_commit();
+	WERROR werr;
+
+	werr = regdb_transaction_commit();
+	if (!W_ERROR_IS_OK(werr)) {
+		return SBC_ERR_IO_FAILURE;
+	}
+
+	return SBC_ERR_OK;
 }
 
-static WERROR smbconf_reg_transaction_cancel(struct smbconf_ctx *ctx)
+static sbcErr smbconf_reg_transaction_cancel(struct smbconf_ctx *ctx)
 {
-	return regdb_transaction_cancel();
+	WERROR werr;
+
+	werr = regdb_transaction_cancel();
+	if (!W_ERROR_IS_OK(werr)) {
+		return SBC_ERR_IO_FAILURE;
+	}
+
+	return SBC_ERR_OK;
 }
 
 struct smbconf_ops smbconf_ops_reg = {
