@@ -82,7 +82,11 @@ static const char *plato_latin_utf16le_base64 =
 	"AG8AdQBkAOgAbgAgAGUAaQByABceawBhAHMAaQBuAC4A";
 
 static const char *gd_utf8_base64 = "R8O8bnRoZXIgRGVzY2huZXI=";
+static const char *gd_utf8_upper_base64 = "R8OcTlRIRVIgREVTQ0hORVI=";
+static const char *gd_utf8_lower_base64 = "Z8O8bnRoZXIgZGVzY2huZXI=";
 static const char *gd_cp850_base64 = "R4FudGhlciBEZXNjaG5lcg==";
+static const char *gd_cp850_upper_base64 = "R5pOVEhFUiBERVNDSE5FUg==";
+static const char *gd_cp850_lower_base64 = "Z4FudGhlciBkZXNjaG5lcg==";
 static const char *gd_iso8859_1_base64 = "R/xudGhlciBEZXNjaG5lcg==";
 static const char *gd_utf16le_base64 = "RwD8AG4AdABoAGUAcgAgAEQAZQBzAGMAaABuAGUAcgA=";
 
@@ -494,6 +498,8 @@ static bool test_gd_case_utf8(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
+	DATA_BLOB gd_utf8_upper = base64_decode_data_blob(gd_utf8_upper_base64);
+	DATA_BLOB gd_utf8_lower = base64_decode_data_blob(gd_utf8_lower_base64);
 	char *gd_lower, *gd_upper;
 	talloc_steal(tctx, gd_utf8.data);
 
@@ -508,8 +514,12 @@ static bool test_gd_case_utf8(struct torture_context *tctx)
 		       "GD's name has an lower case character");
 	gd_lower = strlower_talloc_handle(iconv_handle, tctx, (const char *)gd_utf8.data);
 	torture_assert(tctx, gd_lower, "failed to convert GD's name into lower case");
+	torture_assert_data_blob_equal(tctx, data_blob_string_const(gd_lower), gd_utf8_lower,
+				       "convert GD's name into lower case");
 	gd_upper = strupper_talloc_n_handle(iconv_handle, tctx, (const char *)gd_utf8.data, gd_utf8.length);
 	torture_assert(tctx, gd_lower, "failed to convert GD's name into upper case");
+	torture_assert_data_blob_equal(tctx, data_blob_string_const(gd_upper), gd_utf8_upper,
+				       "convert GD's name into upper case");
 
 	torture_assert(tctx,
 		       strhasupper_handle(iconv_handle, gd_upper),
@@ -551,6 +561,8 @@ static bool test_gd_case_cp850(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
+	DATA_BLOB gd_cp850_upper = base64_decode_data_blob(gd_cp850_upper_base64);
+	DATA_BLOB gd_cp850_lower = base64_decode_data_blob(gd_cp850_lower_base64);
 	char *gd_lower, *gd_upper;
 	talloc_steal(tctx, gd_cp850.data);
 
@@ -565,8 +577,12 @@ static bool test_gd_case_cp850(struct torture_context *tctx)
 		       "GD's name has an lower case character");
 	gd_lower = strlower_talloc_handle(iconv_handle, tctx, (const char *)gd_cp850.data);
 	torture_assert(tctx, gd_lower, "failed to convert GD's name into lower case");
+	torture_assert_data_blob_equal(tctx, data_blob_string_const(gd_lower), gd_cp850_lower,
+				       "convert GD's name into lower case");
 	gd_upper = strupper_talloc_n_handle(iconv_handle, tctx, (const char *)gd_cp850.data, gd_cp850.length);
 	torture_assert(tctx, gd_lower, "failed to convert GD's name into upper case");
+	torture_assert_data_blob_equal(tctx, data_blob_string_const(gd_upper), gd_cp850_upper,
+				       "convert GD's name into upper case");
 
 	torture_assert(tctx,
 		       strhasupper_handle(iconv_handle, gd_upper),
