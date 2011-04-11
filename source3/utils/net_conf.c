@@ -201,8 +201,9 @@ static WERROR import_process_service(struct net_context *c,
 	}
 
 	if (smbconf_share_exists(conf_ctx, service->name)) {
-		werr = smbconf_delete_share(conf_ctx, service->name);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_delete_share(conf_ctx, service->name);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_GENERAL_FAILURE;
 			goto done;
 		}
 	}
@@ -792,7 +793,7 @@ static int net_conf_delshare(struct net_context *c,
 {
 	int ret = -1;
 	const char *sharename = NULL;
-	WERROR werr = WERR_OK;
+	sbcErr err;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 1 || c->display_usage) {
@@ -805,10 +806,10 @@ static int net_conf_delshare(struct net_context *c,
 		goto done;
 	}
 
-	werr = smbconf_delete_share(conf_ctx, sharename);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_delete_share(conf_ctx, sharename);
+	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error deleting share %s: %s\n"),
-			  sharename, win_errstr(werr));
+			  sharename, sbcErrorString(err));
 		goto done;
 	}
 

@@ -89,7 +89,7 @@ sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
 			 const char *servicename,
 			 struct smbconf_service **service);
-WERROR smbconf_delete_share(struct smbconf_ctx *ctx,
+sbcErr smbconf_delete_share(struct smbconf_ctx *ctx,
 			    const char *servicename);
 WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *service,

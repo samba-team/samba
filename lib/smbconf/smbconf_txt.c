@@ -462,10 +462,10 @@ done:
 /**
  * delete a service from configuration
  */
-static WERROR smbconf_txt_delete_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_delete_share(struct smbconf_ctx *ctx,
 				       const char *servicename)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**
