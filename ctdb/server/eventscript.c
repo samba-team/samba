@@ -448,6 +448,11 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	struct ctdb_context *ctdb = state->ctdb;
 	int r, status;
 
+	if (ctdb == NULL) {
+		DEBUG(DEBUG_ERR,("Eventscript finished but ctdb is NULL\n"));
+		return;
+	}
+
 	r = read(state->fd[0], &current->status, sizeof(current->status));
 	if (r < 0) {
 		current->status = -errno;
