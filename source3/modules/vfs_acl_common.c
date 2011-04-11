@@ -474,7 +474,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("inherit_new_acl: child acl for %s is:\n",
 			fsp_str_dbg(fsp) ));
-		NDR_PRINT_DEBUG(security_descriptor, parent_desc);
+		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
 	return SMB_VFS_FSET_NT_ACL(fsp,
