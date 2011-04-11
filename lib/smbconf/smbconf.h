@@ -42,6 +42,7 @@ enum _sbcErrType {
 typedef enum _sbcErrType sbcErr;
 
 #define SBC_ERROR_IS_OK(x) ((x) == SBC_ERR_OK)
+#define SBC_ERROR_EQUAL(x,y) ((x) == (y))
 
 struct smbconf_ctx;
 
@@ -97,12 +98,12 @@ sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *valstr);
 sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val);
-WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const char *service,
 			     const char *param,
 			     char **valstr);
-WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *param,
 				    char **valstr);

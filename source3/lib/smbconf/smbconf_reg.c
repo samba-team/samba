@@ -989,7 +989,7 @@ done:
 /**
  * get the value of a configuration parameter as a string
  */
-static WERROR smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
 					TALLOC_CTX *mem_ctx,
 					const char *service,
 					const char *param,
@@ -1003,35 +1003,34 @@ static WERROR smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
 	err = smbconf_reg_open_service_key(mem_ctx, ctx, service,
 					   REG_KEY_READ, &key);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NOMEM;
 		goto done;
 	}
 
 	if (!smbconf_reg_valname_valid(param)) {
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
 	if (!smbconf_value_exists(key, param)) {
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
 	werr = reg_queryvalue(mem_ctx, key, param, &value);
 	if (!W_ERROR_IS_OK(werr)) {
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 
 	*valstr = smbconf_format_registry_value(mem_ctx, value);
-
 	if (*valstr == NULL) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 	}
 
 done:
 	talloc_free(key);
 	talloc_free(value);
-	return werr;
+	return err;
 }
 
 /**

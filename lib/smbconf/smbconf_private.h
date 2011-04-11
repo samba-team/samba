@@ -52,7 +52,7 @@ struct smbconf_ops {
 				const char *service,
 				const char *param,
 				const char *valstr);
-	WERROR (*get_parameter)(struct smbconf_ctx *ctx,
+	sbcErr (*get_parameter)(struct smbconf_ctx *ctx,
 				TALLOC_CTX *mem_ctx,
 				const char *service,
 				const char *param,

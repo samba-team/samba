@@ -291,14 +291,14 @@ sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 /**
  * get the value of a configuration parameter as a string
  */
-WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const char *service,
 			     const char *param,
 			     char **valstr)
 {
 	if (valstr == NULL) {
-		return WERR_INVALID_PARAM;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
 	return ctx->ops->get_parameter(ctx, mem_ctx, service, param, valstr);
@@ -309,23 +309,22 @@ WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
  *
  * Create [global] if it does not exist.
  */
-WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *param,
 				    char **valstr)
 {
-	WERROR werr;
 	sbcErr err;
 
 	err = smbconf_global_check(ctx);
 	if (!SBC_ERROR_IS_OK(err)) {
-		return WERR_GENERAL_FAILURE;
+		return err;
 	}
 
-	werr = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param,
-				     valstr);
+	err = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param,
+				    valstr);
 
-	return werr;
+	return err;
 }
 
 /**
