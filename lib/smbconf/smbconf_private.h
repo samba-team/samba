@@ -48,7 +48,7 @@ struct smbconf_ops {
 			    struct smbconf_service **service);
 	sbcErr (*delete_share)(struct smbconf_ctx *ctx,
 				    const char *servicename);
-	WERROR (*set_parameter)(struct smbconf_ctx *ctx,
+	sbcErr (*set_parameter)(struct smbconf_ctx *ctx,
 				const char *service,
 				const char *param,
 				const char *valstr);
