@@ -108,7 +108,3 @@ size_t push_utf8_fstring(void *dest, const char *src)
 	return push_utf8(dest, src, sizeof(fstring), STR_TERMINATE);
 }
 
-size_t pull_ucs2_fstring(char *dest, const void *src)
-{
-	return pull_ucs2(NULL, dest, src, sizeof(fstring), -1, STR_TERMINATE);
-}
