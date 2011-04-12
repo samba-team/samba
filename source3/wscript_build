@@ -752,13 +752,17 @@ bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
                     source=REG_API_REGF_SRC,
                     vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('REG_BASE',
-                    source=REG_BASE_SRC,
-                    vars=locals())
+bld.SAMBA3_LIBRARY('smbregistry',
+                   source=REG_BASE_SRC,
+                   deps='''LIB_NONSMBD tdb-wrap3 NDR_SECURITY UTIL_TDB talloc
+                   replace samba3core util_reg samba-util-common security
+                   errors3 CHARSET3''',
+                   private_library=True,
+                   vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
                     source=REG_SMBCONF_SRC,
-                    deps='REG_BASE',
+                    deps='smbregistry',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('REG_FULL',
@@ -849,7 +853,7 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
 
 bld.SAMBA3_SUBSYSTEM('LIB_SMBCONF',
                     source=LIB_SMBCONF_SRC,
-                    deps='LIBSMBCONF REG_BASE REG_SMBCONF',
+                    deps='LIBSMBCONF smbregistry REG_SMBCONF',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('smbd_base',
