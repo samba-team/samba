@@ -182,7 +182,6 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 
 	gfree_names();
 	gfree_loadparm();
-	gfree_case_tables();
 	gfree_charcnv();
 	gfree_interfaces();
 

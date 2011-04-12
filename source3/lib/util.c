@@ -156,7 +156,6 @@ void gfree_all( void )
 {
 	gfree_names();
 	gfree_loadparm();
-	gfree_case_tables();
 	gfree_charcnv();
 	gfree_interfaces();
 	gfree_debugsyms();

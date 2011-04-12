@@ -21,11 +21,6 @@
 
 #include "includes.h"
 
-/* these 3 tables define the unicode case handling.  They are loaded
-   at startup either via mmap() or read() from the lib directory */
-static uint8 *valid_table;
-static bool initialized;
-
 /* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
 #define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
 				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
@@ -35,40 +30,6 @@ static bool initialized;
 #define UCS2_TO_CHAR(c) (((c) >> UCS2_SHIFT) & 0xff)
 
 static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
-
-/**
- * Destroy global objects allocated by load_case_tables()
- **/
-void gfree_case_tables(void)
-{
-	if ( valid_table ) {
-		unmap_file(valid_table, 0x10000);
-		valid_table = NULL;
-	}
-	initialized = false;
-}
-
-/**
- * Load the valid character map table from <tt>valid.dat</tt> or
- * create from the configured codepage.
- *
- * This function is called whenever the configuration is reloaded.
- * However, the valid character table is not changed if it's loaded
- * from a file, because we can't unmap files.
- **/
-
-static void init_valid_table(void)
-{
-	if (valid_table) {
-		return;
-	}
-
-	valid_table = (uint8 *)map_file(data_path("valid.dat"), 0x10000);
-	if (!valid_table) {
-		smb_panic("Could not load valid.dat file required for mangle method=hash");
-		return;
-	}
-}
 
 /*******************************************************************
  Write a string in (little-endian) unicode format. src is in
@@ -108,16 +69,6 @@ int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 		return size;
 	else
 		return -1;
-}
-
-/*******************************************************************
- Determine if a character is valid in a 8.3 name.
-********************************************************************/
-
-bool isvalid83_w(smb_ucs2_t c)
-{
-	init_valid_table();
-	return valid_table[SVAL(&c,0)] != 0;
 }
 
 /*******************************************************************

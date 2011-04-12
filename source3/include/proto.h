@@ -1048,12 +1048,9 @@ char *sanitize_username(TALLOC_CTX *mem_ctx, const char *username);
 
 /* The following definitions come from lib/util_unistr.c  */
 
-void gfree_case_tables(void);
-void load_case_tables(void);
 size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
-bool isvalid83_w(smb_ucs2_t c);
 size_t strlen_w(const smb_ucs2_t *src);
 size_t strnlen_w(const smb_ucs2_t *src, size_t max);
 smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
