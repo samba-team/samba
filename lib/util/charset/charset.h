@@ -174,6 +174,10 @@ bool convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen,
 		      size_t *converted_size);
+bool convert_string_error(charset_t from, charset_t to,
+			  void const *src, size_t srclen,
+			  void *dest, size_t destlen,
+			  size_t *converted_size);
 
 ssize_t iconv_talloc(TALLOC_CTX *mem_ctx, 
 				       smb_iconv_t cd,

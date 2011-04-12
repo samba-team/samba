@@ -702,6 +702,27 @@ _PUBLIC_ bool convert_string(charset_t from, charset_t to,
 }
 
 /**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @param converted_size the number of bytes occupied in the destination
+ *
+ * @returns true on success, false on fail.
+ **/
+_PUBLIC_ bool convert_string_error(charset_t from, charset_t to,
+				   void const *src, size_t srclen,
+				   void *dest, size_t destlen,
+				   size_t *converted_size)
+{
+	return convert_string_error_handle(get_iconv_handle(), from, to,
+					   src, srclen,
+					   dest, destlen, converted_size);
+}
+
+/**
  * Convert between character sets, allocating a new buffer using talloc for the result.
  *
  * @param srclen length of source buffer.
