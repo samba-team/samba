@@ -90,7 +90,7 @@ static const char *gd_cp850_lower_base64 = "Z4FudGhlciBkZXNjaG5lcg==";
 static const char *gd_iso8859_1_base64 = "R/xudGhlciBEZXNjaG5lcg==";
 static const char *gd_utf16le_base64 = "RwD8AG4AdABoAGUAcgAgAEQAZQBzAGMAaABuAGUAcgA=";
 
-static bool test_gd_iso8859_cp850(struct torture_context *tctx)
+static bool test_gd_iso8859_cp850_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
@@ -282,7 +282,78 @@ static bool test_gd_iso8859_cp850(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_plato_english_iso8859_cp850(struct torture_context *tctx)
+static bool test_gd_ascii_handle(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle;
+	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
+	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
+	DATA_BLOB gd_iso8859_1 = base64_decode_data_blob(gd_iso8859_1_base64);
+	DATA_BLOB gd_utf16le = base64_decode_data_blob(gd_utf16le_base64);
+	DATA_BLOB gd_output;
+
+	talloc_steal(tctx, gd_utf8.data);
+	talloc_steal(tctx, gd_cp850.data);
+	talloc_steal(tctx, gd_iso8859_1.data);
+	talloc_steal(tctx, gd_utf16le.data);
+
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8", "UTF8");
+	torture_assert(tctx, iconv_handle, "getting iconv handle");
+
+	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
+						    CH_UTF8, CH_DOS,
+						    gd_utf8.data, gd_utf8.length,
+						    (void *)&gd_output.data, &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ASCII should fail");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf8.length);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ASCII should fail");
+	torture_assert_errno_equal(tctx, EILSEQ, "conversion from UTF8 to (dos charset) ISO8859-1 should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+	torture_assert_data_blob_equal(tctx, gd_output, data_blob_string_const("G"), "partial conversion from UTF8 to (dos charset) ASCII incorrect");
+
+	/* Short output handling confirmation */
+	gd_output.length = 1;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ASCII should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to (dos charset) ASCII too short");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+	torture_assert_data_blob_equal(tctx, gd_output, data_blob_string_const("G"), "conversion from UTF8 to (dos charset) ASCII incorrect");
+
+	/* Short output handling confirmation */
+	gd_output.length = 2;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ASCII should fail due to too illigal seqence");
+	torture_assert_errno_equal(tctx, EILSEQ, "conversion from UTF8 to (dos charset) ISO8859-1 should fail EILSEQ");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 2 char of output");
+
+	/* Short input handling confirmation */
+	gd_output.length = gd_utf8.length;
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF8, CH_DOS,
+							 gd_utf8.data, 2,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to (dos charset) ASCII should fail due to too short");
+	torture_assert_errno_equal(tctx, EILSEQ, "conversion from short UTF8 to (dos charset) ASCII should fail EILSEQ");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+	return true;
+}
+
+static bool test_plato_english_iso8859_cp850_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB plato_english_utf8 = data_blob_string_const(plato_english_ascii);
@@ -401,7 +472,7 @@ static bool test_plato_english_iso8859_cp850(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_plato_cp850_utf8(struct torture_context *tctx)
+static bool test_plato_cp850_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
@@ -592,7 +663,7 @@ static bool test_plato_cp850_utf8(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_plato_latin_cp850_utf8(struct torture_context *tctx)
+static bool test_plato_latin_cp850_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB plato_latin_utf8 = base64_decode_data_blob(plato_latin_utf8_base64);
@@ -662,7 +733,7 @@ static bool test_plato_latin_cp850_utf8(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_gd_case_utf8(struct torture_context *tctx)
+static bool test_gd_case_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
@@ -725,7 +796,7 @@ static bool test_gd_case_utf8(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_gd_case_cp850(struct torture_context *tctx)
+static bool test_gd_case_cp850_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
@@ -788,7 +859,7 @@ static bool test_gd_case_cp850(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_plato_case_utf8(struct torture_context *tctx)
+static bool test_plato_case_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
 	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
@@ -834,23 +905,381 @@ static bool test_plato_case_utf8(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_gd(struct torture_context *tctx)
+{
+	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
+	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
+	DATA_BLOB gd_iso8859_1 = base64_decode_data_blob(gd_iso8859_1_base64);
+	DATA_BLOB gd_utf16le = base64_decode_data_blob(gd_utf16le_base64);
+	DATA_BLOB gd_output;
+	size_t saved_len;
+
+	talloc_steal(tctx, gd_utf8.data);
+	talloc_steal(tctx, gd_cp850.data);
+	talloc_steal(tctx, gd_iso8859_1.data);
+	talloc_steal(tctx, gd_utf16le.data);
+
+	torture_assert(tctx, convert_string_talloc(tctx, CH_UTF8, CH_UTF8,
+						   gd_utf8.data, gd_utf8.length,
+						   (void *)&gd_output.data, &gd_output.length),
+		       "conversion from UTF8 to utf8 charset");
+	saved_len = gd_output.length;
+
+	torture_assert(tctx, convert_string_error(CH_UTF8, CH_UTF8,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length),
+		       "conversion from UTF8 to utf8 charset");
+
+	/* Short output handling confirmation */
+	gd_output.length = 1;
+	torture_assert(tctx, convert_string_error(CH_UTF8, CH_UTF8,
+							 gd_utf8.data, gd_utf8.length,
+							 (void *)gd_output.data, gd_output.length,
+							 &gd_output.length) == false,
+		       "conversion from UTF8 to any utf8 charset should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to utf8 charset should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+	torture_assert_data_blob_equal(tctx, gd_output, data_blob_string_const("G"), "conversion from UTF8 to utf8 charset incorrect");
+
+#if 0 /* This currently fails as we just copy like-for-like character conversions */
+	/* Short output handling confirmation */
+	gd_output.length = 2;
+	torture_assert(tctx, convert_string_error(CH_UTF8, CH_UTF8,
+						  gd_utf8.data, gd_utf8.length,
+						  (void *)gd_output.data, gd_output.length,
+						  &gd_output.length) == false,
+		       "conversion from UTF8 to utf8 charset should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to utf8 charset should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+
+	/* Short input handling confirmation */
+	gd_output.length = saved_len;
+	torture_assert(tctx, convert_string_error(CH_UTF8, CH_UTF8,
+						  gd_utf8.data, 2,
+						  (void *)gd_output.data, gd_output.length,
+						  &gd_output.length) == false,
+		       "conversion from UTF8 to UTF8 should fail due to too short");
+	torture_assert_errno_equal(tctx, EILSEQ, "conversion from short UTF8 to UTF8 should fail EINVAL");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+#endif
+
+	/* Short output handling confirmation */
+	gd_output.length = 1;
+	torture_assert(tctx, convert_string_error(CH_UTF16LE, CH_UTF8,
+						  gd_utf16le.data, gd_utf16le.length,
+						  (void *)gd_output.data, gd_output.length,
+						  &gd_output.length) == false,
+		       "conversion from UTF16 to UTF8 should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16 to UTF8 should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+	torture_assert_data_blob_equal(tctx, gd_output, data_blob_string_const("G"), "conversion from UTF16 to UTF8 incorrect");
+
+	/* Short output handling confirmation */
+	gd_output.length = 3;
+	torture_assert(tctx, convert_string_error(CH_UTF16LE, CH_UTF8,
+						  gd_utf16le.data, gd_utf16le.length,
+						  (void *)gd_output.data, gd_output.length,
+						  &gd_output.length) == false,
+		       "conversion from UTF16 to UTF8 should fail due to too short");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16 to UTF8 should fail E2BIG");
+	torture_assert_int_equal(tctx, gd_output.length, 3, "Should get 3 bytes output for UTF8");
+
+	/* Short input handling confirmation */
+	gd_output.length = saved_len;
+	torture_assert(tctx, convert_string_error(CH_UTF16LE, CH_UTF8,
+						  gd_utf16le.data, 3,
+						  (void *)gd_output.data, gd_output.length,
+						  &gd_output.length) == false,
+		       "conversion from UTF16 to UTF8 should fail due to too short");
+	torture_assert_errno_equal(tctx, EINVAL, "conversion from short UTF16 to UTF8 should fail EINVAL");
+	torture_assert_int_equal(tctx, gd_output.length, 1, "Should only get 1 char of output");
+
+	return true;
+}
+
+static bool test_plato(struct torture_context *tctx)
+{
+	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
+	DATA_BLOB plato_utf16le = base64_decode_data_blob(plato_utf16le_base64);
+	DATA_BLOB plato_output;
+	DATA_BLOB plato_output2;
+
+	talloc_steal(tctx, plato_utf8.data);
+	talloc_steal(tctx, plato_utf16le.data);
+
+	torture_assert(tctx, convert_string_talloc(tctx,
+						   CH_UTF8, CH_UTF16LE,
+						   plato_utf8.data, plato_utf8.length,
+						   (void *)&plato_output.data, &plato_output.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf16le, "conversion from UTF8 to UTF16LE incorrect");
+
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext((const char *)plato_utf8.data,
+					      CH_UTF8, CH_UTF16LE),
+				 plato_output.length / 2,
+				 "checking strlen_m_ext of conversion of UTF8 to UTF16LE");
+
+	memset(plato_output.data, '\0', plato_output.length);
+	torture_assert(tctx, convert_string_error(CH_UTF8, CH_UTF16LE,
+						  plato_utf8.data, plato_utf8.length,
+						  (void *)plato_output.data, plato_output.length,
+						  &plato_output.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf16le, "conversion from UTF8 to UTF16LE incorrect");
+
+	torture_assert(tctx, convert_string_talloc(tctx,
+						   CH_UTF16LE, CH_UTF8,
+						   plato_output.data, plato_output.length,
+						   (void *)&plato_output2.data, &plato_output2.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output2, plato_utf8, "conversion from UTF8 to UTF16LE incorrect");
+
+	memset(plato_output2.data, '\0', plato_output2.length);
+	torture_assert(tctx, convert_string_error(CH_UTF16LE, CH_UTF8,
+						  plato_output.data, plato_output.length,
+						  (void *)plato_output2.data, plato_output2.length, &plato_output2.length),
+		       "conversion of UTF8 ancient greek to UTF16 failed");
+	torture_assert_data_blob_equal(tctx, plato_output2, plato_utf8, "conversion from UTF8 to UTF16LE incorrect");
+
+	torture_assert(tctx, convert_string_talloc(tctx,
+						   CH_UTF8, CH_UTF8,
+						   plato_utf8.data, plato_utf8.length,
+						   (void *)&plato_output.data, &plato_output.length),
+		       "conversion of UTF8 to UTF8");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8,
+				       "conversion of UTF8 to UTF8");
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext((const char *)plato_utf8.data,
+					      CH_UTF8, CH_UTF8),
+				 plato_output.length,
+				 "checking strlen_m_ext of conversion of UTF8 to UTF8");
+	memset(plato_output.data, '\0', plato_output.length);
+	torture_assert(tctx, convert_string_error(CH_UTF8, CH_UTF8,
+						  plato_utf8.data, plato_utf8.length,
+						  (void *)plato_output.data, plato_output.length,
+						  &plato_output.length),
+		       "conversion of UTF8 to UTF8");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8,
+				       "conversion of UTF8 to UTF8");
+
+	memset(plato_output.data, '\0', plato_output.length);
+	torture_assert(tctx, convert_string_error(CH_UTF8, CH_DOS,
+						  plato_utf8.data, plato_utf8.length,
+						  (void *)plato_output.data, plato_output.length,
+						  &plato_output.length) == false,
+		       "conversion of UTF8 to any dos charset should fail");
+	torture_assert_errno_equal(tctx,  EILSEQ, "conversion of UTF16 ancient greek to any DOS charset should fail EILSEQ");
+
+	torture_assert(tctx, convert_string_talloc(tctx,
+						   CH_UTF8, CH_DOS,
+						   plato_utf8.data, plato_utf8.length,
+						   (void *)&plato_output.data, &plato_output.length) == false,
+		       "conversion of UTF8 ancient greek to any DOS charset should fail");
+
+	/* Allocate only enough space for a partial conversion */
+	plato_output = data_blob_talloc(tctx, NULL, 9);
+	torture_assert(tctx, convert_string_error(CH_UTF16LE, CH_UTF8,
+						  plato_utf16le.data, plato_utf16le.length,
+						  (void *)plato_output.data, plato_output.length,
+						  &plato_output.length) == false,
+		       "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_errno_equal(tctx,  E2BIG, "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_int_equal(tctx, plato_output.length, 8,
+				 "conversion of UTF16 ancient greek to UTF8 should stop on multibyte boundary");
+
+	plato_output = data_blob_talloc(tctx, NULL, 2);
+	torture_assert(tctx, convert_string_error(CH_UTF16LE, CH_UTF8,
+						  plato_utf16le.data, plato_utf16le.length,
+						  (void *)plato_output.data, plato_output.length,
+						  &plato_output.length) == false,
+		       "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_errno_equal(tctx,  E2BIG, "conversion of UTF16 ancient greek to UTF8 should fail, not enough space");
+	torture_assert_int_equal(tctx, plato_output.length, 0,
+				 "conversion of UTF16 ancient greek to UTF8 should stop on multibyte boundary");
+
+
+	return true;
+}
+
+static bool test_plato_latin(struct torture_context *tctx)
+{
+	DATA_BLOB plato_latin_utf8 = base64_decode_data_blob(plato_latin_utf8_base64);
+	DATA_BLOB plato_latin_utf16le = base64_decode_data_blob(plato_latin_utf16le_base64);
+	DATA_BLOB plato_latin_output;
+
+	talloc_steal(tctx, plato_latin_utf8.data);
+	talloc_steal(tctx, plato_latin_utf16le.data);
+
+	torture_assert(tctx, convert_string_talloc(tctx,
+						    CH_UTF16LE, CH_UTF8,
+						    plato_latin_utf16le.data, plato_latin_utf16le.length,
+						    (void *)&plato_latin_output.data, &plato_latin_output.length),
+		       "conversion of UTF16 latin charset greek to unix charset UTF8 failed");
+	torture_assert_data_blob_equal(tctx, plato_latin_output, plato_latin_utf8, "conversion from UTF16 to UTF8 incorrect");
+
+	torture_assert_int_equal(tctx,
+				 strlen_m_ext((const char *)plato_latin_output.data,
+					      CH_UTF8, CH_UTF16LE),
+				 plato_latin_utf16le.length / 2,
+				 "checking strlen_m_ext UTF16 latin charset greek to UTF8");
+	torture_assert(tctx, convert_string_talloc(tctx,
+						    CH_UTF8, CH_UTF16LE,
+						    plato_latin_utf8.data, plato_latin_utf8.length,
+						    (void *)&plato_latin_output.data, &plato_latin_output.length),
+		       "conversion of UTF16 latin charset greek to UTF16LE failed");
+	torture_assert_data_blob_equal(tctx, plato_latin_output, plato_latin_utf16le, "conversion from UTF8 to UTF16LE incorrect");
+
+	return true;
+}
+
+static bool test_gd_case(struct torture_context *tctx)
+{
+	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
+	char *gd_unix;
+	size_t gd_size;
+	char *gd_lower, *gd_upper;
+	talloc_steal(tctx, gd_utf8.data);
+
+	torture_assert(tctx, convert_string_talloc(tctx, CH_UTF8, CH_UNIX,
+						   gd_utf8.data, gd_utf8.length,
+						   (void *)&gd_unix, &gd_size),
+		       "conversion of unix charset to UTF8");
+
+	gd_lower = strlower_talloc(tctx, gd_unix);
+	torture_assert(tctx, gd_lower, "failed to convert GD's name into lower case");
+	gd_upper = strupper_talloc_n(tctx, gd_unix, gd_size);
+	torture_assert(tctx, gd_lower, "failed to convert GD's name into upper case");
+
+	torture_assert(tctx,
+		       strhasupper(gd_unix),
+		       "GD's name has an upper case character");
+	torture_assert(tctx,
+		       strhaslower(gd_unix),
+		       "GD's name has an lower case character");
+	torture_assert(tctx,
+		       strhasupper(gd_upper),
+		       "upper case name has an upper case character");
+	torture_assert(tctx,
+		       strhaslower(gd_lower),
+		       "lower case name has an lower case character");
+	torture_assert(tctx,
+		       strhasupper(gd_lower) == false,
+		       "lower case name has no upper case character");
+	torture_assert(tctx,
+		       strhaslower(gd_upper) == false,
+		       "upper case name has no lower case character");
+
+	torture_assert(tctx, strcasecmp_m(gd_unix,
+						 gd_upper) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strcasecmp_m(gd_unix,
+						 gd_lower) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strcasecmp_m(gd_upper,
+						 gd_lower) == 0,
+		       "case insensitive comparison upper/lower");
+
+	/* This string isn't different in length upper/lower, but just check the first 5 chars */
+	torture_assert(tctx, strncasecmp_m(gd_unix,
+						  gd_upper, 5) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strncasecmp_m(gd_unix,
+						 gd_lower, 5) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strncasecmp_m(gd_upper,
+						 gd_lower, 5) == 0,
+		       "case insensitive comparison upper/lower");
+	return true;
+}
+
+static bool test_plato_case(struct torture_context *tctx)
+{
+	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
+	char *plato_unix;
+	size_t plato_length;
+	char *plato_lower, *plato_upper;
+	talloc_steal(tctx, plato_utf8.data);
+
+	torture_assert(tctx, convert_string_talloc(tctx, CH_UTF8, CH_UNIX,
+						   plato_utf8.data, plato_utf8.length,
+						   (void *)&plato_unix, &plato_length),
+		       "conversion of unix charset to UTF8");
+
+	torture_assert(tctx,
+		       strhasupper(plato_unix),
+		       "PLATO's apology has an upper case character");
+	torture_assert(tctx,
+		       strhaslower(plato_unix),
+		       "PLATO's apology has an lower case character");
+	plato_lower = strlower_talloc(tctx, plato_unix);
+	torture_assert(tctx, plato_lower, "failed to convert PLATO's apology into lower case");
+	plato_upper = strupper_talloc_n(tctx, plato_unix, plato_utf8.length);
+	torture_assert(tctx, plato_lower, "failed to convert PLATO's apology into upper case");
+
+	torture_assert(tctx,
+		       strhasupper(plato_upper),
+		       "upper case string has an upper case character");
+	torture_assert(tctx,
+		       strhaslower(plato_lower),
+		       "lower case string has an lower case character");
+	torture_assert(tctx,
+		       strhasupper(plato_lower) == false,
+		       "lower case string has no upper case character");
+	torture_assert(tctx,
+		       strhaslower(plato_upper) == false,
+		       "upper case string has no lower case character");
+
+	torture_assert(tctx, strcasecmp_m(plato_unix,
+						 plato_upper) == 0,
+		       "case insensitive comparison orig/upper");
+	torture_assert(tctx, strcasecmp_m(plato_unix,
+						 plato_lower) == 0,
+		       "case insensitive comparison orig/lower");
+	torture_assert(tctx, strcasecmp_m(plato_upper,
+						 plato_lower) == 0,
+		       "case insensitive comparison upper/lower");
+	return true;
+}
+
 struct torture_suite *torture_local_convert_string_handle(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string_handle");
 
-	torture_suite_add_simple_test(suite, "gd_iso8859_cp850", test_gd_iso8859_cp850);
-	torture_suite_add_simple_test(suite, "plato_english_iso8859_cp850", test_plato_english_iso8859_cp850);
-	torture_suite_add_simple_test(suite, "plato_cp850_utf8", test_plato_cp850_utf8);
-	torture_suite_add_simple_test(suite, "plato_latin_cp850_utf8", test_plato_latin_cp850_utf8);
+	torture_suite_add_simple_test(suite, "gd_ascii", test_gd_ascii_handle);
+	torture_suite_add_simple_test(suite, "gd_iso8859_cp850", test_gd_iso8859_cp850_handle);
+	torture_suite_add_simple_test(suite, "plato_english_iso8859_cp850", test_plato_english_iso8859_cp850_handle);
+	torture_suite_add_simple_test(suite, "plato_cp850_utf8", test_plato_cp850_utf8_handle);
+	torture_suite_add_simple_test(suite, "plato_latin_cp850_utf8", test_plato_latin_cp850_utf8_handle);
+	return suite;
+}
+
+struct torture_suite *torture_local_string_case_handle(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "string_case_handle");
+
+	torture_suite_add_simple_test(suite, "gd_case_utf8", test_gd_case_utf8_handle);
+	torture_suite_add_simple_test(suite, "gd_case_cp850", test_gd_case_cp850_handle);
+	torture_suite_add_simple_test(suite, "plato_case_utf8", test_plato_case_utf8_handle);
+	return suite;
+}
+
+struct torture_suite *torture_local_convert_string(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string");
+
+	torture_suite_add_simple_test(suite, "gd", test_gd);
+	torture_suite_add_simple_test(suite, "plato", test_plato);
+	torture_suite_add_simple_test(suite, "plato_latin", test_plato_latin);
 	return suite;
 }
 
 struct torture_suite *torture_local_string_case(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "string_case");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "string_case_handle");
 
-	torture_suite_add_simple_test(suite, "gd_case_utf8", test_gd_case_utf8);
-	torture_suite_add_simple_test(suite, "gd_case_cp850", test_gd_case_cp850);
-	torture_suite_add_simple_test(suite, "plato_case_utf8", test_plato_case_utf8);
+	torture_suite_add_simple_test(suite, "gd_case", test_gd_case);
+	torture_suite_add_simple_test(suite, "plato_case", test_plato_case);
 	return suite;
 }

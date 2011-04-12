@@ -61,6 +61,8 @@
 	torture_local_loadparm,
 	torture_local_charset,
 	torture_local_convert_string_handle,
+	torture_local_convert_string,
+	torture_local_string_case_handle,
 	torture_local_string_case,
 	torture_local_compression,
 	torture_local_event, 
