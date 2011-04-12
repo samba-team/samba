@@ -2480,6 +2480,7 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	struct rap_WserverGetInfo r;
 	NTSTATUS status;
 	char servername[17];
+	size_t converted_size;
 
 	r.in.level = 0;
 	r.in.bufsize = 0xffff;
@@ -2492,7 +2493,7 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	memcpy(servername, r.out.info.info0.name, 16);
 	servername[16] = '\0';
 
-	if (!pull_ascii_talloc(mem_ctx, name, servername, NULL)) {
+	if (!pull_ascii_talloc(mem_ctx, name, servername, &converted_size)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

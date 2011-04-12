@@ -1180,7 +1180,7 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	ZERO_STRUCT(user_session_key);
 
 	if (!push_ucs2_talloc(samlogon_state->mem_ctx,
-			      &unicodepw, samlogon_state->password, NULL)) {
+			      &unicodepw, samlogon_state->password, &converted_size)) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
 		exit(1);
 	}
