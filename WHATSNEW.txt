@@ -241,6 +241,10 @@ o   Jeremy Allison <jra@samba.org>
     * Implement SMB2 support.
 
 
+o   Stefan Metzmacher <metze@samba.org>
+    * Implement SMB2 support.
+
+
 o   Andreas Schneider <asn@samba.org>
     * Add an Endpoint Mapper daemon.
 
