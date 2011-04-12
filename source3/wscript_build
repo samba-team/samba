@@ -667,7 +667,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     public_deps='''talloc tdb cap wbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     passdb SMBLDAP PARAM_WITHOUT_REG samba-util
                     LIBMSRPC_GEN msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
-                    RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
+                    RPC_CLIENT_SCHANNEL smbconf REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR POPT_SAMBA3''',
@@ -742,7 +742,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
 
 bld.SAMBA3_LIBRARY('param',
                    source='',
-                   deps='PARAM_WITHOUT_REG samba-util LIB_SMBCONF',
+                   deps='PARAM_WITHOUT_REG samba-util smbconf',
                    private_library=True,
                    vars=locals())
 
@@ -852,10 +852,12 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
                     source=AFS_SETTOKEN_SRC,
                     vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('LIB_SMBCONF',
-                    source=LIB_SMBCONF_SRC,
-                    deps='LIBSMBCONF smbregistry REG_SMBCONF',
-                    vars=locals())
+bld.SAMBA3_LIBRARY('smbconf',
+                   source=LIB_SMBCONF_SRC,
+                   deps='''LIBSMBCONF smbregistry REG_SMBCONF talloc PARAM_WITHOUT_REG
+                   util_reg samba-util-common errors3 CHARSET3''',
+                   public_headers='../lib/smbconf/smbconf.h',
+                   vnum='0')
 
 bld.SAMBA3_LIBRARY('smbd_base',
                     source=SMBD_SRC_BASE,
@@ -865,7 +867,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     LIBMSRPC_GEN msrpc3 ads LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY3 REGFIO
-                    LIB_SMBCONF REG_FULL FNAME_UTIL
+                    smbconf REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
                     LIBCLI_SMB_COMMON RPC_SERVER
