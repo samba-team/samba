@@ -24,22 +24,32 @@
 		<arg choice="opt">--allocate-gid</arg>
 		<arg choice="opt">--allocate-uid</arg>
 		<arg choice="opt">-c</arg>
+		<arg choide="opt">--ccache-save</arg>
+		<arg choide="opt">--change-user-password</arg>
 		<arg choice="opt">-D domain</arg>
 		<arg choice="opt">--domain domain</arg>
+		<arg choide="opt">--dsgetdcname domain</arg>
 		<arg choice="opt">-g</arg>
 		<arg choice="opt">--getdcname domain</arg>
 		<arg choice="opt">--get-auth-user</arg>
 		<arg choice="opt">-G gid</arg>
-		<arg choice="opt">-h</arg>
+		<arg choide="opt">--gid-info</arg>
+		<arg choide="opt">--group-info</arg>
+		<arg choice="opt">--help|-?</arg>
 		<arg choice="opt">-i user</arg>
 		<arg choice="opt">-I ip</arg>
 		<arg choice="opt">-K user%password</arg>
+		<arg choide="opt">--lanman</arg>
 		<arg choice="opt">-m</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-N netbios-name</arg>
+		<arg choide="opt">--ntlmv2</arg>
+		<arg choide="opt">--online-status</arg>
 		<arg choice="opt">--own-domain</arg>
 		<arg choice="opt">-p</arg>
+		<arg choice="opt">-P|--ping-dc</arg>
 		<arg choice="opt">-r user</arg>
+		<arg choide="opt">-R|--lookup-rids</arg>
 		<arg choice="opt">--remove-uid-mapping uid,sid</arg>
 		<arg choice="opt">--remove-gid-mapping gid,sid</arg>
 		<arg choice="opt">-s sid</arg>
@@ -49,15 +59,19 @@
 		<arg choice="opt">--set-uid-mapping uid,sid</arg>
 		<arg choice="opt">--set-gid-mapping gid,sid</arg>
 		<arg choice="opt">-S sid</arg>
+		<arg choide="opt">--sid-aliases</arg>
+		<arg choide="opt">--sid-to-fullname</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">--uid-info uid</arg>
+		<arg choide="opt">--usage</arg>
 		<arg choice="opt">--user-domgroups sid</arg>
 		<arg choice="opt">--user-sids sid</arg>
 		<arg choice="opt">-U uid</arg>
 		<arg choice="opt">-V</arg>
-		<arg choice="opt">-Y sid</arg>
 		<arg choice="opt">--verbose</arg>
+		<arg choice="opt">-Y sid</arg>
+
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -120,6 +134,18 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>--ccache-save <replaceable>username%password</replaceable></term>
+		<listitem><para>Store user and password for ccache.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--change-user-password <replaceable>username</replaceable></term>
+		<listitem><para>Change the password of a user. The old and new password will be prompted.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>--domain <replaceable>name</replaceable></term>
 		<listitem><para>This parameter sets the domain on which any specified
 		operations will performed.  If special domain name '.' is used to represent
@@ -134,6 +160,24 @@
 		<term>-D|--domain-info <replaceable>domain</replaceable></term>
 		<listitem><para>Show most of the info we have about the
 		specified domain.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--dsgetdcname <replaceable>domain</replaceable></term>
+		<listitem><para>Find a DC for a domain.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--gid-info <replaceable>gid</replaceable></term>
+		<listitem><para>Get group info from gid.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--group-info <replaceable>user</replaceable></term>
+		<listitem><para>Get group info for user.
 		</para></listitem>
 		</varlistentry>
 
@@ -171,6 +215,12 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>-?</term>
+		<listitem><para>Print brief help overview.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>-i|--user-info <replaceable>user</replaceable></term>
 		<listitem><para>Get user info.
 		</para></listitem>
@@ -189,6 +239,12 @@
 		<varlistentry>
 		<term>-K|--krb5auth <replaceable>username%password</replaceable></term>
 		<listitem><para>Attempt to authenticate a user via Kerberos.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--lanman</term>
+		<listitem><para>Use lanman cryptography for user authentication.
 		</para></listitem>
 		</varlistentry>
 
@@ -227,6 +283,20 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>--ntlmv2</term>
+		<listitem><para>Use NTLMv2 cryptography for user authentication.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--online-status <replaceable>domain</replaceable></term>
+		<listitem><para>Show whether domains are marked as online or
+				offline. An optional domain argument limits the
+				output to the online status of a given domain.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>--own-domain</term>
 		<listitem><para>List own domain.
 		</para></listitem>
@@ -245,6 +315,13 @@
 		<listitem><para>Try to obtain the list of UNIX group ids
 		to which the user belongs.  This only works for users
 		defined on a Domain Controller.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-R|--lookup-rids <replaceable>rid1, rid2, rid3...</replaceable></term>
+		<listitem><para>Converts RIDs to names. Uses a comma separated
+				list of rids.
 		</para></listitem>
 		</varlistentry>
 
@@ -289,6 +366,19 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>--sid-aliases <replaceable>sid</replaceable></term>
+		<listitem><para>Get SID aliases for a given SID.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--sid-to-fullname <replaceable>sid</replaceable></term>
+		<listitem><para>Converts a SID to a full username
+				(DOMAIN\username).
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>-t|--check-secret</term>
 		<listitem><para>Verify that the workstation trust account
 		created when the Samba server is added to the Windows NT
@@ -312,6 +402,12 @@
 		<term>--uid-info <replaceable>uid</replaceable></term>
 		<listitem><para>Get user info for the user connected to
 		user id UID.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--usage</term>
+		<listitem><para>Print brief help overview.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
