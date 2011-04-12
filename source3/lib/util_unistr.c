@@ -79,26 +79,6 @@ size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate
 }
 
 
-/*******************************************************************
- Skip past a unicode string, but not more than len. Always move
- past a terminating zero if found.
-********************************************************************/
-
-char *skip_unibuf(char *src, size_t len)
-{
-	char *srcend = src + len;
-
-	while (src < srcend && SVAL(src,0)) {
-		src += 2;
-	}
-
-	if(!SVAL(src,0)) {
-		src += 2;
-	}
-
-	return src;
-}
-
 /* Converts a string from internal samba format to unicode
  */
 
