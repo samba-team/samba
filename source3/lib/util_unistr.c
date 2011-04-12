@@ -144,7 +144,7 @@ bool isvalid83_w(smb_ucs2_t c)
 }
 
 /*******************************************************************
- Count the number of characters in a smb_ucs2_t string.
+ Count the number of two-byte pairs in a UTF16 string.
 ********************************************************************/
 
 size_t strlen_w(const smb_ucs2_t *src)
