@@ -116,19 +116,34 @@ void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_ou
 
 bool E_deshash(const char *passwd, uint8_t p16[16])
 {
-	bool ret = true;
-	char dospwd[256];
+	bool ret;
+	uint8_t dospwd[14];
+
+	size_t converted_size;
+
+	char *tmpbuf;
+
 	ZERO_STRUCT(dospwd);
 
-	/* Password must be converted to DOS charset - null terminated, uppercase. */
-	push_string(dospwd, passwd, sizeof(dospwd), STR_ASCII|STR_UPPER|STR_TERMINATE);
-
-	/* Only the first 14 chars are considered, password need not be null terminated. */
-	E_P16((const uint8_t *)dospwd, p16);
-
-	if (strlen(dospwd) > 14) {
-		ret = false;
+	tmpbuf = strupper_talloc(NULL, passwd);
+	if (tmpbuf == NULL) {
+		/* Too many callers don't check this result, we need to fill in the buffer with something */
+		safe_strcpy((char *)dospwd, passwd, sizeof(dospwd)-1);
+		E_P16(dospwd, p16);
+		return false;
 	}
+
+	ZERO_STRUCT(dospwd);
+
+	ret = convert_string_error(CH_UNIX, CH_DOS, tmpbuf, strlen(tmpbuf), dospwd, sizeof(dospwd), &converted_size);
+	talloc_free(tmpbuf);
+
+	/* Only the first 14 chars are considered, password need not
+	 * be null terminated.  We do this in the error and success
+	 * case to avoid returning a fixed 'password' buffer, but
+	 * callers should not use it when E_deshash returns false */
+
+	E_P16((const uint8_t *)dospwd, p16);
 
 	ZERO_STRUCT(dospwd);
 
