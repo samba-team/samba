@@ -96,7 +96,6 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 size_t pull_ascii_fstring(char *dest, const void *src);
 size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src);
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags);
-size_t push_utf8_fstring(void *dest, const char *src);
 bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 		      size_t *converted_size);
 bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
