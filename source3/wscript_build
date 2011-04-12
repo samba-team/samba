@@ -963,7 +963,7 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('CHARSET3',
-                    source='''lib/util_str.c lib/charcnv.c  ../lib/util/charset/convert_string.c lib/fstring.c''',
+                    source='''lib/util_str.c lib/charcnv.c lib/fstring.c''',
                     public_deps='ICONV_WRAPPER CODEPOINTS',
                     deps='samba-util')
 

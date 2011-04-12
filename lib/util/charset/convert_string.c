@@ -21,6 +21,7 @@
 
 */
 #include "includes.h"
+#include "system/iconv.h"
 
 /**
  * @file
@@ -387,7 +388,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	}
 
 	/* +2 is for ucs2 null termination. */
-	ob = (char *)TALLOC_REALLOC(ctx, ob, destlen + 2);
+	ob = talloc_realloc(ctx, ob, char, destlen + 2);
 
 	if (!ob) {
 		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
@@ -428,7 +429,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	 */
 	if (o_len > 1024) {
 		/* We're shrinking here so we know the +2 is safe from wrap. */
-		ob = (char *)TALLOC_REALLOC(ctx,ob,destlen + 2);
+		ob = talloc_realloc(ctx,ob, char, destlen + 2);
 	}
 
 	if (destlen && !ob) {

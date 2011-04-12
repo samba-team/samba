@@ -3,7 +3,7 @@
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_SUBSYSTEM('CHARSET',
-                        source='charcnv.c util_unistr.c',
+                        source='util_unistr.c',
                         public_deps='CODEPOINTS',
                         public_headers='charset.h',
                         )
@@ -13,6 +13,6 @@ bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
                     public_deps='iconv replace talloc')
 
 bld.SAMBA_SUBSYSTEM('CODEPOINTS',
-	source='codepoints.c util_str.c util_unistr_w.c',
+	source='codepoints.c convert_string.c util_str.c util_unistr_w.c charcnv.c',
 	deps='DYNCONFIG ICONV_WRAPPER'
 	)
