@@ -21,11 +21,29 @@ from samba_utils import *
 #
 # LOCAL_CACHE(bld, 'TARGET_TYPE') : dictionary mapping subsystem name to target type
 
-def symbols_extract(objfiles, dynamic=False):
+
+def symbols_extract(bld, objfiles, dynamic=False):
     '''extract symbols from objfile, returning a dictionary containing
        the set of undefined and public symbols for each file'''
 
     ret = {}
+
+    # see if we can get some results from the nm cache
+    if not bld.env.nm_cache:
+        bld.env.nm_cache = {}
+
+    objfiles = set(objfiles).copy()
+
+    remaining = set()
+    for obj in objfiles:
+        if obj in bld.env.nm_cache:
+            ret[obj] = bld.env.nm_cache[obj].copy()
+        else:
+            remaining.add(obj)
+    objfiles = remaining
+
+    if len(objfiles) == 0:
+        return ret
 
     cmd = ["nm"]
     if dynamic:
@@ -60,6 +78,13 @@ def symbols_extract(objfiles, dynamic=False):
         elif symbol_type in "U":
             ret[filename]["UNDEFINED"].add(symbol)
 
+    # add to the cache
+    for obj in objfiles:
+        if obj in ret:
+            bld.env.nm_cache[obj] = ret[obj].copy()
+        else:
+            bld.env.nm_cache[obj] = { "PUBLIC": set(), "UNDEFINED" : set() }
+
     return ret
 
 
@@ -73,6 +98,13 @@ def get_ldd_libs(bld, binname):
     '''find the list of linked libraries for any binary or library
     binname is the path to the binary/library on disk
     '''
+
+    # see if we can get the result from the ldd cache
+    if not bld.env.ldd_cache:
+        bld.env.ldd_cache = {}
+    if binname in bld.env.ldd_cache:
+        return bld.env.ldd_cache[binname].copy()
+
     ret = set()
     lddpipe = subprocess.Popen(['ldd', binname], stdout=subprocess.PIPE).stdout
     for line in lddpipe:
@@ -81,10 +113,13 @@ def get_ldd_libs(bld, binname):
         if len(cols) < 3 or cols[1] != "=>" or cols[2] == '':
             continue
         ret.add(os.path.realpath(cols[2]))
+
+    bld.env.ldd_cache[binname] = ret.copy()
+
     return ret
 
 
-def get_ldd_libs_recursive(bld, binname, seen=set()):
+def get_ldd_libs_recursive(bld, binname, seen):
     '''find the recursive list of linked libraries for any binary or library
     binname is the path to the binary/library on disk. seen is a set used
     to prevent loops
@@ -143,7 +178,7 @@ def build_symbol_sets(bld, tgt_list):
                 objlist.append(objpath)
                 objmap[objpath] = t
 
-    symbols = symbols_extract(objlist)
+    symbols = symbols_extract(bld, objlist)
     for obj in objlist:
         t = objmap[obj]
         t.public_symbols = t.public_symbols.union(symbols[obj]["PUBLIC"])
@@ -236,7 +271,7 @@ def build_syslib_sets(bld, tgt_list):
     syslib_paths.append(bld.env.libc_path)
     objmap[bld.env.libc_path] = 'c'
 
-    symbols = symbols_extract(syslib_paths, dynamic=True)
+    symbols = symbols_extract(bld, syslib_paths, dynamic=True)
 
     # keep a map of syslib names to public symbols
     bld.env.syslib_symbols = {}
@@ -503,9 +538,9 @@ def report_duplicate(bld, binname, sym, libs):
 
 def symbols_dupcheck_binary(bld, binname):
     '''check for duplicated symbols in one binary'''
-    libs = get_ldd_libs_recursive(bld, binname)
+    libs = get_ldd_libs_recursive(bld, binname, set())
 
-    symlist = symbols_extract(libs, dynamic=True)
+    symlist = symbols_extract(bld, libs, dynamic=True)
 
     symmap = {}
     for libpath in symlist:
