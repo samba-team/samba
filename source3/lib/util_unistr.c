@@ -392,55 +392,13 @@ int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 }
 
 /*******************************************************************
- Compare 2 strings.
-********************************************************************/
-
-bool strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
-{
-	if (s1 == s2) {
-		return(True);
-	}
-	if (!s1 || !s2) {
-		return(False);
-	}
-  
-	return(strcasecmp_w(s1,s2)==0);
-}
-
-/*******************************************************************
- Compare 2 strings up to and including the nth char.
-******************************************************************/
-
-bool strnequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2,size_t n)
-{
-	if (s1 == s2) {
-		return(True);
-	}
-	if (!s1 || !s2 || !n) {
-		return(False);
-	}
-  
-	return(strncasecmp_w(s1,s2,n)==0);
-}
-
-/*******************************************************************
  Duplicate string.
 ********************************************************************/
 
 smb_ucs2_t *strdup_w(const smb_ucs2_t *src)
 {
-	return strndup_w(src, 0);
-}
-
-/* if len == 0 then duplicate the whole string */
-
-smb_ucs2_t *strndup_w(const smb_ucs2_t *src, size_t len)
-{
 	smb_ucs2_t *dest;
-	
-	if (!len) {
-		len = strlen_w(src);
-	}
+	size_t len = strlen_w(src);
 	dest = SMB_MALLOC_ARRAY(smb_ucs2_t, len + 1);
 	if (!dest) {
 		DEBUG(0,("strdup_w: out of memory!\n"));
@@ -451,126 +409,6 @@ smb_ucs2_t *strndup_w(const smb_ucs2_t *src, size_t len)
 	dest[len] = 0;
 	return dest;
 }
-
-/*******************************************************************
- Copy a string with max len.
-********************************************************************/
-
-smb_ucs2_t *strncpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
-{
-	smb_ucs2_t cp;
-	size_t len;
-	
-	if (!dest || !src) {
-		return NULL;
-	}
-	
-	for (len = 0; (*COPY_UCS2_CHAR(&cp,(src+len))) && (len < max); len++) {
-		cp = *COPY_UCS2_CHAR(dest+len,src+len);
-	}
-	cp = 0;
-	for ( /*nothing*/ ; len < max; len++ ) {
-		cp = *COPY_UCS2_CHAR(dest+len,&cp);
-	}
-	
-	return dest;
-}
-
-/*******************************************************************
- Append a string of len bytes and add a terminator.
-********************************************************************/
-
-smb_ucs2_t *strncat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
-{	
-	size_t start;
-	size_t len;	
-	smb_ucs2_t z = 0;
-
-	if (!dest || !src) {
-		return NULL;
-	}
-	
-	start = strlen_w(dest);
-	len = strnlen_w(src, max);
-
-	memcpy(&dest[start], src, len*sizeof(smb_ucs2_t));			
-	z = *COPY_UCS2_CHAR(dest+start+len,&z);
-
-	return dest;
-}
-
-smb_ucs2_t *strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src)
-{	
-	size_t start;
-	size_t len;	
-	smb_ucs2_t z = 0;
-	
-	if (!dest || !src) {
-		return NULL;
-	}
-	
-	start = strlen_w(dest);
-	len = strlen_w(src);
-
-	memcpy(&dest[start], src, len*sizeof(smb_ucs2_t));			
-	z = *COPY_UCS2_CHAR(dest+start+len,&z);
-	
-	return dest;
-}
-
-
-/*******************************************************************
- Replace any occurence of oldc with newc in unicode string.
-********************************************************************/
-
-void string_replace_w(smb_ucs2_t *s, smb_ucs2_t oldc, smb_ucs2_t newc)
-{
-	smb_ucs2_t cp;
-
-	for(;*(COPY_UCS2_CHAR(&cp,s));s++) {
-		if(cp==oldc) {
-			COPY_UCS2_CHAR(s,&newc);
-		}
-	}
-}
-
-/*******************************************************************
- Trim unicode string.
-********************************************************************/
-
-bool trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
-				  const smb_ucs2_t *back)
-{
-	bool ret = False;
-	size_t len, front_len, back_len;
-
-	if (!s) {
-		return False;
-	}
-
-	len = strlen_w(s);
-
-	if (front && *front) {
-		front_len = strlen_w(front);
-		while (len && strncmp_w(s, front, front_len) == 0) {
-			memmove(s, (s + front_len), (len - front_len + 1) * sizeof(smb_ucs2_t));
-			len -= front_len;
-			ret = True;
-		}
-	}
-	
-	if (back && *back) {
-		back_len = strlen_w(back);
-		while (len && strncmp_w((s + (len - back_len)), back, back_len) == 0) {
-			s[len - back_len] = 0;
-			len -= back_len;
-			ret = True;
-		}
-	}
-
-	return ret;
-}
-
 /*
   The *_wa() functions take a combination of 7 bit ascii
   and wide characters They are used so that you can use string
@@ -588,56 +426,6 @@ int strcmp_wa(const smb_ucs2_t *a, const char *b)
 		b++;
 	}
 	return (*(COPY_UCS2_CHAR(&cp,a)) - UCS2_CHAR(*b));
-}
-
-int strncmp_wa(const smb_ucs2_t *a, const char *b, size_t len)
-{
-	smb_ucs2_t cp = 0;
-	size_t n = 0;
-
-	while ((n < len) && *b && *(COPY_UCS2_CHAR(&cp,a)) == UCS2_CHAR(*b)) {
-		a++;
-		b++;
-		n++;
-	}
-	return (len - n)?(*(COPY_UCS2_CHAR(&cp,a)) - UCS2_CHAR(*b)):0;
-}
-
-smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
-{
-	smb_ucs2_t cp;
-
-	while (*(COPY_UCS2_CHAR(&cp,s))) {
-		int i;
-		for (i=0; p[i] && cp != UCS2_CHAR(p[i]); i++) 
-			;
-		if (p[i]) {
-			return (smb_ucs2_t *)s;
-		}
-		s++;
-	}
-	return NULL;
-}
-
-smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
-{
-	smb_ucs2_t *r;
-	size_t inslen;
-
-	if (!s || !ins) { 
-		return NULL;
-	}
-
-	inslen = strlen(ins);
-	r = (smb_ucs2_t *)s;
-
-	while ((r = strchr_w(r, UCS2_CHAR(*ins)))) {
-		if (strncmp_wa(r, ins, inslen) == 0) 
-			return r;
-		r++;
-	}
-
-	return NULL;
 }
 
 /*************************************************************
