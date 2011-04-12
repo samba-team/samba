@@ -1063,7 +1063,6 @@ bool strupper_w(smb_ucs2_t *s);
 int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
 int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
 int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
-smb_ucs2_t *strdup_w(const smb_ucs2_t *src);
 int strcmp_wa(const smb_ucs2_t *a, const char *b);
 int toupper_ascii(int c);
 int tolower_ascii(int c);

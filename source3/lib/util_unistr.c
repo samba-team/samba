@@ -306,24 +306,6 @@ int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 	return (len - n)?(tolower_m(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_m(*(COPY_UCS2_CHAR(&cpb,b)))):0;
 }
 
-/*******************************************************************
- Duplicate string.
-********************************************************************/
-
-smb_ucs2_t *strdup_w(const smb_ucs2_t *src)
-{
-	smb_ucs2_t *dest;
-	size_t len = strlen_w(src);
-	dest = SMB_MALLOC_ARRAY(smb_ucs2_t, len + 1);
-	if (!dest) {
-		DEBUG(0,("strdup_w: out of memory!\n"));
-		return NULL;
-	}
-
-	memcpy(dest, src, len * sizeof(smb_ucs2_t));
-	dest[len] = 0;
-	return dest;
-}
 /*
   The *_wa() functions take a combination of 7 bit ascii
   and wide characters They are used so that you can use string

@@ -143,6 +143,25 @@ static NTSTATUS has_illegal_chars(const smb_ucs2_t *s, bool allow_wildcards)
 	return NT_STATUS_OK;
 }
 
+/*******************************************************************
+ Duplicate string.
+********************************************************************/
+
+static smb_ucs2_t *strdup_w(const smb_ucs2_t *src)
+{
+	smb_ucs2_t *dest;
+	size_t len = strlen_w(src);
+	dest = SMB_MALLOC_ARRAY(smb_ucs2_t, len + 1);
+	if (!dest) {
+		DEBUG(0,("strdup_w: out of memory!\n"));
+		return NULL;
+	}
+
+	memcpy(dest, src, len * sizeof(smb_ucs2_t));
+	dest[len] = 0;
+	return dest;
+}
+
 /* return False if something fail and
  * return 2 alloced unicode strings that contain prefix and extension
  */
