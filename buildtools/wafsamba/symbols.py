@@ -1,7 +1,7 @@
 # a waf tool to extract symbols from object files or libraries
 # using nm, producing a set of exposed defined/undefined symbols
 
-import Utils, Build, subprocess, Logs
+import Utils, Build, subprocess, Logs, re
 from samba_wildcard import fake_build_environment
 from samba_utils import *
 
@@ -94,43 +94,100 @@ def real_name(name):
     return name
 
 
-def get_ldd_libs(bld, binname):
-    '''find the list of linked libraries for any binary or library
-    binname is the path to the binary/library on disk
-    '''
+def find_ldd_path(bld, libname, binary):
+    '''find the path to the syslib we will link against'''
+    ret = None
+    if not bld.env.syslib_paths:
+        bld.env.syslib_paths = {}
+    if libname in bld.env.syslib_paths:
+        return bld.env.syslib_paths[libname]
 
-    # see if we can get the result from the ldd cache
-    if not bld.env.ldd_cache:
-        bld.env.ldd_cache = {}
-    if binname in bld.env.ldd_cache:
-        return bld.env.ldd_cache[binname].copy()
-
-    ret = set()
-    lddpipe = subprocess.Popen(['ldd', binname], stdout=subprocess.PIPE).stdout
+    lddpipe = subprocess.Popen(['ldd', binary], stdout=subprocess.PIPE).stdout
     for line in lddpipe:
         line = line.strip()
         cols = line.split(" ")
-        if len(cols) < 3 or cols[1] != "=>" or cols[2] == '':
+        if len(cols) < 3 or cols[1] != "=>":
             continue
-        ret.add(os.path.realpath(cols[2]))
+        if cols[0].startswith("libc."):
+            # save this one too
+            bld.env.libc_path = cols[2]
+        if cols[0].startswith(libname):
+            ret = cols[2]
+    bld.env.syslib_paths[libname] = ret
+    return ret
 
-    bld.env.ldd_cache[binname] = ret.copy()
+
+# some regular expressions for parsing readelf output
+re_sharedlib = re.compile('Shared library: \[(.*)\]')
+re_rpath     = re.compile('Library rpath: \[(.*)\]')
+
+def get_libs(bld, binname):
+    '''find the list of linked libraries for any binary or library
+    binname is the path to the binary/library on disk
+
+    We do this using readelf instead of ldd as we need to avoid recursing
+    into system libraries
+    '''
+
+    # see if we can get the result from the ldd cache
+    if not bld.env.lib_cache:
+        bld.env.lib_cache = {}
+    if binname in bld.env.lib_cache:
+        return bld.env.lib_cache[binname].copy()
+
+    rpath = []
+    libs = set()
+
+    elfpipe = subprocess.Popen(['readelf', '--dynamic', binname], stdout=subprocess.PIPE).stdout
+    for line in elfpipe:
+        m = re_sharedlib.search(line)
+        if m:
+            libs.add(m.group(1))
+        m = re_rpath.search(line)
+        if m:
+            rpath.extend(m.group(1).split(":"))
+
+    ret = set()
+    for lib in libs:
+        found = False
+        for r in rpath:
+            path = os.path.join(r, lib)
+            if os.path.exists(path):
+                ret.add(os.path.realpath(path))
+                found = True
+                break
+        if not found:
+            # we didn't find this lib using rpath. It is probably a system
+            # library, so to find the path to it we either need to use ldd
+            # or we need to start parsing /etc/ld.so.conf* ourselves. We'll
+            # use ldd for now, even though it is slow
+            path = find_ldd_path(bld, lib, binname)
+            if path:
+                ret.add(os.path.realpath(path))
+
+    bld.env.lib_cache[binname] = ret.copy()
 
     return ret
 
 
-def get_ldd_libs_recursive(bld, binname, seen):
+def get_libs_recursive(bld, binname, seen):
     '''find the recursive list of linked libraries for any binary or library
     binname is the path to the binary/library on disk. seen is a set used
     to prevent loops
     '''
     if binname in seen:
         return set()
-    ret = get_ldd_libs(bld, binname)
+    ret = get_libs(bld, binname)
     seen.add(binname)
     for lib in ret:
-        ret = ret.union(get_ldd_libs_recursive(bld, lib, seen))
+        # we don't want to recurse into system libraries. If a system
+        # library that we use (eg. libcups) happens to use another library
+        # (such as libkrb5) which contains common symbols with our own
+        # libraries, then that is not an error
+        if lib in bld.env.library_dict:
+            ret = ret.union(get_libs_recursive(bld, lib, seen))
     return ret
+
 
 
 def find_syslib_path(bld, libname, deps):
@@ -143,20 +200,7 @@ def find_syslib_path(bld, libname, deps):
     if libname == "python":
         libname += bld.env.PYTHON_VERSION
 
-    ret = None
-
-    lddpipe = subprocess.Popen(['ldd', linkpath], stdout=subprocess.PIPE).stdout
-    for line in lddpipe:
-        line = line.strip()
-        cols = line.split(" ")
-        if len(cols) < 3 or cols[1] != "=>":
-            continue
-        if cols[0].startswith("lib%s." % libname.lower()):
-            ret = cols[2]
-        if cols[0].startswith("libc."):
-            # save this one too
-            bld.env.libc_path = cols[2]
-    return ret
+    return find_ldd_path(bld, "lib%s" % libname.lower(), linkpath)
 
 
 def build_symbol_sets(bld, tgt_list):
@@ -538,8 +582,8 @@ def report_duplicate(bld, binname, sym, libs):
 
 def symbols_dupcheck_binary(bld, binname):
     '''check for duplicated symbols in one binary'''
-    libs = get_ldd_libs_recursive(bld, binname, set())
 
+    libs = get_libs_recursive(bld, binname, set())
     symlist = symbols_extract(bld, libs, dynamic=True)
 
     symmap = {}
