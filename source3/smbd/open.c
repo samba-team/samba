@@ -226,11 +226,11 @@ void change_file_owner_to_parent(connection_struct *conn,
 			 "was %s\n", fsp_str_dbg(fsp),
 			 (unsigned int)smb_fname_parent->st.st_ex_uid,
 			 strerror(errno) ));
+	} else {
+		DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
+			"parent directory uid %u.\n", fsp_str_dbg(fsp),
+			(unsigned int)smb_fname_parent->st.st_ex_uid));
 	}
-
-	DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
-		  "parent directory uid %u.\n", fsp_str_dbg(fsp),
-		  (unsigned int)smb_fname_parent->st.st_ex_uid));
 
 	TALLOC_FREE(smb_fname_parent);
 }
@@ -325,12 +325,11 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 			  "Error was %s\n", fname,
 			  (unsigned int)smb_fname_parent->st.st_ex_uid,
 			  strerror(errno) ));
-		goto chdir;
+	} else {
+		DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
+			"directory %s to parent directory uid %u.\n",
+			fname, (unsigned int)smb_fname_parent->st.st_ex_uid ));
 	}
-
-	DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
-		  "directory %s to parent directory uid %u.\n",
-		  fname, (unsigned int)smb_fname_parent->st.st_ex_uid ));
 
  chdir:
 	vfs_ChDir(conn,saved_dir);
