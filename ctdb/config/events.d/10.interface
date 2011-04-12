@@ -63,6 +63,14 @@ monitor_interfaces()
 			ctdb setifacelink $IFACE down
 			continue;
 		}
+		grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' /proc/net/bonding/$REALIFACE && {
+			grep 'MII Status:' /proc/net/bonding/$REALIFACE | tail -n +2 | grep -q '^MII Status: up' || {
+				echo No active slaves for 802.ad bond device $REALIFACE
+				ctdb setifacelink $IFACE down
+				fail=1
+				continue
+			}
+		}
 		ok=1 # we only set ok for interfaces known to ctdbd
 		ctdb setifacelink $IFACE up
 		continue;
