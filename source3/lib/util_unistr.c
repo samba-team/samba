@@ -34,6 +34,7 @@ static bool initialized;
 /* return an ascii version of a ucs2 character */
 #define UCS2_TO_CHAR(c) (((c) >> UCS2_SHIFT) & 0xff)
 
+static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
 
 /**
  * Destroy global objects allocated by load_case_tables()
@@ -295,19 +296,6 @@ bool strupper_w(smb_ucs2_t *s)
 	return ret;
 }
 
-/*******************************************************************
- Convert a string to "normal" form.
-********************************************************************/
-
-void strnorm_w(smb_ucs2_t *s, int case_default)
-{
-	if (case_default == CASE_UPPER) {
-		strupper_w(s);
-	} else {
-		strlower_w(s);
-	}
-}
-
 int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 {
 	smb_ucs2_t cpa, cpb;
@@ -322,7 +310,7 @@ int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 		string is longer */
 }
 
-int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
+static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 {
 	smb_ucs2_t cpa, cpb;
 	size_t n = 0;
