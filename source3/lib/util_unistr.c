@@ -21,10 +21,6 @@
 
 #include "includes.h"
 
-#ifndef MAXUNI
-#define MAXUNI 1024
-#endif
-
 /* these 3 tables define the unicode case handling.  They are loaded
    at startup either via mmap() or read() from the lib directory */
 static uint8 *valid_table;
