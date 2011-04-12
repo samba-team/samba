@@ -1079,7 +1079,7 @@ static NTSTATUS ipasam_add_ipa_objectclasses(struct ldapsam_privates *ldap_state
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, LDAP_ATTRIBUTE_KRB_PRINCIPAL, princ);
 	}
 
-	if (!(has_objectclass & HAS_KRB_PRINCIPAL_AUX)); {
+	if (!(has_objectclass & HAS_KRB_PRINCIPAL_AUX)) {
 		smbldap_set_mod(&mods, LDAP_MOD_ADD,
 				LDAP_ATTRIBUTE_OBJECTCLASS,
 				LDAP_OBJ_KRB_PRINCIPAL_AUX);
