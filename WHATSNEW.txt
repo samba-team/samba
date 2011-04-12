@@ -157,6 +157,29 @@ brought to the conciousness of the users that even the simple
 id mapping is not working exactly as in Samba 3.0 versions any more.
 
 
+Endpoint Mapper
+---------------
+
+As Microsoft is more and more relying on endpoint mapper and we didn't have a
+complete implementation we decided to create an instance for Samba. The
+endpoint mapper is like a DNS server but for ports. If you want to talk to a
+certain RPC service over TCP/IP, you just ask the endpoint mapper on which
+port it is running. Then you can connect to the service and make sure that it
+is running.
+The code is deactivated by default, because it needs more testing and it
+doesn't scale yet. We will work on these limitations and hopefully release it
+with pre3. If you want to enable and test the endpoint mapper you can set
+"rpc_server:epmapper = daemon" in the smb.conf file.
+
+
+Internal restructuring
+----------------------
+
+Ongoing internal restructuring for better separation of internal subsystem to
+achieve a faster build, smaller binaries and cleaner dependencies for the samba3
+waf build.
+
+
 SMB Traffic Analyzer
 --------------------
 
@@ -210,6 +233,16 @@ smb.conf changes
 Commit Highlights
 -----------------
 
+o   Michael Adam <obnox@samba.org>
+    * ID Mapping changes.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Implement SMB2 support.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * Add an Endpoint Mapper daemon.
 
 
 
@@ -217,14 +250,45 @@ Changes since 3.6.0pre1
 -----------------------
 
 o   Michael Adam <obnox@samba.org>
-    * IDmapping changes.
+    * ID Mapping changes.
+    * Add "--option" to 'testparm'.
 
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 7080: Quota only shown when logged as root.
+    * BUG 7863: Unlink may unlink wrong file when hardlinks are involved.
     * BUG 7996: Sgid bit lost on folder rename.
     * BUG 8040: Fix smbclient segfault with Cyrillic netbios names.
     * Fix crash bug on smbd shutdown when using FOPENDIR().
+    * Ensure we don't return an incorrect access mask.
+    * Fix bug against the new Mac client.
+    * Fix leak in error path.
+    * Fix error where Windows client spoolss returns WERR_INVALID_DATA.
+
+
+o   Christian Ambach <christian.ambach@de.ibm.com>
+    * Fix a segfault in the krb5 locator plugin.
+    * Enable sharesec for registry shares.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Fix memory leak in "security=share" and "force user".
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 7875: Fix 'nmbd --port'.
+    * BUG 7880: cmd_spoolss_deletedriver() returned without checking all
+      architectures.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * Add new 'net idmap check' command.
+    * Add new 'net idmap delete' command.
+    * Fix segfault on missing input file in 'net idmap restore'.
+
+
+o   Olly Betts <olly@survex.com>
+    * Fix 'net usersidlist' not to skip every other user.
 
 
 o   Gregor Beck <gbeck@sernet.de>
@@ -232,14 +296,23 @@ o   Gregor Beck <gbeck@sernet.de>
       id mapping database.
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 7690: Retry DNS updates when connection to one nameserver has failed.
+    * BUG 7945: Let winbind try to use samlogon validation level 6.
     * Fix Coverity ID 2041.
-    * fix potential crash bug in spoolss_PrinterEnumValues push path.
+    * Fix potential crash bug in spoolss_PrinterEnumValues push path.
+    * Internal restructuring.
+    * Don't wipe out all printer drivers when only one should be deleted.
+    * Fix winbindd_dual_pam_auth_samlogon() for NT4 domains.
 
 
 o   David Disseldorp <ddiss@suse.de>
+    * BUG 7915: Fix cups pcap reload with no printers.
     * BUG 8040: Fix smbclient segfault with Cyrillic netbios names.
     * Fix memory leak in print_cups.c.
     * Remove duplicate cups response processing code.
+    * Follow force user/group for driver IO.
+    * Initiate pcap reload from parent smbd.
+    * Reload shares after pcap cache fill.
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -248,10 +321,24 @@ o   Björn Jacke <bj@sernet.de>
 
 
 o   Volker Lendecke <vl@samba.org>
+    * BUG 7917: Fix bug in chain_reply.
+    * BUG 7940: Fall back for utimes calls.
     * BUG 8009: Fix getting username in 'net rap session'.
     * BUG 8010: Use jenkins hash for str_checksum.
     * BUG 8042: Fix file creation on OS/X.
     * Fix numerous Coverity IDs.
+    * Fix a memory leak in check_sam_security_info3.
+    * Fix a segfault in the nss wrapper when libnss_winbind.so is not loadable.
+    * Make "net sam list [users|workstations]" list only the right things.
+    * Fix a potential memleak in secrets_fetch_trusted_domain_password.
+    * Use the right credentials in check_netlogond_security.
+    * Add support for AF_NETLINK addr notifications.
+    * Fork multiple Winbind children per domain.
+    * Fix a deadlock between smbd and ctdbd.
+    * Add 'wbinfo --dc-info'.
+    * Make "nmbd socket dir" configurable.
+    * Fix a valgrind error.
+    * Fix a memleak in receive_getdc_response.
 
 
 o   Nikolay Martynov <mar.kolya@gmail.com>
@@ -261,8 +348,44 @@ o   Nikolay Martynov <mar.kolya@gmail.com>
 
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 7567: Fix printing from Windows 7.
+    * BUG 7899: Don't return "-1" on success in 'net rpc vampire keytab'.
+    * BUG 7944: Catch lookup_names/sids schannel errors over ncacn_ip_tcp.
     * Don't grant SEC_STD_DELETE always to the owner of a file.
+    * Fix segfaults on addrchange errors in Winbind.
+    * Allow machine accounts as members in groupdb.
 
+
+o   Jonathan Nieder <jrnieder@gmail.com>
+    * BUG 6837: Make "rlimit_max below minimum Windows limit" notification less
+      scary.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * Add an Endpoint Mapper daemon.
+    * Add IPv6 support for the endpoint mapper.
+    * Free unused memory in the rpc server.
+    * Fix possible segfaults in svcctl server.
+    * Fix possible segfault with client_id in rpc server.
+    * Add a 'svcctl shutdown' function to rpc server.
+    * Fix a resource leak in net_afs.
+    * Fix a resource leak in smbta-util.
+    * Fix possible resource leak in net_usershare.
+    * Fix possible resource leak in 'smbget'.
+    * Fix possible resource leak in 'smbfilter'.
+    * Fix a possible null pointer dereference in smbd.
+
+
+o   Pavel Shilovsky <piastry@etersoft.ru>
+    * BUG 7928: Fix problems with "kernel oplocks" option set to "no".
+    * Ensure we send the direct levelII oplock break to the correct fid.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fix private libdir and codepages paths.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix a valgrind error.
 
 
 ######################################################################
