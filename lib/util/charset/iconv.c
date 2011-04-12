@@ -56,6 +56,7 @@ static_decl_charset;
 
 static size_t ascii_pull  (void *,const char **, size_t *, char **, size_t *);
 static size_t ascii_push  (void *,const char **, size_t *, char **, size_t *);
+static size_t latin1_pull(void *,const char **, size_t *, char **, size_t *);
 static size_t latin1_push(void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_pull   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_push   (void *,const char **, size_t *, char **, size_t *);
@@ -81,7 +82,7 @@ static const struct charset_functions builtin_functions[] = {
 
 	{"ASCII", ascii_pull, ascii_push},
 	{"646", ascii_pull, ascii_push},
-	{"ISO-8859-1", ascii_pull, latin1_push},
+	{"ISO-8859-1", latin1_pull, latin1_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push}
 };
 
@@ -373,10 +374,24 @@ _PUBLIC_ int smb_iconv_close(smb_iconv_t cd)
  and also the "test" character sets that are designed to test
  multi-byte character set support for english users
 ***********************************************************************/
+
+/*
+  this takes an ASCII sequence and produces a UTF16 sequence
+
+  The first 127 codepoints of latin1 matches the first 127 codepoints
+  of unicode, and so can be put into the first byte of UTF16LE
+
+ */
+
 static size_t ascii_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
+		if (((*inbuf)[0] & 0x7F) != (*inbuf)[0]) {
+			/* If this is multi-byte, then it isn't legal ASCII */
+			errno = EILSEQ;
+			return -1;
+		}
 		(*outbuf)[0] = (*inbuf)[0];
 		(*outbuf)[1] = 0;
 		(*inbytesleft)  -= 1;
@@ -393,14 +408,26 @@ static size_t ascii_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
+/*
+  this takes a UTF16 sequence and produces an ASCII sequence
+
+  The first 127 codepoints of ASCII matches the first 127 codepoints
+  of unicode, and so can be read directly from the first byte of UTF16LE
+
+ */
 static size_t ascii_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;
 
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		(*outbuf)[0] = (*inbuf)[0] & 0x7F;
-		if ((*inbuf)[1]) ir_count++;
+		if (((*inbuf)[0] & 0x7F) != (*inbuf)[0] ||
+			(*inbuf)[1] != 0) {
+			/* If this is multi-byte, then it isn't legal ASCII */
+			errno = EILSEQ;
+			return -1;
+		}
+		(*outbuf)[0] = (*inbuf)[0];
 		(*inbytesleft)  -= 2;
 		(*outbytesleft) -= 1;
 		(*inbuf)  += 2;
@@ -420,6 +447,40 @@ static size_t ascii_push(void *cd, const char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
+/*
+  this takes a latin1/ISO-8859-1 sequence and produces a UTF16 sequence
+
+  The first 256 codepoints of latin1 matches the first 256 codepoints
+  of unicode, and so can be put into the first byte of UTF16LE
+
+ */
+static size_t latin1_pull(void *cd, const char **inbuf, size_t *inbytesleft,
+			  char **outbuf, size_t *outbytesleft)
+{
+	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
+		(*outbuf)[0] = (*inbuf)[0];
+		(*outbuf)[1] = 0;
+		(*inbytesleft)  -= 1;
+		(*outbytesleft) -= 2;
+		(*inbuf)  += 1;
+		(*outbuf) += 2;
+	}
+
+	if (*inbytesleft > 0) {
+		errno = E2BIG;
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  this takes a UTF16 sequence and produces a latin1/ISO-8859-1 sequence
+
+  The first 256 codepoints of latin1 matches the first 256 codepoints
+  of unicode, and so can be read directly from the first byte of UTF16LE
+
+ */
 static size_t latin1_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
@@ -427,7 +488,11 @@ static size_t latin1_push(void *cd, const char **inbuf, size_t *inbytesleft,
 
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
 		(*outbuf)[0] = (*inbuf)[0];
-		if ((*inbuf)[1]) ir_count++;
+		if ((*inbuf)[1] != 0) {
+			/* If this is multi-byte, then it isn't legal latin1 */
+			errno = EILSEQ;
+			return -1;
+		}
 		(*inbytesleft)  -= 2;
 		(*outbytesleft) -= 1;
 		(*inbuf)  += 2;
