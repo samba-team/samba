@@ -1006,7 +1006,6 @@ static NTSTATUS ipasam_add_ipa_group_objectclasses(struct ldapsam_privates *ldap
 						   uint32_t has_objectclass)
 {
 	LDAPMod **mods = NULL;
-	NTSTATUS status;
 	int ret;
 
 	if (!(has_objectclass & HAS_GROUPOFNAMES)) {
@@ -1050,7 +1049,7 @@ static NTSTATUS ipasam_add_ipa_group_objectclasses(struct ldapsam_privates *ldap
 	if (ret != LDAP_SUCCESS) {
 		DEBUG(1, ("failed to modify/add group %s (dn = %s)\n",
 			  name, dn));
-		return status;
+		return NT_STATUS_LDAP(ret);
 	}
 
 	return NT_STATUS_OK;
