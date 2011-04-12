@@ -227,6 +227,10 @@ o   Jeremy Allison <jra@samba.org>
     * Fix crash bug on smbd shutdown when using FOPENDIR().
 
 
+o   Gregor Beck <gbeck@sernet.de>
+    * Add "net idmap check", a check and repair tool for the
+      id mapping database.
+
 o   Günther Deschner <gd@samba.org>
     * Fix Coverity ID 2041.
     * fix potential crash bug in spoolss_PrinterEnumValues push path.
