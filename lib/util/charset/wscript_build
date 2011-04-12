@@ -13,6 +13,6 @@ bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
                     public_deps='iconv replace talloc')
 
 bld.SAMBA_SUBSYSTEM('CODEPOINTS',
-	source='codepoints.c util_str.c',
+	source='codepoints.c util_str.c util_unistr_w.c',
 	deps='DYNCONFIG ICONV_WRAPPER'
 	)

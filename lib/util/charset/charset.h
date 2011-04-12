@@ -240,6 +240,26 @@ void load_case_tables(void);
 void load_case_tables_library(void);
 bool smb_register_charset(const struct charset_functions *funcs_in);
 
+/* The following definitions come from util_unistr_w.c  */
+
+size_t strlen_w(const smb_ucs2_t *src);
+size_t strnlen_w(const smb_ucs2_t *src, size_t max);
+smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
+smb_ucs2_t *strchr_wa(const smb_ucs2_t *s, char c);
+smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
+smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n);
+smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins);
+bool strlower_w(smb_ucs2_t *s);
+bool strupper_w(smb_ucs2_t *s);
+int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
+int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
+int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
+int strcmp_wa(const smb_ucs2_t *a, const char *b);
+int toupper_ascii(int c);
+int tolower_ascii(int c);
+int isupper_ascii(int c);
+int islower_ascii(int c);
+
 /*
  *   Define stub for charset module which implements 8-bit encoding with gaps.
  *   Encoding tables for such module should be produced from glibc's CHARMAPs

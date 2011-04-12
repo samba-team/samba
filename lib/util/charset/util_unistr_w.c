@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jeremy Allison 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -30,46 +30,6 @@
 #define UCS2_TO_CHAR(c) (((c) >> UCS2_SHIFT) & 0xff)
 
 static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
-
-/*******************************************************************
- Write a string in (little-endian) unicode format. src is in
- the current DOS codepage. len is the length in bytes of the
- string pointed to by dst.
-
- if null_terminate is True then null terminate the packet (adds 2 bytes)
-
- the return value is the length in bytes consumed by the string, including the
- null termination if applied
-********************************************************************/
-
-size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate)
-{
-	int flags = null_terminate ? STR_UNICODE|STR_NOALIGN|STR_TERMINATE
-				   : STR_UNICODE|STR_NOALIGN;
-	return push_ucs2(NULL, dst, src, len, flags);
-}
-
-
-/* Converts a string from internal samba format to unicode
- */
-
-int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags)
-{
-	return push_ucs2(NULL, dest, src, dest_len, flags|STR_UNICODE|STR_NOALIGN);
-}
-
-/* Converts a string from internal samba format to unicode. Always terminates.
- * Actually just a wrapper round push_ucs2_talloc().
- */
-
-int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
-{
-	size_t size;
-	if (push_ucs2_talloc(ctx, dest, src, &size))
-		return size;
-	else
-		return -1;
-}
 
 /*******************************************************************
  Count the number of two-byte pairs in a UTF16 string.
@@ -212,13 +172,13 @@ smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 bool strlower_w(smb_ucs2_t *s)
 {
 	smb_ucs2_t cp;
-	bool ret = False;
+	bool ret = false;
 
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		smb_ucs2_t v = tolower_m(cp);
 		if (v != cp) {
 			COPY_UCS2_CHAR(s,&v);
-			ret = True;
+			ret = true;
 		}
 		s++;
 	}
@@ -235,12 +195,12 @@ bool strlower_w(smb_ucs2_t *s)
 bool strupper_w(smb_ucs2_t *s)
 {
 	smb_ucs2_t cp;
-	bool ret = False;
+	bool ret = false;
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		smb_ucs2_t v = toupper_m(cp);
 		if (v != cp) {
 			COPY_UCS2_CHAR(s,&v);
-			ret = True;
+			ret = true;
 		}
 		s++;
 	}

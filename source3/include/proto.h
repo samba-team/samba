@@ -126,6 +126,9 @@ size_t pull_string_talloc(TALLOC_CTX *ctx,
 			size_t src_len,
 			int flags);
 size_t align_string(const void *base_ptr, const char *p, int flags);
+size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
+int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
+int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
 
 /* The following definitions come from lib/conn_tdb.c  */
 
@@ -1045,29 +1048,6 @@ bool validate_net_name( const char *name,
 char *escape_shell_string(const char *src);
 char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
 char *sanitize_username(TALLOC_CTX *mem_ctx, const char *username);
-
-/* The following definitions come from lib/util_unistr.c  */
-
-size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
-int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
-int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
-size_t strlen_w(const smb_ucs2_t *src);
-size_t strnlen_w(const smb_ucs2_t *src, size_t max);
-smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
-smb_ucs2_t *strchr_wa(const smb_ucs2_t *s, char c);
-smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
-smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n);
-smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins);
-bool strlower_w(smb_ucs2_t *s);
-bool strupper_w(smb_ucs2_t *s);
-int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
-int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
-int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
-int strcmp_wa(const smb_ucs2_t *a, const char *b);
-int toupper_ascii(int c);
-int tolower_ascii(int c);
-int isupper_ascii(int c);
-int islower_ascii(int c);
 
 /* The following definitions come from lib/version.c  */
 

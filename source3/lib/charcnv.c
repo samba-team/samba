@@ -1366,3 +1366,42 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	return 0;
 }
 
+/*******************************************************************
+ Write a string in (little-endian) unicode format. src is in
+ the current DOS codepage. len is the length in bytes of the
+ string pointed to by dst.
+
+ if null_terminate is True then null terminate the packet (adds 2 bytes)
+
+ the return value is the length in bytes consumed by the string, including the
+ null termination if applied
+********************************************************************/
+
+size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate)
+{
+	int flags = null_terminate ? STR_UNICODE|STR_NOALIGN|STR_TERMINATE
+				   : STR_UNICODE|STR_NOALIGN;
+	return push_ucs2(NULL, dst, src, len, flags);
+}
+
+
+/* Converts a string from internal samba format to unicode
+ */
+
+int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags)
+{
+	return push_ucs2(NULL, dest, src, dest_len, flags|STR_UNICODE|STR_NOALIGN);
+}
+
+/* Converts a string from internal samba format to unicode. Always terminates.
+ * Actually just a wrapper round push_ucs2_talloc().
+ */
+
+int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
+{
+	size_t size;
+	if (push_ucs2_talloc(ctx, dest, src, &size))
+		return size;
+	else
+		return -1;
+}
