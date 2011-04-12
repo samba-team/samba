@@ -54,19 +54,17 @@
  *
  **/
 
-static bool convert_string_internal(charset_t from, charset_t to,
-		      void const *src, size_t srclen,
-		      void *dest, size_t destlen, size_t *converted_size)
+static bool convert_string_internal(struct smb_iconv_handle *ic,
+				    charset_t from, charset_t to,
+				    void const *src, size_t srclen,
+				    void *dest, size_t destlen, size_t *converted_size)
 {
 	size_t i_len, o_len;
 	size_t retval;
 	const char* inbuf = (const char*)src;
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
-	struct smb_iconv_handle *ic;
 
-	lazy_initialize_conv();
-	ic = get_iconv_handle();
 	descriptor = get_conv_handle(ic, from, to);
 
 	if (srclen == (size_t)-1) {
@@ -112,10 +110,11 @@ static bool convert_string_internal(charset_t from, charset_t to,
  * Don't change unless you really know what you are doing. JRA.
  **/
 
-bool convert_string_error(charset_t from, charset_t to,
-			    void const *src, size_t srclen,
-			    void *dest, size_t destlen,
-			    size_t *converted_size)
+bool convert_string_error_handle(struct smb_iconv_handle *ic,
+				 charset_t from, charset_t to,
+				 void const *src, size_t srclen,
+				 void *dest, size_t destlen,
+				 size_t *converted_size)
 {
 	/*
 	 * NB. We deliberately don't do a strlen here if srclen == -1.
@@ -155,7 +154,7 @@ bool convert_string_error(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				bool ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
+				bool ret = convert_string_internal(ic, from, to, p, slen, q, dlen, converted_size);
 				*converted_size += retval;
 				return ret;
 #endif
@@ -197,7 +196,7 @@ bool convert_string_error(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				bool ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
+				bool ret = convert_string_internal(ic, from, to, p, slen, q, dlen, converted_size);
 				*converted_size += retval;
 				return ret;
 #endif
@@ -239,7 +238,7 @@ bool convert_string_error(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				bool ret = convert_string_internal(from, to, p, slen, q, dlen, converted_size);
+				bool ret = convert_string_internal(ic, from, to, p, slen, q, dlen, converted_size);
 				*converted_size += retval;
 				return ret;
 #endif
@@ -262,15 +261,16 @@ bool convert_string_error(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
   general_case:
 #endif
-	return convert_string_internal(from, to, src, srclen, dest, destlen, converted_size);
+	return convert_string_internal(ic, from, to, src, srclen, dest, destlen, converted_size);
 }
 
-bool convert_string(charset_t from, charset_t to,
-		      void const *src, size_t srclen,
-		      void *dest, size_t destlen,
-		      size_t *converted_size)
+bool convert_string_handle(struct smb_iconv_handle *ic,
+			   charset_t from, charset_t to,
+			   void const *src, size_t srclen,
+			   void *dest, size_t destlen,
+			   size_t *converted_size)
 {
-	bool ret = convert_string_error(from, to, src, srclen, dest, destlen, converted_size);
+	bool ret = convert_string_error_handle(ic, from, to, src, srclen, dest, destlen, converted_size);
 
 	if(ret==false) {
 		const char *reason="unknown error";
@@ -282,10 +282,6 @@ bool convert_string(charset_t from, charset_t to,
 				break;
 			case E2BIG:
 			{
-				struct smb_iconv_handle *ic;
-				lazy_initialize_conv();
-				ic = get_iconv_handle();
-
 				reason="No more room";
 				if (from == CH_UNIX) {
 					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s'\n",
@@ -331,9 +327,10 @@ bool convert_string(charset_t from, charset_t to,
  * I hate the goto's in this function. It's embarressing.....
  * There has to be a cleaner way to do this. JRA.
  */
-bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			   void const *src, size_t srclen, void *dst,
-			   size_t *converted_size)
+bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
+				  charset_t from, charset_t to,
+				  void const *src, size_t srclen, void *dst,
+				  size_t *converted_size)
 
 {
 	size_t i_len, o_len, destlen = (srclen * 3) / 2;
@@ -342,7 +339,6 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	char *outbuf = NULL, *ob = NULL;
 	smb_iconv_t descriptor;
 	void **dest = (void **)dst;
-	struct smb_iconv_handle *ic;
 
 	*dest = NULL;
 
@@ -371,8 +367,6 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		return true;
 	}
 
-	lazy_initialize_conv();
-	ic = get_iconv_handle();
 	descriptor = get_conv_handle(ic, from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
@@ -464,4 +458,67 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 
 	*converted_size = destlen;
 	return true;
+}
+
+/**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @param converted_size the number of bytes occupied in the destination
+ *
+ * @returns true on success, false on fail.
+ **/
+_PUBLIC_ bool convert_string(charset_t from, charset_t to,
+			       void const *src, size_t srclen,
+			       void *dest, size_t destlen,
+			       size_t *converted_size)
+{
+	return convert_string_handle(get_iconv_handle(), from, to,
+					src, srclen,
+					dest, destlen, converted_size);
+}
+
+/**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @param converted_size the number of bytes occupied in the destination
+ *
+ * @returns true on success, false on fail.
+ **/
+_PUBLIC_ bool convert_string_error(charset_t from, charset_t to,
+				   void const *src, size_t srclen,
+				   void *dest, size_t destlen,
+				   size_t *converted_size)
+{
+	return convert_string_error_handle(get_iconv_handle(), from, to,
+					   src, srclen,
+					   dest, destlen, converted_size);
+}
+
+/**
+ * Convert between character sets, allocating a new buffer using talloc for the result.
+ *
+ * @param srclen length of source buffer.
+ * @param dest always set at least to NULL
+ * @param converted_size Size in bytes of the converted string
+ * @note -1 is not accepted for srclen.
+ *
+ * @returns boolean indication whether the conversion succeeded
+ **/
+
+_PUBLIC_ bool convert_string_talloc(TALLOC_CTX *ctx,
+				    charset_t from, charset_t to,
+				    void const *src, size_t srclen,
+				    void *dest, size_t *converted_size)
+{
+	return convert_string_talloc_handle(ctx, get_iconv_handle(),
+						 from, to, src, srclen, dest,
+						 converted_size);
 }
