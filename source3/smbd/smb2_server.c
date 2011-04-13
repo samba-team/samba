@@ -24,6 +24,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/tsocket/tsocket.h"
+#include "smbprofile.h"
 
 #define OUTVEC_ALLOC_SIZE (SMB2_HDR_BODY + 9)
 

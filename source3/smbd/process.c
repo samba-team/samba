@@ -31,6 +31,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
+#include "smbprofile.h"
 
 extern bool global_machine_password_needs_changing;
 

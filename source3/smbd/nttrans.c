@@ -28,6 +28,7 @@
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "ntioctl.h"
+#include "smbprofile.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

@@ -38,6 +38,7 @@
 #include "libcli/security/security.h"
 #include "libsmb/nmblib.h"
 #include "auth.h"
+#include "smbprofile.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
