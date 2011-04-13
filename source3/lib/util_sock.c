@@ -983,6 +983,16 @@ NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd)
 	return NT_STATUS_OK;
 }
 
+/**
+* @brief open a socket
+*
+* @param pss a struct sockaddr_storage defining the address to connect to
+* @param port to connect to
+* @param timeout in MILLISECONDS
+* @param pfd file descriptor returned
+*
+* @return NTSTATUS code
+*/
 NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 			 int timeout, int *pfd)
 {
