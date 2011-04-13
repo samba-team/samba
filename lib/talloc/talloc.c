@@ -131,7 +131,7 @@ static struct {
 #define TC_INVALIDATE_FULL_FILL_CHUNK(_tc) do { \
 	if (unlikely(talloc_fill.enabled)) { \
 		size_t _flen = (_tc)->size; \
-		char *_fptr = TC_PTR_FROM_CHUNK(_tc); \
+		char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
 		memset(_fptr, talloc_fill.fill_value, _flen); \
 	} \
 } while (0)
@@ -155,7 +155,7 @@ static struct {
 #define TC_INVALIDATE_SHRINK_FILL_CHUNK(_tc, _new_size) do { \
 	if (unlikely(talloc_fill.enabled)) { \
 		size_t _flen = (_tc)->size - (_new_size); \
-		char *_fptr = TC_PTR_FROM_CHUNK(_tc); \
+		char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
 		_fptr += (_new_size); \
 		memset(_fptr, talloc_fill.fill_value, _flen); \
 	} \
@@ -165,7 +165,7 @@ static struct {
 /* Mark the unused bytes not accessable */
 #define TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { \
 	size_t _flen = (_tc)->size - (_new_size); \
-	char *_fptr = TC_PTR_FROM_CHUNK(_tc); \
+	char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
 	_fptr += (_new_size); \
 	VALGRIND_MAKE_MEM_NOACCESS(_fptr, _flen); \
 } while (0)
@@ -430,7 +430,7 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 #define TC_INVALIDATE_FILL_POOL(_pool_tc) do { \
 	if (unlikely(talloc_fill.enabled)) { \
 		size_t _flen = TC_POOL_SPACE_LEFT(_pool_tc); \
-		char *_fptr = (_pool_tc)->pool; \
+		char *_fptr = (char *)(_pool_tc)->pool; \
 		memset(_fptr, talloc_fill.fill_value, _flen); \
 	} \
 } while(0)
@@ -439,7 +439,7 @@ _PUBLIC_ const char *talloc_parent_name(const void *ptr)
 /* Mark the whole remaining pool as not accessable */
 #define TC_INVALIDATE_VALGRIND_POOL(_pool_tc) do { \
 	size_t _flen = TC_POOL_SPACE_LEFT(_pool_tc); \
-	char *_fptr = (_pool_tc)->pool; \
+	char *_fptr = (char *)(_pool_tc)->pool; \
 	VALGRIND_MAKE_MEM_NOACCESS(_fptr, _flen); \
 } while(0)
 #else
