@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
-
+#include "modules/vfs_solarisacl.h"
 
 /* typedef struct acl SOLARIS_ACE_T; */
 typedef aclent_t SOLARIS_ACE_T;

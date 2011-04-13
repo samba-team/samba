@@ -22,6 +22,26 @@
 #include "includes.h"
 #include "system/passwd.h"
 
+#if defined(HAVE_POSIX_ACLS)
+#include "modules/vfs_posixacl.h"
+#endif
+
+#if defined(HAVE_TRU64_ACLS)
+#include "modules/vfs_tru64acl.h"
+#endif
+
+#if defined(HAVE_SOLARIS_ACLS) || defined(HAVE_UNIXWARE_ACLS)
+#include "modules/vfs_solarisacl.h"
+#endif
+
+#if defined(HAVE_HPUX_ACLS)
+#include "modules/vfs_hpuxacl.h"
+#endif
+
+#if defined(HAVE_IRIX_ACLS)
+#include "modules/vfs_irixacl.h"
+#endif
+
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
