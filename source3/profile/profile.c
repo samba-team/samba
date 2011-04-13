@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/shmem.h"
 #include "messages.h"
 
 #ifdef WITH_PROFILE
