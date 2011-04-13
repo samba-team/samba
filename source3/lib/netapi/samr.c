@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
+#include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_lsa.h"

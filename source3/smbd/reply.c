@@ -30,6 +30,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "fake_file.h"
+#include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
