@@ -118,6 +118,7 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 {
 	bool ret;
 	uint8_t dospwd[14];
+	TALLOC_CTX *mem_ctx;
 
 	size_t converted_size;
 
@@ -125,7 +126,12 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 
 	ZERO_STRUCT(dospwd);
 
-	tmpbuf = strupper_talloc(NULL, passwd);
+#if _SAMBA_BUILD_ == 3
+	mem_ctx = talloc_tos();
+#else
+	mem_ctx = NULL;
+#endif
+	tmpbuf = strupper_talloc(mem_ctx, passwd);
 	if (tmpbuf == NULL) {
 		/* Too many callers don't check this result, we need to fill in the buffer with something */
 		safe_strcpy((char *)dospwd, passwd, sizeof(dospwd)-1);
