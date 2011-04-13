@@ -202,7 +202,6 @@ smb.conf changes
    smb2 max read		       New	       1048576
    smb2 max trans		       New	       1048576
    smb2 max write		       New	       1048576
-   strict allocate		       Changed Default Yes
    username map cache time	       New	       0
    winbind max clients		       New	       200
 
