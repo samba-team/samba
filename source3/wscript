@@ -59,6 +59,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('syslog')
     opt.SAMBA3_ADD_OPTION('automount')
     opt.SAMBA3_ADD_OPTION('aio-support')
+    opt.SAMBA3_ADD_OPTION('profiling-data')
 
     opt.SAMBA3_ADD_OPTION('cluster-support')
 
@@ -1702,6 +1703,10 @@ main() {
 		    'SEEKDIR_RETURNS_VOID',
 		    headers='sys/types.h dirent.h',
 		    msg='Checking whether seekdir returns void')
+
+    if Options.options.with_profiling_data:
+        conf.DEFINE('WITH_PROFILE', 1);
+
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
