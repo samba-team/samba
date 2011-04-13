@@ -22,7 +22,6 @@
  * include
  */
 
-#include "localedir.h"
 #include "../librpc/gen_ndr/lsa.h"
 
 #include "intl.h"

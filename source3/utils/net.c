@@ -832,7 +832,7 @@ static struct functable net_func[] = {
 
 	setlocale(LC_ALL, "");
 #if defined(HAVE_BINDTEXTDOMAIN)
-	bindtextdomain(MODULE_NAME, dyn_LOCALEDIR);
+	bindtextdomain(MODULE_NAME, get_dyn_LOCALEDIR());
 #endif
 #if defined(HAVE_TEXTDOMAIN)
 	textdomain(MODULE_NAME);
