@@ -696,16 +696,6 @@ struct locking_data {
         */
 };
 
-/* Used to store pipe open records for NetFileEnum() */
-
-struct pipe_open_rec {
-	struct server_id pid;
-	uid_t uid;
-	int pnum;
-	fstring name;
-};
-
-
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
