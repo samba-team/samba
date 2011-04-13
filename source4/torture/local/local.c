@@ -31,6 +31,7 @@
 { 
 	torture_local_binding_string, 
 	torture_ntlmssp, 
+	torture_smbencrypt,
 	torture_local_messaging, 
 	torture_local_irpc, 
 	torture_local_util_strlist, 

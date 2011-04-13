@@ -70,7 +70,7 @@ bld.SAMBA_MODULE('TORTURE_DFS',
 
 
 bld.SAMBA_MODULE('TORTURE_AUTH',
-	source='auth/ntlmssp.c auth/pac.c',
+	source='auth/ntlmssp.c auth/pac.c auth/smbencrypt.c',
 	autoproto='auth/proto.h',
 	subsystem='smbtorture',
 	deps='LIBCLI_SMB gensec auth4 authkrb5 POPT_CREDENTIALS smbpasswdparser torture com_err gensec_ntlmssp',
