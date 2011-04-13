@@ -57,6 +57,15 @@ struct sess_file_count {
 	int count;
 };
 
+/* Used to store pipe open records for NetFileEnum() */
+
+struct pipe_open_rec {
+	struct server_id pid;
+	uid_t uid;
+	int pnum;
+	fstring name;
+};
+
 /****************************************************************************
  Count the entries belonging to a service in the connection db.
 ****************************************************************************/
