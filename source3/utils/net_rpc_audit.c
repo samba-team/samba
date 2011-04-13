@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 

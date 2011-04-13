@@ -23,6 +23,8 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
+#include "librpc/rpc/dcerpc.h"
+
 /*
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
