@@ -1347,9 +1347,6 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 #endif /* DEVELOPER */
 };
 
-/* LDAP schema types */
-enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
-
 /* LDAP SSL options */
 enum ldap_ssl_types {LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 
