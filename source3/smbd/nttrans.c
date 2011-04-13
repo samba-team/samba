@@ -52,10 +52,10 @@ static char *nttrans_realloc(char **ptr, size_t size)
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-void send_nt_replies(connection_struct *conn,
-			struct smb_request *req, NTSTATUS nt_error,
-		     char *params, int paramsize,
-		     char *pdata, int datasize)
+static void send_nt_replies(connection_struct *conn,
+			    struct smb_request *req, NTSTATUS nt_error,
+			    char *params, int paramsize,
+			    char *pdata, int datasize)
 {
 	int data_to_send = datasize;
 	int params_to_send = paramsize;

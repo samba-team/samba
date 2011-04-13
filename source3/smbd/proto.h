@@ -504,10 +504,6 @@ void *init_quota_handle(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from smbd/nttrans.c  */
 
-void send_nt_replies(connection_struct *conn,
-			struct smb_request *req, NTSTATUS nt_error,
-		     char *params, int paramsize,
-		     char *pdata, int datasize);
 void reply_ntcreate_and_X(struct smb_request *req);
 NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
                        uint32_t security_info_sent);
