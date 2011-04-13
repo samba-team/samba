@@ -1021,7 +1021,7 @@ bld.SAMBA3_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
                  deps='''talloc tdb tevent z cap resolv wbclient dl
                  passdb param ldap LIB_NONSMBD LIBSMB
-                 POPT_SAMBA3 KRBCLIENT NDR_SAMR NDR_LSA''',
+                 POPT_SAMBA3 KRBCLIENT NDR_SAMR NDR_LSA PROFILE''',
                  install_path='${SBINDIR}',
                  vars=locals())
 
