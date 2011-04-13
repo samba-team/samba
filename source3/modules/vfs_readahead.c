@@ -19,6 +19,10 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 
+#if defined(HAVE_LINUX_READAHEAD) && ! defined(HAVE_READAHEAD_DECL)
+ssize_t readahead(int fd, off64_t offset, size_t count);
+#endif
+
 struct readahead_data {
 	SMB_OFF_T off_bound;
 	SMB_OFF_T len;

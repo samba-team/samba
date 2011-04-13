@@ -672,10 +672,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
-#if defined(HAVE_LINUX_READAHEAD) && ! defined(HAVE_READAHEAD_DECL)
-ssize_t readahead(int fd, off64_t offset, size_t count);
-#endif
-
 #ifdef TRUE
 #undef TRUE
 #endif
