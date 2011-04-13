@@ -3330,7 +3330,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 		goto fail;
 	}
 
-	status = open_socket_out(&addr, port, 60, &fd);
+	status = open_socket_out(&addr, port, 60*1000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
