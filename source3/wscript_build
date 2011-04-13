@@ -1085,7 +1085,7 @@ bld.SAMBA3_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb netapi addns cap resolv intl POPT_SAMBA3 passdb LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3 LIBGPO ads LIBADS_SERVER LIBADS_PRINTER
-                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
+                 LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPC_NDR_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
@@ -1331,11 +1331,6 @@ if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
     bld.SAMBA3_SUBSYSTEM('cli-ldap', '', deps='UTIL_TEVENT')
 else:
-
-    # dynconfig provides this in the toplevel build
-    bld.SAMBA3_SUBSYSTEM('LOCALE_DIR',
-                         'localedir.c',
-                         cflags='-DLOCALEDIR=\"%s\"' % bld.env.LOCALEDIR)
 
     # point the s3 rules at in-tree heimdal
     bld.SAMBA3_SUBSYSTEM('gssapi_krb5',

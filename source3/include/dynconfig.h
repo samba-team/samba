@@ -94,3 +94,7 @@ bool is_default_dyn_SMB_PASSWD_FILE(void);
 const char *get_dyn_PRIVATE_DIR(void);
 const char *set_dyn_PRIVATE_DIR(const char *newpath);
 bool is_default_dyn_PRIVATE_DIR(void);
+
+const char *get_dyn_LOCALEDIR(void);
+const char *set_dyn_LOCALEDIR(const char *newpath);
+bool is_default_dyn_LOCALEDIR(void);

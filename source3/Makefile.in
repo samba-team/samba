@@ -1205,7 +1205,7 @@ NET_OBJ = $(NET_OBJ1) \
 	  $(LIBSMBCONF_OBJ) \
 	  $(REGFIO_OBJ) \
 	  $(PRIVILEGES_BASIC_OBJ) \
-	  $(LIB_EVENTLOG_OBJ) localedir.o
+	  $(LIB_EVENTLOG_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
@@ -1739,13 +1739,6 @@ libsmb/libsmb_thread_posix.o: libsmb/libsmb_thread_posix.c
 		echo "$(COMPILE_CC) $(PTHREAD_CFLAGS)" 1>&2;\
 		$(COMPILE_CC) $(PTHREAD_CFLAGS) >/dev/null 2>&1
 ### End section of object files that require PTHREAD_CFLAGS
-
-localedir.o: localedir.c Makefile
-	@echo Compiling $*.c
-	@$(COMPILE_CC_PATH) && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC_PATH)" 1>&2;\
-		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
 lib/pidfile.o: lib/pidfile.c
 	@echo Compiling $*.c

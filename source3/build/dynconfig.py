@@ -30,6 +30,7 @@ dyn_cflags = {
     'CONFIGFILE'                     : '${SYSCONFDIR}/smb.conf',
     'DATADIR'                        : '${DATADIR}',
     'LIBDIR'                         : '${LIBDIR}',
+    'LOCALEDIR'                      : '${LOCALEDIR}',
     'LMHOSTSFILE'                    : '${SYSCONFDIR}/lmhosts',
     'LOCKDIR'                        : '${LOCALSTATEDIR}/locks',
     'LOGFILEBASE'                    : '${LOCALSTATEDIR}',
