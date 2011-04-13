@@ -191,6 +191,8 @@ if sub.returncode == 0:
     for t in tests:
         if t == "base.delaywrite":
             plansmbtorturetestsuite(t, "dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
+        if t == "rap.sam":
+            plansmbtorturetestsuite(t, "dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
         elif t == "unix.whoami":
             plansmbtorturetestsuite(t, "dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD')
         elif t == "raw.samba3posixtimedlock":
