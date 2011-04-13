@@ -24,7 +24,7 @@ if bld.env._SAMBA_BUILD_ == 4:
                       source='''dprintf.c
                       ms_fnmatch.c parmlist.c substitute.c util_str.c
                       ''',
-                      deps='samba-util-common',
+                      deps='samba-util-common DYNCONFIG',
                       public_deps='talloc CHARSET execinfo uid_wrapper',
                       public_headers='attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h',
                       header_path= [ ('dlinklist.h util.h', '.'), ('*', 'util') ],

@@ -662,7 +662,7 @@ if not bld.env.toplevel_build:
 bld.SAMBA3_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap wbclient LIB_NONSMBD LIBSMB KRBCLIENT
-                    passdb SMBLDAP PARAM_WITHOUT_REG DYNCONFIG
+                    passdb SMBLDAP PARAM_WITHOUT_REG samba-util
                     LIBMSRPC_GEN msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON
@@ -739,7 +739,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
 
 bld.SAMBA3_LIBRARY('param',
                    source='',
-                   deps='PARAM_WITHOUT_REG DYNCONFIG LIB_SMBCONF',
+                   deps='PARAM_WITHOUT_REG samba-util LIB_SMBCONF',
                    private_library=True,
                    vars=locals())
 
@@ -854,7 +854,7 @@ bld.SAMBA3_SUBSYSTEM('LIB_SMBCONF',
 bld.SAMBA3_LIBRARY('smbd_base',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
-                    DYNCONFIG wbclient crypt nsl cups cap resolv z passdb
+                    samba-util wbclient crypt nsl cups cap resolv z passdb
                     PARAM_WITHOUT_REG samba3core LIBSMB POPT_SAMBA3 KRBCLIENT AVAHI
                     LIBMSRPC_GEN msrpc3 ads LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
@@ -965,7 +965,7 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
 bld.SAMBA3_SUBSYSTEM('CHARSET3',
                     source='''lib/util_str.c lib/charcnv.c  ../lib/util/charset/convert_string.c lib/fstring.c''',
                     public_deps='ICONV_WRAPPER CODEPOINTS',
-                    deps='DYNCONFIG')
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
                     source='lib/ldb_compat.c')
@@ -1314,7 +1314,7 @@ if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('POPT_SAMBA', source='', deps='POPT_SAMBA3')
     bld.SAMBA3_SUBSYSTEM('tdb-wrap', source='', deps='tdb-wrap3')
     bld.SAMBA3_SUBSYSTEM('errors', source='', deps='errors3')
-    bld.SAMBA3_SUBSYSTEM('samba-util', source='')
+    bld.SAMBA3_SUBSYSTEM('samba-util', source='', deps='DYNCONFIG')
     bld.SAMBA3_SUBSYSTEM('CHARSET', source='', deps='CHARSET3')
     bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
     bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
