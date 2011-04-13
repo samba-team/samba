@@ -25,6 +25,7 @@
 #include "serverid.h"
 #include "auth.h"
 #include "messages.h"
+#include "smbprofile.h"
 
 extern fstring remote_proto;
 

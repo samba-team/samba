@@ -567,9 +567,6 @@ enum flush_reason_enum {
 #include "proto.h"
 #endif
 
-/* We need this after proto.h to reference GetTimeOfDay(). */
-#include "smbprofile.h"
-
 /* String routines */
 
 #include "srvstr.h"

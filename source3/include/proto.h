@@ -2647,11 +2647,6 @@ void set_server_role(void);
 uint32 get_int_param( const char* param );
 char* get_string_param( const char* param );
 
-/* The following definitions come from profile/profile.c  */
-
-void set_profile_level(int level, struct server_id src);
-bool profile_setup(struct messaging_context *msg_ctx, bool rdonly);
-
 /* The following definitions come from librpc/rpc/rpc_common.c  */
 struct ndr_interface_table;
 bool smb_register_ndr_interface(const struct ndr_interface_table *interface);

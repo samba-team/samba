@@ -34,6 +34,7 @@
 #include "libcli/security/security.h"
 #include "trans2.h"
 #include "auth.h"
+#include "smbprofile.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 

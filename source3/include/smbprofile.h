@@ -966,4 +966,9 @@ static inline uint64_t profile_timestamp(void)
 #define END_PROFILE(x)
 #endif /* WITH_PROFILE */
 
+/* The following definitions come from profile/profile.c  */
+
+void set_profile_level(int level, struct server_id src);
+bool profile_setup(struct messaging_context *msg_ctx, bool rdonly);
+
 #endif

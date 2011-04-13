@@ -24,6 +24,7 @@
 #include "memcache.h"
 #include "smbd/smbd.h"
 #include "messages.h"
+#include "smbprofile.h"
 
 /****************************************************************************
  Stat cache code used in unix_convert.
