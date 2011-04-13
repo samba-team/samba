@@ -151,7 +151,6 @@ typedef union unid_t {
 
 #define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
 
-#include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/gen_ndr/security.h"
 
 /*
