@@ -19,7 +19,7 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "transfer_file.h"
-
+#include "smbprofile.h"
 
 #define MODULE "crossrename"
 static SMB_OFF_T module_sizelimit;

@@ -33,6 +33,7 @@
 #include "../lib/util/asn1.h"
 #include "auth.h"
 #include "messages.h"
+#include "smbprofile.h"
 
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {
