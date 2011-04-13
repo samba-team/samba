@@ -527,6 +527,8 @@ typedef char fstring[FSTRING_LEN];
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
+#include "../lib/util/debug.h"
+#include "../lib/util/debug_s3.h"
 
 #include "libads/ads_status.h"
 #include "../libcli/util/error.h"
