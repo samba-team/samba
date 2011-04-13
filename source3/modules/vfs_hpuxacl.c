@@ -49,6 +49,8 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "modules/vfs_hpuxacl.h"
+
 
 /* 
  * including standard header <sys/aclv.h> 

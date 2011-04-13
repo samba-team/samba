@@ -562,31 +562,9 @@ enum flush_reason_enum {
     /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
     NUM_FLUSH_REASONS};
 
-#include "modules/nfs4_acls.h"
-
 /***** prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
-#endif
-
-#if defined(HAVE_POSIX_ACLS)
-#include "modules/vfs_posixacl.h"
-#endif
-
-#if defined(HAVE_TRU64_ACLS)
-#include "modules/vfs_tru64acl.h"
-#endif
-
-#if defined(HAVE_SOLARIS_ACLS) || defined(HAVE_UNIXWARE_ACLS)
-#include "modules/vfs_solarisacl.h"
-#endif
-
-#if defined(HAVE_HPUX_ACLS)
-#include "modules/vfs_hpuxacl.h"
-#endif
-
-#if defined(HAVE_IRIX_ACLS)
-#include "modules/vfs_irixacl.h"
 #endif
 
 /* We need this after proto.h to reference GetTimeOfDay(). */

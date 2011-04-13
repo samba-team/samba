@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "modules/vfs_irixacl.h"
+
 
 /* prototypes for private functions first - for clarity */
 
