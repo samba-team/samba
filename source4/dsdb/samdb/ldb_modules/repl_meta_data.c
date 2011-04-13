@@ -2488,7 +2488,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	if (ret == LDB_ERR_REFERRAL) {
 		struct ldb_dn *olddn = ac->req->op.rename.olddn;
 		struct loadparm_context *lp_ctx;
-		const char *referral;
+		char *referral;
 
 		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 					 struct loadparm_context);
