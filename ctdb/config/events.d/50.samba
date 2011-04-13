@@ -76,7 +76,7 @@ start_samba() {
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
 	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
-		/usr/bin/net serverid wipe
+		net serverid wipe
 
 		nice_service "$CTDB_SERVICE_NMB" start || {
 			echo failed to start nmbd
@@ -141,7 +141,7 @@ testparm_background_update() {
 	while [ $timeleft -gt 0 ]; do
 	    timeleft=$(($timeleft - 1))
 	    # see if the process still exists
-	    /bin/kill -0 $pid > /dev/null 2>&1 || {
+	    kill -0 $pid > /dev/null 2>&1 || {
 		# it doesn't exist, grab its exit status
 		wait $pid
 		[ $? = 0 ] || {
@@ -167,7 +167,7 @@ testparm_background_update() {
 	done
 	# it took more than 10 seconds - kill it off
 	rm -f "${tmpfile}"
-	/bin/kill -9 "$pid" > /dev/null 2>&1
+	kill -9 "$pid" > /dev/null 2>&1
 	echo "50.samba: timed out updating smbconf cache in background"
 	exit 1
     ) &
@@ -241,7 +241,7 @@ case "$1" in
 	[ -f $CTDB_VARDIR/state/samba/periodic_cleanup ] || {
 		touch $CTDB_VARDIR/state/samba/periodic_cleanup
 	}
-	[ `/usr/bin/find $CTDB_VARDIR/state/samba/periodic_cleanup -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
+	[ `find $CTDB_VARDIR/state/samba/periodic_cleanup -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
 		# Cleanup the databases
 	    	periodic_cleanup
 		touch $CTDB_VARDIR/state/samba/periodic_cleanup

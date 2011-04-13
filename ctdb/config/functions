@@ -226,7 +226,7 @@ kill_tcp_connections() {
 	esac
 	_killcount=`expr $_killcount + 1`
      done < $connfile
-    /bin/rm -f $connfile
+    rm -f $connfile
 
     [ $_failed = 0 ] || {
 	echo "Failed to send killtcp control"
@@ -268,7 +268,7 @@ kill_tcp_connections_local_only() {
 	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
 	_killcount=`expr $_killcount + 1`
      done < $connfile
-    /bin/rm -f $connfile
+    rm -f $connfile
 
     [ $_failed = 0 ] || {
 	echo "Failed to send killtcp control"
@@ -311,7 +311,7 @@ tickle_tcp_connections() {
 	echo "Tickle TCP connection $destip:$destport $srcip:$srcport"
 	ctdb tickle $destip:$destport $srcip:$srcport >/dev/null 2>&1 || _failed=1
      done < $connfile
-    /bin/rm -f $connfile
+    rm -f $connfile
 
     [ $_failed = 0 ] || {
 	echo "Failed to send tickle control"

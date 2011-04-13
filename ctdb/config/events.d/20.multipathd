@@ -49,7 +49,7 @@ multipathd_check()
 		timeleft=$(($timeleft - 1))
 
 		# see if the process still exists
-		/bin/kill -0 $pid > /dev/null 2>&1 || {
+		kill -0 $pid > /dev/null 2>&1 || {
 			# it doesn't exist, grab its exit status
 			wait $pid
 			[ $? = 0 ] || {
