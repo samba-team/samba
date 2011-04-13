@@ -19,6 +19,7 @@
  
 #include "includes.h"
 #include "system/filesys.h"
+#include "rpc_client/rpc_client.h"
 #include "registry.h"
 #include "utils/net.h"
 #include "utils/net_registry_util.h"

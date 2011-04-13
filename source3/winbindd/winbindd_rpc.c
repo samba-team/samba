@@ -27,6 +27,7 @@
 #include "winbindd.h"
 #include "winbindd_rpc.h"
 
+#include "rpc_client/rpc_client.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/srv_samr.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"

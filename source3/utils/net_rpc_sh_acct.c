@@ -18,6 +18,7 @@
 */
 #include "includes.h"
 #include "utils/net.h"
+#include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "../libcli/security/security.h"
 

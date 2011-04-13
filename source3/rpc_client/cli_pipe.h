@@ -23,6 +23,8 @@
 #ifndef _CLI_PIPE_H
 #define _CLI_PIPE_H
 
+#include "rpc_client/rpc_client.h"
+
 struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev,
 					 struct rpc_pipe_client *cli,

@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "librpc/rpc/dcerpc.h"
 #include "srv_pipe_internal.h"
 
 #undef DBGC_CLASS
