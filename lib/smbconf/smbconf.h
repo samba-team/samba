@@ -121,7 +121,16 @@ void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);
 
+/**
+ * @brief Drop the whole configuration (restarting empty).
+ *
+ * @param[in] ctx       The smbconf context to drop the config.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_drop(struct smbconf_ctx *ctx);
+
 sbcErr smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,
