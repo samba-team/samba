@@ -51,11 +51,12 @@ struct smbconf_csn {
 	uint64_t csn;
 };
 
+/** Information about a service */
 struct smbconf_service {
-	char *name;
-	uint32_t num_params;
-	char **param_names;
-	char **param_values;
+	char *name;          /**< The name of the share */
+	uint32_t num_params; /**< List of length num_shares of parameter counts for each share */
+	char **param_names;  /**< List of lists of parameter names for each share */
+	char **param_values; /**< List of lists of parameter values for each share */
 };
 
 /*
@@ -131,10 +132,27 @@ bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
  */
 sbcErr smbconf_drop(struct smbconf_ctx *ctx);
 
+/**
+ * @brief Get the whole configuration as lists of strings with counts.
+ *
+ * @param[in] ctx       The smbconf context to get the lists from.
+ *
+ * @param[in] mem_ctx   The memory context to use.
+ *
+ * @param[in] num_shares A pointer to store the number of shares.
+ *
+ * @param[out] services  A pointer to store the services.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ *
+ * @see smbconf_service
+ */
 sbcErr smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,
 			  struct smbconf_service ***services);
+
 sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       TALLOC_CTX *mem_ctx,
 			       uint32_t *num_shares,
