@@ -515,10 +515,10 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/attr.h"
 #include "../lib/util/tsort.h"
 #include "../lib/util/dlinklist.h"
-#include "tdb.h"
+#include <tdb.h>
 #include "util_tdb.h"
 
-#include "talloc.h"
+#include <talloc.h>
 
 #include "event.h"
 #include "../lib/util/tevent_unix.h"
