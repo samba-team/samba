@@ -425,6 +425,14 @@ sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
  */
 sbcErr smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service);
 
+/**
+ * @brief Delete include parameter from the global service.
+ *
+ * @param[in]  ctx      The smbconf context to use.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx);
 
 sbcErr smbconf_transaction_start(struct smbconf_ctx *ctx);
