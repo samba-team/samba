@@ -336,7 +336,7 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	}
 
 	become_root();
-	ret = SMB_VFS_CHOWN(conn, ".", smb_fname_parent->st.st_ex_uid,
+	ret = SMB_VFS_LCHOWN(conn, ".", smb_fname_parent->st.st_ex_uid,
 			    (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
