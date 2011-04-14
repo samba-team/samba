@@ -92,7 +92,13 @@ bool smbconf_backend_requires_messaging(struct smbconf_ctx *ctx);
  */
 bool smbconf_is_writeable(struct smbconf_ctx *ctx);
 
+/**
+ * @brief Close the configuration.
+ *
+ * @param[in] ctx       The smbconf context to close.
+ */
 void smbconf_shutdown(struct smbconf_ctx *ctx);
+
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);
 sbcErr smbconf_drop(struct smbconf_ctx *ctx);
