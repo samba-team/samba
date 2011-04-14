@@ -2151,7 +2151,7 @@ then
 	AC_SUBST(TDBTORTURE)
 	ac_cv_have_tdb_err_nesting=yes
 else
-	AC_TRY_COMPILE([#include "tdb.h"],
+	AC_TRY_COMPILE([#include <tdb.h>],
 		       [enum TDB_ERROR err = TDB_ERR_NESTING],
 		       ac_cv_have_tdb_err_nesting=yes,
 		       ac_cv_have_tdb_err_nesting=no)
