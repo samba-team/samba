@@ -305,7 +305,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		/* avoid replacing all attributes with nTSecurityDescriptor
 		 * if attribute list is empty */
 		if (!attrs) {
-			attrs = ldb_attr_list_copy_add(ac, attrs, "*");
+			attrs = ldb_attr_list_copy_add(ac, req->op.search.attrs, "*");
 		}
 		attrs = ldb_attr_list_copy_add(ac, attrs, "nTSecurityDescriptor");
 	}
