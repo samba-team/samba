@@ -262,6 +262,7 @@ static NTSTATUS read_packet_remainder(int fd, char *buffer,
 static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 						    const char lenbuf[4],
 						    struct smbd_server_connection *sconn,
+						    int sock,
 						    char **buffer,
 						    unsigned int timeout,
 						    size_t *p_unread,
@@ -276,7 +277,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	memcpy(writeX_header, lenbuf, 4);
 
 	status = read_fd_with_timeout(
-		sconn->sock, writeX_header + 4,
+		sock, writeX_header + 4,
 		STANDARD_WRITE_AND_X_HEADER_SIZE,
 		STANDARD_WRITE_AND_X_HEADER_SIZE,
 		timeout, NULL);
@@ -303,7 +304,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 		if (doff > STANDARD_WRITE_AND_X_HEADER_SIZE) {
 			size_t drain = doff - STANDARD_WRITE_AND_X_HEADER_SIZE;
-			if (drain_socket(sconn->sock, drain) != drain) {
+			if (drain_socket(sock, drain) != drain) {
 	                        smb_panic("receive_smb_raw_talloc_partial_read:"
 					" failed to drain pending bytes");
 	                }
@@ -358,7 +359,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 	if(toread > 0) {
 		status = read_packet_remainder(
-			sconn->sock,
+			sock,
 			(*buffer) + 4 + STANDARD_WRITE_AND_X_HEADER_SIZE,
 			timeout, toread);
 
@@ -375,6 +376,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 				       struct smbd_server_connection *sconn,
+				       int sock,
 				       char **buffer, unsigned int timeout,
 				       size_t *p_unread, size_t *plen)
 {
@@ -385,7 +387,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 
 	*p_unread = 0;
 
-	status = read_smb_length_return_keepalive(sconn->sock, lenbuf, timeout,
+	status = read_smb_length_return_keepalive(sock, lenbuf, timeout,
 						  &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -398,7 +400,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	    sconn->smb1.echo_handler.trusted_fde == NULL) {
 
 		return receive_smb_raw_talloc_partial_read(
-			mem_ctx, lenbuf, sconn, buffer, timeout,
+			mem_ctx, lenbuf, sconn, sock, buffer, timeout,
 			p_unread, plen);
 	}
 
@@ -420,7 +422,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 
 	memcpy(*buffer, lenbuf, sizeof(lenbuf));
 
-	status = read_packet_remainder(sconn->sock, (*buffer)+4, timeout, len);
+	status = read_packet_remainder(sock, (*buffer)+4, timeout, len);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -431,6 +433,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 				   struct smbd_server_connection *sconn,
+				   int sock,
 				   char **buffer, unsigned int timeout,
 				   size_t *p_unread, bool *p_encrypted,
 				   size_t *p_len,
@@ -442,7 +445,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 
 	*p_encrypted = false;
 
-	status = receive_smb_raw_talloc(mem_ctx, sconn, buffer, timeout,
+	status = receive_smb_raw_talloc(mem_ctx, sconn, sock, buffer, timeout,
 					p_unread, &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("read_smb_length_return_keepalive failed for "
@@ -2265,7 +2268,7 @@ static void smbd_server_connection_read_handler(
 		}
 
 		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, conn,
+		status = receive_smb_talloc(mem_ctx, conn, fd,
 					    (char **)(void *)&inbuf,
 					    0, /* timeout */
 					    &unread_bytes,
@@ -2275,7 +2278,7 @@ static void smbd_server_connection_read_handler(
 		smbd_unlock_socket(conn);
 	} else {
 		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, conn,
+		status = receive_smb_talloc(mem_ctx, conn, fd,
 					    (char **)(void *)&inbuf,
 					    0, /* timeout */
 					    &unread_bytes,
@@ -2688,7 +2691,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 
 	DEBUG(10,("echo_handler[%d]: reading pdu\n", (int)sys_getpid()));
 
-	status = receive_smb_talloc(state->pending, sconn,
+	status = receive_smb_talloc(state->pending, sconn, sconn->sock,
 				    (char **)(void *)&state->pending[num_pending].iov_base,
 				    0 /* timeout */,
 				    &unread,
