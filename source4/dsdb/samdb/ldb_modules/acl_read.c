@@ -287,6 +287,11 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	if (!ac->schema) {
 		return ldb_operr(ldb);
 	}
+	/*
+	 * In theory we should also check for the SD control but control verification is
+	 * expensive so we'd better had the ntsecuritydescriptor to the list of
+	 * searched attribute and then remove it !
+	 */
 	ac->sd = !(ldb_attr_in_list(req->op.search.attrs, "nTSecurityDescriptor"));
 	if (req->op.search.attrs && !ldb_attr_in_list(req->op.search.attrs, "*")) {
 		if (!ldb_attr_in_list(req->op.search.attrs, "instanceType")) {
