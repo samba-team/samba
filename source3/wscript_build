@@ -775,7 +775,7 @@ bld.SAMBA3_SUBSYSTEM('POPT_SAMBA3',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
-                    public_deps='krb5 k5crypto com_err gssapi gssapi_krb5',
+                    public_deps='KRB5_WRAP krb5 k5crypto com_err gssapi gssapi_krb5',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('samba3core',

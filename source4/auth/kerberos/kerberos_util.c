@@ -542,8 +542,8 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 
 		ZERO_STRUCT(entry);
 
-		ret = create_kerberos_key_from_string(smb_krb5_context->krb5_context, 
-						      salt_princ, &password, &entry.keyblock, enctypes[i]);
+		ret = create_kerberos_key_from_string_direct(smb_krb5_context->krb5_context,
+							     salt_princ, &password, &entry.keyblock, enctypes[i]);
 		if (ret != 0) {
 			return ret;
 		}
