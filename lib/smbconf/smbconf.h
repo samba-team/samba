@@ -325,8 +325,21 @@ sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param);
 
+/**
+ * @brief Delete a global parameter from the configuration.
+ *
+ * It also creates [global] if it does't exist.
+ *
+ * @param[in]  ctx      The smbconf context to use.
+ *
+ * @param[in] param     The name of the parameter to delete.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 				       const char *param);
+
 sbcErr smbconf_get_includes(struct smbconf_ctx *ctx,
 			    TALLOC_CTX *mem_ctx,
 			    const char *service,
