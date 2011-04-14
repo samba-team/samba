@@ -172,7 +172,17 @@ sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       uint32_t *num_shares,
 			       char ***share_names);
 
+/**
+ * @brief Check if a share/service of a given name exists.
+ *
+ * @param[in] ctx       The smbconf context to use.
+ *
+ * @param[in] servicename The service name to check if it exists.
+ *
+ * @return              True if it exists, false if not.
+ */
 bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
+
 sbcErr smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
 sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
