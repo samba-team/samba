@@ -195,10 +195,28 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
  */
 sbcErr smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
 
+/**
+ * @brief Get a definition of a share (service) from configuration.
+ *
+ * @param[in] ctx       The smbconf context to use.
+ *
+ * @param[in] mem_ctx   A memory context to allocate the result.
+ *
+ * @param[in] servicename The service name to get the information from.
+ *
+ * @param[out] service  A pointer to store the service information about the
+ *                      share.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ *
+ * @see smbconf_service
+ */
 sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
 			 const char *servicename,
 			 struct smbconf_service **service);
+
 sbcErr smbconf_delete_share(struct smbconf_ctx *ctx,
 			    const char *servicename);
 sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
