@@ -274,24 +274,6 @@ size_t str_charnum(const char *s)
 	return ret;
 }
 
-/**
- Count the number of characters in a string. Normally this will
- be the same as the number of bytes in a string for single byte strings,
- but will be different for multibyte.
-**/
-
-size_t str_ascii_charnum(const char *s)
-{
-	size_t ret, converted_size;
-	char *tmpbuf2 = NULL;
-	if (!push_ascii_talloc(talloc_tos(), &tmpbuf2, s, &converted_size)) {
-		return 0;
-	}
-	ret = strlen(tmpbuf2);
-	TALLOC_FREE(tmpbuf2);
-	return ret;
-}
-
 bool trim_char(char *s,char cfront,char cback)
 {
 	bool ret = false;
