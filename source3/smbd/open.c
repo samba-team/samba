@@ -214,6 +214,17 @@ void change_file_owner_to_parent(connection_struct *conn,
 			 "directory %s. Error was %s\n",
 			 smb_fname_str_dbg(smb_fname_parent),
 			 strerror(errno)));
+		TALLOC_FREE(smb_fname_parent);
+		return;
+	}
+
+	if (smb_fname_parent->st.st_ex_uid == fsp->fsp_name->st.st_ex_uid) {
+		/* Already this uid - no need to change. */
+		DEBUG(10,("change_file_owner_to_parent: file %s "
+			"is already owned by uid %d\n",
+			fsp_str_dbg(fsp),
+			(int)fsp->fsp_name->st.st_ex_uid ));
+		TALLOC_FREE(smb_fname_parent);
 		return;
 	}
 
@@ -311,6 +322,16 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 			 "device/inode/mode on directory %s changed. "
 			 "Refusing to chown !\n", fname ));
 		status = NT_STATUS_ACCESS_DENIED;
+		goto chdir;
+	}
+
+	if (smb_fname_parent->st.st_ex_uid == smb_fname_cwd->st.st_ex_uid) {
+		/* Already this uid - no need to change. */
+		DEBUG(10,("change_dir_owner_to_parent: directory %s "
+			"is already owned by uid %d\n",
+			fname,
+			(int)smb_fname_cwd->st.st_ex_uid ));
+		status = NT_STATUS_OK;
 		goto chdir;
 	}
 
