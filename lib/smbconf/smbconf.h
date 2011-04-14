@@ -230,10 +230,25 @@ sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 sbcErr smbconf_delete_share(struct smbconf_ctx *ctx,
 			    const char *servicename);
 
+/**
+ * @brief Set a configuration parameter to the value provided.
+ *
+ * @param[in] ctx       The smbconf context to use.
+ *
+ * @param[in] service   The service name to set the parameter.
+ *
+ * @param[in] param     The name of the parameter to set.
+ *
+ * @param[in] valstr    The value to set.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *service,
 			     const char *param,
 			     const char *valstr);
+
 sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val);
 sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
