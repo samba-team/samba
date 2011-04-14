@@ -474,31 +474,6 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 	return(dest);
 }
 
-#if 0
-/**
- Like strncpy but copies up to the character marker.  always null terminates.
- returns a pointer to the character marker in the source string (src).
-**/
-
-static char *strncpyn(char *dest, const char *src, size_t n, char c)
-{
-	char *p;
-	size_t str_len;
-
-	p = strchr_m(src, c);
-	if (p == NULL) {
-		DEBUG(5, ("strncpyn: separator character (%c) not found\n", c));
-		return NULL;
-	}
-
-	str_len = PTR_DIFF(p, src);
-	strncpy(dest, src, MIN(n, str_len));
-	dest[str_len] = '\0';
-
-	return p;
-}
-#endif
-
 /**
  Check if a string is part of a list.
 **/
