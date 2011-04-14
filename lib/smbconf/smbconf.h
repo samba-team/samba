@@ -99,8 +99,28 @@ bool smbconf_is_writeable(struct smbconf_ctx *ctx);
  */
 void smbconf_shutdown(struct smbconf_ctx *ctx);
 
+/**
+ * @brief Detect changes in the configuration.
+ *
+ * Get the change sequence number of the given service/parameter. Service and
+ * parameter strings may be NULL.
+ *
+ * The given change sequence number (csn) struct is filled with the current
+ * csn. smbconf_changed() can also be used for initial retrieval of the csn.
+ *
+ * @param[in] ctx       The smbconf context to check for changes.
+ *
+ * @param[inout] csn    The smbconf csn to be filled.
+ *
+ * @param[in] service   The service name to check or NULL.
+ *
+ * @param[in] param     The param to check or NULL.
+ *
+ * @return              True if it has been changed, false if not.
+ */
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);
+
 sbcErr smbconf_drop(struct smbconf_ctx *ctx);
 sbcErr smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
