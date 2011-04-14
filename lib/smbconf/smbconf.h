@@ -21,6 +21,15 @@
 #define __LIBSMBCONF_H__
 
 /**
+ * @defgroup libsmbconf The smbconf API
+ *
+ * libsmbconf is a library to read or, based on the backend, modify the Samba
+ * configuration.
+ *
+ * @{
+ */
+
+/**
  * @brief Status codes returned from smbconf functions
  */
 enum _sbcErrType {
@@ -472,5 +481,7 @@ sbcErr smbconf_transaction_commit(struct smbconf_ctx *ctx);
  * @see smbconf_transaction_start()
  */
 sbcErr smbconf_transaction_cancel(struct smbconf_ctx *ctx);
+
+/* @} ******************************************************************/
 
 #endif /*  _LIBSMBCONF_H_  */
