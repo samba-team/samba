@@ -289,10 +289,27 @@ sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     const char *param,
 			     char **valstr);
 
+/**
+ * @brief Get the value of a global configuration parameter as a string.
+ *
+ * It also creates [global] if it does't exist.
+ *
+ * @param[in]  ctx      The smbconf context to use.
+ *
+ * @param[in]  mem_ctx  The memory context to allocate the string on.
+ *
+ * @param[in]  param    The parameter to get.
+ *
+ * @param[out] valstr   A pointer to store the value as a string.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *param,
 				    char **valstr);
+
 sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param);
 sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
