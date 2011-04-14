@@ -3,7 +3,7 @@
 bld.SAMBA_LIBRARY('cli-ldap-common',
                   source='ldap_message.c ldap_ndr.c',
                   public_deps='errors talloc ldb',
-                  public_headers='ldap_message.h ldap_errors.h',
+                  public_headers='ldap_message.h ldap_errors.h ldap_ndr.h',
                   deps='samba-util asn1util NDR_SECURITY tevent',
                   private_library=True
 	)
