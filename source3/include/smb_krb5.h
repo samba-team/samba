@@ -1,6 +1,8 @@
 #ifndef _HEADER_smb_krb5_h
 #define _HEADER_smb_krb5_h
 
+#ifdef HAVE_KRB5
+
 #define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
 /* this file uses DEPRECATED interfaces! */
 
@@ -40,7 +42,6 @@
 #define AP_OPTS_USE_SUBKEY 0
 #endif
 
-#ifdef HAVE_KRB5
 typedef struct {
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	krb5_address **addrs;
