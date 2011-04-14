@@ -663,8 +663,8 @@ _PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_open_keytab(mem_ctx, smb_krb5_context, 
-				   keytab_name, &ktc);
+	ret = smb_krb5_get_keytab_container(mem_ctx, smb_krb5_context,
+					    keytab_name, &ktc);
 	if (ret) {
 		return ret;
 	}
