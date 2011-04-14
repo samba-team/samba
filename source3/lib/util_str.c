@@ -1550,28 +1550,6 @@ SMB_OFF_T conv_str_size(const char * str)
 	return lval;
 }
 
-void string_append(char **left, const char *right)
-{
-	int new_len = strlen(right) + 1;
-
-	if (*left == NULL) {
-		*left = (char *)SMB_MALLOC(new_len);
-		if (*left == NULL) {
-			return;
-		}
-		*left[0] = '\0';
-	} else {
-		new_len += strlen(*left);
-		*left = (char *)SMB_REALLOC(*left, new_len);
-	}
-
-	if (*left == NULL) {
-		return;
-	}
-
-	safe_strcat(*left, right, new_len-1);
-}
-
 /* Append an sprintf'ed string. Double buffer size on demand. Usable without
  * error checking in between. The indiation that something weird happened is
  * string==NULL */
