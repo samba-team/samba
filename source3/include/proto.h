@@ -958,7 +958,6 @@ int StrnCaseCmp(const char *s, const char *t, size_t len);
 bool strnequal(const char *s1,const char *s2,size_t n);
 bool strcsequal(const char *s1,const char *s2);
 void strnorm(char *s, int case_default);
-bool strisnormal(const char *s, int case_default);
 char *push_skip_string(char *buf);
 char *skip_string(const char *base, size_t len, char *buf);
 size_t str_charnum(const char *s);

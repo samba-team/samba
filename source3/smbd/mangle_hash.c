@@ -587,6 +587,19 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 	return *out ? True : False;
 }
 
+/**
+ Check if a string is in "normal" case.
+**/
+
+static bool strisnormal(const char *s, int case_default)
+{
+	if (case_default == CASE_UPPER)
+		return(!strhaslower(s));
+
+	return(!strhasupper(s));
+}
+
+
 /*****************************************************************************
  Do the actual mangling to 8.3 format.
 *****************************************************************************/

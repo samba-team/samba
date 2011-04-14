@@ -221,19 +221,6 @@ void strnorm(char *s, int case_default)
 }
 
 /**
- Check if a string is in "normal" case.
-**/
-
-bool strisnormal(const char *s, int case_default)
-{
-	if (case_default == CASE_UPPER)
-		return(!strhaslower(s));
-
-	return(!strhasupper(s));
-}
-
-
-/**
  *  Skip past some strings in a buffer - old version - no checks.
  *  **/
 
