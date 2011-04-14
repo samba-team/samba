@@ -183,7 +183,18 @@ sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
  */
 bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
 
+/**
+ * @brief Add a service if it does not already exist.
+ *
+ * @param[in] ctx       The smbconf context to use.
+ *
+ * @param[in] servicename The name of the service to add.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
+
 sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
 			 const char *servicename,
