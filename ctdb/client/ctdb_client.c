@@ -1876,7 +1876,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	return state.count;
 }
 
-#define ISASCII(x) ((x>31)&&(x<128))
+#define ISASCII(x) (isprint(x) && !strchr("\"\\", (x)))
 /*
   called on each key during a catdb
  */
