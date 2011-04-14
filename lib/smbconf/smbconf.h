@@ -249,8 +249,24 @@ sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *param,
 			     const char *valstr);
 
+/**
+ * @brief Set a global configuration parameter to the value provided.
+ *
+ * This adds a paramet in the [global] service. It also creates [global] if it
+ * does't exist.
+ *
+ * @param[in] ctx       The smbconf context to use.
+ *
+ * @param[in] param     The name of the parameter to set.
+ *
+ * @param[in] val       The value to set.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val);
+
 sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const char *service,
