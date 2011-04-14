@@ -267,11 +267,28 @@ sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val);
 
+/**
+ * @brief Get the value of a configuration parameter as a string.
+ *
+ * @param[in]  ctx      The smbconf context to use.
+ *
+ * @param[in]  mem_ctx  The memory context to allocate the string on.
+ *
+ * @param[in]  service  The name of the service where to find the parameter.
+ *
+ * @param[in]  param    The parameter to get.
+ *
+ * @param[out] valstr   A pointer to store the value as a string.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const char *service,
 			     const char *param,
 			     char **valstr);
+
 sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *param,
