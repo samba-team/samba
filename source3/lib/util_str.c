@@ -399,56 +399,6 @@ char *safe_strcat_fn(char *dest,
 }
 
 /**
- Paranoid strcpy into a buffer of given length (includes terminating
- zero. Strips out all but 'a-Z0-9' and the character in other_safe_chars
- and replaces with '_'. Deliberately does *NOT* check for multibyte
- characters. Treats src as an array of bytes, not as a multibyte
- string. Any byte >0x7f is automatically converted to '_'.
- other_safe_chars must also contain an ascii string (bytes<0x7f).
-**/
-
-char *alpha_strcpy(char *dest,
-		   const char *src,
-		   const char *other_safe_chars,
-		   size_t maxlength)
-{
-	size_t len, i;
-
-	if (!dest) {
-		smb_panic("ERROR: NULL dest in alpha_strcpy");
-	}
-
-	if (!src) {
-		*dest = 0;
-		return dest;
-	}
-
-	len = strlen(src);
-	if (len >= maxlength)
-		len = maxlength - 1;
-
-	if (!other_safe_chars)
-		other_safe_chars = "";
-
-	for(i = 0; i < len; i++) {
-		int val = (src[i] & 0xff);
-		if (val > 0x7f) {
-			dest[i] = '_';
-			continue;
-		}
-		if (isupper(val) || islower(val) ||
-				isdigit(val) || strchr(other_safe_chars, val))
-			dest[i] = src[i];
-		else
-			dest[i] = '_';
-	}
-
-	dest[i] = '\0';
-
-	return dest;
-}
-
-/**
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
 **/

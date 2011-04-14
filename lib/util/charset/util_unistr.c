@@ -39,52 +39,6 @@ _PUBLIC_ void string_replace_m(char *s, char oldc, char newc)
 }
 
 /**
- Paranoid strcpy into a buffer of given length (includes terminating
- zero. Strips out all but 'a-Z0-9' and the character in other_safe_chars
- and replaces with '_'. Deliberately does *NOT* check for multibyte
- characters. Don't change it !
-**/
-
-_PUBLIC_ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
-{
-	size_t len, i;
-
-	if (maxlength == 0) {
-		/* can't fit any bytes at all! */
-		return NULL;
-	}
-
-	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
-		return NULL;
-	}
-
-	if (!src) {
-		*dest = 0;
-		return dest;
-	}  
-
-	len = strlen(src);
-	if (len >= maxlength)
-		len = maxlength - 1;
-
-	if (!other_safe_chars)
-		other_safe_chars = "";
-
-	for(i = 0; i < len; i++) {
-		int val = (src[i] & 0xff);
-		if (isupper(val) || islower(val) || isdigit(val) || strchr_m(other_safe_chars, val))
-			dest[i] = src[i];
-		else
-			dest[i] = '_';
-	}
-
-	dest[i] = '\0';
-
-	return dest;
-}
-
-/**
  Convert a string to lower case, allocated with talloc
 **/
 _PUBLIC_ char *strlower_talloc_handle(struct smb_iconv_handle *iconv_handle,

@@ -968,10 +968,6 @@ char *safe_strcpy_fn(char *dest,
 char *safe_strcat_fn(char *dest,
 		const char *src,
 		size_t maxlength);
-char *alpha_strcpy(char *dest,
-		const char *src,
-		const char *other_safe_chars,
-		size_t maxlength);
 char *StrnCpy(char *dest,const char *src,size_t n);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);
