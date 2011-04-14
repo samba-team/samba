@@ -83,7 +83,15 @@ const char *sbcErrorString(sbcErr error);
  */
 bool smbconf_backend_requires_messaging(struct smbconf_ctx *ctx);
 
+/**
+ * @brief Tell whether the source is writeable.
+ *
+ * @param[in] ctx       The smbconf context to check.
+ *
+ * @return              True if it is writeable, false if not.
+ */
 bool smbconf_is_writeable(struct smbconf_ctx *ctx);
+
 void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 		     const char *service, const char *param);
