@@ -85,11 +85,9 @@ static bool convert_string_internal(struct smb_iconv_handle *ic,
 	o_len=destlen;
 
 	retval = smb_iconv(descriptor, &inbuf, &i_len, &outbuf, &o_len);
-	if (retval == (size_t)-1) {
-		return false;
-	}
 	*converted_size = destlen-o_len;
-	return true;
+
+	return (retval != (size_t)-1);
 }
 
 /**
