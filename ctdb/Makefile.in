@@ -123,6 +123,10 @@ bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o tools/ctdb_vacuum.o libctdb/libctdb.a
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o tools/ctdb_vacuum.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) libctdb/libctdb.a
 
+bin/ltdbtool: tools/ltdbtool.o @TDB_OBJ@
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ $+
+
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o $(POPT_OBJ)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(POPT_OBJ) $(LIB_FLAGS)
