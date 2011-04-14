@@ -447,7 +447,20 @@ sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx);
  */
 sbcErr smbconf_transaction_start(struct smbconf_ctx *ctx);
 
+/**
+ * @brief Commit a transaction on the configuration backend.
+ *
+ * This is to speed up writes to the registry based backend.
+ *
+ * @param[in] ctx       The smbconf context to commit the transaction.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ *
+ * @see smbconf_transaction_start()
+ */
 sbcErr smbconf_transaction_commit(struct smbconf_ctx *ctx);
+
 sbcErr smbconf_transaction_cancel(struct smbconf_ctx *ctx);
 
 #endif /*  _LIBSMBCONF_H_  */
