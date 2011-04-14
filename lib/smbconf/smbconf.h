@@ -340,10 +340,27 @@ sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 				       const char *param);
 
+/**
+ * @brief Get the list of names of included files.
+ *
+ * @param[in]  ctx      The smbconf context to use.
+ *
+ * @param[in]  mem_ctx  The memory context to allocate the names.
+ *
+ * @param[in]  service  The service name to get the include files.
+ *
+ * @param[out] num_includes A pointer to store the number of included files.
+ *
+ * @param[out] includes A pointer to store the paths of the included files.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_get_includes(struct smbconf_ctx *ctx,
 			    TALLOC_CTX *mem_ctx,
 			    const char *service,
 			    uint32_t *num_includes, char ***includes);
+
 sbcErr smbconf_get_global_includes(struct smbconf_ctx *ctx,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t *num_includes, char ***includes);
