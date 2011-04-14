@@ -2905,7 +2905,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
 	    !lp_async_smb_echo_handler()) {
 		/*
-		 * We're not making the desion here,
+		 * We're not making the decision here,
 		 * we're just allowing the client
 		 * to decide between SMB1 and SMB2
 		 * with the first negprot
