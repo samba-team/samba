@@ -179,8 +179,8 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 		unsigned char lastp = '\0';
 
 		/* If all characters are ascii, fast path here. */
-		while (((slen == (size_t)-1) || (slen >= 2)) && dlen) {
-			if (((lastp = *p) <= 0x7f) && (p[1] == 0)) {
+		while (((slen == (size_t)-1) || (slen >= 1)) && dlen) {
+			if (slen >= 2 && ((lastp = *p) <= 0x7f) && (p[1] == 0)) {
 				*q++ = *p;
 				if (slen != (size_t)-1) {
 					slen -= 2;
@@ -221,8 +221,8 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 		unsigned char lastp = '\0';
 
 		/* If all characters are ascii, fast path here. */
-		while (slen && (dlen >= 2)) {
-			if ((lastp = *p) <= 0x7F) {
+		while (slen && (dlen >= 1)) {
+			if (dlen >=2 && (lastp = *p) <= 0x7F) {
 				*q++ = *p++;
 				*q++ = '\0';
 				if (slen != (size_t)-1) {
