@@ -58,6 +58,10 @@ struct smbconf_service {
 	char **param_values;
 };
 
+/*
+ * The smbconf API functions
+ */
+
 /**
  * @brief Translate an error value into a string
  *
@@ -67,10 +71,18 @@ struct smbconf_service {
  **/
 const char *sbcErrorString(sbcErr error);
 
-/*
- * the smbconf API functions
+/**
+ * @brief Check if the backend requires messaging to be set up.
+ *
+ * Tell whether the backend requires messaging to be set up
+ * for the backend to work correctly.
+ *
+ * @param[in] ctx       The smbconf context to check.
+ *
+ * @return              True if needed, false if not.
  */
 bool smbconf_backend_requires_messaging(struct smbconf_ctx *ctx);
+
 bool smbconf_is_writeable(struct smbconf_ctx *ctx);
 void smbconf_shutdown(struct smbconf_ctx *ctx);
 bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
