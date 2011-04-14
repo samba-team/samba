@@ -56,26 +56,6 @@ void init_iconv(void)
 								true, global_iconv_handle);
 }
 
-bool unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
-{
-	size_t size;
-	smb_ucs2_t *buffer;
-	bool ret;
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer, src, &size)) {
-		return (size_t)-1;
-	}
-
-	if (!strupper_w(buffer) && (dest == src)) {
-		TALLOC_FREE(buffer);
-		return srclen;
-	}
-
-	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
-	TALLOC_FREE(buffer);
-	return ret;
-}
-
 /**
  talloc_strdup() a unix string to upper case.
 **/
@@ -138,27 +118,6 @@ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
 
 char *strupper_talloc(TALLOC_CTX *ctx, const char *s) {
 	return talloc_strdup_upper(ctx, s);
-}
-
-
-bool unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
-{
-	size_t size;
-	smb_ucs2_t *buffer = NULL;
-	bool ret;
-
-	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16LE, src, srclen,
-				   (void **)(void *)&buffer, &size))
-	{
-		smb_panic("failed to create UCS2 buffer");
-	}
-	if (!strlower_w(buffer) && (dest == src)) {
-		TALLOC_FREE(buffer);
-		return srclen;
-	}
-	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
-	TALLOC_FREE(buffer);
-	return ret;
 }
 
 

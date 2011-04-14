@@ -1060,6 +1060,27 @@ char *strstr_m(const char *src, const char *findstr)
 	return retp;
 }
 
+static bool unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
+{
+	size_t size;
+	smb_ucs2_t *buffer = NULL;
+	bool ret;
+
+	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16LE, src, srclen,
+				   (void **)(void *)&buffer, &size))
+	{
+		smb_panic("failed to create UCS2 buffer");
+	}
+	if (!strlower_w(buffer) && (dest == src)) {
+		TALLOC_FREE(buffer);
+		return srclen;
+	}
+	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
+	TALLOC_FREE(buffer);
+	return ret;
+}
+
+
 /**
  Convert a string to lower case.
 **/
@@ -1092,6 +1113,26 @@ void strlower_m(char *s)
 	if (errno)
 		s[len-1] = '\0';
 	errno = errno_save;
+}
+
+static bool unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
+{
+	size_t size;
+	smb_ucs2_t *buffer;
+	bool ret;
+
+	if (!push_ucs2_talloc(talloc_tos(), &buffer, src, &size)) {
+		return (size_t)-1;
+	}
+
+	if (!strupper_w(buffer) && (dest == src)) {
+		TALLOC_FREE(buffer);
+		return srclen;
+	}
+
+	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
+	TALLOC_FREE(buffer);
+	return ret;
 }
 
 /**
