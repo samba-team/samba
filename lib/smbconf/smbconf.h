@@ -217,8 +217,19 @@ sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 const char *servicename,
 			 struct smbconf_service **service);
 
+/**
+ * @brief Delete a service from configuration.
+ *
+ * @param[in] ctx       The smbconf context to use.
+ *
+ * @param[in] servicename The service name to delete.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_delete_share(struct smbconf_ctx *ctx,
 			    const char *servicename);
+
 sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *service,
 			     const char *param,
