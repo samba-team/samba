@@ -379,9 +379,24 @@ sbcErr smbconf_get_global_includes(struct smbconf_ctx *ctx,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t *num_includes, char ***includes);
 
+/**
+ * @brief Set a list of config files to include on the given service.
+ *
+ * @param[in]  ctx      The smbconf context to use.
+ *
+ * @param[in]  service  The service to add includes.
+ *
+ * @param[in]  num_includes The number of includes to set.
+ *
+ * @param[in]  includes A list of paths to include.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
 sbcErr smbconf_set_includes(struct smbconf_ctx *ctx,
 			    const char *service,
 			    uint32_t num_includes, const char **includes);
+
 sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
 				   uint32_t num_includes,
 				   const char **includes);
