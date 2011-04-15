@@ -47,7 +47,7 @@ NTSTATUS gssapi_server_auth_start(TALLOC_CTX *mem_ctx,
 	/* by passing NULL, the code will attempt to set a default
 	 * keytab based on configuration options */
 	status = gse_init_server(mem_ctx, do_sign, do_seal,
-				 add_flags, NULL, &gse_ctx);
+				 add_flags, &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to init dcerpc gssapi server (%s)\n",
 			  nt_errstr(status)));

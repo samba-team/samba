@@ -342,15 +342,14 @@ done:
 NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 			 bool do_sign, bool do_seal,
 			 uint32_t add_gss_c_flags,
-			 const char *keytab_name,
 			 struct gse_context **_gse_ctx)
 {
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
-	gss_OID_set_desc mech_set;
 	krb5_error_code ret;
-	const char *ktname;
 	NTSTATUS status;
+	const char *ktname;
+	gss_OID_set_desc mech_set;
 
 	status = gse_context_init(mem_ctx, do_sign, do_seal,
 				  NULL, add_gss_c_flags, &gse_ctx);
@@ -358,27 +357,36 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!keytab_name) {
-		ret = gse_krb5_get_server_keytab(gse_ctx->k5ctx,
-						 &gse_ctx->keytab);
-		if (ret) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			goto done;
-		}
-		ret = smb_krb5_keytab_name(gse_ctx, gse_ctx->k5ctx,
-					   gse_ctx->keytab, &ktname);
-		if (ret) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			goto done;
-		}
-	} else {
-		ktname = keytab_name;
+	ret = gse_krb5_get_server_keytab(gse_ctx->k5ctx,
+					 &gse_ctx->keytab);
+	if (ret) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
 	}
 
+#ifdef HAVE_GSS_KRB5_IMPORT_CRED
+	/* This creates a GSSAPI cred_id_t with the principal and keytab set */
+	gss_maj = gss_krb5_import_cred(&gss_min, NULL, NULL, gse_ctx->keytab, 
+					&gse_ctx->creds);
+	if (gss_maj) {
+		DEBUG(0, ("gss_krb5_import_cred failed with [%s]\n",
+			  gse_errstr(gse_ctx, gss_maj, gss_min)));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+#else
 	/* FIXME!!!
 	 * This call sets the default keytab for the whole server, not
 	 * just for this context. Need to find a way that does not alter
 	 * the state of the whole server ... */
+
+	ret = smb_krb5_keytab_name(gse_ctx, gse_ctx->k5ctx,
+				   gse_ctx->keytab, &ktname);
+	if (ret) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
 	ret = gsskrb5_register_acceptor_identity(ktname);
 	if (ret) {
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -387,7 +395,7 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 
 	mech_set.count = 1;
 	mech_set.elements = &gse_ctx->gss_mech;
-
+	
 	gss_maj = gss_acquire_cred(&gss_min,
 				   GSS_C_NO_NAME,
 				   GSS_C_INDEFINITE,
@@ -395,13 +403,14 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 				   GSS_C_ACCEPT,
 				   &gse_ctx->creds,
 				   NULL, NULL);
+
 	if (gss_maj) {
 		DEBUG(0, ("gss_acquire_creds failed with [%s]\n",
 			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
-
+#endif
 	status = NT_STATUS_OK;
 
 done:
@@ -932,7 +941,6 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 			 bool do_sign, bool do_seal,
 			 uint32_t add_gss_c_flags,
-			 const char *keytab,
 			 struct gse_context **_gse_ctx)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;

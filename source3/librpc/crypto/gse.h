@@ -42,7 +42,6 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 			 bool do_sign, bool do_seal,
 			 uint32_t add_gss_c_flags,
-			 const char *keytab,
 			 struct gse_context **_gse_ctx);
 NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 				   struct gse_context *gse_ctx,
