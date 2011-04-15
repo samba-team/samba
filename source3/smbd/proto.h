@@ -571,6 +571,8 @@ void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 NTSTATUS open_file_fchmod(connection_struct *conn,
 			  struct smb_filename *smb_fname,
 			  files_struct **result);
+bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
+			const SMB_STRUCT_STAT *sbuf2);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 			  struct smb_filename *smb_dname);
 void msg_file_was_renamed(struct messaging_context *msg,
