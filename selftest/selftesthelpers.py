@@ -22,10 +22,10 @@ import os
 import subprocess
 
 def srcdir():
-    return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    return os.path.normpath(os.getenv("SRCDIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")))
 
 def source4dir():
-    return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../source4"))
+    return os.path.normpath(os.path.join(srcdir(), "source4"))
 
 def bindir():
     return os.path.normpath(os.path.join(os.getenv("BUILDDIR", "."), "bin"))

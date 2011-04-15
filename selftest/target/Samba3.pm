@@ -10,23 +10,15 @@ use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
 
-sub binpath($$)
-{
-	my ($self, $binary) = @_;
-
-	if (defined($self->{bindir})) {
-		my $path = "$self->{bindir}/$binary";
-		-f $path or die("File $path doesn't exist");
-		return $path;
-	}
-
-	return $binary;
-}
-
 sub new($$) {
-	my ($classname, $bindir, $srcdir) = @_;
-	my $self = { bindir => $bindir,
-		     srcdir => $srcdir
+	my ($classname, $bindir, $binary_mapping, $bindir_path, $srcdir, $exeext) = @_;
+	$exeext = "" unless defined($exeext);
+	my $self = { vars => {},
+		     bindir => $bindir,
+		     binary_mapping => $binary_mapping,
+		     bindir_path => $bindir_path,
+		     srcdir => $srcdir,
+		     exeext => $exeext
 	};
 	bless $self;
 	return $self;
@@ -180,7 +172,7 @@ sub setup_member($$$)
 
 	$ret or return undef;
 
-	my $net = $self->binpath("net");
+	my $net = $self->{bindir_path}->($self, "net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
@@ -411,14 +403,14 @@ sub check_or_start($$$$$) {
 			@optargs = split(/ /, $ENV{NMBD_OPTIONS});
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->binpath("nmbd");
+		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "nmbd");
 
-		my @preargs = ($self->binpath("timelimit"), $maxtime);
+		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $maxtime);
 		if(defined($ENV{NMBD_VALGRIND})) { 
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
 
-		exec(@preargs, $self->binpath("nmbd"), "-F", "--no-process-group", "-S", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
+		exec(@preargs, $self->{bindir_path}->($self, "nmbd"), "-F", "--no-process-group", "-S", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
@@ -454,14 +446,14 @@ sub check_or_start($$$$$) {
 			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
+		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "winbindd");
 
-		my @preargs = ($self->binpath("timelimit"), $maxtime);
+		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $maxtime);
 		if(defined($ENV{WINBINDD_VALGRIND})) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
 
-		exec(@preargs, $self->binpath("winbindd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+		exec(@preargs, $self->{bindir_path}->($self, "winbindd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
 	write_pid($env_vars, "winbindd", $pid);
 	print "DONE\n";
@@ -492,16 +484,16 @@ sub check_or_start($$$$$) {
 			exit 0;
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->binpath("smbd");
+		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "smbd");
 		my @optargs = ("-d0");
 		if (defined($ENV{SMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{SMBD_OPTIONS});
 		}
-		my @preargs = ($self->binpath("timelimit"), $maxtime);
+		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $maxtime);
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}
-		exec(@preargs, $self->binpath("smbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
+		exec(@preargs, $self->{bindir_path}->($self, "smbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
@@ -824,7 +816,7 @@ domusers:X:$gid_domusers:
 	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 
-	open(PWD, "|".$self->binpath("smbpasswd")." -c $conffile -L -s -a $unix_name >/dev/null");
+	open(PWD, "|".$self->{bindir_path}->($self, "smbpasswd")." -c $conffile -L -s -a $unix_name >/dev/null");
 	print PWD "$password\n$password\n";
 	close(PWD) or die("Unable to set password for test account");
 
@@ -871,11 +863,11 @@ sub wait_for_start($$)
 	print "delaying for nbt name registration\n";
 	sleep(10);
 	# This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
-	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
-	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} __SAMBA__");
-	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
-	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
-	system($self->binpath("nmblookup") ." $envvars->{CONFIGURATION} $envvars->{SERVER}");
+	system($self->{bindir_path}->($self, "nmblookup") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
+	system($self->{bindir_path}->($self, "nmblookup") ." $envvars->{CONFIGURATION} __SAMBA__");
+	system($self->{bindir_path}->($self, "nmblookup") ." $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
+	system($self->{bindir_path}->($self, "nmblookup") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
+	system($self->{bindir_path}->($self, "nmblookup") ." $envvars->{CONFIGURATION} $envvars->{SERVER}");
 
 	# make sure smbd is also up set
 	print "wait for smbd\n";
@@ -883,7 +875,7 @@ sub wait_for_start($$)
 	my $count = 0;
 	my $ret;
 	do {
-	    $ret = system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
+	    $ret = system($self->{bindir_path}->($self, "smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
 	    if ($ret != 0) {
 		sleep(2);
 	    }
@@ -895,7 +887,7 @@ sub wait_for_start($$)
 	    return 0;
 	}
 	# Ensure we have domain users mapped.
-	$ret = system($self->binpath("net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
+	$ret = system($self->{bindir_path}->($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
 	if ($ret != 0) {
 	    return 1;
 	}

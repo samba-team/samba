@@ -6,7 +6,7 @@ use lib $RealBin;
 use lib "$RealBin/target";
 use Samba4;
 
-my $s = new Samba4("bin", undef, $RealBin."/../setup");
+my $s = new Samba4("bin", undef, undef, undef, $RealBin."/../setup");
 
 ok($s);
 

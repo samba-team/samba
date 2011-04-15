@@ -156,7 +156,7 @@ my $opt_testenv = 0;
 my $opt_list = 0;
 my $ldap = undef;
 my $opt_resetup_env = undef;
-my $opt_bindir = undef;
+my $opt_binary_mapping = "";
 my $opt_load_list = undef;
 my @testlists = ();
 
@@ -314,7 +314,6 @@ Target Specific:
  --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
                             failed
  --socket-wrapper           enable socket wrapper
- --bindir=PATH              path to target binaries
 
 Samba4 Specific:
  --ldap=openldap|fedora-ds  back samba onto specified ldap server
@@ -351,10 +350,10 @@ my $result = GetOptions (
 		'list' => \$opt_list,
 		'ldap:s' => \$ldap,
 		'resetup-environment' => \$opt_resetup_env,
-		'bindir:s' => \$opt_bindir,
 		'image=s' => \$opt_image,
 		'testlist=s' => \@testlists,
 		'load-list=s' => \$opt_load_list,
+                'binary-mapping=s' => \$opt_binary_mapping
 	    );
 
 exit(1) if (not $result);
@@ -377,7 +376,7 @@ unless (defined($ENV{VALGRIND})) {
 # make all our python scripts unbuffered
 $ENV{PYTHONUNBUFFERED} = 1;
 
-my $bindir = ($opt_bindir or "$builddir/bin");
+my $bindir = "$builddir/bin";
 my $bindir_abs = abs_path($bindir);
 
 # Backwards compatibility:
@@ -462,17 +461,41 @@ if ($opt_socket_wrapper) {
 my $target;
 my $testenv_default = "none";
 
+my %binary_mapping = {};
+if ($opt_binary_mapping) {
+    my @binmapping_list = split(/,/, $opt_binary_mapping);
+    foreach my $mapping (@binmapping_list) {
+	my ($bin, $map) = split(/\:/, $mapping);
+	$binary_mapping{$bin} = $map;
+    }
+}
+
+$ENV{BINARY_MAPPING} = $opt_binary_mapping;
+
+sub bindir_path($$) {
+	my ($self, $path) = @_;
+
+	if (defined($self->{binary_mapping}->{$path})) {
+	    $path = $self->{binary_mapping}->{$path};
+	}
+
+	my $valpath = "$self->{bindir}/$path$self->{exeext}";
+
+	return $valpath if (-f $valpath);
+	return $path;
+}
+
 if ($opt_target eq "samba4") {
 	$testenv_default = "all";
 	require target::Samba4;
-	$target = new Samba4($bindir, $ldap, $srcdir, $exeext);
+	$target = new Samba4($bindir, \%binary_mapping, \&bindir_path, $ldap, $srcdir, $exeext);
 } elsif ($opt_target eq "samba3") {
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
 	$testenv_default = "member";
 	require target::Samba3;
-	$target = new Samba3($bindir, $srcdir_abs);
+	$target = new Samba3($bindir, \%binary_mapping, \&bindir_path, $srcdir_abs, $exeext);
 } elsif ($opt_target eq "win") {
 	die("Windows tests will not run with socket wrapper enabled.") 
 		if ($opt_socket_wrapper);
