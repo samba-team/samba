@@ -250,6 +250,8 @@ out:
 	return (int)ret;
 }
 
+#ifdef HAVE_ADS
+
 /**********************************************************************
  Adds a single service principal, i.e. 'host' to the system keytab
 ***********************************************************************/
@@ -723,6 +725,8 @@ done:
 	}
 	return ret;
 }
+
+#endif /* HAVE_ADS */
 
 /**********************************************************************
  List system keytab.

@@ -829,8 +829,7 @@ bld.SAMBA3_LIBRARY('ads',
                    source=LIBADS_SRC,
                    deps='cli-ldap-common krb5 gssapi gssapi_krb5 ldap lber',
                    private_library=True,
-                   vars=locals(),
-                   enabled=bld.env.HAVE_ADS)
+                   vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,

@@ -2862,4 +2862,4 @@ int net_ads(struct net_context *c, int argc, const char **argv)
 	return net_ads_noads();
 }
 
-#endif	/* WITH_ADS */
+#endif	/* HAVE_ADS */
