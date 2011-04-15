@@ -16,7 +16,7 @@ DOMAIN=$4
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
-samba4bindir="$BUILDDIR/bin"
+samba4bindir="$BINDIR"
 DD="$samba4bindir/cifsdd$EXEEXT"
 
 SHARE=tmp

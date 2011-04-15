@@ -18,7 +18,7 @@ PREFIX=$5
 shift 5
 failed=0
 
-samba4bindir="$BUILDDIR/bin"
+samba4bindir="$BINDIR"
 masktest="$samba4bindir/masktest$EXEEXT"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh

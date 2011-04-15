@@ -32,7 +32,7 @@ check() {
 	return $status
 }
 
-export PATH="$BUILDDIR/bin:$PATH"
+export PATH="$BINDIR:$PATH"
 
 ldbsearch="$VALGRIND ldbsearch$EXEEXT"
 

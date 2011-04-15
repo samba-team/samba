@@ -28,7 +28,7 @@ def source4dir():
     return os.path.normpath(os.path.join(srcdir(), "source4"))
 
 def bindir():
-    return os.path.normpath(os.path.join(os.getenv("BUILDDIR", "."), "bin"))
+    return os.path.normpath(os.getenv("BINDIR", "./bin"))
 
 def binpath(name):
     return os.path.join(bindir(), "%s%s" % (name, os.getenv("EXEEXT", "")))

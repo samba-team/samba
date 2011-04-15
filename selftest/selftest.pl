@@ -26,7 +26,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--builddir=DIR] [--exeext=EXT][--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--bindir=DIR] [--exeext=EXT][--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -44,9 +44,9 @@ Show list of available options.
 
 Source directory.
 
-=item I<--builddir=DIR>
+=item I<--bindir=DIR>
 
-Build directory.
+Built binaries directory.
 
 =item I<--exeext=EXT>
 
@@ -161,7 +161,7 @@ my $opt_load_list = undef;
 my @testlists = ();
 
 my $srcdir = ".";
-my $builddir = ".";
+my $bindir = "./bin";
 my $exeext = "";
 my $prefix = "./st";
 
@@ -306,7 +306,7 @@ Generic options:
 Paths:
  --prefix=DIR               prefix to run tests in [st]
  --srcdir=DIR               source directory [.]
- --builddir=DIR             output directory [.]
+ --bindir=DIR               binaries directory [./bin]
  --exeext=EXT               executable extention []
 
 Target Specific:
@@ -343,7 +343,7 @@ my $result = GetOptions (
 		'exclude=s' => \@opt_exclude,
 		'include=s' => \@opt_include,
 		'srcdir=s' => \$srcdir,
-		'builddir=s' => \$builddir,
+		'bindir=s' => \$bindir,
 		'exeext=s' => \$exeext,
 		'verbose' => \$opt_verbose,
 		'testenv' => \$opt_testenv,
@@ -376,7 +376,6 @@ unless (defined($ENV{VALGRIND})) {
 # make all our python scripts unbuffered
 $ENV{PYTHONUNBUFFERED} = 1;
 
-my $bindir = "$builddir/bin";
 my $bindir_abs = abs_path($bindir);
 
 # Backwards compatibility:
@@ -408,7 +407,6 @@ my $tmpdir_abs = abs_path("$prefix/tmp");
 mkdir($tmpdir_abs, 0777) unless -d $tmpdir_abs;
 
 my $srcdir_abs = abs_path($srcdir);
-my $builddir_abs = abs_path($builddir);
 
 die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
 die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
@@ -418,7 +416,6 @@ $ENV{KRB5CCNAME} = "$prefix/krb5ticket";
 $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
-$ENV{BUILDDIR} = $builddir;
 $ENV{BINDIR} = $bindir_abs;
 $ENV{EXEEXT} = $exeext;
 

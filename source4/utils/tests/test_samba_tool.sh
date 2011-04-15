@@ -9,7 +9,7 @@ shift 4
 
 failed=0
 
-samba4bindir="$BUILDDIR/bin"
+samba4bindir="$BINDIR"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba_tool="$samba4bindir/samba-tool$EXEEXT"
 

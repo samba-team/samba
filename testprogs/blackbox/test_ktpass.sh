@@ -13,8 +13,8 @@ shift 1
 . `dirname $0`/subunit.sh
 
 
-samba_tool="$BUILDDIR/bin/samba-tool"
-samba4bindir="$BUILDDIR/bin"
+samba_tool="$BINDIR/samba-tool"
+samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 CONFIG="--configfile=$PREFIX/dc/etc/smb.conf"
@@ -27,7 +27,7 @@ KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 echo "testp@ssw0Rd" >$PREFIX/tmppassfile
 testit "kinit with passwd" $samba4kinit -e arcfour-hmac-md5 --password-file=$PREFIX/tmppassfile   $TESTUSER@SAMBA.EXAMPLE.COM   || failed=`expr $failed + 1`
-testit "ktpass" $samba4srcdir/scripting/bin/ktpass.sh --host LOCALDC --out $PREFIX/testuser.kt --princ $TESTUSER --pass "testp@ssw0Rd" --path-to-ldbsearch=$BUILDDIR/bin|| failed=`expr $failed + 1`
+testit "ktpass" $samba4srcdir/scripting/bin/ktpass.sh --host LOCALDC --out $PREFIX/testuser.kt --princ $TESTUSER --pass "testp@ssw0Rd" --path-to-ldbsearch=$BINDIR/bin|| failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME
 

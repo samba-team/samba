@@ -20,7 +20,7 @@ PROVDIR=$7
 shift 7
 failed=0
 
-samba4bindir="$BUILDDIR/bin"
+samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"

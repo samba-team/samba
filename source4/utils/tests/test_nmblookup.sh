@@ -26,7 +26,7 @@ testit() {
 	return $status
 }
 
-samba4bindir="$BUILDDIR/bin"
+samba4bindir="$BINDIR"
 nmblookup="$samba4bindir/nmblookup$EXEEXT"
 
 testit "nmblookup -U \$SERVER_IP \$SERVER" $nmblookup $TORTURE_OPTIONS -U $SERVER_IP $SERVER

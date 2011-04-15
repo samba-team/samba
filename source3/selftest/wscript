@@ -166,7 +166,7 @@ def cmd_testonly(opt):
         os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
 
     # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
-    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=samba3 --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=${srcdir} --exclude=${srcdir}/source3/selftest/skip --testlist="${srcdir}/source3/selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=samba3 --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/source3/selftest/skip --testlist="${srcdir}/source3/selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
     else:
