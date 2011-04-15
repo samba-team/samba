@@ -22,14 +22,16 @@
 #include "includes.h"
 #include "gse.h"
 
-#if defined(HAVE_KRB5) && defined(HAVE_GSSAPI_GSSAPI_EXT_H) && defined(HAVE_GSS_WRAP_IOV)
+#if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
 
 #include "smb_krb5.h"
 #include "gse_krb5.h"
 
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
+#ifdef HAVE_GSSAPI_GSSAPI_EXT_H
 #include <gssapi/gssapi_ext.h>
+#endif
 
 #ifndef GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
 #define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH 11
