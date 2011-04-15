@@ -103,7 +103,7 @@ def cmd_testonly(opt):
         if o[0:1] != '_':
             os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
 
-    env.OPTIONS = ''
+    env.OPTIONS = '--binary-mapping=smbtorture4:smbtorture'
     if not Options.options.SLOWTEST:
         env.OPTIONS += ' --exclude=${srcdir}/source4/selftest/slow'
     if Options.options.QUICKTEST:

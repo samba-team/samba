@@ -25,7 +25,7 @@ import subprocess
 
 samba4srcdir = source4dir()
 samba4bindir = bindir()
-smb4torture = binpath("smbtorture")
+smb4torture = binpath("smbtorture4")
 smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 validate = os.getenv("VALIDATE", "")
 if validate:

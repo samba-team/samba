@@ -30,8 +30,18 @@ def source4dir():
 def bindir():
     return os.path.normpath(os.getenv("BINDIR", "./bin"))
 
+binary_mapping = {}
+
 def binpath(name):
+    if name in binary_mapping:
+        name = binary_mapping[name]
     return os.path.join(bindir(), "%s%s" % (name, os.getenv("EXEEXT", "")))
+
+binary_mapping_string = os.getenv("BINARY_MAPPING", None)
+if binary_mapping_string is not None:
+    for binmapping_entry in binary_mapping_string.split(','):
+        binmapping = binmapping_entry.split(':')
+        binary_mapping[binmapping[0]] = binmapping[1]
 
 perl = os.getenv("PERL", "perl")
 perl = perl.split()
