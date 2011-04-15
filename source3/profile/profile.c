@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/shmem.h"
+#include "system/filesys.h"
 #include "messages.h"
 #include "smbprofile.h"
 
