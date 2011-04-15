@@ -251,7 +251,6 @@ plansmbtorturetestsuite("drs.unit", "none", "ncalrpc:")
 for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
     if f.endswith(".pl"):
         planperltestsuite("pidl.%s" % f[:-3], os.path.normpath(os.path.join(samba4srcdir, "../pidl/tests", f)))
-planperltestsuite("selftest.samba4", os.path.normpath(os.path.join(samba4srcdir, "../selftest/test_samba4.pl")))
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
