@@ -2563,7 +2563,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
  Ensure we didn't get symlink raced on opening a directory.
 ****************************************************************************/
 
-static bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
+bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
 			const SMB_STRUCT_STAT *sbuf2)
 {
 	if (sbuf1->st_ex_uid != sbuf2->st_ex_uid ||

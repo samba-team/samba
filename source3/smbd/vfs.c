@@ -1455,6 +1455,11 @@ int smb_vfs_call_lchown(struct vfs_handle_struct *handle, const char *path,
 NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 {
 	int ret;
+	bool as_root = false;
+	const char *path;
+	char *saved_dir = NULL;
+	char *parent_dir = NULL;
+	NTSTATUS status;
 
 	if (fsp->fh->fd != -1) {
 		/* Try fchown. */
@@ -1467,19 +1472,80 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		}
 	}
 
-	if (fsp->posix_open) {
+	as_root = (geteuid() == 0);
+
+	if (as_root) {
+		/*
+		 * We are being asked to chown as root. Make
+		 * sure we chdir() into the path to pin it,
+		 * and always act using lchown to ensure we
+		 * don't deref any symbolic links.
+		 */
+		const char *final_component = NULL;
+		struct smb_filename local_fname;
+
+		saved_dir = vfs_GetWd(talloc_tos(),fsp->conn);
+		if (!saved_dir) {
+			status = map_nt_error_from_unix(errno);
+			DEBUG(0,("vfs_chown_fsp: failed to get "
+				"current working directory. Error was %s\n",
+				strerror(errno)));
+			return status;
+		}
+
+		if (!parent_dirname(talloc_tos(),
+				fsp->fsp_name->base_name,
+				&parent_dir,
+				&final_component)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* cd into the parent dir to pin it. */
+		ret = SMB_VFS_CHDIR(fsp->conn, parent_dir);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+
+		ZERO_STRUCT(local_fname);
+		local_fname.base_name = CONST_DISCARD(char *,final_component);
+
+		/* Must use lstat here. */
+		ret = SMB_VFS_LSTAT(fsp->conn, &local_fname);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+
+		/* Ensure it matches the fsp stat. */
+		if (!check_same_stat(&local_fname.st, &fsp->fsp_name->st)) {
+                        return NT_STATUS_ACCESS_DENIED;
+                }
+                path = final_component;
+        } else {
+                path = fsp->fsp_name->base_name;
+        }
+
+	if (fsp->posix_open || as_root) {
 		ret = SMB_VFS_LCHOWN(fsp->conn,
-			fsp->fsp_name->base_name,
+			path,
 			uid, gid);
 	} else {
 		ret = SMB_VFS_CHOWN(fsp->conn,
-			fsp->fsp_name->base_name,
+			path,
 			uid, gid);
 	}
+
 	if (ret == 0) {
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+	} else {
+		status = map_nt_error_from_unix(errno);
 	}
-	return map_nt_error_from_unix(errno);
+
+	if (as_root) {
+		vfs_ChDir(fsp->conn,saved_dir);
+		TALLOC_FREE(saved_dir);
+		TALLOC_FREE(parent_dir);
+	}
+	return status;
 }
 
 int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path)
