@@ -30,6 +30,9 @@ def set_options(opt):
     gr.add_option('--tests',
                   help=("wildcard pattern of tests to run"),
                   action="store", dest='TESTS', default='')
+    gr.add_option('--target',
+                  help=("target of samba3 or samba4"),
+                  action="store", dest='TARGET', default=None)
     gr.add_option('--filtered-subunit',
                   help=("output (xfail) filtered subunit"),
                   action="store_true", dest='FILTERED_SUBUNIT', default=False)
@@ -88,7 +91,7 @@ def cmd_testonly(opt):
     env.SUBUNIT_FORMATTER = os.getenv('SUBUNIT_FORMATTER')
     if not env.SUBUNIT_FORMATTER:
         env.SUBUNIT_FORMATTER = '${PYTHON} -u ${srcdir}/selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
-    env.FILTER_XFAIL = '${PYTHON} -u ${srcdir}/selftest/filter-subunit --expected-failures=${srcdir}/source4/selftest/knownfail'
+    env.FILTER_XFAIL = '${PYTHON} -u ${srcdir}/selftest/filter-subunit --expected-failures=${SELFTEST_DIR}/knownfail'
 
     if Options.options.FAIL_IMMEDIATELY:
         env.FILTER_XFAIL += ' --fail-immediately'
@@ -103,11 +106,16 @@ def cmd_testonly(opt):
         if o[0:1] != '_':
             os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
 
-    env.OPTIONS = '--binary-mapping=smbtorture4:smbtorture'
+    binary_mapping = ('nmblookup3:nmblookup3,' +
+                      'smbclient3:smbclient3,' +
+                      'smbtorture4:smbtorture,' + 
+                      'ntlm_auth3:ntlm_auth3')
+
+    env.OPTIONS = '--binary-mapping=%s' % binary_mapping 
     if not Options.options.SLOWTEST:
-        env.OPTIONS += ' --exclude=${srcdir}/source4/selftest/slow'
+        env.OPTIONS += ' --exclude=${SELFTEST_DIR}/slow'
     if Options.options.QUICKTEST:
-        env.OPTIONS += ' --quick --include=${srcdir}/source4/selftest/quick'
+        env.OPTIONS += ' --quick --include=${SELFTEST_DIR}/quick'
     if Options.options.LOAD_LIST:
         env.OPTIONS += ' --load-list=%s' % Options.options.LOAD_LIST
     if Options.options.TESTENV:
@@ -154,12 +162,8 @@ def cmd_testonly(opt):
         os.environ['LDB_MODULES_PATH'] = 'bin/modules/ldb'
 
     # tell build system where to find config.h
-    config_paths = [ 'bin/default/source4/include/config.h',
-                     'bin/default/include/config.h' ]
-    for p in config_paths:
-        if os.path.exists(p):
-            os.environ['CONFIG_H'] = p
-            break
+    os.environ['VFSLIBDIR'] = os.path.abspath('bin/modules/vfs')
+    os.environ['CONFIG_H'] = 'bin/default/include/config.h'
 
     st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')
     if os.path.exists(st_done):
@@ -168,21 +172,33 @@ def cmd_testonly(opt):
     if not os.path.isdir(env.SELFTEST_PREFIX):
         os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
 
-    # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
-    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/source4/selftest/skip --testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+    if Options.options.TARGET:
+        env.SELFTEST_TARGET = Options.options.TARGET
+    else:
+        env.SELFTEST_TARGET = "samba4"
+
+    if env.SELFTEST_TARGET == "samba4":
+        env.SELFTEST_DIR = "${srcdir}/source4/selftest"
+    elif env.SELFTEST_TARGET == "samba3":
+        #This must *only* be set for a Samba3 test, as it will cause timeouts otherwise (as it tries to talk to winbindd)
+        os.environ['NSS_WRAPPER_WINBIND_SO_PATH'] = os.path.abspath('bin/default/nsswitch/libnss-winbind.so')
+        env.SELFTEST_DIR = "${srcdir}/source3/selftest"
+
+        # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
+    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${SELFTEST_DIR}/skip --testlist="${PYTHON} ${SELFTEST_DIR}/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
     else:
         cmd += ' | ${PYTHON} -u ${srcdir}/selftest/filter-subunit'
-    cmd = EXPAND_VARIABLES(opt, cmd)
+    runcmd = EXPAND_VARIABLES(opt, cmd)
 
-    print("test: running %s" % cmd)
+    print("test: running %s" % runcmd)
     ret = RUN_COMMAND(cmd, env=env)
     if os.path.exists(".testrepository"):
         # "testr load -q" isn't
-        cmd = 'testr load -q < ${SELFTEST_PREFIX}/subunit > /dev/null'
-        cmd = EXPAND_VARIABLES(opt, cmd)
-        RUN_COMMAND(cmd, env=env)
+        testrcmd = 'testr load -q < ${SELFTEST_PREFIX}/subunit > /dev/null'
+        runcmd = EXPAND_VARIABLES(opt, testrcmd)
+        RUN_COMMAND(runcmd, env=env)
 
     if ret != 0:
         print("ERROR: test failed with exit code %d" % ret)
