@@ -122,6 +122,11 @@ def configure(conf):
     if sys.platform != "openbsd4":
         conf.env.undefined_ldflags = conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
+    if sys.platform != "openbsd4" and conf.env.undefined_ignore_ldflags == []:
+        if conf.CHECK_LDFLAGS(['-undefined', 'dynamic_lookup']):
+            conf.env.undefined_ignore_ldflags = ['-undefined', 'dynamic_lookup']
+
+
     # gentoo always adds this. We want our normal build to be as
     # strict as the strictest OS we support, so adding this here
     # allows us to find problems on our development hosts faster.
