@@ -1376,12 +1376,15 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 		return False;
 	}
 
-	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+	if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
 		/*
 		 * Going from exclusive or batch,
  		 * we always go through FAKE_LEVEL_II
  		 * first.
  		 */
+		if (!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+			smb_panic("remove_share_oplock: logic error");
+		}
 		e->op_type = FAKE_LEVEL_II_OPLOCK;
 	} else {
 		e->op_type = NO_OPLOCK;
