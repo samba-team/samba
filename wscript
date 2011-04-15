@@ -34,7 +34,7 @@ def set_options(opt):
     opt.RECURSE('lib/replace')
     opt.RECURSE('source4/dynconfig')
     opt.RECURSE('source4/lib/ldb')
-    opt.RECURSE('source4/selftest')
+    opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
     opt.RECURSE('lib/nss_wrapper')
     opt.RECURSE('lib/socket_wrapper')
@@ -112,7 +112,7 @@ def configure(conf):
     conf.RECURSE('lib/subunit/c')
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('pidl')
-    conf.RECURSE('source4/selftest')
+    conf.RECURSE('selftest')
     if conf.env.enable_s3build:
         conf.RECURSE('source3')
 
