@@ -20,6 +20,7 @@ st_test_done() {
 if [ "x${RUN_FROM_BUILD_FARM}" = "xyes" ]; then
 	( rm -f ${SELFTESTPREFIX}/st_done && \
 		${PERL} ${SELFTESTDIR}/selftest.pl \
+	                --binary-mapping=smbtorture3:smbtorture,nmblookup3:nmblookup,smbclient3:smbclient,ntlm_auth3:ntlm_auth \
 			--prefix=${SELFTESTPREFIX} --target=samba3 \
 			--testlist="${PYTHON} ${SOURCEDIR}/selftest/tests.py|" \
 			--exclude=${SOURCEDIR}/selftest/skip \
@@ -33,6 +34,7 @@ if [ "x${RUN_FROM_BUILD_FARM}" = "xyes" ]; then
 else
 	( rm -f ${SELFTESTPREFIX}/st_done && \
 		${PERL} ${SELFTESTDIR}/selftest.pl \
+	                --binary-mapping=smbtorture3:smbtorture,nmblookup3:nmblookup,smbclient3:smbclient,ntlm_auth3:ntlm_auth \
 			--prefix=${SELFTESTPREFIX} --target=samba3 \
 			--testlist="${PYTHON} ${SOURCEDIR}/selftest/tests.py|" \
 			--exclude=${SOURCEDIR}/selftest/skip \

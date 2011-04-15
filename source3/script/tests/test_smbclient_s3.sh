@@ -4,7 +4,7 @@
 
 if [ $# -lt 7 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID LOCAL_PATH PREFIX
+Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID LOCAL_PATH PREFIX SMBCLIENT
 EOF
 exit 1;
 fi
@@ -16,9 +16,10 @@ PASSWORD="$4"
 USERID="$5"
 LOCAL_PATH="$6"
 PREFIX="$7"
-SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient}"
+SMBCLIENT="$8"
+SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 WBINFO="$VALGRIND ${WBINFO:-$BINDIR/wbinfo}"
-shift 7
+shift 8
 ADDARGS="$*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox

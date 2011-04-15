@@ -4,7 +4,7 @@
 
 if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD <smbclient arguments>
+Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD SMBCLIENT <smbclient arguments>
 EOF
 exit 1;
 fi
@@ -13,8 +13,9 @@ SERVER="$1"
 SERVER_IP="$2"
 USERNAME="$3"
 PASSWORD="$4"
-SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient}"
-shift 4
+SMBCLIENT="$5"
+SMBCLIENT="$VALGRIND ${SMBCLIENT}"
+shift 5
 ADDARGS="$*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
