@@ -348,8 +348,6 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 	struct xattr_DOSATTRIB dosattrib;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	files_struct *fsp = NULL;
-	bool ret = false;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return False;
@@ -387,6 +385,9 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 	if (SMB_VFS_SETXATTR(conn, smb_fname->base_name,
 			     SAMBA_XATTR_DOS_ATTRIB, blob.data, blob.length,
 			     0) == -1) {
+		bool ret = false;
+		files_struct *fsp = NULL;
+
 		if((errno != EPERM) && (errno != EACCES)) {
 			if (errno == ENOSYS
 #if defined(ENOTSUP)
@@ -419,9 +420,9 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 
 		if (!NT_STATUS_IS_OK(open_file_fchmod(conn, smb_fname,
 						      &fsp)))
-			return ret;
+			return false;
 		become_root();
-		if (SMB_VFS_SETXATTR(conn, smb_fname->base_name,
+		if (SMB_VFS_FSETXATTR(fsp,
 				     SAMBA_XATTR_DOS_ATTRIB, blob.data,
 				     blob.length, 0) == 0) {
 			ret = true;
