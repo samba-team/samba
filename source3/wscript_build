@@ -1327,6 +1327,7 @@ if not bld.env.toplevel_build:
 
 bld.RECURSE('../lib/util/charset')
 bld.RECURSE('../auth')
+bld.RECURSE('../auth/kerberos')
 bld.RECURSE('../lib/addns')
 bld.RECURSE('../lib/async_req')
 bld.RECURSE('../libcli/auth')

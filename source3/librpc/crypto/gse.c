@@ -62,16 +62,6 @@ gss_OID_desc gse_authz_data_oid = {
 	(void *)GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID
 };
 
-#ifndef GSS_KRB5_EXTRACT_AUTHTIME_FROM_SEC_CONTEXT_OID
-#define GSS_KRB5_EXTRACT_AUTHTIME_FROM_SEC_CONTEXT_OID_LENGTH 11
-#define GSS_KRB5_EXTRACT_AUTHTIME_FROM_SEC_CONTEXT_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x0c"
-#endif
-
-gss_OID_desc gse_authtime_oid = {
-	GSS_KRB5_EXTRACT_AUTHTIME_FROM_SEC_CONTEXT_OID_LENGTH,
-	(void *)GSS_KRB5_EXTRACT_AUTHTIME_FROM_SEC_CONTEXT_OID
-};
-
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
 
 struct gse_context {
@@ -692,42 +682,15 @@ NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gse_get_authtime(struct gse_context *gse_ctx, time_t *authtime)
+NTSTATUS gse_get_pac_blob(struct gse_context *gse_ctx,
+			  TALLOC_CTX *mem_ctx, DATA_BLOB *pac_blob)
 {
-	OM_uint32 gss_min, gss_maj;
-	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
-	int32_t	tkttime;
-
 	if (!gse_ctx->authenticated) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	gss_maj = gss_inquire_sec_context_by_oid(
-				&gss_min, gse_ctx->gss_ctx,
-				&gse_authtime_oid, &set);
-	if (gss_maj) {
-		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	if ((set == GSS_C_NO_BUFFER_SET) || (set->count != 1) != 0) {
-		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
-			  "data in results.\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	if (set->elements[0].length != sizeof(int32_t)) {
-		DEBUG(0, ("Invalid authtime size!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	tkttime = *((int32_t *)set->elements[0].value);
-
-	gss_maj = gss_release_buffer_set(&gss_min, &set);
-
-	*authtime = (time_t)tkttime;
-	return NT_STATUS_OK;
+	return gssapi_obtain_pac_blob(mem_ctx, gse_ctx->gss_ctx,
+					gse_ctx->client_name, pac_blob);
 }
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
@@ -1017,4 +980,4 @@ NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-#endif /* HAVE_KRB5 && HAVE_GSSAPI_EXT_H && HAVE_GSS_WRAP_IOV */
+#endif /* HAVE_KRB5 && HAVE_GSS_WRAP_IOV */

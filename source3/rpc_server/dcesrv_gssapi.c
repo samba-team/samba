@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/crypto/gse.h"
 #include "auth.h"
+#include "libcli/auth/krb5_wrap.h"
 
 NTSTATUS gssapi_server_auth_start(TALLOC_CTX *mem_ctx,
 				  bool do_sign,
@@ -105,14 +106,9 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 				     struct auth_serversupplied_info **server_info)
 {
 	TALLOC_CTX *tmp_ctx;
-	DATA_BLOB auth_data;
-	time_t tgs_authtime;
-	NTTIME tgs_authtime_nttime;
-	DATA_BLOB pac;
+	DATA_BLOB pac_blob;
 	struct PAC_DATA *pac_data;
-	struct PAC_LOGON_NAME *logon_name = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
-	enum ndr_err_code ndr_err;
 	unsigned int i;
 	bool is_mapped;
 	bool is_guest;
@@ -122,14 +118,13 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 	char *username;
 	struct passwd *pw;
 	NTSTATUS status;
-	bool bret;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = gse_get_authz_data(gse_ctx, tmp_ctx, &auth_data);
+	status = gse_get_pac_blob(gse_ctx, tmp_ctx, &pac_blob);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		/* TODO: Fetch user by principal name ? */
 		status = NT_STATUS_ACCESS_DENIED;
@@ -139,35 +134,16 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 		goto done;
 	}
 
-	bret = unwrap_pac(tmp_ctx, &auth_data, &pac);
-	if (!bret) {
-		DEBUG(1, ("Failed to unwrap PAC\n"));
-		status = NT_STATUS_ACCESS_DENIED;
+	status = kerberos_decode_pac(tmp_ctx,
+				     pac_blob,
+				     NULL, NULL, NULL, NULL, 0, &pac_data);
+	data_blob_free(&pac_blob);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	status = gse_get_client_name(gse_ctx, tmp_ctx, &princ_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = gse_get_authtime(gse_ctx, &tgs_authtime);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-	unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
-
-	pac_data = talloc_zero(tmp_ctx, struct PAC_DATA);
-	if (!pac_data) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	ndr_err = ndr_pull_struct_blob(&pac, pac_data, pac_data,
-				(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(1, ("Failed to parse the PAC for %s\n", princ_name));
-		status = ndr_map_error2ntstatus(ndr_err);
 		goto done;
 	}
 
@@ -182,9 +158,6 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 			}
 			logon_info = data_buf->info->logon_info.info;
 			break;
-		case PAC_TYPE_LOGON_NAME:
-			logon_name = &data_buf->info->logon_name;
-			break;
 		default:
 			break;
 		}
@@ -194,25 +167,6 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 		status = NT_STATUS_NOT_FOUND;
 		goto done;
 	}
-	if (!logon_name) {
-		DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
-		status = NT_STATUS_NOT_FOUND;
-		goto done;
-	}
-
-	/* check time */
-	if (tgs_authtime_nttime != logon_name->logon_time) {
-		DEBUG(1, ("Logon time mismatch between ticket and PAC!\n"
-			  "PAC Time = %s | Ticket Time = %s\n",
-			  nt_time_string(tmp_ctx, logon_name->logon_time),
-			  nt_time_string(tmp_ctx, tgs_authtime_nttime)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	/* TODO: Should we check princ_name against account_name in
-	 * logon_name ? Are they supposed to be identical, or can an
-	 * account_name be different from the UPN ? */
 
 	status = get_user_from_kerberos_info(tmp_ctx, client_id->name,
 					     princ_name, logon_info,

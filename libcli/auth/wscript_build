@@ -41,4 +41,4 @@ bld.SAMBA_SUBSYSTEM('SPNEGO_PARSE',
 
 bld.SAMBA_SUBSYSTEM('KRB5_WRAP',
                     source='krb5_wrap.c kerberos_pac.c',
-                    deps='gssapi krb5 ndr-krb5pac com_err')
+                    deps='gssapi_krb5 krb5 ndr-krb5pac com_err KRB5_PAC')

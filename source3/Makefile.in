@@ -598,6 +598,7 @@ LIBMSRPC_OBJ = $(SCHANNEL_OBJ) \
 	       rpc_client/cli_pipe.o \
 	       librpc/crypto/gse_krb5.o \
 	       librpc/crypto/gse.o \
+	       ../auth/kerberos/gssapi_pac.o \
 	       librpc/crypto/cli_spnego.o \
 	       librpc/rpc/rpc_common.o \
 	       rpc_client/rpc_transport_np.o \

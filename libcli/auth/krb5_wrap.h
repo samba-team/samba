@@ -72,3 +72,8 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     krb5_const_principal client_principal,
 			     time_t tgs_authtime,
 			     struct PAC_DATA **pac_data_out);
+
+NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
+				gss_ctx_id_t gssapi_context,
+				gss_name_t gss_client_name,
+				DATA_BLOB *pac_data);
