@@ -219,10 +219,6 @@ information on how to do this. Copy the files from a working Netmon installation
 <title>Useful URLs</title>
 <itemizedlist>
 
-<listitem><para>See how Scott Merrill simulates a BDC behavior at 
-       <ulink noescape="1" url="http://www.skippy.net/linux/smb-howto.html">
-       http://www.skippy.net/linux/smb-howto.html</ulink>. </para></listitem>
-
 <listitem><para>FTP site for older SMB specs, 
        <ulink noescape="1" url="ftp://ftp.microsoft.com/developr/drg/CIFS/">
        ftp://ftp.microsoft.com/developr/drg/CIFS/</ulink></para></listitem>.
