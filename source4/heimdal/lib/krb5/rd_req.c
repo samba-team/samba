@@ -983,8 +983,7 @@ krb5_rd_req_ctx(krb5_context context,
 		goto out;
 	    }
 
-	    if (entry.keyblock.keytype != ap_req.ticket.enc_part.etype ||
-		(kvno && kvno != entry.vno)) {
+	    if (entry.keyblock.keytype != ap_req.ticket.enc_part.etype) {
 		krb5_kt_free_entry (context, &entry);
 		continue;
 	    }
