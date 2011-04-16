@@ -558,7 +558,6 @@ static void tldap_msg_received(struct tevent_req *subreq)
 		subreq, struct tldap_context);
 	struct tevent_req *req;
 	struct tldap_msg_state *state;
-	struct tevent_context *ev;
 	struct asn1_data *data;
 	uint8_t *inbuf;
 	ssize_t received;
@@ -616,8 +615,6 @@ static void tldap_msg_received(struct tevent_req *subreq)
 
 	state->inbuf = talloc_move(state, &inbuf);
 	state->data = talloc_move(state, &data);
-
-	ev = state->ev;
 
 	talloc_set_destructor(req, NULL);
 	tldap_msg_unset_pending(req);
