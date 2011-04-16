@@ -632,7 +632,7 @@ msg.msg_acctrightslen = sizeof(fd);
         if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi') or \
            conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi_krb5'):
             have_gssapi=True
-        conf.CHECK_FUNCS_IN('gss_wrap_iov gss_krb5_import_cred gss_get_name_attribute', 'gssapi gssapi_krb5 krb5')
+        conf.CHECK_FUNCS_IN('gss_wrap_iov gss_krb5_import_cred gss_get_name_attribute gss_oid_equal', 'gssapi gssapi_krb5 krb5')
         conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
         conf.CHECK_FUNCS('''
 krb5_set_real_time krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
