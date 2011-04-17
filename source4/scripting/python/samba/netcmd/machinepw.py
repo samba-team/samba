@@ -18,7 +18,7 @@
 #
 
 import samba.getopt as options
-
+import os
 from samba import Ldb
 from samba.auth import system_session
 from samba.netcmd import Command, CommandError
@@ -40,10 +40,13 @@ class cmd_machinepw(Command):
     def run(self, secret, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        url = lp.get("secrets database")
+        name = lp.get("secrets database")
+        path = lp.get("private dir")
+        url = os.path.join(path, name)
+        if not os.path.exists(url):
+            raise CommandError("secret database not found at %s " % url)
         secretsdb = Ldb(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
-        
         result = secretsdb.search(attrs=["secret"], 
             expression="(&(objectclass=primaryDomain)(samaccountname=%s))" % secret)
 
