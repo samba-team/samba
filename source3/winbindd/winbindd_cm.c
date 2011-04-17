@@ -1375,7 +1375,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 		return False;
 
 	status = smbsock_any_connect(addrs, dcnames, NULL, NULL, NULL,
-				     num_addrs, 0, fd, &fd_index, NULL);
+				     num_addrs, 0, 10, fd, &fd_index, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		for (i=0; i<num_dcs; i++) {
 			char ab[INET6_ADDRSTRLEN];
@@ -1571,7 +1571,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 			status = smbsock_connect(&domain->dcaddr, 0,
 						 NULL, -1, NULL, -1,
-						 &fd, NULL);
+						 &fd, NULL, 10);
 			if (!NT_STATUS_IS_OK(status)) {
 				fd = -1;
 			}

@@ -2837,7 +2837,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
 			 const char *called_name, int called_type,
 			 const char *calling_name, int calling_type,
-			 int *pfd, uint16_t *ret_port);
+			 int *pfd, uint16_t *ret_port, int sec_timeout);
 
 struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
@@ -2856,6 +2856,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     int *calling_types,
 			     size_t num_addrs,
 			     uint16_t port,
+			     int sec_timeout,
 			     int *pfd, size_t *chosen_index,
 			     uint16_t *chosen_port);
 
