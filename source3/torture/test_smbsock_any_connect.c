@@ -35,7 +35,7 @@ bool run_smb_any_connect(int dummy)
 	interpret_string_addr(&addrs[4], "192.168.99.9", 0);
 
 	status = smbsock_any_connect(addrs, NULL, NULL, NULL, NULL,
-				     ARRAY_SIZE(addrs), 0,
+				     ARRAY_SIZE(addrs), 0, 0,
 				     &fd, &chosen_index, &port);
 
 	d_printf("smbsock_any_connect returned %s (fd %d)\n",
