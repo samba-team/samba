@@ -90,48 +90,48 @@ sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
 	
-	if ($envname eq "dc") {
-		return $self->setup_dc("$path/dc");
+	if ($envname eq "s3dc") {
+		return $self->setup_s3dc("$path/s3dc");
 	} elsif ($envname eq "secshare") {
 		return $self->setup_secshare("$path/secshare");
 	} elsif ($envname eq "ktest") {
 		return $self->setup_ktest("$path/ktest");
 	} elsif ($envname eq "secserver") {
-		if (not defined($self->{vars}->{dc})) {
-			if (not defined($self->setup_dc("$path/dc"))) {
+		if (not defined($self->{vars}->{s3dc})) {
+			if (not defined($self->setup_s3dc("$path/s3dc"))) {
 			        return undef;
 			}
 		}
-		return $self->setup_secserver("$path/secserver", $self->{vars}->{dc});
+		return $self->setup_secserver("$path/secserver", $self->{vars}->{s3dc});
 	} elsif ($envname eq "member") {
-		if (not defined($self->{vars}->{dc})) {
-			if (not defined($self->setup_dc("$path/dc"))) {
+		if (not defined($self->{vars}->{s3dc})) {
+			if (not defined($self->setup_s3dc("$path/s3dc"))) {
 			        return undef;
 			}
 		}
-		return $self->setup_member("$path/member", $self->{vars}->{dc});
+		return $self->setup_member("$path/member", $self->{vars}->{s3dc});
 	} else {
 		return undef;
 	}
 }
 
-sub setup_dc($$)
+sub setup_s3dc($$)
 {
 	my ($self, $path) = @_;
 
-	print "PROVISIONING DC...";
+	print "PROVISIONING S3DC...";
 
-	my $dc_options = "
+	my $s3dc_options = "
 	domain master = yes
 	domain logons = yes
 	lanman auth = yes
 ";
 
 	my $vars = $self->provision($path,
-				    "LOCALDC2",
+				    "LOCALS3DC2",
 				    2,
-				    "localdc2pass",
-				    $dc_options);
+				    "locals3dc2pass",
+				    $s3dc_options);
 
 	$vars or return undef;
 
@@ -149,14 +149,14 @@ sub setup_dc($$)
 	$vars->{DC_USERNAME} = $vars->{USERNAME};
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
 
-	$self->{vars}->{dc} = $vars;
+	$self->{vars}->{s3dc} = $vars;
 
 	return $vars;
 }
 
 sub setup_member($$$)
 {
-	my ($self, $prefix, $dcvars) = @_;
+	my ($self, $prefix, $s3dcvars) = @_;
 
 	print "PROVISIONING MEMBER...";
 
@@ -175,8 +175,8 @@ sub setup_member($$$)
 	my $net = $self->{bindir_path}->($self, "net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
-	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+	$cmd .= "$net join $ret->{CONFIGURATION} $s3dcvars->{DOMAIN} member";
+	$cmd .= " -U$s3dcvars->{USERNAME}\%$s3dcvars->{PASSWORD}";
 
 	system($cmd) == 0 or die("Join failed\n$cmd");
 
@@ -188,11 +188,11 @@ sub setup_member($$$)
 	       return undef;
 	}
 
-	$ret->{DC_SERVER} = $dcvars->{SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DC_SERVER} = $s3dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $s3dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $s3dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $s3dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $s3dcvars->{PASSWORD};
 
 	return $ret;
 }
@@ -231,13 +231,13 @@ sub setup_secshare($$)
 
 sub setup_secserver($$$)
 {
-	my ($self, $prefix, $dcvars) = @_;
+	my ($self, $prefix, $s3dcvars) = @_;
 
 	print "PROVISIONING server with security=server...";
 
 	my $secserver_options = "
 	security = server
-        password server = $dcvars->{SERVER_IP}
+        password server = $s3dcvars->{SERVER_IP}
 ";
 
 	my $ret = $self->provision($prefix,
@@ -256,18 +256,18 @@ sub setup_secserver($$$)
 	       return undef;
 	}
 
-	$ret->{DC_SERVER} = $dcvars->{SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DC_SERVER} = $s3dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $s3dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $s3dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $s3dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $s3dcvars->{PASSWORD};
 
 	return $ret;
 }
 
 sub setup_ktest($$$)
 {
-	my ($self, $prefix, $dcvars) = @_;
+	my ($self, $prefix, $s3dcvars) = @_;
 
 	print "PROVISIONING server with security=ads...";
 
