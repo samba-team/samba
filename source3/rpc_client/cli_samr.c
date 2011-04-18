@@ -158,15 +158,28 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 	struct samr_Password old_lm_hash_enc;
 	struct lsa_String server, account;
 
+	ZERO_STRUCT(new_nt_password);
+	ZERO_STRUCT(new_lm_password);
+	ZERO_STRUCT(old_nt_hash_enc);
+	ZERO_STRUCT(old_lm_hash_enc);
+
 	DEBUG(10,("rpccli_samr_chng_pswd_auth_crap\n"));
 
 	init_lsa_String(&server, cli->srv_name_slash);
 	init_lsa_String(&account, username);
 
-	memcpy(&new_nt_password.data, new_nt_password_blob.data, 516);
-	memcpy(&new_lm_password.data, new_lm_password_blob.data, 516);
-	memcpy(&old_nt_hash_enc.hash, old_nt_hash_enc_blob.data, 16);
-	memcpy(&old_lm_hash_enc.hash, old_lm_hash_enc_blob.data, 16);
+	if (new_nt_password_blob.data && new_nt_password_blob.length >= 516) {
+		memcpy(&new_nt_password.data, new_nt_password_blob.data, 516);
+	}
+	if (new_lm_password_blob.data && new_lm_password_blob.length >= 516) {
+		memcpy(&new_lm_password.data, new_lm_password_blob.data, 516);
+	}
+	if (old_nt_hash_enc_blob.data && old_nt_hash_enc_blob.length >= 16) {
+		memcpy(&old_nt_hash_enc.hash, old_nt_hash_enc_blob.data, 16);
+	}
+	if (old_lm_hash_enc_blob.data && old_lm_hash_enc_blob.length >= 16) {
+		memcpy(&old_lm_hash_enc.hash, old_lm_hash_enc_blob.data, 16);
+	}
 
 	result = rpccli_samr_ChangePasswordUser2(cli, mem_ctx,
 						 &server,
