@@ -1,20 +1,27 @@
                    ==============================
                    Release Notes for Samba 3.4.13
-			 , 2011
+			  April 21, 2011
                    ==============================
 
 
 This is the latest stable release of Samba 3.4.
 
+Major enhancements in Samba 3.4.13 include:
 
-o  
+o  Fix Winbind crash caused by null pointer reference (bug #8086).
+o  Fix incorrect timeout handling in ncacn_ip_tcp client code (bug #8085).
 
 
 Changes since 3.4.12
 --------------------
 
 
-o   Jeremy Allison <jra@samba.org>
+o   Günther Deschner <gd@samba.org>
+    * BUG 8085: Fix incorrect timeout handling in ncacn_ip_tcp client code.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8086: Fix Winbind crash caused by null pointer reference.
 
 
 ######################################################################
