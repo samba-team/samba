@@ -185,14 +185,14 @@ sub wait_for_start($$)
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSALIAS}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSALIAS}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSALIAS}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSALIAS}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
 
 	print $self->getlog_env($testenv_vars);
 }
@@ -505,7 +505,7 @@ sub mk_krb5_conf($$)
 
 sub provision_raw_prepare($$$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias,
+	my ($self, $prefix, $server_role, $netbiosname, 
 	    $domain, $realm, $functional_level,
 	    $swiface, $password, $kdc_ipv4) = @_;
 	my $ctx;
@@ -530,7 +530,6 @@ sub provision_raw_prepare($$$$$$$$$$)
 
 	$ctx->{server_role} = $server_role;
 	$ctx->{netbiosname} = $netbiosname;
-	$ctx->{netbiosalias} = $netbiosalias;
 	$ctx->{swiface} = $swiface;
 	$ctx->{password} = $password;
 	$ctx->{kdc_ipv4} = $kdc_ipv4;
@@ -632,7 +631,6 @@ sub provision_raw_step1($$)
 	print CONFFILE "
 [global]
 	netbios name = $ctx->{netbiosname}
-	netbios aliases = $ctx->{netbiosalias}
 	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	workgroup = $ctx->{domain}
 	realm = $ctx->{realm}
@@ -719,7 +717,6 @@ nogroup:x:65534:nobody
 		SERVER => $ctx->{netbiosname},
 		SERVER_IP => $ctx->{ipv4},
 		NETBIOSNAME => $ctx->{netbiosname},
-		NETBIOSALIAS => $ctx->{netbiosalias},
 		DOMAIN => $ctx->{domain},
 		USERNAME => $ctx->{username},
 		REALM => $ctx->{realm},
@@ -760,12 +757,12 @@ sub provision_raw_step2($$$)
 
 sub provision($$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias,
+	my ($self, $prefix, $server_role, $netbiosname, 
 	    $domain, $realm, $functional_level,
 	    $swiface, $password, $kdc_ipv4, $extra_smbconf_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
-					       $netbiosname, $netbiosalias,
+					       $netbiosname, 
 					       $domain, $realm, $functional_level,
 					       $swiface, $password, $kdc_ipv4);
 
@@ -877,7 +874,6 @@ sub provision_member($$$)
 	my $ret = $self->provision($prefix,
 				   "member server",
 				   "localmember",
-				   "member3",
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
@@ -904,14 +900,12 @@ sub provision_member($$$)
 	$ret->{MEMBER_SERVER} = $ret->{SERVER};
 	$ret->{MEMBER_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{MEMBER_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{MEMBER_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
 	$ret->{MEMBER_USERNAME} = $ret->{USERNAME};
 	$ret->{MEMBER_PASSWORD} = $ret->{PASSWORD};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
 
@@ -931,7 +925,6 @@ sub provision_rpc_proxy($$$)
 	my $ret = $self->provision($prefix,
 				   "member server",
 				   "localrpcproxy",
-				   "rpcproxy4",
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
@@ -959,14 +952,12 @@ sub provision_rpc_proxy($$$)
 	$ret->{RPC_PROXY_SERVER} = $ret->{SERVER};
 	$ret->{RPC_PROXY_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{RPC_PROXY_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{RPC_PROXY_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
 	$ret->{RPC_PROXY_USERNAME} = $ret->{USERNAME};
 	$ret->{RPC_PROXY_PASSWORD} = $ret->{PASSWORD};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
 
@@ -981,7 +972,6 @@ sub provision_vampire_dc($$$)
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
 					       "localvampiredc",
-					       "dc2",
 					       "SAMBADOMAIN",
 					       "samba.example.com",
 					       "2008",
@@ -1022,12 +1012,10 @@ sub provision_vampire_dc($$$)
 	$ret->{VAMPIRE_DC_SERVER} = $ret->{SERVER};
 	$ret->{VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{VAMPIRE_DC_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
 
@@ -1042,13 +1030,12 @@ sub provision_dc($$)
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
-				   "dc1",
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
 				   1,
 				   "locDCpass1",
-				   "127.0.0.1", "");
+				   "127.0.0.1", "netbios aliases = DC1");
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1056,10 +1043,10 @@ sub provision_dc($$)
 		return undef;
 	}
 
+	$ret->{NETBIOSALIAS} = "DC1";
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{DC_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
 
@@ -1074,7 +1061,6 @@ sub provision_fl2000dc($$)
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc5",
-				   "localfl2000dc",
 				   "SAMBA2000",
 				   "samba2000.example.com",
 				   "2000",
@@ -1098,7 +1084,6 @@ sub provision_fl2003dc($$)
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc6",
-				   "localfl2003dc",
 				   "SAMBA2003",
 				   "samba2003.example.com",
 				   "2003",
@@ -1122,7 +1107,6 @@ sub provision_fl2008r2dc($$)
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
-				   "localfl2000r2dc",
 				   "SAMBA2008R2",
 				   "samba2008R2.example.com",
 				   "2008_R2",
@@ -1147,7 +1131,6 @@ sub provision_rodc($$$)
 	# We do this so that we don't run the provision.  That's the job of 'net join RODC'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
 					       "rodc",
-					       "dc8",
 					       "SAMBADOMAIN",
 					       "samba.example.com",
 					       "2008",
@@ -1208,12 +1191,10 @@ sub provision_rodc($$$)
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
 	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{RODC_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{RODC_DC_NETBIOSALIAS} = $ret->{NETBIOSALIAS};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_NETBIOSALIAS} = $dcvars->{DC_NETBIOSALIAS};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
 
@@ -1331,7 +1312,6 @@ sub setup_env($$$)
 			$ret->{RPC_PROXY_SERVER} = $rpc_proxy_ret->{SERVER};
 			$ret->{RPC_PROXY_SERVER_IP} = $rpc_proxy_ret->{SERVER_IP};
 			$ret->{RPC_PROXY_NETBIOSNAME} = $rpc_proxy_ret->{NETBIOSNAME};
-			$ret->{RPC_PROXY_NETBIOSALIAS} = $rpc_proxy_ret->{NETBIOSALIAS};
 			$ret->{RPC_PROXY_USERNAME} = $rpc_proxy_ret->{USERNAME};
 			$ret->{RPC_PROXY_PASSWORD} = $rpc_proxy_ret->{PASSWORD};
 		}
@@ -1342,7 +1322,6 @@ sub setup_env($$$)
 			$ret->{FL2000DC_SERVER} = $fl2000dc_ret->{SERVER};
 			$ret->{FL2000DC_SERVER_IP} = $fl2000dc_ret->{SERVER_IP};
 			$ret->{FL2000DC_NETBIOSNAME} = $fl2000dc_ret->{NETBIOSNAME};
-			$ret->{FL2000DC_NETBIOSALIAS} = $fl2000dc_ret->{NETBIOSALIAS};
 			$ret->{FL2000DC_USERNAME} = $fl2000dc_ret->{USERNAME};
 			$ret->{FL2000DC_PASSWORD} = $fl2000dc_ret->{PASSWORD};
 		}
@@ -1353,7 +1332,6 @@ sub setup_env($$$)
 			$ret->{FL2003DC_SERVER} = $fl2003dc_ret->{SERVER};
 			$ret->{FL2003DC_SERVER_IP} = $fl2003dc_ret->{SERVER_IP};
 			$ret->{FL2003DC_NETBIOSNAME} = $fl2003dc_ret->{NETBIOSNAME};
-			$ret->{FL2003DC_NETBIOSALIAS} = $fl2003dc_ret->{NETBIOSALIAS};
 			$ret->{FL2003DC_USERNAME} = $fl2003dc_ret->{USERNAME};
 			$ret->{FL2003DC_PASSWORD} = $fl2003dc_ret->{PASSWORD};
 		}
@@ -1364,7 +1342,6 @@ sub setup_env($$$)
 			$ret->{FL2008R2DC_SERVER} = $fl2008r2dc_ret->{SERVER};
 			$ret->{FL2008R2DC_SERVER_IP} = $fl2008r2dc_ret->{SERVER_IP};
 			$ret->{FL2008R2DC_NETBIOSNAME} = $fl2008r2dc_ret->{NETBIOSNAME};
-			$ret->{FL2008R2DC_NETBIOSALIAS} = $fl2008r2dc_ret->{NETBIOSALIAS};
 			$ret->{FL2008R2DC_USERNAME} = $fl2008r2dc_ret->{USERNAME};
 			$ret->{FL2008R2DC_PASSWORD} = $fl2008r2dc_ret->{PASSWORD};
 		}
