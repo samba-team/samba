@@ -878,7 +878,7 @@ sub provision_member($$$)
 
 	my $ret = $self->provision($prefix,
 				   "member server",
-				   "localmember",
+				   "s4member",
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
@@ -1294,11 +1294,11 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{dc});
-	} elsif ($envname eq "member") {
+	} elsif ($envname eq "s4member") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
 		}
-		return $self->setup_member("$path/member", $self->{vars}->{dc});
+		return $self->setup_member("$path/s4member", $self->{vars}->{dc});
 	} elsif ($envname eq "rodc") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1309,7 +1309,7 @@ sub setup_env($$$)
 			$ENV{ENVNAME} = "dc";
 			$self->setup_dc("$path/dc");
 		}
-		my $ret = $self->setup_member("$path/member", $self->{vars}->{dc});
+		my $ret = $self->setup_member("$path/s4member", $self->{vars}->{dc});
 		if (not defined($self->{vars}->{rpc_proxy})) {
 			$ENV{ENVNAME} = "rpc_proxy";
 			my $rpc_proxy_ret = $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{dc});
