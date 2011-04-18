@@ -182,8 +182,19 @@ def cmd_testonly(opt):
     elif env.SELFTEST_TARGET == "samba3":
         env.SELFTEST_DIR = "${srcdir}/source3/selftest"
 
+    if env.SELFTEST_TARGET == "samba":
+        env.SELFTEST_DIR = "${srcdir}/source3/selftest"
+        xfail = ""
+        xfail += EXPAND_VARIABLES(opt, env.FILTER_XFAIL)
+        xfail += " | "
+        env.SELFTEST_DIR = "${srcdir}/source4/selftest"
+        xfail += EXPAND_VARIABLES(opt, env.FILTER_XFAIL)
+        env.FILTER_XFAIL = xfail;
+        cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude="${srcdir}/source4/selftest/skip" --exclude="${srcdir}/source3/selftest/skip" --testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" --testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+    else:
         # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
-    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${SELFTEST_DIR}/skip --testlist="${PYTHON} ${SELFTEST_DIR}/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+        cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${SELFTEST_DIR}/skip --testlist="${PYTHON} ${SELFTEST_DIR}/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
     else:
