@@ -180,8 +180,6 @@ def cmd_testonly(opt):
     if env.SELFTEST_TARGET == "samba4":
         env.SELFTEST_DIR = "${srcdir}/source4/selftest"
     elif env.SELFTEST_TARGET == "samba3":
-        #This must *only* be set for a Samba3 test, as it will cause timeouts otherwise (as it tries to talk to winbindd)
-        os.environ['NSS_WRAPPER_WINBIND_SO_PATH'] = os.path.abspath('bin/default/nsswitch/libnss-winbind.so')
         env.SELFTEST_DIR = "${srcdir}/source3/selftest"
 
         # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).

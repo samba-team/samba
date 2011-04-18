@@ -481,7 +481,11 @@ sub bindir_path($$) {
 	return $path;
 }
 
-if ($opt_target eq "samba4") {
+if ($opt_target eq "samba") {
+	$testenv_default = "all";
+	require target::Samba;
+	$target = new Samba($bindir, \%binary_mapping, \&bindir_path, $ldap, $srcdir, $exeext);
+} elsif ($opt_target eq "samba4") {
 	$testenv_default = "all";
 	require target::Samba4;
 	$target = new Samba4($bindir, \%binary_mapping, \&bindir_path, $ldap, $srcdir, $exeext);

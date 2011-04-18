@@ -850,6 +850,9 @@ domusers:X:$gid_domusers:
 	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$ret{NSS_WRAPPER_WINBIND_SO_PATH} = $ENV{NSS_WRAPPER_WINBIND_SO_PATH};
+        if (not defined($ret{NSS_WRAPPER_WINBIND_SO_PATH})) {
+	        $ret{NSS_WRAPPER_WINBIND_SO_PATH} = $self->{bindir_path}->($self, "default/nsswitch/libnss-winbind.so");
+        }
 	$ret{LOCAL_PATH} = "$shrdir";
 
 	return \%ret;
