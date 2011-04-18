@@ -786,7 +786,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	rec->data_len = recovery_size;
 	rec->rec_len  = recovery_max_size;
 	rec->key_len  = old_map_size;
-	CONVERT(rec);
+	CONVERT(*rec);
 
 	/* build the recovery data into a single blob to allow us to do a single
 	   large write, which should be more efficient */
@@ -833,7 +833,9 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	/* and the tailer */
 	tailer = sizeof(*rec) + recovery_max_size;
 	memcpy(p, &tailer, 4);
-	CONVERT(p);
+	if (DOCONV()) {
+		tdb_convert(p, 4);
+	}
 
 	/* write the recovery data to the recovery area */
 	if (methods->tdb_write(tdb, recovery_offset, data, sizeof(*rec) + recovery_size) == -1) {
