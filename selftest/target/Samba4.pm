@@ -677,6 +677,11 @@ sub provision_raw_step1($$)
 
 	$self->mk_keyblobs($ctx->{tlsdir});
 
+        #Default the KDC IP to the server's IP
+	if (not defined($ctx->{kdc_ipv4})) {
+             $ctx->{kdc_ipv4} = $ctx->{ipv4};
+        }
+
 	$self->mk_krb5_conf($ctx);
 
 	open(PWD, ">$ctx->{nsswrap_passwd}");
@@ -1035,7 +1040,7 @@ sub provision_dc($$)
 				   "2008",
 				   1,
 				   "locDCpass1",
-				   "127.0.0.1", "netbios aliases = DC1");
+				   undef, "netbios aliases = DC1");
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1066,7 +1071,7 @@ sub provision_fl2000dc($$)
 				   "2000",
 				   5,
 				   "locDCpass5",
-				   "127.0.0.5", "");
+				   undef, "");
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1089,7 +1094,7 @@ sub provision_fl2003dc($$)
 				   "2003",
 				   6,
 				   "locDCpass6",
-				   "127.0.0.6", "");
+				   undef, "");
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1112,7 +1117,7 @@ sub provision_fl2008r2dc($$)
 				   "2008_R2",
 				   7,
 				   "locDCpass7",
-				   "127.0.0.7", "");
+				   undef, "");
 
 	unless ($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
