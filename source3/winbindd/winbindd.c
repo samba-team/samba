@@ -1013,7 +1013,6 @@ int main(int argc, char **argv, char **envp)
 	poptContext pc;
 	int opt;
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_timer *te;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR[12] is received before a handler is installed */
@@ -1260,11 +1259,12 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
-	te = tevent_add_timer(winbind_event_context(), NULL, timeval_zero(),
-			      rescan_trusted_domains, NULL);
-	if (te == NULL) {
-		DEBUG(0, ("Could not trigger rescan_trusted_domains()\n"));
-		exit(1);
+	if (lp_allow_trusted_domains()) {
+		if (tevent_add_timer(winbind_event_context(), NULL, timeval_zero(),
+			      rescan_trusted_domains, NULL) == NULL) {
+			DEBUG(0, ("Could not trigger rescan_trusted_domains()\n"));
+			exit(1);
+		}
 	}
 
 	TALLOC_FREE(frame);
