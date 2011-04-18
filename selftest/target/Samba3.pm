@@ -280,7 +280,7 @@ sub setup_ktest($$$)
 
 	my $ret = $self->provision($prefix,
 				   "LOCALKTEST6",
-				   5,
+				   6,
 				   "localktest6pass",
 				   $ktest_options);
 
