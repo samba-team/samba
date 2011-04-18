@@ -882,7 +882,7 @@ sub provision_member($$$)
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
-				   3,
+				   23,
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
 				   "");
@@ -933,7 +933,7 @@ sub provision_rpc_proxy($$$)
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
-				   4,
+				   24,
 				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
 				   $extra_smbconf_options);
@@ -980,7 +980,7 @@ sub provision_vampire_dc($$$)
 					       "SAMBADOMAIN",
 					       "samba.example.com",
 					       "2008",
-					       2, $dcvars->{PASSWORD},
+					       22, $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
 
 	$ctx->{smb_conf_extra_options} = "
@@ -1038,7 +1038,7 @@ sub provision_dc($$)
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
-				   1,
+				   21,
 				   "locDCpass1",
 				   undef, "netbios aliases = DC1");
 
@@ -1069,7 +1069,7 @@ sub provision_fl2000dc($$)
 				   "SAMBA2000",
 				   "samba2000.example.com",
 				   "2000",
-				   5,
+				   25,
 				   "locDCpass5",
 				   undef, "");
 
@@ -1092,7 +1092,7 @@ sub provision_fl2003dc($$)
 				   "SAMBA2003",
 				   "samba2003.example.com",
 				   "2003",
-				   6,
+				   26,
 				   "locDCpass6",
 				   undef, "");
 
@@ -1115,7 +1115,7 @@ sub provision_fl2008r2dc($$)
 				   "SAMBA2008R2",
 				   "samba2008R2.example.com",
 				   "2008_R2",
-				   7,
+				   27,
 				   "locDCpass7",
 				   undef, "");
 
@@ -1139,7 +1139,7 @@ sub provision_rodc($$$)
 					       "SAMBADOMAIN",
 					       "samba.example.com",
 					       "2008",
-					       8, $dcvars->{PASSWORD},
+					       28, $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
 	unless ($ctx) {
 		return undef;
