@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
+#include "include/smbprofile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
