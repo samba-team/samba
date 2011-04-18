@@ -6687,7 +6687,7 @@ AC_SUBST(FLAGS1)
 ###################################################
 # Check for different/missing (set|get|end)netgrent prototypes
 CFLAGS_SAVE=$CFLAGS
-if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
+if test x"$samba_cv_HAVE_Werror_implicit_function_declaration" = x"yes"; then
 	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
 fi
 AC_CACHE_CHECK([for setnetgrent prototype],samba_cv_setnetgrent_prototype, [
