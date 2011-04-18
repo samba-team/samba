@@ -846,12 +846,15 @@ sub setup_env($$)
 		$testenv_vars = {};
 	} elsif (defined(get_running_env($envname))) {
 		$testenv_vars = get_running_env($envname);
-		if (not $target->check_env($testenv_vars)) {
-			print $target->getlog_env($testenv_vars);
+		if (not $testenv_vars->{target}->check_env($testenv_vars)) {
+			print $testenv_vars->{target}->getlog_env($testenv_vars);
 			$testenv_vars = undef;
 		}
 	} else {
 		$testenv_vars = $target->setup_env($envname, $prefix);
+		if (defined($testenv_vars) && not defined($testenv_vars->{target})) {
+		       $testenv_vars->{target} = $target;
+		}
 	}
 
 	return undef unless defined($testenv_vars);
@@ -897,21 +900,24 @@ sub getlog_env($)
 {
 	my ($envname) = @_;
 	return "" if ($envname eq "none");
-	return $target->getlog_env(get_running_env($envname));
+	my $env = get_running_env($envname);
+	return $env->{target}->getlog_env($env);
 }
 
 sub check_env($)
 {
 	my ($envname) = @_;
 	return 1 if ($envname eq "none");
-	return $target->check_env(get_running_env($envname));
+	my $env = get_running_env($envname);
+	return $env->{target}->check_env($env);
 }
 
 sub teardown_env($)
 {
 	my ($envname) = @_;
 	return if ($envname eq "none");
-	$target->teardown_env(get_running_env($envname));
+	my $env = get_running_env($envname);
+	$env->{target}->teardown_env($env);
 	delete $running_envs{$envname};
 }
 
