@@ -29,7 +29,7 @@ configuration = "--configfile=$SMB_CONF_PATH"
 scriptdir=os.path.join(samba3srcdir, "../script/tests")
 
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
-                   "--target=$SELFTEST_TARGET", "--basedir=$SELFTEST_TMPDIR",
+                   "--target=samba3", "--basedir=$SELFTEST_TMPDIR",
                    '--option="torture:winbindd_netbios_name=$SERVER"',
                    '--option="torture:winbindd_netbios_domain=$DOMAIN"', 
                    '--option=torture:sharedelay=100000']

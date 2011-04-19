@@ -13,7 +13,6 @@ export RPC_PROXY_SERVER=localrpcproxy4
 export RPC_PROXY_SERVER_IP=127.0.0.4
 export RPC_PROXY_NETBIOSNAME=localrpcproxy4
 export RPC_PROXY_NETBIOSALIAS=localrpcproxy
-export SELFTEST_TARGET="samba4"
 export SELFTEST_MAXTIME=1200
 export NETBIOSNAME=localdc1
 export REALM=SAMBA.EXAMPLE.COM

@@ -706,7 +706,6 @@ if ($opt_quick) {
 } else {
 	$ENV{SELFTEST_QUICK} = "";
 }
-$ENV{SELFTEST_TARGET} = $opt_target;
 $ENV{SELFTEST_MAXTIME} = $torture_maxtime;
 
 my @available = ();

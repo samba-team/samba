@@ -47,7 +47,7 @@ bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
 configuration = "--configfile=$SMB_CONF_PATH"
 
-torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", "--target=$SELFTEST_TARGET", "--basedir=$SELFTEST_TMPDIR"]
+torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", "--target=samba4", "--basedir=$SELFTEST_TMPDIR"]
 if not os.getenv("SELFTEST_VERBOSE"):
     torture_options.append("--option=torture:progress=no")
 torture_options.append("--format=subunit")
