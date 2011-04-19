@@ -10,11 +10,11 @@ use target::Samba3;
 use target::Samba4;
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $ldap, $srcdir, $exeext) = @_;
+	my ($classname, $bindir, $binary_mapping, $bindir_path, $ldap, $srcdir, $exeext, $server_maxtime) = @_;
 
 	my $self = {
-	    samba3 => new Samba3($bindir,$binary_mapping, $bindir_path, $srcdir, $exeext),
-	    samba4 => new Samba4($bindir,$binary_mapping, $bindir_path, $ldap, $srcdir, $exeext),
+	    samba3 => new Samba3($bindir,$binary_mapping, $bindir_path, $srcdir, $exeext, $server_maxtime),
+	    samba4 => new Samba4($bindir,$binary_mapping, $bindir_path, $ldap, $srcdir, $exeext, $server_maxtime),
 	};
 	bless $self;
 	return $self;

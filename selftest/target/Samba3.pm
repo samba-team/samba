@@ -11,14 +11,15 @@ use FindBin qw($RealBin);
 use POSIX;
 
 sub new($$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $srcdir, $exeext) = @_;
+	my ($classname, $bindir, $binary_mapping, $bindir_path, $srcdir, $exeext, $server_maxtime) = @_;
 	$exeext = "" unless defined($exeext);
 	my $self = { vars => {},
 		     bindir => $bindir,
 		     binary_mapping => $binary_mapping,
 		     bindir_path => $bindir_path,
 		     srcdir => $srcdir,
-		     exeext => $exeext
+		     exeext => $exeext,
+		     server_maxtime => $server_maxtime
 	};
 	bless $self;
 	return $self;
@@ -136,7 +137,6 @@ sub setup_s3dc($$)
 	$vars or return undef;
 
 	$self->check_or_start($vars,
-			      ($ENV{SMBD_MAXTIME} or 2700),
 			       "yes", "yes", "yes");
 
 	if (not $self->wait_for_start($vars)) {
@@ -180,9 +180,7 @@ sub setup_member($$$)
 
 	system($cmd) == 0 or die("Join failed\n$cmd");
 
-	$self->check_or_start($ret,
-			      ($ENV{SMBD_MAXTIME} or 2700),
-			       "yes", "yes", "yes");
+	$self->check_or_start($ret, "yes", "yes", "yes");
 
 	if (not $self->wait_for_start($ret)) {
 	       return undef;
@@ -216,9 +214,7 @@ sub setup_secshare($$)
 
 	$vars or return undef;
 
-	$self->check_or_start($vars,
-			      ($ENV{SMBD_MAXTIME} or 2700),
-			       "yes", "no", "yes");
+	$self->check_or_start($vars, "yes", "no", "yes");
 
 	if (not $self->wait_for_start($vars)) {
 	       return undef;
@@ -248,9 +244,7 @@ sub setup_secserver($$$)
 
 	$ret or return undef;
 
-	$self->check_or_start($ret,
-			      ($ENV{SMBD_MAXTIME} or 2700),
-			       "yes", "no", "yes");
+	$self->check_or_start($ret, "yes", "no", "yes");
 
 	if (not $self->wait_for_start($ret)) {
 	       return undef;
@@ -330,9 +324,7 @@ $ret->{USERNAME} = KTEST\\Administrator
 	system("cp $self->{srcdir}/source3/selftest/ktest-krb5_ccache-3 $prefix/krb5_ccache-3");
 	chmod 0600, "$prefix/krb5_ccache-3";
 
-	$self->check_or_start($ret,
-			      ($ENV{SMBD_MAXTIME} or 2700),
-			       "yes", "no", "yes");
+	$self->check_or_start($ret, "yes", "no", "yes");
 
 	if (not $self->wait_for_start($ret)) {
 	       return undef;
@@ -369,8 +361,8 @@ sub read_pid($$)
 	return $pid;
 }
 
-sub check_or_start($$$$$) {
-	my ($self, $env_vars, $maxtime, $nmbd, $winbindd, $smbd) = @_;
+sub check_or_start($$$$) {
+	my ($self, $env_vars, $nmbd, $winbindd, $smbd) = @_;
 
 	unlink($env_vars->{NMBD_TEST_LOG});
 	print "STARTING NMBD...";
@@ -394,7 +386,7 @@ sub check_or_start($$$$$) {
 				print("Skip nmbd received signal $signame");
 				exit 0;
 			};
-			sleep($maxtime);
+			sleep($self->{server_maxtime});
 			exit 0;
 		}
 
@@ -405,7 +397,7 @@ sub check_or_start($$$$$) {
 
 		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "nmbd");
 
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $maxtime);
+		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{NMBD_VALGRIND})) { 
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
@@ -437,7 +429,7 @@ sub check_or_start($$$$$) {
 				print("Skip winbindd received signal $signame");
 				exit 0;
 			};
-			sleep($maxtime);
+			sleep($self->{server_maxtime});
 			exit 0;
 		}
 
@@ -448,7 +440,7 @@ sub check_or_start($$$$$) {
 
 		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "winbindd");
 
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $maxtime);
+		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{WINBINDD_VALGRIND})) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
@@ -480,7 +472,7 @@ sub check_or_start($$$$$) {
 				print("Skip smbd received signal $signame");
 				exit 0;
 			};
-			sleep($maxtime);
+			sleep($self->{server_maxtime});
 			exit 0;
 		}
 
@@ -489,7 +481,7 @@ sub check_or_start($$$$$) {
 		if (defined($ENV{SMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{SMBD_OPTIONS});
 		}
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $maxtime);
+		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}

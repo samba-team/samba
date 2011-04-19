@@ -12,7 +12,7 @@ use POSIX;
 use SocketWrapper;
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $ldap, $srcdir, $exeext) = @_;
+	my ($classname, $bindir, $binary_mapping, $bindir_path, $ldap, $srcdir, $exeext, $server_maxtime) = @_;
 	$exeext = "" unless defined($exeext);
 
 	my $self = {
@@ -22,7 +22,8 @@ sub new($$$$$) {
 		binary_mapping => $binary_mapping,
 		bindir_path => $bindir_path,
 		srcdir => $srcdir,
-		exeext => $exeext
+		exeext => $exeext,
+		server_maxtime => $server_maxtime
 	};
 	bless $self;
 	return $self;
@@ -82,9 +83,9 @@ sub slapd_stop($$)
 	return 1;
 }
 
-sub check_or_start($$$)
+sub check_or_start($$)
 {
-	my ($self, $env_vars, $max_time) = @_;
+	my ($self, $env_vars) = @_;
 	return 0 if ( -p $env_vars->{SAMBA_TEST_FIFO});
 
 	unlink($env_vars->{SAMBA_TEST_FIFO});
@@ -126,9 +127,7 @@ sub check_or_start($$$)
 		}
 
 		my $optarg = "";
-		if (defined($max_time)) {
-			$optarg = "--maximum-runtime=$max_time ";
-		}
+		$optarg = "--maximum-runtime=$self->{server_maxtime}";
 		if (defined($ENV{SAMBA_OPTIONS})) {
 			$optarg.= " $ENV{SAMBA_OPTIONS}";
 		}
@@ -1363,7 +1362,7 @@ sub setup_member($$$)
 	my $env = $self->provision_member($path, $dc_vars);
 
 	if (defined $env) {
-		$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
+		$self->check_or_start($env);
 
 		$self->wait_for_start($env);
 
@@ -1380,7 +1379,7 @@ sub setup_rpc_proxy($$$)
 	my $env = $self->provision_rpc_proxy($path, $dc_vars);
 
 	if (defined $env) {
-	        $self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
+	        $self->check_or_start($env);
 
 		$self->wait_for_start($env);
 
@@ -1395,8 +1394,7 @@ sub setup_dc($$)
 
 	my $env = $self->provision_dc($path);
 	if (defined $env) {
-		$self->check_or_start($env,
-			($ENV{SMBD_MAXTIME} or 7500));
+		$self->check_or_start($env);
 
 		$self->wait_for_start($env);
 
@@ -1411,8 +1409,7 @@ sub setup_fl2000dc($$)
 
 	my $env = $self->provision_fl2000dc($path);
 	if (defined $env) {
-		$self->check_or_start($env,
-			($ENV{SMBD_MAXTIME} or 7500));
+		$self->check_or_start($env);
 
 		$self->wait_for_start($env);
 
@@ -1429,8 +1426,7 @@ sub setup_fl2003dc($$)
 	my $env = $self->provision_fl2003dc($path);
 
 	if (defined $env) {
-		$self->check_or_start($env,
-			($ENV{SMBD_MAXTIME} or 7500));
+		$self->check_or_start($env);
 
 		$self->wait_for_start($env);
 
@@ -1446,8 +1442,7 @@ sub setup_fl2008r2dc($$)
 	my $env = $self->provision_fl2008r2dc($path);
 
 	if (defined $env) {
-		$self->check_or_start($env,
-			($ENV{SMBD_MAXTIME} or 7500));
+		$self->check_or_start($env);
 
 		$self->wait_for_start($env);
 
@@ -1464,8 +1459,7 @@ sub setup_vampire_dc($$$)
 	my $env = $self->provision_vampire_dc($path, $dc_vars);
 
 	if (defined $env) {
-		$self->check_or_start($env,
-			($ENV{SMBD_MAXTIME} or 7500));
+		$self->check_or_start($env);
 
 		$self->wait_for_start($env);
 
@@ -1518,8 +1512,7 @@ sub setup_rodc($$$)
 		return undef;
 	}
 
-	$self->check_or_start($env,
-		($ENV{SMBD_MAXTIME} or 7500));
+	$self->check_or_start($env);
 
 	$self->wait_for_start($env);
 
