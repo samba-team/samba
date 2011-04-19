@@ -147,7 +147,10 @@
 #define SOCKET_TYPE_CHAR_TCP_V6		'X'
 #define SOCKET_TYPE_CHAR_UDP_V6		'Y'
 
-#define MAX_WRAPPED_INTERFACES 16
+/* This limit is to avoid broadcast sendto() needing to stat too many
+ * files.  It may be raised (with a performance cost) to up to 254
+ * without changing the format above */
+#define MAX_WRAPPED_INTERFACES 32
 
 #ifdef HAVE_IPV6
 /*
