@@ -658,6 +658,34 @@ static tdb_len_t tdb_recovery_size(struct tdb_context *tdb)
 	return recovery_size;
 }
 
+int tdb_recovery_area(struct tdb_context *tdb,
+		      const struct tdb_methods *methods,
+		      tdb_off_t *recovery_offset,
+		      struct tdb_record *rec)
+{
+	if (tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, recovery_offset) == -1) {
+		return -1;
+	}
+
+	if (*recovery_offset == 0) {
+		rec->rec_len = 0;
+		return 0;
+	}
+
+	if (methods->tdb_read(tdb, *recovery_offset, rec, sizeof(*rec),
+			      DOCONV()) == -1) {
+		return -1;
+	}
+
+	/* ignore invalid recovery regions: can happen in crash */
+	if (rec->magic != TDB_RECOVERY_MAGIC &&
+	    rec->magic != TDB_RECOVERY_INVALID_MAGIC) {
+		*recovery_offset = 0;
+		rec->rec_len = 0;
+	}
+	return 0;
+}
+
 /*
   allocate the recovery area, or use an existing recovery area if it is
   large enough
@@ -671,23 +699,9 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 	const struct tdb_methods *methods = tdb->transaction->io_methods;
 	tdb_off_t recovery_head;
 
-	if (tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, &recovery_head) == -1) {
+	if (tdb_recovery_area(tdb, methods, &recovery_head, &rec) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to read recovery head\n"));
 		return -1;
-	}
-
-	rec.rec_len = 0;
-
-	if (recovery_head != 0) {
-		if (methods->tdb_read(tdb, recovery_head, &rec, sizeof(rec), DOCONV()) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to read recovery record\n"));
-			return -1;
-		}
-		/* ignore invalid recovery regions: can happen in crash */
-		if (rec.magic != TDB_RECOVERY_MAGIC &&
-		    rec.magic != TDB_RECOVERY_INVALID_MAGIC) {
-			recovery_head = 0;
-		}
 	}
 
 	*recovery_size = tdb_recovery_size(tdb);

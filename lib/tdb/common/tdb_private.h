@@ -238,6 +238,10 @@ void tdb_release_transaction_locks(struct tdb_context *tdb);
 int tdb_transaction_lock(struct tdb_context *tdb, int ltype,
 			 enum tdb_lock_flags lockflags);
 int tdb_transaction_unlock(struct tdb_context *tdb, int ltype);
+int tdb_recovery_area(struct tdb_context *tdb,
+		      const struct tdb_methods *methods,
+		      tdb_off_t *recovery_offset,
+		      struct tdb_record *rec);
 int tdb_allrecord_lock(struct tdb_context *tdb, int ltype,
 		       enum tdb_lock_flags flags, bool upgradable);
 int tdb_allrecord_unlock(struct tdb_context *tdb, int ltype, bool mark_lock);

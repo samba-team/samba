@@ -86,12 +86,13 @@ static size_t get_hash_length(struct tdb_context *tdb, unsigned int i)
 
 _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 {
-	tdb_off_t off;
+	tdb_off_t off, rec_off;
 	struct tally freet, keys, data, dead, extra, hash, uncoal;
 	struct tdb_record rec;
 	char *ret = NULL;
 	bool locked;
 	size_t len, unc = 0;
+	struct tdb_record recovery;
 
 	/* Read-only databases use no locking at all: it's best-effort.
 	 * We may have a write lock already, so skip that case too. */
@@ -101,6 +102,10 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 		if (tdb_lockall_read(tdb) == -1)
 			return NULL;
 		locked = true;
+	}
+
+	if (tdb_recovery_area(tdb, tdb->methods, &rec_off, &recovery) != 0) {
+		goto unlock;
 	}
 
 	tally_init(&freet);
@@ -135,7 +140,11 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 		case TDB_RECOVERY_INVALID_MAGIC:
 		case 0x42424242:
 			unc++;
-			rec.rec_len = tdb_dead_space(tdb, off) - sizeof(rec);
+			/* If it's a valid recovery, we can trust rec_len. */
+			if (off != rec_off) {
+				rec.rec_len = tdb_dead_space(tdb, off)
+					- sizeof(rec);
+			}
 			/* Fall through */
 		case TDB_DEAD_MAGIC:
 			tally_add(&dead, rec.rec_len);
