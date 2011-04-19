@@ -1352,7 +1352,6 @@ sub setup_env($$$)
 		}
 		return $ret;
 	} else {
-		warn("Samba4 can't provide environment '$envname'");
 		return undef;
 	}
 }

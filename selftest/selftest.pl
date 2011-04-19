@@ -878,10 +878,14 @@ sub setup_env($$)
 	} else {
 		$testenv_vars = $target->setup_env($envname, $prefix);
 		if (defined($testenv_vars) && not defined($testenv_vars->{target})) {
-		       $testenv_vars->{target} = $target;
+		        $testenv_vars->{target} = $target;
+		}
+		if (not defined($testenv_vars)) {
+		        warn("$opt_target can't provide environment '$envname'");
 		}
 	}
 
+	
 	return undef unless defined($testenv_vars);
 
 	$running_envs{$envname} = $testenv_vars;
