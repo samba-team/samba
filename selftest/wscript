@@ -187,6 +187,8 @@ def cmd_testonly(opt):
 
     if Options.options.TARGET:
         env.SELFTEST_TARGET = Options.options.TARGET
+    elif env.enable_s3build:
+        env.SELFTEST_TARGET = "samba"
     else:
         env.SELFTEST_TARGET = "samba4"
 
