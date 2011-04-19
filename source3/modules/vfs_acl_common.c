@@ -441,7 +441,10 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	struct security_descriptor *psd = NULL;
+	struct dom_sid *owner_sid = NULL;
+	struct dom_sid *group_sid = NULL;
 	size_t size;
+	bool inherit_owner = lp_inherit_owner(SNUM(handle->conn));
 
 	if (!sd_has_inheritable_components(parent_desc, is_directory)) {
 		return NT_STATUS_OK;
@@ -455,12 +458,25 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		NDR_PRINT_DEBUG(security_descriptor, parent_desc);
 	}
 
+	/* Inherit from parent descriptor if "inherit owner" set. */
+	if (inherit_owner) {
+		owner_sid = parent_desc->owner_sid;
+		group_sid = parent_desc->group_sid;
+	}
+
+	if (owner_sid == NULL) {
+		owner_sid = &handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX];
+	}
+	if (group_sid == NULL) {
+		group_sid = &handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX];
+	}
+
 	status = se_create_child_secdesc(ctx,
 			&psd,
 			&size,
 			parent_desc,
-			&handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX],
-			&handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX],
+			owner_sid,
+			group_sid,
 			is_directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -472,11 +488,19 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
-	return SMB_VFS_FSET_NT_ACL(fsp,
+	if (inherit_owner) {
+		/* We need to be root to force this. */
+		become_root();
+	}
+	status = SMB_VFS_FSET_NT_ACL(fsp,
 				(OWNER_SECURITY_INFORMATION |
 				 GROUP_SECURITY_INFORMATION |
 				 DACL_SECURITY_INFORMATION),
 				psd);
+	if (inherit_owner) {
+		unbecome_root();
+	}
+	return status;
 }
 
 static NTSTATUS get_parent_acl_common(vfs_handle_struct *handle,
