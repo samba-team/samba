@@ -71,16 +71,9 @@ clear:
 	}
 	first_try = false;
 
-	DEBUG(0,("retry after CLEAR_IF_FIRST for '%s'\n", path));
-	tdb = tdb_open_log(path, 0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-			   O_RDWR | O_CREAT, 0600);
-	if (tdb) {
-		tdb_close(tdb);
-		goto again;
-	}
-	DEBUG(0,("tdb_open_log(%s) with CLEAR_IF_FIRST - failed\n", path));
-
-	return false;
+	DEBUG(0,("retry after truncate for '%s'\n", path));
+	truncate(path, 0);
+	goto again;
 }
 
 

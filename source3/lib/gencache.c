@@ -81,14 +81,10 @@ again:
 				return false;
 			}
 			first_try = false;
-			DEBUG(0, ("gencache_init: tdb_check(%s) failed - retry after CLEAR_IF_FIRST\n",
+			DEBUG(0, ("gencache_init: tdb_check(%s) failed - retry after truncate\n",
 				  cache_fname));
-			cache = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, open_flags, 0644);
-			if (cache) {
-				tdb_close(cache);
-				cache = NULL;
-				goto again;
-			}
+			truncate(cache_fname, 0);
+			goto again;
 		}
 	}
 
