@@ -306,11 +306,11 @@ for mech in [
     "-k no",
     "-k no --option=usespnego=no",
     "-k no --option=gensec:spengo=no",
-    "-k yes",
-    "-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"]:
+    "-k yes"]:
     signoptions = "%s --signing=off" % mech
-    name = "smb.signing on with %s" % signoptions
-    plantestsuite_loadlist("samba4.%s domain-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+    name = "smb.signing disabled on with %s" % signoptions
+    for env in [ "s4member", "s3member" ]:
+        plantestsuite_loadlist("samba4.%s domain-creds" % name, env, [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
 
 for mech in [
     "-k no",

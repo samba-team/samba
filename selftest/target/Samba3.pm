@@ -195,6 +195,79 @@ sub setup_member($$$)
 	return $ret;
 }
 
+sub setup_admember($$$$)
+{
+	my ($self, $prefix, $dcvars, $iface) = @_;
+
+	print "PROVISIONING S3 AD MEMBER$iface...";
+
+	my $member_options = "
+	security = ads
+	server signing = on
+        workgroup = $dcvars->{DOMAIN}
+        realm = $dcvars->{REALM}
+";
+
+	my $ret = $self->provision($prefix,
+				   "LOCALADMEMBER$iface",
+				   $iface,
+				   "loCalMember${iface}Pass",
+				   $member_options);
+
+	$ret or return undef;
+
+	close(USERMAP);
+	$ret->{DOMAIN} = $dcvars->{DOMAIN};
+	$ret->{REALM} = $dcvars->{REALM};
+
+	my $ctx;
+	my $prefix_abs = abs_path($prefix);
+	$ctx = {};
+	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{domain} = $dcvars->{DOMAIN};
+	$ctx->{realm} = $dcvars->{REALM};
+	$ctx->{dnsname} = lc($dcvars->{REALM});
+	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
+	Samba::mk_krb5_conf($ctx);
+
+	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+
+	my $net = Samba::bindir_path($self, "net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$net join $ret->{CONFIGURATION}";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+
+	system($cmd) == 0 or die("Join failed\n$cmd");
+
+	$self->check_or_start($ret,
+			      "yes", "yes", "yes");
+
+	$self->wait_for_start($ret);
+
+	my $smbcacls = Samba::bindir_path($self, "smbcacls");
+	#Allow domain users to manipulate the share
+	$cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$smbcacls //127.0.0.29/tmp / -U$ret->{USERNAME}%$ret->{PASSWORD} ";
+	$cmd .= "$ret->{CONFIGURATION} -S ACL:$dcvars->{DOMAIN}\\\\Domain\\ Users:ALLOWED/0x0/FULL";
+
+	system($cmd) == 0 or die("Join failed\n$cmd");
+
+	$ret->{DC_SERVER} = $dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
+	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
+	$ret->{target} = $self;
+
+	return $ret;
+}
+
 sub setup_secshare($$)
 {
 	my ($self, $path) = @_;
@@ -261,7 +334,7 @@ sub setup_secserver($$$)
 
 sub setup_ktest($$$)
 {
-	my ($self, $prefix, $s3dcvars) = @_;
+	my ($self, $prefix) = @_;
 
 	print "PROVISIONING server with security=ads...";
 
@@ -279,6 +352,18 @@ sub setup_ktest($$$)
 				   $ktest_options);
 
 	$ret or return undef;
+
+	my $ctx;
+	my $prefix_abs = abs_path($prefix);
+	$ctx = {};
+	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{domain} = "KTEST";
+	$ctx->{realm} = "KTEST.SAMBA.EXAMPLE.COM";
+	$ctx->{dnsname} = lc($ctx->{realm});
+	$ctx->{kdc_ipv4} = "0.0.0.0";
+	Samba::mk_krb5_conf($ctx);
+
+	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
 	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
 	print USERMAP "
@@ -373,6 +458,7 @@ sub check_or_start($$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
@@ -416,6 +502,7 @@ sub check_or_start($$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
@@ -461,6 +548,7 @@ sub check_or_start($$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 

@@ -59,4 +59,60 @@ sub bindir_path($$) {
 	return $path;
 }
 
+sub mk_krb5_conf($)
+{
+	my ($ctx) = @_;
+
+	unless (open(KRB5CONF, ">$ctx->{krb5_conf}")) {
+		die("can't open $ctx->{krb5_conf}$?");
+		return undef;
+	}
+	print KRB5CONF "
+#Generated krb5.conf for $ctx->{realm}
+
+[libdefaults]
+ default_realm = $ctx->{realm}
+ dns_lookup_realm = false
+ dns_lookup_kdc = false
+ ticket_lifetime = 24h
+ forwardable = yes
+ allow_weak_crypto = yes
+
+[realms]
+ $ctx->{realm} = {
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
+  default_domain = $ctx->{dnsname}
+ }
+ $ctx->{dnsname} = {
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
+  default_domain = $ctx->{dnsname}
+ }
+ $ctx->{domain} = {
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
+  default_domain = $ctx->{dnsname}
+ }
+
+[domain_realm]
+ .$ctx->{dnsname} = $ctx->{realm}
+";
+
+        if (defined($ctx->{tlsdir})) {
+	       print KRB5CONF "
+
+[appdefaults]
+	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+
+[kdc]
+	enable-pkinit = true
+	pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
+	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+
+";
+        }
+	close(KRB5CONF);
+}
+
 1;
