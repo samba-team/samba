@@ -482,6 +482,9 @@ sub bindir_path($$) {
 }
 
 if ($opt_target eq "samba") {
+	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
+		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
+	}
 	$testenv_default = "all";
 	require target::Samba;
 	$target = new Samba($bindir, \%binary_mapping, \&bindir_path, $ldap, $srcdir, $exeext);
