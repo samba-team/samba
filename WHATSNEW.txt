@@ -24,6 +24,10 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 8086: Fix Winbind crash caused by null pointer reference.
 
 
+o   Sergey Korsak <skif@1plus1.net>
+    * BUG 8099: setpwent() actually does endpwent() on FreeBSD.
+
+
 ######################################################################
 Reporting bugs & Development Discussion
 #######################################
