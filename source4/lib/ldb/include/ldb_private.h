@@ -58,6 +58,8 @@ struct ldb_handle {
 	enum ldb_state state;
 	struct ldb_context *ldb;
 	unsigned flags;
+	/* flags dedicated to be set by application using ldb */
+	uint32_t custom_flags;
 	unsigned nesting;
 
 	/* used for debugging */

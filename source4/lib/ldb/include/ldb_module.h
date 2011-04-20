@@ -240,6 +240,20 @@ void ldb_req_mark_trusted(struct ldb_request *req);
  */
 bool ldb_req_is_untrusted(struct ldb_request *req);
 
+/**
+  set custom flags. Those flags are set by applications using ldb,
+  they are application dependent and the same bit can have different
+  meaning in different application.
+ */
+void ldb_req_set_custom_flags(struct ldb_request *req, uint32_t flags);
+
+/**
+  get custom flags. Those flags are set by applications using ldb,
+  they are application dependent and the same bit can have different
+  meaning in different application.
+ */
+uint32_t ldb_req_get_custom_flags(struct ldb_request *req);
+
 /* load all modules from the given directory */
 int ldb_modules_load(const char *modules_path, const char *version);
 

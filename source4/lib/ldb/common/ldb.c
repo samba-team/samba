@@ -1112,6 +1112,7 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
 		req->handle->nesting++;
 		req->handle->parent = parent;
 		req->handle->flags = parent->handle->flags;
+		req->handle->custom_flags = parent->handle->custom_flags;
 	}
 
 	*ret_req = req;
@@ -1185,6 +1186,7 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 		req->handle->nesting++;
 		req->handle->parent = parent;
 		req->handle->flags = parent->handle->flags;
+		req->handle->custom_flags = parent->handle->custom_flags;
 	}
 
 	*ret_req = req;
@@ -1229,6 +1231,7 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 		req->handle->nesting++;
 		req->handle->parent = parent;
 		req->handle->flags = parent->handle->flags;
+		req->handle->custom_flags = parent->handle->custom_flags;
 	}
 
 	*ret_req = req;
@@ -1273,6 +1276,7 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 		req->handle->nesting++;
 		req->handle->parent = parent;
 		req->handle->flags = parent->handle->flags;
+		req->handle->custom_flags = parent->handle->custom_flags;
 	}
 
 	*ret_req = req;
@@ -1319,6 +1323,7 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 		req->handle->nesting++;
 		req->handle->parent = parent;
 		req->handle->flags = parent->handle->flags;
+		req->handle->custom_flags = parent->handle->custom_flags;
 	}
 
 	*ret_req = req;
@@ -1394,6 +1399,7 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 		req->handle->nesting++;
 		req->handle->parent = parent;
 		req->handle->flags = parent->handle->flags;
+		req->handle->custom_flags = parent->handle->custom_flags;
 	}
 
 	*ret_req = req;
@@ -1875,6 +1881,38 @@ void ldb_req_mark_trusted(struct ldb_request *req)
 {
 	req->handle->flags &= ~LDB_HANDLE_FLAG_UNTRUSTED;
 }
+
+/**
+  set custom flags. Those flags are set by applications using ldb,
+  they are application dependent and the same bit can have different
+  meaning in different application.
+ */
+void ldb_req_set_custom_flags(struct ldb_request *req, uint32_t flags)
+{
+	if (req != NULL && req->handle != NULL) {
+		req->handle->custom_flags = flags;
+	}
+}
+
+
+/**
+  get custom flags. Those flags are set by applications using ldb,
+  they are application dependent and the same bit can have different
+  meaning in different application.
+ */
+uint32_t ldb_req_get_custom_flags(struct ldb_request *req)
+{
+	if (req != NULL && req->handle != NULL) {
+		return req->handle->custom_flags;
+	}
+
+	/*
+	 * 0 is not something any better or worse than
+	 * anything else as req or the handle is NULL
+	 */
+	return 0;
+}
+
 
 /**
    return true is a request is untrusted
