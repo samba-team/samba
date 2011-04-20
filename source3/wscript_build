@@ -81,6 +81,7 @@ LIB_SRC = '''
           lib/sessionid_tdb.c
           lib/module.c lib/events.c
           lib/server_contexts.c
+          lib/server_prefork.c
           lib/ldap_escape.c
           lib/fncall.c
           libads/krb5_errs.c lib/system_smbd.c lib/audit.c
