@@ -14,14 +14,6 @@
 
 #include "libcli/auth/krb5_wrap.h"
 
-#if HAVE_GSSAPI_GSSAPI_H
-#include <gssapi/gssapi.h>
-#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
-#include <gssapi/gssapi_generic.h>
-#elif HAVE_GSSAPI_H
-#include <gssapi.h>
-#endif
-
 #ifndef KRB5_ADDR_NETBIOS
 #define KRB5_ADDR_NETBIOS 0x14
 #endif
