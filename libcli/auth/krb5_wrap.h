@@ -21,6 +21,8 @@
 */
 
 #include "system/kerberos.h"
+struct PAC_SIGNATURE_DATA;
+struct PAC_DATA;
 
 int create_kerberos_key_from_string_direct(krb5_context context,
 						  krb5_principal host_princ,
@@ -30,3 +32,25 @@ int create_kerberos_key_from_string_direct(krb5_context context,
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
+
+ krb5_error_code smb_krb5_parse_name(krb5_context context,
+				const char *name, /* in unix charset */
+				     krb5_principal *principal);
+krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
+				      krb5_context context,
+				      krb5_const_principal principal,
+				      char **unix_name);
+ krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
+					    const char *name, 
+					     krb5_principal *principal);
+ bool smb_krb5_principal_compare_any_realm(krb5_context context, 
+					  krb5_const_principal princ1, 
+					   krb5_const_principal princ2);
+ void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
+				     struct PAC_SIGNATURE_DATA *sig);
+ krb5_error_code smb_krb5_verify_checksum(krb5_context context,
+					  const krb5_keyblock *keyblock,
+					 krb5_keyusage usage,
+					 krb5_checksum *cksum,
+					 uint8_t *data,
+					  size_t length);

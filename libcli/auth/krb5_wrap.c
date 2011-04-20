@@ -3,7 +3,7 @@
    simple kerberos5 routines for active directory
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2011
    Copyright (C) Guenther Deschner 2005-2009
 
    This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,7 @@
 #ifdef HAVE_KRB5
 
 #include "libcli/auth/krb5_wrap.h"
+#include "librpc/gen_ndr/krb5pac.h"
 
 #if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_USE_ENCTYPE) && defined(HAVE_KRB5_STRING_TO_KEY) && defined(HAVE_KRB5_ENCRYPT_BLOCK)
 int create_kerberos_key_from_string_direct(krb5_context context,
@@ -100,6 +101,210 @@ int create_kerberos_key_from_string_direct(krb5_context context,
 #else
 #error UNKNOWN_KT_FREE_FUNCTION
 #endif
+}
+
+/**************************************************************
+ Wrappers around kerberos string functions that convert from
+ utf8 -> unix charset and vica versa.
+**************************************************************/
+
+/**************************************************************
+ krb5_parse_name that takes a UNIX charset.
+**************************************************************/
+
+ krb5_error_code smb_krb5_parse_name(krb5_context context,
+				const char *name, /* in unix charset */
+				krb5_principal *principal)
+{
+	krb5_error_code ret;
+	char *utf8_name;
+	size_t converted_size;
+
+	if (!push_utf8_talloc(talloc_tos(), &utf8_name, name, &converted_size)) {
+		return ENOMEM;
+	}
+
+	ret = krb5_parse_name(context, utf8_name, principal);
+	TALLOC_FREE(utf8_name);
+	return ret;
+}
+
+#if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
+static void krb5_free_unparsed_name(krb5_context context, char *val)
+{
+	SAFE_FREE(val);
+}
+#endif
+
+/**************************************************************
+ krb5_parse_name that returns a UNIX charset name. Must
+ be freed with talloc_free() call.
+**************************************************************/
+
+krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
+				      krb5_context context,
+				      krb5_const_principal principal,
+				      char **unix_name)
+{
+	krb5_error_code ret;
+	char *utf8_name;
+	size_t converted_size;
+
+	*unix_name = NULL;
+	ret = krb5_unparse_name(context, principal, &utf8_name);
+	if (ret) {
+		return ret;
+	}
+
+	if (!pull_utf8_talloc(mem_ctx, unix_name, utf8_name, &converted_size)) {
+		krb5_free_unparsed_name(context, utf8_name);
+		return ENOMEM;
+	}
+	krb5_free_unparsed_name(context, utf8_name);
+	return 0;
+}
+
+ krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
+					    const char *name, 
+					    krb5_principal *principal)
+{
+#ifdef HAVE_KRB5_PARSE_NAME_NOREALM
+	return smb_krb5_parse_name_norealm_conv(context, name, principal);
+#endif
+
+	/* we are cheating here because parse_name will in fact set the realm.
+	 * We don't care as the only caller of smb_krb5_parse_name_norealm
+	 * ignores the realm anyway when calling
+	 * smb_krb5_principal_compare_any_realm later - Guenther */
+
+	return smb_krb5_parse_name(context, name, principal);
+}
+
+ bool smb_krb5_principal_compare_any_realm(krb5_context context, 
+					  krb5_const_principal princ1, 
+					  krb5_const_principal princ2)
+{
+#ifdef HAVE_KRB5_PRINCIPAL_COMPARE_ANY_REALM
+
+	return krb5_principal_compare_any_realm(context, princ1, princ2);
+
+/* krb5_princ_size is a macro in MIT */
+#elif defined(HAVE_KRB5_PRINC_SIZE) || defined(krb5_princ_size)
+
+	int i, len1, len2;
+	const krb5_data *p1, *p2;
+
+	len1 = krb5_princ_size(context, princ1);
+	len2 = krb5_princ_size(context, princ2);
+
+	if (len1 != len2)
+		return False;
+
+	for (i = 0; i < len1; i++) {
+
+		p1 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ1), i);
+		p2 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ2), i);
+
+		if (p1->length != p2->length ||	memcmp(p1->data, p2->data, p1->length))
+			return False;
+	}
+
+	return True;
+#else
+#error NO_SUITABLE_PRINCIPAL_COMPARE_FUNCTION
+#endif
+}
+
+ void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
+				     struct PAC_SIGNATURE_DATA *sig)
+{
+#ifdef HAVE_CHECKSUM_IN_KRB5_CHECKSUM
+	cksum->cksumtype	= (krb5_cksumtype)sig->type;
+	cksum->checksum.length	= sig->signature.length;
+	cksum->checksum.data	= sig->signature.data;
+#else
+	cksum->checksum_type	= (krb5_cksumtype)sig->type;
+	cksum->length		= sig->signature.length;
+	cksum->contents		= sig->signature.data;
+#endif
+}
+
+ krb5_error_code smb_krb5_verify_checksum(krb5_context context,
+					  const krb5_keyblock *keyblock,
+					 krb5_keyusage usage,
+					 krb5_checksum *cksum,
+					 uint8_t *data,
+					 size_t length)
+{
+	krb5_error_code ret;
+
+	/* verify the checksum */
+
+	/* welcome to the wonderful world of samba's kerberos abstraction layer:
+	 * 
+	 * function			heimdal 0.6.1rc3	heimdal 0.7	MIT krb 1.4.2
+	 * -----------------------------------------------------------------------------
+	 * krb5_c_verify_checksum	-			works		works
+	 * krb5_verify_checksum		works (6 args)		works (6 args)	broken (7 args) 
+	 */
+
+#if defined(HAVE_KRB5_C_VERIFY_CHECKSUM)
+	{
+		krb5_boolean checksum_valid = false;
+		krb5_data input;
+
+		input.data = (char *)data;
+		input.length = length;
+
+		ret = krb5_c_verify_checksum(context, 
+					     keyblock, 
+					     usage,
+					     &input, 
+					     cksum,
+					     &checksum_valid);
+		if (ret) {
+			DEBUG(3,("smb_krb5_verify_checksum: krb5_c_verify_checksum() failed: %s\n", 
+				error_message(ret)));
+			return ret;
+		}
+
+		if (!checksum_valid)
+			ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	}
+
+#elif KRB5_VERIFY_CHECKSUM_ARGS == 6 && defined(HAVE_KRB5_CRYPTO_INIT) && defined(HAVE_KRB5_CRYPTO) && defined(HAVE_KRB5_CRYPTO_DESTROY)
+
+	/* Warning: MIT's krb5_verify_checksum cannot be used as it will use a key
+	 * without enctype and it ignores any key_usage types - Guenther */
+
+	{
+
+		krb5_crypto crypto;
+		ret = krb5_crypto_init(context,
+				       keyblock,
+				       0,
+				       &crypto);
+		if (ret) {
+			DEBUG(0,("smb_krb5_verify_checksum: krb5_crypto_init() failed: %s\n", 
+				error_message(ret)));
+			return ret;
+		}
+
+		ret = krb5_verify_checksum(context,
+					   crypto,
+					   usage,
+					   data,
+					   length,
+					   cksum);
+
+		krb5_crypto_destroy(context, crypto);
+	}
+
+#else
+#error UNKNOWN_KRB5_VERIFY_CHECKSUM_FUNCTION
+#endif
+
+	return ret;
 }
 
  char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx)
