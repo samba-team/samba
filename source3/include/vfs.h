@@ -133,6 +133,7 @@
 /* Leave at 28 - not yet released. Rename posix_fallocate to fallocate
 		to split out the two possible uses. JRA. */
 /* Leave at 28 - not yet released. Add fdopendir. JRA. */
+/* Leave at 28 - not yet released. Rename open function to open_fn. - gd */
 #define SMB_VFS_INTERFACE_VERSION 28
 
 
@@ -214,9 +215,9 @@ struct vfs_fn_pointers {
 
 	/* File operations */
 
-	int (*open)(struct vfs_handle_struct *handle,
-		    struct smb_filename *smb_fname, files_struct *fsp,
-		    int flags, mode_t mode);
+	int (*open_fn)(struct vfs_handle_struct *handle,
+		       struct smb_filename *smb_fname, files_struct *fsp,
+		       int flags, mode_t mode);
 	NTSTATUS (*create_file)(struct vfs_handle_struct *handle,
 				struct smb_request *req,
 				uint16_t root_dir_fid,

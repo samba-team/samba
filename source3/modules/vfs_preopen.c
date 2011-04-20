@@ -443,7 +443,7 @@ static int preopen_open(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_preopen_fns = {
-	.open = preopen_open
+	.open_fn = preopen_open
 };
 
 NTSTATUS vfs_preopen_init(void);

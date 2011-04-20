@@ -1053,7 +1053,7 @@ static int streams_xattr_fallocate(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.fs_capabilities = streams_xattr_fs_capabilities,
-	.open = streams_xattr_open,
+	.open_fn = streams_xattr_open,
 	.stat = streams_xattr_stat,
 	.fstat = streams_xattr_fstat,
 	.lstat = streams_xattr_lstat,
