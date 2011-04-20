@@ -25,6 +25,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "printing/pcap.h"
 
 #ifdef AIX

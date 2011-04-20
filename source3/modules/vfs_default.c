@@ -1649,6 +1649,10 @@ static int vfswrap_set_offline(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+#ifdef AIX
+#undef open /* AIX defines open to be open64 */
+#endif
+
 static struct vfs_fn_pointers vfs_default_fns = {
 	/* Disk operations */
 
