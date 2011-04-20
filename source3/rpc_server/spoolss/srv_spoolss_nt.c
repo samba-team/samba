@@ -7857,8 +7857,8 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 			return WERR_ACCESS_DENIED;
 		}
 	} else {
-		DEBUG(0,("spoolss_addprinterex_level_2: add printer for printer %s called and no"
-			"smb.conf parameter \"addprinter command\" is defined. This"
+		DEBUG(0,("spoolss_addprinterex_level_2: add printer for printer %s called and no "
+			"smb.conf parameter \"addprinter command\" is defined. This "
 			"parameter must exist for this call to succeed\n",
 			info2->sharename ));
 	}
