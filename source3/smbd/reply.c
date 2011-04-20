@@ -3213,7 +3213,7 @@ void reply_readbraw(struct smb_request *req)
 				"(%x << 32) used and we don't support "
 				"64 bit offsets.\n",
 			(unsigned int)IVAL(req->vwv+8, 0) ));
-			reply_readbraw_error();
+			reply_readbraw_error(sconn);
 			END_PROFILE(SMBreadbraw);
 			return;
 		}
