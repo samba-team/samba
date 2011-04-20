@@ -24,6 +24,10 @@
 #include "system/shmem.h"
 #include "smbd/smbd.h"
 
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
+
 struct mmap_area {
 	size_t size;
 	volatile void *ptr;
