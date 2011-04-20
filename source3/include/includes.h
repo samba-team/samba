@@ -580,10 +580,6 @@ enum flush_reason_enum {
 #define SIGRTMIN NSIG
 #endif
 
-#ifndef MAP_FILE
-#define MAP_FILE 0
-#endif
-
 #if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)
 #define OSF1_ENH_SEC 1
 #endif
