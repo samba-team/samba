@@ -518,6 +518,7 @@ case "$host_os" in
 	  			AC_MSG_RESULT([no large file support])
 				;;
 			5.*)
+			LDFLAGS="$LDFLAGS -lthread"
 			AC_MSG_RESULT([enabling large file support])
 			if test "$ac_cv_prog_gcc" = yes; then
 				${CC-cc} -v >conftest.c 2>&1
@@ -526,19 +527,16 @@ case "$host_os" in
 				case "$ac_cv_gcc_compiler_version_number" in
 					*"gcc version 2.6"*|*"gcc version 2.7"*)
 						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE -D_REENTRANT"
-						LDFLAGS="$LDFLAGS -lthread"
 						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 						;;
 					*)
 						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64"
-						LDFLAGS="$LDFLAGS -lthread"
 						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 						AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
 						;;
 				esac
 			else
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64"
-				LDFLAGS="$LDFLAGS -lthread"
 				AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 				AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
 			fi
