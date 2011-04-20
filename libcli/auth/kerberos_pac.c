@@ -279,61 +279,67 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	/* verify by service_key */
-	ret = check_pac_checksum(mem_ctx,
-				 modified_pac_blob, srv_sig_ptr,
-				 context,
-				 service_keyblock);
-	if (ret) {
-		DEBUG(1, ("PAC Decode: Failed to verify the service "
-			  "signature: %s\n", error_message(ret)));
-		return NT_STATUS_ACCESS_DENIED;
+	if (service_keyblock) {
+		/* verify by service_key */
+		ret = check_pac_checksum(mem_ctx,
+					 modified_pac_blob, srv_sig_ptr,
+					 context,
+					 service_keyblock);
+		if (ret) {
+			DEBUG(1, ("PAC Decode: Failed to verify the service "
+				  "signature: %s\n", error_message(ret)));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		if (krbtgt_keyblock) {
+			/* verify the service key checksum by krbtgt_key */
+			ret = check_pac_checksum(mem_ctx,
+						 srv_sig_ptr->signature, kdc_sig_ptr,
+						 context, krbtgt_keyblock);
+			if (ret) {
+				DEBUG(1, ("PAC Decode: Failed to verify the KDC signature: %s\n",
+					  smb_get_krb5_error_message(context, ret, mem_ctx)));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+		}
 	}
 
-	if (krbtgt_keyblock) {
-		/* verify the service key checksum by krbtgt_key */
-		ret = check_pac_checksum(mem_ctx,
-					 srv_sig_ptr->signature, kdc_sig_ptr,
-					 context, krbtgt_keyblock);
-		if (ret) {
-			DEBUG(1, ("PAC Decode: Failed to verify the KDC signature: %s\n",
-				  smb_get_krb5_error_message(context, ret, mem_ctx)));
+	if (tgs_authtime) {
+		/* Convert to NT time, so as not to loose accuracy in comparison */
+		unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
+
+		if (tgs_authtime_nttime != logon_name->logon_time) {
+			DEBUG(2, ("PAC Decode: "
+				  "Logon time mismatch between ticket and PAC!\n"));
+			DEBUG(2, ("PAC Decode: PAC: %s\n",
+				  nt_time_string(mem_ctx, logon_name->logon_time)));
+			DEBUG(2, ("PAC Decode: Ticket: %s\n",
+				  nt_time_string(mem_ctx, tgs_authtime_nttime)));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	/* Convert to NT time, so as not to loose accuracy in comparison */
-	unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
+	if (client_principal) {
+		ret = smb_krb5_parse_name_norealm(context,
+						  logon_name->account_name,
+						  &client_principal_pac);
+		if (ret) {
+			DEBUG(2, ("Could not parse name from PAC: [%s]:%s\n",
+				  logon_name->account_name, error_message(ret)));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 
-	if (tgs_authtime_nttime != logon_name->logon_time) {
-		DEBUG(2, ("PAC Decode: "
-			  "Logon time mismatch between ticket and PAC!\n"));
-		DEBUG(2, ("PAC Decode: PAC: %s\n",
-			  nt_time_string(mem_ctx, logon_name->logon_time)));
-		DEBUG(2, ("PAC Decode: Ticket: %s\n",
-			  nt_time_string(mem_ctx, tgs_authtime_nttime)));
-		return NT_STATUS_ACCESS_DENIED;
-	}
+		bool_ret = smb_krb5_principal_compare_any_realm(context,
+								client_principal,
+								client_principal_pac);
 
-	ret = smb_krb5_parse_name_norealm(context,
-					  logon_name->account_name,
-					  &client_principal_pac);
-	if (ret) {
-		DEBUG(2, ("Could not parse name from PAC: [%s]:%s\n",
-			  logon_name->account_name, error_message(ret)));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+		krb5_free_principal(context, client_principal_pac);
 
-	bool_ret = smb_krb5_principal_compare_any_realm(context,
-							client_principal,
-							client_principal_pac);
-
-	krb5_free_principal(context, client_principal_pac);
-
-	if (!bool_ret) {
-		DEBUG(2, ("Name in PAC [%s] does not match principal name "
-			  "in ticket\n", logon_name->account_name));
-		return NT_STATUS_ACCESS_DENIED;
+		if (!bool_ret) {
+			DEBUG(2, ("Name in PAC [%s] does not match principal name "
+				  "in ticket\n", logon_name->account_name));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	DEBUG(3,("Found account name from PAC: %s [%s]\n",
