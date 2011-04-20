@@ -876,7 +876,7 @@ static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.fs_capabilities = streams_depot_fs_capabilities,
-	.open = streams_depot_open,
+	.open_fn = streams_depot_open,
 	.stat = streams_depot_stat,
 	.lstat = streams_depot_lstat,
 	.unlink = streams_depot_unlink,

@@ -745,7 +745,7 @@ struct vfs_fn_pointers skel_transparent_fns = {
 
 	/* File operations */
 
-	.open = skel_open,
+	.open_fn = skel_open,
 	.create_file = skel_create_file,
 	.close_fn = skel_close_fn,
 	.vfs_read = skel_vfs_read,

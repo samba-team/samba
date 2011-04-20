@@ -304,7 +304,7 @@ static int commit_ftruncate(
 }
 
 static struct vfs_fn_pointers vfs_commit_fns = {
-        .open = commit_open,
+        .open_fn = commit_open,
         .close_fn = commit_close,
         .write = commit_write,
         .pwrite = commit_pwrite,

@@ -1273,11 +1273,8 @@ int smb_vfs_call_open(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname, struct files_struct *fsp,
 		      int flags, mode_t mode)
 {
-#ifdef AIX
-#undef open /* AIX defines open to be open64 */
-#endif
-	VFS_FIND(open);
-	return handle->fns->open(handle, smb_fname, fsp, flags, mode);
+	VFS_FIND(open_fn);
+	return handle->fns->open_fn(handle, smb_fname, fsp, flags, mode);
 }
 
 NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
