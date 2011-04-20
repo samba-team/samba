@@ -25,6 +25,7 @@
 
 #include "auth/kerberos/krb5_init_context.h"
 #include "librpc/gen_ndr/krb5pac.h"
+#include "libcli/auth/krb5_wrap.h"
 
 struct auth_user_info_dc;
 struct cli_credentials;
@@ -112,24 +113,14 @@ bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, k
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
-NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
-			     struct PAC_DATA **pac_data_out,
-			     DATA_BLOB blob,
-			     krb5_context context,
-			     const krb5_keyblock *krbtgt_keyblock,
-			     const krb5_keyblock *service_keyblock,
-			     krb5_const_principal client_principal,
-			     time_t tgs_authtime,
-			     krb5_error_code *k5ret);
- NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
-				  struct PAC_LOGON_INFO **logon_info,
-				  DATA_BLOB blob,
-				  krb5_context context,
-				  const krb5_keyblock *krbtgt_keyblock,
-				  const krb5_keyblock *service_keyblock,
-				  krb5_const_principal client_principal,
-				  time_t tgs_authtime, 
-				  krb5_error_code *k5ret);
+NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
+				 DATA_BLOB blob,
+				 krb5_context context,
+				 const krb5_keyblock *krbtgt_keyblock,
+				 const krb5_keyblock *service_keyblock,
+				 krb5_const_principal client_principal,
+				 time_t tgs_authtime,
+				 struct PAC_LOGON_INFO **logon_info);
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct PAC_DATA *pac_data,
 				    krb5_context context,

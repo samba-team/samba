@@ -142,13 +142,13 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 
 	/* Now check that we can read it back (using full decode and validate) */
 	nt_status = kerberos_decode_pac(mem_ctx, 
-					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
 					&server_keyblock,
 					client_principal, 
-					logon_time, NULL);
+					logon_time,
+ 					&pac_data);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -189,14 +189,13 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 
 	/* Now check that we can read it back (yet again) */
 	nt_status = kerberos_pac_logon_info(mem_ctx, 
-					    &logon_info,
 					    tmp_blob,
 					    smb_krb5_context->krb5_context,
 					    &krbtgt_keyblock,
 					    &server_keyblock,
 					    client_principal, 
 					    logon_time, 
-					    NULL);
+					    &logon_info);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -408,12 +407,11 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 
 	/* Decode and verify the signaure on the PAC */
 	nt_status = kerberos_decode_pac(mem_ctx, 
-					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					krbtgt_keyblock_p,
 					&server_keyblock, 
-					client_principal, authtime, NULL);
+					client_principal, authtime, &pac_data);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);
@@ -466,12 +464,11 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 
 	/* Parse the PAC again, for the logon info this time (using Samba4's parsing) */
 	nt_status = kerberos_pac_logon_info(mem_ctx, 
-					    &logon_info,
 					    tmp_blob,
 					    smb_krb5_context->krb5_context,
 					    krbtgt_keyblock_p,
 					    &server_keyblock,
-					    client_principal, authtime, NULL);
+					    client_principal, authtime, &logon_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -654,13 +651,12 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 
 	/* Break the auth time, to ensure we check this vital detail (not setting this caused all the pain in the first place... */
 	nt_status = kerberos_decode_pac(mem_ctx, 
-					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					krbtgt_keyblock_p,
 					&server_keyblock,
 					client_principal, 
-					authtime + 1, NULL);
+					authtime + 1, &pac_data);
 	if (NT_STATUS_IS_OK(nt_status)) {
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -691,13 +687,12 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	nt_status = kerberos_decode_pac(mem_ctx, 
-					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					krbtgt_keyblock_p,
 					&server_keyblock,
 					client_principal, 
-					authtime, NULL);
+					authtime, &pac_data);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);
@@ -710,13 +705,13 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	tmp_blob.data[tmp_blob.length - 2]++;
 
 	nt_status = kerberos_decode_pac(mem_ctx, 
-					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					krbtgt_keyblock_p,
 					&server_keyblock,
 					client_principal, 
-					authtime, NULL);
+					authtime,
+					&pac_data);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);

@@ -54,3 +54,18 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 					 krb5_checksum *cksum,
 					 uint8_t *data,
 					  size_t length);
+
+krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
+				   DATA_BLOB pac_data,
+				   struct PAC_SIGNATURE_DATA *sig,
+				   krb5_context context,
+				   const krb5_keyblock *keyblock);
+
+NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
+			     DATA_BLOB pac_data_blob,
+			     krb5_context context,
+			     const krb5_keyblock *krbtgt_keyblock,
+			     const krb5_keyblock *service_keyblock,
+			     krb5_const_principal client_principal,
+			     time_t tgs_authtime,
+			     struct PAC_DATA **pac_data_out);

@@ -833,7 +833,7 @@ bld.SAMBA3_LIBRARY('ads',
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
-                    deps='ndr-krb5pac krb5',
+                    deps='ndr-krb5pac krb5 KRB5_WRAP',
 		    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',

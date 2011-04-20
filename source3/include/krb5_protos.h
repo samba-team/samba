@@ -58,21 +58,6 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context, kr
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
-NTSTATUS decode_pac_data(TALLOC_CTX *mem_ctx,
-			 DATA_BLOB *pac_data_blob,
-			 krb5_context context,
-			 krb5_keyblock *service_keyblock,
-			 krb5_const_principal client_principal,
-			 time_t tgs_authtime,
-			 struct PAC_DATA **pac_data_out);
-void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
-				    struct PAC_SIGNATURE_DATA *sig);
-krb5_error_code smb_krb5_verify_checksum(krb5_context context,
-					 const krb5_keyblock *keyblock,
-					 krb5_keyusage usage,
-					 krb5_checksum *cksum,
-					 uint8 *data,
-					 size_t length);
 time_t get_authtime_from_tkt(krb5_ticket *tkt);
 krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context,
 						 const krb5_data *inbuf,

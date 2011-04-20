@@ -680,9 +680,9 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 
 	if (got_auth_data) {
 		struct PAC_DATA *pac_data;
-		pac_ret = decode_pac_data(mem_ctx, &auth_data, context,
-					  keyblock, client_principal,
-					  authtime, &pac_data);
+		pac_ret = kerberos_decode_pac(mem_ctx, auth_data, context,
+					      NULL, keyblock, client_principal,
+					      authtime, &pac_data);
 		data_blob_free(&auth_data);
 		if (!NT_STATUS_IS_OK(pac_ret)) {
 			DEBUG(3, (__location__ ": failed to decode "

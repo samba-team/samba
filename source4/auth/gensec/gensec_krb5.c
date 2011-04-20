@@ -697,11 +697,11 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 		/* decode and verify the pac */
 		nt_status = kerberos_pac_logon_info(gensec_krb5_state, 
-						    &logon_info, pac,
+						    pac,
 						    gensec_krb5_state->smb_krb5_context->krb5_context,
 						    NULL, gensec_krb5_state->keyblock,
 						    client_principal,
-						    gensec_krb5_state->ticket->ticket.authtime, NULL);
+						    gensec_krb5_state->ticket->ticket.authtime, &logon_info);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			free(principal_string);
