@@ -15,7 +15,7 @@ s4_util_public_deps = 'talloc CHARSET execinfo uid_wrapper'
 s4_util_public_headers = 'attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h'
 s4_util_header_path = [ ('dlinklist.h util.h', '.'), ('*', 'util') ]
 
-if bld.env.enable_s3build or bld.env._SAMBA_BUILD_ == 3:
+if bld.env._SAMBA_BUILD_ == 3:
     # as we move files into common between samba-util and samba-util3, move them here.
     # Both samba-util and samba-util3 depend on this private library
     bld.SAMBA_LIBRARY('samba-util-common',
@@ -30,30 +30,17 @@ if bld.env.enable_s3build or bld.env._SAMBA_BUILD_ == 3:
                     private_library=True
                     )
 
-    if bld.env._SAMBA_BUILD_ == 4:
-        bld.SAMBA_LIBRARY('samba-util',
-                        source=s4_util_sources,
-                        deps=s4_util_deps + ' samba-util-common',
-                        public_deps=s4_util_public_deps,
-                        public_headers=s4_util_public_headers,
-                        header_path= s4_util_header_path,
-                        local_include=False,
-                        vnum='0.0.1',
-                        pc_files='samba-util.pc'
-                        )
-
 else:
-    if bld.env._SAMBA_BUILD_ == 4:
-        bld.SAMBA_LIBRARY('samba-util',
-                        source=s4_util_sources + " " + common_util_sources,
-                        deps=s4_util_deps,
-                        public_deps=s4_util_public_deps + ' ' + common_util_public_deps,
-                        public_headers=s4_util_public_headers + ' ' + common_util_headers,
-                        header_path= s4_util_header_path,
-                        local_include=False,
-                        vnum='0.0.1',
-                        pc_files='samba-util.pc'
-                        )
+    bld.SAMBA_LIBRARY('samba-util',
+                      source=s4_util_sources + " " + common_util_sources,
+                      deps=s4_util_deps,
+                      public_deps=s4_util_public_deps + ' ' + common_util_public_deps,
+                      public_headers=s4_util_public_headers + ' ' + common_util_headers,
+                      header_path= s4_util_header_path,
+                      local_include=False,
+                      vnum='0.0.1',
+                      pc_files='samba-util.pc'
+                      )
 
     # dummy subsystem for avoid wider deps changes.
     bld.SAMBA_SUBSYSTEM('samba-util-common',
