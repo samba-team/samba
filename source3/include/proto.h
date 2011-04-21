@@ -2672,13 +2672,6 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe);
 
-/* The following definitions come from rpc_client/cli_pipe_schannel.c  */
-
-NTSTATUS get_schannel_session_key(struct cli_state *cli,
-				  const char *domain,
-				  uint32 *pneg_flags,
-				  struct rpc_pipe_client **presult);
-
 /* The following definitions come from rpc_server/rpc_handles.c  */
 
 size_t num_pipe_handles(struct pipes_struct *p);

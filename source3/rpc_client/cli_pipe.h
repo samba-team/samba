@@ -25,6 +25,8 @@
 
 #include "rpc_client/rpc_client.h"
 
+/* The following definitions come from rpc_client/cli_pipe.c  */
+
 struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev,
 					 struct rpc_pipe_client *cli,
@@ -147,6 +149,13 @@ NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
+
+/* The following definitions come from rpc_client/cli_pipe_schannel.c  */
+
+NTSTATUS get_schannel_session_key(struct cli_state *cli,
+				  const char *domain,
+				  uint32 *pneg_flags,
+				  struct rpc_pipe_client **presult);
 
 #endif /* _CLI_PIPE_H */
 
