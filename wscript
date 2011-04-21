@@ -47,8 +47,8 @@ def set_options(opt):
                    help='enable special build farm options',
                    action='store_true', dest='BUILD_FARM')
 
-    gr.add_option('--enable-s3build',
-                   help='enable build of s3 binaries',
+    gr.add_option('--disable-s3build',
+                   help='disable build of s3 binaries',
                    action='store_true', dest='S3BUILD')
 
     opt.tool_options('python') # options for disabling pyc or pyo compilation
@@ -66,8 +66,9 @@ def configure(conf):
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
 
+    conf.env.enable_s3build = True
     if Options.options.S3BUILD:
-        conf.env.enable_s3build = True
+        conf.env.enable_s3build = False
 
     # this enables smbtorture.static for s3 in the build farm
     conf.env.BUILD_FARM = Options.options.BUILD_FARM or os.environ.get('RUN_FROM_BUILD_FARM')
