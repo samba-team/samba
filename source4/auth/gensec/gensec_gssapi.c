@@ -1224,7 +1224,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
 	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc pac;
 	DATA_BLOB pac_blob;
 	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
 	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
@@ -1239,25 +1238,15 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	mem_ctx = talloc_named(gensec_gssapi_state, 0, "gensec_gssapi_session_info context"); 
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
-	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
-							       gensec_gssapi_state->gssapi_context, 
-							       KRB5_AUTHDATA_WIN2K_PAC,
-							       &pac);
-	
-	
-	if (maj_stat == 0) {
-		pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
-		gss_release_buffer(&min_stat, &pac);
-
-	} else {
-		pac_blob = data_blob(NULL, 0);
-	}
+	nt_status = gssapi_obtain_pac_blob(mem_ctx,  gensec_gssapi_state->gssapi_context,
+					   gensec_gssapi_state->client_name,
+					   &pac_blob);
 	
 	/* IF we have the PAC - otherwise we need to get this
 	 * data from elsewere - local ldb, or (TODO) lookup of some
 	 * kind... 
 	 */
-	if (pac_blob.length) {
+	if (NT_STATUS_IS_OK(nt_status)) {
 		pac_srv_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
 		if (!pac_srv_sig) {
 			talloc_free(mem_ctx);
