@@ -334,6 +334,8 @@ utimensat vsyslog _write __write __xstat
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     elif (host_os.rfind('openbsd') > -1):
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+    elif (host_os.rfind('sunos') > -1):
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     # FIXME: Add more checks here.
     else:
         Logs.warn("Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os)
