@@ -39,7 +39,7 @@ release_lib() {
 
     tagname=$(basename $tarname .tar | sed s/[\.]/-/g)
     echo "tagging as $tagname"
-    git tag -s "$tagname" -m "$lib: tag release $tagname"
+    git tag -u 13084025 -s "$tagname" -m "$lib: tag release $tagname"
 
     echo "signing"
     rm -f "$tarname.asc"
