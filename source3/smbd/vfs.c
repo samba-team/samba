@@ -899,7 +899,6 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 {
 	char *resolved_name = NULL;
-	char *p = NULL;
 
 	DEBUG(3,("check_reduced_name [%s] [%s]\n", fname, conn->connectpath));
 
@@ -915,28 +914,20 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			case ENOENT:
 			{
 				TALLOC_CTX *ctx = talloc_tos();
-				char *tmp_fname = NULL;
-				char *last_component = NULL;
-				/* Last component didn't exist. Remove it and try and canonicalise the directory. */
+				char *dir_name = NULL;
+				const char *last_component = NULL;
+				char *new_name = NULL;
 
-				tmp_fname = talloc_strdup(ctx, fname);
-				if (!tmp_fname) {
+				/* Last component didn't exist.
+				   Remove it and try and canonicalise
+				   the directory name. */
+				if (!parent_dirname(ctx, fname,
+						&dir_name,
+						&last_component)) {
 					return NT_STATUS_NO_MEMORY;
 				}
-				p = strrchr_m(tmp_fname, '/');
-				if (p) {
-					*p++ = '\0';
-					last_component = p;
-				} else {
-					last_component = tmp_fname;
-					tmp_fname = talloc_strdup(ctx,
-							".");
-					if (!tmp_fname) {
-						return NT_STATUS_NO_MEMORY;
-					}
-				}
 
-				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname);
+				resolved_name = SMB_VFS_REALPATH(conn,dir_name);
 				if (!resolved_name) {
 					NTSTATUS status = map_nt_error_from_unix(errno);
 
@@ -951,18 +942,16 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 						nt_errstr(status)));
 					return status;
 				}
-				tmp_fname = talloc_asprintf(ctx,
+				new_name = talloc_asprintf(ctx,
 						"%s/%s",
 						resolved_name,
 						last_component);
-				if (!tmp_fname) {
+				if (!new_name) {
 					return NT_STATUS_NO_MEMORY;
 				}
 				SAFE_FREE(resolved_name);
-				resolved_name = SMB_STRDUP(tmp_fname);
+				resolved_name = SMB_STRDUP(new_name);
 				if (!resolved_name) {
-					DEBUG(0, ("check_reduced_name: malloc "
-						  "fail for %s\n", tmp_fname));
 					return NT_STATUS_NO_MEMORY;
 				}
 				break;
