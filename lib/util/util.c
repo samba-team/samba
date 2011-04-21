@@ -3,7 +3,7 @@
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001-2002
-   Copyright (C) Simo Sorce 2001
+   Copyright (C) Simo Sorce 2001-2011
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James J Myers 2003
    Copyright (C) Volker Lendecke 2010
@@ -63,12 +63,17 @@ _PUBLIC_ const char *tmpdir(void)
 
 /**
  Create a tmp file, open it and immediately unlink it.
+ If dir is NULL uses tmpdir()
  Returns the file descriptor or -1 on error.
 **/
 int create_unlink_tmp(const char *dir)
 {
 	char *fname;
 	int fd;
+
+	if (!dir) {
+		dir = tmpdir();
+	}
 
 	fname = talloc_asprintf(talloc_tos(), "%s/listenerlock_XXXXXX", dir);
 	if (fname == NULL) {
