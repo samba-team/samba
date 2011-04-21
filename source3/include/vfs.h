@@ -32,12 +32,6 @@
 #undef vfs_ops
 #endif
 
-/* Avoid conflict with an Tru64 include file:
-   the vfsops struct on Tru64 has a vfs_init function pointer which we
-   overwrite with a macro below */
-
-#undef vfsops
-
 /*
  * As we're now (thanks Andrew ! :-) using file_structs and connection
  * structs in the vfs - then anyone writing a vfs must include includes.h...
