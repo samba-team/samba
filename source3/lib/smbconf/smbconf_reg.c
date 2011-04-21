@@ -714,6 +714,10 @@ static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
 		goto done;
 	}
 	p = strrchr(path, '\\');
+	if (p == NULL) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
 	*p = '\0';
 	werr = reg_open_path(mem_ctx, path, REG_KEY_WRITE, token,
 			     &parent_key);
