@@ -2422,32 +2422,6 @@ static bool housekeeping_fn(const struct timeval *now, void *private_data)
 	return true;
 }
 
-static int create_unlink_tmp(const char *dir)
-{
-	char *fname;
-	int fd;
-
-	fname = talloc_asprintf(talloc_tos(), "%s/listenerlock_XXXXXX", dir);
-	if (fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	fd = mkstemp(fname);
-	if (fd == -1) {
-		TALLOC_FREE(fname);
-		return -1;
-	}
-	if (unlink(fname) == -1) {
-		int sys_errno = errno;
-		close(fd);
-		TALLOC_FREE(fname);
-		errno = sys_errno;
-		return -1;
-	}
-	TALLOC_FREE(fname);
-	return fd;
-}
-
 /*
  * Read an smb packet in the echo handler child, giving the parent
  * smbd one second to react once the socket becomes readable.

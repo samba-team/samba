@@ -623,6 +623,11 @@ bool file_compare(const char *path1, const char *path2);
 _PUBLIC_ const char *tmpdir(void);
 
 /**
+ * Creates and immediately unlinks a file. Returns open file descriptor.
+ **/
+_PUBLIC_ int create_unlink_tmp(const char *dir);
+
+/**
  Check if a file exists - call vfs_file_exist for samba files.
 **/
 _PUBLIC_ bool file_exist(const char *fname);

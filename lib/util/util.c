@@ -6,6 +6,7 @@
    Copyright (C) Simo Sorce 2001
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James J Myers 2003
+   Copyright (C) Volker Lendecke 2010
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -57,6 +58,37 @@ _PUBLIC_ const char *tmpdir(void)
 	if ((p = getenv("TMPDIR")))
 		return p;
 	return "/tmp";
+}
+
+
+/**
+ Create a tmp file, open it and immediately unlink it.
+ Returns the file descriptor or -1 on error.
+**/
+int create_unlink_tmp(const char *dir)
+{
+	char *fname;
+	int fd;
+
+	fname = talloc_asprintf(talloc_tos(), "%s/listenerlock_XXXXXX", dir);
+	if (fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	fd = mkstemp(fname);
+	if (fd == -1) {
+		TALLOC_FREE(fname);
+		return -1;
+	}
+	if (unlink(fname) == -1) {
+		int sys_errno = errno;
+		close(fd);
+		TALLOC_FREE(fname);
+		errno = sys_errno;
+		return -1;
+	}
+	TALLOC_FREE(fname);
+	return fd;
 }
 
 
