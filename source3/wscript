@@ -1634,6 +1634,8 @@ main() {
 		    headers='sys/types.h dirent.h',
 		    msg='Checking whether seekdir returns void')
 
+    conf.CHECK_TYPE_IN('struct vfsops', 'sys/mount.h')
+
     if Options.options.with_profiling_data:
         conf.DEFINE('WITH_PROFILE', 1);
 

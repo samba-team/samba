@@ -5400,6 +5400,8 @@ if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
 fi
 AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 
+AC_CHECK_TYPE(struct vfsops,[AC_DEFINE(HAVE_STRUCT_VFSOPS,1,[Whether struct vfsops exists])],,[#include <sys/mount.h>])
+
 
 #################################################
 # check for cluster extensions
