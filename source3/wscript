@@ -191,7 +191,7 @@ main() {
                     'HAVE_KERNEL_OPLOCKS_IRIX', headers='fcntl.h',
                     msg="Checking for IRIX kernel oplock types")
 
-    # Check for krenel share modes
+    # Check for kernel share modes
     conf.CHECK_CODE('''
 #include <sys/types.h>
 #include <fcntl.h>
