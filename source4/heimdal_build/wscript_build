@@ -621,6 +621,13 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                                    version.c warn.c krb5_err.c
                                    heim_err.c k524_err.c krb_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
 
+    # Alias subsystem to allow common kerberos code that will
+    # otherwise link against MIT's gssapi_krb5
+    HEIMDAL_SUBSYSTEM('gssapi_krb5',
+        '',
+        deps='gssapi'
+        )
+
     HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
         version_script='lib/krb5/version-script.map',
                         includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
@@ -632,6 +639,12 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
     HEIMDAL_AUTOPROTO_PRIVATE('lib/krb5/krb5-private.h', KRB5_PROTO_SOURCE)
     HEIMDAL_AUTOPROTO('lib/krb5/krb5-protos.h', KRB5_PROTO_SOURCE,
         options='-E KRB5_LIB -q -P comment -o')
+
+    # Alias subsystem to allow common kerberos code that will
+    # otherwise link against MIT's k5crypto
+    HEIMDAL_SUBSYSTEM('k5crypto',
+                      '',
+                      deps='krb5')
 
 if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
     HEIMDAL_HEIM_ASN1_DER_SOURCE = '''

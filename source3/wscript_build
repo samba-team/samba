@@ -1321,17 +1321,6 @@ if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
     bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
     bld.SAMBA3_SUBSYSTEM('cli-ldap', '', deps='UTIL_TEVENT')
-else:
-
-    # point the s3 rules at in-tree heimdal
-    bld.SAMBA3_SUBSYSTEM('gssapi_krb5',
-                         source='',
-                         deps='gssapi krb5')
-    bld.SAMBA3_SUBSYSTEM('k5crypto',
-                         source='',
-                         deps='krb5')
-
-
 
 
 ########################## INCLUDES #################################
