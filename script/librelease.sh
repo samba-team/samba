@@ -65,6 +65,7 @@ release_lib() {
     rsync -Pav $tarname.asc $tgzname master.samba.org:~ftp/pub/$lib/ || {
 	exit 1
     }
+    rsync master.samba.org:~ftp/pub/$lib/$tarname.*
 
     popd
 }
