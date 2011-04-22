@@ -3502,6 +3502,10 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	}
 
 	hostnameDN = ads_get_dn(ads, talloc_tos(), (LDAPMessage *)msg);
+	if (hostnameDN == NULL) {
+		SAFE_FREE(host);
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
 
 	rc = ldap_delete_ext_s(ads->ldap.ld, hostnameDN, pldap_control, NULL);
 	if (rc) {
