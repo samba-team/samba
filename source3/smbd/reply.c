@@ -456,7 +456,9 @@ static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 	p = strchr_m(retarget, '#');
 	if (p != NULL) {
 		*p++ = '\0';
-		sscanf(p, "%x", &retarget_type);
+		if (sscanf(p, "%x", &retarget_type) != 1) {
+			goto fail;
+		}
 	}
 
 	ret = resolve_name(retarget, &retarget_addr, retarget_type, false);
