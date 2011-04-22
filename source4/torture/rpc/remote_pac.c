@@ -476,8 +476,9 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	/* Wipe out any existing ccache */
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
-	cli_credentials_set_target_service(credentials, talloc_asprintf(tmp_ctx, "host/%s", test_machine_name));
-	cli_credentials_set_impersonate_principal(credentials, cli_credentials_get_principal(cmdline_credentials, tmp_ctx));
+	cli_credentials_set_impersonate_principal(credentials,
+			cli_credentials_get_principal(cmdline_credentials, tmp_ctx),
+			talloc_asprintf(tmp_ctx, "host/%s", test_machine_name));
 
 	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
@@ -525,7 +526,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	/* Don't pollute the remaining tests with the changed credentials */
 	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
 	cli_credentials_set_target_service(credentials, NULL);
-	cli_credentials_set_impersonate_principal(credentials, NULL);
+	cli_credentials_set_impersonate_principal(credentials, NULL, NULL);
 
 	/* Extract the PAC using Samba's code */
 

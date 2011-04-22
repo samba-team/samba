@@ -788,19 +788,35 @@ _PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, c
  * member of the domain to get the groups of a user.  This is also
  * known as S4U2Self */
 
-const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred)
+_PUBLIC_ const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred)
 {
 	return cred->impersonate_principal;
 }
 
-_PUBLIC_ void cli_credentials_set_impersonate_principal(struct cli_credentials *cred, const char *principal)
+/*
+ * The 'self_service' is the service principal that
+ * represents the same object (by its objectSid)
+ * as the client principal (typically our machine account).
+ * When trying to impersonate 'impersonate_principal' with
+ * S4U2Self.
+ */
+_PUBLIC_ const char *cli_credentials_get_self_service(struct cli_credentials *cred)
+{
+	return cred->self_service;
+}
+
+_PUBLIC_ void cli_credentials_set_impersonate_principal(struct cli_credentials *cred,
+							const char *principal,
+							const char *self_service)
 {
 	talloc_free(cred->impersonate_principal);
 	cred->impersonate_principal = talloc_strdup(cred, principal);
+	talloc_free(cred->self_service);
+	cred->self_service = talloc_strdup(cred, self_service);
 }
 
-/* when impersonating for S4U2Self we need to set the target principal
- * to ourself, as otherwise we would need additional rights.
+/*
+ * when impersonating for S4U2proxy we need to set the target principal.
  * Similarly, we may only be authorized to do general impersonation to
  * some particular services.
  *

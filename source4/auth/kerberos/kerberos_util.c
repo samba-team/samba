@@ -338,7 +338,9 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 				 const char **error_string)
 {
 	krb5_error_code ret;
-	const char *password, *target_service;
+	const char *password;
+	const char *self_service;
+	const char *target_service;
 	time_t kdc_time = 0;
 	krb5_principal princ;
 	krb5_principal impersonate_principal;
@@ -363,6 +365,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		return ret;
 	}
 
+	self_service = cli_credentials_get_self_service(credentials);
 	target_service = cli_credentials_get_target_service(credentials);
 
 	password = cli_credentials_get_password(credentials);
@@ -403,7 +406,8 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		if (password) {
 			ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
 							 princ, password,
-							 impersonate_principal, target_service,
+							 impersonate_principal,
+							 self_service,
 							 krb_options,
 							 NULL, &kdc_time);
 		} else if (impersonate_principal) {
