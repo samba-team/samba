@@ -518,6 +518,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			ip_list = (struct ip_service *)memdup(
 				&server_addr, sizeof(server_addr));
 			if (ip_list == NULL) {
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
+				}
 				TALLOC_FREE(frame);
 				errno = ENOMEM;
 				return NULL;
