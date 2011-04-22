@@ -127,7 +127,7 @@ static bool send_pcap_blob(DATA_BLOB *pcap_blob, int fd)
 		return false;
 	}
 
-	DEBUG(10, ("successfully sent blob of len %ld\n", (int64_t)ret));
+	DEBUG(10, ("successfully sent blob of len %d\n", (int)ret));
 	return true;
 }
 
@@ -152,7 +152,7 @@ static bool recv_pcap_blob(TALLOC_CTX *mem_ctx, int fd, DATA_BLOB *pcap_blob)
 		return false;
 	}
 
-	DEBUG(10, ("successfully recvd blob of len %ld\n", (int64_t)ret));
+	DEBUG(10, ("successfully recvd blob of len %d\n", (int)ret));
 	return true;
 }
 
