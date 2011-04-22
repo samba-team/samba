@@ -15,6 +15,7 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+umask 0022
 
 release_lib() {
     lib="$1"
