@@ -899,6 +899,8 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 {
 	char *resolved_name = NULL;
+	bool allow_symlinks = true;
+	bool allow_widelinks = false;
 
 	DEBUG(3,("check_reduced_name [%s] [%s]\n", fname, conn->connectpath));
 
@@ -973,9 +975,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
-	/* Check for widelinks allowed. */
-	if (!lp_widelinks(SNUM(conn))) {
+	allow_widelinks = lp_widelinks(SNUM(conn));
+	allow_symlinks = lp_symlinks(SNUM(conn));
+
+	/* Common widelinks and symlinks checks. */
+	if (!allow_widelinks || !allow_symlinks) {
 		const char *conn_rootdir;
+		size_t rootdir_len;
 
 		conn_rootdir = SMB_VFS_CONNECTPATH(conn, fname);
 		if (conn_rootdir == NULL) {
@@ -985,8 +991,9 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
+		rootdir_len = strlen(conn_rootdir);
 		if (strncmp(conn_rootdir, resolved_name,
-				strlen(conn_rootdir)) != 0) {
+				rootdir_len) != 0) {
 			DEBUG(2, ("check_reduced_name: Bad access "
 				"attempt: %s is a symlink outside the "
 				"share path\n", fname));
@@ -995,35 +1002,61 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			SAFE_FREE(resolved_name);
 			return NT_STATUS_ACCESS_DENIED;
 		}
+
+		/* Extra checks if all symlinks are disallowed. */
+		if (!allow_symlinks) {
+			struct smb_filename *smb_fname = NULL;
+			NTSTATUS status;
+			/* fname can't have changed in resolved_path. */
+			const char *p = &resolved_name[rootdir_len];
+
+			/* *p ran be '\0' if fname was "." */
+			if (*p == '\0' && ISDOT(fname)) {
+				goto out;
+			}
+
+			if (*p != '/') {
+				DEBUG(2, ("check_reduced_name: logic error (%c) "
+					"in resolved_name: %s\n",
+					*p,
+					fname));
+				SAFE_FREE(resolved_name);
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			p++;
+			if (strcmp(fname, p)!=0) {
+				DEBUG(2, ("check_reduced_name: Bad access "
+					"attempt: %s is a symlink\n",
+					fname));
+				SAFE_FREE(resolved_name);
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			/* Check if we are allowing users to follow symlinks */
+			/* Patch from David Clerc <David.Clerc@cui.unige.ch>
+			   University of Geneva */
+			status = create_synthetic_smb_fname(talloc_tos(),
+					fname, NULL,
+					NULL, &smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				SAFE_FREE(resolved_name);
+				return status;
+			}
+
+			if ( (SMB_VFS_LSTAT(conn, smb_fname) != -1) &&
+					(S_ISLNK(smb_fname->st.st_ex_mode)) ) {
+				SAFE_FREE(resolved_name);
+				DEBUG(3,("check_reduced_name: denied: file path name "
+					"%s is a symlink\n",resolved_name));
+				TALLOC_FREE(smb_fname);
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			TALLOC_FREE(smb_fname);
+		}
 	}
 
-        /* Check if we are allowing users to follow symlinks */
-        /* Patch from David Clerc <David.Clerc@cui.unige.ch>
-                University of Geneva */
-
-#ifdef S_ISLNK
-        if (!lp_symlinks(SNUM(conn))) {
-		struct smb_filename *smb_fname = NULL;
-		NTSTATUS status;
-
-		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
-						    NULL, &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			SAFE_FREE(resolved_name);
-                        return status;
-		}
-
-		if ( (SMB_VFS_LSTAT(conn, smb_fname) != -1) &&
-                                (S_ISLNK(smb_fname->st.st_ex_mode)) ) {
-			SAFE_FREE(resolved_name);
-                        DEBUG(3,("check_reduced_name: denied: file path name "
-				 "%s is a symlink\n",resolved_name));
-			TALLOC_FREE(smb_fname);
-			return NT_STATUS_ACCESS_DENIED;
-                }
-		TALLOC_FREE(smb_fname);
-        }
-#endif
+  out:
 
 	DEBUG(3,("check_reduced_name: %s reduced to %s\n", fname,
 		 resolved_name));
