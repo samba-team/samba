@@ -1596,8 +1596,6 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
-	frame = talloc_stackframe();
-
 	if (!regdb_key_exists(db, key)) {
 		DEBUG(10, ("key [%s] not found\n", key));
 		werr = WERR_NOT_FOUND;
