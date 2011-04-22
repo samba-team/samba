@@ -290,7 +290,11 @@ bool ber_write_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const ch
 	/* Add partially encoded sub-identifier */
 	if (p) {
 		DATA_BLOB tmp_blob = strhex_to_data_blob(tmp_ctx, p);
-		data_blob_append(mem_ctx, blob, tmp_blob.data, tmp_blob.length);
+		if (!data_blob_append(mem_ctx, blob, tmp_blob.data,
+				      tmp_blob.length)) {
+			talloc_free(tmp_ctx);
+			return false;
+		}
 	}
 
 	talloc_free(tmp_ctx);
