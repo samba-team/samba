@@ -134,6 +134,10 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 	memset(cutstr, '\0', len+1);
 	host = strncat(cutstr, mnttype, sizeof(char) * len);
 	testpath = strchr_m(mnttype, ':');
+	if (testpath == NULL) {
+		errno = EINVAL;
+		goto out;
+	}
 	testpath++;
 	gq_args.gqa_pathp = testpath;
 	gq_args.gqa_uid = id.uid;
