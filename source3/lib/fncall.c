@@ -21,7 +21,7 @@
 
 #if WITH_PTHREADPOOL
 
-#include "pthreadpool.h"
+#include "lib/pthreadpool/pthreadpool.h"
 
 struct fncall_state {
 	struct fncall_context *ctx;
