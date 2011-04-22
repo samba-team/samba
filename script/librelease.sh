@@ -2,6 +2,7 @@
 # make a release of a Samba library
 
 GPG_USER='Samba Library Distribution Key <samba-bugs@samba.org>'
+GPG_KEYID='13084025'
 
 if [ ! -d ".git" ]; then
 	echo "Run this script from the top-level directory in the"
@@ -39,7 +40,7 @@ release_lib() {
 
     tagname=$(basename $tarname .tar | sed s/[\.]/-/g)
     echo "tagging as $tagname"
-    git tag -u 13084025 -s "$tagname" -m "$lib: tag release $tagname"
+    git tag -u $GPG_KEYID -s "$tagname" -m "$lib: tag release $tagname"
 
     echo "signing"
     rm -f "$tarname.asc"
