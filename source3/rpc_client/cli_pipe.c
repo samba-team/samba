@@ -2691,7 +2691,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 
 	ZERO_STRUCT(addr);
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
+	strlcpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
 
 	if (sys_connect(fd, (struct sockaddr *)(void *)&addr) == -1) {
 		DEBUG(0, ("connect(%s) failed: %s\n", socket_path,
