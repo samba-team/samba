@@ -469,11 +469,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 			  pkt->u.fault.status),
 			  rpccli_pipe_txt(talloc_tos(), cli)));
 
-		if (NT_STATUS_IS_OK(NT_STATUS(pkt->u.fault.status))) {
-			return NT_STATUS_UNSUCCESSFUL;
-		} else {
-			return NT_STATUS(pkt->u.fault.status);
-		}
+		return dcerpc_fault_to_nt_status(pkt->u.fault.status);
 
 	default:
 		DEBUG(0, (__location__ "Unknown packet type %u received "

@@ -1985,7 +1985,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 		 * no_dssetup mode here as well to get domain->initialized
 		 * set - gd */
 
-		if (NT_STATUS_V(status) == DCERPC_FAULT_OP_RNG_ERROR) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 			goto no_dssetup;
 		}
 

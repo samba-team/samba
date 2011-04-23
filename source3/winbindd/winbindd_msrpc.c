@@ -1120,8 +1120,8 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	/* And restore our original timeout. */
 	dcerpc_binding_handle_set_timeout(b, orig_timeout);
 
-	if (NT_STATUS_V(status) == DCERPC_FAULT_ACCESS_DENIED ||
-	    NT_STATUS_V(status) == DCERPC_FAULT_SEC_PKG_ERROR) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
 		/*
 		 * This can happen if the schannel key is not
 		 * valid anymore, we need to invalidate the
@@ -1208,8 +1208,8 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	/* And restore our original timeout. */
 	dcerpc_binding_handle_set_timeout(b, orig_timeout);
 
-	if (NT_STATUS_V(status) == DCERPC_FAULT_ACCESS_DENIED ||
-	    NT_STATUS_V(status) == DCERPC_FAULT_SEC_PKG_ERROR) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
 		/*
 		 * This can happen if the schannel key is not
 		 * valid anymore, we need to invalidate the
