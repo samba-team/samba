@@ -308,10 +308,10 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 #ifdef LARGE_SMB_INO_T
-#define SINO_T_VAL(p, ofs, v) (SIVAL((p),(ofs),(v)&0xFFFFFFFF), SIVAL((p),(ofs)+4,(v)>>32))
-#define INO_T_VAL(p, ofs) ((SMB_INO_T)(((uint64_t)(IVAL(p,ofs)))| (((uint64_t)(IVAL(p,(ofs)+4))) << 32)))
+#define SINO_T_VAL(p, ofs, v) SBVAL(p, ofs, v)
+#define INO_T_VAL(p, ofs) ((SMB_INO_T)BVAL(p, ofs))
 #else 
-#define SINO_T_VAL(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#define SINO_T_VAL(p, ofs, v) SBVAL(p, ofs, ((uint64_t)(v)) & UINT32_MAX)
 #define INO_T_VAL(p, ofs) ((SMB_INO_T)(IVAL((p),(ofs))))
 #endif
 
