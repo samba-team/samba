@@ -102,12 +102,12 @@ bld.SAMBA_SUBSYSTEM('UTIL_TEVENT',
 
 
 if bld.env._SAMBA_BUILD_ == 4:
-    bld.SAMBA_SUBSYSTEM('UTIL_LDB',
-	source='util_ldb.c',
-        local_include=False,
-	public_deps='ldb',
-        public_headers='util_ldb.h'
-	)
+	bld.SAMBA_SUBSYSTEM('util_ldb',
+		source='util_ldb.c',
+		local_include=False,
+		public_deps='ldb',
+		public_headers='util_ldb.h'
+		)
 
 
 bld.SAMBA_SUBSYSTEM('UTIL_RUNCMD',
