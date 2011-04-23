@@ -480,10 +480,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	create_options = IVAL(req->vwv+19, 1);
 	root_dir_fid = (uint16)IVAL(req->vwv+5, 1);
 
-	allocation_size = (uint64_t)IVAL(req->vwv+9, 1);
-#ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((uint64_t)IVAL(req->vwv+11, 1)) << 32);
-#endif
+	allocation_size = BVAL(req->vwv+9, 1);
 
 	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf,
 			    STR_TERMINATE, &status);
@@ -1032,10 +1029,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	sd_len = IVAL(params,36);
 	ea_len = IVAL(params,40);
 	root_dir_fid = (uint16)IVAL(params,4);
-	allocation_size = (uint64_t)IVAL(params,12);
-#ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((uint64_t)IVAL(params,16)) << 32);
-#endif
+	allocation_size = BVAL(params,12);
 
 	/*
 	 * we need to remove ignored bits when they come directly from the client
@@ -2834,46 +2828,13 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	 */
 
 	/* the used space 8 bytes (uint64_t)*/
-	qt.usedspace = (uint64_t)IVAL(pdata,16);
-#ifdef LARGE_SMB_OFF_T
-	qt.usedspace |= (((uint64_t)IVAL(pdata,20)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(pdata,20) != 0)&&
-		((qt.usedspace != 0xFFFFFFFF)||
-		(IVAL(pdata,20)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-		return;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.usedspace = BVAL(pdata,16);
 
 	/* the soft quotas 8 bytes (uint64_t)*/
-	qt.softlim = (uint64_t)IVAL(pdata,24);
-#ifdef LARGE_SMB_OFF_T
-	qt.softlim |= (((uint64_t)IVAL(pdata,28)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(pdata,28) != 0)&&
-		((qt.softlim != 0xFFFFFFFF)||
-		(IVAL(pdata,28)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-		return;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.softlim = BVAL(pdata,24);
 
 	/* the hard quotas 8 bytes (uint64_t)*/
-	qt.hardlim = (uint64_t)IVAL(pdata,32);
-#ifdef LARGE_SMB_OFF_T
-	qt.hardlim |= (((uint64_t)IVAL(pdata,36)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(pdata,36) != 0)&&
-		((qt.hardlim != 0xFFFFFFFF)||
-		(IVAL(pdata,36)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-		return;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.hardlim = BVAL(pdata,32);
 
 	if (!sid_parse(pdata+40,sid_len,&sid)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
