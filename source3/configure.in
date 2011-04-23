@@ -6648,6 +6648,8 @@ if test x"$enable_pthreadpool" = x"yes" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; t
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     AC_DEFINE(WITH_PTHREADPOOL, 1, [Whether to include pthreadpool helpers])
     AC_SUBST(PTHREADPOOL_OBJ, "lib/pthreadpool/pthreadpool.o")
+    PTHREADPOOLTEST="bin/pthreadpooltest\$(EXEEXT)"
+    AC_SUBST(PTHREADPOOLTEST)
 fi
 
 #################################################

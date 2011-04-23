@@ -97,6 +97,7 @@ TDBTOOL = @TDBTOOL@
 TDBDUMP = @TDBDUMP@
 TDBRESTORE = @TDBRESTORE@
 TDBTORTURE = @TDBTORTURE@
+PTHREADPOOLTEST = @PTHREADPOOLTEST@
 
 INSTALLCMD=@INSTALL@
 INSTALLLIBCMD_SH=@INSTALLLIBCMD_SH@
@@ -230,7 +231,7 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
 	bin/pdbtest@EXEEXT@ $(TALLOCTORT) bin/replacetort@EXEEXT@ \
-	$(TDBTORTURE) \
+	$(TDBTORTURE) $(PTHREADPOOLTEST) \
 	bin/smbconftort@EXEEXT@ bin/vlp@EXEEXT@
 
 BIN_PROGS = @EXTRA_BIN_PROGS@ \
@@ -1129,6 +1130,9 @@ SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
 		  $(LIBSMB_ERR_OBJ) \
 		  $(POPT_LIB_OBJ)
 
+PTHREADPOOLTEST_OBJ = lib/pthreadpool/pthreadpool.o \
+		lib/pthreadpool/tests.o
+
 LIBNET_OBJ = libnet/libnet_join.o \
 	     libnet/libnet_keytab.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
@@ -1567,6 +1571,8 @@ replacetort : SHOWFLAGS bin/replacetort@EXEEXT@
 
 smbconftort : SHOWFLAGS bin/smbconftort@EXEEXT@
 
+pthreadpooltest : SHOWFLAGS bin/pthreadpooltest@EXEEXT@
+
 timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
@@ -1891,6 +1897,10 @@ bin/smbconftort@EXEEXT@: $(SMBCONFTORT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@$(CC) -o $@ $(SMBCONFTORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+
+bin/pthreadpooltest@EXEEXT@: $(PTHREADPOOLTEST_OBJ)
+	@echo Linking $@
+	@$(CC) -o $@ $(PTHREADPOOLTEST_OBJ) $(LDFLAGS) -lpthread
 
 bin/masktest@EXEEXT@: $(BINARY_PREREQS) $(MASKTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
