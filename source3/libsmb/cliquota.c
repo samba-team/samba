@@ -80,43 +80,13 @@ static bool parse_user_quota_record(const uint8_t *rdata,
 	 */
 
 	/* the used space 8 bytes (uint64_t)*/
-	qt.usedspace = (uint64_t)IVAL(rdata,16);
-#ifdef LARGE_SMB_OFF_T
-	qt.usedspace |= (((uint64_t)IVAL(rdata,20)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(rdata,20) != 0)&&
-		((qt.usedspace != 0xFFFFFFFF)||
-		 (IVAL(rdata,20)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		return False;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.usedspace = BVAL(rdata,16);
 
 	/* the soft quotas 8 bytes (uint64_t)*/
-	qt.softlim = (uint64_t)IVAL(rdata,24);
-#ifdef LARGE_SMB_OFF_T
-	qt.softlim |= (((uint64_t)IVAL(rdata,28)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(rdata,28) != 0)&&
-		((qt.softlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,28)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		return False;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.softlim = BVAL(rdata,24);
 
 	/* the hard quotas 8 bytes (uint64_t)*/
-	qt.hardlim = (uint64_t)IVAL(rdata,32);
-#ifdef LARGE_SMB_OFF_T
-	qt.hardlim |= (((uint64_t)IVAL(rdata,36)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(rdata,36) != 0)&&
-		((qt.hardlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,36)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		return False;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.hardlim = BVAL(rdata,32);
 
 	if (!sid_parse((char *)rdata+40,sid_len,&qt.sid)) {
 		return false;
@@ -421,32 +391,10 @@ NTSTATUS cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum,
 	/* unknown_1 24 NULL bytes in pdata*/
 
 	/* the soft quotas 8 bytes (uint64_t)*/
-	qt.softlim = (uint64_t)IVAL(rdata,24);
-#ifdef LARGE_SMB_OFF_T
-	qt.softlim |= (((uint64_t)IVAL(rdata,28)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(rdata,28) != 0)&&
-		((qt.softlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,28)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		goto cleanup;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.softlim = BVAL(rdata,24);
 
 	/* the hard quotas 8 bytes (uint64_t)*/
-	qt.hardlim = (uint64_t)IVAL(rdata,32);
-#ifdef LARGE_SMB_OFF_T
-	qt.hardlim |= (((uint64_t)IVAL(rdata,36)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if ((IVAL(rdata,36) != 0)&&
-		((qt.hardlim != 0xFFFFFFFF)||
-		 (IVAL(rdata,36)!=0xFFFFFFFF))) {
-		/* more than 32 bits? */
-		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		goto cleanup;
-	}
-#endif /* LARGE_SMB_OFF_T */
+	qt.hardlim = BVAL(rdata,32);
 
 	/* quota_flags 2 bytes **/
 	qt.qflags = SVAL(rdata,40);
