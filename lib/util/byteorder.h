@@ -201,18 +201,29 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 
 #endif /* not CAREFUL_ALIGNMENT */
 
+/* 64 bit macros */
+#define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
+#define BVALS(p, ofs) ((int64_t)BVAL(p,ofs))
+#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,((uint64_t)(v))>>32))
+#define SBVALS(p, ofs, v) (SBVAL(p,ofs,(uint64_t)v))
+
 /* now the reverse routines - these are used in nmb packets (mostly) */
 #define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
 #define IREV(x) ((SREV(x)<<16) | (SREV((x)>>16)))
+#define BREV(x) ((IREV(x)<<32) | (IREV((x)>>32)))
 
 #define RSVAL(buf,pos) SREV(SVAL(buf,pos))
 #define RSVALS(buf,pos) SREV(SVALS(buf,pos))
 #define RIVAL(buf,pos) IREV(IVAL(buf,pos))
 #define RIVALS(buf,pos) IREV(IVALS(buf,pos))
+#define RBVAL(buf,pos) BREV(BVAL(buf,pos))
+#define RBVALS(buf,pos) BREV(BVALS(buf,pos))
 #define RSSVAL(buf,pos,val) SSVAL(buf,pos,SREV(val))
 #define RSSVALS(buf,pos,val) SSVALS(buf,pos,SREV(val))
 #define RSIVAL(buf,pos,val) SIVAL(buf,pos,IREV(val))
 #define RSIVALS(buf,pos,val) SIVALS(buf,pos,IREV(val))
+#define RSBVAL(buf,pos,val) SBVAL(buf,pos,BREV(val))
+#define RSBVALS(buf,pos,val) SBVALS(buf,pos,BREV(val))
 
 /* Alignment macros. */
 #define ALIGN4(p,base) ((p) + ((4 - (PTR_DIFF((p), (base)) & 3)) & 3))
@@ -221,11 +232,5 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 
 /* macros for accessing SMB protocol elements */
 #define VWV(vwv) ((vwv)*2)
-
-/* 64 bit macros */
-#define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
-#define BVALS(p, ofs) ((int64_t)BVAL(p,ofs))
-#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,((uint64_t)(v))>>32))
-#define SBVALS(p, ofs, v) (SBVAL(p,ofs,(uint64_t)v))
 
 #endif /* _BYTEORDER_H */
