@@ -787,6 +787,32 @@ int open_socket_in(int type,
 #endif /* SO_REUSEPORT */
 	}
 
+#ifdef HAVE_IPV6
+	/*
+	 * As IPV6_V6ONLY is the default on some systems,
+	 * we better try to be consistent and always use it.
+	 *
+	 * This also avoids using IPv4 via AF_INET6 sockets
+	 * and makes sure %I never resolves to a '::ffff:192.168.0.1'
+	 * string.
+	 */
+	if (sock.ss_family == AF_INET6) {
+		int val = 1;
+		int ret;
+
+		ret = setsockopt(res, IPPROTO_IPV6, IPV6_V6ONLY,
+				 (const void *)&val, sizeof(val));
+		if (ret == -1) {
+			if(DEBUGLVL(0)) {
+				dbgtext("open_socket_in(): IPV6_ONLY failed: ");
+				dbgtext("%s\n", strerror(errno));
+			}
+			close(res);
+			return -1;
+		}
+	}
+#endif
+
 	/* now we've got a socket - we need to bind it */
 	if (bind(res, (struct sockaddr *)&sock, slen) == -1 ) {
 		if( DEBUGLVL(dlevel) && (port == SMB_PORT1 ||
