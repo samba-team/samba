@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha14
+What's new in Samba 4 alpha15
 =============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -6,13 +6,13 @@ developed in parallel to the stable 3.x series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba4 alpha14 follows on from the alpha release series we have been
+Samba4 alpha15 follows on from the alpha release series we have been
 publishing since September 2007.
 
 WARNINGS
 ========
 
-Samba4 alpha14 is not a final Samba release.  That is more a reference
+Samba4 alpha15 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -62,23 +62,14 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE alpha13
+CHANGES SINCE alpha14
 =====================
 
-We have continued our commitment to provide a full DRS implementation for our
-AD implementation and therefore achieved also this time big steps forward.
+For a list of changes since alpha 14, please see the git log.
 
-Our progress on DRS is being tracked in the Samba wiki:
-http://wiki.samba.org/index.php/Samba4_DRS_TODO_List
-
-Beside this the release includes (among a lot of other things):
-
-* a script for backuping production provision
-Although still in development, samba4 is already used in a couple of production sites
-and such kind of use case is intensifying. This script is intendended for administrators
-to allow them to make a periodic backup of the provision in case of problem.
-
-* the 'net' command has been renamed to 'samba-tool'
+$ git clone git://git.samba.org/samba.git
+$ cd samba.git
+$ git log release-4-0-0alpha14..release-4-0-0alpha15
 
 CHANGES
 =======
