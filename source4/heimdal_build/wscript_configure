@@ -182,8 +182,9 @@ check_system_heimdal_lib("asn1", "initialize_asn1_error_table", "asn1_err.h", on
 check_system_heimdal_lib("heimbase", "heim_cmp", "heimbase.h", onlyif="roken")
 check_system_heimdal_lib("hcrypto", "MD4_Init", "hcrypto/md4.h",
     onlyif="asn1 roken com_err")
-check_system_heimdal_lib("krb5", "krb5_anyaddr", "krb5.h",
-    onlyif="roken wind asn1 hx509 hcrypto com_err heimbase")
+if check_system_heimdal_lib("krb5", "krb5_anyaddr", "krb5.h",
+    onlyif="roken wind asn1 hx509 hcrypto com_err heimbase"):
+    conf.CHECK_FUNCS_IN('krb5_free_unparsed_name', 'krb5', headers="krb5.h")
 check_system_heimdal_lib("gssapi", "gss_oid_to_name", "gssapi.h",
     onlyif="hcrypto asn1 roken krb5 com_err wind")
 check_system_heimdal_lib("heimntlm", "heim_ntlm_ntlmv2_key", "heimntlm.h",
