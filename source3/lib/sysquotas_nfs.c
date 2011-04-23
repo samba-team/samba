@@ -91,7 +91,7 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 		      enum SMB_QUOTA_TYPE qtype,
 		      unid_t id, SMB_DISK_QUOTA *dp)
 {
-	CLIENT *clnt;
+	CLIENT *clnt = NULL;
 	struct getquota_rslt gq_rslt;
 	struct getquota_args gq_args;
 	const char *mnttype;
