@@ -323,11 +323,10 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #  endif
 #endif
 
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#define BIG_UINT(p, ofs) ((((uint64_t) IVAL(p,(ofs)+4))<<32)|IVAL(p,ofs))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF)) | \
-		(( ((uint64_t)(IVAL((buf),(off+4)))) & ((uint64_t)0xFFFFFFFF) ) << 32 ) )
-
+/* TODO: remove this macros */
+#define SBIG_UINT(p, ofs, v) SBVAL(p, ofs, v)
+#define BIG_UINT(p, ofs) BVAL(p, ofs)
+#define IVAL2_TO_SMB_BIG_UINT(p, ofs) BVAL(p, ofs)
 
 /* this should really be a 64 bit type if possible */
 typedef uint64_t br_off;
