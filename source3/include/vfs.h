@@ -138,11 +138,7 @@
 
 
 /* to bug old modules which are trying to compile with the old functions */
-
-#ifndef HAVE_STRUCT_VFSOPS /* vfsops struct on Tru64 has a vfs_init function pointer */
 #define vfs_init __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore(void) { __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore };
-#endif /* HAVE_STRUCT_VFSOPS */
-
 #define lp_parm_string __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string { \
   __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string };
 #define lp_vfs_options __ERROR_please_donot_use_lp_vfs_options_anymore_use_lp_parm_xxxx_functions_instead { \
