@@ -31,13 +31,12 @@ import samba
 from samba import Ldb, version, ntacls
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
-from samba.provision import (ProvisionNames, provision_paths_from_lp,
+from samba.provision import (provision_paths_from_lp,
                             getpolicypath, set_gpos_acl, create_gpo_struct,
                             FILL_FULL, provision, ProvisioningError,
                             setsysvolacl, secretsdb_self_join)
-from samba.dcerpc import misc, security, xattr
+from samba.dcerpc import xattr
 from samba.dcerpc.misc import SEC_CHAN_BDC
-from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
 
 # All the ldb related to registry are commented because the path for them is

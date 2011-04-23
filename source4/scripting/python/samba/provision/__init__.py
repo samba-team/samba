@@ -48,15 +48,13 @@ from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba import (
     Ldb,
     check_all_substituted,
-    in_source_tree,
-    source_tree_topdir,
     read_and_sub_file,
     setup_file,
     substitute_var,
     valid_netbios_name,
     version,
     )
-from samba.dcerpc import security
+from samba.dcerpc import security, misc
 from samba.dcerpc.misc import (
     SEC_CHAN_BDC,
     SEC_CHAN_WKSTA,
@@ -284,7 +282,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
 
     # invocation id/objectguid
     res5 = samdb.search(expression="(objectClass=*)",
-            base="CN=NTDS Settings,%s" % str(names.serverdn), scope=SCOPE_BASE,
+            base="CN=NTDS Settings,%s" % str(names.serverdn), scope=ldb.SCOPE_BASE,
             attrs=["invocationID", "objectGUID"])
     names.invocation = str(ndr_unpack(misc.GUID, res5[0]["invocationId"][0]))
     names.ntdsguid = str(ndr_unpack(misc.GUID, res5[0]["objectGUID"][0]))
