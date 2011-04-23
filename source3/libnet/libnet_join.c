@@ -1074,7 +1074,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					  &user_info,
 					  &result);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
 
 		/* retry with level 24 */
 
