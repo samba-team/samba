@@ -3733,36 +3733,10 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				/* unknown_1 24 NULL bytes in pdata*/
 
 				/* the soft quotas 8 bytes (uint64_t)*/
-				quotas.softlim = (uint64_t)IVAL(pdata,24);
-#ifdef LARGE_SMB_OFF_T
-				quotas.softlim |= (((uint64_t)IVAL(pdata,28)) << 32);
-#else /* LARGE_SMB_OFF_T */
-				if ((IVAL(pdata,28) != 0)&&
-					((quotas.softlim != 0xFFFFFFFF)||
-					(IVAL(pdata,28)!=0xFFFFFFFF))) {
-					/* more than 32 bits? */
-					reply_nterror(
-						req,
-						NT_STATUS_INVALID_PARAMETER);
-					return;
-				}
-#endif /* LARGE_SMB_OFF_T */
+				quotas.softlim = BVAL(pdata,24);
 
 				/* the hard quotas 8 bytes (uint64_t)*/
-				quotas.hardlim = (uint64_t)IVAL(pdata,32);
-#ifdef LARGE_SMB_OFF_T
-				quotas.hardlim |= (((uint64_t)IVAL(pdata,36)) << 32);
-#else /* LARGE_SMB_OFF_T */
-				if ((IVAL(pdata,36) != 0)&&
-					((quotas.hardlim != 0xFFFFFFFF)||
-					(IVAL(pdata,36)!=0xFFFFFFFF))) {
-					/* more than 32 bits? */
-					reply_nterror(
-						req,
-						NT_STATUS_INVALID_PARAMETER);
-					return;
-				}
-#endif /* LARGE_SMB_OFF_T */
+				quotas.hardlim = BVAL(pdata,32);
 
 				/* quota_flags 2 bytes **/
 				quotas.qflags = SVAL(pdata,40);
