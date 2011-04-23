@@ -303,7 +303,6 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 			DEBUG (3, ("Parsed output of get_quota, ...\n"));
 
-#ifdef LARGE_SMB_OFF_T
 			DEBUGADD (5,( 
 				"qflags:%u curblocks:%llu softlimit:%llu hardlimit:%llu\n"
 				"curinodes:%llu isoftlimit:%llu ihardlimit:%llu bsize:%llu\n", 
@@ -312,16 +311,6 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 				(long long unsigned)dp->curinodes,
 				(long long unsigned)dp->isoftlimit,(long long unsigned)dp->ihardlimit,
 				(long long unsigned)dp->bsize));
-#else /* LARGE_SMB_OFF_T */
-			DEBUGADD (5,( 
-				"qflags:%u curblocks:%lu softlimit:%lu hardlimit:%lu\n"
-				"curinodes:%lu isoftlimit:%lu ihardlimit:%lu bsize:%lu\n", 
-				dp->qflags,(long unsigned)dp->curblocks,
-				(long unsigned)dp->softlimit,(long unsigned)dp->hardlimit,
-				(long unsigned)dp->curinodes,
-				(long unsigned)dp->isoftlimit,(long unsigned)dp->ihardlimit,
-				(long unsigned)dp->bsize));
-#endif /* LARGE_SMB_OFF_T */
 			return 0;
 		}
 
@@ -362,7 +351,6 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 				return -1;
 		}
 
-#ifdef LARGE_SMB_OFF_T
 		if (asprintf(&syscmd,
 			"%s \"%s\" %d %d "
 			"%u %llu %llu "
@@ -373,18 +361,6 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 			(long long unsigned)dp->bsize) < 0) {
 			return -1;
 		}
-#else /* LARGE_SMB_OFF_T */
-		if (asprintf(&syscmd,
-			"%s \"%s\" %d %d "
-			"%u %lu %lu "
-			"%lu %lu %lu ",
-			set_quota_command, path, qtype, _id, dp->qflags,
-			(long unsigned)dp->softlimit,(long unsigned)dp->hardlimit,
-			(long unsigned)dp->isoftlimit,(long unsigned)dp->ihardlimit,
-			(long unsigned)dp->bsize) < 0) {
-			return -1;
-		}
-#endif /* LARGE_SMB_OFF_T */
 
 		DEBUG (3, ("get_quota: Running command %s\n", syscmd));
 
