@@ -45,6 +45,7 @@ def configure(conf):
 
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed
+        conf.find_program('python', var='PYTHON')
         conf.check_tool('python')
         conf.check_python_version((2,4,2))
         conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)

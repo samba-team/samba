@@ -26,12 +26,18 @@ def set_options(opt):
     opt.RECURSE('lib/tdb')
     opt.RECURSE('lib/tevent')
     opt.RECURSE('lib/replace')
+    opt.tool_options('python') # options for disabling pyc or pyo compilation
 
 def configure(conf):
     conf.RECURSE('lib/tdb')
     conf.RECURSE('lib/tevent')
     conf.RECURSE('lib/popt')
     conf.RECURSE('lib/replace')
+    conf.find_program('python', var='PYTHON')
+    conf.find_program('xsltproc', var='XSLTPROC')
+    conf.check_tool('python')
+    conf.check_python_version((2,4,2))
+    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
 
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
