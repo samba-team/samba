@@ -178,27 +178,30 @@ static bool string_match(const char *tok,const char *s)
 bool client_match(const char *tok, const void *item)
 {
 	const char **client = (const char **)item;
+	const char *tok_addr = tok;
+	const char *cli_addr = client[ADDR_INDEX];
+
+	/*
+	 * tok and client[ADDR_INDEX] can be an IPv4 mapped to IPv6,
+	 * we try and match the IPv4 part of address only.
+	 * Bug #5311 and #7383.
+	 */
+
+	if (strnequal(tok_addr, "::ffff:",7)) {
+		tok_addr += 7;
+	}
+
+	if (strnequal(cli_addr,"::ffff:",7)) {
+		cli_addr += 7;
+	}
 
 	/*
 	 * Try to match the address first. If that fails, try to match the host
 	 * name if available.
 	 */
 
-	if (string_match(tok, client[ADDR_INDEX])) {
+	if (string_match(tok_addr, cli_addr)) {
 		return true;
-	}
-
-	if (strnequal(client[ADDR_INDEX],"::ffff:",7) &&
-			!strnequal(tok, "::ffff:",7)) {
-		/* client[ADDR_INDEX] is an IPv4 mapped to IPv6, but
- 		 * the list item is not. Try and match the IPv4 part of
- 		 * address only. This will happen a lot on IPv6 enabled
- 		 * systems with IPv4 allow/deny lists in smb.conf.
- 		 * Bug #5311. JRA.
- 		 */
-		if (string_match(tok, (client[ADDR_INDEX])+7)) {
-			return true;
-		}
 	}
 
 	if (client[NAME_INDEX][0] != 0) {
