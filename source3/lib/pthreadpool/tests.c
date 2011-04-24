@@ -120,7 +120,7 @@ static int test_busydestroy(void)
 		return -1;
 	}
 
-	pfd.fd = pthreadpool_sig_fd(p);
+	pfd.fd = pthreadpool_signal_fd(p);
 	pfd.events = POLLIN|POLLERR;
 
 	poll(&pfd, 1, -1);
@@ -202,7 +202,7 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 				strerror(ret));
 			return -1;
 		}
-		pfds[i].fd = pthreadpool_sig_fd(pools[i]);
+		pfds[i].fd = pthreadpool_signal_fd(pools[i]);
 		pfds[i].events = POLLIN|POLLHUP;
 	}
 

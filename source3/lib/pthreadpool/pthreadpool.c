@@ -250,7 +250,7 @@ static void pthreadpool_prep_atfork(void)
  * finished
  */
 
-int pthreadpool_sig_fd(struct pthreadpool *pool)
+int pthreadpool_signal_fd(struct pthreadpool *pool)
 {
 	return pool->sig_pipe[0];
 }
