@@ -139,6 +139,9 @@ plantestsuite("samba3.blackbox.net.local.registry.roundtrip", "dc:local", [os.pa
 plantestsuite("samba3.blackbox.testparm", "dc:local", [os.path.join(samba3srcdir, "script/tests/test_testparm_s3.sh"),
                                                        "$LOCAL_PATH"])
 
+plantestsuite(
+    "samba3.pthreadpool", "s3dc",
+    [os.path.join(samba3srcdir, "script/tests/test_pthreadpool.sh")])
 
 #smbtorture4 tests
 
