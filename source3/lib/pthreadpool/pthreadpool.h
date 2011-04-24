@@ -73,18 +73,18 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
  * @brief Get the signalling fd from a pthreadpool
  *
  * Completion of a job is indicated by readability of the fd retuned
- * by pthreadpool_sig_fd().
+ * by pthreadpool_signal_fd().
  *
  * @param[in]	pool		The pool in question
  * @return			The fd to listen on for readability
  */
-int pthreadpool_sig_fd(struct pthreadpool *pool);
+int pthreadpool_signal_fd(struct pthreadpool *pool);
 
 /**
  * @brief Get the job_id of a finished job
  *
  * This blocks until a job has finished unless the fd returned by
- * pthreadpool_sig_fd() is readable.
+ * pthreadpool_signal_fd() is readable.
  *
  * @param[in]	pool		The pool to query for finished jobs
  * @return			The job_id of the finished job
