@@ -515,6 +515,8 @@ sub provision($$$$$$)
 	my $bindir_abs = abs_path($self->{bindir});
 	my $vfs_modulesdir_abs = ($ENV{VFSLIBDIR} or $bindir_abs);
 
+	my $dns_host_file = "$ENV{SELFTEST_PREFIX}/dns_host_file";
+
 	my @dirs = ();
 
 	my $shrdir="$prefix_abs/share";
@@ -713,6 +715,8 @@ sub provision($$$$$$)
 
 	ncalrpc dir = $lockdir/ncalrpc
 	rpc_server:epmapper = embedded
+
+        resolv:host file = $dns_host_file
 
 	# Begin extra options
 	$extra_options

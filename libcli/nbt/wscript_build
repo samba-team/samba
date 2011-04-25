@@ -7,13 +7,13 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	)
 
 bld.SAMBA_SUBSYSTEM('lmhosts',
-                    source='lmhosts.c',
+                    source='lmhosts.c ../dns/dns_hosts_file.c',
                     deps='replace talloc'
                     )
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_LIBRARY('cli-nbt',
-                      source='nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
+                      source='nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c',
                       public_deps='ndr NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket samba-util lmhosts',
                       private_library=True
                       )
