@@ -1411,6 +1411,14 @@ AC_CHECK_LIB(resolv, dn_expand)
 AC_CHECK_LIB(resolv, _dn_expand)
 AC_CHECK_LIB(resolv, __dn_expand)
 
+AC_TRY_COMPILE([#include <resolv.h>],
+	       [struct __res_state s; res_ninit(&s);],
+	       ac_cv_have_res_ninit=yes,ac_cv_have_res_ninit=no)
+
+if test x"$ac_cv_have_res_ninit" = x"yes"; then
+	AC_DEFINE(HAVE_RES_NINIT, 1, [Whether we have res_ninit])
+fi
+
 #
 # Check for the functions putprpwnam, set_auth_parameters,
 # getspnam, bigcrypt and getprpwnam in -lsec and -lsecurity
