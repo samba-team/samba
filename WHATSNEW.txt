@@ -251,6 +251,40 @@ o   Andreas Schneider <asn@samba.org>
 Changes since 3.6.0pre2
 -----------------------
 
+o   Michael Adam <obnox@samba.org>
+    * Fix build of tdb2.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8083: "inherit owner = yes" doesn't interact correctly with
+      vfs_acl_xattr or vfs_acl_tdb module.
+    * BUG 8088: rpccli_samr_chng_pswd_auth_crap segfaults if any input blobs
+      are null.
+
+
+o   Günther Deschner <gd@samba.org>
+    * Fix timeout in rpc_pipe_open_tcp_port().
+    * Fix the build of "--with-profiling-data".
+    * Fix the AIX 5.3 build.
+
+
+o   Sergey Korsak <skif@1plus1.net>
+    * BUG #8099: setpwent() actually does endpwent() and vice versa on FreeBSD.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8066: Fix wrong output in 'smbget'.
+    * Fix Coverity ID 2470: STRAY_SEMICOLON.
+    * Fix Coverity ID 2471: UNINIT.
+    * nsswitch: Add 'wbinfo --lookup-sids'.
+    * nsswitch: Add 'wbinfo --sids-to-unix-ids'.
+    * Fix smbd with the async echo responder.
+    * Fix the build of vfs_gpfs.c.
+
+
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * Fix transaction recovery area for converted tdbs.
+
 
 
 Changes since 3.6.0pre1
