@@ -606,7 +606,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 			i++;
 			j = 0;
 		} else {
-			/* use the IP addresses from the SRV sresponse */
+			/* use the IP addresses from the SRV response */
 
 			if (j >= dcs[i].num_ips) {
 				i++;
@@ -620,8 +620,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 
 		/* make sure it is a valid IP.  I considered checking the
 		 * negative connection cache, but this is the wrong place for
-		 * it.  Maybe only as a hac.  After think about it, if all of
-		 * the IP addresses retuend from DNS are dead, what hope does a
+		 * it.  Maybe only as a hack. After think about it, if all of
+		 * the IP addresses returned from DNS are dead, what hope does a
 		 * netbios name lookup have?  The standard reason for falling
 		 * back to netbios lookups is that our DNS server doesn't know
 		 * anything about the DC's   -- jerry */
