@@ -1005,8 +1005,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
 		/* Extra checks if all symlinks are disallowed. */
 		if (!allow_symlinks) {
-			struct smb_filename *smb_fname = NULL;
-			NTSTATUS status;
 			/* fname can't have changed in resolved_path. */
 			const char *p = &resolved_name[rootdir_len];
 
@@ -1032,27 +1030,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				SAFE_FREE(resolved_name);
 				return NT_STATUS_ACCESS_DENIED;
 			}
-
-			/* Check if we are allowing users to follow symlinks */
-			/* Patch from David Clerc <David.Clerc@cui.unige.ch>
-			   University of Geneva */
-			status = create_synthetic_smb_fname(talloc_tos(),
-					fname, NULL,
-					NULL, &smb_fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				SAFE_FREE(resolved_name);
-				return status;
-			}
-
-			if ( (SMB_VFS_LSTAT(conn, smb_fname) != -1) &&
-					(S_ISLNK(smb_fname->st.st_ex_mode)) ) {
-				SAFE_FREE(resolved_name);
-				DEBUG(3,("check_reduced_name: denied: file path name "
-					"%s is a symlink\n",resolved_name));
-				TALLOC_FREE(smb_fname);
-				return NT_STATUS_ACCESS_DENIED;
-			}
-			TALLOC_FREE(smb_fname);
 		}
 	}
 
