@@ -39,6 +39,9 @@ struct pthreadpool;
  * @param[in]	max_threads	Maximum parallelism in this pool
  * @param[out]	presult		Pointer to the threadpool returned
  * @return			success: 0, failure: errno
+ *
+ * max_threads=0 means unlimited parallelism. The caller has to take
+ * care to not overload the system.
  */
 int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult);
 
