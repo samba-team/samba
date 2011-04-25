@@ -274,12 +274,13 @@ o   Sergey Korsak <skif@1plus1.net>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 8066: Fix wrong output in 'smbget'.
-    * Fix Coverity ID 2470: STRAY_SEMICOLON.
-    * Fix Coverity ID 2471: UNINIT.
+    * Fix Coverity IDs 986, 1340, 2047, 2299, 2307, 2325, 2335, 2336, 2470,
+      2471.
     * nsswitch: Add 'wbinfo --lookup-sids'.
     * nsswitch: Add 'wbinfo --sids-to-unix-ids'.
     * Fix smbd with the async echo responder.
     * Fix the build of vfs_gpfs.c.
+    * Add a 10-second timeout for the 445 or netbios connection to a DC.
 
 
 o   Rusty Russell <rusty@rustcorp.com.au>
