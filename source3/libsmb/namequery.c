@@ -1494,7 +1494,6 @@ NTSTATUS name_resolve_bcast(const char *name,
 	int i;
 	int num_interfaces = iface_count();
 	struct sockaddr_storage *ss_list;
-	struct sockaddr_storage ss;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 
 	if (lp_disable_netbios()) {
@@ -1512,11 +1511,6 @@ NTSTATUS name_resolve_bcast(const char *name,
 
 	DEBUG(3,("name_resolve_bcast: Attempting broadcast lookup "
 		"for name %s<0x%x>\n", name, name_type));
-
-	if (!interpret_string_addr(&ss, lp_socket_address(),
-				AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_sockaddr(&ss);
-	}
 
 	/*
 	 * Lookup the name on all the interfaces, return on
