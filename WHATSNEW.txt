@@ -228,6 +228,10 @@ smb.conf changes
    username map cache time	       New	       0
    winbind max clients		       New	       200
 
+   The variable substitutions for %i and %I no longer
+   use IPv4 addresses mapped to IPv6, e.g. '::ffff:192.168.0.1',
+   if the host has IPv6 enabled. Now %i and %I contain just
+   '192.168.0.1'.
 
 Commit Highlights
 -----------------
