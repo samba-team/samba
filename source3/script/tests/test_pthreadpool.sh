@@ -3,15 +3,18 @@
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
-TESTPROG=$BINDIR/pthreadpooltest
-
 if [ ! -x $BINDIR/pthreadpooltest ] ; then
-    TESTPROG=/bin/true
+    # Some machines don't have /bin/true, simulate it
+    cat >$BINDIR/pthreadpooltest <<EOF
+#!/bin/sh
+exit 0
+EOF
+    chmod +x $BINDIR/pthreadpooltest
 fi
 
 failed=0
 
-testit "pthreadpool" $VALGRIND $TESTPROG ||
+testit "pthreadpool" $VALGRIND $BINDIR/pthreadpooltest ||
 	failed=`expr $failed + 1`
 
 testok $0 $failed
