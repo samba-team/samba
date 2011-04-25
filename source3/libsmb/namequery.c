@@ -1507,6 +1507,237 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 	return true;
 }
 
+struct name_queries_state {
+	struct tevent_context *ev;
+	const char *name;
+	int name_type;
+	bool bcast;
+	bool recurse;
+	const struct sockaddr_storage *addrs;
+	int num_addrs;
+	int wait_msec;
+	int timeout_msec;
+
+	struct tevent_req **subreqs;
+	int num_received;
+	int num_sent;
+
+	int received_index;
+	struct sockaddr_storage *result_addrs;
+	int num_result_addrs;
+	uint8_t flags;
+};
+
+static void name_queries_done(struct tevent_req *subreq);
+static void name_queries_next(struct tevent_req *subreq);
+
+/*
+ * Send a name query to multiple destinations with a wait time in between
+ */
+
+static struct tevent_req *name_queries_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	const char *name, int name_type,
+	bool bcast, bool recurse,
+	const struct sockaddr_storage *addrs,
+	int num_addrs, int wait_msec, int timeout_msec)
+{
+	struct tevent_req *req, *subreq;
+	struct name_queries_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct name_queries_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->name = name;
+	state->name_type = name_type;
+	state->bcast = bcast;
+	state->recurse = recurse;
+	state->addrs = addrs;
+	state->num_addrs = num_addrs;
+	state->wait_msec = wait_msec;
+	state->timeout_msec = timeout_msec;
+
+	state->subreqs = talloc_zero_array(
+		state, struct tevent_req *, num_addrs);
+	if (tevent_req_nomem(state->subreqs, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->num_sent = 0;
+
+	subreq = name_query_send(
+		state->subreqs, state->ev, name, name_type, bcast, recurse,
+		&state->addrs[state->num_sent]);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	if (!tevent_req_set_endtime(
+		    subreq, state->ev,
+		    timeval_current_ofs(0, state->timeout_msec * 1000))) {
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, name_queries_done, req);
+
+	state->subreqs[state->num_sent] = subreq;
+	state->num_sent += 1;
+
+	if (state->num_sent < state->num_addrs) {
+		subreq = tevent_wakeup_send(
+			state, state->ev,
+			timeval_current_ofs(0, state->wait_msec * 1000));
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, name_queries_next, req);
+	}
+	return req;
+}
+
+static void name_queries_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct name_queries_state *state = tevent_req_data(
+		req, struct name_queries_state);
+	int i;
+	NTSTATUS status;
+
+	status = name_query_recv(subreq, state, &state->result_addrs,
+				 &state->num_result_addrs, &state->flags);
+
+	for (i=0; i<state->num_sent; i++) {
+		if (state->subreqs[i] == subreq) {
+			break;
+		}
+	}
+	if (i == state->num_sent) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	TALLOC_FREE(state->subreqs[i]);
+
+	state->num_received += 1;
+
+	if (!NT_STATUS_IS_OK(status)) {
+
+		if (state->num_received >= state->num_addrs) {
+			tevent_req_nterror(req, status);
+			return;
+		}
+		/*
+		 * Still outstanding requests, just wait
+		 */
+		return;
+	}
+	state->received_index = i;
+	tevent_req_done(req);
+}
+
+static void name_queries_next(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct name_queries_state *state = tevent_req_data(
+		req, struct name_queries_state);
+
+	if (!tevent_wakeup_recv(subreq)) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	subreq = name_query_send(
+		state->subreqs, state->ev,
+		state->name, state->name_type, state->bcast, state->recurse,
+		&state->addrs[state->num_sent]);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, name_queries_done, req);
+	if (!tevent_req_set_endtime(
+		    subreq, state->ev,
+		    timeval_current_ofs(0, state->timeout_msec * 1000))) {
+		tevent_req_nomem(NULL, req);
+		return;
+	}
+	state->subreqs[state->num_sent] = subreq;
+	state->num_sent += 1;
+
+	if (state->num_sent < state->num_addrs) {
+		subreq = tevent_wakeup_send(
+			state, state->ev,
+			timeval_current_ofs(0, state->wait_msec * 1000));
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, name_queries_next, req);
+	}
+}
+
+static NTSTATUS name_queries_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				  struct sockaddr_storage **result_addrs,
+				  int *num_result_addrs, uint8_t *flags,
+				  int *received_index)
+{
+	struct name_queries_state *state = tevent_req_data(
+		req, struct name_queries_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (result_addrs != NULL) {
+		*result_addrs = talloc_move(mem_ctx, &state->result_addrs);
+	}
+	if (num_result_addrs != NULL) {
+		*num_result_addrs = state->num_result_addrs;
+	}
+	if (flags != NULL) {
+		*flags = state->flags;
+	}
+	if (received_index != NULL) {
+		*received_index = state->received_index;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS name_queries(const char *name, int name_type,
+			     bool bcast, bool recurse,
+			     const struct sockaddr_storage *addrs,
+			     int num_addrs, int wait_msec, int timeout_msec,
+			     TALLOC_CTX *mem_ctx,
+			     struct sockaddr_storage **result_addrs,
+			     int *num_result_addrs, uint8_t *flags,
+			     int *received_index)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = name_queries_send(frame, ev, name, name_type, bcast,
+				recurse, addrs, num_addrs, wait_msec,
+				timeout_msec);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = name_queries_recv(req, mem_ctx, result_addrs,
+				   num_result_addrs, flags, received_index);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /********************************************************
  Resolve via "bcast" method.
 *********************************************************/
