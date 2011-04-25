@@ -23,6 +23,7 @@
 struct pipes_struct;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
+typedef void (named_pipe_termination_fn)(void *private_data);
 
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p);
@@ -32,7 +33,9 @@ bool setup_named_pipe_socket(const char *pipe_name,
 			     struct messaging_context *msg_ctx);
 void named_pipe_accept_function(struct tevent_context *ev_ctx,
 			        struct messaging_context *msg_ctx,
-			        const char *pipe_name, int fd);
+				const char *pipe_name, int fd,
+				named_pipe_termination_fn *term_fn,
+				void *private_data);
 
 uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 					 struct messaging_context *msg_ctx,

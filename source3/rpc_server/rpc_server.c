@@ -281,7 +281,7 @@ static void named_pipe_listener(struct tevent_context *ev,
 	named_pipe_accept_function(state->ev_ctx,
 				   state->msg_ctx,
 				   state->ep.name,
-				   sd);
+				   sd, NULL, 0);
 }
 
 
@@ -314,13 +314,26 @@ struct named_pipe_client {
 
 	struct iovec *iov;
 	size_t count;
+
+	named_pipe_termination_fn *term_fn;
+	void *private_data;
 };
+
+static int named_pipe_destructor(struct named_pipe_client *npc)
+{
+	if (npc->term_fn) {
+		npc->term_fn(npc->private_data);
+	}
+	return 0;
+}
 
 static void named_pipe_accept_done(struct tevent_req *subreq);
 
 void named_pipe_accept_function(struct tevent_context *ev_ctx,
 			        struct messaging_context *msg_ctx,
-			        const char *pipe_name, int fd)
+				const char *pipe_name, int fd,
+				named_pipe_termination_fn *term_fn,
+				void *private_data)
 {
 	struct named_pipe_client *npc;
 	struct tstream_context *plain;
@@ -343,6 +356,10 @@ void named_pipe_accept_function(struct tevent_context *ev_ctx,
 	}
 	npc->ev = ev_ctx;
 	npc->msg_ctx = msg_ctx;
+	npc->term_fn = term_fn;
+	npc->private_data = private_data;
+
+	talloc_set_destructor(npc, named_pipe_destructor);
 
 	/* make sure socket is in NON blocking state */
 	ret = set_blocking(fd, false);
