@@ -1748,8 +1748,8 @@ NTSTATUS name_resolve_bcast(const char *name,
 			struct sockaddr_storage **return_iplist,
 			int *return_count)
 {
-	int i;
-	int num_interfaces = iface_count();
+	struct sockaddr_storage *bcast_addrs;
+	int i, num_addrs, num_bcast_addrs;
 	struct sockaddr_storage *ss_list;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 
@@ -1759,9 +1759,6 @@ NTSTATUS name_resolve_bcast(const char *name,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*return_iplist = NULL;
-	*return_count = 0;
-
 	/*
 	 * "bcast" means do a broadcast lookup on all the local interfaces.
 	 */
@@ -1769,32 +1766,33 @@ NTSTATUS name_resolve_bcast(const char *name,
 	DEBUG(3,("name_resolve_bcast: Attempting broadcast lookup "
 		"for name %s<0x%x>\n", name, name_type));
 
+	num_addrs = iface_count();
+	bcast_addrs = talloc_array(talloc_tos(), struct sockaddr_storage,
+				   num_addrs);
+	if (bcast_addrs == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/*
 	 * Lookup the name on all the interfaces, return on
 	 * the first successful match.
 	 */
-	for( i = num_interfaces-1; i >= 0; i--) {
+	num_bcast_addrs = 0;
+
+	for (i=0; i<num_addrs; i++) {
 		const struct sockaddr_storage *pss = iface_n_bcast(i);
 
-		/* Done this way to fix compiler error on IRIX 5.x */
-		if (!pss) {
+		if (pss->ss_family != AF_INET) {
 			continue;
 		}
-		status = name_query(name, name_type, true, true, pss,
-				    talloc_tos(), &ss_list, return_count,
-				    NULL);
-		if (NT_STATUS_IS_OK(status)) {
-			goto success;
-		}
+		bcast_addrs[num_bcast_addrs] = *pss;
+		num_bcast_addrs += 1;
 	}
 
-	/* failed - no response */
-
-	return status;
-
-success:
-	*return_iplist = ss_list;
-	return status;
+	return name_queries(name, name_type, true, true,
+			    bcast_addrs, num_bcast_addrs, 0, 1000,
+			    mem_ctx, return_iplist, return_count,
+			    NULL, NULL);
 }
 
 /********************************************************
