@@ -3456,7 +3456,7 @@ buildfarm-test:
 subunit-test:
 	$(MAKE) test SUBUNIT_FORMATTER=cat
 
-SELFTEST_TESTENV = dc
+SELFTEST_TESTENV = s3dc
 
 testenv:
 	$(MAKE) test SELFTEST_TESTENV=$(SELFTEST_TESTENV) TESTS="--testenv"
