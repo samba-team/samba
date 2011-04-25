@@ -32,7 +32,6 @@
 
 struct ip_service_name {
 	struct sockaddr_storage ss;
-	unsigned port;
 	const char *hostname;
 };
 
@@ -514,7 +513,6 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 			       &iplist[i].ss);
 
 		r->ss	= iplist[i].ss;
-		r->port = iplist[i].port;
 		r->hostname = talloc_strdup(mem_ctx, addr);
 		if (!r->hostname) {
 			SAFE_FREE(iplist);
@@ -598,7 +596,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 
 		struct ip_service_name *r = &dclist[count];
 
-		r->port = dcs[i].port;
 		r->hostname = dcs[i].hostname;
 
 		/* If we don't have an IP list for a name, lookup it up */
