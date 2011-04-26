@@ -861,9 +861,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_dcs; i++) {
 
+
 		DEBUG(10,("LDAP ping to %s\n", dclist[i].hostname));
 
-		if (ads_cldap_netlogon(mem_ctx, dclist[i].hostname,
+		if (ads_cldap_netlogon(mem_ctx, &dclist[i].ss,
 					domain_name,
 					nt_version,
 					&r))

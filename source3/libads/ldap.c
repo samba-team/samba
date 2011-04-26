@@ -196,45 +196,32 @@ bool ads_closest_dc(ADS_STRUCT *ads)
  */
 static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 {
-	char *srv;
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = false;
+	struct sockaddr_storage ss;
+	char addr[INET6_ADDRSTRLEN];
 
 	if (!server || !*server) {
 		TALLOC_FREE(frame);
 		return False;
 	}
 
-	if (!is_ipaddress(server)) {
-		struct sockaddr_storage ss;
-		char addr[INET6_ADDRSTRLEN];
-
-		if (!resolve_name(server, &ss, 0x20, true)) {
-			DEBUG(5,("ads_try_connect: unable to resolve name %s\n",
-				server ));
-			TALLOC_FREE(frame);
-			return false;
-		}
-		print_sockaddr(addr, sizeof(addr), &ss);
-		srv = talloc_strdup(frame, addr);
-	} else {
-		/* this copes with inet_ntoa brokenness */
-		srv = talloc_strdup(frame, server);
-	}
-
-	if (!srv) {
+	if (!resolve_name(server, &ss, 0x20, true)) {
+		DEBUG(5,("ads_try_connect: unable to resolve name %s\n",
+			 server ));
 		TALLOC_FREE(frame);
 		return false;
 	}
+	print_sockaddr(addr, sizeof(addr), &ss);
 
 	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n", 
-		srv, ads->server.realm));
+		addr, ads->server.realm));
 
 	ZERO_STRUCT( cldap_reply );
 
-	if ( !ads_cldap_netlogon_5(frame, srv, ads->server.realm, &cldap_reply ) ) {
-		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
+	if ( !ads_cldap_netlogon_5(frame, &ss, ads->server.realm, &cldap_reply ) ) {
+		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", addr));
 		ret = false;
 		goto out;
 	}
@@ -243,7 +230,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 
 	if ( !(cldap_reply.server_type & NBT_SERVER_LDAP) ) {
 		DEBUG(1,("ads_try_connect: %s's CLDAP reply says it is not an LDAP server!\n",
-			srv));
+			addr));
 		ret = false;
 		goto out;
 	}
@@ -273,13 +260,7 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 	ads->server.workgroup          = SMB_STRDUP(cldap_reply.domain_name);
 
 	ads->ldap.port = gc ? LDAP_GC_PORT : LDAP_PORT;
-	if (!interpret_string_addr(&ads->ldap.ss, srv, 0)) {
-		DEBUG(1,("ads_try_connect: unable to convert %s "
-			"to an address\n",
-			srv));
-		ret = false;
-		goto out;
-	}
+	ads->ldap.ss = ss;
 
 	/* Store our site name. */
 	sitename_store( cldap_reply.domain_name, cldap_reply.client_site);

@@ -107,6 +107,7 @@ done:
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct sockaddr_storage ss;
 
 	if (!gc || !domain) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -126,8 +127,17 @@ done:
 	nt_status = ads_ntstatus(ads_status);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
+	if (!resolve_name(ads->config.ldap_server_name, &ss, 0x20, true)) {
+		DEBUG(5,("gc_find_forest_root: unable to resolve name %s\n",
+			 ads->config.ldap_server_name));
+		nt_status = NT_STATUS_IO_TIMEOUT;
+		/* This matches the old code which did the resolve in
+		 * ads_cldap_netlogon_5 */
+		BAIL_ON_NTSTATUS_ERROR(nt_status);
+	}
+
 	if (!ads_cldap_netlogon_5(frame,
-				  ads->config.ldap_server_name,
+				  &ss,
 				  ads->config.realm,
 				  &cldap_reply))
 	{

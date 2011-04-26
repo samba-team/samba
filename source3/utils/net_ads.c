@@ -60,7 +60,8 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	if ( !ads_cldap_netlogon_5(talloc_tos(), addr, ads->server.realm, &reply ) ) {
+
+	if ( !ads_cldap_netlogon_5(talloc_tos(), &ads->ldap.ss, ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, _("CLDAP query failed!\n"));
 		return -1;
 	}
@@ -383,7 +384,6 @@ int net_ads_check(struct net_context *c)
 static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	char addr[INET6_ADDRSTRLEN];
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	if (c->display_usage) {
@@ -405,8 +405,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 		ads->ldap.port = 389;
 	}
 
-	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	if ( !ads_cldap_netlogon_5(talloc_tos(), addr, ads->server.realm, &reply ) ) {
+	if ( !ads_cldap_netlogon_5(talloc_tos(), &ads->ldap.ss, ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, _("CLDAP query failed!\n"));
 		ads_destroy(&ads);
 		return -1;
