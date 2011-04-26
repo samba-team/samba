@@ -1849,6 +1849,10 @@ struct tevent_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
 				       off_t offset, size_t size);
 NTSTATUS cli_write_andx_recv(struct tevent_req *req, size_t *pwritten);
 
+NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
+		      const uint8_t *buf, off_t offset, size_t size,
+		      size_t *pwritten);
+
 struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				 struct cli_state *cli,
 				 uint16_t fnum, uint16_t mode,

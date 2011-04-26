@@ -1138,9 +1138,57 @@ static void cli_writeall_written(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, cli_writeall_written, req);
 }
 
-static NTSTATUS cli_writeall_recv(struct tevent_req *req)
+static NTSTATUS cli_writeall_recv(struct tevent_req *req,
+				  size_t *pwritten)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	struct cli_writeall_state *state = tevent_req_data(
+		req, struct cli_writeall_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (pwritten != NULL) {
+		*pwritten = state->written;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
+		      const uint8_t *buf, off_t offset, size_t size,
+		      size_t *pwritten)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_writeall_send(frame, ev, cli, fnum, mode, buf, offset, size);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+	status = cli_writeall_recv(req, pwritten);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 struct cli_push_write_state {
@@ -1305,7 +1353,7 @@ static void cli_push_written(struct tevent_req *subreq)
 	state->reqs[idx] = NULL;
 	state->pending -= 1;
 
-	status = cli_writeall_recv(subreq);
+	status = cli_writeall_recv(subreq, NULL);
 	TALLOC_FREE(subreq);
 	TALLOC_FREE(substate);
 	if (tevent_req_nterror(req, status)) {
