@@ -37,7 +37,14 @@ typedef int ber_int_t;
 #endif
 
 /* function declarations not included in proto.h */
-LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
+LDAP *ldap_open_with_timeout(const char *server,
+			     struct sockaddr_storage *ss,
+			     int port, unsigned int to);
+
+#ifdef HAVE_LDAP_PVT_H
+#include <ldap_pvt.h>
+#endif
+int ldap_init_fd(ber_socket_t fd, int proto, char *uri, LDAP **ldp);
 
 #endif /* HAVE_LDAP_H */
 

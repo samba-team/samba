@@ -574,7 +574,7 @@ msg.msg_acctrightslen = sizeof(fd);
 
     # Check for LDAP
     if Options.options.with_ldap:
-        conf.CHECK_HEADERS('ldap.h lber.h')
+        conf.CHECK_HEADERS('ldap.h lber.h ldap_pvt.h')
         conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
         conf.CHECK_FUNCS_IN('ber_scanf ber_sockbuf_add_io', 'lber')
         conf.CHECK_VARIABLE('LDAP_OPT_SOCKBUF', headers='ldap.h')
@@ -584,7 +584,7 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.CHECK_VARIABLE('LBER_OPT_LOG_PRINT_FN',
                             define='HAVE_LBER_LOG_PRINT_FN', headers='lber.h')
 
-        conf.CHECK_FUNCS_IN('ldap_init ldap_initialize ldap_set_rebind_proc', 'ldap')
+        conf.CHECK_FUNCS_IN('ldap_init ldap_init_fd ldap_initialize ldap_set_rebind_proc', 'ldap')
         conf.CHECK_FUNCS_IN('ldap_add_result_entry', 'ldap')
 
         # Check if ldap_set_rebind_proc() takes three arguments

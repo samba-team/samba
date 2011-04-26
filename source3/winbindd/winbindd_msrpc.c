@@ -762,7 +762,7 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 
 #include <ldap.h>
 
-static int get_ldap_seq(const char *server, int port, uint32 *seq)
+static int get_ldap_seq(const char *server, struct sockaddr_storage *ss, int port, uint32 *seq)
 {
 	int ret = -1;
 	struct timeval to;
@@ -778,7 +778,7 @@ static int get_ldap_seq(const char *server, int port, uint32 *seq)
 	 * search timeout doesn't seem to apply to doing an open as well. JRA.
 	 */
 
-	ldp = ldap_open_with_timeout(server, port, lp_ldap_timeout());
+	ldp = ldap_open_with_timeout(server, ss, port, lp_ldap_timeout());
 	if (ldp == NULL)
 		return -1;
 
@@ -822,7 +822,7 @@ static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	char addr[INET6_ADDRSTRLEN];
 
 	print_sockaddr(addr, sizeof(addr), &domain->dcaddr);
-	if ((ret = get_ldap_seq(addr, LDAP_PORT, seq)) == 0) {
+	if ((ret = get_ldap_seq(addr, &domain->dcaddr, LDAP_PORT, seq)) == 0) {
 		DEBUG(3, ("get_ldap_sequence_number: Retrieved sequence "
 			  "number for Domain (%s) from DC (%s)\n",
 			domain->name, addr));
