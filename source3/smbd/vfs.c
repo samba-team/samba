@@ -1008,7 +1008,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			/* fname can't have changed in resolved_path. */
 			const char *p = &resolved_name[rootdir_len];
 
-			/* *p ran be '\0' if fname was "." */
+			/* *p can be '\0' if fname was "." */
 			if (*p == '\0' && ISDOT(fname)) {
 				goto out;
 			}
