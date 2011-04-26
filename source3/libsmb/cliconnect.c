@@ -3,6 +3,8 @@
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Andrew Bartlett 2001-2003
+   Copyright (C) Volker Lendecke 2011
+   Copyright (C) Jeremy Allison 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
