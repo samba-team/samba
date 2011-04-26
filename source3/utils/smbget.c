@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "popt_common.h"
 #include "libsmbclient.h"
 
