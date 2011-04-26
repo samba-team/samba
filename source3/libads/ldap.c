@@ -658,18 +658,6 @@ got_connection:
 		ads->auth.kdc_server = SMB_STRDUP(addr);
 	}
 
-#if KRB5_DNS_HACK
-	/* this is a really nasty hack to avoid ADS DNS problems. It needs a patch
-	   to MIT kerberos to work (tridge) */
-	{
-		char *env = NULL;
-		if (asprintf(&env, "KRB5_KDC_ADDRESS_%s", ads->config.realm) > 0) {
-			setenv(env, ads->auth.kdc_server, 1);
-			free(env);
-		}
-	}
-#endif
-
 	/* If the caller() requested no LDAP bind, then we are done */
 
 	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
