@@ -185,6 +185,13 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		tevent_cleanup_pending_signal_handlers(se);
 	}
 
+	/* clean up nesting or we get an abort when nesting
+	 * is not allowed. -- SSS */
+	ev->nesting.allowed = false;
+	ev->nesting.level = 0;
+	ev->nesting.hook_fn = NULL;
+	ev->nesting.hook_private = NULL;
+
 	return 0;
 }
 
