@@ -2842,7 +2842,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 
 	if (ads->config.current_time != 0) {
 		ads->auth.time_offset = ads->config.current_time - time(NULL);
-		DEBUG(4,("time offset is %d seconds\n", ads->auth.time_offset));
+		DEBUG(4,("KDC time offset is %d seconds\n", ads->auth.time_offset));
 	}
 
 	ads_msgfree(ads, res);
