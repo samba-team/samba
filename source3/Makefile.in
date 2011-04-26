@@ -529,7 +529,7 @@ LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
 	     ../librpc/ndr/ndr_svcctl.o
 
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
-	     libsmb/namequery.o ../libcli/nbt/lmhosts.o libsmb/conncache.o \
+	     libsmb/namequery.o ../libcli/nbt/lmhosts.o ../libcli/dns/dns_hosts_file.o libsmb/conncache.o \
 	     libads/dns.o libads/sitename_cache.o
 
 NTERR_OBJ = libsmb/nterr.o libsmb/smberr.o

@@ -401,9 +401,17 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
+	const char *dns_hosts_file;
 
 	if ( !ctx || !name || !dclist ) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
+	if (dns_hosts_file) {
+		return resolve_dns_hosts_file_as_dns_rr(dns_hosts_file,
+							name, true, ctx,
+							dclist, numdcs);
 	}
 
 	/* Send the request.  May have to loop several times in case
@@ -590,9 +598,16 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
+	const char *dns_hosts_file;
 
 	if ( !ctx || !dnsdomain || !nslist ) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
+	if (dns_hosts_file) {
+		DEBUG(1, ("NO 'NS' lookup available when using resolv:host file"));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	/* Send the request.  May have to loop several times in case
