@@ -655,8 +655,6 @@ sub provision($$$$$$)
 	debug pid = yes
         max log size = 0
 
-	name resolve order = bcast
-
 	state directory = $lockdir
 	cache directory = $lockdir
 
