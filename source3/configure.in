@@ -3871,6 +3871,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(gss_krb5_import_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_get_name_attribute, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_oid_equal, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(gss_inquire_sec_context_by_oid, $KRB5_LIBS)
 
   # MIT krb5 1.8 does not expose this call (yet)
   AC_CHECK_DECLS(krb5_get_credentials_for_user, [], [], [#include <krb5.h>])

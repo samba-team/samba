@@ -38,20 +38,19 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 				gss_name_t gss_client_name,
 				DATA_BLOB *pac_blob)
 {
+	NTSTATUS status;
 	OM_uint32 gss_maj, gss_min;
-	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
+#ifdef HAVE_GSS_GET_NAME_ATTRIBUTE
 	gss_buffer_desc pac_buffer;
 	gss_buffer_desc pac_display_buffer;
 	gss_buffer_desc pac_name = {
 		.value = "urn:mspac:",
 		.length = sizeof("urn:mspac:")-1
 	};
-	NTSTATUS status;
 	int more = -1;
 	int authenticated = false;
 	int complete = false;
 
-#ifdef HAVE_GSS_GET_NAME_ATTRIBUTE
 	gss_maj = gss_get_name_attribute(
 		&gss_min, gss_client_name, &pac_name,
 		&authenticated, &complete,
@@ -83,7 +82,10 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-#endif
+#elif defined(HAVE_GSS_INQUIRE_SEC_CONTEXT_BY_OID)
+
+	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
+
 	/* If we didn't have the routine to get a verified, validated
 	 * PAC (supplied only by MIT at the time of writing), then try
 	 * with the Heimdal OID (fetches the PAC directly and always
@@ -118,6 +120,10 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 		gss_maj = gss_release_buffer_set(&gss_min, &set);
 		return status;
 	}
+#else
+	DEBUG(1, ("unable to obtain a PAC against this GSSAPI library.  "
+		  "GSSAPI secured connections are available only with Heimdal or MIT Kerberos >= 1.8\n"));
+#endif
 	return NT_STATUS_ACCESS_DENIED;
 }
 #endif
