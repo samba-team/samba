@@ -23,8 +23,9 @@
 #include "../librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/crypto/gse.h"
 #include "auth.h"
+#ifdef HAVE_KRB5
 #include "libcli/auth/krb5_wrap.h"
-
+#endif
 NTSTATUS gssapi_server_auth_start(TALLOC_CTX *mem_ctx,
 				  bool do_sign,
 				  bool do_seal,
@@ -107,7 +108,7 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 {
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB pac_blob;
-	struct PAC_DATA *pac_data;
+	struct PAC_DATA *pac_data = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	unsigned int i;
 	bool is_mapped;
@@ -134,9 +135,13 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 		goto done;
 	}
 
+#ifdef HAVE_KRB5
 	status = kerberos_decode_pac(tmp_ctx,
 				     pac_blob,
 				     NULL, NULL, NULL, NULL, 0, &pac_data);
+#else
+	status = NT_STATUS_ACCESS_DENIED;
+#endif
 	data_blob_free(&pac_blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;

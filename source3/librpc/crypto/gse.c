@@ -972,7 +972,8 @@ NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS gse_get_authtime(struct gse_context *gse_ctx, time_t *authtime)
+NTSTATUS gse_get_pac_blob(struct gse_context *gse_ctx,
+			  TALLOC_CTX *mem_ctx, DATA_BLOB *pac_blob)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
