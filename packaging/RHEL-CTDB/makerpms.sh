@@ -42,6 +42,14 @@ case $RPMVER in
        ;;
 esac
 
+mkdir -p `rpm --eval %_specdir`
+mkdir -p `rpm --eval %_sourcedir`
+mkdir -p `rpm --eval %_builddir`
+mkdir -p `rpm --eval %_srcrpmdir`
+mkdir -p `rpm --eval %_rpmdir`/noarch
+mkdir -p `rpm --eval %_rpmdir`/i386
+mkdir -p `rpm --eval %_rpmdir`/x86_64
+
 ##
 ## Delete the old debuginfo remnants:
 ##
