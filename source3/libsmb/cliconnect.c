@@ -47,6 +47,40 @@ static const struct {
 
 #define STAR_SMBSERVER "*SMBSERVER"
 
+/********************************************************
+ Utility function to ensure we always return at least
+ a valid char * pointer to an empty string for the
+ cli->server_os, cli->server_type and cli->server_domain
+ strings.
+*******************************************************/
+
+static NTSTATUS smb_bytes_talloc_string(struct cli_state *cli,
+					char *inbuf,
+					char **dest,
+					uint8_t *src,
+					size_t srclen,
+					ssize_t *destlen)
+{
+	*destlen = clistr_pull_talloc(cli,
+				inbuf,
+				SVAL(inbuf, smb_flg2),
+				dest,
+				(char *)src,
+				srclen,
+				STR_TERMINATE);
+	if (*destlen == -1) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (*dest == NULL) {
+		*dest = talloc_strdup(cli, "");
+		if (*dest == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 /**
  * Set the user session key for a connection
  * @param cli The cli structure to add it too
@@ -220,6 +254,7 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
+	ssize_t ret;
 
 	status = cli_smb_recv(subreq, state, &in, 0, NULL, NULL,
 			      &num_bytes, &bytes);
@@ -234,12 +269,44 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 
 	cli->vuid = SVAL(inbuf, smb_uid);
 
-	p += clistr_pull(inbuf, cli->server_os, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_type, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_domain, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_os,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_type,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_domain,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
@@ -415,6 +482,7 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
+	ssize_t ret;
 
 	status = cli_smb_recv(subreq, state, &in, 0, NULL, NULL,
 			      &num_bytes, &bytes);
@@ -429,12 +497,44 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 
 	cli->vuid = SVAL(inbuf, smb_uid);
 
-	p += clistr_pull(inbuf, cli->server_os, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_type, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_domain, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_os,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_type,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_domain,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
@@ -590,6 +690,7 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
+	ssize_t ret;
 
 	status = cli_smb_recv(subreq, state, &in, 0, NULL, NULL,
 			      &num_bytes, &bytes);
@@ -603,12 +704,44 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 
 	cli->vuid = SVAL(inbuf, smb_uid);
 
-	p += clistr_pull(inbuf, cli->server_os, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_type, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_domain, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_os,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_type,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_domain,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
 
 	status = cli_set_username(cli, state->user);
 	if (tevent_req_nterror(req, status)) {
@@ -913,6 +1046,7 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
+	ssize_t ret;
 
 	status = cli_smb_recv(subreq, state, &in, 0, NULL, NULL,
 			      &num_bytes, &bytes);
@@ -927,12 +1061,41 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 
 	cli->vuid = SVAL(inbuf, smb_uid);
 
-	p += clistr_pull(inbuf, cli->server_os, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_type, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(inbuf, cli->server_domain, (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_os,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_type,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					inbuf,
+					&cli->server_domain,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
@@ -1122,6 +1285,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	uint8_t *p;
 	uint16_t blob_length;
 	uint8_t *inbuf;
+	ssize_t ret;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
 			      &num_bytes, &bytes);
@@ -1147,15 +1311,44 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 
 	p = bytes + blob_length;
 
-	p += clistr_pull(state->inbuf, cli->server_os,
-			 (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(state->inbuf, cli->server_type,
-			 (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(state->inbuf, cli->server_domain,
-			 (char *)p, sizeof(fstring),
-			 bytes+num_bytes-p, STR_TERMINATE);
+	status = smb_bytes_talloc_string(cli,
+					(char *)inbuf,
+					&cli->server_os,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					(char *)inbuf,
+					&cli->server_type,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
+
+	status = smb_bytes_talloc_string(cli,
+					(char *)inbuf,
+					&cli->server_domain,
+					p,
+					bytes+num_bytes-p,
+					&ret);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	p += ret;
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
@@ -1456,8 +1649,14 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 
 	if (NT_STATUS_IS_OK(status)) {
 		if (state->cli->server_domain[0] == '\0') {
-			fstrcpy(state->cli->server_domain,
-				state->ntlmssp_state->server.netbios_domain);
+			TALLOC_FREE(state->cli->server_domain);
+			state->cli->server_domain = talloc_strdup(state->cli,
+						state->ntlmssp_state->server.netbios_domain);
+			if (state->cli->server_domain == NULL) {
+				TALLOC_FREE(subreq);
+				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
 		}
 		cli_set_session_key(
 			state->cli, state->ntlmssp_state->session_key);
@@ -1754,12 +1953,15 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *workgroup)
 {
 	char *p;
-	fstring user2;
+	char *user2;
 
 	if (user) {
-		fstrcpy(user2, user);
+		user2 = talloc_strdup(talloc_tos(), user);
 	} else {
-		user2[0] ='\0';
+		user2 = talloc_strdup(talloc_tos(), "");
+	}
+	if (user2 == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!workgroup) {
@@ -1979,7 +2181,10 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 	vwv = state->vwv;
 
-	fstrcpy(cli->share, share);
+	cli->share = talloc_strdup(cli, share);
+	if (!cli->share) {
+		return NULL;
+	}
 
 	/* in user level security don't send a password now */
 	if (cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
@@ -2143,8 +2348,24 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 
 	inbuf = (char *)in;
 
-	clistr_pull(inbuf, cli->dev, bytes, sizeof(fstring), num_bytes,
-		    STR_TERMINATE|STR_ASCII);
+	if (num_bytes) {
+		if (clistr_pull_talloc(cli,
+				inbuf,
+				SVAL(inbuf, smb_flg2),
+				&cli->dev,
+				bytes,
+				num_bytes,
+				STR_TERMINATE|STR_ASCII) == -1) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+	} else {
+		cli->dev = talloc_strdup(cli, "");
+		if (cli->dev == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+	}
 
 	if ((cli->protocol >= PROTOCOL_NT1) && (num_bytes == 3)) {
 		/* almost certainly win95 - enable bug fixes */
@@ -2777,7 +2998,10 @@ NTSTATUS cli_connect(struct cli_state *cli,
 		host = STAR_SMBSERVER;
 	}
 
-	fstrcpy(cli->desthost, host);
+	cli->desthost = talloc_strdup(cli, host);
+	if (cli->desthost == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* allow hostnames of the form NAME#xx and do a netbios lookup */
 	if ((p = strchr(cli->desthost, '#'))) {

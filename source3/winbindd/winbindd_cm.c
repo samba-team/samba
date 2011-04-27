@@ -816,7 +816,12 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	(*cli)->timeout = 10000; 	/* 10 seconds */
 	(*cli)->fd = sockfd;
-	fstrcpy((*cli)->desthost, controller);
+	(*cli)->desthost = talloc_strdup((*cli), controller);
+	if ((*cli)->desthost == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	(*cli)->use_kerberos = True;
 
 	peeraddr_len = sizeof(peeraddr);
