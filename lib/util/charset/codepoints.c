@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "lib/util/charset/charset.h"
 #include "system/locale.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 #ifdef strcasecmp
 #undef strcasecmp

@@ -146,7 +146,7 @@ Build.BuildContext.dynconfig_cflags = dynconfig_cflags
 def build(bld):
     cflags = bld.dynconfig_cflags()
     bld.SAMBA_SUBSYSTEM('DYNCONFIG',
-                        'dynconfig.c',
+                        '../../dynconfig/dynconfig.c',
                         deps='replace talloc',
                         public_headers=os_path_relpath(os.path.join(Options.launch_dir, 'version.h'), bld.curdir),
                         header_path='samba',

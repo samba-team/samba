@@ -1,8 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-   Copyright (C) 2003 by Jim McDonough <jmcd@us.ibm.com>
-   Copyright (C) 2007 by Jeremy Allison <jra@samba.org>
+   Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
+   Copyright (C) Stefan Metzmacher	2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "nsswitch/winbind_struct_protocol.h"
 
 /**
  * @file dynconfig.c
@@ -40,31 +41,49 @@
  * table?  There's kind of a chicken-and-egg situation there...
  **/
 
+#include "dynconfig.h"
+#ifdef strdup
+#undef strdup
+#endif
+
 #define DEFINE_DYN_CONFIG_PARAM(name) \
-static char *dyn_##name; \
+const char *dyn_##name = name; \
 \
- const char *get_dyn_##name(void) \
+bool is_default_dyn_##name(void) \
 {\
-	if (dyn_##name == NULL) {\
-		return name;\
-	}\
+	if (strcmp(name, dyn_##name) == 0) { \
+		return true; \
+	} \
+	return false; \
+}\
+\
+const char *get_dyn_##name(void) \
+{\
 	return dyn_##name;\
 }\
 \
- const char *set_dyn_##name(const char *newpath) \
+const char *set_dyn_##name(const char *newpath) \
 {\
-	if (dyn_##name) {\
-		SAFE_FREE(dyn_##name);\
+	if (newpath == NULL) { \
+		return NULL; \
+	} \
+	if (strcmp(name, newpath) == 0) { \
+		return dyn_##name; \
+	} \
+	newpath = strdup(newpath);\
+	if (newpath == NULL) { \
+		return NULL; \
+	} \
+	if (is_default_dyn_##name()) { \
+		/* do not free a static string */ \
+	} else if (dyn_##name) {\
+		free(discard_const(dyn_##name)); \
 	}\
-	dyn_##name = SMB_STRDUP(newpath);\
+	dyn_##name = newpath; \
 	return dyn_##name;\
-}\
-\
- bool is_default_dyn_##name(void) \
-{\
-	return (dyn_##name == NULL);\
 }
 
+/* these are in common with s3 */
 DEFINE_DYN_CONFIG_PARAM(SBINDIR)
 DEFINE_DYN_CONFIG_PARAM(BINDIR)
 DEFINE_DYN_CONFIG_PARAM(SWATDIR)
@@ -79,8 +98,20 @@ DEFINE_DYN_CONFIG_PARAM(LOCKDIR)
 DEFINE_DYN_CONFIG_PARAM(STATEDIR) /** Persistent state files. Default LOCKDIR */
 DEFINE_DYN_CONFIG_PARAM(CACHEDIR) /** Temporary cache files. Default LOCKDIR */
 DEFINE_DYN_CONFIG_PARAM(PIDDIR)
-DEFINE_DYN_CONFIG_PARAM(NMBDSOCKETDIR)
 DEFINE_DYN_CONFIG_PARAM(NCALRPCDIR)
 DEFINE_DYN_CONFIG_PARAM(SMB_PASSWD_FILE)
 DEFINE_DYN_CONFIG_PARAM(PRIVATE_DIR)
 DEFINE_DYN_CONFIG_PARAM(LOCALEDIR)
+DEFINE_DYN_CONFIG_PARAM(NMBDSOCKETDIR)
+DEFINE_DYN_CONFIG_PARAM(DATADIR)
+DEFINE_DYN_CONFIG_PARAM(SETUPDIR)
+DEFINE_DYN_CONFIG_PARAM(WINBINDD_SOCKET_DIR) /* from winbind_struct_protocol.h in s3 autoconf */
+
+/* these are not in s3 */
+#if (_SAMBA_BUILD_ >= 4)
+DEFINE_DYN_CONFIG_PARAM(WINBINDD_PRIVILEGED_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PARAM(NTP_SIGND_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PARAM(PYTHONDIR)
+DEFINE_DYN_CONFIG_PARAM(PYTHONARCHDIR)
+DEFINE_DYN_CONFIG_PARAM(SCRIPTSBINDIR)
+#endif

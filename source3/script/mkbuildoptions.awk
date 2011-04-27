@@ -21,7 +21,7 @@ BEGIN {
 	print "";
 	print "#include \"includes.h\"";
 	print "#include \"build_env.h\"";
-	print "#include \"dynconfig.h\"";
+	print "#include \"dynconfig/dynconfig.h\"";
 	print "";
 	print "static int output(bool screen, const char *format, ...) PRINTF_ATTRIBUTE(2,3);";
 	print "void build_options(bool screen);";

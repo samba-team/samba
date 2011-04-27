@@ -140,6 +140,7 @@ CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
 DATADIR = @datadir@
+SETUPDIR = @datadir@/setup
 
 # The permissions to give the executables and other data
 INSTALLPERMS_BIN = 0755
@@ -210,7 +211,9 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DCACHEDIR=\"$(CACHEDIR)\" \
 	-DSTATEDIR=\"$(STATEDIR)\" \
 	-DNMBDSOCKETDIR=\"$(NMBDSOCKETDIR)\" \
-	-DLOCALEDIR=\"$(LOCALEDIR)\"
+	-DLOCALEDIR=\"$(LOCALEDIR)\" \
+	-DDATADIR=\"$(DATADIR)\" \
+	-DSETUPDIR=\"$(SETUPDIR)\"
 
 # Note that all executable programs now provide for an optional executable suffix.
 
@@ -485,7 +488,7 @@ READLINE_OBJ = ../libcli/smbreadline/smbreadline.o
 # Be sure to include them into your application
 POPT_LIB_OBJ = lib/popt_common.o
 
-PARAM_WITHOUT_REG_OBJ = dynconfig.o param/loadparm.o param/loadparm_server_role.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o
+PARAM_WITHOUT_REG_OBJ = ../dynconfig/dynconfig.o param/loadparm.o param/loadparm_server_role.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o
 PARAM_REG_ADD_OBJ = $(REG_SMBCONF_OBJ) $(LIBSMBCONF_OBJ) $(PRIVILEGES_BASIC_OBJ)
 PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 
@@ -1697,7 +1700,7 @@ BINARY_PREREQS = bin/.dummy
 # but since we also require "make install prefix=/opt/samba" *not* to
 # rebuild it's a bit hard.
 
-dynconfig.o: dynconfig.c Makefile
+../dynconfig/dynconfig.o: ../dynconfig/dynconfig.c Makefile
 	@echo Compiling $*.c
 	@$(COMPILE_CC_PATH) && exit 0;\
 		echo "The following command failed:" 1>&2;\
@@ -3302,16 +3305,13 @@ uninstallpammodules::
 		rm -f "$(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@"; \
 	done
 
-# Toplevel clean files
-TOPFILES=dynconfig.o localedir.o
-
 cleanlibs::
 	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
 		../lib/*/*.ho \
 		../libcli/*.o ../libcli/*/*.o ../libcli/*/*/*.o \
 		../librpc/*/*.o \
 		../libgpo/*.o ../libgpo/*/*.o \
-		../libds/*.o ../libds/*/*.o
+		../libds/*.o ../libds/*/*.o ../dynconfig/*.o
 
 clean:: cleanlibs
 	-rm -f include/build_env.h

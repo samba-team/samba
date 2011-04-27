@@ -532,7 +532,7 @@ typedef char fstring[FSTRING_LEN];
 #include "libads/ads_status.h"
 #include "../libcli/util/error.h"
 #include "../lib/util/charset/charset.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 #include "locking.h"
 #include "smb_perfcount.h"
 #include "smb.h"

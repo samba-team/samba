@@ -42,7 +42,7 @@ def configure(conf):
 def build(bld):
     cflags = dynconfig_cflags(bld)
     bld.SAMBA3_SUBSYSTEM('DYNCONFIG',
-                        '../dynconfig.c',
+                        '../../dynconfig/dynconfig.c',
                         deps='replace talloc tdb popt',
                         cflags=cflags)
 
