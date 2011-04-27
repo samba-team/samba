@@ -1704,6 +1704,7 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 void close_conns_after_fork(void)
 {
 	struct winbindd_domain *domain;
+	struct winbindd_cli_state *cli_state;
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		struct cli_state *cli = domain->conn.cli;
@@ -1719,6 +1720,15 @@ void close_conns_after_fork(void)
 		}
 
 		invalidate_cm_connection(&domain->conn);
+	}
+
+	for (cli_state = winbindd_client_list();
+	     cli_state != NULL;
+	     cli_state = cli_state->next) {
+		if (cli_state->sock >= 0) {
+			close(cli_state->sock);
+			cli_state->sock = -1;
+		}
 	}
 }
 
