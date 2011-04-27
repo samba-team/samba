@@ -728,7 +728,7 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
 
 bld.SAMBA3_LIBRARY('passdb',
                    source=PASSDB_SRC,
-                   deps='SECRETS3 SMBLDAP GROUPDB pdb wbclient LIBCLI_AUTH',
+                   deps='SECRETS3 SMBLDAP GROUPDB pdb wbclient LIBCLI_AUTH flag_mapping',
                    private_library=True,
                    vars=locals())
 
@@ -780,7 +780,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg passdb',
                    private_library=True,
                    vars=locals())
 
@@ -791,7 +791,7 @@ bld.SAMBA3_SUBSYSTEM('LIB_NONSMBD',
 
 bld.SAMBA3_SUBSYSTEM('LIBSMB_ERR',
                     source='',
-                    deps='errors3 SECRETS3 ldap lber MSRPC_PARSE LIBCLI_AUTH rpccommon',
+                    deps='errors3 passdb ldap lber MSRPC_PARSE LIBCLI_AUTH rpccommon',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
