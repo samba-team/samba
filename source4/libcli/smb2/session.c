@@ -143,10 +143,72 @@ struct smb2_session_state {
 	NTSTATUS gensec_status;
 };
 
+static void smb2_session_setup_spnego_handler(struct smb2_request *req);
+
+/*
+  a composite function that does a full SPNEGO session setup
+ */
+struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *session,
+							 struct cli_credentials *credentials)
+{
+	struct composite_context *c;
+	struct smb2_session_state *state;
+	const char *chosen_oid;
+
+	c = composite_create(session, session->transport->socket->event.ctx);
+	if (c == NULL) return NULL;
+
+	state = talloc(c, struct smb2_session_state);
+	if (composite_nomem(state, c)) return c;
+	c->private_data = state;
+
+	ZERO_STRUCT(state->io);
+	state->io.in.vc_number          = 0;
+	if (session->transport->signing_required) {
+		state->io.in.security_mode =
+			SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
+	}
+	state->io.in.capabilities       = 0;
+	state->io.in.channel            = 0;
+	state->io.in.previous_sessionid = 0;
+
+	c->status = gensec_set_credentials(session->gensec, credentials);
+	if (!composite_is_ok(c)) return c;
+
+	c->status = gensec_set_target_hostname(session->gensec,
+					       session->transport->socket->hostname);
+	if (!composite_is_ok(c)) return c;
+
+	c->status = gensec_set_target_service(session->gensec, "cifs");
+	if (!composite_is_ok(c)) return c;
+
+	if (session->transport->negotiate.secblob.length > 0) {
+		chosen_oid = GENSEC_OID_SPNEGO;
+	} else {
+		chosen_oid = GENSEC_OID_NTLMSSP;
+	}
+
+	c->status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
+	if (!composite_is_ok(c)) return c;
+
+	c->status = gensec_update(session->gensec, c,
+				  session->transport->negotiate.secblob,
+				  &state->io.in.secblob);
+	if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		composite_error(c, c->status);
+		return c;
+	}
+	state->gensec_status = c->status;
+
+	state->req = smb2_session_setup_send(session, &state->io);
+	composite_continue_smb2(c, state->req, smb2_session_setup_spnego_handler, c);
+	return c;
+}
+
 /*
   handle continuations of the spnego session setup
 */
-static void session_request_handler(struct smb2_request *req)
+static void smb2_session_setup_spnego_handler(struct smb2_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private_data, 
 						      struct composite_context);
@@ -184,7 +246,7 @@ static void session_request_handler(struct smb2_request *req)
 			return;
 		}
 
-		state->req->async.fn = session_request_handler;
+		state->req->async.fn = smb2_session_setup_spnego_handler;
 		state->req->async.private_data = c;
 		return;
 	}
@@ -205,66 +267,6 @@ static void session_request_handler(struct smb2_request *req)
 	}
 
 	composite_done(c);
-}
-
-/*
-  a composite function that does a full SPNEGO session setup
- */
-struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *session, 
-							 struct cli_credentials *credentials)
-{
-	struct composite_context *c;
-	struct smb2_session_state *state;
-	const char *chosen_oid;
-
-	c = composite_create(session, session->transport->socket->event.ctx);
-	if (c == NULL) return NULL;
-
-	state = talloc(c, struct smb2_session_state);
-	if (composite_nomem(state, c)) return c;
-	c->private_data = state;
-
-	ZERO_STRUCT(state->io);
-	state->io.in.vc_number          = 0;
-	if (session->transport->signing_required) {
-		state->io.in.security_mode = 
-			SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
-	}
-	state->io.in.capabilities       = 0;
-	state->io.in.channel            = 0;
-	state->io.in.previous_sessionid = 0;
-
-	c->status = gensec_set_credentials(session->gensec, credentials);
-	if (!composite_is_ok(c)) return c;
-
-	c->status = gensec_set_target_hostname(session->gensec, 
-					       session->transport->socket->hostname);
-	if (!composite_is_ok(c)) return c;
-
-	c->status = gensec_set_target_service(session->gensec, "cifs");
-	if (!composite_is_ok(c)) return c;
-
-	if (session->transport->negotiate.secblob.length > 0) {
-		chosen_oid = GENSEC_OID_SPNEGO;
-	} else {
-		chosen_oid = GENSEC_OID_NTLMSSP;
-	}
-
-	c->status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
-	if (!composite_is_ok(c)) return c;
-
-	c->status = gensec_update(session->gensec, c, 
-				  session->transport->negotiate.secblob,
-				  &state->io.in.secblob);
-	if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		composite_error(c, c->status);
-		return c;
-	}
-	state->gensec_status = c->status;
-		
-	state->req = smb2_session_setup_send(session, &state->io);
-	composite_continue_smb2(c, state->req, session_request_handler, c);
-	return c;
 }
 
 /*
