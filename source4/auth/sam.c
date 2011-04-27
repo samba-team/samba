@@ -41,6 +41,7 @@
 	"msDS-SecondaryKrbTgtNumber",		\
 	"msDS-SupportedEncryptionTypes",	\
 	"supplementalCredentials",		\
+	"msDS-AllowedToDelegateTo",		\
 						\
 	/* passwords */				\
 	"dBCSPwd",				\

@@ -1667,6 +1667,111 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 			  hdb_entry_ex *entry,
 			  krb5_const_principal target_principal)
 {
+	krb5_error_code ret;
+	char *tmp = NULL;
+	const char *client_dn = NULL;
+	const char *target_principal_name = NULL;
+	struct ldb_message_element *el;
+	struct ldb_val val;
+	unsigned int i;
+	bool found = false;
+	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
+
+	TALLOC_CTX *mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_check_s4u2proxy");
+
+	if (!mem_ctx) {
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret,
+				       "samba_kdc_check_s4u2proxy:"
+				       " talloc_named() failed!");
+		return ret;
+	}
+
+	client_dn = ldb_dn_get_linearized(p->msg->dn);
+	if (!client_dn) {
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
+		ret = errno;
+		krb5_set_error_message(context, ret,
+				       "samba_kdc_check_s4u2proxy:"
+				       " ldb_dn_get_linearized() failed!");
+		return ret;
+	}
+
+	/*
+	 * The main heimdal code already checked that the target_principal
+	 * belongs to the same realm as the client.
+	 *
+	 * So we just need the principal without the realm,
+	 * as that is what is configured in the "msDS-AllowedToDelegateTo"
+	 * attribute.
+	 */
+	ret = krb5_unparse_name_flags(context, target_principal,
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &tmp);
+	if (ret) {
+		talloc_free(mem_ctx);
+		krb5_set_error_message(context, ret,
+				       "samba_kdc_check_s4u2proxy:"
+				       " krb5_unparse_name() failed!");
+		return ret;
+	}
+	DEBUG(10,("samba_kdc_check_s4u2proxy: client[%s] for target[%s]\n",
+		 client_dn, tmp));
+
+	target_principal_name = talloc_strdup(mem_ctx, tmp);
+	SAFE_FREE(tmp);
+	if (target_principal_name == NULL) {
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret,
+				       "samba_kdc_check_s4u2proxy:"
+				       " talloc_strdup() failed!");
+		return ret;
+	}
+
+	el = ldb_msg_find_element(p->msg, "msDS-AllowedToDelegateTo");
+	if (el == NULL) {
+		goto bad_option;
+	}
+
+	val = data_blob_string_const(target_principal_name);
+
+	for (i=0; i<el->num_values; i++) {
+		struct ldb_val *val1 = &val;
+		struct ldb_val *val2 = &el->values[i];
+		int cmp;
+
+		if (val1->length != val2->length) {
+			continue;
+		}
+
+		cmp = strncasecmp((const char *)val1->data,
+				  (const char *)val2->data,
+				  val1->length);
+		if (cmp != 0) {
+			continue;
+		}
+
+		found = true;
+		break;
+	}
+
+	if (!found) {
+		goto bad_option;
+	}
+
+	DEBUG(10,("samba_kdc_check_s4u2proxy: client[%s] allowed target[%s]\n",
+		 client_dn, tmp));
+	talloc_free(mem_ctx);
+	return 0;
+
+bad_option:
+	krb5_set_error_message(context, ret,
+			       "samba_kdc_check_s4u2proxy: client[%s] "
+			       "not allowed for delegation to target[%s]",
+			       client_dn,
+			       target_principal_name);
+	talloc_free(mem_ctx);
 	return KRB5KDC_ERR_BADOPTION;
 }
 
