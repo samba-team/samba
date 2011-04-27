@@ -189,7 +189,7 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 	smb2req->async.private_data = req;
 }
 
-static void smb2_connect_session_done(struct composite_context *creq);
+static void smb2_connect_session_done(struct tevent_req *subreq);
 
 static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 {
@@ -200,7 +200,7 @@ static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 		tevent_req_data(req,
 		struct smb2_connect_state);
 	struct smb2_transport *transport = smb2req->transport;
-	struct composite_context *creq;
+	struct tevent_req *subreq;
 	NTSTATUS status;
 
 	status = smb2_negprot_recv(smb2req, state, &state->negprot);
@@ -252,20 +252,21 @@ static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 		return;
 	}
 
-	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
-	if (tevent_req_nomem(creq, req)) {
+	subreq = smb2_session_setup_spnego_send(state, state->ev,
+						state->session,
+						state->credentials);
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	creq->async.fn = smb2_connect_session_done;
-	creq->async.private_data = req;
+	tevent_req_set_callback(subreq, smb2_connect_session_done, req);
 }
 
 static void smb2_connect_tcon_done(struct smb2_request *smb2req);
 
-static void smb2_connect_session_done(struct composite_context *creq)
+static void smb2_connect_session_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
-		talloc_get_type_abort(creq->async.private_data,
+		tevent_req_callback_data(subreq,
 		struct tevent_req);
 	struct smb2_connect_state *state =
 		tevent_req_data(req,
@@ -273,7 +274,8 @@ static void smb2_connect_session_done(struct composite_context *creq)
 	struct smb2_request *smb2req;
 	NTSTATUS status;
 
-	status = smb2_session_setup_spnego_recv(creq);
+	status = smb2_session_setup_spnego_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
