@@ -1344,7 +1344,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (is_valid_policy_hnd(&alias_handle)) {
+	if (b && is_valid_policy_hnd(&alias_handle)) {
 		dcerpc_samr_Close(b, talloc_tos(), &alias_handle, &result);
 	}
 
