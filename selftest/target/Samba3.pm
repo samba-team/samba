@@ -9,14 +9,14 @@ use strict;
 use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
+use target::Samba;
 
 sub new($$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $srcdir, $exeext, $server_maxtime) = @_;
+	my ($classname, $bindir, $binary_mapping, $srcdir, $exeext, $server_maxtime) = @_;
 	$exeext = "" unless defined($exeext);
 	my $self = { vars => {},
 		     bindir => $bindir,
 		     binary_mapping => $binary_mapping,
-		     bindir_path => $bindir_path,
 		     srcdir => $srcdir,
 		     exeext => $exeext,
 		     server_maxtime => $server_maxtime
@@ -172,7 +172,7 @@ sub setup_member($$$)
 
 	$ret or return undef;
 
-	my $net = $self->{bindir_path}->($self, "net");
+	my $net = Samba::bindir_path($self, "net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION} $s3dcvars->{DOMAIN} member";
@@ -395,14 +395,14 @@ sub check_or_start($$$$) {
 			@optargs = split(/ /, $ENV{NMBD_OPTIONS});
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "nmbd");
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "nmbd");
 
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
+		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{NMBD_VALGRIND})) { 
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
 
-		exec(@preargs, $self->{bindir_path}->($self, "nmbd"), "-F", "--no-process-group", "-S", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
+		exec(@preargs, Samba::bindir_path($self, "nmbd"), "-F", "--no-process-group", "-S", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
@@ -438,14 +438,14 @@ sub check_or_start($$$$) {
 			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "winbindd");
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "winbindd");
 
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
+		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{WINBINDD_VALGRIND})) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
 
-		exec(@preargs, $self->{bindir_path}->($self, "winbindd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
 	write_pid($env_vars, "winbindd", $pid);
 	print "DONE\n";
@@ -476,16 +476,16 @@ sub check_or_start($$$$) {
 			exit 0;
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "smbd");
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "smbd");
 		my @optargs = ("-d0");
 		if (defined($ENV{SMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{SMBD_OPTIONS});
 		}
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
+		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}
-		exec(@preargs, $self->{bindir_path}->($self, "smbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
+		exec(@preargs, Samba::bindir_path($self, "smbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
@@ -812,7 +812,7 @@ domusers:X:$gid_domusers:
 	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 
-	open(PWD, "|".$self->{bindir_path}->($self, "smbpasswd")." -c $conffile -L -s -a $unix_name >/dev/null");
+	open(PWD, "|".Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name >/dev/null");
 	print PWD "$password\n$password\n";
 	close(PWD) or die("Unable to set password for test account");
 
@@ -847,7 +847,7 @@ domusers:X:$gid_domusers:
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$ret{NSS_WRAPPER_WINBIND_SO_PATH} = $ENV{NSS_WRAPPER_WINBIND_SO_PATH};
         if (not defined($ret{NSS_WRAPPER_WINBIND_SO_PATH})) {
-	        $ret{NSS_WRAPPER_WINBIND_SO_PATH} = $self->{bindir_path}->($self, "default/nsswitch/libnss-winbind.so");
+	        $ret{NSS_WRAPPER_WINBIND_SO_PATH} = Samba::bindir_path($self, "default/nsswitch/libnss-winbind.so");
         }
 	$ret{LOCAL_PATH} = "$shrdir";
 
@@ -862,11 +862,11 @@ sub wait_for_start($$)
 	print "delaying for nbt name registration\n";
 	sleep(10);
 	# This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} __SAMBA__");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} $envvars->{SERVER}");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} __SAMBA__");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} $envvars->{SERVER}");
 
 	# make sure smbd is also up set
 	print "wait for smbd\n";
@@ -874,7 +874,7 @@ sub wait_for_start($$)
 	my $count = 0;
 	my $ret;
 	do {
-	    $ret = system($self->{bindir_path}->($self, "smbclient3") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
+	    $ret = system(Samba::bindir_path($self, "smbclient3") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
 	    if ($ret != 0) {
 		sleep(2);
 	    }
@@ -886,7 +886,7 @@ sub wait_for_start($$)
 	    return 0;
 	}
 	# Ensure we have domain users mapped.
-	$ret = system($self->{bindir_path}->($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
+	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
 	if ($ret != 0) {
 	    return 1;
 	}

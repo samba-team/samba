@@ -10,9 +10,10 @@ use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
 use SocketWrapper;
+use target::Samba;
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $ldap, $srcdir, $exeext, $server_maxtime) = @_;
+	my ($classname, $bindir, $binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime) = @_;
 	$exeext = "" unless defined($exeext);
 
 	my $self = {
@@ -20,7 +21,6 @@ sub new($$$$$) {
 		ldap => $ldap,
 		bindir => $bindir,
 		binary_mapping => $binary_mapping,
-		bindir_path => $bindir_path,
 		srcdir => $srcdir,
 		exeext => $exeext,
 		server_maxtime => $server_maxtime
@@ -41,7 +41,7 @@ sub slapd_start($$)
 {
 	my $count = 0;
 	my ($self, $env_vars) = @_;
-	my $ldbsearch = $self->bindir_path($self, "ldbsearch");
+	my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
 
 	my $uri = $env_vars->{LDAP_URI};
 
@@ -131,7 +131,7 @@ sub check_or_start($$)
 		if (defined($ENV{SAMBA_OPTIONS})) {
 			$optarg.= " $ENV{SAMBA_OPTIONS}";
 		}
-		my $samba = $self->{bindir_path}->($self, "samba");
+		my $samba =  Samba::bindir_path($self, "samba");
 
 		# allow selection of the process model using
 		# the environment varibale SAMBA_PROCESS_MODEL
@@ -179,7 +179,7 @@ sub wait_for_start($$)
 
 	# This will return quickly when things are up, but be slow if we
 	# need to wait for (eg) SSL init
-	my $nmblookup = $self->{bindir_path}->($self, "nmblookup");
+	my $nmblookup =  Samba::bindir_path($self, "nmblookup");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
@@ -200,7 +200,7 @@ sub write_ldb_file($$$)
 {
 	my ($self, $file, $ldif) = @_;
 
-	my $ldbadd = $self->{bindir_path}->($self, "ldbadd");
+	my $ldbadd =  Samba::bindir_path($self, "ldbadd");
 	open(LDIF, "|$ldbadd -H $file >/dev/null");
 	print LDIF $ldif;
 	return(close(LDIF));
@@ -889,7 +889,7 @@ sub provision_member($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -941,7 +941,7 @@ sub provision_rpc_proxy($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -1001,7 +1001,7 @@ sub provision_vampire_dc($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -1173,7 +1173,7 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -1467,7 +1467,7 @@ sub setup_vampire_dc($$$)
 
 		# force replicated DC to update repsTo/repsFrom
 		# for vampired partitions
-		my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 		my $cmd = "";
 		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
