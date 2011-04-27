@@ -59,7 +59,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('syslog')
     opt.SAMBA3_ADD_OPTION('automount')
     opt.SAMBA3_ADD_OPTION('aio-support')
-    opt.SAMBA3_ADD_OPTION('profiling-data')
+    opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
 
     opt.SAMBA3_ADD_OPTION('cluster-support')
 
