@@ -34,7 +34,7 @@
 	to configure it separately for each domain for which one wants
 	to use it, using disjoint ranges. One usually needs to configure
 	a writeable default idmap range, using for example the
-	<parameter>tdb</parameter> or <parameter>ldap</parameter>)
+	<parameter>tdb</parameter> or <parameter>ldap</parameter>
 	backend, in order to be able to map the BUILTIN sids and
 	possibly other trusted domains. The writeable default config
 	is also needed in order to be able to create group mappings.
