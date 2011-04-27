@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
+                     source='pthreadpool.c',
+                     deps='pthread',
+                     enabled=bld.env.WITH_PTHREADPOOL)
+
+bld.SAMBA3_BINARY('pthreadpooltest',
+                  source='tests.c',
+                  deps='PTHREADPOOL',
+                  enabled=bld.env.WITH_PTHREADPOOL)

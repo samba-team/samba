@@ -57,8 +57,6 @@ LIBCLI_WINREG_SRC = '''rpc_client/cli_winreg.c
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 
-PTHREADPOOL_SRC = ''
-
 LIB_SRC = '''
           lib/messages.c lib/messages_local.c
           lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
@@ -91,7 +89,7 @@ LIB_SRC = '''
           lib/module.c lib/events.c
           lib/server_contexts.c
           lib/ldap_escape.c
-          lib/secdesc.c ${PTHREADPOOL_SRC}
+          lib/secdesc.c
           lib/fncall.c
           libads/krb5_errs.c lib/system_smbd.c lib/audit.c
           lib/file_id.c lib/idmap_cache.c'''
@@ -780,7 +778,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg passdb',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg passdb PTHREADPOOL',
                    private_library=True,
                    vars=locals())
 
@@ -1361,6 +1359,7 @@ bld.RECURSE('../nsswitch')
 bld.RECURSE('../nsswitch/libwbclient')
 bld.RECURSE('auth')
 bld.RECURSE('libgpo/gpext')
+bld.RECURSE('lib/pthreadpool')
 bld.RECURSE('librpc')
 bld.RECURSE('librpc/idl')
 bld.RECURSE('modules')
