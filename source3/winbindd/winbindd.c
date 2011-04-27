@@ -940,7 +940,7 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 
 const char *get_winbind_pipe_dir(void)
 {
-	return lp_parm_const_string(-1, "winbindd", "socket dir", WINBINDD_SOCKET_DIR);
+	return lp_parm_const_string(-1, "winbindd", "socket dir", get_dyn_WINBINDD_SOCKET_DIR());
 }
 
 char *get_winbind_priv_pipe_dir(void)
