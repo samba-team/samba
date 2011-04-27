@@ -178,7 +178,10 @@ sub setup_member($$$)
 	$cmd .= "$net join $ret->{CONFIGURATION} $s3dcvars->{DOMAIN} member";
 	$cmd .= " -U$s3dcvars->{USERNAME}\%$s3dcvars->{PASSWORD}";
 
-	system($cmd) == 0 or die("Join failed\n$cmd");
+	if (system($cmd) != 0) {
+	    warn("Join failed\n$cmd");
+	    return undef;
+	}
 
 	$self->check_or_start($ret, "yes", "yes", "yes");
 
@@ -239,7 +242,10 @@ sub setup_admember($$$$)
 	$cmd .= "$net join $ret->{CONFIGURATION}";
 	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
 
-	system($cmd) == 0 or die("Join failed\n$cmd");
+	if (system($cmd) != 0) {
+	    warn("Join failed\n$cmd");
+	    return undef;
+	}
 
 	$self->check_or_start($ret,
 			      "yes", "yes", "yes");
@@ -251,10 +257,13 @@ sub setup_admember($$$$)
 	$cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$smbcacls //127.0.0.29/tmp / -U$ret->{USERNAME}%$ret->{PASSWORD} ";
-	$cmd .= "$ret->{CONFIGURATION} -S ACL:$dcvars->{DOMAIN}\\\\Domain\\ Users:ALLOWED/0x0/FULL";
+	$cmd .= "$smbcacls $ret->{CONFIGURATION} //127.0.0.29/tmp / -U$ret->{USERNAME}%$ret->{PASSWORD} ";
+	$cmd .= "-S ACL:$dcvars->{DOMAIN}\\\\Domain\\ Users:ALLOWED/0x0/FULL";
 
-	system($cmd) == 0 or die("Join failed\n$cmd");
+	if (system($cmd) != 0) {
+	    warn("smbcacls failed\n$cmd");
+	    return undef;
+	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
