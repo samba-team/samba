@@ -120,6 +120,8 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
 
 	ret = pthread_mutex_init(&pool->mutex, NULL);
 	if (ret != 0) {
+		close(pool->sig_pipe[0]);
+		close(pool->sig_pipe[1]);
 		free(pool);
 		return ret;
 	}
@@ -127,6 +129,8 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
 	ret = pthread_cond_init(&pool->condvar, NULL);
 	if (ret != 0) {
 		pthread_mutex_destroy(&pool->mutex);
+		close(pool->sig_pipe[0]);
+		close(pool->sig_pipe[1]);
 		free(pool);
 		return ret;
 	}
@@ -143,6 +147,8 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
 	if (ret != 0) {
 		pthread_cond_destroy(&pool->condvar);
 		pthread_mutex_destroy(&pool->mutex);
+		close(pool->sig_pipe[0]);
+		close(pool->sig_pipe[1]);
 		free(pool);
 		return ret;
 	}
