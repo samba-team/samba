@@ -71,7 +71,7 @@ struct cli_state {
 	int rap_error;
 	int privileges;
 
-	fstring desthost;
+	char *desthost;
 
 	/* The credentials used to open the cli_state connection. */
 	char *domain;
@@ -83,12 +83,12 @@ struct cli_state {
 	 * ones returned by the server if
 	 * the protocol > NT1.
 	 */
-	fstring server_type;
-	fstring server_os;
-	fstring server_domain;
+	char *server_type;
+	char *server_os;
+	char *server_domain;
 
-	fstring share;
-	fstring dev;
+	char *share;
+	char *dev;
 	struct nmb_name called;
 	struct nmb_name calling;
 	struct sockaddr_storage dest_ss;
