@@ -599,11 +599,6 @@ sub write_clientconf($$$)
 
 	open(CF, ">$conffile");
 	print CF "[global]\n";
-	if (defined($ENV{VALGRIND})) {
-		print CF "\ticonv:native = true\n";
-	} else {
-		print CF "\ticonv:native = false\n";
-	}
 	print CF "\tnetbios name = client\n";
 	if (defined($vars->{DOMAIN})) {
 		print CF "\tworkgroup = $vars->{DOMAIN}\n";
