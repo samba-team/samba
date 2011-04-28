@@ -404,7 +404,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 
 	/* child */
 
-	if (!winbindd_reinit_after_fork(NULL)) {
+	if (!winbindd_reinit_after_fork(NULL, NULL)) {
 		_exit(0);
 	}
 

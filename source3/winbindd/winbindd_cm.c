@@ -233,7 +233,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		}
 	}
 
-	if (!winbindd_reinit_after_fork(lfile)) {
+	if (!winbindd_reinit_after_fork(NULL, lfile)) {
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
