@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "tldap.h"
 #include "../lib/util/asn1.h"
+#include "../lib/tsocket/tsocket.h"
 
 static int tldap_simple_recv(struct tevent_req *req);
 

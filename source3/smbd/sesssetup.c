@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "../lib/tsocket/tsocket.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
