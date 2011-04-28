@@ -226,39 +226,7 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 	smb2req->async.private_data = req;
 }
 
-static void smb2_connect_resolve_done(struct composite_context *creq)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(creq->async.private_data,
-		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	NTSTATUS status;
-	const char *addr;
-	const char **ports;
-	const char *default_ports[] = { "445", NULL };
-
-	status = resolve_name_recv(creq, state, &addr);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	if (state->ports == NULL) {
-		ports = default_ports;
-	} else {
-		ports = state->ports;
-	}
-
-	creq = smbcli_sock_connect_send(state, addr, ports,
-					state->host, state->resolve_ctx,
-					state->ev, state->socket_options);
-	if (tevent_req_nomem(creq, req)) {
-		return;
-	}
-	creq->async.fn = smb2_connect_socket_done;
-	creq->async.private_data = req;
-}
+static void smb2_connect_resolve_done(struct composite_context *creq);
 
 /*
   a composite function that does a full negprot/sesssetup/tcon, returning
@@ -308,9 +276,40 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-/*
-  receive a connect reply
-*/
+static void smb2_connect_resolve_done(struct composite_context *creq)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(creq->async.private_data,
+		struct tevent_req);
+	struct smb2_connect_state *state =
+		tevent_req_data(req,
+		struct smb2_connect_state);
+	NTSTATUS status;
+	const char *addr;
+	const char **ports;
+	const char *default_ports[] = { "445", NULL };
+
+	status = resolve_name_recv(creq, state, &addr);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->ports == NULL) {
+		ports = default_ports;
+	} else {
+		ports = state->ports;
+	}
+
+	creq = smbcli_sock_connect_send(state, addr, ports,
+					state->host, state->resolve_ctx,
+					state->ev, state->socket_options);
+	if (tevent_req_nomem(creq, req)) {
+		return;
+	}
+	creq->async.fn = smb2_connect_socket_done;
+	creq->async.private_data = req;
+}
+
 NTSTATUS smb2_connect_recv(struct tevent_req *req,
 			   TALLOC_CTX *mem_ctx,
 			   struct smb2_tree **tree)
