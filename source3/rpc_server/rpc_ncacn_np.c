@@ -32,6 +32,7 @@
 #include "auth.h"
 #include "ntdomain.h"
 #include "../lib/tsocket/tsocket.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

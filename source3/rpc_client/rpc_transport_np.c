@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "rpc_client/rpc_transport.h"
 #include "libsmb/cli_np_tstream.h"
 

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "libsmb/clirap.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 static long long int ival(const char *str)
 {
