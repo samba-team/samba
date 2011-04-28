@@ -65,10 +65,6 @@ static void gotalarm_sig(int signum)
 {
 	LDAP *ldp = NULL;
 
-	int fd, ldap_err;
-	NTSTATUS status;
-	char *uri;
-
 	DEBUG(10, ("Opening connection to LDAP server '%s:%d', timeout "
 		   "%u seconds\n", server, port, to));
 
@@ -77,6 +73,10 @@ static void gotalarm_sig(int signum)
 	 * as this is the best way to get the emulated TCP socket into
 	 * OpenLDAP */
 	if (socket_wrapper_dir() != NULL) {
+		int fd, ldap_err;
+		NTSTATUS status;
+		char *uri;
+
 		status = open_socket_out(ss, port, to, &fd);
 
 		if (!NT_STATUS_IS_OK(status)) {
