@@ -813,6 +813,7 @@ _PUBLIC_ void cli_credentials_set_impersonate_principal(struct cli_credentials *
 	cred->impersonate_principal = talloc_strdup(cred, principal);
 	talloc_free(cred->self_service);
 	cred->self_service = talloc_strdup(cred, self_service);
+	cli_credentials_set_kerberos_state(cred, CRED_MUST_USE_KERBEROS);
 }
 
 /*
