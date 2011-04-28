@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
    Character set conversion Extensions
    Copyright (C) Igor Vergeichik <iverg@mail.ru> 2001
-   Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Andrew Tridgell 2001-2011
+   Copyright (C) Andrew Bartlett 2011
    Copyright (C) Simo Sorce 2001
    Copyright (C) Martin Pool 2003
 
