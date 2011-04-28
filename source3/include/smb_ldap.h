@@ -22,6 +22,17 @@ typedef int ber_int_t;
 #ifndef LDAP_CONST
 #define LDAP_CONST const
 #endif
+
+#ifdef HAVE_LDAP_PVT_H
+#include <ldap_pvt.h>
+#endif /* HAVE_LDAP_PVT_H */
+int ldap_init_fd(ber_socket_t fd, int proto, char *uri, LDAP **ldp);
+
+/* function declarations not included in proto.h */
+LDAP *ldap_open_with_timeout(const char *server,
+			     struct sockaddr_storage *ss,
+			     int port, unsigned int to);
+
 #ifndef LDAP_OPT_SUCCESS
 #define LDAP_OPT_SUCCESS 0
 #endif
@@ -35,16 +46,6 @@ typedef int ber_int_t;
 #if !defined(LDAPS_PORT)
 #define LDAPS_PORT 636
 #endif
-
-/* function declarations not included in proto.h */
-LDAP *ldap_open_with_timeout(const char *server,
-			     struct sockaddr_storage *ss,
-			     int port, unsigned int to);
-
-#ifdef HAVE_LDAP_PVT_H
-#include <ldap_pvt.h>
-#endif
-int ldap_init_fd(ber_socket_t fd, int proto, char *uri, LDAP **ldp);
 
 #endif /* HAVE_LDAP_H */
 
