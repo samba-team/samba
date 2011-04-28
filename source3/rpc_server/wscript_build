@@ -33,7 +33,8 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     source='rpc_server.c')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CRYPTO',
-                    source='dcesrv_ntlmssp.c dcesrv_gssapi.c dcesrv_spnego.c')
+                     source='dcesrv_ntlmssp.c dcesrv_gssapi.c dcesrv_spnego.c',
+                     deps = 'KRB5_PAC')
 
 bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
                     source='srv_pipe_register.c')

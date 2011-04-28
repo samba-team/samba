@@ -699,7 +699,7 @@ bld.SAMBA3_SUBSYSTEM('msrpc3',
                     source='${LIBMSRPC_SRC}',
                     deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
                     RPC_NDR_EPMAPPER COMMON_SCHANNEL LIBCLI_AUTH
-                    LIBTSOCKET krb5 rpccommon''',
+                    LIBTSOCKET KRB5_WRAP rpccommon''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
@@ -773,12 +773,12 @@ bld.SAMBA3_SUBSYSTEM('POPT_SAMBA3',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
-                    public_deps='KRB5_WRAP krb5 k5crypto com_err gssapi gssapi_krb5',
+                    public_deps='KRB5_WRAP k5crypto',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION krb5 flag_mapping util_reg passdb PTHREADPOOL',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL',
                    private_library=True,
                    vars=locals())
 
@@ -825,13 +825,13 @@ bld.SAMBA3_SUBSYSTEM('SMBLDAP',
 
 bld.SAMBA3_LIBRARY('ads',
                    source=LIBADS_SRC,
-                   deps='cli-ldap-common krb5 gssapi gssapi_krb5 ldap lber',
+                   deps='cli-ldap-common KRB5_WRAP ldap lber',
                    private_library=True,
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
-                    deps='ndr-krb5pac krb5 KRB5_WRAP',
+                    deps='ndr-krb5pac KRB5_WRAP',
 		    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
@@ -900,7 +900,7 @@ bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
                     source=LIBNET_SRC,
-                    deps='NDR_LIBNET_JOIN krb5',
+                    deps='NDR_LIBNET_JOIN KRB5_WRAP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
@@ -1259,7 +1259,7 @@ bld.SAMBA3_BINARY('wbinfo' + bld.env.suffix3,
 
 bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
                  source=NTLM_AUTH_SRC,
-                 deps='''tdb talloc cap krb5 k5crypto com_err wbclient param LIB_NONSMBD
+                 deps='''tdb talloc cap KRB5_WRAP k5crypto wbclient param LIB_NONSMBD
                  samba3core LIBNTLMSSP POPT_SAMBA3 asn1util LIBTSOCKET
                  passdb SMBLDAP winbind-client LIBINIPARSER LIBADS_SERVER
                  NDR_SAMR NDR_LSA NDR_NETLOGON cli-ldap-common LIBNMB SLCACHE SPNEGO_PARSE KRBCLIENT''',
