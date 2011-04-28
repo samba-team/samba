@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "trans2.h"
 

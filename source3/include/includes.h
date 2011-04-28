@@ -520,8 +520,6 @@ typedef char fstring[FSTRING_LEN];
 #include <talloc.h>
 
 #include "event.h"
-#include "../lib/util/tevent_unix.h"
-#include "../lib/util/tevent_ntstatus.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"

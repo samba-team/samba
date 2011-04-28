@@ -24,6 +24,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "trans2.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
