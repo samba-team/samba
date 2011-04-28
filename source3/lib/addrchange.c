@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "lib/addrchange.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 #if HAVE_LINUX_RTNETLINK_H
 

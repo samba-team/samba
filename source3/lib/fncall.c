@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../lib/util/tevent_unix.h"
 
 #if WITH_PTHREADPOOL
 

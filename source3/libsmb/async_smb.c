@@ -19,6 +19,8 @@
 
 #include "includes.h"
 #include "../lib/async_req/async_sock.h"
+#include "../lib/util/tevent_ntstatus.h"
+#include "../lib/util/tevent_unix.h"
 #include "async_smb.h"
 #include "smb_crypt.h"
 #include "libsmb/nmblib.h"

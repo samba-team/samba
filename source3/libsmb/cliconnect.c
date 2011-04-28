@@ -28,6 +28,7 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "libads/kerberos_proto.h"
 #include "krb5_env.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
 

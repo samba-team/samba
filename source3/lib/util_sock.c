@@ -25,6 +25,8 @@
 #include "../lib/async_req/async_sock.h"
 #include "../lib/util/select.h"
 #include "interfaces.h"
+#include "../lib/util/tevent_unix.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 /****************************************************************************
  Get a port number in host byte order from a sockaddr_storage.
