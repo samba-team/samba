@@ -178,28 +178,29 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 		size_t slen = srclen;
 		size_t dlen = destlen;
 		unsigned char lastp = '\0';
+		bool ret;
 
-		/* If all characters are ascii, fast path here. */
-		while (((slen == (size_t)-1) || (slen >= 1)) && dlen) {
-			if (slen >= 2 && ((lastp = *p) <= 0x7f) && (p[1] == 0)) {
+		if (slen == (size_t)-1) {
+			while (dlen &&
+			       ((lastp = *p) <= 0x7f) && (p[1] == 0)) {
 				*q++ = *p;
-				if (slen != (size_t)-1) {
-					slen -= 2;
-				}
 				p += 2;
 				dlen--;
 				retval++;
 				if (!lastp)
 					break;
-			} else {
-#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
-				goto general_case;
-#else
-				bool ret = convert_string_internal(ic, from, to, p, slen, q, dlen, converted_size);
-				*converted_size += retval;
-				return ret;
-#endif
 			}
+			if (lastp != 0) goto slow_path;
+		} else {
+			while (slen >= 2 && dlen &&
+			       (*p <= 0x7f) && (p[1] == 0)) {
+				*q++ = *p;
+				slen -= 2;
+				p += 2;
+				dlen--;
+				retval++;
+			}
+			if (slen != 0) goto slow_path;
 		}
 
 		*converted_size = retval;
@@ -213,6 +214,19 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 			}
 		}
 		return true;
+
+	slow_path:
+		/* come here when we hit a character we can't deal
+		 * with in the fast path
+		 */
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+		goto general_case;
+#else
+		ret = convert_string_internal(ic, from, to, p, slen, q, dlen, converted_size);
+		*converted_size += retval;
+		return ret;
+#endif
+
 	} else if (from != CH_UTF16LE && from != CH_UTF16BE && to == CH_UTF16LE) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
