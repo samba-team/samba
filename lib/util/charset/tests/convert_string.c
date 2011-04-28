@@ -282,6 +282,191 @@ static bool test_gd_iso8859_cp850_handle(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_gd_minus_1_handle(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle;
+	DATA_BLOB gd_utf8 = base64_decode_data_blob(gd_utf8_base64);
+	DATA_BLOB gd_cp850 = base64_decode_data_blob(gd_cp850_base64);
+	DATA_BLOB gd_utf16le = base64_decode_data_blob(gd_utf16le_base64);
+	DATA_BLOB gd_output;
+	DATA_BLOB gd_utf8_terminated;
+	DATA_BLOB gd_cp850_terminated;
+	DATA_BLOB gd_utf16le_terminated;
+	
+	talloc_steal(tctx, gd_utf8.data);
+	talloc_steal(tctx, gd_cp850.data);
+	talloc_steal(tctx, gd_utf16le.data);
+
+	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "CP850", "UTF8");
+	torture_assert(tctx, iconv_handle, "getting iconv handle");
+
+	gd_utf8_terminated = data_blob_talloc(tctx, NULL, gd_utf8.length + 1);
+	memcpy(gd_utf8_terminated.data, gd_utf8.data, gd_utf8.length);
+	gd_utf8_terminated.data[gd_utf8.length] = '\0';
+
+	gd_cp850_terminated = data_blob_talloc(tctx, NULL, gd_cp850.length + 1);
+	memcpy(gd_cp850_terminated.data, gd_cp850.data, gd_cp850.length);
+	gd_cp850_terminated.data[gd_cp850.length] = '\0';
+
+	gd_utf16le_terminated = data_blob_talloc(tctx, NULL, gd_utf16le.length + 2);
+	memcpy(gd_utf16le_terminated.data, gd_utf16le.data, gd_utf16le.length);
+	gd_utf16le_terminated.data[gd_utf16le.length] = '\0';
+	gd_utf16le_terminated.data[gd_utf16le.length + 1] = '\0';
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  gd_utf8_terminated.data, -1,
+							 (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf16le.length + 10);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  gd_utf8_terminated.data, -1,
+							  (void *)gd_output.data, gd_utf16le.length, &gd_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf16le, "conversion from UTF8 to UTF16LE null terminated");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf16le.length + 10);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  gd_utf8_terminated.data, -1,
+							  (void *)gd_output.data, gd_utf16le.length - 1, &gd_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf16le.length + 10);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  gd_utf8_terminated.data, -1,
+							  (void *)gd_output.data, gd_utf16le.length - 2, &gd_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf8.length + 10);
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_utf8.length, &gd_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf8, "conversion from UTF16LE to UTF8 null terminated");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_utf8.length - 1, &gd_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_utf8.length - 2, &gd_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_cp850.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_DOS,
+							 gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF16LE to CP850 (dos) null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_cp850_terminated, "conversion from UTF16LE to CP850 (dos) null terminated");
+
+	/* Now null terminate the string early, the confirm we don't skip the NULL and convert any further */
+	gd_utf8_terminated.data[3] = '\0';
+	gd_utf8_terminated.length = 4; /* used for the comparison only */
+
+	gd_cp850_terminated.data[2] = '\0';
+	gd_cp850_terminated.length = 3; /* used for the comparison only */
+
+	gd_utf16le_terminated.data[4] = '\0';
+	gd_utf16le_terminated.data[5] = '\0';
+	gd_utf16le_terminated.length = 6; /* used for the comparison only */
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  gd_utf8_terminated.data, -1,
+							  (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated early");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF16LE, CH_UTF8,
+							  gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated early");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_DOS, CH_UTF16LE,
+							  gd_cp850_terminated.data, -1,
+							  (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from CP850 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated early");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_cp850.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF16LE, CH_DOS,
+							  gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_cp850_terminated, "conversion from UTF16LE to UTF8 null terminated early");
+	
+	/* Now null terminate the string particularly early, the confirm we don't skip the NULL and convert any further */
+	gd_utf8_terminated.data[1] = '\0';
+	gd_utf8_terminated.length = 2; /* used for the comparison only */
+	
+	gd_utf16le_terminated.data[2] = '\0';
+	gd_utf16le_terminated.data[3] = '\0';
+	gd_utf16le_terminated.length = 4; /* used for the comparison only */
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle, CH_UTF8, CH_UTF16LE,
+							  gd_utf8_terminated.data, -1,
+							 (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated very early");
+
+	gd_output = data_blob_talloc(tctx, NULL, gd_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF16LE, CH_UTF8,
+							  gd_utf16le_terminated.data, -1,
+							 (void *)gd_output.data, gd_output.length, &gd_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, gd_output, gd_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated very early");
+
+	return true;
+}
+
 static bool test_gd_ascii_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
@@ -469,6 +654,261 @@ static bool test_plato_english_iso8859_cp850_handle(struct torture_context *tctx
 						    (void *)&plato_english_output.data, &plato_english_output.length), 
 		       "conversion from (dos charset) ISO8859-1 to UTF16LE");
 	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf16le, "conversion from (dos charset) ISO8859-1 to UTF16LE");
+	return true;
+}
+
+static bool test_plato_english_minus_1_handle(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle;
+	DATA_BLOB plato_english_utf8 = data_blob_string_const(plato_english_ascii);
+	DATA_BLOB plato_english_utf16le = base64_decode_data_blob(plato_english_utf16le_base64);
+	DATA_BLOB plato_english_output;
+	DATA_BLOB plato_english_utf8_terminated;
+	DATA_BLOB plato_english_utf16le_terminated;
+	
+	talloc_steal(tctx, plato_english_utf16le.data);
+
+	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850", "UTF8");
+	torture_assert(tctx, iconv_handle, "getting iconv handle");
+
+	plato_english_utf8_terminated = data_blob_talloc(tctx, NULL, plato_english_utf8.length + 1);
+	memcpy(plato_english_utf8_terminated.data, plato_english_utf8.data, plato_english_utf8.length);
+	plato_english_utf8_terminated.data[plato_english_utf8.length] = '\0';
+
+	plato_english_utf16le_terminated = data_blob_talloc(tctx, NULL, plato_english_utf16le.length + 2);
+	memcpy(plato_english_utf16le_terminated.data, plato_english_utf16le.data, plato_english_utf16le.length);
+	plato_english_utf16le_terminated.data[plato_english_utf16le.length] = '\0';
+	plato_english_utf16le_terminated.data[plato_english_utf16le.length + 1] = '\0';
+		
+	plato_english_output = data_blob_talloc(tctx, NULL, plato_english_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_english_utf8_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_output.length, &plato_english_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_english_utf8_terminated.data, -1,
+							  (void *)plato_english_output.data, plato_english_utf16le.length, &plato_english_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf16le, "conversion from UTF8 to UTF16LE null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_english_utf8_terminated.data, -1,
+							  (void *)plato_english_output.data, plato_english_utf16le.length - 1, &plato_english_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_english_utf8_terminated.data, -1,
+							  (void *)plato_english_output.data, plato_english_utf16le.length - 2, &plato_english_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+
+	plato_english_output = data_blob_talloc(tctx, NULL, plato_english_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_english_utf16le_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_output.length, &plato_english_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_english_utf16le_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_utf8.length, &plato_english_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf8, "conversion from UTF16LE to UTF8 null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_english_utf16le_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_utf8.length - 1, &plato_english_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_english_utf16le_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_utf8.length - 2, &plato_english_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+
+	/* Now null terminate the string early, the confirm we don't skip the NULL and convert any further */
+	plato_english_utf8_terminated.data[3] = '\0';
+	plato_english_utf8_terminated.length = 4; /* used for the comparison only */
+
+	plato_english_utf16le_terminated.data[6] = '\0';
+	plato_english_utf16le_terminated.data[7] = '\0';
+	plato_english_utf16le_terminated.length = 8; /* used for the comparison only */
+
+	plato_english_output = data_blob_talloc(tctx, NULL, plato_english_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_english_utf8_terminated.data, -1,
+							  (void *)plato_english_output.data, plato_english_output.length, &plato_english_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated early");
+
+	plato_english_output = data_blob_talloc(tctx, NULL, plato_english_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF16LE, CH_UTF8,
+							  plato_english_utf16le_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_output.length, &plato_english_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated early");
+
+	
+	/* Now null terminate the string particularly early, the confirm we don't skip the NULL and convert any further */
+	plato_english_utf8_terminated.data[1] = '\0';
+	plato_english_utf8_terminated.length = 2; /* used for the comparison only */
+	
+	plato_english_utf16le_terminated.data[2] = '\0';
+	plato_english_utf16le_terminated.data[3] = '\0';
+	plato_english_utf16le_terminated.length = 4; /* used for the comparison only */
+
+	plato_english_output = data_blob_talloc(tctx, NULL, plato_english_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle, CH_UTF8, CH_UTF16LE,
+							  plato_english_utf8_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_output.length, &plato_english_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated very early");
+
+	plato_english_output = data_blob_talloc(tctx, NULL, plato_english_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF16LE, CH_UTF8,
+							  plato_english_utf16le_terminated.data, -1,
+							 (void *)plato_english_output.data, plato_english_output.length, &plato_english_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, plato_english_output, plato_english_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated very early");
+
+	return true;
+}
+
+static bool test_plato_minus_1_handle(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle;
+	DATA_BLOB plato_utf8 = base64_decode_data_blob(plato_utf8_base64);
+	DATA_BLOB plato_utf16le = base64_decode_data_blob(plato_utf16le_base64);
+	DATA_BLOB plato_output;
+	DATA_BLOB plato_utf8_terminated;
+	DATA_BLOB plato_utf16le_terminated;
+	
+	talloc_steal(tctx, plato_utf8.data);
+	talloc_steal(tctx, plato_utf16le.data);
+
+	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850", "UTF8");
+	torture_assert(tctx, iconv_handle, "getting iconv handle");
+
+	plato_utf8_terminated = data_blob_talloc(tctx, NULL, plato_utf8.length + 1);
+	memcpy(plato_utf8_terminated.data, plato_utf8.data, plato_utf8.length);
+	plato_utf8_terminated.data[plato_utf8.length] = '\0';
+
+	plato_utf16le_terminated = data_blob_talloc(tctx, NULL, plato_utf16le.length + 2);
+	memcpy(plato_utf16le_terminated.data, plato_utf16le.data, plato_utf16le.length);
+	plato_utf16le_terminated.data[plato_utf16le.length] = '\0';
+	plato_utf16le_terminated.data[plato_utf16le.length + 1] = '\0';
+
+	plato_output = data_blob_talloc(tctx, NULL, plato_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_utf8_terminated.data, -1,
+							 (void *)plato_output.data, plato_output.length, &plato_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_utf8_terminated.data, -1,
+							  (void *)plato_output.data, plato_utf16le.length, &plato_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf16le, "conversion from UTF8 to UTF16LE null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_utf8_terminated.data, -1,
+							  (void *)plato_output.data, plato_utf16le.length - 1, &plato_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_utf8_terminated.data, -1,
+							  (void *)plato_output.data, plato_utf16le.length - 2, &plato_output.length) == false,
+		       "conversion from UTF8 to UTF16LE null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF8 to UTF16LE should fail E2BIG");
+
+	plato_output = data_blob_talloc(tctx, NULL, plato_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_utf16le_terminated.data, -1,
+							 (void *)plato_output.data, plato_output.length, &plato_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_utf16le_terminated.data, -1,
+							 (void *)plato_output.data, plato_utf8.length, &plato_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8, "conversion from UTF16LE to UTF8 null terminated");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_utf16le_terminated.data, -1,
+							 (void *)plato_output.data, plato_utf8.length - 1, &plato_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							 CH_UTF16LE, CH_UTF8,
+							 plato_utf16le_terminated.data, -1,
+							 (void *)plato_output.data, plato_utf8.length - 2, &plato_output.length) == false,
+		       "conversion from UTF16LE to UTF8 null terminated should fail");
+	torture_assert_errno_equal(tctx, E2BIG, "conversion from UTF16LE to UTF8 should fail E2BIG");
+
+	/* Now null terminate the string early, the confirm we don't skip the NULL and convert any further */
+	plato_utf8_terminated.data[5] = '\0';
+	plato_utf8_terminated.length = 6; /* used for the comparison only */
+
+	plato_utf16le_terminated.data[4] = '\0';
+	plato_utf16le_terminated.data[5] = '\0';
+	plato_utf16le_terminated.length = 6; /* used for the comparison only */
+
+	plato_output = data_blob_talloc(tctx, NULL, plato_utf16le.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF8, CH_UTF16LE,
+							  plato_utf8_terminated.data, -1,
+							  (void *)plato_output.data, plato_output.length, &plato_output.length),
+		       "conversion from UTF8 to UTF16LE null terminated");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf16le_terminated, "conversion from UTF8 to UTF16LE null terminated early");
+
+	plato_output = data_blob_talloc(tctx, NULL, plato_utf8.length + 10);
+
+	torture_assert(tctx, convert_string_error_handle(iconv_handle,
+							  CH_UTF16LE, CH_UTF8,
+							  plato_utf16le_terminated.data, -1,
+							 (void *)plato_output.data, plato_output.length, &plato_output.length),
+		       "conversion from UTF16LE to UTF8 null terminated");
+	torture_assert_data_blob_equal(tctx, plato_output, plato_utf8_terminated, "conversion from UTF16LE to UTF8 null terminated early");
+	
 	return true;
 }
 
@@ -1248,9 +1688,12 @@ struct torture_suite *torture_local_convert_string_handle(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string_handle");
 
 	torture_suite_add_simple_test(suite, "gd_ascii", test_gd_ascii_handle);
+	torture_suite_add_simple_test(suite, "gd_minus_1", test_gd_minus_1_handle);
 	torture_suite_add_simple_test(suite, "gd_iso8859_cp850", test_gd_iso8859_cp850_handle);
 	torture_suite_add_simple_test(suite, "plato_english_iso8859_cp850", test_plato_english_iso8859_cp850_handle);
+	torture_suite_add_simple_test(suite, "plato_english_minus_1", test_plato_english_minus_1_handle);
 	torture_suite_add_simple_test(suite, "plato_cp850_utf8", test_plato_cp850_utf8_handle);
+	torture_suite_add_simple_test(suite, "plato_minus_1", test_plato_minus_1_handle);
 	torture_suite_add_simple_test(suite, "plato_latin_cp850_utf8", test_plato_latin_cp850_utf8_handle);
 	return suite;
 }
