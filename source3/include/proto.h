@@ -94,16 +94,6 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 size_t pull_ascii_fstring(char *dest, const void *src);
 size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src);
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags);
-bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		      size_t *converted_size);
-bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
-		      size_t *converted_size);
-bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		      size_t *converted_size);
-bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
-		      size_t *converted_size);
-bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		       size_t *converted_size);
 size_t push_string_check_fn(void *dest, const char *src,
 			    size_t dest_len, int flags);
 size_t push_string_base(const char *base, uint16 flags2,

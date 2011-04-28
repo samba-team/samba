@@ -189,15 +189,6 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
  Push and malloc an ascii string. src and dest null terminated.
 ********************************************************************/
 
-bool push_ascii_talloc(TALLOC_CTX *mem_ctx, char **dest, const char *src, size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(mem_ctx, CH_UNIX, CH_DOS, src, src_len,
-				     (void **)dest, converted_size);
-}
-
 /**
  * Copy a string from a dos codepage source to a unix char* destination.
  *
@@ -413,48 +404,6 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 }
 
 
-/**
- * Copy a string from a unix char* src to a UCS2 destination,
- * allocating a buffer using talloc().
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
-		      size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE, src, src_len,
-				     (void **)dest, converted_size);
-}
-
-
-/**
- * Copy a string from a unix char* src to a UTF-8 destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		      size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len,
-				     (void**)dest, converted_size);
-}
 
 /**
  Copy a string from a ucs2 source to a unix char* destination.
@@ -624,70 +573,6 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 
 	*ppdest = dest;
 	return src_len + ucs2_align_len;
-}
-
-/**
- * Copy a string from a UCS2 src to a unix char * destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
-		      size_t *converted_size)
-{
-	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, src, src_len,
-				     (void **)dest, converted_size);
-}
-
-/**
- * Copy a string from a UTF-8 src to a unix char * destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		      size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len,
-				     (void **)dest, converted_size);
-}
-
- 
-/**
- * Copy a string from a DOS src to a unix char * destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		       size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len,
-				     (void **)dest, converted_size);
 }
 
 /**
