@@ -1167,7 +1167,8 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 	dump_event_list(winbind_event_context());
 }
 
-bool winbindd_reinit_after_fork(const char *logfilename)
+bool winbindd_reinit_after_fork(const struct winbindd_child *myself,
+				const char *logfilename)
 {
 	struct winbindd_domain *domain;
 	struct winbindd_child *cl;
@@ -1242,6 +1243,14 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 		 * go through the parent.
 		 */
 		cl->pid = (pid_t)0;
+
+		/*
+		 * Close service sockets to all other children
+		 */
+		if ((cl != myself) && (cl->sock != -1)) {
+			close(cl->sock);
+			cl->sock = -1;
+		}
         }
 	/*
 	 * This is a little tricky, children must not
@@ -1325,7 +1334,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	if (!winbindd_reinit_after_fork(child->logfilename)) {
+	if (!winbindd_reinit_after_fork(child, child->logfilename)) {
 		_exit(0);
 	}
 
