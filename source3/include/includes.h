@@ -522,7 +522,6 @@ typedef char fstring[FSTRING_LEN];
 #include "event.h"
 #include "../lib/util/tevent_unix.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "../lib/tsocket/tsocket.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
