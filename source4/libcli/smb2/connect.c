@@ -46,10 +46,7 @@ struct smb2_connect_state {
 	struct smb2_tree *tree;
 };
 
-/*
-  continue after tcon reply
-*/
-static void continue_tcon(struct smb2_request *smb2req)
+static void smb2_connect_tcon_done(struct smb2_request *smb2req)
 {
 	struct tevent_req *req =
 		talloc_get_type_abort(smb2req->async.private_data,
@@ -69,10 +66,7 @@ static void continue_tcon(struct smb2_request *smb2req)
 	tevent_req_done(req);
 }
 
-/*
-  continue after a session setup
-*/
-static void continue_session(struct composite_context *creq)
+static void smb2_connect_session_done(struct composite_context *creq)
 {
 	struct tevent_req *req =
 		talloc_get_type_abort(creq->async.private_data,
@@ -104,14 +98,11 @@ static void continue_session(struct composite_context *creq)
 	if (tevent_req_nomem(smb2req, req)) {
 		return;
 	}
-	smb2req->async.fn = continue_tcon;
+	smb2req->async.fn = smb2_connect_tcon_done;
 	smb2req->async.private_data = req;
 }
 
-/*
-  continue after negprot reply
-*/
-static void continue_negprot(struct smb2_request *smb2req)
+static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 {
 	struct tevent_req *req =
 		talloc_get_type_abort(smb2req->async.private_data,
@@ -176,14 +167,11 @@ static void continue_negprot(struct smb2_request *smb2req)
 	if (tevent_req_nomem(creq, req)) {
 		return;
 	}
-	creq->async.fn = continue_session;
+	creq->async.fn = smb2_connect_session_done;
 	creq->async.private_data = req;
 }
 
-/*
-  continue after a socket connect completes
-*/
-static void continue_socket(struct composite_context *creq)
+static void smb2_connect_socket_done(struct composite_context *creq)
 {
 	struct tevent_req *req =
 		talloc_get_type_abort(creq->async.private_data,
@@ -234,15 +222,11 @@ static void continue_socket(struct composite_context *creq)
 	if (tevent_req_nomem(smb2req, req)) {
 		return;
 	}
-	smb2req->async.fn = continue_negprot;
+	smb2req->async.fn = smb2_connect_negprot_done;
 	smb2req->async.private_data = req;
 }
 
-
-/*
-  continue after a resolve finishes
-*/
-static void continue_resolve(struct composite_context *creq)
+static void smb2_connect_resolve_done(struct composite_context *creq)
 {
 	struct tevent_req *req =
 		talloc_get_type_abort(creq->async.private_data,
@@ -272,7 +256,7 @@ static void continue_resolve(struct composite_context *creq)
 	if (tevent_req_nomem(creq, req)) {
 		return;
 	}
-	creq->async.fn = continue_socket;
+	creq->async.fn = smb2_connect_socket_done;
 	creq->async.private_data = req;
 }
 
@@ -319,7 +303,7 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(creq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	creq->async.fn = continue_resolve;
+	creq->async.fn = smb2_connect_resolve_done;
 	creq->async.private_data = req;
 	return req;
 }
