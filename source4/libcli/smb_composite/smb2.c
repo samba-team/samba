@@ -289,28 +289,7 @@ static void smb2_composite_setpathinfo_setinfo_done(struct smb2_request *smb2req
 	composite_continue_smb2(ctx, smb2req, smb2_composite_setpathinfo_close_done, ctx);
 }
 
-static void smb2_composite_setpathinfo_create_done(struct smb2_request *smb2req)
-{
-	struct composite_context *ctx = talloc_get_type(smb2req->async.private_data,
-							struct composite_context);
-	struct smb2_tree *tree = smb2req->tree;
-	struct smb2_create create_parm;
-	NTSTATUS status;
-	union smb_setfileinfo *io2 = talloc_get_type(ctx->private_data, 
-						     union smb_setfileinfo);
-
-	status = smb2_create_recv(smb2req, ctx, &create_parm);
-	if (!NT_STATUS_IS_OK(status)) {
-		composite_error(ctx, status);
-		return;
-	}
-
-	io2->generic.in.file.handle = create_parm.out.file.handle;
-
-	smb2req = smb2_setinfo_file_send(tree, io2);
-	composite_continue_smb2(ctx, smb2req, smb2_composite_setpathinfo_setinfo_done, ctx);
-}
-
+static void smb2_composite_setpathinfo_create_done(struct smb2_request *smb2req);
 
 /*
   composite SMB2 setpathinfo call
@@ -351,6 +330,28 @@ struct composite_context *smb2_composite_setpathinfo_send(struct smb2_tree *tree
 
 	composite_continue_smb2(ctx, smb2req, smb2_composite_setpathinfo_create_done, ctx);
 	return ctx;
+}
+
+static void smb2_composite_setpathinfo_create_done(struct smb2_request *smb2req)
+{
+	struct composite_context *ctx = talloc_get_type(smb2req->async.private_data,
+							struct composite_context);
+	struct smb2_tree *tree = smb2req->tree;
+	struct smb2_create create_parm;
+	NTSTATUS status;
+	union smb_setfileinfo *io2 = talloc_get_type(ctx->private_data,
+						     union smb_setfileinfo);
+
+	status = smb2_create_recv(smb2req, ctx, &create_parm);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(ctx, status);
+		return;
+	}
+
+	io2->generic.in.file.handle = create_parm.out.file.handle;
+
+	smb2req = smb2_setinfo_file_send(tree, io2);
+	composite_continue_smb2(ctx, smb2req, smb2_composite_setpathinfo_setinfo_done, ctx);
 }
 
 static void smb2_composite_setpathinfo_close_done(struct smb2_request *smb2req)
