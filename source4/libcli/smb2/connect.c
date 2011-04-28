@@ -46,26 +46,6 @@ struct smb2_connect_state {
 	struct smb2_tree *tree;
 };
 
-static void smb2_connect_tcon_done(struct smb2_request *smb2req)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(smb2req->async.private_data,
-		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	NTSTATUS status;
-
-	status = smb2_tree_connect_recv(smb2req, &state->tcon);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	state->tree->tid = state->tcon.out.tid;
-
-	tevent_req_done(req);
-}
-
 static void smb2_connect_resolve_done(struct composite_context *creq);
 
 /*
@@ -280,6 +260,8 @@ static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 	creq->async.private_data = req;
 }
 
+static void smb2_connect_tcon_done(struct smb2_request *smb2req);
+
 static void smb2_connect_session_done(struct composite_context *creq)
 {
 	struct tevent_req *req =
@@ -314,6 +296,26 @@ static void smb2_connect_session_done(struct composite_context *creq)
 	}
 	smb2req->async.fn = smb2_connect_tcon_done;
 	smb2req->async.private_data = req;
+}
+
+static void smb2_connect_tcon_done(struct smb2_request *smb2req)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(smb2req->async.private_data,
+		struct tevent_req);
+	struct smb2_connect_state *state =
+		tevent_req_data(req,
+		struct smb2_connect_state);
+	NTSTATUS status;
+
+	status = smb2_tree_connect_recv(smb2req, &state->tcon);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->tree->tid = state->tcon.out.tid;
+
+	tevent_req_done(req);
 }
 
 NTSTATUS smb2_connect_recv(struct tevent_req *req,
