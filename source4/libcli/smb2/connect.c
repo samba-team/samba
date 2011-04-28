@@ -102,75 +102,6 @@ static void smb2_connect_session_done(struct composite_context *creq)
 	smb2req->async.private_data = req;
 }
 
-static void smb2_connect_negprot_done(struct smb2_request *smb2req)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(smb2req->async.private_data,
-		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	struct smb2_transport *transport = smb2req->transport;
-	struct composite_context *creq;
-	NTSTATUS status;
-
-	status = smb2_negprot_recv(smb2req, state, &state->negprot);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	transport->negotiate.secblob = state->negprot.out.secblob;
-	talloc_steal(transport, transport->negotiate.secblob.data);
-	transport->negotiate.system_time = state->negprot.out.system_time;
-	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
-	transport->negotiate.security_mode = state->negprot.out.security_mode;
-	transport->negotiate.dialect_revision = state->negprot.out.dialect_revision;
-
-	switch (transport->options.signing) {
-	case SMB_SIGNING_OFF:
-		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
-		transport->signing_required = false;
-		break;
-	case SMB_SIGNING_SUPPORTED:
-		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
-			transport->signing_required = true;
-		} else {
-			transport->signing_required = false;
-		}
-		break;
-	case SMB_SIGNING_AUTO:
-		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_ENABLED) {
-			transport->signing_required = true;
-		} else {
-			transport->signing_required = false;
-		}
-		break;
-	case SMB_SIGNING_REQUIRED:
-		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_ENABLED) {
-			transport->signing_required = true;
-		} else {
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
-		break;
-	}
-
-	state->session = smb2_session_init(transport, state->gensec_settings, state, true);
-	if (tevent_req_nomem(state->session, req)) {
-		return;
-	}
-
-	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
-	if (tevent_req_nomem(creq, req)) {
-		return;
-	}
-	creq->async.fn = smb2_connect_session_done;
-	creq->async.private_data = req;
-}
-
 static void smb2_connect_resolve_done(struct composite_context *creq);
 
 /*
@@ -257,6 +188,8 @@ static void smb2_connect_resolve_done(struct composite_context *creq)
 	creq->async.private_data = req;
 }
 
+static void smb2_connect_negprot_done(struct smb2_request *smb2req);
+
 static void smb2_connect_socket_done(struct composite_context *creq)
 {
 	struct tevent_req *req =
@@ -310,6 +243,75 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 	}
 	smb2req->async.fn = smb2_connect_negprot_done;
 	smb2req->async.private_data = req;
+}
+
+static void smb2_connect_negprot_done(struct smb2_request *smb2req)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(smb2req->async.private_data,
+		struct tevent_req);
+	struct smb2_connect_state *state =
+		tevent_req_data(req,
+		struct smb2_connect_state);
+	struct smb2_transport *transport = smb2req->transport;
+	struct composite_context *creq;
+	NTSTATUS status;
+
+	status = smb2_negprot_recv(smb2req, state, &state->negprot);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	transport->negotiate.secblob = state->negprot.out.secblob;
+	talloc_steal(transport, transport->negotiate.secblob.data);
+	transport->negotiate.system_time = state->negprot.out.system_time;
+	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
+	transport->negotiate.security_mode = state->negprot.out.security_mode;
+	transport->negotiate.dialect_revision = state->negprot.out.dialect_revision;
+
+	switch (transport->options.signing) {
+	case SMB_SIGNING_OFF:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+		transport->signing_required = false;
+		break;
+	case SMB_SIGNING_SUPPORTED:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
+			transport->signing_required = true;
+		} else {
+			transport->signing_required = false;
+		}
+		break;
+	case SMB_SIGNING_AUTO:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_ENABLED) {
+			transport->signing_required = true;
+		} else {
+			transport->signing_required = false;
+		}
+		break;
+	case SMB_SIGNING_REQUIRED:
+		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_ENABLED) {
+			transport->signing_required = true;
+		} else {
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+		break;
+	}
+
+	state->session = smb2_session_init(transport, state->gensec_settings, state, true);
+	if (tevent_req_nomem(state->session, req)) {
+		return;
+	}
+
+	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
+	if (tevent_req_nomem(creq, req)) {
+		return;
+	}
+	creq->async.fn = smb2_connect_session_done;
+	creq->async.private_data = req;
 }
 
 NTSTATUS smb2_connect_recv(struct tevent_req *req,
