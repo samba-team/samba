@@ -2169,7 +2169,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_tcon_andx_state *state;
-	fstring pword;
+	uint8_t p24[24];
 	uint16_t *vwv;
 	char *tmp = NULL;
 	uint8_t *bytes;
@@ -2211,12 +2211,15 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		 * Non-encrypted passwords - convert to DOS codepage before
 		 * encryption.
 		 */
+		SMBencrypt(pass, cli->secblob.data, p24);
 		passlen = 24;
-		SMBencrypt(pass, cli->secblob.data, (uchar *)pword);
+		pass = (const char *)p24;
 	} else {
 		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL
 				     |NEGOTIATE_SECURITY_CHALLENGE_RESPONSE))
 		   == 0) {
+			char *tmp_pass;
+
 			if (!lp_client_plaintext_auth() && (*pass)) {
 				DEBUG(1, ("Server requested plaintext "
 					  "password but "
@@ -2228,16 +2231,21 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 			 * Non-encrypted passwords - convert to DOS codepage
 			 * before using.
 			 */
-			passlen = clistr_push(cli, pword, pass, sizeof(pword),
-					      STR_TERMINATE);
+			tmp_pass = talloc_array(talloc_tos(), char, 128);
+			if (tmp_pass == NULL) {
+				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+				return tevent_req_post(req, ev);
+			}
+			passlen = clistr_push(cli,
+					tmp_pass,
+					pass,
+					talloc_get_size(tmp_pass),
+					STR_TERMINATE);
 			if (passlen == -1) {
-				DEBUG(1, ("clistr_push(pword) failed\n"));
-				goto access_denied;
+				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+				return tevent_req_post(req, ev);
 			}
-		} else {
-			if (passlen) {
-				memcpy(pword, pass, passlen);
-			}
+			pass = tmp_pass;
 		}
 	}
 
@@ -2247,8 +2255,8 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	SSVAL(vwv+2, 0, TCONX_FLAG_EXTENDED_RESPONSE);
 	SSVAL(vwv+3, 0, passlen);
 
-	if (passlen) {
-		bytes = (uint8_t *)talloc_memdup(state, pword, passlen);
+	if (passlen && pass) {
+		bytes = (uint8_t *)talloc_memdup(state, pass, passlen);
 	} else {
 		bytes = talloc_array(state, uint8_t, 0);
 	}
