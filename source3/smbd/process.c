@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "../lib/tsocket/tsocket.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"

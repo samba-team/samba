@@ -29,6 +29,7 @@
 #include "rpc_dce.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "ntdomain.h"
+#include "../lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
