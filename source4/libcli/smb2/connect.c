@@ -66,42 +66,6 @@ static void smb2_connect_tcon_done(struct smb2_request *smb2req)
 	tevent_req_done(req);
 }
 
-static void smb2_connect_session_done(struct composite_context *creq)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(creq->async.private_data,
-		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	struct smb2_request *smb2req;
-	NTSTATUS status;
-
-	status = smb2_session_setup_spnego_recv(creq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	state->tree = smb2_tree_init(state->session, state, true);
-	if (tevent_req_nomem(state->tree, req)) {
-		return;
-	}
-
-	state->tcon.in.reserved = 0;
-	state->tcon.in.path     = talloc_asprintf(state, "\\\\%s\\%s", 
-						  state->host, state->share);
-	if (tevent_req_nomem(state->tcon.in.path, req)) {
-		return;
-	}
-
-	smb2req = smb2_tree_connect_send(state->tree, &state->tcon);
-	if (tevent_req_nomem(smb2req, req)) {
-		return;
-	}
-	smb2req->async.fn = smb2_connect_tcon_done;
-	smb2req->async.private_data = req;
-}
-
 static void smb2_connect_resolve_done(struct composite_context *creq);
 
 /*
@@ -245,6 +209,8 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 	smb2req->async.private_data = req;
 }
 
+static void smb2_connect_session_done(struct composite_context *creq);
+
 static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 {
 	struct tevent_req *req =
@@ -312,6 +278,42 @@ static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 	}
 	creq->async.fn = smb2_connect_session_done;
 	creq->async.private_data = req;
+}
+
+static void smb2_connect_session_done(struct composite_context *creq)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(creq->async.private_data,
+		struct tevent_req);
+	struct smb2_connect_state *state =
+		tevent_req_data(req,
+		struct smb2_connect_state);
+	struct smb2_request *smb2req;
+	NTSTATUS status;
+
+	status = smb2_session_setup_spnego_recv(creq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->tree = smb2_tree_init(state->session, state, true);
+	if (tevent_req_nomem(state->tree, req)) {
+		return;
+	}
+
+	state->tcon.in.reserved = 0;
+	state->tcon.in.path     = talloc_asprintf(state, "\\\\%s\\%s",
+						  state->host, state->share);
+	if (tevent_req_nomem(state->tcon.in.path, req)) {
+		return;
+	}
+
+	smb2req = smb2_tree_connect_send(state->tree, &state->tcon);
+	if (tevent_req_nomem(smb2req, req)) {
+		return;
+	}
+	smb2req->async.fn = smb2_connect_tcon_done;
+	smb2req->async.private_data = req;
 }
 
 NTSTATUS smb2_connect_recv(struct tevent_req *req,
