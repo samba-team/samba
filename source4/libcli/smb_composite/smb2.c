@@ -264,31 +264,6 @@ NTSTATUS smb2_composite_rmdir(struct smb2_tree *tree, struct smb_rmdir *io)
 	return composite_wait_free(c);
 }
 
-static void smb2_composite_setpathinfo_close_done(struct smb2_request *smb2req);
-
-static void smb2_composite_setpathinfo_setinfo_done(struct smb2_request *smb2req)
-{
-	struct composite_context *ctx = talloc_get_type(smb2req->async.private_data,
-							struct composite_context);
-	struct smb2_tree *tree = smb2req->tree;
-	struct smb2_close close_parm;
-	NTSTATUS status;
-	union smb_setfileinfo *io2 = talloc_get_type(ctx->private_data, 
-						     union smb_setfileinfo);
-
-	status = smb2_setinfo_recv(smb2req);
-	if (!NT_STATUS_IS_OK(status)) {
-		composite_error(ctx, status);
-		return;
-	}
-
-	ZERO_STRUCT(close_parm);
-	close_parm.in.file.handle = io2->generic.in.file.handle;
-	
-	smb2req = smb2_close_send(tree, &close_parm);
-	composite_continue_smb2(ctx, smb2req, smb2_composite_setpathinfo_close_done, ctx);
-}
-
 static void smb2_composite_setpathinfo_create_done(struct smb2_request *smb2req);
 
 /*
@@ -332,6 +307,8 @@ struct composite_context *smb2_composite_setpathinfo_send(struct smb2_tree *tree
 	return ctx;
 }
 
+static void smb2_composite_setpathinfo_setinfo_done(struct smb2_request *smb2req);
+
 static void smb2_composite_setpathinfo_create_done(struct smb2_request *smb2req)
 {
 	struct composite_context *ctx = talloc_get_type(smb2req->async.private_data,
@@ -352,6 +329,31 @@ static void smb2_composite_setpathinfo_create_done(struct smb2_request *smb2req)
 
 	smb2req = smb2_setinfo_file_send(tree, io2);
 	composite_continue_smb2(ctx, smb2req, smb2_composite_setpathinfo_setinfo_done, ctx);
+}
+
+static void smb2_composite_setpathinfo_close_done(struct smb2_request *smb2req);
+
+static void smb2_composite_setpathinfo_setinfo_done(struct smb2_request *smb2req)
+{
+	struct composite_context *ctx = talloc_get_type(smb2req->async.private_data,
+							struct composite_context);
+	struct smb2_tree *tree = smb2req->tree;
+	struct smb2_close close_parm;
+	NTSTATUS status;
+	union smb_setfileinfo *io2 = talloc_get_type(ctx->private_data,
+						     union smb_setfileinfo);
+
+	status = smb2_setinfo_recv(smb2req);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(ctx, status);
+		return;
+	}
+
+	ZERO_STRUCT(close_parm);
+	close_parm.in.file.handle = io2->generic.in.file.handle;
+
+	smb2req = smb2_close_send(tree, &close_parm);
+	composite_continue_smb2(ctx, smb2req, smb2_composite_setpathinfo_close_done, ctx);
 }
 
 static void smb2_composite_setpathinfo_close_done(struct smb2_request *smb2req)
