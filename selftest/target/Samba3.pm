@@ -261,7 +261,7 @@ sub setup_admember($$$$)
 	$cmd .= "-S ACL:$dcvars->{DOMAIN}\\\\Domain\\ Users:ALLOWED/0x0/FULL";
 
 	if (system($cmd) != 0) {
-	    warn("smbcacls failed\n$cmd");
+	    warn("smbcacls failed, your filesystem may not support ACLs.  Try mount $prefix_abs -oremount,acl\nThis support is required for S3 member in S4 tests\n$cmd");
 	    return undef;
 	}
 
