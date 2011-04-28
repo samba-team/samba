@@ -27,10 +27,8 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
-#include "memcache.h"
 #include "globals.h"
 #include "../libcli/security/dom_sid.h"
-#include "../librpc/gen_ndr/ndr_security.h"
 #include "idmap_cache.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
