@@ -73,6 +73,19 @@ def set_options(opt):
 def configure(conf):
     conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
 
+def combine_files(file1, file2, outfile):
+
+    f1 = open(file1)
+    f2 = open(file2)
+    of = open(outfile, mode='w')
+    for line in f1:
+        of.write(line)
+    for line in f2:
+        of.write(line)
+    f1.close()
+    f2.close()
+    of.close()
+
 def cmd_testonly(opt):
     '''run tests without doing a build first'''
     env = LOAD_ENVIRONMENT()
@@ -183,17 +196,19 @@ def cmd_testonly(opt):
         env.SELFTEST_DIR = "${srcdir}/source3/selftest"
 
     if env.SELFTEST_TARGET == "samba":
-        env.SELFTEST_DIR = "${srcdir}/source3/selftest"
-        xfail = ""
-        xfail += EXPAND_VARIABLES(opt, env.FILTER_XFAIL)
-        xfail += " | "
-        env.SELFTEST_DIR = "${srcdir}/source4/selftest"
-        xfail += EXPAND_VARIABLES(opt, env.FILTER_XFAIL)
-        env.FILTER_XFAIL = xfail;
-        cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude="${srcdir}/source4/selftest/skip" --exclude="${srcdir}/source3/selftest/skip" --testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" --testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+        for f in ["knownfail", "slow", "quick", "skip" ]:
+            combine_files(env.srcdir + "/source4/selftest/" + f,
+                          env.srcdir + "/source3/selftest/" + f,
+                          env.SELFTEST_PREFIX + "/" + f)
+
+        env.SELFTEST_DIR = "${srcdir}/st"
+        env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
+                         '--testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
     else:
-        # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
-        cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${SELFTEST_DIR}/skip --testlist="${PYTHON} ${SELFTEST_DIR}/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+        env.TESTLISTS = '--testlist="${SELFTEST_DIR}/tests.py|"'
+
+    # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
+    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${SELFTEST_DIR}/skip ${TESTLISTS} ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
 
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
