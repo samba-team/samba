@@ -171,61 +171,6 @@ static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 	creq->async.private_data = req;
 }
 
-static void smb2_connect_socket_done(struct composite_context *creq)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(creq->async.private_data,
-		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	struct smbcli_socket *sock;
-	struct smb2_transport *transport;
-	struct smb2_request *smb2req;
-	NTSTATUS status;
-	uint16_t dialects[3] = {
-		SMB2_DIALECT_REVISION_000,
-		SMB2_DIALECT_REVISION_202,
-		SMB2_DIALECT_REVISION_210
-	};
-
-	status = smbcli_sock_connect_recv(creq, state, &sock);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	transport = smb2_transport_init(sock, state, &state->options);
-	if (tevent_req_nomem(transport, req)) {
-		return;
-	}
-
-	ZERO_STRUCT(state->negprot);
-	state->negprot.in.dialect_count = ARRAY_SIZE(dialects);
-	switch (transport->options.signing) {
-	case SMB_SIGNING_OFF:
-		state->negprot.in.security_mode = 0;
-		break;
-	case SMB_SIGNING_SUPPORTED:
-	case SMB_SIGNING_AUTO:
-		state->negprot.in.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
-		break;
-	case SMB_SIGNING_REQUIRED:
-		state->negprot.in.security_mode = 
-			SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
-		break;
-	}
-	state->negprot.in.capabilities  = 0;
-	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
-	state->negprot.in.dialects = dialects;
-
-	smb2req = smb2_negprot_send(transport, &state->negprot);
-	if (tevent_req_nomem(smb2req, req)) {
-		return;
-	}
-	smb2req->async.fn = smb2_connect_negprot_done;
-	smb2req->async.private_data = req;
-}
-
 static void smb2_connect_resolve_done(struct composite_context *creq);
 
 /*
@@ -276,6 +221,8 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void smb2_connect_socket_done(struct composite_context *creq);
+
 static void smb2_connect_resolve_done(struct composite_context *creq)
 {
 	struct tevent_req *req =
@@ -308,6 +255,61 @@ static void smb2_connect_resolve_done(struct composite_context *creq)
 	}
 	creq->async.fn = smb2_connect_socket_done;
 	creq->async.private_data = req;
+}
+
+static void smb2_connect_socket_done(struct composite_context *creq)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(creq->async.private_data,
+		struct tevent_req);
+	struct smb2_connect_state *state =
+		tevent_req_data(req,
+		struct smb2_connect_state);
+	struct smbcli_socket *sock;
+	struct smb2_transport *transport;
+	struct smb2_request *smb2req;
+	NTSTATUS status;
+	uint16_t dialects[3] = {
+		SMB2_DIALECT_REVISION_000,
+		SMB2_DIALECT_REVISION_202,
+		SMB2_DIALECT_REVISION_210
+	};
+
+	status = smbcli_sock_connect_recv(creq, state, &sock);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	transport = smb2_transport_init(sock, state, &state->options);
+	if (tevent_req_nomem(transport, req)) {
+		return;
+	}
+
+	ZERO_STRUCT(state->negprot);
+	state->negprot.in.dialect_count = ARRAY_SIZE(dialects);
+	switch (transport->options.signing) {
+	case SMB_SIGNING_OFF:
+		state->negprot.in.security_mode = 0;
+		break;
+	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_AUTO:
+		state->negprot.in.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
+		break;
+	case SMB_SIGNING_REQUIRED:
+		state->negprot.in.security_mode =
+			SMB2_NEGOTIATE_SIGNING_ENABLED | SMB2_NEGOTIATE_SIGNING_REQUIRED;
+		break;
+	}
+	state->negprot.in.capabilities  = 0;
+	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
+	state->negprot.in.dialects = dialects;
+
+	smb2req = smb2_negprot_send(transport, &state->negprot);
+	if (tevent_req_nomem(smb2req, req)) {
+		return;
+	}
+	smb2req->async.fn = smb2_connect_negprot_done;
+	smb2req->async.private_data = req;
 }
 
 NTSTATUS smb2_connect_recv(struct tevent_req *req,
