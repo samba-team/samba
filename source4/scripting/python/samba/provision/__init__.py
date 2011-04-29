@@ -1166,6 +1166,11 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
             "DESCRIPTOR": descr,
             })
 
+        # Now register this container in the root of the forest
+        msg = ldb.Message(ldb.Dn(samdb, names.domaindn))
+        msg["subRefs"] = ldb.MessageElement(names.configdn , ldb.FLAG_MOD_ADD,
+                    "subRefs")
+
         # The LDIF here was created when the Schema object was constructed
         logger.info("Setting up sam.ldb schema")
         samdb.add_ldif(schema.schema_dn_add, controls=["relax:0"])

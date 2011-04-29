@@ -82,14 +82,8 @@ pwdProperties: 1
 replace: pwdHistoryLength
 pwdHistoryLength: 24
 -
-replace: rIDManagerReference
-rIDManagerReference: CN=RID Manager$,CN=System,${DOMAINDN}
--
 replace: serverState
 serverState: 1
--
-replace: subRefs
-subRefs: ${CONFIGDN}
 -
 replace: systemFlags
 systemFlags: -1946157056
