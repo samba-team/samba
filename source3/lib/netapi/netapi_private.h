@@ -29,6 +29,8 @@
 	} \
 	return fn ## _r(ctx, r);
 
+struct dcerpc_binding_handle;
+
 struct libnetapi_private_ctx {
 	struct {
 		const char *domain_name;

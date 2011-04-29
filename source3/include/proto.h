@@ -2619,34 +2619,6 @@ void set_server_role(void);
 uint32 get_int_param( const char* param );
 char* get_string_param( const char* param );
 
-/* The following definitions come from rpc_server/rpc_ncacn_np.c  */
-struct auth_serversupplied_info;
-struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-					      const struct ndr_syntax_id *syntax,
-					      struct client_address *client_id,
-					      const struct auth_serversupplied_info *session_info,
-					      struct messaging_context *msg_ctx);
-struct dcerpc_binding_handle;
-struct ndr_interface_table;
-NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
-			       const struct ndr_interface_table *ndr_table,
-			       struct client_address *client_id,
-			       const struct auth_serversupplied_info *session_info,
-			       struct messaging_context *msg_ctx,
-			       struct dcerpc_binding_handle **binding_handle);
-NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
-				const struct ndr_syntax_id *abstract_syntax,
-				const struct auth_serversupplied_info *serversupplied_info,
-				struct client_address *client_id,
-				struct messaging_context *msg_ctx,
-				struct rpc_pipe_client **presult);
-NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
-				 const struct ndr_syntax_id *syntax,
-				 const struct auth_serversupplied_info *session_info,
-				 struct client_address *client_id,
-				 struct messaging_context *msg_ctx,
-				 struct rpc_pipe_client **cli_pipe);
-
 /* The following definitions come from rpc_server/srv_rpc_register.c  */
 
 struct rpc_srv_callbacks {
@@ -2656,6 +2628,8 @@ struct rpc_srv_callbacks {
 };
 
 struct api_struct;
+struct ndr_interface_table;
+struct pipes_struct;
 NTSTATUS rpc_srv_register(int version, const char *clnt,
 			  const char *srv,
 			  const struct ndr_interface_table *iface,
