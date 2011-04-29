@@ -75,7 +75,7 @@ bool lpcfg_is_myname(struct loadparm_context *lp_ctx, const char *name)
 /**
  A useful function for returning a path in the Samba lock directory.
 **/
-char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			 const char *name)
 {
 	char *fname, *dname;

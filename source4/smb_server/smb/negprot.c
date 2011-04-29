@@ -278,7 +278,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		capabilities |= CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS;
 	}
 
-	large_test_path = lock_path(req, req->smb_conn->lp_ctx, "large_test.dat");
+	large_test_path = lpcfg_lock_path(req, req->smb_conn->lp_ctx, "large_test.dat");
 	if (large_file_support(large_test_path)) {
 		capabilities |= CAP_LARGE_FILES;
 	}
