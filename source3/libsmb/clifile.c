@@ -4396,7 +4396,6 @@ static uint32_t open_flags_to_wire(int flags)
 #endif
 #if defined(O_DIRECTORY)
 	if (flags & O_DIRECTORY) {
-		ret &= ~(SMB_O_RDONLY|SMB_O_RDWR|SMB_O_WRONLY);
 		ret |= SMB_O_DIRECTORY;
 	}
 #endif
@@ -4471,7 +4470,6 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 
 	/* Setup data words. */
 	if (is_dir) {
-		wire_flags &= ~(SMB_O_RDONLY|SMB_O_RDWR|SMB_O_WRONLY);
 		wire_flags |= SMB_O_DIRECTORY;
 	}
 

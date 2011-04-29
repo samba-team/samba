@@ -5073,8 +5073,16 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	/* What happens when we try and POSIX open a directory ? */
-	if (NT_STATUS_IS_OK(cli_posix_open(cli1, dname, O_RDONLY, 0, &fnum1))) {
+	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, dname, O_RDONLY, 0, &fnum1))) {
+		printf("POSIX open directory O_RDONLY of %s failed (%s)\n",
+			dname, cli_errstr(cli1));
+		goto out;
+	}
+
+	cli_close(cli1, fnum1);
+
+	/* What happens when we try and POSIX open a directory for write ? */
+	if (NT_STATUS_IS_OK(cli_posix_open(cli1, dname, O_RDWR, 0, &fnum1))) {
 		printf("POSIX open of directory %s succeeded, should have failed.\n", fname);
 		goto out;
 	} else {
