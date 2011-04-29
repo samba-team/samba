@@ -2652,3 +2652,37 @@ int timeval_to_msec(struct timeval t)
 {
 	return t.tv_sec * 1000 + (t.tv_usec+999) / 1000;
 }
+
+/*******************************************************************
+ Check a given DOS pathname is valid for a share.
+********************************************************************/
+
+char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname)
+{
+	char *ptr = NULL;
+
+	if (!dos_pathname) {
+		return NULL;
+	}
+
+	ptr = talloc_strdup(ctx, dos_pathname);
+	if (!ptr) {
+		return NULL;
+	}
+	/* Convert any '\' paths to '/' */
+	unix_format(ptr);
+	ptr = unix_clean_name(ctx, ptr);
+	if (!ptr) {
+		return NULL;
+	}
+
+	/* NT is braindead - it wants a C: prefix to a pathname ! So strip it. */
+	if (strlen(ptr) > 2 && ptr[1] == ':' && ptr[0] != '/')
+		ptr += 2;
+
+	/* Only absolute paths allowed. */
+	if (*ptr != '/')
+		return NULL;
+
+	return ptr;
+}
