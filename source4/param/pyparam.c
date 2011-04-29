@@ -229,7 +229,7 @@ static PyObject *py_lp_ctx_private_path(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	path = private_path(NULL, PyLoadparmContext_AsLoadparmContext(self), name);
+	path = lpcfg_private_path(NULL, PyLoadparmContext_AsLoadparmContext(self), name);
 	ret = PyString_FromString(path);
 	talloc_free(path);
 

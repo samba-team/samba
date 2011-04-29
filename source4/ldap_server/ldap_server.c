@@ -969,7 +969,7 @@ static void ldapsrv_task_init(struct task_server *task)
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
-	ldapi_path = private_path(ldap_service, task->lp_ctx, "ldapi");
+	ldapi_path = lpcfg_private_path(ldap_service, task->lp_ctx, "ldapi");
 	if (!ldapi_path) {
 		goto failed;
 	}
@@ -986,7 +986,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 #ifdef WITH_LDAPI_PRIV_SOCKET
-	priv_dir = private_path(ldap_service, task->lp_ctx, "ldap_priv");
+	priv_dir = lpcfg_private_path(ldap_service, task->lp_ctx, "ldap_priv");
 	if (priv_dir == NULL) {
 		goto failed;
 	}

@@ -525,7 +525,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 
 	if (options.url == NULL) {
 		options.url = talloc_asprintf(tmp_ctx, "ldapi://%s",
-					      private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
+					      lpcfg_private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
 		if (options.url == NULL) {
 			result = ISC_R_NOMEMORY;
 			goto failed;

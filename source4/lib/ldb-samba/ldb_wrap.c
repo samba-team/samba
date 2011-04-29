@@ -209,7 +209,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 		flags |= LDB_FLG_ENABLE_TRACING;
 	}
 
-	real_url = private_path(ldb, lp_ctx, url);
+	real_url = lpcfg_private_path(ldb, lp_ctx, url);
 	if (real_url == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

@@ -123,12 +123,12 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 
 	path = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "path");
 	if (path == NULL) {
-		path = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update");
+		path = lpcfg_private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update");
 	}
 
 	path_static = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "extra_static_grant_rules");
 	if (path_static == NULL) {
-		path_static = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update.static");
+		path_static = lpcfg_private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update.static");
 	}
 
 	tmp_path = talloc_asprintf(tmp_ctx, "%s.tmp", path);

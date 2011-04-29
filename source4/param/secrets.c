@@ -57,7 +57,7 @@ struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_c
 	uint8_t dummy;
 	struct tdb_wrap *tdb;
 
-	fname = private_path(mem_ctx, lp_ctx, "secrets.tdb");
+	fname = lpcfg_private_path(mem_ctx, lp_ctx, "secrets.tdb");
 
 	tdb = tdb_wrap_open(mem_ctx, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 

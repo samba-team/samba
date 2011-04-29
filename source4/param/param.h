@@ -295,7 +295,7 @@ char *lpcfg_config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-char *private_path(TALLOC_CTX* mem_ctx, 
+char *lpcfg_private_path(TALLOC_CTX* mem_ctx,
 			    struct loadparm_context *lp_ctx,
 			    const char *name);
 

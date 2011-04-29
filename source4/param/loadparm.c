@@ -2830,27 +2830,27 @@ void lpcfg_smbcli_session_options(struct loadparm_context *lp_ctx,
 
 _PUBLIC_ char *lpcfg_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_keyfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_keyfile);
 }
 
 _PUBLIC_ char *lpcfg_tls_certfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_certfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_certfile);
 }
 
 _PUBLIC_ char *lpcfg_tls_cafile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_cafile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_cafile);
 }
 
 _PUBLIC_ char *lpcfg_tls_crlfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_crlfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_crlfile);
 }
 
 _PUBLIC_ char *lpcfg_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_dhpfile);
+	return lpcfg_private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_dhpfile);
 }
 
 _PUBLIC_ struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)

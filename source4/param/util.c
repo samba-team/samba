@@ -139,7 +139,7 @@ char *lpcfg_config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-char *private_path(TALLOC_CTX* mem_ctx, 
+char *lpcfg_private_path(TALLOC_CTX* mem_ctx,
 			    struct loadparm_context *lp_ctx,
 			    const char *name)
 {
@@ -165,7 +165,7 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx,
 {
 	char *fname, *dname;
 
-	dname = private_path(mem_ctx, lp_ctx, "smbd.tmp");
+	dname = lpcfg_private_path(mem_ctx, lp_ctx, "smbd.tmp");
 	if (!directory_exist(dname)) {
 		mkdir(dname,0755);
 	}
