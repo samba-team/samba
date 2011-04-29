@@ -7045,18 +7045,55 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 
 	wire_open_mode &= ~SMB_ACCMODE;
 
-	if((wire_open_mode & (SMB_O_CREAT | SMB_O_EXCL)) == (SMB_O_CREAT | SMB_O_EXCL)) {
-		create_disp = FILE_CREATE;
-	} else if((wire_open_mode & (SMB_O_CREAT | SMB_O_TRUNC)) == (SMB_O_CREAT | SMB_O_TRUNC)) {
-		create_disp = FILE_OVERWRITE_IF;
-	} else if((wire_open_mode & SMB_O_CREAT) == SMB_O_CREAT) {
-		create_disp = FILE_OPEN_IF;
-	} else if ((wire_open_mode & (SMB_O_CREAT | SMB_O_EXCL | SMB_O_TRUNC)) == 0) {
-		create_disp = FILE_OPEN;
-	} else {
-		DEBUG(5,("smb_posix_open: invalid create mode 0x%x\n",
-			(unsigned int)wire_open_mode ));
-		return NT_STATUS_INVALID_PARAMETER;
+	/* First take care of O_CREAT|O_EXCL interactions. */
+	switch (wire_open_mode & (SMB_O_CREAT | SMB_O_EXCL)) {
+		case (SMB_O_CREAT | SMB_O_EXCL):
+			/* File exists fail. File not exist create. */
+			create_disp = FILE_CREATE;
+			break;
+		case SMB_O_CREAT:
+			/* File exists open. File not exist create. */
+			create_disp = FILE_OPEN_IF;
+			break;
+		case 0:
+			/* File exists open. File not exist fail. */
+			create_disp = FILE_OPEN;
+			break;
+		case SMB_O_EXCL:
+			/* O_EXCL on its own without O_CREAT is undefined. */
+		default:
+			DEBUG(5,("smb_posix_open: invalid create mode 0x%x\n",
+				(unsigned int)wire_open_mode ));
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Next factor in the effects of O_TRUNC. */
+	wire_open_mode &= ~(SMB_O_CREAT | SMB_O_EXCL);
+
+	if (wire_open_mode & SMB_O_TRUNC) {
+		switch (create_disp) {
+			case FILE_CREATE:
+				/* (SMB_O_CREAT | SMB_O_EXCL | O_TRUNC) */
+				/* Leave create_disp alone as
+				   (O_CREAT|O_EXCL|O_TRUNC) == (O_CREAT|O_EXCL)
+				*/
+				/* File exists fail. File not exist create. */
+				break;
+			case FILE_OPEN_IF:
+				/* SMB_O_CREAT | SMB_O_TRUNC */
+				/* File exists overwrite. File not exist create. */
+				create_disp = FILE_OVERWRITE_IF;
+				break;
+			case FILE_OPEN:
+				/* SMB_O_TRUNC */
+				/* File exists overwrite. File not exist fail. */
+				create_disp = FILE_OVERWRITE;
+				break;
+			default:
+				/* Cannot get here. */
+				smb_panic("smb_posix_open: logic error");
+				return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	raw_unixmode = IVAL(pdata,8);
