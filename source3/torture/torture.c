@@ -5720,7 +5720,7 @@ static bool run_dirtest1(int dummy)
 		correct = False;
 
 	num_seen = 0;
-	cli_list_old(cli, "\\LISTDIR\\*", (aARCH<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, &num_seen);
+	cli_list_old(cli, "\\LISTDIR\\*", (FILE_ATTRIBUTE_ARCHIVE<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, &num_seen);
 	printf("num_seen = %d\n", num_seen );
 	if (num_seen != 1000)
 		correct = False;

@@ -306,7 +306,7 @@ char *attrib_string(uint16 mode)
 
 	if (mode & FILE_ATTRIBUTE_VOLUME) fstrcat(attrstr,"V");
 	if (mode & FILE_ATTRIBUTE_DIRECTORY) fstrcat(attrstr,"D");
-	if (mode & aARCH) fstrcat(attrstr,"A");
+	if (mode & FILE_ATTRIBUTE_ARCHIVE) fstrcat(attrstr,"A");
 	if (mode & FILE_ATTRIBUTE_HIDDEN) fstrcat(attrstr,"H");
 	if (mode & FILE_ATTRIBUTE_SYSTEM) fstrcat(attrstr,"S");
 	if (mode & FILE_ATTRIBUTE_READONLY) fstrcat(attrstr,"R");

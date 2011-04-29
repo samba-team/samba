@@ -1450,7 +1450,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
-	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
+	/* Grrr. We have to do this as open_file_ntcreate adds FILE_ATTRIBUTE_ARCHIVE when it
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
 	if (!parent_dirname(talloc_tos(), smb_fname_dst->base_name, &parent,
