@@ -1559,7 +1559,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_NTLMSSP) ||
 	     (p->auth.auth_type == DCERPC_AUTH_TYPE_KRB5) ||
 	     (p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO))) {
-		if(!become_authenticated_pipe_user(p)) {
+		if(!become_authenticated_pipe_user(p->session_info)) {
 			data_blob_free(&p->out_data.rdata);
 			return False;
 		}

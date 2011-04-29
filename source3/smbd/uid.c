@@ -25,7 +25,6 @@
 #include "libcli/security/security.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 /* what user is current? */
 extern struct current_user current_user;
@@ -409,14 +408,14 @@ bool change_to_root_user(void)
  user. Doesn't modify current_user.
 ****************************************************************************/
 
-bool become_authenticated_pipe_user(struct pipes_struct *p)
+bool become_authenticated_pipe_user(struct auth_serversupplied_info *session_info)
 {
 	if (!push_sec_ctx())
 		return False;
 
-	set_sec_ctx(p->session_info->utok.uid, p->session_info->utok.gid,
-		    p->session_info->utok.ngroups, p->session_info->utok.groups,
-		    p->session_info->security_token);
+	set_sec_ctx(session_info->utok.uid, session_info->utok.gid,
+		    session_info->utok.ngroups, session_info->utok.groups,
+		    session_info->security_token);
 
 	return True;
 }
