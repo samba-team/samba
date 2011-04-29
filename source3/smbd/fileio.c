@@ -322,7 +322,7 @@ ssize_t write_file(struct smb_request *req,
 				int dosmode = dos_mode(fsp->conn, fsp->fsp_name);
 				if (!IS_DOS_ARCHIVE(dosmode)) {
 					file_set_dosmode(fsp->conn, fsp->fsp_name,
-						 dosmode | aARCH, NULL, false);
+						 dosmode | FILE_ATTRIBUTE_ARCHIVE, NULL, false);
 				}
 			}
 

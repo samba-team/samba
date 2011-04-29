@@ -183,7 +183,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 	} /* Else never set the readonly bit. */
 
 	if (MAP_ARCHIVE(conn) && ((smb_fname->st.st_ex_mode & S_IXUSR) != 0))
-		result |= aARCH;
+		result |= FILE_ATTRIBUTE_ARCHIVE;
 
 	if (MAP_SYSTEM(conn) && ((smb_fname->st.st_ex_mode & S_IXGRP) != 0))
 		result |= FILE_ATTRIBUTE_SYSTEM;
@@ -202,7 +202,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
 	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (result & aARCH  ) DEBUG(8, ("a"));
+	if (result & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
 
 	DEBUG(8,("\n"));
 	return result;
@@ -329,7 +329,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	if (dosattr & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (dosattr & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
 	if (dosattr & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (dosattr & aARCH  ) DEBUG(8, ("a"));
+	if (dosattr & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
 
 	DEBUG(8,("\n"));
 
@@ -490,7 +490,7 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
 	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (result & aARCH  ) DEBUG(8, ("a"));
+	if (result & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
 
 	DEBUG(8,("\n"));
@@ -507,7 +507,7 @@ int dos_attributes_to_stat_dos_flags(uint32_t dosmode)
 {
 	uint32_t dos_stat_flags = 0;
 
-	if (dosmode & aARCH)
+	if (dosmode & FILE_ATTRIBUTE_ARCHIVE)
 		dos_stat_flags |= UF_DOS_ARCHIVE;
 	if (dosmode & FILE_ATTRIBUTE_HIDDEN)
 		dos_stat_flags |= UF_DOS_HIDDEN;
@@ -540,7 +540,7 @@ static bool get_stat_dos_flags(connection_struct *conn,
 		  smb_fname_str_dbg(smb_fname)));
 
 	if (smb_fname->st.st_ex_flags & UF_DOS_ARCHIVE)
-		*dosmode |= aARCH;
+		*dosmode |= FILE_ATTRIBUTE_ARCHIVE;
 	if (smb_fname->st.st_ex_flags & UF_DOS_HIDDEN)
 		*dosmode |= FILE_ATTRIBUTE_HIDDEN;
 	if (smb_fname->st.st_ex_flags & UF_DOS_RO)
@@ -675,7 +675,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
 	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (result & aARCH  ) DEBUG(8, ("a"));
+	if (result & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
 
 	DEBUG(8,("\n"));
