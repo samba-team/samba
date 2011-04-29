@@ -2620,27 +2620,10 @@ void set_server_role(void);
 uint32 get_int_param( const char* param );
 char* get_string_param( const char* param );
 
-/* The following definitions come from rpc_server/srv_rpc_register.c  */
-
-struct rpc_srv_callbacks {
-	bool (*init)(void *private_data);
-	bool (*shutdown)(void *private_data);
-	void *private_data;
-};
-
-struct api_struct;
-struct ndr_interface_table;
-struct pipes_struct;
-NTSTATUS rpc_srv_register(int version, const char *clnt,
-			  const char *srv,
-			  const struct ndr_interface_table *iface,
-			  const struct api_struct *cmds, int size,
-			  const struct rpc_srv_callbacks *rpc_srv_cb);
-
-NTSTATUS rpc_srv_unregister(const struct ndr_interface_table *iface);
-
 /* The following definitions come from rpc_server/srv_pipe.c  */
 struct ncacn_packet;
+struct api_struct;
+struct pipes_struct;
 bool create_next_pdu(struct pipes_struct *p);
 bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
 bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
