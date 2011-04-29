@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "auth.h"
 #include "ntdomain.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
