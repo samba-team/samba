@@ -872,15 +872,15 @@ bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 	uint32 mask;
 
 	/* Check the "may have" search bits. */
-	if (((mode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | aSYSTEM | aDIR)) != 0)
+	if (((mode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | aDIR)) != 0)
 		return False;
 
 	/* Check the "must have" bits, which are the may have bits shifted eight */
 	/* If must have bit is set, the file/dir can not be returned in search unless the matching
 		file attribute is set */
-	mask = ((dirtype >> 8) & (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|aSYSTEM)); /* & 0x37 */
+	mask = ((dirtype >> 8) & (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM)); /* & 0x37 */
 	if(mask) {
-		if((mask & (mode & (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|aSYSTEM))) == mask)   /* check if matching attribute present */
+		if((mask & (mode & (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM))) == mask)   /* check if matching attribute present */
 			return True;
 		else
 			return False;

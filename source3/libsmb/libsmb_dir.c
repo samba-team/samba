@@ -816,7 +816,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			}
 
 			status = cli_list(targetcli, targetpath,
-					  aDIR | aSYSTEM | FILE_ATTRIBUTE_HIDDEN,
+					  aDIR | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 					  dir_list_fn, (void *)dir);
 			if (!NT_STATUS_IS_OK(status)) {
 				if (dir) {
@@ -1345,7 +1345,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 			}
 
 			status = cli_list(targetcli, lpath,
-					  aDIR | aSYSTEM | FILE_ATTRIBUTE_HIDDEN,
+					  aDIR | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 					  rmdir_list_fn,
 					  &smbc_rmdir_dirempty);
 
@@ -1613,7 +1613,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 
 	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) mode |= FILE_ATTRIBUTE_READONLY;
 	if ((newmode & S_IXUSR) && lp_map_archive(-1)) mode |= aARCH;
-	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= aSYSTEM;
+	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= FILE_ATTRIBUTE_SYSTEM;
 	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= FILE_ATTRIBUTE_HIDDEN;
 
 	if (!NT_STATUS_IS_OK(cli_setatr(targetcli, targetpath, mode, 0))) {
@@ -1803,7 +1803,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>unlink: resolved path as %s\n", targetpath);*/
 
-	if (!NT_STATUS_IS_OK(cli_unlink(targetcli, targetpath, aSYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	if (!NT_STATUS_IS_OK(cli_unlink(targetcli, targetpath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
 
 		errno = SMBC_errno(context, targetcli);
 
@@ -2009,7 +2009,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 		int eno = SMBC_errno(ocontext, targetcli1);
 
 		if (eno != EEXIST ||
-		    !NT_STATUS_IS_OK(cli_unlink(targetcli1, targetpath2, aSYSTEM | FILE_ATTRIBUTE_HIDDEN)) ||
+		    !NT_STATUS_IS_OK(cli_unlink(targetcli1, targetpath2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN)) ||
 		    !NT_STATUS_IS_OK(cli_rename(targetcli1, targetpath1, targetpath2))) {
 
 			errno = eno;

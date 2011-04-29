@@ -371,7 +371,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 		if (die_on_error) exit(1);
 	}
 
-	cli_unlink(cli, file, aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_unlink(cli, file, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
 	SAFE_FREE(long_name);
@@ -388,7 +388,7 @@ static void test_mask(int argc, char *argv[],
 
 	cli_mkdir(cli, "\\masktest");
 
-	cli_unlink(cli, "\\masktest\\*", aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_unlink(cli, "\\masktest\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (argc >= 2) {
 		while (argc >= 2) {

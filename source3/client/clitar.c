@@ -70,7 +70,7 @@ extern struct cli_state *cli;
 #define ATTRSET 1
 #define ATTRRESET 0
 
-static uint16 attribute = aDIR | aSYSTEM | FILE_ATTRIBUTE_HIDDEN;
+static uint16 attribute = aDIR | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 #ifndef CLIENT_TIMEOUT
 #define CLIENT_TIMEOUT (30*1000)
@@ -689,7 +689,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 	if (tar_inc && !(finfo.mode & aARCH)) {
 		DEBUG(4, ("skipping %s - archive bit not set\n", finfo.name));
 		shallitime=0;
-	} else if (!tar_system && (finfo.mode & aSYSTEM)) {
+	} else if (!tar_system && (finfo.mode & FILE_ATTRIBUTE_SYSTEM)) {
 		DEBUG(4, ("skipping %s - system bit is set\n", finfo.name));
 		shallitime=0;
 	} else if (!tar_hidden && (finfo.mode & FILE_ATTRIBUTE_HIDDEN)) {
@@ -1411,7 +1411,7 @@ int cmd_setmode(void)
 					attra[direct]|=FILE_ATTRIBUTE_HIDDEN;
 					break;
 				case 's':
-					attra[direct]|=aSYSTEM;
+					attra[direct]|=FILE_ATTRIBUTE_SYSTEM;
 					break;
 				case 'a':
 					attra[direct]|=aARCH;
