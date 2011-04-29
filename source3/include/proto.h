@@ -2662,16 +2662,6 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
 bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 
-/* The following definitions come from rpc_server/srv_spoolss_nt.c  */
-void srv_spoolss_cleanup(void);
-
-void do_drv_upgrade_printer(struct messaging_context *msg,
-			    void *private_data,
-			    uint32_t msg_type,
-			    struct server_id server_id,
-			    DATA_BLOB *data);
-void update_monitored_printq_cache(struct messaging_context *msg_ctx);
-
 /* The following definitions come from rpc_server/srv_svcctl_nt.c  */
 
 bool init_service_op_table( void );

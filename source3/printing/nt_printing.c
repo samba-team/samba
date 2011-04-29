@@ -37,6 +37,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "ntdomain.h"
+#include "rpc_server/spoolss/srv_spoolss_nt.h"
 
 /* Map generic permissions to printer object specific permissions */
 

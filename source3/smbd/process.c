@@ -33,6 +33,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "smbprofile.h"
+#include "rpc_server/spoolss/srv_spoolss_nt.h"
 
 extern bool global_machine_password_needs_changing;
 
