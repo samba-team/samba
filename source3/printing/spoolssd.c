@@ -29,6 +29,7 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_setup.h"
 #include "rpc_server/srv_pipe_register.h"
+#include "rpc_server/spoolss/srv_spoolss_nt.h"
 
 #define SPOOLSS_PIPE_NAME "spoolss"
 #define DAEMON_NAME "spoolssd"
