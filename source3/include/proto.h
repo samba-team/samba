@@ -2630,11 +2630,6 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
 bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 
-/* The following definitions come from rpc_server/srv_svcctl_nt.c  */
-
-bool init_service_op_table( void );
-bool shutdown_service_op_table(void);
-
 /* The following definitions come from lib/server_contexts.c  */
 struct tevent_context *server_event_context(void);
 void server_event_context_free(void);

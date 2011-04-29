@@ -42,6 +42,7 @@
 #include "rpc_server/eventlog/srv_eventlog_reg.h"
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
+#include "rpc_server/svcctl/srv_svcctl_nt.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
 
