@@ -554,7 +554,7 @@ static bool add_sfs_aces(files_struct *fsp, struct ifs_security_descriptor *sd)
 
 		/* Use existing samba logic to derive the mode bits. */
 		file_mode = unix_mode(fsp->conn, 0, fsp->fsp_name, NULL);
-		dir_mode = unix_mode(fsp->conn, aDIR, fsp->fsp_name, NULL);
+		dir_mode = unix_mode(fsp->conn, FILE_ATTRIBUTE_DIRECTORY, fsp->fsp_name, NULL);
 
 		/* Initialize ACEs. */
 		new_aces[0] = onefs_init_ace(fsp->conn, file_mode, false, USR);

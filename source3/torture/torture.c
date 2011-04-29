@@ -5386,7 +5386,7 @@ static NTSTATUS del_fn(const char *mnt, struct file_info *finfo, const char *mas
 	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
 		return NT_STATUS_OK;
 
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		if (!NT_STATUS_IS_OK(cli_rmdir(pcli, fname)))
 			printf("del_fn: failed to rmdir %s\n,", fname );
 	} else {
@@ -5679,7 +5679,7 @@ static bool run_dirtest1(int dummy)
 	cli_sockopt(cli, sockops);
 
 	cli_list(cli, "\\LISTDIR\\*", 0, del_fn, cli);
-	cli_list(cli, "\\LISTDIR\\*", aDIR, del_fn, cli);
+	cli_list(cli, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, del_fn, cli);
 	cli_rmdir(cli, "\\LISTDIR");
 	cli_mkdir(cli, "\\LISTDIR");
 
@@ -5705,7 +5705,7 @@ static bool run_dirtest1(int dummy)
 
 	/* Now ensure that doing an old list sees both files and directories. */
 	num_seen = 0;
-	cli_list_old(cli, "\\LISTDIR\\*", aDIR, list_fn, &num_seen);
+	cli_list_old(cli, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, list_fn, &num_seen);
 	printf("num_seen = %d\n", num_seen );
 	/* We should see 100 files + 1000 directories + . and .. */
 	if (num_seen != 2002)
@@ -5715,20 +5715,20 @@ static bool run_dirtest1(int dummy)
 	 * relevent entries.
 	 */
 	num_seen = 0;
-	cli_list_old(cli, "\\LISTDIR\\*", (aDIR<<8)|aDIR, list_fn, &num_seen);
+	cli_list_old(cli, "\\LISTDIR\\*", (FILE_ATTRIBUTE_DIRECTORY<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, &num_seen);
 	printf("num_seen = %d\n", num_seen );
 	if (num_seen != 1002)
 		correct = False;
 
 	num_seen = 0;
-	cli_list_old(cli, "\\LISTDIR\\*", (aARCH<<8)|aDIR, list_fn, &num_seen);
+	cli_list_old(cli, "\\LISTDIR\\*", (aARCH<<8)|FILE_ATTRIBUTE_DIRECTORY, list_fn, &num_seen);
 	printf("num_seen = %d\n", num_seen );
 	if (num_seen != 1000)
 		correct = False;
 
 	/* Delete everything. */
 	cli_list(cli, "\\LISTDIR\\*", 0, del_fn, cli);
-	cli_list(cli, "\\LISTDIR\\*", aDIR, del_fn, cli);
+	cli_list(cli, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, del_fn, cli);
 	cli_rmdir(cli, "\\LISTDIR");
 
 #if 0
@@ -6715,7 +6715,7 @@ static NTSTATUS shortname_del_fn(const char *mnt, struct file_info *finfo,
 	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
 		return NT_STATUS_OK;
 
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		status = cli_rmdir(pcli, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("del_fn: failed to rmdir %s\n,", fname );
@@ -6780,7 +6780,7 @@ static bool run_shortname_test(int dummy)
 	cli_sockopt(cli, sockops);
 
 	cli_list(cli, "\\shortname\\*", 0, shortname_del_fn, cli);
-	cli_list(cli, "\\shortname\\*", aDIR, shortname_del_fn, cli);
+	cli_list(cli, "\\shortname\\*", FILE_ATTRIBUTE_DIRECTORY, shortname_del_fn, cli);
 	cli_rmdir(cli, "\\shortname");
 
 	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\shortname"))) {
@@ -6841,7 +6841,7 @@ static bool run_shortname_test(int dummy)
   out:
 
 	cli_list(cli, "\\shortname\\*", 0, shortname_del_fn, cli);
-	cli_list(cli, "\\shortname\\*", aDIR, shortname_del_fn, cli);
+	cli_list(cli, "\\shortname\\*", FILE_ATTRIBUTE_DIRECTORY, shortname_del_fn, cli);
 	cli_rmdir(cli, "\\shortname");
 	torture_close_connection(cli);
 	return correct;

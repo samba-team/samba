@@ -1148,7 +1148,7 @@ static void call_trans2open(connection_struct *conn,
 	fattr = dos_mode(conn, smb_fname);
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 	inode = smb_fname->st.st_ex_ino;
-	if (fattr & aDIR) {
+	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
@@ -1524,7 +1524,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	ZERO_STRUCT(create_date_ts);
 	ZERO_STRUCT(cdate_ts);
 
-	if (!(mode & aDIR)) {
+	if (!(mode & FILE_ATTRIBUTE_DIRECTORY)) {
 		file_size = get_file_size_stat(&smb_fname->st);
 	}
 	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
@@ -4227,7 +4227,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	mode = dos_mode(conn, smb_fname);
 	nlink = psbuf->st_ex_nlink;
 
-	if (nlink && (mode&aDIR)) {
+	if (nlink && (mode&FILE_ATTRIBUTE_DIRECTORY)) {
 		nlink = 1;
 	}
 
@@ -4308,7 +4308,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	if (!(mode & aDIR)) {
+	if (!(mode & FILE_ATTRIBUTE_DIRECTORY)) {
 		file_size = get_file_size_stat(psbuf);
 	}
 
@@ -4478,7 +4478,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SOFF_T(pdata,8,file_size);
 			SIVAL(pdata,16,nlink);
 			SCVAL(pdata,20,delete_pending?1:0);
-			SCVAL(pdata,21,(mode&aDIR)?1:0);
+			SCVAL(pdata,21,(mode&FILE_ATTRIBUTE_DIRECTORY)?1:0);
 			SSVAL(pdata,22,0); /* Padding. */
 			break;
 
@@ -4561,7 +4561,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SOFF_T(pdata,8,file_size);
 			SIVAL(pdata,16,nlink);
 			SCVAL(pdata,20,delete_pending);
-			SCVAL(pdata,21,(mode&aDIR)?1:0);
+			SCVAL(pdata,21,(mode&FILE_ATTRIBUTE_DIRECTORY)?1:0);
 			SSVAL(pdata,22,0);
 			pdata += 24;
 			SIVAL(pdata,0,ea_size);
@@ -4592,7 +4592,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SBVAL(pdata,	0x30, file_size);
 			SIVAL(pdata,	0x38, nlink);
 			SCVAL(pdata,	0x3C, delete_pending);
-			SCVAL(pdata,	0x3D, (mode&aDIR)?1:0);
+			SCVAL(pdata,	0x3D, (mode&FILE_ATTRIBUTE_DIRECTORY)?1:0);
 			SSVAL(pdata,	0x3E, 0); /* padding */
 			SBVAL(pdata,	0x40, file_index);
 			SIVAL(pdata,	0x48, ea_size);
@@ -5554,9 +5554,9 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 
 	if (dosmode) {
 		if (S_ISDIR(smb_fname_base->st.st_ex_mode)) {
-			dosmode |= aDIR;
+			dosmode |= FILE_ATTRIBUTE_DIRECTORY;
 		} else {
-			dosmode &= ~aDIR;
+			dosmode &= ~FILE_ATTRIBUTE_DIRECTORY;
 		}
 	}
 

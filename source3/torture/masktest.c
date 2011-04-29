@@ -313,11 +313,11 @@ static void get_real_name(struct cli_state *cli,
 	*pp_long_name = NULL;
 	/* nasty hack to force level 260 listings - tridge */
 	if (max_protocol <= PROTOCOL_LANMAN1) {
-		cli_list_trans(cli, "\\masktest\\*.*", FILE_ATTRIBUTE_HIDDEN | aDIR,
+		cli_list_trans(cli, "\\masktest\\*.*", FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO, listfn,
 			       &state);
 	} else {
-		cli_list_trans(cli, "\\masktest\\*", FILE_ATTRIBUTE_HIDDEN | aDIR,
+		cli_list_trans(cli, "\\masktest\\*", FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO,
 			       listfn, &state);
 	}
@@ -359,7 +359,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 		return;
 	}
 	fstrcpy(res1, "---");
-	cli_list(cli, mask, FILE_ATTRIBUTE_HIDDEN | aDIR, listfn, NULL);
+	cli_list(cli, mask, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 

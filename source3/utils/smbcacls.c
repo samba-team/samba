@@ -1044,7 +1044,7 @@ static int inherit(struct cli_state *cli, const char *filename,
 				/* Add inherited flag to all aces */
 				ace->flags=ace->flags|
 				           SEC_ACE_FLAG_INHERITED_ACE;
-				if ((oldattr & aDIR) == aDIR) {
+				if ((oldattr & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
 					if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ==
 					    SEC_ACE_FLAG_CONTAINER_INHERIT) {
 						add_ace(&old->dacl, ace);
