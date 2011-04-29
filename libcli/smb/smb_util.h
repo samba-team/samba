@@ -1,9 +1,9 @@
 /*
    Unix SMB/CIFS implementation.
-
-   SMB and SMB2 common header
-
-   Copyright (C) Stefan Metzmacher 2009
+   client file operations
+   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Jeremy Allison 2001-2002
+   Copyright (C) James Myers 2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,12 +19,4 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __LIBCLI_SMB_SMB_COMMON_H__
-#define __LIBCLI_SMB_SMB_COMMON_H__
-
-#include "../libcli/smb/smb2_constants.h"
-#include "../libcli/smb/smb2_create_blob.h"
-#include "../libcli/smb/smb_constants.h"
-#include "../libcli/smb/smb_util.h"
-
-#endif
+char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib);

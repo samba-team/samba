@@ -1066,7 +1066,8 @@ bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap POPT_SAMBA3 passdb LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG wbclient param KRBCLIENT LIBMSRPC_GEN
-                 msrpc3 SMBREADLINE libsmb/smbclient RPC_NDR_SRVSVC INIT_LSA''',
+                 msrpc3 SMBREADLINE libsmb/smbclient RPC_NDR_SRVSVC INIT_LSA
+                 LIBCLI_SMB_COMMON''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('net',

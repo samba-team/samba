@@ -295,26 +295,6 @@ SMB_OFF_T get_file_size(char *file_name)
 }
 
 /*******************************************************************
- Return a string representing an attribute for a file.
-********************************************************************/
-
-char *attrib_string(TALLOC_CTX *mem_ctx, uint16 mode)
-{
-	fstring attrstr;
-
-	attrstr[0] = 0;
-
-	if (mode & FILE_ATTRIBUTE_VOLUME) fstrcat(attrstr,"V");
-	if (mode & FILE_ATTRIBUTE_DIRECTORY) fstrcat(attrstr,"D");
-	if (mode & FILE_ATTRIBUTE_ARCHIVE) fstrcat(attrstr,"A");
-	if (mode & FILE_ATTRIBUTE_HIDDEN) fstrcat(attrstr,"H");
-	if (mode & FILE_ATTRIBUTE_SYSTEM) fstrcat(attrstr,"S");
-	if (mode & FILE_ATTRIBUTE_READONLY) fstrcat(attrstr,"R");
-
-	return talloc_strdup(mem_ctx, attrstr);
-}
-
-/*******************************************************************
  Show a smb message structure.
 ********************************************************************/
 
