@@ -22,6 +22,7 @@
 
 struct dcerpc_binding_handle;
 struct ndr_interface_table;
+struct tsocket_address;
 
 struct np_proxy_state {
 	uint16_t file_type;

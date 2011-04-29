@@ -35,6 +35,7 @@
 #include "trans2.h"
 #include "auth.h"
 #include "smbprofile.h"
+#include "rpc_server/srv_pipe_hnd.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
