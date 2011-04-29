@@ -84,7 +84,7 @@ static const char *sclassic_string_option(struct share_config *scfg,
 	}
 
 	if (strcmp(opt_name, SHARE_VOLUME) == 0) {
-		return volume_label(s, lpcfg_default_service(lp_ctx));
+		return lpcfg_volume_label(s, lpcfg_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_TYPE) == 0) {

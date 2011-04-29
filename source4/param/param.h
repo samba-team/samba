@@ -211,7 +211,7 @@ struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
 /**
  * A useful volume label function.
  */
-const char *volume_label(struct loadparm_service *service, struct loadparm_service *sDefault);
+const char *lp_cfg_volume_label(struct loadparm_service *service, struct loadparm_service *sDefault);
 
 /**
  * If we are PDC then prefer us as DMB

@@ -2750,7 +2750,7 @@ const char *lpcfg_servicename(const struct loadparm_service *service)
 /**
  * A useful volume label function.
  */
-const char *volume_label(struct loadparm_service *service, struct loadparm_service *sDefault)
+const char *lpcfg_volume_label(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
 	const char *ret;
 	ret = lp_string((const char *)((service != NULL && service->volume != NULL) ?
