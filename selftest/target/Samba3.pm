@@ -247,23 +247,15 @@ sub setup_admember($$$$)
 	    return undef;
 	}
 
+	# We need world access to this share, as otherwise the domain
+	# administrator from the AD domain provided by Samba4 can't
+	# access the share for tests.
+	chmod 0777, "$prefix/share";
+
 	$self->check_or_start($ret,
 			      "yes", "yes", "yes");
 
 	$self->wait_for_start($ret);
-
-	my $smbcacls = Samba::bindir_path($self, "smbcacls");
-	#Allow domain users to manipulate the share
-	$cmd = "";
-	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$smbcacls $ret->{CONFIGURATION} //127.0.0.29/tmp / -U$ret->{USERNAME}%$ret->{PASSWORD} ";
-	$cmd .= "-S ACL:$dcvars->{DOMAIN}\\\\Domain\\ Users:ALLOWED/0x0/FULL";
-
-	if (system($cmd) != 0) {
-	    warn("smbcacls failed, your filesystem may not support ACLs.  Try mount $prefix_abs -oremount,acl\nThis support is required for S3 member in S4 tests\n$cmd");
-	    return undef;
-	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};

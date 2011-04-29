@@ -399,8 +399,14 @@ $prefix =~ s+/$++;
 
 die("using an empty prefix isn't allowed") unless $prefix ne "";
 
-#Ensure we have the test prefix around
-mkdir($prefix, 0777) unless -d $prefix;
+# Ensure we have the test prefix around.
+#
+# We need restrictive
+# permissions on this as some subdirectories in this tree will have
+# wider permissions (ie 0777) and this would allow other users on the
+# host to subvert the test process.
+mkdir($prefix, 0700) unless -d $prefix;
+chmod 0700, $prefix;
 
 my $prefix_abs = abs_path($prefix);
 my $tmpdir_abs = abs_path("$prefix/tmp");
