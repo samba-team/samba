@@ -28,6 +28,7 @@
 #include "krb5_env.h"
 #include "../libcli/registry/util_reg.h"
 #include "auth.h"
+#include "../librpc/ndr/libndr.h"
 
 #ifdef HAVE_ADS
 /*****************************************************************
