@@ -2653,14 +2653,6 @@ void set_server_role(void);
 uint32 get_int_param( const char* param );
 char* get_string_param( const char* param );
 
-/* The following definitions come from librpc/rpc/rpc_common.c  */
-struct ndr_interface_table;
-bool smb_register_ndr_interface(const struct ndr_interface_table *interface);
-const struct ndr_interface_table *get_iface_from_syntax(
-	const struct ndr_syntax_id *syntax);
-const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
-                                     const struct ndr_syntax_id *syntax);
-
 /* The following definitions come from rpc_server/rpc_ncacn_np.c  */
 struct auth_serversupplied_info;
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
@@ -2669,6 +2661,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct auth_serversupplied_info *session_info,
 					      struct messaging_context *msg_ctx);
 struct dcerpc_binding_handle;
+struct ndr_interface_table;
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
 			       struct client_address *client_id,
