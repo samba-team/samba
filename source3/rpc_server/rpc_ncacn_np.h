@@ -53,5 +53,4 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 struct client_address *client_id,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe);
-
 #endif /* _RPC_NCACN_NP_H_ */
