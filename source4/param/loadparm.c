@@ -1151,9 +1151,9 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
  * Add a new printer service, with defaults coming from service iFrom.
  */
 
-bool lp_add_printer(struct loadparm_context *lp_ctx,
-		    const char *pszPrintername,
-		    struct loadparm_service *default_service)
+bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
+		       const char *pszPrintername,
+		       struct loadparm_service *default_service)
 {
 	const char *comment = "From Printcap";
 	struct loadparm_service *service;
@@ -1422,7 +1422,7 @@ static void add_to_file_list(struct loadparm_context *lp_ctx,
 /*******************************************************************
  Check if a config file has changed date.
 ********************************************************************/
-bool lp_file_list_changed(struct loadparm_context *lp_ctx)
+bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx)
 {
 	struct file_lists *f;
 	DEBUG(6, ("lp_file_list_changed()\n"));
@@ -2275,7 +2275,7 @@ static void lpcfg_add_auto_services(struct loadparm_context *lp_ctx,
  * Unload unused services.
  */
 
-void lp_killunused(struct loadparm_context *lp_ctx,
+void lpcfg_killunused(struct loadparm_context *lp_ctx,
 		   struct smbsrv_connection *smb,
 		   bool (*snumused) (struct smbsrv_connection *, int))
 {
