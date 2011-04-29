@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "librpc/rpc/dcerpc.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "../librpc/gen_ndr/ndr_dssetup.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
