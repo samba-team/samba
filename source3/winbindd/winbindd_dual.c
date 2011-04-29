@@ -1167,8 +1167,8 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 	dump_event_list(winbind_event_context());
 }
 
-bool winbindd_reinit_after_fork(const struct winbindd_child *myself,
-				const char *logfilename)
+NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
+				    const char *logfilename)
 {
 	struct winbindd_domain *domain;
 	struct winbindd_child *cl;
@@ -1181,7 +1181,7 @@ bool winbindd_reinit_after_fork(const struct winbindd_child *myself,
 		true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
-		return false;
+		return status;
 	}
 
 	close_conns_after_fork();
@@ -1192,10 +1192,10 @@ bool winbindd_reinit_after_fork(const struct winbindd_child *myself,
 	}
 
 	if (!winbindd_setup_sig_term_handler(false))
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	if (!winbindd_setup_sig_hup_handler(override_logfile ? NULL :
 					    logfilename))
-		return false;
+		return NT_STATUS_NO_MEMORY;
 
 	/* Stop zombies in children */
 	CatchChild();
@@ -1271,7 +1271,7 @@ bool winbindd_reinit_after_fork(const struct winbindd_child *myself,
 	cl = idmap_child();
 	cl->pid = (pid_t)0;
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -1291,6 +1291,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	struct winbindd_request request;
 	struct winbindd_response response;
 	struct winbindd_domain *primary_domain = NULL;
+	NTSTATUS status;
 
 	if (child->domain) {
 		DEBUG(10, ("fork_domain_child called for domain '%s'\n",
@@ -1334,7 +1335,10 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	if (!winbindd_reinit_after_fork(child, child->logfilename)) {
+	status = winbindd_reinit_after_fork(child, child->logfilename);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("winbindd_reinit_after_fork failed: %s\n",
+			  nt_errstr(status)));
 		_exit(0);
 	}
 
@@ -1434,7 +1438,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct iovec iov[2];
 		int iov_count;
-		NTSTATUS status;
 
 		if (run_events_poll(winbind_event_context(), 0, NULL, 0)) {
 			TALLOC_FREE(frame);
