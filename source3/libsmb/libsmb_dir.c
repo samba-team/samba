@@ -1611,7 +1611,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 
 	mode = 0;
 
-	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) mode |= aRONLY;
+	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) mode |= FILE_ATTRIBUTE_READONLY;
 	if ((newmode & S_IXUSR) && lp_map_archive(-1)) mode |= aARCH;
 	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= aSYSTEM;
 	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= aHIDDEN;

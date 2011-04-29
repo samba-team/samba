@@ -41,7 +41,7 @@ static int set_link_read_only_flag(const SMB_STRUCT_STAT *const sbuf)
 #ifdef S_ISLNK
 #if LINKS_READ_ONLY
 	if (S_ISLNK(sbuf->st_mode) && S_ISDIR(sbuf->st_mode))
-		return aRONLY;
+		return FILE_ATTRIBUTE_READONLY;
 #endif
 #endif
 	return 0;
@@ -173,12 +173,12 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 	if (ro_opts == MAP_READONLY_YES) {
 		/* Original Samba method - map inverse of user "w" bit. */
 		if ((smb_fname->st.st_ex_mode & S_IWUSR) == 0) {
-			result |= aRONLY;
+			result |= FILE_ATTRIBUTE_READONLY;
 		}
 	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
 		/* Check actual permissions for read-only. */
 		if (!can_write_to_file(conn, smb_fname)) {
-			result |= aRONLY;
+			result |= FILE_ATTRIBUTE_READONLY;
 		}
 	} /* Else never set the readonly bit. */
 
@@ -192,14 +192,14 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 		result |= aHIDDEN;   
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
-		result = aDIR | (result & aRONLY);
+		result = aDIR | (result & FILE_ATTRIBUTE_READONLY);
 
 	result |= set_link_read_only_flag(&smb_fname->st);
 
 	DEBUG(8,("dos_mode_from_sbuf returning "));
 
 	if (result & aHIDDEN) DEBUG(8, ("h"));
-	if (result & aRONLY ) DEBUG(8, ("r"));
+	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
@@ -326,7 +326,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	DEBUG(8,("get_ea_dos_attribute returning (0x%x)", dosattr));
 
 	if (dosattr & aHIDDEN) DEBUG(8, ("h"));
-	if (dosattr & aRONLY ) DEBUG(8, ("r"));
+	if (dosattr & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (dosattr & aSYSTEM) DEBUG(8, ("s"));
 	if (dosattr & aDIR   ) DEBUG(8, ("d"));
 	if (dosattr & aARCH  ) DEBUG(8, ("a"));
@@ -487,7 +487,7 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 	DEBUG(8,("dos_mode_msdfs returning "));
 
 	if (result & aHIDDEN) DEBUG(8, ("h"));
-	if (result & aRONLY ) DEBUG(8, ("r"));
+	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
@@ -511,7 +511,7 @@ int dos_attributes_to_stat_dos_flags(uint32_t dosmode)
 		dos_stat_flags |= UF_DOS_ARCHIVE;
 	if (dosmode & aHIDDEN)
 		dos_stat_flags |= UF_DOS_HIDDEN;
-	if (dosmode & aRONLY)
+	if (dosmode & FILE_ATTRIBUTE_READONLY)
 		dos_stat_flags |= UF_DOS_RO;
 	if (dosmode & aSYSTEM)
 		dos_stat_flags |= UF_DOS_SYSTEM;
@@ -544,7 +544,7 @@ static bool get_stat_dos_flags(connection_struct *conn,
 	if (smb_fname->st.st_ex_flags & UF_DOS_HIDDEN)
 		*dosmode |= aHIDDEN;
 	if (smb_fname->st.st_ex_flags & UF_DOS_RO)
-		*dosmode |= aRONLY;
+		*dosmode |= FILE_ATTRIBUTE_READONLY;
 	if (smb_fname->st.st_ex_flags & UF_DOS_SYSTEM)
 		*dosmode |= aSYSTEM;
 	if (smb_fname->st.st_ex_flags & UF_DOS_NOINDEX)
@@ -672,7 +672,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	DEBUG(8,("dos_mode returning "));
 
 	if (result & aHIDDEN) DEBUG(8, ("h"));
-	if (result & aRONLY ) DEBUG(8, ("r"));
+	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));

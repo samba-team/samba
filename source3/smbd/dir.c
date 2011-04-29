@@ -878,9 +878,9 @@ bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 	/* Check the "must have" bits, which are the may have bits shifted eight */
 	/* If must have bit is set, the file/dir can not be returned in search unless the matching
 		file attribute is set */
-	mask = ((dirtype >> 8) & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM)); /* & 0x37 */
+	mask = ((dirtype >> 8) & (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|aHIDDEN|aSYSTEM)); /* & 0x37 */
 	if(mask) {
-		if((mask & (mode & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM))) == mask)   /* check if matching attribute present */
+		if((mask & (mode & (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|aHIDDEN|aSYSTEM))) == mask)   /* check if matching attribute present */
 			return True;
 		else
 			return False;
