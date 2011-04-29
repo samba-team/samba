@@ -24,6 +24,7 @@
 
 struct dcerpc_binding_handle;
 struct auth_serversupplied_info;
+struct dcerpc_binding_handle;
 
 /**
  * @brief Connect to the interal winreg server and open the given key.
