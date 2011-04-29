@@ -155,6 +155,7 @@ bool strhasupper_handle(struct smb_iconv_handle *ic,
 			const char *string);
 char *strrchr_m(const char *s, char c);
 char *strchr_m(const char *s, char c);
+char *strstr_m(const char *src, const char *findstr);
 
 bool push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
 bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src, size_t *converted_size);
