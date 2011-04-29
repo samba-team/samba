@@ -2725,10 +2725,6 @@ struct ncacn_packet;
 bool create_next_pdu(struct pipes_struct *p);
 bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
 bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
-NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
-				    const char *srv,
-				    const struct ndr_syntax_id *interface,
-				    const struct api_struct *cmds, int size);
 bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 
 /* The following definitions come from rpc_server/srv_pipe_hnd.c  */
