@@ -520,7 +520,7 @@ static bool do_this_one(struct file_info *finfo)
 		return false;
 	}
 
-	if ((archive_level==1 || archive_level==2) && !(finfo->mode & aARCH)) {
+	if ((archive_level==1 || archive_level==2) && !(finfo->mode & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(3,("archive %s failed\n", finfo->name));
 		return false;
 	}
@@ -1147,8 +1147,8 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		close(handle);
 	}
 
-	if (archive_level >= 2 && (attr & aARCH)) {
-		cli_setatr(cli, rname, attr & ~(uint16)aARCH, 0);
+	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
+		cli_setatr(cli, rname, attr & ~(uint16)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{

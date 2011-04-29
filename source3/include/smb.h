@@ -83,9 +83,6 @@ enum smb_read_errors {
 
 #define DIR_STRUCT_SIZE 43
 
-/* these define the attribute byte as seen by DOS */
-#define aARCH (1L<<5)		/* 0x20 */
-
 /* deny modes */
 #define DENY_DOS 0
 #define DENY_ALL 1

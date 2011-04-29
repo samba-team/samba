@@ -498,9 +498,9 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		unx_mode = (mode_t)(new_dos_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 		new_dos_attributes = 0;
 	} else {
-		/* We add aARCH to this as this mode is only used if the file is
+		/* We add FILE_ATTRIBUTE_ARCHIVE to this as this mode is only used if the file is
 		 * created new. */
-		unx_mode = unix_mode(conn, new_dos_attributes | aARCH,
+		unx_mode = unix_mode(conn, new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
 				     smb_fname, parent_dir);
 	}
 
@@ -587,7 +587,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 	/* Setup dos_attributes to be set by ifs_createfile */
 	if (lp_store_dos_attributes(SNUM(conn))) {
-		createfile_attributes = (new_dos_attributes | aARCH) &
+		createfile_attributes = (new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE) &
 		    ~(FILE_ATTRIBUTE_NONINDEXED | FILE_ATTRIBUTE_COMPRESSED);
 	}
 

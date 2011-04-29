@@ -686,7 +686,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 
 	DEBUG(3,("file %s attrib 0x%X\n",finfo.name,finfo.mode));
 
-	if (tar_inc && !(finfo.mode & aARCH)) {
+	if (tar_inc && !(finfo.mode & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(4, ("skipping %s - archive bit not set\n", finfo.name));
 		shallitime=0;
 	} else if (!tar_system && (finfo.mode & FILE_ATTRIBUTE_SYSTEM)) {
@@ -784,7 +784,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 
 		/* if shallitime is true then we didn't skip */
 		if (tar_reset && !dry_run)
-			(void) do_setrattr(finfo.name, aARCH, ATTRRESET);
+			(void) do_setrattr(finfo.name, FILE_ATTRIBUTE_ARCHIVE, ATTRRESET);
 
 		clock_gettime_mono(&tp_end);
 		this_time = (tp_end.tv_sec - tp_start.tv_sec)*1000 + (tp_end.tv_nsec - tp_start.tv_nsec)/1000000;
@@ -1414,7 +1414,7 @@ int cmd_setmode(void)
 					attra[direct]|=FILE_ATTRIBUTE_SYSTEM;
 					break;
 				case 'a':
-					attra[direct]|=aARCH;
+					attra[direct]|=FILE_ATTRIBUTE_ARCHIVE;
 					break;
 				default:
 					DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
