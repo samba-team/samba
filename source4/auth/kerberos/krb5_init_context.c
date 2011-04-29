@@ -415,7 +415,7 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 		return ret;
 	}
 
-	config_file = config_path(tmp_ctx, lp_ctx, "krb5.conf");
+	config_file = lpcfg_config_path(tmp_ctx, lp_ctx, "krb5.conf");
 	if (!config_file) {
 		krb5_free_context(krb5_ctx);
 		return ENOMEM;

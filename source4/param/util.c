@@ -108,7 +108,7 @@ char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
 
-char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *lpcfg_config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			   const char *name)
 {
 	char *fname, *config_dir, *p;
