@@ -29,6 +29,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "libcli/security/security.h"
+#include "rpc_server/srv_pipe_hnd.h"
 
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)

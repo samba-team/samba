@@ -28,6 +28,7 @@
 #include "auth.h"
 #include "ntdomain.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "rpc_server/srv_pipe_hnd.h"
 
 #define SERVER_TCP_LOW_PORT  1024
 #define SERVER_TCP_HIGH_PORT 1300
