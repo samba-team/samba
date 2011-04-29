@@ -7240,7 +7240,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	uint32 mod_unixmode = 0;
 	uint32 create_disp = 0;
 	uint32 access_mask = 0;
-	uint32 create_options = 0;
+	uint32 create_options = FILE_NON_DIRECTORY_FILE;
 	NTSTATUS status = NT_STATUS_OK;
 	mode_t unixmode = (mode_t)0;
 	files_struct *fsp = NULL;
@@ -7354,6 +7354,14 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	if (wire_open_mode & SMB_O_SYNC) {
 		create_options |= FILE_WRITE_THROUGH;
 	}
+	if ((wire_open_mode & SMB_O_DIRECTORY) ||
+			VALID_STAT_OF_DIR(smb_fname->st)) {
+		if (access_mask != FILE_READ_DATA) {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
+		create_options &= ~FILE_NON_DIRECTORY_FILE;
+		create_options |= FILE_DIRECTORY_FILE;
+	}
 	if (wire_open_mode & SMB_O_APPEND) {
 		access_mask |= FILE_APPEND_DATA;
 	}
@@ -7375,7 +7383,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
 		create_disp,				/* create_disposition*/
-		FILE_NON_DIRECTORY_FILE,		/* create_options */
+		create_options,				/* create_options */
 		mod_unixmode,				/* file_attributes */
 		oplock_request,				/* oplock_request */
 		0,					/* allocation_size */
