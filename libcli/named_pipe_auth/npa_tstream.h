@@ -23,6 +23,7 @@
 struct tevent_req;
 struct tevent_context;
 struct auth_session_info_transport;
+struct tsocket_address;
 
 struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
