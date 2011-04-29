@@ -23,7 +23,7 @@
 #define NT_PRINTING_H_
 
 #include "client.h"
-#include "../librpc/gen_ndr/srv_spoolss.h"
+#include "../librpc/gen_ndr/spoolss.h"
 
 #ifndef SAMBA_PRINTER_PORT_NAME
 #define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
@@ -169,11 +169,11 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 			 const struct spoolss_DriverInfo8 *r);
 
-WERROR move_driver_to_download_area(struct pipes_struct *p,
+WERROR move_driver_to_download_area(struct auth_serversupplied_info *session_info,
 				    struct spoolss_AddDriverInfoCtr *r);
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
-			      struct pipes_struct *rpc_pipe,
+			      struct auth_serversupplied_info *session_info,
 			      struct spoolss_AddDriverInfoCtr *r);
 
 void map_printer_permissions(struct security_descriptor *sd);
