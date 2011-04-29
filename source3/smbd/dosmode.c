@@ -192,7 +192,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 		result |= FILE_ATTRIBUTE_HIDDEN;
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
-		result = aDIR | (result & FILE_ATTRIBUTE_READONLY);
+		result = FILE_ATTRIBUTE_DIRECTORY | (result & FILE_ATTRIBUTE_READONLY);
 
 	result |= set_link_read_only_flag(&smb_fname->st);
 
@@ -201,7 +201,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (result & aDIR   ) DEBUG(8, ("d"));
+	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
 
 	DEBUG(8,("\n"));
@@ -318,7 +318,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	}
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		dosattr |= aDIR;
+		dosattr |= FILE_ATTRIBUTE_DIRECTORY;
 	}
 	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
 	*pattr = (uint32)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
@@ -328,7 +328,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	if (dosattr & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (dosattr & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (dosattr & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (dosattr & aDIR   ) DEBUG(8, ("d"));
+	if (dosattr & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
 	if (dosattr & aARCH  ) DEBUG(8, ("a"));
 
 	DEBUG(8,("\n"));
@@ -489,7 +489,7 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (result & aDIR   ) DEBUG(8, ("d"));
+	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
 
@@ -552,7 +552,7 @@ static bool get_stat_dos_flags(connection_struct *conn,
 	if (smb_fname->st.st_ex_flags & FILE_ATTRIBUTE_SPARSE)
 		*dosmode |= FILE_ATTRIBUTE_SPARSE;
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
-		*dosmode |= aDIR;
+		*dosmode |= FILE_ATTRIBUTE_DIRECTORY;
 
 	*dosmode |= set_link_read_only_flag(&smb_fname->st);
 
@@ -674,7 +674,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (result & aDIR   ) DEBUG(8, ("d"));
+	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
 
@@ -712,9 +712,9 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 			   &smb_fname->st.st_ex_mode);
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
-		dosmode |= aDIR;
+		dosmode |= FILE_ATTRIBUTE_DIRECTORY;
 	else
-		dosmode &= ~aDIR;
+		dosmode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
 	new_create_timespec = smb_fname->st.st_ex_btime;
 

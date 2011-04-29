@@ -305,13 +305,13 @@ static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
 		printf("asprintf failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		char *s2;
 		if (asprintf(&s2, "%s\\*", s) == -1) {
 			printf("asprintf failed\n");
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = cli_list(c, s2, aDIR, delete_fn, NULL);
+		status = cli_list(c, s2, FILE_ATTRIBUTE_DIRECTORY, delete_fn, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			free(n);
 			free(s2);
@@ -336,7 +336,7 @@ void nb_deltree(const char *dname)
 	}
 
 	total_deleted = 0;
-	cli_list(c, mask, aDIR, delete_fn, NULL);
+	cli_list(c, mask, FILE_ATTRIBUTE_DIRECTORY, delete_fn, NULL);
 	free(mask);
 	cli_rmdir(c, dname);
 

@@ -70,7 +70,7 @@ extern struct cli_state *cli;
 #define ATTRSET 1
 #define ATTRRESET 0
 
-static uint16 attribute = aDIR | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+static uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 #ifndef CLIENT_TIMEOUT
 #define CLIENT_TIMEOUT (30*1000)
@@ -294,7 +294,7 @@ of link other than a GNUtar Longlink - ignoring\n"));
 
 	if ((unoct(hb->dbuf.mode, sizeof(hb->dbuf.mode)) & S_IFDIR) ||
 				(*(finfo->name+strlen(finfo->name)-1) == '\\')) {
-		finfo->mode=aDIR;
+		finfo->mode=FILE_ATTRIBUTE_DIRECTORY;
 	} else {
 		finfo->mode=0; /* we don't care about mode at the moment, we'll
 				* just make it a regular file */
@@ -852,7 +852,7 @@ static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 		TALLOC_FREE(exclaim);
 	}
 
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		char *saved_curdir = NULL;
 		char *new_cd = NULL;
 		char *mtar_mask = NULL;

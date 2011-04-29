@@ -245,7 +245,7 @@ dir_list_fn(const char *mnt,
 {
 
 	if (add_dirent((SMBCFILE *)state, finfo->name, "",
-		       (finfo->mode&aDIR?SMBC_DIR:SMBC_FILE)) < 0) {
+		       (finfo->mode&FILE_ATTRIBUTE_DIRECTORY?SMBC_DIR:SMBC_FILE)) < 0) {
 		SMBCFILE *dir = (SMBCFILE *)state;
 		return map_nt_error_from_unix(dir->dir_error);
 	}
@@ -816,7 +816,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			}
 
 			status = cli_list(targetcli, targetpath,
-					  aDIR | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
+					  FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 					  dir_list_fn, (void *)dir);
 			if (!NT_STATUS_IS_OK(status)) {
 				if (dir) {
@@ -1345,7 +1345,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 			}
 
 			status = cli_list(targetcli, lpath,
-					  aDIR | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
+					  FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 					  rmdir_list_fn,
 					  &smbc_rmdir_dirempty);
 
