@@ -4532,7 +4532,7 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_setatr(cli1, fname, aRONLY, 0))) {
+	if (!NT_STATUS_IS_OK(cli_setatr(cli1, fname, FILE_ATTRIBUTE_READONLY, 0))) {
 		printf("cli_setatr failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}

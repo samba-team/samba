@@ -1405,7 +1405,7 @@ int cmd_setmode(void)
 					direct=0;
 					break;
 				case 'r':
-					attra[direct]|=aRONLY;
+					attra[direct]|=FILE_ATTRIBUTE_READONLY;
 					break;
 				case 'h':
 					attra[direct]|=aHIDDEN;

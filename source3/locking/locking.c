@@ -1424,7 +1424,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode)
 	 * Only allow delete on close for writable files.
 	 */
 
-	if ((dosmode & aRONLY) &&
+	if ((dosmode & FILE_ATTRIBUTE_READONLY) &&
 	    !lp_delete_readonly(SNUM(fsp->conn))) {
 		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
 			  "flag set but file attribute is readonly.\n",
