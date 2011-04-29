@@ -304,7 +304,7 @@ char *attrib_string(uint16 mode)
 
 	attrstr[0] = 0;
 
-	if (mode & aVOLID) fstrcat(attrstr,"V");
+	if (mode & FILE_ATTRIBUTE_VOLUME) fstrcat(attrstr,"V");
 	if (mode & aDIR) fstrcat(attrstr,"D");
 	if (mode & aARCH) fstrcat(attrstr,"A");
 	if (mode & FILE_ATTRIBUTE_HIDDEN) fstrcat(attrstr,"H");
