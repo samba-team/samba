@@ -8012,12 +8012,12 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	}
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	err = clean_up_driver_struct(p->mem_ctx, p, r->in.info_ctr);
+	err = clean_up_driver_struct(p->mem_ctx, p->session_info, r->in.info_ctr);
 	if (!W_ERROR_IS_OK(err))
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	err = move_driver_to_download_area(p, r->in.info_ctr);
+	err = move_driver_to_download_area(p->session_info, r->in.info_ctr);
 	if (!W_ERROR_IS_OK(err)) {
 		goto done;
 	}
