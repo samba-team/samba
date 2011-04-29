@@ -5,11 +5,11 @@ common_util_sources = '''talloc_stack.c smb_threads.c xfile.c data_blob.c
                     genrand.c fsusage.c blocking.c become_daemon.c
                     signal.c system.c params.c util.c util_id.c util_net.c
                     util_strlist.c idtree.c debug.c fault.c base64.c
-                    util_str_common.c'''
+                    util_str_common.c substitute.c'''
 
 common_util_headers = 'debug.h'
 common_util_public_deps = 'talloc pthread LIBCRYPTO'
-s4_util_sources = '''dprintf.c ms_fnmatch.c parmlist.c substitute.c util_str.c'''
+s4_util_sources = '''dprintf.c ms_fnmatch.c parmlist.c util_str.c'''
 s4_util_deps = 'DYNCONFIG'
 s4_util_public_deps = 'talloc CHARSET execinfo uid_wrapper'
 s4_util_public_headers = 'attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h'

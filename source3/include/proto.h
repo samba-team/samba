@@ -960,12 +960,6 @@ char *StrnCpy(char *dest,const char *src,size_t n);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);
 bool string_set(char **dest,const char *src);
-void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
-		 bool remove_unsafe_characters, bool replace_once,
-		 bool allow_trailing_dollar);
-void string_sub_once(char *s, const char *pattern,
-		const char *insert, size_t len);
-void string_sub(char *s,const char *pattern, const char *insert, size_t len);
 void fstring_sub(char *s,const char *pattern,const char *insert);
 char *realloc_string_sub2(char *string,
 			const char *pattern,

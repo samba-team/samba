@@ -29,18 +29,20 @@
  **/
 
 /**
- Substitute a string for a pattern in another string. Make sure there is 
+ Substitute a string for a pattern in another string. Make sure there is
  enough room!
 
- This routine looks for pattern in s and replaces it with 
- insert. It may do multiple replacements.
+ This routine looks for pattern in s and replaces it with
+ insert. It may do multiple replacements or just one.
 
  Any of " ; ' $ or ` in the insert string are replaced with _
  if len==0 then the string cannot be extended. This is different from the old
  use of len==0 which was for no length checks to be done.
 **/
 
-_PUBLIC_ void string_sub(char *s, const char *pattern, const char *insert, size_t len)
+static void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
+			bool remove_unsafe_characters, bool replace_once,
+			bool allow_trailing_dollar)
 {
 	char *p;
 	ssize_t ls, lp, li, i;
@@ -55,9 +57,10 @@ _PUBLIC_ void string_sub(char *s, const char *pattern, const char *insert, size_
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
 
-	while (lp <= ls && (p = strstr(s, pattern))) {
+	while (lp <= ls && (p = strstr_m(s,pattern))) {
 		if (ls + (li-lp) >= len) {
-			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
+			DEBUG(0,("ERROR: string overflow by "
+				"%d in string_sub(%.50s, %d)\n",
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
 			break;
@@ -67,23 +70,48 @@ _PUBLIC_ void string_sub(char *s, const char *pattern, const char *insert, size_
 		}
 		for (i=0;i<li;i++) {
 			switch (insert[i]) {
+			case '$':
+				/* allow a trailing $
+				 * (as in machine accounts) */
+				if (allow_trailing_dollar && (i == li - 1 )) {
+					p[i] = insert[i];
+					break;
+				}
 			case '`':
 			case '"':
 			case '\'':
 			case ';':
-			case '$':
 			case '%':
 			case '\r':
 			case '\n':
-				p[i] = '_';
-				break;
+				if ( remove_unsafe_characters ) {
+					p[i] = '_';
+					/* yes this break should be here
+					 * since we want to fall throw if
+					 * not replacing unsafe chars */
+					break;
+				}
 			default:
 				p[i] = insert[i];
 			}
 		}
 		s = p + li;
 		ls += (li-lp);
+
+		if (replace_once)
+			break;
 	}
+}
+
+void string_sub_once(char *s, const char *pattern,
+		const char *insert, size_t len)
+{
+	string_sub2( s, pattern, insert, len, true, true, false );
+}
+
+void string_sub(char *s,const char *pattern, const char *insert, size_t len)
+{
+	string_sub2( s, pattern, insert, len, true, false, false );
 }
 
 /**
@@ -146,13 +174,14 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
 
 	if (!*pattern)
 		return;
-	
+
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
-	
-	while (lp <= ls && (p = strstr(s,pattern))) {
+
+	while (lp <= ls && (p = strstr_m(s,pattern))) {
 		if (ls + (li-lp) >= len) {
-			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
+			DEBUG(0,("ERROR: string overflow by "
+				"%d in all_string_sub(%.50s, %d)\n",
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
 			break;
