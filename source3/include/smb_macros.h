@@ -28,7 +28,7 @@
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
 
 /* for readability... */
-#define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)
+#define IS_DOS_READONLY(test_mode) (((test_mode) & FILE_ATTRIBUTE_READONLY) != 0)
 #define IS_DOS_DIR(test_mode)      (((test_mode) & aDIR) != 0)
 #define IS_DOS_ARCHIVE(test_mode)  (((test_mode) & aARCH) != 0)
 #define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)

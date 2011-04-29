@@ -309,7 +309,7 @@ char *attrib_string(uint16 mode)
 	if (mode & aARCH) fstrcat(attrstr,"A");
 	if (mode & aHIDDEN) fstrcat(attrstr,"H");
 	if (mode & aSYSTEM) fstrcat(attrstr,"S");
-	if (mode & aRONLY) fstrcat(attrstr,"R");	  
+	if (mode & FILE_ATTRIBUTE_READONLY) fstrcat(attrstr,"R");
 
 	return talloc_strdup(talloc_tos(), attrstr);
 }

@@ -1110,7 +1110,7 @@ void reply_getatr(struct smb_request *req)
 	if (*fname == '\0') {
 		mode = aHIDDEN | aDIR;
 		if (!CAN_WRITE(conn)) {
-			mode |= aRONLY;
+			mode |= FILE_ATTRIBUTE_READONLY;
 		}
 		size = 0;
 		mtime = 0;
@@ -2449,10 +2449,10 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	fattr = dos_mode(conn, smb_fname);
 
 	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
-		dirtype = aDIR|aARCH|aRONLY;
+		dirtype = aDIR|aARCH|FILE_ATTRIBUTE_READONLY;
 	}
 
-	dirtype &= (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM);
+	dirtype &= (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|aHIDDEN|aSYSTEM);
 	if (!dirtype) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
