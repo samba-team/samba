@@ -78,7 +78,7 @@ class TokenTest(samba.tests.TestCase):
         res = self.ldb.search("", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
         self.assertEquals(len(res), 1)
 
-        print("Geting tokenGroups from rootDSE")
+        print("Getting tokenGroups from rootDSE")
         tokengroups = []
         for sid in res[0]['tokenGroups']:
             tokengroups.append(str(ndr_unpack(samba.dcerpc.security.dom_sid, sid)))
@@ -93,7 +93,7 @@ class TokenTest(samba.tests.TestCase):
             self.fail(msg="calculated groups don't match against rootDSE tokenGroups")
 
     def test_dn_tokenGroups(self):
-        print("Geting tokenGroups from user DN")
+        print("Getting tokenGroups from user DN")
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
         self.assertEquals(len(res), 1)
 
