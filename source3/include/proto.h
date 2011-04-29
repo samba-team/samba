@@ -630,7 +630,7 @@ bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
 bool socket_exist(const char *fname);
 uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf);
 SMB_OFF_T get_file_size(char *file_name);
-char *attrib_string(uint16 mode);
+char *attrib_string(TALLOC_CTX *mem_ctx, uint16 mode);
 void show_msg(char *buf);
 void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num);
 void smb_setlen(char *buf,int len);

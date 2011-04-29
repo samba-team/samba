@@ -547,7 +547,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 	if (!showacls) {
 		d_printf("  %-30s%7.7s %8.0f  %s",
 			 finfo->name,
-			 attrib_string(finfo->mode),
+			 attrib_string(talloc_tos(), finfo->mode),
 		 	(double)finfo->size,
 			time_to_asc(t));
 		dir_total += finfo->size;
@@ -569,7 +569,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 		}
 		/* print file meta date header */
 		d_printf( "FILENAME:%s\n", finfo->name);
-		d_printf( "MODE:%s\n", attrib_string(finfo->mode));
+		d_printf( "MODE:%s\n", attrib_string(talloc_tos(), finfo->mode));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
 		status = cli_ntcreate(cli_state, afname, 0,

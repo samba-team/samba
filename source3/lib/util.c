@@ -298,7 +298,7 @@ SMB_OFF_T get_file_size(char *file_name)
  Return a string representing an attribute for a file.
 ********************************************************************/
 
-char *attrib_string(uint16 mode)
+char *attrib_string(TALLOC_CTX *mem_ctx, uint16 mode)
 {
 	fstring attrstr;
 
@@ -311,7 +311,7 @@ char *attrib_string(uint16 mode)
 	if (mode & FILE_ATTRIBUTE_SYSTEM) fstrcat(attrstr,"S");
 	if (mode & FILE_ATTRIBUTE_READONLY) fstrcat(attrstr,"R");
 
-	return talloc_strdup(talloc_tos(), attrstr);
+	return talloc_strdup(mem_ctx, attrstr);
 }
 
 /*******************************************************************
