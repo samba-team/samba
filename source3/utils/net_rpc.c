@@ -3968,7 +3968,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 		cp_clistate.cli_share_src = NULL;
 		cp_clistate.cli_share_dst = NULL;
 		cp_clistate.cwd = NULL;
-		cp_clistate.attribute = aSYSTEM | aHIDDEN | aDIR;
+		cp_clistate.attribute = aSYSTEM | FILE_ATTRIBUTE_HIDDEN | aDIR;
 		cp_clistate.c = c;
 
 	        /* open share source */

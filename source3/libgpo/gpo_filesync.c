@@ -228,7 +228,7 @@ NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx,
 	ctx.cli 	= cli;
 	ctx.remote_path	= CONST_DISCARD(char *, nt_path);
 	ctx.local_path	= CONST_DISCARD(char *, local_path);
-	ctx.attribute 	= (aSYSTEM | aHIDDEN | aDIR);
+	ctx.attribute 	= (aSYSTEM | FILE_ATTRIBUTE_HIDDEN | aDIR);
 
 	ctx.mask = talloc_asprintf(mem_ctx,
 				"%s\\*",

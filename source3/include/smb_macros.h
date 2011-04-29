@@ -32,7 +32,7 @@
 #define IS_DOS_DIR(test_mode)      (((test_mode) & aDIR) != 0)
 #define IS_DOS_ARCHIVE(test_mode)  (((test_mode) & aARCH) != 0)
 #define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
-#define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
+#define IS_DOS_HIDDEN(test_mode)   (((test_mode) & FILE_ATTRIBUTE_HIDDEN) != 0)
 
 #define SMB_WARN(condition, message) \
     ((condition) ? (void)0 : \

@@ -311,7 +311,7 @@ char *attrib_string(uint16 mode)
 	if (mode & aVOLID) fstrcat(attrstr,"V");
 	if (mode & aDIR) fstrcat(attrstr,"D");
 	if (mode & aARCH) fstrcat(attrstr,"A");
-	if (mode & aHIDDEN) fstrcat(attrstr,"H");
+	if (mode & FILE_ATTRIBUTE_HIDDEN) fstrcat(attrstr,"H");
 	if (mode & aSYSTEM) fstrcat(attrstr,"S");
 	if (mode & FILE_ATTRIBUTE_READONLY) fstrcat(attrstr,"R");
 
