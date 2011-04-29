@@ -2388,7 +2388,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 	}
 
 	fmode = dos_mode(conn, fsp->fsp_name);
-	if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | aSYSTEM)) {
+	if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
@@ -2452,7 +2452,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		dirtype = aDIR|aARCH|FILE_ATTRIBUTE_READONLY;
 	}
 
-	dirtype &= (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|aSYSTEM);
+	dirtype &= (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM);
 	if (!dirtype) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}

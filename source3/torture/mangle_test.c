@@ -58,7 +58,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 	}
 
 	fstr_sprintf(name2, "\\mangle_test\\%s", shortname);
-	if (!NT_STATUS_IS_OK(cli_unlink(cli, name2, aSYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	if (!NT_STATUS_IS_OK(cli_unlink(cli, name2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
 		       name2, name, cli_errstr(cli));
 		return False;
@@ -75,11 +75,11 @@ static bool test_one(struct cli_state *cli, const char *name)
 	}
 
 	/* and unlink by long name */
-	if (!NT_STATUS_IS_OK(cli_unlink(cli, name, aSYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	if (!NT_STATUS_IS_OK(cli_unlink(cli, name, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
 		printf("unlink2 of %s  (%s) failed (%s)\n", 
 		       name, name2, cli_errstr(cli));
 		failures++;
-		cli_unlink(cli, name2, aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		cli_unlink(cli, name2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 		return True;
 	}
 
@@ -178,7 +178,7 @@ bool torture_mangle(int dummy)
 		return False;
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*", aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_unlink(cli, "\\mangle_test\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_rmdir(cli, "\\mangle_test");
 
 	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\mangle_test"))) {
@@ -202,7 +202,7 @@ bool torture_mangle(int dummy)
 		}
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*", aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_unlink(cli, "\\mangle_test\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	if (!NT_STATUS_IS_OK(cli_rmdir(cli, "\\mangle_test"))) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
