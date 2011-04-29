@@ -26,7 +26,10 @@ typedef int ber_int_t;
 #ifdef HAVE_LDAP_PVT_H
 #include <ldap_pvt.h>
 #endif /* HAVE_LDAP_PVT_H */
+
+#ifdef HAVE_LDAP_INIT_FD
 int ldap_init_fd(ber_socket_t fd, int proto, char *uri, LDAP **ldp);
+#endif
 
 /* function declarations not included in proto.h */
 LDAP *ldap_open_with_timeout(const char *server,
