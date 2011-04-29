@@ -2782,13 +2782,6 @@ int sessionid_traverse_read(int (*fn)(const char *key,
 char *stdin_new_passwd( void);
 char *get_pass( const char *prompt, bool stdin_get);
 
-/* The following definitions come from winbindd/nss_info.c  */
-
-
-/* The following definitions come from winbindd/nss_info_template.c  */
-
-NTSTATUS nss_info_template_init( void );
-
 /* The following definitions come from lib/avahi.c */
 
 struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
