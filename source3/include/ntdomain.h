@@ -220,5 +220,6 @@ void *_policy_handle_find(struct pipes_struct *p,
 	(_type *)_policy_handle_find((_p), (_hnd), (_access_required), \
 				     (_access_granted), #_type, __location__, (_pstatus))
 
+#include "rpc_server/srv_pipe_register.h"
 
 #endif /* _NT_DOMAIN_H */

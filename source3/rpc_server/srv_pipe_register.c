@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "librpc/rpc/dcerpc.h"
 #include "srv_pipe_internal.h"
+#include "rpc_server/srv_pipe_register.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
