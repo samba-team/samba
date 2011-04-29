@@ -1482,7 +1482,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 		file_attributes = 0;
 	} else {
-		mode = unix_mode(conn, aDIR, smb_dname, parent_dir);
+		mode = unix_mode(conn, FILE_ATTRIBUTE_DIRECTORY, smb_dname, parent_dir);
 	}
 
 	/*

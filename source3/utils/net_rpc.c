@@ -3730,7 +3730,7 @@ static NTSTATUS copy_fn(const char *mnt, struct file_info *f,
 	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
 
 	/* DIRECTORY */
-	if (f->mode & aDIR) {
+	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
 
 		DEBUG(3,("got dir: %s\n", f->name));
 
@@ -3968,7 +3968,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 		cp_clistate.cli_share_src = NULL;
 		cp_clistate.cli_share_dst = NULL;
 		cp_clistate.cwd = NULL;
-		cp_clistate.attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | aDIR;
+		cp_clistate.attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
 		cp_clistate.c = c;
 
 	        /* open share source */

@@ -150,7 +150,7 @@ static NTSTATUS gpo_sync_func(const char *mnt,
 	DEBUG(5,("gpo_sync_func: got mask: [%s], name: [%s]\n",
 		mask, info->name));
 
-	if (info->mode & aDIR) {
+	if (info->mode & FILE_ATTRIBUTE_DIRECTORY) {
 
 		DEBUG(3,("got dir: [%s]\n", info->name));
 
@@ -228,7 +228,7 @@ NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx,
 	ctx.cli 	= cli;
 	ctx.remote_path	= CONST_DISCARD(char *, nt_path);
 	ctx.local_path	= CONST_DISCARD(char *, local_path);
-	ctx.attribute 	= (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | aDIR);
+	ctx.attribute 	= (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY);
 
 	ctx.mask = talloc_asprintf(mem_ctx,
 				"%s\\*",
