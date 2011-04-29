@@ -400,7 +400,7 @@ static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 	}
 	for (server=0;server<NSERVERS;server++) {
-		cli_unlink(cli[server][0], FILENAME, aSYSTEM | aHIDDEN);
+		cli_unlink(cli[server][0], FILENAME, aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	}
 }
 

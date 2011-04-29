@@ -189,7 +189,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 		result |= aSYSTEM;
 
 	if (MAP_HIDDEN(conn) && ((smb_fname->st.st_ex_mode & S_IXOTH) != 0))
-		result |= aHIDDEN;   
+		result |= FILE_ATTRIBUTE_HIDDEN;
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		result = aDIR | (result & FILE_ATTRIBUTE_READONLY);
@@ -198,7 +198,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 
 	DEBUG(8,("dos_mode_from_sbuf returning "));
 
-	if (result & aHIDDEN) DEBUG(8, ("h"));
+	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
@@ -325,7 +325,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 
 	DEBUG(8,("get_ea_dos_attribute returning (0x%x)", dosattr));
 
-	if (dosattr & aHIDDEN) DEBUG(8, ("h"));
+	if (dosattr & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (dosattr & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (dosattr & aSYSTEM) DEBUG(8, ("s"));
 	if (dosattr & aDIR   ) DEBUG(8, ("d"));
@@ -465,7 +465,7 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 		/* Only . and .. are not hidden. */
 		if (p[0] == '.' && !((p[1] == '\0') ||
 				(p[1] == '.' && p[2] == '\0'))) {
-			result |= aHIDDEN;
+			result |= FILE_ATTRIBUTE_HIDDEN;
 		}
 	}
 
@@ -473,9 +473,9 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
-	if (!(result & aHIDDEN) &&
+	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
 	    IS_HIDDEN_PATH(conn, smb_fname->base_name)) {
-		result |= aHIDDEN;
+		result |= FILE_ATTRIBUTE_HIDDEN;
 	}
 
 	if (result == 0) {
@@ -486,7 +486,7 @@ uint32 dos_mode_msdfs(connection_struct *conn,
 
 	DEBUG(8,("dos_mode_msdfs returning "));
 
-	if (result & aHIDDEN) DEBUG(8, ("h"));
+	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
@@ -509,7 +509,7 @@ int dos_attributes_to_stat_dos_flags(uint32_t dosmode)
 
 	if (dosmode & aARCH)
 		dos_stat_flags |= UF_DOS_ARCHIVE;
-	if (dosmode & aHIDDEN)
+	if (dosmode & FILE_ATTRIBUTE_HIDDEN)
 		dos_stat_flags |= UF_DOS_HIDDEN;
 	if (dosmode & FILE_ATTRIBUTE_READONLY)
 		dos_stat_flags |= UF_DOS_RO;
@@ -542,7 +542,7 @@ static bool get_stat_dos_flags(connection_struct *conn,
 	if (smb_fname->st.st_ex_flags & UF_DOS_ARCHIVE)
 		*dosmode |= aARCH;
 	if (smb_fname->st.st_ex_flags & UF_DOS_HIDDEN)
-		*dosmode |= aHIDDEN;
+		*dosmode |= FILE_ATTRIBUTE_HIDDEN;
 	if (smb_fname->st.st_ex_flags & UF_DOS_RO)
 		*dosmode |= FILE_ATTRIBUTE_READONLY;
 	if (smb_fname->st.st_ex_flags & UF_DOS_SYSTEM)
@@ -637,7 +637,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		/* Only . and .. are not hidden. */
 		if (p[0] == '.' && !((p[1] == '\0') ||
 				(p[1] == '.' && p[2] == '\0'))) {
-			result |= aHIDDEN;
+			result |= FILE_ATTRIBUTE_HIDDEN;
 		}
 	}
 
@@ -658,9 +658,9 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
-	if (!(result & aHIDDEN) &&
+	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
 	    IS_HIDDEN_PATH(conn, smb_fname->base_name)) {
-		result |= aHIDDEN;
+		result |= FILE_ATTRIBUTE_HIDDEN;
 	}
 
 	if (result == 0) {
@@ -671,7 +671,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 
 	DEBUG(8,("dos_mode returning "));
 
-	if (result & aHIDDEN) DEBUG(8, ("h"));
+	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
 	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));

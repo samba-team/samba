@@ -924,7 +924,7 @@ NTSTATUS do_list(const char *mask,
 static int cmd_dir(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = aDIR | aSYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	int rc = 1;
@@ -974,7 +974,7 @@ static int cmd_dir(void)
 static int cmd_du(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = aDIR | aSYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status;
@@ -1306,7 +1306,7 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = do_list(mget_mask, aSYSTEM | aHIDDEN | aDIR,do_mget,false, true);
+	status = do_list(mget_mask, aSYSTEM | FILE_ATTRIBUTE_HIDDEN | aDIR,do_mget,false, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1395,7 +1395,7 @@ static int cmd_more(void)
 static int cmd_mget(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute = aSYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mget_mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -2311,7 +2311,7 @@ static NTSTATUS do_del(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_OK;
 	}
 
-	status = cli_unlink(cli_state, mask, aSYSTEM | aHIDDEN);
+	status = cli_unlink(cli_state, mask, aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s deleting remote file %s\n",
 			 nt_errstr(status), mask);
@@ -2330,7 +2330,7 @@ static int cmd_del(void)
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint16 attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute = aSYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 	if (recurse) {
 		attribute |= aDIR;
@@ -4629,7 +4629,7 @@ static char **remote_completion(const char *text, int len)
 	if (!cli_resolve_path(ctx, "", auth_info, cli, dirmask, &targetcli, &targetpath)) {
 		goto cleanup;
 	}
-	status = cli_list(targetcli, targetpath, aDIR | aSYSTEM | aHIDDEN,
+	status = cli_list(targetcli, targetpath, aDIR | aSYSTEM | FILE_ATTRIBUTE_HIDDEN,
 			  completion_remote_filter, (void *)&info);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;

@@ -134,7 +134,7 @@ void nb_setup(struct cli_state *cli)
 
 void nb_unlink(const char *fname)
 {
-	if (!NT_STATUS_IS_OK(cli_unlink(c, fname, aSYSTEM | aHIDDEN))) {
+	if (!NT_STATUS_IS_OK(cli_unlink(c, fname, aSYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
 #if NBDEBUG
 		printf("(%d) unlink %s failed (%s)\n", 
 		       line_count, fname, cli_errstr(c));
