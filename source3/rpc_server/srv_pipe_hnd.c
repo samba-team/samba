@@ -20,11 +20,7 @@
  */
 
 #include "includes.h"
-#include "../librpc/gen_ndr/srv_spoolss.h"
-#include "librpc/gen_ndr/ndr_named_pipe_auth.h"
-#include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "rpc_server.h"
-#include "smbd/globals.h"
 #include "fake_file.h"
 #include "rpc_dce.h"
 #include "rpc_server/rpc_ncacn_np.h"
