@@ -2292,7 +2292,7 @@ void lpcfg_killunused(struct loadparm_context *lp_ctx,
 }
 
 
-static int lp_destructor(struct loadparm_context *lp_ctx)
+static int lpcfg_destructor(struct loadparm_context *lp_ctx)
 {
 	struct parmlist_entry *data;
 
@@ -2333,7 +2333,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	if (lp_ctx == NULL)
 		return NULL;
 
-	talloc_set_destructor(lp_ctx, lp_destructor);
+	talloc_set_destructor(lp_ctx, lpcfg_destructor);
 	lp_ctx->bInGlobalSection = true;
 	lp_ctx->globals = talloc_zero(lp_ctx, struct loadparm_global);
 	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
