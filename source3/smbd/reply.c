@@ -1108,7 +1108,7 @@ void reply_getatr(struct smb_request *req)
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
 		under WfWg - weird! */
 	if (*fname == '\0') {
-		mode = aHIDDEN | aDIR;
+		mode = FILE_ATTRIBUTE_HIDDEN | aDIR;
 		if (!CAN_WRITE(conn)) {
 			mode |= FILE_ATTRIBUTE_READONLY;
 		}
@@ -2388,7 +2388,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 	}
 
 	fmode = dos_mode(conn, fsp->fsp_name);
-	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM)) {
+	if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | aSYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
@@ -2452,7 +2452,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		dirtype = aDIR|aARCH|FILE_ATTRIBUTE_READONLY;
 	}
 
-	dirtype &= (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|aHIDDEN|aSYSTEM);
+	dirtype &= (aDIR|aARCH|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|aSYSTEM);
 	if (!dirtype) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}

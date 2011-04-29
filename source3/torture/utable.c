@@ -42,7 +42,7 @@ bool torture_utable(int dummy)
 	memset(valid, 0, sizeof(valid));
 
 	cli_mkdir(cli, "\\utable");
-	cli_unlink(cli, "\\utable\\*", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\utable\\*", aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	for (c=1; c < 0x10000; c++) {
 		size_t size = 0;
@@ -77,7 +77,7 @@ bool torture_utable(int dummy)
 		}
 
 		cli_close(cli, fnum);
-		cli_unlink(cli, fname, aSYSTEM | aHIDDEN);
+		cli_unlink(cli, fname, aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 		if (c % 100 == 0) {
 			printf("%d (%d/%d)\r", c, chars_allowed, alt_allowed);
@@ -144,7 +144,7 @@ bool torture_casetable(int dummy)
 
 	memset(equiv, 0, sizeof(equiv));
 
-	cli_unlink(cli, "\\utable\\*", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\utable\\*", aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_rmdir(cli, "\\utable");
 	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\utable"))) {
 		printf("Failed to create utable directory!\n");
@@ -203,7 +203,7 @@ bool torture_casetable(int dummy)
 		cli_close(cli, fnum);
 	}
 
-	cli_unlink(cli, "\\utable\\*", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\utable\\*", aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_rmdir(cli, "\\utable");
 
 	return True;

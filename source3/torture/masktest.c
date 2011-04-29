@@ -313,11 +313,11 @@ static void get_real_name(struct cli_state *cli,
 	*pp_long_name = NULL;
 	/* nasty hack to force level 260 listings - tridge */
 	if (max_protocol <= PROTOCOL_LANMAN1) {
-		cli_list_trans(cli, "\\masktest\\*.*", aHIDDEN | aDIR,
+		cli_list_trans(cli, "\\masktest\\*.*", FILE_ATTRIBUTE_HIDDEN | aDIR,
 			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO, listfn,
 			       &state);
 	} else {
-		cli_list_trans(cli, "\\masktest\\*", aHIDDEN | aDIR,
+		cli_list_trans(cli, "\\masktest\\*", FILE_ATTRIBUTE_HIDDEN | aDIR,
 			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO,
 			       listfn, &state);
 	}
@@ -359,7 +359,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 		return;
 	}
 	fstrcpy(res1, "---");
-	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
+	cli_list(cli, mask, FILE_ATTRIBUTE_HIDDEN | aDIR, listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 
@@ -371,7 +371,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 		if (die_on_error) exit(1);
 	}
 
-	cli_unlink(cli, file, aSYSTEM | aHIDDEN);
+	cli_unlink(cli, file, aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
 	SAFE_FREE(long_name);
@@ -388,7 +388,7 @@ static void test_mask(int argc, char *argv[],
 
 	cli_mkdir(cli, "\\masktest");
 
-	cli_unlink(cli, "\\masktest\\*", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\masktest\\*", aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (argc >= 2) {
 		while (argc >= 2) {

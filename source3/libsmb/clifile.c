@@ -1134,7 +1134,7 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	SSVAL(state->vwv+0, 0, aSYSTEM | aHIDDEN | aDIR);
+	SSVAL(state->vwv+0, 0, aSYSTEM | FILE_ATTRIBUTE_HIDDEN | aDIR);
 
 	bytes = talloc_array(state, uint8_t, 1);
 	if (tevent_req_nomem(bytes, req)) {
@@ -1259,7 +1259,7 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	SSVAL(state->vwv+0, 0 ,aSYSTEM | aHIDDEN | aDIR);
+	SSVAL(state->vwv+0, 0 ,aSYSTEM | FILE_ATTRIBUTE_HIDDEN | aDIR);
 	SSVAL(state->vwv+1, 0, rename_flag);
 
 	bytes = talloc_array(state, uint8_t, 1);
@@ -2115,7 +2115,7 @@ struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 	SSVAL(state->vwv + 1, 0, 0);
 	SSVAL(state->vwv + 2, 0, 0);  /* no additional info */
 	SSVAL(state->vwv + 3, 0, accessmode);
-	SSVAL(state->vwv + 4, 0, aSYSTEM | aHIDDEN);
+	SSVAL(state->vwv + 4, 0, aSYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	SSVAL(state->vwv + 5, 0, 0);
 	SIVAL(state->vwv + 6, 0, 0);
 	SSVAL(state->vwv + 8, 0, openfn);
