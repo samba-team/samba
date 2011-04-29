@@ -1520,11 +1520,11 @@ void reply_search(struct smb_request *req)
 	/* Initialize per SMBsearch/SMBffirst/SMBfunique operation data */
 	dptr_init_search_op(dirptr);
 
-	if ((dirtype&0x1F) == aVOLID) {
+	if ((dirtype&0x1F) == FILE_ATTRIBUTE_VOLUME) {
 		char buf[DIR_STRUCT_SIZE];
 		memcpy(buf,status,21);
 		if (!make_dir_struct(ctx,buf,"???????????",volume_label(SNUM(conn)),
-				0,aVOLID,0,!allow_long_path_components)) {
+				0,FILE_ATTRIBUTE_VOLUME,0,!allow_long_path_components)) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
 		}
@@ -2160,7 +2160,7 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
-	if (fattr & aVOLID) {
+	if (fattr & FILE_ATTRIBUTE_VOLUME) {
 		DEBUG(0,("Attempt to create file (%s) with volid set - "
 			 "please report this\n",
 			 smb_fname_str_dbg(smb_fname)));
