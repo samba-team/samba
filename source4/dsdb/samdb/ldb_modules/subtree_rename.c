@@ -3,6 +3,7 @@
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006-2007
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2007
+   Copyright (C) Matthias Dieter WallnÃ¶fer <mdw@samba.org> 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -319,9 +320,12 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ldb_dn_compare(ares->message->dn, ac->list->olddn) == 0) {
-			/* this was already stored by the
-			 * subtree_rename_search() */
-
+			/*
+			 * This is the root entry of the originating move
+			 * respectively rename request. It has been already
+			 * stored in the list using "subtree_rename_search()".
+			 * Only this one is subject to constraint checking.
+			 */
 			ret = check_constraints(ares->message, ac,
 						ac->list->olddn,
 						ac->list->newdn);
@@ -356,13 +360,6 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
-
-		ret = check_constraints(ares->message, ac,
-					store->olddn, store->newdn);
-		if (ret != LDB_SUCCESS) {
-			return ldb_module_done(ac->req, NULL, NULL, ret);
-		}
-
 		break;
 
 	case LDB_REPLY_REFERRAL:
