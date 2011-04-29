@@ -28,6 +28,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "smbprofile.h"
+#include "rpc_server/srv_pipe_hnd.h"
 
 #define NERR_notsupported 50
 
