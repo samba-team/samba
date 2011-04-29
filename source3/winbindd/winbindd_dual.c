@@ -1292,6 +1292,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	struct winbindd_response response;
 	struct winbindd_domain *primary_domain = NULL;
 	NTSTATUS status;
+	ssize_t nwritten;
 
 	if (child->domain) {
 		DEBUG(10, ("fork_domain_child called for domain '%s'\n",
@@ -1320,7 +1321,25 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	if (child->pid != 0) {
 		/* Parent */
+		ssize_t nread;
+
 		close(fdpair[0]);
+
+		nread = read(fdpair[1], &status, sizeof(status));
+		if (nread != sizeof(status)) {
+			DEBUG(1, ("fork_domain_child: Could not read child status: "
+				  "nread=%d, error=%s\n", (int)nread,
+				  strerror(errno)));
+			close(fdpair[1]);
+			return false;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("fork_domain_child: Child status is %s\n",
+				  nt_errstr(status)));
+			close(fdpair[1]);
+			return false;
+		}
+
 		child->next = child->prev = NULL;
 		DLIST_ADD(winbindd_children, child);
 		child->sock = fdpair[1];
@@ -1336,6 +1355,14 @@ static bool fork_domain_child(struct winbindd_child *child)
 	close(fdpair[1]);
 
 	status = winbindd_reinit_after_fork(child, child->logfilename);
+
+	nwritten = write(state.sock, &status, sizeof(status));
+	if (nwritten != sizeof(status)) {
+		DEBUG(1, ("fork_domain_child: Could not write status: "
+			  "nwritten=%d, error=%s\n", (int)nwritten,
+			  strerror(errno)));
+		_exit(0);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("winbindd_reinit_after_fork failed: %s\n",
 			  nt_errstr(status)));
