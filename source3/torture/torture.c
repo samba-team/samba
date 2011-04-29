@@ -5018,6 +5018,61 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
+	/* Create again to test open with O_TRUNC. */
+	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600, &fnum1))) {
+		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Test ftruncate - set file size. */
+	if (!NT_STATUS_IS_OK(cli_ftruncate(cli1, fnum1, 1000))) {
+		printf("ftruncate failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Ensure st_size == 1000 */
+	if (!NT_STATUS_IS_OK(cli_posix_stat(cli1, fname, &sbuf))) {
+		printf("stat failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	if (sbuf.st_ex_size != 1000) {
+		printf("ftruncate - stat size (%u) != 1000\n", (unsigned int)sbuf.st_ex_size);
+		goto out;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
+		printf("close(2) failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Re-open with O_TRUNC. */
+	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_WRONLY|O_TRUNC, 0600, &fnum1))) {
+		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Ensure st_size == 0 */
+	if (!NT_STATUS_IS_OK(cli_posix_stat(cli1, fname, &sbuf))) {
+		printf("stat failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	if (sbuf.st_ex_size != 0) {
+		printf("O_TRUNC - stat size (%u) != 0\n", (unsigned int)sbuf.st_ex_size);
+		goto out;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
+		printf("close failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_posix_unlink(cli1, fname))) {
+		printf("POSIX unlink of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
 	/* What happens when we try and POSIX open a directory ? */
 	if (NT_STATUS_IS_OK(cli_posix_open(cli1, dname, O_RDONLY, 0, &fnum1))) {
 		printf("POSIX open of directory %s succeeded, should have failed.\n", fname);
