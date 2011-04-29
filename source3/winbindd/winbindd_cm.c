@@ -189,6 +189,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	TALLOC_CTX *mem_ctx = NULL;
 	pid_t parent_pid = sys_getpid();
 	char *lfile = NULL;
+	NTSTATUS status;
 
 	if (domain->dc_probe_pid != (pid_t)-1) {
 		/*
@@ -233,7 +234,10 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		}
 	}
 
-	if (!winbindd_reinit_after_fork(NULL, lfile)) {
+	status = winbindd_reinit_after_fork(NULL, lfile);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("winbindd_reinit_after_fork failed: %s\n",
+			  nt_errstr(status)));
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
