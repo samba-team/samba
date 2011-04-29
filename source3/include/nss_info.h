@@ -95,5 +95,12 @@ NTSTATUS nss_map_from_alias( TALLOC_CTX *mem_ctx, const char *domain,
 
 NTSTATUS nss_close( const char *parameters );
 
+/* The following definitions come from winbindd/nss_info.c  */
+
+
+/* The following definitions come from winbindd/nss_info_template.c  */
+
+NTSTATUS nss_info_template_init( void );
+
 #endif /* _IDMAP_NSS_H_ */
 
