@@ -4,10 +4,10 @@ bld.RECURSE('ldap')
 bld.RECURSE('wbclient')
 
 bld.SAMBA_LIBRARY('errors',
-                  source='../../libcli/util/doserr.c util/errormap.c util/nterr.c',
+                  source='util/errormap.c util/nterr.c',
                   public_headers='../../libcli/util/error.h ../../libcli/util/ntstatus.h ../../libcli/util/doserr.h ../../libcli/util/werror.h',
                   header_path='core',
-                  deps='talloc',
+                  deps='talloc LIBCLI_ERRORS',
                   private_library=True
                   )
 

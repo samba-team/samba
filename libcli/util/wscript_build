@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+
+bld.SAMBA_SUBSYSTEM('LIBCLI_ERRORS',
+	source='doserr.c',
+	public_deps='talloc'
+	)
+

@@ -971,7 +971,8 @@ bld.SAMBA3_SUBSYSTEM('ldb3',
                     source='lib/ldb_compat.c')
 
 bld.SAMBA3_SUBSYSTEM('errors3',
-                     source='../libcli/util/doserr.c libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c')
+                     source='libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c', 
+                     deps='LIBCLI_ERRORS')
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
@@ -1338,6 +1339,7 @@ bld.RECURSE('../libcli/netlogon')
 bld.RECURSE('../libcli/samsync')
 bld.RECURSE('../libcli/security')
 bld.RECURSE('../libcli/smb')
+bld.RECURSE('../libcli/util')
 bld.RECURSE('../libcli/smbreadline')
 bld.RECURSE('../libcli/nbt')
 bld.RECURSE('../libcli/registry')
