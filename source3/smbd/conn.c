@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 /* The connections bitmap is expanded in increments of BITMAP_BLOCK_SZ. The
  * maximum size of the bitmap is the largest positive integer, but you will hit

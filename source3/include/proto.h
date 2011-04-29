@@ -2651,11 +2651,6 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 
 /* The following definitions come from rpc_server/srv_pipe_hnd.c  */
 
-struct pipes_struct *get_first_internal_pipe(void);
-struct pipes_struct *get_next_internal_pipe(struct pipes_struct *p);
-bool check_open_pipes(void);
-int close_internal_rpc_pipe_hnd(struct pipes_struct *p);
-
 bool fsp_is_np(struct files_struct *fsp);
 struct tsocket_address;
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
