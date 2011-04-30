@@ -9618,8 +9618,8 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 
 	name = &req_packet->questions[0].name;
 
-	_NBT_ASSERT(name->type, rec->name.type);
 	_NBT_ASSERT_STRING(name->name, rec->name.name);
+	_NBT_ASSERT(name->type, rec->name.type);
 	_NBT_ASSERT_STRING(name->scope, rec->name.scope);
 
 	_NBT_ASSERT(rec->defend.expect_release, false);
@@ -9717,8 +9717,8 @@ static void test_conflict_owned_active_vs_replica_handler_release(
 
 	name = &req_packet->questions[0].name;
 
-	_NBT_ASSERT(name->type, rec->name.type);
 	_NBT_ASSERT_STRING(name->name, rec->name.name);
+	_NBT_ASSERT(name->type, rec->name.type);
 	_NBT_ASSERT_STRING(name->scope, rec->name.scope);
 
 	_NBT_ASSERT(rec->defend.expect_release, true);
