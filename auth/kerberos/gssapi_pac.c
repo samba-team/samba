@@ -52,11 +52,6 @@ const gss_OID_desc * const gss_mech_krb5_wrong        = krb5_gss_oid_array+2;
 /*					                EXTRACTION OID		   AUTHZ ID */
 #define EXTRACT_PAC_AUTHZ_DATA_FROM_SEC_CONTEXT_OID "\x2a\x85\x70\x2b\x0d\x03" "\x81\x00"
 
-static gss_OID_desc pac_data_oid = {
-	EXTRACT_PAC_AUTHZ_DATA_FROM_SEC_CONTEXT_OID_LENGTH,
-	(void *)EXTRACT_PAC_AUTHZ_DATA_FROM_SEC_CONTEXT_OID
-};
-
 NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 				gss_ctx_id_t gssapi_context,
 				gss_name_t gss_client_name,
@@ -68,7 +63,7 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 	gss_buffer_desc pac_buffer;
 	gss_buffer_desc pac_display_buffer;
 	gss_buffer_desc pac_name = {
-		.value = "urn:mspac:",
+		.value = discard_const("urn:mspac:"),
 		.length = sizeof("urn:mspac:")-1
 	};
 	int more = -1;
@@ -107,6 +102,10 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 #elif defined(HAVE_GSS_INQUIRE_SEC_CONTEXT_BY_OID)
+	gss_OID_desc pac_data_oid = {
+		.elements = discard_const(EXTRACT_PAC_AUTHZ_DATA_FROM_SEC_CONTEXT_OID),
+		.length = EXTRACT_PAC_AUTHZ_DATA_FROM_SEC_CONTEXT_OID_LENGTH
+	};
 
 	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
 
