@@ -540,7 +540,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                    addr));
 
                         cli = get_ipc_connect_master_ip(talloc_tos(),
-							&ip_list[i],
+							&ip_list[i].ss,
                                                         &u_info,
 							&wg_ptr);
 			/* cli == NULL is the master browser refused to talk or
