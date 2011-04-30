@@ -456,9 +456,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
                 int i;
                 int count;
                 int max_lmb_count;
-                struct ip_service *ip_list;
-                struct ip_service server_addr;
+                struct sockaddr_storage *ip_list;
+                struct sockaddr_storage server_addr;
                 struct user_auth_info u_info;
+		NTSTATUS status;
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
 
@@ -498,13 +499,14 @@ SMBC_opendir_ctx(SMBCCTX *context,
                  */
 
                 ip_list = NULL;
-                if (!NT_STATUS_IS_OK(name_resolve_bcast(MSBROWSE, 1, &ip_list,
-                                                        &count)))
+		status = name_resolve_bcast(MSBROWSE, 1, talloc_tos(),
+					    &ip_list, &count);
+                if (!NT_STATUS_IS_OK(status))
 		{
 
-                        SAFE_FREE(ip_list);
+                        TALLOC_FREE(ip_list);
 
-                        if (!find_master_ip(workgroup, &server_addr.ss)) {
+                        if (!find_master_ip(workgroup, &server_addr)) {
 
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -515,8 +517,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                 return NULL;
                         }
 
-			ip_list = (struct ip_service *)memdup(
-				&server_addr, sizeof(server_addr));
+			ip_list = (struct sockaddr_storage *)talloc_memdup(
+				talloc_tos(), &server_addr,
+				sizeof(server_addr));
 			if (ip_list == NULL) {
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -534,13 +537,13 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			char *wg_ptr = NULL;
                 	struct cli_state *cli = NULL;
 
-			print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
+			print_sockaddr(addr, sizeof(addr), &ip_list[i]);
                         DEBUG(99, ("Found master browser %d of %d: %s\n",
                                    i+1, MAX(count, max_lmb_count),
                                    addr));
 
                         cli = get_ipc_connect_master_ip(talloc_tos(),
-							&ip_list[i].ss,
+							&ip_list[i],
                                                         &u_info,
 							&wg_ptr);
 			/* cli == NULL is the master browser refused to talk or
@@ -594,7 +597,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                         }
                 }
 
-                SAFE_FREE(ip_list);
+                TALLOC_FREE(ip_list);
         } else {
                 /*
                  * Server not an empty string ... Check the rest and see what
