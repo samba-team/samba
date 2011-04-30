@@ -903,7 +903,9 @@ NTSTATUS cli_write_andx_recv(struct tevent_req *req, size_t *pwritten)
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	*pwritten = state->written;
+	if (pwritten != 0) {
+		*pwritten = state->written;
+	}
 	return NT_STATUS_OK;
 }
 
