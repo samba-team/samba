@@ -1489,7 +1489,8 @@ static bool convert_ss2service(struct ip_service **return_iplist,
 
 NTSTATUS name_resolve_bcast(const char *name,
 			int name_type,
-			struct ip_service **return_iplist,
+			TALLOC_CTX *mem_ctx,
+			struct sockaddr_storage **return_iplist,
 			int *return_count)
 {
 	int i;
@@ -1537,11 +1538,7 @@ NTSTATUS name_resolve_bcast(const char *name,
 	return status;
 
 success:
-
-	if (!convert_ss2service(return_iplist, ss_list, *return_count) )
-		status = NT_STATUS_NO_MEMORY;
-
-	TALLOC_FREE(ss_list);
+	*return_iplist = ss_list;
 	return status;
 }
 
@@ -2075,10 +2072,16 @@ NTSTATUS internal_resolve_name(const char *name,
 				}
 			}
 		} else if(strequal( tok, "bcast")) {
-			status = name_resolve_bcast(name, name_type,
-						    return_iplist,
-						    return_count);
+			struct sockaddr_storage *ss_list;
+			status = name_resolve_bcast(
+				name, name_type, talloc_tos(),
+				&ss_list, return_count);
 			if (NT_STATUS_IS_OK(status)) {
+				if (!convert_ss2service(return_iplist,
+							ss_list,
+							*return_count)) {
+					status = NT_STATUS_NO_MEMORY;
+				}
 				goto done;
 			}
 		} else {
