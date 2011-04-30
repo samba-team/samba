@@ -9764,6 +9764,17 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 {
 	struct test_conflict_owned_active_vs_replica_struct *rec = 
 		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private_data;
+	struct nbt_name *name = &req_packet->questions[0].name;
+
+	if (req_packet->operation & NBT_FLAG_BROADCAST) {
+		torture_comment(rec->tctx,
+			"%s: incoming packet name[%s] flags[0x%08X] from[%s]\n",
+			__location__,
+			nbt_name_string(rec->tctx, name),
+			req_packet->operation,
+			src->addr);
+		return;
+	}
 
 	rec->defend.ret = false;
 
@@ -9775,8 +9786,14 @@ static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket
 		test_conflict_owned_active_vs_replica_handler_release(nbtsock, req_packet, src);
 		break;
 	default:
-		printf("%s: unexpected incoming packet\n", __location__);
-		return;
+		torture_comment(rec->tctx,
+			"%s: unexpected packet name[%s] flags[0x%08X] from[%s]\n",
+			__location__,
+			nbt_name_string(rec->tctx, name),
+			req_packet->operation,
+			src->addr);
+		_NBT_ASSERT((req_packet->operation & NBT_OPCODE), NBT_OPCODE_QUERY);
+		break;
 	}
 }
 
