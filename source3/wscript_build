@@ -668,7 +668,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
-                    INIT_NETLOGON INIT_SAMR''',
+                    INIT_NETLOGON INIT_SAMR POPT_SAMBA3''',
                     public_headers='../source3/lib/netapi/netapi.h',
                     vnum='0',
                     vars=locals())
