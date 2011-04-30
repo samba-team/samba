@@ -14,8 +14,6 @@ samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/g
 
 cleanup_list = []
 
-os.environ['CC'] = "ccache gcc"
-
 builddirs = {
     "samba3"  : "source3",
     "samba3-waf": "source3",
