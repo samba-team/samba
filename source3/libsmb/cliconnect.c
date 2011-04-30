@@ -3414,7 +3414,7 @@ struct cli_state *get_ipc_connect(char *server,
  */
 
 struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
-				struct ip_service *mb_ip,
+				struct sockaddr_storage *mb_ip,
 				const struct user_auth_info *user_info,
 				char **pp_workgroup_out)
 {
@@ -3425,7 +3425,7 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 
 	*pp_workgroup_out = NULL;
 
-	print_sockaddr(addr, sizeof(addr), &mb_ip->ss);
+	print_sockaddr(addr, sizeof(addr), mb_ip);
         DEBUG(99, ("Looking up name of master browser %s\n",
                    addr));
 
@@ -3440,8 +3440,8 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
          * the original wildcard query as the first choice and fall back to
          * MSBROWSE if the wildcard query fails.
          */
-        if (!name_status_find("*", 0, 0x1d, &mb_ip->ss, name) &&
-            !name_status_find(MSBROWSE, 1, 0x1d, &mb_ip->ss, name)) {
+        if (!name_status_find("*", 0, 0x1d, mb_ip, name) &&
+            !name_status_find(MSBROWSE, 1, 0x1d, mb_ip, name)) {
 
                 DEBUG(99, ("Could not retrieve name status for %s\n",
                            addr));
@@ -3493,7 +3493,7 @@ struct cli_state *get_ipc_connect_master_ip_bcast(TALLOC_CTX *ctx,
 		print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
 		DEBUG(99, ("Found master browser %s\n", addr));
 
-		cli = get_ipc_connect_master_ip(ctx, &ip_list[i],
+		cli = get_ipc_connect_master_ip(ctx, &ip_list[i].ss,
 				user_info, pp_workgroup_out);
 		if (cli)
 			return(cli);

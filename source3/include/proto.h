@@ -1114,7 +1114,7 @@ struct cli_state *get_ipc_connect(char *server,
 				struct sockaddr_storage *server_ss,
 				const struct user_auth_info *user_info);
 struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
-				struct ip_service *mb_ip,
+				struct sockaddr_storage *mb_ip,
 				const struct user_auth_info *user_info,
 				char **pp_workgroup_out);
 struct cli_state *get_ipc_connect_master_ip_bcast(TALLOC_CTX *ctx,
