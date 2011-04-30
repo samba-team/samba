@@ -1007,7 +1007,7 @@ char *ipstr_list_make(char **ipstr_list,
 int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list);
 void ipstr_list_free(char* ipstr_list);
 uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
-SMB_OFF_T conv_str_size(const char * str);
+uint64_t conv_str_size(const char * str);
 bool add_string_to_array(TALLOC_CTX *mem_ctx,
 			 const char *str, const char ***strings,
 			 int *num);

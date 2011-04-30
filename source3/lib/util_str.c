@@ -1206,25 +1206,17 @@ uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
  *
  *  Returns 0 if the string can't be converted.
  */
-SMB_OFF_T conv_str_size(const char * str)
+uint64_t conv_str_size(const char * str)
 {
-	SMB_OFF_T lval_orig;
-        SMB_OFF_T lval;
+	uint64_t lval_orig;
+        uint64_t lval;
 	char * end;
 
         if (str == NULL || *str == '\0') {
                 return 0;
         }
 
-#ifdef HAVE_STRTOULL
-	if (sizeof(SMB_OFF_T) == 8) {
-		lval = strtoull(str, &end, 10 /* base */);
-	} else {
-		lval = strtoul(str, &end, 10 /* base */);
-	}
-#else
-	lval = strtoul(str, &end, 10 /* base */);
-#endif
+	lval = strtoull(str, &end, 10 /* base */);
 
         if (end == NULL || end == str) {
                 return 0;
@@ -1237,29 +1229,20 @@ SMB_OFF_T conv_str_size(const char * str)
 	lval_orig = lval;
 
 	if (strwicmp(end, "K") == 0) {
-		lval *= (SMB_OFF_T)1024;
+		lval *= 1024ULL;
 	} else if (strwicmp(end, "M") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL);
 	} else if (strwicmp(end, "G") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL *
+			 1024ULL);
 	} else if (strwicmp(end, "T") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL *
+			 1024ULL * 1024ULL);
 	} else if (strwicmp(end, "P") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL *
+			 1024ULL * 1024ULL *
+			 1024ULL);
 	} else {
-		return 0;
-	}
-
-	/*
-	 * Primitive attempt to detect wrapping on platforms with
-	 * 4-byte SMB_OFF_T. It's better to let the caller handle a
-	 * failure than some random number.
-	 */
-	if (lval_orig <= lval) {
 		return 0;
 	}
 
