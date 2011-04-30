@@ -371,12 +371,10 @@ _PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean);
  */
 _PUBLIC_ bool conv_str_bool(const char * str, bool * val);
 
-#if _SAMBA_BUILD_ == 4
 /**
  * Convert a size specification like 16K into an integral number of bytes. 
  **/
-_PUBLIC_ bool conv_str_size(const char * str, uint64_t * val);
-#endif
+_PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val);
 
 /**
  * Parse a uint64_t value from a string

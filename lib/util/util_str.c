@@ -175,7 +175,7 @@ _PUBLIC_ bool conv_str_bool(const char * str, bool * val)
 /**
  * Convert a size specification like 16K into an integral number of bytes. 
  **/
-_PUBLIC_ bool conv_str_size(const char * str, uint64_t * val)
+_PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;

@@ -949,7 +949,7 @@ int lpcfg_parm_bytes(struct loadparm_context *lp_ctx,
 
 	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
 
-	if (value && conv_str_size(value, &bval)) {
+	if (value && conv_str_size_error(value, &bval)) {
 		if (bval <= INT_MAX) {
 			return (int)bval;
 		}
@@ -1662,7 +1662,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		case P_BYTES:
 		{
 			uint64_t val;
-			if (conv_str_size(pszParmValue, &val)) {
+			if (conv_str_size_error(pszParmValue, &val)) {
 				if (val <= INT_MAX) {
 					*(int *)parm_ptr = (int)val;
 					break;

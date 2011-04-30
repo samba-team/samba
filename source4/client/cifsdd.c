@@ -152,7 +152,7 @@ int set_arg_argv(const char * argv)
 			}
 			break;
 		case ARG_SIZE:
-			if (!conv_str_size(val, &arg->arg_val.nval)) {
+			if (!conv_str_size_error(val, &arg->arg_val.nval)) {
 				goto fail;
 			}
 			break;
