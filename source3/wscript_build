@@ -676,7 +676,7 @@ bld.SAMBA3_LIBRARY('netapi',
 bld.SAMBA3_LIBRARY('libsmb/smbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb wbclient cap param LIB_NONSMBD LIBSMB KRBCLIENT passdb SMBLDAP
-                    LIBMSRPC_GEN msrpc3 LIBCLI_LSA3 RPC_NDR_SRVSVC''',
+                    LIBMSRPC_GEN msrpc3 LIBCLI_LSA3 RPC_NDR_SRVSVC POPT_SAMBA3''',
                     public_headers='include/libsmbclient.h',
                     vnum='0',
                     vars=locals())
