@@ -45,7 +45,9 @@
 #include <gssapi.h>
 #endif
 
+#if HAVE_GSSAPI_GSSAPI_KRB5_H
 #include <gssapi/gssapi_krb5.h>
+#endif
 
 #endif
 #endif

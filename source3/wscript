@@ -619,7 +619,7 @@ msg.msg_acctrightslen = sizeof(fd);
             conf.check_cfg(path="krb5-config", args="--cflags --libs",
                        package="gssapi", uselib_store="krb5")
         conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
-        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h com_err.h', lib='krb5')
+        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h com_err.h', lib='krb5')
 
         if conf.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
             conf.env['WINBIND_KRB5_LOCATOR'] = 'bin/winbind_krb5_locator.so'
