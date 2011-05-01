@@ -55,13 +55,6 @@ VFS is backed with an extensive automated test suite.
 A new scripting interface has been added to Samba 4, allowing
 Python programs to interface to Samba's internals.
 
-The Samba 4 architecture is based around an LDAP-like database that
-can use a range of modular backends.  One of the backends supports
-standards compliant LDAP servers (including OpenLDAP), and we are
-working on modules to map between AD-like behaviours and this backend.
-We are aiming for Samba 4 to be powerful frontend to large
-directories.
-
 CHANGES SINCE alpha13
 =====================
 
