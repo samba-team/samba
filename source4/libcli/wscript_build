@@ -36,8 +36,8 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_COMPOSITE',
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB_COMPOSITE',
 	source='smb_composite/loadfile.c smb_composite/savefile.c smb_composite/connect.c smb_composite/sesssetup.c smb_composite/fetchfile.c smb_composite/appendacl.c smb_composite/fsinfo.c smb_composite/smb2.c',
 	autoproto='smb_composite/proto.h',
-	deps='LIBCLI_SMB2',
-	public_deps='LIBCLI_COMPOSITE credentials gensec LIBCLI_RESOLVE'
+	deps='LIBCLI_SMB2 UTIL_TEVENT',
+	public_deps='LIBCLI_COMPOSITE credentials gensec LIBCLI_RESOLVE tevent'
 	)
 
 
