@@ -1,6 +1,6 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   Packet handling
+   CTDB Packet handling
    Copyright (C) Volker Lendecke 2007
 
    This program is free software; you can redistribute it and/or modify
@@ -18,35 +18,35 @@
 */
 
 /*
- * A packet context is a wrapper around a bidirectional file descriptor,
+ * A ctdb_packet context is a wrapper around a bidirectional file descriptor,
  * hiding the handling of individual requests.
  */
 
-struct packet_context;
+struct ctdb_packet_context;
 
 /*
- * Initialize a packet context. The fd is given to the packet context, meaning
- * that it is automatically closed when the packet context is freed.
+ * Initialize a ctdb_packet context. The fd is given to the ctdb_packet context, meaning
+ * that it is automatically closed when the ctdb_packet context is freed.
  */
-struct packet_context *packet_init(TALLOC_CTX *mem_ctx, int fd);
+struct ctdb_packet_context *ctdb_packet_init(TALLOC_CTX *mem_ctx, int fd);
 
 /*
  * Pull data from the fd
  */
-NTSTATUS packet_fd_read(struct packet_context *ctx);
+NTSTATUS ctdb_packet_fd_read(struct ctdb_packet_context *ctx);
 
 /*
  * Sync read, wait for the next chunk
  */
-NTSTATUS packet_fd_read_sync(struct packet_context *ctx, int timeout);
+NTSTATUS ctdb_packet_fd_read_sync(struct ctdb_packet_context *ctx, int timeout);
 
 /*
- * Handle an incoming packet:
+ * Handle an incoming ctdb_packet:
  * Return False if none is available
  * Otherwise return True and store the callback result in *status
  * Callback must either talloc_move or talloc_free buf
  */
-bool packet_handler(struct packet_context *ctx,
+bool ctdb_packet_handler(struct ctdb_packet_context *ctx,
 		    bool (*full_req)(const uint8_t *buf,
 				     size_t available,
 				     size_t *length,
@@ -59,27 +59,27 @@ bool packet_handler(struct packet_context *ctx,
 /*
  * How many bytes of outgoing data do we have pending?
  */
-size_t packet_outgoing_bytes(struct packet_context *ctx);
+size_t ctdb_packet_outgoing_bytes(struct ctdb_packet_context *ctx);
 
 /*
  * Push data to the fd
  */
-NTSTATUS packet_fd_write(struct packet_context *ctx);
+NTSTATUS ctdb_packet_fd_write(struct ctdb_packet_context *ctx);
 
 /*
  * Sync flush all outgoing bytes
  */
-NTSTATUS packet_flush(struct packet_context *ctx);
+NTSTATUS ctdb_packet_flush(struct ctdb_packet_context *ctx);
 
 /*
  * Send a list of DATA_BLOBs
  *
- * Example:  packet_send(ctx, 2, data_blob_const(&size, sizeof(size)),
+ * Example:  ctdb_packet_send(ctx, 2, data_blob_const(&size, sizeof(size)),
  *			 data_blob_const(buf, size));
  */
-NTSTATUS packet_send(struct packet_context *ctx, int num_blobs, ...);
+NTSTATUS ctdb_packet_send(struct ctdb_packet_context *ctx, int num_blobs, ...);
 
 /*
- * Get the packet context's file descriptor
+ * Get the ctdb_packet context's file descriptor
  */
-int packet_get_fd(struct packet_context *ctx);
+int ctdb_packet_get_fd(struct ctdb_packet_context *ctx);

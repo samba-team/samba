@@ -1,6 +1,6 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   Packet handling
+   CTDB Packet handling
    Copyright (C) Volker Lendecke 2007
 
    This program is free software; you can redistribute it and/or modify
@@ -21,9 +21,9 @@
 #include "../lib/util/select.h"
 #include "system/filesys.h"
 #include "system/select.h"
-#include "packet.h"
+#include "ctdb_packet.h"
 
-struct packet_context {
+struct ctdb_packet_context {
 	int fd;
 	DATA_BLOB in, out;
 };
@@ -31,32 +31,32 @@ struct packet_context {
 /*
  * Close the underlying fd
  */
-static int packet_context_destructor(struct packet_context *ctx)
+static int ctdb_packet_context_destructor(struct ctdb_packet_context *ctx)
 {
 	return close(ctx->fd);
 }
 
 /*
- * Initialize a packet context. The fd is given to the packet context, meaning
- * that it is automatically closed when the packet context is freed.
+ * Initialize a ctdb_packet context. The fd is given to the ctdb_packet context, meaning
+ * that it is automatically closed when the ctdb_packet context is freed.
  */
-struct packet_context *packet_init(TALLOC_CTX *mem_ctx, int fd)
+struct ctdb_packet_context *ctdb_packet_init(TALLOC_CTX *mem_ctx, int fd)
 {
-	struct packet_context *result;
+	struct ctdb_packet_context *result;
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct packet_context))) {
+	if (!(result = TALLOC_ZERO_P(mem_ctx, struct ctdb_packet_context))) {
 		return NULL;
 	}
 
 	result->fd = fd;
-	talloc_set_destructor(result, packet_context_destructor);
+	talloc_set_destructor(result, ctdb_packet_context_destructor);
 	return result;
 }
 
 /*
  * Pull data from the fd
  */
-NTSTATUS packet_fd_read(struct packet_context *ctx)
+NTSTATUS ctdb_packet_fd_read(struct ctdb_packet_context *ctx)
 {
 	int res, available;
 	size_t new_size;
@@ -105,7 +105,7 @@ NTSTATUS packet_fd_read(struct packet_context *ctx)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS packet_fd_read_sync(struct packet_context *ctx, int timeout)
+NTSTATUS ctdb_packet_fd_read_sync(struct ctdb_packet_context *ctx, int timeout)
 {
 	int res, revents;
 
@@ -124,10 +124,10 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx, int timeout)
 		return NT_STATUS_IO_TIMEOUT;
 	}
 
-	return packet_fd_read(ctx);
+	return ctdb_packet_fd_read(ctx);
 }
 
-bool packet_handler(struct packet_context *ctx,
+bool ctdb_packet_handler(struct ctdb_packet_context *ctx,
 		    bool (*full_req)(const uint8_t *buf,
 				     size_t available,
 				     size_t *length,
@@ -171,7 +171,7 @@ bool packet_handler(struct packet_context *ctx,
 /*
  * How many bytes of outgoing data do we have pending?
  */
-size_t packet_outgoing_bytes(struct packet_context *ctx)
+size_t ctdb_packet_outgoing_bytes(struct ctdb_packet_context *ctx)
 {
 	return ctx->out.length;
 }
@@ -179,7 +179,7 @@ size_t packet_outgoing_bytes(struct packet_context *ctx)
 /*
  * Push data to the fd
  */
-NTSTATUS packet_fd_write(struct packet_context *ctx)
+NTSTATUS ctdb_packet_fd_write(struct ctdb_packet_context *ctx)
 {
 	ssize_t sent;
 
@@ -200,10 +200,10 @@ NTSTATUS packet_fd_write(struct packet_context *ctx)
 /*
  * Sync flush all outgoing bytes
  */
-NTSTATUS packet_flush(struct packet_context *ctx)
+NTSTATUS ctdb_packet_flush(struct ctdb_packet_context *ctx)
 {
 	while (ctx->out.length != 0) {
-		NTSTATUS status = packet_fd_write(ctx);
+		NTSTATUS status = ctdb_packet_fd_write(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -214,10 +214,10 @@ NTSTATUS packet_flush(struct packet_context *ctx)
 /*
  * Send a list of DATA_BLOBs
  *
- * Example:  packet_send(ctx, 2, data_blob_const(&size, sizeof(size)),
+ * Example:  ctdb_packet_send(ctx, 2, data_blob_const(&size, sizeof(size)),
  *			 data_blob_const(buf, size));
  */
-NTSTATUS packet_send(struct packet_context *ctx, int num_blobs, ...)
+NTSTATUS ctdb_packet_send(struct ctdb_packet_context *ctx, int num_blobs, ...)
 {
 	va_list ap;
 	int i;
@@ -266,10 +266,9 @@ NTSTATUS packet_send(struct packet_context *ctx, int num_blobs, ...)
 }
 
 /*
- * Get the packet context's file descriptor
+ * Get the ctdb_packet context's file descriptor
  */
-int packet_get_fd(struct packet_context *ctx)
+int ctdb_packet_get_fd(struct ctdb_packet_context *ctx)
 {
 	return ctx->fd;
 }
-

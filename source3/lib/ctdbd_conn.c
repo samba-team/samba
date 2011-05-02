@@ -23,7 +23,7 @@
 #ifdef CLUSTER_SUPPORT
 
 #include "ctdbd_conn.h"
-#include "packet.h"
+#include "ctdb_packet.h"
 #include "messages.h"
 
 /* paths to these include files come from --with-ctdb= in configure */
@@ -35,7 +35,7 @@ struct ctdbd_connection {
 	uint32 reqid;
 	uint32 our_vnn;
 	uint64 rand_srvid;
-	struct packet_context *pkt;
+	struct ctdb_packet_context *pkt;
 	struct fd_event *fde;
 
 	void (*release_ip_handler)(const char *ip_addr, void *private_data);
@@ -168,9 +168,9 @@ uint32 ctdbd_vnn(const struct ctdbd_connection *conn)
  */
 
 static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
-			      struct packet_context **presult)
+			      struct ctdb_packet_context **presult)
 {
-	struct packet_context *result;
+	struct ctdb_packet_context *result;
 	const char *sockname = lp_ctdbd_socket();
 	struct sockaddr_un addr;
 	int fd;
@@ -196,7 +196,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (!(result = packet_init(mem_ctx, fd))) {
+	if (!(result = ctdb_packet_init(mem_ctx, fd))) {
 		close(fd);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -271,7 +271,7 @@ struct req_pull_state {
 };
 
 /*
- * Pull a ctdb request out of the incoming packet queue
+ * Pull a ctdb request out of the incoming ctdb_packet queue
  */
 
 static NTSTATUS ctdb_req_pull(uint8_t *buf, size_t length,
@@ -329,14 +329,14 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS ctdb_packet_fd_read_sync(struct packet_context *ctx)
+static NTSTATUS ctdb_packet_fd_read_sync(struct ctdb_packet_context *ctx)
 {
 	int timeout = lp_ctdb_timeout();
 
 	if (timeout == 0) {
 		timeout = -1;
 	}
-	return packet_fd_read_sync(ctx, timeout);
+	return ctdb_packet_fd_read_sync(ctx, timeout);
 }
 
 /*
@@ -364,7 +364,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("packet_fd_read failed: %s\n", nt_errstr(status)));
+		DEBUG(0, ("ctdb_packet_fd_read failed: %s\n", nt_errstr(status)));
 		cluster_fatal("ctdbd died\n");
 	}
 
@@ -373,7 +373,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 	ZERO_STRUCT(state);
 	state.mem_ctx = mem_ctx;
 
-	if (!packet_handler(conn->pkt, ctdb_req_complete, ctdb_req_pull,
+	if (!ctdb_packet_handler(conn->pkt, ctdb_req_complete, ctdb_req_pull,
 			    &state, &status)) {
 		/*
 		 * Not enough data
@@ -383,7 +383,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Could not read packet: %s\n", nt_errstr(status)));
+		DEBUG(0, ("Could not read ctdb_packet: %s\n", nt_errstr(status)));
 		cluster_fatal("ctdbd died\n");
 	}
 
@@ -583,7 +583,7 @@ struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn)
 
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
 {
-	return packet_get_fd(conn->pkt);
+	return ctdb_packet_get_fd(conn->pkt);
 }
 
 /*
@@ -674,14 +674,14 @@ static void ctdbd_socket_handler(struct event_context *event_ctx,
 
 	NTSTATUS status;
 
-	status = packet_fd_read(conn->pkt);
+	status = ctdb_packet_fd_read(conn->pkt);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("packet_fd_read failed: %s\n", nt_errstr(status)));
 		cluster_fatal("ctdbd died\n");
 	}
 
-	while (packet_handler(conn->pkt, ctdb_req_complete,
+	while (ctdb_packet_handler(conn->pkt, ctdb_req_complete,
 			      ctdb_handle_message, conn, &status)) {
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("could not handle incoming message: %s\n",
@@ -701,7 +701,7 @@ NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 	SMB_ASSERT(conn->fde == NULL);
 
 	if (!(conn->fde = event_add_fd(msg_ctx->event_ctx, conn,
-				       packet_get_fd(conn->pkt),
+				       ctdb_packet_get_fd(conn->pkt),
 				       EVENT_FD_READ,
 				       ctdbd_socket_handler,
 				       conn))) {
@@ -758,17 +758,17 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	DEBUG(10, ("ctdbd_messaging_send: Sending ctdb packet\n"));
 	ctdb_packet_dump(&r.hdr);
 
-	status = packet_send(
+	status = ctdb_packet_send(
 		conn->pkt, 2,
 		data_blob_const(&r, offsetof(struct ctdb_req_message, data)),
 		blob);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("packet_send failed: %s\n", nt_errstr(status)));
+		DEBUG(0, ("ctdb_packet_send failed: %s\n", nt_errstr(status)));
 		goto fail;
 	}
 
-	status = packet_flush(conn->pkt);
+	status = ctdb_packet_flush(conn->pkt);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("write to ctdbd failed: %s\n", nt_errstr(status)));
@@ -823,17 +823,17 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
 	ctdb_packet_dump(&req.hdr);
 
-	status = packet_send(
+	status = ctdb_packet_send(
 		conn->pkt, 2,
 		data_blob_const(&req, offsetof(struct ctdb_req_control, data)),
 		data_blob_const(data.dptr, data.dsize));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("packet_send failed: %s\n", nt_errstr(status)));
+		DEBUG(3, ("ctdb_packet_send failed: %s\n", nt_errstr(status)));
 		goto fail;
 	}
 
-	status = packet_flush(conn->pkt);
+	status = ctdb_packet_flush(conn->pkt);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("write to ctdbd failed: %s\n", nt_errstr(status)));
@@ -1005,17 +1005,17 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
 	DEBUG(10, ("ctdbd_migrate: Sending ctdb packet\n"));
 	ctdb_packet_dump(&req.hdr);
 
-	status = packet_send(
+	status = ctdb_packet_send(
 		conn->pkt, 2,
 		data_blob_const(&req, offsetof(struct ctdb_req_call, data)),
 		data_blob_const(key.dptr, key.dsize));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("packet_send failed: %s\n", nt_errstr(status)));
+		DEBUG(3, ("ctdb_packet_send failed: %s\n", nt_errstr(status)));
 		return status;
 	}
 
-	status = packet_flush(conn->pkt);
+	status = ctdb_packet_flush(conn->pkt);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("write to ctdbd failed: %s\n", nt_errstr(status)));
@@ -1064,17 +1064,17 @@ NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
 	req.db_id            = db_id;
 	req.keylen           = key.dsize;
 
-	status = packet_send(
+	status = ctdb_packet_send(
 		conn->pkt, 2,
 		data_blob_const(&req, offsetof(struct ctdb_req_call, data)),
 		data_blob_const(key.dptr, key.dsize));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("packet_send failed: %s\n", nt_errstr(status)));
+		DEBUG(3, ("ctdb_packet_send failed: %s\n", nt_errstr(status)));
 		return status;
 	}
 
-	status = packet_flush(conn->pkt);
+	status = ctdb_packet_flush(conn->pkt);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("write to ctdbd failed: %s\n", nt_errstr(status)));
@@ -1235,7 +1235,7 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 
 		status = NT_STATUS_OK;
 
-		if (packet_handler(conn->pkt, ctdb_req_complete,
+		if (ctdb_packet_handler(conn->pkt, ctdb_req_complete,
 				   ctdb_traverse_handler, &state, &status)) {
 
 			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
@@ -1268,7 +1268,7 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("packet_fd_read_sync failed: %s\n", nt_errstr(status)));
+			DEBUG(0, ("ctdb_packet_fd_read_sync failed: %s\n", nt_errstr(status)));
 			cluster_fatal("ctdbd died\n");
 		}
 	}

@@ -59,7 +59,7 @@ REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 
 LIB_SRC = '''
           lib/messages.c lib/messages_local.c
-          lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
+          lib/messages_ctdbd.c lib/ctdb_packet.c lib/ctdbd_conn.c
           lib/interfaces.c lib/memcache.c
           lib/talloc_dict.c
           lib/util_sconn.c
