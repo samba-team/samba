@@ -21,6 +21,7 @@
 /* Implementation of registry functions. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "registry.h"
 #include "registry/reg_api.h"
@@ -28,7 +29,6 @@
 #include "registry/reg_perfcount.h"
 #include "rpc_misc.h"
 #include "auth.h"
-#include "ntdomain.h"
 #include "lib/privileges.h"
 
 #undef DBGC_CLASS

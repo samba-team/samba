@@ -35,6 +35,7 @@
 #include "system/passwd.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "rpc_server/samr/srv_samr_util.h"
 #include "../lib/crypto/arcfour.h"
@@ -43,7 +44,6 @@
 #include "../libcli/security/security.h"
 #include "passdb.h"
 #include "auth.h"
-#include "ntdomain.h"
 #include "rpc_server/srv_access_check.h"
 
 #undef DBGC_CLASS

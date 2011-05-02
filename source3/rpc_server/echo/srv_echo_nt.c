@@ -22,8 +22,8 @@
 /* This is the interface to the rpcecho pipe. */
 
 #include "includes.h"
-#include "../librpc/gen_ndr/srv_echo.h"
 #include "ntdomain.h"
+#include "../librpc/gen_ndr/srv_echo.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

@@ -28,6 +28,7 @@
    up, all the errors returned are DOS errors, not NT status codes. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "nt_printing.h"
 #include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
@@ -48,7 +49,6 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "messages.h"
-#include "ntdomain.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 
 /* macros stolen from s4 spoolss server */

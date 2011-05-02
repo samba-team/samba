@@ -27,6 +27,7 @@
 #include "winbindd.h"
 #include "nsswitch/winbind_client.h"
 #include "nsswitch/wb_reqtrans.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "secrets.h"

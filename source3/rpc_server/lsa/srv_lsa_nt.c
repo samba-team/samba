@@ -30,6 +30,7 @@
 /* This is the implementation of the lsa server code. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/netlogon.h"
@@ -43,7 +44,6 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "passdb.h"
 #include "auth.h"
-#include "ntdomain.h"
 #include "lib/privileges.h"
 #include "rpc_server/srv_access_check.h"
 

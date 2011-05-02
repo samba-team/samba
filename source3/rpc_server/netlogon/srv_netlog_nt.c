@@ -25,6 +25,7 @@
 /* This is the implementation of the netlogon pipe. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/srv_netlogon.h"
 #include "../librpc/gen_ndr/srv_samr.h"
@@ -45,7 +46,6 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
-#include "ntdomain.h"
 
 extern userdom_struct current_user_info;
 

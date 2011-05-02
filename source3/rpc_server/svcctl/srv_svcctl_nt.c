@@ -23,13 +23,13 @@
  */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "services/services.h"
 #include "services/svc_winreg_glue.h"
 #include "auth.h"
-#include "ntdomain.h"
 #include "rpc_server/svcctl/srv_svcctl_nt.h"
 
 #undef DBGC_CLASS

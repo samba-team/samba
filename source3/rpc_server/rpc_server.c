@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_dce.h"
 #include "librpc/gen_ndr/netlogon.h"
@@ -26,7 +27,6 @@
 #include "libcli/named_pipe_auth/npa_tstream.h"
 #include "../auth/auth_sam_reply.h"
 #include "auth.h"
-#include "ntdomain.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "rpc_server/srv_pipe_hnd.h"
 

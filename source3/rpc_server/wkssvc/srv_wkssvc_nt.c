@@ -23,6 +23,7 @@
 /* This is the implementation of the wks interface. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "librpc/gen_ndr/libnet_join.h"
 #include "libnet/libnet_join.h"
 #include "../libcli/auth/libcli_auth.h"
@@ -31,7 +32,6 @@
 #include "session.h"
 #include "smbd/smbd.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
