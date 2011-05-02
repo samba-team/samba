@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('netif',
-    source='interface.c netif.c',
-    autoproto='netif_proto.h',
-    deps='samba-util',
-    private_library=True
-    )
+                  source='interface.c',
+                  deps='samba-util interfaces',
+                  private_library=True,
+                  autoproto='netif_proto.h'
+                  )
 
 bld.SAMBA_MODULE('socket_ip',
     source='socket_ip.c',
