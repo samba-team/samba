@@ -23,6 +23,7 @@
 #define _RPC_SERVER_SRV_PIPE_HND_H_
 
 struct tsocket_address;
+struct pipes_struct;
 
 /* The following definitions come from rpc_server/srv_pipe_hnd.c  */
 

@@ -20,6 +20,8 @@
 #ifndef _RPC_SERVER_H_
 #define _RPC_SERVER_H_
 
+struct pipes_struct;
+
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
 
 void set_incoming_fault(struct pipes_struct *p);
