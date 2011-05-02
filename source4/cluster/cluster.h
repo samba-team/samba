@@ -29,12 +29,12 @@
 */
 #define cluster_id_equal(id_1, id_2) ((id_1)->pid == (id_2)->pid \
 				    && (id_1)->id2 == (id_2)->id2 \
-				    && (id_1)->node == (id_2)->node)
+				    && (id_1)->vnn == (id_2)->vnn)
 
 /*
   test for same cluster node
 */
-#define cluster_node_equal(id1, id2) ((id1)->node == (id2)->node)
+#define cluster_node_equal(id1, id2) ((id1)->vnn == (id2)->vnn)
 
 struct messaging_context;
 typedef void (*cluster_message_fn_t)(struct messaging_context *, DATA_BLOB);

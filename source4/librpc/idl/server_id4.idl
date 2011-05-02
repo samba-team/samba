@@ -7,7 +7,7 @@ interface server_id
 	typedef [public] struct {
 		hyper pid;
 		uint32 id2;
-		uint32 node;
+		uint32 vnn;
 		udlong unique_id;
 	} server_id;
 }
