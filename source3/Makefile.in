@@ -440,7 +440,7 @@ CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
 LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/ctdb_packet.o lib/ctdbd_conn.o \
-	  lib/interfaces.o lib/memcache.o \
+	  ../lib/socket/interfaces.o lib/memcache.o \
 	  lib/talloc_dict.o \
 	  lib/serverid.o \
 	  lib/util_sconn.o \

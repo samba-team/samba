@@ -60,7 +60,7 @@ REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 LIB_SRC = '''
           lib/messages.c lib/messages_local.c
           lib/messages_ctdbd.c lib/ctdb_packet.c lib/ctdbd_conn.c
-          lib/interfaces.c lib/memcache.c
+          lib/memcache.c
           lib/talloc_dict.c
           lib/util_sconn.c
           lib/serverid.c
@@ -780,7 +780,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL',
+                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 CHARSET3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL interfaces',
                    private_library=True,
                    vars=locals())
 
@@ -1331,6 +1331,7 @@ bld.RECURSE('../auth')
 bld.RECURSE('../auth/kerberos')
 bld.RECURSE('../lib/addns')
 bld.RECURSE('../lib/async_req')
+bld.RECURSE('../lib/socket')
 bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('../libcli/ldap')

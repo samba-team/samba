@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "interfaces.h"
+#include "lib/socket/interfaces.h"
 
 static struct iface_struct *probed_ifaces;
 static int total_probed;

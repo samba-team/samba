@@ -24,7 +24,7 @@
 #include "memcache.h"
 #include "../lib/async_req/async_sock.h"
 #include "../lib/util/select.h"
-#include "interfaces.h"
+#include "lib/socket/interfaces.h"
 #include "../lib/util/tevent_unix.h"
 #include "../lib/util/tevent_ntstatus.h"
 

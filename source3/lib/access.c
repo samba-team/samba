@@ -12,7 +12,7 @@
 
 #include "includes.h"
 #include "memcache.h"
-#include "interfaces.h"
+#include "lib/socket/interfaces.h"
 
 #define NAME_INDEX 0
 #define ADDR_INDEX 1
