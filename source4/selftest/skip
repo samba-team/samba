@@ -28,24 +28,19 @@
 ^samba4.raw.ping.pong		# Needs second server to test
 ^samba4.rpc.samr.accessmask
 ^samba4.raw.scan.eamax
-samba4.ntvfs.cifs.raw.qfileinfo.ipc
 ^samba4.smb2.notify
 ^samba4.smb2.scan
 ^samba4.smb2.lease
 ^samba4.smb2.durable.open
 ^samba4.smb2.dir
-^samba4.ntvfs.cifs.base.charset
-^samba4.ntvfs.cifs.base.iometer
-^samba4.ntvfs.cifs.base.casetable
-^samba4.ntvfs.cifs.base.nttrans
-^samba4.ntvfs.cifs.base.scan-maxfid
-^samba4.ntvfs.cifs.base.utable
-^samba4.ntvfs.cifs.base.smb
-^samba4.ntvfs.cifs.raw.composite
-^samba4.ntvfs.cifs.raw.notify
-^samba4.ntvfs.cifs.raw.scan-eamax
-^samba4.ntvfs.cifs.raw.context
-^samba4.ntvfs.cifs.raw.qfileinfo.ipc
+^samba4.ntvfs.cifs.*.base.charset
+^samba4.ntvfs.cifs.*.base.iometer
+^samba4.ntvfs.cifs.*.base.casetable
+^samba4.ntvfs.cifs.*.base.nttrans
+^samba4.ntvfs.cifs.*.base.scan-maxfid
+^samba4.ntvfs.cifs.*.base.utable
+^samba4.ntvfs.cifs.*.base.smb
+^samba4.ntvfs.cifs.*.raw.
 ^samba4.rpc.samsync
 ^samba4.rpc.remact							# Not provided by Samba 4
 ^samba4.rpc.oxidresolve						# Not provided by Samba 4
@@ -58,11 +53,8 @@ samba4.ntvfs.cifs.raw.qfileinfo.ipc
 ^samba4.rpc.ntsvcs							# Not provided by Samba 4
 ^samba4.rpc.dfs								# Not provided by Samba 4
 ^samba4.rpc.lsa.forest							# Not provided by Samba 4
-^samba4.base.samba3.*						# Samba3-specific test
-^samba4.ntvfs.cifs.base.samba3.*				# Samba3-specific test
-^samba4.raw.samba3.*						# Samba3-specific test
-^samba4.ntvfs.cifs.raw.samba3.*					# Samba3-specific test
-^samba4.ntvfs.cifs.raw.
+^samba4.*.base.samba3.*						# Samba3-specific test
+^samba4.*.raw.samba3.*						# Samba3-specific test
 ^samba4.rpc..*samba3.*						# Samba3-specific test
 ^samba4.samba-tool.domopen.*$				# Hangs for some reason
 ^samba4.nss.test						# Fails
@@ -73,20 +65,13 @@ samba4.ntvfs.cifs.raw.qfileinfo.ipc
 ^samba4.rap.printing # Not provided by Samba 4
 ^samba4.rap.sam # Not provided by Samba 4
 bench # don't run benchmarks in our selftest
-^samba4.ntvfs.cifs.trans2.scan 
-^samba4.trans2.scan # uses huge number of file descriptors
-^samba4.ntvfs.cifs.base.scan.ioctl
-^samba4.base.scan.ioctl # bad idea in make test
-^samba4.ntvfs.cifs.base.scan.pipe_number
-^samba4.base.scan.pipe_number # bad idea in make test
-^samba4.ntvfs.cifs.base.secleak
-^samba4.base.secleak # no point on build farm
-^samba4.ntvfs.cifs.base.delaywrite
-^samba4.base.delaywrite # This is randomly failing, depending on timing and filesystem features
-^samba4.ntvfs.cifs.base.winattr
-^samba4.base.winattr
-^samba4.ntvfs.cifs.base.birthtime
-^samba4.base.birthtime
+^samba4..*trans2.scan # uses huge number of file descriptors
+^samba4.*.base.scan.ioctl # bad idea in make test
+^samba4.*.base.scan.pipe_number # bad idea in make test
+^samba4.*.base.secleak # no point on build farm
+^samba4.*.base.delaywrite # This is randomly failing, depending on timing and filesystem features
+^samba4.*.base.winattr
+^samba4.*.base.birthtime
 ^samba4.smb2.acls # new test which doesn't pass yet
 # ktutil might not be installed or from mit...
 # we should build a samba4ktutil and use that instead

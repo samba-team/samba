@@ -56,10 +56,9 @@
 ^samba4.*base.delaywrite.*update of write time using SET_ALLOCATION_SIZE$
 ^samba4.ldap.python \(dc\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID$
 # some operations don't work over the CIFS NTVFS backend yet (eg. root_fid)
-^samba4.ntvfs.cifs.base.createx_access
-^samba4.ntvfs.cifs.base.createx_sharemodes_dir
-^samba4.ntvfs.cifs.base.maximum_allowed
-^samba4.base.createx_access # this test is broken for non-administrator users
+^samba4.ntvfs.cifs.*.base.createx_sharemodes_dir
+^samba4.ntvfs.cifs.*.base.maximum_allowed
+^samba4.*.base.createx_access # this test is broken for non-administrator users
 ^samba4.smb2.oplock # oplocks in the s4 SMB2 server are a mess
 ^samba4.raw.lock.*.async # bug 6960
 ^samba4.smb2.lock.*.multiple-unlock # bug 6959
