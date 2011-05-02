@@ -24,6 +24,7 @@
 #include "messages.h"
 #include "include/printing.h"
 #include "printing/nt_printing_migrate.h"
+#include "ntdomain.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_spoolss.h"
 #include "rpc_server/rpc_server.h"

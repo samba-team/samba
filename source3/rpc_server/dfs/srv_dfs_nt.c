@@ -22,11 +22,11 @@
 /* This is the implementation of the dfs pipe. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_dfs.h"
 #include "msdfs.h"
 #include "smbd/smbd.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_MSDFS

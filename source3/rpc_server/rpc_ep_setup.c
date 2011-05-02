@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "ntdomain.h"
 
 #include "../librpc/gen_ndr/ndr_epmapper_c.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"

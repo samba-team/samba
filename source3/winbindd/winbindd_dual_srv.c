@@ -24,11 +24,11 @@
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
 #include "rpc_client/cli_pipe.h"
+#include "ntdomain.h"
 #include "librpc/gen_ndr/srv_wbint.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "idmap.h"
 #include "../libcli/security/security.h"
-#include "ntdomain.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
