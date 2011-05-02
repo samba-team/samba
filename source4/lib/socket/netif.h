@@ -23,8 +23,10 @@
 
 struct iface_struct {
 	char name[16];
-	struct in_addr ip;
-	struct in_addr netmask;
+	int flags;
+	struct sockaddr_storage ip;
+	struct sockaddr_storage netmask;
+	struct sockaddr_storage bcast;
 };
 
 struct interface;
