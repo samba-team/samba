@@ -25,7 +25,7 @@
 #include "smb_server/smb_server.h"
 #include "system/filesys.h"
 #include "param/param.h"
-
+#include "cluster/cluster.h"
 
 /*
   send an oplock break request to a client
@@ -471,6 +471,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	int flags;
 	struct smbsrv_connection *smb_conn = req->smb_conn;
 	NTSTATUS status;
+	char *task_id;
 
 	type &= 0xff;
 
@@ -501,8 +502,10 @@ static void switch_message(int type, struct smbsrv_request *req)
 		}
 	}
 
-	DEBUG(5,("switch message %s (task_id %u)\n",
-		 smb_fn_name(type), (unsigned)req->smb_conn->connection->server_id.id));
+	task_id = cluster_id_string(NULL, req->smb_conn->connection->server_id);
+	DEBUG(5,("switch message %s (task_id %s)\n",
+		 smb_fn_name(type), task_id));
+	talloc_free(task_id);
 
 	/* this must be called before we do any reply */
 	if (flags & SIGNING_NO_REPLY) {

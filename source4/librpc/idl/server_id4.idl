@@ -5,8 +5,9 @@ interface server_id
 {
 	/* id used to identify a endpoint, possibly in a cluster */
 	typedef [public] struct {
-		hyper id;
+		hyper pid;
 		uint32 id2;
 		uint32 node;
+		udlong unique_id;
 	} server_id;
 }

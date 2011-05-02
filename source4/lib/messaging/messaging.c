@@ -109,9 +109,11 @@ static void irpc_handler(struct messaging_context *, void *,
 static void ping_message(struct messaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
-	DEBUG(1,("INFO: Received PING message from server %u.%u [%.*s]\n",
-		 (unsigned int)src.node, (unsigned int)src.id, (int)data->length,
+	char *task_id = cluster_id_string(NULL, src);
+	DEBUG(1,("INFO: Received PING message from server %s [%.*s]\n",
+		 task_id, (int)data->length,
 		 data->data?(const char *)data->data:""));
+	talloc_free(task_id);
 	messaging_send(msg, src, MSG_PONG, data);
 }
 
@@ -638,7 +640,7 @@ struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx,
 {
 	struct server_id id;
 	ZERO_STRUCT(id);
-	id.id = random() % 0x10000000;
+	id.pid = random() % 0x10000000;
 	return messaging_init(mem_ctx, dir, id, ev);
 }
 /*
@@ -1312,7 +1314,7 @@ struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
 		errno = EADDRNOTAVAIL;
 		return NULL;
 	}
-	if (sids[0].id == 0) {
+	if (sids[0].pid == 0) {
 		talloc_free(sids);
 		errno = EADDRNOTAVAIL;
 		return NULL;
