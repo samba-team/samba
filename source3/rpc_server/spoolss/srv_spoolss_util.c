@@ -23,7 +23,6 @@
 #include "nt_printing.h"
 #include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
-#include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "secrets.h"
