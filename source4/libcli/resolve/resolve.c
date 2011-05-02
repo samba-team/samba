@@ -316,18 +316,6 @@ NTSTATUS resolve_name_ex(struct resolve_context *ctx,
 }
 
 
-/*
-  general name resolution - sync call
- */
-NTSTATUS resolve_name(struct resolve_context *ctx,
-		      struct nbt_name *name,
-		      TALLOC_CTX *mem_ctx,
-		      const char **reply_addr,
-		      struct tevent_context *ev)
-{
-	return resolve_name_ex(ctx, 0, 0, name, mem_ctx, reply_addr, ev);
-}
-
 /* Initialise a struct nbt_name with a NULL scope */
 
 void make_nbt_name(struct nbt_name *nbt, const char *name, int type)

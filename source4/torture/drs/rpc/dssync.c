@@ -105,8 +105,9 @@ static struct DsSyncTest *test_create_context(struct torture_context *tctx)
 	make_nbt_name_server(&name, ctx->drsuapi_binding->host);
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(lpcfg_resolve_context(tctx->lp_ctx), &name, tctx,
-			      &ctx->dest_address, tctx->ev);
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				 0, 0, &name, tctx,
+				 &ctx->dest_address, tctx->ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));

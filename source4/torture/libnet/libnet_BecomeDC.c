@@ -67,8 +67,9 @@ bool torture_net_become_dc(struct torture_context *torture)
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(lpcfg_resolve_context(torture->lp_ctx),
-			      &name, torture, &address, torture->ev);
+	status = resolve_name_ex(lpcfg_resolve_context(torture->lp_ctx),
+				 0, 0,
+				 &name, torture, &address, torture->ev);
 	torture_assert_ntstatus_ok(torture, status, talloc_asprintf(torture,
 				   "Failed to resolve %s - %s\n",
 				   name.name, nt_errstr(status)));
