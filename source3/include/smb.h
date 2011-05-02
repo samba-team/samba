@@ -27,6 +27,7 @@
 #define _SMB_H
 
 #include "libcli/smb/smb_common.h"
+#include "libds/common/roles.h"
 
 /* logged when starting the various Samba daemons */
 #define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2011"
@@ -1297,14 +1298,6 @@ enum protocol_types {
 
 /* security levels */
 enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN,SEC_ADS};
-
-/* server roles */
-enum server_types {
-	ROLE_STANDALONE,
-	ROLE_DOMAIN_MEMBER,
-	ROLE_DOMAIN_BDC,
-	ROLE_DOMAIN_PDC
-};
 
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,

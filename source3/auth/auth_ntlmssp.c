@@ -184,7 +184,7 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 	struct auth_ntlmssp_state *ans;
 	struct auth_context *auth_context;
 
-	if ((enum server_types)lp_server_role() == ROLE_STANDALONE) {
+	if ((enum server_role)lp_server_role() == ROLE_STANDALONE) {
 		is_standalone = true;
 	} else {
 		is_standalone = false;
