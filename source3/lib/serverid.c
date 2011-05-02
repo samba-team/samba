@@ -26,6 +26,7 @@
 
 struct serverid_key {
 	pid_t pid;
+	uint32_t task_id;
 	uint32_t vnn;
 };
 
@@ -72,6 +73,7 @@ static void serverid_fill_key(const struct server_id *id,
 {
 	ZERO_STRUCTP(key);
 	key->pid = id->pid;
+	key->task_id = id->task_id;
 	key->vnn = id->vnn;
 }
 
@@ -275,6 +277,7 @@ static bool serverid_rec_parse(const struct db_record *rec,
 	memcpy(&data, rec->value.dptr, sizeof(data));
 
 	id->pid = key.pid;
+	id->task_id = key.task_id;
 	id->vnn = key.vnn;
 	id->unique_id = data.unique_id;
 	*msg_flags = data.msg_flags;

@@ -1924,6 +1924,7 @@ struct server_id pid_to_procid(pid_t pid)
 {
 	struct server_id result;
 	result.pid = pid;
+	result.task_id = 0;
 	result.unique_id = my_unique_id;
 	result.vnn = my_vnn;
 	return result;
@@ -1937,6 +1938,8 @@ struct server_id procid_self(void)
 bool procid_equal(const struct server_id *p1, const struct server_id *p2)
 {
 	if (p1->pid != p2->pid)
+		return False;
+	if (p1->task_id != p2->task_id)
 		return False;
 	if (p1->vnn != p2->vnn)
 		return False;
@@ -1952,6 +1955,8 @@ bool cluster_id_equal(const struct server_id *id1,
 bool procid_is_me(const struct server_id *pid)
 {
 	if (pid->pid != sys_getpid())
+		return False;
+	if (pid->task_id != 0)
 		return False;
 	if (pid->vnn != my_vnn)
 		return False;
