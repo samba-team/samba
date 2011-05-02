@@ -23,7 +23,7 @@
 #ifndef SAMBA_DCERPC_SERVER_H
 #define SAMBA_DCERPC_SERVER_H
 
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/ndr/libndr.h"
 

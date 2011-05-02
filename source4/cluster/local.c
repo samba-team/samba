@@ -26,7 +26,7 @@
 #include "lib/util/tdb_wrap.h"
 #include "system/filesys.h"
 #include "param/param.h"
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 
 /*
   server a server_id for the local node

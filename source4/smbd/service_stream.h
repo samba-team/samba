@@ -23,7 +23,7 @@
 #ifndef __SERVICE_STREAM_H__
 #define __SERVICE_STREAM_H__
 
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change

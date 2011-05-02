@@ -21,7 +21,7 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 
 struct imessaging_context;
 

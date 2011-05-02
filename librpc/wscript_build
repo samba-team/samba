@@ -175,6 +175,13 @@ bld.SAMBA_SUBSYSTEM('NDR_SCERPC',
 	public_deps='ndr'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_SERVER_ID',
+	source='gen_ndr/ndr_server_id.c',
+	deps='ndr',
+	public_headers='gen_ndr/server_id.h',
+	header_path='gen_ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_TRKWKS',
 	source='gen_ndr/ndr_trkwks.c',
 	public_deps='ndr'

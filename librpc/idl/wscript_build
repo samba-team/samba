@@ -8,7 +8,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        browser.idl dfs.idl dssetup.idl frsapi.idl krb5pac.idl
                        named_pipe_auth.idl orpc.idl rot.idl spoolss.idl w32time.idl xattr.idl
                        dbgidl.idl dnsserver.idl echo.idl frsrpc.idl lsa.idl nbt.idl dns.idl
-                       oxidresolver.idl samr.idl srvsvc.idl winreg.idl dcerpc.idl
+                       oxidresolver.idl samr.idl server_id.idl srvsvc.idl winreg.idl dcerpc.idl
                        drsblobs.idl efs.idl frstrans.idl mgmt.idl netlogon.idl
                        policyagent.idl scerpc.idl svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
                        printcap.idl''',

@@ -1608,8 +1608,7 @@ IDL_FILES = librpc/idl/messaging.idl \
 	    librpc/idl/wbint.idl \
 	    librpc/idl/perfcount.idl \
 	    librpc/idl/secrets.idl \
-	    librpc/idl/libnet_join.idl \
-	    librpc/idl/server_id.idl
+	    librpc/idl/libnet_join.idl
 
 samba3-idl::
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \

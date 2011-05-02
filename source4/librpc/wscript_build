@@ -4,13 +4,6 @@ bld.RECURSE('../../librpc/idl')
 bld.RECURSE('../../librpc/tools')
 bld.RECURSE('idl')
 
-bld.SAMBA_SUBSYSTEM('NDR_SERVER_ID4',
-	source='gen_ndr/ndr_server_id4.c',
-	deps='ndr',
-	public_headers='gen_ndr/server_id4.h',
-	header_path='gen_ndr'
-	)
-
 
 bld.SAMBA_SUBSYSTEM('NDR_WINSTATION',
 	source='gen_ndr/ndr_winstation.c',
@@ -52,7 +45,7 @@ bld.SAMBA_SUBSYSTEM('NDR_OPENDB',
 
 bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
 	source='gen_ndr/ndr_s4_notify.c',
-	public_deps='ndr NDR_SERVER_ID4'
+	public_deps='ndr NDR_SERVER_ID'
 	)
 
 

@@ -23,7 +23,7 @@
 #include "cluster/cluster.h"
 #include "cluster/cluster_private.h"
 #include "librpc/gen_ndr/misc.h"
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 
 static struct cluster_ops *ops;
 
