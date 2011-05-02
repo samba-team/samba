@@ -108,4 +108,6 @@ const char *client_name(int fd);
 int get_socket_port(int fd);
 const char *client_socket_addr(int fd, char *addr, size_t addr_len);
 
+void set_socket_options(int fd, const char *options);
+
 #endif /* _SAMBA_UTIL_NET_H_ */
