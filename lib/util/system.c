@@ -117,3 +117,75 @@ _PUBLIC_ pid_t sys_getpid(void)
 
 	return mypid;
 }
+
+
+_PUBLIC_ int sys_getpeereid( int s, uid_t *uid)
+{
+#if defined(HAVE_PEERCRED)
+	struct ucred cred;
+	socklen_t cred_len = sizeof(struct ucred);
+	int ret;
+
+	ret = getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred, &cred_len);
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (cred_len != sizeof(struct ucred)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*uid = cred.uid;
+	return 0;
+#else
+#if defined(HAVE_GETPEEREID)
+	gid_t gid;
+	return getpeereid(s, uid, &gid);
+#endif
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+_PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
+			     int salen,
+			     char *host,
+			     size_t hostlen,
+			     char *service,
+			     size_t servlen,
+			     int flags)
+{
+	/*
+	 * For Solaris we must make sure salen is the
+	 * correct length for the incoming sa_family.
+	 */
+
+	if (salen == sizeof(struct sockaddr_storage)) {
+		salen = sizeof(struct sockaddr_in);
+#if defined(HAVE_IPV6)
+		if (psa->sa_family == AF_INET6) {
+			salen = sizeof(struct sockaddr_in6);
+		}
+#endif
+	}
+	return getnameinfo(psa, salen, host, hostlen, service, servlen, flags);
+}
+
+_PUBLIC_ int sys_connect(int fd, const struct sockaddr * addr)
+{
+	socklen_t salen = (socklen_t)-1;
+
+	if (addr->sa_family == AF_INET) {
+	    salen = sizeof(struct sockaddr_in);
+	} else if (addr->sa_family == AF_UNIX) {
+	    salen = sizeof(struct sockaddr_un);
+	}
+#if defined(HAVE_IPV6)
+	else if (addr->sa_family == AF_INET6) {
+	    salen = sizeof(struct sockaddr_in6);
+	}
+#endif
+
+	return connect(fd, addr, salen);
+}

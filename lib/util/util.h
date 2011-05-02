@@ -133,8 +133,20 @@ _PUBLIC_ pid_t sys_fork(void);
  **/
 _PUBLIC_ pid_t sys_getpid(void);
 
-/* The following definitions come from lib/util/genrand.c  */
+_PUBLIC_ int sys_getpeereid( int s, uid_t *uid);
 
+struct sockaddr;
+
+_PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
+			     int salen,
+			     char *host,
+			     size_t hostlen,
+			     char *service,
+			     size_t servlen,
+			     int flags);
+_PUBLIC_ int sys_connect(int fd, const struct sockaddr * addr);
+
+/* The following definitions come from lib/util/genrand.c  */
 /**
  Copy any user given reseed data.
 **/
