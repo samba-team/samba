@@ -22,6 +22,7 @@
 #include "includes.h"
 
 #include "serverid.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"

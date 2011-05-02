@@ -29,8 +29,8 @@
 #include "includes.h"
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
-#include "librpc/gen_ndr/srv_wbint.h"
 #include "ntdomain.h"
+#include "librpc/gen_ndr/srv_wbint.h"
 
 struct wbint_bh_state {
 	struct winbindd_domain *domain;
