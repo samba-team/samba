@@ -18,7 +18,7 @@ interface server_id
 	*/
 
 	typedef [public] struct {
-		uint32 pid;
+		hyper pid;
 		uint32 task_id;
 		uint32 vnn;
 		udlong unique_id;
