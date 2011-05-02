@@ -532,16 +532,6 @@ int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb);
 int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb);
 int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb);
 int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout);
-int sys_getpeereid( int s, uid_t *uid);
-int sys_getnameinfo(const struct sockaddr *psa,
-			socklen_t salen,
-			char *host,
-			size_t hostlen,
-			char *service,
-			size_t servlen,
-			int flags);
-int sys_connect(int fd, const struct sockaddr * addr);
-
 /* The following definitions come from lib/system_smbd.c  */
 
 bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,

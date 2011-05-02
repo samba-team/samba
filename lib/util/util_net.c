@@ -540,3 +540,158 @@ void set_sockaddr_port(struct sockaddr *psa, uint16_t port)
 }
 
 
+/****************************************************************************
+ Get a port number in host byte order from a sockaddr_storage.
+****************************************************************************/
+
+uint16_t get_sockaddr_port(const struct sockaddr_storage *pss)
+{
+	uint16_t port = 0;
+
+	if (pss->ss_family != AF_INET) {
+#if defined(HAVE_IPV6)
+		/* IPv6 */
+		const struct sockaddr_in6 *sa6 =
+			(const struct sockaddr_in6 *)pss;
+		port = ntohs(sa6->sin6_port);
+#endif
+	} else {
+		const struct sockaddr_in *sa =
+			(const struct sockaddr_in *)pss;
+		port = ntohs(sa->sin_port);
+	}
+	return port;
+}
+
+/****************************************************************************
+ Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
+****************************************************************************/
+
+char *print_sockaddr_len(char *dest,
+			 size_t destlen,
+			const struct sockaddr *psa,
+			socklen_t psalen)
+{
+	if (destlen > 0) {
+		dest[0] = '\0';
+	}
+	(void)sys_getnameinfo(psa,
+			psalen,
+			dest, destlen,
+			NULL, 0,
+			NI_NUMERICHOST);
+	return dest;
+}
+
+/****************************************************************************
+ Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
+****************************************************************************/
+
+char *print_sockaddr(char *dest,
+			size_t destlen,
+			const struct sockaddr_storage *psa)
+{
+	return print_sockaddr_len(dest, destlen, (struct sockaddr *)psa,
+			sizeof(struct sockaddr_storage));
+}
+
+/****************************************************************************
+ Print out a canonical IPv4 or IPv6 address from a struct sockaddr_storage.
+****************************************************************************/
+
+char *print_canonical_sockaddr(TALLOC_CTX *ctx,
+			const struct sockaddr_storage *pss)
+{
+	char addr[INET6_ADDRSTRLEN];
+	char *dest = NULL;
+	int ret;
+
+	/* Linux getnameinfo() man pages says port is unitialized if
+	   service name is NULL. */
+
+	ret = sys_getnameinfo((const struct sockaddr *)pss,
+			sizeof(struct sockaddr_storage),
+			addr, sizeof(addr),
+			NULL, 0,
+			NI_NUMERICHOST);
+	if (ret != 0) {
+		return NULL;
+	}
+
+	if (pss->ss_family != AF_INET) {
+#if defined(HAVE_IPV6)
+		dest = talloc_asprintf(ctx, "[%s]", addr);
+#else
+		return NULL;
+#endif
+	} else {
+		dest = talloc_asprintf(ctx, "%s", addr);
+	}
+
+	return dest;
+}
+
+/****************************************************************************
+ Return the port number we've bound to on a socket.
+****************************************************************************/
+
+int get_socket_port(int fd)
+{
+	struct sockaddr_storage sa;
+	socklen_t length = sizeof(sa);
+
+	if (fd == -1) {
+		return -1;
+	}
+
+	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
+		int level = (errno == ENOTCONN) ? 2 : 0;
+		DEBUG(level, ("getsockname failed. Error was %s\n",
+			       strerror(errno)));
+		return -1;
+	}
+
+#if defined(HAVE_IPV6)
+	if (sa.ss_family == AF_INET6) {
+		return ntohs(((struct sockaddr_in6 *)&sa)->sin6_port);
+	}
+#endif
+	if (sa.ss_family == AF_INET) {
+		return ntohs(((struct sockaddr_in *)&sa)->sin_port);
+	}
+	return -1;
+}
+
+/****************************************************************************
+ Return the string of an IP address (IPv4 or IPv6).
+****************************************************************************/
+
+static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
+{
+	struct sockaddr_storage sa;
+	socklen_t length = sizeof(sa);
+
+	/* Ok, returning a hard coded IPv4 address
+	 * is bogus, but it's just as bogus as a
+	 * zero IPv6 address. No good choice here.
+	 */
+
+	strlcpy(addr_buf, "0.0.0.0", addr_len);
+
+	if (fd == -1) {
+		return addr_buf;
+	}
+
+	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
+		DEBUG(0,("getsockname failed. Error was %s\n",
+			strerror(errno) ));
+		return addr_buf;
+	}
+
+	return print_sockaddr_len(addr_buf, addr_len, (struct sockaddr *)&sa, length);
+}
+
+const char *client_socket_addr(int fd, char *addr, size_t addr_len)
+{
+	return get_socket_addr(fd, addr, addr_len);
+}
