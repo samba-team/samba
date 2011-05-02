@@ -60,7 +60,7 @@ struct server_id cluster_id(uint64_t id, uint32_t id2)
 /*
   return a server_id as a string
 */
-const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id)
+char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id)
 {
 	cluster_init();
 	return ops->cluster_id_string(ops, mem_ctx, id);

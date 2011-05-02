@@ -44,7 +44,7 @@ static struct server_id local_id(struct cluster_ops *ops, uint64_t pid, uint32_t
 /*
   return a server_id as a string
 */
-static const char *local_id_string(struct cluster_ops *ops,
+static char *local_id_string(struct cluster_ops *ops,
 				   TALLOC_CTX *mem_ctx, struct server_id id)
 {
 	return talloc_asprintf(mem_ctx, "%u.%llu.%u", id.node, (unsigned long long)id.pid, id.id2);
