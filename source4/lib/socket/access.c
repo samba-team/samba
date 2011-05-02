@@ -249,9 +249,9 @@ static bool allow_access_internal(TALLOC_CTX *mem_ctx,
 }
 
 /* return true if access should be allowed */
-bool allow_access(TALLOC_CTX *mem_ctx,
-		  const char **deny_list, const char **allow_list,
-		  const char *cname, const char *caddr)
+bool socket_allow_access(TALLOC_CTX *mem_ctx,
+			 const char **deny_list, const char **allow_list,
+			 const char *cname, const char *caddr)
 {
 	bool ret;
 	char *nc_cname = talloc_strdup(mem_ctx, cname);
@@ -346,7 +346,7 @@ bool socket_check_access(struct socket_context *sock,
 		return false;
 	}
 
-	ret = allow_access(mem_ctx, deny_list, allow_list, name, addr->addr);
+	ret = socket_allow_access(mem_ctx, deny_list, allow_list, name, addr->addr);
 	
 	if (ret) {
 		DEBUG(2,("socket_check_access: Allowed connection to '%s' from %s (%s)\n", 

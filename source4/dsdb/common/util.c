@@ -1762,7 +1762,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 		allow_list[0] = l_subnet_name;
 
-		if (allow_access(mem_ctx, NULL, allow_list, "", ip_address)) {
+		if (socket_allow_access(mem_ctx, NULL, allow_list, "", ip_address)) {
 			sites_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx,
 							   res->msgs[i],
 							   "siteObject");
