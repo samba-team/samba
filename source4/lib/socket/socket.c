@@ -569,68 +569,115 @@ _PUBLIC_ const struct socket_ops *socket_getops_byname(const char *family, enum 
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
-static const struct {
+typedef struct smb_socket_option {
 	const char *name;
 	int level;
 	int option;
 	int value;
 	int opttype;
-} socket_options[] = {
-  {"SO_KEEPALIVE",      SOL_SOCKET,    SO_KEEPALIVE,    0,                 OPT_BOOL},
-  {"SO_REUSEADDR",      SOL_SOCKET,    SO_REUSEADDR,    0,                 OPT_BOOL},
-  {"SO_BROADCAST",      SOL_SOCKET,    SO_BROADCAST,    0,                 OPT_BOOL},
+} smb_socket_option;
+
+static const smb_socket_option socket_options[] = {
+  {"SO_KEEPALIVE", SOL_SOCKET, SO_KEEPALIVE, 0, OPT_BOOL},
+  {"SO_REUSEADDR", SOL_SOCKET, SO_REUSEADDR, 0, OPT_BOOL},
+  {"SO_BROADCAST", SOL_SOCKET, SO_BROADCAST, 0, OPT_BOOL},
 #ifdef TCP_NODELAY
-  {"TCP_NODELAY",       IPPROTO_TCP,   TCP_NODELAY,     0,                 OPT_BOOL},
+  {"TCP_NODELAY", IPPROTO_TCP, TCP_NODELAY, 0, OPT_BOOL},
+#endif
+#ifdef TCP_KEEPCNT
+  {"TCP_KEEPCNT", IPPROTO_TCP, TCP_KEEPCNT, 0, OPT_INT},
+#endif
+#ifdef TCP_KEEPIDLE
+  {"TCP_KEEPIDLE", IPPROTO_TCP, TCP_KEEPIDLE, 0, OPT_INT},
+#endif
+#ifdef TCP_KEEPINTVL
+  {"TCP_KEEPINTVL", IPPROTO_TCP, TCP_KEEPINTVL, 0, OPT_INT},
 #endif
 #ifdef IPTOS_LOWDELAY
-  {"IPTOS_LOWDELAY",    IPPROTO_IP,    IP_TOS,          IPTOS_LOWDELAY,    OPT_ON},
+  {"IPTOS_LOWDELAY", IPPROTO_IP, IP_TOS, IPTOS_LOWDELAY, OPT_ON},
 #endif
 #ifdef IPTOS_THROUGHPUT
-  {"IPTOS_THROUGHPUT",  IPPROTO_IP,    IP_TOS,          IPTOS_THROUGHPUT,  OPT_ON},
+  {"IPTOS_THROUGHPUT", IPPROTO_IP, IP_TOS, IPTOS_THROUGHPUT, OPT_ON},
 #endif
 #ifdef SO_REUSEPORT
-  {"SO_REUSEPORT",      SOL_SOCKET,    SO_REUSEPORT,    0,                 OPT_BOOL},
+  {"SO_REUSEPORT", SOL_SOCKET, SO_REUSEPORT, 0, OPT_BOOL},
 #endif
 #ifdef SO_SNDBUF
-  {"SO_SNDBUF",         SOL_SOCKET,    SO_SNDBUF,       0,                 OPT_INT},
+  {"SO_SNDBUF", SOL_SOCKET, SO_SNDBUF, 0, OPT_INT},
 #endif
 #ifdef SO_RCVBUF
-  {"SO_RCVBUF",         SOL_SOCKET,    SO_RCVBUF,       0,                 OPT_INT},
+  {"SO_RCVBUF", SOL_SOCKET, SO_RCVBUF, 0, OPT_INT},
 #endif
 #ifdef SO_SNDLOWAT
-  {"SO_SNDLOWAT",       SOL_SOCKET,    SO_SNDLOWAT,     0,                 OPT_INT},
+  {"SO_SNDLOWAT", SOL_SOCKET, SO_SNDLOWAT, 0, OPT_INT},
 #endif
 #ifdef SO_RCVLOWAT
-  {"SO_RCVLOWAT",       SOL_SOCKET,    SO_RCVLOWAT,     0,                 OPT_INT},
+  {"SO_RCVLOWAT", SOL_SOCKET, SO_RCVLOWAT, 0, OPT_INT},
 #endif
 #ifdef SO_SNDTIMEO
-  {"SO_SNDTIMEO",       SOL_SOCKET,    SO_SNDTIMEO,     0,                 OPT_INT},
+  {"SO_SNDTIMEO", SOL_SOCKET, SO_SNDTIMEO, 0, OPT_INT},
 #endif
 #ifdef SO_RCVTIMEO
-  {"SO_RCVTIMEO",       SOL_SOCKET,    SO_RCVTIMEO,     0,                 OPT_INT},
+  {"SO_RCVTIMEO", SOL_SOCKET, SO_RCVTIMEO, 0, OPT_INT},
+#endif
+#ifdef TCP_FASTACK
+  {"TCP_FASTACK", IPPROTO_TCP, TCP_FASTACK, 0, OPT_INT},
+#endif
+#ifdef TCP_QUICKACK
+  {"TCP_QUICKACK", IPPROTO_TCP, TCP_QUICKACK, 0, OPT_BOOL},
+#endif
+#ifdef TCP_KEEPALIVE_THRESHOLD
+  {"TCP_KEEPALIVE_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_THRESHOLD, 0, OPT_INT},
+#endif
+#ifdef TCP_KEEPALIVE_ABORT_THRESHOLD
+  {"TCP_KEEPALIVE_ABORT_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_ABORT_THRESHOLD, 0, OPT_INT},
 #endif
   {NULL,0,0,0,0}};
 
+/****************************************************************************
+ Print socket options.
+****************************************************************************/
 
-/**
- Set user socket options.
-**/
-_PUBLIC_ void set_socket_options(int fd, const char *options)
+static void print_socket_options(int s)
 {
-	const char **options_list = (const char **)str_list_make(NULL, options, " \t,");
-	int j;
+	int value;
+	socklen_t vlen = 4;
+	const smb_socket_option *p = &socket_options[0];
 
-	if (!options_list)
-		return;
+	/* wrapped in if statement to prevent streams
+	 * leak in SCO Openserver 5.0 */
+	/* reported on samba-technical  --jerry */
+	if ( DEBUGLEVEL >= 5 ) {
+		DEBUG(5,("Socket options:\n"));
+		for (; p->name != NULL; p++) {
+			if (getsockopt(s, p->level, p->option,
+						(void *)&value, &vlen) == -1) {
+				DEBUGADD(5,("\tCould not test socket option %s.\n",
+							p->name));
+			} else {
+				DEBUGADD(5,("\t%s = %d\n",
+							p->name,value));
+			}
+		}
+	}
+ }
 
-	for (j = 0; options_list[j]; j++) {
-		const char *tok = options_list[j];
+/****************************************************************************
+ Set user socket options.
+****************************************************************************/
+
+void set_socket_options(int fd, const char *options)
+{
+	TALLOC_CTX *ctx = talloc_new(NULL);
+	char *tok;
+
+	while (next_token_talloc(ctx, &options, &tok," \t,")) {
 		int ret=0,i;
 		int value = 1;
 		char *p;
 		bool got_value = false;
 
-		if ((p = strchr(tok,'='))) {
+		if ((p = strchr_m(tok,'='))) {
 			*p = 0;
 			value = atoi(p+1);
 			got_value = true;
@@ -649,26 +696,35 @@ _PUBLIC_ void set_socket_options(int fd, const char *options)
 		case OPT_BOOL:
 		case OPT_INT:
 			ret = setsockopt(fd,socket_options[i].level,
-						socket_options[i].option,(char *)&value,sizeof(int));
+					socket_options[i].option,
+					(char *)&value,sizeof(int));
 			break;
 
 		case OPT_ON:
 			if (got_value)
-				DEBUG(0,("syntax error - %s does not take a value\n",tok));
+				DEBUG(0,("syntax error - %s "
+					"does not take a value\n",tok));
 
 			{
 				int on = socket_options[i].value;
 				ret = setsockopt(fd,socket_options[i].level,
-							socket_options[i].option,(char *)&on,sizeof(int));
+					socket_options[i].option,
+					(char *)&on,sizeof(int));
 			}
-			break;	  
+			break;
 		}
-      
-		if (ret != 0)
-			DEBUG(0,("Failed to set socket option %s (Error %s)\n",tok, strerror(errno) ));
+
+		if (ret != 0) {
+			/* be aware that some systems like Solaris return
+			 * EINVAL to a setsockopt() call when the client
+			 * sent a RST previously - no need to worry */
+			DEBUG(2,("Failed to set socket option %s (Error %s)\n",
+				tok, strerror(errno) ));
+		}
 	}
 
-	talloc_free(options_list);
+	TALLOC_FREE(ctx);
+	print_socket_options(fd);
 }
 
 /*
