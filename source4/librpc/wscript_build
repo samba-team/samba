@@ -43,12 +43,6 @@ bld.SAMBA_SUBSYSTEM('NDR_OPENDB',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
-	source='gen_ndr/ndr_s4_notify.c',
-	public_deps='ndr NDR_SERVER_ID'
-	)
-
-
 bld.SAMBA_SUBSYSTEM('NDR_NTP_SIGND',
 	source='gen_ndr/ndr_ntp_signd.c',
 	public_deps='ndr'
@@ -69,7 +63,7 @@ bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
 # create a grouping library to consolidate our samba4 specific NDR code
 bld.SAMBA_LIBRARY('ndr-samba4',
 	source=[],
-	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY ndr-table',
+	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB ndr-table',
 	private_library=True,
 	grouping_library=True
 	)

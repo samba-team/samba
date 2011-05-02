@@ -888,7 +888,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     PARAM_WITHOUT_REG samba3core LIBSMB POPT_SAMBA3 KRBCLIENT AVAHI
                     LIBMSRPC_GEN msrpc3 ads LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
-                    PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY3 REGFIO
+                    PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     smbconf REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR

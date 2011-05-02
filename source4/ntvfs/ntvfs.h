@@ -332,7 +332,7 @@ struct ntvfs_critical_sizes {
 
 struct imessaging_context;
 #include "librpc/gen_ndr/security.h"
-#include "librpc/gen_ndr/s4_notify.h"
+#include "librpc/gen_ndr/notify.h"
 #include "ntvfs/ntvfs_proto.h"
 
 #endif /* _NTVFS_H_ */

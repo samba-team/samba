@@ -202,6 +202,11 @@ bld.SAMBA_SUBSYSTEM('NDR_IDMAP',
 	public_deps='ndr ndr-standard'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
+	source='gen_ndr/ndr_notify.c',
+	public_deps='ndr ndr-standard NDR_SERVER_ID NDR_FILE_ID'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_NTLMSSP',
 	source='ndr/ndr_ntlmssp.c gen_ndr/ndr_ntlmssp.c',
 	public_deps='ndr ndr-standard'
@@ -312,7 +317,8 @@ bld.SAMBA_LIBRARY('ndr-standard',
 	pc_files='ndr_standard.pc',
 	deps='''NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS
 	NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG
-	NDR_ECHO security NDR_DNS NDR_ATSVC NDR_SPOOLSS NDR_DSSETUP''',
+	NDR_ECHO security NDR_DNS NDR_ATSVC NDR_SPOOLSS NDR_DSSETUP
+        NDR_SERVER_ID NDR_NOTIFY''',
 	public_deps='ndr',
 	public_headers='gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/lsa.h gen_ndr/netlogon.h gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h',
 	header_path='gen_ndr'

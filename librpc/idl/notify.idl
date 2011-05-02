@@ -41,7 +41,7 @@ interface notify
 	  The max_mask and max_mask_subdir at each depth is the
 	  bitwise or of the filters and subdir filters for all entries
 	  at that depth. This allows a depth to be quickly skipped if
-	  no entries will match the target filter	  
+	  no entries will match the target filter
 	*/
 	typedef struct {
 		uint32 max_mask;

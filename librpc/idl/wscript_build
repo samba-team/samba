@@ -10,6 +10,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        dbgidl.idl dnsserver.idl echo.idl frsrpc.idl lsa.idl nbt.idl dns.idl
                        oxidresolver.idl samr.idl server_id.idl srvsvc.idl winreg.idl dcerpc.idl
                        drsblobs.idl efs.idl frstrans.idl mgmt.idl netlogon.idl
+                       notify.idl
                        policyagent.idl scerpc.idl svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
                        printcap.idl''',
                     options='--header --ndr-parser --samba3-ndr-server --server --client --python',
