@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+
+bld.SAMBA_MODULE('service_s3fs',
+                 source='file_server.c',
+                 autoproto='file_server_proto.h',
+                 subsystem='service',
+                 init_function='server_service_s3fs_init',
+                 deps='samba-hostconfig service talloc UTIL_RUNCMD',
+                 internal_module=False
+                 )
