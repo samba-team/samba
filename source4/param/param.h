@@ -45,11 +45,7 @@ typedef NTSTATUS (*init_module_fn) (void);
    function init_module() which makes a system call */
 #define SAMBA_INIT_MODULE "samba_init_module"
 
-enum server_role {
-	ROLE_STANDALONE=0,
-	ROLE_DOMAIN_MEMBER=1,
-	ROLE_DOMAIN_CONTROLLER=2,
-};
+#include "libds/common/roles.h"
 
 enum sid_generator {
 	SID_GENERATOR_INTERNAL=0,
