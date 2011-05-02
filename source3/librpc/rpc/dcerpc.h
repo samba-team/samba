@@ -33,7 +33,20 @@
 #define SMB_RPC_INTERFACE_VERSION 1
 
 struct NL_AUTH_MESSAGE;
-struct pipe_auth_data;
+
+/* auth state for all bind types. */
+
+struct pipe_auth_data {
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	void *auth_ctx;
+
+	/* Only the client code uses these 3 for now */
+	char *domain;
+	char *user_name;
+	DATA_BLOB user_session_key;
+};
 
 /* The following definitions come from librpc/rpc/dcerpc_helpers.c  */
 NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
