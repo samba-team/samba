@@ -23,8 +23,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _SMB_H
-#define _SMB_H
+#ifndef _RAW_SMB_H
+#define _RAW_SMB_H
 
 /* deny modes */
 #define DENY_DOS 0
@@ -582,4 +582,4 @@
 #include "libcli/raw/interfaces.h"
 #include "libcli/smb/smb_common.h"
 
-#endif /* _SMB_H */
+#endif /* _RAW_SMB_H */
