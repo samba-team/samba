@@ -178,6 +178,32 @@ static struct {
 	TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size); \
 } while (0)
 
+#define TC_UNDEFINE_SHRINK_FILL_CHUNK(_tc, _new_size) do { \
+	if (unlikely(talloc_fill.enabled)) { \
+		size_t _flen = (_tc)->size - (_new_size); \
+		char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
+		_fptr += (_new_size); \
+		memset(_fptr, talloc_fill.fill_value, _flen); \
+	} \
+} while (0)
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
+/* Mark the unused bytes as undefined */
+#define TC_UNDEFINE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { \
+	size_t _flen = (_tc)->size - (_new_size); \
+	char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
+	_fptr += (_new_size); \
+	VALGRIND_MAKE_MEM_UNDEFINED(_fptr, _flen); \
+} while (0)
+#else
+#define TC_UNDEFINE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { } while (0)
+#endif
+
+#define TC_UNDEFINE_SHRINK_CHUNK(_tc, _new_size) do { \
+	TC_UNDEFINE_SHRINK_FILL_CHUNK(_tc, _new_size); \
+	TC_UNDEFINE_SHRINK_VALGRIND_CHUNK(_tc, _new_size); \
+} while (0)
+
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
 /* Mark the new bytes as undefined */
 #define TC_UNDEFINE_GROW_VALGRIND_CHUNK(_tc, _new_size) do { \
@@ -1365,7 +1391,16 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			}
 			return ptr;
 		} else if ((tc->size - size) < 1024) {
-			TC_INVALIDATE_SHRINK_CHUNK(tc, size);
+			/*
+			 * if we call TC_INVALIDATE_SHRINK_CHUNK() here
+			 * we would need to call TC_UNDEFINE_GROW_CHUNK()
+			 * after each realloc call, which slows down
+			 * testing a lot :-(.
+			 *
+			 * That is why we only mark memory as undefined here.
+			 */
+			TC_UNDEFINE_SHRINK_CHUNK(tc, size);
+
 			/* do not shrink if we have less than 1k to gain */
 			tc->size = size;
 			return ptr;
