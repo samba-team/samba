@@ -1856,6 +1856,7 @@ void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
 bool change_to_root_user(void);
+void smbd_set_server_fd(int fd);
 struct event_context *smbd_event_context(void);
 void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
