@@ -228,7 +228,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		credentials = req->session_info->credentials;
 	} else {
 		DEBUG(1,("CIFS backend: NO delegated credentials found: You must supply server, user and password or the client must supply delegated credentials\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	/* connect to the server, using the smbd event context */
