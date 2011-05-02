@@ -343,7 +343,7 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
 
 MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
 
-SMBD_SRC_MAIN = '''smbd/server.c smbd/server_exit.c smbd/msg_idmap.c'''
+SMBD_SRC_MAIN = '''smbd/server.c smbd/msg_idmap.c'''
 
 BUILDOPT_SRC = '''smbd/build_options.c'''
 
@@ -388,6 +388,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/smb2_getinfo.c
                smbd/smb2_setinfo.c
                smbd/smb2_break.c
+               smbd/server_exit.c
                ${MANGLE_SRC}'''
 
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
