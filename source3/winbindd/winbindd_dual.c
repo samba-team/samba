@@ -35,7 +35,6 @@
 #include "../libcli/security/security.h"
 #include "system/select.h"
 #include "messages.h"
-#include "ntdomain.h"
 #include "../lib/util/tevent_unix.h"
 
 #undef DBGC_CLASS
