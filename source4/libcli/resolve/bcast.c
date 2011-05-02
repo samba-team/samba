@@ -47,13 +47,13 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	int i, count=0;
 	struct resolve_bcast_data *data = talloc_get_type(userdata, struct resolve_bcast_data);
 
-	num_interfaces = iface_count(data->ifaces);
+	num_interfaces = iface_list_count(data->ifaces);
 
 	address_list = talloc_array(mem_ctx, const char *, num_interfaces+1);
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		const char *bcast = iface_n_bcast(data->ifaces, i);
+		const char *bcast = iface_list_n_bcast(data->ifaces, i);
 		if (bcast == NULL) continue;
 		address_list[count] = talloc_strdup(address_list, bcast);
 		if (address_list[count] == NULL) {
@@ -101,6 +101,6 @@ bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interf
 bool resolve_context_add_bcast_method_lp(struct resolve_context *ctx, struct loadparm_context *lp_ctx)
 {
 	struct interface *ifaces;
-	load_interfaces(ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	load_interface_list(ctx, lpcfg_interfaces(lp_ctx), &ifaces);
 	return resolve_context_add_bcast_method(ctx, ifaces, lpcfg_nbt_port(lp_ctx), lpcfg_parm_int(lp_ctx, NULL, "nbt", "timeout", 1));
 }

@@ -1678,11 +1678,11 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(dce_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+		load_interface_list(dce_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
 
-		num_interfaces = iface_count(ifaces);
+		num_interfaces = iface_list_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = iface_n_ip(ifaces, i);
+			const char *address = iface_list_n_ip(ifaces, i);
 			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, address);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}

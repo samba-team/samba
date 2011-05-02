@@ -615,14 +615,14 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->nbtsock = nbt_name_socket_init(ctx, tctx->ev);
 	if (!ctx->nbtsock) return NULL;
 
-	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
 
-	ctx->myaddr = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_best_ip(ifaces, address), 0);
+	ctx->myaddr = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_list_best_ip(ifaces, address), 0);
 	if (!ctx->myaddr) return NULL;
 
-	for (i = 0; i < iface_count(ifaces); i++) {
-		if (strcmp(ctx->myaddr->addr, iface_n_ip(ifaces, i)) == 0) continue;
-		ctx->myaddr2 = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_n_ip(ifaces, i), 0);
+	for (i = 0; i < iface_list_count(ifaces); i++) {
+		if (strcmp(ctx->myaddr->addr, iface_list_n_ip(ifaces, i)) == 0) continue;
+		ctx->myaddr2 = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_list_n_ip(ifaces, i), 0);
 		if (!ctx->myaddr2) return NULL;
 		break;
 	}
@@ -679,12 +679,12 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->addresses_best[0].owner	= ctx->b.address;
 	ctx->addresses_best[0].ip	= ctx->myaddr->addr;
 
-	ctx->addresses_all_num = iface_count(ifaces);
+	ctx->addresses_all_num = iface_list_count(ifaces);
 	ctx->addresses_all = talloc_array(ctx, struct wrepl_ip, ctx->addresses_all_num);
 	if (!ctx->addresses_all) return NULL;
 	for (i=0; i < ctx->addresses_all_num; i++) {
 		ctx->addresses_all[i].owner	= ctx->b.address;
-		ctx->addresses_all[i].ip	= talloc_strdup(ctx->addresses_all, iface_n_ip(ifaces, i));
+		ctx->addresses_all[i].ip	= talloc_strdup(ctx->addresses_all, iface_list_n_ip(ifaces, i));
 		if (!ctx->addresses_all[i].ip) return NULL;
 	}
 

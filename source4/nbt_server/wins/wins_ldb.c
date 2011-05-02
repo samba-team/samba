@@ -92,8 +92,8 @@ static int wins_ldb_init(struct ldb_module *module)
 	owner = lpcfg_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
 	if (!owner) {
 		struct interface *ifaces;
-		load_interfaces(module, lpcfg_interfaces(lp_ctx), &ifaces);
-		owner = iface_n_ip(ifaces, 0);
+		load_interface_list(module, lpcfg_interfaces(lp_ctx), &ifaces);
+		owner = iface_list_n_ip(ifaces, 0);
 		if (!owner) {
 			owner = "0.0.0.0";
 		}

@@ -149,22 +149,22 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	load_interfaces(tmp_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	load_interface_list(tmp_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
 
-	count = iface_count(ifaces);
+	count = iface_list_count(ifaces);
 
 	/* first count how many are not loopback addresses */
 	for (ifcount = i = 0; i<count; i++) {
-		const char *ip = iface_n_ip(ifaces, i);
-		if (!(!all_interfaces && iface_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
+		const char *ip = iface_list_n_ip(ifaces, i);
+		if (!(!all_interfaces && iface_list_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
 			ifcount++;
 		}
 	}
 
 	pylist = PyList_New(ifcount);
 	for (ifcount = i = 0; i<count; i++) {
-		const char *ip = iface_n_ip(ifaces, i);
-		if (!(!all_interfaces && iface_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
+		const char *ip = iface_list_n_ip(ifaces, i);
+		if (!(!all_interfaces && iface_list_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
 			PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
 			ifcount++;
 		}

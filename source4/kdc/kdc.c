@@ -729,7 +729,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	num_interfaces = iface_count(ifaces);
+	num_interfaces = iface_list_count(ifaces);
 
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
@@ -751,7 +751,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 	}
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 
 		if (kdc_port) {
 			status = kdc_add_socket(kdc, model_ops,
@@ -895,9 +895,9 @@ static void kdc_task_init(struct task_server *task)
 		break;
 	}
 
-	load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+	load_interface_list(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
-	if (iface_count(ifaces) == 0) {
+	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured", false);
 		return;
 	}

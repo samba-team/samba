@@ -153,7 +153,7 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);
 	NTSTATUS status;
 
-	num_interfaces = iface_count(ifaces);
+	num_interfaces = iface_list_count(ifaces);
 
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
@@ -165,7 +165,7 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 	/* now we have to also listen on the specific interfaces,
 	   so that replies always come from the right IP */
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 		status = cldapd_add_socket(cldapd, lp_ctx, address);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
@@ -184,9 +184,9 @@ static void cldapd_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct interface *ifaces;
 	
-	load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+	load_interface_list(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
-	if (iface_count(ifaces) == 0) {
+	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "cldapd: no network interfaces configured", false);
 		return;
 	}

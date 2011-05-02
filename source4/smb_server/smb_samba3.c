@@ -135,16 +135,16 @@ static void samba3_smb_task_init(struct task_server *task)
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+		load_interface_list(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
-		num_interfaces = iface_count(ifaces);
+		num_interfaces = iface_list_count(ifaces);
 
 		/* We have been given an interfaces line, and been
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = iface_n_ip(ifaces, i);
+			const char *address = iface_list_n_ip(ifaces, i);
 			status = samba3_add_socket(task,
 						   task->event_ctx,
 						   task->lp_ctx,

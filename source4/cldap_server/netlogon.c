@@ -291,16 +291,16 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	client_site      = samdb_client_site_name(sam_ctx, mem_ctx,
 						  src_address, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(client_site);
-	load_interfaces(mem_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	load_interface_list(mem_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
 	/*
 	 * TODO: the caller should pass the address which the client
 	 * used to trigger this call, as the client is able to reach
 	 * this ip.
 	 */
 	if (src_address) {
-		pdc_ip = iface_best_ip(ifaces, src_address);
+		pdc_ip = iface_list_best_ip(ifaces, src_address);
 	} else {
-		pdc_ip = iface_n_ip(ifaces, 0);
+		pdc_ip = iface_list_n_ip(ifaces, 0);
 	}
 	ZERO_STRUCTP(netlogon);
 

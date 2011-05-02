@@ -951,15 +951,15 @@ static void ldapsrv_task_init(struct task_server *task)
 		int num_interfaces;
 		int i;
 
-		load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
-		num_interfaces = iface_count(ifaces);
+		load_interface_list(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+		num_interfaces = iface_list_count(ifaces);
 
 		/* We have been given an interfaces line, and been 
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = iface_n_ip(ifaces, i);
+			const char *address = iface_list_n_ip(ifaces, i);
 			status = add_socket(task, task->lp_ctx, model_ops, address, ldap_service);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}

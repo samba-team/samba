@@ -559,10 +559,10 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns, struct loadparm_c
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	num_interfaces = iface_count(ifaces);
+	num_interfaces = iface_list_count(ifaces);
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 
 		status = dns_add_socket(dns, model_ops, "dns", address, DNS_SERVICE_PORT);
 		NT_STATUS_NOT_OK_RETURN(status);
@@ -617,9 +617,9 @@ static void dns_task_init(struct task_server *task)
 		break;
 	}
 
-	load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+	load_interface_list(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
 
-	if (iface_count(ifaces) == 0) {
+	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "dns: no network interfaces configured", false);
 		return;
 	}

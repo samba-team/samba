@@ -48,9 +48,9 @@ struct interface {
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
-static struct interface *iface_find(struct interface *interfaces, 
-				    const struct sockaddr *ip,
-				    bool check_mask)
+static struct interface *iface_list_find(struct interface *interfaces,
+					 const struct sockaddr *ip,
+					 bool check_mask)
 {
 	struct interface *i;
 
@@ -79,7 +79,7 @@ static void add_interface(TALLOC_CTX *mem_ctx, const struct iface_struct *ifs, s
 	char addr[INET6_ADDRSTRLEN];
 	struct interface *iface;
 
-	if (iface_find(*interfaces, (const struct sockaddr *)&ifs->ip, false)) {
+	if (iface_list_find(*interfaces, (const struct sockaddr *)&ifs->ip, false)) {
 		DEBUG(3,("add_interface: not adding duplicate interface %s\n",
 			print_sockaddr(addr, sizeof(addr), &ifs->ip) ));
 		return;
@@ -283,7 +283,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 /**
 load the list of network interfaces
 **/
-void load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, struct interface **local_interfaces)
+void load_interface_list(TALLOC_CTX *mem_ctx, const char **interfaces, struct interface **local_interfaces)
 {
 	const char **ptr = interfaces;
 	int i;
@@ -322,7 +322,7 @@ void load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, struct interf
 /**
   how many interfaces do we have
   **/
-int iface_count(struct interface *ifaces)
+int iface_list_count(struct interface *ifaces)
 {
 	int ret = 0;
 	struct interface *i;
@@ -335,7 +335,7 @@ int iface_count(struct interface *ifaces)
 /**
   return IP of the Nth interface
   **/
-const char *iface_n_ip(struct interface *ifaces, int n)
+const char *iface_list_n_ip(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
@@ -351,7 +351,7 @@ const char *iface_n_ip(struct interface *ifaces, int n)
 /**
   return bcast of the Nth interface
   **/
-const char *iface_n_bcast(struct interface *ifaces, int n)
+const char *iface_list_n_bcast(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
@@ -367,7 +367,7 @@ const char *iface_n_bcast(struct interface *ifaces, int n)
 /**
   return netmask of the Nth interface
   **/
-const char *iface_n_netmask(struct interface *ifaces, int n)
+const char *iface_list_n_netmask(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
@@ -384,32 +384,32 @@ const char *iface_n_netmask(struct interface *ifaces, int n)
   return the local IP address that best matches a destination IP, or
   our first interface if none match
 */
-const char *iface_best_ip(struct interface *ifaces, const char *dest)
+const char *iface_list_best_ip(struct interface *ifaces, const char *dest)
 {
 	struct interface *iface;
 	struct sockaddr_storage ss;
 
 	if (!interpret_string_addr(&ss, dest, AI_NUMERICHOST)) {
-		return iface_n_ip(ifaces, 0);
+		return iface_list_n_ip(ifaces, 0);
 	}
-	iface = iface_find(ifaces, (const struct sockaddr *)&ss, true);
+	iface = iface_list_find(ifaces, (const struct sockaddr *)&ss, true);
 	if (iface) {
 		return iface->ip_s;
 	}
-	return iface_n_ip(ifaces, 0);
+	return iface_list_n_ip(ifaces, 0);
 }
 
 /**
   return true if an IP is one one of our local networks
 */
-bool iface_is_local(struct interface *ifaces, const char *dest)
+bool iface_list_is_local(struct interface *ifaces, const char *dest)
 {
 	struct sockaddr_storage ss;
 
 	if (!interpret_string_addr(&ss, dest, AI_NUMERICHOST)) {
 		return false;
 	}
-	if (iface_find(ifaces, (const struct sockaddr *)&ss, true)) {
+	if (iface_list_find(ifaces, (const struct sockaddr *)&ss, true)) {
 		return true;
 	}
 	return false;
@@ -418,7 +418,7 @@ bool iface_is_local(struct interface *ifaces, const char *dest)
 /**
   return true if a IP matches a IP/netmask pair
 */
-bool iface_same_net(const char *ip1, const char *ip2, const char *netmask)
+bool iface_list_same_net(const char *ip1, const char *ip2, const char *netmask)
 {
 	return same_net_v4(interpret_addr2(ip1),
 			interpret_addr2(ip2),
