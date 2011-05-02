@@ -1253,6 +1253,7 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 		private_data, struct name_query_state);
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct sockaddr_storage *tmp_addrs;
+	bool got_unique_netbios_name = false;
 	int i;
 
 	debug_nmb_packet(p);
@@ -1327,7 +1328,12 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 		 "from %s ( ", inet_ntoa(p->ip)));
 
 	for (i=0; i<nmb->answers->rdlength/6; i++) {
+		uint16_t flags;
 		struct in_addr ip;
+
+		flags = RSVAL(&nmb->answers->rdata[i*6], 0);
+		got_unique_netbios_name |= ((flags & 0x8000) == 0);
+
 		putip((char *)&ip,&nmb->answers->rdata[2+i*6]);
 		in_addr_to_sockaddr_storage(
 			&state->addrs[state->num_addrs], ip);
@@ -1352,10 +1358,10 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 
 	if (state->bcast) {
 		/*
-		 * We have to collect all entries coming in from
-		 * broadcast queries
+		 * We have to collect all entries coming in from broadcast
+		 * queries. If we got a unique name, we're done.
 		 */
-		return false;
+		return got_unique_netbios_name;
 	}
 	/*
 	 * WINS responses are accepted when they are received
