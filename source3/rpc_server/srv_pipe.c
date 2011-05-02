@@ -41,6 +41,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "ntdomain.h"
+#include "rpc_server/srv_pipe.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

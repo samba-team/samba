@@ -2653,15 +2653,6 @@ void set_server_role(void);
 uint32 get_int_param( const char* param );
 char* get_string_param( const char* param );
 
-/* The following definitions come from rpc_server/srv_pipe.c  */
-struct ncacn_packet;
-struct api_struct;
-struct pipes_struct;
-bool create_next_pdu(struct pipes_struct *p);
-bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
-bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
-bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
-
 /* The following definitions come from lib/server_contexts.c  */
 struct tevent_context *server_event_context(void);
 void server_event_context_free(void);
