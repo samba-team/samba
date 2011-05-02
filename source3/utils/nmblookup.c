@@ -168,27 +168,9 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 				    &bcast_addr, talloc_tos(),
 				    &ip_list, &count, &flags);
 	} else {
-		const struct in_addr *bcast;
-		for (j=iface_count() - 1;
-		     !ip_list && j >= 0;
-		     j--) {
-			char addr[INET6_ADDRSTRLEN];
-			struct sockaddr_storage bcast_ss;
-
-			bcast = iface_n_bcast_v4(j);
-			if (!bcast) {
-				continue;
-			}
-			in_addr_to_sockaddr_storage(&bcast_ss, *bcast);
-			print_sockaddr(addr, sizeof(addr), &bcast_ss);
-			d_printf("querying %s on %s\n",
-			       lookup, addr);
-			status = name_query(lookup,lookup_type,
-					    use_bcast,
-					    use_bcast?True:recursion_desired,
-					    &bcast_ss, talloc_tos(),
-					    &ip_list, &count, &flags);
-		}
+		status = name_resolve_bcast(
+			lookup, lookup_type,
+			talloc_tos(), &ip_list, &count);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
