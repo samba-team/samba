@@ -93,7 +93,6 @@ size_t push_ascii_nstring(void *dest, const char *src);
 size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
 size_t pull_ascii_fstring(char *dest, const void *src);
 size_t pull_ascii_nstring(char *dest, size_t dest_len, const void *src);
-size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags);
 size_t push_string_check_fn(void *dest, const char *src,
 			    size_t dest_len, int flags);
 size_t push_string_base(const char *base, uint16 flags2,

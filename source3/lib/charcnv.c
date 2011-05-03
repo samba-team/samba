@@ -345,7 +345,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
  * destination.
  **/
 
-size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
+static size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
 	size_t src_len;
