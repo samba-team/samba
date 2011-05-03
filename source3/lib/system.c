@@ -2376,7 +2376,7 @@ static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 	dirp = fdopendir(newfd);
 
 	while ((de = readdir(dirp))) {
-		size_t listlen = strlen(de->d_name);
+		size_t listlen = strlen(de->d_name) + 1;
 		if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
 			/* we don't want "." and ".." here: */
 			DEBUG(10,("skipped EA %s\n",de->d_name));
@@ -2385,18 +2385,16 @@ static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 
 		if (size == 0) {
 			/* return the current size of the list of extended attribute names*/
-			len += listlen + 1;
+			len += listlen;
 		} else {
 			/* check size and copy entrieѕ + nul into list. */
-			if ((len + listlen + 1) > size) {
+			if ((len + listlen) > size) {
 				errno = ERANGE;
 				len = -1;
 				break;
 			} else {
-				safe_strcpy(list + len, de->d_name, listlen);
+				strlcpy(list + len, de->d_name, listlen);
 				len += listlen;
-				list[len] = '\0';
-				++len;
 			}
 		}
 	}
