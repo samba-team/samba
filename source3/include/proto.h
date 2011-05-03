@@ -1674,13 +1674,6 @@ NTSTATUS cli_force_encryption(struct cli_state *c,
 			const char *password,
 			const char *domain);
 
-/* The following definitions come from libsmb/clikrb5.c  */
-
-bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx, 
-			   DATA_BLOB *edata, 
-			   DATA_BLOB *edata_out);
-bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data);
-
 /* The following definitions come from libsmb/clilist.c  */
 
 NTSTATUS cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
