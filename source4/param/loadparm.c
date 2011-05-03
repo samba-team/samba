@@ -779,6 +779,7 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option)
 {
+	char *vfskey_tmp = NULL;
 	char *vfskey = NULL;
 	struct parmlist_entry *data;
 
@@ -787,13 +788,14 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 
 	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
 
-	asprintf(&vfskey, "%s:%s", type, option);
-	if (vfskey == NULL) return NULL;
-	strlower(vfskey);
+	vfskey_tmp = talloc_asprintf(NULL, "%s:%s", type, option);
+	if (vfskey_tmp == NULL) return NULL;
+	vfskey = strlower_talloc(NULL, vfskey_tmp);
+	talloc_free(vfskey_tmp);
 
 	while (data) {
 		if (strcmp(data->key, vfskey) == 0) {
-			free(vfskey);
+			talloc_free(vfskey);
 			return data->value;
 		}
 		data = data->next;
@@ -805,13 +807,13 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 		for (data = lp_ctx->globals->param_opt; data;
 		     data = data->next) {
 			if (strcmp(data->key, vfskey) == 0) {
-				free(vfskey);
+				talloc_free(vfskey);
 				return data->value;
 			}
 		}
 	}
 
-	free(vfskey);
+	talloc_free(vfskey);
 
 	return NULL;
 }
@@ -1031,7 +1033,27 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 
 	*dest = talloc_strdup(mem_ctx, src);
 	if ((*dest) == NULL) {
-		DEBUG(0,("Out of memory in string_init\n"));
+		DEBUG(0,("Out of memory in string_set\n"));
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Set a string value, deallocating any existing space, and allocing the space
+ * for the string
+ */
+static bool string_set_upper(TALLOC_CTX *mem_ctx, char **dest, const char *src)
+{
+	talloc_free(*dest);
+
+	if (src == NULL)
+		src = "";
+
+	*dest = strupper_talloc(mem_ctx, src);
+	if ((*dest) == NULL) {
+		DEBUG(0,("Out of memory in string_set_upper\n"));
 		return false;
 	}
 
@@ -1292,10 +1314,9 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					break;
 
 				case P_USTRING:
-					string_set(pserviceDest,
-						   (char **)dest_ptr,
-						   *(char **)src_ptr);
-					strupper(*(char **)dest_ptr);
+					string_set_upper(pserviceDest,
+							 (char **)dest_ptr,
+							 *(char **)src_ptr);
 					break;
 				case P_LIST:
 					*(const char ***)dest_ptr = (const char **)str_list_copy(pserviceDest, 
@@ -1574,10 +1595,8 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 		pszParmName++;
 	}
 
-	name = strdup(pszParmName);
+	name = strlower_talloc(lp_ctx, pszParmName);
 	if (!name) return false;
-
-	strlower(name);
 
 	if (service == NULL) {
 		data = lp_ctx->globals->param_opt;
@@ -1594,13 +1613,14 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 		if (strcmp(paramo->key, name) == 0) {
 			if ((paramo->priority & FLAG_CMDLINE) &&
 			    !(flags & FLAG_CMDLINE)) {
+				talloc_free(name);
 				return true;
 			}
 
 			talloc_free(paramo->value);
 			paramo->value = talloc_strdup(paramo, pszParmValue);
 			paramo->priority = flags;
-			free(name);
+			talloc_free(name);
 			return true;
 		}
 	}
@@ -1617,7 +1637,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 		DLIST_ADD(service->param_opt, paramo);
 	}
 
-	free(name);
+	talloc_free(name);
 
 	return true;
 }
@@ -1713,8 +1733,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 
 		case P_USTRING:
-			string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
-			strupper(*(char **)parm_ptr);
+			string_set_upper(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_ENUM:

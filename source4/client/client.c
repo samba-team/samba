@@ -696,11 +696,12 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *p_lnam
 	char *lname;
 
 
-	lname = talloc_strdup(ctx, p_lname);
 	GetTimeOfDay(&tp_start);
 
 	if (ctx->lowercase) {
-		strlower(lname);
+		lname = strlower_talloc(ctx, p_lname);
+	} else {
+		lname = talloc_strdup(ctx, p_lname);
 	}
 
 	fnum = smbcli_open(ctx->cli->tree, rname, O_RDONLY, DENY_NONE);
@@ -884,13 +885,14 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 
 	ctx->remote_cur_dir = talloc_asprintf_append_buffer(NULL, "%s\\", finfo->name);
 
-	l_fname = talloc_strdup(ctx, finfo->name);
-
-	string_replace(l_fname, '\\', '/');
 	if (ctx->lowercase) {
-		strlower(l_fname);
+		l_fname = strlower_talloc(ctx, finfo->name);
+	} else {
+		l_fname = talloc_strdup(ctx, finfo->name);
 	}
 	
+	string_replace(l_fname, '\\', '/');
+
 	if (!directory_exist(l_fname) &&
 	    mkdir(l_fname, 0777) != 0) {
 		d_printf("failed to create directory %s\n", l_fname);

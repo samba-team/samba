@@ -914,7 +914,6 @@ static bool parse_domain_user(struct torture_context *torture,
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
-	strupper_m(domain);
 
 	return true;
 }

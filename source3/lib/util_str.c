@@ -796,6 +796,36 @@ static bool unix_strlower(const char *src, size_t srclen, char *dest, size_t des
 	return ret;
 }
 
+#if 0 /* Alternate function that avoid talloc calls for ASCII and non ASCII */
+
+/**
+ Convert a string to lower case.
+**/
+_PUBLIC_ void strlower_m(char *s)
+{
+	char *d;
+	struct smb_iconv_handle *iconv_handle;
+
+	iconv_handle = get_iconv_handle();
+
+	d = s;
+
+	while (*s) {
+		size_t c_size, c_size2;
+		codepoint_t c = next_codepoint_handle(iconv_handle, s, &c_size);
+		c_size2 = push_codepoint_handle(iconv_handle, d, tolower_m(c));
+		if (c_size2 > c_size) {
+			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
+				 c, tolower_m(c), (int)c_size, (int)c_size2));
+			smb_panic("codepoint expansion in strlower_m\n");
+		}
+		s += c_size;
+		d += c_size2;
+	}
+	*d = 0;
+}
+
+#endif
 
 /**
  Convert a string to lower case.
@@ -850,6 +880,37 @@ static bool unix_strupper(const char *src, size_t srclen, char *dest, size_t des
 	TALLOC_FREE(buffer);
 	return ret;
 }
+
+#if 0 /* Alternate function that avoid talloc calls for ASCII and non ASCII */
+
+/**
+ Convert a string to UPPER case.
+**/
+_PUBLIC_ void strupper_m(char *s)
+{
+	char *d;
+	struct smb_iconv_handle *iconv_handle;
+
+	iconv_handle = get_iconv_handle();
+
+	d = s;
+
+	while (*s) {
+		size_t c_size, c_size2;
+		codepoint_t c = next_codepoint_handle(iconv_handle, s, &c_size);
+		c_size2 = push_codepoint_handle(iconv_handle, d, toupper_m(c));
+		if (c_size2 > c_size) {
+			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
+				 c, toupper_m(c), (int)c_size, (int)c_size2));
+			smb_panic("codepoint expansion in strupper_m\n");
+		}
+		s += c_size;
+		d += c_size2;
+	}
+	*d = 0;
+}
+
+#endif
 
 /**
  Convert a string to upper case.

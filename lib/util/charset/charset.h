@@ -105,11 +105,6 @@ typedef struct smb_iconv_s {
 struct loadparm_context;
 struct smb_iconv_handle;
 
-/* replace some string functions with multi-byte
-   versions */
-#define strlower(s) strlower_m(s)
-#define strupper(s) strupper_m(s)
-
 char *strchr_m(const char *s, char c);
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
@@ -137,8 +132,6 @@ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			const char *s1, const char *s2);
 int strcasecmp_m(const char *s1, const char *s2);
 size_t count_chars_m(const char *s, char c);
-void strupper_m(char *s);
-void strlower_m(char *s);
 char *strupper_talloc(TALLOC_CTX *ctx, const char *src);
 char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src);
 char *strupper_talloc_n_handle(struct smb_iconv_handle *iconv_handle,

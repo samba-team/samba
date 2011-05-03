@@ -222,11 +222,10 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 					  struct loadparm_context);
 		char *ldap_service_name, *hostname;
 
-		hostname = talloc_strdup(msg, lpcfg_netbios_name(lp_ctx));
+		hostname = strlower_talloc(msg, lpcfg_netbios_name(lp_ctx));
 		if (hostname == NULL) {
 			goto failed;
 		}
-		strlower_m(hostname);
 
 		ldap_service_name = talloc_asprintf(msg, "%s:%s$@%s",
 						    samdb_forest_name(ldb, msg),
