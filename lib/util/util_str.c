@@ -236,6 +236,6 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2)
 	if (!s1 || !s2)
 		return false;
   
-	return strcasecmp(s1,s2) == 0;
+	return strcasecmp_m(s1,s2) == 0;
 }
 

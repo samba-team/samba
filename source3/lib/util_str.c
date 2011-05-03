@@ -179,21 +179,6 @@ int StrnCaseCmp(const char *s, const char *t, size_t len)
 }
 
 /**
- * Compare 2 strings.
- *
- * @note The comparison is case-insensitive.
- **/
-bool strequal(const char *s1, const char *s2)
-{
-	if (s1 == s2)
-		return(true);
-	if (!s1 || !s2)
-		return(false);
-
-	return(StrCaseCmp(s1,s2)==0);
-}
-
-/**
  * Compare 2 strings up to and including the nth char.
  *
  * @note The comparison is case-insensitive.
@@ -325,77 +310,6 @@ bool trim_char(char *s,char cfront,char cback)
 	ep[1] = '\0';
 	memmove(s, fp, ep-fp+2);
 	return ret;
-}
-
-/**
- Safe string copy into a known length string. maxlength does not
- include the terminating zero.
-**/
-
-char *safe_strcpy_fn(char *dest,
-		     const char *src,
-		     size_t maxlength)
-{
-	size_t len;
-
-	if (!dest) {
-		smb_panic("ERROR: NULL dest in safe_strcpy");
-	}
-
-	if (!src) {
-		*dest = 0;
-		return dest;
-	}
-
-	len = strnlen(src, maxlength+1);
-
-	if (len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by "
-			"%lu (%lu - %lu) in safe_strcpy [%.50s]\n",
-			 (unsigned long)(len-maxlength), (unsigned long)len,
-			 (unsigned long)maxlength, src));
-		len = maxlength;
-	}
-
-	memmove(dest, src, len);
-	dest[len] = 0;
-	return dest;
-}
-
-/**
- Safe string cat into a string. maxlength does not
- include the terminating zero.
-**/
-char *safe_strcat_fn(char *dest,
-		     const char *src,
-		     size_t maxlength)
-{
-	size_t src_len, dest_len;
-
-	if (!dest) {
-		smb_panic("ERROR: NULL dest in safe_strcat");
-	}
-
-	if (!src)
-		return dest;
-
-	src_len = strnlen(src, maxlength + 1);
-	dest_len = strnlen(dest, maxlength + 1);
-
-	if (src_len + dest_len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by %d "
-			"in safe_strcat [%.50s]\n",
-			 (int)(src_len + dest_len - maxlength), src));
-		if (maxlength > dest_len) {
-			memcpy(&dest[dest_len], src, maxlength - dest_len);
-		}
-		dest[maxlength] = 0;
-		return NULL;
-	}
-
-	memcpy(&dest[dest_len], src, src_len);
-	dest[dest_len + src_len] = 0;
-	return dest;
 }
 
 /**
