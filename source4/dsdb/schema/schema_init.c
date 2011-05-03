@@ -757,6 +757,7 @@ WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
 	GET_STRING_LDB(msg, "defaultSecurityDescriptor", obj, obj, defaultSecurityDescriptor, false);
 
 	GET_UINT32_LDB(msg, "schemaFlagsEx", obj, schemaFlagsEx);
+	GET_UINT32_LDB(msg, "systemFlags", obj, systemFlags);
 	GET_BLOB_LDB(msg, "msDs-Schema-Extensions", obj, obj, msDs_Schema_Extensions);
 
 	GET_BOOL_LDB(msg, "showInAdvancedViewOnly", obj, showInAdvancedViewOnly, false);

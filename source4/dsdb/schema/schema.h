@@ -143,6 +143,7 @@ struct dsdb_class {
 	const char *defaultSecurityDescriptor;
 
 	uint32_t schemaFlagsEx;
+	uint32_t systemFlags;
 	struct ldb_val msDs_Schema_Extensions;
 
 	bool showInAdvancedViewOnly;
