@@ -146,3 +146,9 @@ int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
 			time_t *tgs_expire,
 			const char *impersonate_princ_s);
 
+/* The following definitions come from libsmb/clikrb5.c  */
+
+bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
+			   DATA_BLOB *edata,
+			   DATA_BLOB *edata_out);
+bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data);
