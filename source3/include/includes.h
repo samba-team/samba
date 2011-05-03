@@ -538,22 +538,6 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
 
-/*
- * Reasons for cache flush.
- */
-
-enum flush_reason_enum {
-    SEEK_FLUSH,
-    READ_FLUSH,
-    WRITE_FLUSH,
-    READRAW_FLUSH,
-    OPLOCK_RELEASE_FLUSH,
-    CLOSE_FLUSH,
-    SYNC_FLUSH,
-    SIZECHANGE_FLUSH,
-    /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
-    NUM_FLUSH_REASONS};
-
 /***** prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"

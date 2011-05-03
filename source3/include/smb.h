@@ -1742,4 +1742,20 @@ struct deferred_open_record;
 /* Used inside aio code. */
 struct aio_extra;
 
+/*
+ * Reasons for cache flush.
+ */
+
+enum flush_reason_enum {
+    SEEK_FLUSH,
+    READ_FLUSH,
+    WRITE_FLUSH,
+    READRAW_FLUSH,
+    OPLOCK_RELEASE_FLUSH,
+    CLOSE_FLUSH,
+    SYNC_FLUSH,
+    SIZECHANGE_FLUSH,
+    /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
+    NUM_FLUSH_REASONS};
+
 #endif /* _SMB_H */
