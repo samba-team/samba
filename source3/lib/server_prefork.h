@@ -74,3 +74,11 @@ int prefork_wait_for_client(struct pf_worker_data *pf,
 			    int lock_fd, int listen_fd,
 			    struct sockaddr *addr,
 			    socklen_t *addrlen, int *fd);
+
+struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct pf_worker_data *pf,
+					int lock_fd, int listen_fd,
+					struct sockaddr *addr,
+					socklen_t *addrlen);
+int prefork_listen_recv(struct tevent_req *req, int *fd);
