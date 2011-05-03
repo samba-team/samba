@@ -56,14 +56,6 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
  * update a lot of code. To make this a little easier here are some
  * functions that provide the lengths with less pain */
 
-/* overmalloc_safe_strcpy: DEPRECATED!  Used when you know the
- * destination buffer is longer than maxlength, but you don't know how
- * long.  This is not a good situation, because we can't do the normal
- * sanity checks. Don't use in new code! */
-
-#define overmalloc_safe_strcpy(dest,src,maxlength) \
-	safe_strcpy_fn(dest,src,maxlength)
-
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
 /* if the compiler will optimize out function calls, then use this to tell if we are
