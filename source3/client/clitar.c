@@ -180,7 +180,7 @@ static void writetarheader(int f, const char *aname, uint64_t size, time_t mtime
 	/* write out a "standard" tar format header */
 
 	hb.dbuf.name[NAMSIZ-1]='\0';
-	strlcpy(hb.dbuf.mode, amode, sizeof(hb.dbuf.mode));
+	strlcpy(hb.dbuf.mode, amode ? amode : "", sizeof(hb.dbuf.mode));
 	oct_it((uint64_t)0, 8, hb.dbuf.uid);
 	oct_it((uint64_t)0, 8, hb.dbuf.gid);
 	oct_it((uint64_t) size, 13, hb.dbuf.size);
