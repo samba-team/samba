@@ -20,17 +20,6 @@
 */
 
 
-/* working out the interfaces for a OS is an incredibly non-portable
-   thing. We have several possible implementations below, and autoconf
-   tries each of them to see what works
-
-   Note that this file does _not_ include includes.h. That is so this code
-   can be called directly from the autoconf tests. That also means
-   this code cannot use any of the normal Samba debug stuff or defines.
-   This is standalone code.
-
-*/
-
 #include "includes.h"
 #include "system/network.h"
 #include "interfaces.h"
