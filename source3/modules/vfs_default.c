@@ -1512,12 +1512,12 @@ static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle, const char *p
 	return sys_listxattr(path, list, size);
 }
 
-ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
+static ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
 {
 	return sys_llistxattr(path, list, size);
 }
 
-ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
+static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
 	return sys_flistxattr(fsp->fh->fd, list, size);
 }
