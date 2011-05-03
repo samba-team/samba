@@ -549,7 +549,7 @@ static char *validate_group(struct smbd_server_connection *sconn,
 				DEBUG(10,("validate_group: = gr_mem = "
 					  "%s\n", gptr->gr_mem[i]));
 
-				safe_strcpy(member, gptr->gr_mem[i],
+				strlcpy(member, gptr->gr_mem[i],
 					list_len - (member-member_list));
 				member += member_len;
 			}
