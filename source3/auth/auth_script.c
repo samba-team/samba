@@ -74,32 +74,32 @@ static NTSTATUS script_check_user_credentials(const struct auth_context *auth_co
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	safe_strcpy( secret_str, user_info->mapped.domain_name, secret_str_len - 1);
-	safe_strcat( secret_str, "\n", secret_str_len - 1);
-	safe_strcat( secret_str, user_info->client.account_name, secret_str_len - 1);
-	safe_strcat( secret_str, "\n", secret_str_len - 1);
+	strlcpy( secret_str, user_info->mapped.domain_name, secret_str_len);
+	strlcat( secret_str, "\n", secret_str_len);
+	strlcat( secret_str, user_info->client.account_name, secret_str_len);
+	strlcat( secret_str, "\n", secret_str_len);
 
 	for (i = 0; i < 8; i++) {
 		slprintf(&hex_str[i*2], 3, "%02X", auth_context->challenge.data[i]);
 	}
-	safe_strcat( secret_str, hex_str, secret_str_len - 1);
-	safe_strcat( secret_str, "\n", secret_str_len - 1);
+	strlcat( secret_str, hex_str, secret_str_len);
+	strlcat( secret_str, "\n", secret_str_len);
 
 	if (user_info->password.response.lanman.data) {
 		for (i = 0; i < 24; i++) {
 			slprintf(&hex_str[i*2], 3, "%02X", user_info->password.response.lanman.data[i]);
 		}
-		safe_strcat( secret_str, hex_str, secret_str_len - 1);
+		strlcat( secret_str, hex_str, secret_str_len);
 	}
-	safe_strcat( secret_str, "\n", secret_str_len - 1);
+	strlcat( secret_str, "\n", secret_str_len);
 
 	if (user_info->password.response.nt.data) {
 		for (i = 0; i < 24; i++) {
 			slprintf(&hex_str[i*2], 3, "%02X", user_info->password.response.nt.data[i]);
 		}
-		safe_strcat( secret_str, hex_str, secret_str_len - 1);
+		strlcat( secret_str, hex_str, secret_str_len);
 	}
-	safe_strcat( secret_str, "\n", secret_str_len - 1);
+	strlcat( secret_str, "\n", secret_str_len);
 
 	DEBUG(10,("script_check_user_credentials: running %s with parameters:\n%s\n",
 		script, secret_str ));
