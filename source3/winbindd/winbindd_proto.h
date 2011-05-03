@@ -392,7 +392,6 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
 bool parse_domain_user(const char *domuser, fstring domain, fstring user);
 bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 			      char **domain, char **user);
-void parse_add_domuser(void *buf, char *domuser, int *len);
 bool canonicalize_username(fstring username_inout, fstring domain, fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume);
 char *fill_domain_username_talloc(TALLOC_CTX *ctx,

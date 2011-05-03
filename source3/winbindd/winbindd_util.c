@@ -894,31 +894,6 @@ bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 	return ((*domain != NULL) && (*user != NULL));
 }
 
-/* add a domain user name to a buffer */
-void parse_add_domuser(void *buf, char *domuser, int *len)
-{
-	fstring domain;
-	char *p, *user;
-
-	user = domuser;
-	p = strchr(domuser, *lp_winbind_separator());
-
-	if (p) {
-
-		fstrcpy(domain, domuser);
-		domain[PTR_DIFF(p, domuser)] = 0;
-		p++;
-
-		if (assume_domain(domain)) {
-
-			user = p;
-			*len -= (PTR_DIFF(p, domuser));
-		}
-	}
-
-	safe_strcpy((char *)buf, user, *len);
-}
-
 /* Ensure an incoming username from NSS is fully qualified. Replace the
    incoming fstring with DOMAIN <separator> user. Returns the same
    values as parse_domain_user() but also replaces the incoming username.
