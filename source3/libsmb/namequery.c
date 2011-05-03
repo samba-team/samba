@@ -1330,14 +1330,30 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 	for (i=0; i<nmb->answers->rdlength/6; i++) {
 		uint16_t flags;
 		struct in_addr ip;
+		struct sockaddr_storage addr;
+		int j;
 
 		flags = RSVAL(&nmb->answers->rdata[i*6], 0);
 		got_unique_netbios_name |= ((flags & 0x8000) == 0);
 
 		putip((char *)&ip,&nmb->answers->rdata[2+i*6]);
-		in_addr_to_sockaddr_storage(
-			&state->addrs[state->num_addrs], ip);
+		in_addr_to_sockaddr_storage(&addr, ip);
+
+		for (j=0; j<state->num_addrs; j++) {
+			if (sockaddr_equal(
+				    (struct sockaddr *)&addr,
+				    (struct sockaddr *)&state->addrs[j])) {
+				break;
+			}
+		}
+		if (j < state->num_addrs) {
+			/* Already got it */
+			continue;
+		}
+
 		DEBUGADD(2,("%s ",inet_ntoa(ip)));
+
+		state->addrs[state->num_addrs] = addr;
 		state->num_addrs += 1;
 	}
 	DEBUGADD(2,(")\n"));
