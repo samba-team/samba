@@ -838,14 +838,17 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 		offset += token_size;
 	}
 
-	safe_strcpy((char *)result.dptr + offset, lck->servicepath,
-		    result.dsize - offset - 1);
+	strlcpy((char *)result.dptr + offset,
+		lck->servicepath ? lck->servicepath : "",
+		result.dsize - offset);
 	offset += sp_len + 1;
-	safe_strcpy((char *)result.dptr + offset, lck->base_name,
-		    result.dsize - offset - 1);
+	strlcpy((char *)result.dptr + offset,
+		lck->base_name ? lck->base_name : "",
+		result.dsize - offset);
 	offset += bn_len + 1;
-	safe_strcpy((char *)result.dptr + offset, lck->stream_name,
-		    result.dsize - offset - 1);
+	strlcpy((char *)result.dptr + offset,
+		lck->stream_name ? lck->stream_name : "",
+		result.dsize - offset);
 
 	if (DEBUGLEVEL >= 10) {
 		print_share_mode_table(data);
@@ -1087,10 +1090,15 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 
 	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
-	safe_strcpy(&frm[24], lck->servicepath, sp_len);
-	safe_strcpy(&frm[24 + sp_len + 1], lck->base_name, bn_len);
-	safe_strcpy(&frm[24 + sp_len + 1 + bn_len + 1], lck->stream_name,
-		    sn_len);
+	strlcpy(&frm[24],
+		lck->servicepath ? lck->servicepath : "",
+		sp_len+1);
+	strlcpy(&frm[24 + sp_len + 1],
+		lck->base_name ? lck->base_name : "",
+		bn_len+1);
+	strlcpy(&frm[24 + sp_len + 1 + bn_len + 1],
+		lck->stream_name ? lck->stream_name : "",
+		sn_len+1);
 
 	/* Send the messages. */
 	for (i=0; i<lck->num_share_modes; i++) {
