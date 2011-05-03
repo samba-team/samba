@@ -292,7 +292,7 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	return ret;
 }
 
-const char *lpcfg_messaging_path(TALLOC_CTX *mem_ctx,
+const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx)
 {
 	return smbd_tmp_path(mem_ctx, lp_ctx, "msg");

@@ -30,7 +30,7 @@
 */
 _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
-					   struct messaging_context *msg,
+					   struct imessaging_context *msg,
 					   struct loadparm_context *lp_ctx,
 					   const char *nt4_domain,
 					   const char *nt4_username,

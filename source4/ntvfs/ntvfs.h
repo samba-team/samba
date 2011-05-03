@@ -201,7 +201,7 @@ struct ntvfs_context {
 	struct server_id server_id;
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *event_ctx;
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 
 	struct {
 		void *private_data;
@@ -330,7 +330,7 @@ struct ntvfs_critical_sizes {
 	.sizeof_ntvfs_handle_data	= sizeof(struct ntvfs_handle_data), \
     }
 
-struct messaging_context;
+struct imessaging_context;
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/s4_notify.h"
 #include "ntvfs/ntvfs_proto.h"

@@ -35,7 +35,7 @@
 
 void initmessaging(void);
 
-extern PyTypeObject messaging_Type;
+extern PyTypeObject imessaging_Type;
 
 static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 {
@@ -58,23 +58,23 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
-	struct messaging_context *msg_ctx;
-} messaging_Object;
+	struct imessaging_context *msg_ctx;
+} imessaging_Object;
 
-static PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_imessaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
 	struct tevent_context *ev;
 	const char *kwnames[] = { "own_id", "messaging_path", NULL };
 	PyObject *own_id = Py_None;
-	const char *messaging_path = NULL;
-	messaging_Object *ret;
+	const char *imessaging_path = NULL;
+	imessaging_Object *ret;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Oz:connect", 
-		discard_const_p(char *, kwnames), &own_id, &messaging_path)) {
+		discard_const_p(char *, kwnames), &own_id, &imessaging_path)) {
 		return NULL;
 	}
 
-	ret = PyObject_New(messaging_Object, &messaging_Type);
+	ret = PyObject_New(imessaging_Object, &imessaging_Type);
 	if (ret == NULL)
 		return NULL;
 
@@ -82,11 +82,11 @@ static PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObje
 
 	ev = s4_event_context_init(ret->mem_ctx);
 
-	if (messaging_path == NULL) {
-		messaging_path = lpcfg_messaging_path(ret->mem_ctx,
+	if (imessaging_path == NULL) {
+		imessaging_path = lpcfg_imessaging_path(ret->mem_ctx,
 								   py_default_loadparm_context(ret->mem_ctx));
 	} else {
-		messaging_path = talloc_strdup(ret->mem_ctx, messaging_path);
+		imessaging_path = talloc_strdup(ret->mem_ctx, imessaging_path);
 	}
 
 	if (own_id != Py_None) {
@@ -95,18 +95,18 @@ static PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObje
 		if (!server_id_from_py(own_id, &server_id)) 
 			return NULL;
 
-		ret->msg_ctx = messaging_init(ret->mem_ctx, 
-					    messaging_path,
+		ret->msg_ctx = imessaging_init(ret->mem_ctx,
+					    imessaging_path,
 					    server_id,
 					    ev);
 	} else {
-		ret->msg_ctx = messaging_client_init(ret->mem_ctx, 
-					    messaging_path,
+		ret->msg_ctx = imessaging_client_init(ret->mem_ctx,
+					    imessaging_path,
 					    ev);
 	}
 
 	if (ret->msg_ctx == NULL) {
-		PyErr_SetString(PyExc_RuntimeError, "messaging_connect unable to create a messaging context");
+		PyErr_SetString(PyExc_RuntimeError, "imessaging_connect unable to create a messaging context");
 		talloc_free(ret->mem_ctx);
 		return NULL;
 	}
@@ -114,16 +114,16 @@ static PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObje
 	return (PyObject *)ret;
 }
 
-static void py_messaging_dealloc(PyObject *self)
+static void py_imessaging_dealloc(PyObject *self)
 {
-	messaging_Object *iface = (messaging_Object *)self;
+	imessaging_Object *iface = (imessaging_Object *)self;
 	talloc_free(iface->msg_ctx);
 	self->ob_type->tp_free(self);
 }
 
-static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_imessaging_send(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	messaging_Object *iface = (messaging_Object *)self;
+	imessaging_Object *iface = (imessaging_Object *)self;
 	uint32_t msg_type;
 	DATA_BLOB data;
 	PyObject *target;
@@ -143,7 +143,7 @@ static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwa
 	if (!server_id_from_py(target, &server))
 		return NULL;
 
-	status = messaging_send(iface->msg_ctx, server, msg_type, &data);
+	status = imessaging_send(iface->msg_ctx, server, msg_type, &data);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetNTSTATUS(status);
 		return NULL;
@@ -152,7 +152,7 @@ static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwa
 	Py_RETURN_NONE;
 }
 
-static void py_msg_callback_wrapper(struct messaging_context *msg, void *private_data,
+static void py_msg_callback_wrapper(struct imessaging_context *msg, void *private_data,
 			       uint32_t msg_type, 
 			       struct server_id server_id, DATA_BLOB *data)
 {
@@ -163,9 +163,9 @@ static void py_msg_callback_wrapper(struct messaging_context *msg, void *private
 			      data->data, data->length);
 }
 
-static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_imessaging_register(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	messaging_Object *iface = (messaging_Object *)self;
+	imessaging_Object *iface = (imessaging_Object *)self;
 	int msg_type = -1;
 	PyObject *callback;
 	NTSTATUS status;
@@ -180,11 +180,11 @@ static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject 
 
 	if (msg_type == -1) {
 		uint32_t msg_type32 = msg_type;
-		status = messaging_register_tmp(iface->msg_ctx, callback,
+		status = imessaging_register_tmp(iface->msg_ctx, callback,
 						py_msg_callback_wrapper, &msg_type32);
 		msg_type = msg_type32;
 	} else {
-		status = messaging_register(iface->msg_ctx, callback,
+		status = imessaging_register(iface->msg_ctx, callback,
 				    msg_type, py_msg_callback_wrapper);
 	}
 	if (NT_STATUS_IS_ERR(status)) {
@@ -195,9 +195,9 @@ static PyObject *py_messaging_register(PyObject *self, PyObject *args, PyObject 
 	return PyLong_FromLong(msg_type);
 }
 
-static PyObject *py_messaging_deregister(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_imessaging_deregister(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	messaging_Object *iface = (messaging_Object *)self;
+	imessaging_Object *iface = (imessaging_Object *)self;
 	int msg_type = -1;
 	PyObject *callback;
 	const char *kwnames[] = { "callback", "msg_type", NULL };
@@ -207,49 +207,49 @@ static PyObject *py_messaging_deregister(PyObject *self, PyObject *args, PyObjec
 		return NULL;
 	}
 
-	messaging_deregister(iface->msg_ctx, msg_type, callback);
+	imessaging_deregister(iface->msg_ctx, msg_type, callback);
 
 	Py_DECREF(callback);
 
 	Py_RETURN_NONE;
 }
 
-static PyMethodDef py_messaging_methods[] = {
-	{ "send", (PyCFunction)py_messaging_send, METH_VARARGS|METH_KEYWORDS, 
+static PyMethodDef py_imessaging_methods[] = {
+	{ "send", (PyCFunction)py_imessaging_send, METH_VARARGS|METH_KEYWORDS,
 		"S.send(target, msg_type, data) -> None\nSend a message" },
-	{ "register", (PyCFunction)py_messaging_register, METH_VARARGS|METH_KEYWORDS,
+	{ "register", (PyCFunction)py_imessaging_register, METH_VARARGS|METH_KEYWORDS,
 		"S.register(callback, msg_type=None) -> msg_type\nRegister a message handler" },
-	{ "deregister", (PyCFunction)py_messaging_deregister, METH_VARARGS|METH_KEYWORDS,
+	{ "deregister", (PyCFunction)py_imessaging_deregister, METH_VARARGS|METH_KEYWORDS,
 		"S.deregister(callback, msg_type) -> None\nDeregister a message handler" },
 	{ NULL, NULL, 0, NULL }
 };
 
-static PyObject *py_messaging_server_id(PyObject *obj, void *closure)
+static PyObject *py_imessaging_server_id(PyObject *obj, void *closure)
 {
-	messaging_Object *iface = (messaging_Object *)obj;
-	struct server_id server_id = messaging_get_server_id(iface->msg_ctx);
+	imessaging_Object *iface = (imessaging_Object *)obj;
+	struct server_id server_id = imessaging_get_server_id(iface->msg_ctx);
 
 	return Py_BuildValue("(iii)", server_id.pid, server_id.id2,
 			     server_id.vnn);
 }
 
-static PyGetSetDef py_messaging_getset[] = {
-	{ discard_const_p(char, "server_id"), py_messaging_server_id, NULL, 
+static PyGetSetDef py_imessaging_getset[] = {
+	{ discard_const_p(char, "server_id"), py_imessaging_server_id, NULL,
 	  discard_const_p(char, "local server id") },
 	{ NULL },
 };
 
 
-PyTypeObject messaging_Type = {
+PyTypeObject imessaging_Type = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "messaging.Messaging",
-	.tp_basicsize = sizeof(messaging_Object),
+	.tp_basicsize = sizeof(imessaging_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-	.tp_new = py_messaging_connect,
-	.tp_dealloc = py_messaging_dealloc,
-	.tp_methods = py_messaging_methods,
-	.tp_getset = py_messaging_getset,
-	.tp_doc = "Messaging(own_id=None, messaging_path=None)\n" \
+	.tp_new = py_imessaging_connect,
+	.tp_dealloc = py_imessaging_dealloc,
+	.tp_methods = py_imessaging_methods,
+	.tp_getset = py_imessaging_getset,
+	.tp_doc = "Messaging(own_id=None, imessaging_path=None)\n" \
 		  "Create a new object that can be used to communicate with the peers in the specified messaging path.\n" \
 		  "If no path is specified, the default path from smb.conf will be used."
 };
@@ -258,13 +258,13 @@ void initmessaging(void)
 {
 	PyObject *mod;
 
-	if (PyType_Ready(&messaging_Type) < 0)
+	if (PyType_Ready(&imessaging_Type) < 0)
 		return;
 
 	mod = Py_InitModule3("messaging", NULL, "Internal RPC");
 	if (mod == NULL)
 		return;
 
-	Py_INCREF((PyObject *)&messaging_Type);
-	PyModule_AddObject(mod, "Messaging", (PyObject *)&messaging_Type);
+	Py_INCREF((PyObject *)&imessaging_Type);
+	PyModule_AddObject(mod, "Messaging", (PyObject *)&imessaging_Type);
 }

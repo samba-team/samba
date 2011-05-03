@@ -80,7 +80,7 @@ static void *local_backend_handle(struct cluster_ops *ops)
   dummy message init function - not needed as all messages are local
 */
 static NTSTATUS local_message_init(struct cluster_ops *ops,
-				   struct messaging_context *msg, 
+				   struct imessaging_context *msg,
 				   struct server_id server,
 				   cluster_message_fn_t handler)
 {

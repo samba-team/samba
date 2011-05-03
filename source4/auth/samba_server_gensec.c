@@ -29,7 +29,7 @@
 
 NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *event_ctx,
-				   struct messaging_context *msg_ctx,
+				   struct imessaging_context *msg_ctx,
 				   struct loadparm_context *lp_ctx,
 				   struct cli_credentials *server_credentials,
 				   const char *target_service,

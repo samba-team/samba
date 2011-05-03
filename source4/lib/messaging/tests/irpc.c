@@ -34,7 +34,7 @@ static bool test_debug;
 
 struct irpc_test_data
 {
-	struct messaging_context *msg_ctx1, *msg_ctx2;
+	struct imessaging_context *msg_ctx1, *msg_ctx2;
 	struct tevent_context *ev;
 };
 
@@ -246,15 +246,15 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 
 	data->ev = tctx->ev;
 	torture_assert(tctx, data->msg_ctx1 = 
-		       messaging_init(tctx, 
-				      lpcfg_messaging_path(tctx, tctx->lp_ctx),
+		       imessaging_init(tctx,
+				      lpcfg_imessaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(0, MSG_ID1),
 				      data->ev),
 		       "Failed to init first messaging context");
 
 	torture_assert(tctx, data->msg_ctx2 = 
-		       messaging_init(tctx, 
-				      lpcfg_messaging_path(tctx, tctx->lp_ctx),
+		       imessaging_init(tctx,
+				      lpcfg_imessaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(0, MSG_ID2), 
 				      data->ev),
 		       "Failed to init second messaging context");

@@ -109,7 +109,7 @@ struct auth_context {
 	struct tevent_context *event_ctx;
 
 	/* the messaging context which can be used by backends */
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 
 	/* loadparm context */
 	struct loadparm_context *lp_ctx;
@@ -193,7 +193,7 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 
 NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods,
 				     struct tevent_context *ev,
-				     struct messaging_context *msg,
+				     struct imessaging_context *msg,
 				     struct loadparm_context *lp_ctx,
 				     struct ldb_context *sam_ctx,
 				     struct auth_context **auth_ctx);
@@ -201,7 +201,7 @@ const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *
 
 NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev,
-			     struct messaging_context *msg,
+			     struct imessaging_context *msg,
 			     struct loadparm_context *lp_ctx,
 			     struct auth_context **auth_ctx);
 NTSTATUS auth_context_create_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct auth_context **auth_ctx);
@@ -215,7 +215,7 @@ NTSTATUS auth_register(const struct auth_operations *ops);
 NTSTATUS server_service_auth_init(void);
 NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
-				  struct messaging_context *msg,
+				  struct imessaging_context *msg,
 				  struct loadparm_context *lp_ctx,
 				  const char *nt4_domain,
 				  const char *nt4_username,
@@ -242,7 +242,7 @@ NTSTATUS auth_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *event_ctx,
-				   struct messaging_context *msg_ctx,
+				   struct imessaging_context *msg_ctx,
 				   struct loadparm_context *lp_ctx,
 				   struct cli_credentials *server_credentials,
 				   const char *target_service,

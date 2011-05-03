@@ -236,7 +236,7 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 
 /* called by the samldb ldb module to tell us to ask for a new RID
    pool */
-void dreplsrv_allocate_rid(struct messaging_context *msg, void *private_data,
+void dreplsrv_allocate_rid(struct imessaging_context *msg, void *private_data,
 			   uint32_t msg_type,
 			   struct server_id server_id, DATA_BLOB *data)
 {

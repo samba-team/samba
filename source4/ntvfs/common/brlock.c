@@ -45,16 +45,16 @@ void brl_set_ops(const struct brlock_ops *new_ops)
 
 /*
   Open up the brlock database. Close it down using talloc_free(). We
-  need the messaging_ctx to allow for pending lock notifications.
+  need the imessaging_ctx to allow for pending lock notifications.
 */
 struct brl_context *brl_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 			     struct loadparm_context *lp_ctx,
-			     struct messaging_context *messaging_ctx)
+			     struct imessaging_context *imessaging_ctx)
 {
 	if (ops == NULL) {
 		brl_tdb_init_ops();
 	}
-	return ops->brl_init(mem_ctx, server, lp_ctx, messaging_ctx);
+	return ops->brl_init(mem_ctx, server, lp_ctx, imessaging_ctx);
 }
 
 struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, struct ntvfs_handle *ntvfs, DATA_BLOB *file_key)

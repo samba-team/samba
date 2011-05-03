@@ -28,7 +28,7 @@ struct wbc_context {
 };
 
 struct wbc_context *wbc_init(TALLOC_CTX *mem_ctx,
-			     struct messaging_context *msg_ctx,
+			     struct imessaging_context *msg_ctx,
 			     struct tevent_context *event_ctx);
 
 struct composite_context *wbc_sids_to_xids_send(struct wbc_context *wbc_ctx,

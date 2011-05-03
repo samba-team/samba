@@ -80,7 +80,7 @@ struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_conte
 /*
   register a callback function for a messaging endpoint
 */
-NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,
+NTSTATUS cluster_message_init(struct imessaging_context *msg, struct server_id server,
 			      cluster_message_fn_t handler)
 {
 	cluster_init();

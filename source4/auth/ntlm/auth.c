@@ -425,7 +425,7 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 ***************************************************************************/
 _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
 					      struct tevent_context *ev,
-					      struct messaging_context *msg,
+					      struct imessaging_context *msg,
 					      struct loadparm_context *lp_ctx,
 					      struct ldb_context *sam_ctx,
 					      struct auth_context **auth_ctx)
@@ -508,7 +508,7 @@ const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *
 ***************************************************************************/
 _PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev,
-			     struct messaging_context *msg,
+			     struct imessaging_context *msg,
 			     struct loadparm_context *lp_ctx,
 			     struct auth_context **auth_ctx)
 {

@@ -41,7 +41,7 @@
 struct notify_context {
 	struct tdb_wrap *w;
 	struct server_id server;
-	struct messaging_context *messaging_ctx;
+	struct imessaging_context *imessaging_ctx;
 	struct notify_list *list;
 	struct notify_array *array;
 	int seqnum;
@@ -63,7 +63,7 @@ struct notify_list {
 #define NOTIFY_ENABLE_DEFAULT	true
 
 static NTSTATUS notify_remove_all(struct notify_context *notify);
-static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
+static void notify_handler(struct imessaging_context *msg_ctx, void *private_data,
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data);
 
 /*
@@ -71,18 +71,18 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 */
 static int notify_destructor(struct notify_context *notify)
 {
-	messaging_deregister(notify->messaging_ctx, MSG_PVFS_NOTIFY, notify);
+	imessaging_deregister(notify->imessaging_ctx, MSG_PVFS_NOTIFY, notify);
 	notify_remove_all(notify);
 	return 0;
 }
 
 /*
   Open up the notify.tdb database. You should close it down using
-  talloc_free(). We need the messaging_ctx to allow for notifications
+  talloc_free(). We need the imessaging_ctx to allow for notifications
   via internal messages
 */
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server, 
-				   struct messaging_context *messaging_ctx,
+				   struct imessaging_context *imessaging_ctx,
 				   struct loadparm_context *lp_ctx,
 				   struct tevent_context *ev,
 				   struct share_config *scfg)
@@ -109,7 +109,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	}
 
 	notify->server = server;
-	notify->messaging_ctx = messaging_ctx;
+	notify->imessaging_ctx = imessaging_ctx;
 	notify->list = NULL;
 	notify->array = NULL;
 	notify->seqnum = tdb_get_seqnum(notify->w->tdb);
@@ -118,7 +118,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 
 	/* register with the messaging subsystem for the notify
 	   message type */
-	messaging_register(notify->messaging_ctx, notify, 
+	imessaging_register(notify->imessaging_ctx, notify,
 			   MSG_PVFS_NOTIFY, notify_handler);
 
 	notify->sys_notify_ctx = sys_notify_context_create(scfg, notify, ev);
@@ -247,7 +247,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
 /*
   handle incoming notify messages
 */
-static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
+static void notify_handler(struct imessaging_context *msg_ctx, void *private_data,
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
 {
 	struct notify_context *notify = talloc_get_type(private_data, struct notify_context);
@@ -563,7 +563,7 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
 		return;
 	}
 
-	status = messaging_send(notify->messaging_ctx, e->server, 
+	status = imessaging_send(notify->imessaging_ctx, e->server,
 				MSG_PVFS_NOTIFY, &data);
 	talloc_free(tmp_ctx);
 }

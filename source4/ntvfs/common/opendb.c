@@ -55,7 +55,7 @@ void odb_set_ops(const struct opendb_ops *new_ops)
 
 /*
   Open up the openfiles.tdb database. Close it down using
-  talloc_free(). We need the messaging_ctx to allow for pending open
+  talloc_free(). We need the imessaging_ctx to allow for pending open
   notifications.
 */
 struct odb_context *odb_init(TALLOC_CTX *mem_ctx, 

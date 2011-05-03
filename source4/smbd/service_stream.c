@@ -122,7 +122,7 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 				     struct loadparm_context *lp_ctx,
 				     const struct model_ops *model_ops,
 				     const struct stream_server_ops *stream_ops,
-				     struct messaging_context *msg_ctx,
+				     struct imessaging_context *msg_ctx,
 				     void *private_data,
 				     struct stream_connection **_srv_conn)
 {
@@ -186,11 +186,11 @@ static void stream_new_connection(struct tevent_context *ev,
 	}
 
 	/* setup to receive internal messages on this connection */
-	srv_conn->msg_ctx = messaging_init(srv_conn, 
-					   lpcfg_messaging_path(srv_conn, lp_ctx),
+	srv_conn->msg_ctx = imessaging_init(srv_conn,
+					   lpcfg_imessaging_path(srv_conn, lp_ctx),
 					   srv_conn->server_id, ev);
 	if (!srv_conn->msg_ctx) {
-		stream_terminate_connection(srv_conn, "messaging_init() failed");
+		stream_terminate_connection(srv_conn, "imessaging_init() failed");
 		return;
 	}
 

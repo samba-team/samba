@@ -48,7 +48,7 @@
 struct brl_context {
 	struct tdb_wrap *w;
 	struct server_id server;
-	struct messaging_context *messaging_ctx;
+	struct imessaging_context *imessaging_ctx;
 };
 
 /*
@@ -89,12 +89,12 @@ static bool brl_invalid_lock_range(uint64_t start, uint64_t size)
 
 /*
   Open up the brlock.tdb database. Close it down using
-  talloc_free(). We need the messaging_ctx to allow for
+  talloc_free(). We need the imessaging_ctx to allow for
   pending lock notifications.
 */
 static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 					struct loadparm_context *lp_ctx,
-				    struct messaging_context *messaging_ctx)
+				    struct imessaging_context *imessaging_ctx)
 {
 	struct brl_context *brl;
 
@@ -110,7 +110,7 @@ static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id se
 	}
 
 	brl->server = server;
-	brl->messaging_ctx = messaging_ctx;
+	brl->imessaging_ctx = imessaging_ctx;
 
 	return brl;
 }
@@ -419,7 +419,7 @@ static void brl_tdb_notify_unlock(struct brl_context *brl,
 			if (locks[i].lock_type == PENDING_WRITE_LOCK) {
 				last_notice = i;
 			}
-			messaging_send_ptr(brl->messaging_ctx, locks[i].context.server, 
+			imessaging_send_ptr(brl->imessaging_ctx, locks[i].context.server,
 					   MSG_BRL_RETRY, locks[i].notify_ptr);
 		}
 	}

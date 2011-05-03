@@ -366,7 +366,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	};
 	struct gensec_ntlm_state *state;
 	struct tevent_context *ev;
-	struct messaging_context *msg;
+	struct imessaging_context *msg;
 
 	NTSTATUS nt_status;
 	bool first = false;
@@ -463,7 +463,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			const char *winbind_method[] = { "winbind", NULL };
 			struct auth_context *auth_context;
 
-			msg = messaging_client_init(state, lpcfg_messaging_path(state, lp_ctx), ev);
+			msg = imessaging_client_init(state, lpcfg_imessaging_path(state, lp_ctx), ev);
 			if (!msg) {
 				talloc_free(mem_ctx);
 				exit(1);

@@ -74,13 +74,13 @@ struct odb_lock {
 	} can_open;
 };
 
-static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
+static NTSTATUS odb_oplock_break_send(struct imessaging_context *msg_ctx,
 				      struct opendb_entry *e,
 				      uint8_t level);
 
 /*
   Open up the openfiles.tdb database. Close it down using
-  talloc_free(). We need the messaging_ctx to allow for pending open
+  talloc_free(). We need the imessaging_ctx to allow for pending open
   notifications.
 */
 static struct odb_context *odb_tdb_init(TALLOC_CTX *mem_ctx, 
@@ -294,7 +294,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 /*
   send an oplock break to a client
 */
-static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
+static NTSTATUS odb_oplock_break_send(struct imessaging_context *msg_ctx,
 				      struct opendb_entry *e,
 				      uint8_t level)
 {
@@ -311,7 +311,7 @@ static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
 
 	blob = data_blob_const(&op_break, sizeof(op_break));
 
-	status = messaging_send(msg_ctx, e->server,
+	status = imessaging_send(msg_ctx, e->server,
 				MSG_NTVFS_OPLOCK_BREAK, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -611,7 +611,7 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle,
 
 	/* send any pending notifications, removing them once sent */
 	for (i=0;i<lck->file.num_pending;i++) {
-		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+		imessaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
 				   lck->file.pending[i].server,
 				   MSG_PVFS_RETRY_OPEN,
 				   lck->file.pending[i].notify_ptr);
@@ -666,7 +666,7 @@ static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
 
 	/* send any pending notifications, removing them once sent */
 	for (i=0;i<lck->file.num_pending;i++) {
-		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+		imessaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
 				   lck->file.pending[i].server,
 				   MSG_PVFS_RETRY_OPEN,
 				   lck->file.pending[i].notify_ptr);

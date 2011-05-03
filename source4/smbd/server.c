@@ -221,11 +221,11 @@ static NTSTATUS samba_terminate(struct irpc_message *msg,
 static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx, 
 				       struct loadparm_context *lp_ctx)
 {
-	struct messaging_context *msg;
+	struct imessaging_context *msg;
 	NTSTATUS status;
 
-	msg = messaging_init(talloc_autofree_context(), 
-			     lpcfg_messaging_path(event_ctx, lp_ctx),
+	msg = imessaging_init(talloc_autofree_context(),
+			     lpcfg_imessaging_path(event_ctx, lp_ctx),
 			     cluster_id(0, SAMBA_PARENT_TASKID), event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 

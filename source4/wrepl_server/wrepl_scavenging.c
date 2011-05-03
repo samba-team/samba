@@ -306,7 +306,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 }
 
 struct verify_state {
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 	struct wreplsrv_service *service;
 	struct winsdb_record *rec;
 	struct nbtd_proxy_wins_challenge r;

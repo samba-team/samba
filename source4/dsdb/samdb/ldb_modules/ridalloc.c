@@ -66,14 +66,14 @@
  */
 static void ridalloc_poke_rid_manager(struct ldb_module *module)
 {
-	struct messaging_context *msg;
+	struct imessaging_context *msg;
 	struct server_id *server;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct loadparm_context *lp_ctx =
 		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 
-	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
+	msg = imessaging_client_init(tmp_ctx, lpcfg_imessaging_path(tmp_ctx, lp_ctx),
 				    ldb_get_event_context(ldb));
 	if (!msg) {
 		DEBUG(3,(__location__ ": Failed to create messaging context\n"));
@@ -88,7 +88,7 @@ static void ridalloc_poke_rid_manager(struct ldb_module *module)
 		return;
 	}
 
-	messaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
+	imessaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
 
 	/* we don't care if the message got through */
 	talloc_free(tmp_ctx);

@@ -1195,7 +1195,7 @@ static int rootdse_become_master(struct ldb_module *module,
 				 struct ldb_request *req,
 				 enum drepl_role_master role)
 {
-	struct messaging_context *msg;
+	struct imessaging_context *msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
@@ -1223,10 +1223,10 @@ static int rootdse_become_master(struct ldb_module *module,
 				 "RODC cannot become a role master.");
 	}
 
-	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
+	msg = imessaging_client_init(tmp_ctx, lpcfg_imessaging_path(tmp_ctx, lp_ctx),
 				    ldb_get_event_context(ldb));
 	if (!msg) {
-		ldb_asprintf_errstring(ldb, "Failed to generate client messaging context in %s", lpcfg_messaging_path(tmp_ctx, lp_ctx));
+		ldb_asprintf_errstring(ldb, "Failed to generate client messaging context in %s", lpcfg_imessaging_path(tmp_ctx, lp_ctx));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, msg,
