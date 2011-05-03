@@ -2578,7 +2578,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	/* skip the check if we have started but not finished recovery */
 	if (timeval_compare(&uptime1->last_recovery_finished,
 			    &uptime1->last_recovery_started) != 1) {
-		DEBUG(DEBUG_NOTICE, (__location__ " in the middle of recovery or ip reallocation. skipping public ip address check\n"));
+		DEBUG(DEBUG_INFO, (__location__ " in the middle of recovery or ip reallocation. skipping public ip address check\n"));
 		talloc_free(mem_ctx);
 
 		return 0;
