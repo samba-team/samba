@@ -136,23 +136,6 @@ static void unfixtarname(char *tptr, char *fp, int l, bool first);
  * tar specific utitlities
  */
 
-/*******************************************************************
-Create  a string of size size+1 (for the null)
-*******************************************************************/
-
-static char *string_create_s(int size)
-{
-	char *tmp;
-
-	tmp = (char *)SMB_MALLOC(size+1);
-
-	if (tmp == NULL) {
-		DEBUG(0, ("Out of memory in string_create_s\n"));
-	}
-
-	return(tmp);
-}
-
 /****************************************************************************
 Write a tar header to buffer
 ****************************************************************************/
@@ -197,7 +180,7 @@ static void writetarheader(int f, const char *aname, uint64_t size, time_t mtime
 	/* write out a "standard" tar format header */
 
 	hb.dbuf.name[NAMSIZ-1]='\0';
-	safe_strcpy(hb.dbuf.mode, amode, sizeof(hb.dbuf.mode)-1);
+	strlcpy(hb.dbuf.mode, amode, sizeof(hb.dbuf.mode));
 	oct_it((uint64_t)0, 8, hb.dbuf.uid);
 	oct_it((uint64_t)0, 8, hb.dbuf.gid);
 	oct_it((uint64_t) size, 13, hb.dbuf.size);
@@ -263,12 +246,12 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, const char *prefi
 		return -1;
 	}
 
-	if ((finfo->name = string_create_s(strlen(prefix) + strlen(hb -> dbuf.name) + 3)) == NULL) {
+	if ((finfo->name = SMB_MALLOC(strlen(prefix) + strlen(hb -> dbuf.name) + 4)) == NULL) {
 		DEBUG(0, ("Out of space creating file_info2 for %s\n", hb -> dbuf.name));
 		return(-1);
 	}
 
-	safe_strcpy(finfo->name, prefix, strlen(prefix) + strlen(hb -> dbuf.name) + 3);
+	strlcpy(finfo->name, prefix, strlen(prefix) + strlen(hb -> dbuf.name) + 4);
 
 	/* use l + 1 to do the null too; do prefix - prefcnt to zap leading slash */
 	unfixtarname(finfo->name + strlen(prefix), hb->dbuf.name,
@@ -521,14 +504,15 @@ static bool ensurepath(const char *fname)
 	/* ensures path exists */
 
 	char *partpath, *ffname;
+	size_t fnamelen = strlen(fname)+1;
 	const char *p=fname;
 	char *basehack;
 	char *saveptr;
 
 	DEBUG(5, ( "Ensurepath called with: %s\n", fname));
 
-	partpath = string_create_s(strlen(fname));
-	ffname = string_create_s(strlen(fname));
+	partpath = SMB_MALLOC(fnamelen);
+	ffname = SMB_MALLOC(fnamelen);
 
 	if ((partpath == NULL) || (ffname == NULL)){
 		DEBUG(0, ("Out of memory in ensurepath: %s\n", fname));
@@ -541,7 +525,7 @@ static bool ensurepath(const char *fname)
 
 	/* fname copied to ffname so can strtok_r */
 
-	safe_strcpy(ffname, fname, strlen(fname));
+	strlcpy(ffname, fname, fnamelen);
 
 	/* do a `basename' on ffname, so don't try and make file name directory */
 	if ((basehack=strrchr_m(ffname, '\\')) == NULL) {
@@ -555,7 +539,7 @@ static bool ensurepath(const char *fname)
 	p=strtok_r(ffname, "\\", &saveptr);
 
 	while (p) {
-		safe_strcat(partpath, p, strlen(fname) + 1);
+		strlcat(partpath, p, fnamelen);
 
 		if (!NT_STATUS_IS_OK(cli_chkpath(cli, partpath))) {
 			if (!NT_STATUS_IS_OK(cli_mkdir(cli, partpath))) {
@@ -568,7 +552,7 @@ static bool ensurepath(const char *fname)
 			}
 		}
 
-		safe_strcat(partpath, "\\", strlen(fname) + 1);
+		strlcat(partpath, "\\", fnamelen);
 		p = strtok_r(NULL, "/\\", &saveptr);
 	}
 
@@ -675,14 +659,12 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 		goto cleanup;
 	}
 
-	finfo.name = string_create_s(strlen(rname));
+	finfo.name = smb_xstrdup(rname);
 	if (finfo.name == NULL) {
 		DEBUG(0, ("Unable to allocate space for finfo.name in do_atar\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto cleanup;
 	}
-
-	safe_strcpy(finfo.name,rname, strlen(rname));
 
 	DEBUG(3,("file %s attrib 0x%X\n",finfo.name,finfo.mode));
 
@@ -934,9 +916,12 @@ static void unfixtarname(char *tptr, char *fp, int l, bool first)
 			fp++;
 			l--;
 		}
+		if (l <= 0) {
+			return;
+		}
 	}
 
-	safe_strcpy(tptr, fp, l);
+	strlcpy(tptr, fp, l);
 	string_replace(tptr, '/', '\\');
 }
 
@@ -1170,7 +1155,8 @@ static char *get_longfilename(file_info2 finfo)
 			return(NULL);
 		}
 
-		unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size), first--);
+		unfixtarname(longname + offset, buffer_p,
+			namesize - offset, first--);
 		DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, buffer_p));
 
 		offset += TBLOCK;
@@ -1721,7 +1707,7 @@ static int read_inclusion_file(char *filename)
 			}
 		}
 
-		safe_strcpy(inclusion_buffer + inclusion_buffer_sofar, buf, inclusion_buffer_size - inclusion_buffer_sofar);
+		strlcpy(inclusion_buffer + inclusion_buffer_sofar, buf, inclusion_buffer_size - inclusion_buffer_sofar);
 		inclusion_buffer_sofar += strlen(buf) + 1;
 		clipn++;
 	}
