@@ -99,12 +99,12 @@ static int gensec_sasl_get_password(sasl_conn_t *conn, void *context, int id,
 		*psecret = NULL;
 		return SASL_OK;
 	}
-	secret = talloc_size(gensec_security, sizeof(sasl_secret_t)+strlen(password));
+	secret = talloc_size(gensec_security, sizeof(sasl_secret_t)+strlen(password)+1);
 	if (!secret) {
 		return SASL_NOMEM;
 	}
 	secret->len = strlen(password);
-	safe_strcpy((char*)secret->data, password, secret->len+1);
+	strlcpy((char*)secret->data, password, secret->len+1);
 	*psecret = secret;
 	return SASL_OK;
 }
