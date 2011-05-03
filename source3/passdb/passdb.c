@@ -384,9 +384,9 @@ void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32_t acct_ctrl)
 			slprintf(&p[i*2], 3, "%02X", pwd[i]);
 	} else {
 		if (acct_ctrl & ACB_PWNOTREQ)
-			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32);
+			strlcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
 		else
-			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+			strlcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
 	}
 }
 
@@ -435,7 +435,7 @@ void pdb_sethexhours(char *p, const unsigned char *hours)
 			slprintf(&p[i*2], 3, "%02X", hours[i]);
 		}
 	} else {
-		safe_strcpy(p, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 43);
+		strlcpy(p, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 44);
 	}
 }
 

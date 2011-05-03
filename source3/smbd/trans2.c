@@ -491,7 +491,7 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
 		if (strequal(&unix_ea_name[5], ea_list->ea.name)) {
 			DEBUG(10,("canonicalize_ea_name: %s -> %s\n",
 				&unix_ea_name[5], ea_list->ea.name));
-			safe_strcpy(&unix_ea_name[5], ea_list->ea.name, sizeof(fstring)-6);
+			strlcpy(&unix_ea_name[5], ea_list->ea.name, sizeof(fstring)-5);
 			break;
 		}
 	}

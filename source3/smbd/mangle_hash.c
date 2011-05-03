@@ -473,7 +473,7 @@ static void cache_mangled_name( const char mangled_name[13],
 		return;
 
 	/* Init the string lengths. */
-	safe_strcpy(mangled_name_key, mangled_name, sizeof(mangled_name_key)-1);
+	strlcpy(mangled_name_key, mangled_name, sizeof(mangled_name_key));
 
 	/* See if the extensions are unmangled.  If so, store the entry
 	 * without the extension, thus creating a "group" reverse map.
@@ -638,7 +638,7 @@ static bool to_8_3(char magic_char, const char *in, char out[13], int default_ca
 
 	if( p ) {
 		if( p == s )
-			safe_strcpy( extension, "___", 3 );
+			strlcpy( extension, "___", 4);
 		else {
 			*p++ = 0;
 			while( *p && extlen < 3 ) {
@@ -670,7 +670,7 @@ static bool to_8_3(char magic_char, const char *in, char out[13], int default_ca
 
 	if( *extension ) {
 		out[baselen+3] = '.';
-		safe_strcpy(&out[baselen+4], extension, 3);
+		strlcpy(&out[baselen+4], extension, 4);
 	}
 
 	SAFE_FREE(s);
@@ -738,7 +738,7 @@ static bool hash_name_to_8_3(const char *in,
 	if (NT_STATUS_IS_OK(is_valid_name(in_ucs2, False, False)) &&
 				NT_STATUS_IS_OK(is_8_3_w(in_ucs2, False))) {
 		TALLOC_FREE(in_ucs2);
-		safe_strcpy(out, in, 12);
+		strlcpy(out, in, 13);
 		return True;
 	}
 
