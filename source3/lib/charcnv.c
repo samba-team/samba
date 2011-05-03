@@ -45,98 +45,6 @@ void init_iconv(void)
 }
 
 /**
- talloc_strdup() a unix string to upper case.
-**/
-
-char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
-{
-	char *out_buffer = talloc_strdup(ctx,s);
-	const unsigned char *p = (const unsigned char *)s;
-	unsigned char *q = (unsigned char *)out_buffer;
-
-	if (!q) {
-		return NULL;
-	}
-
-	/* this is quite a common operation, so we want it to be
-	   fast. We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-
-	while (*p) {
-		if (*p & 0x80)
-			break;
-		*q++ = toupper_ascii_fast(*p);
-		p++;
-	}
-
-	if (*p) {
-		/* MB case. */
-		size_t converted_size, converted_size2;
-		smb_ucs2_t *ubuf = NULL;
-
-		/* We're not using the ascii buffer above. */
-		TALLOC_FREE(out_buffer);
-
-		if (!convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE, s,
-					   strlen(s)+1, (void *)&ubuf,
-					   &converted_size))
-		{
-			return NULL;
-		}
-
-		strupper_w(ubuf);
-
-		if (!convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, ubuf,
-					   converted_size, (void *)&out_buffer,
-					   &converted_size2))
-		{
-			TALLOC_FREE(ubuf);
-			return NULL;
-		}
-
-		/* Don't need the intermediate buffer
- 		 * anymore.
- 		 */
-		TALLOC_FREE(ubuf);
-	}
-
-	return out_buffer;
-}
-
-char *strupper_talloc(TALLOC_CTX *ctx, const char *s) {
-	return talloc_strdup_upper(ctx, s);
-}
-
-
-char *talloc_strdup_lower(TALLOC_CTX *ctx, const char *s)
-{
-	size_t converted_size;
-	smb_ucs2_t *buffer = NULL;
-	char *out_buffer;
-
-	if (!push_ucs2_talloc(ctx, &buffer, s, &converted_size)) {
-		return NULL;
-	}
-
-	strlower_w(buffer);
-
-	if (!pull_ucs2_talloc(ctx, &out_buffer, buffer, &converted_size)) {
-		TALLOC_FREE(buffer);
-		return NULL;
-	}
-
-	TALLOC_FREE(buffer);
-
-	return out_buffer;
-}
-
-char *strlower_talloc(TALLOC_CTX *ctx, const char *s) {
-	return talloc_strdup_lower(ctx, s);
-}
-
-
-/**
  * Copy a string from a char* unix src to a dos codepage string destination.
  *
  * @return the number of bytes occupied by the string in the destination.
@@ -624,36 +532,6 @@ size_t push_string_base(const char *base, uint16 flags2,
 		return push_ucs2(base, dest, src, dest_len, flags);
 	}
 	return push_ascii(dest, src, dest_len, flags);
-}
-
-/**
- Copy a string from a char* src to a unicode or ascii
- dos codepage destination choosing unicode or ascii based on the 
- flags supplied
- Return the number of bytes occupied by the string in the destination.
- flags can have:
-  STR_TERMINATE means include the null termination.
-  STR_UPPER     means uppercase in the destination.
-  STR_ASCII     use ascii even with unicode packet.
-  STR_NOALIGN   means don't do alignment.
- dest_len is the maximum length allowed in the destination. If dest_len
- is -1 then no maxiumum is used.
-**/
-
-ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
-{
-	size_t ret;
-
-	if (!(flags & STR_ASCII) && \
-	    (flags & STR_UNICODE)) {
-		ret = push_ucs2(NULL, dest, src, dest_len, flags);
-	} else {
-		ret = push_ascii(dest, src, dest_len, flags);
-	}
-	if (ret == (size_t)-1) {
-		return -1;
-	}
-	return ret;
 }
 
 /**

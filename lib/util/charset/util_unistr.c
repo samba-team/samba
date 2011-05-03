@@ -194,7 +194,7 @@ _PUBLIC_ size_t count_chars_m(const char *s, char c)
  * @param dest_len the maximum length in bytes allowed in the
  * destination.  If @p dest_len is -1 then no maximum is used.
  **/
-static bool push_ascii(void *dest, const char *src, size_t dest_len, int flags, size_t *converted_size)
+static bool push_ascii_string(void *dest, const char *src, size_t dest_len, int flags, size_t *converted_size)
 {
 	size_t src_len;
 	bool ret;
@@ -204,7 +204,7 @@ static bool push_ascii(void *dest, const char *src, size_t dest_len, int flags, 
 		if (tmpbuf == NULL) {
 			return false;
 		}
-		ret = push_ascii(dest, tmpbuf, dest_len, flags & ~STR_UPPER, converted_size);
+		ret = push_ascii_string(dest, tmpbuf, dest_len, flags & ~STR_UPPER, converted_size);
 		talloc_free(tmpbuf);
 		return ret;
 	}
@@ -232,7 +232,7 @@ static bool push_ascii(void *dest, const char *src, size_t dest_len, int flags, 
  * @param src_len is the length of the source area in bytes.
  * @returns the number of bytes occupied by the string in @p src.
  **/
-static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
+static ssize_t pull_ascii_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	size_t size = 0;
 
@@ -373,7 +373,7 @@ _PUBLIC_ ssize_t push_string(void *dest, const char *src, size_t dest_len, int f
 {
 	if (flags & STR_ASCII) {
 		size_t size = 0;
-		if (push_ascii(dest, src, dest_len, flags, &size)) {
+		if (push_ascii_string(dest, src, dest_len, flags, &size)) {
 			return (ssize_t)size;
 		} else {
 			return (ssize_t)-1;
@@ -404,7 +404,7 @@ _PUBLIC_ ssize_t push_string(void *dest, const char *src, size_t dest_len, int f
 _PUBLIC_ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
 	if (flags & STR_ASCII) {
-		return pull_ascii(dest, src, dest_len, src_len, flags);
+		return pull_ascii_string(dest, src, dest_len, src_len, flags);
 	} else if (flags & STR_UNICODE) {
 		return pull_ucs2(dest, src, dest_len, src_len, flags);
 	} else {

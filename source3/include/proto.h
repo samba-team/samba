@@ -82,10 +82,6 @@ bool convert_string_error(charset_t from, charset_t to,
 			    void const *src, size_t srclen,
 			    void *dest, size_t destlen,
 			    size_t *converted_size);
-char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s);
-char *strupper_talloc(TALLOC_CTX *ctx, const char *s);
-char *talloc_strdup_lower(TALLOC_CTX *ctx, const char *s);
-char *strlower_talloc(TALLOC_CTX *ctx, const char *s);
 size_t ucs2_align(const void *base_ptr, const void *p, int flags);
 size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags);
 size_t push_ascii_fstring(void *dest, const char *src);

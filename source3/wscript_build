@@ -964,7 +964,7 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
 
 bld.SAMBA3_SUBSYSTEM('CHARSET3',
                     source='''lib/util_str.c lib/charcnv.c lib/fstring.c''',
-                    public_deps='ICONV_WRAPPER CODEPOINTS',
+                    public_deps='ICONV_WRAPPER CHARSET',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
@@ -1317,7 +1317,6 @@ if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('tdb-wrap', source='', deps='tdb-wrap3')
     bld.SAMBA3_SUBSYSTEM('errors', source='', deps='errors3')
     bld.SAMBA3_SUBSYSTEM('samba-util', source='', deps='DYNCONFIG')
-    bld.SAMBA3_SUBSYSTEM('CHARSET', source='', deps='CHARSET3')
     bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
     bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
     bld.SAMBA3_SUBSYSTEM('cli-ldap', '', deps='UTIL_TEVENT')
