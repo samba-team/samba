@@ -1005,7 +1005,10 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		errno = sav;
 	}
 
-	if (ret == -1 && errno != EINTR) {
+	if (ret == -1) {
+		if (errno == EINTR) {
+			return NT_STATUS_RETRY;
+		}
 		return map_nt_error_from_unix(errno);
 	}
 
