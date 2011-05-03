@@ -388,10 +388,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	pidfile_create(lpcfg_piddir(cmdline_lp_ctx), binary_name);
 
-	/* Do *not* remove this, until you have removed
-	 * passdb/secrets.c, and proved that Samba still builds... */
-	/* Setup the SECRETS subsystem */
-	if (secrets_init(talloc_autofree_context(), cmdline_lp_ctx) == NULL) {
+	/* Set up a database to hold a random seed, in case we don't
+	 * have /dev/urandom */
+	if (randseed_init(talloc_autofree_context(), cmdline_lp_ctx) == NULL) {
 		return 1;
 	}
 
