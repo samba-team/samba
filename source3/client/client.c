@@ -702,7 +702,7 @@ static void add_to_do_list_queue(const char *entry)
 		}
 	}
 	if (do_list_queue) {
-		safe_strcpy_base(do_list_queue + do_list_queue_end,
+		strlcpy_base(do_list_queue + do_list_queue_end,
 				 entry, do_list_queue, do_list_queue_size);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",

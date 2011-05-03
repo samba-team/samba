@@ -41,8 +41,8 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 
 #endif /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
 
-#define safe_strcpy_base(dest, src, base, size) \
-    safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
+#define strlcpy_base(dest, src, base, size) \
+    strlcpy(dest, src, size-PTR_DIFF(dest,base))
 
 /* String copy functions - macro hell below adds 'type checking' (limited,
    but the best we can do in C) */

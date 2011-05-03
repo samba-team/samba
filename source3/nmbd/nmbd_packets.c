@@ -2087,7 +2087,7 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 	SSVAL(ptr,smb_vwv15,1);
 	SSVAL(ptr,smb_vwv16,2);
 	p2 = smb_buf(ptr);
-	safe_strcpy_base(p2, mailslot, dgram->data, sizeof(dgram->data));
+	strlcpy_base(p2, mailslot, dgram->data, sizeof(dgram->data));
 	p2 = skip_string(ptr,MAX_DGRAM_SIZE,p2);
 
 	if (((p2+len) > dgram->data+sizeof(dgram->data)) || ((p2+len) < p2)) {
