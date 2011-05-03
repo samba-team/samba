@@ -937,12 +937,6 @@ size_t str_charnum(const char *s);
 bool trim_char(char *s,char cfront,char cback);
 bool strhasupper(const char *s);
 bool strhaslower(const char *s);
-char *safe_strcpy_fn(char *dest,
-		const char *src,
-		size_t maxlength);
-char *safe_strcat_fn(char *dest,
-		const char *src,
-		size_t maxlength);
 char *StrnCpy(char *dest,const char *src,size_t n);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);

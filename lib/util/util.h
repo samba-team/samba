@@ -247,18 +247,6 @@ _PUBLIC_ bool trim_string(char *s, const char *front, const char *back);
 _PUBLIC_ _PURE_ size_t count_chars(const char *s, char c);
 
 /**
- Safe string copy into a known length string. maxlength does not
- include the terminating zero.
-**/
-_PUBLIC_ char *safe_strcpy_fn(char *dest,const char *src, size_t maxlength);
-
-/**
- Safe string cat into a string. maxlength does not
- include the terminating zero.
-**/
-_PUBLIC_ char *safe_strcat_fn(char *dest, const char *src, size_t maxlength);
-
-/**
  Routine to get hex characters and turn them into a 16 byte array.
  the array can be variable length, and any non-hex-numeric
  characters are skipped.  "0xnn" or "0Xnn" is specially catered

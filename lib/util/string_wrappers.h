@@ -52,25 +52,11 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 #define nstrcpy(d,s) strlcpy((d), (s) ? (s) : "",sizeof(nstring))
 #define unstrcpy(d,s) strlcpy((d), (s) ? (s) : "",sizeof(unstring))
 
-/* the addition of the DEVELOPER checks in safe_strcpy means we must
- * update a lot of code. To make this a little easier here are some
- * functions that provide the lengths with less pain */
-
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
 /* if the compiler will optimize out function calls, then use this to tell if we are
    have the correct types (this works only where sizeof() returns the size of the buffer, not
    the size of the pointer). */
-
-#define safe_strcpy(d, s, max_len) \
-    (CHECK_STRING_SIZE(d, max_len+1) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcpy_fn((d), (s), (max_len)))
-
-#define safe_strcat(d, s, max_len) \
-    (CHECK_STRING_SIZE(d, max_len+1) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcat_fn((d), (s), (max_len)))
 
 #define push_string_check(dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
@@ -105,8 +91,6 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 
 #else
 
-#define safe_strcpy safe_strcpy_fn
-#define safe_strcat safe_strcat_fn
 #define push_string_check push_string_check_fn
 #define clistr_push clistr_push_fn
 #define clistr_pull clistr_pull_fn
