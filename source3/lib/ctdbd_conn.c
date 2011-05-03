@@ -336,7 +336,7 @@ static NTSTATUS ctdb_packet_fd_read_sync(struct ctdb_packet_context *ctx)
 	if (timeout == 0) {
 		timeout = -1;
 	}
-	return ctdb_packet_fd_read_sync(ctx, timeout);
+	return ctdb_packet_fd_read_sync_timeout(ctx, timeout);
 }
 
 /*

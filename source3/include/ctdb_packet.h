@@ -38,7 +38,7 @@ NTSTATUS ctdb_packet_fd_read(struct ctdb_packet_context *ctx);
 /*
  * Sync read, wait for the next chunk
  */
-NTSTATUS ctdb_packet_fd_read_sync(struct ctdb_packet_context *ctx, int timeout);
+NTSTATUS ctdb_packet_fd_read_sync_timeout(struct ctdb_packet_context *ctx, int timeout);
 
 /*
  * Handle an incoming ctdb_packet:

@@ -105,7 +105,7 @@ NTSTATUS ctdb_packet_fd_read(struct ctdb_packet_context *ctx)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ctdb_packet_fd_read_sync(struct ctdb_packet_context *ctx, int timeout)
+NTSTATUS ctdb_packet_fd_read_sync_timeout(struct ctdb_packet_context *ctx, int timeout)
 {
 	int res, revents;
 
