@@ -681,11 +681,6 @@ void exit_server(const char *const reason) _NORETURN_;
 void exit_server_cleanly(const char *const reason) _NORETURN_;
 void exit_server_fault(void) _NORETURN_;
 
-#if defined(HAVE_IPV6)
-void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
-				  struct in6_addr ip);
-#endif
-
 /* samba3 doesn't use uwrap yet */
 #define uwrap_enabled() 0
 
