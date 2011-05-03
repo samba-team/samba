@@ -85,7 +85,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	/* Now test that the duplicate filtering code works. */
 	pong_count = 0;
 
-	safe_strcpy(buf, "1234567890", sizeof(buf)-1);
+	strlcpy(buf, "1234567890", sizeof(buf));
 
 	for (i=0;i<n;i++) {
 		messaging_send(msg_ctx, messaging_server_id(msg_ctx), MSG_PING,

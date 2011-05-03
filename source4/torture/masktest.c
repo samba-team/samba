@@ -175,7 +175,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 
 	count++;
 
-	safe_strcpy(res1, "---", sizeof(res1)-1);
+	strlcpy(res1, "---", sizeof(res1));
 
 	state.mem_ctx = mem_ctx;
 
@@ -189,7 +189,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 	resultp = res1;
 	short_name = talloc_strdup(mem_ctx, "");
 	get_real_name(mem_ctx, cli, &long_name, &short_name);
-	safe_strcpy(res1, "---", sizeof(res1)-1);
+	strlcpy(res1, "---", sizeof(res1));
 	smbcli_list_new(cli->tree, mask,
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,

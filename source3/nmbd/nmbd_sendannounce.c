@@ -105,7 +105,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 	SCVAL(p,0,updatecount);
 	SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
 
-	safe_strcpy(upper_server_name, server_name, sizeof(upper_server_name)-1);
+	strlcpy(upper_server_name, server_name ? server_name : "", sizeof(upper_server_name));
 	strupper_m(upper_server_name);
 	push_string_check(p+5, upper_server_name, 16, STR_ASCII|STR_TERMINATE);
 

@@ -134,7 +134,7 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 	tmpbuf = strupper_talloc(mem_ctx, passwd);
 	if (tmpbuf == NULL) {
 		/* Too many callers don't check this result, we need to fill in the buffer with something */
-		safe_strcpy((char *)dospwd, passwd, sizeof(dospwd)-1);
+		strlcpy((char *)dospwd, passwd, sizeof(dospwd));
 		E_P16(dospwd, p16);
 		return false;
 	}

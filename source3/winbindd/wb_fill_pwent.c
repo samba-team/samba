@@ -194,7 +194,7 @@ static bool fillup_pw_field(const char *lp_template,
 	if (!templ)
 		return False;
 
-	safe_strcpy(out, templ, sizeof(fstring) - 1);
+	strlcpy(out, templ, sizeof(fstring));
 	TALLOC_FREE(templ);
 
 	return True;

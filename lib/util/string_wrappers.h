@@ -47,10 +47,10 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 /* String copy functions - macro hell below adds 'type checking' (limited,
    but the best we can do in C) */
 
-#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
-#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
-#define nstrcpy(d,s) safe_strcpy((d), (s),sizeof(nstring)-1)
-#define unstrcpy(d,s) safe_strcpy((d), (s),sizeof(unstring)-1)
+#define fstrcpy(d,s) strlcpy((d),(s) ? (s) : "",sizeof(fstring))
+#define fstrcat(d,s) strlcpy((d),(s) ? (s) : "",sizeof(fstring))
+#define nstrcpy(d,s) strlcpy((d), (s) ? (s) : "",sizeof(nstring))
+#define unstrcpy(d,s) strlcpy((d), (s) ? (s) : "",sizeof(unstring))
 
 /* the addition of the DEVELOPER checks in safe_strcpy means we must
  * update a lot of code. To make this a little easier here are some

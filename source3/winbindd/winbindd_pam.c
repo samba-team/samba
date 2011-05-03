@@ -1514,8 +1514,8 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		fstr_sprintf( domain_user, "%s%c%s", name_domain,
 			*lp_winbind_separator(),
 			name_user );
-		safe_strcpy( state->request->data.auth.user, domain_user,
-			     sizeof(state->request->data.auth.user)-1 );
+		strlcpy( state->request->data.auth.user, domain_user,
+			     sizeof(state->request->data.auth.user));
 	}
 
 	if (!domain->online) {
