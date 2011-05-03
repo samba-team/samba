@@ -12,7 +12,7 @@ common_util_public_deps = 'talloc pthread LIBCRYPTO'
 s4_util_sources = '''dprintf.c ms_fnmatch.c parmlist.c'''
 s4_util_deps = 'DYNCONFIG'
 s4_util_public_deps = 'talloc CHARSET execinfo uid_wrapper'
-s4_util_public_headers = 'attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h'
+s4_util_public_headers = 'attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h string_wrappers.h'
 s4_util_header_path = [ ('dlinklist.h util.h', '.'), ('*', 'util') ]
 
 if bld.env._SAMBA_BUILD_ == 3:
