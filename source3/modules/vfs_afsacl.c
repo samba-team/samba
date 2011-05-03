@@ -30,7 +30,7 @@
 #include <afs/venus.h>
 #include <afs/prs_fs.h>
 
-#define MAXSIZE 2048
+#define MAXSIZE 2049
 
 extern const struct dom_sid global_sid_World;
 extern const struct dom_sid global_sid_Builtin_Administrators;
@@ -234,10 +234,10 @@ static bool parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 	int nplus, nminus;
 	int aces;
 
-	char str[MAXSIZE+1];
+	char str[MAXSIZE];
 	char *p = str;
 
-	strncpy(str, acl_str, MAXSIZE);
+	strlcpy(str, acl_str, MAXSIZE);
 
 	if (sscanf(p, "%d", &nplus) != 1)
 		return False;
@@ -313,16 +313,16 @@ static bool unparse_afs_acl(struct afs_acl *acl, char *acl_str)
 	}
 
 	fstr_sprintf(line, "%d\n", positives);
-	safe_strcat(acl_str, line, MAXSIZE);
+	strlcat(acl_str, line, MAXSIZE);
 
 	fstr_sprintf(line, "%d\n", negatives);
-	safe_strcat(acl_str, line, MAXSIZE);
+	strlcat(acl_str, line, MAXSIZE);
 
 	ace = acl->acelist;
 
 	while (ace != NULL) {
 		fstr_sprintf(line, "%s\t%d\n", ace->name, ace->rights);
-		safe_strcat(acl_str, line, MAXSIZE);
+		strlcat(acl_str, line, MAXSIZE);
 		ace = ace->next;
 	}
 	return True;
@@ -897,7 +897,7 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 {
 	struct afs_acl old_afs_acl, new_afs_acl;
 	struct afs_acl dir_acl, file_acl;
-	char acl_string[2049];
+	char acl_string[MAXSIZE];
 	struct afs_iob iob;
 	int ret = -1;
 	char *name = NULL;
