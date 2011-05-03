@@ -91,6 +91,11 @@ static void add_interface(TALLOC_CTX *mem_ctx, const struct iface_struct *ifs, s
 		return;
 	}
 
+	if (ifs->ip.ss_family != AF_INET) {
+		DEBUG(5, ("not adding IPv6 interface %s\n", ifs->name));
+		return;
+	}
+
 	iface = talloc(*interfaces == NULL ? mem_ctx : *interfaces, struct interface);
 	if (iface == NULL) 
 		return;
