@@ -2213,12 +2213,6 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 				     struct dom_sid **sids );
 NTSTATUS change_trust_account_password( const char *domain, const char *remote_machine);
 
-/* The following definitions come from modules/vfs_default.c  */
-
-ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
-ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
-NTSTATUS vfs_default_init(void);
-
 /* The following definitions come from param/loadparm.c  */
 
 char *lp_smb_ports(void);
