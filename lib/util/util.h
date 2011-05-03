@@ -62,6 +62,8 @@ extern const char *panic_action;
 
 #include "lib/util/memory.h"
 
+#include "lib/util/string_wrappers.h"
+
 /**
  * Write backtrace to debug log
  */
@@ -248,13 +250,13 @@ _PUBLIC_ _PURE_ size_t count_chars(const char *s, char c);
  Safe string copy into a known length string. maxlength does not
  include the terminating zero.
 **/
-_PUBLIC_ char *safe_strcpy(char *dest,const char *src, size_t maxlength);
+_PUBLIC_ char *safe_strcpy_fn(char *dest,const char *src, size_t maxlength);
 
 /**
  Safe string cat into a string. maxlength does not
  include the terminating zero.
 **/
-_PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength);
+_PUBLIC_ char *safe_strcat_fn(char *dest, const char *src, size_t maxlength);
 
 /**
  Routine to get hex characters and turn them into a 16 byte array.
