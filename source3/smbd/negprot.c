@@ -234,6 +234,10 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 		SAFE_FREE(host_princ_s);
 	}
 
+	if (blob.length == 0 || blob.data == NULL) {
+		return data_blob_null;
+	}
+
 	blob_out = data_blob_talloc(ctx, NULL, 16 + blob.length);
 	if (blob_out.data == NULL) {
 		data_blob_free(&blob);
@@ -245,7 +249,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 	safe_strcpy(unix_name, global_myname(), sizeof(unix_name)-1);
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
-	safe_strcpy((char *)blob_out.data, dos_name, 16);
+	strlcpy((char *)blob_out.data, dos_name, 17);
 
 #ifdef DEVELOPER
 	/* Fix valgrind 'uninitialized bytes' issue. */
