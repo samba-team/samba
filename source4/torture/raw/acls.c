@@ -1846,6 +1846,7 @@ done:
 	return ret;
 }
 
+#if 0
 static bool test_inheritance_flags(struct torture_context *tctx,
     struct smbcli_state *cli)
 {
@@ -2073,6 +2074,7 @@ done:
 	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
+#endif
 
 /*
   test dynamic acl inheritance
@@ -2243,6 +2245,8 @@ done:
 	} \
 	CHECK_STATUS_FOR_BIT_ACTION(status, bits, do {} while (0)); \
 } while (0)
+
+#if 0
 
 /* test what access mask is needed for getting and setting security_descriptors
   Test copied to smb2/acls.c for SMB2. */
@@ -2433,6 +2437,7 @@ done:
 	return ret;
 }
 
+#endif
 
 /* 
    basic testing of security descriptor calls
@@ -2450,11 +2455,14 @@ struct torture_suite *torture_raw_acls(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "owner", test_owner_bits);
 	torture_suite_add_1smb_test(suite, "inheritance", test_inheritance);
 
-	/* torture_suite_add_1smb_test(suite, "INHERITFLAGS", test_inheritance_flags); */
+#if 0
+	torture_suite_add_1smb_test(suite, "INHERITFLAGS", test_inheritance_flags);
+#endif
 	torture_suite_add_1smb_test(suite, "dynamic", test_inheritance_dynamic);
-	/* XXX This test does not work against XP or Vista.
+#if 0
+	/* XXX This test does not work against XP or Vista. */
 	torture_suite_add_1smb_test(suite, "GETSET", test_sd_get_set);
-	*/
+#endif
 
 	return suite;
 }

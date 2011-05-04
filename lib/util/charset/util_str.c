@@ -329,7 +329,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
-			return (char *)s;
+			return discard_const_p(char, s);
 	}
 
 	if (!*s)
@@ -397,7 +397,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 					break;
 				}
 				/* No - we have a match ! */
-				return (char *)cp;
+				return discard_const_p(char , cp);
 			}
 		} while (cp-- != s);
 		if (!got_mb)
@@ -492,7 +492,7 @@ char *strstr_m(const char *src, const char *findstr)
 
 	/* for correctness */
 	if (!findstr[0]) {
-		return (char*)src;
+		return discard_const_p(char, src);
 	}
 
 	/* Samba does single character findstr calls a *lot*. */
@@ -509,7 +509,7 @@ char *strstr_m(const char *src, const char *findstr)
 				findstr_len = strlen(findstr);
 
 			if (strncmp(s, findstr, findstr_len) == 0) {
-				return (char *)s;
+				return discard_const_p(char, s);
 			}
 		}
 	}

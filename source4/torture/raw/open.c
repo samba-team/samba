@@ -152,7 +152,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	if (!NT_STATUS_IS_OK(status)) { \
 		torture_warning(tctx, "(%s) Failed to set attrib 0x%x on %s\n", \
-		       __location__, sattrib, fname); \
+		       __location__, (int)sattrib, fname); \
 	}} while (0)
 
 /*

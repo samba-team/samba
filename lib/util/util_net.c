@@ -591,7 +591,7 @@ char *print_sockaddr(char *dest,
 			size_t destlen,
 			const struct sockaddr_storage *psa)
 {
-	return print_sockaddr_len(dest, destlen, (struct sockaddr *)psa,
+	return print_sockaddr_len(dest, destlen, (const struct sockaddr *)psa,
 			sizeof(struct sockaddr_storage));
 }
 

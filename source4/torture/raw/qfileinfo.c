@@ -779,7 +779,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find("BASIC_INFO");
 	if (s1 && is_ipc) {
 		if (s1->basic_info.out.attrib != FILE_ATTRIBUTE_NORMAL) {
-			printf("(%d) attrib basic_info/nlink incorrect - %d should be %d\n", __LINE__, s1->basic_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
+			printf("(%d) attrib basic_info/nlink incorrect - %d should be %d\n", __LINE__, s1->basic_info.out.attrib, (int)FILE_ATTRIBUTE_NORMAL);
 			ret = false;
 		}
 	}
