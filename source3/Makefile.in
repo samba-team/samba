@@ -830,6 +830,7 @@ VFS_CACHEPRIME_OBJ = modules/vfs_cacheprime.o
 VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
 VFS_COMMIT_OBJ = modules/vfs_commit.o
 VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
+VFS_GPFS_HSM_NOTIFY_OBJ = modules/vfs_gpfs_hsm_notify.o
 VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
 VFS_READAHEAD_OBJ = modules/vfs_readahead.o
 VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
@@ -2970,6 +2971,10 @@ bin/commit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_COMMIT_OBJ)
 bin/gpfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_GPFS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_GPFS_OBJ)
+
+bin/gpfs_hsm_notify.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_GPFS_HSM_NOTIFY_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_GPFS_HSM_NOTIFY_OBJ)
 
 bin/notify_fam.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NOTIFY_FAM_OBJ)
 	@echo "Building plugin $@"
