@@ -1235,6 +1235,17 @@ static bool vfs_gpfs_aio_force(struct vfs_handle_struct *handle,
 	return vfs_gpfs_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
 }
 
+static ssize_t vfs_gpfs_sendfile(vfs_handle_struct *handle, int tofd,
+				 files_struct *fsp, const DATA_BLOB *hdr,
+				 SMB_OFF_T offset, size_t n)
+{
+	if ((fsp->fsp_name->st.vfs_private & GPFS_WINATTR_OFFLINE) != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, hdr, offset, n);
+}
+
 int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 			const char *user)
 {
@@ -1314,6 +1325,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.ntimes = vfs_gpfs_ntimes,
 	.is_offline = vfs_gpfs_is_offline,
 	.aio_force = vfs_gpfs_aio_force,
+	.sendfile = vfs_gpfs_sendfile,
 	.ftruncate = vfs_gpfs_ftruncate
 };
 
