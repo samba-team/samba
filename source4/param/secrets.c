@@ -25,7 +25,7 @@
 #include "secrets.h"
 #include "param/param.h"
 #include "system/filesys.h"
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "lib/ldb-samba/ldb_wrap.h"
 #include <ldb.h>
 #include "../lib/util/util_tdb.h"

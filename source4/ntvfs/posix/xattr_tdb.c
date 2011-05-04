@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include <tdb.h>
 #include "vfs_posix.h"
 

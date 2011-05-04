@@ -21,7 +21,7 @@
 #include <Python.h>
 #include "includes.h"
 #include <tdb.h>
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "librpc/ndr/libndr.h"
 #include "lib/util/wrap_xattr.h"
 #include "ntvfs/posix/vfs_posix.h"

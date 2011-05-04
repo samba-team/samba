@@ -5,12 +5,3 @@ bld.SAMBA_SUBSYSTEM('GENCACHE',
         enabled=False,
 	deps='tdb-wrap'
 	)
-
-
-bld.SAMBA_LIBRARY('tdb-wrap',
-                  source='tdb_wrap.c',
-                  deps='tdb talloc samba-util',
-                  public_headers='tdb_wrap.h',
-                  private_library=True
-                  )
-

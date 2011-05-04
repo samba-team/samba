@@ -27,9 +27,7 @@
 #include "../lib/util/util_tdb.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
-#if _SAMBA_BUILD_ == 4
-#include "tdb_wrap.h"
-#endif
+#include "lib/util/tdb_wrap.h"
 
 #define SECRETS_SCHANNEL_STATE "SECRETS/SCHANNEL"
 

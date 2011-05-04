@@ -27,7 +27,7 @@
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/messaging/irpc.h"
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "../lib/util/unix_privs.h"
 #include "librpc/rpc/dcerpc.h"
 #include <tdb.h>
