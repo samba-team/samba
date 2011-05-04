@@ -19,7 +19,6 @@
 #include "includes.h"
 #include "serverid.h"
 #include "smbd/smbd.h"
-#include "locking/proto.h"
 
 #include "messages.h"
 #include "include/printing.h"
@@ -29,7 +28,6 @@
 #include "librpc/gen_ndr/srv_spoolss.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_setup.h"
-#include "rpc_server/srv_pipe_register.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 
 #define SPOOLSS_PIPE_NAME "spoolss"
