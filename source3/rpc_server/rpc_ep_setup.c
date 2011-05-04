@@ -49,7 +49,6 @@
 
 #include "rpc_server/rpc_ep_setup.h"
 #include "rpc_server/rpc_server.h"
-#include "rpc_server/srv_pipe_register.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
 
 struct dcesrv_ep_context {

@@ -26,7 +26,6 @@
 #include "../librpc/gen_ndr/srv_epmapper.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
-#include "rpc_server/srv_pipe_register.h"
 #include "messages.h"
 
 #define DAEMON_NAME "epmd"
