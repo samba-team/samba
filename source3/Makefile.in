@@ -269,6 +269,7 @@ EXTRA_ALL_TARGETS = @EXTRA_ALL_TARGETS@
 ######################################################################
 
 TDB_LIB_OBJ = lib/util_tdb.o ../lib/util/util_tdb.o \
+	  ../lib/util/tdb_wrap.o \
 	  lib/dbwrap.o lib/dbwrap_tdb.o \
 	  lib/dbwrap_ctdb.o \
 	  lib/g_lock.o \

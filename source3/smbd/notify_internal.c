@@ -29,6 +29,7 @@
 #include "dbwrap.h"
 #include "smbd/smbd.h"
 #include "messages.h"
+#include "lib/util/tdb_wrap.h"
 
 struct notify_context {
 	struct db_context *db_recursive;

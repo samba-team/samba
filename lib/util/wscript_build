@@ -91,3 +91,13 @@ bld.SAMBA_SUBSYSTEM('UTIL_PW',
 	local_include=False,
 	public_deps='talloc'
 	)
+
+
+bld.SAMBA_LIBRARY('tdb-wrap',
+                  source='tdb_wrap.c',
+                  deps='tdb talloc samba-util',
+                  public_headers='tdb_wrap.h',
+                  private_library=True,
+                  local_include=False
+                  )
+

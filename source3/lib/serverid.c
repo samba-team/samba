@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "serverid.h"
 #include "dbwrap.h"
+#include "lib/util/tdb_wrap.h"
 
 struct serverid_key {
 	pid_t pid;

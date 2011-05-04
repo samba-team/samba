@@ -967,6 +967,7 @@ bld.SAMBA3_SUBSYSTEM('ndr-util',
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
+                     deps='tdb-wrap',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('CHARSET3',
@@ -1323,7 +1324,6 @@ bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
 if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('POPT_SAMBA', source='', deps='POPT_SAMBA3')
-    bld.SAMBA3_SUBSYSTEM('tdb-wrap', source='', deps='tdb-wrap3')
     bld.SAMBA3_SUBSYSTEM('errors', source='', deps='errors3')
     bld.SAMBA3_SUBSYSTEM('samba-util', source='', deps='samba-util3')
     bld.SAMBA3_SUBSYSTEM('CHARSET', source='', deps='CHARSET3')

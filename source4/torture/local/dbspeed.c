@@ -25,7 +25,7 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include "ldb_wrap.h"
-#include "lib/tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "torture/smbtorture.h"
 #include "param/param.h"
 

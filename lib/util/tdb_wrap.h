@@ -33,9 +33,6 @@
 
 struct tdb_wrap {
 	struct tdb_context *tdb;
-
-	const char *name;
-	struct tdb_wrap *next, *prev;
 };
 
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
