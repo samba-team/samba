@@ -53,10 +53,16 @@
 
 /* NT status -> dos error map */
 static const struct {
-	uint8 dos_class;
-	uint32 dos_code;
+	uint8_t dos_class;
+	uint32_t dos_code;
 	NTSTATUS ntstatus;
 } ntstatus_to_dos_map[] = {
+/*
+ * Not an official error, as only bit 0x80000000, not bits 0xC0000000 are set.
+ */
+	{ERRDOS,	ERRmoredata,	STATUS_BUFFER_OVERFLOW},
+	{ERRDOS,	ERRnofiles,	STATUS_NO_MORE_FILES},
+	{ERRDOS,	ERRnofiles,	NT_STATUS_NO_MORE_ENTRIES},
 	{ERRDOS,	ERRgeneral,	NT_STATUS_UNSUCCESSFUL},
 	{ERRDOS,	ERRbadfunc,	NT_STATUS_NOT_IMPLEMENTED},
 	{ERRDOS,	87,	NT_STATUS_INVALID_INFO_CLASS},
@@ -105,11 +111,6 @@ static const struct {
 */
 	{ERRDOS,	ERRnoaccess,	NT_STATUS_ACCESS_DENIED},
 	{ERRDOS,	111,	NT_STATUS_BUFFER_TOO_SMALL},
-/*
- * Not an official error, as only bit 0x80000000, not bits 0xC0000000 are set.
- */
-	{ERRDOS,	ERRmoredata,	STATUS_BUFFER_OVERFLOW},
-	{ERRDOS,	ERRnofiles,	STATUS_NO_MORE_FILES},
 	{ERRDOS,	ERRbadfid,	NT_STATUS_OBJECT_TYPE_MISMATCH},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_NONCONTINUABLE_EXCEPTION},
 	{ERRHRD,	ERRgeneral,	NT_STATUS_INVALID_DISPOSITION},
@@ -1448,7 +1449,7 @@ NTSTATUS dos_to_ntstatus(uint8 eclass, uint32 ecode)
 /*****************************************************************************
 convert a NT status code to a dos class/code
  *****************************************************************************/
-void ntstatus_to_dos(NTSTATUS ntstatus, uint8 *eclass, uint32 *ecode)
+void ntstatus_to_dos(NTSTATUS ntstatus, uint8_t *eclass, uint32_t *ecode)
 {
 	int i;
 	if (NT_STATUS_IS_OK(ntstatus)) {
