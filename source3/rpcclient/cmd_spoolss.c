@@ -27,7 +27,6 @@
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
-#include "registry.h"
 #include "registry/reg_objects.h"
 #include "nt_printing.h"
 #include "../libcli/security/display_sec.h"
