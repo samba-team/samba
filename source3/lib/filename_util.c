@@ -17,7 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "smbd/smbd.h"
 
 /**
  * XXX: This is temporary and there should be no callers of this outside of
