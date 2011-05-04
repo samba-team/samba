@@ -23,8 +23,6 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "smbd/globals.h"
-#include "../libcli/auth/libcli_auth.h"
 #include "nsswitch/winbind_client.h"
 #include "passdb.h"
 
