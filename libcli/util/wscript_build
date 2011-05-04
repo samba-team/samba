@@ -2,7 +2,7 @@
 
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_ERRORS',
-	source='doserr.c',
+	source='doserr.c errormap.c',
 	public_deps='talloc'
 	)
 

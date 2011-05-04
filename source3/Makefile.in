@@ -543,7 +543,7 @@ LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 
 NTERR_OBJ = libsmb/nterr.o libsmb/smberr.o
 DOSERR_OBJ = ../libcli/util/doserr.o
-ERRORMAP_OBJ = libsmb/errormap.o
+ERRORMAP_OBJ = ../libcli/util/errormap.o libsmb/errormap.o
 DCE_RPC_ERR_OBJ = ../librpc/rpc/dcerpc_error.o
 
 LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ)
