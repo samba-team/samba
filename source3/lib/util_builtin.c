@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "passdb.h"
 #include "../libcli/security/security.h"
 
 struct rid_name_map {
