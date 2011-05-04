@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "include/registry.h"
-#include "utils/net_registry_util.h"
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "rpc_client/cli_winreg_int.h"
 #include "rpc_server/rpc_ncacn_np.h"
