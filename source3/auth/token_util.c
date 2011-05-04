@@ -31,7 +31,6 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
-#include "lib/winbind_util.h"
 #include "passdb.h"
 #include "lib/privileges.h"
 

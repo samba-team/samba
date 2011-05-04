@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "auth.h"
 #include "system/passwd.h"
-#include "../librpc/gen_ndr/samr.h"
 #include "smbd/globals.h"
 
 #undef DBGC_CLASS
