@@ -1259,14 +1259,12 @@ WERROR ntstatus_to_werror(NTSTATUS error)
 	return W_ERROR(NT_STATUS_V(error) & 0xffff);
 }
 
-/* Mapping between Unix, DOS and NT error numbers */
+/* Mapping between Unix, and NT error numbers */
 
-struct unix_error_map {
+static const struct {
 	int unix_error;
 	NTSTATUS nt_error;
-};
-
-const struct unix_error_map unix_nt_errmap[] = {
+} unix_nt_errmap[] = {
 	{ EAGAIN,       STATUS_MORE_ENTRIES },
 	{ EINTR,        STATUS_MORE_ENTRIES },
 	{ ENOBUFS,      STATUS_MORE_ENTRIES },

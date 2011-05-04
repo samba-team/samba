@@ -21,9 +21,6 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
-/* From lib/error.c */
-extern struct unix_error_map unix_dos_nt_errmap[];
-
 bool use_nt_status(void)
 {
 	return lp_nt_status_support() && (global_client_caps & CAP_STATUS32);

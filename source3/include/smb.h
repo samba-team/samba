@@ -1549,13 +1549,6 @@ typedef struct user_struct {
 	struct auth_ntlmssp_state *auth_ntlmssp_state;
 } user_struct;
 
-struct unix_error_map {
-	int unix_error;
-	int dos_class;
-	int dos_code;
-	NTSTATUS nt_error;
-};
-
 /*
    Do you want session setups at user level security with a invalid
    password to be rejected or allowed in as guest? WinNT rejects them
