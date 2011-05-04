@@ -1549,7 +1549,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 			if (dcip_to_name(mem_ctx, domain, &ss, saf_name )) {
-				fstrcpy( domain->dcname, saf_name );
+				strlcpy(domain->dcname, saf_name, sizeof(domain->dcname));
 			} else {
 				winbind_add_failed_connection_entry(
 					domain, saf_servername,

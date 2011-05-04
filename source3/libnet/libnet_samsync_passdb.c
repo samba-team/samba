@@ -428,11 +428,11 @@ static NTSTATUS fetch_group_info(TALLOC_CTX *mem_ctx,
 	map.gid = grp->gr_gid;
 	map.sid = group_sid;
 	map.sid_name_use = SID_NAME_DOM_GRP;
-	fstrcpy(map.nt_name, name);
+	strlcpy(map.nt_name, name, sizeof(map.nt_name));
 	if (r->description.string) {
-		fstrcpy(map.comment, comment);
+		strlcpy(map.comment, comment, sizeof(map.comment));
 	} else {
-		fstrcpy(map.comment, "");
+		strlcpy(map.comment, "", sizeof(map.comment));
 	}
 
 	if (insert)
@@ -617,8 +617,8 @@ static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
 	else
 		map.sid_name_use = SID_NAME_ALIAS;
 
-	fstrcpy(map.nt_name, name);
-	fstrcpy(map.comment, comment);
+	strlcpy(map.nt_name, name, sizeof(map.nt_name));
+	strlcpy(map.comment, comment, sizeof(map.comment));
 
 	if (insert)
 		pdb_add_group_mapping_entry(&map);

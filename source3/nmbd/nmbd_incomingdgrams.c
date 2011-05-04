@@ -172,7 +172,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 			/* Update the record. */
 			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
 			update_server_ttl( servrec, ttl);
-			fstrcpy(servrec->serv.comment,comment);
+			strlcpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment));
 		}
 	} else {
 		/*
@@ -338,7 +338,7 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 			/* Update the record. */
 			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
 			update_server_ttl(servrec, ttl);
-			fstrcpy(servrec->serv.comment,comment);
+			strlcpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment));
 		}
 	
 		set_workgroup_local_master_browser_name( work, server_name );
@@ -512,7 +512,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 			/* Update the record. */
 			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
 			update_server_ttl( servrec, ttl);
-			fstrcpy(servrec->serv.comment,comment);
+			strlcpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment));
 		}
 	} else {
 		/*

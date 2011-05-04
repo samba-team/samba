@@ -131,7 +131,9 @@ static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq)
 				     true);
 	}
 
-	fstrcpy(state->pw->pw_name, output_username);
+	strlcpy(state->pw->pw_name,
+		output_username,
+		sizeof(state->pw->pw_name));
 	fstrcpy(state->pw->pw_gecos, state->info->full_name);
 
 	/* Home directory and shell */

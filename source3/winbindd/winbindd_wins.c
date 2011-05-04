@@ -140,7 +140,9 @@ void winbindd_wins_byip(struct winbindd_cli_state *state)
 	    response[strlen(response)-1] = '\n';
 	    TALLOC_FREE(status);
 	}
-	fstrcpy(state->response->data.winsresp,response);
+	strlcpy(state->response->data.winsresp,
+			response,
+			sizeof(state->response->data.winsresp));
 	request_ok(state);
 }
 
@@ -181,8 +183,8 @@ void winbindd_wins_byname(struct winbindd_cli_state *state)
 					response[strlen(response)-1] = ' ';
 				}
 			}
-			fstrcat(response,addr);
-			fstrcat(response,"\t");
+			strlcat(response,addr,sizeof(response));
+			strlcat(response,"\t",sizeof(response));
 		}
 		size = strlen(state->request->data.winsreq) + strlen(response);
 		if (size > maxlen) {
@@ -190,15 +192,17 @@ void winbindd_wins_byname(struct winbindd_cli_state *state)
 		    request_error(state);
 		    return;
 		}
-		fstrcat(response,state->request->data.winsreq);
-		fstrcat(response,"\n");
+		strlcat(response,state->request->data.winsreq,sizeof(response));
+		strlcat(response,"\n",sizeof(response));
 		TALLOC_FREE(ip_list);
 	} else {
 		request_error(state);
 		return;
 	}
 
-	fstrcpy(state->response->data.winsresp,response);
+	strlcpy(state->response->data.winsresp,
+		response,
+		sizeof(state->response->data.winsresp));
 
 	request_ok(state);
 }

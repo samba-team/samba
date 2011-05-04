@@ -435,7 +435,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 			if(!(nb_flags & NB_GROUP) && (name_type == 0x00) && 
 					server_name[0] == 0) {
 				/* this is almost certainly the server netbios name */
-				unstrcpy(server_name, qname);
+				strlcpy(server_name, qname, sizeof(server_name));
 				continue;
 			}
 
@@ -461,7 +461,9 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 						return;
 
 					/* remember who the master is */
-					unstrcpy(work->local_master_browser_name, server_name);
+					strlcpy(work->local_master_browser_name,
+						server_name,
+						sizeof(work->local_master_browser_name));
 					make_nmb_name(&nmbname, server_name, 0x20);
 					work->dmb_name = nmbname;
 					work->dmb_addr = from_ip;

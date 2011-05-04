@@ -232,8 +232,8 @@ static struct cli_state *connect_one(char *share, int snum)
 	}
 
 	if (got_pass == 1) {
-		fstrcpy(password[1], password[0]);
-		fstrcpy(username[1], username[0]);
+		strlcpy(password[1], password[0],sizeof(password[1]));
+		strlcpy(username[1], username[0],sizeof(username[1]));
 	}
 
 	status = cli_session_setup(c, username[snum],

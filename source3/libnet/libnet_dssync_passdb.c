@@ -1531,11 +1531,11 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 		map.sid_name_use = SID_NAME_ALIAS;
 	}
 
-	fstrcpy(map.nt_name, name);
+	strlcpy(map.nt_name, name, sizeof(map.nt_name));
 	if (description) {
-		fstrcpy(map.comment, comment);
+		strlcpy(map.comment, comment, sizeof(map.comment));
 	} else {
-		fstrcpy(map.comment, "");
+		strlcpy(map.comment, "", sizeof(map.comment));
 	}
 
 	if (insert)
@@ -1636,11 +1636,11 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 	map.gid = grp->gr_gid;
 	map.sid = group_sid;
 	map.sid_name_use = SID_NAME_DOM_GRP;
-	fstrcpy(map.nt_name, name);
+	strlcpy(map.nt_name, name, sizeof(map.nt_name));
 	if (description) {
-		fstrcpy(map.comment, comment);
+		strlcpy(map.comment, comment, sizeof(map.comment));
 	} else {
-		fstrcpy(map.comment, "");
+		strlcpy(map.comment, "", sizeof(map.comment));
 	}
 
 	if (insert)

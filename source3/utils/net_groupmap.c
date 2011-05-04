@@ -130,7 +130,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 		GROUP_MAP map;
 
 		if ( sid_string[0] )
-			fstrcpy( ntgroup, sid_string);
+			strlcpy(ntgroup, sid_string, sizeof(ntgroup));
 
 		if (!get_sid_from_input(&sid, ntgroup)) {
 			return -1;
@@ -324,7 +324,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ntgroup[0] )
-		fstrcpy( ntgroup, unixgrp );
+		strlcpy(ntgroup, unixgrp, sizeof(ntgroup));
 
 	if (!NT_STATUS_IS_OK(add_initial_entry(gid, string_sid, sid_type, ntgroup, ntcomment))) {
 		d_fprintf(stderr, _("adding entry for group %s failed!\n"), ntgroup);
@@ -457,10 +457,10 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 
 	/* Change comment if new one */
 	if ( ntcomment[0] )
-		fstrcpy( map.comment, ntcomment );
+		strlcpy(map.comment, ntcomment, sizeof(map.comment));
 
 	if ( ntgroup[0] )
-		fstrcpy( map.nt_name, ntgroup );
+		strlcpy(map.nt_name, ntgroup, sizeof(map.nt_name));
 
 	if ( unixgrp[0] ) {
 		gid = nametogid( unixgrp );
@@ -528,7 +528,7 @@ static int net_groupmap_delete(struct net_context *c, int argc, const char **arg
 	/* give preference to the SID if we have that */
 
 	if ( sid_string[0] )
-		fstrcpy( ntgroup, sid_string );
+		strlcpy(ntgroup, sid_string, sizeof(ntgroup));
 
 	if ( !get_sid_from_input(&sid, ntgroup) ) {
 		d_fprintf(stderr, _("Unable to resolve group %s to a SID\n"),

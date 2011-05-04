@@ -727,7 +727,7 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	DEBUGADD(4,("set_printer_hnd_name: Printer found: %s -> %s\n", aprinter, sname));
 
-	fstrcpy(Printer->sharename, sname);
+	strlcpy(Printer->sharename, sname, sizeof(Printer->sharename));
 
 	return WERR_OK;
 }

@@ -5046,9 +5046,9 @@ static int do_message_op(struct user_auth_info *a_info)
 	make_nmb_name(&calling, calling_name, 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
-	fstrcpy(server_name, desthost);
+	strlcpy(server_name, desthost,sizeof(server_name));
 	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
-	fstrcat(server_name, name_type_hex);
+	strlcat(server_name, name_type_hex,sizeof(server_name));
 
         zero_sockaddr(&ss);
 	if (have_ip)

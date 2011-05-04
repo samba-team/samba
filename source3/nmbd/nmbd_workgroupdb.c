@@ -52,7 +52,7 @@ static void name_to_unstring(unstring unname, const char *name)
 	if (errno == E2BIG) {
 		unstring tname;
 		pull_ascii_nstring(tname, sizeof(tname), nname);
-		unstrcpy(unname, tname);
+		strlcpy(unname, tname, sizeof(nname));
 		DEBUG(0,("name_to_nstring: workgroup name %s is too long. Truncating to %s\n",
 			name, tname));
 	} else {

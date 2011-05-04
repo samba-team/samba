@@ -3763,8 +3763,8 @@ static NTSTATUS copy_fn(const char *mnt, struct file_info *f,
 		}
 
 		/* search below that directory */
-		fstrcpy(new_mask, dir);
-		fstrcat(new_mask, "\\*");
+		strlcpy(new_mask, dir, sizeof(new_mask));
+		strlcat(new_mask, "\\*", sizeof(new_mask));
 
 		old_dir = local_state->cwd;
 		local_state->cwd = dir;
@@ -4802,7 +4802,7 @@ static bool get_user_tokens_from_file(FILE *f,
 
 		token = &((*tokens)[*num_tokens-1]);
 
-		fstrcpy(token->name, line);
+		strlcpy(token->name, line, sizeof(token->name));
 		token->token.num_sids = 0;
 		token->token.sids = NULL;
 		continue;
