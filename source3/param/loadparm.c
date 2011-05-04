@@ -56,7 +56,6 @@
 #include "printing.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
-#include "lib/smbconf/smbconf_reg.h"
 
 #include "ads.h"
 #include "../librpc/gen_ndr/svcctl.h"
