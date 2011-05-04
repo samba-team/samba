@@ -26,10 +26,6 @@
 #include "../libcli/util/ntstatus.h" /* for map_nt_error_from_tdb() */
 #include "../../lib/util/util_tdb.h"
 
-struct tdb_wrap {
-	struct tdb_context *tdb;
-};
-
 int tdb_chainlock_with_timeout( struct tdb_context *tdb, TDB_DATA key,
 				unsigned int timeout);
 int tdb_lock_bystring_with_timeout(struct tdb_context *tdb, const char *keyval,
@@ -50,10 +46,6 @@ bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 
 struct tdb_context *tdb_open_log(const char *name, int hash_size,
 				 int tdb_flags, int open_flags, mode_t mode);
-
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
-			       const char *name, int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode);
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err);
 

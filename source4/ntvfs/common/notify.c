@@ -28,7 +28,7 @@
 #include <tdb.h>
 #include "../lib/util/util_tdb.h"
 #include "messaging/messaging.h"
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_s4_notify.h"
 #include "../lib/util/dlinklist.h"

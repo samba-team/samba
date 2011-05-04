@@ -45,6 +45,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "messages.h"
+#include "lib/util/tdb_wrap.h"
 
 struct messaging_tdb_context {
 	struct messaging_context *msg_ctx;
