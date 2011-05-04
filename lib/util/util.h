@@ -777,11 +777,12 @@ enum protocol_types {
 	PROTOCOL_SMB2
 };
 
-int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol);
+#endif
+
+int ms_fnmatch_protocol(const char *pattern, const char *string, enum protocol_types protocol);
 
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string);
-#endif
 
 /* The following definitions come from lib/util/idtree.c  */
 
