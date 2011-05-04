@@ -1117,6 +1117,7 @@ AC_CHECK_HEADERS(gpfs_gpl.h)
 if test x"$ac_cv_header_gpfs_gpl_h" = x"yes"; then
     AC_DEFINE(HAVE_GPFS,1,[Whether GPFS GPL headers are available])
     default_shared_modules="$default_shared_modules vfs_gpfs"
+    default_shared_modules="$default_shared_modules vfs_gpfs_hsm_notify"
 fi
 
 #############################################
@@ -6870,6 +6871,7 @@ SMB_MODULE(vfs_cacheprime, \$(VFS_CACHEPRIME_OBJ), "bin/cacheprime.$SHLIBEXT", V
 SMB_MODULE(vfs_prealloc, \$(VFS_PREALLOC_OBJ), "bin/prealloc.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_commit, \$(VFS_COMMIT_OBJ), "bin/commit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_gpfs_hsm_notify, \$(VFS_GPFS_PREFETCH_OBJ), "bin/gpfs_hsm_notify.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readahead, \$(VFS_READAHEAD_OBJ), "bin/readahead.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_tsmsm, \$(VFS_TSMSM_OBJ), "bin/tsmsm.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fileid, \$(VFS_FILEID_OBJ), "bin/fileid.$SHLIBEXT", VFS)
