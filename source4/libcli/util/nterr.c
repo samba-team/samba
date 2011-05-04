@@ -897,22 +897,23 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
  Returns an NT_STATUS constant as a string for inclusion in autogen C code.
  *****************************************************************************/
 
-const char *get_nt_error_c_code(NTSTATUS nt_code)
+const char *get_nt_error_c_code(TALLOC_CTX *mem_ctx, NTSTATUS nt_code)
 {
-	static char out[40];
+	char *result;
 	int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
 		    NT_STATUS_V(nt_code)) {
-			return nt_errs[idx].nt_errstr;
+			result = talloc_strdup(mem_ctx, nt_errs[idx].nt_errstr);
+			return result;
 		}
 		idx++;
 	}
 
-	slprintf(out, sizeof(out), "NT_STATUS(0x%08x)", NT_STATUS_V(nt_code));
-
-	return out;
+	result = talloc_asprintf(mem_ctx, "NT_STATUS(0x%08x)",
+				 NT_STATUS_V(nt_code));
+	return result;
 }
 
 /*****************************************************************************

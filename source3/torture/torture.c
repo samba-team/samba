@@ -5910,14 +5910,14 @@ static bool run_error_map_extract(int dummy) {
 
 		if (NT_STATUS_V(nt_status) != error) { 
 			printf("/*\t{ This NT error code was 'sqashed'\n\t from %s to %s \n\t during the session setup }\n*/\n", 
-			       get_nt_error_c_code(NT_STATUS(error)), 
-			       get_nt_error_c_code(nt_status));
+			       get_nt_error_c_code(talloc_tos(), NT_STATUS(error)), 
+			       get_nt_error_c_code(talloc_tos(), nt_status));
 		}
 
 		printf("\t{%s,\t%s,\t%s},\n", 
 		       smb_dos_err_class(errclass), 
 		       smb_dos_err_name(errclass, errnum), 
-		       get_nt_error_c_code(NT_STATUS(error)));
+		       get_nt_error_c_code(talloc_tos(), NT_STATUS(error)));
 	}
 	return True;
 }

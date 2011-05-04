@@ -641,7 +641,7 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code);
 /*****************************************************************************
  returns an NT_STATUS constant as a string for inclusion in autogen C code
  *****************************************************************************/
-const char *get_nt_error_c_code(NTSTATUS nt_code);
+const char *get_nt_error_c_code(void *mem_ctx, NTSTATUS nt_code);
 
 /*****************************************************************************
  returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)

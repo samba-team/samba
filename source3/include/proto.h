@@ -1976,7 +1976,6 @@ bool get_dc_name(const char *domain,
 
 const char *nt_errstr(NTSTATUS nt_code);
 const char *get_friendly_nt_error_msg(NTSTATUS nt_code);
-const char *get_nt_error_c_code(NTSTATUS nt_code);
 NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 NTSTATUS nt_status_squash(NTSTATUS nt_status);
 
