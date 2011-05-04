@@ -72,7 +72,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	@INFINIBAND_BINS@
 
-BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong
+BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool
 SBINS = bin/ctdbd
 
 DIRS = lib bin tests/bin
