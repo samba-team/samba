@@ -20,3 +20,6 @@
 */
 
 char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib);
+uint32_t unix_perms_to_wire(mode_t perms);
+mode_t wire_perms_to_unix(uint32_t perms);
+mode_t unix_filetype_from_wire(uint32_t wire_type);

@@ -51,34 +51,6 @@ static NTSTATUS smbcli_link_internal(struct smbcli_tree *tree,
 }
 
 /****************************************************************************
- Map standard UNIX permissions onto wire representations.
-****************************************************************************/
-uint32_t unix_perms_to_wire(mode_t perms)
-{
-        unsigned int ret = 0;
-
-        ret |= ((perms & S_IXOTH) ?  UNIX_X_OTH : 0);
-        ret |= ((perms & S_IWOTH) ?  UNIX_W_OTH : 0);
-        ret |= ((perms & S_IROTH) ?  UNIX_R_OTH : 0);
-        ret |= ((perms & S_IXGRP) ?  UNIX_X_GRP : 0);
-        ret |= ((perms & S_IWGRP) ?  UNIX_W_GRP : 0);
-        ret |= ((perms & S_IRGRP) ?  UNIX_R_GRP : 0);
-        ret |= ((perms & S_IXUSR) ?  UNIX_X_USR : 0);
-        ret |= ((perms & S_IWUSR) ?  UNIX_W_USR : 0);
-        ret |= ((perms & S_IRUSR) ?  UNIX_R_USR : 0);
-#ifdef S_ISVTX
-        ret |= ((perms & S_ISVTX) ?  UNIX_STICKY : 0);
-#endif
-#ifdef S_ISGID
-        ret |= ((perms & S_ISGID) ?  UNIX_SET_GID : 0);
-#endif
-#ifdef S_ISUID
-        ret |= ((perms & S_ISUID) ?  UNIX_SET_UID : 0);
-#endif
-        return ret;
-}
-
-/****************************************************************************
  Symlink a file (UNIX extensions).
 ****************************************************************************/
 NTSTATUS smbcli_unix_symlink(struct smbcli_tree *tree, const char *fname_src, 
