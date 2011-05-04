@@ -116,11 +116,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ctdb
 %{_bindir}/smnotify
 %{_bindir}/ping_pong
+%{_bindir}/ltdbtool
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/onnode.1.gz
+%{_mandir}/man1/ltdbtool.1.gz
 %{_libdir}/pkgconfig/ctdb.pc
 
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
