@@ -726,8 +726,3 @@ NTSTATUS map_nt_error_from_unix(int unix_error)
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-/* Convert a Unix error code to WERROR */
-WERROR unix_to_werror(int unix_error)
-{
-	return ntstatus_to_werror(map_nt_error_from_unix(unix_error));
-}
