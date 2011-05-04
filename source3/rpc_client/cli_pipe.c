@@ -25,7 +25,6 @@
 #include "../librpc/gen_ndr/ndr_dssetup.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
-#include "smb_krb5.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
