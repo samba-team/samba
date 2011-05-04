@@ -20,12 +20,7 @@
  */
 
 #include "includes.h"
-#include "printing/pcap.h"
 #include "printing/nt_printing_tdb.h"
-#include "printing/nt_printing_migrate.h"
-#include "registry.h"
-#include "registry/reg_objects.h"
-#include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/spoolss/srv_spoolss_util.h"
 #include "nt_printing.h"

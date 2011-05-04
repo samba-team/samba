@@ -25,7 +25,6 @@
 #include "rpc_client/rpc_client.h"
 #include "librpc/gen_ndr/ndr_ntprinting.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
-#include "rpc_client/cli_spoolss.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "auth.h"
