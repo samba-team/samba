@@ -154,7 +154,7 @@ static int ms_fnmatch_core(const char *p, const char *n,
 	return -1;
 }
 
-int ms_fnmatch_protocol(const char *pattern, const char *string, enum protocol_types protocol)
+int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol)
 {
 	int ret, count, i;
 	struct max_n *max_n = NULL;
