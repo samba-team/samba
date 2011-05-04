@@ -482,6 +482,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	int ret;
 	struct ctdb_do_updateip_state *state;
 	struct ctdb_iface *old = vnn->iface;
+	char *new_name;
 
 	ctdb_vnn_unassign_iface(ctdb, vnn);
 	ret = ctdb_vnn_assign_iface(ctdb, vnn);
@@ -492,6 +493,16 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 				 vnn->public_netmask_bits,
 				 old->name));
 		return -1;
+	}
+
+	new_name = ctdb_vnn_iface_string(vnn);
+	if (old->name != NULL && new_name != NULL && !strcmp(old->name, new_name)) {
+		/* A benign update from one interface onto itself.
+		 * no need to run the eventscripts in this case, just return
+		 * success.
+		 */
+		ctdb_request_control_reply(ctdb, c, NULL, 0, NULL);
+		return 0;
 	}
 
 	state = talloc(vnn, struct ctdb_do_updateip_state);
@@ -506,7 +517,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 			    ctdb_addr_to_str(&vnn->public_address),
 			    vnn->public_netmask_bits,
 			    old->name,
-			    ctdb_vnn_iface_string(vnn)));
+			    new_name));
 
 	ret = ctdb_event_script_callback(ctdb,
 					 state,
@@ -516,13 +527,13 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 					 CTDB_EVENT_UPDATE_IP,
 					 "%s %s %s %u",
 					 state->old->name,
-					 ctdb_vnn_iface_string(vnn),
+					 new_name,
 					 ctdb_addr_to_str(&vnn->public_address),
 					 vnn->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed update IP %s from interface %s to %s\n",
 				 ctdb_addr_to_str(&vnn->public_address),
-				 old->name, ctdb_vnn_iface_string(vnn)));
+				 old->name, new_name));
 		talloc_free(state);
 		return -1;
 	}
