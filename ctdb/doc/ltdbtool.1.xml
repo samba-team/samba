@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="ltdbtool.1">
+
+<refmeta>
+	<refentrytitle>ltdbtool</refentrytitle>
+	<manvolnum>1</manvolnum>
+	<refmiscinfo class="source"> </refmiscinfo>
+	<refmiscinfo class="manual"> </refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>ltdbtool</refname>
+        <refpurpose>handle ctdb's local tdb copies </refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>ltdbtool [OPTIONS] COMMAND</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+  <refsect1><title>DESCRIPTION</title>
+    <para>
+      ltdbtool is a utility to cope with ctdb's local tdb copies (LTDBs)
+      without connecting to a ctdb daemon.
+    </para>
+    <para>It can be used to
+    <itemizedlist spacing='compact'> <!-- mark='opencircle' -->
+      <listitem>
+	<para>
+	  dump the contents of a LTDB, optionally printing the ctdb
+	  record header information,
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  convert between an LTDB and a non-clustered tdb
+	  by adding or removing ctdb headers and
+	</para>
+      </listitem>
+      <listitem>
+	<para>convert between 64 and 32 bit LTDBs where the ctdb record
+	headers differ by 4 bytes of padding.
+	</para>
+      </listitem>
+    </itemizedlist>
+    </para>
+  </refsect1>
+
+  <refsect1><title>COMMANDS</title>
+
+    <variablelist>
+      <varlistentry><term>help</term>
+        <listitem>
+          <para>
+	    Print a help text.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>dump &lt;IDB&gt;</term>
+        <listitem>
+          <para>
+	    Dump the contents of a LTDB file to standard output in a
+	    human-readable format.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>convert &lt;IDB&gt; &lt;ODB&gt;</term>
+        <listitem>
+          <para>
+	    Make a copy of a LTDB optionally adding or removing ctdb headers.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1><title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry><term>-p</term>
+        <listitem>
+          <para>
+	    Dump with header information, similar to "ctdb catdb".
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-s {0|32|64}</term>
+        <listitem>
+	  <para>
+	    Specify how to determine the ctdb record header size
+	    for the input database:
+	    <variablelist spacing="normal">
+	      <varlistentry><term>0</term>
+	      <listitem>
+		<para>no ctdb header</para>
+	      </listitem>
+	      </varlistentry>
+	      <varlistentry><term>32</term>
+	      <listitem>
+		<para>ctdb header size of a 32 bit system (20 bytes)</para>
+	      </listitem>
+	      </varlistentry>
+	      <varlistentry><term>64</term>
+	      <listitem>
+		<para>ctdb header size of a 64 bit system (24 bytes)</para>
+	      </listitem>
+	      </varlistentry>
+	    </variablelist>
+	    The default is 32 or 64 depending on the system architecture.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-o {0|32|64}</term>
+        <listitem>
+          <para>
+	    Specify how to determine the ctdb record header size
+	    for the output database, see -s
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-S &lt;SIZE&gt;</term>
+        <listitem>
+          <para>
+	    Explicitly specify the ctdb record header size of the input database in bytes.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-O &lt;SIZE&gt;</term>
+        <listitem>
+          <para>
+	    Explicitly specify the ctdb record header size for the output database in bytes.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-h</term>
+        <listitem>
+          <para>
+            Print a help text.
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1><title>EXAMPLES</title>
+    <para>
+      Print a local tdb in "tdbdump" style:
+    </para>
+    <screen format="linespecific">
+      ltdbtool dump idmap2.tdb.0
+    </screen>
+
+    <para>
+      Print a local tdb with header information similar to "ctdb catdb":
+    </para>
+    <screen format="linespecific">
+      ltdbtool dump -p idmap2.tdb.0
+    </screen>
+
+    <para>
+      Strip the ctdb headers from records:
+    </para>
+    <screen format="linespecific">
+      ltdbtool convert -o0 idmap2.tdb.0 idmap.tdb
+    </screen>
+
+    <para>
+      Strip 64 bit ctdb headers from records, running on i386:
+    </para>
+    <screen format="linespecific">
+      ltdbtool convert -s64 -o0 idmap2.tdb.0 idmap.tdb
+    </screen>
+
+    <para>
+      Strip the ctdb headers from records by piping through tdbrestore:
+    </para>
+    <screen format="linespecific">
+      ltdbtool dump idmap2.tdb.0 | tdbrestore idmap.tdb
+    </screen>
+
+    <para>
+      Convert a local tdb from a 64 bit system for usage on a 32 bit system:
+    </para>
+    <screen format="linespecific">
+      ltdbtool convert -s64 -o32 idmap2.tdb.0 idmap2.tdb.1
+    </screen>
+
+    <para>
+      Add a default header:
+    </para>
+    <screen format="linespecific">
+      ltdbtool convert -s0 idmap.tdb idmap2.tdb.0
+    </screen>
+  </refsect1>
+
+  <refsect1><title>SEE ALSO</title>
+    <para>
+      ctdbd(1), ctdb(1), tdbdump(1), tdbrestore(1),
+      <ulink url="http://ctdb.samba.org/"/>
+    </para>
+  </refsect1>
+  <refsect1><title>COPYRIGHT/LICENSE</title>
+<literallayout>
+Copyright (C) Gregor Beck 2011
+Copyright (C) Michael Adam 2011
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see http://www.gnu.org/licenses/.
+</literallayout>
+  </refsect1>
+</refentry>

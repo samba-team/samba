@@ -202,7 +202,8 @@ tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 
 doc: doc/ctdb.1 doc/ctdb.1.html \
 	doc/ctdbd.1 doc/ctdbd.1.html \
-	doc/onnode.1 doc/onnode.1.html
+	doc/onnode.1 doc/onnode.1.html \
+	doc/ltdbtool.1 doc/ltdbtool.1.html
 
 clean:
 	rm -f *.o */*.o */*.a */*/*.o */*~
