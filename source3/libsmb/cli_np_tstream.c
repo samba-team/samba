@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "../util/tevent_unix.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/tsocket/tsocket_internal.h"
