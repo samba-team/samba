@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "libnet/libnet_samsync.h"
-#include "../lib/crypto/crypto.h"
 #include "../libcli/samsync/samsync.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "rpc_client/rpc_client.h"
