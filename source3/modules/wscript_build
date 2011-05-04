@@ -30,6 +30,7 @@ VFS_CACHEPRIME_SRC = 'vfs_cacheprime.c'
 VFS_PREALLOC_SRC = 'vfs_prealloc.c'
 VFS_COMMIT_SRC = 'vfs_commit.c'
 VFS_GPFS_SRC = 'vfs_gpfs.c gpfs.c'
+VFS_GPFS_HSM_NOTIFY_SRC = 'vfs_gpfs_hsm_notify.c'
 VFS_NOTIFY_FAM_SRC = 'vfs_notify_fam.c'
 VFS_READAHEAD_SRC = 'vfs_readahead.c'
 VFS_TSMSM_SRC = 'vfs_tsmsm.c'
@@ -279,6 +280,13 @@ bld.SAMBA3_MODULE('vfs_gpfs',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_gpfs'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs'))
+
+bld.SAMBA3_MODULE('vfs_gpfs_hsm_notify',
+                 subsystem='vfs',
+                 source=VFS_GPFS_HSM_NOTIFY_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_gpfs_hsm_notify'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs_hsm_notify'))
 
 bld.SAMBA3_MODULE('vfs_notify_fam',
                  subsystem='vfs',
