@@ -263,6 +263,7 @@ install: all
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -m 644 doc/ctdb.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ctdbd.1 ];then ${INSTALLCMD} -m 644 doc/ctdbd.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/onnode.1 ];then ${INSTALLCMD} -m 644 doc/onnode.1 $(DESTDIR)$(mandir)/man1; fi
+	if [ -f doc/ltdbtool.1 ]; then ${INSTALLCMD} -m 644 doc/ltdbtool.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/notify.sh ];then ${INSTALLCMD} -m 755 config/notify.sh $(DESTDIR)$(etcdir)/ctdb; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/ctdb-crash-cleanup.sh ];then ${INSTALLCMD} -m 755 config/ctdb-crash-cleanup.sh $(DESTDIR)$(etcdir)/ctdb; fi
 
