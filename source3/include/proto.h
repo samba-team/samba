@@ -217,7 +217,6 @@ void init_modules(void);
 
 int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	       bool is_case_sensitive);
-int gen_fnmatch(const char *pattern, const char *string);
 
 /* The following definitions come from lib/pidfile.c  */
 
