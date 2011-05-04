@@ -621,11 +621,6 @@ static const struct {
 	NTSTATUS ntstatus;
 	WERROR werror;
 } ntstatus_to_werror_map[] = {
-	/*
-	 * we add this manualy here, so that W_ERROR(0x5)
-	 * gets mapped to NTSTATUS_ACCESS_DENIED
-	 */
-	{NT_STATUS_ACCESS_DENIED, WERR_ACCESS_DENIED},
 	{NT_STATUS(0x103), W_ERROR(0x3e5)},
 	{NT_STATUS(0x105), W_ERROR(0xea)},
 	{NT_STATUS(0x106), W_ERROR(0x514)},
@@ -1160,7 +1155,14 @@ static const struct {
 	{NT_STATUS(0x80000025), W_ERROR(0x962)},
 	{NT_STATUS(0x80000288), W_ERROR(0x48d)},
 	{NT_STATUS(0x80000289), W_ERROR(0x48e)},
-	{NT_STATUS_OK, WERR_OK}
+	{NT_STATUS_OK, WERR_OK}};
+
+static const struct {
+	WERROR werror;
+	NTSTATUS ntstatus;
+} werror_to_ntstatus_map[] = {
+	{ W_ERROR(0x5), NT_STATUS_ACCESS_DENIED },
+	{ WERR_OK, NT_STATUS_OK }
 };
 
 bool ntstatus_check_dos_mapping = true;
@@ -1234,6 +1236,14 @@ NTSTATUS werror_to_ntstatus(WERROR error)
 {
 	int i;
 	if (W_ERROR_IS_OK(error)) return NT_STATUS_OK;
+
+	for (i=0; !W_ERROR_IS_OK(werror_to_ntstatus_map[i].werror); i++) {
+		if (W_ERROR_V(error) == 
+		    W_ERROR_V(werror_to_ntstatus_map[i].werror)) {
+			return werror_to_ntstatus_map[i].ntstatus;
+		}
+	}
+
 	for (i=0; NT_STATUS_V(ntstatus_to_werror_map[i].ntstatus); i++) {
 		if (W_ERROR_V(error) == 
 		    W_ERROR_V(ntstatus_to_werror_map[i].werror)) {
