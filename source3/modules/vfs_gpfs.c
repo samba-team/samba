@@ -1088,6 +1088,7 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 	if (ret == 0) {
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+		smb_fname->st.vfs_private = attrs.winAttrs;
 	}
 	return 0;
 }
@@ -1135,6 +1136,7 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	if (ret == 0) {
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+		smb_fname->st.vfs_private = attrs.winAttrs;
 	}
 	return 0;
 }
@@ -1199,18 +1201,23 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 	struct gpfs_winattr attrs;
 	char *path = NULL;
 	NTSTATUS status;
-	int ret;
 
 	status = get_full_smb_filename(talloc_tos(), fname, &path);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(path, &attrs);
 
-	if (ret == -1) {
-		TALLOC_FREE(path);
-		return false;
+	if (VALID_STAT(*sbuf)) {
+		attrs.winAttrs = sbuf->vfs_private;
+	} else {
+		int ret;
+		ret = get_gpfs_winattrs(path, &attrs);
+
+		if (ret == -1) {
+			TALLOC_FREE(path);
+			return false;
+		}
 	}
 	if ((attrs.winAttrs & GPFS_WINATTR_OFFLINE) != 0) {
 		DEBUG(10, ("%s is offline\n", path));
