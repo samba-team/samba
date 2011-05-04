@@ -58,6 +58,7 @@ static bool use_multishare_conn = False;
 static bool do_encrypt;
 static const char *local_path = NULL;
 static int signing_state = Undefined;
+char *test_filename;
 
 bool torture_showall = False;
 
@@ -8374,6 +8375,7 @@ static struct {
 	{ "NOTIFY-BENCH", run_notify_bench },
 	{ "BAD-NBT-SESSION", run_bad_nbt_session },
 	{ "SMB-ANY-CONNECT", run_smb_any_connect },
+	{ "NOTIFY-ONLINE", run_notify_online },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
@@ -8467,6 +8469,7 @@ static void usage(void)
 	printf("\t-p port\n");
 	printf("\t-s seed\n");
 	printf("\t-b unclist_filename   specify multiple shares for multiple connections\n");
+	printf("\t-f filename   filename to test\n");
 	printf("\n\n");
 
 	printf("tests are:");
@@ -8544,7 +8547,8 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ll:d:Aec:ks:b:B:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ll:d:Aec:ks:b:B:f:"))
+	       != EOF) {
 		switch (opt) {
 		case 'p':
 			port_to_use = atoi(optarg);
@@ -8612,6 +8616,9 @@ static void usage(void)
 			break;
 		case 'B':
 			torture_blocksize = atoi(optarg);
+			break;
+		case 'f':
+			test_filename = SMB_STRDUP(optarg);
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);

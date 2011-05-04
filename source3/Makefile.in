@@ -1228,6 +1228,7 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/nbench.o \
 		torture/test_async_echo.o \
 		torture/test_smbsock_any_connect.o \
+		torture/test_notify_online.o \
 		torture/test_addrchange.o \
 		torture/test_case_insensitive.o \
 		torture/test_posix_append.o
