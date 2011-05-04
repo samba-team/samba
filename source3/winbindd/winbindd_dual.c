@@ -510,6 +510,11 @@ void winbind_child_died(pid_t pid)
 
 	DLIST_REMOVE(winbindd_children, child);
 	child->pid = 0;
+
+	if (child->sock != -1) {
+		close(child->sock);
+		child->sock = -1;
+	}
 }
 
 /* Ensure any negative cache entries with the netbios or realm names are removed. */
