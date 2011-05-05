@@ -104,4 +104,26 @@ NTSTATUS smb2cli_flush(struct cli_state *cli,
 		       uint64_t fid_persistent,
 		       uint64_t fid_volatile);
 
+struct tevent_req *smb2cli_read_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct cli_state *cli,
+				     uint32_t length,
+				     uint64_t offset,
+				     uint64_t fid_persistent,
+				     uint64_t fid_volatile,
+				     uint64_t minimum_count,
+				     uint64_t remaining_bytes);
+NTSTATUS smb2cli_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   uint8_t **data, uint32_t *data_length);
+NTSTATUS smb2cli_read(struct cli_state *cli,
+		      uint32_t length,
+		      uint64_t offset,
+		      uint64_t fid_persistent,
+		      uint64_t fid_volatile,
+		      uint64_t minimum_count,
+		      uint64_t remaining_bytes,
+		      TALLOC_CTX *mem_ctx,
+		      uint8_t **data,
+		      uint32_t *data_length);
+
 #endif /* __SMB2CLI_H__ */
