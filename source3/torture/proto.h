@@ -67,6 +67,7 @@ void *shm_setup(int size);
 bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 		      char **hostname, char **sharename);
 bool torture_open_connection(struct cli_state **c, int conn_index);
+bool torture_init_connection(struct cli_state **pcli);
 bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid);
 bool torture_close_connection(struct cli_state *c);
 bool torture_ioctl_test(int dummy);
@@ -91,5 +92,6 @@ bool run_smb_any_connect(int dummy);
 bool run_addrchange(int dummy);
 bool run_notify_online(int dummy);
 bool run_nttrans_create(int dummy);
+bool run_smb2_basic(int dummy);
 
 #endif /* __TORTURE_H__ */

@@ -42,7 +42,7 @@
 extern char *optarg;
 extern int optind;
 
-static fstring host, workgroup, share, password, username, myname;
+fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static const char *sockops="TCP_NODELAY";
 static int nprocs=1;
@@ -412,6 +412,19 @@ bool torture_open_connection(struct cli_state **c, int conn_index)
 	}
 
 	return torture_open_connection_share(c, host, share);
+}
+
+bool torture_init_connection(struct cli_state **pcli)
+{
+	struct cli_state *cli;
+
+	cli = open_nbt_connection();
+	if (cli == NULL) {
+		return false;
+	}
+
+	*pcli = cli;
+	return true;
 }
 
 bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
@@ -8695,6 +8708,7 @@ static struct {
 	{ "BAD-NBT-SESSION", run_bad_nbt_session },
 	{ "SMB-ANY-CONNECT", run_smb_any_connect },
 	{ "NOTIFY-ONLINE", run_notify_online },
+	{ "SMB2-BASIC", run_smb2_basic },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},

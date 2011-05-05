@@ -1252,7 +1252,8 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/test_notify_online.o \
 		torture/test_addrchange.o \
 		torture/test_case_insensitive.o \
-		torture/test_posix_append.o
+		torture/test_posix_append.o \
+		torture/test_smb2.o
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) $(TLDAP_OBJ) \
 	$(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) \
