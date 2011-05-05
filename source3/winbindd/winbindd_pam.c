@@ -385,9 +385,9 @@ static void fill_in_password_policy(struct winbindd_response *r,
 	r->data.auth.policy.password_properties =
 		p->password_properties;
 	r->data.auth.policy.expire	=
-		nt_time_to_unix_abs((NTTIME *)&(p->max_password_age));
+		nt_time_to_unix_abs((const NTTIME *)&(p->max_password_age));
 	r->data.auth.policy.min_passwordage =
-		nt_time_to_unix_abs((NTTIME *)&(p->min_password_age));
+		nt_time_to_unix_abs((const NTTIME *)&(p->min_password_age));
 }
 
 static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
@@ -2135,7 +2135,7 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	}
 
 	if (!*domain && lp_winbind_use_default_domain()) {
-		fstrcpy(domain,(char *)lp_workgroup());
+		fstrcpy(domain,lp_workgroup());
 	}
 
 	if(!*user) {

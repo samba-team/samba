@@ -83,7 +83,7 @@ static char *fix_backslash(const char *str)
 	return newstring;
 }
 
-static const char *fix_quotes(TALLOC_CTX *ctx, const char *str)
+static const char *fix_quotes(TALLOC_CTX *ctx, char *str)
 {
 	char *newstring = NULL;
 	char *p = NULL;

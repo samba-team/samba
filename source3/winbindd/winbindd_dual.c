@@ -746,7 +746,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	}
 
 	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
-			   (uint8 *)message, strlen(message) + 1);
+			   (const uint8 *)message, strlen(message) + 1);
 
 	talloc_destroy(mem_ctx);
 }
@@ -823,7 +823,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 
 		messaging_send_buf(msg_ctx, *sender,
 				   MSG_WINBIND_DUMP_DOMAIN_LIST,
-				   (uint8_t *)message, strlen(message) + 1);
+				   (const uint8_t *)message, strlen(message) + 1);
 
 		talloc_destroy(mem_ctx);
 

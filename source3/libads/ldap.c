@@ -940,21 +940,21 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 		ber_printf(cookie_be, "{io}", (ber_int_t) 1000, "", 0);
 	}
 	ber_flatten(cookie_be, &cookie_bv);
-	PagedResults.ldctl_oid = CONST_DISCARD(char *, ADS_PAGE_CTL_OID);
+	PagedResults.ldctl_oid = discard_const_p(char, ADS_PAGE_CTL_OID);
 	PagedResults.ldctl_iscritical = (char) 1;
 	PagedResults.ldctl_value.bv_len = cookie_bv->bv_len;
 	PagedResults.ldctl_value.bv_val = cookie_bv->bv_val;
 
-	NoReferrals.ldctl_oid = CONST_DISCARD(char *, ADS_NO_REFERRALS_OID);
+	NoReferrals.ldctl_oid = discard_const_p(char, ADS_NO_REFERRALS_OID);
 	NoReferrals.ldctl_iscritical = (char) 0;
 	NoReferrals.ldctl_value.bv_len = 0;
-	NoReferrals.ldctl_value.bv_val = CONST_DISCARD(char *, "");
+	NoReferrals.ldctl_value.bv_val = discard_const_p(char, "");
 
 	if (external_control && 
 	    (strequal(external_control->control, ADS_EXTENDED_DN_OID) || 
 	     strequal(external_control->control, ADS_SD_FLAGS_OID))) {
 
-		ExternalCtrl.ldctl_oid = CONST_DISCARD(char *, external_control->control);
+		ExternalCtrl.ldctl_oid = discard_const_p(char, external_control->control);
 		ExternalCtrl.ldctl_iscritical = (char) external_control->critical;
 
 		/* win2k does not accept a ldctl_value beeing passed in */
@@ -1524,7 +1524,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	   non-existent attribute (but allowable for the object) to run
 	*/
 	LDAPControl PermitModify = {
-                CONST_DISCARD(char *, ADS_PERMIT_MODIFY_OID),
+                discard_const_p(char, ADS_PERMIT_MODIFY_OID),
 		{0, NULL},
 		(char) 1};
 	LDAPControl *controls[2];
@@ -3485,7 +3485,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 	pldap_control[0] = &ldap_control;
 	memset(&ldap_control, 0, sizeof(LDAPControl));
-	ldap_control.ldctl_oid = (char *)LDAP_SERVER_TREE_DELETE_OID;
+	ldap_control.ldctl_oid = discard_const_p(char, LDAP_SERVER_TREE_DELETE_OID);
 
 	/* hostname must be lowercase */
 	host = SMB_STRDUP(hostname);

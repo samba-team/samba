@@ -155,7 +155,7 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ads->config.realm) {
-		ads->config.realm = CONST_DISCARD(char *, c->opt_target_workgroup);
+		ads->config.realm = discard_const_p(char, c->opt_target_workgroup);
 		ads->ldap.port = 389;
 	}
 
@@ -401,7 +401,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ads->config.realm) {
-		ads->config.realm = CONST_DISCARD(char *, c->opt_target_workgroup);
+		ads->config.realm = discard_const_p(char, c->opt_target_workgroup);
 		ads->ldap.port = 389;
 	}
 
@@ -2023,7 +2023,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	const char *auth_principal = c->opt_user_name;
 	const char *auth_password = c->opt_password;
 	char *realm = NULL;
-	char *new_password = NULL;
+	const char *new_password = NULL;
 	char *chr, *prompt;
 	const char *user;
 	ADS_STATUS ret;

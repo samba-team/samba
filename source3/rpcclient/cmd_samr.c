@@ -295,7 +295,7 @@ static NTSTATUS get_domain_handle(struct rpc_pipe_client *cli,
 		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					      connect_pol,
 					      access_mask,
-					      CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+					      discard_const_p(struct dom_sid2, &global_sid_Builtin),
 					      domain_pol,
 					      &result);
 	}

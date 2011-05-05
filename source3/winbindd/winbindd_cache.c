@@ -1856,8 +1856,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 		/* Only save the reverse mapping if this was not a UPN */
 		if (!strchr(name, '@')) {
-			strupper_m(CONST_DISCARD(char *,domain_name));
-			strlower_m(CONST_DISCARD(char *,name));
+			strupper_m(discard_const_p(char, domain_name));
+			strlower_m(discard_const_p(char, name));
 			wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
 		}
 	}
