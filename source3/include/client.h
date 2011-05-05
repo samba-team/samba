@@ -145,6 +145,17 @@ struct cli_state {
 		uint32_t pid;
 		uint32_t tid;
 		uint64_t uid;
+
+		/* SMB2 negprot */
+		uint16_t security_mode;
+		uint16_t dialect_revision;
+		struct GUID server_guid;
+		uint16_t server_capabilities;
+		uint32_t max_transact_size;
+		uint32_t max_read_size;
+		uint32_t max_write_size;
+		struct timespec system_time;
+		struct timespec server_start_time;
 	} smb2;
 };
 
