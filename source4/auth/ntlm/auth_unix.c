@@ -737,46 +737,11 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 		return nt_status;
 	}
 
-	if ( user_info->flags | USER_INFO_CASE_INSENSITIVE_PASSWORD) {
-		return nt_status;
-	}
+	/* we no longer try different case combinations here. The use
+	 * of this code is now web auth, where trying different case
+	 * combinations makes no sense
+	 */
 
-	/* if the password was given to us with mixed case then we don't
-	 * need to proceed as we know it hasn't been case modified by the
-	 * client */
-	if (strhasupper(password) && strhaslower(password)) {
-		return nt_status;
-	}
-
-	/* make a copy of it */
-	pwcopy = talloc_strdup(ctx, password);
-	if (!pwcopy)
-		return NT_STATUS_NO_MEMORY;
-
-	/* try all lowercase if it's currently all uppercase */
-	if (strhasupper(pwcopy)) {
-		strlower(pwcopy);
-		nt_status = password_check(username, pwcopy, crypted, salt);
-		if NT_STATUS_IS_OK(nt_status) {
-			*ret_passwd = pws;
-			return nt_status;
-		}
-	}
-
-	/* give up? */
-	if (level < 1) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	/* last chance - all combinations of up to level chars upper! */
-	strlower(pwcopy);
-
-#if 0
-        if (NT_STATUS_IS_OK(nt_status = string_combinations(pwcopy, password_check, level))) {
-		*ret_passwd = pws;
-		return nt_status;
-	}
-#endif   
 	return NT_STATUS_WRONG_PASSWORD;
 }
 
