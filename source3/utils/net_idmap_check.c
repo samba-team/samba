@@ -32,6 +32,7 @@
 #include "cbuf.h"
 #include "srprs.h"
 #include <termios.h>
+#include "util_tdb.h"
 
 static int traverse_commit(struct db_record *diff_rec, void* data);
 static int traverse_check(struct db_record *rec, void* data);

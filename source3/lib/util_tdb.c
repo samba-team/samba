@@ -21,6 +21,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "util_tdb.h"
+
 #undef malloc
 #undef realloc
 #undef calloc

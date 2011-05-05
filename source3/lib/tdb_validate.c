@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "util_tdb.h"
 #include "tdb_validate.h"
 
 /*

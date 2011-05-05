@@ -25,6 +25,7 @@
 #include "nt_printing.h"
 #include "printing/notify.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 static TALLOC_CTX *send_ctx;
 

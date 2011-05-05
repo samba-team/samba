@@ -32,6 +32,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;

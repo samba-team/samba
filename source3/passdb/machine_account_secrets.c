@@ -28,6 +28,7 @@
 #include "secrets.h"
 #include "dbwrap.h"
 #include "../librpc/ndr/libndr.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

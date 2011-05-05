@@ -25,6 +25,7 @@
 #include "registry.h"
 #include "reg_perfcount.h"
 #include "../libcli/registry/util_reg.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

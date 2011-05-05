@@ -158,9 +158,12 @@ extern struct printif	iprint_printif;
 /* There can be this many printing tdb's open, plus any locked ones. */
 #define MAX_PRINT_DBS_OPEN 1
 
+struct TDB_DATA;
+struct tdb_context;
+
 struct tdb_print_db {
 	struct tdb_print_db *next, *prev;
-	TDB_CONTEXT *tdb;
+	struct tdb_context *tdb;
 	int ref_count;
 	fstring printer_name;
 };
@@ -249,7 +252,7 @@ uint32_t print_parse_jobid(const char *fname);
 struct tdb_print_db *get_print_db_byname(const char *printername);
 void release_print_db( struct tdb_print_db *pdb);
 void close_all_print_db(void);
-TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name, bool cleanlist);
+struct TDB_DATA get_printer_notify_pid_list(struct tdb_context *tdb, const char *printer_name, bool cleanlist);
 
 void print_queue_receive(struct messaging_context *msg,
 				void *private_data,

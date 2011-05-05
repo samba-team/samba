@@ -22,6 +22,7 @@
 #include "smbd/globals.h"
 #include "memcache.h"
 #include "messages.h"
+#include <tdb.h>
 
 #if defined(WITH_AIO)
 struct aio_extra *aio_list_head = NULL;

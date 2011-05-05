@@ -20,6 +20,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/util/tdb_wrap.h"
+#include "util_tdb.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb.h"
 #include "ctdb_private.h"
