@@ -649,7 +649,7 @@ void smb_panic_s3(const char *why);
 void log_stack_trace(void);
 const char *readdirname(SMB_STRUCT_DIR *p);
 bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive);
-void set_namearray(name_compare_entry **ppname_array, char *namelist);
+void set_namearray(name_compare_entry **ppname_array, const char *namelist);
 void free_namearray(name_compare_entry *name_array);
 bool fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);

@@ -1314,24 +1314,30 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
  passing to is_in_path(). We do this for
  speed so we can pre-parse all the names in the list 
  and don't do it for each call to is_in_path().
- namelist is modified here and is assumed to be 
- a copy owned by the caller.
  We also check if the entry contains a wildcard to
  remove a potentially expensive call to mask_match
  if possible.
 ********************************************************************/
 
-void set_namearray(name_compare_entry **ppname_array, char *namelist)
+void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 {
 	char *name_end;
-	char *nameptr = namelist;
+	char *namelist;
+	char *nameptr;
 	int num_entries = 0;
 	int i;
 
 	(*ppname_array) = NULL;
 
-	if((nameptr == NULL ) || ((nameptr != NULL) && (*nameptr == '\0'))) 
+	if((namelist_in == NULL ) || ((namelist_in != NULL) && (*namelist_in == '\0'))) 
 		return;
+
+	namelist = talloc_strdup(talloc_tos(), namelist_in);
+	if (namelist == NULL) {
+		DEBUG(0,("set_namearray: talloc fail\n"));
+		return;
+	}
+	nameptr = namelist;
 
 	/* We need to make two passes over the string. The
 		first to count the number of elements, the second
@@ -1358,11 +1364,14 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
 		num_entries++;
 	}
 
-	if(num_entries == 0)
+	if(num_entries == 0) {
+		talloc_free(namelist);
 		return;
+	}
 
 	if(( (*ppname_array) = SMB_MALLOC_ARRAY(name_compare_entry, num_entries + 1)) == NULL) {
 		DEBUG(0,("set_namearray: malloc fail\n"));
+		talloc_free(namelist);
 		return;
 	}
 
@@ -1389,6 +1398,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
 		(*ppname_array)[i].is_wild = ms_has_wild(nameptr);
 		if(((*ppname_array)[i].name = SMB_STRDUP(nameptr)) == NULL) {
 			DEBUG(0,("set_namearray: malloc fail (1)\n"));
+			talloc_free(namelist);
 			return;
 		}
 
@@ -1399,6 +1409,7 @@ void set_namearray(name_compare_entry **ppname_array, char *namelist)
 
 	(*ppname_array)[i].name = NULL;
 
+	talloc_free(namelist);
 	return;
 }
 

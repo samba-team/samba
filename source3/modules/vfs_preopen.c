@@ -322,7 +322,7 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 		return NULL;
 	}
 
-	set_namearray(&state->preopen_names, (char *)namelist);
+	set_namearray(&state->preopen_names, namelist);
 
 	if (state->preopen_names == NULL) {
 		TALLOC_FREE(state);
