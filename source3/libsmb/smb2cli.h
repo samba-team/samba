@@ -26,4 +26,20 @@ struct tevent_req *smb2cli_negprot_send(TALLOC_CTX *mem_ctx,
 NTSTATUS smb2cli_negprot_recv(struct tevent_req *req);
 NTSTATUS smb2cli_negprot(struct cli_state *cli);
 
+struct tevent_req *smb2cli_sesssetup_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct cli_state *cli,
+					  const char *user,
+					  const char *domain,
+					  const char *pass);
+NTSTATUS smb2cli_sesssetup_recv(struct tevent_req *req);
+NTSTATUS smb2cli_sesssetup(struct cli_state *cli, const char *user,
+			   const char *domain, const char *pass);
+
+struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct cli_state *cli);
+NTSTATUS smb2cli_logoff_recv(struct tevent_req *req);
+NTSTATUS smb2cli_logoff(struct cli_state *cli);
+
 #endif /* __SMB2CLI_H__ */
