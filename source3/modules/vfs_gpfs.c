@@ -32,6 +32,7 @@
 #include <gpfs_gpl.h>
 #include "nfs4_acls.h"
 #include "vfs_gpfs.h"
+#include "system/filesys.h"
 
 struct gpfs_config_data {
 	bool sharemodes;
@@ -1299,6 +1300,17 @@ static uint32_t vfs_gpfs_capabilities(struct vfs_handle_struct *handle,
 	return next;
 }
 
+static int vfs_gpfs_open(struct vfs_handle_struct *handle,
+			 struct smb_filename *smb_fname, files_struct *fsp,
+			 int flags, mode_t mode)
+{
+	if (lp_parm_bool(fsp->conn->params->service, "gpfs", "syncio",
+			 false)) {
+		flags |= O_SYNC;
+	}
+	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+}
+
 
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.connect_fn = vfs_gpfs_connect,
@@ -1326,6 +1338,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.is_offline = vfs_gpfs_is_offline,
 	.aio_force = vfs_gpfs_aio_force,
 	.sendfile = vfs_gpfs_sendfile,
+	.open_fn = vfs_gpfs_open,
 	.ftruncate = vfs_gpfs_ftruncate
 };
 
