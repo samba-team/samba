@@ -652,10 +652,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #undef HAVE_MMAP
 #endif
 
-#ifndef CONST_DISCARD
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#endif
-
 void dump_core(void) _NORETURN_;
 void exit_server(const char *const reason) _NORETURN_;
 void exit_server_cleanly(const char *const reason) _NORETURN_;

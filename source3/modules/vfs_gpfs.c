@@ -998,7 +998,7 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 	}
 
 
-        ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
+        ret = set_gpfs_winattrs(discard_const_p(char, path),
 				GPFS_WINATTR_SET_ATTRS, &attrs);
         if ( ret == -1){
 		if (errno == ENOSYS) {
@@ -1029,7 +1029,7 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
                 return SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size);
         }
 
-        ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
+        ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
         if ( ret == -1){
 		if (errno == ENOSYS) {
 			return SMB_VFS_NEXT_GETXATTR(handle, path, name, value,
@@ -1083,7 +1083,7 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(CONST_DISCARD(char *, fname), &attrs);
+	ret = get_gpfs_winattrs(discard_const_p(char, fname), &attrs);
 	TALLOC_FREE(fname);
 	if (ret == 0) {
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
@@ -1131,7 +1131,7 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
+	ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
 	TALLOC_FREE(path);
 	if (ret == 0) {
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
@@ -1172,7 +1172,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
         attrs.creationTime.tv_sec = ft->create_time.tv_sec;
         attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
 
-        ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
+        ret = set_gpfs_winattrs(discard_const_p(char, path),
                                 GPFS_WINATTR_SET_CREATION_TIME, &attrs);
         if(ret == -1 && errno != ENOSYS){
                 DEBUG(1,("vfs_gpfs_ntimes: set GPFS ntimes failed %d\n",ret));

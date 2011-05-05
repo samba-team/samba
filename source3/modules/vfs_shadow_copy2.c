@@ -825,12 +825,12 @@ static int shadow_copy2_chmod_acl(vfs_handle_struct *handle,
 
 static int shadow_copy2_label_cmp_asc(const void *x, const void *y)
 {
-	return strncmp((char *)x, (char *)y, sizeof(SHADOW_COPY_LABEL));
+	return strncmp((const char *)x, (const char *)y, sizeof(SHADOW_COPY_LABEL));
 }
 
 static int shadow_copy2_label_cmp_desc(const void *x, const void *y)
 {
-	return -strncmp((char *)x, (char *)y, sizeof(SHADOW_COPY_LABEL));
+	return -strncmp((const char *)x, (const char *)y, sizeof(SHADOW_COPY_LABEL));
 }
 
 /*

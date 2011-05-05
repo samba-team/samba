@@ -52,9 +52,9 @@ static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 	SMB_ASSERT(upper_sname != NULL);
 
         MD5Init(&ctx);
-        MD5Update(&ctx, (unsigned char *)&(sbuf->st_ex_dev),
+        MD5Update(&ctx, (const unsigned char *)&(sbuf->st_ex_dev),
 		  sizeof(sbuf->st_ex_dev));
-        MD5Update(&ctx, (unsigned char *)&(sbuf->st_ex_ino),
+        MD5Update(&ctx, (const unsigned char *)&(sbuf->st_ex_ino),
 		  sizeof(sbuf->st_ex_ino));
         MD5Update(&ctx, (unsigned char *)upper_sname,
 		  talloc_get_size(upper_sname)-1);

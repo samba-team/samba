@@ -63,7 +63,7 @@ static bool send_message(struct messaging_context *msg_ctx,
 	if (procid_to_pid(&pid) != 0)
 		return NT_STATUS_IS_OK(
 			messaging_send_buf(msg_ctx, pid, msg_type,
-					   (uint8 *)buf, len));
+					   (const uint8 *)buf, len));
 
 	ret = message_send_all(msg_ctx, msg_type, buf, len, &n_sent);
 	DEBUG(10,("smbcontrol/send_message: broadcast message to "
@@ -748,7 +748,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 
 		notify_printer_byname(messaging_event_context(msg_ctx),
 				      msg_ctx, argv[2], attribute,
-				      CONST_DISCARD(char *, argv[4]));
+				      discard_const_p(char, argv[4]));
 
 		goto send;
 	}

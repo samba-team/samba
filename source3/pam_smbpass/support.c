@@ -150,7 +150,7 @@ int make_remark( pam_handle_t * pamh, unsigned int ctrl
 		struct pam_response *resp;
 
 		pmsg[0] = &msg[0];
-		msg[0].msg = CONST_DISCARD(char *, text);
+		msg[0].msg = discard_const_p(char, text);
 		msg[0].msg_style = type;
 		resp = NULL;
 
@@ -550,7 +550,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
     if (comment != NULL && off(SMB__QUIET, ctrl)) {
         pmsg[0] = &msg[0];
         msg[0].msg_style = PAM_TEXT_INFO;
-        msg[0].msg = CONST_DISCARD(char *, comment);
+        msg[0].msg = discard_const_p(char, comment);
         i = 1;
     } else {
         i = 0;
@@ -558,12 +558,12 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
 
     pmsg[i] = &msg[i];
     msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
-    msg[i++].msg = CONST_DISCARD(char *, prompt1);
+    msg[i++].msg = discard_const_p(char, prompt1);
 
     if (prompt2 != NULL) {
         pmsg[i] = &msg[i];
         msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
-        msg[i++].msg = CONST_DISCARD(char *, prompt2);
+        msg[i++].msg = discard_const_p(char, prompt2);
         expect = 2;
     } else
         expect = 1;

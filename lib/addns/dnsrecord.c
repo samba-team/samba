@@ -131,7 +131,7 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 		return ERROR_DNS_SUCCESS;
 	}
 
-	ip = ((struct sockaddr_in *)pss)->sin_addr;
+	ip = ((const struct sockaddr_in *)pss)->sin_addr;
 	if (!(data = (uint8 *)TALLOC_MEMDUP(mem_ctx, (const void *)&ip.s_addr,
 					    sizeof(ip.s_addr)))) {
 		return ERROR_DNS_NO_MEMORY;

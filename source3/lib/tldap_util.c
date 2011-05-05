@@ -325,7 +325,7 @@ bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 
 	blob.length = strlen(newval);
 	if (blob.length != 0) {
-		blob.data = CONST_DISCARD(uint8_t *, newval);
+		blob.data = discard_const_p(uint8_t, newval);
 	}
 	ret = tldap_make_mod_blob_int(existing, mem_ctx, pmods, pnum_mods,
 				      attrib, blob, compare_utf8_blobs);

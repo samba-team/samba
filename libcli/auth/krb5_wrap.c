@@ -203,8 +203,8 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < len1; i++) {
 
-		p1 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ1), i);
-		p2 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ2), i);
+		p1 = krb5_princ_component(context, discard_const(krb5_principal, princ1), i);
+		p2 = krb5_princ_component(context, discard_const(krb5_principal, princ2), i);
 
 		if (p1->length != p2->length ||	memcmp(p1->data, p2->data, p1->length))
 			return False;

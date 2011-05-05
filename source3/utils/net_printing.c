@@ -512,7 +512,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		keyname = CONST_DISCARD(char *, r.printer_data[j].name);
+		keyname = discard_const_p(char, r.printer_data[j].name);
 		valuename = strchr(keyname, '\\');
 		if (valuename == NULL) {
 			continue;

@@ -721,7 +721,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 			retval = krb5_fwd_tgt_creds(context,/* Krb5 context [in] */
 				*auth_context,  /* Authentication context [in] */
-				CONST_DISCARD(char *, KRB5_TGS_NAME),  /* Ticket service name ("krbtgt") [in] */
+				discard_const_p(char, KRB5_TGS_NAME),  /* Ticket service name ("krbtgt") [in] */
 				credsp->client, /* Client principal for the tgt [in] */
 				credsp->server, /* Server principal for the tgt [in] */
 				ccache,         /* Credential cache to use for storage [in] */

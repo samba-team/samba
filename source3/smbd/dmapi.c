@@ -289,7 +289,7 @@ uint32 dmapi_file_flags(const char * const path)
 	become_root();
 #endif
 
-	err = dm_path_to_handle(CONST_DISCARD(char *, path),
+	err = dm_path_to_handle(discard_const_p(char, path),
 		&dm_handle, &dm_handle_len);
 	if (err < 0) {
 		DEBUG(DMAPI_TRACE, ("dm_path_to_handle(%s): %s\n",
@@ -308,7 +308,7 @@ uint32 dmapi_file_flags(const char * const path)
 
 		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
 
-		err = dm_path_to_handle(CONST_DISCARD(char *, path),
+		err = dm_path_to_handle(discard_const_p(char, path),
 			&dm_handle, &dm_handle_len);
 		if (err < 0) {
 			DEBUG(DMAPI_TRACE,

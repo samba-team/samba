@@ -230,7 +230,7 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 	for (h = p->pipe_handles->handles; h != NULL; h = h->next) {
 		if (memcmp(&h->wire_handle, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%u] ", count));
-			dump_data(4, (uint8 *)hnd, sizeof(*hnd));
+			dump_data(4, (const uint8 *)hnd, sizeof(*hnd));
 			if (data_p) {
 				*data_p = h->data;
 			}
@@ -240,7 +240,7 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, (uint8_t *)hnd, sizeof(*hnd));
+	dump_data(4, (const uint8_t *)hnd, sizeof(*hnd));
 
 	p->bad_handle_fault_state = true;
 

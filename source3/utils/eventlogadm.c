@@ -178,7 +178,7 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 			return False;
 		}
 		memcpy( wp, wrklist, sizeof( char * ) * numsources );
-		*( wp + numsources ) = ( char * ) sourcename;
+		*( wp + numsources ) = (const char * ) sourcename;
 		*( wp + numsources + 1 ) = NULL;
 		if (!push_reg_multi_sz(ctx, &blob, wp)) {
 			return false;

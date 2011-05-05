@@ -258,7 +258,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 
 		/* The return must be allocated on the caller's mem_ctx, as our own will be
 		   destoyed just after the call. */
-		return data_blob_talloc((TALLOC_CTX *)auth_context, cli->secblob.data,8);
+		return data_blob_talloc(discard_const_p(TALLOC_CTX, auth_context), cli->secblob.data,8);
 	} else {
 		return data_blob_null;
 	}

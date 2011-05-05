@@ -11,8 +11,6 @@
 */
 
 #include "pam_winbind.h"
-#define CONST_DISCARD(type,ptr) ((type)(void *)ptr)
-
 
 static int wbc_error_to_pam_error(wbcErr status)
 {

@@ -313,13 +313,13 @@ int get_pam_winbind_config()
 		opt_pam_winbind_conf = PAM_WINBIND_CONFIG_FILE;
 	}
 
-	d = iniparser_load(CONST_DISCARD(char *, opt_pam_winbind_conf));
+	d = iniparser_load(discard_const_p(char, opt_pam_winbind_conf));
 
 	if (!d) {
 		return 0;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:krb5_auth"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:krb5_auth"), false)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
@@ -1722,7 +1722,7 @@ static void manage_client_ntlmssp_targ(struct spnego_data spnego)
 
 	spnego.type = SPNEGO_NEG_TOKEN_TARG;
 	spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-	spnego.negTokenTarg.supportedMech = (char *)OID_NTLMSSP;
+	spnego.negTokenTarg.supportedMech = (const char *)OID_NTLMSSP;
 	spnego.negTokenTarg.responseToken = request;
 	spnego.negTokenTarg.mechListMIC = null_blob;
 

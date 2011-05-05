@@ -144,7 +144,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 
 	xacl.version = 3;
 	xacl.info.sd_hs3 = &sd_hs3;
-	xacl.info.sd_hs3->sd = CONST_DISCARD(struct security_descriptor *, psd);
+	xacl.info.sd_hs3->sd = discard_const_p(struct security_descriptor, psd);
 	xacl.info.sd_hs3->hash_type = hash_type;
 	memcpy(&xacl.info.sd_hs3->hash[0], hash, XATTR_SD_HASH_SIZE);
 
@@ -190,7 +190,7 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 	/* Fake a quick smb_filename. */
 	ZERO_STRUCT(smb_fname);
 	smb_fname.st = *psbuf;
-	smb_fname.base_name = CONST_DISCARD(char *, name);
+	smb_fname.base_name = discard_const_p(char, name);
 
 	dir_mode = unix_mode(conn,
 			FILE_ATTRIBUTE_DIRECTORY, &smb_fname, NULL);
@@ -729,7 +729,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
 			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor,
-			CONST_DISCARD(struct security_descriptor *,orig_psd));
+			discard_const_p(struct security_descriptor, orig_psd));
 	}
 
 	status = get_nt_acl_internal(handle, fsp,
@@ -784,7 +784,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		DEBUG(10,("fset_nt_acl_xattr: storing xattr sd for file %s\n",
 			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor,
-			CONST_DISCARD(struct security_descriptor *,psd));
+			discard_const_p(struct security_descriptor, psd));
 	}
 	create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
 	store_acl_blob_fsp(handle, fsp, &blob);
@@ -836,7 +836,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	}
 
 	ZERO_STRUCT(local_fname);
-	local_fname.base_name = CONST_DISCARD(char *,final_component);
+	local_fname.base_name = discard_const_p(char, final_component);
 
 	/* Must use lstat here. */
 	ret = SMB_VFS_LSTAT(conn, &local_fname);

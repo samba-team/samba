@@ -237,7 +237,7 @@ static NTSTATUS search_cell(struct likewise_cell *c,
 done:
 	PRINT_NTSTATUS_ERROR(nt_status, "search_cell", 4);
 
-	talloc_destroy(CONST_DISCARD(char*, base));
+	talloc_destroy(discard_const_p(char, base));
 	talloc_destroy(frame);
 
 	return nt_status;

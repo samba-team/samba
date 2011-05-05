@@ -1480,7 +1480,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
-				       CONST_DISCARD(char **, attrs),
+				       discard_const_p(char *, attrs),
 				       attrsonly, sctrls, cctrls, &timeout,
 				       sizelimit, res);
 		if (rc != LDAP_SUCCESS) {
@@ -1924,7 +1924,7 @@ static bool smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *val
 	}
 
 	rc = ldap_search_s(ld, "", LDAP_SCOPE_BASE, 
-			   "(objectclass=*)", CONST_DISCARD(char **, attrs), 0 , &msg);
+			   "(objectclass=*)", discard_const_p(char *, attrs), 0 , &msg);
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(3,("smbldap_check_root_dse: Could not search rootDSE\n"));

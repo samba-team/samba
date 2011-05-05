@@ -4564,7 +4564,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 		return False;
 	}
 	if (!pull_utf8_talloc(mem_ctx,
-			      CONST_DISCARD(char **, &result->account_name),
+			      discard_const_p(char *, &result->account_name),
 			      vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
@@ -4577,7 +4577,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"displayName\" not found\n"));
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **, &result->fullname),
+				   discard_const_p(char *, &result->fullname),
 				   vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
@@ -4590,7 +4590,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"description\" not found\n"));
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **, &result->description),
+				   discard_const_p(char *, &result->description),
 				   vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
@@ -4724,7 +4724,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 			return False;
 		}
 		if (!pull_utf8_talloc(mem_ctx,
-				      CONST_DISCARD(char **,
+				      discard_const_p(char *,
 						    &result->account_name),
 				      vals[0], &converted_size))
 		{
@@ -4733,7 +4733,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 		}
 	}
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **,
+				   discard_const_p(char *,
 						 &result->account_name),
 				   vals[0], &converted_size))
 	{
@@ -4747,7 +4747,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"description\" not found\n"));
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **, &result->description),
+				   discard_const_p(char *, &result->description),
 				   vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s",

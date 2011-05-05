@@ -281,7 +281,7 @@ static struct dc_info *dc_find_domain(const char *dns_domain)
 	*cell = dc->domain_cell;
 
 done:
-	talloc_destroy(CONST_DISCARD(char*, base));
+	talloc_destroy(discard_const_p(char, base));
 	talloc_destroy(frame);
 
 	return nt_status;

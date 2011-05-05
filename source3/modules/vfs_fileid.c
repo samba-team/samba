@@ -144,7 +144,7 @@ static uint64_t fileid_device_mapping_fsname(struct fileid_handle_data *data,
 	if (!m) return dev;
 
 	if (m->devid == (uint64_t)-1) {
-		m->devid = fileid_uint64_hash((uint8_t *)m->mnt_fsname,
+		m->devid = fileid_uint64_hash((const uint8_t *)m->mnt_fsname,
 					      strlen(m->mnt_fsname));
 	}
 

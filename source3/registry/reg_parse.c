@@ -622,7 +622,7 @@ static bool lookslike_utf16(const char* line, size_t len, bool* little_endian)
 	bool le;
 
 	size_t l = MIN(len/2, 64);
-	uint16_t* u = (uint16_t*)line;
+	const uint16_t* u = (const uint16_t*)line;
 	int i;
 
 	assert(len >= 2);

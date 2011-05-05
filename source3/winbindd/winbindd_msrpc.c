@@ -787,7 +787,7 @@ static int get_ldap_seq(const char *server, struct sockaddr_storage *ss, int por
 	to.tv_usec = 0;
 
 	if (ldap_search_st(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)",
-			   CONST_DISCARD(char **, attrs), 0, &to, &res))
+			   discard_const_p(char *, attrs), 0, &to, &res))
 		goto done;
 
 	if (ldap_count_entries(ldp, res) != 1)

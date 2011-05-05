@@ -37,7 +37,7 @@
  Ensures we have at least RPC_HEADER_LEN amount of data in the incoming buffer.
 ****************************************************************************/
 
-static ssize_t fill_rpc_header(struct pipes_struct *p, char *data, size_t data_to_copy)
+static ssize_t fill_rpc_header(struct pipes_struct *p, const char *data, size_t data_to_copy)
 {
 	size_t len_needed_to_complete_hdr =
 		MIN(data_to_copy, RPC_HEADER_LEN - p->in_data.pdu.length);
@@ -126,7 +126,7 @@ static void free_pipe_context(struct pipes_struct *p)
  Accepts incoming data on an rpc pipe. Processes the data in pdu sized units.
 ****************************************************************************/
 
-ssize_t process_incoming_data(struct pipes_struct *p, char *data, size_t n)
+ssize_t process_incoming_data(struct pipes_struct *p, const char *data, size_t n)
 {
 	size_t data_to_copy = MIN(n, RPC_MAX_PDU_FRAG_LEN
 					- p->in_data.pdu.length);
@@ -231,7 +231,7 @@ ssize_t process_incoming_data(struct pipes_struct *p, char *data, size_t n)
  Accepts incoming data on an internal rpc pipe.
 ****************************************************************************/
 
-static ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n)
+static ssize_t write_to_internal_pipe(struct pipes_struct *p, const char *data, size_t n)
 {
 	size_t data_left = n;
 
@@ -535,7 +535,7 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		struct pipes_struct *p = talloc_get_type_abort(
 			handle->private_data, struct pipes_struct);
 
-		state->nwritten = write_to_internal_pipe(p, (char *)data, len);
+		state->nwritten = write_to_internal_pipe(p, (const char *)data, len);
 
 		status = (state->nwritten >= 0)
 			? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
@@ -549,7 +549,7 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 		state->ev = ev;
 		state->p = p;
-		state->iov.iov_base = CONST_DISCARD(void *, data);
+		state->iov.iov_base = discard_const_p(void, data);
 		state->iov.iov_len = len;
 
 		subreq = tstream_writev_queue_send(state, ev,

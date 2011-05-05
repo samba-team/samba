@@ -163,7 +163,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	 * last compnent to shorten the tree walk. */
 
 	/*
-	 * Safe to use CONST_DISCARD
+	 * Safe to use discard_const_p
 	 * here as last_component points
 	 * into our smb_fname->base_name.
 	 */

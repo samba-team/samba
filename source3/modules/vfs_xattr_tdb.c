@@ -314,7 +314,7 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 	}
 
 	attribs->eas[i].name = name;
-	attribs->eas[i].value.data = CONST_DISCARD(uint8 *, value);
+	attribs->eas[i].value.data = discard_const_p(uint8, value);
 	attribs->eas[i].value.length = size;
 
 	status = xattr_tdb_save_attrs(rec, attribs);

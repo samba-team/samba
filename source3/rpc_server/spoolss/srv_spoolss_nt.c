@@ -575,7 +575,7 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename,
 		(unsigned long)strlen(handlename)));
 
-	aprinter = CONST_DISCARD(char *, handlename);
+	aprinter = discard_const_p(char, handlename);
 	if ( *handlename == '\\' ) {
 		servername = canon_servername(handlename);
 		if ( (aprinter = strchr_m( servername, '\\' )) != NULL ) {
@@ -1501,7 +1501,7 @@ static bool srv_spoolss_drv_upgrade_printer(const char *drivername,
 
 	messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
 			   MSG_PRINTER_DRVUPGRADE,
-			   (uint8_t *)drivername, len+1);
+			   (const uint8_t *)drivername, len+1);
 
 	return true;
 }
