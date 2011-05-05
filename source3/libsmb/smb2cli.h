@@ -146,4 +146,30 @@ NTSTATUS smb2cli_write(struct cli_state *cli,
 		       uint32_t flags,
 		       const uint8_t *data);
 
+struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct cli_state *cli,
+						uint8_t level,
+						uint8_t flags,
+						uint32_t file_index,
+						uint64_t fid_persistent,
+						uint64_t fid_volatile,
+						const char *mask,
+						uint32_t outbuf_len);
+NTSTATUS smb2cli_query_directory_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      uint8_t **data,
+				      uint32_t *data_length);
+NTSTATUS smb2cli_query_directory(struct cli_state *cli,
+				 uint8_t level,
+				 uint8_t flags,
+				 uint32_t file_index,
+				 uint64_t fid_persistent,
+				 uint64_t fid_volatile,
+				 const char *mask,
+				 uint32_t outbuf_len,
+				 TALLOC_CTX *mem_ctx,
+				 uint8_t **data,
+				 uint32_t *data_length);
+
 #endif /* __SMB2CLI_H__ */
