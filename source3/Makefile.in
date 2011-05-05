@@ -600,6 +600,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clioplock.o libsmb/clirap2.o \
 	     libsmb/smb_seal.o libsmb/async_smb.o \
 	     libsmb/read_smb.o \
+	     libsmb/smb2cli_base.o \
 	     libsmb/cli_np_tstream.o \
 	     libsmb/smbsock_connect.o \
 	     $(LIBSAMBA_OBJ) \

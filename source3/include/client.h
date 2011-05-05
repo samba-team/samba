@@ -139,6 +139,13 @@ struct cli_state {
 
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
+
+	struct {
+		uint64_t mid;
+		uint32_t pid;
+		uint32_t tid;
+		uint64_t uid;
+	} smb2;
 };
 
 struct file_info {
