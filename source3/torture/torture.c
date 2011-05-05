@@ -2602,7 +2602,7 @@ static bool run_fdpasstest(int dummy)
 		return False;
 	}
 
-	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)"hello world\n", 0,
+	status = cli_writeall(cli1, fnum1, 0, (const uint8_t *)"hello world\n", 0,
 			      13, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("write failed (%s)\n", nt_errstr(status));
@@ -2667,7 +2667,7 @@ static bool run_fdsesstest(int dummy)
 		return False;
 	}
 
-	status = cli_writeall(cli, fnum1, 0, (uint8_t *)"hello world\n", 0, 13,
+	status = cli_writeall(cli, fnum1, 0, (const uint8_t *)"hello world\n", 0, 13,
 			      NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("write failed (%s)\n", nt_errstr(status));
@@ -2770,7 +2770,6 @@ test how many open files this server supports on the one socket
 static bool run_maxfidtest(int dummy)
 {
 	struct cli_state *cli;
-	const char *ftemplate = "\\maxfid.%d.%d";
 	fstring fname;
 	uint16_t fnums[0x11000];
 	int i;
@@ -2787,7 +2786,7 @@ static bool run_maxfidtest(int dummy)
 	cli_sockopt(cli, sockops);
 
 	for (i=0; i<0x11000; i++) {
-		slprintf(fname,sizeof(fname)-1,ftemplate, i,(int)getpid());
+		slprintf(fname,sizeof(fname)-1,"\\maxfid.%d.%d", i,(int)getpid());
 		if (!NT_STATUS_IS_OK(cli_open(cli, fname, 
 					O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &fnums[i]))) {
 			printf("open of %s failed (%s)\n", 
@@ -2802,7 +2801,7 @@ static bool run_maxfidtest(int dummy)
 
 	printf("cleaning up\n");
 	for (;i>=0;i--) {
-		slprintf(fname,sizeof(fname)-1,ftemplate, i,(int)getpid());
+		slprintf(fname,sizeof(fname)-1,"\\maxfid.%d.%d", i,(int)getpid());
 		cli_close(cli, fnums[i]);
 		if (!NT_STATUS_IS_OK(cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
 			printf("unlink of %s failed (%s)\n", 
@@ -4862,7 +4861,7 @@ static bool run_opentest(int dummy)
 	}
 
 	/* Write to ensure we have to update the file time. */
-	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)"TEST DATA\n", 0, 10,
+	status = cli_writeall(cli1, fnum1, 0, (const uint8_t *)"TEST DATA\n", 0, 10,
 			      NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("TEST #8 cli_write failed: %s\n", nt_errstr(status));
@@ -5100,7 +5099,7 @@ static bool run_simple_posix_open_test(int dummy)
 	}
 
 	/* Write some data into it. */
-	status = cli_writeall(cli1, fnum1, 0, (uint8_t *)"TEST DATA\n", 0, 10,
+	status = cli_writeall(cli1, fnum1, 0, (const uint8_t *)"TEST DATA\n", 0, 10,
 			      NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_write failed: %s\n", nt_errstr(status));
@@ -6048,7 +6047,7 @@ static bool run_chain1(int dummy)
 
 
 	reqs[1] = cli_write_andx_create(talloc_tos(), evt, cli1, 0, 0,
-					(uint8_t *)str, 0, strlen(str)+1,
+					(const uint8_t *)str, 0, strlen(str)+1,
 					smbreqs, 1, &smbreqs[1]);
 	if (reqs[1] == NULL) return false;
 	tevent_req_set_callback(reqs[1], chain1_write_completion, NULL);
@@ -8013,7 +8012,7 @@ static bool run_getaddrinfo_send(int dummy)
 			goto fail;
 		}
 		tevent_req_set_callback(reqs[i], getaddrinfo_finished,
-					(void *)names[i]);
+					discard_const_p(void, names[i]));
 	}
 
 	for (i=0; i<ARRAY_SIZE(reqs); i++) {
