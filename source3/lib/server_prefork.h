@@ -37,10 +37,12 @@ enum pf_server_cmds {
 struct pf_worker_data {
 	pid_t pid;
 	enum pf_worker_status status;
-	enum pf_server_cmds cmds;
 	time_t started;
 	time_t last_used;
 	int num_clients;
+
+	enum pf_server_cmds cmds;
+	int allowed_clients;
 };
 
 typedef int (prefork_main_fn_t)(struct tevent_context *ev,
@@ -67,6 +69,8 @@ int prefork_retire_children(struct prefork_pool *pfp,
 			    int num_children, time_t age_limit);
 int prefork_count_active_children(struct prefork_pool *pfp, int *total);
 bool prefork_mark_pid_dead(struct prefork_pool *pfp, pid_t pid);
+void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max);
+void prefork_reset_allowed_clients(struct prefork_pool *pfp);
 
 /* ==== Functions used by children ==== */
 

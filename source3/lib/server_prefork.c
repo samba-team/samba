@@ -36,6 +36,8 @@ struct prefork_pool {
 
 	int pool_size;
 	struct pf_worker_data *pool;
+
+	int allowed_clients;
 };
 
 int prefork_pool_destructor(struct prefork_pool *pfp)
@@ -86,6 +88,10 @@ bool prefork_create_pool(struct tevent_context *ev_ctx,
 	talloc_set_destructor(pfp, prefork_pool_destructor);
 
 	for (i = 0; i < min_children; i++) {
+
+		pfp->pool[i].allowed_clients = 1;
+		pfp->pool[i].started = now;
+
 		pid = sys_fork();
 		switch (pid) {
 		case -1:
@@ -102,7 +108,6 @@ bool prefork_create_pool(struct tevent_context *ev_ctx,
 
 		default: /* THE PARENT */
 			pfp->pool[i].pid = pid;
-			pfp->pool[i].started = now;
 			break;
 		}
 	}
@@ -126,6 +131,9 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 			continue;
 		}
 
+		pfp->pool[i].allowed_clients = 1;
+		pfp->pool[i].started = now;
+
 		pid = sys_fork();
 		switch (pid) {
 		case -1:
@@ -144,7 +152,6 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 
 		default: /* THE PARENT */
 			pfp->pool[i].pid = pid;
-			pfp->pool[i].started = now;
 			j++;
 			break;
 		}
@@ -261,6 +268,30 @@ bool prefork_mark_pid_dead(struct prefork_pool *pfp, pid_t pid)
 	}
 
 	return false;
+}
+
+void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max)
+{
+	int i;
+
+	for (i = 0; i < pfp->pool_size; i++) {
+		if (pfp->pool[i].status == PF_WORKER_NONE) {
+			continue;
+		}
+
+		if (pfp->pool[i].allowed_clients < max) {
+			pfp->pool[i].allowed_clients++;
+		}
+	}
+}
+
+void prefork_reset_allowed_clients(struct prefork_pool *pfp)
+{
+	int i;
+
+	for (i = 0; i < pfp->pool_size; i++) {
+		pfp->pool[i].allowed_clients = 1;
+	}
 }
 
 /* ==== Functions used by children ==== */
