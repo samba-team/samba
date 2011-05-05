@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "dbwrap.h"
+#include "util_tdb.h"
 #include "printer_list.h"
 
 #define PL_DB_NAME() lock_path("printer_list.tdb")

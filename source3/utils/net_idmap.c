@@ -25,6 +25,7 @@
 #include "dbwrap.h"
 #include "../libcli/security/security.h"
 #include "net_idmap_check.h"
+#include "util_tdb.h"
 
 #define ALLOC_CHECK(mem) do { \
 	if (!mem) { \

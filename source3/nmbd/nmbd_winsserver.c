@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "nmbd/nmbd.h"
+#include "util_tdb.h"
 
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1

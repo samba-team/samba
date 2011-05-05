@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "g_lock.h"
+#include "util_tdb.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/select.h"
 #include "system/select.h"

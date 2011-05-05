@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/glob.h"
+#include "util_tdb.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB

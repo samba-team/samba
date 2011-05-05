@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "../libcli/security/security.h"
+#include "util_tdb.h"
 
 #define NETSAMLOGON_TDB	"netsamlogon_cache.tdb"
 

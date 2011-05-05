@@ -28,6 +28,7 @@
 #include "../lib/crypto/crypto.h"
 #include "dbwrap.h"
 #include "auth.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

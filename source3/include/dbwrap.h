@@ -20,6 +20,8 @@
 #ifndef __DBWRAP_H__
 #define __DBWRAP_H__
 
+#include <tdb.h>
+
 struct db_record {
 	TDB_DATA key, value;
 	NTSTATUS (*store)(struct db_record *rec, TDB_DATA data, int flag);

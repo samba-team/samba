@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
+#include "util_tdb.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
 #include "messages.h"

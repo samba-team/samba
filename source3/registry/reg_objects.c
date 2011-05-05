@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "reg_objects.h"
+#include "util_tdb.h"
 #include "dbwrap.h"
 #include "../libcli/registry/util_reg.h"
 

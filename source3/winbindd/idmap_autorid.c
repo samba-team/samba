@@ -28,6 +28,7 @@
 #include "dbwrap.h"
 #include "idmap.h"
 #include "../libcli/security/dom_sid.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
