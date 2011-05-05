@@ -274,12 +274,11 @@ struct spoolss_children_data {
 	struct pf_worker_data *pf;
 	int listen_fd;
 	int lock_fd;
+
+	bool listening;
 };
 
-static void spoolss_schedule_loop(void *pvt);
-static void spoolss_children_loop(struct tevent_context *ev_ctx,
-				  struct tevent_immediate *im,
-				  void *pvt);
+static void spoolss_next_client(void *pvt);
 
 static int spoolss_children_main(struct tevent_context *ev_ctx,
 				 struct pf_worker_data *pf,
@@ -305,11 +304,13 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	data->msg_ctx = msg_ctx;
 	data->lock_fd = lock_fd;
 	data->listen_fd = listen_fd;
-
-	spoolss_schedule_loop(data);
+	data->listening = false;
 
 	/* loop until it is time to exit */
 	while (pf->status != PF_WORKER_EXITING) {
+		/* try to see if it is time to schedule the next client */
+		spoolss_next_client(data);
+
 		ret = tevent_loop_once(ev_ctx);
 		if (ret != 0) {
 			DEBUG(0, ("tevent_loop_once() exited with %d: %s\n",
@@ -335,13 +336,22 @@ static void spoolss_client_terminated(void *pvt)
 		return;
 	}
 
-	spoolss_schedule_loop(pvt);
+	spoolss_next_client(pvt);
 }
 
-static void spoolss_schedule_loop(void *pvt)
-{
+struct spoolss_new_client {
 	struct spoolss_children_data *data;
-	struct tevent_immediate *im;
+	struct sockaddr_un sunaddr;
+	socklen_t addrlen;
+};
+
+static void spoolss_handle_client(struct tevent_req *req);
+
+static void spoolss_next_client(void *pvt)
+{
+	struct tevent_req *req;
+	struct spoolss_children_data *data;
+	struct spoolss_new_client *next;
 
 	data = talloc_get_type_abort(pvt, struct spoolss_children_data);
 
@@ -354,35 +364,59 @@ static void spoolss_schedule_loop(void *pvt)
 		return;
 	}
 
-	im = tevent_create_immediate(data);
-	if (!im) {
-		DEBUG(1, ("Failed to create immediate event!\n"));
+	if (data->listening ||
+	    data->pf->num_clients >= data->pf->allowed_clients) {
+		/* nothing to do for now we are already listening
+		 * or reached the number of clients we are allowed
+		 * to handle in parallel */
 		return;
 	}
 
-	tevent_schedule_immediate(im, data->ev_ctx,
-				  spoolss_children_loop, data);
+	next = talloc_zero(data, struct spoolss_new_client);
+	if (!next) {
+		DEBUG(1, ("Out of memory!?\n"));
+		return;
+	}
+	next->data = data;
+	next->addrlen = sizeof(next->sunaddr);
+
+	req = prefork_listen_send(next, data->ev_ctx, data->pf,
+				  data->lock_fd, data->listen_fd,
+				  (struct sockaddr *)&next->sunaddr,
+				  &next->addrlen);
+	if (!req) {
+		DEBUG(1, ("Failed to make listening request!?\n"));
+		talloc_free(next);
+		return;
+	}
+	tevent_req_set_callback(req, spoolss_handle_client, next);
+
+	data->listening = true;
 }
 
-static void spoolss_children_loop(struct tevent_context *ev_ctx,
-				  struct tevent_immediate *im,
-				  void *pvt)
+static void spoolss_handle_client(struct tevent_req *req)
 {
 	struct spoolss_children_data *data;
-	struct sockaddr_un sunaddr;
-	socklen_t addrlen = sizeof(sunaddr);
+	struct spoolss_new_client *client;
 	int ret;
 	int sd;
 
-	data = talloc_get_type_abort(pvt, struct spoolss_children_data);
+	client = tevent_req_callback_data(req, struct spoolss_new_client);
+	data = client->data;
 
+	ret = prefork_listen_recv(req, &sd);
 
-	/* FIXME: this call is blocking. */
-	ret = prefork_wait_for_client(data->pf, data->lock_fd, data->listen_fd,
-					(struct sockaddr *)(void *)&sunaddr,
-					&addrlen, &sd);
+	/* this will free the request too */
+	talloc_free(client);
+	/* we are done listening */
+	data->listening = false;
+
 	if (ret > 0) {
-		DEBUG(1, ("Failed to accept connection!\n"));
+		DEBUG(1, ("Failed to accept client connection!\n"));
+		/* bail out if we are not serving any other client */
+		if (data->pf->num_clients == 0) {
+			data->pf->status = PF_WORKER_EXITING;
+		}
 		return;
 	}
 
@@ -392,7 +426,7 @@ static void spoolss_children_loop(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	DEBUG(2, ("Spoolss preforked child %d activated!\n",
+	DEBUG(2, ("Spoolss preforked child %d got client connection!\n",
 		  (int)(data->pf->pid)));
 
 	named_pipe_accept_function(data->ev_ctx, data->msg_ctx,
