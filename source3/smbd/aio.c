@@ -1030,7 +1030,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *smbreq,
-			      files_struct *fsp, char *data,
+			      files_struct *fsp, const char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite)
 {
