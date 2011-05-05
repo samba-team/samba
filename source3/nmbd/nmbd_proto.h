@@ -48,7 +48,7 @@ void sync_all_dmbs(time_t t);
 
 void check_master_browser_exists(time_t t);
 void run_elections(time_t t);
-void process_election(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_election(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
 bool check_elections(void);
 void nmbd_message_election(struct messaging_context *msg,
 			   void *private_data,
@@ -59,18 +59,18 @@ void nmbd_message_election(struct messaging_context *msg,
 /* The following definitions come from nmbd/nmbd_incomingdgrams.c  */
 
 void tell_become_backup(void);
-void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
-void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
-void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
+void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
+void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
 void process_master_browser_announce(struct subnet_record *subrec,
-                                     struct packet_struct *p,char *buf);
-void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len);
+                                     struct packet_struct *p,const char *buf);
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len);
 void process_get_backup_list_request(struct subnet_record *subrec,
-                                     struct packet_struct *p,char *buf);
+                                     struct packet_struct *p,const char *buf);
 void process_reset_browser(struct subnet_record *subrec,
-                                  struct packet_struct *p,char *buf);
-void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf);
-void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len);
+                                  struct packet_struct *p,const char *buf);
+void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len);
 
 /* The following definitions come from nmbd/nmbd_incomingrequests.c  */
 
@@ -250,7 +250,7 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 
 bool initialize_nmbd_proxy_logon(void);
 
-void process_logon_packet(struct packet_struct *p, char *buf,int len,
+void process_logon_packet(struct packet_struct *p, const char *buf,int len,
                           const char *mailslot);
 
 /* The following definitions come from nmbd/nmbd_responserecordsdb.c  */

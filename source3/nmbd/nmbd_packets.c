@@ -108,7 +108,7 @@ void set_nb_flags(char *buf, uint16 nb_flags)
 Dumps out the browse packet data.
 **************************************************************************/
 
-static void debug_browse_data(char *outbuf, int len)
+static void debug_browse_data(const char *outbuf, int len)
 {
 	int i,j;
 
@@ -1062,7 +1062,7 @@ static struct subnet_record *find_subnet_for_dgram_browse_packet(struct packet_s
 Dispatch a browse frame from port 138 to the correct processing function.
 ****************************************************************************/
 
-static void process_browse_packet(struct packet_struct *p, char *buf,int len)
+static void process_browse_packet(struct packet_struct *p, const char *buf,int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int command = CVAL(buf,0);
@@ -1149,7 +1149,7 @@ command code %d from %s IP %s to %s\n", subrec->subnet_name, command, nmb_namest
  Dispatch a LanMan browse frame from port 138 to the correct processing function.
 ****************************************************************************/
 
-static void process_lanman_packet(struct packet_struct *p, char *buf,int len)
+static void process_lanman_packet(struct packet_struct *p, const char *buf,int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int command = SVAL(buf,0);
@@ -1216,8 +1216,8 @@ static bool listening(struct packet_struct *p,struct nmb_name *nbname)
 
 static void process_dgram(struct packet_struct *p)
 {
-	char *buf;
-	char *buf2;
+	const char *buf;
+	const char *buf2;
 	int len;
 	struct dgram_packet *dgram = &p->packet.dgram;
 

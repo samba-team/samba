@@ -95,7 +95,7 @@ void tell_become_backup(void)
   Process an incoming host announcement packet.
 *******************************************************************/
 
-void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
@@ -195,7 +195,7 @@ done:
   Process an incoming WORKGROUP announcement packet.
 *******************************************************************/
 
-void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
@@ -252,7 +252,7 @@ done:
   Process an incoming local master browser announcement packet.
 *******************************************************************/
 
-void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
@@ -367,7 +367,7 @@ done:
 ******************************************************************/
 
 void process_master_browser_announce(struct subnet_record *subrec, 
-                                     struct packet_struct *p,char *buf)
+                                     struct packet_struct *p,const char *buf)
 {
 	unstring local_master_name;
 	struct work_record *work;
@@ -418,7 +418,7 @@ done:
   Process an incoming LanMan host announcement packet.
 *******************************************************************/
 
-void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len)
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	uint32 servertype = IVAL(buf,1);
@@ -431,7 +431,7 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	unstring work_name;
 	unstring source_name;
 	fstring comment;
-	char *s = get_safe_str_ptr(buf,len,buf,9);
+	char *s = get_safe_str_ptr(buf,len,discard_const_p(char, buf),9);
 
 	START_PROFILE(lm_host_announce);
 	if (!s) {
@@ -641,7 +641,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 ********************************************************************/
 
 void process_get_backup_list_request(struct subnet_record *subrec,
-                                     struct packet_struct *p,char *buf)
+                                     struct packet_struct *p,const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
@@ -724,7 +724,7 @@ done:
 ******************************************************************/
 
 void process_reset_browser(struct subnet_record *subrec,
-                                  struct packet_struct *p,char *buf)
+                                  struct packet_struct *p,const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int state = CVAL(buf,0);
@@ -776,7 +776,7 @@ request from %s IP %s state=0x%X\n",
   announcement is needed soon.
 ******************************************************************/
 
-void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
@@ -817,7 +817,7 @@ done:
   through the "lm announce" parameter in smb.conf)
 ******************************************************************/
 
-void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len)
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	unstring workgroup_name;
