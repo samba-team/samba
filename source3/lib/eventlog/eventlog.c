@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "lib/eventlog/eventlog.h"
 #include "../libcli/security/security.h"
+#include "util_tdb.h"
 
 /* maintain a list of open eventlog tdbs with reference counts */
 

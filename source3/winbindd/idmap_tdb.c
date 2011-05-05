@@ -30,6 +30,7 @@
 #include "idmap_rw.h"
 #include "dbwrap.h"
 #include "../libcli/security/security.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

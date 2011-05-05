@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "dbwrap.h"
+#include "util_tdb.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_private.h"
 #endif

@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "torture/proto.h"
 #include "libsmb/clirap.h"
+#include "util_tdb.h"
 
 extern int torture_numops;
 

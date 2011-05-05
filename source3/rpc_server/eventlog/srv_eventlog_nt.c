@@ -30,6 +30,7 @@
 #include "rpc_client/cli_winreg.h"
 #include "smbd/smbd.h"
 #include "auth.h"
+#include "util_tdb.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

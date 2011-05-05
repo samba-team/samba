@@ -35,6 +35,7 @@
 #include "trans2.h"
 #include "libsmb/nmblib.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "util_tdb.h"
 
 extern char *optarg;
 extern int optind;

@@ -25,6 +25,7 @@
 #include "passdb.h"
 #include "groupdb/mapping.h"
 #include "dbwrap.h"
+#include "util_tdb.h"
 #include "../libcli/security/security.h"
 
 static struct db_context *db; /* used for driver files */

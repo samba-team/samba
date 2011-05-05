@@ -17,6 +17,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <tdb.h>
+
 /* Defines for TDB keys */
 #define  EVT_OLDEST_ENTRY  "INFO/oldest_entry"
 #define  EVT_NEXT_RECORD   "INFO/next_record"

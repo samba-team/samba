@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smb_share_modes.h"
+#include <tdb.h>
 
 /* Database context handle. */
 struct smbdb_ctx {

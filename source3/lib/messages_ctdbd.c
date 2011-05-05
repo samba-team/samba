@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 #ifdef CLUSTER_SUPPORT
 

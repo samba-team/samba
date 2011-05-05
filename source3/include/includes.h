@@ -510,8 +510,6 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/attr.h"
 #include "../lib/util/tsort.h"
 #include "../lib/util/dlinklist.h"
-#include <tdb.h>
-#include "util_tdb.h"
 
 #include <talloc.h>
 
@@ -522,6 +520,7 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/debug.h"
 #include "../lib/util/debug_s3.h"
 
+#include "../libcli/util/ntstatus.h"
 #include "libads/ads_status.h"
 #include "../libcli/util/error.h"
 #include "../lib/util/charset/charset.h"

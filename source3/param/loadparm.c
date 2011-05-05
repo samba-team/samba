@@ -53,6 +53,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "util_tdb.h"
 #include "printing.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"

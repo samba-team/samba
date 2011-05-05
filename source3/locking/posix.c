@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "locking/proto.h"
 #include "dbwrap.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
