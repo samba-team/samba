@@ -305,6 +305,7 @@ static void cr_descr_log_descriptor(struct security_descriptor *sd,
 	}
 }
 
+#if 0
 static void cr_descr_log_acl(struct security_acl *acl,
 				    const char *message,
 				    int level)
@@ -318,6 +319,7 @@ static void cr_descr_log_acl(struct security_acl *acl,
 		DEBUG(level,("%s: NULL\n", message));
 	}
 }
+#endif
 
 static bool compute_acl(struct security_descriptor *parent_sd,
 			struct security_descriptor *creator_sd,
