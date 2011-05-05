@@ -258,7 +258,7 @@ static bool win_election(struct work_record *work, int version,
   Process an incoming election datagram packet.
 ******************************************************************/
 
-void process_election(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_election(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int version = CVAL(buf,0);

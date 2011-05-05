@@ -304,7 +304,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq)
 Process a domain logon packet
 **************************************************************************/
 
-void process_logon_packet(struct packet_struct *p, char *buf,int len,
+void process_logon_packet(struct packet_struct *p, const char *buf,int len,
                           const char *mailslot)
 {
 	fstring source_name;
