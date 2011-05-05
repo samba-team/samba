@@ -3404,7 +3404,6 @@ static bool construct_notify_printer_info(struct messaging_context *msg_ctx,
 	uint16_t field;
 
 	struct spoolss_Notify *current_data;
-	print_queue_struct *queue=NULL;
 
 	type = option_type->type;
 
@@ -3438,7 +3437,7 @@ static bool construct_notify_printer_info(struct messaging_context *msg_ctx,
 			   pinfo2->printername));
 
 		notify_info_data_table[j].fn(msg_ctx, snum, current_data,
-					     queue, pinfo2, mem_ctx);
+					     NULL, pinfo2, mem_ctx);
 
 		info->count++;
 	}
