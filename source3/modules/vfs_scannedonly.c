@@ -165,7 +165,7 @@ static char *cachefile_name_f_fullpath(TALLOC_CTX *ctx,
 static char *construct_full_path(TALLOC_CTX *ctx, vfs_handle_struct * handle,
 				 const char *somepath, bool ending_slash)
 {
-	char *tmp;
+	const char *tmp;
 
 	if (!somepath) {
 		return NULL;
@@ -176,7 +176,7 @@ static char *construct_full_path(TALLOC_CTX *ctx, vfs_handle_struct * handle,
 		}
 		return talloc_strdup(ctx,somepath);
 	}
-	tmp=(char *)somepath;
+	tmp = somepath;
 	if (tmp[0]=='.'&&tmp[1]=='/') {
 		tmp+=2;
 	}
