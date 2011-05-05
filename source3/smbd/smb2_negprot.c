@@ -78,7 +78,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint16_t dialect = 0;
 	uint32_t capabilities;
 
-/* TODO: drop the connection with INVALI_PARAMETER */
+/* TODO: drop the connection with INVALID_PARAMETER */
 
 	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
