@@ -320,7 +320,7 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), mask,
 				   strlen(mask)+1, NULL);
 
-	bytes = smb_bytes_push_bytes(bytes, 5, (uint8_t *)&zero, 2);
+	bytes = smb_bytes_push_bytes(bytes, 5, (const uint8_t *)&zero, 2);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}

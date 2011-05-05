@@ -1562,7 +1562,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 	}
 	ber_flatten(cookie_be, &cookie_bv);
 
-	pr.ldctl_oid = CONST_DISCARD(char *, ADS_PAGE_CTL_OID);
+	pr.ldctl_oid = discard_const_p(char, ADS_PAGE_CTL_OID);
 	pr.ldctl_iscritical = (char) critical;
 	pr.ldctl_value.bv_len = cookie_bv->bv_len;
 	pr.ldctl_value.bv_val = cookie_bv->bv_val;

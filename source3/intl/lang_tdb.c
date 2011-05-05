@@ -236,7 +236,7 @@ const char *lang_msg(const char *msgid)
 void lang_msg_free(const char *msgstr)
 {
 	if (!tdb) return;
-	free((void *)msgstr);
+	free(discard_const_p(void, msgstr));
 }
 
 /* 

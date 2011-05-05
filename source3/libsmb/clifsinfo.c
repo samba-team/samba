@@ -693,7 +693,7 @@ static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
 	NTSTATUS status = NT_STATUS_OK;
 
 	gss_OID_desc nt_hostbased_service =
-	{10, CONST_DISCARD(char *,"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
+	{10, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
 
 	memset(&tok_out, '\0', sizeof(tok_out));
 

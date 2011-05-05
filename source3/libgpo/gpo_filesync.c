@@ -226,8 +226,8 @@ NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx,
 
 	ctx.mem_ctx 	= mem_ctx;
 	ctx.cli 	= cli;
-	ctx.remote_path	= CONST_DISCARD(char *, nt_path);
-	ctx.local_path	= CONST_DISCARD(char *, local_path);
+	ctx.remote_path	= discard_const_p(char, nt_path);
+	ctx.local_path	= discard_const_p(char, local_path);
 	ctx.attribute 	= (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY);
 
 	ctx.mask = talloc_asprintf(mem_ctx,

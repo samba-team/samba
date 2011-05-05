@@ -546,7 +546,7 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 	struct iovec iov;
 	NTSTATUS status;
 
-	iov.iov_base = CONST_DISCARD(void *, bytes);
+	iov.iov_base = discard_const_p(void, bytes);
 	iov.iov_len = num_bytes;
 
 	req = cli_smb_req_create(mem_ctx, ev, cli, smb_command,

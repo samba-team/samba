@@ -567,7 +567,7 @@ dos_attr_query(SMBCCTX *context,
         }
 
         /* Obtain the DOS attributes */
-        if (!SMBC_getatr(context, srv, CONST_DISCARD(char *, filename),
+        if (!SMBC_getatr(context, srv, filename,
                          &mode, &size,
                          &create_time_ts,
                          &access_time_ts,
@@ -700,8 +700,8 @@ cacl_get(SMBCCTX *context,
          SMBCSRV *srv,
          struct cli_state *ipc_cli,
          struct policy_handle *pol,
-         char *filename,
-         char *attr_name,
+         const char *filename,
+         const char *attr_name,
          char *buf,
          int bufsize)
 {
@@ -2107,12 +2107,12 @@ SMBC_getxattr_ctx(SMBCCTX *context,
             StrCaseCmp(name, "system.dos_attr.inode") == 0) {
 
                 /* Yup. */
-                char *filename = (char *) name;
+                const char *filename = name;
                 ret = cacl_get(context, talloc_tos(), srv,
                                ipc_srv == NULL ? NULL : ipc_srv->cli, 
                                &ipc_srv->pol, path,
                                filename,
-                               CONST_DISCARD(char *, value),
+                               discard_const_p(char, value),
                                size);
                 if (ret < 0 && errno == 0) {
                         errno = SMBC_errno(context, srv->cli);
@@ -2231,7 +2231,7 @@ SMBC_removexattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 ret = cacl_set(context, talloc_tos(), srv->cli,
                                ipc_srv->cli, &ipc_srv->pol, path,
-                               CONST_DISCARD(char *, name) + 19,
+                               discard_const_p(char, name) + 19,
                                SMBC_XATTR_MODE_REMOVE, 0);
 		TALLOC_FREE(frame);
                 return ret;

@@ -480,7 +480,7 @@ SMBC_close_ctx(SMBCCTX *context,
 bool
 SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
-            char *path,
+            const char *path,
             uint16 *mode,
             SMB_OFF_T *size,
             struct timespec *create_time_ts,

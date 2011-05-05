@@ -575,7 +575,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	status = dcerpc_samr_OpenDomain(b, talloc_tos(),
 					&connect_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					CONST_DISCARD(struct dom_sid *, &global_sid_Builtin),
+					discard_const_p(struct dom_sid, &global_sid_Builtin),
 					&builtin_handle,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {

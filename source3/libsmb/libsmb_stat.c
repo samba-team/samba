@@ -52,7 +52,7 @@ generate_inode(SMBCCTX *context,
 static int
 setup_stat(SMBCCTX *context,
            struct stat *st,
-           char *fname,
+           const char *fname,
            SMB_OFF_T size,
            int mode)
 {
@@ -180,7 +180,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 
 	st->st_ino = ino;
 
-	setup_stat(context, st, (char *) fname, size, mode);
+	setup_stat(context, st, fname, size, mode);
 
 	st->st_atime = convert_timespec_to_time_t(access_time_ts);
 	st->st_ctime = convert_timespec_to_time_t(change_time_ts);

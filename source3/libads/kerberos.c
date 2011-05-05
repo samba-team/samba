@@ -223,8 +223,8 @@ int kerberos_kinit_password_ext(const char *principal,
 		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
 	}
 
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
-						 kerb_prompter, CONST_DISCARD(char *,password),
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, discard_const_p(char,password), 
+						 kerb_prompter, discard_const_p(char, password),
 						 0, NULL, opt))) {
 		goto out;
 	}

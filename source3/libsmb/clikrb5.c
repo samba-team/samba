@@ -538,6 +538,7 @@ static krb5_error_code setup_auth_context(krb5_context context,
 	return retval;
 }
 
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
 static krb5_error_code create_gss_checksum(krb5_data *in_data, /* [inout] */
 						uint32_t gss_flags)
 {
@@ -589,6 +590,7 @@ static krb5_error_code create_gss_checksum(krb5_data *in_data, /* [inout] */
 	in_data->length = base_cksum_size + orig_length;
 	return 0;
 }
+#endif
 
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
@@ -610,7 +612,6 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_data in_data;
 	bool creds_ready = False;
 	int i = 0, maxtries = 3;
-	uint32_t gss_flags = 0;
 
 	ZERO_STRUCT(in_data);
 
@@ -690,32 +691,35 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	}
 
 #if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
-	if( credsp->ticket_flags & TKT_FLG_OK_AS_DELEGATE ) {
-		/* Fetch a forwarded TGT from the KDC so that we can hand off a 2nd ticket
-		 as part of the kerberos exchange. */
+	{
+		uint32_t gss_flags = 0;
 
-		DEBUG( 3, ("ads_krb5_mk_req: server marked as OK to delegate to, building forwardable TGT\n")  );
+		if( credsp->ticket_flags & TKT_FLG_OK_AS_DELEGATE ) {
+			/* Fetch a forwarded TGT from the KDC so that we can hand off a 2nd ticket
+			 as part of the kerberos exchange. */
 
-		retval = krb5_auth_con_setuseruserkey(context,
+			DEBUG( 3, ("ads_krb5_mk_req: server marked as OK to delegate to, building forwardable TGT\n")  );
+
+			retval = krb5_auth_con_setuseruserkey(context,
 					*auth_context,
 					&credsp->keyblock );
-		if (retval) {
-			DEBUG(1,("krb5_auth_con_setuseruserkey failed (%s)\n",
-				error_message(retval)));
-			goto cleanup_creds;
-		}
+			if (retval) {
+				DEBUG(1,("krb5_auth_con_setuseruserkey failed (%s)\n",
+					error_message(retval)));
+				goto cleanup_creds;
+			}
 
-		/* Must use a subkey for forwarded tickets. */
-		retval = krb5_auth_con_setflags(context,
+			/* Must use a subkey for forwarded tickets. */
+			retval = krb5_auth_con_setflags(context,
 				*auth_context,
 				KRB5_AUTH_CONTEXT_USE_SUBKEY);
-		if (retval) {
-			DEBUG(1,("krb5_auth_con_setflags failed (%s)\n",
-				error_message(retval)));
-			goto cleanup_creds;
-		}
+			if (retval) {
+				DEBUG(1,("krb5_auth_con_setflags failed (%s)\n",
+					error_message(retval)));
+				goto cleanup_creds;
+			}
 
-		retval = krb5_fwd_tgt_creds(context,/* Krb5 context [in] */
+			retval = krb5_fwd_tgt_creds(context,/* Krb5 context [in] */
 				*auth_context,  /* Authentication context [in] */
 				CONST_DISCARD(char *, KRB5_TGS_NAME),  /* Ticket service name ("krbtgt") [in] */
 				credsp->client, /* Client principal for the tgt [in] */
@@ -724,46 +728,47 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				1,              /* Turn on for "Forwardable ticket" [in] */
 				&in_data );     /* Resulting response [out] */
 
-		if (retval) {
-			DEBUG( 3, ("krb5_fwd_tgt_creds failed (%s)\n",
-				   error_message( retval ) ) );
-
-			/*
-			 * This is not fatal. Delete the *auth_context and continue
-			 * with krb5_mk_req_extended to get a non-forwardable ticket.
-			 */
-
-			if (in_data.data) {
-				free( in_data.data );
-				in_data.data = NULL;
-				in_data.length = 0;
-			}
-			krb5_auth_con_free(context, *auth_context);
-			*auth_context = NULL;
-			retval = setup_auth_context(context, auth_context);
 			if (retval) {
-				DEBUG(1,("setup_auth_context failed (%s)\n",
-					error_message(retval)));
-				goto cleanup_creds;
+				DEBUG( 3, ("krb5_fwd_tgt_creds failed (%s)\n",
+					   error_message( retval ) ) );
+
+				/*
+				 * This is not fatal. Delete the *auth_context and continue
+				 * with krb5_mk_req_extended to get a non-forwardable ticket.
+				 */
+
+				if (in_data.data) {
+					free( in_data.data );
+					in_data.data = NULL;
+					in_data.length = 0;
+				}
+				krb5_auth_con_free(context, *auth_context);
+				*auth_context = NULL;
+				retval = setup_auth_context(context, auth_context);
+				if (retval) {
+					DEBUG(1,("setup_auth_context failed (%s)\n",
+						error_message(retval)));
+					goto cleanup_creds;
+				}
+			} else {
+				/* We got a delegated ticket. */
+				gss_flags |= GSS_C_DELEG_FLAG;
 			}
-		} else {
-			/* We got a delegated ticket. */
-			gss_flags |= GSS_C_DELEG_FLAG;
 		}
-	}
 
-	/* Frees and reallocates in_data into a GSS checksum blob. */
-	retval = create_gss_checksum(&in_data, gss_flags);
-	if (retval) {
-		goto cleanup_data;
-	}
+		/* Frees and reallocates in_data into a GSS checksum blob. */
+		retval = create_gss_checksum(&in_data, gss_flags);
+		if (retval) {
+			goto cleanup_data;
+		}
 
-	/* We always want GSS-checksum types. */
-	retval = krb5_auth_con_set_req_cksumtype(context, *auth_context, GSSAPI_CHECKSUM );
-	if (retval) {
-		DEBUG(1,("krb5_auth_con_set_req_cksumtype failed (%s)\n",
-			error_message(retval)));
-		goto cleanup_data;
+		/* We always want GSS-checksum types. */
+		retval = krb5_auth_con_set_req_cksumtype(context, *auth_context, GSSAPI_CHECKSUM );
+		if (retval) {
+			DEBUG(1,("krb5_auth_con_set_req_cksumtype failed (%s)\n",
+				error_message(retval)));
+			goto cleanup_data;
+		}
 	}
 #endif
 
@@ -774,7 +779,10 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			 error_message(retval)));
 	}
 
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
 cleanup_data:
+#endif
+
 	if (in_data.data) {
 		free( in_data.data );
 		in_data.length = 0;
@@ -919,7 +927,7 @@ done:
 {
 	static krb5_data kdata;
 
-	kdata.data = (char *)krb5_principal_get_comp_string(context, principal, i);
+	kdata.data = discard_const_p(char, krb5_principal_get_comp_string(context, principal, i));
 	kdata.length = strlen((const char *)kdata.data);
 	return &kdata;
 }
@@ -1131,7 +1139,7 @@ out:
 	DEBUG(10,("smb_krb5_renew_ticket: using %s as ccache\n", ccache_string));
 
 	/* FIXME: we should not fall back to defaults */
-	ret = krb5_cc_resolve(context, CONST_DISCARD(char *, ccache_string), &ccache);
+	ret = krb5_cc_resolve(context, discard_const_p(char, ccache_string), &ccache);
 	if (ret) {
 		goto done;
 	}
@@ -1150,7 +1158,7 @@ out:
 
 #ifdef HAVE_KRB5_GET_RENEWED_CREDS	/* MIT */
 	{
-		ret = krb5_get_renewed_creds(context, &creds, client, ccache, CONST_DISCARD(char *, service_string));
+		ret = krb5_get_renewed_creds(context, &creds, client, ccache, discard_const_p(char, service_string));
 		if (ret) {
 			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
 			goto done;
@@ -1956,11 +1964,11 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_principal principal)
 {
 #ifdef HAVE_KRB5_PRINCIPAL_GET_REALM /* Heimdal */
-	return krb5_principal_get_realm(context, principal);
+	return discard_const_p(char, krb5_principal_get_realm(context, principal));
 #elif defined(krb5_princ_realm) /* MIT */
 	krb5_data *realm;
 	realm = krb5_princ_realm(context, principal);
-	return (char *)realm->data;
+	return discard_const_p(char, realm->data);
 #else
 	return NULL;
 #endif

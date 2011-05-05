@@ -197,7 +197,7 @@ static void cli_read_andx_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->buf = (uint8_t *)smb_base(inbuf) + SVAL(vwv+6, 0);
+	state->buf = discard_const_p(uint8_t, smb_base(inbuf)) + SVAL(vwv+6, 0);
 
 	if (trans_oob(smb_len(inbuf), SVAL(vwv+6, 0), state->received)
 	    || ((state->received != 0) && (state->buf < bytes))) {
@@ -824,7 +824,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 	state->pad = 0;
 	state->iov[0].iov_base = (void *)&state->pad;
 	state->iov[0].iov_len = 1;
-	state->iov[1].iov_base = CONST_DISCARD(void *, buf);
+	state->iov[1].iov_base = discard_const_p(void, buf);
 	state->iov[1].iov_len = size;
 
 	subreq = cli_smb_req_create(state, ev, cli, SMBwriteX, 0, wct, vwv,

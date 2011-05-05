@@ -305,7 +305,7 @@ static void add_interface(const struct iface_struct *ifs)
 	char addr[INET6_ADDRSTRLEN];
 	struct interface *iface;
 
-	if (iface_find((struct sockaddr *)&ifs->ip, False)) {
+	if (iface_find((const struct sockaddr *)&ifs->ip, False)) {
 		DEBUG(3,("add_interface: not adding duplicate interface %s\n",
 			print_sockaddr(addr, sizeof(addr), &ifs->ip) ));
 		return;

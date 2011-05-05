@@ -125,7 +125,7 @@ again:
 static TDB_DATA last_stabilize_key(void)
 {
 	TDB_DATA result;
-	result.dptr = (uint8_t *)"@LAST_STABILIZED";
+	result.dptr = discard_const_p(uint8_t, "@LAST_STABILIZED");
 	result.dsize = 17;
 	return result;
 }

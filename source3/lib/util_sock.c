@@ -306,7 +306,7 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 {
 	struct iovec iov;
 
-	iov.iov_base = CONST_DISCARD(void *, buffer);
+	iov.iov_base = discard_const_p(void, buffer);
 	iov.iov_len = N;
 	return write_data_iov(fd, &iov, 1);
 }
@@ -960,7 +960,7 @@ static bool matchname(const char *remotehost,
 			continue;
 		}
 		if (sockaddr_equal((const struct sockaddr *)res->ai_addr,
-					(struct sockaddr *)pss)) {
+					(const struct sockaddr *)pss)) {
 			freeaddrinfo(ailist);
 			return true;
 		}

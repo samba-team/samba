@@ -112,7 +112,7 @@ static int traverse_fn(struct db_record *rec, const struct server_id *id,
 	 * the msg has already been deleted from the messages.tdb.*/
 
 	status = messaging_send_buf(msg_all->msg_ctx, *id, msg_all->msg_type,
-				    (uint8 *)msg_all->buf, msg_all->len);
+				    (const uint8 *)msg_all->buf, msg_all->len);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		

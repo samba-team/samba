@@ -321,7 +321,7 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	state->my_mailslot = mailslot_name(
-		state, ((struct sockaddr_in *)dc_addr)->sin_addr);
+		state, ((const struct sockaddr_in *)dc_addr)->sin_addr);
 	if (tevent_req_nomem(state->my_mailslot, req)) {
 		return tevent_req_post(req, ev);
 	}
