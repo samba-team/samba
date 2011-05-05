@@ -2082,7 +2082,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (argv[1]) {
-		new_password = (char *)argv[1];
+		new_password = (const char *)argv[1];
 	} else {
 		if (asprintf(&prompt, _("Enter new password for %s:"), user) == -1) {
 			return -1;

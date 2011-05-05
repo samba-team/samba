@@ -290,7 +290,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (argc>0) {
-                realm.data = CONST_DISCARD(char *, argv[0]);
+                realm.data = discard_const_p(char, argv[0]);
 		realm.length = strlen(argv[0]);
 	} else if (lp_realm() && *lp_realm()) {
 		realm.data = lp_realm();

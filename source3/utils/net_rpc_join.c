@@ -498,7 +498,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* Now store the secret in the secrets database */
 
-	strupper_m(CONST_DISCARD(char *, domain));
+	strupper_m(discard_const_p(char, domain));
 
 	if (!secrets_store_domain_sid(domain, domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));

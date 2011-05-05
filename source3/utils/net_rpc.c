@@ -549,7 +549,7 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1622,7 +1622,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
         if (!NT_STATUS_IS_OK(status)) {
@@ -2584,7 +2584,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2710,7 +2710,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+					discard_const_p(struct dom_sid2, &global_sid_Builtin),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3032,7 +3032,7 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4318,7 +4318,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5803,7 +5803,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5977,7 +5977,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6937,7 +6937,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 
 		for (i = 0; i < num_domains; i++) {
 
-			char *str = CONST_DISCARD(char *, trusts->entries[i].name.string);
+			char *str = discard_const_p(char, trusts->entries[i].name.string);
 
 			found_domain = true;
 

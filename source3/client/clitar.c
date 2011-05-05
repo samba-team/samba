@@ -1291,7 +1291,7 @@ int cmd_block(void)
 	char *buf;
 	int block;
 
-	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	if (!next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		DEBUG(0, ("blocksize <n>\n"));
 		return 1;
 	}
@@ -1316,7 +1316,7 @@ int cmd_tarmode(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 
-	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	while (next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		if (strequal(buf, "full"))
 			tar_inc=False;
 		else if (strequal(buf, "inc"))
@@ -1366,7 +1366,7 @@ int cmd_setmode(void)
 
 	attra[0] = attra[1] = 0;
 
-	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	if (!next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
 		return 1;
 	}
@@ -1379,7 +1379,7 @@ int cmd_setmode(void)
 		return 1;
 	}
 
-	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	while (next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		q=buf;
 
 		while(*q) {
@@ -1481,7 +1481,7 @@ int cmd_tar(void)
 	int argcl = 0;
 	int ret;
 
-	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	if (!next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
 		return 1;
 	}
