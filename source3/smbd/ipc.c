@@ -808,7 +808,7 @@ void reply_transs(struct smb_request *req)
 
 	START_PROFILE(SMBtranss);
 
-	show_msg((char *)req->inbuf);
+	show_msg((const char *)req->inbuf);
 
 	if (req->wct < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

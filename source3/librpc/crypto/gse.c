@@ -365,8 +365,6 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 	OM_uint32 gss_maj, gss_min;
 	krb5_error_code ret;
 	NTSTATUS status;
-	const char *ktname;
-	gss_OID_set_desc mech_set;
 
 	status = gse_context_init(mem_ctx, do_sign, do_seal,
 				  NULL, add_gss_c_flags, &gse_ctx);
@@ -396,24 +394,27 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 	 * This call sets the default keytab for the whole server, not
 	 * just for this context. Need to find a way that does not alter
 	 * the state of the whole server ... */
+	{
+		const char *ktname;
+		gss_OID_set_desc mech_set;
 
-	ret = smb_krb5_keytab_name(gse_ctx, gse_ctx->k5ctx,
+		ret = smb_krb5_keytab_name(gse_ctx, gse_ctx->k5ctx,
 				   gse_ctx->keytab, &ktname);
-	if (ret) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
+		if (ret) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
 
-	ret = gsskrb5_register_acceptor_identity(ktname);
-	if (ret) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
+		ret = gsskrb5_register_acceptor_identity(ktname);
+		if (ret) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
 
-	mech_set.count = 1;
-	mech_set.elements = &gse_ctx->gss_mech;
-	
-	gss_maj = gss_acquire_cred(&gss_min,
+		mech_set.count = 1;
+		mech_set.elements = &gse_ctx->gss_mech;
+
+		gss_maj = gss_acquire_cred(&gss_min,
 				   GSS_C_NO_NAME,
 				   GSS_C_INDEFINITE,
 				   &mech_set,
@@ -421,11 +422,12 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 				   &gse_ctx->creds,
 				   NULL, NULL);
 
-	if (gss_maj) {
-		DEBUG(0, ("gss_acquire_creds failed with [%s]\n",
-			  gse_errstr(gse_ctx, gss_maj, gss_min)));
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
+		if (gss_maj) {
+			DEBUG(0, ("gss_acquire_creds failed with [%s]\n",
+				  gse_errstr(gse_ctx, gss_maj, gss_min)));
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
 	}
 #endif
 	status = NT_STATUS_OK;

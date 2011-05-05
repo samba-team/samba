@@ -298,7 +298,7 @@ SMB_OFF_T get_file_size(char *file_name)
  Show a smb message structure.
 ********************************************************************/
 
-void show_msg(char *buf)
+void show_msg(const char *buf)
 {
 	int i;
 	int bcc=0;
@@ -335,7 +335,7 @@ void show_msg(char *buf)
 	if (DEBUGLEVEL < 50)
 		bcc = MIN(bcc, 512);
 
-	dump_data(10, (uint8 *)smb_buf(buf), bcc);	
+	dump_data(10, (const uint8 *)smb_buf(buf), bcc);
 }
 
 /*******************************************************************

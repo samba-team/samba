@@ -337,7 +337,7 @@ static void reply_lockingX_error(struct blocking_lock_record *blr, NTSTATUS stat
 	uint8_t *data;
 	int i;
 
-	data = (uint8_t *)blr->req->buf
+	data = discard_const_p(uint8_t, blr->req->buf)
 		+ ((large_file_format ? 20 : 10)*num_ulocks);
 
 	/* 
@@ -429,7 +429,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 	uint8_t *data;
 	NTSTATUS status = NT_STATUS_OK;
 
-	data = (uint8_t *)blr->req->buf
+	data = discard_const_p(uint8_t, blr->req->buf)
 		+ ((large_file_format ? 20 : 10)*num_ulocks);
 
 	/* 

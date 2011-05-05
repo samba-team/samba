@@ -270,7 +270,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+2, 0));
 	int smb_doff = SVAL(req->vwv+11, 0);
-	uint8_t *data;
+	const uint8_t *data;
 	struct pipe_write_andx_state *state;
 	struct tevent_req *subreq;
 
@@ -299,7 +299,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 	DEBUG(6, ("reply_pipe_write_and_X: %x name: %s len: %d\n",
 		  (int)fsp->fnum, fsp_str_dbg(fsp), (int)state->numtowrite));
 
-	data = (uint8_t *)smb_base(req->inbuf) + smb_doff;
+	data = (const uint8_t *)smb_base(req->inbuf) + smb_doff;
 
 	if (state->pipe_start_message_raw) {
 		/*

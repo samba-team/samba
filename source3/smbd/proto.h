@@ -23,7 +23,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     size_t smb_maxcnt);
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
-			      files_struct *fsp, char *data,
+			      files_struct *fsp, const char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite);
 NTSTATUS schedule_smb2_aio_read(connection_struct *conn,

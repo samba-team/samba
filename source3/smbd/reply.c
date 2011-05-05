@@ -314,7 +314,7 @@ size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 char **pp_dest, const char *src, int flags,
 				 NTSTATUS *err, bool *contains_wcard)
 {
-	return srvstr_get_path_wcard(mem_ctx, (char *)req->inbuf, req->flags2,
+	return srvstr_get_path_wcard(mem_ctx, (const char *)req->inbuf, req->flags2,
 				     pp_dest, src, smbreq_bufrem(req, src),
 				     flags, err, contains_wcard);
 }
@@ -873,7 +873,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		 service));
 
 	/* set the incoming and outgoing tid to the just created one */
-	SSVAL(req->inbuf,smb_tid,conn->cnum);
+	SSVAL(discard_const_p(uint8_t, req->inbuf),smb_tid,conn->cnum);
 	SSVAL(req->outbuf,smb_tid,conn->cnum);
 
 	END_PROFILE(SMBtconX);
@@ -3896,7 +3896,7 @@ void reply_writebraw(struct smb_request *req)
 	size_t numtowrite=0;
 	size_t tcount;
 	SMB_OFF_T startpos;
-	char *data=NULL;
+	const char *data=NULL;
 	bool write_through;
 	files_struct *fsp;
 	struct lock_struct lock;
@@ -3909,7 +3909,7 @@ void reply_writebraw(struct smb_request *req)
 	 * type of SMBwritec, not SMBwriteBraw, as this tells the client
 	 * we're finished.
 	 */
-	SCVAL(req->inbuf,smb_com,SMBwritec);
+	SCVAL(discard_const_p(uint8_t, req->inbuf),smb_com,SMBwritec);
 
 	if (srv_is_signing_active(req->sconn)) {
 		END_PROFILE(SMBwritebraw);
@@ -3955,8 +3955,8 @@ void reply_writebraw(struct smb_request *req)
 		on whether we are using the core+ or lanman1.0 protocol */
 
 	if(get_Protocol() <= PROTOCOL_COREPLUS) {
-		numtowrite = SVAL(smb_buf(req->inbuf),-2);
-		data = smb_buf(req->inbuf);
+		numtowrite = SVAL(smb_buf_const(req->inbuf),-2);
+		data = smb_buf_const(req->inbuf);
 	} else {
 		numtowrite = SVAL(req->vwv+10, 0);
 		data = smb_base(req->inbuf) + SVAL(req->vwv+11, 0);
@@ -4474,7 +4474,7 @@ void reply_write_and_X(struct smb_request *req)
 	ssize_t nwritten;
 	unsigned int smb_doff;
 	unsigned int smblen;
-	char *data;
+	const char *data;
 	NTSTATUS status;
 	int saved_errno = 0;
 

@@ -245,7 +245,7 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 		(*types)[i] = (enum lsa_SidType)name_types[i];
 	}
 
-	wbcFreeMemory(CONST_DISCARD(char*, dom_name));
+	wbcFreeMemory(discard_const_p(char, dom_name));
 	wbcFreeMemory(namelist);
 	wbcFreeMemory(name_types);
 

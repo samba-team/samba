@@ -2861,7 +2861,7 @@ static void handle_nttrans(connection_struct *conn,
 {
 	if (get_Protocol() >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
-		SSVAL(req->inbuf,smb_flg2,req->flags2);
+		SSVAL(discard_const_p(uint8_t, req->inbuf),smb_flg2,req->flags2);
 	}
 
 
@@ -3203,7 +3203,7 @@ void reply_nttranss(struct smb_request *req)
 
 	START_PROFILE(SMBnttranss);
 
-	show_msg((char *)req->inbuf);
+	show_msg((const char *)req->inbuf);
 
 	if (req->wct < 18) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

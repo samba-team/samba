@@ -8322,7 +8322,7 @@ static void call_trans2getdfsreferral(connection_struct *conn,
 		return;
 	}
 
-	SSVAL(req->inbuf, smb_flg2,
+	SSVAL((discard_const_p(uint8_t, req->inbuf)), smb_flg2,
 	      SVAL(req->inbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
 	send_trans2_replies(conn, req,0,0,*ppdata,reply_size, max_data_bytes);
 
@@ -8453,7 +8453,7 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 {
 	if (get_Protocol() >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
-		SSVAL(req->inbuf,smb_flg2,req->flags2);
+		SSVAL((discard_const_p(uint8_t, req->inbuf)),smb_flg2,req->flags2);
 	}
 
 	if (conn->encrypt_level == Required && !req->encrypted) {
@@ -8812,7 +8812,7 @@ void reply_transs2(struct smb_request *req)
 
 	START_PROFILE(SMBtranss2);
 
-	show_msg((char *)req->inbuf);
+	show_msg((const char *)req->inbuf);
 
 	if (req->wct < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

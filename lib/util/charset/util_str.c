@@ -550,7 +550,7 @@ char *strstr_m(const char *src, const char *findstr)
 		DEBUG(0,("strstr_m: dest malloc fail\n"));
 		return NULL;
 	}
-	retp = (char *)(s+strlen(s2));
+	retp = discard_const_p(char, (s+strlen(s2)));
 	TALLOC_FREE(src_w);
 	TALLOC_FREE(find_w);
 	TALLOC_FREE(s2);

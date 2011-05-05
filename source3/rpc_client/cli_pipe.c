@@ -2581,7 +2581,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	status = dcerpc_epm_Map(epm_handle,
 				tmp_ctx,
-				CONST_DISCARD(struct GUID *,
+				discard_const_p(struct GUID,
 					      &(abstract_syntax->uuid)),
 				map_tower,
 				entry_handle,

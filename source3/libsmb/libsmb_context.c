@@ -456,11 +456,11 @@ smbc_option_get(SMBCCTX *context,
                 switch(smbc_getOptionSmbEncryptionLevel(context))
                 {
                 case 0:
-                        return (void *) "none";
+                        return discard_const_p(void, "none");
                 case 1:
-                        return (void *) "request";
+                        return discard_const_p(void, "request");
                 case 2:
-                        return (void *) "require";
+                        return discard_const_p(void, "require");
                 }
 
         } else if (strcmp(option_name, "smb_encrypt_on") == 0) {

@@ -454,7 +454,7 @@
 
 /* where to find the base of the SMB packet proper */
 /* REWRITE TODO: smb_base needs to be removed */
-#define smb_base(buf) (((char *)(buf))+4)
+#define smb_base(buf) (((const char *)(buf))+4)
 
 /* we don't allow server strings to be longer than 48 characters as
    otherwise NT will not honour the announce packets */

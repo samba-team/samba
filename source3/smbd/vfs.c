@@ -1506,7 +1506,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		}
 
 		ZERO_STRUCT(local_fname);
-		local_fname.base_name = CONST_DISCARD(char *,final_component);
+		local_fname.base_name = discard_const_p(char, final_component);
 
 		/* Must use lstat here. */
 		ret = SMB_VFS_LSTAT(fsp->conn, &local_fname);

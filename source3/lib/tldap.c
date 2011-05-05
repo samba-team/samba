@@ -189,7 +189,7 @@ bool tldap_context_setattr(struct tldap_context *ld,
 	struct tldap_ctx_attribute *tmp, *attr;
 	char *tmpname;
 	int num_attrs;
-	void **pptr = (void **)_pptr;
+	void **pptr = (void **)discard_const_p(void,_pptr);
 
 	attr = tldap_context_findattr(ld, name);
 	if (attr != NULL) {
@@ -935,10 +935,10 @@ struct tevent_req *tldap_simple_bind_send(TALLOC_CTX *mem_ctx,
 	DATA_BLOB cred;
 
 	if (passwd != NULL) {
-		cred.data = (uint8_t *)passwd;
+		cred.data = discard_const_p(uint8_t, passwd);
 		cred.length = strlen(passwd);
 	} else {
-		cred.data = (uint8_t *)"";
+		cred.data = discard_const_p(uint8_t, "");
 		cred.length = 0;
 	}
 	return tldap_sasl_bind_send(mem_ctx, ev, ld, dn, NULL, &cred, NULL, 0,
@@ -956,10 +956,10 @@ int tldap_simple_bind(struct tldap_context *ld, const char *dn,
 	DATA_BLOB cred;
 
 	if (passwd != NULL) {
-		cred.data = (uint8_t *)passwd;
+		cred.data = discard_const_p(uint8_t, passwd);
 		cred.length = strlen(passwd);
 	} else {
-		cred.data = (uint8_t *)"";
+		cred.data = discard_const_p(uint8_t, "");
 		cred.length = 0;
 	}
 	return tldap_sasl_bind(ld, dn, NULL, &cred, NULL, 0, NULL, 0);

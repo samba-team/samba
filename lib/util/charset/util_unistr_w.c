@@ -72,12 +72,12 @@ smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	smb_ucs2_t cp;
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		if (c == cp) {
-			return (smb_ucs2_t *)s;
+			return discard_const_p(smb_ucs2_t, s);
 		}
 		s++;
 	}
 	if (c == cp) {
-		return (smb_ucs2_t *)s;
+		return discard_const_p(smb_ucs2_t, s);
 	}
 
 	return NULL;
@@ -104,7 +104,7 @@ smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	p += (len - 1);
 	do {
 		if (c == *(COPY_UCS2_CHAR(&cp,p))) {
-			return (smb_ucs2_t *)p;
+			return discard_const_p(smb_ucs2_t, p);
 		}
 	} while (p-- != s);
 	return NULL;

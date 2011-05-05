@@ -251,7 +251,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *smbreq,
-			      files_struct *fsp, char *data,
+			      files_struct *fsp, const char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite)
 {
@@ -329,7 +329,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	/* Now set up the aio record for the write call. */
 
 	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = data;
+	a->aio_buf = discard_const_p(char, data);
 	a->aio_nbytes = numtowrite;
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;

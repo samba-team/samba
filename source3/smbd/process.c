@@ -503,9 +503,9 @@ static bool init_smb_request(struct smb_request *req,
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
-	req->vwv    = (uint16_t *)(inbuf+smb_vwv);
+	req->vwv    = discard_const_p(uint16_t, (inbuf+smb_vwv));
 	req->buflen = smb_buflen(inbuf);
-	req->buf    = (const uint8_t *)smb_buf(inbuf);
+	req->buf    = (const uint8_t *)smb_buf_const(inbuf);
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->sconn = sconn;
@@ -524,7 +524,7 @@ static bool init_smb_request(struct smb_request *req,
 		return false;
 	}
 	/* Ensure bcc is correct. */
-	if (((uint8 *)smb_buf(inbuf)) + req->buflen > inbuf + req_size) {
+	if (((const uint8_t *)smb_buf_const(inbuf)) + req->buflen > inbuf + req_size) {
 		DEBUG(0,("init_smb_request: invalid bcc number %u "
 			"(wct = %u, size %u)\n",
 			(unsigned int)req->buflen,
@@ -1350,7 +1350,7 @@ static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 		char *msg;
 		if (asprintf(&msg, "num_bytes too large: %u",
 			     (unsigned)num_bytes) == -1) {
-			msg = CONST_DISCARD(char *, "num_bytes too large");
+			msg = discard_const_p(char, "num_bytes too large");
 		}
 		smb_panic(msg);
 	}
@@ -1377,7 +1377,7 @@ static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 {
 	char *outbuf;
-	if (!create_outbuf(req, req, (char *)req->inbuf, &outbuf, num_words,
+	if (!create_outbuf(req, req, (const char *)req->inbuf, &outbuf, num_words,
 			   num_bytes)) {
 		smb_panic("could not allocate output buffer\n");
 	}
@@ -1449,7 +1449,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 	if (smb_messages[type].fn == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
-		smb_dump("Unknown", 1, (char *)req->inbuf, size);
+		smb_dump("Unknown", 1, (const char *)req->inbuf, size);
 		reply_unknown_new(req, type);
 		return NULL;
 	}
@@ -1464,10 +1464,10 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n", smb_fn_name(type),
 		 (int)sys_getpid(), (unsigned long)conn));
 
-	smb_dump(smb_fn_name(type), 1, (char *)req->inbuf, size);
+	smb_dump(smb_fn_name(type), 1, (const char *)req->inbuf, size);
 
 	/* Ensure this value is replaced in the incoming packet. */
-	SSVAL(req->inbuf,smb_uid,session_tag);
+	SSVAL(discard_const_p(uint8_t, req->inbuf),smb_uid,session_tag);
 
 	/*
 	 * Ensure the correct username is in current_user_info.  This is a
@@ -1753,7 +1753,7 @@ static void construct_reply_common(struct smb_request *req, const char *inbuf,
 
 void construct_reply_common_req(struct smb_request *req, char *outbuf)
 {
-	construct_reply_common(req, (char *)req->inbuf, outbuf);
+	construct_reply_common(req, (const char *)req->inbuf, outbuf);
 }
 
 /*
@@ -1976,9 +1976,9 @@ void chain_reply(struct smb_request *req)
 	uint32_t chain_offset;	/* uint32_t to avoid overflow */
 
 	uint8_t wct;
-	uint16_t *vwv;
+	const uint16_t *vwv;
 	uint16_t buflen;
-	uint8_t *buf;
+	const uint8_t *buf;
 
 	if (IVAL(req->outbuf, smb_rcls) != 0) {
 		fixup_chain_error_packet(req);
@@ -2127,7 +2127,7 @@ void chain_reply(struct smb_request *req)
 	if (length_needed > smblen) {
 		goto error;
 	}
-	vwv = (uint16_t *)(smb_base(req->inbuf) + chain_offset + 1);
+	vwv = (const uint16_t *)(smb_base(req->inbuf) + chain_offset + 1);
 
 	/*
 	 * Now grab the new byte buffer....
@@ -2143,11 +2143,11 @@ void chain_reply(struct smb_request *req)
 	if (length_needed > smblen) {
 		goto error;
 	}
-	buf = (uint8_t *)(vwv+wct+1);
+	buf = (const uint8_t *)(vwv+wct+1);
 
 	req->cmd = chain_cmd;
 	req->wct = wct;
-	req->vwv = vwv;
+	req->vwv = discard_const_p(uint16_t, vwv);
 	req->buflen = buflen;
 	req->buf = buf;
 
@@ -2613,7 +2613,7 @@ static bool smbd_echo_reply(uint8_t *inbuf, size_t inbuf_len,
 		return false;
 	}
 
-	if (!create_outbuf(talloc_tos(), &req, (char *)req.inbuf, &outbuf,
+	if (!create_outbuf(talloc_tos(), &req, (const char *)req.inbuf, &outbuf,
 			   1, req.buflen)) {
 		DEBUG(10, ("create_outbuf failed\n"));
 		return false;
@@ -3162,7 +3162,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 
 bool req_is_in_chain(struct smb_request *req)
 {
-	if (req->vwv != (uint16_t *)(req->inbuf+smb_vwv)) {
+	if (req->vwv != (const uint16_t *)(req->inbuf+smb_vwv)) {
 		/*
 		 * We're right now handling a subsequent request, so we must
 		 * be in a chain
