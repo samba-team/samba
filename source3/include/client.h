@@ -156,6 +156,11 @@ struct cli_state {
 		uint32_t max_write_size;
 		struct timespec system_time;
 		struct timespec server_start_time;
+
+		/* SMB2 tcon */
+		uint8_t share_type;
+		uint32_t share_flags;
+		uint32_t maximal_access;
 	} smb2;
 };
 
