@@ -42,7 +42,7 @@ bool nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 int build_packet(char *buf, size_t buflen, struct packet_struct *p);
 bool send_packet(struct packet_struct *p);
 bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name);
-int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len);
+int matching_len_bits(const unsigned char *p1, const unsigned char *p2, size_t len);
 void sort_query_replies(char *data, int n, struct in_addr ip);
 char *name_mangle(TALLOC_CTX *mem_ctx, const char *In, char name_type);
 int name_extract(unsigned char *buf,size_t buf_len, unsigned int ofs, fstring name);

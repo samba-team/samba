@@ -844,7 +844,7 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	if (chained_fixup) {
 		/* Fix up our own outhdr. */
 		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-		SBVAL(outhdr, SMB2_HDR_SESSION_ID, in_session_id);
+		SBVAL(discard_const_p(uint8_t, outhdr), SMB2_HDR_SESSION_ID, in_session_id);
 	}
 	return NT_STATUS_OK;
 }

@@ -105,7 +105,7 @@ static struct dssync_passdb_obj *dssync_search_obj_by_guid(struct dssync_passdb 
 	TDB_DATA key;
 	TDB_DATA data;
 
-	key = make_tdb_data((const uint8_t *)(void *)guid,
+	key = make_tdb_data((const uint8_t *)(const void *)guid,
 			     sizeof(*guid));
 
 	ret = db->fetch(db, talloc_tos(), key, &data);

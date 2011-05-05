@@ -240,8 +240,8 @@ static void reload_interfaces(time_t t)
 			continue;
 		}
 
-		ip = ((struct sockaddr_in *)(void *)&iface->ip)->sin_addr;
-		nmask = ((struct sockaddr_in *)(void *)
+		ip = ((const struct sockaddr_in *)(const void *)&iface->ip)->sin_addr;
+		nmask = ((const struct sockaddr_in *)(const void *)
 			 &iface->netmask)->sin_addr;
 
 		/*
@@ -250,7 +250,7 @@ static void reload_interfaces(time_t t)
 		 * ignore it here. JRA.
 		 */
 
-		if (is_loopback_addr((struct sockaddr *)(void *)&iface->ip)) {
+		if (is_loopback_addr((const struct sockaddr *)(const void *)&iface->ip)) {
 			DEBUG(2,("reload_interfaces: Ignoring loopback "
 				"interface %s\n",
 				print_sockaddr(str, sizeof(str), &iface->ip) ));

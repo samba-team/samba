@@ -269,15 +269,15 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 	memcpy(req->in.nbt_hdr, inbuf, 4);
 
 	ofs = 0;
-	req->in.vector[0].iov_base	= (void *)req->in.nbt_hdr;
+	req->in.vector[0].iov_base	= discard_const_p(void, req->in.nbt_hdr);
 	req->in.vector[0].iov_len	= 4;
 	ofs += req->in.vector[0].iov_len;
 
-	req->in.vector[1].iov_base	= (void *)(inbuf + ofs);
+	req->in.vector[1].iov_base	= discard_const_p(void, (inbuf + ofs));
 	req->in.vector[1].iov_len	= SMB2_HDR_BODY;
 	ofs += req->in.vector[1].iov_len;
 
-	req->in.vector[2].iov_base	= (void *)(inbuf + ofs);
+	req->in.vector[2].iov_base	= discard_const_p(void, (inbuf + ofs));
 	req->in.vector[2].iov_len	= SVAL(inbuf, ofs) & 0xFFFE;
 	ofs += req->in.vector[2].iov_len;
 
@@ -285,7 +285,7 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	req->in.vector[3].iov_base	= (void *)(inbuf + ofs);
+	req->in.vector[3].iov_base	= discard_const_p(void, (inbuf + ofs));
 	req->in.vector[3].iov_len	= size - ofs;
 	ofs += req->in.vector[3].iov_len;
 

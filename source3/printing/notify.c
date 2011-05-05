@@ -398,7 +398,7 @@ static void send_notify_field_buffer(struct tevent_context *ev,
 	msg->field = field;
 	msg->id = id;
 	msg->len = len;
-	msg->notify.data = CONST_DISCARD(char *,buffer);
+	msg->notify.data = discard_const_p(char, buffer);
 
 	send_spoolss_notify2_msg(ev, msg_ctx, msg);
 }

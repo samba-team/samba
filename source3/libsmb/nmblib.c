@@ -1147,7 +1147,7 @@ bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name)
  Return the number of bits that match between two len character buffers
 ***************************************************************************/
 
-int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len)
+int matching_len_bits(const unsigned char *p1, const unsigned char *p2, size_t len)
 {
 	size_t i, j;
 	int ret = 0;

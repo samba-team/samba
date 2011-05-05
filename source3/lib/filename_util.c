@@ -60,8 +60,8 @@ NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
 	ZERO_STRUCT(smb_fname_loc);
 
 	/* Setup the base_name/stream_name. */
-	smb_fname_loc.base_name = CONST_DISCARD(char *, base_name);
-	smb_fname_loc.stream_name = CONST_DISCARD(char *, stream_name);
+	smb_fname_loc.base_name = discard_const_p(char, base_name);
+	smb_fname_loc.stream_name = discard_const_p(char, stream_name);
 
 	/* Copy the psbuf if one was given. */
 	if (psbuf)

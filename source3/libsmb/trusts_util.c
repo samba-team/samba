@@ -220,7 +220,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	}
 
 	for (i=0; i< *num_domains; i++) {
-		(*domain_names)[i] = CONST_DISCARD(char *, dom_list.domains[i].name.string);
+		(*domain_names)[i] = discard_const_p(char, dom_list.domains[i].name.string);
 		(*sids)[i] = *dom_list.domains[i].sid;
 	}
 

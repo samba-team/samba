@@ -1786,7 +1786,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 		 * Once srvstr_get_path() uses talloc it'll
 		 * be a talloced ptr anyway.
 		 */
-		*pp_name_out = CONST_DISCARD(char *,name_in);
+		*pp_name_out = discard_const_p(char, name_in);
 	}
 	return status;
 }

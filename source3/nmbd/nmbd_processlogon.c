@@ -157,7 +157,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq);
 static void nmbd_proxy_logon(struct nmbd_proxy_logon_context *ctx,
 			     struct in_addr local_ip,
 			     struct packet_struct *p,
-			     uint8_t *buf,
+			     const uint8_t *buf,
 			     uint32_t len)
 {
 	struct nmbd_proxy_logon_state *state;
@@ -328,7 +328,7 @@ void process_logon_packet(struct packet_struct *p, const char *buf,int len,
 			inet_ntoa(p->ip) ));
 		return;
 	}
-	ip = ((struct sockaddr_in *)pss)->sin_addr;
+	ip = ((const struct sockaddr_in *)pss)->sin_addr;
 
 	if (!lp_domain_logons()) {
 		DEBUG(5,("process_logon_packet: Logon packet received from IP %s and domain \
@@ -459,7 +459,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 		if (global_nmbd_proxy_logon) {
 			nmbd_proxy_logon(global_nmbd_proxy_logon,
-					 ip, p, (uint8_t *)buf, len);
+					 ip, p, (const uint8_t *)buf, len);
 			return;
 		}
 

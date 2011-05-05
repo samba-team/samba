@@ -359,13 +359,13 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 	/* migrate printerdata */
 	for (j = 0; j < r.count; j++) {
 		char *valuename;
-		char *keyname;
+		const char *keyname;
 
 		if (r.printer_data[j].type == REG_NONE) {
 			continue;
 		}
 
-		keyname = CONST_DISCARD(char *, r.printer_data[j].name);
+		keyname = r.printer_data[j].name;
 		valuename = strchr(keyname, '\\');
 		if (valuename == NULL) {
 			continue;

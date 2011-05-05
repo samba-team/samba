@@ -612,9 +612,9 @@ static void fill_printq_info_52(struct spoolss_DriverInfo3 *driver,
 {
 	int 				i;
 	fstring 			location;
-	trim_string((char *)driver->driver_path, "\\print$\\WIN40\\0\\", 0);
-	trim_string((char *)driver->data_file, "\\print$\\WIN40\\0\\", 0);
-	trim_string((char *)driver->help_file, "\\print$\\WIN40\\0\\", 0);
+	trim_string(discard_const_p(char, driver->driver_path), "\\print$\\WIN40\\0\\", 0);
+	trim_string(discard_const_p(char, driver->data_file), "\\print$\\WIN40\\0\\", 0);
+	trim_string(discard_const_p(char, driver->help_file), "\\print$\\WIN40\\0\\", 0);
 
 	PACKI(desc, "W", 0x0400);                     /* don't know */
 	PACKS(desc, "z", driver->driver_name);        /* long printer name */
@@ -641,7 +641,7 @@ static void fill_printq_info_52(struct spoolss_DriverInfo3 *driver,
 
 	for ( i=0; i<count && driver->dependent_files && *driver->dependent_files[i]; i++)
 	{
-		trim_string((char *)driver->dependent_files[i], "\\print$\\WIN40\\0\\", 0);
+		trim_string(discard_const_p(char, driver->dependent_files[i]), "\\print$\\WIN40\\0\\", 0);
 		PACKS(desc,"z",driver->dependent_files[i]);         /* driver files to copy */
 		DEBUG(3,("Dependent File: %s:\n", driver->dependent_files[i]));
 	}

@@ -963,9 +963,9 @@ static int addr_compare(const struct sockaddr_storage *ss1,
 
 	for (i=0;i<num_interfaces;i++) {
 		const struct sockaddr_storage *pss = iface_n_bcast(i);
-		unsigned char *p_ss1 = NULL;
-		unsigned char *p_ss2 = NULL;
-		unsigned char *p_if = NULL;
+		const unsigned char *p_ss1 = NULL;
+		const unsigned char *p_ss2 = NULL;
+		const unsigned char *p_if = NULL;
 		size_t len = 0;
 		int bits1, bits2;
 
@@ -974,21 +974,21 @@ static int addr_compare(const struct sockaddr_storage *ss1,
 			continue;
 		}
 		if (pss->ss_family == AF_INET) {
-			p_if = (unsigned char *)
+			p_if = (const unsigned char *)
 				&((const struct sockaddr_in *)pss)->sin_addr;
-			p_ss1 = (unsigned char *)
+			p_ss1 = (const unsigned char *)
 				&((const struct sockaddr_in *)ss1)->sin_addr;
-			p_ss2 = (unsigned char *)
+			p_ss2 = (const unsigned char *)
 				&((const struct sockaddr_in *)ss2)->sin_addr;
 			len = 4;
 		}
 #if defined(HAVE_IPV6)
 		if (pss->ss_family == AF_INET6) {
-			p_if = (unsigned char *)
+			p_if = (const unsigned char *)
 				&((const struct sockaddr_in6 *)pss)->sin6_addr;
-			p_ss1 = (unsigned char *)
+			p_ss1 = (const unsigned char *)
 				&((const struct sockaddr_in6 *)ss1)->sin6_addr;
-			p_ss2 = (unsigned char *)
+			p_ss2 = (const unsigned char *)
 				&((const struct sockaddr_in6 *)ss2)->sin6_addr;
 			len = 16;
 		}
@@ -1003,14 +1003,14 @@ static int addr_compare(const struct sockaddr_storage *ss1,
 	}
 
 	/* Bias towards directly reachable IPs */
-	if (iface_local((struct sockaddr *)ss1)) {
+	if (iface_local((const struct sockaddr *)ss1)) {
 		if (ss1->ss_family == AF_INET) {
 			max_bits1 += 32;
 		} else {
 			max_bits1 += 128;
 		}
 	}
-	if (iface_local((struct sockaddr *)ss2)) {
+	if (iface_local((const struct sockaddr *)ss2)) {
 		if (ss2->ss_family == AF_INET) {
 			max_bits2 += 32;
 		} else {

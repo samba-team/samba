@@ -387,7 +387,7 @@ static bool string_init(char **dest,const char *src)
 	l = strlen(src);
 
 	if (l == 0) {
-		*dest = CONST_DISCARD(char*, null_string);
+		*dest = discard_const_p(char, null_string);
 	} else {
 		(*dest) = SMB_STRDUP(src);
 		if ((*dest) == NULL) {
@@ -684,7 +684,7 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 		/* Too hard to try and get right. */
 		return NULL;
 	}
-	ret = (char *)(s+strlen(s2));
+	ret = discard_const_p(char, (s+strlen(s2)));
 	TALLOC_FREE(ws);
 	TALLOC_FREE(s2);
 	return ret;

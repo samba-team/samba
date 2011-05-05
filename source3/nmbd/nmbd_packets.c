@@ -1290,28 +1290,28 @@ packet sent to name %s from IP %s\n",
 
 	DEBUG(4,("process_dgram: datagram from %s to %s IP %s for %s of type %d len=%d\n",
 		nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
-		inet_ntoa(p->ip), smb_buf(buf),CVAL(buf2,0),len));
+		inet_ntoa(p->ip), smb_buf_const(buf),CVAL(buf2,0),len));
 
 	/* Datagram packet received for the browser mailslot */
-	if (strequal(smb_buf(buf),BROWSE_MAILSLOT)) {
+	if (strequal(smb_buf_const(buf),BROWSE_MAILSLOT)) {
 		process_browse_packet(p,buf2,len);
 		return;
 	}
 
 	/* Datagram packet received for the LAN Manager mailslot */
-	if (strequal(smb_buf(buf),LANMAN_MAILSLOT)) {
+	if (strequal(smb_buf_const(buf),LANMAN_MAILSLOT)) {
 		process_lanman_packet(p,buf2,len);
 		return;
 	}
 
 	/* Datagram packet received for the domain logon mailslot */
-	if (strequal(smb_buf(buf),NET_LOGON_MAILSLOT)) {
+	if (strequal(smb_buf_const(buf),NET_LOGON_MAILSLOT)) {
 		process_logon_packet(p,buf2,len,NET_LOGON_MAILSLOT);
 		return;
 	}
 
 	/* Datagram packet received for the NT domain logon mailslot */
-	if (strequal(smb_buf(buf),NT_LOGON_MAILSLOT)) {
+	if (strequal(smb_buf_const(buf),NT_LOGON_MAILSLOT)) {
 		process_logon_packet(p,buf2,len,NT_LOGON_MAILSLOT);
 		return;
 	}

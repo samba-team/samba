@@ -331,7 +331,7 @@ NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 	if (chained_fixup) {
 		/* Fix up our own outhdr. */
 		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-		SIVAL(outhdr, SMB2_HDR_TID, in_tid);
+		SIVAL(discard_const_p(uint8_t, outhdr), SMB2_HDR_TID, in_tid);
 	}
 
 	return NT_STATUS_OK;
