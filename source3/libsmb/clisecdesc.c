@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 
 /****************************************************************************
   query the security descriptor for a open file

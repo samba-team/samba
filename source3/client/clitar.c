@@ -38,6 +38,7 @@
 #include "system/filesys.h"
 #include "clitar.h"
 #include "client/client_proto.h"
+#include "libsmb/libsmb.h"
 
 static int clipfind(char **aret, int ret, char *tok);
 

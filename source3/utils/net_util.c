@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/ndr_dssetup_c.h"
 #include "secrets.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     TALLOC_CTX *mem_ctx, struct cli_state *cli,

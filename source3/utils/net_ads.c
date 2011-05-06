@@ -36,6 +36,7 @@
 #include "secrets.h"
 #include "krb5_env.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 
 #ifdef HAVE_ADS
 

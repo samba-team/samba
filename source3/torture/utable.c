@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "torture/proto.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 
 bool torture_utable(int dummy)

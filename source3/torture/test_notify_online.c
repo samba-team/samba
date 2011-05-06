@@ -21,6 +21,7 @@
 #include "torture/proto.h"
 #include "libcli/security/security.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "libsmb/libsmb.h"
 
 extern char *test_filename;
 

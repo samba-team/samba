@@ -23,6 +23,7 @@
 #include "nmbd/nmbd.h"
 #include "../lib/util/select.h"
 #include "system/select.h"
+#include "libsmb/libsmb.h"
 
 extern int ClientNMB;
 extern int ClientDGRAM;

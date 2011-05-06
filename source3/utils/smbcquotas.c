@@ -28,6 +28,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "fake_file.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 
 static char *server;
 

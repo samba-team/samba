@@ -34,6 +34,7 @@
 #include "messages.h"
 #include "smbprofile.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
+#include "libsmb/libsmb.h"
 
 extern bool global_machine_password_needs_changing;
 

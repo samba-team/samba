@@ -31,6 +31,7 @@
 #include "dbwrap.h"
 #include "talloc_dict.h"
 #include "async_smb.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "trans2.h"
 #include "libsmb/nmblib.h"

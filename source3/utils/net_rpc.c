@@ -39,6 +39,7 @@
 #include "lib/netapi/netapi_net.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "passdb.h"

@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "libsmb/libsmb.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
 

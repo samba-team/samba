@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 
 /*****************************************************
  RAP error codes - a small start but will be extended.
