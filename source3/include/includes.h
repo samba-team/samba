@@ -521,7 +521,6 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/debug_s3.h"
 
 #include "../libcli/util/ntstatus.h"
-#include "libads/ads_status.h"
 #include "../libcli/util/error.h"
 #include "../lib/util/charset/charset.h"
 #include "dynconfig/dynconfig.h"
