@@ -390,7 +390,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	/* Set up a database to hold a random seed, in case we don't
 	 * have /dev/urandom */
-	if (randseed_init(talloc_autofree_context(), cmdline_lp_ctx) == NULL) {
+	if (!randseed_init(talloc_autofree_context(), cmdline_lp_ctx)) {
 		return 1;
 	}
 
