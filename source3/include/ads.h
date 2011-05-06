@@ -6,6 +6,7 @@
   basically this is a wrapper around ldap
 */
 
+#include "libads/ads_status.h"
 #include "smb_ldap.h"
 
 struct ads_struct;
