@@ -2119,8 +2119,8 @@ fi
 AC_ARG_ENABLE(external_libtdb,
 	[AS_HELP_STRING([--enable-external-libtdb],
 		[Enable external tdb [default=auto]])],
-		[ enable_external_libtalloc=$enableval ],
-		[ enable_external_libtalloc=auto ])
+		[ enable_external_libtdb=$enableval ],
+		[ enable_external_libtdb=auto ])
 
 if test "x$enable_external_libtdb" != xno
 then
