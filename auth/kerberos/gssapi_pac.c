@@ -23,6 +23,30 @@
 
 #include "libcli/auth/krb5_wrap.h"
 
+#if 0
+/* FIXME - need proper configure/waf test
+ * to determine if gss_mech_krb5 and friends
+ * exist. JRA.
+ */
+/*
+ * These are not exported by Solaris -lkrb5
+ * Maybe move to libreplace somewhere?
+ */
+static const gss_OID_desc krb5_gss_oid_array[] = {
+	/* this is the official, rfc-specified OID */
+	{ 9, "\052\206\110\206\367\022\001\002\002" },
+	/* this is the pre-RFC mech OID */
+	{ 5, "\053\005\001\005\002" },
+	/* this is the unofficial, incorrect mech OID emitted by MS */
+	{ 9, "\052\206\110\202\367\022\001\002\002" },
+	{ 0, 0 }
+};
+
+const gss_OID_desc * const gss_mech_krb5              = krb5_gss_oid_array+0;
+const gss_OID_desc * const gss_mech_krb5_old          = krb5_gss_oid_array+1;
+const gss_OID_desc * const gss_mech_krb5_wrong        = krb5_gss_oid_array+2;
+#endif
+
 /* The Heimdal OID for getting the PAC */
 #define EXTRACT_PAC_AUTHZ_DATA_FROM_SEC_CONTEXT_OID_LENGTH 8
 /*					                EXTRACTION OID		   AUTHZ ID */

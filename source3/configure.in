@@ -3579,16 +3579,16 @@ else
     # Check to see whether there is enough LDAP functionality to be able
     # to build AD support.
 
-# HPUX only has ldap_init; ok, we take care of this in smbldap.c
+# HPUX and Solaris only has ldap_init; ok, we take care of this in smbldap.c
 case "$host_os" in
-	*hpux*)
+	*hpux* | *solaris*)
     AC_CHECK_FUNC_EXT(ldap_init,$LDAP_LIBS)
 
     if test x"$ac_cv_func_ext_ldap_init" != x"yes"; then
 	if test x"$with_ads_support" = x"yes"; then
-	    AC_MSG_ERROR(Active Directory support on HPUX requires ldap_init)
+	    AC_MSG_ERROR(Active Directory support on HPUX or Solaris requires ldap_init)
 	elif test x"$with_ads_support" = x"auto"; then
-	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_init on HPUX))
+	    AC_MSG_WARN(Disabling Active Directory support (requires ldap_init on HPUX or Solaris))
 	    with_ads_support=no
 	fi
     fi
@@ -3638,7 +3638,6 @@ if test x"$with_ads_support" != x"no"; then
         ;;
       yes)
         AC_MSG_RESULT(/usr)
-        FOUND_KRB5=yes
         ;;
       *)
         AC_MSG_RESULT($withval)
@@ -3722,6 +3721,21 @@ if test x"$with_ads_support" != x"no"; then
       KRB5_LIBS="-lcrypto"
       FOUND_KRB5=yes
       AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
+  fi
+
+  if test x$FOUND_KRB5 = x"no"; then
+    #################################################
+    # see if this box has Solaris MIT kerberos implementation
+    AC_MSG_CHECKING(for Solaris MIT kerberos)
+    if test -x "$KRB5CONFIG" && $KRB5CONFIG --version | grep -s Solaris | grep -s MIT > /dev/null ; then
+       FOUND_KRB5=yes
+       KRB5_LIBS="-lgss -lkrb5"
+       KRB5_CFLAGS="`$KRB5CONFIG --cflags`"
+       KRB5_CPPFLAGS="`$KRB5CONFIG --cflags`"
+       AC_MSG_RESULT(yes)
     else
       AC_MSG_RESULT(no)
     fi
@@ -3816,6 +3830,7 @@ if test x"$with_ads_support" != x"no"; then
   # now see if we can find the gssapi libs in standard paths
   if test x"$have_gssapi" != x"yes"; then
      AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
+     AC_CHECK_LIB_EXT(gss, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
      AC_CHECK_FUNC_EXT(gss_wrap_iov, $KRB5_LIBS)
   fi
 
@@ -3870,6 +3885,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_free_host_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_krb5_import_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_get_name_attribute, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(gss_mech_krb5, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_oid_equal, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_inquire_sec_context_by_oid, $KRB5_LIBS)
 
