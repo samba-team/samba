@@ -2171,7 +2171,7 @@ fi
 SMB_LIBRARY(netapi, 0)
 SMB_LIBRARY(smbclient, 0)
 SMB_LIBRARY(smbsharemodes, 0)
-SMB_LIBRARY(addns, 0, no, [undefined API])
+SMB_LIBRARY(addns, 0, [], no, [undefined API])
 
 
 
