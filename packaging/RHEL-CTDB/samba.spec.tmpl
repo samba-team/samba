@@ -170,7 +170,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--without-ldb \
 	--without-dnsupdate \
 	--with-aio-support\
-	--disable-merged-build
+	--disable-merged-build \
+	--disable-smbtorture4
 
 make showlayout
 
