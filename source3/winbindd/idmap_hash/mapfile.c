@@ -87,8 +87,8 @@ static bool mapfile_read_line(fstring key, fstring value)
 	*p = '\0';
 	p++;
 
-	strlcpy(key, buffer, sizeof(key));
-	strlcpy(value, p, sizeof(value));
+	strlcpy(key, buffer, sizeof(fstring));
+	strlcpy(value, p, sizeof(fstring));
 
 	/* Eat whitespace */
 
