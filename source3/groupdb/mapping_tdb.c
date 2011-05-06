@@ -900,10 +900,10 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 				}
 			} else if (StrCaseCmp(name, "ntname") == 0) {
 				strlcpy(map.nt_name, val,
-					sizeof(map.nt_name) -1);
+					sizeof(map.nt_name));
 			} else if (StrCaseCmp(name, "comment") == 0) {
 				strlcpy(map.comment, val,
-					sizeof(map.comment) -1);
+					sizeof(map.comment));
 			} else if (StrCaseCmp(name, "member") == 0) {
 				if (!string_to_sid(&members[j], val)) {
 					errno = EIO;
