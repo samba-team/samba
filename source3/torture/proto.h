@@ -23,6 +23,8 @@
 #ifndef __TORTURE_H__
 #define __TORTURE_H__
 
+struct cli_state;
+
 /* The following definitions come from torture/denytest.c  */
 
 bool torture_denytest1(int dummy);

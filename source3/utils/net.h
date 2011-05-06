@@ -22,6 +22,8 @@
  * include
  */
 
+struct cli_state;
+
 #include "../librpc/gen_ndr/lsa.h"
 
 #include "intl.h"

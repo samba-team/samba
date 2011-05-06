@@ -23,6 +23,8 @@
 #ifndef _CLIENT_PROTO_H_
 #define _CLIENT_PROTO_H_
 
+struct cli_state;
+struct file_info;
 
 /* The following definitions come from client/client.c  */
 
