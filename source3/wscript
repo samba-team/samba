@@ -1699,6 +1699,9 @@ main() {
         default_static_modules.extend(TO_LIST('pdb_ads auth_netlogond'))
         default_shared_modules.extend(TO_LIST('charset_weird perfcount_test'))
 
+    if conf.env.toplevel_build:
+        default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4'))
+
     if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
         default_static_modules.extend(TO_LIST('vfs_posixacl'))
 

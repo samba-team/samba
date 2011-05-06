@@ -46,3 +46,13 @@ bld.SAMBA3_MODULE('pdb_wbc_sam',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_wbc_sam'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_wbc_sam'))
+
+bld.SAMBA3_MODULE('pdb_samba4',
+                  subsystem='pdb',
+                  source='pdb_samba4.c',
+                  init_function='',
+                  deps='IDMAP samdb',
+                  allow_undefined_symbols=False,
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_samba4'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_samba4'))
+
