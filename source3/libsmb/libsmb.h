@@ -18,6 +18,7 @@
 #ifndef _LIBSMB_LIBSMB_H
 #define _LIBSMB_LIBSMB_H
 
+#include "client.h"
 #include "libsmb/proto.h"
 
 #endif /* _LIBSMB_LIBSMB_H */

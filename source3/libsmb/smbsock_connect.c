@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "client.h"
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
 

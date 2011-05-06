@@ -20,7 +20,7 @@
 #ifndef __ASYNC_SMB_H__
 #define __ASYNC_SMB_H__
 
-#include "includes.h"
+struct cli_state;
 
 /*
  * Fetch an error out of a NBT packet
