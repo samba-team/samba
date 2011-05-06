@@ -2109,7 +2109,9 @@ fi
 if test "x$enable_external_libtalloc" = xno
 then
 	m4_include(../lib/talloc/libtalloc.m4)
-	LINK_LIBTALLOC=STATIC
+	if test x"$USESHARED" == x"no" ; then
+		LINK_LIBTALLOC=STATIC
+	fi
 	LIBTALLOCVERSION=`grep ^VERSION ${tallocdir}/wscript | sed -e "s/'//g" -e 's/.* //'`
 	SMB_LIBRARY(talloc, 2, ${LIBTALLOCVERSION})
 	LIBTALLOC_OBJ0=""
