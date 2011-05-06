@@ -1,3 +1,5 @@
+#ifndef _LIBADS_ADS_STATUS_H_
+#define _LIBADS_ADS_STATUS_H_
 
 /* there are 5 possible types of errors the ads subsystem can produce */
 enum ads_error_type {ENUM_ADS_ERROR_KRB5, ENUM_ADS_ERROR_GSS,
@@ -40,3 +42,5 @@ ADS_STATUS ads_build_nt_error(enum ads_error_type etype,
 NTSTATUS ads_ntstatus(ADS_STATUS status);
 const char *ads_errstr(ADS_STATUS status);
 NTSTATUS gss_err_to_ntstatus(uint32 maj, uint32 min);
+
+#endif /* _LIBADS_ADS_STATUS_H_ */

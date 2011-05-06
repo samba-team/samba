@@ -23,6 +23,7 @@
 #ifndef _NET_PROTO_H_
 #define _NET_PROTO_H_
 
+#include "libads/ads_status.h"
 
 /* The following definitions come from utils/net.c  */
 
