@@ -644,7 +644,7 @@ bool authorise_login(struct smbd_server_connection *sconn,
 					get_session_workgroup(sconn),
 					user2,password)) {
 				ok = True;
-				strlcpy(user,user2,sizeof(user));
+				strlcpy(user,user2,sizeof(fstring));
 				DEBUG(3,("authorise_login: ACCEPTED: session "
 					 "list username (%s) and given "
 					 "password ok\n", user));
@@ -695,7 +695,7 @@ bool authorise_login(struct smbd_server_connection *sconn,
 						get_session_workgroup(sconn),
 						user2,password)) {
 					ok = True;
-					strlcpy(user,user2,sizeof(user));
+					strlcpy(user,user2,sizeof(fstring));
 					DEBUG(3,("authorise_login: ACCEPTED: "
 						 "user list username and "
 						 "given password ok (%s)\n",
@@ -714,7 +714,7 @@ bool authorise_login(struct smbd_server_connection *sconn,
 		fstrcpy(guestname,lp_guestaccount());
 		guest_pw = Get_Pwnam_alloc(talloc_tos(), guestname);
 		if (guest_pw != NULL) {
-			strlcpy(user,guestname,sizeof(user));
+			strlcpy(user,guestname,sizeof(fstring));
 			ok = True;
 			DEBUG(3,("authorise_login: ACCEPTED: guest account "
 				 "and guest ok (%s)\n",	user));
