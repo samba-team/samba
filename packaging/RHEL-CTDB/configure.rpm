@@ -61,6 +61,8 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--with-aio-support \
 	--disable-merged-build \
 	--disable-smbtorture4 \
+	--disable-external-libtalloc \
+	--disable-external-libtdb \
 	$*
 
 make showlayout
