@@ -2061,8 +2061,13 @@ cleanlibtalloc::
 
 installlibtalloc:: installdirs libtalloc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
-	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET_FULLVER) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET)`
+	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET_SONAME)`
+	-if test -r $(LIBTALLOC_SHARED_TARGET_FULLVER) ; then \
+		ln -f -s `basename $(LIBTALLOC_SHARED_TARGET_FULLVER)` \
+			$(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET_SONAME)` ; \
+	fi
 	-if test -r $(LIBTALLOC_SHARED_TARGET_SONAME) ; then \
 		ln -f -s `basename $(LIBTALLOC_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBTALLOC_SHARED_TARGET)` ; \
