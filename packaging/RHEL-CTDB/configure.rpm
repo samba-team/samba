@@ -60,6 +60,7 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--without-dnsupdate \
 	--with-aio-support \
 	--disable-merged-build \
+	--disable-smbtorture4 \
 	$*
 
 make showlayout
