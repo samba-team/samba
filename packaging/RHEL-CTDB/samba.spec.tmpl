@@ -77,11 +77,35 @@ shares and printing to SMB printers.
 Summary: Files used by both Samba servers and clients.
 Group: Applications/System
 Provides: samba-common = %{version}-%{release}
+Requires: libtalloc >= 2.0.1
+Requires: libtdb >= 1.2.6
 
 %description common
 Samba-common provides files necessary for both the server and client
 packages of Samba.
 
+
+#######################################################################
+%package libtdb
+Summary: the tdb library
+Group: Applications/System
+Provides: libtdb = LIBTDBVERSION-%{release}
+Obsoletes: libtdb
+#Conflicts: libtdb < LIBTALLOCVERSION
+
+%description libtdb
+Samba's tdb library.
+
+#######################################################################
+%package libtalloc
+Summary: the talloc library
+Group: Applications/System
+Provides: libtalloc = LIBTALLOCVERSION-%{release}
+Obsoletes: libtalloc
+#Conflicts: libtalloc < LIBTALLOCVERSION
+
+%description libtalloc
+Samba's talloc library
 
 #######################################################################
 %package swat
@@ -255,6 +279,11 @@ cp -p source3/bin/winbind_krb5_locator.so ${RPM_BUILD_ROOT}/%{_libarchdir}/krb5/
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
+
+# remove installed but unpackaged files:
+/bin/rm -f $RPM_BUILD_ROOT/usr/lib*/libtalloc.so
+/bin/rm -f $RPM_BUILD_ROOT/usr/lib*/libtdb.so
+
 
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
@@ -483,6 +512,14 @@ exit 0
 
 ##########
 
+%files libtalloc
+%{_libarchdir}/libtalloc.so.LIBTALLOCVERSION
+%{_libarchdir}/libtalloc.so.2
+
+%files libtdb
+%{_libarchdir}/libtdb.so.LIBTDBVERSION
+%{_libarchdir}/libtdb.so.1
+
 %files common
 %defattr(-,root,root)
 %dir %{_sysconfdir}/samba
@@ -524,10 +561,6 @@ exit 0
 %{_includedir}/tdb.h
 %{_libarchdir}/libnetapi.so
 %{_libarchdir}/libnetapi.so.0
-%{_libarchdir}/libtalloc.so
-%{_libarchdir}/libtalloc.so.2
-%{_libarchdir}/libtdb.so
-%{_libarchdir}/libtdb.so.1
 %{_libarchdir}/libwbclient.so
 %{_libarchdir}/libwbclient.so.0
 

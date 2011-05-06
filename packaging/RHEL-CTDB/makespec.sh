@@ -45,8 +45,21 @@ else
 	echo "GITHASH: ${GITHASH}"
 fi
 
-sed -e s/PVERSION/${VERSION}/g \
+
+#
+# get the versions of libtdb and libtalloc we provide
+#
+#LIBTDBVERSION=1.2.9
+LIBTDBVERSION=$(grep ^VERSION ${DIRNAME}/../../lib/tdb/wscript | sed -e "s/'//g" -e 's/.* //')
+
+#LIBTALLOCVERSION=2.0.1
+LIBTALLOCVERSION=$(grep ^VERSION ${DIRNAME}/../../lib/talloc/wscript | sed -e "s/'//g" -e 's/.* //')
+
+sed \
+	-e s/PVERSION/${VERSION}/g \
 	-e s/GITHASH/${GITHASH}/g \
+	-e s/LIBTDBVERSION/${LIBTDBVERSION}/g \
+	-e s/LIBTALLOCVERSION/${LIBTALLOCVERSION}/g \
 	< ${SPECFILE}.tmpl \
 	> ${SPECFILE}
 
