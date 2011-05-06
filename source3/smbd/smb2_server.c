@@ -2018,9 +2018,11 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 				invalid = true;
 			}
 
-			if ((body_size % 2) != 0) {
-				body_size -= 1;
-			}
+			/*
+			 * Mask out the lowest bit, the "dynamic" part
+			 * of body_size.
+			 */
+			body_size &= ~1;
 
 			if (body_size > (full_size - SMB2_HDR_BODY)) {
 				/*
