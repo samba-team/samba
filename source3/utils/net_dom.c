@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/ndr_winreg.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_net.h"
+#include "libsmb/libsmb.h"
 
 int net_dom_usage(struct net_context *c, int argc, const char **argv)
 {

@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "secrets.h"
 #include "passdb.h"
+#include "libsmb/libsmb.h"
 
 /*********************************************************
  Change the domain password on the PDC.

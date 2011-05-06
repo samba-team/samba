@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 
 size_t clistr_push_fn(const char *function,
 			unsigned int line,

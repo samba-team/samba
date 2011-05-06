@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "system/filesys.h"
 #include "locking/proto.h"
 

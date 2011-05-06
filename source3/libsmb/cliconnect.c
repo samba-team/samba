@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "popt_common.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"

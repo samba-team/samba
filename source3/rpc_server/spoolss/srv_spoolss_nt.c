@@ -51,6 +51,7 @@
 #include "messages.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "util_tdb.h"
+#include "libsmb/libsmb.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "smb_signing.h"
 #include "async_smb.h"

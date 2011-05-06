@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/proto.h"
+#include "libsmb/libsmb.h"
 
 extern bool torture_showall;
 
