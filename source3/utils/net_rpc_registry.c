@@ -31,6 +31,7 @@
 #include <assert.h>
 #include "../libcli/security/display_sec.h"
 #include "../libcli/registry/util_reg.h"
+#include "client.h"
 
 
 /*******************************************************************

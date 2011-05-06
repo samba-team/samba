@@ -530,8 +530,6 @@ typedef char fstring[FSTRING_LEN];
 #include "smb.h"
 #include "../lib/util/byteorder.h"
 
-#include "client.h"
-
 #include "module.h"
 #include "../lib/util/talloc_stack.h"
 #include "../lib/util/smb_threads.h"
