@@ -370,60 +370,6 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   SMB_ACL_T acl_d);
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
 			    const char *path);
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp);
-int sys_acl_set_file(vfs_handle_struct *handle,
-		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path);
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp);
-int sys_acl_set_file(vfs_handle_struct *handle,
-		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path);
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp);
-int sys_acl_set_file(vfs_handle_struct *handle,
-		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path);
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp);
-int sys_acl_set_file(vfs_handle_struct *handle,
-		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path);
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp);
-int sys_acl_set_file(vfs_handle_struct *handle,
-		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path);
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp);
-int sys_acl_set_file(vfs_handle_struct *handle,
-		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path);
 int no_acl_syscall_error(int err);
 
 /* The following definitions come from lib/sysquotas.c  */
