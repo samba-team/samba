@@ -2080,8 +2080,11 @@ LINK_LIBSMBCLIENT=STATIC
 #  TODO: for talloc and tdb (at least), these should
 #  be extracted from their respective source directories
 #
-AC_ARG_ENABLE(external_libtalloc, [AS_HELP_STRING([--enable-external-libtalloc], [Enable external talloc [default=auto]])],
-[ enable_external_libtalloc=$enableval ], [ enable_external_libtalloc=auto ])
+AC_ARG_ENABLE(external_libtalloc,
+	[AS_HELP_STRING([--enable-external-libtalloc],
+		[Enable external talloc [default=auto]])],
+	[ enable_external_libtalloc=$enableval ],
+	[ enable_external_libtalloc=auto ])
 
 if test "x$enable_external_libtalloc" != xno
 then
