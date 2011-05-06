@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "fake_file.h"
 #include "../libcli/security/security.h"

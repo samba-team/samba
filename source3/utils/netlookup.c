@@ -24,6 +24,7 @@
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
+#include "libsmb/libsmb.h"
 
 /********************************************************
  Connection cachine struct. Goes away when ctx destroyed.

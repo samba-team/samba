@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
+#include "libsmb/libsmb.h"
 
 /****************************************************************************
 send an ack for an oplock break request

@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/security/dom_sid.h"
+#include "libsmb/libsmb.h"
 
 
 #define ARG_OTHERSERVER "otherserver="

@@ -26,6 +26,7 @@
 #include "smb_crypt.h"
 #include "../lib/util/asn1.h"
 #include "auth.h"
+#include "libsmb/libsmb.h"
 
 /******************************************************************************
  Server side encryption.

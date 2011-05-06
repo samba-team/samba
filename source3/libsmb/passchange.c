@@ -21,6 +21,7 @@
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "rpc_client/cli_pipe.h"
 #include "rpc_client/cli_samr.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "libsmb/nmblib.h"
 

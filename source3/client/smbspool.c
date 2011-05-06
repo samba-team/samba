@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/passwd.h"
+#include "libsmb/libsmb.h"
 
 /*
  * Starting with CUPS 1.3, Kerberos support is provided by cupsd including

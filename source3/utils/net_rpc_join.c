@@ -30,6 +30,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
+#include "libsmb/libsmb.h"
 
 /* Macro for checking RPC error codes to make things more readable */
 

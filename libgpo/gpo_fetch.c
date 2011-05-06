@@ -34,6 +34,7 @@
 #include "lib/util/util.h"
 #else
 #include "libgpo/gpo_proto.h"
+#include "libsmb/libsmb.h"
 #endif
 
 /****************************************************************

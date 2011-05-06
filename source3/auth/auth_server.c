@@ -22,6 +22,7 @@
 #include "auth.h"
 #include "system/passwd.h"
 #include "smbd/smbd.h"
+#include "libsmb/libsmb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

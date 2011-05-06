@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "../lib/util/tevent_ntstatus.h"

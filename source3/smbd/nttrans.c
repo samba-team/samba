@@ -29,6 +29,7 @@
 #include "auth.h"
 #include "ntioctl.h"
 #include "smbprofile.h"
+#include "libsmb/libsmb.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

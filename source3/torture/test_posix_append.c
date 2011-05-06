@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 
 /*
  * Make sure that GENERIC_WRITE does not trigger append. See

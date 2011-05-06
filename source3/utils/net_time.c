@@ -19,6 +19,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "libsmb/nmblib.h"
+#include "libsmb/libsmb.h"
 
 /*
   return the time on a server. This does not require any authentication

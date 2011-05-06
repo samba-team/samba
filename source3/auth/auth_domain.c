@@ -26,6 +26,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
 #include "passdb.h"
+#include "libsmb/libsmb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
