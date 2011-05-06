@@ -175,10 +175,7 @@ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			    const char *name_for_logs,
 			    bool allow_domain_trust,
 			    bool password_change);
-NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
-				      struct ldb_val *dn_val, const bool only_childs, const char *filter,
-				      TALLOC_CTX *res_sids_ctx, struct dom_sid ***res_sids,
-				      unsigned int *num_res_sids);
+
 struct auth_session_info *system_session(struct loadparm_context *lp_ctx);
 NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 					   const char *netbios_name,
