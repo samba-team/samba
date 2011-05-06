@@ -196,7 +196,14 @@ AC_ARG_WITH(profiling-data,
 )
 
 dnl Checks for programs.
-smbtorture4_possible=yes
+AC_ARG_ENABLE(smbtorture4,
+	[AS_HELP_STRING([--enable-smbtorture4], [Enable building smbtorture4 (default=auto)])])
+
+if test x$enable_smbtorture4 != xno; then
+	smbtorture4_possible=yes
+else
+	smbtorture4_possible=no
+fi
 
 AC_PROG_INSTALL
 AC_PROG_AWK
