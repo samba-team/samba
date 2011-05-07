@@ -590,7 +590,7 @@ static NTSTATUS pvfs_brl_locking_handle(TALLOC_CTX *mem_ctx,
 		data_blob_free(&odb_key);
 	}
 
-	h = brl_create_handle(mem_ctx, ntvfs, &key);
+	h = brlock_create_handle(mem_ctx, ntvfs, &key);
 	NT_STATUS_HAVE_NO_MEMORY(h);
 
 	*_h = h;
@@ -1569,7 +1569,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	f->handle->fd = fd;
 
-	status = brl_count(f->pvfs->brl_context, f->brl_handle, &count);
+	status = brlock_count(f->pvfs->brl_context, f->brl_handle, &count);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		return status;

@@ -249,7 +249,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->private_data = pvfs;
 
-	pvfs->brl_context = brl_init(pvfs, 
+	pvfs->brl_context = brlock_init(pvfs, 
 				     pvfs->ntvfs->ctx->server_id,
 				     pvfs->ntvfs->ctx->lp_ctx,
 				     pvfs->ntvfs->ctx->msg_ctx);

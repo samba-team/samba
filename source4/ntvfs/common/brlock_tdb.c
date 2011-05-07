@@ -779,5 +779,5 @@ static const struct brlock_ops brlock_tdb_ops = {
 
 void brl_tdb_init_ops(void)
 {
-	brl_set_ops(&brlock_tdb_ops);
+	brlock_set_ops(&brlock_tdb_ops);
 }
