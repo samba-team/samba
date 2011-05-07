@@ -18,6 +18,8 @@
 #ifndef _LIBSMB_PROTO_H_
 #define _LIBSMB_PROTO_H_
 
+#include "ads.h"
+
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
