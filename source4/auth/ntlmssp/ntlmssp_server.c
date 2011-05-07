@@ -308,7 +308,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	ntlmssp_state->server.netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
 
 	{
-		char *dnsdomain = lpcfg_dnsdomain(gensec_security->settings->lp_ctx);
+		const char *dnsdomain = lpcfg_dnsdomain(gensec_security->settings->lp_ctx);
 		char *dnsname, *lower_netbiosname;
 		lower_netbiosname = strlower_talloc(ntlmssp_state, ntlmssp_state->server.netbios_name);
 
