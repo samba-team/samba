@@ -38,7 +38,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 					   const uint32_t logon_parameters,
 					   struct auth_session_info **session_info) 
 {
-	struct auth_context *auth_context;
+	struct auth4_context *auth_context;
 	struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS nt_status;

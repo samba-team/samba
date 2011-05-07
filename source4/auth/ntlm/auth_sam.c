@@ -72,7 +72,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
+static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 				    TALLOC_CTX *mem_ctx,
 				    uint16_t acct_flags,
 				    const struct samr_Password *lm_pwd, 
@@ -142,7 +142,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
   send a message to the drepl server telling it to initiate a
   REPL_SECRET getncchanges extended op to fetch the users secrets
  */
-static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx, struct auth_context *auth_context,
+static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx, struct auth4_context *auth_context,
 					 struct ldb_dn *user_dn)
 {
 	struct dcerpc_binding_handle *irpc_handle;
@@ -170,7 +170,7 @@ static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx, struct auth_contex
 }
 
 
-static NTSTATUS authsam_authenticate(struct auth_context *auth_context, 
+static NTSTATUS authsam_authenticate(struct auth4_context *auth_context, 
 				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx, 
 				     struct ldb_dn *domain_dn,
 				     struct ldb_message *msg,
@@ -357,7 +357,7 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 				   
 /* Wrapper for the auth subsystem pointer */
 static NTSTATUS authsam_get_user_info_dc_principal_wrapper(TALLOC_CTX *mem_ctx,
-							  struct auth_context *auth_context,
+							  struct auth4_context *auth_context,
 							  const char *principal,
 							  struct ldb_dn *user_dn,
 							  struct auth_user_info_dc **user_info_dc)
@@ -381,7 +381,7 @@ static const struct auth_operations sam_ops = {
 	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper
 };
 
-_PUBLIC_ NTSTATUS auth_sam_init(void)
+_PUBLIC_ NTSTATUS auth4_sam_init(void)
 {
 	NTSTATUS ret;
 

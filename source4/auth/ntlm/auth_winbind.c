@@ -31,7 +31,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "libcli/security/security.h"
 
-_PUBLIC_ NTSTATUS auth_winbind_init(void);
+_PUBLIC_ NTSTATUS auth4_winbind_init(void);
 
 static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					       struct wbcAuthUserInfo *info,
@@ -324,7 +324,7 @@ static const struct auth_operations winbind_wbclient_ops = {
 	.check_password	= winbind_check_password_wbclient
 };
 
-_PUBLIC_ NTSTATUS auth_winbind_init(void)
+_PUBLIC_ NTSTATUS auth4_winbind_init(void)
 {
 	NTSTATUS ret;
 

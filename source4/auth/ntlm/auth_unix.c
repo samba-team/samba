@@ -28,7 +28,7 @@
 #include "../libcli/auth/pam_errors.h"
 #include "param/param.h"
 
-_PUBLIC_ NTSTATUS auth_unix_init(void);
+_PUBLIC_ NTSTATUS auth4_unix_init(void);
 
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info
  * except in case USER_INFO_DONT_CHECK_UNIX_ACCOUNT is set
@@ -804,7 +804,7 @@ static const struct auth_operations unix_ops = {
 	.check_password	= authunix_check_password
 };
 
-_PUBLIC_ NTSTATUS auth_unix_init(void)
+_PUBLIC_ NTSTATUS auth4_unix_init(void)
 {
 	NTSTATUS ret;
 

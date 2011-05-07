@@ -461,7 +461,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case SQUID_2_5_NTLMSSP:
 		{
 			const char *winbind_method[] = { "winbind", NULL };
-			struct auth_context *auth_context;
+			struct auth4_context *auth_context;
 
 			msg = imessaging_client_init(state, lpcfg_imessaging_path(state, lp_ctx), ev);
 			if (!msg) {

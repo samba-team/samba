@@ -300,7 +300,7 @@ struct smbsrv_connection {
 		enum protocol_types protocol;
 
 		/* authentication context for multi-part negprot */
-		struct auth_context *auth_context;
+		struct auth4_context *auth_context;
 	
 		/* reference to the kerberos keytab, or machine trust account */
 		struct cli_credentials *server_credentials;

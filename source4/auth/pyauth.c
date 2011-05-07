@@ -205,7 +205,7 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 	return ret;
 }
 
-static PyObject *PyAuthContext_FromContext(struct auth_context *auth_context)
+static PyObject *PyAuthContext_FromContext(struct auth4_context *auth_context)
 {
 	return py_talloc_reference(&PyAuthContext, auth_context);
 }
@@ -218,7 +218,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 	PyObject *py_auth_context = Py_None;
 	PyObject *py_methods = Py_None;
 	TALLOC_CTX *mem_ctx;
-	struct auth_context *auth_context;
+	struct auth4_context *auth_context;
 	struct imessaging_context *imessaging_context = NULL;
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *ev;

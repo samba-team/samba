@@ -514,7 +514,7 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
 			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
- 			     struct auth_context *auth_context,
+ 			     struct auth4_context *auth_context,
 			     struct gensec_security **gensec_security)
 {
 	if (ev == NULL) {
@@ -604,7 +604,7 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 				      struct tevent_context *ev,
 				      struct gensec_settings *settings,
-				      struct auth_context *auth_context,
+				      struct auth4_context *auth_context,
 				      struct gensec_security **gensec_security)
 {
 	NTSTATUS status;

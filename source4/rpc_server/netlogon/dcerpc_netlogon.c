@@ -600,7 +600,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonE
 static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonSamLogonEx *r, struct netlogon_creds_CredentialState *creds)
 {
-	struct auth_context *auth_context;
+	struct auth4_context *auth_context;
 	struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS nt_status;

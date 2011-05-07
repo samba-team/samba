@@ -99,7 +99,7 @@ NTSTATUS map_user_info(TALLOC_CTX *mem_ctx,
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
 
-NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_context, 
+NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_context, 
 			   enum auth_password_state to_state,
 			   const struct auth_usersupplied_info *user_info_in,
 			   const struct auth_usersupplied_info **user_info_encrypted)

@@ -88,7 +88,7 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS status;
 
 	status = auth_context->get_challenge(auth_context, chal);
@@ -111,7 +111,7 @@ static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 
 	return auth_context->challenge_may_be_modified(auth_context);
 }
@@ -125,7 +125,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS nt_status;
 	const uint8_t *chal;
 
@@ -155,7 +155,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS nt_status;
 	struct auth_usersupplied_info *user_info;
 

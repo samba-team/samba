@@ -165,7 +165,7 @@ struct gensec_security {
 	/* When we are a server, this may be filled in to provide an
 	 * NTLM authentication backend, and user lookup (such as if no
 	 * PAC is found) */
-	struct auth_context *auth_context;
+	struct auth4_context *auth_context;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
@@ -179,7 +179,7 @@ struct gensec_critical_sizes {
 
 struct gensec_security;
 struct socket_context;
-struct auth_context;
+struct auth4_context;
 struct auth_user_info_dc;
 
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
@@ -270,7 +270,7 @@ const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security,
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
-			     struct auth_context *auth_context,
+			     struct auth4_context *auth_context,
 			     struct gensec_security **gensec_security);
 NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
 			     struct auth_session_info **session_info);
