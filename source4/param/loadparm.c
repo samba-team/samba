@@ -264,6 +264,7 @@ static const struct enum_list enum_protocol[] = {
 static const struct enum_list enum_security[] = {
 	{SEC_SHARE, "SHARE"},
 	{SEC_USER, "USER"},
+	{SEC_ADS, "ADS"},
 	{-1, NULL}
 };
 

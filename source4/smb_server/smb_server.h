@@ -22,6 +22,7 @@
 #include "libcli/raw/request.h"
 #include "libcli/raw/interfaces.h"
 #include "lib/socket/socket.h"
+#include "libds/common/roles.h"
 #include "../lib/util/dlinklist.h"
 #include "../librpc/gen_ndr/nbt.h"
 
@@ -264,8 +265,6 @@ struct smbsrv_request {
 	struct smb_request_buffer in;
 	struct smb_request_buffer out;
 };
-
-enum security_types {SEC_SHARE,SEC_USER};
 
 /* smb server context structure. This should contain all the state
  * information associated with a SMB server connection 
