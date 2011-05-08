@@ -107,6 +107,7 @@ static int process_options(int argc, char **argv, int local_flags)
 			break;
 		case 'c':
 			configfile = optarg;
+			set_dyn_CONFIGFILE(optarg);
 			break;
 		case 'a':
 			local_flags |= LOCAL_ADD_USER;
