@@ -13,7 +13,6 @@ loadconfig
 }
 
 [ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
-	echo "No public addresses file found. Nothing to do for 10.interfaces"
 	exit 0
 }
 
@@ -54,25 +53,25 @@ monitor_interfaces()
 		grep -q 'Currently Active Slave: None' /proc/net/bonding/$REALIFACE && {
 			echo "ERROR: No active slaves for bond device $REALIFACE"
 			fail=1
-			ctdb setifacelink $IFACE down
+			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
 			continue;
 		}
 		grep -q '^MII Status: up' /proc/net/bonding/$REALIFACE || {
 			echo "ERROR: public network interface $REALIFACE is down"
 			fail=1
-			ctdb setifacelink $IFACE down
+			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
 			continue;
 		}
 		grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' /proc/net/bonding/$REALIFACE && {
 			grep 'MII Status:' /proc/net/bonding/$REALIFACE | tail -n +2 | grep -q '^MII Status: up' || {
 				echo No active slaves for 802.ad bond device $REALIFACE
-				ctdb setifacelink $IFACE down
+				ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
 				fail=1
 				continue
 			}
 		}
 		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up
+		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
 		continue;
 	    }
 
@@ -80,12 +79,12 @@ monitor_interfaces()
 	    lo*)
 		# loopback is always working
 		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up
+		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
 		;;
 	    ib*)
 		# we dont know how to test ib links
 		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up
+		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
 		;;
 	    *)
 		[ -z "$IFACE" ] || {
@@ -99,12 +98,12 @@ monitor_interfaces()
 			ethtool $IFACE | grep -q 'Link detected: yes' || {
 			    echo "ERROR: No link on the public network interface $IFACE"
 			    fail=1
-			    ctdb setifacelink $IFACE down
+			    ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
 			    continue
 			}
 		    }
 		    ok=1 # we only set ok for interfaces known to ctdbd
-		    ctdb setifacelink $IFACE up
+		    ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
 		}
 		;;
 	    esac
@@ -141,7 +140,7 @@ case "$1" in
 	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
 
 	for IFACE in $INTERFACES ; do
-		ctdb setifacelink $IFACE down
+		ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
 	done
 	
 	monitor_interfaces
