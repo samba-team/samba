@@ -96,3 +96,12 @@ bld.SAMBA3_MODULE('auth_script',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_script'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_script'))
+
+bld.SAMBA3_MODULE('auth_samba4',
+                  subsystem='auth',
+                  source='auth_samba4.c',
+                  init_function='',
+                  deps='auth4',
+                  allow_undefined_symbols=False,
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_samba4'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_samba4'))
