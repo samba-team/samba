@@ -64,7 +64,7 @@ sub mk_krb5_conf($)
 	my ($ctx) = @_;
 
 	unless (open(KRB5CONF, ">$ctx->{krb5_conf}")) {
-		die("can't open $ctx->{krb5_conf}$?");
+	        warn("can't open $ctx->{krb5_conf}$?");
 		return undef;
 	}
 	print KRB5CONF "

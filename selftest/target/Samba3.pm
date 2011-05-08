@@ -673,12 +673,18 @@ sub provision($$$$$$)
 
 	chmod 0755, $ro_shrdir;
 	my $unreadable_file = "$ro_shrdir/unreadable_file";
-	open(UNREADABLE_FILE, ">$unreadable_file") or die("Unable to open $unreadable_file");
+	unless (open(UNREADABLE_FILE, ">$unreadable_file")) {
+	        warn("Unable to open $unreadable_file");
+		return undef;
+	}
 	close(UNREADABLE_FILE);
 	chmod 0600, $unreadable_file;
 
 	my $msdfs_target = "$ro_shrdir/msdfs-target";
-	open(MSDFS_TARGET, ">$msdfs_target") or die("Unable to open $msdfs_target");
+	unless (open(MSDFS_TARGET, ">$msdfs_target")) {
+	        warn("Unable to open $msdfs_target");
+		return undef;
+	}
 	close(MSDFS_TARGET);
 	chmod 0666, $msdfs_target;
 	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/msdfs-src1";
@@ -726,7 +732,10 @@ sub provision($$$$$$)
 	## create conffile
 	##
 
-	open(CONF, ">$conffile") or die("Unable to open $conffile");
+	unless (open(CONF, ">$conffile")) {
+	        warn("Unable to open $conffile");
+		return undef;
+	}
 	print CONF "
 [global]
 	netbios name = $server
@@ -871,7 +880,10 @@ sub provision($$$$$$)
 	## create a test account
 	##
 
-	open(PASSWD, ">$nss_wrapper_passwd") or die("Unable to open $nss_wrapper_passwd");
+	unless (open(PASSWD, ">$nss_wrapper_passwd")) {
+           warn("Unable to open $nss_wrapper_passwd");
+           return undef;
+        } 
 	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix_abs:/bin/false
 $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 ";
@@ -880,7 +892,10 @@ $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 	}
 	close(PASSWD);
 
-	open(GROUP, ">$nss_wrapper_group") or die("Unable to open $nss_wrapper_group");
+	unless (open(GROUP, ">$nss_wrapper_group")) {
+             warn("Unable to open $nss_wrapper_group");
+             return undef;
+        }
 	print GROUP "nobody:x:$gid_nobody:
 nogroup:x:$gid_nogroup:nobody
 $unix_name-group:x:$unix_gids[0]:
@@ -901,10 +916,16 @@ domusers:X:$gid_domusers:
 	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 
-	open(PWD, "|".Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name >/dev/null");
+        my $cmd = Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name > /dev/null";
+	unless (open(PWD, "|$cmd")) {
+             warn("Unable to set password for test account\n$cmd");
+             return undef;
+        }
 	print PWD "$password\n$password\n";
-	close(PWD) or die("Unable to set password for test account");
-
+	unless (close(PWD)) {
+             warn("Unable to set password for test account\n$cmd");
+             return undef; 
+        }
 	print "DONE\n";
 
 	open(HOSTS, ">>$ENV{SELFTEST_PREFIX}/dns_host_file") or die("Unable to open $ENV{SELFTEST_PREFIX}/dns_host_file");
