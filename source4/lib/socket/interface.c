@@ -129,7 +129,11 @@ static void add_interface(TALLOC_CTX *mem_ctx, const struct iface_struct *ifs, s
 	DEBUG(2,("netmask=%s\n", addr));
 	iface->nmask_s = talloc_strdup(iface, addr);
 
-	DLIST_ADD(*interfaces, iface);
+	/*
+	   this needs to be a ADD_END, as some tests (such as the
+	   spoolss notify test) depend on the interfaces ordering
+	*/
+	DLIST_ADD_END(*interfaces, iface, NULL);
 }
 
 /**
