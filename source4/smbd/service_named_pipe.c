@@ -207,7 +207,7 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 
 	if (!directory_create_or_exist(dirname, geteuid(), 0700)) {
 		status = map_nt_error_from_unix(errno);
-		DEBUG(0,(__location__ ": Failed to create stream pipe directory %s - %s\n",
+		DEBUG(0,(__location__ ": Failed to create stream pipe directory '%s' - %s\n",
 			 dirname, nt_errstr(status)));
 		goto fail;
 	}

@@ -152,7 +152,8 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 		}
 		if ((st.st_mode & 0777) != dir_perms) {
 			DEBUG(0, ("invalid permissions on directory "
-				  "%s\n", dname));
+				  "'%s': has 0%o should be 0%o\n", dname,
+				  (st.st_mode & 0777), dir_perms));
 			umask(old_umask);
 			return false;
 		}

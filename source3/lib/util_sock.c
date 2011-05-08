@@ -1166,14 +1166,21 @@ int create_pipe_sock(const char *socket_dir,
 	} else {
 		/* Check ownership and permission on existing directory */
 		if (!S_ISDIR(st.st_mode)) {
-			DEBUG(0, ("socket directory %s isn't a directory\n",
+			DEBUG(0, ("socket directory '%s' isn't a directory\n",
 				socket_dir));
 			goto out_umask;
 		}
-		if ((st.st_uid != sec_initial_uid()) ||
-				((st.st_mode & 0777) != dir_perms)) {
-			DEBUG(0, ("invalid permissions on socket directory "
-				"%s\n", socket_dir));
+		if (st.st_uid != sec_initial_uid()) {
+			DEBUG(0, ("invalid ownership on directory "
+				  "'%s'\n", socket_dir));
+			umask(old_umask);
+			goto out_umask;
+		}
+		if ((st.st_mode & 0777) != dir_perms) {
+			DEBUG(0, ("invalid permissions on directory "
+				  "'%s': has 0%o should be 0%o\n", socket_dir,
+				  (st.st_mode & 0777), dir_perms));
+			umask(old_umask);
 			goto out_umask;
 		}
 	}
