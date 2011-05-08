@@ -60,6 +60,7 @@ def configure(conf):
     version = samba_version.load_version(env=conf.env)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
+    conf.DEFINE('_SAMBA_WAF_BUILD_', version.MAJOR)
     conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
 
