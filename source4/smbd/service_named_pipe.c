@@ -200,6 +200,13 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	if (!directory_create_or_exist(lpcfg_ncalrpc_dir(lp_ctx), geteuid(), 0755)) {
+		status = map_nt_error_from_unix(errno);
+		DEBUG(0,(__location__ ": Failed to create ncalrpc pipe directory '%s' - %s\n",
+			 lpcfg_ncalrpc_dir(lp_ctx), nt_errstr(status)));
+		goto fail;
+	}
+
 	dirname = talloc_asprintf(pipe_sock, "%s/np", lpcfg_ncalrpc_dir(lp_ctx));
 	if (dirname == NULL) {
 		goto fail;
