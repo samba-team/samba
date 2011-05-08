@@ -292,7 +292,7 @@ sub setup_plugin_s4_dc($$$$)
 				   "plugindc",
 				   $iface,
 				   "pluGin${iface}Pass",
-				   $plugin_s4_dc_options);
+				   $plugin_s4_dc_options, 1);
 
 	$ret or return undef;
 
@@ -634,9 +634,9 @@ sub check_or_start($$$$) {
 	return 0;
 }
 
-sub provision($$$$$$)
+sub provision($$$$$$$)
 {
-	my ($self, $prefix, $server, $swiface, $password, $extra_options) = @_;
+	my ($self, $prefix, $server, $swiface, $password, $extra_options, $no_delete_prefix) = @_;
 
 	##
 	## setup the various environment variables we need
@@ -714,7 +714,9 @@ sub provision($$$$$$)
 
 	mkdir($prefix_abs, 0777);
 	print "CREATE TEST ENVIRONMENT IN '$prefix'...";
-	system("rm -rf $prefix_abs/*");
+	if (not defined($no_delete_prefix) or not $no_delete_prefix) {
+	    system("rm -rf $prefix_abs/*");
+	}
 	mkdir($_, 0777) foreach(@dirs);
 
 	##
@@ -861,7 +863,7 @@ sub provision($$$$$$)
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
 
-	ncalrpc dir = $lockdir/ncalrpc
+	ncalrpc dir = $prefix_abs/ncalrpc
 	rpc_server:epmapper = embedded
 
         resolv:host file = $dns_host_file
