@@ -533,6 +533,8 @@ struct loadparm_context {
 	unsigned int flags[NUMPARAMETERS];
 	bool loaded;
 	bool refuse_free;
+	bool global; /* Is this the global context, which may set
+		      * global variables such as debug level etc? */
 };
 
 
@@ -1550,14 +1552,19 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 {
 
 	string_set(lp_ctx, ptr, pszParmValue);
-	return debug_parse_levels(pszParmValue);
+	if (lp_ctx->global) {
+		return debug_parse_levels(pszParmValue);
+	}
+	return true;
 }
 
 static bool handle_logfile(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr)
 {
 	debug_set_logfile(pszParmValue);
-	string_set(lp_ctx, ptr, pszParmValue);
+	if (lp_ctx->global) {
+		string_set(lp_ctx, ptr, pszParmValue);
+	}
 	return true;
 }
 
@@ -2561,6 +2568,7 @@ struct loadparm_context *loadparm_init_global(bool load_default)
 	if (global_loadparm_context == NULL) {
 		return NULL;
 	}
+	global_loadparm_context->global = true;
 	if (load_default && !global_loadparm_context->loaded) {
 		lpcfg_load_default(global_loadparm_context);
 	}
@@ -2592,6 +2600,10 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 
 	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
 		lpcfg_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
+	}
+
+	if (!lp_ctx->global) {
+		return true;
 	}
 
 	panic_action = lp_ctx->globals->panic_action;
@@ -2818,6 +2830,10 @@ struct smb_iconv_handle *lpcfg_iconv_handle(struct loadparm_context *lp_ctx)
 _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 {
 	struct smb_iconv_handle *old_ic = lp_ctx->iconv_handle;
+	if (!lp_ctx->global) {
+		return;
+	}
+
 	if (old_ic == NULL) {
 		old_ic = global_iconv_handle;
 	}
