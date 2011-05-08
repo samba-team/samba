@@ -269,6 +269,56 @@ sub setup_admember($$$$)
 	return $ret;
 }
 
+sub setup_plugin_s4_dc($$$$)
+{
+	my ($self, $prefix, $dcvars, $iface) = @_;
+
+	print "PROVISIONING S4 PLUGIN AD DC$iface...";
+
+	my $plugin_s4_dc_options = "
+        workgroup = $dcvars->{DOMAIN}
+        realm = $dcvars->{REALM}
+        security=ads
+        passdb backend = samba4
+        auth methods = guest samba4
+        domain logons = yes
+        rpc_server:lsarpc = external
+        rpc_server:netlogon = external
+        rpc_server:samr = external
+	server signing = on
+";
+
+	my $ret = $self->provision($prefix,
+				   "plugindc",
+				   $iface,
+				   "pluGin${iface}Pass",
+				   $plugin_s4_dc_options);
+
+	$ret or return undef;
+
+	close(USERMAP);
+	$ret->{DOMAIN} = $dcvars->{DOMAIN};
+	$ret->{REALM} = $dcvars->{REALM};
+	$ret->{KRB5_CONFIG} = $dcvars->{KRB5_CONFIG};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
+	# We need world access to this share, as otherwise the domain
+	# administrator from the AD domain provided by Samba4 can't
+	# access the share for tests.
+	chmod 0777, "$prefix/share";
+
+	$self->check_or_start($ret,
+			      "no", "yes", "yes");
+
+	$self->wait_for_start($ret);
+
+	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
+	$ret->{target} = $self;
+
+	return $ret;
+}
+
 sub setup_secshare($$)
 {
 	my ($self, $path) = @_;

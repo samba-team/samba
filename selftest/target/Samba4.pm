@@ -611,6 +611,7 @@ sub provision_raw_step1($$)
         spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate
         resolv:host file = $ctx->{dns_host_file}
 	dreplsrv:periodic_startup_interval = 0
+        ncalrpc dir = $ctx->{lockdir}/ncalrpc
 ";
 
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
@@ -1157,6 +1158,40 @@ sub provision_rodc($$$)
 	return $ret;
 }
 
+sub provision_plugin_s4_dc($$)
+{
+	my ($self, $prefix) = @_;
+
+	my $extra_smbconf_options = "
+server services = -winbind, -smb
+";
+
+	print "PROVISIONING PLUGIN S4 DC...";
+	my $ret = $self->provision($prefix,
+				   "domain controller",
+				   "plugindc",
+				   "PLUGINDOMAIN",
+				   "plugin.samba.example.com",
+				   "2008",
+				   30,
+				   "locDCpass1",
+				   undef, $extra_smbconf_options);
+
+	return undef unless(defined $ret);
+	unless($self->add_wins_config("$prefix/private")) {
+		warn("Unable to add wins configuration");
+		return undef;
+	}
+
+	$ret->{DC_SERVER} = $ret->{SERVER};
+	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $ret->{USERNAME};
+	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+
+	return $ret;
+}
+
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
@@ -1261,6 +1296,8 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
+	} elsif ($envname eq "plugin_s4_dc") {
+		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc");
 	} elsif ($envname eq "all") {
 		if (not defined($self->{vars}->{dc})) {
 			$ENV{ENVNAME} = "dc";
@@ -1488,6 +1525,26 @@ sub setup_rodc($$$)
 
 	$self->{vars}->{rodc} = $env;
 
+	return $env;
+}
+
+sub setup_plugin_s4_dc($$)
+{
+	my ($self, $path) = @_;
+
+	my $env = $self->provision_plugin_s4_dc($path);
+	if (defined $env) {
+		$self->check_or_start($env);
+
+		$self->wait_for_start($env);
+
+		my $s3_part_env = $self->{target3}->setup_plugin_s4_dc($path, $env, 30);
+		if (not defined($s3_part_env)) {
+		    return undef;
+		}
+
+		$self->{vars}->{plugin_s4_dc} = $s3_part_env;
+	}
 	return $env;
 }
 
