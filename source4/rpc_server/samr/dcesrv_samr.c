@@ -1205,7 +1205,6 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	}
 	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
-		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	a_state->sam_ctx = d_state->sam_ctx;
