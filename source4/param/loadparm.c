@@ -1711,17 +1711,23 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			char **new_list = str_list_make(mem_ctx,
 							pszParmValue, NULL);
 			for (i=0; new_list[i]; i++) {
-				if (new_list[i][0] == '+' && new_list[i][1]) {
+				if (new_list[i][0] == '+' && new_list[i][1] &&
+				    (!str_list_check(*(const char ***)parm_ptr,
+						     &new_list[i][1]))) {
 					*(const char ***)parm_ptr = str_list_add(*(const char ***)parm_ptr,
 										 &new_list[i][1]);
 				} else if (new_list[i][0] == '-' && new_list[i][1]) {
+#if 0 /* This is commented out because we sometimes parse the list
+       * twice, and so we can't assert on this */
 					if (!str_list_check(*(const char ***)parm_ptr,
 							    &new_list[i][1])) {
-						DEBUG(0, ("Unsupported value for: %s = %s, %s is not in the original list\n",
-							  pszParmName, pszParmValue, new_list[i]));
+						DEBUG(0, ("Unsupported value for: %s = %s, %s is not in the original list [%s]\n",
+							  pszParmName, pszParmValue, new_list[i],
+							  str_list_join_shell(mem_ctx, *(const char ***)parm_ptr, ' ')));
 						return false;
 
 					}
+#endif
 					str_list_remove(*(const char ***)parm_ptr,
 							&new_list[i][1]);
 				} else {
