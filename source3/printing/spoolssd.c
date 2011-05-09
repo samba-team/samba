@@ -119,6 +119,17 @@ static void spoolss_reopen_logs(void)
 	reopen_logs();
 }
 
+static void update_conf(struct tevent_context *ev,
+			struct messaging_context *msg)
+{
+	change_to_root_user();
+	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	reload_printers(ev, msg);
+
+	spoolss_reopen_logs();
+	spoolss_prefork_config();
+}
+
 static void smb_conf_updated(struct messaging_context *msg,
 			     void *private_data,
 			     uint32_t msg_type,
@@ -129,10 +140,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 							     struct tevent_context);
 
 	DEBUG(10, ("Got message saying smb.conf was updated. Reloading.\n"));
-	change_to_root_user();
-	reload_printers(ev_ctx, msg);
-	spoolss_reopen_logs();
-	spoolss_prefork_config();
+	update_conf(ev_ctx, msg);
 }
 
 static void spoolss_sig_term_handler(struct tevent_context *ev,
@@ -159,6 +167,11 @@ static void spoolss_setup_sig_term_handler(struct tevent_context *ev_ctx)
 	}
 }
 
+struct spoolss_hup_ctx {
+	struct messaging_context *msg_ctx;
+	struct prefork_pool *pfp;
+};
+
 static void spoolss_sig_hup_handler(struct tevent_context *ev,
 				    struct tevent_signal *se,
 				    int signum,
@@ -166,26 +179,36 @@ static void spoolss_sig_hup_handler(struct tevent_context *ev,
 				    void *siginfo,
 				    void *pvt)
 {
-	struct messaging_context *msg_ctx;
+	struct spoolss_hup_ctx *hup_ctx;
 
-	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
+	hup_ctx = talloc_get_type_abort(pvt, struct spoolss_hup_ctx);
 
-	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	reload_printers(ev, msg_ctx);
-	spoolss_reopen_logs();
+	update_conf(ev, hup_ctx->msg_ctx);
+
+	/* relay to all children */
+	prefork_send_signal_to_all(hup_ctx->pfp, SIGHUP);
 }
 
 static void spoolss_setup_sig_hup_handler(struct tevent_context *ev_ctx,
+					  struct prefork_pool *pfp,
 					  struct messaging_context *msg_ctx)
 {
+	struct spoolss_hup_ctx *hup_ctx;
 	struct tevent_signal *se;
+
+	hup_ctx = talloc(ev_ctx, struct spoolss_hup_ctx);
+	if (!hup_ctx) {
+		exit_server("failed to setup SIGHUP handler");
+	}
+	hup_ctx->pfp = pfp;
+	hup_ctx->msg_ctx = msg_ctx;
 
 	se = tevent_add_signal(ev_ctx,
 			       ev_ctx,
 			       SIGHUP, 0,
 			       spoolss_sig_hup_handler,
-			       msg_ctx);
+			       hup_ctx);
 	if (!se) {
 		exit_server("failed to setup SIGHUP handler");
 	}
@@ -696,7 +719,7 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 				 &pool);
 
 	spoolss_setup_sig_term_handler(ev_ctx);
-	spoolss_setup_sig_hup_handler(ev_ctx, msg_ctx);
+	spoolss_setup_sig_hup_handler(ev_ctx, pool, msg_ctx);
 
 	if (!serverid_register(procid_self(),
 				FLAG_MSG_GENERAL|FLAG_MSG_SMBD
