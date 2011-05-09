@@ -136,7 +136,7 @@ struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const cha
 const char **tevent_backend_list(TALLOC_CTX *mem_ctx);
 
 /**
- * @brief Set the default tevent backent.
+ * @brief Set the default tevent backend.
  *
  * @param[in]  backend  The name of the backend to set.
  */
