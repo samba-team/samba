@@ -993,12 +993,14 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	msg->dn = drs_ObjectIdentifier_to_dn(msg, ldb, req10->naming_context);
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
+	/* TODO: make sure ntds_dn is a valid nTDSDSA object */
 	ret = dsdb_find_dn_by_guid(ldb, msg, &req10->destination_dsa_guid, &ntds_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, (__location__ ": Unable to find NTDS object for guid %s - %s\n",
 			  GUID_string(mem_ctx, &req10->destination_dsa_guid), ldb_errstring(ldb)));
 		talloc_free(msg);
-		return WERR_DS_DRA_INTERNAL_ERROR;
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_UNKNOWN_CALLER;
+		return WERR_OK;
 	}
 
 	ret = ldb_msg_add_string(msg, "fSMORoleOwner", ldb_dn_get_linearized(ntds_dn));
