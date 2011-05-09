@@ -300,8 +300,6 @@ sub setup_plugin_s4_dc($$$$)
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 	$ret->{KRB5_CONFIG} = $dcvars->{KRB5_CONFIG};
-	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
 	# We need world access to this share, as otherwise the domain
 	# administrator from the AD domain provided by Samba4 can't
