@@ -22,7 +22,10 @@
 #include "includes.h"
 #include "gse.h"
 
-#if defined(HAVE_KRB5) && defined(HAVE_GSSAPI_GSSAPI_EXT_H) && defined(HAVE_GSS_WRAP_IOV)
+#if defined(HAVE_KRB5) \
+	&& defined(HAVE_GSSAPI_GSSAPI_EXT_H) \
+	&& defined(HAVE_GSS_WRAP_IOV) \
+	&& defined(HAVE_GSS_GET_NAME_ATTRIBUTE)
 
 #include "smb_krb5.h"
 #include "gse_krb5.h"
@@ -681,42 +684,62 @@ NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gse_get_authtime(struct gse_context *gse_ctx, time_t *authtime)
+NTSTATUS gse_get_pac_blob(struct gse_context *gse_ctx,
+			  TALLOC_CTX *mem_ctx, DATA_BLOB *pac_blob)
 {
 	OM_uint32 gss_min, gss_maj;
-	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
-	int32_t	tkttime;
+	gss_buffer_desc pac_buffer;
+	gss_buffer_desc pac_display_buffer;
+	gss_buffer_desc pac_name = {
+		.value = discard_const_p(char, "urn:mspac:"),
+		.length = sizeof("urn:mspac:") - 1
+	};
+	int more = -1;
+	int authenticated = false;
+	int complete = false;
+	NTSTATUS status;
 
 	if (!gse_ctx->authenticated) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	gss_maj = gss_inquire_sec_context_by_oid(
-				&gss_min, gse_ctx->gss_ctx,
-				&gse_authtime_oid, &set);
-	if (gss_maj) {
-		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		return NT_STATUS_NOT_FOUND;
+	gss_maj = gss_get_name_attribute(&gss_min,
+					 gse_ctx->client_name, &pac_name,
+					 &authenticated, &complete,
+					 &pac_buffer, &pac_display_buffer,
+					 &more);
+
+	if (gss_maj != 0) {
+		DEBUG(0, ("obtaining PAC via GSSAPI gss_get_name_attribute "
+			  "failed: %s\n",
+			  gse_errstr(mem_ctx, gss_maj, gss_min)));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if ((set == GSS_C_NO_BUFFER_SET) || (set->count != 1) != 0) {
-		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
-			  "data in results.\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+	if (authenticated && complete) {
+		/* The PAC blob is returned directly */
+		*pac_blob = data_blob_talloc(mem_ctx,
+					     pac_buffer.value,
+					     pac_buffer.length);
+		if (!pac_blob->data) {
+			status = NT_STATUS_NO_MEMORY;
+		} else {
+			status = NT_STATUS_OK;
+		}
+
+		gss_maj = gss_release_buffer(&gss_min, &pac_buffer);
+		gss_maj = gss_release_buffer(&gss_min, &pac_display_buffer);
+
+		return status;
 	}
 
-	if (set->elements[0].length != sizeof(int32_t)) {
-		DEBUG(0, ("Invalid authtime size!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	DEBUG(0, ("obtaining PAC via GSSAPI failed: authenticated: %s, "
+		  "complete: %s, more: %s\n",
+		  authenticated ? "true" : "false",
+		  complete ? "true" : "false",
+		  more ? "true" : "false"));
 
-	tkttime = *((int32_t *)set->elements[0].value);
-
-	gss_maj = gss_release_buffer_set(&gss_min, &set);
-
-	*authtime = (time_t)tkttime;
-	return NT_STATUS_OK;
+	return NT_STATUS_ACCESS_DENIED;
 }
 
 size_t gse_get_signature_length(struct gse_context *gse_ctx,
@@ -972,7 +995,8 @@ NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS gse_get_authtime(struct gse_context *gse_ctx, time_t *authtime)
+NTSTATUS gse_get_pac_blob(struct gse_context *gse_ctx,
+			  TALLOC_CTX *mem_ctx, DATA_BLOB *pac)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

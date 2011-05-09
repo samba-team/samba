@@ -106,11 +106,8 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 {
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB auth_data;
-	time_t tgs_authtime;
-	NTTIME tgs_authtime_nttime;
 	DATA_BLOB pac;
 	struct PAC_DATA *pac_data;
-	struct PAC_LOGON_NAME *logon_name = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	enum ndr_err_code ndr_err;
 	unsigned int i;
@@ -122,14 +119,13 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 	char *username;
 	struct passwd *pw;
 	NTSTATUS status;
-	bool bret;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = gse_get_authz_data(gse_ctx, tmp_ctx, &auth_data);
+	status = gse_get_pac_blob(gse_ctx, tmp_ctx, &pac);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		/* TODO: Fetch user by principal name ? */
 		status = NT_STATUS_ACCESS_DENIED;
@@ -138,24 +134,6 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
-
-	bret = unwrap_pac(tmp_ctx, &auth_data, &pac);
-	if (!bret) {
-		DEBUG(1, ("Failed to unwrap PAC\n"));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	status = gse_get_client_name(gse_ctx, tmp_ctx, &princ_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = gse_get_authtime(gse_ctx, &tgs_authtime);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-	unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
 
 	pac_data = talloc_zero(tmp_ctx, struct PAC_DATA);
 	if (!pac_data) {
@@ -182,9 +160,6 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 			}
 			logon_info = data_buf->info->logon_info.info;
 			break;
-		case PAC_TYPE_LOGON_NAME:
-			logon_name = &data_buf->info->logon_name;
-			break;
 		default:
 			break;
 		}
@@ -192,21 +167,6 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 	if (!logon_info) {
 		DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
 		status = NT_STATUS_NOT_FOUND;
-		goto done;
-	}
-	if (!logon_name) {
-		DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
-		status = NT_STATUS_NOT_FOUND;
-		goto done;
-	}
-
-	/* check time */
-	if (tgs_authtime_nttime != logon_name->logon_time) {
-		DEBUG(1, ("Logon time mismatch between ticket and PAC!\n"
-			  "PAC Time = %s | Ticket Time = %s\n",
-			  nt_time_string(tmp_ctx, logon_name->logon_time),
-			  nt_time_string(tmp_ctx, tgs_authtime_nttime)));
-		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
 
