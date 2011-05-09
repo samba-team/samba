@@ -72,6 +72,7 @@ int prefork_count_active_children(struct prefork_pool *pfp, int *total);
 bool prefork_mark_pid_dead(struct prefork_pool *pfp, pid_t pid);
 void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max);
 void prefork_reset_allowed_clients(struct prefork_pool *pfp);
+void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num);
 
 /* ==== Functions used by children ==== */
 

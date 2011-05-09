@@ -326,6 +326,20 @@ void prefork_reset_allowed_clients(struct prefork_pool *pfp)
 	}
 }
 
+void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num)
+{
+	int i;
+
+	for (i = 0; i < pfp->pool_size; i++) {
+		if (pfp->pool[i].status == PF_WORKER_NONE) {
+			continue;
+		}
+
+		kill(pfp->pool[i].pid, signal_num);
+	}
+}
+
+
 /* ==== Functions used by children ==== */
 
 static SIG_ATOMIC_T pf_alarm;
