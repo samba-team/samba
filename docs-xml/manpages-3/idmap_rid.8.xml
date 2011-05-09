@@ -28,7 +28,7 @@
 	Currently, there should to be an explicit idmap configuration for each
 	domain that should use the idmap_rid backend, using disjoint ranges.
 	One usually needs to define a writeable default idmap range, using
-	a backent like <parameter>tdb</parameter> or <parameter>ldap</parameter>
+	a backend like <parameter>tdb</parameter> or <parameter>ldap</parameter>
 	that can create unix ids, in order to be able to map the BUILTIN sids
 	and other domains, and also in order to be able to create group mappings.
 	See the example below.
