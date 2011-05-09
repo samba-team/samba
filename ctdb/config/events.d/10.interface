@@ -42,7 +42,7 @@ monitor_interfaces()
 
 	    ip addr show $IFACE 2>/dev/null >/dev/null || {
 		echo Interface $IFACE does not exist but it is used by public addresses.
-		exit 1
+		continue
 	    }
 
 	    # These interfaces are sometimes bond devices
