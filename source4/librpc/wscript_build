@@ -92,11 +92,6 @@ bld.SAMBA_LIBRARY('dcerpc-samba4',
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 
-if bld.env.enable_s3build:
-    s3_ndr = "NDR_WBINT"
-else:
-    s3_ndr = ""
-
 bld.SAMBA_SUBSYSTEM('ndr-table',
 	source='../../librpc/ndr/ndr_table.c gen_ndr/tables.c',
         public_deps='''ndr-standard NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
@@ -109,7 +104,7 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
         NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI
         NDR_FRSTRANS NDR_NFS4ACL NDR_NTP_SIGND NDR_DCOM NDR_WMI
         NDR_NAMED_PIPE_AUTH NDR_NTLMSSP NDR_DFSBLOBS NDR_DNSP
-        NDR_NTPRINTING NDR_DNS NDR_BACKUPKEY NDR_PREG ''' + s3_ndr,
+        NDR_NTPRINTING NDR_DNS NDR_BACKUPKEY NDR_PREG NDR_WBINT''',
         depends_on='GEN_NDR_TABLES'
         )
 

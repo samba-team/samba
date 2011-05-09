@@ -120,8 +120,7 @@ bld.RECURSE('source4/scripting')
 bld.RECURSE('pidl')
 bld.RECURSE('lib')
 bld.RECURSE('libds/common')
-if bld.env.enable_s3build:
-    bld.RECURSE('source3')
+bld.RECURSE('source3')
 
 bld.RECURSE('testsuite/headers')
 
