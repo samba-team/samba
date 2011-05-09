@@ -40,6 +40,40 @@
 #define SPOOLSS_SPAWN_RATE 5
 #define SPOOLSS_MIN_LIFE 60 /* 1 minute minimum life time */
 
+static int spoolss_min_children;
+static int spoolss_max_children;
+static int spoolss_spawn_rate;
+
+static void spoolss_prefork_config(void)
+{
+	const char *prefork_str;
+	int min, max, rate;
+	bool use_defaults = false;
+	int ret;
+
+	prefork_str = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "spoolssd", "prefork", "none");
+	if (strcmp(prefork_str, "none") == 0) {
+		use_defaults = true;
+	} else {
+		ret = sscanf(prefork_str, "%d:%d:%d", &min, &max, &rate);
+		if (ret != 3) {
+			DEBUG(0, ("invalid format for spoolssd:prefork!\n"));
+			use_defaults = true;
+		}
+	}
+
+	if (use_defaults) {
+		spoolss_min_children = SPOOLSS_MIN_CHILDREN;
+		spoolss_max_children = SPOOLSS_MAX_CHILDREN;
+		spoolss_spawn_rate = SPOOLSS_SPAWN_RATE;
+	} else {
+		spoolss_min_children = min;
+		spoolss_max_children = max;
+		spoolss_spawn_rate = rate;
+	}
+}
+
 void start_spoolssd(struct tevent_context *ev_ctx,
 		    struct messaging_context *msg_ctx);
 
@@ -80,6 +114,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 	change_to_root_user();
 	reload_printers(ev_ctx, msg);
 	spoolss_reopen_logs();
+	spoolss_prefork_config();
 }
 
 static void spoolss_sig_term_handler(struct tevent_context *ev,
@@ -462,10 +497,10 @@ static void spoolssd_sig_chld_handler(struct tevent_context *ev_ctx,
 	active = prefork_count_active_children(pfp, &total);
 
 	n = 0;
-	if (total < SPOOLSS_MIN_CHILDREN) {
-		n = total - SPOOLSS_MIN_CHILDREN;
+	if (total < spoolss_min_children) {
+		n = total - spoolss_min_children;
 	} else if (total - active < (total / 4)) {
-		n = SPOOLSS_MIN_CHILDREN;
+		n = spoolss_min_children;
 	}
 
 	if (n > 0) {
@@ -551,17 +586,17 @@ static void spoolssd_check_children(struct tevent_context *ev_ctx,
 
 	active = prefork_count_active_children(pfp, &total);
 
-	if (total - active < SPOOLSS_SPAWN_RATE) {
-		n = prefork_add_children(ev_ctx, pfp, SPOOLSS_SPAWN_RATE);
-		if (n < SPOOLSS_SPAWN_RATE) {
+	if (total - active < spoolss_spawn_rate) {
+		n = prefork_add_children(ev_ctx, pfp, spoolss_spawn_rate);
+		if (n < spoolss_spawn_rate) {
 			DEBUG(10, ("Tried to start 5 children but only,"
 				   "%d were actually started.!\n", n));
 		}
 	}
 
-	if (total - active > SPOOLSS_MIN_CHILDREN) {
-		if ((total - SPOOLSS_MIN_CHILDREN) >= SPOOLSS_SPAWN_RATE) {
-			prefork_retire_children(pfp, SPOOLSS_SPAWN_RATE,
+	if (total - active > spoolss_min_children) {
+		if ((total - spoolss_min_children) >= spoolss_spawn_rate) {
+			prefork_retire_children(pfp, spoolss_spawn_rate,
 						time(NULL) - SPOOLSS_MIN_LIFE);
 		}
 	}
@@ -609,6 +644,7 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 	}
 
 	spoolss_reopen_logs();
+	spoolss_prefork_config();
 
 	/* the listening fd must be created before the children are actually
 	 * forked out. */
@@ -617,7 +653,7 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	ret = listen(listen_fd, SPOOLSS_MAX_CHILDREN);
+	ret = listen(listen_fd, spoolss_max_children);
 	if (ret == -1) {
 		DEBUG(0, ("Failed to listen on spoolss pipe - %s\n",
 			  strerror(errno)));
@@ -627,8 +663,8 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 
 	/* start children before any more initialization is done */
 	ok = prefork_create_pool(ev_ctx, ev_ctx, listen_fd,
-				 SPOOLSS_MIN_CHILDREN,
-				 SPOOLSS_MAX_CHILDREN,
+				 spoolss_min_children,
+				 spoolss_max_children,
 				 &spoolss_children_main, NULL,
 				 &pool);
 
