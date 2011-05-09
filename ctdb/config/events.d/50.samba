@@ -65,7 +65,11 @@ start_samba() {
 
 	# start the winbind service
 	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
-		service "$CTDB_SERVICE_WINBIND" start
+		service "$CTDB_SERVICE_WINBIND" start || {
+			echo failed to start winbind
+			exit 1
+		}
+
 	}
 
 	# start Samba service. Start it reniced, as under very heavy load 
@@ -74,8 +78,15 @@ start_samba() {
 	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
 		/usr/bin/net serverid wipe
 
-		nice_service "$CTDB_SERVICE_NMB" start
-		nice_service "$CTDB_SERVICE_SMB" start
+		nice_service "$CTDB_SERVICE_NMB" start || {
+			echo failed to start nmbd
+			exit 1
+		}
+
+		nice_service "$CTDB_SERVICE_SMB" start || {
+			echo failed to start samba
+			exit 1
+		}
 	}
 	return 0
 }
