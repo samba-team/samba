@@ -202,7 +202,7 @@ void gfree_debugsyms(void)
 
 	TALLOC_FREE(format_bufr);
 
-	debug_num_classes = DBGC_MAX_FIXED;
+	debug_num_classes = 0;
 
 	state.initialized = false;
 }
