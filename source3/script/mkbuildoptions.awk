@@ -235,7 +235,7 @@ function output(ARRAY, ELEMENTS, TITLE) {
 END {
 	##################################################
 	# add code to show various options
-	print "/* Output various other options (as gleaned from include/config.h.in) */";
+	print "/* Output various other options (as gleaned from include/autoconf/config.h.in) */";
 	output(sys_ary,     sys_i,     "System Headers");
 	output(headers_ary, headers_i, "Headers");
 	output(utmp_ary,    utmp_i,    "UTMP Options");

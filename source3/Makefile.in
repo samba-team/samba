@@ -1766,16 +1766,16 @@ lib/version.o: lib/version.c include/version.h
 		echo "$(COMPILE_CC_PATH)" 1>&2;\
 		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
-smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/build_env.h include/proto.h
+smbd/build_options.o: smbd/build_options.c Makefile include/autoconf/config.h include/build_env.h include/proto.h
 	@echo Compiling $*.c
 	@$(COMPILE_CC_PATH) && exit 0;\
 		echo "The following command failed:" 1>&2;\
 		echo "$(COMPILE_CC_PATH)" 1>&2;\
 		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
-smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
+smbd/build_options.c: include/autoconf/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
-	@dir=smbd $(MAKEDIR) && $(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/config.h.in
+	@dir=smbd $(MAKEDIR) && $(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/autoconf/config.h.in
 
 bin/.dummy:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
@@ -3362,12 +3362,12 @@ realclean:: clean
 
 distclean:: realclean
 	-rm -f smbadduser
-	-rm -f include/config.h Makefile
+	-rm -f include/autoconf/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps TAGS
 
 realdistclean:: distclean
-	-rm -f include/config.h.in
+	-rm -f include/autoconf/config.h.in
 	-rm -f include/version.h
 	-rm -f configure
 

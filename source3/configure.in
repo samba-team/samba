@@ -6,7 +6,7 @@ AC_PREREQ(2.54)
 AC_INIT([Samba],[3],[samba-technical@samba.org])
 
 AC_CONFIG_SRCDIR([include/includes.h])
-AC_CONFIG_HEADER(include/config.h)
+AC_CONFIG_HEADER(include/autoconf/config.h)
 AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h])
 
 case "$PATH" in
@@ -34,7 +34,7 @@ done
 AC_SUBST(LIBTEVENT_OBJ0)
 LIBS="${LIBS} ${TEVENT_LIBS}"
 
-SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
+SAMBA_CPPFLAGS="-Iinclude/autoconf -Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TEVENT_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
