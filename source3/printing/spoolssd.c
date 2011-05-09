@@ -40,16 +40,30 @@
 #define SPOOLSS_SPAWN_RATE 5
 #define SPOOLSS_MIN_LIFE 60 /* 1 minute minimum life time */
 
+#define SPOOLSS_ALL_FINE 0x00
+#define SPOOLSS_NEW_MAX  0x01
+#define SPOLLSS_ENOSPC   0x02
+
 static int spoolss_min_children;
 static int spoolss_max_children;
 static int spoolss_spawn_rate;
+static int spoolss_prefork_status;
 
 static void spoolss_prefork_config(void)
 {
+	static int spoolss_prefork_config_init = false;
 	const char *prefork_str;
 	int min, max, rate;
 	bool use_defaults = false;
 	int ret;
+
+	if (!spoolss_prefork_config_init) {
+		spoolss_prefork_status = SPOOLSS_ALL_FINE;
+		spoolss_min_children = 0;
+		spoolss_max_children = 0;
+		spoolss_spawn_rate = 0;
+		spoolss_prefork_config_init = true;
+	}
 
 	prefork_str = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 					   "spoolssd", "prefork", "none");
@@ -64,14 +78,18 @@ static void spoolss_prefork_config(void)
 	}
 
 	if (use_defaults) {
-		spoolss_min_children = SPOOLSS_MIN_CHILDREN;
-		spoolss_max_children = SPOOLSS_MAX_CHILDREN;
-		spoolss_spawn_rate = SPOOLSS_SPAWN_RATE;
-	} else {
-		spoolss_min_children = min;
-		spoolss_max_children = max;
-		spoolss_spawn_rate = rate;
+		min = SPOOLSS_MIN_CHILDREN;
+		max = SPOOLSS_MAX_CHILDREN;
+		rate = SPOOLSS_SPAWN_RATE;
 	}
+
+	if (max > spoolss_max_children && spoolss_max_children != 0) {
+		spoolss_prefork_status |= SPOOLSS_NEW_MAX;
+	}
+
+	spoolss_min_children = min;
+	spoolss_max_children = max;
+	spoolss_spawn_rate = rate;
 }
 
 void start_spoolssd(struct tevent_context *ev_ctx,
@@ -583,6 +601,15 @@ static void spoolssd_check_children(struct tevent_context *ev_ctx,
 	int ret, n;
 
 	pfp = talloc_get_type_abort(pvt, struct prefork_pool);
+
+	if ((spoolss_prefork_status & SPOOLSS_NEW_MAX) &&
+	    !(spoolss_prefork_status & SPOLLSS_ENOSPC)) {
+		ret = prefork_expand_pool(pfp, spoolss_max_children);
+		if (ret == ENOSPC) {
+			spoolss_prefork_status |= SPOLLSS_ENOSPC;
+		}
+		spoolss_prefork_status &= ~SPOOLSS_NEW_MAX;
+	}
 
 	active = prefork_count_active_children(pfp, &total);
 
