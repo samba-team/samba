@@ -116,6 +116,38 @@ bool prefork_create_pool(struct tevent_context *ev_ctx,
 	return true;
 }
 
+/* Provide the new max children number in new_max
+ * (must be larger than current max).
+ * Returns: 0 if all fine
+ *	    ENOSPC if mremap fails to expand
+ *	    EINVAL if new_max is invalid
+ */
+int prefork_expand_pool(struct prefork_pool *pfp, int new_max)
+{
+	struct pf_worker_data *pool;
+	size_t old_size;
+	size_t new_size;
+
+	if (new_max <= pfp->pool_size) {
+		return EINVAL;
+	}
+
+	old_size = sizeof(struct pf_worker_data) * pfp->pool_size;
+	new_size = sizeof(struct pf_worker_data) * new_max;
+
+	pool = mremap(pfp->pool, old_size, new_size, 0);
+	if (pool == MAP_FAILED) {
+		DEBUG(3, ("Failed to mremap memory for prefork pool!\n"));
+		return ENOSPC;
+	}
+
+	memset(&pool[pfp->pool_size], 0, new_size - old_size);
+
+	pfp->pool_size = new_max;
+
+	return 0;
+}
+
 int prefork_add_children(struct tevent_context *ev_ctx,
 			 struct prefork_pool *pfp,
 			 int num_children)

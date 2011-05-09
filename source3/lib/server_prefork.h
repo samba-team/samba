@@ -61,6 +61,7 @@ bool prefork_create_pool(struct tevent_context *ev_ctx,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
 			 struct prefork_pool **pf_pool);
+int prefork_expand_pool(struct prefork_pool *pfp, int new_max);
 
 int prefork_add_children(struct tevent_context *ev_ctx,
 			 struct prefork_pool *pfp,
