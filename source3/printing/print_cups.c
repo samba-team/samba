@@ -1731,10 +1731,6 @@ bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
 	if (response)
 		ippDelete(response);
 
-	if (request) {
-		ippDelete(request);
-	}
-
 	if (language)
 		cupsLangFree(language);
 
