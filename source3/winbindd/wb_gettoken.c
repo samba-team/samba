@@ -90,8 +90,7 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 	status = wb_lookupusergroups_recv(subreq, state, &state->num_sids,
 					  &state->sids);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -135,8 +134,7 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 
 	status = wb_lookupuseraliases_recv(subreq, state, &num_rids, &rids);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	domain = find_domain_from_sid_noinit(get_global_sam_sid());
@@ -181,8 +179,7 @@ static void wb_gettoken_gotbuiltins(struct tevent_req *subreq)
 
 	status = wb_lookupuseraliases_recv(subreq, state, &num_rids, &rids);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	if (!wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
