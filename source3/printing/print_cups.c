@@ -1688,7 +1688,7 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 	} else {
 		server = talloc_strdup(frame,cupsServer());
 	}
-	if (server) {
+	if (!server) {
 		goto out;
 	}
 	if (!push_utf8_talloc(frame, &sharename, printer->sharename, &size)) {
