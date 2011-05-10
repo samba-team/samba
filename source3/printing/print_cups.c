@@ -1633,7 +1633,7 @@ bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
 	} else {
 		server = talloc_strdup(frame,cupsServer());
 	}
-	if (server) {
+	if (!server) {
 		goto out;
 	}
 	if (!push_utf8_talloc(frame, &sharename, printername, &size)) {
