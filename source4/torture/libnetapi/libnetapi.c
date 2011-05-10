@@ -17,11 +17,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "source3/include/includes.h"
 #include "torture/smbtorture.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/popt_common.h"
-#include <netapi.h>
+#include "source3/lib/netapi/netapi.h"
+#include "source3/lib/netapi/netapi_private.h"
+#include "source4/param/param.h"
 #include "torture/libnetapi/proto.h"
 
 bool torture_libnetapi_init_context(struct torture_context *tctx,
@@ -30,13 +32,19 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx;
 
-	status = libnetapi_init(&ctx);
+	if (!lp_load(lpcfg_configfile(tctx->lp_ctx), true, false, false, true)) {
+		fprintf(stderr, "error loading %s\n", lpcfg_configfile(tctx->lp_ctx));
+		return W_ERROR_V(WERR_GENERAL_FAILURE);
+	}
+
+	init_names();
+	load_interfaces();
+
+	status = libnetapi_net_init(&ctx);
 	if (status != 0) {
 		return false;
 	}
 
-	libnetapi_set_debuglevel(ctx,
-		talloc_asprintf(ctx, "%d", DEBUGLEVEL));
 	libnetapi_set_username(ctx,
 		cli_credentials_get_username(cmdline_credentials));
 	libnetapi_set_password(ctx,
@@ -52,10 +60,16 @@ static bool torture_libnetapi_initialize(struct torture_context *tctx)
         NET_API_STATUS status;
 	struct libnetapi_ctx *ctx;
 
+	/* We must do this first, as otherwise we fail if we don't
+	 * have an smb.conf in the default path (we need to use the
+	 * torture smb.conf */
+	torture_assert(tctx, torture_libnetapi_init_context(tctx, &ctx),
+		       "failed to initialize libnetapi");
+
 	status = libnetapi_init(&ctx);
-	if (status != 0) {
-		return false;
-	}
+
+	torture_assert(tctx, ctx != NULL, "Failed to get a libnetapi_ctx");
+	torture_assert_int_equal(tctx, status, 0, "libnetapi_init failed despite alredy being set up");
 
 	libnetapi_free(ctx);
 

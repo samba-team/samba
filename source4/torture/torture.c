@@ -43,20 +43,6 @@ bool torture_register_suite(struct torture_suite *suite)
 	return torture_suite_add_suite(torture_root, suite);
 }
 
-#ifndef ENABLE_LIBNETAPI
-NTSTATUS torture_libnetapi_init(void)
-{
-	return NT_STATUS_OK;
-}
-#endif
-
-#ifndef ENABLE_LIBSMBCLIENT
-NTSTATUS torture_libsmbclient_init(void)
-{
-	return NT_STATUS_OK;
-}
-#endif
-
 _PUBLIC_ int torture_init(void)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
