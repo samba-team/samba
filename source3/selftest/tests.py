@@ -192,7 +192,9 @@ unix = ["unix.info2", "unix.whoami"]
 
 nbt = ["nbt.dgram" ]
 
-tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt
+libsmbclient = ["libsmbclient"]
+
+tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt + libsmbclient
 
 sub = subprocess.Popen("%s --version 2> /dev/null" % smb4torture, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
 sub.communicate("")

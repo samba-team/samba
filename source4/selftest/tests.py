@@ -230,7 +230,11 @@ smb2 = smb4torture_testsuites("smb2.")
 raw = filter(lambda x: "raw.qfileinfo.ipc" not in x, smb4torture_testsuites("raw."))
 base = smb4torture_testsuites("base.")
 
-for t in base + raw + smb2:
+netapi = smb4torture_testsuites("netapi.")
+
+libsmbclient = smb4torture_testsuites("libsmbclient.")
+
+for t in base + raw + smb2 + netapi + libsmbclient:
     plansmbtorturetestsuite(t, "dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD' + " " + " ".join(ntvfsargs))
 
 plansmbtorturetestsuite("raw.qfileinfo.ipc", "dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')

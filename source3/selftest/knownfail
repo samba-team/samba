@@ -12,3 +12,5 @@
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3
 ^samba3.*rap.basic.*.netsessiongetinfo # Not provided by Samba 3
+^samba3.posix_s3.libsmbclient .opendir # This requires a workgroup called 'WORKGROUP' and for netbios browse lists to have been registered
+
