@@ -1411,15 +1411,18 @@ NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx);
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx);
 
 /****************************************************************
+Return a specific libnetapi error as a string, caller must free with NetApiBufferFree
 ****************************************************************/
 
-const char *libnetapi_errstr(NET_API_STATUS status);
+char *libnetapi_errstr(NET_API_STATUS status);
 
 /****************************************************************
+Return the last libnetapi error as a string, caller must free with NetApiBufferFree
+ctx is optional
 ****************************************************************/
 
-const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
-				       NET_API_STATUS status);
+char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
+				 NET_API_STATUS status);
 
 /****************************************************************
  NetApiBufferAllocate
