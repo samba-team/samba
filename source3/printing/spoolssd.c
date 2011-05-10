@@ -348,7 +348,8 @@ struct spoolss_children_data {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 	struct pf_worker_data *pf;
-	int listen_fd;
+	int listen_fd_size;
+	int *listen_fds;
 	int lock_fd;
 
 	bool listening;
@@ -358,7 +359,9 @@ static void spoolss_next_client(void *pvt);
 
 static int spoolss_children_main(struct tevent_context *ev_ctx,
 				 struct pf_worker_data *pf,
-				 int listen_fd, int lock_fd,
+				 int listen_fd_size,
+				 int *listen_fds,
+				 int lock_fd,
 				 void *private_data)
 {
 	struct messaging_context *msg_ctx = server_messaging_context();
@@ -379,7 +382,8 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	data->ev_ctx = ev_ctx;
 	data->msg_ctx = msg_ctx;
 	data->lock_fd = lock_fd;
-	data->listen_fd = listen_fd;
+	data->listen_fd_size = listen_fd_size;
+	data->listen_fds = listen_fds;
 	data->listening = false;
 
 	/* loop until it is time to exit */
@@ -457,7 +461,9 @@ static void spoolss_next_client(void *pvt)
 	next->addrlen = sizeof(next->sunaddr);
 
 	req = prefork_listen_send(next, data->ev_ctx, data->pf,
-				  data->lock_fd, data->listen_fd,
+				  data->listen_fd_size,
+				  data->listen_fds,
+				  data->lock_fd,
 				  (struct sockaddr *)&next->sunaddr,
 				  &next->addrlen);
 	if (!req) {
@@ -712,7 +718,7 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 
 
 	/* start children before any more initialization is done */
-	ok = prefork_create_pool(ev_ctx, ev_ctx, listen_fd,
+	ok = prefork_create_pool(ev_ctx, ev_ctx, 1, &listen_fd,
 				 spoolss_min_children,
 				 spoolss_max_children,
 				 &spoolss_children_main, NULL,

@@ -47,7 +47,8 @@ struct pf_worker_data {
 
 typedef int (prefork_main_fn_t)(struct tevent_context *ev,
 				struct pf_worker_data *pf,
-				int listen_fd,
+				int listen_fd_size,
+				int *listen_fds,
 				int lock_fd,
 				void *private_data);
 
@@ -56,8 +57,8 @@ struct prefork_pool;
 
 /* ==== Functions used by controlling process ==== */
 
-bool prefork_create_pool(struct tevent_context *ev_ctx,
-			 TALLOC_CTX *mem_ctx, int listen_fd,
+bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
+			 int listen_fd_size, int *listen_fds,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
 			 struct prefork_pool **pf_pool);
@@ -76,15 +77,12 @@ void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num);
 
 /* ==== Functions used by children ==== */
 
-int prefork_wait_for_client(struct pf_worker_data *pf,
-			    int lock_fd, int listen_fd,
-			    struct sockaddr *addr,
-			    socklen_t *addrlen, int *fd);
-
 struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct pf_worker_data *pf,
-					int lock_fd, int listen_fd,
+					int listen_fd_size,
+					int *listen_fds,
+					int lock_fd,
 					struct sockaddr *addr,
 					socklen_t *addrlen);
 int prefork_listen_recv(struct tevent_req *req, int *fd);

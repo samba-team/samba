@@ -28,7 +28,9 @@
 
 struct prefork_pool {
 
-	int listen_fd;
+	int listen_fd_size;
+	int *listen_fds;
+
 	int lock_fd;
 
 	prefork_main_fn_t *main_fn;
@@ -46,8 +48,8 @@ int prefork_pool_destructor(struct prefork_pool *pfp)
 	return 0;
 }
 
-bool prefork_create_pool(struct tevent_context *ev_ctx,
-			 TALLOC_CTX *mem_ctx, int listen_fd,
+bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
+			 int listen_fd_size, int *listen_fds,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
 			 struct prefork_pool **pf_pool)
@@ -64,7 +66,15 @@ bool prefork_create_pool(struct tevent_context *ev_ctx,
 		DEBUG(1, ("Out of memory!\n"));
 		return false;
 	}
-	pfp->listen_fd = listen_fd;
+	pfp->listen_fd_size = listen_fd_size;
+	pfp->listen_fds = talloc_array(pfp, int, listen_fd_size);
+	if (!pfp->listen_fds) {
+		DEBUG(1, ("Out of memory!\n"));
+		return false;
+	}
+	for (i = 0; i < listen_fd_size; i++) {
+		pfp->listen_fds[i] = listen_fds[i];
+	}
 	pfp->main_fn = main_fn;
 	pfp->private_data = private_data;
 
@@ -102,7 +112,9 @@ bool prefork_create_pool(struct tevent_context *ev_ctx,
 
 			pfp->pool[i].status = PF_WORKER_IDLE;
 			ret = pfp->main_fn(ev_ctx, &pfp->pool[i],
-					   pfp->listen_fd, pfp->lock_fd,
+					   pfp->listen_fd_size,
+					   pfp->listen_fds,
+					   pfp->lock_fd,
 					   pfp->private_data);
 			exit(ret);
 
@@ -176,7 +188,9 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 
 			pfp->pool[i].status = PF_WORKER_IDLE;
 			ret = pfp->main_fn(ev_ctx, &pfp->pool[i],
-					   pfp->listen_fd, pfp->lock_fd,
+					   pfp->listen_fd_size,
+					   pfp->listen_fds,
+					   pfp->lock_fd,
 					   pfp->private_data);
 
 			pfp->pool[i].status = PF_WORKER_EXITING;
@@ -515,69 +529,6 @@ done:
 	return ret;
 }
 
-/* returns:
- * negative errno on error
- * -2 if server commands to terminate
- * 0 if all ok
- * ERRNO on other errors
- */
-
-int prefork_wait_for_client(struct pf_worker_data *pf,
-			    int lock_fd, int listen_fd,
-			    struct sockaddr *addr,
-			    socklen_t *addrlen, int *fd)
-{
-	int ret;
-	int sd = -1;
-	int err;
-
-	ret = prefork_grab_lock(pf, lock_fd, -1);
-	if (ret != 0) {
-		return ret;
-	}
-
-	err = 0;
-	do {
-		sd = accept(listen_fd, addr, addrlen);
-
-		if (sd != -1) break;
-
-		if (errno == EINTR) {
-			if (pf->cmds == PF_SRV_MSG_EXIT) {
-				err = -2;
-			}
-		} else {
-			err = errno;
-		}
-
-	} while ((sd == -1) && (err == 0));
-
-	/* return lock now, even if the accept failed.
-	 * if it takes more than 10 seconds we are in deep trouble */
-	ret = prefork_release_lock(pf, lock_fd, 2);
-	if (ret != 0) {
-		/* we were unable to release the lock!! */
-		DEBUG(0, ("Terminating due to fatal failure!\n"));
-
-		/* Just exit we cannot hold the whole server, better to error
-		 * on this one client and hope it was a transiet problem */
-		err = -2;
-	}
-
-	if (err != 0) {
-		if (sd != -1) {
-			close(sd);
-			sd = -1;
-		}
-		return err;
-	}
-
-	pf->status = PF_WORKER_BUSY;
-	pf->num_clients++;
-	*fd = sd;
-	return 0;
-}
-
 /* ==== async code ==== */
 
 #define PF_ASYNC_LOCK_GRAB	0x01
@@ -683,8 +634,10 @@ struct pf_listen_state {
 	struct tevent_context *ev;
 	struct pf_worker_data *pf;
 
+	int listen_fd_size;
+	int *listen_fds;
+
 	int lock_fd;
-	int listen_fd;
 
 	struct sockaddr *addr;
 	socklen_t *addrlen;
@@ -703,7 +656,9 @@ static void prefork_listen_release_done(struct tevent_req *subreq);
 struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct pf_worker_data *pf,
-					int lock_fd, int listen_fd,
+					int listen_fd_size,
+					int *listen_fds,
+					int lock_fd,
 					struct sockaddr *addr,
 					socklen_t *addrlen)
 {
@@ -718,7 +673,8 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->pf = pf;
 	state->lock_fd = lock_fd;
-	state->listen_fd = listen_fd;
+	state->listen_fd_size = listen_fd_size;
+	state->listen_fds = listen_fds;
 	state->addr = addr;
 	state->addrlen = addrlen;
 	state->accept_fd = -1;
@@ -734,12 +690,21 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+struct pf_listen_ctx {
+	TALLOC_CTX *fde_ctx;
+	struct tevent_req *req;
+	int listen_fd;
+};
+
 static void prefork_listen_lock_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req;
 	struct pf_listen_state *state;
+	struct pf_listen_ctx *ctx;
 	struct tevent_fd *fde;
+	TALLOC_CTX *fde_ctx;
 	int ret;
+	int i;
 
 	req = tevent_req_callback_data(subreq, struct tevent_req);
 	state = tevent_req_data(req, struct pf_listen_state);
@@ -750,11 +715,28 @@ static void prefork_listen_lock_done(struct tevent_req *subreq)
 		return;
 	}
 
+	fde_ctx = talloc_new(state);
+	if (tevent_req_nomem(fde_ctx, req)) {
+		return;
+	}
+
 	/* next step, accept */
-	fde = tevent_add_fd(state->ev, state,
-			    state->listen_fd, TEVENT_FD_READ,
-			    prefork_listen_accept_handler, req);
-	tevent_req_nomem(fde, req);
+	for (i = 0; i < state->listen_fd_size; i++) {
+		ctx = talloc(fde_ctx, struct pf_listen_ctx);
+		if (tevent_req_nomem(ctx, req)) {
+			return;
+		}
+		ctx->fde_ctx = fde_ctx;
+		ctx->req = req;
+		ctx->listen_fd = state->listen_fds[i];
+
+		fde = tevent_add_fd(state->ev, fde_ctx,
+				    ctx->listen_fd, TEVENT_FD_READ,
+				    prefork_listen_accept_handler, ctx);
+		if (tevent_req_nomem(fde, req)) {
+			return;
+		}
+	}
 }
 
 static void prefork_listen_accept_handler(struct tevent_context *ev,
@@ -763,13 +745,14 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 {
 	struct pf_listen_state *state;
 	struct tevent_req *req, *subreq;
+	struct pf_listen_ctx *ctx;
 	int err = 0;
 	int sd = -1;
 
-	req = talloc_get_type_abort(pvt, struct tevent_req);
-	state = tevent_req_data(req, struct pf_listen_state);
+	ctx = talloc_get_type_abort(pvt, struct pf_listen_ctx);
+	state = tevent_req_data(ctx->req, struct pf_listen_state);
 
-	sd = accept(state->listen_fd, state->addr, state->addrlen);
+	sd = accept(ctx->listen_fd, state->addr, state->addrlen);
 	if (sd == -1) {
 		if (errno == EINTR) {
 			/* keep trying */
@@ -780,8 +763,10 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 
 	}
 
-	/* do not track the listen fd anymore */
-	talloc_free(fde);
+	/* do not track the listen fds anymore */
+	req = ctx->req;
+	talloc_free(ctx->fde_ctx);
+	ctx = NULL;
 	if (err) {
 		tevent_req_error(req, err);
 		return;
