@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include <tevent_internal.h>
+#include "lib/tevent/tevent_internal.h"
 #include "../lib/util/select.h"
 #include "system/select.h"
 
