@@ -97,8 +97,7 @@ static void winbindd_getgrnam_lookupsid_done(struct tevent_req *subreq)
 
 	status = wb_lookupname_recv(subreq, &state->sid, &type);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -127,8 +126,7 @@ static void winbindd_getgrnam_done(struct tevent_req *subreq)
 	status = wb_getgrsid_recv(subreq, state, &state->domname, &state->name,
 				  &state->gid, &state->members);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);

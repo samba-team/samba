@@ -94,8 +94,7 @@ static void wb_sid2gid_lookup_done(struct tevent_req *subreq)
 
 	status = wb_lookupsid_recv(subreq, talloc_tos(), &type, &domname,
 				   &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 

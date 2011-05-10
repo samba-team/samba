@@ -155,8 +155,7 @@ static struct tevent_req *wb_groups_members_send(TALLOC_CTX *mem_ctx,
 	state->all_members = NULL;
 
 	status = wb_groups_members_next_subreq(state, state, &subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 	if (subreq == NULL) {
@@ -210,8 +209,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 	 * and just continue if an error occured.
 	 */
 
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -235,8 +233,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 	TALLOC_FREE(members);
 
 	status = wb_groups_members_next_subreq(state, state, &subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	if (subreq == NULL) {
@@ -313,8 +310,7 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 	state->groups->type = type;
 
 	status = wb_group_members_next_subreq(state, state, &subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 	if (subreq == NULL) {
@@ -361,8 +357,7 @@ static void wb_group_members_done(struct tevent_req *subreq)
 
 	status = wb_groups_members_recv(subreq, state, &num_members, &members);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -440,8 +435,7 @@ static void wb_group_members_done(struct tevent_req *subreq)
 	}
 
 	status = wb_group_members_next_subreq(state, state, &subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	if (subreq == NULL) {
