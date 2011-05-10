@@ -91,8 +91,7 @@ static void wb_lookupname_done(struct tevent_req *subreq)
 
 	status = dcerpc_wbint_LookupName_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	if (NT_STATUS_IS_OK(result)) {

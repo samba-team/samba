@@ -83,8 +83,7 @@ static void wb_getgrsid_lookupsid_done(struct tevent_req *subreq)
 	status = wb_lookupsid_recv(subreq, state, &state->type,
 				   &state->domname, &state->name);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -115,8 +114,7 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 
 	status = wb_sid2gid_recv(subreq, &state->gid);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	subreq = wb_group_members_send(state, state->ev, &state->sid,
@@ -137,8 +135,7 @@ static void wb_getgrsid_got_members(struct tevent_req *subreq)
 
 	status = wb_group_members_recv(subreq, state, &state->members);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);
