@@ -27,12 +27,6 @@
 #include "smb_krb5.h"
 #include "gse_krb5.h"
 
-#include <gssapi/gssapi.h>
-#include <gssapi/gssapi_krb5.h>
-#ifdef HAVE_GSSAPI_GSSAPI_EXT_H
-#include <gssapi/gssapi_ext.h>
-#endif
-
 #ifndef GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
 #define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH 11
 #define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x05"
