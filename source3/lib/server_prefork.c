@@ -578,17 +578,23 @@ static void prefork_lock_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req;
 	struct pf_lock_state *state;
+	struct timeval tv;
+	int timeout = 0;
 	int ret;
 
 	req = talloc_get_type_abort(pvt, struct tevent_req);
 	state = tevent_req_data(req, struct pf_lock_state);
 
+	if (state->pf->num_clients > 0) {
+		timeout = 1;
+	}
+
 	switch (state->flags & PF_ASYNC_ACTION_MASK) {
 	case PF_ASYNC_LOCK_GRAB:
-		ret = prefork_grab_lock(state->pf, state->lock_fd, 0);
+		ret = prefork_grab_lock(state->pf, state->lock_fd, timeout);
 		break;
 	case PF_ASYNC_LOCK_RELEASE:
-		ret = prefork_release_lock(state->pf, state->lock_fd, 0);
+		ret = prefork_release_lock(state->pf, state->lock_fd, timeout);
 		break;
 	default:
 		ret = EINVAL;
@@ -601,8 +607,12 @@ static void prefork_lock_handler(struct tevent_context *ev,
 		tevent_req_done(req);
 		return;
 	case -1:
-		te = tevent_add_timer(ev, state,
-					tevent_timeval_current_ofs(1, 0),
+		if (timeout) {
+			tv = tevent_timeval_zero();
+		} else {
+			tv = tevent_timeval_current_ofs(0, 100000);
+		}
+		te = tevent_add_timer(ev, state, tv,
 					prefork_lock_handler, req);
 		tevent_req_nomem(te, req);
 		return;
