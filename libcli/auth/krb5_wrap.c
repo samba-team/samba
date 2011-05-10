@@ -120,13 +120,15 @@ int create_kerberos_key_from_string_direct(krb5_context context,
 	krb5_error_code ret;
 	char *utf8_name;
 	size_t converted_size;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!push_utf8_talloc(talloc_tos(), &utf8_name, name, &converted_size)) {
+	if (!push_utf8_talloc(frame, &utf8_name, name, &converted_size)) {
+		talloc_free(frame);
 		return ENOMEM;
 	}
 
 	ret = krb5_parse_name(context, utf8_name, principal);
-	TALLOC_FREE(utf8_name);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
