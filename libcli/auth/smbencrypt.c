@@ -118,7 +118,7 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 {
 	bool ret;
 	uint8_t dospwd[14];
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	size_t converted_size;
 
@@ -126,23 +126,19 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 
 	ZERO_STRUCT(dospwd);
 
-#if _SAMBA_BUILD_ == 3
-	mem_ctx = talloc_tos();
-#else
-	mem_ctx = NULL;
-#endif
-	tmpbuf = strupper_talloc(mem_ctx, passwd);
+	tmpbuf = strupper_talloc(frame, passwd);
 	if (tmpbuf == NULL) {
 		/* Too many callers don't check this result, we need to fill in the buffer with something */
 		strlcpy((char *)dospwd, passwd ? passwd : "", sizeof(dospwd));
 		E_P16(dospwd, p16);
+		talloc_free(frame);
 		return false;
 	}
 
 	ZERO_STRUCT(dospwd);
 
 	ret = convert_string_error(CH_UNIX, CH_DOS, tmpbuf, strlen(tmpbuf), dospwd, sizeof(dospwd), &converted_size);
-	talloc_free(tmpbuf);
+	talloc_free(frame);
 
 	/* Only the first 14 chars are considered, password need not
 	 * be null terminated.  We do this in the error and success
