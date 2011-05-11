@@ -651,7 +651,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 		return false;
 	}
 
-	status = rpc_pipe_open_internal(tmp_ctx,
+	status = rpc_pipe_open_interface(tmp_ctx,
 					&ndr_table_spoolss.syntax_id,
 					session_info,
 					NULL,
