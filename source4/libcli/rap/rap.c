@@ -1633,3 +1633,50 @@ NTSTATUS smbcli_rap_netuserdelete(struct smbcli_tree *tree,
 	talloc_free(call);
 	return result;
 }
+
+NTSTATUS smbcli_rap_netremotetod(struct smbcli_tree *tree,
+				  TALLOC_CTX *mem_ctx,
+				  struct rap_NetRemoteTOD *r)
+{
+	struct rap_call *call;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!(call = new_rap_cli_call(mem_ctx, RAP_NetRemoteTOD))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rap_cli_push_rcvbuf(call, r->in.bufsize);
+
+	rap_cli_expect_format(call, "DDBBBBWWBBWB");
+	rap_cli_expect_extra_format(call, "");
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(rap_NetRemoteTOD, r);
+	}
+
+	result = rap_cli_do_call(tree, call);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = NT_STATUS_INVALID_PARAMETER;
+
+	NDR_GOTO(ndr_pull_rap_status(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_GOTO(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+
+	NDR_GOTO(ndr_pull_rap_TimeOfDayInfo(call->ndr_pull_data, NDR_SCALARS|NDR_BUFFERS, &r->out.tod));
+
+	result = NT_STATUS_OK;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(rap_NetRemoteTOD, r);
+	}
+
+ done:
+	talloc_free(call);
+	return result;
+}
