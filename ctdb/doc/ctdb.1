@@ -2,12 +2,12 @@
 .\"     Title: ctdb
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 09/14/2010
+.\"      Date: 05/11/2011
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDB" "1" "09/14/2010" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDB" "1" "05/11/2011" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -731,7 +731,7 @@ Procedure to remove a node:
 .PP
 1, To remove a node from an existing cluster, first ensure with \*(Aqctdb status\*(Aq that all nodes, except the node to be deleted, are up and running and that they are all healthy\&. Do not try to remove a node from a cluster unless the cluster is completely healthy!
 .PP
-2, Shutdown and poerwoff the node to be removed\&.
+2, Shutdown and poweroff the node to be removed\&.
 .PP
 3, On all other nodes, edit the /etc/ctdb/nodes file and comment out the node to be removed\&. Do not delete the line for that node, just comment it out by adding a \*(Aq#\*(Aq at the beginning of the line\&.
 .PP
