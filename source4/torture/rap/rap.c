@@ -206,6 +206,21 @@ static bool test_netsessiongetinfo(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netremotetod(struct torture_context *tctx,
+			      struct smbcli_state *cli)
+{
+	struct rap_NetRemoteTOD r;
+
+	r.in.bufsize = 8192;
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_rap_netremotetod(cli->tree, tctx, &r),
+		"smbcli_rap_netremotetod failed");
+	torture_assert_werr_ok(tctx, W_ERROR(r.out.status),
+		"smbcli_rap_netremotetod failed");
+
+	return true;
+}
 
 bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 {
@@ -246,6 +261,8 @@ NTSTATUS torture_rap_init(void)
 				    test_netsessionenum);
 	torture_suite_add_1smb_test(suite_basic, "netsessiongetinfo",
 				    test_netsessiongetinfo);
+	torture_suite_add_1smb_test(suite_basic, "netremotetod",
+				    test_netremotetod);
 
 	torture_suite_add_1smb_test(suite, "scan", torture_rap_scan);
 

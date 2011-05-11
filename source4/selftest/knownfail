@@ -41,6 +41,7 @@ samba4.base.charset.*.Testing partial surrogate
 samba4.rap.*netservergetinfo
 samba4.rap.*netsessionenum
 samba4.rap.*netsessiongetinfo
+samba4.rap.*netremotetod
 samba4.smb2.persistent.handles1
 samba4.winbind.struct.*.show_sequence     # Not yet working in winbind
 samba4.winbind.struct.*.getpwent          # Not yet working in winbind
