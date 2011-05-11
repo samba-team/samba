@@ -1411,6 +1411,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 				     ldb_get_schema_basedn(b_state->sam_ctx));
 		getnc_state->is_schema_nc = (0 == ret);
 
+		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
+			r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
+		}
+
 		/*
 		 * This is the first replication cycle and it is
 		 * a good place to handle extended operations
