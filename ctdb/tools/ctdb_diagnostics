@@ -249,38 +249,6 @@ show_all "/usr/sbin/nfsstat -v"
     done
 }
 
-[ -d /usr/lpp/mmfs ] && {
-cat <<EOF
---------------------------------------------------------------------
-Showing GPFS status and recent log entries
-EOF
- show_all "tail -100 /var/adm/ras/mmfs.log.latest"
- show_all "/usr/lpp/mmfs/bin/mmlsconfig"
- show_all "/usr/lpp/mmfs/bin/mmlsfs all"
- show_all "/usr/lpp/mmfs/bin/mmlsnsd"
- show_all "/usr/lpp/mmfs/bin/mmlsnsd -X"
- show_all "/usr/lpp/mmfs/bin/mmfsadm dump version"
- show_all "/usr/lpp/mmfs/bin/mmfsadm dump waiters"
- show_all "/usr/lpp/mmfs/bin/mmlsmount all"
- show_all "/usr/lpp/mmfs/bin/mmlsquota"
- show_all "/usr/lpp/mmfs/bin/mmlscluster"
- show_all "/usr/lpp/mmfs/bin/mmlsmgr"
- devlist=`mmlsfs all|grep ^File.system.attributes | cut -d/ -f3 | cut -d: -f1`
- for d in $devlist; do
-     show_all "mmdf $d"
-     show_all "mmlsdisk $d"
-     show_all "mmlsfileset $d"
-     show_all "mmlspolicy $d"
-     show_all "mmlssnapshot $d"
- done
- fslist=`mount|grep type.gpfs|awk '{print $1}'`
- for fs in $fslist; do
-     show_all "/usr/lpp/mmfs/bin/mmlssnapshot $fs"
-     show_all "/usr/lpp/mmfs/bin/mmlsdisk $fs"
-     show_all "/usr/lpp/mmfs/bin/mmlsfileset $fs"
- done
-}
-
 cat <<EOF
 --------------------------------------------------------------------
 Showing Samba status
