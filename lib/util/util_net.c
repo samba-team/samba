@@ -73,10 +73,9 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 			ppres);
 
 	if (ret) {
-		DEBUG(3,("interpret_string_addr_internal: getaddrinfo failed "
-			"for name %s [%s]\n",
-			str,
-			gai_strerror(ret) ));
+		DEBUG(3, ("interpret_string_addr_internal: "
+			  "getaddrinfo failed for name %s (flags %d) [%s]\n",
+			  str, flags, gai_strerror(ret)));
 		return false;
 	}
 	return true;
@@ -97,6 +96,7 @@ static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 #if defined(HAVE_IPV6)
 	char addr[INET6_ADDRSTRLEN];
 	unsigned int scope_id = 0;
+	int int_flags;
 
 	if (strchr_m(str, ':')) {
 		char *p = strchr_m(str, '%');
@@ -117,7 +117,13 @@ static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 
 	zero_sockaddr(pss);
 
-	if (!interpret_string_addr_internal(&res, str, flags|AI_ADDRCONFIG)) {
+	if (flags & AI_NUMERICHOST) {
+		int_flags = flags;
+	} else {
+		int_flags = flags|AI_ADDRCONFIG;
+	}
+
+	if (!interpret_string_addr_internal(&res, str, int_flags)) {
 		return false;
 	}
 	if (!res) {
