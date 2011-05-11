@@ -833,22 +833,9 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	/*
-	 * Delete a sorted subkey cache for regdb_key_exists, will be
-	 * recreated automatically
+	 * recreate the sorted subkey cache for regdb_key_exists()
 	 */
-	keyname = talloc_asprintf(ctx, "%s\\%s", REG_SORTED_SUBKEYS_PREFIX,
-				  keyname);
-	if (keyname == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	werr = ntstatus_to_werror(dbwrap_delete_bystring(db, keyname));
-
-	/* don't treat WERR_NOT_FOUND as an error here */
-	if (W_ERROR_EQUAL(werr, WERR_NOT_FOUND)) {
-		werr = WERR_OK;
-	}
+	werr = ntstatus_to_werror(create_sorted_subkeys(keyname));
 
 done:
 	TALLOC_FREE(ctx);
