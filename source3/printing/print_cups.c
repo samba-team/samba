@@ -1585,7 +1585,6 @@ bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
 	ipp_attribute_t	*attr;		/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI];
-	char *server = NULL;
 	char *sharename = NULL;
 	char *name = NULL;
 	static const char *requested[] =/* Requested attributes */
@@ -1626,21 +1625,11 @@ bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
 
-	if (lp_cups_server() != NULL && strlen(lp_cups_server()) > 0) {
-		if (!push_utf8_talloc(frame, &server, lp_cups_server(), &size)) {
-			goto out;
-		}
-	} else {
-		server = talloc_strdup(frame,cupsServer());
-	}
-	if (!server) {
-		goto out;
-	}
 	if (!push_utf8_talloc(frame, &sharename, printername, &size)) {
 		goto out;
 	}
-	slprintf(uri, sizeof(uri) - 1, "ipp://%s/printers/%s",
-		 server, sharename);
+	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
+		 sharename);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);
