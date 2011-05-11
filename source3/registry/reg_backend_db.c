@@ -48,6 +48,8 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 static bool regdb_store_values_internal(struct db_context *db, const char *key,
 					struct regval_ctr *values);
 
+static NTSTATUS create_sorted_subkeys(const char *key);
+
 /* List the deepest path into the registry.  All part components will be created.*/
 
 /* If you want to have a part of the path controlled by the tdb and part by
@@ -1421,6 +1423,25 @@ static NTSTATUS create_sorted_subkeys_internal(const char *key,
 				 create_sorted_subkeys_action,
 				 &sorted_ctx);
 
+	return status;
+}
+
+static NTSTATUS create_sorted_subkeys(const char *key)
+{
+	char *sorted_subkeys_keyname;
+	NTSTATUS status;
+
+	sorted_subkeys_keyname = talloc_asprintf(talloc_tos(), "%s\\%s",
+						 REG_SORTED_SUBKEYS_PREFIX,
+						 key);
+	if (sorted_subkeys_keyname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = create_sorted_subkeys_internal(key, sorted_subkeys_keyname);
+
+done:
 	return status;
 }
 
