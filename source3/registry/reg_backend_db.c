@@ -1408,7 +1408,8 @@ done:
 	return status;
 }
 
-static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
+static bool create_sorted_subkeys_internal(const char *key,
+					   const char *sorted_keyname)
 {
 	NTSTATUS status;
 	struct create_sorted_subkeys_context sorted_ctx;
@@ -1506,7 +1507,7 @@ static bool scan_parent_subkeys(struct db_context *db, const char *parent,
 			goto fail;
 		}
 
-		if (!create_sorted_subkeys(path, key)) {
+		if (!create_sorted_subkeys_internal(path, key)) {
 			res = db->transaction_cancel(db);
 			if (res != 0) {
 				smb_panic("Failed to cancel transaction.");
