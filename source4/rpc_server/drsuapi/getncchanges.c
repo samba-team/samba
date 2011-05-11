@@ -1163,6 +1163,69 @@ getncchanges_map_req8(TALLOC_CTX *mem_ctx,
 }
 
 
+/**
+ * Collects object for normal replication cycle.
+ */
+static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
+					   TALLOC_CTX *mem_ctx,
+					   struct drsuapi_DsGetNCChangesRequest10 *req10,
+					   struct ldb_dn *search_dn,
+					   const char *extra_filter,
+					   struct ldb_result **search_res)
+{
+	int ret;
+	char* search_filter;
+	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
+	//const char *extra_filter;
+	struct drsuapi_getncchanges_state *getnc_state = b_state->getncchanges_state;
+	const char *attrs[] = { "uSNChanged",
+				"objectGUID" ,
+				NULL };
+
+	if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
+	    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
+		scope = LDB_SCOPE_BASE;
+	}
+
+	//extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
+
+	//getnc_state->min_usn = req10->highwatermark.highest_usn;
+
+	/* Construct response. */
+	search_filter = talloc_asprintf(mem_ctx,
+					"(uSNChanged>=%llu)",
+					(unsigned long long)(getnc_state->min_usn+1));
+
+	if (extra_filter) {
+		search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
+	}
+
+	if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+		search_filter = talloc_asprintf(mem_ctx,
+						"(&%s(isCriticalSystemObject=TRUE))",
+						search_filter);
+	}
+
+	if (req10->replica_flags & DRSUAPI_DRS_ASYNC_REP) {
+		scope = LDB_SCOPE_BASE;
+	}
+
+	if (!search_dn) {
+		search_dn = getnc_state->ncRoot_dn;
+	}
+
+	DEBUG(2,(__location__ ": getncchanges on %s using filter %s\n",
+		 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
+	ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, search_res,
+					      search_dn, scope, attrs,
+					      search_filter);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	return WERR_OK;
+}
+
 /* 
   drsuapi_DsGetNCChanges
 
@@ -1179,9 +1242,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
-	const char *attrs[] = { "uSNChanged",
-				"objectGUID" ,
-				NULL };
 	WERROR werr;
 	struct dcesrv_handle *h;
 	struct drsuapi_bind_state *b_state;	
@@ -1393,51 +1453,17 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	   Work out if this is the start of a new cycle */
 
 	if (getnc_state->guids == NULL) {
-		char* search_filter;
-		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 		const char *extra_filter;
 		struct ldb_result *search_res;
-
-		if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
-		    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
-			scope = LDB_SCOPE_BASE;
-		}
 
 		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
 		getnc_state->min_usn = req10->highwatermark.highest_usn;
 
-		/* Construct response. */
-		search_filter = talloc_asprintf(mem_ctx,
-						"(uSNChanged>=%llu)",
-						(unsigned long long)(getnc_state->min_usn+1));
-	
-		if (extra_filter) {
-			search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
-		}
-
-		if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
-			search_filter = talloc_asprintf(mem_ctx,
-							"(&%s(isCriticalSystemObject=TRUE))",
-							search_filter);
-		}
-		
-		if (req10->replica_flags & DRSUAPI_DRS_ASYNC_REP) {
-			scope = LDB_SCOPE_BASE;
-		}
-		
-		if (!search_dn) {
-			search_dn = getnc_state->ncRoot_dn;
-		}
-
-		DEBUG(2,(__location__ ": getncchanges on %s using filter %s\n",
-			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
-		ret = drsuapi_search_with_extended_dn(sam_ctx, getnc_state, &search_res,
-						      search_dn, scope, attrs,
-						      search_filter);
-		if (ret != LDB_SUCCESS) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
+		werr = getncchanges_collect_objects(b_state, mem_ctx, req10,
+						    search_dn, extra_filter,
+						    &search_res);
+		W_ERROR_NOT_OK_RETURN(werr);
 
 		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
 			TYPESAFE_QSORT(search_res->msgs,
