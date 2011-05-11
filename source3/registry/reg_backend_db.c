@@ -1516,6 +1516,11 @@ static bool scan_parent_subkeys(struct db_context *db, const char *parent,
 			goto fail;
 		}
 
+		DEBUG(2, (__location__ " WARNING: recreating the sorted "
+			  "subkeys cache for key '%s' from scan_parent_subkeys "
+			  "this should not happen (too frequently)...\n",
+			  path));
+
 		status = create_sorted_subkeys_internal(path, key);
 		if (!NT_STATUS_IS_OK(status)) {
 			res = db->transaction_cancel(db);
