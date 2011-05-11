@@ -2,12 +2,12 @@
 .\"     Title: ctdb
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 05/11/2011
+.\"      Date: 05/12/2011
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDB" "1" "05/11/2011" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDB" "1" "05/12/2011" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -463,42 +463,44 @@ ControlTimeout      = 60
 TraverseTimeout     = 20
 KeepaliveInterval   = 5
 KeepaliveLimit      = 5
-MaxLACount          = 7
 RecoverTimeout      = 20
 RecoverInterval     = 1
 ElectionTimeout     = 3
-TakeoverTimeout     = 5
+TakeoverTimeout     = 9
 MonitorInterval     = 15
 TickleUpdateInterval = 20
 EventScriptTimeout  = 30
-EventScriptBanCount = 10
+EventScriptTimeoutCount = 1
 EventScriptUnhealthyOnTimeout = 0
 RecoveryGracePeriod = 120
 RecoveryBanPeriod   = 300
-DatabaseHashSize    = 10000
+DatabaseHashSize    = 100001
 DatabaseMaxDead     = 5
 RerecoveryTimeout   = 10
 EnableBans          = 1
 DeterministicIPs    = 1
-DisableWhenUnhealthy = 0
 ReclockPingPeriod   = 60
 NoIPFailback        = 0
+DisableIPFailover   = 0
 VerboseMemoryNames  = 0
 RecdPingTimeout     = 60
 RecdFailCount       = 10
 LogLatencyMs        = 0
 RecLockLatencyMs    = 1000
-RecoveryDropAllIPs  = 60
+RecoveryDropAllIPs  = 120
 VerifyRecoveryLock  = 1
-VacuumDefaultInterval = 300
+VacuumDefaultInterval = 10
 VacuumMaxRunTime    = 30
 RepackLimit         = 10000
 VacuumLimit         = 5000
-VacuumMinInterval   = 60
-VacuumMaxInterval   = 600
-MaxQueueDropMsg     = 1000
+VacuumMinInterval   = 10
+VacuumMaxInterval   = 10
+VacuumFastPathCount = 60
+MaxQueueDropMsg     = 1000000
 UseStatusEvents     = 0
 AllowUnhealthyDBRead = 0
+StatHistoryInterval = 1
+DeferredAttachTO    = 120
       
 .fi
 .if n \{\
