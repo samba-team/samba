@@ -1502,7 +1502,7 @@ static bool scan_parent_subkeys(struct db_context *db, const char *parent,
 	} else {
 		res = db->transaction_start(db);
 		if (res != 0) {
-			DEBUG(0, ("error starting transacion\n"));
+			DEBUG(0, ("error starting transaction\n"));
 			goto fail;
 		}
 
