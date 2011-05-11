@@ -922,7 +922,7 @@ Reclock file:/gpfs/.ctdb/shared
       Do not try to remove a node from a cluster unless the cluster is completely healthy!
       </para>
       <para>
-      2, Shutdown and poerwoff the node to be removed.
+      2, Shutdown and poweroff the node to be removed.
       </para>
       <para>
       3, On all other nodes, edit the /etc/ctdb/nodes file and comment out the node to be removed. Do not delete the line for that node, just comment it out by adding a '#' at the beginning of the line.
