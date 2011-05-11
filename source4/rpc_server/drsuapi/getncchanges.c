@@ -1226,6 +1226,28 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 	return WERR_OK;
 }
 
+/**
+ * Collects object for normal replication cycle.
+ */
+static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_state,
+						TALLOC_CTX *mem_ctx,
+						struct drsuapi_DsGetNCChangesRequest10 *req10,
+						struct drsuapi_DsGetNCChangesCtr6 *ctr6,
+						struct ldb_dn *search_dn,
+						const char *extra_filter,
+						struct ldb_result **search_res)
+{
+	/* we have nothing to do in case of ex-op failure */
+	if (ctr6->extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+		return WERR_OK;
+	}
+
+	/* TODO: implement extended op specific collection
+	 * of objects. Right now we just normal procedure
+	 * for collecting objects */
+	return getncchanges_collect_objects(b_state, mem_ctx, req10, search_dn, extra_filter, search_res);
+}
+
 /* 
   drsuapi_DsGetNCChanges
 
@@ -1454,29 +1476,38 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	if (getnc_state->guids == NULL) {
 		const char *extra_filter;
-		struct ldb_result *search_res;
+		struct ldb_result *search_res = NULL;
 
 		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
 		getnc_state->min_usn = req10->highwatermark.highest_usn;
 
-		werr = getncchanges_collect_objects(b_state, mem_ctx, req10,
-						    search_dn, extra_filter,
-						    &search_res);
+		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+			werr = getncchanges_collect_objects(b_state, mem_ctx, req10,
+							    search_dn, extra_filter,
+							    &search_res);
+		} else {
+			werr = getncchanges_collect_objects_exop(b_state, mem_ctx, req10,
+								 &r->out.ctr->ctr6,
+								 search_dn, extra_filter,
+								 &search_res);
+		}
 		W_ERROR_NOT_OK_RETURN(werr);
 
-		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
-			TYPESAFE_QSORT(search_res->msgs,
-				       search_res->count,
-				       site_res_cmp_parent_order);
-		} else {
-			TYPESAFE_QSORT(search_res->msgs,
-				       search_res->count,
-				       site_res_cmp_usn_order);
+		if (search_res) {
+			if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
+				TYPESAFE_QSORT(search_res->msgs,
+					       search_res->count,
+					       site_res_cmp_parent_order);
+			} else {
+				TYPESAFE_QSORT(search_res->msgs,
+					       search_res->count,
+					       site_res_cmp_usn_order);
+			}
 		}
 
 		/* extract out the GUIDs list */
-		getnc_state->num_records = search_res->count;
+		getnc_state->num_records = search_res ? search_res->count : 0;
 		getnc_state->guids = talloc_array(getnc_state, struct GUID, getnc_state->num_records);
 		W_ERROR_HAVE_NO_MEMORY(getnc_state->guids);
 
