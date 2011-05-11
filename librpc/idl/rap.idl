@@ -966,6 +966,28 @@ interface rap
 		[out] uint16 convert
 	);
 
+	typedef [public] struct {
+		uint32 TimeSinceJan11970;
+		uint32 TimeSinceBoot;
+		uint8 Hours;
+		uint8 Minutes;
+		uint8 Seconds;
+		uint8 Hundreds;
+		uint16 TimeZone;
+		uint16 ClockFrequency;
+		uint8 Day;
+		uint8 Month;
+		uint16 Year;
+		uint8 Weekday;
+	} rap_TimeOfDayInfo;
+
+	[public] void rap_NetRemoteTOD(
+		[in] uint16 bufsize,
+		[out] rap_status status,
+		[out] uint16 convert,
+		[out] rap_TimeOfDayInfo tod
+	);
+
 	/* Parameter description strings for RAP calls   */
 	/* Names are defined name for RAP call with _REQ */
 	/* appended to end.                              */
