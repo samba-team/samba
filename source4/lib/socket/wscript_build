@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('netif',
                   source='interface.c',
-                  deps='samba-util interfaces',
+                  deps='samba-util interfaces samba-hostconfig',
                   private_library=True,
                   autoproto='netif_proto.h'
                   )
