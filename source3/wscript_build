@@ -797,10 +797,11 @@ bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
                     deps='LIBSMB_ERR NDR_NTLMSSP NTLMSSP_COMMON',
                     vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('LIBSMB',
-                    source=LIBSMB_SRC,
-                    deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON',
-                    vars=locals())
+bld.SAMBA3_LIBRARY('LIBSMB',
+                   source=LIBSMB_SRC,
+                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON',
+                   vars=locals(),
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBDRSUAPI',
                     source=DRSUAPI_SRC,
