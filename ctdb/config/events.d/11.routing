@@ -19,13 +19,12 @@ loadconfig
     exit 0
 }
 
-case "$1" in 
-    takeip|releaseip)
-	iface=$2
-	cat $CTDB_BASE/static-routes | egrep "^$iface " | while read IFACE DEST GW; do
-	    ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
-	done
-	;;
+case "$1" in
+    recovered|ipreallocated)
+        cat $CTDB_BASE/static-routes | while read IFACE DEST GW; do
+            ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
+        done
+        ;;
 
     updateip)
 	oiface=$2
