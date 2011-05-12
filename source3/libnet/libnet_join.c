@@ -1292,7 +1292,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
 	union samr_UserInfo *info = NULL;
-	struct dcerpc_binding_handle *b;
+	struct dcerpc_binding_handle *b = NULL;
 
 	ZERO_STRUCT(sam_pol);
 	ZERO_STRUCT(domain_pol);
@@ -1433,7 +1433,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 
 done:
-	if (pipe_hnd) {
+	if (pipe_hnd && b) {
 		if (is_valid_policy_hnd(&domain_pol)) {
 			dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		}
