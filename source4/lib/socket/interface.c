@@ -348,6 +348,38 @@ const char *iface_list_n_ip(struct interface *ifaces, int n)
 	return NULL;
 }
 
+
+/**
+  return the first IPv4 interface address we have registered
+  **/
+const char *iface_list_first_v4(struct interface *ifaces)
+{
+	struct interface *i;
+
+	for (i=ifaces; i; i=i->next) {
+		if (i->ip.ss_family == AF_INET) {
+			return i->ip_s;
+		}
+	}
+	return NULL;
+}
+
+/**
+   check if an interface is IPv4
+  **/
+bool iface_list_n_is_v4(struct interface *ifaces, int n)
+{
+	struct interface *i;
+
+	for (i=ifaces;i && n;i=i->next)
+		n--;
+
+	if (i) {
+		return i->ip.ss_family == AF_INET;
+	}
+	return false;
+}
+
 /**
   return bcast of the Nth interface
   **/
