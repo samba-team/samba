@@ -1648,7 +1648,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 
 	status = stream_setup_socket(dcesrv_sock, event_ctx, dce_ctx->lp_ctx,
 				     model_ops, &dcesrv_stream_ops, 
-				     "ipv4", address, &port, 
+				     "ip", address, &port,
 				     lpcfg_socket_options(dce_ctx->lp_ctx),
 				     dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {

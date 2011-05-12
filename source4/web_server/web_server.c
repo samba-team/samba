@@ -328,7 +328,7 @@ static void websrv_task_init(struct task_server *task)
 						     task->event_ctx,
 						     task->lp_ctx, model_ops,
 						     &web_stream_ops, 
-						     "ipv4", address, 
+						     "ip", address,
 						     &port, lpcfg_socket_options(task->lp_ctx),
 						     task);
 			if (!NT_STATUS_IS_OK(status)) goto failed;

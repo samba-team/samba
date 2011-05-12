@@ -815,7 +815,7 @@ static NTSTATUS add_socket(struct task_server *task,
 
 	status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 				     model_ops, &ldap_stream_nonpriv_ops,
-				     "ipv4", address, &port, 
+				     "ip", address, &port,
 				     lpcfg_socket_options(lp_ctx),
 				     ldap_service);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -830,7 +830,7 @@ static NTSTATUS add_socket(struct task_server *task,
 		status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 					     model_ops,
 					     &ldap_stream_nonpriv_ops,
-					     "ipv4", address, &port, 
+					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
 					     ldap_service);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -852,7 +852,7 @@ static NTSTATUS add_socket(struct task_server *task,
 		status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 					     model_ops,
 					     &ldap_stream_nonpriv_ops,
-					     "ipv4", address, &port, 
+					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
 					     ldap_service);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -866,7 +866,7 @@ static NTSTATUS add_socket(struct task_server *task,
 			status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 						     model_ops,
 						     &ldap_stream_nonpriv_ops,
-						     "ipv4", address, &port,
+						     "ip", address, &port,
 						     lpcfg_socket_options(lp_ctx),
 						     ldap_service);
 			if (!NT_STATUS_IS_OK(status)) {
