@@ -600,7 +600,7 @@ static sbcErr smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 	}
 	ctx->path = talloc_strdup(ctx, path);
 	if (ctx->path == NULL) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 
