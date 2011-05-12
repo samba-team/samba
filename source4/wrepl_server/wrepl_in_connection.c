@@ -450,6 +450,9 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
+			if (!iface_list_n_is_v4(ifaces, i)) {
+				continue;
+			}
 			address = iface_list_n_ip(ifaces, i);
 			status = stream_setup_socket(task, task->event_ctx,
 						     task->lp_ctx, model_ops,
