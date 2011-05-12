@@ -286,15 +286,16 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
 		const char *primary_address;
 
+		primary_address = iface_list_first_v4(ifaces);
+
 		/* the primary address is the address we will return
 		   for non-WINS queries not made on a specific
 		   interface */
-		if (num_interfaces > 0) {
-			primary_address = iface_list_n_ip(ifaces, 0);
-		} else {
+		if (primary_address == NULL) {
 			primary_address = inet_ntoa(interpret_addr2(
-							lpcfg_netbios_name(lp_ctx)));
+							    lpcfg_netbios_name(lp_ctx)));
 		}
+
 		primary_address = talloc_strdup(tmp_ctx, primary_address);
 		NT_STATUS_HAVE_NO_MEMORY(primary_address);
 
@@ -308,9 +309,15 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 	}
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *bcast = iface_list_n_bcast(ifaces, i);
+		const char *bcast;
 		const char *address, *netmask;
 
+		if (!iface_list_n_is_v4(ifaces, i)) {
+			/* v4 only for NBT protocol */
+			continue;
+		}
+
+		bcast = iface_list_n_bcast(ifaces, i);
 		/* we can't assume every interface is broadcast capable */
 		if (bcast == NULL) continue;
 
