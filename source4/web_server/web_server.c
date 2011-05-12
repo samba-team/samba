@@ -336,13 +336,23 @@ static void websrv_task_init(struct task_server *task)
 
 		talloc_free(ifaces);
 	} else {
-		status = stream_setup_socket(task, task->event_ctx,
-					     task->lp_ctx, model_ops,
-					     &web_stream_ops,
-					     "ipv4", lpcfg_socket_address(task->lp_ctx),
-					     &port, lpcfg_socket_options(task->lp_ctx),
-					     task);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		const char **wcard;
+		int i;
+		wcard = iface_list_wildcard(task, task->lp_ctx);
+		if (wcard == NULL) {
+			DEBUG(0,("No wildcard addresses available\n"));
+			goto failed;
+		}
+		for (i=0; wcard[i]; i++) {
+			status = stream_setup_socket(task, task->event_ctx,
+						     task->lp_ctx, model_ops,
+						     &web_stream_ops,
+						     "ip", wcard[i],
+						     &port, lpcfg_socket_options(task->lp_ctx),
+						     wdata);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
+		}
+		talloc_free(wcard);
 	}
 
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);

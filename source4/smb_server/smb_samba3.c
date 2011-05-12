@@ -152,12 +152,21 @@ static void samba3_smb_task_init(struct task_server *task)
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		/* Just bind to lpcfg_socket_address() (usually 0.0.0.0) */
-		status = samba3_add_socket(task,
-					   task->event_ctx, task->lp_ctx,
-					   model_ops,
-					   lpcfg_socket_address(task->lp_ctx));
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		const char **wcard;
+		int i;
+		wcard = iface_list_wildcard(task, task->lp_ctx);
+		if (wcard == NULL) {
+			DEBUG(0,("No wildcard addresses available\n"));
+			goto failed;
+		}
+		for (i=0; wcard[i]; i++) {
+			status = samba3_add_socket(task,
+						   task->event_ctx, task->lp_ctx,
+						   model_ops,
+						   wcard[i]);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
+		}
+		talloc_free(wcard);
 	}
 
 	return;
