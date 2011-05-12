@@ -174,6 +174,10 @@ struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,
 struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx, 
 						    struct sockaddr *sockaddr, 
 						    size_t addrlen);
+struct sockaddr_storage;
+struct socket_address *socket_address_from_sockaddr_storage(TALLOC_CTX *mem_ctx,
+							    const struct sockaddr_storage *sockaddr,
+							    uint16_t port);
 _PUBLIC_ void socket_address_set_port(struct socket_address *a,
 				      uint16_t port);
 struct socket_address *socket_address_copy(TALLOC_CTX *mem_ctx,

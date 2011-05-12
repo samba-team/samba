@@ -510,6 +510,50 @@ _PUBLIC_ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx
 	return addr;
 }
 
+
+/*
+   Create a new socket_address from sockaddr_storage
+ */
+_PUBLIC_ struct socket_address *socket_address_from_sockaddr_storage(TALLOC_CTX *mem_ctx,
+								     const struct sockaddr_storage *sockaddr,
+	uint16_t port)
+{
+	struct socket_address *addr = talloc_zero(mem_ctx, struct socket_address);
+	char addr_str[INET6_ADDRSTRLEN+1];
+	const char *str;
+
+	if (!addr) {
+		return NULL;
+	}
+	addr->port = port;
+	switch (sockaddr->ss_family) {
+	case AF_INET:
+		addr->family = "ipv4";
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		addr->family = "ipv6";
+		break;
+#endif
+	default:
+		talloc_free(addr);
+		return NULL;
+	}
+
+	str = print_sockaddr(addr_str, sizeof(addr_str), sockaddr);
+	if (str == NULL) {
+		talloc_free(addr);
+		return NULL;
+	}
+	addr->addr = talloc_strdup(addr, str);
+	if (addr->addr == NULL) {
+		talloc_free(addr);
+		return NULL;
+	}
+
+	return addr;
+}
+
 /* Copy a socket_address structure */
 struct socket_address *socket_address_copy(TALLOC_CTX *mem_ctx,
 					   const struct socket_address *oaddr)
