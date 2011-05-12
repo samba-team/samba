@@ -87,6 +87,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	struct rk_resource_record **srv_rr;
 	uint32_t addrs_valid = 0;
 	struct rk_resource_record **addrs_rr;
+	struct rk_dns_reply **srv_replies = NULL;
 	char *addrs;
 	bool first;
 	uint32_t i;
@@ -167,6 +168,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		goto done;
 	}
 
+	srv_replies = talloc_zero_array(state,
+					struct rk_dns_reply *,
+				     	count);
+	if (!srv_replies) {
+		goto done;
+	}
+
 	/* Loop over all returned records and pick the records */
 	for (rr=reply->head;rr;rr=rr->next) {
 		/* we are only interested in the IN class */
@@ -210,8 +218,12 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	}
 
 	for (i=0; i < srv_valid; i++) {
-		for (rr=reply->head;rr;rr=rr->next) {
+		srv_replies[i] = rk_dns_lookup(srv_rr[i]->u.srv->target, "A");
+		if (srv_replies[i] == NULL)
+			continue;
 
+		/* Add first A record to addrs_rr */
+		for (rr=srv_replies[i]->head;rr;rr=rr->next) {
 			if (rr->class != rk_ns_c_in) {
 				continue;
 			}
@@ -221,8 +233,8 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 				continue;
 			}
 
-			/* verify we actually have a srv record here */
-			if (strcmp(&srv_rr[i]->u.srv->target[0], rr->domain) != 0) {
+			/* verify we actually have a A record here */
+			if (!rr->u.a) {
 				continue;
 			}
 
@@ -241,7 +253,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		goto done;
 	}
 	first = true;
-	for (i=0; i < count; i++) {
+	for (i=0; i < addrs_valid; i++) {
 		uint16_t port;
 		if (!addrs_rr[i]) {
 			continue;
@@ -270,6 +282,12 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	}
 
 done:
+	if (reply != NULL)
+		rk_dns_free_data(reply);
+	for (i=0; i < srv_valid; i++) {
+		if (srv_replies[i] != NULL)
+			rk_dns_free_data(srv_replies[i]);
+	}
 	close(fd);
 }
 
