@@ -248,15 +248,14 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 */
 static void websrv_accept(struct stream_connection *conn)
 {
-	struct task_server *task = talloc_get_type(conn->private_data, struct task_server);
-	struct web_server_data *wdata = talloc_get_type(task->private_data, struct web_server_data);
+	struct web_server_data *wdata = talloc_get_type(conn->private_data, struct web_server_data);
 	struct websrv_context *web;
 	struct socket_context *tls_socket;
 
 	web = talloc_zero(conn, struct websrv_context);
 	if (web == NULL) goto failed;
 
-	web->task = task;
+	web->task = wdata->task;
 	web->conn = conn;
 	conn->private_data = web;
 	talloc_set_destructor(web, websrv_destructor);
@@ -312,6 +311,7 @@ static void websrv_task_init(struct task_server *task)
 	wdata = talloc_zero(task, struct web_server_data);
 	if (wdata == NULL) goto failed;
 
+	wdata->task = task;
 	task->private_data = wdata;
 
 	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {
