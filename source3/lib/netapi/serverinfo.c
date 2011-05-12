@@ -540,7 +540,7 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 static WERROR NetServerSetInfo_l_1005(struct libnetapi_ctx *ctx,
 				      struct NetServerSetInfo *r)
 {
-	WERROR werr;
+	WERROR werr = WERR_OK;
 	sbcErr err;
 	struct smbconf_ctx *conf_ctx;
 	struct srvsvc_NetSrvInfo1005 *info1005;

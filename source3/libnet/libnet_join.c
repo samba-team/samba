@@ -1455,7 +1455,7 @@ done:
 
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
-	WERROR werr;
+	WERROR werr = WERR_OK;
 	sbcErr err;
 	struct smbconf_ctx *ctx;
 
