@@ -640,13 +640,6 @@ t = bld.SAMBA_GENERATOR('build_env.h',
 t.env.SRCDIR = bld.path.abspath()
 t.env.BUILDDIR = bld.path.abspath()
 
-if not bld.env.toplevel_build:
-    bld.SAMBA_GENERATOR('smbtorture4',
-			source='',
-			target='',
-			rule='cd ../; make -f Makefile-smbtorture4 bin/smbtorture4',
-			always=True)
-
 bld.SETUP_BUILD_GROUPS()
 
 if not bld.env.toplevel_build:
