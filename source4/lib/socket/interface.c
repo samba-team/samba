@@ -302,7 +302,7 @@ void load_interface_list(TALLOC_CTX *mem_ctx, const char **interfaces, struct in
 			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
 		}
 		for (i=0;i<total_probed;i++) {
-			if (!is_loopback_addr(&ifaces[i].ip)) {
+			if (!is_loopback_addr((struct sockaddr *)&ifaces[i].ip)) {
 				add_interface(mem_ctx, &ifaces[i], local_interfaces);
 			}
 		}
