@@ -126,7 +126,7 @@ class cmd_listall(Command):
             print("display name : %s" % m['displayName'][0])
             print("path         : %s" % m['gPCFileSysPath'][0])
             print("dn           : %s" % m.dn)
-            print("version      : %s" % attr_default(m, 'version', '0'))
+            print("version      : %s" % attr_default(m, 'versionNumber', '0'))
             print("flags        : %s" % flags_string(gpo_flags, int(attr_default(m, 'flags', 0))))
             print("")
 
