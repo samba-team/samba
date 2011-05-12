@@ -667,9 +667,22 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 	return ip_connect_complete(sock, flags);
 }
 
+/*
+  fix the sin6_scope_id based on the address interface
+ */
+static void fix_scope_id(struct sockaddr_in6 *in6,
+			 const char *address)
+{
+	const char *p = strchr(address, '%');
+	if (p != NULL) {
+		in6->sin6_scope_id = if_nametoindex(p+1);
+	}
+}
+
+
 static NTSTATUS ipv6_listen(struct socket_context *sock,
-				const struct socket_address *my_address,
-				int queue_size, uint32_t flags)
+			    const struct socket_address *my_address,
+			    int queue_size, uint32_t flags)
 {
 	struct sockaddr_in6 my_addr;
 	struct in6_addr ip_addr;
@@ -680,14 +693,21 @@ static NTSTATUS ipv6_listen(struct socket_context *sock,
 	if (my_address->sockaddr) {
 		ret = bind(sock->fd, my_address->sockaddr, my_address->sockaddrlen);
 	} else {
+		int one = 1;
 		ip_addr = interpret_addr6(my_address->addr);
 		
 		ZERO_STRUCT(my_addr);
 		my_addr.sin6_addr	= ip_addr;
 		my_addr.sin6_port	= htons(my_address->port);
 		my_addr.sin6_family	= PF_INET6;
-		
-		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+		fix_scope_id(&my_addr, my_address->addr);
+
+		/* when binding on ipv6 we always want to only bind on v6 */
+		ret = setsockopt(sock->fd, IPPROTO_IPV6, IPV6_V6ONLY,
+				 (const void *)&one, sizeof(one));
+		if (ret != -1) {
+			ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+		}
 	}
 
 	if (ret == -1) {
