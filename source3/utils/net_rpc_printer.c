@@ -70,7 +70,7 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 	printf(_("\tConfigfile: [%s]\n\n"), r->config_file);
 	printf(_("\tHelpfile: [%s]\n\n"), r->help_file);
 
-	for (i=0; r->dependent_files[i] != NULL; i++) {
+	for (i=0; r->dependent_files && r->dependent_files[i] != NULL; i++) {
 		printf(_("\tDependentfiles: [%s]\n"), r->dependent_files[i]);
 	}
 
