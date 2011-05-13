@@ -2667,33 +2667,6 @@ const struct ndr_interface_table *get_iface_from_syntax(
 const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
                                      const struct ndr_syntax_id *syntax);
 
-/* The following definitions come from rpc_server/rpc_ncacn_np.c  */
-struct auth_serversupplied_info;
-struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-					      const struct ndr_syntax_id *syntax,
-					      struct client_address *client_id,
-					      const struct auth_serversupplied_info *session_info,
-					      struct messaging_context *msg_ctx);
-struct dcerpc_binding_handle;
-NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
-			       const struct ndr_interface_table *ndr_table,
-			       struct client_address *client_id,
-			       const struct auth_serversupplied_info *session_info,
-			       struct messaging_context *msg_ctx,
-			       struct dcerpc_binding_handle **binding_handle);
-NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
-				const struct ndr_syntax_id *abstract_syntax,
-				const struct auth_serversupplied_info *serversupplied_info,
-				struct client_address *client_id,
-				struct messaging_context *msg_ctx,
-				struct rpc_pipe_client **presult);
-NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
-				 const struct ndr_syntax_id *syntax,
-				 const struct auth_serversupplied_info *session_info,
-				 struct client_address *client_id,
-				 struct messaging_context *msg_ctx,
-				 struct rpc_pipe_client **cli_pipe);
-
 /* The following definitions come from rpc_client/cli_pipe_schannel.c  */
 
 NTSTATUS get_schannel_session_key(struct cli_state *cli,
@@ -2703,6 +2676,7 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 
 /* The following definitions come from rpc_server/rpc_handles.c  */
 
+struct pipes_struct;
 size_t num_pipe_handles(struct pipes_struct *p);
 bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *syntax);
 bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd, void *data_ptr);

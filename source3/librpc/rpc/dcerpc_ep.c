@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/ndr_epmapper_c.h"
 #include "rpc_client/cli_pipe.h"
 #include "auth.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
