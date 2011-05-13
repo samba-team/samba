@@ -1,10 +1,10 @@
-                   =================================
-                   Release Notes for Samba 3.6.0pre3
-                            April 26, 2011
-                   =================================
+                   ================================
+                   Release Notes for Samba 3.6.0rc1
+                             May 17, 2011
+                   ================================
 
 
-This is the third preview release of Samba 3.6.0.  This is *not*
+This is the first release candidate of Samba 3.6.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -250,6 +250,12 @@ o   Stefan Metzmacher <metze@samba.org>
 
 o   Andreas Schneider <asn@samba.org>
     * Add an Endpoint Mapper daemon.
+
+
+Changes since 3.6.0pre3
+-----------------------
+
+o   
 
 
 Changes since 3.6.0pre2
