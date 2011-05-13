@@ -1740,7 +1740,8 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal);
 struct parm_struct *lp_get_parameter(const char *param_name);
 struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 bool lp_snum_ok(int iService);
-void lp_add_one_printer(const char *name, const char *comment, void *pdata);
+void lp_add_one_printer(const char *name, const char *comment,
+			const char *location, void *pdata);
 bool lp_loaded(void);
 void lp_killunused(bool (*snumused) (int));
 void lp_kill_all_services(void);

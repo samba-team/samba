@@ -32,6 +32,8 @@ bool printer_list_parent_init(void);
  *
  * @param[out] comment  A pointer to store the comment of the printer.
  *
+ * @param[out] location A pointer to store the location of the printer.
+ *
  * @param[out] last_refresh A pointer to store the last refresh time of the
  *                          printer.
  *
@@ -41,6 +43,7 @@ bool printer_list_parent_init(void);
 NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
 				  const char *name,
 				  const char **comment,
+				  const char **location,
 				  time_t *last_refresh);
 
 /**
@@ -52,6 +55,8 @@ NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  comment  The comment to store in the db.
  *
+ * @param[in]  location  The location to store in the db.
+ *
  * @param[in]  last_refresh The last refresh time of the printer to store in
  *                          the db.
  *
@@ -61,6 +66,7 @@ NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
 NTSTATUS printer_list_set_printer(TALLOC_CTX *mem_ctx,
 				  const char *name,
 				  const char *comment,
+				  const char *location,
 				  time_t last_refresh);
 
 /**
@@ -94,6 +100,6 @@ NTSTATUS printer_list_mark_reload(void);
  */
 NTSTATUS printer_list_clean_old(void);
 
-NTSTATUS printer_list_run_fn(void (*fn)(const char *, const char *, void *),
+NTSTATUS printer_list_run_fn(void (*fn)(const char *, const char *, const char *, void *),
 			     void *private_data);
 #endif /* _PRINTER_LIST_H_ */

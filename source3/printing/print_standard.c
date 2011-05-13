@@ -120,7 +120,7 @@ bool std_pcap_cache_reload(const char *pcap_name)
 		comment[60] = 0;
 		name[MAXPRINTERLEN] = 0;
 
-		if (*name && !pcap_cache_add(name, comment)) {
+		if (*name && !pcap_cache_add(name, comment, NULL)) {
 			x_fclose(pcap_file);
 			return false;
 		}
