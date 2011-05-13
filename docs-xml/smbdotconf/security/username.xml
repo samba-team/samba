@@ -9,7 +9,7 @@
     list, in which case the supplied password will be tested against 
     each username in turn (left to right).</para>
 
-    <para>The <parameter moreinfo="none">username</parameter> line is needed only when 
+    <para>The deprecated <parameter moreinfo="none">username</parameter> line is needed only when
     the PC is unable to supply its own username. This is the case 
     for the COREPLUS protocol or where your users have different WfWg 
     usernames to UNIX usernames. In both these cases you may also be 
