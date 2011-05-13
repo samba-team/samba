@@ -52,6 +52,7 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "util_tdb.h"
 #include "libsmb/libsmb.h"
+#include "printing/printer_list.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
@@ -2879,7 +2880,21 @@ static void spoolss_notify_location(struct messaging_context *msg_ctx,
 				    struct spoolss_PrinterInfo2 *pinfo2,
 				    TALLOC_CTX *mem_ctx)
 {
-	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, pinfo2->location);
+	const char *loc = pinfo2->location;
+	NTSTATUS status;
+
+	status = printer_list_get_printer(mem_ctx,
+					  pinfo2->sharename,
+					  NULL,
+					  &loc,
+					  NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		if (loc == NULL) {
+			loc = pinfo2->location;
+		}
+	}
+
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, loc);
 }
 
 /*******************************************************************
@@ -4011,8 +4026,24 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->comment);
 
-	r->location		= talloc_strdup(mem_ctx, info2->location);
+	r->location	= talloc_strdup(mem_ctx, info2->location);
+	if (info2->location[0] == '\0') {
+		const char *loc = NULL;
+		NTSTATUS nt_status;
+
+		nt_status = printer_list_get_printer(mem_ctx,
+						     info2->sharename,
+						     NULL,
+						     &loc,
+						     NULL);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			if (loc != NULL) {
+				r->location = talloc_strdup(mem_ctx, loc);
+			}
+		}
+	}
 	W_ERROR_HAVE_NO_MEMORY(r->location);
+
 	r->sepfile		= talloc_strdup(mem_ctx, info2->sepfile);
 	W_ERROR_HAVE_NO_MEMORY(r->sepfile);
 	r->printprocessor	= talloc_strdup(mem_ctx, info2->printprocessor);
