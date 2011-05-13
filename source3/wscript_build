@@ -692,9 +692,10 @@ bld.SAMBA3_LIBRARY('nss_wins',
 
 bld.SAMBA3_SUBSYSTEM('msrpc3',
                     source='${LIBMSRPC_SRC}',
-                    deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
-                    RPC_NDR_EPMAPPER COMMON_SCHANNEL LIBCLI_AUTH
-                    LIBTSOCKET KRB5_WRAP rpccommon''',
+                    deps='''ndr ndr-util ndr-standard
+                    RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
+                    LIBTSOCKET KRB5_WRAP rpccommon
+                    LIBSMB''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
