@@ -163,6 +163,7 @@ static bool process_cups_printers_response(TALLOC_CTX *mem_ctx,
 	ipp_attribute_t	*attr;
 	char *name;
 	char *info;
+	char *location = NULL;
 	struct pcap_printer *printer;
 	bool ret_ok = false;
 
@@ -206,6 +207,16 @@ static bool process_cups_printers_response(TALLOC_CTX *mem_ctx,
 				}
 			}
 
+			if (strcmp(attr->name, "printer-location") == 0 &&
+			    attr->value_tag == IPP_TAG_TEXT) {
+				if (!pull_utf8_talloc(mem_ctx,
+						&location,
+						attr->values[0].string.text,
+						&size)) {
+					goto err_out;
+				}
+			}
+
 			attr = attr->next;
 		}
 
@@ -229,6 +240,7 @@ static bool process_cups_printers_response(TALLOC_CTX *mem_ctx,
 		pcap_data->printers = printer;
 		pcap_data->printers[pcap_data->count].name = name;
 		pcap_data->printers[pcap_data->count].info = info;
+		pcap_data->printers[pcap_data->count].location = location;
 		pcap_data->count++;
 	}
 
@@ -252,7 +264,8 @@ static bool cups_cache_reload_async(int fd)
 	static const char *requested[] =/* Requested attributes */
 			{
 			  "printer-name",
-			  "printer-info"
+			  "printer-info",
+			  "printer-location"
 			};
 	bool ret = False;
 	enum ndr_err_code ndr_ret;
@@ -478,7 +491,8 @@ static void cups_async_callback(struct event_context *event_ctx,
 	for (i = 0; i < pcap_data.count; i++) {
 		ret_ok = pcap_cache_add_specific(&tmp_pcap_cache,
 						 pcap_data.printers[i].name,
-						 pcap_data.printers[i].info);
+						 pcap_data.printers[i].info,
+						 pcap_data.printers[i].location);
 		if (!ret_ok) {
 			DEBUG(0, ("failed to add to tmp pcap cache\n"));
 			goto err_out;

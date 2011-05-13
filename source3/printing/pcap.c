@@ -43,10 +43,11 @@
 struct pcap_cache {
 	char *name;
 	char *comment;
+	char *location;
 	struct pcap_cache *next;
 };
 
-bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment)
+bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, const char *comment, const char *location)
 {
 	struct pcap_cache *p;
 
@@ -55,9 +56,11 @@ bool pcap_cache_add_specific(struct pcap_cache **ppcache, const char *name, cons
 
 	p->name = SMB_STRDUP(name);
 	p->comment = (comment && *comment) ? SMB_STRDUP(comment) : NULL;
+	p->location = (location && *location) ? SMB_STRDUP(location) : NULL;
 
-	DEBUG(11,("pcap_cache_add_specific: Adding name %s info %s\n",
-		p->name, p->comment ? p->comment : ""));
+	DEBUG(11,("pcap_cache_add_specific: Adding name %s info %s, location: %s\n",
+		p->name, p->comment ? p->comment : "",
+		p->location ? p->location : ""));
 
 	p->next = *ppcache;
 	*ppcache = p;
@@ -74,17 +77,18 @@ void pcap_cache_destroy_specific(struct pcap_cache **pp_cache)
 
 		SAFE_FREE(p->name);
 		SAFE_FREE(p->comment);
+		SAFE_FREE(p->location);
 		SAFE_FREE(p);
 	}
 	*pp_cache = NULL;
 }
 
-bool pcap_cache_add(const char *name, const char *comment)
+bool pcap_cache_add(const char *name, const char *comment, const char *location)
 {
 	NTSTATUS status;
 	time_t t = time_mono(NULL);
 
-	status = printer_list_set_printer(talloc_tos(), name, comment, t);
+	status = printer_list_set_printer(talloc_tos(), name, comment, location, t);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -109,7 +113,7 @@ bool pcap_cache_replace(const struct pcap_cache *pcache)
 	}
 
 	for (p = pcache; p; p = p->next) {
-		pcap_cache_add(p->name, p->comment);
+		pcap_cache_add(p->name, p->comment, p->location);
 	}
 
 	status = printer_list_clean_old();
@@ -205,7 +209,7 @@ bool pcap_printername_ok(const char *printername)
 {
 	NTSTATUS status;
 
-	status = printer_list_get_printer(talloc_tos(), printername, NULL, 0);
+	status = printer_list_get_printer(talloc_tos(), printername, NULL, NULL, 0);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -214,18 +218,18 @@ run a function on each printer name in the printcap file.
 ***************************************************************************/
 
 void pcap_printer_fn_specific(const struct pcap_cache *pc,
-			void (*fn)(const char *, const char *, void *),
+			void (*fn)(const char *, const char *, const char *, void *),
 			void *pdata)
 {
 	const struct pcap_cache *p;
 
 	for (p = pc; p != NULL; p = p->next)
-		fn(p->name, p->comment, pdata);
+		fn(p->name, p->comment, p->location, pdata);
 
 	return;
 }
 
-void pcap_printer_fn(void (*fn)(const char *, const char *, void *), void *pdata)
+void pcap_printer_fn(void (*fn)(const char *, const char *, const char *, void *), void *pdata)
 {
 	NTSTATUS status;
 
