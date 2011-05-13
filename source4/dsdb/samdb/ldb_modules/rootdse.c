@@ -76,6 +76,8 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct ldb_context *ldb;
 	int edn_type = 0;
+	unsigned int i;
+	struct ldb_message_element *el;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -84,76 +86,83 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 		edn_type = edn->type;
 	}
 
-	v = discard_const_p(struct ldb_val, ldb_msg_find_ldb_val(msg, attrname));
-	if (v == NULL) {
-		talloc_free(tmp_ctx);
+	el = ldb_msg_find_element(msg, attrname);
+	if (!el || el->num_values == 0) {
 		return LDB_SUCCESS;
 	}
 
-	dn_string = talloc_strndup(tmp_ctx, (const char *)v->data, v->length);
-	if (dn_string == NULL) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
+	for (i = 0; i < el->num_values; i++) {
+		v = &el->values[i];
+		if (v == NULL) {
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
+
+		dn_string = talloc_strndup(tmp_ctx, (const char *)v->data, v->length);
+		if (dn_string == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
+
+		res = talloc_zero(tmp_ctx, struct ldb_result);
+		if (res == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
+
+		dn = ldb_dn_new(tmp_ctx, ldb, dn_string);
+		if (dn == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
+
+		ret = ldb_build_search_req(&req2, ldb, tmp_ctx,
+					dn,
+					LDB_SCOPE_BASE,
+					NULL,
+					no_attrs,
+					NULL,
+					res, ldb_search_default_callback,
+					req);
+		LDB_REQ_SET_LOCATION(req2);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+
+		ret = ldb_request_add_control(req2,
+					LDB_CONTROL_EXTENDED_DN_OID,
+					edn_control->critical, edn);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ldb_error(ldb, ret, "Failed to add control");
+		}
+
+		ret = ldb_next_request(module, req2);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req2->handle, LDB_WAIT_ALL);
+		}
+
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		if (!res || res->count != 1) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
+
+		dn2 = res->msgs[0]->dn;
+
+		v->data = (uint8_t *)ldb_dn_get_extended_linearized(msg->elements, dn2, edn_type);
+		if (v->data == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
+		v->length = strlen((char *)v->data);
 	}
-
-	res = talloc_zero(tmp_ctx, struct ldb_result);
-	if (res == NULL) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-
-	dn = ldb_dn_new(tmp_ctx, ldb, dn_string);
-	if (dn == NULL) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-
-	ret = ldb_build_search_req(&req2, ldb, tmp_ctx,
-				   dn,
-				   LDB_SCOPE_BASE,
-				   NULL,
-				   no_attrs,
-				   NULL,
-				   res, ldb_search_default_callback,
-				   req);
-	LDB_REQ_SET_LOCATION(req2);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-
-	ret = ldb_request_add_control(req2,
-				      LDB_CONTROL_EXTENDED_DN_OID,
-				      edn_control->critical, edn);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	ret = ldb_next_request(module, req2);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req2->handle, LDB_WAIT_ALL);
-	}
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	if (!res || res->count != 1) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-
-	dn2 = res->msgs[0]->dn;
-
-	v->data = (uint8_t *)ldb_dn_get_extended_linearized(msg->elements, dn2, edn_type);
-	if (v->data == NULL) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-	v->length = strlen((char *)v->data);
-
 
 	talloc_free(tmp_ctx);
 
