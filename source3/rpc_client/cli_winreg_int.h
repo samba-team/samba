@@ -22,6 +22,7 @@
 #ifndef CLI_WINREG_INT_H
 #define CLI_WINREG_INT_H
 
+struct dcerpc_binding_handle;
 struct auth_serversupplied_info;
 
 /**

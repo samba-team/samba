@@ -20,6 +20,8 @@
 #ifndef _RPC_NCACN_NP_H_
 #define _RPC_NCACN_NP_H_
 
+struct dcerpc_binding_handle;
+
 struct np_proxy_state {
 	uint16_t file_type;
 	uint16_t device_state;
