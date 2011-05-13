@@ -279,7 +279,7 @@ static size_t CHARSETNAME ## _push(void *cd, const char **inbuf, size_t *inbytes
 		int i; 										\
 		int done = 0; 									\
 												\
-		uint16 ch = SVAL(*inbuf,0); 							\
+		uint16_t ch = SVAL(*inbuf,0); 							\
 												\
 		for (i=0; from_idx[i].start != 0xffff; i++) {					\
 			if ((from_idx[i].start <= ch) && (from_idx[i].end >= ch)) {		\

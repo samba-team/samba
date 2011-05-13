@@ -410,45 +410,6 @@ bld.SAMBA3_MODULE('vfs_time_audit',
 
 
 
-CHARSET_WEIRD_SRC = 'weird.c'
-CHARSET_CP850_SRC = 'CP850.c'
-CHARSET_CP437_SRC = 'CP437.c'
-CHARSET_MACOSXFS_SRC = 'charset_macosxfs.c'
-
-
-bld.SAMBA3_SUBSYSTEM('charset',
-                    source='',
-                    vars=locals())
-
-bld.SAMBA3_MODULE('charset_weird',
-                 subsystem='charset',
-                 source=CHARSET_WEIRD_SRC,
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_weird'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_weird'))
-
-bld.SAMBA3_MODULE('charset_CP850',
-                 subsystem='charset',
-                 source=CHARSET_CP850_SRC,
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_CP850'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_CP850'))
-
-bld.SAMBA3_MODULE('charset_CP437',
-                 subsystem='charset',
-                 source=CHARSET_CP437_SRC,
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_CP437'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_CP437'))
-
-bld.SAMBA3_MODULE('charset_macosxfs',
-                 subsystem='charset',
-                 source=CHARSET_MACOSXFS_SRC,
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_macosxfs'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_macosxfs'))
-
-
 PERFCOUNT_ONEFS_SRC = 'perfcount_onefs.c'
 PERFCOUNT_TEST_SRC = 'perfcount_test.c'
 
