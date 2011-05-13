@@ -1160,7 +1160,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.bNullPasswords,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "obey pam restrictions",
@@ -1259,7 +1259,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.bEnablePrivileges,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 
 	{
@@ -1332,7 +1332,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.pwordlevel,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "username level",
@@ -1431,7 +1431,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &sDefault.szUsername,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "user",
@@ -2294,7 +2294,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.bUseSpnego,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "client signing",
@@ -9578,6 +9578,12 @@ static bool lp_load_ex(const char *pszFname,
 	set_server_role();
 	set_default_server_announce_type();
 	set_allowed_client_auth();
+
+	if (lp_security() == SEC_SHARE) {
+		DEBUG(1, ("WARNING: The security=share option is deprecated\n"));
+	} else if (lp_security() == SEC_SERVER) {
+		DEBUG(1, ("WARNING: The security=server option is deprecated\n"));
+	}
 
 	bLoaded = True;
 
