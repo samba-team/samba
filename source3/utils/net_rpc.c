@@ -1977,7 +1977,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 		TALLOC_FREE(pipe_hnd);
 	}
 
-	if (!NT_STATUS_IS_OK(status) && (StrnCaseCmp(name, "S-", 2) == 0)) {
+	if (!NT_STATUS_IS_OK(status) && (strncasecmp_m(name, "S-", 2) == 0)) {
 
 		/* Try as S-1-5-whatever */
 

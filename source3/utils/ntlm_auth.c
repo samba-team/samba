@@ -2680,7 +2680,7 @@ enum {
 			break;
 
                 case OPT_REQUIRE_MEMBERSHIP:
-			if (StrnCaseCmp("S-", require_membership_of, 2) == 0) {
+			if (strncasecmp_m("S-", require_membership_of, 2) == 0) {
 				require_membership_of_sid = require_membership_of;
 			}
 			break;

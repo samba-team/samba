@@ -1375,7 +1375,7 @@ static bool tldap_push_filter_basic(struct tldap_context *ld,
 				return false;
 			}
 
-			if (StrnCaseCmp(dn, "dn:", 3) != 0) {
+			if (strncasecmp_m(dn, "dn:", 3) != 0) {
 				if (rule == e) {
 					rule = dn;
 					dn = NULL;

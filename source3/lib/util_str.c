@@ -36,66 +36,6 @@ const char toupper_ascii_fast_table[128] = {
 };
 
 /**
- Case insensitive string compararison, length limited.
-**/
-int StrnCaseCmp(const char *s, const char *t, size_t len)
-{
-	size_t n = 0;
-	const char *ps, *pt;
-	size_t size;
-	smb_ucs2_t *buffer_s, *buffer_t;
-	int ret;
-
-	for (ps = s, pt = t; n < len ; ps++, pt++, n++) {
-		char us, ut;
-
-		if (!*ps && !*pt)
-			return 0; /* both ended */
- 		else if (!*ps)
-			return -1; /* s is a prefix */
-		else if (!*pt)
-			return +1; /* t is a prefix */
-		else if ((*ps & 0x80) || (*pt & 0x80))
-			/* not ascii anymore, do it the
-			 * hard way from here on in */
-			break;
-
-		us = toupper_ascii_fast(*ps);
-		ut = toupper_ascii_fast(*pt);
-		if (us == ut)
-			continue;
-		else if (us < ut)
-			return -1;
-		else if (us > ut)
-			return +1;
-	}
-
-	if (n == len) {
-		return 0;
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_s, ps, &size)) {
-		return strncmp(ps, pt, len-n);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive,
-		   and it's pretty close */
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_t, pt, &size)) {
-		TALLOC_FREE(buffer_s);
-		return strncmp(ps, pt, len-n);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive,
-		   and it's pretty close */
-	}
-
-	ret = strncasecmp_w(buffer_s, buffer_t, len-n);
-	TALLOC_FREE(buffer_s);
-	TALLOC_FREE(buffer_t);
-	return ret;
-}
-
-/**
  * Compare 2 strings up to and including the nth char.
  *
  * @note The comparison is case-insensitive.
@@ -107,7 +47,7 @@ bool strnequal(const char *s1,const char *s2,size_t n)
 	if (!s1 || !s2 || !n)
 		return(false);
 
-	return(StrnCaseCmp(s1,s2,n)==0);
+	return(strncasecmp_m(s1,s2,n)==0);
 }
 
 /**

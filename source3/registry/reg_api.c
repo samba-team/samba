@@ -188,7 +188,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 
 	/* Tag this as a Performance Counter Key */
 
-	if( StrnCaseCmp(key->name, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
+	if( strncasecmp_m(key->name, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
 		key->type = REG_KEY_HKPD;
 
 	/* Look up the table of registry I/O operations */

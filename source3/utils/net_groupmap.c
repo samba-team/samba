@@ -35,7 +35,7 @@ static bool get_sid_from_input(struct dom_sid *sid, char *input)
 {
 	GROUP_MAP map;
 
-	if (StrnCaseCmp( input, "S-", 2)) {
+	if (strncasecmp_m( input, "S-", 2)) {
 		/* Perhaps its the NT group name? */
 		if (!pdb_getgrnam(&map, input)) {
 			printf(_("NT Group %s doesn't exist in mapping DB\n"),
@@ -103,14 +103,14 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 		if ( !strcasecmp_m(argv[i], "verbose")) {
 			long_list = true;
 		}
-		else if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {
+		else if ( !strncasecmp_m(argv[i], "ntgroup", strlen("ntgroup")) ) {
 			fstrcpy( ntgroup, get_string_param( argv[i] ) );
 			if ( !ntgroup[0] ) {
 				d_fprintf(stderr, _("must supply a name\n"));
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
+		else if ( !strncasecmp_m(argv[i], "sid", strlen("sid")) ) {
 			fstrcpy( sid_string, get_string_param( argv[i] ) );
 			if ( !sid_string[0] ) {
 				d_fprintf(stderr, _("must supply a SID\n"));
@@ -201,7 +201,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
-		if ( !StrnCaseCmp(argv[i], "rid", strlen("rid")) ) {
+		if ( !strncasecmp_m(argv[i], "rid", strlen("rid")) ) {
 			rid = get_int_param(argv[i]);
 			if ( rid < DOMAIN_RID_ADMINS ) {
 				d_fprintf(stderr,
@@ -210,28 +210,28 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "unixgroup", strlen("unixgroup")) ) {
+		else if ( !strncasecmp_m(argv[i], "unixgroup", strlen("unixgroup")) ) {
 			fstrcpy( unixgrp, get_string_param( argv[i] ) );
 			if ( !unixgrp[0] ) {
 				d_fprintf(stderr,_( "must supply a name\n"));
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {
+		else if ( !strncasecmp_m(argv[i], "ntgroup", strlen("ntgroup")) ) {
 			fstrcpy( ntgroup, get_string_param( argv[i] ) );
 			if ( !ntgroup[0] ) {
 				d_fprintf(stderr, _("must supply a name\n"));
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
+		else if ( !strncasecmp_m(argv[i], "sid", strlen("sid")) ) {
 			fstrcpy( string_sid, get_string_param( argv[i] ) );
 			if ( !string_sid[0] ) {
 				d_fprintf(stderr, _("must supply a SID\n"));
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "comment", strlen("comment")) ) {
+		else if ( !strncasecmp_m(argv[i], "comment", strlen("comment")) ) {
 			fstrcpy( ntcomment, get_string_param( argv[i] ) );
 			if ( !ntcomment[0] ) {
 				d_fprintf(stderr,
@@ -239,7 +239,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "type", strlen("type")) )  {
+		else if ( !strncasecmp_m(argv[i], "type", strlen("type")) )  {
 			fstrcpy( type, get_string_param( argv[i] ) );
 			switch ( type[0] ) {
 				case 'b':
@@ -361,21 +361,21 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
-		if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {
+		if ( !strncasecmp_m(argv[i], "ntgroup", strlen("ntgroup")) ) {
 			fstrcpy( ntgroup, get_string_param( argv[i] ) );
 			if ( !ntgroup[0] ) {
 				d_fprintf(stderr, _("must supply a name\n"));
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
+		else if ( !strncasecmp_m(argv[i], "sid", strlen("sid")) ) {
 			fstrcpy( sid_string, get_string_param( argv[i] ) );
 			if ( !sid_string[0] ) {
 				d_fprintf(stderr, _("must supply a name\n"));
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "comment", strlen("comment")) ) {
+		else if ( !strncasecmp_m(argv[i], "comment", strlen("comment")) ) {
 			fstrcpy( ntcomment, get_string_param( argv[i] ) );
 			if ( !ntcomment[0] ) {
 				d_fprintf(stderr,
@@ -383,7 +383,7 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "unixgroup", strlen("unixgroup")) ) {
+		else if ( !strncasecmp_m(argv[i], "unixgroup", strlen("unixgroup")) ) {
 			fstrcpy( unixgrp, get_string_param( argv[i] ) );
 			if ( !unixgrp[0] ) {
 				d_fprintf(stderr,
@@ -391,7 +391,7 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "type", strlen("type")) )  {
+		else if ( !strncasecmp_m(argv[i], "type", strlen("type")) )  {
 			fstrcpy( type, get_string_param( argv[i] ) );
 			switch ( type[0] ) {
 				case 'd':
@@ -500,14 +500,14 @@ static int net_groupmap_delete(struct net_context *c, int argc, const char **arg
 
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
-		if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {
+		if ( !strncasecmp_m(argv[i], "ntgroup", strlen("ntgroup")) ) {
 			fstrcpy( ntgroup, get_string_param( argv[i] ) );
 			if ( !ntgroup[0] ) {
 				d_fprintf(stderr, _("must supply a name\n"));
 				return -1;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
+		else if ( !strncasecmp_m(argv[i], "sid", strlen("sid")) ) {
 			fstrcpy( sid_string, get_string_param( argv[i] ) );
 			if ( !sid_string[0] ) {
 				d_fprintf(stderr, _("must supply a SID\n"));

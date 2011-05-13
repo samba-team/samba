@@ -871,7 +871,6 @@ ssize_t tstream_read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 /* The following definitions come from lib/util_str.c  */
 
 bool next_token(const char **ptr, char *buff, const char *sep, size_t bufsize);
-int StrnCaseCmp(const char *s, const char *t, size_t len);
 bool strnequal(const char *s1,const char *s2,size_t n);
 bool strcsequal(const char *s1,const char *s2);
 void strnorm(char *s, int case_default);

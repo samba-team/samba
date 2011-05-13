@@ -1349,25 +1349,25 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	/* process additional command line args */
 
 	for ( i=0; i<argc; i++ ) {
-		if ( !StrnCaseCmp(argv[i], "createupn", strlen("createupn")) ) {
+		if ( !strncasecmp_m(argv[i], "createupn", strlen("createupn")) ) {
 			createupn = true;
 			machineupn = get_string_param(argv[i]);
 		}
-		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
+		else if ( !strncasecmp_m(argv[i], "createcomputer", strlen("createcomputer")) ) {
 			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, _("Please supply a valid OU path.\n"));
 				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "osName", strlen("osName")) ) {
+		else if ( !strncasecmp_m(argv[i], "osName", strlen("osName")) ) {
 			if ( (os_name = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, _("Please supply a operating system name.\n"));
 				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "osVer", strlen("osVer")) ) {
+		else if ( !strncasecmp_m(argv[i], "osVer", strlen("osVer")) ) {
 			if ( (os_version = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, _("Please supply a valid operating system version.\n"));
 				werr = WERR_INVALID_PARAM;

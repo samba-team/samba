@@ -38,7 +38,7 @@
 	for (i = 0; i < num_lines; i++) {
 		/* make sure to avoid substring matches like uid
 		   and uidNumber */
-		if ((StrnCaseCmp(list[i], substr, cmplen) == 0) &&
+		if ((strncasecmp_m(list[i], substr, cmplen) == 0) &&
 		    (list[i][cmplen] == '=')) {
 			/* Don't return an empty string */
 			if (list[i][cmplen + 1] != '\0')
@@ -230,7 +230,7 @@ done:
 	while (next_token_talloc(frame, &tmp_dn, &buffer, ",")) {
 
 		/* skip everything up the where DC=... begins */
-		if (StrnCaseCmp(buffer, "DC=", 3) != 0)
+		if (strncasecmp_m(buffer, "DC=", 3) != 0)
 			continue;
 
 		if (!domain) {

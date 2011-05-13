@@ -632,7 +632,7 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 				sub_sockaddr[0] ? sub_sockaddr : "0.0.0.0");
 			break;
 		case 'L' : 
-			if ( StrnCaseCmp(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {
+			if ( strncasecmp_m(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {
 				break;
 			}
 			if (local_machine_name && *local_machine_name) {

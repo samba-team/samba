@@ -310,7 +310,7 @@ static bool check_forest_scope(const char *dn)
 	}
 
 	q++;
-	if (StrnCaseCmp(q, "dc=", 3) != 0) {
+	if (strncasecmp_m(q, "dc=", 3) != 0) {
 		nt_status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		BAIL_ON_NTSTATUS_ERROR(nt_status);
 	}
