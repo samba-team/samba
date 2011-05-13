@@ -308,7 +308,68 @@ int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct 
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
+/*
+  a ldb_extended request operating on modules below the
+  current module
+ */
+int dsdb_module_extended(struct ldb_module *module,
+		       const char* oid, void* data,
+		       uint32_t dsdb_flags,
+		       struct ldb_request *parent)
+{
+	struct ldb_request *req;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	struct ldb_result *res;
 
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
+
+	ret = ldb_build_extended_req(&req, ldb,
+			tmp_ctx,
+			oid,
+			data,
+			NULL,
+			res, ldb_extended_default_callback,
+			parent);
+
+	LDB_REQ_SET_LOCATION(req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (dsdb_flags & DSDB_FLAG_TRUSTED) {
+		ldb_req_mark_trusted(req);
+	}
+
+	/* Run the new request */
+	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
+		ret = ldb_next_request(module, req);
+	} else if (dsdb_flags & DSDB_FLAG_TOP_MODULE) {
+		ret = ldb_request(ldb_module_get_ctx(module), req);
+	} else {
+		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
+		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
+		ret = ops->extended(module, req);
+	}
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
 /*
   a ldb_modify request operating on modules below the
   current module
