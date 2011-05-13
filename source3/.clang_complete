@@ -1,2 +1,3 @@
 -I. -I./.. -Iinclude -I./../lib/replace -I./../lib/tevent -I./librpc -I./../lib/talloc -I../lib/tdb/include
+-I./../bin/default/include -I./../bin/default/source3 -I./../bin/default
 -Iinclude/includes.h.gch
