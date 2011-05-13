@@ -36,89 +36,6 @@ const char toupper_ascii_fast_table[128] = {
 };
 
 /**
- * Case insensitive string compararison.
- *
- * iconv does not directly give us a way to compare strings in
- * arbitrary unix character sets -- all we can is convert and then
- * compare.  This is expensive.
- *
- * As an optimization, we do a first pass that considers only the
- * prefix of the strings that is entirely 7-bit.  Within this, we
- * check whether they have the same value.
- *
- * Hopefully this will often give the answer without needing to copy.
- * In particular it should speed comparisons to literal ascii strings
- * or comparisons of strings that are "obviously" different.
- *
- * If we find a non-ascii character we fall back to converting via
- * iconv.
- *
- * This should never be slower than convering the whole thing, and
- * often faster.
- *
- * A different optimization would be to compare for bitwise equality
- * in the binary encoding.  (It would be possible thought hairy to do
- * both simultaneously.)  But in that case if they turn out to be
- * different, we'd need to restart the whole thing.
- *
- * Even better is to implement strcasecmp for each encoding and use a
- * function pointer.
- **/
-int StrCaseCmp(const char *s, const char *t)
-{
-
-	const char *ps, *pt;
-	size_t size;
-	smb_ucs2_t *buffer_s, *buffer_t;
-	int ret;
-
-	for (ps = s, pt = t; ; ps++, pt++) {
-		char us, ut;
-
-		if (!*ps && !*pt)
-			return 0; /* both ended */
- 		else if (!*ps)
-			return -1; /* s is a prefix */
-		else if (!*pt)
-			return +1; /* t is a prefix */
-		else if ((*ps & 0x80) || (*pt & 0x80))
-			/* not ascii anymore, do it the hard way
-			 * from here on in */
-			break;
-
-		us = toupper_ascii_fast(*ps);
-		ut = toupper_ascii_fast(*pt);
-		if (us == ut)
-			continue;
-		else if (us < ut)
-			return -1;
-		else if (us > ut)
-			return +1;
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_s, ps, &size)) {
-		return strcmp(ps, pt);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive, and it's pretty
-		   close */
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_t, pt, &size)) {
-		TALLOC_FREE(buffer_s);
-		return strcmp(ps, pt);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive, and it's pretty
-		   close */
-	}
-
-	ret = strcasecmp_w(buffer_s, buffer_t);
-	TALLOC_FREE(buffer_s);
-	TALLOC_FREE(buffer_t);
-	return ret;
-}
-
-
-/**
  Case insensitive string compararison, length limited.
 **/
 int StrnCaseCmp(const char *s, const char *t, size_t len)
@@ -360,7 +277,7 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 				break;
 			}
 		} else {
-			if (StrCaseCmp(tok,s) == 0) {
+			if (strcasecmp_m(tok,s) == 0) {
 				ret = true;
 				break;
 			}

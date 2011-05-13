@@ -1183,7 +1183,7 @@ static int net_conf_run_function(struct net_context *c, int argc,
 
 	if (argc != 0) {
 		for (i=0; table[i].funcname; i++) {
-			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+			if (strcasecmp_m(argv[0], table[i].funcname) == 0)
 				return net_conf_wrap_function(c, table[i].fn,
 							      argc-1,
 							      argv+1);

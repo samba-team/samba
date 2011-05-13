@@ -475,16 +475,16 @@ int main( int argc, char *argv[] )
 
 	/*  note that the separate command types should call usage if they need to... */
 	while ( 1 ) {
-		if ( !StrCaseCmp( opname, "addsource" ) ) {
+		if ( !strcasecmp_m( opname, "addsource" ) ) {
 			rc = DoAddSourceCommand( argc, argv, opt_debug,
 						 exename );
 			break;
 		}
-		if ( !StrCaseCmp( opname, "write" ) ) {
+		if ( !strcasecmp_m( opname, "write" ) ) {
 			rc = DoWriteCommand( argc, argv, opt_debug, exename );
 			break;
 		}
-		if ( !StrCaseCmp( opname, "dump" ) ) {
+		if ( !strcasecmp_m( opname, "dump" ) ) {
 			rc = DoDumpCommand( argc, argv, opt_debug, exename );
 			break;
 		}

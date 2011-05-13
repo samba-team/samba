@@ -3488,7 +3488,7 @@ static int dns_cmp(const char *s1, size_t l1,
 	int cret;
 
 	if (l1 == l2) {
-		if (StrCaseCmp(s1, s2) == 0) {
+		if (strcasecmp_m(s1, s2) == 0) {
 			return DNS_CMP_MATCH;
 		}
 		return DNS_CMP_NO_MATCH;
@@ -3512,7 +3512,7 @@ static int dns_cmp(const char *s1, size_t l1,
 		return DNS_CMP_NO_MATCH;
 	}
 
-	if (StrCaseCmp(&p1[t1 - t2], p2) == 0) {
+	if (strcasecmp_m(&p1[t1 - t2], p2) == 0) {
 		return cret;
 	}
 
@@ -3701,7 +3701,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 				sid_conflict = true;
 			}
 			if (!(trec->flags & LSA_NB_DISABLED_ADMIN) &&
-			    StrCaseCmp(trec->data.info.netbios_name.string,
+			    strcasecmp_m(trec->data.info.netbios_name.string,
 				       nb_name) == 0) {
 				nb_conflict = true;
 			}
@@ -3876,7 +3876,7 @@ NTSTATUS _lsa_lsaRSetForestTrustInformation(struct pipes_struct *p,
 		if (domains[i]->domain_name == NULL) {
 			return NT_STATUS_INVALID_DOMAIN_STATE;
 		}
-		if (StrCaseCmp(domains[i]->domain_name,
+		if (strcasecmp_m(domains[i]->domain_name,
 			       r->in.trusted_domain_name->string) == 0) {
 			break;
 		}

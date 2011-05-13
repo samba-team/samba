@@ -6532,7 +6532,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	 * or to remote one given in command line
 	 */
 
-	if (StrCaseCmp(c->opt_workgroup, lp_workgroup())) {
+	if (strcasecmp_m(c->opt_workgroup, lp_workgroup())) {
 		domain_name = c->opt_workgroup;
 		c->opt_target_workgroup = c->opt_workgroup;
 	} else {
@@ -6712,7 +6712,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	 * or to remote one given in command line
 	 */
 
-	if (StrCaseCmp(c->opt_workgroup, lp_workgroup())) {
+	if (strcasecmp_m(c->opt_workgroup, lp_workgroup())) {
 		domain_name = c->opt_workgroup;
 		c->opt_target_workgroup = c->opt_workgroup;
 	} else {

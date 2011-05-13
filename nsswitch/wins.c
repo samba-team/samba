@@ -180,7 +180,7 @@ int lookup(nsd_file_t *rq)
 	 * response needs to be a string of the following format
 	 * ip_address[ ip_address]*\tname[ alias]*
 	 */
-	if (StrCaseCmp(map,"hosts.byaddr") == 0) {
+	if (strcasecmp_m(map,"hosts.byaddr") == 0) {
 		if ( status = lookup_byaddr_backend(key, &count)) {
 		    size = strlen(key) + 1;
 		    if (size > len) {
@@ -208,7 +208,7 @@ int lookup(nsd_file_t *rq)
 		    response[strlen(response)-1] = '\n';
 		    talloc_free(status);
 		}
-	} else if (StrCaseCmp(map,"hosts.byname") == 0) {
+	} else if (strcasecmp_m(map,"hosts.byname") == 0) {
 	    if (ip_list = lookup_byname_backend(key, &count)) {
 		for (i = count; i ; i--) {
 		    addr = inet_ntoa(ip_list[i-1]);

@@ -405,7 +405,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 			return NULL;
 		}
 
-		if (StrCaseCmp(tmp, result) < 0) {
+		if (strcasecmp_m(tmp, result) < 0) {
 			TALLOC_FREE(result);
 			result = tmp;
 		} else {
@@ -654,7 +654,7 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 			equal = (newblob && (data_blob_cmp(&oldblob, newblob) == 0));
 		} else {
 			/* all of our string attributes are case insensitive */
-			equal = (newval && (StrCaseCmp(oldval, newval) == 0));
+			equal = (newval && (strcasecmp_m(oldval, newval) == 0));
 		}
 
 		if (equal) {

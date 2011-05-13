@@ -586,7 +586,7 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 
 	if (argc != 0) {
 		for (i=0; table[i].funcname != NULL; i++) {
-			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+			if (strcasecmp_m(argv[0], table[i].funcname) == 0)
 				return table[i].fn(c, argc-1, argv+1);
 		}
 	}

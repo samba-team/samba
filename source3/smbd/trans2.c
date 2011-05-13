@@ -1219,7 +1219,7 @@ static bool exact_match(bool has_wild,
 	if (case_sensitive) {
 		return strcmp(str,mask)==0;
 	} else {
-		return StrCaseCmp(str,mask) == 0;
+		return strcasecmp_m(str,mask) == 0;
 	}
 }
 

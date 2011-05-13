@@ -55,7 +55,7 @@ int net_group(struct net_context *c, int argc, const char **argv)
 	if (argc < 1)
 		return net_group_usage(c, argc, argv);
 
-	if (StrCaseCmp(argv[0], "HELP") == 0) {
+	if (strcasecmp_m(argv[0], "HELP") == 0) {
 		net_group_usage(c, argc, argv);
 		return 0;
 	}

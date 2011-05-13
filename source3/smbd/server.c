@@ -1202,7 +1202,7 @@ extern void build_options(bool screen);
 		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 						   "rpc_server", "epmapper",
 						   "none");
-		if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 			start_epmd(smbd_event_context(),
 				   smbd_server_conn->msg_ctx);
 		}
@@ -1235,7 +1235,7 @@ extern void build_options(bool screen);
 		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 						   "rpc_server", "spoolss",
 						   "embedded");
-		if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+		if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 			start_spoolssd(smbd_event_context(),
 				       smbd_messaging_context());
 		}

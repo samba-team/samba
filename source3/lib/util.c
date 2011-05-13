@@ -1299,7 +1299,7 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
 			}
 		} else {
 			if((case_sensitive && (strcmp(last_component, namelist->name) == 0))||
-						(!case_sensitive && (StrCaseCmp(last_component, namelist->name) == 0))) {
+						(!case_sensitive && (strcasecmp_m(last_component, namelist->name) == 0))) {
 				DEBUG(8,("is_in_path: match succeeded\n"));
 				return True;
 			}
@@ -2203,7 +2203,7 @@ bool name_to_fqdn(fstring fqdn, const char *name)
 			}
 		}
 	}
-	if (full && (StrCaseCmp(full, "localhost.localdomain") == 0)) {
+	if (full && (strcasecmp_m(full, "localhost.localdomain") == 0)) {
 		DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
 		DEBUGADD(1, ("    Specifing the machine hostname for address 127.0.0.1 may lead\n"));
 		DEBUGADD(1, ("    to Kerberos authentication problems as localhost.localdomain\n"));

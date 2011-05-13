@@ -100,7 +100,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
-		if ( !StrCaseCmp(argv[i], "verbose")) {
+		if ( !strcasecmp_m(argv[i], "verbose")) {
 			long_list = true;
 		}
 		else if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {

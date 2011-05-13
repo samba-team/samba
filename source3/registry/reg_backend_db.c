@@ -1300,7 +1300,7 @@ done:
 
 static int cmp_keynames(char **p1, char **p2)
 {
-	return StrCaseCmp(*p1, *p2);
+	return strcasecmp_m(*p1, *p2);
 }
 
 struct create_sorted_subkeys_context {

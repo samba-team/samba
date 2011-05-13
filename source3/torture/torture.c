@@ -7980,7 +7980,7 @@ static NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 		stype = "$DATA";
 	}
 	else {
-		if (StrCaseCmp(stype, ":$DATA") != 0) {
+		if (strcasecmp_m(stype, ":$DATA") != 0) {
 			/*
 			 * If there is an explicit stream type, so far we only
 			 * allow $DATA. Is there anything else allowed? -- vl

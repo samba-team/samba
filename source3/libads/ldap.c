@@ -2228,7 +2228,7 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 	}
 
 	for (i=0; handlers[i].name; i++) {
-		if (StrCaseCmp(handlers[i].name, field) == 0) {
+		if (strcasecmp_m(handlers[i].name, field) == 0) {
 			if (!values) /* first time, indicate string or not */
 				return handlers[i].string;
 			handlers[i].handler(ads, field, (struct berval **) values);

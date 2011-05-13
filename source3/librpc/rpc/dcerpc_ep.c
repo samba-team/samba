@@ -169,7 +169,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 					   "rpc_server", "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
 		static struct client_address client_id;
 
 		strlcpy(client_id.addr, "localhost", sizeof(client_id.addr));
@@ -186,7 +186,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 				  "epmapper (%s)", nt_errstr(status)));
 			goto done;
 		}
-	} else if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		/* Connect to the endpoint mapper locally */
 		ncalrpc_sock = talloc_asprintf(tmp_ctx,
 					      "%s/%s",

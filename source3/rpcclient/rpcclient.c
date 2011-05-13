@@ -240,7 +240,7 @@ static NTSTATUS cmd_listcommands(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	{
 		tmp_set = tmp->cmd_set;
 
-		if (!StrCaseCmp(argv[1], tmp_set->name))
+		if (!strcasecmp_m(argv[1], tmp_set->name))
 		{
 			printf("Available commands on the %s pipe:\n\n", tmp_set->name);
 

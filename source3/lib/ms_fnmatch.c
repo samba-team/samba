@@ -166,7 +166,7 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 		if (is_case_sensitive) {
 			return strcmp(pattern, string);
 		} else {
-			return StrCaseCmp(pattern, string);
+			return strcasecmp_m(pattern, string);
 		}
 	}
 

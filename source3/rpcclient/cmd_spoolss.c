@@ -83,7 +83,7 @@ static const char *cmd_spoolss_get_short_archi(const char *long_archi)
         do {
                 i++;
         } while ( (archi_table[i].long_archi!=NULL ) &&
-                  StrCaseCmp(long_archi, archi_table[i].long_archi) );
+                  strcasecmp_m(long_archi, archi_table[i].long_archi) );
 
         if (archi_table[i].long_archi==NULL) {
                 DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
@@ -1616,7 +1616,7 @@ static char *get_driver_3_param(TALLOC_CTX *mem_ctx, char *str,
 	   parameter because two consecutive delimiters
 	   will not return an empty string.  See man strtok(3)
 	   for details */
-	if (ptr && (StrCaseCmp(ptr, "NULL") == 0)) {
+	if (ptr && (strcasecmp_m(ptr, "NULL") == 0)) {
 		ptr = NULL;
 	}
 

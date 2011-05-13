@@ -190,7 +190,7 @@ static NTSTATUS check_privilege_for_user(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	for (i = 0; i < rights.count; i++) {
-		if (StrCaseCmp(rights.names[i].string, right) == 0) {
+		if (strcasecmp_m(rights.names[i].string, right) == 0) {
 			return NT_STATUS_OK;
 		}
 	}

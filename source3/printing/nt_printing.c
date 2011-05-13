@@ -147,7 +147,7 @@ const char *get_short_archi(const char *long_archi)
         do {
                 i++;
         } while ( (archi_table[i].long_archi!=NULL ) &&
-                  StrCaseCmp(long_archi, archi_table[i].long_archi) );
+                  strcasecmp_m(long_archi, archi_table[i].long_archi) );
 
         if (archi_table[i].long_archi==NULL) {
                 DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));

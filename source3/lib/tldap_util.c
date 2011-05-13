@@ -300,7 +300,7 @@ static int compare_utf8_blobs(const DATA_BLOB *d1, const DATA_BLOB *d2)
 		TALLOC_FREE(s1);
 		return 0;
 	}
-	ret = StrCaseCmp(s1, s2);
+	ret = strcasecmp_m(s1, s2);
 	TALLOC_FREE(s2);
 	TALLOC_FREE(s1);
 	return ret;

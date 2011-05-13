@@ -134,7 +134,7 @@ static struct tree_node *pathtree_birth_child(struct tree_node *node,
 			/* the strings should never match assuming that we 
 			   have called pathtree_find_child() first */
 
-			if ( StrCaseCmp( infant->key, node->children[i-1]->key ) > 0 ) {
+			if ( strcasecmp_m( infant->key, node->children[i-1]->key ) > 0 ) {
 				DEBUG(11,("pathtree_birth_child: storing infant in i == [%d]\n", 
 					i));
 				node->children[i] = infant;
@@ -183,7 +183,7 @@ static struct tree_node *pathtree_find_child(struct tree_node *node,
 		DEBUG(11,("pathtree_find_child: child key => [%s]\n",
 			node->children[i]->key));
 
-		result = StrCaseCmp( node->children[i]->key, key );
+		result = strcasecmp_m( node->children[i]->key, key );
 
 		if ( result == 0 )
 			next = node->children[i];

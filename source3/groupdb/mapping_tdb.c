@@ -849,7 +849,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 		p += len + 1;
 
 		num_vals = pull_uint32(p, 0);
-		if (StrCaseCmp(name, "member") == 0) {
+		if (strcasecmp_m(name, "member") == 0) {
 			num_mem = num_vals;
 			members = talloc_array(tmp_ctx, struct dom_sid, num_mem);
 			if (members == NULL) {
@@ -882,30 +882,30 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 
 			/* we ignore unknown or uninteresting attributes
 			 * (objectclass, etc.) */
-			if (StrCaseCmp(name, "gidNumber") == 0) {
+			if (strcasecmp_m(name, "gidNumber") == 0) {
 				map.gid = strtoul(val, &q, 10);
 				if (*q) {
 					errno = EIO;
 					goto failed;
 				}
-			} else if (StrCaseCmp(name, "sid") == 0) {
+			} else if (strcasecmp_m(name, "sid") == 0) {
 				if (!string_to_sid(&map.sid, val)) {
 					errno = EIO;
 					goto failed;
 				}
-			} else if (StrCaseCmp(name, "sidNameUse") == 0) {
+			} else if (strcasecmp_m(name, "sidNameUse") == 0) {
 				map.sid_name_use = strtoul(val, &q, 10);
 				if (*q) {
 					errno = EIO;
 					goto failed;
 				}
-			} else if (StrCaseCmp(name, "ntname") == 0) {
+			} else if (strcasecmp_m(name, "ntname") == 0) {
 				strlcpy(map.nt_name, val,
 					sizeof(map.nt_name));
-			} else if (StrCaseCmp(name, "comment") == 0) {
+			} else if (strcasecmp_m(name, "comment") == 0) {
 				strlcpy(map.comment, val,
 					sizeof(map.comment));
-			} else if (StrCaseCmp(name, "member") == 0) {
+			} else if (strcasecmp_m(name, "member") == 0) {
 				if (!string_to_sid(&members[j], val)) {
 					errno = EIO;
 					goto failed;

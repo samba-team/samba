@@ -441,10 +441,10 @@ static bool usergrp_display(ADS_STRUCT *ads, char *field, void **values, void *d
 	}
 	if (!values) /* must be new field, indicate string field */
 		return true;
-	if (StrCaseCmp(field, "sAMAccountName") == 0) {
+	if (strcasecmp_m(field, "sAMAccountName") == 0) {
 		disp_fields[0] = SMB_STRDUP((char *) values[0]);
 	}
-	if (StrCaseCmp(field, "description") == 0)
+	if (strcasecmp_m(field, "description") == 0)
 		disp_fields[1] = SMB_STRDUP((char *) values[0]);
 	return true;
 }

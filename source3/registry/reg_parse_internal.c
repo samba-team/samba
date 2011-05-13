@@ -308,7 +308,7 @@ int write_bom(FILE* file, const char* charset, charset_t ctype)
 		DEBUG(0, ("No Byte Order Mark for charset_t: %u\n", (unsigned)ctype));
 	} else {
 		for (i=0; BOM[i].name; i++) {
-			if (StrCaseCmp(BOM[i].name, charset) == 0) {
+			if (strcasecmp_m(BOM[i].name, charset) == 0) {
 				return fwrite(BOM[i].seq, 1, BOM[i].len, file);
 			}
 		}

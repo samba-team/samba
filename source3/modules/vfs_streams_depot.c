@@ -324,7 +324,7 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 	stype = strchr_m(smb_fname->stream_name + 1, ':');
 
 	if (stype) {
-		if (StrCaseCmp(stype, ":$DATA") != 0) {
+		if (strcasecmp_m(stype, ":$DATA") != 0) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}

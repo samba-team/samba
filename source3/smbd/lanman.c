@@ -1427,7 +1427,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 
 static int srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
 {
-	return StrCaseCmp(s1->name,s2->name);
+	return strcasecmp_m(s1->name,s2->name);
 }
 
 /****************************************************************************
@@ -1596,7 +1596,7 @@ static int srv_name_match(const char *n1, const char *n2)
 	 *  the server will return a list of servers that exist on
 	 *  the network greater than or equal to the FirstNameToReturn.
 	 */
-	int ret = StrCaseCmp(n1, n2);
+	int ret = strcasecmp_m(n1, n2);
 
 	if (ret <= 0) {
 		return 0;
@@ -1708,7 +1708,7 @@ static bool api_RNetServerEnum3(struct smbd_server_connection *sconn,
 			 */
 			for (;first > 0;) {
 				int ret;
-				ret = StrCaseCmp(first_name,
+				ret = strcasecmp_m(first_name,
 						 servers[first-1].name);
 				if (ret > 0) {
 					break;

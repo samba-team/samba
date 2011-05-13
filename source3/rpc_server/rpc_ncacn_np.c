@@ -895,7 +895,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 					   "rpc_server", pipe_name,
 					   "embedded");
 
-	if (StrCaseCmp(server_type, "embedded") == 0) {
+	if (strcasecmp_m(server_type, "embedded") == 0) {
 		status = rpc_pipe_open_internal(tmp_ctx,
 						syntax, session_info,
 						client_id, msg_ctx,
@@ -903,8 +903,8 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-	} else if (StrCaseCmp(server_type, "daemon") == 0 ||
-		   StrCaseCmp(server_type, "external") == 0) {
+	} else if (strcasecmp_m(server_type, "daemon") == 0 ||
+		   strcasecmp_m(server_type, "external") == 0) {
 		/* It would be nice to just use rpc_pipe_open_ncalrpc() but
 		 * for now we need to use the special proxy setup to connect
 		 * to spoolssd. */

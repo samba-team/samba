@@ -2339,32 +2339,32 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 {
 	DEBUG(8,("getprinterdata_printer_server:%s\n", value));
 
-	if (!StrCaseCmp(value, "W3SvcInstalled")) {
+	if (!strcasecmp_m(value, "W3SvcInstalled")) {
 		*type = REG_DWORD;
 		data->value = 0x00;
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "BeepEnabled")) {
+	if (!strcasecmp_m(value, "BeepEnabled")) {
 		*type = REG_DWORD;
 		data->value = 0x00;
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "EventLog")) {
+	if (!strcasecmp_m(value, "EventLog")) {
 		*type = REG_DWORD;
 		/* formally was 0x1b */
 		data->value = 0x00;
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "NetPopup")) {
+	if (!strcasecmp_m(value, "NetPopup")) {
 		*type = REG_DWORD;
 		data->value = 0x00;
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "MajorVersion")) {
+	if (!strcasecmp_m(value, "MajorVersion")) {
 		*type = REG_DWORD;
 
 		/* Windows NT 4.0 seems to not allow uploading of drivers
@@ -2381,7 +2381,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "MinorVersion")) {
+	if (!strcasecmp_m(value, "MinorVersion")) {
 		*type = REG_DWORD;
 		data->value = 0x00;
 		return WERR_OK;
@@ -2394,7 +2394,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 	 *  uint32_t build 	 = [2195|2600]
 	 *  extra unicode string = e.g. "Service Pack 3"
 	 */
-	if (!StrCaseCmp(value, "OSVersion")) {
+	if (!strcasecmp_m(value, "OSVersion")) {
 		DATA_BLOB blob;
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
@@ -2417,7 +2417,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 	}
 
 
-	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
+	if (!strcasecmp_m(value, "DefaultSpoolDirectory")) {
 		*type = REG_SZ;
 
 		data->string = talloc_strdup(mem_ctx, "C:\\PRINTERS");
@@ -2426,7 +2426,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "Architecture")) {
+	if (!strcasecmp_m(value, "Architecture")) {
 		*type = REG_SZ;
 		data->string = talloc_strdup(mem_ctx,
 			lp_parm_const_string(GLOBAL_SECTION_SNUM, "spoolss", "architecture", SPOOLSS_ARCHITECTURE_NT_X86));
@@ -2435,7 +2435,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "DsPresent")) {
+	if (!strcasecmp_m(value, "DsPresent")) {
 		*type = REG_DWORD;
 
 		/* only show the publish check box if we are a
@@ -2449,7 +2449,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!StrCaseCmp(value, "DNSMachineName")) {
+	if (!strcasecmp_m(value, "DNSMachineName")) {
 		const char *hostname = get_mydnsfullname();
 
 		if (!hostname) {

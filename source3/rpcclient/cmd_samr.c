@@ -284,14 +284,14 @@ static NTSTATUS get_domain_handle(struct rpc_pipe_client *cli,
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER, result;
 
-	if (StrCaseCmp(sam, "domain") == 0) {
+	if (strcasecmp_m(sam, "domain") == 0) {
 		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					      connect_pol,
 					      access_mask,
 					      _domain_sid,
 					      domain_pol,
 					      &result);
-	} else if (StrCaseCmp(sam, "builtin") == 0) {
+	} else if (strcasecmp_m(sam, "builtin") == 0) {
 		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					      connect_pol,
 					      access_mask,

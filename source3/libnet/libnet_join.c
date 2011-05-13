@@ -1771,7 +1771,7 @@ static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 	}
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (krb5_cc_env && StrCaseCmp(krb5_cc_env, "MEMORY:libnetjoin")) {
+	if (krb5_cc_env && strcasecmp_m(krb5_cc_env, "MEMORY:libnetjoin")) {
 		unsetenv(KRB5_ENV_CCNAME);
 	}
 
@@ -1790,7 +1790,7 @@ static int libnet_destroy_UnjoinCtx(struct libnet_UnjoinCtx *r)
 	}
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (krb5_cc_env && StrCaseCmp(krb5_cc_env, "MEMORY:libnetjoin")) {
+	if (krb5_cc_env && strcasecmp_m(krb5_cc_env, "MEMORY:libnetjoin")) {
 		unsetenv(KRB5_ENV_CCNAME);
 	}
 
