@@ -4,6 +4,8 @@
    util_asn1 testing
 
    Copyright (C) Kamen Mazdrashki <kamen.mazdrashki@postpath.com> 2009
+   Copyright (C) Volker Lendecke 2004
+   Copyright (C) Andrew Bartlett 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -103,6 +105,55 @@ static const struct oid_data partial_oid_data_ok[] = {
 	},
 };
 
+static const struct {
+	DATA_BLOB blob;
+	int value;
+} integer_tests[] = {
+        {
+		.blob = {"\x02\x01\x00", 3},
+		.value = 0
+	},
+	{
+		.blob = {"\x02\x01\x7f", 3},
+		.value = 127
+	},
+	{
+		.blob = {"\x02\x02\x00\x80", 4},
+		.value = 128
+	},
+	{
+		.blob = {"\x02\x02\x01\x00", 4},
+		.value = 256
+	},
+	{
+		.blob = {"\x02\x01\x80", 3},
+		.value = -128
+	},
+	{
+		.blob = {"\x02\x02\xff\x7f", 4},
+		.value = -129
+	},
+	{
+		.blob = {"\x02\x01\xff", 3},
+		.value = -1
+	},
+	{
+		.blob = {"\x02\x02\xff\x01", 4},
+		.value = -255
+	},
+	{
+		.blob = {"\x02\x02\x00\xff", 4},
+		.value = 255
+	},
+	{
+		.blob = {"\x02\x04\x80\x00\x00\x00", 6},
+		.value = 0x80000000
+	},
+	{
+		.blob = {"\x02\x04\x7f\xff\xff\xff", 6},
+		.value = 0x7fffffff
+	}
+};
 
 /* Testing ber_write_OID_String() function */
 static bool test_ber_write_OID_String(struct torture_context *tctx)
@@ -260,6 +311,46 @@ static bool test_ber_read_partial_OID_String(struct torture_context *tctx)
 	return true;
 }
 
+/*
+ * Testing asn1_read_Integer and asn1_write_Integer functions,
+ * inspired by Love Hornquist Astrand
+ */
+
+static bool test_asn1_Integer(struct torture_context *tctx)
+{
+	int i;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(tctx);
+
+	for (i = 0; i < ARRAY_SIZE(integer_tests); i++) {
+		ASN1_DATA *data;
+		DATA_BLOB blob;
+		int val;
+
+		data = asn1_init(mem_ctx);
+		if (!data) {
+			return -1;
+		}
+
+		asn1_write_Integer(data, integer_tests[i].value);
+
+		blob.data = data->data;
+		blob.length = data->length;
+		torture_assert_data_blob_equal(tctx, blob, integer_tests[i].blob, "asn1_write_Integer gave incorrect result");
+
+		asn1_load(data, blob);
+		torture_assert(tctx, asn1_read_Integer(data, &val), "asn1_write_Integer output could not be read by asn1_read_Integer()");
+
+		torture_assert_int_equal(tctx, val, integer_tests[i].value,
+			"readback of asn1_write_Integer output by asn1_read_Integer() failed");
+	}
+
+	talloc_free(mem_ctx);
+
+	return true;
+}
+
 
 /* LOCAL-ASN1 test suite creation */
 struct torture_suite *torture_local_util_asn1(TALLOC_CTX *mem_ctx)
@@ -277,6 +368,9 @@ struct torture_suite *torture_local_util_asn1(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "ber_read_partial_OID_String",
 				      test_ber_read_partial_OID_String);
+
+	torture_suite_add_simple_test(suite, "asn1_Integer",
+				      test_asn1_Integer);
 
 	return suite;
 }
