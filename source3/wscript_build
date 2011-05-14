@@ -690,13 +690,14 @@ bld.SAMBA3_LIBRARY('nss_wins',
                   realname='libnss_wins.so.2',
                   vnum='2')
 
-bld.SAMBA3_SUBSYSTEM('msrpc3',
-                    source='${LIBMSRPC_SRC}',
-                    deps='''ndr ndr-util ndr-standard
+bld.SAMBA3_LIBRARY('msrpc3',
+                   source='${LIBMSRPC_SRC}',
+                   deps='''ndr ndr-util ndr-standard
                     RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
                     LIBTSOCKET KRB5_WRAP rpccommon
                     LIBSMB''',
-                    vars=locals())
+                   vars=locals(),
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
                     source='',
