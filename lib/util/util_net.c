@@ -405,7 +405,7 @@ bool is_zero_addr(const struct sockaddr_storage *pss)
  */
 void zero_ip_v4(struct in_addr *ip)
 {
-	memset(ip, '\0', sizeof(struct in_addr));
+	ZERO_STRUCTP(ip);
 }
 
 /**
@@ -415,7 +415,7 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip)
 {
 	struct sockaddr_in *sa = (struct sockaddr_in *)ss;
-	memset(ss, '\0', sizeof(*ss));
+	ZERO_STRUCTP(ss);
 	sa->sin_family = AF_INET;
 	sa->sin_addr = ip;
 }
