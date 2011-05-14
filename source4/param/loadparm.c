@@ -2622,8 +2622,6 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	settings.timestamp_logs = true;
 	debug_set_settings(&settings);
 
-	/* FIXME: ntstatus_check_dos_mapping = lpcfg_nt_status_support(lp_ctx); */
-
 	/* FIXME: This is a bit of a hack, but we can't use a global, since 
 	 * not everything that uses lp also uses the socket library */
 	if (lpcfg_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false)) {

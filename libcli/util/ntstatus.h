@@ -648,9 +648,6 @@ const char *get_nt_error_c_code(void *mem_ctx, NTSTATUS nt_code);
  *****************************************************************************/
 NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 
-/** Used by ntstatus_dos_equal: */
-extern bool ntstatus_check_dos_mapping;
-
 /* we need these here for openchange */
 #ifndef likely
 #define likely(x) (x)
@@ -661,13 +658,7 @@ extern bool ntstatus_check_dos_mapping;
 
 #define NT_STATUS_IS_OK(x) (likely(NT_STATUS_V(x) == 0))
 #define NT_STATUS_IS_ERR(x) (unlikely((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000))
-/* checking for DOS error mapping here is ugly, but unfortunately the
-   alternative is a very intrusive rewrite of the torture code */
-#if _SAMBA_BUILD_ == 4
-#define NT_STATUS_EQUAL(x,y) (NT_STATUS_IS_DOS(x)||NT_STATUS_IS_DOS(y)?ntstatus_dos_equal(x,y):NT_STATUS_V(x) == NT_STATUS_V(y))
-#else
 #define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
-#endif
 
 #define NT_STATUS_HAVE_NO_MEMORY(x) do { \
 	if (unlikely(!(x))) {		\

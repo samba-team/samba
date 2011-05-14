@@ -570,41 +570,6 @@ static const struct {
 	{ WERR_OK, NT_STATUS_OK }
 };
 
-bool ntstatus_check_dos_mapping = true;
-
-/*
-  check if a DOS encoded NTSTATUS code maps to the given NTSTATUS code
-*/
-bool ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2)
-{
-	/* when we negotiate nt status support, we don't want to consider
-	   the mapping of dos codes, as we want to catch the cases where
-	   a forced dos code is needed
-	*/
-	if (ntstatus_check_dos_mapping) {
-		return NT_STATUS_V(status1) == NT_STATUS_V(status2);
-	}
-
-	/* otherwise check if the mapping comes out right. Note that it is important
-	   that we do the mapping only from ntstatus -> dos and not from dos -> ntstatus,
-	   as that is the mapping that servers must do */
-	if (!NT_STATUS_IS_DOS(status1) && NT_STATUS_IS_DOS(status2)) {
-		uint8_t eclass;
-		uint32_t ecode;
-		ntstatus_to_dos(status1, &eclass, &ecode);
-		return eclass == NT_STATUS_DOS_CLASS(status2) &&
-			ecode == NT_STATUS_DOS_CODE(status2);
-	}
-	if (NT_STATUS_IS_DOS(status1) && !NT_STATUS_IS_DOS(status2)) {
-		uint8_t eclass;
-		uint32_t ecode;
-		ntstatus_to_dos(status2, &eclass, &ecode);
-		return eclass == NT_STATUS_DOS_CLASS(status1) &&
-			ecode == NT_STATUS_DOS_CODE(status1);
-	}
-	return NT_STATUS_V(status1) == NT_STATUS_V(status2);
-}
-
 /* Mapping between Unix, and NT error numbers */
 
 static const struct {
