@@ -197,6 +197,17 @@ char *saf_fetch( const char *domain )
 	return server;
 }
 
+static void set_socket_addr_v4(struct sockaddr_storage *addr)
+{
+	if (!interpret_string_addr(addr, lp_socket_address(),
+				   AI_NUMERICHOST|AI_PASSIVE)) {
+		zero_sockaddr(addr);
+	}
+	if (addr->ss_family != AF_INET) {
+		zero_sockaddr(addr);
+	}
+}
+
 /****************************************************************************
  Generate a random trn_id.
 ****************************************************************************/
@@ -705,10 +716,7 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 	in_addr = (struct sockaddr_in *)(void *)&state->addr;
 	in_addr->sin_port = htons(NMB_PORT);
 
-	if (!interpret_string_addr(&state->my_addr, lp_socket_address(),
-				   AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_sockaddr(&state->my_addr);
-	}
+	set_socket_addr_v4(&state->my_addr);
 
 	ZERO_STRUCT(p);
 	nmb->header.name_trn_id = generate_trn_id();
@@ -892,10 +900,7 @@ bool name_status_find(const char *q_name,
 		return false;
 	}
 
-	if (!interpret_string_addr(&ss, lp_socket_address(),
-				AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_sockaddr(&ss);
-	}
+	set_socket_addr_v4(&ss);
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
@@ -1202,10 +1207,7 @@ struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 	in_addr = (struct sockaddr_in *)(void *)&state->addr;
 	in_addr->sin_port = htons(NMB_PORT);
 
-	if (!interpret_string_addr(&state->my_addr, lp_socket_address(),
-				   AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_sockaddr(&state->my_addr);
-	}
+	set_socket_addr_v4(&state->my_addr);
 
 	ZERO_STRUCT(p);
 	nmb->header.name_trn_id = generate_trn_id();
