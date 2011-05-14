@@ -271,6 +271,7 @@ static int smbsock_connect_state_destructor(
 {
 	if (state->sock != -1) {
 		close(state->sock);
+		state->sock = -1;
 	}
 	return 0;
 }
