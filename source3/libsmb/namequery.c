@@ -208,6 +208,15 @@ static void set_socket_addr_v4(struct sockaddr_storage *addr)
 	}
 }
 
+static struct in_addr my_socket_addr_v4(void)
+{
+	struct sockaddr_storage my_addr;
+	struct sockaddr_in *in_addr = (struct sockaddr_in *)((char *)&my_addr);
+
+	set_socket_addr_v4(&my_addr);
+	return in_addr->sin_addr;
+}
+
 /****************************************************************************
  Generate a random trn_id.
 ****************************************************************************/
@@ -1800,6 +1809,141 @@ NTSTATUS name_resolve_bcast(const char *name,
 			    bcast_addrs, num_bcast_addrs, 0, 1000,
 			    mem_ctx, return_iplist, return_count,
 			    NULL, NULL);
+}
+
+struct query_wins_list_state {
+	struct tevent_context *ev;
+	const char *name;
+	uint8_t name_type;
+	struct in_addr *servers;
+	uint32_t num_servers;
+	struct sockaddr_storage server;
+	uint32_t num_sent;
+
+	struct sockaddr_storage *addrs;
+	int num_addrs;
+	uint8_t flags;
+};
+
+static void query_wins_list_done(struct tevent_req *subreq);
+
+/*
+ * Query a list of (replicating) wins servers in sequence, call them
+ * dead if they don't reply
+ */
+
+static struct tevent_req *query_wins_list_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct in_addr src_ip, const char *name, uint8_t name_type,
+	struct in_addr *servers, int num_servers)
+{
+	struct tevent_req *req, *subreq;
+	struct query_wins_list_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct query_wins_list_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->name = name;
+	state->name_type = name_type;
+	state->servers = servers;
+	state->num_servers = num_servers;
+
+	if (state->num_servers == 0) {
+		tevent_req_nterror(req, NT_STATUS_NOT_FOUND);
+		return tevent_req_post(req, ev);
+	}
+
+	in_addr_to_sockaddr_storage(
+		&state->server, state->servers[state->num_sent]);
+
+	subreq = name_query_send(state, state->ev,
+				 state->name, state->name_type,
+				 false, true, &state->server);
+	state->num_sent += 1;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	if (!tevent_req_set_endtime(subreq, state->ev,
+				    timeval_current_ofs(2, 0))) {
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, query_wins_list_done, req);
+	return req;
+}
+
+static void query_wins_list_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct query_wins_list_state *state = tevent_req_data(
+		req, struct query_wins_list_state);
+	NTSTATUS status;
+
+	status = name_query_recv(subreq, state,
+				 &state->addrs, &state->num_addrs,
+				 &state->flags);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(status)) {
+		tevent_req_done(req);
+		return;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	wins_srv_died(state->servers[state->num_sent-1],
+		      my_socket_addr_v4());
+
+	if (state->num_sent == state->num_servers) {
+		tevent_req_nterror(req, NT_STATUS_NOT_FOUND);
+		return;
+	}
+
+	in_addr_to_sockaddr_storage(
+		&state->server, state->servers[state->num_sent]);
+
+	subreq = name_query_send(state, state->ev,
+				 state->name, state->name_type,
+				 false, true, &state->server);
+	state->num_sent += 1;
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	if (!tevent_req_set_endtime(subreq, state->ev,
+				    timeval_current_ofs(2, 0))) {
+		tevent_req_nomem(NULL, req);
+		return;
+	}
+	tevent_req_set_callback(subreq, query_wins_list_done, req);
+}
+
+static NTSTATUS query_wins_list_recv(struct tevent_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     struct sockaddr_storage **addrs,
+				     int *num_addrs,
+				     uint8_t *flags)
+{
+	struct query_wins_list_state *state = tevent_req_data(
+		req, struct query_wins_list_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (addrs != NULL) {
+		*addrs = talloc_move(mem_ctx, &state->addrs);
+	}
+	if (num_addrs != NULL) {
+		*num_addrs = state->num_addrs;
+	}
+	if (flags != NULL) {
+		*flags = state->flags;
+	}
+	return NT_STATUS_OK;
 }
 
 /********************************************************
