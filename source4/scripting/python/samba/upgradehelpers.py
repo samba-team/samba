@@ -342,7 +342,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
                             (security.SID_BUILTIN_ADMINISTRATORS),
                             attrs=["xidNumber"])
     if len(res9) == 1:
-        names.wheel_gid = res9[0]["xidNumber"]
+        names.wheel_gid = int(str(res9[0]["xidNumber"]))
     else:
         raise ProvisioningError("Unable to find uid/gid for Domain Admins rid")
     return names
