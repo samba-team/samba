@@ -55,18 +55,18 @@ static bool test_getdomainreferral(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3",
 					resp.referral_entries[0].version));
-	torture_assert_int_equal(tctx, resp.referral_entries[0].referral.v3.data.server_type,
+	torture_assert_int_equal(tctx, resp.referral_entries[0].referral.v3.server_type,
 				 DFS_SERVER_NON_ROOT,
 				 talloc_asprintf(tctx,
 					"Wrong server type, expected non root server and got %d",
-					resp.referral_entries[0].referral.v3.data.server_type));
-	torture_assert_int_equal(tctx, resp.referral_entries[0].referral.v3.data.entry_flags,
+					resp.referral_entries[0].referral.v3.server_type));
+	torture_assert_int_equal(tctx, resp.referral_entries[0].referral.v3.entry_flags,
 				 DFS_FLAG_REFERRAL_DOMAIN_RESP,
 				 talloc_asprintf(tctx,
 					"Wrong entry flag expected to have a domain response and got %d",
-					resp.referral_entries[0].referral.v3.data.entry_flags));
+					resp.referral_entries[0].referral.v3.entry_flags));
 	torture_assert_int_equal(tctx, strlen(
-				 resp.referral_entries[0].referral.v3.data.referrals.r2.special_name) > 0,
+				 resp.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
 				 1,
 				 "Length of domain is 0 or less");
 	return true;
@@ -88,9 +88,9 @@ static bool test_getdcreferral(struct torture_context *tctx,
 		   dfs_cli_do_call(cli->tree, &r),
 		   "Get Domain referral failed");
 
-	str = resp.referral_entries[0].referral.v3.data.referrals.r2.special_name;
+	str = resp.referral_entries[0].referral.v3.referrals.r2.special_name;
 	if( strchr(str, '.') == NULL ) {
-		str = resp.referral_entries[1].referral.v3.data.referrals.r2.special_name;
+		str = resp.referral_entries[1].referral.v3.referrals.r2.special_name;
 	}
 
 	r2.in.req.max_referral_level = 3;
@@ -112,26 +112,26 @@ static bool test_getdcreferral(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3",
 					resp2.referral_entries[0].version));
-	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.data.server_type,
+	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.server_type,
 				 DFS_SERVER_NON_ROOT,
 				 talloc_asprintf(tctx,
 					"Wrong server type, expected non root server and got %d",
-					resp2.referral_entries[0].referral.v3.data.server_type));
-	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.data.entry_flags,
+					resp2.referral_entries[0].referral.v3.server_type));
+	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.entry_flags,
 				 DFS_FLAG_REFERRAL_DOMAIN_RESP,
 				 talloc_asprintf(tctx,
 					"Wrong entry flag expected to have a domain response and got %d",
-					resp2.referral_entries[0].referral.v3.data.entry_flags));
+					resp2.referral_entries[0].referral.v3.entry_flags));
 	torture_assert_int_equal(tctx, strlen(
-				 resp2.referral_entries[0].referral.v3.data.referrals.r2.special_name) > 0,
+				 resp2.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
 				 1,
 				 "Length of domain is 0 or less");
 	torture_assert_int_equal(tctx, strlen(
-				 resp2.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0]) > 0,
+				 resp2.referral_entries[0].referral.v3.referrals.r2.expanded_names[0]) > 0,
 				 1,
 				 "Length of first dc is less than 0");
-	str = strchr(resp2.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0], '.');
-	str2 = resp2.referral_entries[0].referral.v3.data.referrals.r2.special_name;
+	str = strchr(resp2.referral_entries[0].referral.v3.referrals.r2.expanded_names[0], '.');
+	str2 = resp2.referral_entries[0].referral.v3.referrals.r2.special_name;
 	if (str2[0] == '\\') {
 		str2++;
 	}
@@ -164,22 +164,22 @@ static bool test_getdcreferral(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3",
 					resp3.referral_entries[0].version));
-	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.data.server_type,
+	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.server_type,
 				 DFS_SERVER_NON_ROOT,
 				 talloc_asprintf(tctx,
 					"Wrong server type, expected non root server and got %d",
-					resp3.referral_entries[0].referral.v3.data.server_type));
-	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.data.entry_flags,
+					resp3.referral_entries[0].referral.v3.server_type));
+	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.entry_flags,
 				 DFS_FLAG_REFERRAL_DOMAIN_RESP,
 				 talloc_asprintf(tctx,
 					"Wrong entry flag expected to have a domain response and got %d",
-					resp3.referral_entries[0].referral.v3.data.entry_flags));
+					resp3.referral_entries[0].referral.v3.entry_flags));
 	torture_assert_int_equal(tctx, strlen(
-				 resp3.referral_entries[0].referral.v3.data.referrals.r2.special_name) > 0,
+				 resp3.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
 				 1,
 				 "Length of domain is 0 or less");
 	torture_assert_int_equal(tctx, strlen(
-				 resp3.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0]) > 0,
+				 resp3.referral_entries[0].referral.v3.referrals.r2.expanded_names[0]) > 0,
 				 1,
 				 "Length of first dc is less than 0");
 	return true;
@@ -202,9 +202,9 @@ static bool test_getdcreferral_netbios(struct torture_context *tctx,
 
 	r2.in.req.max_referral_level = 3;
 
-	str = resp.referral_entries[0].referral.v3.data.referrals.r2.special_name;
+	str = resp.referral_entries[0].referral.v3.referrals.r2.special_name;
 	if( strchr(str, '.') != NULL ) {
-		str = resp.referral_entries[1].referral.v3.data.referrals.r2.special_name;
+		str = resp.referral_entries[1].referral.v3.referrals.r2.special_name;
 	}
 
 	r2.in.req.servername = str;
@@ -224,26 +224,26 @@ static bool test_getdcreferral_netbios(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3",
 					resp2.referral_entries[0].version));
-	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.data.server_type,
+	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.server_type,
 				 DFS_SERVER_NON_ROOT,
 				 talloc_asprintf(tctx,
 					"Wrong server type, expected non root server and got %d",
-					resp2.referral_entries[0].referral.v3.data.server_type));
-	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.data.entry_flags,
+					resp2.referral_entries[0].referral.v3.server_type));
+	torture_assert_int_equal(tctx, resp2.referral_entries[0].referral.v3.entry_flags,
 				 DFS_FLAG_REFERRAL_DOMAIN_RESP,
 				 talloc_asprintf(tctx,
 					"Wrong entry flag expected to have a domain response and got %d",
-					resp2.referral_entries[0].referral.v3.data.entry_flags));
+					resp2.referral_entries[0].referral.v3.entry_flags));
 	torture_assert_int_equal(tctx, strlen(
-				 resp2.referral_entries[0].referral.v3.data.referrals.r2.special_name) > 0,
+				 resp2.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
 				 1,
 				 "Length of domain is 0 or less");
 	torture_assert_int_equal(tctx, strlen(
-				 resp2.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0]) > 0,
+				 resp2.referral_entries[0].referral.v3.referrals.r2.expanded_names[0]) > 0,
 				 1,
 				 "Length of first dc is less than 0");
 	torture_assert(tctx, strchr(
-		       resp2.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0],'.') == NULL,
+		       resp2.referral_entries[0].referral.v3.referrals.r2.expanded_names[0],'.') == NULL,
 		       "referral contains dots it's not a netbios name");
 
 	r3.in.req.max_referral_level = 3;
@@ -269,26 +269,26 @@ static bool test_getdcreferral_netbios(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3",
 					resp3.referral_entries[0].version));
-	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.data.server_type,
+	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.server_type,
 				 DFS_SERVER_NON_ROOT,
 				 talloc_asprintf(tctx,
 					"Wrong server type, expected non root server and got %d",
-					resp3.referral_entries[0].referral.v3.data.server_type));
-	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.data.entry_flags,
+					resp3.referral_entries[0].referral.v3.server_type));
+	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.entry_flags,
 				 DFS_FLAG_REFERRAL_DOMAIN_RESP,
 				 talloc_asprintf(tctx,
 					"Wrong entry flag expected to have a domain response and got %d",
-					resp3.referral_entries[0].referral.v3.data.entry_flags));
+					resp3.referral_entries[0].referral.v3.entry_flags));
 	torture_assert_int_equal(tctx, strlen(
-				 resp3.referral_entries[0].referral.v3.data.referrals.r2.special_name) > 0,
+				 resp3.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
 				 1,
 				 "Length of domain is 0 or less");
 	torture_assert_int_equal(tctx, strlen(
-				 resp3.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0]) > 0,
+				 resp3.referral_entries[0].referral.v3.referrals.r2.expanded_names[0]) > 0,
 				 1,
 				 "Length of first dc is less than 0");
 	torture_assert(tctx, strchr(
-		       resp3.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0],'.') == NULL,
+		       resp3.referral_entries[0].referral.v3.referrals.r2.expanded_names[0],'.') == NULL,
 		       "referral contains dots it's not a netbios name");
 	return true;
 }
@@ -308,9 +308,9 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 		   dfs_cli_do_call(cli->tree, &r),
 		   "Get Domain referral failed");
 
-	str = resp.referral_entries[0].referral.v3.data.referrals.r2.special_name;
+	str = resp.referral_entries[0].referral.v3.referrals.r2.special_name;
 	if( strchr(str, '.') == NULL ) {
-		str = resp.referral_entries[1].referral.v3.data.referrals.r2.special_name;
+		str = resp.referral_entries[1].referral.v3.referrals.r2.special_name;
 	}
 
 	r2.in.req.max_referral_level = 3;
@@ -339,22 +339,22 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3",
 					resp3.referral_entries[0].version));
-	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.data.server_type,
+	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.server_type,
 				 DFS_SERVER_NON_ROOT,
 				 talloc_asprintf(tctx,
 					"Wrong server type, expected non root server and got %d",
-					resp3.referral_entries[0].referral.v3.data.server_type));
-	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.data.entry_flags,
+					resp3.referral_entries[0].referral.v3.server_type));
+	torture_assert_int_equal(tctx, resp3.referral_entries[0].referral.v3.entry_flags,
 				 0,
 				 talloc_asprintf(tctx,
 					"Wrong entry flag expected to have a non domain response and got %d",
-					resp3.referral_entries[0].referral.v3.data.entry_flags));
+					resp3.referral_entries[0].referral.v3.entry_flags));
 	torture_assert_int_equal(tctx, strlen(
-				 resp3.referral_entries[0].referral.v3.data.referrals.r2.special_name) > 0,
+				 resp3.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
 				 1,
 				 "Length of domain is 0 or less");
 	torture_assert_int_equal(tctx, strlen(
-				 resp2.referral_entries[0].referral.v3.data.referrals.r2.expanded_names[0]) > 0,
+				 resp2.referral_entries[0].referral.v3.referrals.r2.expanded_names[0]) > 0,
 				 1,
 				 "Length of first referral is less than 0");
 
@@ -426,14 +426,14 @@ static bool test_getsysvolplusreferral(struct torture_context *tctx,
 		   "Get Domain referral failed");
 
 	r2.in.req.max_referral_level = 3;
-	r2.in.req.servername = resp.referral_entries[0].referral.v3.data.referrals.r2.special_name;
+	r2.in.req.servername = resp.referral_entries[0].referral.v3.referrals.r2.special_name;
 	r2.out.resp = &resp2;
 
 	torture_assert_ntstatus_ok(tctx,
 		   dfs_cli_do_call(cli->tree, &r2),
 		   "Get DC Domain referral failed");
 
-	str = resp2.referral_entries[0].referral.v3.data.referrals.r2.special_name;
+	str = resp2.referral_entries[0].referral.v3.referrals.r2.special_name;
 	r3.in.req.max_referral_level = 3;
 	r3.in.req.servername = talloc_asprintf(tctx, "%s\\sysvol\\foo", str);
 	r3.out.resp = &resp3;
