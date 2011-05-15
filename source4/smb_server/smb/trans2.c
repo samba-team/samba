@@ -872,15 +872,15 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 	case 3:
 		ZERO_STRUCTP(ref);
 		ref->version = version;
-		ref->referral.v3.data.server_type = DFS_SERVER_NON_ROOT;
+		ref->referral.v3.server_type = DFS_SERVER_NON_ROOT;
 		/* "normal" referral seems to always include the GUID */
 		ref->referral.v3.size = 34;
 
-		ref->referral.v3.data.entry_flags = 0;
-		ref->referral.v3.data.ttl = 600; /* As w2k3 */
-		ref->referral.v3.data.referrals.r1.DFS_path = dfs_path;
-		ref->referral.v3.data.referrals.r1.DFS_alt_path = dfs_path;
-		ref->referral.v3.data.referrals.r1.netw_address = server_path;
+		ref->referral.v3.entry_flags = 0;
+		ref->referral.v3.ttl = 600; /* As w2k3 */
+		ref->referral.v3.referrals.r1.DFS_path = dfs_path;
+		ref->referral.v3.referrals.r1.DFS_alt_path = dfs_path;
+		ref->referral.v3.referrals.r1.netw_address = server_path;
 		return NT_STATUS_OK;
 	case 4:
 		ZERO_STRUCTP(ref);
@@ -892,10 +892,10 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 		if (isfirstoffset) {
 			ref->referral.v4.entry_flags =  DFS_HEADER_FLAG_TARGET_BCK;
 		}
-		ref->referral.v4.ttl = 600; /* As w2k3 */
-		ref->referral.v4.r1.DFS_path = dfs_path;
-		ref->referral.v4.r1.DFS_alt_path = dfs_path;
-		ref->referral.v4.r1.netw_address = server_path;
+		ref->referral.v4.ttl = 900; /* As w2k8r2 */
+		ref->referral.v4.referrals.r1.DFS_path = dfs_path;
+		ref->referral.v4.referrals.r1.DFS_alt_path = dfs_path;
+		ref->referral.v4.referrals.r1.netw_address = server_path;
 
 		return NT_STATUS_OK;
 	}
@@ -915,17 +915,23 @@ static NTSTATUS fill_domain_dfs_referraltype(struct dfs_referral_type *ref,
 	case 3:
 		ZERO_STRUCTP(ref);
 		ref->version = version;
-		ref->referral.v3.data.server_type = DFS_SERVER_NON_ROOT;
+		ref->referral.v3.server_type = DFS_SERVER_NON_ROOT;
 		/* It's hard coded ... don't think it's a good way but the sizeof return not the
 		 * correct values
 		 *
 		 * We have 18 if the GUID is not included 34 otherwise
 		*/
-		ref->referral.v3.size = 18;
-		ref->referral.v3.data.entry_flags = DFS_FLAG_REFERRAL_DOMAIN_RESP;
-		ref->referral.v3.data.ttl = 600; /* As w2k3 */
-		ref->referral.v3.data.referrals.r2.special_name = domain;
-		ref->referral.v3.data.referrals.r2.nb_expanded_names = numnames;
+		if (numnames == 0) {
+			/* Windows return without the guid when returning domain list
+			 */
+			ref->referral.v3.size = 18;
+		} else {
+			ref->referral.v3.size = 34;
+		}
+		ref->referral.v3.entry_flags = DFS_FLAG_REFERRAL_DOMAIN_RESP;
+		ref->referral.v3.ttl = 600; /* As w2k3 */
+		ref->referral.v3.referrals.r2.special_name = domain;
+		ref->referral.v3.referrals.r2.nb_expanded_names = numnames;
 		/* Put the final terminator */
 		if (names) {
 			const char **names2 = talloc_array(ref, const char *, numnames+1);
@@ -936,7 +942,7 @@ static NTSTATUS fill_domain_dfs_referraltype(struct dfs_referral_type *ref,
 				NT_STATUS_HAVE_NO_MEMORY(names2[i]);
 			}
 			names2[numnames] = 0;
-			ref->referral.v3.data.referrals.r2.expanded_names = names2;
+			ref->referral.v3.referrals.r2.expanded_names = names2;
 		}
 		return NT_STATUS_OK;
 	}

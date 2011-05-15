@@ -53,7 +53,6 @@ interface dfsblobs
 		[relative_short] nstring *DFS_path;
 		[relative_short] nstring *DFS_alt_path;
 		[relative_short] nstring *netw_address;
-		/* As stated in MS DFSC 2.2.4.3.1 this array was guid but now MUST be 16 null bytes*/
 	} dfs_normal_referral;
 
 	typedef struct {
@@ -74,32 +73,20 @@ interface dfsblobs
 	} dfs_padding;
 
 	typedef [flag(NDR_NOALIGN)] struct {
+		uint16 size;
 		DFS_SERVER_TYPE server_type;
 		DFS_FLAGS_REFERRAL entry_flags;
 		uint32 ttl;
 		[switch_is(entry_flags & DFS_FLAG_REFERRAL_DOMAIN_RESP)] dfs_referral referrals;
-	} dfs_referral_v3_remaining;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint16 size;
-		dfs_referral_v3_remaining data;
 		/* this is either 0 or 16 bytes */
 		[switch_is(size - 18)] dfs_padding service_site_guid;
 	} dfs_referral_v3;
-
-	typedef struct {
-		uint16 size;
-		DFS_SERVER_TYPE server_type;
-		DFS_FLAGS_REFERRAL entry_flags;
-		uint32 ttl;
-		dfs_normal_referral r1;
-	} dfs_referral_v4;
 
 	typedef [nodiscriminant] union {
 		[case(1)] dfs_referral_v1 v1;
 		[case(2)] dfs_referral_v2 v2;
 		[case(3)] dfs_referral_v3 v3;
-		[case(4)] dfs_referral_v4 v4;
+		[case(4)] dfs_referral_v3 v4;
 		[default];
 	} dfs_referral_version;
 
