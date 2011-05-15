@@ -69,6 +69,10 @@ static bool test_getdomainreferral(struct torture_context *tctx,
 				 resp.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
 				 1,
 				 "Length of domain is 0 or less");
+	torture_assert_int_equal(tctx,
+				 resp.referral_entries[0].referral.v3.referrals.r2.special_name[0] == '\\',
+				 1,
+				 "domain didn't start with a \\");
 	return true;
 }
 
@@ -138,8 +142,12 @@ static bool test_getdcreferral(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, strlen(str) >0, 1 ,"Length of domain too short");
 	str++;
 	torture_assert_int_equal(tctx, strcmp(str,str2), 0,
-					talloc_asprintf(tctx, "Pb domain of the dc is not"\
-								"the same as the requested: domain = %s got =%s",str2 ,str));
+					talloc_asprintf(tctx, "Pb domain of the dc is not "\
+								"the same as the requested: domain was = %s got =%s",str2 ,str));
+	torture_assert_int_equal(tctx,
+				 resp.referral_entries[0].referral.v3.referrals.r2.special_name[0] == '\\',
+				 1,
+				 "dc name didn't start with a \\");
 
 	r3.in.req.max_referral_level = 3;
 	/*
@@ -299,6 +307,9 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 	const char* str;
 	struct dfs_GetDFSReferral r, r2, r3;
 	struct dfs_referral_resp resp, resp2, resp3;
+	uint8_t zeros[16];
+
+	memset(zeros, 0, sizeof(zeros));
 
 	r.in.req.max_referral_level = 3;
 	r.in.req.servername = "";
@@ -350,13 +361,25 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 					"Wrong entry flag expected to have a non domain response and got %d",
 					resp3.referral_entries[0].referral.v3.entry_flags));
 	torture_assert_int_equal(tctx, strlen(
-				 resp3.referral_entries[0].referral.v3.referrals.r2.special_name) > 0,
+				 resp3.referral_entries[0].referral.v3.referrals.r1.DFS_path) > 0,
 				 1,
 				 "Length of domain is 0 or less");
+	torture_assert_int_equal(tctx, strstr(resp3.referral_entries[0].referral.v3.referrals.r1.DFS_path,
+					str+1) != NULL, 1,
+				 	talloc_asprintf(tctx,
+						"Wrong DFS_path %s unable to find substring %s in it",
+						resp3.referral_entries[0].referral.v3.referrals.r1.DFS_path,
+						str+1));
 	torture_assert_int_equal(tctx, strlen(
-				 resp2.referral_entries[0].referral.v3.referrals.r2.expanded_names[0]) > 0,
+				 resp2.referral_entries[0].referral.v3.referrals.r1.netw_address) > 0,
 				 1,
 				 "Length of first referral is less than 0");
+	torture_assert_int_equal(tctx, strstr(resp3.referral_entries[0].referral.v3.referrals.r1.netw_address,
+					str+1) != NULL, 1,
+				 	talloc_asprintf(tctx,
+						"Wrong DFS_path %s unable to find substring %s in it",
+						resp3.referral_entries[0].referral.v3.referrals.r1.netw_address,
+						str+1));
 
 	r3.in.req.max_referral_level = 4;
 
@@ -368,6 +391,9 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 4",
 					resp3.referral_entries[0].version));
+	torture_assert_int_equal(tctx, memcmp(resp3.referral_entries[0].referral.v3.service_site_guid.value, zeros, 16), 0,
+				 talloc_asprintf(tctx,
+					"Service_site_guid is not NULL as expected"));
 #if 0
 	/*
 	 * We do not support fallback indication for the moment
