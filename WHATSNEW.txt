@@ -255,7 +255,29 @@ o   Andreas Schneider <asn@samba.org>
 Changes since 3.6.0pre3
 -----------------------
 
-o   
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8111: CIFS VFS: Fix unexpected error on SMB posix open.
+    * BUG 8112: POSIX extension opens of a directory are denied with EISDIR.
+    * Remove fstrings from client struct.
+    * BUGFIX when converting from safe_strcpy to strlcpy.
+    * Fix off-by-one calculations with strlcpy.
+
+
+o   Günther Deschner <gd@samba.org>
+    * Fix Coverity CID #2302: FORWARD_NULL.
+    * Fix cups_pull_comment_location().
+    * Fix double free of cups request.
+    * Make cups_pull_comment_location() work again.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Properly clean up in pthreadpool_init in case of failure.
+    * Make plaintext session setup async.
+    * Reduce fd load in Winbind children.
+    * Avoid a potential 100% CPU loop in Winbind.
+    * Tune broadcast namequeries for unique names.
+    * Properly deal with exited winbind children.
+    * Fix dup_smb2_vec3.
 
 
 Changes since 3.6.0pre2
