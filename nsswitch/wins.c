@@ -99,7 +99,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		in_addr_to_sockaddr_storage(&ss, *bcast);
 		status = name_query(name, 0x00, True, True, &ss,
 				    NULL, &pss, count, NULL);
-		if (pss) {
+		if (NT_STATUS_IS_OK(status) && (*count > 0)) {
 			if ((ret = SMB_MALLOC_P(struct in_addr)) == NULL) {
 				return NULL;
 			}
