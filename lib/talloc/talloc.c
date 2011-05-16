@@ -709,6 +709,65 @@ _PUBLIC_ void *_talloc_reference_loc(const void *context, const void *ptr, const
 
 static void *_talloc_steal_internal(const void *new_ctx, const void *ptr);
 
+static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
+					const char *location)
+{
+	struct talloc_chunk *pool;
+	void *next_tc;
+	unsigned int *pool_object_count;
+
+	pool = (struct talloc_chunk *)tc->pool;
+	next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
+
+	tc->flags |= TALLOC_FLAG_FREE;
+
+	/* we mark the freed memory with where we called the free
+	 * from. This means on a double free error we can report where
+	 * the first free came from
+	 */
+	tc->name = location;
+
+	TC_INVALIDATE_FULL_CHUNK(tc);
+
+	pool_object_count = talloc_pool_objectcount(pool);
+
+	if (unlikely(*pool_object_count == 0)) {
+		talloc_abort("Pool object count zero!");
+		return;
+	}
+
+	*pool_object_count -= 1;
+
+	if (unlikely(*pool_object_count == 1 && !(pool->flags & TALLOC_FLAG_FREE))) {
+		/*
+		 * if there is just one object left in the pool
+		 * and pool->flags does not have TALLOC_FLAG_FREE,
+		 * it means this is the pool itself and
+		 * the rest is available for new objects
+		 * again.
+		 */
+		pool->pool = TC_POOL_FIRST_CHUNK(pool);
+		TC_INVALIDATE_POOL(pool);
+	} else if (unlikely(*pool_object_count == 0)) {
+		/*
+		 * we mark the freed memory with where we called the free
+		 * from. This means on a double free error we can report where
+		 * the first free came from
+		 */
+		pool->name = location;
+
+		TC_INVALIDATE_FULL_CHUNK(pool);
+		free(pool);
+	} else if (pool->pool == next_tc) {
+		/*
+		 * if pool->pool still points to end of
+		 * 'tc' (which is stored in the 'next_tc' variable),
+		 * we can reclaim the memory of 'tc'.
+		 */
+		pool->pool = tc;
+	}
+}
+
 /* 
    internal talloc_free call
 */
@@ -823,21 +882,10 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	 */	 
 	tc->name = location;
 
-	if (tc->flags & (TALLOC_FLAG_POOL|TALLOC_FLAG_POOLMEM)) {
-		struct talloc_chunk *pool;
-		void *next_tc = NULL;
+	if (tc->flags & TALLOC_FLAG_POOL) {
 		unsigned int *pool_object_count;
 
-		if (unlikely(tc->flags & TALLOC_FLAG_POOL)) {
-			pool = tc;
-		} else {
-			pool = (struct talloc_chunk *)tc->pool;
-			next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
-
-			TC_INVALIDATE_FULL_CHUNK(tc);
-		}
-
-		pool_object_count = talloc_pool_objectcount(pool);
+		pool_object_count = talloc_pool_objectcount(tc);
 
 		if (unlikely(*pool_object_count == 0)) {
 			talloc_abort("Pool object count zero!");
@@ -846,26 +894,12 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 
 		*pool_object_count -= 1;
 
-		if (unlikely(*pool_object_count == 1)) {
-			/*
-			 * if there is just object left in the pool
-			 * it means this is the pool itself and
-			 * the rest is available for new objects
-			 * again.
-			 */
-			pool->pool = TC_POOL_FIRST_CHUNK(pool);
-			TC_INVALIDATE_POOL(pool);
-		} else if (unlikely(*pool_object_count == 0)) {
-			TC_INVALIDATE_FULL_CHUNK(pool);
-			free(pool);
-		} else if (pool->pool == next_tc) {
-			/*
-			 * if pool->pool still points to end of
-			 * 'tc' (which is stored in the 'next_tc' variable),
-			 * we can reclaim the memory of 'tc'.
-			 */
-			pool->pool = tc;
+		if (unlikely(*pool_object_count == 0)) {
+			TC_INVALIDATE_FULL_CHUNK(tc);
+			free(tc);
 		}
+	} else if (tc->flags & TALLOC_FLAG_POOLMEM) {
+		_talloc_free_poolmem(tc, location);
 	} else {
 		TC_INVALIDATE_FULL_CHUNK(tc);
 		free(tc);
