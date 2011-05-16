@@ -160,18 +160,14 @@ int prefork_retire_children(struct prefork_pool *pfp,
 * @return The number of children actually serving clients
 */
 int prefork_count_active_children(struct prefork_pool *pfp, int *total);
+
 /**
-* @brief Mark a child structure as free, based on the dead child pid.
-*	 This function is called when the parent gets back notice a child
-*	 has died through waitpid. It is critical to call this function
-*	 when children are reaped so that memory slots can be freed.
+* @brief Perform cleanups, like waiting (WNOHANG) dead children.
+*	 MUST be called regularly from the parent main loop.
 *
 * @param pfp	The pool.
-* @param pid	The child pid.
-*
-* @return True if the slot was clared. False if the pid is not listed.
 */
-bool prefork_mark_pid_dead(struct prefork_pool *pfp, pid_t pid);
+void prefork_cleanup_loop(struct prefork_pool *pfp);
 
 /**
 * @brief Inform all children that they are allowed to accept 'max' clients

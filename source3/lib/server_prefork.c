@@ -291,29 +291,37 @@ int prefork_count_active_children(struct prefork_pool *pfp, int *total)
 	return a;
 }
 
-/* to be used to finally mark a children as dead, so that it's slot can
- * be reused */
-bool prefork_mark_pid_dead(struct prefork_pool *pfp, pid_t pid)
+void prefork_cleanup_loop(struct prefork_pool *pfp)
 {
+	int status;
+	pid_t pid;
 	int i;
 
+	/* TODO: should we use a process group id wait instead of looping ? */
 	for (i = 0; i < pfp->pool_size; i++) {
-		if (pfp->pool[i].pid == pid) {
+		if (pfp->pool[i].status == PF_WORKER_NONE ||
+		    pfp->pool[i].pid == 0) {
+			continue;
+		}
+
+		pid = sys_waitpid(pfp->pool[i].pid, &status, WNOHANG);
+		if (pid > 0) {
+
 			if (pfp->pool[i].status != PF_WORKER_EXITING) {
-				DEBUG(2, ("pid %d terminated abnormally!\n",
-					  (int)pid));
+				DEBUG(3, ("Child (%d) terminated abnormally:"
+					  " %d\n", (int)pid, status));
+			} else {
+				DEBUG(10, ("Child (%d) terminated with status:"
+					   " %d\n", (int)pid, status));
 			}
 
 			/* reset all fields,
 			 * this makes status = PF_WORK_NONE */
 			memset(&pfp->pool[i], 0,
 				sizeof(struct pf_worker_data));
-
-			return true;
 		}
 	}
 
-	return false;
 }
 
 void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max)

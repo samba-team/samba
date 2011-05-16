@@ -524,23 +524,16 @@ static void spoolssd_sig_chld_handler(struct tevent_context *ev_ctx,
 				      void *siginfo, void *pvt)
 {
 	struct prefork_pool *pfp;
-	pid_t pid;
-	int status;
-	bool ok;
 	int active, total;
 	int n, r;
 
 	pfp = talloc_get_type_abort(pvt, struct prefork_pool);
 
-	while ((pid = sys_waitpid(-1, &status, WNOHANG)) > 0) {
-		ok = prefork_mark_pid_dead(pfp, pid);
-		if (!ok) {
-			DEBUG(1, ("Pid %d was not found in children pool!\n",
-				  (int)pid));
-		}
-	}
+	/* run the cleanup function to make sure all dead children are
+	 * properly and timely retired. */
+	prefork_cleanup_loop(pfp);
 
-	/* now check we do not descent below the minimum */
+	/* now check we do not descend below the minimum */
 	active = prefork_count_active_children(pfp, &total);
 
 	n = 0;
