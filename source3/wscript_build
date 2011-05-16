@@ -772,10 +772,11 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
                     deps='REG_SMBCONF',
                     vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('POPT_SAMBA3',
-                     source=POPT_LIB_SRC,
-                     deps='popt',
-                     vars=locals())
+bld.SAMBA3_LIBRARY('POPT_SAMBA3',
+                   source=POPT_LIB_SRC,
+                   deps='popt',
+                   vars=locals(),
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
