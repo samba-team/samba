@@ -949,7 +949,9 @@ static NTSTATUS send_break_message(files_struct *fsp,
  * Do internal consistency checks on the share mode for a file.
  */
 
-static void find_oplock_types(struct share_mode_lock *lck,
+static void find_oplock_types(files_struct *fsp,
+				int oplock_request,
+				struct share_mode_lock *lck,
 				struct share_mode_entry **pp_batch,
 				struct share_mode_entry **pp_ex_or_batch,
 				bool *got_level2,
@@ -962,8 +964,24 @@ static void find_oplock_types(struct share_mode_lock *lck,
 	*got_level2 = false;
 	*got_no_oplock = false;
 
+	/* Ignore stat or internal opens, as is done in
+		delay_for_batch_oplocks() and
+		delay_for_exclusive_oplocks().
+	 */
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
+		return;
+	}
+
 	for (i=0; i<lck->num_share_modes; i++) {
 		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
+			continue;
+		}
+
+		if (lck->share_modes[i].op_type == NO_OPLOCK &&
+				is_stat_open(lck->share_modes[i].access_mask)) {
+			/* We ignore stat opens in the table - they
+			   always have NO_OPLOCK and never get or
+			   cause breaks. JRA. */
 			continue;
 		}
 
@@ -1906,7 +1924,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		/* Get the types we need to examine. */
-		find_oplock_types(lck,
+		find_oplock_types(fsp,
+				oplock_request,
+				lck,
 				&batch_entry,
 				&exclusive_entry,
 				&got_level2_oplock,
@@ -2151,7 +2171,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		/* Get the types we need to examine. */
-		find_oplock_types(lck,
+		find_oplock_types(fsp,
+				oplock_request,
+				lck,
 				&batch_entry,
 				&exclusive_entry,
 				&got_level2_oplock,
