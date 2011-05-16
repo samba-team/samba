@@ -1479,8 +1479,13 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		size_t new_chunk_size = TC_ALIGN16(TC_HDR_SIZE + size);
 		size_t space_needed;
 		size_t space_left;
+		unsigned int chunk_count = *talloc_pool_objectcount(pool_tc);
 
-		if (*talloc_pool_objectcount(pool_tc) == 2) {
+		if (!(pool_tc->flags & TALLOC_FLAG_FREE)) {
+			chunk_count -= 1;
+		}
+
+		if (chunk_count == 1) {
 			/*
 			 * optimize for the case where 'tc' is the only
 			 * chunk in the pool.
