@@ -34,6 +34,14 @@ enum pf_server_cmds {
 	PF_SRV_MSG_EXIT
 };
 
+/**
+* @brief This structure is shared betwee the controlling parent and the
+*        the child. The parent can only write to the 'cmds' and
+*        'allowed_clients' variables, while a child is running.
+*        The child can change 'status', and 'num_clients'.
+*        All other variables are initialized by the parent before forking the
+*        child.
+*/
 struct pf_worker_data {
 	pid_t pid;
 	enum pf_worker_status status;
@@ -45,6 +53,22 @@ struct pf_worker_data {
 	int allowed_clients;
 };
 
+/**
+* @brief This is the 'main' function called by a child right after the fork.
+*        It is daemon specific and should initialize and perform whatever
+*        operation the child is meant to do. Returning from this function will
+*        cause the termination of the child.
+*
+* @param ev		The event context
+* @param pf		The mmaped area used to communicate with parent
+* @param listen_fd_size The number of file descriptors to monitor
+* @param listen_fds	The array of file descriptors
+* @param lock_fd	The locking file descriptor
+* @param private_data	Private data that needs to be passed to the main
+*			function from the calling parent.
+*
+* @return Returns the exit status to be reported to the parent via exit()
+*/
 typedef int (prefork_main_fn_t)(struct tevent_context *ev,
 				struct pf_worker_data *pf,
 				int listen_fd_size,
@@ -57,26 +81,153 @@ struct prefork_pool;
 
 /* ==== Functions used by controlling process ==== */
 
+/**
+* @brief Creates the first pool of preforked processes
+*
+* @param ev_ctx		The event context
+* @param mem_ctx	The memory context used to hold the pool structure
+* @param listen_fd_size	The number of file descriptors to monitor
+* @param listen_fds	The array of file descriptors to monitor
+* @param min_children	Minimum number of children that must be available at
+*			any given time
+* @param max_children   Maximum number of children that can be started. Also
+*			determines the initial size of the pool.
+* @param main_fn	The children 'main' function to be called after fork
+* @param private_data	The children private data.
+* @param pf_pool	The allocated pool.
+*
+* @return True if it was successful, False otherwise.
+*/
 bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
 			 int listen_fd_size, int *listen_fds,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
 			 struct prefork_pool **pf_pool);
+/**
+* @brief Function used to attemp to expand the size of children.
+*
+* @param pfp		The pool structure.
+* @param new_max	The new max number of children.
+*
+* @return 0 if operation was successful
+*	  ENOSPC if the mmap area could not be grown to the requested size
+*	  EINVAL if the new max is invalid.
+*
+* NOTE: this funciton can easily fail if the mmap area cannot be enlarged.
+*	A well behaving parent MUST NOT error out if this happen.
+*/
 int prefork_expand_pool(struct prefork_pool *pfp, int new_max);
 
+/**
+* @brief Used to prefork a number of new children
+*
+* @param ev_ctx		The event context
+* @param pfp		The pool structure
+* @param num_children	The number of children to be started
+*
+* @return The number of new children effectively forked.
+*
+* NOTE: This method does not expand the pool, if the max number of children
+*	has already been forked it will do nothing.
+*/
 int prefork_add_children(struct tevent_context *ev_ctx,
 			 struct prefork_pool *pfp,
 			 int num_children);
+/**
+* @brief Commands a number fo children to stop and exit
+*
+* @param pfp		The pool.
+* @param num_children	The number of children we need to retire.
+* @param age_limit	The minimum age a child has been active to be
+*			considered for retirement. (Compared against the
+*			'started' value in the pf_worker_data structure of the
+*			children.
+*
+* @return Number of children that were signaled to stop
+*
+* NOTE: Only children that has no attached clients can be stopped.
+*	If all the available children are too young or are busy than it
+*	is possible that none will be asked to stop.
+*/
 int prefork_retire_children(struct prefork_pool *pfp,
 			    int num_children, time_t age_limit);
+/**
+* @brief Count the number of active children
+*
+* @param pfp	The pool.
+* @param total	Returns the number of children currently alive
+*
+* @return The number of children actually serving clients
+*/
 int prefork_count_active_children(struct prefork_pool *pfp, int *total);
+/**
+* @brief Mark a child structure as free, based on the dead child pid.
+*	 This function is called when the parent gets back notice a child
+*	 has died through waitpid. It is critical to call this function
+*	 when children are reaped so that memory slots can be freed.
+*
+* @param pfp	The pool.
+* @param pid	The child pid.
+*
+* @return True if the slot was clared. False if the pid is not listed.
+*/
 bool prefork_mark_pid_dead(struct prefork_pool *pfp, pid_t pid);
+
+/**
+* @brief Inform all children that they are allowed to accept 'max' clients
+*	 now. Use this when all children are already busy and more clients
+*	 are trying to connect. It will allow each child to handle more than
+*	 one client at a time, up to 'max'.
+*
+* @param pfp	The pool.
+* @param max	Max number of clients per child.
+*/
 void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max);
+
+/**
+* @brief Reset the maximum allowd clients per child to 1.
+*	 Does not reduce the number of clients actually beeing served by
+*	 any given child, but prevents children from overcommitting from
+*	 now on.
+*
+* @param pfp	The pool.
+*/
 void prefork_reset_allowed_clients(struct prefork_pool *pfp);
+
+/**
+* @brief Send a specific signal to all children.
+*	 Used to send SIGHUP when a reload of the configuration is needed
+*	 for example.
+*
+* @param pfp		The pool.
+* @param signal_num	The signal number to be sent.
+*/
 void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num);
 
 /* ==== Functions used by children ==== */
 
+/**
+* @brief Try to listen and accept on one of the listening sockets.
+*	 Asynchronusly tries to grab the lock and perform an accept.
+*	 Will automatically updated the 'status' of the child and handle
+*	 all the locking/unlocking/timingout as necessary.
+*	 Changes behavior depending on whether the child already has other
+*	 client connections. If not it blocks on the lock call for periods of
+*	 time. Otherwise it loops on the lock using a timer in order to allow
+*	 processing of the other clients requests.
+*
+* @param mem_ctx	The memory context on whic to allocate the request
+* @param ev		The event context
+* @param pf		The child/parent shared structure
+* @param listen_fd_size	The number of listening file descriptors
+* @param listen_fds	The array of listening file descriptors
+* @param lock_fd	The locking file descriptor
+* @param addr		The structure that will hold the client address on
+*			return
+* @param addrlen	The structure length on return.
+*
+* @return The tevent request pointer or NULL on allocation errors.
+*/
 struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct pf_worker_data *pf,
@@ -85,4 +236,13 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					int lock_fd,
 					struct sockaddr *addr,
 					socklen_t *addrlen);
+/**
+* @brief Returns the file descriptor after the new client connection has
+*	 been accepted.
+*
+* @param req	The request
+* @param fd	The new file descriptor.
+*
+* @return	The error in case the operation failed.
+*/
 int prefork_listen_recv(struct tevent_req *req, int *fd);
