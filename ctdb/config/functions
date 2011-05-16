@@ -1014,7 +1014,7 @@ ctdb_service_unset_reconfigure ()
 
 ctdb_service_reconfigure ()
 {
-    echo "Reconfiguring service \"$service_name\"..."
+    echo "Reconfiguring service \"$@\"..."
     ctdb_service_unset_reconfigure "$@"
     service_reconfigure "$@" || return $?
     ctdb_counter_init "$@"
@@ -1026,28 +1026,101 @@ service_reconfigure ()
     service "${1:-$service_name}" restart
 }
 
+ctdb_reconfigure_try_lock ()
+{
+    
+    _ctdb_service_reconfigure_common "$@"
+    _lock="${_d}/reconfigure_lock"
+    touch "$_lock"
+
+    (
+	flock 0
+	# This is overkill but will work if we need to extend this to
+	# allow certain events to run multiple times in parallel
+	# (e.g. takeip) and write multiple PIDs to the file.
+	read _locker_event 
+	if [ -n "$_locker_event" ] ; then
+	    while read _pid ; do
+		if [ -n "$_pid" -a "$_pid" != $$ ] && \
+		    kill -0 "$_pid" 2>/dev/null ; then
+		    exit 1
+		fi
+	    done
+	fi
+
+	printf "%s\n%s\n" "$event_name" $$ >"$_lock"
+	exit 0
+    ) <"$_lock"
+}
+
+ctdb_replay_monitor_status ()
+{
+    echo "Replaying previous status for this script due to reconfigure..."
+    ctdb scriptstatus | \
+	grep -q -E "^${script_name}[[:space:]]+Status:OK[[:space:]]"
+    exit $?
+}
+
 ctdb_service_check_reconfigure ()
 {
-    # Only do this for certain events.
+    [ -n "$1" ] || set -- "$service_name"
+
+    # We only care about some events in this function.  For others we
+    # return now.
     case "$event_name" in
-	monitor|ipreallocated) : ;;
-	*) return 0
+	monitor|ipreallocated|reconfigure) : ;;
+	*) return 0 ;;
     esac
 
-    if ctdb_service_needs_reconfigure "$@" ; then
-	ctdb_service_reconfigure "$@"
-
-	# Fall through to non-monitor events.
-	[ "$event_name" = "monitor" ] || return 0
-
-	# We don't want to proceed with the rest of the monitor event
-	# here, so we exit.  However, if we exit 0 then, if the
-	# service was previously broken, we might return a false
-	# positive.  So we simply retrieve the status of this script
-	# from the previous monitor loop and exit with that status.
-	ctdb scriptstatus | \
-	    grep -q -E "^${script_name}[[:space:]]+Status:OK[[:space:]]"
-	exit $?
+    if ctdb_reconfigure_try_lock "$@" ; then
+	# No events covered by this function are running, so proceed
+	# with gay abandon.
+	case "$event_name" in
+	    reconfigure)
+		(ctdb_service_reconfigure "$@")
+		exit $?
+		;;
+	    ipreallocated)
+		if ctdb_service_needs_reconfigure "$@" ; then
+		    ctdb_service_reconfigure "$@"
+		fi
+		;;
+	    monitor)
+		if ctdb_service_needs_reconfigure "$@" ; then
+		    ctdb_service_reconfigure "$@"
+		    # Given that the reconfigure might not have
+		    # resulted in the service being stable yet, we
+		    # replay the previous status since that's the best
+		    # information we have.
+		    ctdb_replay_monitor_status
+		fi
+		;;
+	esac
+    else
+	# Somebody else is running an event we don't want to collide
+	# with.  We proceed with caution.
+	case "$event_name" in
+	    reconfigure)
+		# Tell whoever called us to retry.
+		exit 2
+		;;
+	    ipreallocated)
+		# Defer any scheduled reconfigure and just run the
+		# rest of the ipreallocated event, as per the
+		# eventscript.  There's an assumption here that the
+		# event doesn't depend on any scheduled reconfigure.
+		# This is true in the current code.
+		return 0
+		;;
+	    monitor)
+		# There is most likely a reconfigure in progress so
+		# the service is possibly unstable.  As above, we
+		# defer any scheduled reconfigured.  We also replay
+		# the previous monitor status since that's the best
+		# information we have.
+		ctdb_replay_monitor_status
+		;;
+	esac
     fi
 }
 
