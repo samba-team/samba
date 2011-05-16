@@ -59,6 +59,7 @@ static void nss_wins_init(void)
 
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct ip_service *address = NULL;
 	struct in_addr *ret = NULL;
 	int j;
@@ -73,16 +74,19 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	if (NT_STATUS_IS_OK(resolve_wins(name,0x00,&address,count))) {
 		if ( (ret = SMB_MALLOC_P(struct in_addr)) == NULL ) {
 			free( address );
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 		if (address[0].ss.ss_family != AF_INET) {
 			free(address);
 			free(ret);
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 		*ret = ((struct sockaddr_in *)(void *)&address[0].ss)
 			->sin_addr;
 		free( address );
+		TALLOC_FREE(frame);
 		return ret;
 	}
 
@@ -98,17 +102,17 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		}
 		in_addr_to_sockaddr_storage(&ss, *bcast);
 		status = name_query(name, 0x00, True, True, &ss,
-				    NULL, &pss, count, NULL);
+				    talloc_tos(), &pss, count, NULL);
 		if (NT_STATUS_IS_OK(status) && (*count > 0)) {
 			if ((ret = SMB_MALLOC_P(struct in_addr)) == NULL) {
+				TALLOC_FREE(frame);
 				return NULL;
 			}
 			*ret = ((struct sockaddr_in *)pss)->sin_addr;
-			TALLOC_FREE(pss);
 			break;
 		}
 	}
-
+	TALLOC_FREE(frame);
 	return ret;
 }
 
