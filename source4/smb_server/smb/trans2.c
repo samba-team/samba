@@ -867,24 +867,22 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 					     const char *dfs_path,
 					     const char *server_path, int isfirstoffset)
 {
+	ZERO_STRUCTP(ref);
+	ref->version = version;
 
 	switch (version) {
 	case 3:
-		ZERO_STRUCTP(ref);
-		ref->version = version;
 		ref->referral.v3.server_type = DFS_SERVER_NON_ROOT;
 		/* "normal" referral seems to always include the GUID */
 		ref->referral.v3.size = 34;
 
 		ref->referral.v3.entry_flags = 0;
 		ref->referral.v3.ttl = 600; /* As w2k3 */
-		ref->referral.v3.referrals.r1.DFS_path = dfs_path;
-		ref->referral.v3.referrals.r1.DFS_alt_path = dfs_path;
-		ref->referral.v3.referrals.r1.netw_address = server_path;
+		ref->referral.v3.referrals.r1.DFS_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v3.referrals.r1.DFS_alt_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v3.referrals.r1.netw_address = talloc_strdup(ref, server_path);
 		return NT_STATUS_OK;
 	case 4:
-		ZERO_STRUCTP(ref);
-		ref->version = version;
 		ref->referral.v4.server_type = DFS_SERVER_NON_ROOT;
 		/* "normal" referral seems to always include the GUID */
 		ref->referral.v4.size = 34;
@@ -893,10 +891,9 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 			ref->referral.v4.entry_flags =  DFS_HEADER_FLAG_TARGET_BCK;
 		}
 		ref->referral.v4.ttl = 900; /* As w2k8r2 */
-		ref->referral.v4.referrals.r1.DFS_path = dfs_path;
-		ref->referral.v4.referrals.r1.DFS_alt_path = dfs_path;
-		ref->referral.v4.referrals.r1.netw_address = server_path;
-
+		ref->referral.v4.referrals.r1.DFS_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v4.referrals.r1.DFS_alt_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v4.referrals.r1.netw_address = talloc_strdup(ref, server_path);
 		return NT_STATUS_OK;
 	}
 	return NT_STATUS_INVALID_LEVEL;
