@@ -655,6 +655,13 @@ if not bld.env.toplevel_build:
 
 ######################## SUBSYSTEMS #################################
 
+# A grouping library to get various helper rpc clients in a library
+bld.SAMBA3_LIBRARY('rpc_client',
+                   source='',
+                   deps='RPC_CLIENT_SCHANNEL INIT_LSA INIT_NETLOGON INIT_SAMR LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS LIBCLI_WINREG',
+                   private_library=True,
+                   grouping_library=True)
+
 bld.SAMBA3_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap wbclient LIB_NONSMBD LIBSMB KRBCLIENT
