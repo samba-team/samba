@@ -267,13 +267,7 @@ bool setup_named_pipe_socket(const char *pipe_name,
 		goto out;
 	}
 
-	if (!directory_create_or_exist(np_dir, geteuid(), 0700)) {
-		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
-			  np_dir, strerror(errno)));
-		goto out;
-	}
-
-	state->fd = create_pipe_sock(np_dir, pipe_name, 0700);
+	state->fd = create_pipe_sock(np_dir, pipe_name, 0755);
 	if (state->fd == -1) {
 		DEBUG(0, ("Failed to create pipe socket! [%s/%s]\n",
 			  np_dir, pipe_name));
@@ -889,12 +883,6 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 		DEBUG(0, ("Out of memory\n"));
 		talloc_free(state);
 		return false;
-	}
-
-	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
-		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
-			  lp_ncalrpc_dir(), strerror(errno)));
-		goto out;
 	}
 
 	state->fd = create_pipe_sock(lp_ncalrpc_dir(), name, 0755);
