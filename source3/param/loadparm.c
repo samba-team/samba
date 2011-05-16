@@ -9775,54 +9775,6 @@ struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-struct share_iterator *share_list_all(TALLOC_CTX *mem_ctx)
-{
-	struct share_iterator *result;
-
-	if (!(result = TALLOC_P(mem_ctx, struct share_iterator))) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	result->next_id = 0;
-	return result;
-}
-
-struct share_params *next_share(struct share_iterator *list)
-{
-	struct share_params *result;
-
-	while (!lp_snum_ok(list->next_id) &&
-	       (list->next_id < lp_numservices())) {
-		list->next_id += 1;
-	}
-
-	if (list->next_id >= lp_numservices()) {
-		return NULL;
-	}
-
-	if (!(result = TALLOC_P(list, struct share_params))) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	result->service = list->next_id;
-	list->next_id += 1;
-	return result;
-}
-
-struct share_params *next_printer(struct share_iterator *list)
-{
-	struct share_params *result;
-
-	while ((result = next_share(list)) != NULL) {
-		if (lp_print_ok(result->service)) {
-			break;
-		}
-	}
-	return result;
-}
-
 /*
  * This is a hack for a transition period until we transformed all code from
  * service numbers to struct share_params.
