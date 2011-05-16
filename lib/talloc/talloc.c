@@ -1550,7 +1550,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		}
 
 		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE);
-		*talloc_pool_objectcount(pool_tc) -= 1;
 
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
@@ -1559,21 +1558,8 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
-			TC_INVALIDATE_FULL_CHUNK(tc);
 
-			if (*talloc_pool_objectcount(pool_tc) == 1) {
-				/*
-				 * If the pool is empty now reclaim everything.
-				 */
-				pool_tc->pool = TC_POOL_FIRST_CHUNK(pool_tc);
-				TC_INVALIDATE_POOL(pool_tc);
-			} else if (next_tc == pool_tc->pool) {
-				/*
-				 * If it was reallocated and tc was the last
-				 * chunk, we can reclaim the memory of tc.
-				 */
-				pool_tc->pool = tc;
-			}
+			_talloc_free_poolmem(tc, __location__ "_talloc_realloc");
 		}
 	}
 	else {
