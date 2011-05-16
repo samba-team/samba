@@ -42,15 +42,35 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 #endif /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
 
 #define strlcpy_base(dest, src, base, size) \
-    strlcpy((dest), (src) ? (src) : "", (size)-PTR_DIFF((dest),(base)))
+do { \
+	const char *_strlcpy_base_src = (const char *)src; \
+	strlcpy((dest), _strlcpy_base_src? _strlcpy_base_src : "", (size)-PTR_DIFF((dest),(base))); \
+} while (0)
 
 /* String copy functions - macro hell below adds 'type checking' (limited,
    but the best we can do in C) */
 
-#define fstrcpy(d,s) strlcpy((d),(s) ? (s) : "",sizeof(fstring))
-#define fstrcat(d,s) strlcpy((d),(s) ? (s) : "",sizeof(fstring))
-#define nstrcpy(d,s) strlcpy((d), (s) ? (s) : "",sizeof(nstring))
-#define unstrcpy(d,s) strlcpy((d), (s) ? (s) : "",sizeof(unstring))
+#define fstrcpy(d,s) \
+do { \
+	const char *_fstrcpy_src = (const char *)(s); \
+	strlcpy((d),_fstrcpy_src ? _fstrcpy_src : "",sizeof(fstring)); \
+} while (0)
+
+#define fstrcat(d,s) \
+do { \
+	const char *_fstrcat_src = (const char *)(s); \
+	strlcat((d),_fstrcat_src ? _fstrcat_src : "",sizeof(fstring)); \
+} while (0)
+#define nstrcpy(d,s) \
+do { \
+	const char *_nstrcpy_src = (const char *)(s); \
+	strlcpy((d),_nstrcpy_src ? _nstrcpy_src : "",sizeof(fstring)); \
+} while (0)
+#define unstrcpy(d,s) \
+do { \
+	const char *_unstrcpy_src = (const char *)(s); \
+	strlcpy((d),_unstrcpy_src ? _unstrcpy_src : "",sizeof(fstring)); \
+} while (0)
 
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
