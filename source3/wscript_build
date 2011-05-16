@@ -39,8 +39,6 @@ COMPRESSION_SRC = '../lib/compression/mszip.c'
 
 DRSUAPI_SRC = '''${COMPRESSION_SRC}'''
 
-LIBNDR_SRC = '''librpc/ndr/util.c'''
-
 LIBCLI_SPOOLSS_SRC = '''rpc_client/cli_spoolss.c
                      rpc_client/init_spoolss.c'''
 
@@ -699,7 +697,7 @@ bld.SAMBA3_LIBRARY('nss_wins',
 
 bld.SAMBA3_LIBRARY('msrpc3',
                    source='${LIBMSRPC_SRC}',
-                   deps='''ndr ndr-util ndr-standard
+                   deps='''ndr ndr-standard
                     RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
                     LIBTSOCKET KRB5_WRAP rpccommon
                     LIBSMB''',
@@ -786,7 +784,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr ndr-util security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL interfaces',
+                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL interfaces',
                    private_library=True,
                    vars=locals())
 
@@ -964,10 +962,6 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
                      deps='ads',
-                    vars=locals())
-
-bld.SAMBA3_SUBSYSTEM('ndr-util',
-                    source=LIBNDR_SRC,
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
