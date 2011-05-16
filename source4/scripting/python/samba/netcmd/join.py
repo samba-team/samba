@@ -59,7 +59,13 @@ class cmd_join(Command):
             role = role.upper()
 
         if role is None or role == "MEMBER":
-            secure_channel_type = SEC_CHAN_WKSTA
+            (join_password, sid, domain_name) = net.join_member(domain,
+                                                                netbios_name,
+                                                                LIBNET_JOIN_AUTOMATIC)
+
+            self.outf.write("Joined domain %s (%s)\n" % (domain_name, sid))
+            return
+
         elif role == "DC":
             join_DC(server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir)
@@ -70,10 +76,3 @@ class cmd_join(Command):
             return
         else:
             raise CommandError("Invalid role %s (possible values: MEMBER, BDC, RODC)" % role)
-
-        (join_password, sid, domain_name) = net.join(domain,
-                                                     netbios_name,
-                                                     secure_channel_type,
-                                                     LIBNET_JOIN_AUTOMATIC)
-
-        self.outf.write("Joined domain %s (%s)\n" % (domain_name, sid))

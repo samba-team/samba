@@ -889,9 +889,9 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	return status;
 }
 
-static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx, 
-					   TALLOC_CTX *mem_ctx, 
-					   struct libnet_Join *r)
+NTSTATUS libnet_Join_member(struct libnet_context *ctx,
+			    TALLOC_CTX *mem_ctx,
+			    struct libnet_Join_member *r)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_mem;
@@ -916,15 +916,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (r->in.join_type == SEC_CHAN_BDC) {
-		acct_type = ACB_SVRTRUST;
-	} else if (r->in.join_type == SEC_CHAN_WKSTA) {
-		acct_type = ACB_WSTRUST;
-	} else {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);	
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	acct_type = ACB_WSTRUST;
 
 	if (r->in.netbios_name != NULL) {
 		netbios_name = r->in.netbios_name;
@@ -972,7 +964,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	set_secrets->domain_name = r2->out.domain_name;
 	set_secrets->realm = r2->out.realm;
 	set_secrets->netbios_name = netbios_name;
-	set_secrets->secure_channel_type = r->in.join_type;
+	set_secrets->secure_channel_type = SEC_CHAN_WKSTA;
 	set_secrets->machine_password = r2->out.join_password;
 	set_secrets->key_version_number = r2->out.kvno;
 	set_secrets->domain_sid = r2->out.domain_sid;
@@ -996,21 +988,3 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_Join *r)
-{
-	switch (r->in.join_type) {
-		case SEC_CHAN_WKSTA:
-			return libnet_Join_primary_domain(ctx, mem_ctx, r);
-		case SEC_CHAN_BDC:
-			return libnet_Join_primary_domain(ctx, mem_ctx, r);
-		case SEC_CHAN_DOMAIN:
-		case SEC_CHAN_DNS_DOMAIN:
-		case SEC_CHAN_NULL:
-			break;
-	}
-
-	r->out.error_string = talloc_asprintf(mem_ctx,
-					      "Invalid join type specified (%08X) attempting to join domain %s",
-					      r->in.join_type, r->in.domain_name);
-	return NT_STATUS_INVALID_PARAMETER;
-}

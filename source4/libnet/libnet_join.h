@@ -63,11 +63,10 @@ struct libnet_JoinDomain {
 	} out;
 };
 
-struct libnet_Join {
+struct libnet_Join_member {
 	struct {
 		const char *domain_name;
 		const char *netbios_name;
-		enum netr_SchannelType join_type;
 		enum libnet_Join_level level;
 	} in;
 	
