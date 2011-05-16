@@ -9775,18 +9775,6 @@ struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/*
- * This is a hack for a transition period until we transformed all code from
- * service numbers to struct share_params.
- */
-
-struct share_params *snum2params_static(int snum)
-{
-	static struct share_params result;
-	result.service = snum;
-	return &result;
-}
-
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/

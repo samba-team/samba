@@ -1675,7 +1675,6 @@ int lp_servicenumber(const char *pszServiceName);
 bool share_defined(const char *service_name);
 struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 				      const char *sharename);
-struct share_params *snum2params_static(int snum);
 const char *volume_label(int snum);
 bool lp_domain_master(void);
 bool lp_domain_master_true_or_auto(void);
