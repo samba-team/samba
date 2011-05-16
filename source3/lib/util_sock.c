@@ -1321,13 +1321,13 @@ static bool is_my_ipaddr(const char *ipaddr_str)
 		return false;
 	}
 
-	if (ismyaddr((struct sockaddr *)&ss)) {
-		return true;
+	if (is_zero_addr(&ss)) {
+		return false;
 	}
 
-	if (is_zero_addr(&ss) ||
-		is_loopback_addr((struct sockaddr *)&ss)) {
-		return false;
+	if (ismyaddr((struct sockaddr *)&ss) ||
+			is_loopback_addr((struct sockaddr *)&ss)) {
+		return true;
 	}
 
 	n = get_interfaces(talloc_tos(), &nics);
