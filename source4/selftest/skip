@@ -45,18 +45,18 @@ ntvfs.cifs.raw.notify
 ntvfs.cifs.raw.scan-eamax
 ntvfs.cifs.raw.context
 ntvfs.cifs.raw.qfileinfo.ipc
-rpc.samsync
-rpc.remact							# Not provided by Samba 4
-rpc.oxidresolve						# Not provided by Samba 4
-rpc.eventlog						# Not provided by Samba 4
-rpc.initshutdown					# Not provided by Samba 4
-rpc.spoolss						# Not provided by Samba 4
-rpc.svcctl							# Not provided by Samba 4
-rpc.atsvc							# Not provided by Samba 4
-rpc.frsapi							# Not provided by Samba 4
-rpc.ntsvcs							# Not provided by Samba 4
-rpc.dfs								# Not provided by Samba 4
-rpc.lsa.forest							# Not provided by Samba 4
+samba4.rpc.samsync
+samba4.rpc.remact							# Not provided by Samba 4
+samba4.rpc.oxidresolve						# Not provided by Samba 4
+samba4.rpc.eventlog						# Not provided by Samba 4
+samba4.rpc.initshutdown					# Not provided by Samba 4
+samba4.rpc.spoolss						# Not provided by Samba 4
+samba4.rpc.svcctl							# Not provided by Samba 4
+samba4.rpc.atsvc							# Not provided by Samba 4
+samba4.rpc.frsapi							# Not provided by Samba 4
+samba4.rpc.ntsvcs							# Not provided by Samba 4
+samba4.rpc.dfs								# Not provided by Samba 4
+samba4.rpc.lsa.forest							# Not provided by Samba 4
 ^samba4.base.samba3.*						# Samba3-specific test
 ^samba4.ntvfs.cifs.base.samba3.*				# Samba3-specific test
 ^samba4.raw.samba3.*						# Samba3-specific test
