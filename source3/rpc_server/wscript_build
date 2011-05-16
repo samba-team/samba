@@ -27,7 +27,7 @@ bld.SAMBA3_SUBSYSTEM('rpc',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NCACN_NP',
                     source='rpc_ncacn_np.c rpc_handles.c',
-                    deps='auth_sam_reply')
+                    deps='auth_sam_reply RPC_PIPE_REGISTER AUTH_COMMON npa_tstream')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     source='rpc_server.c')
@@ -87,6 +87,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_NTSVCS',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETLOGON',
                     source=RPC_NETLOGON_SRC,
+                     deps='RPC_NCACN_NP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
@@ -99,7 +100,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
 
 bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source=RPC_SPOOLSS_SRC,
-                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG',
+                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG RPC_NCACN_NP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',

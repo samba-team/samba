@@ -26,6 +26,7 @@ bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
 			      server_info_sam.c
 			      user_info.c
 			      user_util.c''',
+                     deps='TOKEN_UTIL DCUTIL',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('auth',

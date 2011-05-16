@@ -956,6 +956,7 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
+                     deps='ads',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('ndr-util',
@@ -997,7 +998,7 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_SPOOLSS',
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',
                     source=LIBCLI_WINREG_SRC,
-                    deps='RPC_NDR_WINREG')
+                    deps='RPC_NDR_WINREG RPC_NCACN_NP')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
 	source=RPC_CLIENT_SCHANNEL_SRC,
