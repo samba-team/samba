@@ -44,10 +44,6 @@ bool cups_cache_reload(struct tevent_context *ev,
 		       struct messaging_context *msg_ctx,
 		       void (*post_cache_fill_fn)(struct tevent_context *,
 						  struct messaging_context *));
-bool cups_pull_comment_location(TALLOC_CTX *mem_ctx,
-				const char *printername,
-				char **comment,
-				char **location);
 
 /* The following definitions come from printing/print_iprint.c  */
 
