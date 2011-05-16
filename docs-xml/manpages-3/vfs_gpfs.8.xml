@@ -276,6 +276,26 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>gpfs:syncio = [yes|no]</term>
+		<listitem>
+		<para>This parameter makes Samba open all files with O_SYNC.
+		  This triggers optimizations in GPFS for workloads that
+		  heavily share files.</para>
+
+		<para>Following is the behaviour of Samba for different
+		  values:
+		</para>
+		<itemizedlist>
+		<listitem><para><command>yes</command>Open files with O_SYNC
+		</para></listitem>
+		<listitem><para><command>no (default)</command>Open files as
+		    normal Samba would do
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
