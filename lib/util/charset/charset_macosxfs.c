@@ -30,6 +30,7 @@
  */
 
 #include "includes.h"
+#undef realloc
 
 /*
  * Include OS frameworks.  These are only needed in this module.
@@ -61,7 +62,7 @@ static inline void *resize_buffer (void *buffer, size_t *size, size_t newsize)
 {
 	if (newsize > *size) {
 		*size = newsize + 128;
-		buffer = SMB_REALLOC(buffer, *size);
+		buffer = realloc(buffer, *size);
 	}
 	return buffer;
 }
@@ -372,7 +373,7 @@ static size_t macosxfs_encoding_push(
 	cfsize = CFStringGetLength(cfstring);
 	charsconverted = CFStringGetBytes(
 		cfstring, CFRangeMake(0,cfsize),
-		script_code, 0, False,
+		script_code, 0, false,
 		*outbuf, *outbytesleft, &outsize);
 
 	if (0 == charsconverted) {
