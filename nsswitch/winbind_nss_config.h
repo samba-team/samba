@@ -54,7 +54,13 @@
 #ifndef FSTRING_LEN
 #define FSTRING_LEN 256
 typedef char fstring[FSTRING_LEN];
-#define fstrcpy(d,s) strlcpy((d),(s) ? (s) : "",sizeof(fstring))
+#ifndef fstrcpy
+#define fstrcpy(d,s) \
+do { \
+        const char *_fstrcpy_src = (const char *)(s); \
+        strlcpy((d),_fstrcpy_src ? _fstrcpy_src : "",sizeof(fstring)); \
+} while (0)
+#endif
 #endif
 
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
