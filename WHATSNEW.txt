@@ -1,10 +1,10 @@
                    ================================
-                   Release Notes for Samba 3.6.0rc1
-                             May 17, 2011
+                   Release Notes for Samba 3.6.0rc2
+                             May , 2011
                    ================================
 
 
-This is the first release candidate of Samba 3.6.0.  This is *not*
+This is the second release candidate of Samba 3.6.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -166,10 +166,10 @@ endpoint mapper is like a DNS server but for ports. If you want to talk to a
 certain RPC service over TCP/IP, you just ask the endpoint mapper on which
 port it is running. Then you can connect to the service and make sure that it
 is running.
+
 The code is deactivated by default, because it needs more testing and it
-doesn't scale yet. We will work on these limitations and hopefully release it
-with pre3. If you want to enable and test the endpoint mapper you can set
-"rpc_server:epmapper = daemon" in the smb.conf file.
+doesn't scale yet. If you want to enable and test the endpoint mapper
+you can set "rpc_server:epmapper = daemon" in the smb.conf file.
 
 
 Internal restructuring
@@ -250,6 +250,11 @@ o   Stefan Metzmacher <metze@samba.org>
 
 o   Andreas Schneider <asn@samba.org>
     * Add an Endpoint Mapper daemon.
+
+
+Changes since 3.6.0rc1
+----------------------
+
 
 
 Changes since 3.6.0pre3
