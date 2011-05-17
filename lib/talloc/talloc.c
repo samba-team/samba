@@ -1512,6 +1512,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 				memmove(pool_tc->pool, tc, old_used);
 				new_ptr = pool_tc->pool;
 
+				tc = (struct talloc_chunk *)new_ptr;
 				TC_UNDEFINE_GROW_CHUNK(tc, size);
 
 				/*
