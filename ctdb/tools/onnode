@@ -138,18 +138,6 @@ get_nodes_with_status ()
     local all_nodes="$1"
     local status="$2"
 
-    local bits
-    case "$status" in
-	healthy)
-	    bits="0:0:0:0:0:0"
-	    ;;
-	connected)
-	    bits="0:[0-1]:[0-1]:[0-1]:[0-1]:[0-1]"
-	    ;;
-	*)
-	    invalid_nodespec
-    esac
-
     if [ -z "$ctdb_status_output" ] ; then
 	# FIXME: need to do something if $CTDB_NODES_SOCKETS is set.
 	ctdb_status_output=$(ctdb -Y status 2>/dev/null)
@@ -160,22 +148,35 @@ get_nodes_with_status ()
 	ctdb_status_output="${ctdb_status_output#* }"
     fi
 
-    local nodes=""
-    local i
-    for i in $ctdb_status_output ; do
-	# Try removing bits from end.
-	local t="${i%:${bits}:}"
-	if [ "$t" != "$i" ] ; then
-	    # Succeeded.  Get address.  NOTE: this is an optimisation.
-	    # It might be better to get the node number and then get
-	    # the nth node to get the address.  This would make things
-	    # more consistent if $ctdb_base/nodes actually contained
-	    # hostnames.
-	    nodes="${nodes} ${t#:*:}"
-	fi
-    done
+    (
+	local i
+	for i in $ctdb_status_output ; do
 
-    echo $nodes
+	    IFS="${IFS}:"
+	    set -- $i
+	    shift # line starts with : so 1st field is empty
+	    local pnn="$1" ; shift
+	    local ip="$1" ; shift
+
+	    case "$status" in
+		healthy)
+		    # If any bit is not 0, don't match this address.
+		    local s
+		    for s ; do
+			[ "$s" = "0" ] || continue 2
+		    done
+		    ;;
+		connected)
+		    # If disconnected bit is not 0, don't match this address.
+		    [ "$1" = "0" ] || continue
+		    ;;
+		*)
+		    invalid_nodespec
+	    esac
+	    
+	    echo_nth "$pnn" $all_nodes
+	done
+    )
 }
 
 ctdb_props="" # cache
