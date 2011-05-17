@@ -7227,6 +7227,9 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
  Open/Create a file with POSIX semantics.
 ****************************************************************************/
 
+#define SMB_O_RDONLY_MAPPING (FILE_READ_DATA|FILE_READ_ATTRIBUTES|FILE_READ_EA)
+#define SMB_O_WRONLY_MAPPING (FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|FILE_WRITE_EA)
+
 static NTSTATUS smb_posix_open(connection_struct *conn,
 			       struct smb_request *req,
 				char **ppdata,
@@ -7272,13 +7275,14 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 
 	switch (wire_open_mode & SMB_ACCMODE) {
 		case SMB_O_RDONLY:
-			access_mask = FILE_READ_DATA;
+			access_mask = SMB_O_RDONLY_MAPPING;
 			break;
 		case SMB_O_WRONLY:
-			access_mask = FILE_WRITE_DATA;
+			access_mask = SMB_O_WRONLY_MAPPING;
 			break;
 		case SMB_O_RDWR:
-			access_mask = FILE_READ_DATA|FILE_WRITE_DATA;
+			access_mask = (SMB_O_RDONLY_MAPPING|
+					SMB_O_WRONLY_MAPPING);
 			break;
 		default:
 			DEBUG(5,("smb_posix_open: invalid open mode 0x%x\n",
@@ -7356,19 +7360,20 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	if (wire_open_mode & SMB_O_SYNC) {
 		create_options |= FILE_WRITE_THROUGH;
 	}
-	if ((wire_open_mode & SMB_O_DIRECTORY) ||
-			VALID_STAT_OF_DIR(smb_fname->st)) {
-		if (access_mask != FILE_READ_DATA) {
-			return NT_STATUS_FILE_IS_A_DIRECTORY;
-		}
-		create_options &= ~FILE_NON_DIRECTORY_FILE;
-		create_options |= FILE_DIRECTORY_FILE;
-	}
 	if (wire_open_mode & SMB_O_APPEND) {
 		access_mask |= FILE_APPEND_DATA;
 	}
 	if (wire_open_mode & SMB_O_DIRECT) {
 		mod_unixmode |= FILE_FLAG_NO_BUFFERING;
+	}
+
+	if ((wire_open_mode & SMB_O_DIRECTORY) ||
+			VALID_STAT_OF_DIR(smb_fname->st)) {
+		if (access_mask != SMB_O_RDONLY_MAPPING) {
+			return NT_STATUS_FILE_IS_A_DIRECTORY;
+		}
+		create_options &= ~FILE_NON_DIRECTORY_FILE;
+		create_options |= FILE_DIRECTORY_FILE;
 	}
 
 	DEBUG(10,("smb_posix_open: file %s, smb_posix_flags = %u, mode 0%o\n",
