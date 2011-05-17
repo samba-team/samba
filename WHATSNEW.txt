@@ -261,13 +261,22 @@ o   Jeremy Allison <jra@samba.org>
     * Remove fstrings from client struct.
     * BUGFIX when converting from safe_strcpy to strlcpy.
     * Fix off-by-one calculations with strlcpy.
+    * Ensure we always write the correct incoming mid into the share mode table
+      entries.
+    * Fix the SMB2 oplock showstopper.
+
+
+o   Christian Ambach <christian.ambach@de.ibm.com>
+    * Convert user-specified domain to uppercase in libsmb.
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 8132: Fix filling printers location field when using cups.
     * Fix Coverity CID #2302: FORWARD_NULL.
     * Fix cups_pull_comment_location().
     * Fix double free of cups request.
     * Make cups_pull_comment_location() work again.
+    * Fix potential crash bug in display_print_driver3().
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -278,6 +287,7 @@ o   Volker Lendecke <vl@samba.org>
     * Tune broadcast namequeries for unique names.
     * Properly deal with exited winbind children.
     * Fix dup_smb2_vec3.
+    * Fix return check in nss_wins.
 
 
 Changes since 3.6.0pre2
@@ -372,10 +382,6 @@ o   Gregor Beck <gbeck@sernet.de>
 o   Olly Betts <olly@survex.com>
     * Fix 'net usersidlist' not to skip every other user.
 
-
-o   Gregor Beck <gbeck@sernet.de>
-    * Add "net idmap check", a check and repair tool for the
-      id mapping database.
 
 o   Günther Deschner <gd@samba.org>
     * BUG 7690: Retry DNS updates when connection to one nameserver has failed.
