@@ -263,6 +263,17 @@ bool setup_named_pipe_socket(const char *pipe_name,
 	}
 	state->fd = -1;
 
+	/*
+	 * As lp_ncalrpc_dir() should have 0755, but
+	 * lp_ncalrpc_dir()/np should have 0700, we need to
+	 * create lp_ncalrpc_dir() first.
+	 */
+	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
+		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
+			  lp_ncalrpc_dir(), strerror(errno)));
+		goto out;
+	}
+
 	np_dir = talloc_asprintf(state, "%s/np", lp_ncalrpc_dir());
 	if (!np_dir) {
 		DEBUG(0, ("Out of memory\n"));
