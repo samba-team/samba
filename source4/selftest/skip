@@ -72,7 +72,6 @@ samba4.ntvfs.cifs.raw.qfileinfo.ipc
 ^samba4.rap.scan # same thing here - we have docs now
 ^samba4.rap.printing # Not provided by Samba 4
 ^samba4.rap.sam # Not provided by Samba 4
-^samba4.gensec.python # not finished
 bench # don't run benchmarks in our selftest
 ^samba4.ntvfs.cifs.trans2.scan 
 ^samba4.trans2.scan # uses huge number of file descriptors
