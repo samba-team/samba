@@ -621,10 +621,10 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.12 NAME 'sambaConfigOption' SUP top STRUCTURA
 ##
 ## used for IPA_ldapsam
 ##
-objectclasses ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL
+objectclass ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL
 	DESC 'Samba Trusted Domain Object'
 	MUST ( cn )
-	MAY ( sambaTrustTyp e $ sambaTrustAttributes $ sambaTrustDirection $
+	MAY ( sambaTrustType $ sambaTrustAttributes $ sambaTrustDirection $
 	      sambaTrustPartner $ sambaFlatName $ sambaTrustAuthOutgoing $
 	      sambaTrustAuthIncoming $ sambaSecurityIdentifier $
 	      sambaTrustForestTrustInfo) )

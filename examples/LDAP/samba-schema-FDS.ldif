@@ -183,4 +183,4 @@ objectClasses: ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaTrustedDomainPassword' SUP t
 ##
 ## used for IPA_ldapsam
 ##
-objectClasses: ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL DESC 'Samba Trusted Domain Object' MUST ( cn ) MAY ( sambaTrustTyp e $ sambaTrustAttributes $ sambaTrustDirection $ sambaTrustPartner $ sambaFlatName $ sambaTrustAuthOutgoing $ sambaTrustAuthIncoming $ sambaSecurityIdentifier $ sambaTrustForestTrustInfo ) )
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL DESC 'Samba Trusted Domain Object' MUST ( cn ) MAY ( sambaTrustType $ sambaTrustAttributes $ sambaTrustDirection $ sambaTrustPartner $ sambaFlatName $ sambaTrustAuthOutgoing $ sambaTrustAuthIncoming $ sambaSecurityIdentifier $ sambaTrustForestTrustInfo ) )
