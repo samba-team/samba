@@ -169,7 +169,7 @@ get_nodes_with_status ()
 	    # the nth node to get the address.  This would make things
 	    # more consistent if $ctdb_base/nodes actually contained
 	    # hostnames.
-	    nodes="${nodes} ${t##*:}"
+	    nodes="${nodes} ${t#:*:}"
 	fi
     done
 
