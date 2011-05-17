@@ -139,7 +139,6 @@ get_nodes_with_status ()
     local status="$2"
 
     if [ -z "$ctdb_status_output" ] ; then
-	# FIXME: need to do something if $CTDB_NODES_SOCKETS is set.
 	ctdb_status_output=$(ctdb -Y status 2>/dev/null)
 	if [ $? -ne 0 ] ; then
 	    echo "${prog}: unable to get status of CTDB nodes" >&2
