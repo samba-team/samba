@@ -70,7 +70,9 @@ parse_options ()
     # $POSIXLY_CORRECT means that the command passed to onnode can
     # take options and getopt won't reorder things to make them
     # options ot onnode.
-    local temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqv" -l help -- "$@")
+    local temp
+    # Not on the previous line - local returns 0!
+    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqv" -l help -- "$@")
 
     [ $? != 0 ] && usage
 
