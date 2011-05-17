@@ -1128,23 +1128,31 @@ static bool test_pool(void)
 	pool = talloc_pool(NULL, 1024);
 
 	p1 = talloc_size(pool, 80);
+	memset(p1, 0x11, talloc_get_size(p1));
 	p2 = talloc_size(pool, 20);
+	memset(p2, 0x11, talloc_get_size(p2));
 	p3 = talloc_size(p1, 50);
+	memset(p3, 0x11, talloc_get_size(p3));
 	p4 = talloc_size(p3, 1000);
+	memset(p4, 0x11, talloc_get_size(p4));
 
 #if 1 /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 	p2_2 = talloc_realloc_size(pool, p2, 20+1);
 	torture_assert("pool realloc 20+1", p2_2 == p2, "failed: pointer changed");
+	memset(p2, 0x11, talloc_get_size(p2));
 	p2_2 = talloc_realloc_size(pool, p2, 20-1);
 	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+	memset(p2, 0x11, talloc_get_size(p2));
 	p2_2 = talloc_realloc_size(pool, p2, 20-1);
 	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+	memset(p2, 0x11, talloc_get_size(p2));
 
 	talloc_free(p3);
 
 	/* this should reclaim the memory of p4 and p3 */
 	p2_2 = talloc_realloc_size(pool, p2, 400);
 	torture_assert("pool realloc 400", p2_2 == p2, "failed: pointer changed");
+	memset(p2, 0x11, talloc_get_size(p2));
 
 	talloc_free(p1);
 
@@ -1152,37 +1160,46 @@ static bool test_pool(void)
 	p2_2 = talloc_realloc_size(pool, p2, 800);
 	torture_assert("pool realloc 800", p2_2 == p1, "failed: pointer not changed");
 	p2 = p2_2;
+	memset(p2, 0x11, talloc_get_size(p2));
 
 	/* this should do a malloc */
 	p2_2 = talloc_realloc_size(pool, p2, 1800);
 	torture_assert("pool realloc 1800", p2_2 != p2, "failed: pointer not changed");
 	p2 = p2_2;
+	memset(p2, 0x11, talloc_get_size(p2));
 
 	/* this should reclaim the memory from the pool */
 	p3 = talloc_size(pool, 80);
 	torture_assert("pool alloc 80", p3 == p1, "failed: pointer changed");
+	memset(p3, 0x11, talloc_get_size(p3));
 
 	talloc_free(p2);
 	talloc_free(p3);
 
 	p1 = talloc_size(pool, 80);
+	memset(p1, 0x11, talloc_get_size(p1));
 	p2 = talloc_size(pool, 20);
+	memset(p2, 0x11, talloc_get_size(p2));
 
 	talloc_free(p1);
 
 	p2_2 = talloc_realloc_size(pool, p2, 20-1);
 	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+	memset(p2, 0x11, talloc_get_size(p2));
 	p2_2 = talloc_realloc_size(pool, p2, 20-1);
 	torture_assert("pool realloc 20-1", p2_2 == p2, "failed: pointer changed");
+	memset(p2, 0x11, talloc_get_size(p2));
 
 	/* this should do a malloc */
 	p2_2 = talloc_realloc_size(pool, p2, 1800);
 	torture_assert("pool realloc 1800", p2_2 != p2, "failed: pointer not changed");
 	p2 = p2_2;
+	memset(p2, 0x11, talloc_get_size(p2));
 
 	/* this should reclaim the memory from the pool */
 	p3 = talloc_size(pool, 800);
 	torture_assert("pool alloc 800", p3 == p1, "failed: pointer changed");
+	memset(p3, 0x11, talloc_get_size(p3));
 
 #endif /* this relies on ALWAYS_REALLOC == 0 in talloc.c */
 
