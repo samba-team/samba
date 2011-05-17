@@ -407,4 +407,4 @@ objectClasses: ( 1.3.6.1.4.1.7165.2.2.13 NAME 'sambaPrivilege' DESC 'Samba Privi
 dn: cn=schema
 changetype: modify
 add: objectClasses
-objectClasses: ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL DESC 'Samba Trusted Domain Object' MUST ( cn ) MAY ( sambaTrustTyp e $ sambaTrustAttributes $ sambaTrustDirection $ sambaTrustPartner $ sambaFlatName $ sambaTrustAuthOutgoing $ sambaTrustAuthIncoming $ sambaSecurityIdentifier $ sambaTrustForestTrustInfo ) )
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL DESC 'Samba Trusted Domain Object' MUST ( cn ) MAY ( sambaTrustType $ sambaTrustAttributes $ sambaTrustDirection $ sambaTrustPartner $ sambaFlatName $ sambaTrustAuthOutgoing $ sambaTrustAuthIncoming $ sambaSecurityIdentifier $ sambaTrustForestTrustInfo ) )
