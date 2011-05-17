@@ -2246,13 +2246,14 @@ static bool fd_is_readable(int fd)
 
 }
 
-static void smbd_server_connection_write_handler(struct smbd_server_connection *conn)
+static void smbd_server_connection_write_handler(
+	struct smbd_server_connection *sconn)
 {
 	/* TODO: make write nonblocking */
 }
 
 static void smbd_server_connection_read_handler(
-	struct smbd_server_connection *conn, int fd)
+	struct smbd_server_connection *sconn, int fd)
 {
 	uint8_t *inbuf = NULL;
 	size_t inbuf_len = 0;
@@ -2262,29 +2263,29 @@ static void smbd_server_connection_read_handler(
 	NTSTATUS status;
 	uint32_t seqnum;
 
-	bool from_client = (conn->sock == fd);
+	bool from_client = (sconn->sock == fd);
 
 	if (from_client) {
-		smbd_lock_socket(conn);
+		smbd_lock_socket(sconn);
 
 		if (lp_async_smb_echo_handler() && !fd_is_readable(fd)) {
 			DEBUG(10,("the echo listener was faster\n"));
-			smbd_unlock_socket(conn);
+			smbd_unlock_socket(sconn);
 			return;
 		}
 
 		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, conn, fd,
+		status = receive_smb_talloc(mem_ctx, sconn, fd,
 					    (char **)(void *)&inbuf,
 					    0, /* timeout */
 					    &unread_bytes,
 					    &encrypted,
 					    &inbuf_len, &seqnum,
 					    false /* trusted channel */);
-		smbd_unlock_socket(conn);
+		smbd_unlock_socket(sconn);
 	} else {
 		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, conn, fd,
+		status = receive_smb_talloc(mem_ctx, sconn, fd,
 					    (char **)(void *)&inbuf,
 					    0, /* timeout */
 					    &unread_bytes,
@@ -2304,7 +2305,7 @@ static void smbd_server_connection_read_handler(
 	}
 
 process:
-	process_smb(conn, inbuf, inbuf_len, unread_bytes,
+	process_smb(sconn, inbuf, inbuf_len, unread_bytes,
 		    seqnum, encrypted, NULL);
 }
 
