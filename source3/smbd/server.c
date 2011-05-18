@@ -42,9 +42,6 @@
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);
 
-extern void start_spoolssd(struct event_context *ev_ctx,
-			   struct messaging_context *msg_ctx);
-
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
@@ -1212,29 +1209,18 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	/* only start the background queue daemon if we are 
-	   running as a daemon -- bad things will happen if
-	   smbd is launched via inetd and we fork a copy of 
-	   ourselves here */
+	/* only start other daemons if we are running as a daemon
+	 * -- bad things will happen if smbd is launched via inetd
+	 *  and we fork a copy of ourselves here */
+	if (is_daemon && !interactive && !_lp_disable_spoolss()) {
+		bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
 
-	if (is_daemon && !interactive
-	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
-		if (!printing_subsystem_init(ev_ctx, msg_ctx, true)) {
+		if (!printing_subsystem_init(ev_ctx, msg_ctx, true, bgq)) {
 			exit(1);
 		}
-	} else {
-		if (!printing_subsystem_init(ev_ctx, msg_ctx, false)) {
+	} else if (!_lp_disable_spoolss()) {
+		if (!printing_subsystem_init(ev_ctx, msg_ctx, false, false)) {
 			exit(1);
-		}
-	}
-
-	if (is_daemon && !_lp_disable_spoolss()) {
-		enum rpc_service_mode_e spoolss_mode = rpc_spoolss_mode();
-
-		/* start spoolss daemon */
-		/* start as a separate daemon only if enabled */
-		if (spoolss_mode == RPC_SERVICE_MODE_DAEMON) {
-			start_spoolssd(ev_ctx, msg_ctx);
 		}
 	}
 

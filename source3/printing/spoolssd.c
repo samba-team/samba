@@ -23,6 +23,7 @@
 #include "messages.h"
 #include "include/printing.h"
 #include "printing/nt_printing_migrate_internal.h"
+#include "printing/queue_process.h"
 #include "printing/pcap.h"
 #include "ntdomain.h"
 #include "librpc/gen_ndr/srv_winreg.h"
@@ -92,9 +93,6 @@ static void spoolss_prefork_config(void)
 	spoolss_max_children = max;
 	spoolss_spawn_rate = rate;
 }
-
-void start_spoolssd(struct tevent_context *ev_ctx,
-		    struct messaging_context *msg_ctx);
 
 static void spoolss_reopen_logs(void)
 {
@@ -519,6 +517,26 @@ static void spoolss_handle_client(struct tevent_req *req)
 
 /* ==== Main Process Functions ==== */
 
+extern pid_t background_lpq_updater_pid;
+
+static void check_updater_child(void)
+{
+	int status;
+	pid_t pid;
+
+	if (background_lpq_updater_pid == -1) {
+		return;
+	}
+
+	pid = sys_waitpid(background_lpq_updater_pid, &status, WNOHANG);
+	if (pid > 0) {
+		DEBUG(2, ("The background queue child died... Restarting!\n"));
+		pid = start_background_queue(server_event_context(),
+					     server_messaging_context());
+		background_lpq_updater_pid = pid;
+	}
+}
+
 static void spoolssd_sig_chld_handler(struct tevent_context *ev_ctx,
 				      struct tevent_signal *se,
 				      int signum, int count,
@@ -552,7 +570,8 @@ static void spoolssd_sig_chld_handler(struct tevent_context *ev_ctx,
 		}
 	}
 
-
+	/* also check if the updater child is alive and well */
+	check_updater_child();
 }
 
 static bool spoolssd_setup_sig_chld_handler(struct tevent_context *ev_ctx,
@@ -602,8 +621,8 @@ static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
 	/* check situation again in 10 seconds */
 	next_event = tevent_timeval_current_ofs(10, 0);
 
-	/* check when the socket becomes readable, so that children
-	 * are checked only when there is some activity */
+	/* TODO: check when the socket becomes readable, so that children
+	 * are checked only when there is some activity ? */
 	te = tevent_add_timer(ev_ctx, pfp, next_event,
 				spoolssd_check_children, pfp);
 	if (!te) {
@@ -654,7 +673,17 @@ static void spoolssd_check_children(struct tevent_context *ev_ctx,
 	ret = spoolssd_schedule_check(ev_ctx, pfp, current_time);
 }
 
-void start_spoolssd(struct tevent_context *ev_ctx,
+static void print_queue_forward(struct messaging_context *msg,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id server_id,
+				DATA_BLOB *data)
+{
+	messaging_send_buf(msg, pid_to_procid(background_lpq_updater_pid),
+			   MSG_PRINTER_UPDATE, data->data, data->length);
+}
+
+pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		    struct messaging_context *msg_ctx)
 {
 	struct prefork_pool *pool;
@@ -672,14 +701,12 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 	pid = sys_fork();
 
 	if (pid == -1) {
-		DEBUG(0, ("Failed to fork SPOOLSS [%s], aborting ...\n",
+		DEBUG(0, ("Failed to fork SPOOLSS [%s]\n",
 			   strerror(errno)));
-		exit(1);
 	}
-
-	if (pid) {
-		/* parent */
-		return;
+	if (pid != 0) {
+		/* parent or error */
+		return pid;
 	}
 
 	/* child */
@@ -698,6 +725,12 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 
 	/* Publish nt printers, this requires a working winreg pipe */
 	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
+
+	/* always start the backgroundqueue listner in spoolssd */
+	pid = start_background_queue(ev_ctx, msg_ctx);
+	if (pid > 0) {
+		background_lpq_updater_pid = pid;
+	}
 
 	/* the listening fd must be created before the children are actually
 	 * forked out. */
@@ -734,10 +767,10 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	messaging_register(msg_ctx, NULL,
-			   MSG_PRINTER_UPDATE, print_queue_receive);
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
+	messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
+			   print_queue_forward);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -795,8 +828,6 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 		DEBUG(0, ("Failed to setup children monitoring!\n"));
 		exit(1);
 	}
-
-	reload_printers(ev_ctx, msg_ctx);
 
 	DEBUG(1, ("SPOOLSS Daemon Started (%d)\n", getpid()));
 

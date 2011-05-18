@@ -29,6 +29,10 @@
 #include "serverid.h"
 #include "locking/proto.h"
 #include "smbd/proto.h"
+#include "rpc_server/rpc_service_setup.h"
+
+extern pid_t start_spoolssd(struct event_context *ev_ctx,
+			    struct messaging_context *msg_ctx);
 
 /****************************************************************************
  Notify smbds of new printcap data
@@ -222,7 +226,6 @@ pid_t start_background_queue(struct tevent_context *ev,
 		if (!locking_init()) {
 			exit(1);
 		}
-
 		messaging_register(msg_ctx, ev, MSG_SMB_CONF_UPDATED,
 				   bq_smb_conf_updated);
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
@@ -252,15 +255,23 @@ pid_t start_background_queue(struct tevent_context *ev,
 /* Run before the parent forks */
 bool printing_subsystem_init(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
+			     bool start_daemons,
 			     bool background_queue)
 {
+	enum rpc_service_mode_e spoolss_mode = rpc_spoolss_mode();
 	pid_t pid = -1;
 
 	if (!print_backend_init(msg_ctx)) {
 		return false;
 	}
 
-	if (background_queue) {
+	/* start spoolss daemon */
+	/* start as a separate daemon only if enabled */
+	if (start_daemons && spoolss_mode == RPC_SERVICE_MODE_DAEMON) {
+
+		pid = start_spoolssd(ev_ctx, msg_ctx);
+
+	} else if (start_daemons && background_queue) {
 
 		pid = start_background_queue(ev_ctx, msg_ctx);
 
