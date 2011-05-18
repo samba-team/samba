@@ -45,6 +45,8 @@
 	protocol, supporting only a small list of VFS operations, and had
 	several drawbacks. The protocol version 2 is a try to solve the
 	problems version 1 had while at the same time adding new features.
+	With the release of Samba 3.6.0, the module will run protocol version 2
+	by default.
 	</para>
 </refsect1>
 
@@ -77,6 +79,7 @@
 	<listitem><para><command>SHARE</command> - the name of the share on which the VFS operation occured</para></listitem>
 	<listitem><para><command>FILENAME</command> - the name of the file that was used by the VFS operation</para></listitem>
 	<listitem><para><command>TIMESTAMP</command> - a timestamp, formatted as "yyyy-mm-dd hh-mm-ss.ms" indicating when the VFS operation occured</para></listitem>
+	<listitem><para><command>IP</command> - The IP Address (v4 or v6) of the client machine that initiated the VFS operation.</para></listitem>
 	</itemizedlist>
 
 	</para>
@@ -224,9 +227,9 @@
 		<varlistentry>
 		<term>smb_traffic_analyzer:protocol_version = STRING</term>
 		<listitem>
-		<para>If STRING matches to V1 or is not given at all, the module
-		will use version 1 of the protocol. If STRING matches to "V2"
-		the module will use version 2 of the protocol.
+		<para>If STRING matches to V1, the module will use version 1 of the
+		protocol. If STRING is not given, the module will use version 2 of the
+		protocol, which is the default.
 		</para>
 		</listitem>
 		</varlistentry>
@@ -241,7 +244,6 @@
 	<smbconfsection name="[example_share]"/>
 	<smbconfoption name="path">/data/example</smbconfoption>
 	<smbconfoption name="vfs_objects">smb_traffic_analyzer</smbconfoption>
-	<smbconfoption name="smb_traffic_analyzer:protocol_version">V2</smbconfoption>
 	<smbconfoption name="smb_traffic_analyzer:host">examplehost</smbconfoption>
 	<smbconfoption name="smb_traffic_analyzer:port">3491</smbconfoption>
 	</programlisting>
