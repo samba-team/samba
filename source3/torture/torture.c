@@ -822,7 +822,6 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 
 	for (i = 0; i < torture_numops; i++)
 	{
-		NTSTATUS status;
 		size_t buf_size = ((unsigned)sys_random()%(sizeof(buf)-1))+ 1;
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
