@@ -133,7 +133,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct ndr_interface_table *iface,
-					  const char *name,
+					  const char *ncalrpc,
 					  uint16_t port,
 					  struct dcerpc_binding_handle **pbh);
 
@@ -256,7 +256,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct ndr_interface_table *iface,
-					  const char *name,
+					  const char *ncalrpc,
 					  uint16_t port,
 					  struct dcerpc_binding_handle **pbh)
 {
@@ -266,7 +266,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 	status = dcerpc_binding_vector_create(mem_ctx,
 					      iface,
 					      port,
-					      name,
+					      ncalrpc,
 					      &v);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -276,7 +276,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 				    iface,
 				    v,
 				    &iface->syntax_id.uuid,
-				    name,
+				    iface->name,
 				    pbh);
 	talloc_free(v);
 	if (!NT_STATUS_IS_OK(status)) {
