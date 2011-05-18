@@ -234,38 +234,6 @@ static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 	return (len - n)?(*(COPY_UCS2_CHAR(&cpa,a)) - *(COPY_UCS2_CHAR(&cpb,b))):0;
 }
 
-/*******************************************************************
- Case insensitive string comparison.
-********************************************************************/
-
-int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
-{
-	smb_ucs2_t cpa, cpb;
-
-	while ((*COPY_UCS2_CHAR(&cpb,b)) && toupper_m(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_m(cpb)) {
-		a++;
-		b++;
-	}
-	return (tolower_m(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_m(*(COPY_UCS2_CHAR(&cpb,b))));
-}
-
-/*******************************************************************
- Case insensitive string comparison, length limited.
-********************************************************************/
-
-int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
-{
-	smb_ucs2_t cpa, cpb;
-	size_t n = 0;
-
-	while ((n < len) && *COPY_UCS2_CHAR(&cpb,b) && (toupper_m(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_m(cpb))) {
-		a++;
-		b++;
-		n++;
-	}
-	return (len - n)?(tolower_m(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_m(*(COPY_UCS2_CHAR(&cpb,b)))):0;
-}
-
 /*
   The *_wa() functions take a combination of 7 bit ascii
   and wide characters They are used so that you can use string
