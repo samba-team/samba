@@ -487,8 +487,9 @@ char *strstr_m(const char *src, const char *findstr)
 	const char *s;
 	char *s2;
 	char *retp;
-
 	size_t converted_size, findstr_len = 0;
+
+	TALLOC_CTX *frame; /* Only set up in the iconv case */
 
 	/* for correctness */
 	if (!findstr[0]) {
@@ -524,35 +525,34 @@ char *strstr_m(const char *src, const char *findstr)
 	s = src;
 #endif
 
-	if (!push_ucs2_talloc(talloc_tos(), &src_w, src, &converted_size)) {
+	frame = talloc_stackframe();
+
+	if (!push_ucs2_talloc(frame, &src_w, src, &converted_size)) {
 		DEBUG(0,("strstr_m: src malloc fail\n"));
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	if (!push_ucs2_talloc(talloc_tos(), &find_w, findstr, &converted_size)) {
-		TALLOC_FREE(src_w);
+	if (!push_ucs2_talloc(frame, &find_w, findstr, &converted_size)) {
 		DEBUG(0,("strstr_m: find malloc fail\n"));
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
 	p = strstr_w(src_w, find_w);
 
 	if (!p) {
-		TALLOC_FREE(src_w);
-		TALLOC_FREE(find_w);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
 	*p = 0;
-	if (!pull_ucs2_talloc(talloc_tos(), &s2, src_w, &converted_size)) {
-		TALLOC_FREE(src_w);
-		TALLOC_FREE(find_w);
+	if (!pull_ucs2_talloc(frame, &s2, src_w, &converted_size)) {
+		TALLOC_FREE(frame);
 		DEBUG(0,("strstr_m: dest malloc fail\n"));
 		return NULL;
 	}
 	retp = discard_const_p(char, (s+strlen(s2)));
-	TALLOC_FREE(src_w);
-	TALLOC_FREE(find_w);
-	TALLOC_FREE(s2);
+	TALLOC_FREE(frame);
 	return retp;
 }
