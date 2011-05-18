@@ -128,18 +128,33 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	 * Password server sanity checks.
 	 */
 
-	if((lp_security() == SEC_SERVER || lp_security() >= SEC_DOMAIN) && !lp_passwordserver()) {
+	if((lp_security() == SEC_SERVER || lp_security() >= SEC_DOMAIN) && !*lp_passwordserver()) {
 		const char *sec_setting;
 		if(lp_security() == SEC_SERVER)
 			sec_setting = "server";
 		else if(lp_security() == SEC_DOMAIN)
 			sec_setting = "domain";
+		else if(lp_security() == SEC_ADS)
+			sec_setting = "ads";
 		else
 			sec_setting = "";
 
-		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
-to a valid password server.\n", sec_setting );
+		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set\n"
+			"to the default value * or a valid password server.\n", sec_setting );
 		ret = 1;
+	}
+
+	if((lp_security() >= SEC_DOMAIN) && (strcmp(lp_passwordserver(), "*") != 0)) {
+		const char *sec_setting;
+		if(lp_security() == SEC_DOMAIN)
+			sec_setting = "domain";
+		else if(lp_security() == SEC_ADS)
+			sec_setting = "ads";
+		else
+			sec_setting = "";
+
+		fprintf(stderr, "WARNING: The setting 'security=%s' should NOT be combined with the 'password server' parameter.\n"
+			"(by default Samba will discover the correct DC to contact automatically).\n", sec_setting );
 	}
 
 	/*
