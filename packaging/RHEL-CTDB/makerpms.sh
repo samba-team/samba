@@ -139,8 +139,17 @@ fi
 ##
 echo "$(basename $0): Getting Ready to build release package"
 
+case ${EXTRA_OPTIONS} in
+	*-b*)
+		BUILD_TARGET=""
+		;;
+	*)
+		BUILD_TARGET="-ba"
+		;;
+esac
+
 pushd ${RPMSPECDIR}
-${RPM} -ba $EXTRA_OPTIONS $SPECFILE
+${RPM} ${BUILD_TARGET} ${EXTRA_OPTIONS} ${SPECFILE}
 popd
 
 echo "$(basename $0): Done."
