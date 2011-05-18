@@ -240,10 +240,16 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 	if (!lp_passdb_backend()) {
 		fprintf(stderr,"ERROR: passdb backend must have a value or be left out\n");
+		ret = 1;
 	}
 	
 	if (lp_os_level() > 255) {
 		fprintf(stderr,"WARNING: Maximum value for 'os level' is 255!\n");	
+	}
+
+	if (strequal(lp_dos_charset(), "UTF8") || strequal(lp_dos_charset(), "UTF-8")) {
+		fprintf(stderr, "ERROR: 'dos charset' must not be UTF8\n");
+		ret = 1;
 	}
 
 	return ret;

@@ -290,6 +290,11 @@ _PUBLIC_ struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(ret, close_iconv_handle);
 
+	if (strcasecmp(dos_charset, "UTF8") == 0 || strcasecmp(dos_charset, "UTF-8") == 0) {
+		DEBUG(0,("ERROR: invalid DOS charset: 'dos charset' must not be UTF8, using (default value) CP850 instead\n"));
+		dos_charset = "CP850";
+	}
+
 	ret->dos_charset = talloc_strdup(ret->child_ctx, dos_charset);
 	ret->unix_charset = talloc_strdup(ret->child_ctx, unix_charset);
 	ret->display_charset = talloc_strdup(ret->child_ctx, display_charset);
