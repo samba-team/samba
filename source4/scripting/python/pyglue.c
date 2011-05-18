@@ -25,6 +25,10 @@
 
 void init_glue(void);
 
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
+
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
 	int len;
@@ -173,6 +177,30 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	return pylist;
 }
 
+static PyObject *py_strcasecmp_m(PyObject *self, PyObject *args)
+{
+	char *s1, *s2;
+
+	if (!PyArg_ParseTuple(args, "ss", &s1, &s2))
+		return NULL;
+
+	return PyInt_FromLong(strcasecmp_m(s1, s2));
+}
+
+static PyObject *py_strstr_m(PyObject *self, PyObject *args)
+{
+	char *s1, *s2, *ret;
+
+	if (!PyArg_ParseTuple(args, "ss", &s1, &s2))
+		return NULL;
+
+	ret = strstr_m(s1, s2);
+	if (!ret) {
+		Py_RETURN_NONE;
+	}
+	return PyString_FromString(ret);
+}
+
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"generate_random_str(len) -> string\n"
@@ -192,6 +220,10 @@ static PyMethodDef py_misc_methods[] = {
 		"get debug level" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
+	{ "strcasecmp_m", (PyCFunction)py_strcasecmp_m, METH_VARARGS,
+		"(for testing) compare two strings using Samba's strcasecmp_m()"},
+	{ "strstr_m", (PyCFunction)py_strstr_m, METH_VARARGS,
+		"(for testing) find one string in another with Samba's strstr_m()"},
 	{ NULL }
 };
 
