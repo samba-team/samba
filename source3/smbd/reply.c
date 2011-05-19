@@ -2381,15 +2381,18 @@ void reply_ctemp(struct smb_request *req)
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 			uint16 dirtype)
 {
-	uint32 fmode;
-
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	fmode = dos_mode(conn, fsp->fsp_name);
-	if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
-		return NT_STATUS_NO_SUCH_FILE;
+	if ((dirtype & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) !=
+			(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
+		/* Only bother to read the DOS attribute if we might deny the
+		   rename on the grounds of attribute missmatch. */
+		uint32_t fmode = dos_mode(conn, fsp->fsp_name);
+		if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
+			return NT_STATUS_NO_SUCH_FILE;
+		}
 	}
 
 	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
