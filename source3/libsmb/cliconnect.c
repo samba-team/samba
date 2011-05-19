@@ -32,6 +32,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
+#include "read_smb.h"
 
 static const struct {
 	int prot;
@@ -2789,10 +2790,13 @@ NTSTATUS cli_negprot(struct cli_state *cli)
 bool cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called)
 {
-	char *p;
-	int len = 4;
-	int namelen = 0;
-	char *tmp;
+	TALLOC_CTX *frame;
+	uint8_t len_buf[4];
+	struct iovec iov[3];
+	ssize_t len;
+	uint8_t *inbuf;
+	int err;
+	bool ret = false;
 
 	/* 445 doesn't have session request */
 	if (cli->port == 445)
@@ -2803,35 +2807,30 @@ bool cli_session_request(struct cli_state *cli,
 
 	/* put in the destination name */
 
-	tmp = name_mangle(talloc_tos(), cli->called.name,
-			  cli->called.name_type);
-	if (tmp == NULL) {
-		return false;
-	}
+	frame = talloc_stackframe();
 
-	p = cli->outbuf+len;
-	namelen = name_len((unsigned char *)tmp, talloc_get_size(tmp));
-	if (namelen > 0) {
-		memcpy(p, tmp, namelen);
-		len += namelen;
+	iov[0].iov_base = len_buf;
+	iov[0].iov_len  = sizeof(len_buf);
+
+	/* put in the destination name */
+
+	iov[1].iov_base = name_mangle(talloc_tos(), called->name,
+				      called->name_type);
+	if (iov[1].iov_base == NULL) {
+		goto fail;
 	}
-	TALLOC_FREE(tmp);
+	iov[1].iov_len = name_len((unsigned char *)iov[1].iov_base,
+				  talloc_get_size(iov[1].iov_base));
 
 	/* and my name */
 
-	tmp = name_mangle(talloc_tos(), cli->calling.name,
-			  cli->calling.name_type);
-	if (tmp == NULL) {
-		return false;
+	iov[2].iov_base = name_mangle(talloc_tos(), calling->name,
+				      calling->name_type);
+	if (iov[2].iov_base == NULL) {
+		goto fail;
 	}
-
-	p = cli->outbuf+len;
-	namelen = name_len((unsigned char *)tmp, talloc_get_size(tmp));
-	if (namelen > 0) {
-		memcpy(p, tmp, namelen);
-		len += namelen;
-	}
-	TALLOC_FREE(tmp);
+	iov[2].iov_len = name_len((unsigned char *)iov[2].iov_base,
+				  talloc_get_size(iov[2].iov_base));
 
 	/* send a session request (RFC 1002) */
 	/* setup the packet length
@@ -2841,17 +2840,21 @@ bool cli_session_request(struct cli_state *cli,
          * about this and accounts for those four bytes.
          * CRH.
          */
-        len -= 4;
-	_smb_setlen(cli->outbuf,len);
-	SCVAL(cli->outbuf,0,0x81);
 
-	cli_send_smb(cli);
-	DEBUG(5,("Sent session request\n"));
+	_smb_setlen(len_buf, iov[1].iov_len + iov[2].iov_len);
+	SCVAL(len_buf,0,0x81);
 
-	if (!cli_receive_smb(cli))
-		return False;
+	len = write_data_iov(cli->fd, iov, 3);
+	if (len == -1) {
+		goto fail;
+	}
+	len = read_smb(cli->fd, talloc_tos(), &inbuf, &err);
+	if (len == -1) {
+		errno = err;
+		goto fail;
+	}
 
-	if (CVAL(cli->inbuf,0) == 0x84) {
+	if (CVAL(inbuf,0) == 0x84) {
 		/* C. Hoch  9/14/95 Start */
 		/* For information, here is the response structure.
 		 * We do the byte-twiddling to for portability.
@@ -2863,18 +2866,18 @@ bool cli_session_request(struct cli_state *cli,
 		int16 port;
 		};
 		*/
-		uint16_t port = (CVAL(cli->inbuf,8)<<8)+CVAL(cli->inbuf,9);
+		uint16_t port = (CVAL(inbuf,8)<<8)+CVAL(inbuf,9);
 		struct in_addr dest_ip;
 		NTSTATUS status;
 
 		/* SESSION RETARGET */
-		putip((char *)&dest_ip,cli->inbuf+4);
+		putip((char *)&dest_ip,inbuf+4);
 		in_addr_to_sockaddr_storage(&cli->dest_ss, dest_ip);
 
 		status = open_socket_out(&cli->dest_ss, port,
 					 LONG_CONNECT_TIMEOUT, &cli->fd);
 		if (!NT_STATUS_IS_OK(status)) {
-			return False;
+			goto fail;
 		}
 
 		DEBUG(3,("Retargeted\n"));
@@ -2884,24 +2887,29 @@ bool cli_session_request(struct cli_state *cli,
 		/* Try again */
 		{
 			static int depth;
-			bool ret;
 			if (depth > 4) {
 				DEBUG(0,("Retarget recursion - failing\n"));
-				return False;
+				goto fail;
 			}
 			depth++;
 			ret = cli_session_request(cli, calling, called);
 			depth--;
-			return ret;
+			goto done;
 		}
 	} /* C. Hoch 9/14/95 End */
 
-	if (CVAL(cli->inbuf,0) != 0x82) {
+	if (CVAL(inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */
-		cli->rap_error = CVAL(cli->inbuf,4);
-		return False;
+		cli->rap_error = CVAL(inbuf,4);
+		goto fail;
 	}
-	return(True);
+done:
+	ret = true;
+fail:
+	err = errno;
+	TALLOC_FREE(frame);
+	errno = err;
+	return ret;
 }
 
 struct fd_struct {
