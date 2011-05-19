@@ -361,9 +361,6 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli, const char *use
 	status = cli_session_setup_lanman2_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -598,9 +595,6 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 	status = cli_session_setup_guest_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -802,9 +796,6 @@ static NTSTATUS cli_session_setup_plain(struct cli_state *cli,
 	status = cli_session_setup_plain_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1170,9 +1161,6 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	status = cli_session_setup_nt1_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1788,9 +1776,6 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli,
 	status = cli_session_setup_ntlmssp_recv(req);
 fail:
 	TALLOC_FREE(ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2175,9 +2160,6 @@ NTSTATUS cli_ulogoff(struct cli_state *cli)
 	status = cli_ulogoff_recv(req);
 fail:
 	TALLOC_FREE(ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2471,9 +2453,6 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 	status = cli_tcon_andx_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2554,9 +2533,6 @@ NTSTATUS cli_tdis(struct cli_state *cli)
 	status = cli_tdis_recv(req);
 fail:
 	TALLOC_FREE(ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2809,9 +2785,6 @@ NTSTATUS cli_negprot(struct cli_state *cli)
 	status = cli_negprot_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 

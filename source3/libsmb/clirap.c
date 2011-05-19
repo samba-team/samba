@@ -689,9 +689,6 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 				     write_time, size, mode);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -867,9 +864,6 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 				     write_time, change_time, size, mode, ino);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -981,9 +975,6 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 					    pstreams);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1249,9 +1240,6 @@ NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 	status = cli_qpathinfo_basic_recv(req, sbuf, attributes);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 

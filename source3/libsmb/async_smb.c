@@ -872,6 +872,8 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 
 	status = cli_pull_error((char *)state->inbuf);
 
+	cli_set_error(state->cli, status);
+
 	if (!have_andx_command((char *)state->inbuf, wct_ofs)) {
 
 		if ((cmd == SMBsesssetupX)

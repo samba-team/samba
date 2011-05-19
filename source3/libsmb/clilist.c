@@ -514,9 +514,6 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 	}
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -843,9 +840,6 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 	}
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -968,8 +962,5 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 	}
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
