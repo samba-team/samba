@@ -53,12 +53,11 @@ static void add_auto_printers(void)
 }
 
 /***************************************************************************
-load automatic printer services
+load automatic printer services from pre-populated pcap cache
 ***************************************************************************/
 void load_printers(void)
 {
-	if (!pcap_cache_loaded())
-		pcap_cache_reload();
+	SMB_ASSERT(pcap_cache_loaded());
 
 	add_auto_printers();
 

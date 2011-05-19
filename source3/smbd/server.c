@@ -741,9 +741,9 @@ static void smbd_parent_loop(struct smbd_parent_context *parent)
 /* NOTREACHED	return True; */
 }
 
-/****************************************************************************
- Reload printers
-**************************************************************************/
+/***************************************************************************
+ purge stale printers and reload from pre-populated pcap cache
+***************************************************************************/
 void reload_printers(void)
 {
 	int snum;
@@ -751,9 +751,9 @@ void reload_printers(void)
 	int pnum = lp_servicenumber(PRINTERS_NAME);
 	const char *pname;
 
-	pcap_cache_reload();
+	SMB_ASSERT(pcap_cache_loaded());
 
-	/* remove stale printers */
+	DEBUG(10, ("reloading printer services from pcap cache\n"));
 	for (snum = 0; snum < n_services; snum++) {
 		/* avoid removing PRINTERS_NAME or non-autoloaded printers */
 		if (snum == pnum || !(lp_snum_ok(snum) && lp_print_ok(snum) &&
@@ -800,7 +800,7 @@ bool reload_services(bool test)
 
 	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 
-	reload_printers();
+	pcap_cache_reload(&reload_printers);
 
 	/* perhaps the config filename is now set */
 	if (!test)
