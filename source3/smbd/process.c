@@ -2083,7 +2083,7 @@ void check_reload(time_t t)
 			|| (t-last_printer_reload_time  < 0) ) 
 		{
 			DEBUG( 3,( "Printcap cache time expired.\n"));
-			reload_printers();
+			pcap_cache_reload(&reload_printers);
 			last_printer_reload_time = t;
 		}
 	}
@@ -2369,7 +2369,7 @@ void smbd_process(void)
 	}
 
 	if (!(event_add_idle(smbd_event_context(), NULL,
-			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
+			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "housekeeping", housekeeping_fn, NULL))) {
 		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
