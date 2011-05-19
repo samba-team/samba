@@ -108,3 +108,27 @@ ssize_t read_smb_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*pbuf = talloc_move(mem_ctx, &state->buf);
 	return talloc_get_size(*pbuf);
 }
+
+ssize_t read_smb(int fd, TALLOC_CTX *mem_ctx, uint8_t **pbuf, int *perrno)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	ssize_t ret = -1;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = read_smb_send(frame, ev, fd);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		goto fail;
+	}
+	ret = read_smb_recv(req, mem_ctx, pbuf, perrno);
+ fail:
+	TALLOC_FREE(frame);
+	return ret;
+}

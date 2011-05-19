@@ -29,5 +29,6 @@ struct tevent_req *read_smb_send(TALLOC_CTX *mem_ctx,
 
 ssize_t read_smb_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		      uint8_t **pbuf, int *perrno);
+ssize_t read_smb(int fd, TALLOC_CTX *mem_ctx, uint8_t **pbuf, int *perrno);
 
 #endif
