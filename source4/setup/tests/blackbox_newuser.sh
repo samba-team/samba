@@ -34,9 +34,9 @@ testit "setpassword" $samba_tool setpassword $CONFIG NewUser --newpassword=testp
 testit "setpassword" $samba_tool setpassword $CONFIG NewUser1 --newpassword=testp@ssw0Rd2
 
 # check the setexpiry script
-testit "noexpiry" $samba_tool setexpiry $CONFIG NewUser --noexpiry
-testit "noexpiry" $samba_tool setexpiry $CONFIG NewUser1 --noexpiry
-testit "expiry" $samba_tool setexpiry $CONFIG NewUser --days=7
-testit "expiry" $samba_tool setexpiry $CONFIG NewUser1 --days=7
+testit "noexpiry" $samba_tool user setexpiry $CONFIG NewUser --noexpiry
+testit "noexpiry" $samba_tool user setexpiry $CONFIG NewUser1 --noexpiry
+testit "expiry" $samba_tool user setexpiry $CONFIG NewUser --days=7
+testit "expiry" $samba_tool user setexpiry $CONFIG NewUser1 --days=7
 
 exit $failed

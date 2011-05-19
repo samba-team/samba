@@ -110,7 +110,43 @@ class cmd_user_enable(Command):
             credentials=creds, lp=lp)
         samdb.enable_account(filter)
 
+class cmd_user_setexpiry(Command):
+    """Sets the expiration of a user account"""
 
+    synopsis = "%prog user setexpiry <username> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--filter", help="LDAP Filter to set password on", type=str),
+        Option("--days", help="Days to expiry", type=int),
+        Option("--noexpiry", help="Password does never expire", action="store_true"),
+    ]
+
+    takes_args = ["username?"]
+    def run(self, username=None, sambaopts=None, credopts=None,
+            versionopts=None, H=None, filter=None, days=None, noexpiry=None):
+        if username is None and filter is None:
+            raise CommandError("Either the username or '--filter' must be specified!")
+
+        if filter is None:
+            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (username)
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
+        if days is None:
+            days = 0
+
+        samdb = SamDB(url=H, session_info=system_session(),
+            credentials=creds, lp=lp)
+
+        samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
 
 class cmd_user(SuperCommand):
     """User management [server connection needed]"""
@@ -119,4 +155,4 @@ class cmd_user(SuperCommand):
     subcommands["add"] = cmd_user_add()
     subcommands["delete"] = cmd_user_delete()
     subcommands["enable"] = cmd_user_enable()
-
+    subcommands["setexpiry"] = cmd_user_setexpiry()
