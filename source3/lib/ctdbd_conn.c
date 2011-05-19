@@ -1361,6 +1361,11 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	}
 
 	conn->release_ip_handler = release_ip_handler;
+	/*
+	 * store the IP address of the server socket for later
+	 * comparison in release_ip()
+	 */
+	conn->release_ip_priv = private_data;
 
 	/*
 	 * We want to be told about IP releases
