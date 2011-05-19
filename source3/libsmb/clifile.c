@@ -358,9 +358,6 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -503,9 +500,6 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -570,9 +564,6 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -778,9 +769,6 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -912,9 +900,6 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1029,9 +1014,6 @@ NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1102,9 +1084,6 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1224,9 +1203,6 @@ NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fn
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1368,9 +1344,6 @@ NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1433,9 +1406,6 @@ NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const cha
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1543,9 +1513,6 @@ NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_a
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1650,9 +1617,6 @@ NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1757,9 +1721,6 @@ NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1874,9 +1835,6 @@ NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2038,9 +1996,6 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	status = cli_ntcreate_recv(req, pfid);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2289,9 +2244,6 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 	status = cli_open_recv(req, pfnum);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2407,9 +2359,6 @@ NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
 	status = cli_close_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2525,9 +2474,6 @@ NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2587,7 +2533,6 @@ bool cli_lock(struct cli_state *cli, uint16_t fnum,
 
 	status = cli_locktype(cli, fnum, offset, len, timeout,
 			      (lock_type == READ_LOCK? 1 : 0));
-	cli_set_error(cli, status);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -2698,9 +2643,6 @@ NTSTATUS cli_unlock(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -2751,7 +2693,6 @@ bool cli_lock64(struct cli_state *cli, uint16_t fnum,
 
 	cli->timeout = saved_timeout;
 
-	cli_set_error(cli, status);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -2866,9 +2807,6 @@ NTSTATUS cli_unlock64(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3040,9 +2978,6 @@ NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3107,9 +3042,6 @@ NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3261,9 +3193,6 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3410,9 +3339,6 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3525,9 +3451,6 @@ NTSTATUS cli_setattrE(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3651,9 +3574,6 @@ NTSTATUS cli_setatr(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3773,9 +3693,6 @@ NTSTATUS cli_chkpath(struct cli_state *cli, const char *path)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -3887,9 +3804,6 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -4044,9 +3958,6 @@ NTSTATUS cli_ctemp(struct cli_state *cli,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -4373,9 +4284,6 @@ NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 	status = cli_get_ea_list_path_recv(req, ctx, pnum_eas, pea_list);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -4602,9 +4510,6 @@ NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -4663,9 +4568,6 @@ NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -4771,9 +4673,6 @@ NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -4835,9 +4734,6 @@ NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
 
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -5120,9 +5016,6 @@ NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	status = cli_qpathinfo_recv(req, mem_ctx, rdata, num_rdata);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -5252,9 +5145,6 @@ NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	status = cli_qfileinfo_recv(req, mem_ctx, rdata, num_rdata);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -5334,9 +5224,6 @@ NTSTATUS cli_flush(TALLOC_CTX *mem_ctx, struct cli_state *cli, uint16_t fnum)
 	status = cli_flush_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -5482,8 +5369,5 @@ NTSTATUS cli_shadow_copy_data(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	status = cli_shadow_copy_data_recv(req, mem_ctx, pnames, pnum_names);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
