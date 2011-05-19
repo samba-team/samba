@@ -2357,6 +2357,9 @@ static void release_ip(const char *ip, void *priv)
 		p = addr + 7;
 	}
 
+	DEBUG(10, ("Got release IP message for %s, "
+		   "our address is %s\n", ip, p));
+
 	if ((strcmp(p, ip) == 0) || ((p != addr) && strcmp(addr, ip) == 0)) {
 		/* we can't afford to do a clean exit - that involves
 		   database writes, which would potentially mean we
