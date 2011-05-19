@@ -665,9 +665,6 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 	status = cli_pull_recv(req, received);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -688,7 +685,6 @@ ssize_t cli_read(struct cli_state *cli, uint16_t fnum, char *buf,
 	status = cli_pull(cli, fnum, offset, size, size,
 			  cli_read_sink, &buf, &ret);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
 		return -1;
 	}
 	return ret;
@@ -1029,9 +1025,6 @@ NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	status = cli_writeall_recv(req, pwritten);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1261,8 +1254,5 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	status = cli_push_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }

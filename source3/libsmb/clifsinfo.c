@@ -153,9 +153,6 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 						  pcaphigh);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -258,9 +255,6 @@ NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
 	status = cli_set_unix_extensions_capabilities_recv(req);
 fail:
 	TALLOC_FREE(ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -357,9 +351,6 @@ NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 	status = cli_get_fs_attr_info_recv(req, fs_attr);
 fail:
 	TALLOC_FREE(ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
