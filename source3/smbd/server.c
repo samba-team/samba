@@ -498,6 +498,14 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	return true;
 }
 
+static bool parent_housekeeping_fn(const struct timeval *now, void *private_data)
+{
+	DEBUG(5, ("houskeeping\n"));
+	/* check if we need to reload services */
+	check_reload(time(NULL));
+	return true;
+}
+
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
@@ -624,6 +632,14 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	   includes checking to see that smbd is listening. */
 	claim_connection(NULL,"",
 			 FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_DBWRAP);
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
+			     "parent_housekeeping", parent_housekeeping_fn,
+			     parent))) {
+		DEBUG(0, ("Could not add housekeeping event\n"));
+		exit(1);
+	}
 
         /* Listen to messages */
 

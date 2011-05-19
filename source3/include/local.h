@@ -148,6 +148,7 @@
 #define LPQ_LOCK_TIMEOUT (5)
 #define NMBD_INTERFACES_RELOAD (120)
 #define NMBD_UNEXPECTED_TIMEOUT (15)
+#define SMBD_HOUSEKEEPING_INTERVAL SMBD_SELECT_TIMEOUT
 
 /* the following are in milliseconds */
 #define LOCK_RETRY_TIMEOUT (100)
