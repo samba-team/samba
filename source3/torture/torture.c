@@ -37,6 +37,7 @@
 #include "libsmb/nmblib.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "util_tdb.h"
+#include "libsmb/read_smb.h"
 
 extern char *optarg;
 extern int optind;
@@ -237,75 +238,81 @@ static struct cli_state *open_nbt_connection(void)
 static bool cli_bad_session_request(struct cli_state *cli,
                          struct nmb_name *calling, struct nmb_name *called)
 {
-        char *p;
-        int len = 4;
-        int namelen = 0;
-        char *tmp;
+	TALLOC_CTX *frame;
+	uint8_t len_buf[4];
+	struct iovec iov[3];
+	ssize_t len;
+	uint8_t *inbuf;
+	int err;
+	bool ret = false;
 
         memcpy(&(cli->calling), calling, sizeof(*calling));
         memcpy(&(cli->called ), called , sizeof(*called ));
 
-        /* put in the destination name */
+	/* 445 doesn't have session request */
+	if (cli->port == 445)
+		return True;
 
-        tmp = name_mangle(talloc_tos(), cli->called.name,
-                          cli->called.name_type);
-        if (tmp == NULL) {
-                return false;
-        }
+	frame = talloc_stackframe();
 
-        p = cli->outbuf+len;
-        namelen = name_len((unsigned char *)tmp, talloc_get_size(tmp));
-        if (namelen > 0) {
-                memcpy(p, tmp, namelen);
-                len += namelen;
-        }
-        TALLOC_FREE(tmp);
+	iov[0].iov_base = len_buf;
+	iov[0].iov_len  = sizeof(len_buf);
+
+	/* put in the destination name */
+
+	iov[1].iov_base = name_mangle(talloc_tos(), called->name,
+				      called->name_type);
+	if (iov[1].iov_base == NULL) {
+		goto fail;
+	}
+	iov[1].iov_len = name_len((unsigned char *)iov[1].iov_base,
+				  talloc_get_size(iov[1].iov_base));
+
+	/* and my name */
+
+	iov[2].iov_base = name_mangle(talloc_tos(), calling->name,
+				      calling->name_type);
+	if (iov[2].iov_base == NULL) {
+		goto fail;
+	}
+	iov[2].iov_len = name_len((unsigned char *)iov[2].iov_base,
+				  talloc_get_size(iov[2].iov_base));
 
 	/* Deliberately corrupt the name len (first byte) */
-	*p = 100;
+	*((uint8_t *)iov[2].iov_base) = 100;
 
-        /* and my name */
-
-        tmp = name_mangle(talloc_tos(), cli->calling.name,
-                          cli->calling.name_type);
-        if (tmp == NULL) {
-                return false;
-        }
-
-        p = cli->outbuf+len;
-        namelen = name_len((unsigned char *)tmp, talloc_get_size(tmp));
-        if (namelen > 0) {
-                memcpy(p, tmp, namelen);
-                len += namelen;
-        }
-        TALLOC_FREE(tmp);
-	/* Deliberately corrupt the name len (first byte) */
-	*p = 100;
-
-        /* send a session request (RFC 1002) */
-        /* setup the packet length
+	/* send a session request (RFC 1002) */
+	/* setup the packet length
          * Remove four bytes from the length count, since the length
          * field in the NBT Session Service header counts the number
          * of bytes which follow.  The cli_send_smb() function knows
          * about this and accounts for those four bytes.
          * CRH.
          */
-        len -= 4;
-        _smb_setlen(cli->outbuf,len);
-        SCVAL(cli->outbuf,0,0x81);
 
-        cli_send_smb(cli);
-        DEBUG(5,("Sent session request\n"));
+	_smb_setlen(len_buf, iov[1].iov_len + iov[2].iov_len);
+	SCVAL(len_buf,0,0x81);
 
-        if (!cli_receive_smb(cli))
-                return False;
+	len = write_data_iov(cli->fd, iov, 3);
+	if (len == -1) {
+		goto fail;
+	}
+	len = read_smb(cli->fd, talloc_tos(), &inbuf, &err);
+	if (len == -1) {
+		errno = err;
+		goto fail;
+	}
 
-        if (CVAL(cli->inbuf,0) != 0x82) {
+        if (CVAL(inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */
-                cli->rap_error = CVAL(cli->inbuf,4);
-                return False;
+                cli->rap_error = CVAL(inbuf,4);
+		goto fail;
         }
-        return(True);
+
+	ret = true;
+fail:
+	TALLOC_FREE(frame);
+        return ret;
 }
 
 static struct cli_state *open_bad_nbt_connection(void)
