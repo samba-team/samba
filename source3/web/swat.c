@@ -490,7 +490,7 @@ static int save_reload(int snum)
                 return 0;
         }
 	iNumNonAutoPrintServices = lp_numservices();
-	load_printers();
+	pcap_cache_reload(&load_printers);
 
 	return 1;
 }
@@ -1434,7 +1434,7 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	load_config(True);
 	load_interfaces();
 	iNumNonAutoPrintServices = lp_numservices();
-	load_printers();
+	pcap_cache_reload(&load_printers);
 
 	cgi_setup(get_dyn_SWATDIR(), !demo_mode);
 
