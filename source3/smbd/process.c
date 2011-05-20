@@ -2798,7 +2798,7 @@ static void smbd_echo_loop(struct smbd_server_connection *sconn,
 /*
  * Handle SMBecho requests in a forked child process
  */
-static bool fork_echo_handler(struct smbd_server_connection *sconn)
+bool fork_echo_handler(struct smbd_server_connection *sconn)
 {
 	int listener_pipe[2];
 	int res;
@@ -2912,8 +2912,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 	const char *remaddr = NULL;
 	int ret;
 
-	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
-	    !lp_async_smb_echo_handler()) {
+	if (lp_maxprotocol() == PROTOCOL_SMB2) {
 		/*
 		 * We're not making the decision here,
 		 * we're just allowing the client
@@ -3032,10 +3031,6 @@ void smbd_process(struct smbd_server_connection *sconn)
 
 	if (!srv_init_signing(sconn)) {
 		exit_server("Failed to init smb_signing");
-	}
-
-	if (lp_async_smb_echo_handler() && !fork_echo_handler(sconn)) {
-		exit_server("Failed to fork echo handler");
 	}
 
 	/* Setup oplocks */

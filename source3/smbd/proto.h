@@ -750,6 +750,7 @@ size_t req_wct_ofs(struct smb_request *req);
 void chain_reply(struct smb_request *req);
 bool req_is_in_chain(struct smb_request *req);
 void smbd_process(struct smbd_server_connection *sconn);
+bool fork_echo_handler(struct smbd_server_connection *sconn);
 
 /* The following definitions come from smbd/quotas.c  */
 
