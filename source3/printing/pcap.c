@@ -209,6 +209,10 @@ void pcap_cache_reload(void (*post_cache_fill_fn)(void))
 
 			has_punctuation = (strchr_m(p, ' ') ||
 			                   strchr_m(p, '\t') ||
+					   strchr_m(p, '"') ||
+					   strchr_m(p, '\'') ||
+					   strchr_m(p, ';') ||
+					   strchr_m(p, ',') ||
 			                   strchr_m(p, '(') ||
 			                   strchr_m(p, ')'));
 
@@ -217,8 +221,7 @@ void pcap_cache_reload(void (*post_cache_fill_fn)(void))
 				continue;
 			}
 
-			if (strlen(p) <= MAXPRINTERLEN &&
-			    strlen(p) > strlen(name) && !has_punctuation) {
+			if (strlen(p) <= MAXPRINTERLEN && *name == '\0' && !has_punctuation) {
 				if (!*comment) {
 					strlcpy(comment, name, sizeof(comment));
 				}
@@ -232,9 +235,6 @@ void pcap_cache_reload(void (*post_cache_fill_fn)(void))
 				continue;
 			}
 		}
-
-		comment[60] = 0;
-		name[MAXPRINTERLEN] = 0;
 
 		if (*name && !pcap_cache_add(name, comment)) {
 			x_fclose(pcap_file);
