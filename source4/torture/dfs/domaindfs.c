@@ -371,7 +371,7 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 						resp3.referral_entries[0].referral.v3.referrals.r1.DFS_path,
 						str+1));
 	torture_assert_int_equal(tctx, strlen(
-				 resp2.referral_entries[0].referral.v3.referrals.r1.netw_address) > 0,
+				 resp3.referral_entries[0].referral.v3.referrals.r1.netw_address) > 0,
 				 1,
 				 "Length of first referral is less than 0");
 	torture_assert_int_equal(tctx, strstr(resp3.referral_entries[0].referral.v3.referrals.r1.netw_address,
