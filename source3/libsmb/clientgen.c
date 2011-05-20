@@ -417,11 +417,6 @@ void cli_setup_packet_buf(struct cli_state *cli, char *buf)
 	SSVAL(buf,smb_flg2, flags2);
 }
 
-void cli_setup_packet(struct cli_state *cli)
-{
-	cli_setup_packet_buf(cli, cli->outbuf);
-}
-
 /****************************************************************************
  Setup the bcc length of the packet from a pointer to the end of the data.
 ****************************************************************************/
