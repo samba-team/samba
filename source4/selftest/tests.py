@@ -432,3 +432,6 @@ plantestsuite_loadlist("samba4.%s.two" % t, "vampire_dc", [valgrindify(smb4tortu
 plantestsuite_loadlist("samba4.rpc.echo", "rodc", [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME%$PASSWORD', '-W' '$DOMAIN', 'rpc.echo'])
 plantestsuite_loadlist("samba4.rpc.echo", "rodc:local", [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-P', '-W' '$DOMAIN', 'rpc.echo'])
 plantestsuite("samba4.blackbox.provision-backend.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision-backend.sh"), '$PREFIX/provision'])
+
+# Test renaming the DC
+plantestsuite("samba4.blackbox.renamedc.sh", "none", ["PYTHON=%s" % python, os.path.join(bbdir, "renamedc.sh"), '$PREFIX/provision'])
