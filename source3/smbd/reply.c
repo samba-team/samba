@@ -5815,7 +5815,7 @@ static void rename_open_files(connection_struct *conn,
 	files_struct *fsp;
 	bool did_rename = False;
 	NTSTATUS status;
-	uint32_t new_name_hash;
+	uint32_t new_name_hash = 0;
 
 	for(fsp = file_find_di_first(conn->sconn, lck->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
