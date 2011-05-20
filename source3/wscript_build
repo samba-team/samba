@@ -711,7 +711,7 @@ bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
 
 bld.SAMBA3_SUBSYSTEM('LIBGPO',
                     source='${LIBGPO_SRC}',
-                    deps='gpext',
+                    deps='gpext talloc',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('AVAHI',
@@ -720,7 +720,8 @@ bld.SAMBA3_SUBSYSTEM('AVAHI',
                     enabled=bld.env.with_avahi)
 
 bld.SAMBA3_SUBSYSTEM('GROUPDB',
-                    source=GROUPDB_SRC)
+                    source=GROUPDB_SRC,
+                    deps='tdb')
 
 bld.SAMBA3_SUBSYSTEM('TLDAP',
                     source=TLDAP_SRC,
@@ -733,7 +734,8 @@ bld.SAMBA3_LIBRARY('passdb',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
-                    source=PARAM_UTIL_SRC)
+                    source=PARAM_UTIL_SRC,
+                    deps='samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC,
@@ -748,10 +750,12 @@ bld.SAMBA3_LIBRARY('param',
 
 bld.SAMBA3_SUBSYSTEM('REGFIO',
                     source=REGFIO_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
                     source=REG_API_REGF_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('smbregistry',
@@ -774,7 +778,7 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
 
 bld.SAMBA3_LIBRARY('POPT_SAMBA3',
                    source=POPT_LIB_SRC,
-                   deps='popt',
+                   deps='popt samba-util-common',
                    vars=locals(),
                    private_library=True)
 
@@ -844,14 +848,17 @@ bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
                     source=LIBADS_PRINTER_SRC,
+                    deps='samba-util-common',
 		    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBAFS',
                     source=AFS_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
                     source=AFS_SETTOKEN_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('smbconf',
@@ -884,10 +891,12 @@ bld.SAMBA3_SUBSYSTEM('LOCKING',
 
 bld.SAMBA3_SUBSYSTEM('PROFILE',
                     source='${PROFILE_SRC}',
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PRINTBASE',
                     source=PRINTBASE_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
@@ -902,10 +911,12 @@ bld.SAMBA3_SUBSYSTEM('PRINTING',
 
 bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
                     source=PASSWD_UTIL_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     source=FNAME_UTIL_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
@@ -940,6 +951,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNBT',
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
                     source=SERVICES_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
@@ -954,10 +966,12 @@ bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
 
 bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
                     source=VERSION_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SLCACHE',
                     source=SLCACHE_SRC,
+                    deps='samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
@@ -972,11 +986,12 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
 
 bld.SAMBA3_SUBSYSTEM('CHARSET3',
                     source='''lib/util_str.c lib/charcnv.c lib/fstring.c''',
-                    public_deps='ICONV_WRAPPER CHARSET',
+                    public_deps='ICONV_WRAPPER samba3core CHARSET',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
-                    source='lib/ldb_compat.c')
+                    source='lib/ldb_compat.c',
+                    deps='samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('errors3',
                      source='libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c', 
@@ -1003,17 +1018,21 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',
                     deps='RPC_NDR_WINREG RPC_NCACN_NP')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
-	source=RPC_CLIENT_SCHANNEL_SRC,
-	vars=locals())
+                    source=RPC_CLIENT_SCHANNEL_SRC,
+                    deps='samba-util-common',
+                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('INIT_LSA',
-                    source='rpc_client/init_lsa.c')
+                    source='rpc_client/init_lsa.c',
+                    deps='samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('INIT_NETLOGON',
-                    source='rpc_client/init_netlogon.c')
+                    source='rpc_client/init_netlogon.c',
+                    deps='samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
-                    source='rpc_client/init_samr.c')
+                    source='rpc_client/init_samr.c',
+                    deps='samba-util-common')
 
 ########################## BINARIES #################################
 
@@ -1257,7 +1276,7 @@ bld.SAMBA3_BINARY('smbfilter',
 
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
-                 deps='SAMBA_VERSION',
+                 deps='SAMBA_VERSION samba3core param',
                  vars=locals())
 
 bld.SAMBA3_BINARY('wbinfo' + bld.env.suffix3,
@@ -1309,7 +1328,7 @@ bld.SAMBA3_BINARY('split_tokens',
 
 bld.SAMBA3_BINARY('vlp',
                  source=VLP_SRC,
-                 deps='''talloc tdb PARAM_UTIL UTIL_TDB''',
+                 deps='''talloc tdb PARAM_UTIL UTIL_TDB samba3core param''',
                  vars=locals())
 
 swat_dir = os.path.join(bld.curdir, '../swat')
