@@ -154,7 +154,6 @@ to the default value * or a valid password server.\n", sec_setting );
 			sec_setting = "";
 
 		fprintf(stderr, "WARNING: The setting 'security=%s' is should NOT be combined with the 'password server' parameter.\n  (by default Samba will discover the correct DC to contact automatically).\n", sec_setting );
-		ret = 1;
 	}
 
 	/*
