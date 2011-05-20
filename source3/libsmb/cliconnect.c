@@ -1412,7 +1412,7 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_session_setup_kerberos_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *principal, const char *workgroup)
+	const char *principal)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_kerberos_state *state;
@@ -1500,8 +1500,7 @@ static ADS_STATUS cli_session_setup_kerberos_recv(struct tevent_req *req)
 }
 
 static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli,
-					     const char *principal,
-					     const char *workgroup)
+					     const char *principal)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -1514,8 +1513,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_session_setup_kerberos_send(ev, ev, cli, principal,
-					      workgroup);
+	req = cli_session_setup_kerberos_send(ev, ev, cli, principal);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -1901,8 +1899,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		}
 
 		if (principal) {
-			rc = cli_session_setup_kerberos(cli, principal,
-				dest_realm);
+			rc = cli_session_setup_kerberos(cli, principal);
 			if (ADS_ERR_OK(rc) || !cli->fallback_after_kerberos) {
 				TALLOC_FREE(principal);
 				return rc;
