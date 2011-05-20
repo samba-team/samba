@@ -293,9 +293,10 @@ char *libnetapi_errstr(NET_API_STATUS status)
 	if (status & 0xc0000000) {
 		ret = talloc_strdup(NULL, 
 				     get_friendly_nt_error_msg(NT_STATUS(status)));
+	} else {
+		ret = talloc_strdup(NULL,
+				    get_friendly_werror_msg(W_ERROR(status)));
 	}
-
-	ret = talloc_strdup(NULL, get_friendly_werror_msg(W_ERROR(status)));
 	TALLOC_FREE(frame);
 	return ret;
 }
