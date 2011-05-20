@@ -2375,15 +2375,6 @@ static void release_ip(const char *ip, void *priv)
 	}
 }
 
-static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data,
-			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
-{
-	struct smbd_server_connection *sconn = talloc_get_type_abort(
-		private_data, struct smbd_server_connection);
-
-	release_ip((char *)data->data, sconn->client_id.addr);
-}
-
 #ifdef CLUSTER_SUPPORT
 static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
 			       struct sockaddr_storage *client)
@@ -3040,8 +3031,6 @@ void smbd_process(struct smbd_server_connection *sconn)
 	/* register our message handlers */
 	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	messaging_register(sconn->msg_ctx, sconn,
-			   MSG_SMB_RELEASE_IP, msg_release_ip);
 	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_SMB_CLOSE_FILE, msg_close_file);
 
