@@ -1871,6 +1871,9 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			host = strchr_m(cli->desthost, '.');
 			if (dest_realm) {
 				realm = SMB_STRDUP(dest_realm);
+				if (!realm) {
+					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+				}
 				strupper_m(realm);
 			} else {
 				if (host) {
@@ -1882,19 +1885,33 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 				}
 			}
 
-			if (realm && *realm) {
-				principal = talloc_asprintf(talloc_tos(),
-							    "cifs/%s@%s",
-							    cli->desthost,
-							    realm);
-				if (!principal) {
-					SAFE_FREE(realm);
+			if (realm == NULL || *realm == '\0') {
+				realm = SMB_STRDUP(lp_realm());
+				if (!realm) {
 					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 				}
-				DEBUG(3,("cli_session_setup_spnego: guessed "
-					"server principal=%s\n",
-					principal ? principal : "<null>"));
+				strupper_m(realm);
+				DEBUG(3,("cli_session_setup_spnego: cannot "
+					"get realm from dest_realm %s, "
+					"desthost %s. Using default "
+					"smb.conf realm %s\n",
+					dest_realm ? dest_realm : "<null>",
+					cli->desthost,
+					realm));
 			}
+
+			principal = talloc_asprintf(talloc_tos(),
+						    "cifs/%s@%s",
+						    cli->desthost,
+						    realm);
+			if (!principal) {
+				SAFE_FREE(realm);
+				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
+			DEBUG(3,("cli_session_setup_spnego: guessed "
+				"server principal=%s\n",
+				principal ? principal : "<null>"));
+
 			SAFE_FREE(realm);
 		}
 
