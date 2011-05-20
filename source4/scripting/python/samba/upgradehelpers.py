@@ -24,13 +24,11 @@
 """Helpers used for upgrading between different database formats."""
 
 import os
-import string
 import re
 import shutil
 import samba
 
 from samba import Ldb, version, ntacls
-from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
 import ldb
 from samba.provision import (ProvisionNames, provision_paths_from_lp,
@@ -240,112 +238,6 @@ def update_policyids(names, samdb):
         names.policyid_dc = str(res2[0]["cn"]).replace("{","").replace("}","")
     else:
         names.policyid_dc = None
-
-
-def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp):
-    """Get key provision parameters (realm, domain, ...) from a given provision
-
-    :param samdb: An LDB object connected to the sam.ldb file
-    :param secretsdb: An LDB object connected to the secrets.ldb file
-    :param idmapdb: An LDB object connected to the idmap.ldb file
-    :param paths: A list of path to provision object
-    :param smbconf: Path to the smb.conf file
-    :param lp: A LoadParm object
-    :return: A list of key provision parameters
-    """
-    names = ProvisionNames()
-    names.adminpass = None
-
-    # NT domain, kerberos realm, root dn, domain dn, domain dns name
-    names.domain = string.upper(lp.get("workgroup"))
-    names.realm = lp.get("realm")
-    basedn = "DC=" + names.realm.replace(".",",DC=")
-    names.dnsdomain = names.realm.lower()
-    names.realm = string.upper(names.realm)
-    # netbiosname
-    # Get the netbiosname first (could be obtained from smb.conf in theory)
-    res = secretsdb.search(expression="(flatname=%s)" %
-                            names.domain,base="CN=Primary Domains",
-                            scope=SCOPE_SUBTREE, attrs=["sAMAccountName"])
-    names.netbiosname = str(res[0]["sAMAccountName"]).replace("$","")
-
-    names.smbconf = smbconf
-
-    # That's a bit simplistic but it's ok as long as we have only 3
-    # partitions
-    current = samdb.search(expression="(objectClass=*)", 
-        base="", scope=SCOPE_BASE,
-        attrs=["defaultNamingContext", "schemaNamingContext",
-               "configurationNamingContext","rootDomainNamingContext"])
-
-    names.configdn = current[0]["configurationNamingContext"]
-    configdn = str(names.configdn)
-    names.schemadn = current[0]["schemaNamingContext"]
-    if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
-                                       current[0]["defaultNamingContext"][0]))):
-        raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
-                                 "is not the same ..." % (paths.samdb,
-                                    str(current[0]["defaultNamingContext"][0]),
-                                    paths.smbconf, basedn)))
-
-    names.domaindn=current[0]["defaultNamingContext"]
-    names.rootdn=current[0]["rootDomainNamingContext"]
-    # default site name
-    res3 = samdb.search(expression="(objectClass=*)", 
-        base="CN=Sites," + configdn, scope=SCOPE_ONELEVEL, attrs=["cn"])
-    names.sitename = str(res3[0]["cn"])
-
-    # dns hostname and server dn
-    res4 = samdb.search(expression="(CN=%s)" % names.netbiosname,
-                            base="OU=Domain Controllers,%s" % basedn,
-                            scope=SCOPE_ONELEVEL, attrs=["dNSHostName"])
-    names.hostname = str(res4[0]["dNSHostName"]).replace("." + names.dnsdomain,"")
-
-    server_res = samdb.search(expression="serverReference=%s" % res4[0].dn,
-                                attrs=[], base=configdn)
-    names.serverdn = server_res[0].dn
-
-    # invocation id/objectguid
-    res5 = samdb.search(expression="(objectClass=*)",
-            base="CN=NTDS Settings,%s" % str(names.serverdn), scope=SCOPE_BASE,
-            attrs=["invocationID", "objectGUID"])
-    names.invocation = str(ndr_unpack(misc.GUID, res5[0]["invocationId"][0]))
-    names.ntdsguid = str(ndr_unpack(misc.GUID, res5[0]["objectGUID"][0]))
-
-    # domain guid/sid
-    res6 = samdb.search(expression="(objectClass=*)", base=basedn,
-            scope=SCOPE_BASE, attrs=["objectGUID",
-                "objectSid","msDS-Behavior-Version" ])
-    names.domainguid = str(ndr_unpack(misc.GUID, res6[0]["objectGUID"][0]))
-    names.domainsid = ndr_unpack( security.dom_sid, res6[0]["objectSid"][0])
-    if res6[0].get("msDS-Behavior-Version") is None or \
-        int(res6[0]["msDS-Behavior-Version"][0]) < DS_DOMAIN_FUNCTION_2000:
-        names.domainlevel = DS_DOMAIN_FUNCTION_2000
-    else:
-        names.domainlevel = int(res6[0]["msDS-Behavior-Version"][0])
-
-    # policy guid
-    res7 = samdb.search(expression="(displayName=Default Domain Policy)",
-                        base="CN=Policies,CN=System," + basedn,
-                        scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
-    names.policyid = str(res7[0]["cn"]).replace("{","").replace("}","")
-    # dc policy guid
-    res8 = samdb.search(expression="(displayName=Default Domain Controllers"
-                                   " Policy)",
-                            base="CN=Policies,CN=System," + basedn,
-                            scope=SCOPE_ONELEVEL, attrs=["cn","displayName"])
-    if len(res8) == 1:
-        names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
-    else:
-        names.policyid_dc = None
-    res9 = idmapdb.search(expression="(cn=%s)" %
-                            (security.SID_BUILTIN_ADMINISTRATORS),
-                            attrs=["xidNumber"])
-    if len(res9) == 1:
-        names.wheel_gid = int(str(res9[0]["xidNumber"]))
-    else:
-        raise ProvisioningError("Unable to find uid/gid for Domain Admins rid")
-    return names
 
 
 def newprovision(names, creds, session, smbconf, provdir, logger):

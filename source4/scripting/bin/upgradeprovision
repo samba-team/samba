@@ -44,7 +44,7 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn)
 from samba import param, dsdb, Ldb
-from samba.provision import (get_domain_descriptor,
+from samba.provision import (get_domain_descriptor, find_provision_key_parameters,
                             get_config_descriptor,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn, setup_path)
@@ -52,7 +52,7 @@ from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import security, drsblobs, xattr
 from samba.ndr import ndr_unpack
 from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
-                                 find_provision_key_parameters, get_ldbs,
+                                 get_ldbs,
                                  usn_in_range, identic_rename, get_diff_sddls,
                                  update_secrets, CHANGE, ERROR, SIMPLE,
                                  CHANGEALL, GUESS, CHANGESD, PROVISION,
