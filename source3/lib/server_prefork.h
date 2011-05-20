@@ -21,6 +21,8 @@
 #include "system/network.h"
 #include <tevent.h>
 
+struct prefork_pool;
+
 enum pf_worker_status {
 	PF_WORKER_NONE = 0,
 	PF_WORKER_IDLE,
@@ -76,8 +78,16 @@ typedef int (prefork_main_fn_t)(struct tevent_context *ev,
 				int lock_fd,
 				void *private_data);
 
-struct prefork_pool;
-
+/**
+* @brief Callback function for parents that also want to be called on sigchld
+*
+* @param ev_ctx		The event context
+* @param pool		The pool handler
+* @param private_data	Data private to the parent
+*/
+typedef void (prefork_sigchld_fn_t)(struct tevent_context *ev_ctx,
+				    struct prefork_pool *pool,
+				    void *private_data);
 
 /* ==== Functions used by controlling process ==== */
 
@@ -162,14 +172,6 @@ int prefork_retire_children(struct prefork_pool *pfp,
 int prefork_count_active_children(struct prefork_pool *pfp, int *total);
 
 /**
-* @brief Perform cleanups, like waiting (WNOHANG) dead children.
-*	 MUST be called regularly from the parent main loop.
-*
-* @param pfp	The pool.
-*/
-void prefork_cleanup_loop(struct prefork_pool *pfp);
-
-/**
 * @brief Inform all children that they are allowed to accept 'max' clients
 *	 now. Use this when all children are already busy and more clients
 *	 are trying to connect. It will allow each child to handle more than
@@ -199,6 +201,17 @@ void prefork_reset_allowed_clients(struct prefork_pool *pfp);
 * @param signal_num	The signal number to be sent.
 */
 void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num);
+
+/**
+* @brief Sets the SIGCHLD callback
+*
+* @param pfp		The pool handler.
+* @param sigchld_fn	The callback function (pass NULL to unset).
+* @param private_data	Private data for the callback function.
+*/
+void prefork_set_sigchld_callback(struct prefork_pool *pfp,
+				  prefork_sigchld_fn_t *sigchld_fn,
+				  void *private_data);
 
 /* ==== Functions used by children ==== */
 

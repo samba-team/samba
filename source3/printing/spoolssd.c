@@ -228,7 +228,7 @@ static bool spoolss_shutdown_cb(void *ptr)
 	return true;
 }
 
-/* Childrens */
+/* Children */
 
 struct spoolss_chld_sig_hup_ctx {
 	struct messaging_context *msg_ctx;
@@ -537,20 +537,20 @@ static void check_updater_child(void)
 	}
 }
 
-static void spoolssd_sig_chld_handler(struct tevent_context *ev_ctx,
-				      struct tevent_signal *se,
-				      int signum, int count,
-				      void *siginfo, void *pvt)
+static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
+				    struct prefork_pool *pfp,
+				    struct timeval current_time);
+static void spoolssd_check_children(struct tevent_context *ev_ctx,
+				    struct tevent_timer *te,
+				    struct timeval current_time,
+				    void *pvt);
+
+static void spoolssd_sigchld_handler(struct tevent_context *ev_ctx,
+				     struct prefork_pool *pfp,
+				     void *private_data)
 {
-	struct prefork_pool *pfp;
 	int active, total;
 	int n, r;
-
-	pfp = talloc_get_type_abort(pvt, struct prefork_pool);
-
-	/* run the cleanup function to make sure all dead children are
-	 * properly and timely retired. */
-	prefork_cleanup_loop(pfp);
 
 	/* now check we do not descend below the minimum */
 	active = prefork_count_active_children(pfp, &total);
@@ -574,38 +574,13 @@ static void spoolssd_sig_chld_handler(struct tevent_context *ev_ctx,
 	check_updater_child();
 }
 
-static bool spoolssd_setup_sig_chld_handler(struct tevent_context *ev_ctx,
-					    struct prefork_pool *pfp)
-{
-	struct tevent_signal *se;
-
-	se = tevent_add_signal(ev_ctx, ev_ctx, SIGCHLD, 0,
-				spoolssd_sig_chld_handler, pfp);
-	if (!se) {
-		DEBUG(0, ("Failed to setup SIGCHLD handler!\n"));
-		return false;
-	}
-
-	return true;
-}
-
-static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
-				    struct prefork_pool *pfp,
-				    struct timeval current_time);
-static void spoolssd_check_children(struct tevent_context *ev_ctx,
-				    struct tevent_timer *te,
-				    struct timeval current_time,
-				    void *pvt);
-
 static bool spoolssd_setup_children_monitor(struct tevent_context *ev_ctx,
 					    struct prefork_pool *pfp)
 {
 	bool ok;
 
-	ok = spoolssd_setup_sig_chld_handler(ev_ctx, pfp);
-	if (!ok) {
-		return false;
-	}
+	/* add our oun sigchld callback */
+	prefork_set_sigchld_callback(pfp, spoolssd_sigchld_handler, NULL);
 
 	ok = spoolssd_schedule_check(ev_ctx, pfp, tevent_timeval_current());
 	return ok;

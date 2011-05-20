@@ -40,9 +40,15 @@ struct prefork_pool {
 	struct pf_worker_data *pool;
 
 	int allowed_clients;
+
+	prefork_sigchld_fn_t *sigchld_fn;
+	void *sigchld_data;
 };
 
-int prefork_pool_destructor(struct prefork_pool *pfp)
+static bool prefork_setup_sigchld_handler(struct tevent_context *ev_ctx,
+					    struct prefork_pool *pfp);
+
+static int prefork_pool_destructor(struct prefork_pool *pfp)
 {
 	munmap(pfp->pool, pfp->pool_size * sizeof(struct pf_worker_data));
 	return 0;
@@ -60,8 +66,9 @@ bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
 	size_t data_size;
 	int ret;
 	int i;
+	bool ok;
 
-	pfp = talloc(mem_ctx, struct prefork_pool);
+	pfp = talloc_zero(mem_ctx, struct prefork_pool);
 	if (!pfp) {
 		DEBUG(1, ("Out of memory!\n"));
 		return false;
@@ -122,6 +129,13 @@ bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
 			pfp->pool[i].pid = pid;
 			break;
 		}
+	}
+
+	ok = prefork_setup_sigchld_handler(ev_ctx, pfp);
+	if (!ok) {
+		DEBUG(1, ("Failed to setup SIGCHLD Handler!\n"));
+		talloc_free(pfp);
+		return false;
 	}
 
 	*pf_pool = pfp;
@@ -291,7 +305,7 @@ int prefork_count_active_children(struct prefork_pool *pfp, int *total)
 	return a;
 }
 
-void prefork_cleanup_loop(struct prefork_pool *pfp)
+static void prefork_cleanup_loop(struct prefork_pool *pfp)
 {
 	int status;
 	pid_t pid;
@@ -361,6 +375,46 @@ void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num)
 	}
 }
 
+static void prefork_sigchld_handler(struct tevent_context *ev_ctx,
+				    struct tevent_signal *se,
+				    int signum, int count,
+				    void *siginfo, void *pvt)
+{
+	struct prefork_pool *pfp;
+
+	pfp = talloc_get_type_abort(pvt, struct prefork_pool);
+
+	/* run the cleanup function to make sure all dead children are
+	 * properly and timely retired. */
+	prefork_cleanup_loop(pfp);
+
+	if (pfp->sigchld_fn) {
+		pfp->sigchld_fn(ev_ctx, pfp, pfp->sigchld_data);
+	}
+}
+
+static bool prefork_setup_sigchld_handler(struct tevent_context *ev_ctx,
+					  struct prefork_pool *pfp)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(ev_ctx, pfp, SIGCHLD, 0,
+				prefork_sigchld_handler, pfp);
+	if (!se) {
+		DEBUG(0, ("Failed to setup SIGCHLD handler!\n"));
+		return false;
+	}
+
+	return true;
+}
+
+void prefork_set_sigchld_callback(struct prefork_pool *pfp,
+				  prefork_sigchld_fn_t *sigchld_fn,
+				  void *private_data)
+{
+	pfp->sigchld_fn = sigchld_fn;
+	pfp->sigchld_data = private_data;
+}
 
 /* ==== Functions used by children ==== */
 
