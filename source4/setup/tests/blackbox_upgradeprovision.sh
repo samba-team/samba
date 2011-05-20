@@ -28,9 +28,6 @@ upgradeprovision_full() {
 	$PYTHON $SRCDIR/source4/scripting/bin/upgradeprovision -s "$PREFIX/upgradeprovision_full/etc/smb.conf" --full --debugchange
 }
 
-testit "upgradeprovision" upgradeprovision
-testit "upgradeprovision_full" upgradeprovision_full
-
 if [ -d $PREFIX/upgradeprovision ]; then
   rm -fr $PREFIX/upgradeprovision
 fi
@@ -38,5 +35,8 @@ fi
 if [ -d $PREFIX/upgradeprovision_full ]; then
   rm -fr $PREFIX/upgradeprovision_full
 fi
+
+testit "upgradeprovision" upgradeprovision
+testit "upgradeprovision_full" upgradeprovision_full
 
 exit $failed
