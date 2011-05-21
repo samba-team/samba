@@ -1219,6 +1219,12 @@ static int samldb_prim_group_trigger(struct samldb_ctx *ac)
 	return ret;
 }
 
+
+/**
+ * This function is called on a LDB modify. It performs some additions/changes
+ * on the current LDB message. Changes depend on the value of
+ * userAccountControl.
+ */
 static int samldb_user_account_control_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
@@ -1278,7 +1284,16 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
+	/*
+	 * If the account has UF_SERVER_TRUST_ACCOUNT or
+	 * UF_WORKSTATION_TRUST_ACCOUNT then change the group
+	 * as it's either a workstation, a RODC, or a DC.
+	 *
+	 * If not it might be just a user that we are enabling
+	 * and in this case we don't want to change its default group.
+	 */
+	if (user_account_control & (UF_SERVER_TRUST_ACCOUNT| UF_WORKSTATION_TRUST_ACCOUNT) &&
+			!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
 		uint32_t rid = ds_uf2prim_group_rid(user_account_control);
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "primaryGroupID", rid);
