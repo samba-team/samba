@@ -36,8 +36,8 @@ from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_ACCOUNTDISABLE,
     ATYPE_SECURITY_LOCAL_GROUP, ATYPE_DISTRIBUTION_GLOBAL_GROUP,
     ATYPE_DISTRIBUTION_UNIVERSAL_GROUP, ATYPE_DISTRIBUTION_LOCAL_GROUP,
     ATYPE_WORKSTATION_TRUST)
-from samba.dcerpc.security import (DOMAIN_RID_USERS, DOMAIN_RID_DOMAIN_MEMBERS,
-    DOMAIN_RID_DCS, DOMAIN_RID_READONLY_DCS)
+from samba.dcerpc.security import (DOMAIN_RID_USERS, DOMAIN_RID_ADMINS,
+    DOMAIN_RID_DOMAIN_MEMBERS, DOMAIN_RID_DCS, DOMAIN_RID_READONLY_DCS)
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -1866,7 +1866,45 @@ class SamTests(unittest.TestCase):
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
+        ldb.add({
+            "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
+            "objectclass": "user",
+            "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)})
+
+        res1 = ldb.search("cn=ldaptestuser2,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["userAccountControl"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["userAccountControl"][0]),
+           UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)
+
+        m = Message()
+        m.dn = Dn(ldb, "<SID=" + ldb.get_domain_sid() + "-" + str(DOMAIN_RID_ADMINS) + ">")
+        m["member"] = MessageElement(
+          "cn=ldaptestuser2,cn=users," + self.base_dn, FLAG_MOD_ADD, "member")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement(str(DOMAIN_RID_ADMINS),
+          FLAG_MOD_REPLACE, "primaryGroupID")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser2,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["userAccountControl", "primaryGroupID"])
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_ADMINS)
+
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
     def test_service_principal_name_updates(self):
