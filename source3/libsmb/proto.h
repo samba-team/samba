@@ -157,7 +157,6 @@ bool cli_state_seqnum_remove(struct cli_state *cli,
 bool cli_receive_smb(struct cli_state *cli);
 bool cli_send_smb(struct cli_state *cli);
 void cli_setup_packet_buf(struct cli_state *cli, char *buf);
-void cli_setup_bcc(struct cli_state *cli, void *p);
 NTSTATUS cli_set_domain(struct cli_state *cli, const char *domain);
 NTSTATUS cli_set_username(struct cli_state *cli, const char *username);
 NTSTATUS cli_set_password(struct cli_state *cli, const char *password);

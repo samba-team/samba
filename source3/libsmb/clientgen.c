@@ -418,15 +418,6 @@ void cli_setup_packet_buf(struct cli_state *cli, char *buf)
 }
 
 /****************************************************************************
- Setup the bcc length of the packet from a pointer to the end of the data.
-****************************************************************************/
-
-void cli_setup_bcc(struct cli_state *cli, void *p)
-{
-	set_message_bcc(cli->outbuf, PTR_DIFF(p, smb_buf(cli->outbuf)));
-}
-
-/****************************************************************************
  Initialize Domain, user or password.
 ****************************************************************************/
 
