@@ -75,8 +75,3 @@ size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 				  src_len,
 				  flags);
 }
-
-size_t clistr_align_out(struct cli_state *cli, const void *p, int flags)
-{
-	return align_string(cli->outbuf, (const char *)p, flags);
-}
