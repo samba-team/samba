@@ -154,8 +154,6 @@ bool cli_state_seqnum_persistent(struct cli_state *cli,
 				 uint16_t mid);
 bool cli_state_seqnum_remove(struct cli_state *cli,
 			     uint16_t mid);
-bool cli_receive_smb(struct cli_state *cli);
-bool cli_send_smb(struct cli_state *cli);
 void cli_setup_packet_buf(struct cli_state *cli, char *buf);
 NTSTATUS cli_set_domain(struct cli_state *cli, const char *domain);
 NTSTATUS cli_set_username(struct cli_state *cli, const char *username);
