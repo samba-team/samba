@@ -414,8 +414,8 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 		if (buf == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = cli_encrypt_message(state->cli, (char *)buf,
-					     &enc_buf);
+		status = common_encrypt_buffer(state->cli->trans_enc_state,
+					       (char *)buf, &enc_buf);
 		TALLOC_FREE(buf);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Error in encrypting client message: %s\n",
