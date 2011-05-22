@@ -597,11 +597,20 @@ sub write_clientconf($$$)
 	        mkdir("$clientdir/lockdir", 0777);
 	}
 
+	# this is ugly, but the ncalrpcdir needs exactly 0755
+	# otherwise tests fail.
+	my $mask = umask;
+	umask 0022;
+	if ( -d "$clientdir/ncalrpcdir/np" ) {
+	        unlink <$clientdir/ncalrpcdir/np/*>;
+		rmdir <$clientdir/ncalrpcdir/np>;
+	}
 	if ( -d "$clientdir/ncalrpcdir" ) {
 	        unlink <$clientdir/ncalrpcdir/*>;
-	} else {
-	        mkdir("$clientdir/ncalrpcdir", 0777);
+		rmdir <$clientdir/ncalrpcdir>;
 	}
+	mkdir("$clientdir/ncalrpcdir", 0755);
+	umask $mask;
 
 	open(CF, ">$conffile");
 	print CF "[global]\n";
