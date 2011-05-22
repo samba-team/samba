@@ -4,6 +4,7 @@
 
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2006-2007
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006-2008
+   Copyright (C) Matthieu Patou <mat@matws.net> 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
