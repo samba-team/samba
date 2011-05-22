@@ -3577,21 +3577,21 @@ static bool run_oplock3(int dummy)
 /* What are we looking for here?  What's sucess and what's FAILURE? */
 }
 
-/* handler for oplock 4 tests */
-bool *oplock4_shared_correct;
+struct oplock4_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	bool *got_break;
+	uint16_t *fnum2;
+};
 
-static NTSTATUS oplock4_handler(struct cli_state *cli, uint16_t fnum, unsigned char level)
-{
-	printf("got oplock break fnum=%d level=%d\n",
-	       fnum, level);
-	*oplock4_shared_correct = true;
-	cli_oplock_ack(cli, fnum, level);
-	return NT_STATUS_UNSUCCESSFUL; /* Cause cli_receive_smb to return. */
-}
+static void oplock4_got_break(struct tevent_req *req);
+static void oplock4_got_open(struct tevent_req *req);
 
 static bool run_oplock4(int dummy)
 {
+	struct tevent_context *ev;
 	struct cli_state *cli1, *cli2;
+	struct tevent_req *oplock_req, *open_req;
 	const char *fname = "\\lockt4.lck";
 	const char *fname_ln = "\\lockt4_ln.lck";
 	uint16_t fnum1, fnum2;
@@ -3599,8 +3599,9 @@ static bool run_oplock4(int dummy)
 	NTSTATUS status;
 	bool correct = true;
 
-	oplock4_shared_correct = (bool *)shm_setup(sizeof(bool));
-	*oplock4_shared_correct = false;
+	bool got_break;
+
+	struct oplock4_state *state;
 
 	printf("starting oplock test 4\n");
 
@@ -3675,36 +3676,62 @@ static bool run_oplock4(int dummy)
 	cli2->use_oplocks = true;
 	cli2->use_level_II_oplocks = true;
 
-	cli_oplock_handler(cli1, oplock4_handler);
-
 	status = cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return false;
 	}
 
-	if (fork() == 0) {
-		/* Child code */
-		status = cli_open(cli2, fname_ln, O_RDWR, DENY_NONE, &fnum2);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("open of %s failed (%s)\n", fname_ln, nt_errstr(status));
-			*oplock4_shared_correct = false;
-			exit(0);
-		}
-
-		status = cli_close(cli2, fnum2);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("close2 failed (%s)\n", nt_errstr(status));
-			*oplock4_shared_correct = false;
-		}
-
-		exit(0);
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		printf("tevent_req_create failed\n");
+		return false;
 	}
 
-	sleep(2);
+	state = talloc(ev, struct oplock4_state);
+	if (state == NULL) {
+		printf("talloc failed\n");
+		return false;
+	}
+	state->ev = ev;
+	state->cli = cli1;
+	state->got_break = &got_break;
+	state->fnum2 = &fnum2;
 
-	/* Process the oplock break. */
-	cli_receive_smb(cli1);
+	oplock_req = cli_smb_oplock_break_waiter_send(
+		talloc_tos(), ev, cli1);
+	if (oplock_req == NULL) {
+		printf("cli_smb_oplock_break_waiter_send failed\n");
+		return false;
+	}
+	tevent_req_set_callback(oplock_req, oplock4_got_break, state);
+
+	open_req = cli_open_send(
+		talloc_tos(), ev, cli2, fname_ln, O_RDWR, DENY_NONE);
+	if (oplock_req == NULL) {
+		printf("cli_open_send failed\n");
+		return false;
+	}
+	tevent_req_set_callback(open_req, oplock4_got_open, state);
+
+	got_break = false;
+	fnum2 = 0xffff;
+
+	while (!got_break || fnum2 == 0xffff) {
+		int ret;
+		ret = tevent_loop_once(ev);
+		if (ret == -1) {
+			printf("tevent_loop_once failed: %s\n",
+			       strerror(errno));
+			return false;
+		}
+	}
+
+	status = cli_close(cli2, fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close2 failed (%s)\n", nt_errstr(status));
+		correct = false;
+	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3728,7 +3755,7 @@ static bool run_oplock4(int dummy)
 		correct = false;
 	}
 
-	if (!*oplock4_shared_correct) {
+	if (!got_break) {
 		correct = false;
 	}
 
@@ -3737,6 +3764,43 @@ static bool run_oplock4(int dummy)
 	return correct;
 }
 
+static void oplock4_got_break(struct tevent_req *req)
+{
+	struct oplock4_state *state = tevent_req_callback_data(
+		req, struct oplock4_state);
+	uint16_t fnum;
+	uint8_t level;
+	NTSTATUS status;
+
+	status = cli_smb_oplock_break_waiter_recv(req, &fnum, &level);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_smb_oplock_break_waiter_recv returned %s\n",
+		       nt_errstr(status));
+		return;
+	}
+	*state->got_break = true;
+
+	req = cli_oplock_ack_send(state, state->ev, state->cli, fnum,
+				  NO_OPLOCK);
+	if (req == NULL) {
+		printf("cli_oplock_ack_send failed\n");
+		return;
+	}
+}
+
+static void oplock4_got_open(struct tevent_req *req)
+{
+	struct oplock4_state *state = tevent_req_callback_data(
+		req, struct oplock4_state);
+	NTSTATUS status;
+
+	status = cli_open_recv(req, state->fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_open_recv returned %s\n", nt_errstr(status));
+		*state->fnum2 = 0xffff;
+	}
+}
 
 /*
   Test delete on close semantics.
