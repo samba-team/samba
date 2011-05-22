@@ -53,7 +53,7 @@ plantestsuite("samba3.local_s3", "s3dc:local", [os.path.join(samba3srcdir, "scri
 
 tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7", "LOCK9",
         "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
-        "OPLOCK1", "OPLOCK2", "OPLOCK3", "OPLOCK4", "STREAMERROR",
+        "OPLOCK1", "OPLOCK2", "OPLOCK4", "STREAMERROR",
         "DIR", "DIR1", "DIR-CREATETIME", "TCON", "TCONDEV", "RW1", "RW2", "RW3", "RW-SIGNING",
         "OPEN", "XCOPY", "RENAME", "DELETE", "DELETE-LN", "PROPERTIES", "W2K",
         "TCON2", "IOCTL", "CHKPATH", "FDSESS", "LOCAL-SUBSTITUTE", "CHAIN1",

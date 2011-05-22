@@ -3520,63 +3520,6 @@ static bool run_oplock2(int dummy)
 	return correct;
 }
 
-/* handler for oplock 3 tests */
-static NTSTATUS oplock3_handler(struct cli_state *cli, uint16_t fnum, unsigned char level)
-{
-	printf("got oplock break fnum=%d level=%d\n",
-	       fnum, level);
-	return cli_oplock_ack(cli, fnum, level);
-}
-
-static bool run_oplock3(int dummy)
-{
-	struct cli_state *cli;
-	const char *fname = "\\oplockt3.dat";
-	uint16_t fnum;
-	char buf[4] = "abcd";
-	bool correct = True;
-	volatile bool *shared_correct;
-
-	shared_correct = (volatile bool *)shm_setup(sizeof(bool));
-	*shared_correct = True;
-
-	printf("starting oplock test 3\n");
-
-	if (fork() == 0) {
-		/* Child code */
-		use_oplocks = True;
-		use_level_II_oplocks = True;
-		if (!torture_open_connection(&cli, 0)) {
-			*shared_correct = False;
-			exit(0);
-		} 
-		sleep(2);
-		/* try to trigger a oplock break in parent */
-		cli_open(cli, fname, O_RDWR, DENY_NONE, &fnum);
-		cli_writeall(cli, fnum, 0, (uint8_t *)buf, 0, 4, NULL);
-		exit(0);
-	}
-
-	/* parent code */
-	use_oplocks = True;
-	use_level_II_oplocks = True;
-	if (!torture_open_connection(&cli, 1)) { /* other is forked */
-		return False;
-	}
-	cli_oplock_handler(cli, oplock3_handler);
-	cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE, &fnum);
-	cli_writeall(cli, fnum, 0, (uint8_t *)buf, 0, 4, NULL);
-	cli_close(cli, fnum);
-	cli_open(cli, fname, O_RDWR, DENY_NONE, &fnum);
-	cli->timeout = 20000;
-	cli_receive_smb(cli);
-	printf("finished oplock test 3\n");
-
-	return (correct && *shared_correct);
-
-/* What are we looking for here?  What's sucess and what's FAILURE? */
-}
-
 struct oplock4_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
@@ -8686,7 +8629,6 @@ static struct {
 	{"NBENCH2", run_nbench2, 0},
 	{"OPLOCK1",  run_oplock1, 0},
 	{"OPLOCK2",  run_oplock2, 0},
-	{"OPLOCK3",  run_oplock3, 0},
 	{"OPLOCK4",  run_oplock4, 0},
 	{"DIR",  run_dirtest, 0},
 	{"DIR1",  run_dirtest1, 0},
