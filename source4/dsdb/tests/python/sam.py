@@ -1471,25 +1471,33 @@ class SamTests(unittest.TestCase):
             self.assertEquals(num, ERR_OTHER)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
-# This isn't supported yet in s4
-#        try:
-#            ldb.add({
-#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": "user",
-#                "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
-#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-#
-#        try:
-#            ldb.add({
-#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": "user",
-#                "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
-#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)})
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
 # This isn't supported yet in s4 - needs ACL module adaption
 #        try:
@@ -1570,17 +1578,16 @@ class SamTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OTHER)
 
-# This isn't supported yet in s4
-#        try:
-#            m = Message()
-#            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-#            m["userAccountControl"] = MessageElement(
-#              str(UF_SERVER_TRUST_ACCOUNT),
-#              FLAG_MOD_REPLACE, "userAccountControl")
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_SERVER_TRUST_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -1588,6 +1595,17 @@ class SamTests(unittest.TestCase):
           str(UF_WORKSTATION_TRUST_ACCOUNT),
           FLAG_MOD_REPLACE, "userAccountControl")
         ldb.modify(m)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["sAMAccountType"])
