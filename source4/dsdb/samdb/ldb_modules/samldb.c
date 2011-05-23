@@ -1095,13 +1095,10 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	/* Fetch information from the existing object */
 
-	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
+				    DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
-	}
-	if (res->count != 1) {
-		return ldb_operr(ldb);
 	}
 
 	/* Finds out the DN of the old primary group */
