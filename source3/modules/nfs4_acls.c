@@ -272,6 +272,9 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 		}
 
 		mapped_ace_flags = ace->aceFlags & 0xf;
+		if (ace->aceFlags & SMB_ACE4_INHERITED_ACE) {
+			mapped_ace_flags |= SEC_ACE_FLAG_INHERITED_ACE;
+		}
 		if (!is_directory && (mapped_ace_flags & (SMB_ACE4_FILE_INHERIT_ACE|SMB_ACE4_DIRECTORY_INHERIT_ACE))) {
 			/*
 			 * GPFS sets inherits dir_inhert and file_inherit flags
