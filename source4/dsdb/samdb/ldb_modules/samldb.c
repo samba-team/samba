@@ -1221,17 +1221,18 @@ static int samldb_prim_group_trigger(struct samldb_ctx *ac)
 
 
 /**
- * This function is called on a LDB modify. It performs some additions/changes
- * on the current LDB message. Changes depend on the value of
- * userAccountControl.
+ * This function is called on LDB modify operations. It performs some additions/
+ * replaces on the current LDB message when "userAccountControl" changes.
  */
 static int samldb_user_account_control_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	uint32_t user_account_control, account_type;
+	uint32_t user_account_control, old_user_account_control, account_type;
 	struct ldb_message_element *el;
 	struct ldb_message *tmp_msg;
 	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { "userAccountControl", NULL };
 
 	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
 					 ac->req->operation);
@@ -1259,6 +1260,31 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		return LDB_ERR_OTHER;
 	}
 
+	/* Fetch the old "userAccountControl" */
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
+				    DSDB_FLAG_NEXT_MODULE, ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	old_user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
+	if (old_user_account_control == 0) {
+		return ldb_operr(ldb);
+	}
+
+	/*
+	 * The functions "ds_uf2atype" and "ds_uf2prim_group_rid" are used as
+	 * detectors for account type changes.
+	 * So if the account type does change then we need to adjust the
+	 * "sAMAccountType", the "isCriticalSystemObject" and the
+	 * "primaryGroupID" attribute.
+	 */
+	if ((ds_uf2atype(user_account_control)
+	     == ds_uf2atype(old_user_account_control)) &&
+	    (ds_uf2prim_group_rid(user_account_control)
+	     == ds_uf2prim_group_rid(old_user_account_control))) {
+		return LDB_SUCCESS;
+	}
+
 	account_type = ds_uf2atype(user_account_control);
 	if (account_type == 0) {
 		ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
@@ -1284,16 +1310,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
-	/*
-	 * If the account has UF_SERVER_TRUST_ACCOUNT or
-	 * UF_WORKSTATION_TRUST_ACCOUNT then change the group
-	 * as it's either a workstation, a RODC, or a DC.
-	 *
-	 * If not it might be just a user that we are enabling
-	 * and in this case we don't want to change its default group.
-	 */
-	if (user_account_control & (UF_SERVER_TRUST_ACCOUNT| UF_WORKSTATION_TRUST_ACCOUNT) &&
-			!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
+	if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
 		uint32_t rid = ds_uf2prim_group_rid(user_account_control);
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "primaryGroupID", rid);
