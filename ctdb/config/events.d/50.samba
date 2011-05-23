@@ -113,6 +113,12 @@ service_stop ()
 	return 0
 }
 
+service_reconfigure ()
+{
+    # Samba automatically reloads config - no restart needed.
+    :
+}
+
 # set default samba cleanup period - in minutes
 [ -z "$SAMBA_CLEANUP_PERIOD" ] && {
     SAMBA_CLEANUP_PERIOD=10
