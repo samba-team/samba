@@ -210,6 +210,9 @@
     Samba server may fail (from a single client, till it disconnects).
 	</para></note>
 
+	<note><para>If the client selects NTLMv2 authentication, then this mode of operation <emphasis>will fail</emphasis>
+	</para></note>
+
 	<note><para>From the client's point of 
     view, <command moreinfo="none">security = server</command> is the
     same as <command moreinfo="none">security = user</command>.  It
