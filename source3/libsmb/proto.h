@@ -191,7 +191,6 @@ bool cli_is_error(struct cli_state *cli);
 bool cli_is_nt_error(struct cli_state *cli);
 bool cli_is_dos_error(struct cli_state *cli);
 NTSTATUS cli_get_nt_error(struct cli_state *cli);
-void cli_set_nt_error(struct cli_state *cli, NTSTATUS status);
 bool cli_state_is_connected(struct cli_state *cli);
 
 /* The following definitions come from libsmb/clifile.c  */
