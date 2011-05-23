@@ -708,6 +708,7 @@ static bool handle_workgroup( int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
 static bool handle_charset( int snum, const char *pszParmValue, char **ptr );
+static bool handle_dos_charset( int snum, const char *pszParmValue, char **ptr );
 static bool handle_printing( int snum, const char *pszParmValue, char **ptr);
 static bool handle_ldap_debug_level( int snum, const char *pszParmValue, char **ptr);
 
@@ -955,7 +956,7 @@ static struct parm_struct parm_table[] = {
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.dos_charset,
-		.special	= handle_charset,
+		.special	= handle_dos_charset,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED
 	},
@@ -7529,6 +7530,43 @@ static bool handle_charset(int snum, const char *pszParmValue, char **ptr)
 		init_iconv();
 	}
 	return True;
+}
+
+static bool handle_dos_charset(int snum, const char *pszParmValue, char **ptr)
+{
+	bool is_utf8 = false;
+	size_t len = strlen(pszParmValue);
+
+	if (len == 4 || len == 5) {
+		/* Don't use StrCaseCmp here as we don't want to
+		   initialize iconv. */
+		if ((toupper_ascii(pszParmValue[0]) == 'U') &&
+		    (toupper_ascii(pszParmValue[1]) == 'T') &&
+		    (toupper_ascii(pszParmValue[2]) == 'F')) {
+			if (len == 4) {
+				if (pszParmValue[3] == '8') {
+					is_utf8 = true;
+				}
+			} else {
+				if (pszParmValue[3] == '-' &&
+				    pszParmValue[4] == '8') {
+					is_utf8 = true;
+				}
+			}
+		}
+	}
+
+	if (strcmp(*ptr, pszParmValue) != 0) {
+		if (is_utf8) {
+			DEBUG(0,("ERROR: invalid DOS charset: 'dos charset' must not "
+				"be UTF8, using (default value) %s instead.\n",
+				DEFAULT_DOS_CHARSET));
+			pszParmValue = DEFAULT_DOS_CHARSET;
+		}
+		string_set(ptr, pszParmValue);
+		init_iconv();
+	}
+	return true;
 }
 
 
