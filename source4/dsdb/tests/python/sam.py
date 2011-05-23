@@ -1866,6 +1866,10 @@ class SamTests(unittest.TestCase):
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
+        # "primaryGroupID" does not change if account type remains the same
+
+        # For a user account
+
         ldb.add({
             "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
             "objectclass": "user",
@@ -1900,8 +1904,42 @@ class SamTests(unittest.TestCase):
         res1 = ldb.search("cn=ldaptestuser2,cn=users," + self.base_dn,
                           scope=SCOPE_BASE,
                           attrs=["userAccountControl", "primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
         self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_ADMINS)
+
+        # For a workstation account
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_DOMAIN_MEMBERS)
+
+        m = Message()
+        m.dn = Dn(ldb, "<SID=" + ldb.get_domain_sid() + "-" + str(DOMAIN_RID_USERS) + ">")
+        m["member"] = MessageElement(
+          "cn=ldaptestcomputer,cn=computers," + self.base_dn, FLAG_MOD_ADD, "member")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["primaryGroupID"] = MessageElement(str(DOMAIN_RID_USERS),
+          FLAG_MOD_REPLACE, "primaryGroupID")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_WORKSTATION_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["primaryGroupID"][0]), DOMAIN_RID_USERS)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
