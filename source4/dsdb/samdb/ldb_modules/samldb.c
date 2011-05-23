@@ -3,7 +3,7 @@
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Simo Sorce  2004-2008
-   Copyright (C) Matthias Dieter Wallnöfer 2009-2010
+   Copyright (C) Matthias Dieter Wallnöfer 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -897,6 +897,16 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				return LDB_ERR_OTHER;
 			}
 
+			/* Workstation and (read-only) DC objects do need objectclass "computer" */
+			if ((samdb_find_attribute(ldb, ac->msg,
+						  "objectclass", "computer") == NULL) &&
+			    (user_account_control &
+			     (UF_SERVER_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT))) {
+				ldb_set_errstring(ldb,
+						  "samldb: Requested account type does need objectclass 'computer'!");
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			}
+
 			account_type = ds_uf2atype(user_account_control);
 			if (account_type == 0) {
 				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
@@ -1241,7 +1251,9 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "userAccountControl", NULL };
+	const char *attrs[] = { "userAccountControl", "objectClass", NULL };
+	unsigned int i;
+	bool is_computer = false;
 
 	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
 					 ac->req->operation);
@@ -1269,7 +1281,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		return LDB_ERR_OTHER;
 	}
 
-	/* Fetch the old "userAccountControl" */
+	/* Fetch the old "userAccountControl" and "objectClass" */
 	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
 				    DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
@@ -1278,6 +1290,24 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	old_user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
 	if (old_user_account_control == 0) {
 		return ldb_operr(ldb);
+	}
+	el = ldb_msg_find_element(res->msgs[0], "objectClass");
+	if (el == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	/* When we do not have objectclass "computer" we cannot switch to a (read-only) DC */
+	for (i = 0; i < el->num_values; i++) {
+		if (ldb_attr_cmp((char *)el->values[i].data, "computer") == 0) {
+			is_computer = true;
+			break;
+		}
+	}
+	if (!is_computer &&
+	    (user_account_control & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT))) {
+		ldb_set_errstring(ldb,
+				  "samldb: Requested account type does need objectclass 'computer'!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	/*
