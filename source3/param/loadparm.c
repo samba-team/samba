@@ -9624,6 +9624,11 @@ static bool lp_load_ex(const char *pszFname,
 		DEBUG(1, ("WARNING: The security=server option is deprecated\n"));
 	}
 
+	if (lp_security() == SEC_ADS && strchr(lp_passwordserver(), ':')) {
+		DEBUG(1, ("WARNING: The optional ':port' in password server = %s is deprecated\n",
+			  lp_passwordserver()));
+	}
+
 	bLoaded = True;
 
 	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
