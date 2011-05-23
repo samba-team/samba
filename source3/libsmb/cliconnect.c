@@ -2655,10 +2655,10 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		}
 		/* work out if they sent us a workgroup */
 		if (!(cli->capabilities & CAP_EXTENDED_SECURITY) &&
-		    smb_buflen(cli->inbuf) > 8) {
+		    smb_buflen(inbuf) > 8) {
 			ssize_t ret;
 			status = smb_bytes_talloc_string(
-				cli, (char *)cli->inbuf, &cli->server_domain,
+				cli, (char *)inbuf, &cli->server_domain,
 				bytes + 8, num_bytes - 8, &ret);
 			if (tevent_req_nterror(req, status)) {
 				return;
