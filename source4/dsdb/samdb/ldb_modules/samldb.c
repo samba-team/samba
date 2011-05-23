@@ -911,11 +911,20 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
 			el2->flags = LDB_FLAG_MOD_REPLACE;
 
+			/* "isCriticalSystemObject" might be set */
 			if (user_account_control &
 			    (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
-				ret = samdb_msg_set_string(ldb, ac->msg, ac->msg,
-							   "isCriticalSystemObject",
-							   "TRUE");
+				ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+							 "TRUE");
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+				el2 = ldb_msg_find_element(ac->msg,
+							   "isCriticalSystemObject");
+				el2->flags = LDB_FLAG_MOD_REPLACE;
+			} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
+				ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+							 "FALSE");
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
@@ -1298,10 +1307,20 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
+	/* "isCriticalSystemObject" might be set/changed */
 	if (user_account_control
 	    & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
 		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
 					 "TRUE");
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el = ldb_msg_find_element(ac->msg,
+					   "isCriticalSystemObject");
+		el->flags = LDB_FLAG_MOD_REPLACE;
+	} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
+		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+					 "FALSE");
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
