@@ -625,6 +625,41 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 					uint16_t flags,
 					void *private_data);
 
+int create_tcpip_socket(const struct sockaddr_storage *ifss, uint16_t *port)
+{
+	int fd = -1;
+
+	if (*port == 0) {
+		uint16_t i;
+
+		for (i = SERVER_TCP_LOW_PORT; i <= SERVER_TCP_HIGH_PORT; i++) {
+			fd = open_socket_in(SOCK_STREAM,
+					    i,
+					    0,
+					    ifss,
+					    false);
+			if (fd > 0) {
+				*port = i;
+				break;
+			}
+		}
+	} else {
+		fd = open_socket_in(SOCK_STREAM,
+				    *port,
+				    0,
+				    ifss,
+				    true);
+	}
+	if (fd == -1) {
+		DEBUG(0, ("Failed to create socket on port %u!\n", *port));
+		return -1;
+	}
+
+	DEBUG(10, ("Opened tcpip socket fd %d for port %u\n", fd, *port));
+
+	return fd;
+}
+
 uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 					 struct messaging_context *msg_ctx,
 					 const struct sockaddr_storage *ifss,
@@ -644,30 +679,8 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 	state->ep.port = port;
 	state->disconnect_fn = NULL;
 
-	if (state->ep.port == 0) {
-		uint16_t i;
-
-		for (i = SERVER_TCP_LOW_PORT; i <= SERVER_TCP_HIGH_PORT; i++) {
-			state->fd = open_socket_in(SOCK_STREAM,
-						   i,
-						   0,
-						   ifss,
-						   false);
-			if (state->fd > 0) {
-				state->ep.port = i;
-				break;
-			}
-		}
-	} else {
-		state->fd = open_socket_in(SOCK_STREAM,
-					   state->ep.port,
-					   0,
-					   ifss,
-					   true);
-	}
+	state->fd = create_tcpip_socket(ifss, &state->ep.port);
 	if (state->fd == -1) {
-		DEBUG(0, ("setup_dcerpc_ncacn_tcpip_socket: Failed to create "
-			  "socket on port %u!\n", state->ep.port));
 		goto out;
 	}
 
