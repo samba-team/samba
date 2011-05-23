@@ -1945,6 +1945,138 @@ class SamTests(unittest.TestCase):
         delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
+    def test_isCriticalSystemObject(self):
+        """Test the isCriticalSystemObject behaviour"""
+        print "Testing isCriticalSystemObject behaviour\n"
+
+        # Add tests
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer"})
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertTrue("isCriticalSystemObject" not in res1[0])
+
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "FALSE")
+
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)})
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+
+        # Modification tests
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_WORKSTATION_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "FALSE")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_SERVER_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "TRUE")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_WORKSTATION_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["isCriticalSystemObject"][0], "FALSE")
+
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
     def test_service_principal_name_updates(self):
         """Test the servicePrincipalNames update behaviour"""
         print "Testing servicePrincipalNames update behaviour\n"
