@@ -5,7 +5,7 @@
 
 # - Insert the following lines into the options {} section of your named.conf
 # file:
-tkey-gssapi-credential "DNS/${DNSDOMAIN}";
+tkey-gssapi-credential "DNS/${DNSNAME}";
 tkey-domain "${REALM}";
 
 # - Modify BIND init scripts to pass the location of the generated keytab file.

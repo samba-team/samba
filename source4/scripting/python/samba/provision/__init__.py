@@ -1749,6 +1749,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
                 create_named_txt(paths.namedtxt,
                     realm=names.realm, dnsdomain=names.dnsdomain,
+                    dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
                     private_dir=paths.private_dir,
                     keytab_name=paths.dns_keytab)
                 logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
@@ -1985,7 +1986,7 @@ def create_named_conf(paths, realm, dnsdomain,
     setup_file(setup_path("named.conf.update"), paths.namedconf_update)
 
 
-def create_named_txt(path, realm, dnsdomain, private_dir,
+def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
     keytab_name):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
@@ -1998,6 +1999,7 @@ def create_named_txt(path, realm, dnsdomain, private_dir,
     """
     setup_file(setup_path("named.txt"), path, {
             "DNSDOMAIN": dnsdomain,
+            "DNSNAME" : dnsname, 
             "REALM": realm,
             "DNS_KEYTAB": keytab_name,
             "DNS_KEYTAB_ABS": os.path.join(private_dir, keytab_name),
