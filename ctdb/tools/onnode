@@ -139,21 +139,24 @@ get_nodes_with_status ()
     local status="$2"
 
     if [ -z "$ctdb_status_output" ] ; then
-	ctdb_status_output=$(ctdb -Y status 2>/dev/null)
+	ctdb_status_output=$(ctdb -Y status 2>&1)
 	if [ $? -ne 0 ] ; then
 	    echo "${prog}: unable to get status of CTDB nodes" >&2
+	    echo "$ctdb_status_output" >&2
 	    exit 1
 	fi
-	ctdb_status_output="${ctdb_status_output#* }"
+	local nl="
+"
+	ctdb_status_output="${ctdb_status_output#*${nl}}"
     fi
 
     (
 	local i
-	for i in $ctdb_status_output ; do
+	IFS="${IFS}:"
+	while IFS="" read i ; do
 
-	    IFS="${IFS}:"
-	    set -- $i
-	    shift # line starts with : so 1st field is empty
+	    set -- $i # split line on colons
+	    shift     # line starts with : so 1st field is empty
 	    local pnn="$1" ; shift
 	    local ip="$1" ; shift
 
@@ -172,9 +175,9 @@ get_nodes_with_status ()
 		*)
 		    invalid_nodespec
 	    esac
-	    
+
 	    echo_nth "$pnn" $all_nodes
-	done
+	done <<<"$ctdb_status_output"
     )
 }
 
