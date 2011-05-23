@@ -189,20 +189,36 @@ get_node_with_property ()
 
     local prop_node=""
     if [ "${ctdb_props##:${prop}:}" = "$ctdb_props" ] ; then
+	# Not in cache.
 	prop_node=$(ctdb "$prop" -Y 2>/dev/null)
-	# We only want the first line.
-	local nl="
-"
-	prop_node="${prop_node%%${nl}*}"
 	if [ $? -eq 0 ] ; then
-	    ctdb_props="${ctdb_props}${ctdb_props:+ }:${prop}:${prop_node}"
+	    if [ "$prop" = "natgwlist" ] ; then
+		prop_node="${prop_node%% *}" # 1st word
+		if [ "$prop_node" = "-1" ] ; then
+		    # This works around natgwlist returning 0 even
+		    # when there's no natgw.
+		    prop_node=""
+		fi
+	    else
+		# We only want the first line.
+		local nl="
+"
+		prop_node="${prop_node%%${nl}*}"
+	    fi
 	else
 	    prop_node=""
 	fi
+
+	if [ -n "$prop_node" ] ; then
+	    # Add to cache.
+	    ctdb_props="${ctdb_props}${ctdb_props:+ }:${prop}:${prop_node}"
+	fi
     else
+	# Get from cache.
 	prop_node="${ctdb_props##:${prop}:}"
 	prop_node="${prop_node%% *}"
     fi
+
     if [ -n "$prop_node" ] ; then
 	echo_nth "$prop_node" $all_nodes
     else
