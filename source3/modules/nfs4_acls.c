@@ -567,6 +567,9 @@ static bool smbacl4_fill_ace4(
 	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
 	ace_v4->aceType = ace_nt->type; /* only ACCESS|DENY supported right now */
 	ace_v4->aceFlags = ace_nt->flags & SEC_ACE_FLAG_VALID_INHERIT;
+	if (ace_nt->flags & SEC_ACE_FLAG_INHERITED_ACE) {
+		ace_v4->aceFlags |= SMB_ACE4_INHERITED_ACE;
+	}
 	ace_v4->aceMask = ace_nt->access_mask &
 		(SEC_STD_ALL | SEC_FILE_ALL);
 
