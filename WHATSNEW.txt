@@ -1,6 +1,6 @@
                    ================================
                    Release Notes for Samba 3.6.0rc2
-                             May , 2011
+                            June 7, 2011
                    ================================
 
 
@@ -255,6 +255,39 @@ o   Andreas Schneider <asn@samba.org>
 Changes since 3.6.0rc1
 ----------------------
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8133: Fix strange behavior for the file (whose filename first
+      character is period ) in SMB2 case.
+    * BUG 8144: Fix setting timestamp when touching files with CIFS clients.
+    * BUG 8153: Fix setting up getaddrinfo on IPv6-only machines.
+    * BUG 8156: Fix 'net ads join' using the user's Kerberos ticket.
+    * BUG 8157: Fix parsing a cups printcap file.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8152: Fix smbd crash in release_ip().
+
+
+o   Sumit Bose <sbose@redhat.com>
+    * BUG 8142: Fix typos in LDAP schema files.
+
+
+o   Holger Hetterich <hhetter@novell.com>
+    * BUG 8148: Default to protocol version 2 for SMB Traffic Analyzer.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8140: talloc: Fix Valgrind false positives and other backports.
+    * BUG 8141: Fix wrong permissions on lp_ncalrpc_dir().
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8155: Fix registering only named pipes on EPM for a service.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8159: Fix memory corruption in fetching cli->server_domain from the
+      server.
 
 
 Changes since 3.6.0pre3
