@@ -612,7 +612,16 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 		DEBUG(10,("%s SAMR_FIELD_EXPIRED_FLAG: %02X\n", l,
 			from->password_expired));
 		if (from->password_expired != 0) {
-			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);
+			/* Only allow the set_time to zero (which means
+			   "User Must Change Password on Next Login"
+			   if the user object allows password change. */
+			if (pdb_get_pass_can_change(to)) {
+				pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);
+			} else {
+				DEBUG(10,("%s Disallowing set of 'User Must "
+					"Change Password on Next Login' as "
+					"user object disallows this.\n", l));
+			}
 		} else {
 			/* A subtlety here: some windows commands will
 			   clear the expired flag even though it's not
