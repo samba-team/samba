@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "librpc/gen_ndr/ndr_printcap.h"
 
 #ifdef HAVE_CUPS
 #include <cups/cups.h>
@@ -111,46 +112,54 @@ static http_t *cups_connect(TALLOC_CTX *frame)
 	return http;
 }
 
-static void send_pcap_info(const char *name, const char *info, void *pd)
+static bool send_pcap_blob(DATA_BLOB *pcap_blob, int fd)
 {
-	int fd = *(int *)pd;
-	size_t namelen = name ? strlen(name)+1 : 0;
-	size_t infolen = info ? strlen(info)+1 : 0;
+	size_t ret;
 
-	DEBUG(11,("send_pcap_info: writing namelen %u\n", (unsigned int)namelen));
-	if (sys_write(fd, &namelen, sizeof(namelen)) != sizeof(namelen)) {
-		DEBUG(10,("send_pcap_info: namelen write failed %s\n",
-			strerror(errno)));
-		return;
+	ret = sys_write(fd, &pcap_blob->length, sizeof(pcap_blob->length));
+	if (ret != sizeof(pcap_blob->length)) {
+		return false;
 	}
-	DEBUG(11,("send_pcap_info: writing infolen %u\n", (unsigned int)infolen));
-	if (sys_write(fd, &infolen, sizeof(infolen)) != sizeof(infolen)) {
-		DEBUG(10,("send_pcap_info: infolen write failed %s\n",
-			strerror(errno)));
-		return;
+
+	ret = sys_write(fd, pcap_blob->data, pcap_blob->length);
+	if (ret != pcap_blob->length) {
+		return false;
 	}
-	if (namelen) {
-		DEBUG(11,("send_pcap_info: writing name %s\n", name));
-		if (sys_write(fd, name, namelen) != namelen) {
-			DEBUG(10,("send_pcap_info: name write failed %s\n",
-				strerror(errno)));
-			return;
-		}
+
+	DEBUG(10, ("successfully sent blob of len %ld\n", (int64_t)ret));
+	return true;
+}
+
+static bool recv_pcap_blob(TALLOC_CTX *mem_ctx, int fd, DATA_BLOB *pcap_blob)
+{
+	size_t blob_len;
+	size_t ret;
+
+	ret = sys_read(fd, &blob_len, sizeof(blob_len));
+	if (ret != sizeof(blob_len)) {
+		return false;
 	}
-	if (infolen) {
-		DEBUG(11,("send_pcap_info: writing info %s\n", info));
-		if (sys_write(fd, info, infolen) != infolen) {
-			DEBUG(10,("send_pcap_info: info write failed %s\n",
-				strerror(errno)));
-			return;
-		}
+
+	*pcap_blob = data_blob_talloc_named(mem_ctx, NULL, blob_len,
+					   "cups pcap");
+	if (pcap_blob->length != blob_len) {
+		return false;
 	}
+	ret = sys_read(fd, pcap_blob->data, blob_len);
+	if (ret != blob_len) {
+		talloc_free(pcap_blob->data);
+		return false;
+	}
+
+	DEBUG(10, ("successfully recvd blob of len %ld\n", (int64_t)ret));
+	return true;
 }
 
 static bool cups_cache_reload_async(int fd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct pcap_cache *tmp_pcap_cache = NULL;
+	struct pcap_data pcap_data;
+	struct pcap_printer *printer;
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
@@ -165,6 +174,11 @@ static bool cups_cache_reload_async(int fd)
 			};
 	bool ret = False;
 	size_t size;
+	enum ndr_err_code ndr_ret;
+	DATA_BLOB pcap_blob;
+
+	ZERO_STRUCT(pcap_data);
+	pcap_data.status = NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(5, ("reloading cups printcap cache\n"));
 
@@ -268,9 +282,20 @@ static bool cups_cache_reload_async(int fd)
 		if (name == NULL)
 			break;
 
-		if (!pcap_cache_add_specific(&tmp_pcap_cache, name, info)) {
+		if (pcap_data.count == 0) {
+			printer = talloc_array(frame, struct pcap_printer, 1);
+		} else {
+			printer = talloc_realloc(frame, pcap_data.printers,
+						 struct pcap_printer,
+						 pcap_data.count + 1);
+		}
+		if (printer == NULL) {
 			goto out;
 		}
+		pcap_data.printers = printer;
+		pcap_data.printers[pcap_data.count].name = name;
+		pcap_data.printers[pcap_data.count].info = info;
+		pcap_data.count++;
 	}
 
 	ippDelete(response);
@@ -360,13 +385,24 @@ static bool cups_cache_reload_async(int fd)
 		if (name == NULL)
 			break;
 
-		if (!pcap_cache_add_specific(&tmp_pcap_cache, name, info)) {
+		if (pcap_data.count == 0) {
+			printer = talloc_array(frame, struct pcap_printer, 1);
+		} else {
+			printer = talloc_realloc(frame, pcap_data.printers,
+						 struct pcap_printer,
+						 pcap_data.count + 1);
+		}
+		if (printer == NULL) {
 			goto out;
 		}
+		pcap_data.printers = printer;
+		pcap_data.printers[pcap_data.count].name = name;
+		pcap_data.printers[pcap_data.count].info = info;
+		pcap_data.count++;
 	}
 
-	ret = True;
-
+	ret = true;
+	pcap_data.status = NT_STATUS_OK;
  out:
 	if (response)
 		ippDelete(response);
@@ -378,13 +414,14 @@ static bool cups_cache_reload_async(int fd)
 		httpClose(http);
 
 	/* Send all the entries up the pipe. */
-	if (tmp_pcap_cache) {
-		pcap_printer_fn_specific(tmp_pcap_cache,
-				send_pcap_info,
-				(void *)&fd);
-
-		pcap_cache_destroy_specific(&tmp_pcap_cache);
+	ndr_ret = ndr_push_struct_blob(&pcap_blob, frame, NULL, &pcap_data,
+				       (ndr_push_flags_fn_t)ndr_push_pcap_data);
+	if (ndr_ret == NDR_ERR_SUCCESS) {
+		ret = send_pcap_blob(&pcap_blob, fd);
+	} else {
+		ret = false;
 	}
+
 	TALLOC_FREE(frame);
 	return ret;
 }
@@ -457,104 +494,44 @@ static void cups_async_callback(struct event_context *event_ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct cups_async_cb_args *cb_args = (struct cups_async_cb_args *)p;
-	int fd = cb_args->pipe_fd;
 	struct pcap_cache *tmp_pcap_cache = NULL;
-	bool ret_ok = true;
+	bool ret_ok;
+	struct pcap_data pcap_data;
+	DATA_BLOB pcap_blob;
+	enum ndr_err_code ndr_ret;
+	int i;
 
 	DEBUG(5,("cups_async_callback: callback received for printer data. "
-		"fd = %d\n", fd));
+		"fd = %d\n", cb_args->pipe_fd));
 
-	while (1) {
-		char *name = NULL, *info = NULL;
-		size_t namelen = 0, infolen = 0;
-		ssize_t ret = -1;
+	ret_ok = recv_pcap_blob(frame, cb_args->pipe_fd, &pcap_blob);
+	if (!ret_ok) {
+		DEBUG(0,("failed to recv pcap blob\n"));
+		goto err_out;
+	}
 
-		ret = sys_read(fd, &namelen, sizeof(namelen));
-		if (ret == 0) {
-			/* EOF */
-			break;
-		}
-		if (ret != sizeof(namelen)) {
-			DEBUG(10,("cups_async_callback: namelen read failed %d %s\n",
-				errno, strerror(errno)));
-			ret_ok = false;
-			break;
-		}
+	ndr_ret = ndr_pull_struct_blob(&pcap_blob, frame, NULL, &pcap_data,
+				       (ndr_pull_flags_fn_t)ndr_pull_pcap_data);
+	if (ndr_ret != NDR_ERR_SUCCESS) {
+		goto err_out;
+	}
 
-		DEBUG(11,("cups_async_callback: read namelen %u\n",
-			(unsigned int)namelen));
+	if (!NT_STATUS_IS_OK(pcap_data.status)) {
+		DEBUG(0,("failed to retrieve printer list: %s\n",
+			 nt_errstr(pcap_data.status)));
+		goto err_out;
+	}
 
-		ret = sys_read(fd, &infolen, sizeof(infolen));
-		if (ret == 0) {
-			/* EOF */
-			break;
-		}
-		if (ret != sizeof(infolen)) {
-			DEBUG(10,("cups_async_callback: infolen read failed %s\n",
-				strerror(errno)));
-			ret_ok = false;
-			break;
-		}
-
-		DEBUG(11,("cups_async_callback: read infolen %u\n",
-			(unsigned int)infolen));
-
-		if (namelen) {
-			name = TALLOC_ARRAY(frame, char, namelen);
-			if (!name) {
-				ret_ok = false;
-				break;
-			}
-			ret = sys_read(fd, name, namelen);
-			if (ret == 0) {
-				/* EOF */
-				break;
-			}
-			if (ret != namelen) {
-				DEBUG(10,("cups_async_callback: name read failed %s\n",
-					strerror(errno)));
-				ret_ok = false;
-				break;
-			}
-			DEBUG(11,("cups_async_callback: read name %s\n",
-				name));
-		} else {
-			name = NULL;
-		}
-		if (infolen) {
-			info = TALLOC_ARRAY(frame, char, infolen);
-			if (!info) {
-				ret_ok = false;
-				break;
-			}
-			ret = sys_read(fd, info, infolen);
-			if (ret == 0) {
-				/* EOF */
-				break;
-			}
-			if (ret != infolen) {
-				DEBUG(10,("cups_async_callback: info read failed %s\n",
-					strerror(errno)));
-				ret_ok = false;
-				break;
-			}
-			DEBUG(11,("cups_async_callback: read info %s\n",
-				info));
-		} else {
-			info = NULL;
-		}
-
-		/* Add to our local pcap cache. */
-		ret_ok = pcap_cache_add_specific(&tmp_pcap_cache, name, info);
-		TALLOC_FREE(name);
-		TALLOC_FREE(info);
+	for (i = 0; i < pcap_data.count; i++) {
+		ret_ok = pcap_cache_add_specific(&tmp_pcap_cache,
+						 pcap_data.printers[i].name,
+						 pcap_data.printers[i].info);
 		if (!ret_ok) {
 			DEBUG(0, ("failed to add to tmp pcap cache\n"));
 			break;
 		}
 	}
 
-	TALLOC_FREE(frame);
 	if (!ret_ok) {
 		DEBUG(0,("failed to read a new printer list\n"));
 		pcap_cache_destroy_specific(&tmp_pcap_cache);
@@ -571,7 +548,9 @@ static void cups_async_callback(struct event_context *event_ctx,
 			cb_args->post_cache_fill_fn();
 		}
 	}
-	close(fd);
+err_out:
+	TALLOC_FREE(frame);
+	close(cb_args->pipe_fd);
 	TALLOC_FREE(cb_args);
 	TALLOC_FREE(cache_fd_event);
 }
