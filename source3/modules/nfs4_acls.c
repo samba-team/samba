@@ -398,13 +398,15 @@ static int smbacl4_get_vfs_params(
 {
 	static const struct enum_list enum_smbacl4_modes[] = {
 		{ e_simple, "simple" },
-		{ e_special, "special" }
+		{ e_special, "special" },
+		{ -1 , NULL }
 	};
 	static const struct enum_list enum_smbacl4_acedups[] = {
 		{ e_dontcare, "dontcare" },
 		{ e_reject, "reject" },
 		{ e_ignore, "ignore" },
 		{ e_merge, "merge" },
+		{ -1 , NULL }
 	};
 
 	memset(params, 0, sizeof(smbacl4_vfs_params));
