@@ -139,8 +139,8 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		else
 			sec_setting = "";
 
-		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
-to the default value * or a valid password server.\n", sec_setting );
+		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set\n"
+			"to the default value * or a valid password server.\n", sec_setting );
 		ret = 1;
 	}
 
@@ -153,7 +153,8 @@ to the default value * or a valid password server.\n", sec_setting );
 		else
 			sec_setting = "";
 
-		fprintf(stderr, "WARNING: The setting 'security=%s' is should NOT be combined with the 'password server' parameter.\n  (by default Samba will discover the correct DC to contact automatically).\n", sec_setting );
+		fprintf(stderr, "WARNING: The setting 'security=%s' should NOT be combined with the 'password server' parameter.\n"
+			"(by default Samba will discover the correct DC to contact automatically).\n", sec_setting );
 	}
 
 	/*
@@ -254,7 +255,6 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 
 	if (!lp_passdb_backend()) {
 		fprintf(stderr,"ERROR: passdb backend must have a value or be left out\n");
-		ret = 1;
 	}
 	
 	if (lp_os_level() > 255) {
