@@ -1413,7 +1413,7 @@ samba3-idl::
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh \
 		librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl \
 		librpc/idl/wbint.idl librpc/idl/perfcount.idl \
-		librpc/idl/secrets.idl
+		librpc/idl/secrets.idl librpc/idl/printcap.idl
 
 #####################################################################
 
