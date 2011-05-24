@@ -790,6 +790,8 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid);
+
 /*
  * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
  *
@@ -946,6 +948,18 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			/* Step 1.4: "userAccountControl" -> "primaryGroupID" mapping */
 			if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
 				uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+
+				/*
+				 * Older AD deployments don't know about the
+				 * RODC group
+				 */
+				if (rid == DOMAIN_RID_READONLY_DCS) {
+					ret = samldb_prim_group_tester(ac, rid);
+					if (ret != LDB_SUCCESS) {
+						return ret;
+					}
+				}
+
 				ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 							 "primaryGroupID", rid);
 				if (ret != LDB_SUCCESS) {
@@ -1028,25 +1042,13 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
  * ac->msg contains the "add"/"modify" message
  */
 
-static int samldb_prim_group_set(struct samldb_ctx *ac)
+static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	uint32_t rid;
 	struct dom_sid *sid;
 	struct ldb_result *res;
 	int ret;
 	const char *noattrs[] = { NULL };
-
-	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
-	if (rid == (uint32_t) -1) {
-		/* we aren't affected of any primary group set */
-		return LDB_SUCCESS;
-
-	} else if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-		ldb_set_errstring(ldb,
-				  "The primary group isn't settable on add operations!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
 
 	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
 	if (sid == NULL) {
@@ -1071,6 +1073,25 @@ static int samldb_prim_group_set(struct samldb_ctx *ac)
 	talloc_free(res);
 
 	return LDB_SUCCESS;
+}
+
+static int samldb_prim_group_set(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	uint32_t rid;
+
+	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	if (rid == (uint32_t) -1) {
+		/* we aren't affected of any primary group set */
+		return LDB_SUCCESS;
+
+	} else if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		ldb_set_errstring(ldb,
+				  "The primary group isn't settable on add operations!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	return samldb_prim_group_tester(ac, rid);
 }
 
 static int samldb_prim_group_change(struct samldb_ctx *ac)
@@ -1358,6 +1379,15 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 
 	if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
 		uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+
+		/* Older AD deployments don't know about the RODC group */
+		if (rid == DOMAIN_RID_READONLY_DCS) {
+			ret = samldb_prim_group_tester(ac, rid);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "primaryGroupID", rid);
 		if (ret != LDB_SUCCESS) {
