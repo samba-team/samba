@@ -150,25 +150,105 @@ static bool recv_pcap_blob(TALLOC_CTX *mem_ctx, int fd, DATA_BLOB *pcap_blob)
 	return true;
 }
 
+static bool process_cups_printers_response(TALLOC_CTX *mem_ctx,
+					   ipp_t *response,
+					   struct pcap_data *pcap_data)
+{
+	ipp_attribute_t	*attr;
+	char *name;
+	char *info;
+	struct pcap_printer *printer;
+	bool ret_ok = false;
+
+	for (attr = response->attrs; attr != NULL;) {
+	       /*
+		* Skip leading attributes until we hit a printer...
+		*/
+
+		while (attr != NULL && attr->group_tag != IPP_TAG_PRINTER)
+			attr = attr->next;
+
+		if (attr == NULL)
+			break;
+
+	       /*
+		* Pull the needed attributes from this printer...
+		*/
+
+		name       = NULL;
+		info       = NULL;
+
+		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER) {
+			size_t size;
+			if (strcmp(attr->name, "printer-name") == 0 &&
+			    attr->value_tag == IPP_TAG_NAME) {
+				if (!pull_utf8_talloc(mem_ctx,
+						&name,
+						attr->values[0].string.text,
+						&size)) {
+					goto err_out;
+				}
+			}
+
+			if (strcmp(attr->name, "printer-info") == 0 &&
+			    attr->value_tag == IPP_TAG_TEXT) {
+				if (!pull_utf8_talloc(mem_ctx,
+						&info,
+						attr->values[0].string.text,
+						&size)) {
+					goto err_out;
+				}
+			}
+
+			attr = attr->next;
+		}
+
+	       /*
+		* See if we have everything needed...
+		*/
+
+		if (name == NULL)
+			break;
+
+		if (pcap_data->count == 0) {
+			printer = talloc_array(mem_ctx, struct pcap_printer, 1);
+		} else {
+			printer = talloc_realloc(mem_ctx, pcap_data->printers,
+						 struct pcap_printer,
+						 pcap_data->count + 1);
+		}
+		if (printer == NULL) {
+			goto err_out;
+		}
+		pcap_data->printers = printer;
+		pcap_data->printers[pcap_data->count].name = name;
+		pcap_data->printers[pcap_data->count].info = info;
+		pcap_data->count++;
+	}
+
+	ret_ok = true;
+err_out:
+	return ret_ok;
+}
+
+/*
+ * request printer list from cups, send result back to up parent via fd.
+ * returns true if the (possibly failed) result was successfuly sent to parent.
+ */
 static bool cups_cache_reload_async(int fd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pcap_data pcap_data;
-	struct pcap_printer *printer;
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
-	ipp_attribute_t	*attr;		/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
-	char		*name,		/* printer-name attribute */
-			*info;		/* printer-info attribute */
 	static const char *requested[] =/* Requested attributes */
 			{
 			  "printer-name",
 			  "printer-info"
 			};
 	bool ret = False;
-	size_t size;
 	enum ndr_err_code ndr_ret;
 	DATA_BLOB pcap_blob;
 
@@ -182,10 +262,6 @@ static bool cups_cache_reload_async(int fd)
 	*/
 
         cupsSetPasswordCB(cups_passwd_cb);
-
-       /*
-	* Try to connect to the server...
-	*/
 
 	if ((http = cups_connect(frame)) == NULL) {
 		goto out;
@@ -218,79 +294,16 @@ static bool cups_cache_reload_async(int fd)
 		      (sizeof(requested) / sizeof(requested[0])),
 		      NULL, requested);
 
-       /*
-	* Do the request and get back a response...
-	*/
-
 	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
 		DEBUG(0,("Unable to get printer list - %s\n",
 			 ippErrorString(cupsLastError())));
 		goto out;
 	}
 
-	for (attr = response->attrs; attr != NULL;) {
-	       /*
-		* Skip leading attributes until we hit a printer...
-		*/
-
-		while (attr != NULL && attr->group_tag != IPP_TAG_PRINTER)
-			attr = attr->next;
-
-		if (attr == NULL)
-        		break;
-
-	       /*
-		* Pull the needed attributes from this printer...
-		*/
-
-		name       = NULL;
-		info       = NULL;
-
-		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER) {
-        		if (strcmp(attr->name, "printer-name") == 0 &&
-			    attr->value_tag == IPP_TAG_NAME) {
-				if (!pull_utf8_talloc(frame,
-						&name,
-						attr->values[0].string.text,
-						&size)) {
-					goto out;
-				}
-			}
-
-        		if (strcmp(attr->name, "printer-info") == 0 &&
-			    attr->value_tag == IPP_TAG_TEXT) {
-				if (!pull_utf8_talloc(frame,
-						&info,
-						attr->values[0].string.text,
-						&size)) {
-					goto out;
-				}
-			}
-
-        		attr = attr->next;
-		}
-
-	       /*
-		* See if we have everything needed...
-		*/
-
-		if (name == NULL)
-			break;
-
-		if (pcap_data.count == 0) {
-			printer = talloc_array(frame, struct pcap_printer, 1);
-		} else {
-			printer = talloc_realloc(frame, pcap_data.printers,
-						 struct pcap_printer,
-						 pcap_data.count + 1);
-		}
-		if (printer == NULL) {
-			goto out;
-		}
-		pcap_data.printers = printer;
-		pcap_data.printers[pcap_data.count].name = name;
-		pcap_data.printers[pcap_data.count].info = info;
-		pcap_data.count++;
+	ret = process_cups_printers_response(frame, response, &pcap_data);
+	if (!ret) {
+		DEBUG(0,("failed to process cups response\n"));
+		goto out;
 	}
 
 	ippDelete(response);
@@ -321,82 +334,18 @@ static bool cups_cache_reload_async(int fd)
 		      (sizeof(requested) / sizeof(requested[0])),
 		      NULL, requested);
 
-       /*
-	* Do the request and get back a response...
-	*/
-
 	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
 		DEBUG(0,("Unable to get printer list - %s\n",
 			 ippErrorString(cupsLastError())));
 		goto out;
 	}
 
-	for (attr = response->attrs; attr != NULL;) {
-	       /*
-		* Skip leading attributes until we hit a printer...
-		*/
-
-		while (attr != NULL && attr->group_tag != IPP_TAG_PRINTER)
-			attr = attr->next;
-
-		if (attr == NULL)
-        		break;
-
-	       /*
-		* Pull the needed attributes from this printer...
-		*/
-
-		name       = NULL;
-		info       = NULL;
-
-		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER) {
-        		if (strcmp(attr->name, "printer-name") == 0 &&
-			    attr->value_tag == IPP_TAG_NAME) {
-				if (!pull_utf8_talloc(frame,
-						&name,
-						attr->values[0].string.text,
-						&size)) {
-					goto out;
-				}
-			}
-
-        		if (strcmp(attr->name, "printer-info") == 0 &&
-			    attr->value_tag == IPP_TAG_TEXT) {
-				if (!pull_utf8_talloc(frame,
-						&info,
-						attr->values[0].string.text,
-						&size)) {
-					goto out;
-				}
-			}
-
-        		attr = attr->next;
-		}
-
-	       /*
-		* See if we have everything needed...
-		*/
-
-		if (name == NULL)
-			break;
-
-		if (pcap_data.count == 0) {
-			printer = talloc_array(frame, struct pcap_printer, 1);
-		} else {
-			printer = talloc_realloc(frame, pcap_data.printers,
-						 struct pcap_printer,
-						 pcap_data.count + 1);
-		}
-		if (printer == NULL) {
-			goto out;
-		}
-		pcap_data.printers = printer;
-		pcap_data.printers[pcap_data.count].name = name;
-		pcap_data.printers[pcap_data.count].info = info;
-		pcap_data.count++;
+	ret = process_cups_printers_response(frame, response, &pcap_data);
+	if (!ret) {
+		DEBUG(0,("failed to process cups response\n"));
+		goto out;
 	}
 
-	ret = true;
 	pcap_data.status = NT_STATUS_OK;
  out:
 	if (response)
@@ -408,13 +357,11 @@ static bool cups_cache_reload_async(int fd)
 	if (http)
 		httpClose(http);
 
-	/* Send all the entries up the pipe. */
+	ret = false;
 	ndr_ret = ndr_push_struct_blob(&pcap_blob, frame, NULL, &pcap_data,
 				       (ndr_push_flags_fn_t)ndr_push_pcap_data);
 	if (ndr_ret == NDR_ERR_SUCCESS) {
 		ret = send_pcap_blob(&pcap_blob, fd);
-	} else {
-		ret = false;
 	}
 
 	TALLOC_FREE(frame);
