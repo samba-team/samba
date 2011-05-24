@@ -2055,7 +2055,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
 	if (el != NULL) {
-		ret = samldb_prim_group_change(ac);
+		ret = samldb_prim_group_trigger(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
