@@ -740,7 +740,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC,
-                    deps='''PARAM_UTIL smbd_conn USER_UTIL PRINTING''',
+                    deps='''PARAM_UTIL smbd_conn''',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('param',
@@ -748,6 +748,10 @@ bld.SAMBA3_LIBRARY('param',
                    deps='PARAM_WITHOUT_REG samba-util smbconf',
                    private_library=True,
                    vars=locals())
+
+bld.SAMBA3_SUBSYSTEM('param_service',
+                     source='param/service.c',
+                     deps = 'USER_UTIL param USER_UTIL PRINTING')
 
 bld.SAMBA3_SUBSYSTEM('REGFIO',
                     source=REGFIO_SRC,
@@ -886,7 +890,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     smbconf REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
-                    LIBCLI_SMB_COMMON RPC_SERVER smbd_conn
+                    LIBCLI_SMB_COMMON RPC_SERVER smbd_conn param_service
                     ''',
                     private_library=True,
                     vars=locals())

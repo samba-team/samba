@@ -23,17 +23,6 @@
 
 #include "includes.h"
 
-int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
-{
-	return -1;
-}
-
-bool conn_snum_used(struct smbd_server_connection *sconn,
-		    int snum)
-{
-	return False;
-}
-
 void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			struct byte_range_lock *br_lck,
 			enum file_close_type close_type)
