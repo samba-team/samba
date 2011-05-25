@@ -94,7 +94,7 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 		if (strequal(sock_addr, "0.0.0.0") ||
 		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
-			sock_addr = "::";
+			sock_addr = "::,0.0.0.0";
 #else
 			sock_addr = "0.0.0.0";
 #endif
