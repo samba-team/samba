@@ -1071,7 +1071,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	}
 
-	/* User does *NOT* know the correct password, modify info3 accordingly */
+	/* User does *NOT* know the correct password, modify info3 accordingly, but only if online */
+	if (domain->online == false) {
+		goto failed;
+	}
 
 	/* failure of this is not critical */
 	result = get_max_bad_attempts_from_lockout_policy(domain, state->mem_ctx, &max_allowed_bad_attempts);
