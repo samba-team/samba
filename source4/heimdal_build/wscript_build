@@ -400,12 +400,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         ../heimdal_build/replace.c
     '''
 
-    if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
-        ROKEN_HOSTCC_SOURCE += '''
-            lib/roken/getprogname.c
-            lib/roken/setprogname.c
-        '''
-
     if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
         ROKEN_HOSTCC_SOURCE += '''
             lib/roken/closefrom.c

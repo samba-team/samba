@@ -83,3 +83,20 @@
 	return -1;
 }
 #endif
+
+#ifndef HAVE_SETPROGNAME
+
+/* We don't want to use a setprogname reimplementation */
+void setprogname(const char *argv0)
+{
+}
+
+#endif /* HAVE_SETPROGNAME */
+
+#ifndef HAVE_GETPROGNAME
+/* We don't want to use a getprogname reimplementation */
+const char *getprogname(void)
+{
+	return "";
+}
+#endif /* HAVE_GETPROGNAME */
