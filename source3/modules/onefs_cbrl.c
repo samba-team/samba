@@ -251,7 +251,7 @@ static void onefs_init_cbrl(void)
 	DEBUG(10, ("cbrl_event_fd = %d\n", cbrl_event_fd));
 
 	/* Register the CBRL event_fd with samba's event system */
-	cbrl_fde = event_add_fd(smbd_event_context(),
+	cbrl_fde = event_add_fd(server_event_context(),
 				     NULL,
 				     cbrl_event_fd,
 				     EVENT_FD_READ,

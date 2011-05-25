@@ -139,7 +139,7 @@ static bool recalc_brl_timeout(struct smbd_server_connection *sconn)
 		    (int)from_now.tv_sec, (int)from_now.tv_usec));
 	}
 
-	sconn->smb1.locks.brl_timeout = event_add_timed(smbd_event_context(),
+	sconn->smb1.locks.brl_timeout = event_add_timed(server_event_context(),
 							NULL, next_timeout,
 							brl_timeout_fn, sconn);
 	if (sconn->smb1.locks.brl_timeout == NULL) {

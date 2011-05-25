@@ -568,7 +568,7 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 	}
 
 	sconn->smb2.locks.brl_timeout = event_add_timed(
-				smbd_event_context(),
+				server_event_context(),
 				NULL,
 				next_timeout,
 				brl_timeout_fn,

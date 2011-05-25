@@ -353,7 +353,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 
 	fsp->oplock_timeout =
-		event_add_timed(smbd_event_context(), fsp,
+		event_add_timed(server_event_context(), fsp,
 				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
 				oplock_timeout_handler, fsp);
 

@@ -203,7 +203,7 @@ void reply_pipe_write(struct smb_request *req)
 	DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n", (int)fsp->fnum,
 		  fsp_str_dbg(fsp), (int)state->numtowrite));
 
-	subreq = np_write_send(state, smbd_event_context(),
+	subreq = np_write_send(state, server_event_context(),
 			       fsp->fake_file_handle, data, state->numtowrite);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -319,7 +319,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		state->numtowrite -= 2;
 	}
 
-	subreq = np_write_send(state, smbd_event_context(),
+	subreq = np_write_send(state, server_event_context(),
 			       fsp->fake_file_handle, data, state->numtowrite);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -426,7 +426,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	state->outbuf = req->outbuf;
 	req->outbuf = NULL;
 
-	subreq = np_read_send(state, smbd_event_context(),
+	subreq = np_read_send(state, server_event_context(),
 			      fsp->fake_file_handle, data,
 			      state->smb_maxcnt);
 	if (subreq == NULL) {

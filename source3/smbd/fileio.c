@@ -240,7 +240,7 @@ void trigger_write_time_update(struct files_struct *fsp)
 
 	/* trigger the update 2 seconds later */
 	fsp->update_write_time_event =
-		event_add_timed(smbd_event_context(), NULL,
+		event_add_timed(server_event_context(), NULL,
 				timeval_current_ofs(0, delay),
 				update_write_time_handler, fsp);
 }

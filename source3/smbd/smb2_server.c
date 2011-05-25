@@ -95,7 +95,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 
 	TALLOC_FREE(sconn->smb1.fde);
 
-	sconn->smb2.event_ctx = smbd_event_context();
+	sconn->smb2.event_ctx = server_event_context();
 
 	sconn->smb2.recv_queue = tevent_queue_create(sconn, "smb2 recv queue");
 	if (sconn->smb2.recv_queue == NULL) {

@@ -237,7 +237,7 @@ static NTSTATUS preopen_init_helper(struct preopen_helper *h)
 	}
 	close(fdpair[1]);
 	h->fd = fdpair[0];
-	h->fde = event_add_fd(smbd_event_context(), h->state, h->fd,
+	h->fde = event_add_fd(server_event_context(), h->state, h->fd,
 			      EVENT_FD_READ, preopen_helper_readable, h);
 	if (h->fde == NULL) {
 		close(h->fd);

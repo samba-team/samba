@@ -81,8 +81,8 @@ static bool initialize_async_io_handler(void)
 	}
 	tried_signal_setup = true;
 
-	aio_signal_event = tevent_add_signal(smbd_event_context(),
-					     smbd_event_context(),
+	aio_signal_event = tevent_add_signal(server_event_context(),
+					     server_event_context(),
 					     RT_SIGNAL_AIO, SA_SIGINFO,
 					     smbd_aio_signal_handler,
 					     NULL);

@@ -444,7 +444,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		subreq = np_read_send(state, smbd_event_context(),
+		subreq = np_read_send(state, server_event_context(),
 				      fsp->fake_file_handle,
 				      state->out_data.data,
 				      state->out_data.length);

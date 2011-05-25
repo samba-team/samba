@@ -332,7 +332,7 @@ struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 	ctx->read_fd = pfd[0];
 	ctx->write_fd = pfd[1];
 
-	ctx->read_fde = event_add_fd(smbd_event_context(),
+	ctx->read_fde = event_add_fd(server_event_context(),
 				     ctx,
 				     ctx->read_fd,
 				     EVENT_FD_READ,

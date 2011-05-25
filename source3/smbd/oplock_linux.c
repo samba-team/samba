@@ -210,7 +210,7 @@ struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 
 	ctx->ops = &linux_koplocks;
 
-	se = tevent_add_signal(smbd_event_context(),
+	se = tevent_add_signal(server_event_context(),
 			       ctx,
 			       RT_SIGNAL_LEASE, SA_SIGINFO,
 			       linux_oplock_signal_handler,

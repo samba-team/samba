@@ -624,7 +624,7 @@ static bool push_queued_message(struct smb_request *req,
 		}
 	}
 
-	msg->te = event_add_timed(smbd_event_context(),
+	msg->te = event_add_timed(server_event_context(),
 				  msg,
 				  end_time,
 				  smbd_deferred_open_timer,
@@ -708,7 +708,7 @@ void schedule_deferred_open_message_smb(uint64_t mid)
 				"scheduling mid %llu\n",
 				(unsigned long long)mid ));
 
-			te = event_add_timed(smbd_event_context(),
+			te = event_add_timed(server_event_context(),
 					     pml,
 					     timeval_zero(),
 					     smbd_deferred_open_timer,
@@ -934,8 +934,8 @@ void smbd_setup_sig_term_handler(void)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(smbd_event_context(),
-			       smbd_event_context(),
+	se = tevent_add_signal(server_event_context(),
+			       server_event_context(),
 			       SIGTERM, 0,
 			       smbd_sig_term_handler,
 			       NULL);
@@ -987,11 +987,11 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	 * select for longer than it would take to wait for them.
 	 */
 
-	event_add_to_poll_args(smbd_event_context(), conn,
+	event_add_to_poll_args(server_event_context(), conn,
 			       &conn->pfds, &num_pfds, &timeout);
 
 	/* Process a signal and timed events now... */
-	if (run_events_poll(smbd_event_context(), 0, NULL, 0)) {
+	if (run_events_poll(server_event_context(), 0, NULL, 0)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -1013,7 +1013,7 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		return map_nt_error_from_unix(errno);
 	}
 
-	retry = run_events_poll(smbd_event_context(), ret, conn->pfds,
+	retry = run_events_poll(server_event_context(), ret, conn->pfds,
 				num_pfds);
 	if (retry) {
 		return NT_STATUS_RETRY;
@@ -2814,7 +2814,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 		set_blocking(listener_pipe[1], false);
 
 		status = reinit_after_fork(sconn->msg_ctx,
-					   smbd_event_context(),
+					   server_event_context(),
 					   procid_self(), false);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
@@ -2834,7 +2834,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 	 * Without smb signing this is the same as the normal smbd
 	 * listener. This needs to change once signing comes in.
 	 */
-	sconn->smb1.echo_handler.trusted_fde = event_add_fd(smbd_event_context(),
+	sconn->smb1.echo_handler.trusted_fde = event_add_fd(server_event_context(),
 					sconn,
 					sconn->smb1.echo_handler.trusted_fd,
 					EVENT_FD_READ,
@@ -3044,7 +3044,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 			   MSG_DEBUG, debug_message);
 
 	if ((lp_keepalive() != 0)
-	    && !(event_add_idle(smbd_event_context(), NULL,
+	    && !(event_add_idle(server_event_context(), NULL,
 				timeval_set(lp_keepalive(), 0),
 				"keepalive", keepalive_fn,
 				NULL))) {
@@ -3052,14 +3052,14 @@ void smbd_process(struct smbd_server_connection *sconn)
 		exit(1);
 	}
 
-	if (!(event_add_idle(smbd_event_context(), NULL,
+	if (!(event_add_idle(server_event_context(), NULL,
 			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
 			     "deadtime", deadtime_fn, sconn))) {
 		DEBUG(0, ("Could not add deadtime event\n"));
 		exit(1);
 	}
 
-	if (!(event_add_idle(smbd_event_context(), NULL,
+	if (!(event_add_idle(server_event_context(), NULL,
 			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "housekeeping", housekeeping_fn, sconn))) {
 		DEBUG(0, ("Could not add housekeeping event\n"));
@@ -3116,7 +3116,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 		exit_server("init_dptrs() failed");
 	}
 
-	sconn->smb1.fde = event_add_fd(smbd_event_context(),
+	sconn->smb1.fde = event_add_fd(server_event_context(),
 						  sconn,
 						  sconn->sock,
 						  EVENT_FD_READ,
