@@ -617,7 +617,7 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 		return -1;
 	}
 
-#ifndef WITH_SYSLOG
+#ifdef WITH_SYSLOG
 	openlog("smbd_audit", 0, audit_syslog_facility(handle));
 #endif
 
