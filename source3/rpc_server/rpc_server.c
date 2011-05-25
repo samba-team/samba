@@ -79,7 +79,6 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
  * sent from the client */
 static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    const char *pipe_name,
-				    const struct ndr_syntax_id id,
 				    enum dcerpc_transport_t transport,
 				    bool ncalrpc_as_system,
 				    const char *client_address,
@@ -93,14 +92,14 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	struct pipes_struct *p;
 	struct auth_serversupplied_info *server_info;
 	NTSTATUS status;
-	bool ok;
 
 	p = talloc_zero(mem_ctx, struct pipes_struct);
 	if (!p) {
 		*perrno = ENOMEM;
 		return -1;
 	}
-	p->syntax = id;
+
+	p->syntax = null_ndr_syntax_id;
 	p->transport = transport;
 	p->ncalrpc_as_system = ncalrpc_as_system;
 
@@ -110,15 +109,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		*perrno = ENOMEM;
 		return -1;
 	}
-
-	ok = init_pipe_handles(p, &id);
-	if (!ok) {
-		DEBUG(1, ("Failed to init handles\n"));
-		TALLOC_FREE(p);
-		*perrno = EINVAL;
-		return -1;
-	}
-
 
 	data_blob_free(&p->in_data.data);
 	data_blob_free(&p->in_data.pdu);
@@ -354,7 +344,6 @@ static void named_pipe_listener(struct tevent_context *ev,
 
 struct named_pipe_client {
 	const char *pipe_name;
-	struct ndr_syntax_id pipe_id;
 
 	struct tevent_context *ev;
 	struct messaging_context *msg_ctx;
@@ -383,19 +372,10 @@ static void named_pipe_accept_done(struct tevent_req *subreq);
 
 static void named_pipe_accept_function(const char *pipe_name, int fd)
 {
-	struct ndr_syntax_id syntax;
 	struct named_pipe_client *npc;
 	struct tstream_context *plain;
 	struct tevent_req *subreq;
-	bool ok;
 	int ret;
-
-	ok = is_known_pipename(pipe_name, &syntax);
-	if (!ok) {
-		DEBUG(1, ("Unknown pipe [%s]\n", pipe_name));
-		close(fd);
-		return;
-	}
 
 	npc = talloc_zero(NULL, struct named_pipe_client);
 	if (!npc) {
@@ -404,7 +384,6 @@ static void named_pipe_accept_function(const char *pipe_name, int fd)
 		return;
 	}
 	npc->pipe_name = pipe_name;
-	npc->pipe_id = syntax;
 	npc->ev = server_event_context();
 	npc->msg_ctx = server_messaging_context();
 
@@ -484,7 +463,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	}
 
 	ret = make_server_pipes_struct(npc,
-					npc->pipe_name, npc->pipe_id, NCACN_NP,
+				       npc->pipe_name, NCACN_NP,
 					false, cli_addr, NULL, npc->session_info,
 					&npc->p, &error);
 	if (ret != 0) {
@@ -693,7 +672,6 @@ fail:
 
 static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				struct messaging_context *msg_ctx,
-				struct ndr_syntax_id syntax_id,
 				enum dcerpc_transport_t transport,
 				const char *name,
 				uint16_t port,
@@ -713,7 +691,6 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 
 uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 					 struct messaging_context *msg_ctx,
-					 struct ndr_syntax_id syntax_id,
 					 const struct sockaddr_storage *ifss,
 					 uint16_t port)
 {
@@ -727,7 +704,6 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 		return 0;
 	}
 
-	state->syntax_id = syntax_id;
 	state->fd = -1;
 	state->ep.port = port;
 	state->disconnect_fn = NULL;
@@ -853,7 +829,6 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
-			    state->syntax_id,
 			    NCACN_IP_TCP,
 			    NULL,
 			    state->ep.port,
@@ -874,7 +849,6 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 
 bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
-				 struct ndr_syntax_id syntax_id,
 				 const char *name,
 				 dcerpc_ncacn_disconnect_fn fn)
 {
@@ -887,7 +861,6 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	state->syntax_id = syntax_id;
 	state->fd = -1;
 	state->disconnect_fn = fn;
 
@@ -983,15 +956,13 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
-			    state->syntax_id, NCALRPC,
+			    NCALRPC,
 			    state->ep.name, 0,
 			    cli_addr, NULL, sd,
 			    state->disconnect_fn);
 }
 
 struct dcerpc_ncacn_conn {
-	struct ndr_syntax_id syntax_id;
-
 	enum dcerpc_transport_t transport;
 
 	union {
@@ -1025,7 +996,6 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq);
 
 static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				struct messaging_context *msg_ctx,
-				struct ndr_syntax_id syntax_id,
 				enum dcerpc_transport_t transport,
 				const char *name,
 				uint16_t port,
@@ -1054,7 +1024,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	}
 
 	ncacn_conn->transport = transport;
-	ncacn_conn->syntax_id = syntax_id;
 	ncacn_conn->ev_ctx = ev_ctx;
 	ncacn_conn->msg_ctx = msg_ctx;
 	ncacn_conn->sock = s;
@@ -1185,7 +1154,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 	rc = make_server_pipes_struct(ncacn_conn,
 				      pipe_name,
-				      ncacn_conn->syntax_id,
 				      ncacn_conn->transport,
 				      system_user,
 				      cli_str,

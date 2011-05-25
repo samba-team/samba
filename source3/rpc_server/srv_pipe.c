@@ -335,6 +335,7 @@ static bool check_bind_req(struct pipes_struct *p,
 			   uint32_t context_id)
 {
 	struct pipe_rpc_fns *context_fns;
+	bool ok;
 
 	DEBUG(3,("check_bind_req for %s\n",
 		 get_pipe_name_from_syntax(talloc_tos(), abstract)));
@@ -346,6 +347,12 @@ static bool check_bind_req(struct pipes_struct *p,
 			  rpc_srv_get_pipe_cli_name(abstract),
 			  rpc_srv_get_pipe_srv_name(abstract)));
 	} else {
+		return false;
+	}
+
+	ok = init_pipe_handles(p, abstract);
+	if (!ok) {
+		DEBUG(1, ("Failed to init pipe handles!\n"));
 		return false;
 	}
 

@@ -54,7 +54,6 @@ static bool epmd_open_sockets(struct tevent_context *ev_ctx,
 
 			port = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							       msg_ctx,
-							       ndr_table_epmapper.syntax_id,
 							       ifss,
 							       135);
 			if (port == 0) {
@@ -89,7 +88,6 @@ static bool epmd_open_sockets(struct tevent_context *ev_ctx,
 
 			port = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							       msg_ctx,
-							       ndr_table_epmapper.syntax_id,
 							       &ss,
 							       135);
 			if (port == 0) {
@@ -263,7 +261,6 @@ void start_epmd(struct tevent_context *ev_ctx,
 
 	ok = setup_dcerpc_ncalrpc_socket(ev_ctx,
 					 msg_ctx,
-					 ndr_table_epmapper.syntax_id,
 					 "EPMAPPER",
 					 srv_epmapper_delete_endpoints);
 	if (!ok) {

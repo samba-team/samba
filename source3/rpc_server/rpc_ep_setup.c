@@ -79,7 +79,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 
 			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							    msg_ctx,
-							    syntax_id,
 							    ifss,
 							    port);
 			if (p == 0) {
@@ -115,7 +114,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 
 			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							    msg_ctx,
-							    syntax_id,
 							    &ss,
 							    port);
 			if (p == 0) {
@@ -430,7 +428,6 @@ static bool winreg_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -478,7 +475,6 @@ static bool srvsvc_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -527,7 +523,6 @@ static bool lsarpc_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -576,7 +571,6 @@ static bool samr_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -625,7 +619,6 @@ static bool netlogon_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -890,7 +883,6 @@ static bool netdfs_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -939,7 +931,6 @@ static bool dssetup_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -987,7 +978,6 @@ static bool wkssvc_init_cb(void *ptr)
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
