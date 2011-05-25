@@ -307,6 +307,10 @@ bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd)
 
 void close_policy_by_pipe(struct pipes_struct *p)
 {
+	if (p->pipe_handles == NULL) {
+		return;
+	}
+
 	p->pipe_handles->pipe_ref_count--;
 
 	if (p->pipe_handles->pipe_ref_count == 0) {
