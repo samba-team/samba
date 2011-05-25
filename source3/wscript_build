@@ -347,7 +347,8 @@ BUILDOPT_SRC = '''smbd/build_options.c'''
 
 SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/utmp.c smbd/session.c
-               smbd/dfree.c smbd/dir.c smbd/password.c smbd/conn.c
+               smbd/dfree.c smbd/dir.c smbd/password.c smbd/conn_msg.c
+               smbd/conn_idle.c
                smbd/share_access.c smbd/fileio.c
                smbd/ipc.c smbd/lanman.c smbd/negprot.c
                smbd/message.c smbd/nttrans.c smbd/pipes.c
@@ -739,7 +740,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC,
-                    deps='''PARAM_UTIL''',
+                    deps='''PARAM_UTIL smbd_conn USER_UTIL PRINTING''',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('param',
@@ -868,6 +869,12 @@ bld.SAMBA3_LIBRARY('smbconf',
                    public_headers='../lib/smbconf/smbconf.h',
                    vnum='0')
 
+bld.SAMBA3_LIBRARY('smbd_conn',
+                   source='smbd/conn.c',
+                   deps='samba3core string_init',
+                   allow_undefined_symbols=False,
+                   private_library=True)
+
 bld.SAMBA3_LIBRARY('smbd_base',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
@@ -879,7 +886,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     smbconf REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
-                    LIBCLI_SMB_COMMON RPC_SERVER
+                    LIBCLI_SMB_COMMON RPC_SERVER smbd_conn
                     ''',
                     private_library=True,
                     vars=locals())

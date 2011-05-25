@@ -890,7 +890,7 @@ BUILDOPT_OBJ = smbd/build_options.o
 SMBD_OBJ_SRV = smbd/server_reload.o \
 	       smbd/files.o smbd/connection.o \
 	       smbd/utmp.o smbd/session.o \
-               smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o \
+               smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/conn_idle.o smbd/conn_msg.o \
 	       smbd/share_access.o smbd/fileio.o \
                smbd/ipc.o smbd/lanman.o smbd/negprot.o \
                smbd/message.o smbd/nttrans.o smbd/pipes.o \

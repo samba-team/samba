@@ -102,6 +102,7 @@ bool conn_close_all(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint16 vuid);
 void conn_free(connection_struct *conn);
+void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename);
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,
@@ -1049,7 +1050,6 @@ void reply_transs2(struct smb_request *req);
 /* The following definitions come from smbd/uid.c  */
 
 bool change_to_guest(void);
-void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid);
 bool change_to_user(connection_struct *conn, uint16 vuid);
 bool change_to_user_by_session(connection_struct *conn,
 			       const struct auth_serversupplied_info *session_info);
