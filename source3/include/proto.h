@@ -1635,7 +1635,8 @@ bool lp_snum_ok(int iService);
 void lp_add_one_printer(const char *name, const char *comment,
 			const char *location, void *pdata);
 bool lp_loaded(void);
-void lp_killunused(bool (*snumused) (int));
+void lp_killunused(struct smbd_server_connection *sconn,
+		   bool (*snumused) (struct smbd_server_connection *, int));
 void lp_kill_all_services(void);
 void lp_killservice(int iServiceIn);
 const char* server_role_str(uint32 role);
@@ -1651,7 +1652,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			struct security_descriptor **ppsd,
 			bool *pallow_guest);
 int load_usershare_service(const char *servicename);
-int load_usershare_shares(void);
+int load_usershare_shares(struct smbd_server_connection *sconn);
 void gfree_loadparm(void);
 void lp_set_in_client(bool b);
 bool lp_is_in_client(void);
@@ -1842,7 +1843,7 @@ void unbecome_root(void);
 /* The following definitions come from lib/dummysmbd.c */
 
 int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out);
-bool conn_snum_used(int snum);
+bool conn_snum_used(struct smbd_server_connection *sconn, int snum);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			struct byte_range_lock *br_lck,
 			enum file_close_type close_type);

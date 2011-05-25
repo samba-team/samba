@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/srv_dfs.h"
 #include "msdfs.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "auth.h"
 
 #undef DBGC_CLASS
@@ -278,7 +279,8 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 	size_t i;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	jn = enum_msdfs_links(ctx, &num_jn);
+	jn = enum_msdfs_links(msg_ctx_to_sconn(p->msg_ctx),
+			      ctx, &num_jn);
 	if (!jn || num_jn == 0) {
 		num_jn = 0;
 		jn = NULL;

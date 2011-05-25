@@ -54,10 +54,9 @@ int conn_num_open(struct smbd_server_connection *sconn)
  Check if a snum is in use.
 ****************************************************************************/
 
-bool conn_snum_used(int snum)
+bool conn_snum_used(struct smbd_server_connection *sconn,
+		    int snum)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
-
 	if (sconn->using_smb2) {
 		/* SMB2 */
 		struct smbd_smb2_session *sess;

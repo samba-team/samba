@@ -8676,7 +8676,8 @@ bool lp_loaded(void)
  Unload unused services.
 ***************************************************************************/
 
-void lp_killunused(bool (*snumused) (int))
+void lp_killunused(struct smbd_server_connection *sconn,
+		   bool (*snumused) (struct smbd_server_connection *, int))
 {
 	int i;
 	for (i = 0; i < iNumServices; i++) {
@@ -8689,7 +8690,7 @@ void lp_killunused(bool (*snumused) (int))
 			continue;
 		}
 
-		if (!snumused || !snumused(i)) {
+		if (!snumused || !snumused(sconn, i)) {
 			free_service_byindex(i);
 		}
 	}
@@ -8700,7 +8701,7 @@ void lp_killunused(bool (*snumused) (int))
  */
 void lp_kill_all_services(void)
 {
-	lp_killunused(NULL);
+	lp_killunused(NULL, NULL);
 }
 
 /***************************************************************************
@@ -9314,7 +9315,7 @@ int load_usershare_service(const char *servicename)
  been removed.
 ***************************************************************************/
 
-int load_usershare_shares(void)
+int load_usershare_shares(struct smbd_server_connection *sconn)
 {
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
@@ -9452,7 +9453,7 @@ int load_usershare_shares(void)
 	   not currently in use. */
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) && (ServicePtrs[iService]->usershare == USERSHARE_PENDING_DELETE)) {
-			if (conn_snum_used(iService)) {
+			if (conn_snum_used(sconn, iService)) {
 				continue;
 			}
 			/* Remove from the share ACL db. */

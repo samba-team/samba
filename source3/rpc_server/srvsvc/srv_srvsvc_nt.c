@@ -33,6 +33,7 @@
 #include "session.h"
 #include "../lib/util/util_pw.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "auth.h"
 #include "messages.h"
 
@@ -568,7 +569,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
-	load_usershare_shares();
+	load_usershare_shares(msg_ctx_to_sconn(p->msg_ctx));
 	load_registry_shares();
 	num_services = lp_numservices();
 	unbecome_root();

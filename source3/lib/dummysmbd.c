@@ -28,7 +28,8 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 	return -1;
 }
 
-bool conn_snum_used(int snum)
+bool conn_snum_used(struct smbd_server_connection *sconn,
+		    int snum)
 {
 	return False;
 }

@@ -47,6 +47,7 @@
 #include "serverid.h"
 #include "../libcli/registry/util_reg.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "auth.h"
 #include "messages.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"

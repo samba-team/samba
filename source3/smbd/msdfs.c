@@ -1709,7 +1709,8 @@ out:
 	return cnt;
 }
 
-struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
+struct junction_map *enum_msdfs_links(struct smbd_server_connection *sconn,
+				      TALLOC_CTX *ctx, size_t *p_num_jn)
 {
 	struct junction_map *jn = NULL;
 	int i=0;
@@ -1724,7 +1725,7 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	load_registry_shares();
-	sharecount = load_usershare_shares();
+	sharecount = load_usershare_shares(sconn);
 	unbecome_root();
 
 	for(i=0;i < sharecount;i++) {
