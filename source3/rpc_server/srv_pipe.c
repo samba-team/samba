@@ -857,9 +857,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
-		DEBUG(2,("api_pipe_bind_req: rejecting bind request on bound "
-			 "pipe %s.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(2,("Rejecting bind request on bound rpc connection\n"));
 		return setup_bind_nak(p, pkt);
 	}
 
@@ -874,38 +872,35 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	 */
 	id = pkt->u.bind.ctx_list[0].abstract_syntax;
 	if (rpc_srv_pipe_exists_by_id(&id)) {
-		DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-			rpc_srv_get_pipe_cli_name(&id),
-			rpc_srv_get_pipe_srv_name(&id)));
+		DEBUG(3, ("api_pipe_bind_req: %s -> %s rpc service\n",
+			  rpc_srv_get_pipe_cli_name(&id),
+			  rpc_srv_get_pipe_srv_name(&id)));
 	} else {
 		status = smb_probe_module(
 			"rpc", get_pipe_name_from_syntax(
 				talloc_tos(),
-				&pkt->u.bind.ctx_list[0].abstract_syntax));
+				&id));
 
 		if (NT_STATUS_IS_ERR(status)) {
-                       DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
-                                get_pipe_name_from_syntax(
-					talloc_tos(),
-					&pkt->u.bind.ctx_list[0].abstract_syntax)));
+			DEBUG(3,("api_pipe_bind_req: Unknown rpc service name "
+                                 "%s in bind request.\n",
+				 get_pipe_name_from_syntax(talloc_tos(), &id)));
 
 			return setup_bind_nak(p, pkt);
 		}
 
 		if (rpc_srv_get_pipe_interface_by_cli_name(
 				get_pipe_name_from_syntax(talloc_tos(),
-							  &p->syntax),
+							  &id),
 				&id)) {
-			DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-				rpc_srv_get_pipe_cli_name(&id),
-				rpc_srv_get_pipe_srv_name(&id)));
+			DEBUG(3, ("api_pipe_bind_req: %s -> %s rpc service\n",
+				  rpc_srv_get_pipe_cli_name(&id),
+				  rpc_srv_get_pipe_srv_name(&id)));
 		} else {
 			DEBUG(0, ("module %s doesn't provide functions for "
 				  "pipe %s!\n",
-				  get_pipe_name_from_syntax(talloc_tos(),
-							    &p->syntax),
-				  get_pipe_name_from_syntax(talloc_tos(),
-							    &p->syntax)));
+				  get_pipe_name_from_syntax(talloc_tos(), &id),
+				  get_pipe_name_from_syntax(talloc_tos(), &id)));
 			return setup_bind_nak(p, pkt);
 		}
 	}
