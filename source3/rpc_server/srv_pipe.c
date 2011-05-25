@@ -331,19 +331,19 @@ bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS fault_status)
 static bool check_bind_req(struct pipes_struct *p,
 			   struct ndr_syntax_id* abstract,
 			   struct ndr_syntax_id* transfer,
-			   uint32 context_id)
+			   uint32_t context_id)
 {
 	struct pipe_rpc_fns *context_fns;
 
 	DEBUG(3,("check_bind_req for %s\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		 get_pipe_name_from_syntax(talloc_tos(), abstract)));
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 	if (rpc_srv_pipe_exists_by_id(abstract) &&
 	   ndr_syntax_id_equal(transfer, &ndr_transfer_syntax)) {
-		DEBUG(3, ("check_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-			rpc_srv_get_pipe_cli_name(abstract),
-			rpc_srv_get_pipe_srv_name(abstract)));
+		DEBUG(3, ("check_bind_req: %s -> %s rpc service\n",
+			  rpc_srv_get_pipe_cli_name(abstract),
+			  rpc_srv_get_pipe_srv_name(abstract)));
 	} else {
 		return false;
 	}
@@ -358,6 +358,7 @@ static bool check_bind_req(struct pipes_struct *p,
 	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(abstract);
 	context_fns->cmds = rpc_srv_get_pipe_cmds(abstract);
 	context_fns->context_id = context_id;
+	context_fns->syntax = *abstract;
 
 	/* add to the list of open contexts */
 
