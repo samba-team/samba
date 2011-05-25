@@ -93,7 +93,7 @@ def s3_fix_kwargs(bld, kwargs):
 
 def SAMBA3_LIBRARY(bld, name, *args, **kwargs):
 	s3_fix_kwargs(bld, kwargs)
-        if not 'allow_undefined_symbols' in kwargs:
+        if not 'allow_undefined_symbols' in kwargs and ('private_library' in kwargs and kwargs['private_library'] == True):
             kwargs['allow_undefined_symbols'] = True
 	return bld.SAMBA_LIBRARY(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_LIBRARY = SAMBA3_LIBRARY
