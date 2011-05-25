@@ -789,7 +789,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_LIBRARY('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL interfaces cap',
+                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL interfaces cap string_init',
                    private_library=True,
                    vars=locals())
 
@@ -983,6 +983,9 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
                      deps='tdb-wrap',
                     vars=locals())
+
+bld.SAMBA3_SUBSYSTEM('string_init',
+                     source='''lib/string_init.c''')
 
 bld.SAMBA3_SUBSYSTEM('CHARSET3',
                     source='''lib/util_str.c lib/charcnv.c lib/fstring.c''',

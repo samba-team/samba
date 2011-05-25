@@ -227,58 +227,6 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 	return ret;
 }
 
-/* this is used to prevent lots of mallocs of size 1 */
-static const char null_string[] = "";
-
-/**
- Set a string value, allocing the space for the string
-**/
-
-static bool string_init(char **dest,const char *src)
-{
-	size_t l;
-
-	if (!src)
-		src = "";
-
-	l = strlen(src);
-
-	if (l == 0) {
-		*dest = discard_const_p(char, null_string);
-	} else {
-		(*dest) = SMB_STRDUP(src);
-		if ((*dest) == NULL) {
-			DEBUG(0,("Out of memory in string_init\n"));
-			return false;
-		}
-	}
-	return(true);
-}
-
-/**
- Free a string value.
-**/
-
-void string_free(char **s)
-{
-	if (!s || !(*s))
-		return;
-	if (*s == null_string)
-		*s = NULL;
-	SAFE_FREE(*s);
-}
-
-/**
- Set a string value, deallocating any existing space, and allocing the space
- for the string
-**/
-
-bool string_set(char **dest,const char *src)
-{
-	string_free(dest);
-	return(string_init(dest,src));
-}
-
 void fstring_sub(char *s,const char *pattern,const char *insert)
 {
 	string_sub(s, pattern, insert, sizeof(fstring));
