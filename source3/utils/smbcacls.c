@@ -360,7 +360,12 @@ static bool parse_ace_flags(const char *str, unsigned int *pflags)
 			return false;
 		}
 
-		if (*p != '|' && *p != '\0') {
+		switch (*p) {
+		case '|':
+			p++;
+		case '\0':
+			continue;
+		default:
 			return false;
 		}
 	}
