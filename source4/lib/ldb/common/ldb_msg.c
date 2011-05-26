@@ -130,7 +130,6 @@ static int _ldb_msg_add_el(struct ldb_message *msg,
 	els = talloc_realloc(msg, msg->elements,
 			     struct ldb_message_element, msg->num_elements + 1);
 	if (!els) {
-		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -164,7 +163,6 @@ int ldb_msg_add_empty(struct ldb_message *msg,
 	el->flags = flags;
 	el->name = talloc_strdup(msg->elements, attr_name);
 	if (!el->name) {
-		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -229,7 +227,6 @@ int ldb_msg_add_value(struct ldb_message *msg,
 	vals = talloc_realloc(msg->elements, el->values, struct ldb_val,
 			      el->num_values+1);
 	if (!vals) {
-		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	el->values = vals;
