@@ -3226,57 +3226,14 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      int signing_state, int flags)
 {
 	NTSTATUS nt_status;
-	struct nmb_name calling;
-	struct nmb_name called;
 	struct cli_state *cli;
-	struct sockaddr_storage ss;
 
-	if (!my_name) 
-		my_name = global_myname();
-
-	if (!(cli = cli_initialise_ex(signing_state))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	make_nmb_name(&calling, my_name, 0x0);
-	make_nmb_name(&called , dest_host, 0x20);
-
-	cli_set_port(cli, port);
-	cli_set_timeout(cli, 10000); /* 10 seconds. */
-
-	if (dest_ss) {
-		ss = *dest_ss;
-	} else {
-		zero_sockaddr(&ss);
-	}
-
-again:
-
-	DEBUG(3,("Connecting to host=%s\n", dest_host));
-
-	nt_status = cli_connect(cli, dest_host, &ss);
+	nt_status = cli_connect_nb(dest_host, dest_ss, port, my_name,
+				   signing_state, &cli);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &ss);
-		DEBUG(1,("cli_start_connection: failed to connect to %s (%s). Error %s\n",
-			 nmb_namestr(&called), addr, nt_errstr(nt_status) ));
-		cli_shutdown(cli);
+		DEBUG(10, ("cli_connect_nb failed: %s\n",
+			   nt_errstr(nt_status)));
 		return nt_status;
-	}
-
-	if (!cli_session_request(cli, &calling, &called)) {
-		char *p;
-		DEBUG(1,("session request to %s failed (%s)\n",
-			 called.name, cli_errstr(cli)));
-		if ((p=strchr(called.name, '.')) && !is_ipaddress(called.name)) {
-			*p = 0;
-			goto again;
-		}
-		if (strcmp(called.name, STAR_SMBSERVER)) {
-			make_nmb_name(&called , STAR_SMBSERVER, 0x20);
-			goto again;
-		}
-		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO)
