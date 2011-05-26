@@ -3079,6 +3079,139 @@ NTSTATUS cli_connect(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cli_connect_sock(const char *host, int name_type,
+				 const struct sockaddr_storage *pss,
+				 const char *myname, uint16_t port,
+				 int sec_timeout, int *pfd, uint16_t *pport)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *prog;
+	unsigned int i, num_addrs;
+	const char **called_names;
+	const char **calling_names;
+	int *called_types;
+	NTSTATUS status;
+	int fd;
+
+	prog = getenv("LIBSMB_PROG");
+	if (prog != NULL) {
+		fd = sock_exec(prog);
+		if (fd == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		port = 0;
+		goto done;
+	}
+
+	if ((pss == NULL) || is_zero_addr(pss)) {
+		struct sockaddr_storage *addrs;
+		status = resolve_name_list(talloc_tos(), host, name_type,
+					   &addrs, &num_addrs);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		pss = addrs;
+	} else {
+		num_addrs = 1;
+	}
+
+	called_names = talloc_array(talloc_tos(), const char *, num_addrs);
+	if (called_names == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	called_types = talloc_array(talloc_tos(), int, num_addrs);
+	if (called_types == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	calling_names = talloc_array(talloc_tos(), const char *, num_addrs);
+	if (calling_names == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	for (i=0; i<num_addrs; i++) {
+		called_names[i] = host;
+		called_types[i] = name_type;
+		calling_names[i] = myname;
+	}
+	status = smbsock_any_connect(pss, called_names, called_types,
+				     calling_names, NULL, num_addrs, port,
+				     sec_timeout, &fd, NULL, &port);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+done:
+	*pfd = fd;
+	*pport = port;
+	status = NT_STATUS_OK;
+fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
+			uint16_t port, const char *myname,
+			int signing_state, struct cli_state **pcli)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_state *cli;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	int name_type = 0x20;
+	int fd = -1;
+	char *desthost;
+	char *p;
+	socklen_t length;
+	int ret;
+
+	desthost = talloc_strdup(talloc_tos(), host);
+	if (desthost == NULL) {
+		goto fail;
+	}
+
+	p = strchr(host, '#');
+	if (p != NULL) {
+		name_type = strtol(p+1, NULL, 16);
+		host = talloc_strndup(talloc_tos(), host, p - host);
+		if (host == NULL) {
+			goto fail;
+		}
+	}
+
+	cli = cli_initialise_ex(signing_state);
+	if (cli == NULL) {
+		goto fail;
+	}
+	cli->desthost = talloc_move(cli, &desthost);
+
+	status = cli_connect_sock(host, name_type, pss, myname, port, 20, &fd,
+				  &port);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_shutdown(cli);
+		goto fail;
+	}
+	cli->fd = fd;
+	cli->port = port;
+
+	length = sizeof(cli->dest_ss);
+	ret = getpeername(fd, (struct sockaddr *)&cli->dest_ss, &length);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		cli_shutdown(cli);
+		goto fail;
+	}
+
+	if (pss != NULL) {
+		*pss = cli->dest_ss;
+	}
+
+	*pcli = cli;
+	status = NT_STATUS_OK;
+fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /**
    establishes a connection to after the negprot. 
    @param output_cli A fully initialised cli structure, non-null only on success
