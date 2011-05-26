@@ -1101,12 +1101,27 @@ static NTSTATUS check_spnego_blob_complete(struct smbd_server_connection *sconn,
 	}
 
 	asn1_load(data, *pblob);
-	asn1_start_tag(data, pblob->data[0]);
-	if (data->has_error || data->nesting == NULL) {
+	if (asn1_start_tag(data, pblob->data[0])) {
+		/* asn1_start_tag checks if the given
+		   length of the blob is enough to complete
+		   the tag. If it returns true we know
+		   there is nothing to do - the blob is
+		   complete. */
 		asn1_free(data);
-		/* Let caller catch. */
 		return NT_STATUS_OK;
 	}
+
+	if (data->nesting == NULL) {
+		/* Incorrect tag, allocation failed,
+		   or reading the tag length failed.
+		   Let the caller catch. */
+		asn1_free(data);
+		return NT_STATUS_OK;
+	}
+
+	/* Here we know asn1_start_tag() has set data->has_error to true.
+	   asn1_tag_remaining() will have failed due to the given blob
+	   being too short. We need to work out how short. */
 
 	/* Integer wrap paranoia.... */
 
@@ -1136,6 +1151,13 @@ static NTSTATUS check_spnego_blob_complete(struct smbd_server_connection *sconn,
 
 	if (needed_len <= pblob->length) {
 		/* Nothing to do - blob is complete. */
+		/* THIS SHOULD NOT HAPPEN - asn1_start_tag()
+		   above should have caught this !!! */
+		DEBUG(0,("check_spnego_blob_complete: logic "
+			"error (needed_len = %u, "
+			"pblob->length = %u).\n",
+			(unsigned int)needed_len,
+			(unsigned int)pblob->length ));
 		return NT_STATUS_OK;
 	}
 
