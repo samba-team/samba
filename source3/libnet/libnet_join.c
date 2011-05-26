@@ -103,6 +103,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 {
 	ADS_STATUS status;
 	ADS_STRUCT *my_ads = NULL;
+	char *cp;
 
 	my_ads = ads_init(dns_domain_name,
 			  netbios_domain_name,
@@ -114,6 +115,12 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	if (user_name) {
 		SAFE_FREE(my_ads->auth.user_name);
 		my_ads->auth.user_name = SMB_STRDUP(user_name);
+		if ((cp = strchr_m(my_ads->auth.user_name, '@'))!=0) {
+			*cp++ = '\0';
+			SAFE_FREE(my_ads->auth.realm);
+			my_ads->auth.realm = smb_xstrdup(cp);
+			strupper_m(my_ads->auth.realm);
+		}
 	}
 
 	if (password) {
