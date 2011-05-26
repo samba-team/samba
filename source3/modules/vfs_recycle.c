@@ -35,32 +35,8 @@ static int vfs_recycle_debug_level = DBGC_VFS;
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_recycle_debug_level
  
-static int recycle_connect(vfs_handle_struct *handle, const char *service, const char *user);
-static void recycle_disconnect(vfs_handle_struct *handle);
 static int recycle_unlink(vfs_handle_struct *handle,
 			  const struct smb_filename *smb_fname);
-
-static int recycle_connect(vfs_handle_struct *handle, const char *service, const char *user)
-{
-	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
-
-	if (ret < 0) {
-		return ret;
-	}
-
-	DEBUG(10,("recycle_connect() connect to service[%s] as user[%s].\n",
-		service,user));
-
-	return 0;
-}
-
-static void recycle_disconnect(vfs_handle_struct *handle)
-{
-	DEBUG(10,("recycle_disconnect() connect to service[%s].\n",
-		lp_servicename(SNUM(handle->conn))));
-
-	SMB_VFS_NEXT_DISCONNECT(handle);
-}
 
 static const char *recycle_repository(vfs_handle_struct *handle)
 {
@@ -663,8 +639,6 @@ done:
 }
 
 static struct vfs_fn_pointers vfs_recycle_fns = {
-	.connect_fn = recycle_connect,
-	.disconnect = recycle_disconnect,
 	.unlink = recycle_unlink
 };
 
