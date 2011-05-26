@@ -2203,13 +2203,14 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 	smbcli_unlink(cli->tree, fname1);
 
 done:
-	torture_comment(tctx, "put back original sd\n");
-	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
-	set.set_secdesc.in.file.fnum = fnum;
-	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
-	set.set_secdesc.in.sd = sd_orig;
-	status = smb_raw_setfileinfo(cli->tree, &set);
-
+	if (sd_orig != NULL) {
+		torture_comment(tctx, "put back original sd\n");
+		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+		set.set_secdesc.in.file.fnum = fnum;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+		set.set_secdesc.in.sd = sd_orig;
+		status = smb_raw_setfileinfo(cli->tree, &set);
+	}
 	smbcli_close(cli->tree, fnum);
 	smbcli_rmdir(cli->tree, dname);
 	smb_raw_exit(cli->session);
