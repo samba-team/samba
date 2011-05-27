@@ -19,8 +19,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SMBD_RPC_CALLBACKS_H
-#define _SMBD_RPC_CALLBACKS_H
+#ifndef _RPC_EP_SETUP_H
+#define _RPC_EP_SETUP_H
 
 struct ndr_interface_table;
 
@@ -51,6 +51,6 @@ NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
 bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx);
 
-#endif /* _SMBD_RPC_CALLBACKS_H */
+#endif /* _RPC_EP_SETUP_H */
 
 /* vim: set ts=8 sw=8 noet cindent ft=c.doxygen: */
