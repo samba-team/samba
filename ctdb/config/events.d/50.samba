@@ -39,7 +39,9 @@ service_start ()
 	if [ "$_service_name" = "samba" ] || \
 	    is_ctdb_managed_service "samba" ; then
 		service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
-		service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
+		if [ -n "$CTDB_SERVICE_NMB" ] ; then
+		    service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
+		fi
 		killall -0 -q smbd && {
 		    sleep 1
 		    # make absolutely sure samba is dead
@@ -81,10 +83,12 @@ service_start ()
 	    is_ctdb_managed_service "samba" ; then
 		net serverid wipe
 
-		nice_service "$CTDB_SERVICE_NMB" start || {
+		if [ -n "$CTDB_SERVICE_NMB" ] ; then
+		    nice_service "$CTDB_SERVICE_NMB" start || {
 			echo failed to start nmbd
 			exit 1
-		}
+		    }
+		fi
 		nice_service "$CTDB_SERVICE_SMB" start || {
 			echo failed to start samba
 			exit 1
@@ -101,7 +105,9 @@ service_stop ()
 	if [ "$_service_name" = "samba" ] || \
 	    is_ctdb_managed_service "samba" ; then
 		service "$CTDB_SERVICE_SMB" stop
-		service "$CTDB_SERVICE_NMB" stop
+		if [ -n "$CTDB_SERVICE_NMB" ] ; then
+		    service "$CTDB_SERVICE_NMB" stop
+		fi
 	fi
 
 	# stop the winbind service
