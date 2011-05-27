@@ -25,7 +25,7 @@
 	<cmdsynopsis>
 		<command>smbta-util</command>
 		<arg rep="repeat" choice="opt">
-		<replaceable>COMMANDS</replaceable>
+		<replaceable>OPTIONS</replaceable>
 		</arg>
 	</cmdsynopsis>
 
@@ -36,7 +36,7 @@
 
 	<para>This tool is part of the
 	<citerefentry><refentrytitle>samba</refentrytitle>
-	<manvolnum>1</manvolnum></citerefentry> suite.</para>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>smbta-util</command> is a tool to ease the
 	configuration of the vfs_smb_traffic_analyzer module regarding
@@ -52,7 +52,7 @@
 
 
 <refsect1>
-	<title>COMMANDS</title>
+	<title>OPTIONS</title>
 
 	<variablelist>
 
@@ -103,7 +103,7 @@
 
 <refsect1>
 	<title>VERSION</title>
-	<para>This man page is correct for version 3.4 of the Samba suite.</para>
+	<para>This man page is correct for version 3.6 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
