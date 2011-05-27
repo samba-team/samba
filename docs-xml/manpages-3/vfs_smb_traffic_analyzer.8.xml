@@ -153,7 +153,7 @@
 		</listitem>
 		<listitem>
 		<para>
-		The module now potientially has the ability to create data on every VFS function. As of
+		The module now potentially has the ability to create data on every VFS function. As of
 		protocol V2.0, there is support for 8 VFS functions, namely write,read,pread,pwrite,
 		rename,chdir,mkdir and rmdir. Supporting more VFS functions is one of the targets for the
 		upcoming sub-releases.
