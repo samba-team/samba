@@ -33,10 +33,8 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 				const char *old_passwd, const char *new_passwd,
 				char **err_str)
 {
-	struct nmb_name calling, called;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	struct sockaddr_storage ss;
 	char *user, *domain, *p;
 
 	NTSTATUS result;
@@ -57,41 +55,14 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	*err_str = NULL;
 
-	if(!resolve_name( remote_machine, &ss, 0x20, false)) {
-		if (asprintf(err_str, "Unable to find an IP address for machine "
-			 "%s.\n", remote_machine) == -1) {
-			*err_str = NULL;
-		}
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	cli = cli_initialise();
-	if (!cli) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result = cli_connect(cli, remote_machine, &ss);
+	result = cli_connect_nb(remote_machine, NULL, 0, 0x20, NULL,
+				Undefined, &cli);
 	if (!NT_STATUS_IS_OK(result)) {
 		if (asprintf(err_str, "Unable to connect to SMB server on "
 			 "machine %s. Error was : %s.\n",
 			 remote_machine, nt_errstr(result))==-1) {
 			*err_str = NULL;
 		}
-		cli_shutdown(cli);
-		return result;
-	}
-
-	make_nmb_name(&calling, global_myname() , 0x0);
-	make_nmb_name(&called , remote_machine, 0x20);
-
-	if (!cli_session_request(cli, &calling, &called)) {
-		result = cli_nt_error(cli);
-		if (asprintf(err_str, "machine %s rejected the session setup. "
-			 "Error was : %s.\n",
-			 remote_machine, nt_errstr(result)) == -1) {
-			*err_str = NULL;
-		}
-		cli_shutdown(cli);
 		return result;
 	}
 
