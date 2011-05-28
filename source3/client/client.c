@@ -5037,43 +5037,13 @@ static int do_tar_op(const char *base_directory)
 
 static int do_message_op(struct user_auth_info *a_info)
 {
-	struct sockaddr_storage ss;
-	struct nmb_name called, calling;
-	fstring server_name;
-	char name_type_hex[10];
-	int msg_port;
 	NTSTATUS status;
 
-	make_nmb_name(&calling, calling_name, 0x0);
-	make_nmb_name(&called , desthost, name_type);
-
-	strlcpy(server_name, desthost,sizeof(server_name));
-	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
-	strlcat(server_name, name_type_hex,sizeof(server_name));
-
-        zero_sockaddr(&ss);
-	if (have_ip)
-		ss = dest_ss;
-
-	/* we can only do messages over port 139 (to windows clients at least) */
-
-	msg_port = port ? port : 139;
-
-	if (!(cli=cli_initialise())) {
-		d_printf("Connection to %s failed\n", desthost);
-		return 1;
-	}
-	cli_set_port(cli, msg_port);
-
-	status = cli_connect(cli, server_name, &ss);
+	status = cli_connect_nb(desthost, have_ip ? &dest_ss : NULL,
+				port ? port : 139, name_type,
+				calling_name, Undefined, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
-		return 1;
-	}
-
-	if (!cli_session_request(cli, &calling, &called)) {
-		d_printf("session request failed\n");
-		cli_shutdown(cli);
 		return 1;
 	}
 
