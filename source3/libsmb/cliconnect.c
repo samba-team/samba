@@ -3194,7 +3194,8 @@ NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
 	cli->port = port;
 
 	length = sizeof(cli->dest_ss);
-	ret = getpeername(fd, (struct sockaddr *)&cli->dest_ss, &length);
+	ret = getpeername(fd, (struct sockaddr *)(void *)&cli->dest_ss,
+			  &length);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		cli_shutdown(cli);
