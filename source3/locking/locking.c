@@ -1496,6 +1496,7 @@ static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct
 		cpy->groups = (gid_t *)talloc_memdup(
 			cpy, tok->groups, tok->ngroups * sizeof(gid_t));
 		if (!cpy->groups) {
+			TALLOC_FREE(cpy);
 			return NULL;
 		}
 	}
