@@ -70,15 +70,11 @@ bool smbd_running(void)
 	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 	in_addr_to_sockaddr_storage(&ss, loopback_ip);
 
-	if ((cli = cli_initialise()) == NULL)
-		return False;
-
-	status = cli_connect(cli, global_myname(), &ss);
+	status = cli_connect_nb("localhost", &ss, 0, 0x20, global_myname(),
+				Undefined, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_shutdown(cli);
-		return False;
+		return false;
 	}
-
 	cli_shutdown(cli);
 	return True;
 }
