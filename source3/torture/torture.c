@@ -178,24 +178,11 @@ static bool force_cli_encryption(struct cli_state *c,
 
 static struct cli_state *open_nbt_connection(void)
 {
-	struct nmb_name called, calling;
-	struct sockaddr_storage ss;
 	struct cli_state *c;
 	NTSTATUS status;
 
-	make_nmb_name(&calling, myname, 0x0);
-	make_nmb_name(&called , host, 0x20);
-
-        zero_sockaddr(&ss);
-
-	if (!(c = cli_initialise_ex(signing_state))) {
-		printf("Failed initialize cli_struct to connect with %s\n", host);
-		return NULL;
-	}
-
-	c->port = port_to_use;
-
-	status = cli_connect(c, host, &ss);
+	status = cli_connect_nb(host, NULL, port_to_use, 0x20, myname,
+				signing_state, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 		return NULL;
@@ -206,27 +193,6 @@ static struct cli_state *open_nbt_connection(void)
 	c->timeout = 120000; /* set a really long timeout (2 minutes) */
 	if (use_oplocks) c->use_oplocks = True;
 	if (use_level_II_oplocks) c->use_level_II_oplocks = True;
-
-	if (!cli_session_request(c, &calling, &called)) {
-		/*
-		 * Well, that failed, try *SMBSERVER ...
-		 * However, we must reconnect as well ...
-		 */
-		status = cli_connect(c, host, &ss);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
-			return NULL;
-		}
-
-		make_nmb_name(&called, "*SMBSERVER", 0x20);
-		if (!cli_session_request(c, &calling, &called)) {
-			printf("%s rejected the session\n",host);
-			printf("We tried with a called name of %s & %s\n",
-				host, "*SMBSERVER");
-			cli_shutdown(c);
-			return NULL;
-		}
-	}
 
 	return c;
 }
