@@ -164,10 +164,8 @@ return a connection to a server
 static struct cli_state *connect_one(char *share, int snum)
 {
 	struct cli_state *c;
-	struct nmb_name called, calling;
 	char *server_n;
 	fstring server;
-	struct sockaddr_storage ss;
 	fstring myname;
 	static int count;
 	NTSTATUS status;
@@ -180,41 +178,18 @@ static struct cli_state *connect_one(char *share, int snum)
 
 	server_n = server;
 
-	zero_sockaddr(&ss);
-
 	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
 
-	make_nmb_name(&calling, myname, 0x0);
-	make_nmb_name(&called , server, 0x20);
-
- again:
-        zero_sockaddr(&ss);
-
 	/* have to open a new connection */
-	if (!(c=cli_initialise())) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
-		return NULL;
-	}
 
-	status = cli_connect(c, server_n, &ss);
+	status = cli_connect_nb(server_n, NULL, 0, myname, Undefined, &c);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Connection to %s failed. Error %s\n", server_n, nt_errstr(status) ));
+		DEBUG(0, ("Connection to %s failed. Error %s\n", server_n,
+			  nt_errstr(status)));
 		return NULL;
 	}
 
 	c->use_kerberos = use_kerberos;
-
-	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
-		cli_shutdown(c);
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
 
 	status = cli_negprot(c);
 	if (!NT_STATUS_IS_OK(status)) {
