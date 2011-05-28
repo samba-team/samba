@@ -1493,11 +1493,11 @@ static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct
 	cpy->ngroups = tok->ngroups;
 	if (tok->ngroups) {
 		/* Make this a talloc child of cpy. */
-		cpy->groups = TALLOC_ARRAY(cpy, gid_t, tok->ngroups);
+		cpy->groups = (gid_t *)talloc_memdup(
+			cpy, tok->groups, tok->ngroups * sizeof(gid_t));
 		if (!cpy->groups) {
 			return NULL;
 		}
-		memcpy(cpy->groups, tok->groups, tok->ngroups * sizeof(gid_t));
 	}
 	return cpy;
 }
