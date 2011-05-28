@@ -4,20 +4,19 @@
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
    Copyright (C) Jeremy Allison 1994-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
 */
 
 /* this file handles asynchronous browse synchronisation requests. The
@@ -127,7 +126,7 @@ static void sync_child(char *name, int nm_type,
 	cli_NetServerEnum(cli, unix_workgroup,
 			  local_type|SV_TYPE_DOMAIN_ENUM, 
 			  callback, NULL);
-	
+
 	/* Now fetch a server list. */
 	if (servers) {
 		fstrcpy(unix_workgroup, workgroup);
@@ -135,7 +134,7 @@ static void sync_child(char *name, int nm_type,
 				  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
 				  callback, NULL);
 	}
-	
+
 	cli_shutdown(cli);
 }
 
