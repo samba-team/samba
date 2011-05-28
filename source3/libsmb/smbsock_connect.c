@@ -575,7 +575,7 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq)
 	}
 
 	state->num_received += 1;
-	if (state->num_received <= state->num_addrs) {
+	if (state->num_received < state->num_addrs) {
 		/*
 		 * More addrs pending, wait for the others
 		 */
