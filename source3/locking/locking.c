@@ -4,17 +4,17 @@
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1992-2006
    Copyright (C) Volker Lendecke 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -310,15 +310,15 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 {
 	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
-	
+
 	if (!fsp->can_lock) {
 		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
-	
+
 	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_OK;
 	}
-	
+
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum,
 		  fsp_str_dbg(fsp)));
@@ -335,7 +335,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			offset,
 			count,
 			lock_flav);
-   
+
 	TALLOC_FREE(br_lck);
 
 	if (!ok) {
@@ -365,7 +365,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return fsp->is_directory ?
 			NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
-	
+
 	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
@@ -672,7 +672,7 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 	}
 
 	lck->share_modes = NULL;
-	
+
 	if (lck->num_share_modes != 0) {
 
 		if (dbuf.dsize < (sizeof(struct locking_data) +
@@ -680,7 +680,7 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 				   sizeof(struct share_mode_entry)))) {
 			smb_panic("parse_share_modes: buffer too short");
 		}
-				  
+
 		lck->share_modes = (struct share_mode_entry *)
 			TALLOC_MEMDUP(lck,
 				      dbuf.dptr+sizeof(struct locking_data),
@@ -1582,7 +1582,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct security_unix_token *tok)
 {
 	struct share_mode_lock *lck;
-	
+
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
 		  "fnum = %d, file %s\n",
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,

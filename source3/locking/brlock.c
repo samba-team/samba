@@ -5,17 +5,17 @@
 
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1992-2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -52,7 +52,7 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
 			(unsigned long long)pls->context.smblctx,
 			(unsigned int)pls->context.tid,
 			procid_str(talloc_tos(), &pls->context.pid) ));
-	
+
 	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
 		(double)pls->start,
 		(double)pls->size,
@@ -180,7 +180,7 @@ static bool brl_conflict1(const struct lock_struct *lck1,
 	    lck2->start >= (lck1->start + lck1->size)) {
 		return False;
 	}
-	    
+
 	return True;
 } 
 #endif
@@ -1881,7 +1881,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 
 		memcpy(br_lck->lock_data, data.dptr, data.dsize);
 	}
-	
+
 	if (!fsp->lockdb_clean) {
 		int orig_num_locks = br_lck->num_locks;
 
