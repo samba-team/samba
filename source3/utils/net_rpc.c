@@ -7091,16 +7091,11 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	if (!net_find_server(c, NULL, flags, &server_ss, &server_name))
 		return false;
 
-	if ((cli = cli_initialise()) == NULL) {
+	status = cli_connect_nb(server_name, &server_ss, 0, 0x20,
+				global_myname(), Undefined, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
-
-	status = cli_connect(cli, server_name, &server_ss);
-	if (!NT_STATUS_IS_OK(status))
-		goto done;
-	if (!attempt_netbios_session_request(&cli, global_myname(),
-					     server_name, &server_ss))
-		goto done;
 	status = cli_negprot(cli);
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
