@@ -3151,13 +3151,12 @@ fail:
 }
 
 NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
-			uint16_t port, const char *myname,
+			uint16_t port, int name_type, const char *myname,
 			int signing_state, struct cli_state **pcli)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct cli_state *cli;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	int name_type = 0x20;
 	int fd = -1;
 	char *desthost;
 	char *p;
@@ -3229,7 +3228,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	NTSTATUS nt_status;
 	struct cli_state *cli;
 
-	nt_status = cli_connect_nb(dest_host, dest_ss, port, my_name,
+	nt_status = cli_connect_nb(dest_host, dest_ss, port, 0x20, my_name,
 				   signing_state, &cli);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("cli_connect_nb failed: %s\n",

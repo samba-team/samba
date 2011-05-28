@@ -74,7 +74,7 @@ NTSTATUS cli_connect(struct cli_state *cli,
 		const char *host,
 		struct sockaddr_storage *dest_ss);
 NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
-			uint16_t port, const char *myname,
+			uint16_t port, int name_type, const char *myname,
 			int signing_state, struct cli_state **pcli);
 NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *my_name,

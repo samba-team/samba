@@ -182,7 +182,8 @@ static struct cli_state *connect_one(char *share, int snum)
 
 	/* have to open a new connection */
 
-	status = cli_connect_nb(server_n, NULL, 0, myname, Undefined, &c);
+	status = cli_connect_nb(server_n, NULL, 0, 0x20, myname, Undefined,
+				&c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Connection to %s failed. Error %s\n", server_n,
 			  nt_errstr(status)));
