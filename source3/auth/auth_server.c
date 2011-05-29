@@ -427,7 +427,7 @@ use this machine as the password server.\n"));
 	}
 
 	/* if logged in as guest then reject */
-	if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
+	if (cli->is_guestlogin) {
 		DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
 		nt_status = NT_STATUS_LOGON_FAILURE;
 	}
