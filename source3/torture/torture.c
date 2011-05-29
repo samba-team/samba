@@ -273,42 +273,6 @@ fail:
         return ret;
 }
 
-static struct cli_state *open_bad_nbt_connection(void)
-{
-	struct nmb_name called, calling;
-	struct sockaddr_storage ss;
-	struct cli_state *c;
-	NTSTATUS status;
-
-	make_nmb_name(&calling, myname, 0x0);
-	make_nmb_name(&called , host, 0x20);
-
-        zero_sockaddr(&ss);
-
-	if (!(c = cli_initialise_ex(signing_state))) {
-		printf("Failed initialize cli_struct to connect with %s\n", host);
-		return NULL;
-	}
-
-	c->port = 139;
-
-	status = cli_connect(c, host, &ss);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
-		return NULL;
-	}
-
-	c->timeout = 4000; /* set a short timeout (4 seconds) */
-
-	if (!cli_bad_session_request(c->fd, &calling, &called)) {
-		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
-		return NULL;
-	}
-
-	return c;
-}
-
-
 /* Insert a NULL at the first separator of the given path and return a pointer
  * to the remainder of the string.
  */
@@ -2906,15 +2870,37 @@ static bool run_negprot_nowait(int dummy)
 /* send smb negprot commands, not reading the response */
 static bool run_bad_nbt_session(int dummy)
 {
-	static struct cli_state *cli;
+	struct nmb_name called, calling;
+	struct sockaddr_storage ss;
+	NTSTATUS status;
+	int fd;
+	bool ret;
 
 	printf("starting bad nbt session test\n");
 
-	if (!(cli = open_bad_nbt_connection())) {
-		return False;
+	make_nmb_name(&calling, myname, 0x0);
+	make_nmb_name(&called , host, 0x20);
+
+	if (!resolve_name(host, &ss, 0x20, true)) {
+		d_fprintf(stderr, "Could not resolve name %s\n", host);
+		return false;
 	}
 
-	cli_shutdown(cli);
+	status = open_socket_out(&ss, 139, 10000, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "open_socket_out failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	ret = cli_bad_session_request(fd, &calling, &called);
+	close(fd);
+	if (!ret) {
+		d_fprintf(stderr, "open_socket_out failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
 	printf("finished bad nbt session test\n");
 	return true;
 }
