@@ -109,6 +109,7 @@ struct cli_state {
 	int initialised;
 	int win95;
 	bool is_samba;
+	bool is_guestlogin;
 	uint32 capabilities;
 	/* What the server offered. */
 	uint32_t server_posix_capabilities;
