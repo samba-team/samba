@@ -72,7 +72,6 @@ static void sync_child(char *name, int nm_type,
 	fstring unix_workgroup;
 	struct cli_state *cli;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
-	struct nmb_name called, calling;
 	struct sockaddr_storage ss;
 	NTSTATUS status;
 
@@ -80,25 +79,12 @@ static void sync_child(char *name, int nm_type,
 	 * Patch from Andy Levine andyl@epicrealm.com.
 	 */
 
-	cli = cli_initialise();
-	if (!cli) {
-		return;
-	}
-
-	cli_set_port(cli, 139);
-
 	in_addr_to_sockaddr_storage(&ss, ip);
-	status = cli_connect(cli, name, &ss);
+
+	status = cli_connect_nb(name, &ss, 139, nm_type,
+				get_local_machine_name(), Undefined,
+				&cli);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_shutdown(cli);
-		return;
-	}
-
-	make_nmb_name(&calling, get_local_machine_name(), 0x0);
-	make_nmb_name(&called , name, nm_type);
-
-	if (!cli_session_request(cli, &calling, &called)) {
-		cli_shutdown(cli);
 		return;
 	}
 
