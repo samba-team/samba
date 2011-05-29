@@ -44,12 +44,6 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	struct named_mutex *mutex = NULL;
 	NTSTATUS status;
 
-	if (!(cli = cli_initialise()))
-		return NULL;
-
-	/* security = server just can't function with spnego */
-	cli->use_spnego = False;
-
         pserver = talloc_strdup(mem_ctx, lp_passwordserver());
 	p = pserver;
 
@@ -87,11 +81,11 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 		mutex = grab_named_mutex(talloc_tos(), desthost, 10);
 		if (mutex == NULL) {
-			cli_shutdown(cli);
 			return NULL;
 		}
 
-		status = cli_connect(cli, desthost, &dest_ss);
+		status = cli_connect_nb(desthost, &dest_ss, 0, 0x20,
+					global_myname(), Undefined, &cli);
 		if (NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
@@ -104,17 +98,11 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	if (!connected_ok) {
 		DEBUG(0,("password server not available\n"));
-		cli_shutdown(cli);
 		return NULL;
 	}
 
-	if (!attempt_netbios_session_request(&cli, global_myname(),
-					     desthost, &dest_ss)) {
-		TALLOC_FREE(mutex);
-		DEBUG(1,("password server fails session request\n"));
-		cli_shutdown(cli);
-		return NULL;
-	}
+	/* security = server just can't function with spnego */
+	cli->use_spnego = False;
 
 	DEBUG(3,("got session\n"));
 
