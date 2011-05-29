@@ -1280,7 +1280,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	uint8_t *inbuf;
 	ssize_t ret;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, &inbuf, 4, &wct, &vwv,
 			      &num_bytes, &bytes);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)
