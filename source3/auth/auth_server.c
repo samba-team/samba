@@ -64,6 +64,12 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		}
 		strupper_m(desthost);
 
+		if (strequal(desthost, myhostname())) {
+			DEBUG(1,("Password server loop - disabling "
+				 "password server %s\n", desthost));
+			continue;
+		}
+
 		if(!resolve_name( desthost, &dest_ss, 0x20, false)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
 			continue;
@@ -108,10 +114,6 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		DEBUG(1,("password server fails session request\n"));
 		cli_shutdown(cli);
 		return NULL;
-	}
-
-	if (strequal(desthost,myhostname())) {
-		exit_server_cleanly("Password server loop!");
 	}
 
 	DEBUG(3,("got session\n"));
