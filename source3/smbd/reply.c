@@ -491,6 +491,13 @@ static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 	return ret;
 }
 
+static void reply_called_name_not_present(char *outbuf)
+{
+	smb_setlen(outbuf, 1);
+	SCVAL(outbuf, 0, 0x83);
+	SCVAL(outbuf, 4, 0x82);
+}
+
 /****************************************************************************
  Reply to a (netbios-level) special message. 
 ****************************************************************************/
@@ -531,11 +538,13 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		name_len1 = name_len((unsigned char *)(inbuf+4),inbuf_size - 4);
 		if (name_len1 <= 0 || name_len1 > inbuf_size - 4) {
 			DEBUG(0,("Invalid name length in session request\n"));
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 		name_len2 = name_len((unsigned char *)(inbuf+4+name_len1),inbuf_size - 4 - name_len1);
 		if (name_len2 <= 0 || name_len2 > inbuf_size - 4 - name_len1) {
 			DEBUG(0,("Invalid name length in session request\n"));
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 
@@ -546,6 +555,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 
 		if (name_type1 == -1 || name_type2 == -1) {
 			DEBUG(0,("Invalid name type in session request\n"));
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 
@@ -575,7 +585,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		if (name_type2 == 'R') {
 			/* We are being asked for a pathworks session --- 
 			   no thanks! */
-			SCVAL(outbuf, 0,0x83);
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 
@@ -614,6 +624,10 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		    msg_type, msg_flags));
 
 	srv_send_smb(sconn, outbuf, false, 0, false, NULL);
+
+	if (CVAL(outbuf, 0) != 0x82) {
+		exit_server_cleanly("invalid netbios session");
+	}
 	return;
 }
 
