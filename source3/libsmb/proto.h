@@ -89,8 +89,6 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *user, const char *domain,
 			     const char *password, int flags,
 			     int signing_state);
-bool attempt_netbios_session_request(struct cli_state **ppcli, const char *srchost, const char *desthost,
-                                     struct sockaddr_storage *pdest_ss);
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
 		      uint16 *max_xmit, uint16 *tid);
