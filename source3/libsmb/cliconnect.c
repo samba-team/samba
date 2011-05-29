@@ -3154,6 +3154,7 @@ static NTSTATUS cli_connect_sock(const char *host, int name_type,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
+	set_socket_options(fd, lp_socket_options());
 done:
 	*pfd = fd;
 	*pport = port;
