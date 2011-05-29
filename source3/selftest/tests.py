@@ -60,6 +60,7 @@ tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7",
         "GETADDRINFO", "POSIX", "UID-REGRESSION-TEST", "SHORTNAME-TEST",
         "LOCAL-BASE64", "LOCAL-GENCACHE", "POSIX-APPEND",
         "CASE-INSENSITIVE-CREATE",
+        "BAD-NBT-SESSION",
         "LOCAL-string_to_sid", "LOCAL-CONVERT-STRING" ]
 
 for t in tests:
