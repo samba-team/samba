@@ -201,7 +201,7 @@ static struct cli_state *open_nbt_connection(void)
  Send a corrupt session request. See rfc1002.txt 4.3 and 4.3.2.
 ****************************************************************************/
 
-static bool cli_bad_session_request(struct cli_state *cli,
+static bool cli_bad_session_request(int fd,
                          struct nmb_name *calling, struct nmb_name *called)
 {
 	TALLOC_CTX *frame;
@@ -211,13 +211,6 @@ static bool cli_bad_session_request(struct cli_state *cli,
 	uint8_t *inbuf;
 	int err;
 	bool ret = false;
-
-        memcpy(&(cli->calling), calling, sizeof(*calling));
-        memcpy(&(cli->called ), called , sizeof(*called ));
-
-	/* 445 doesn't have session request */
-	if (cli->port == 445)
-		return True;
 
 	frame = talloc_stackframe();
 
@@ -259,11 +252,11 @@ static bool cli_bad_session_request(struct cli_state *cli,
 	_smb_setlen(len_buf, iov[1].iov_len + iov[2].iov_len);
 	SCVAL(len_buf,0,0x81);
 
-	len = write_data_iov(cli->fd, iov, 3);
+	len = write_data_iov(fd, iov, 3);
 	if (len == -1) {
 		goto fail;
 	}
-	len = read_smb(cli->fd, talloc_tos(), &inbuf, &err);
+	len = read_smb(fd, talloc_tos(), &inbuf, &err);
 	if (len == -1) {
 		errno = err;
 		goto fail;
@@ -271,7 +264,6 @@ static bool cli_bad_session_request(struct cli_state *cli,
 
         if (CVAL(inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */
-                cli->rap_error = CVAL(inbuf,4);
 		goto fail;
         }
 
@@ -308,7 +300,7 @@ static struct cli_state *open_bad_nbt_connection(void)
 
 	c->timeout = 4000; /* set a short timeout (4 seconds) */
 
-	if (!cli_bad_session_request(c, &calling, &called)) {
+	if (!cli_bad_session_request(c->fd, &calling, &called)) {
 		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 		return NULL;
 	}
