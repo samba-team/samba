@@ -68,8 +68,6 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 				    struct event_context *ev,
 				    struct cli_state *cli);
 NTSTATUS cli_negprot_recv(struct tevent_req *req);
-bool cli_session_request(struct cli_state *cli,
-			 struct nmb_name *calling, struct nmb_name *called);
 NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
 			uint16_t port, int name_type, const char *myname,
 			int signing_state, struct cli_state **pcli);
