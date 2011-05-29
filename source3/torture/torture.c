@@ -211,6 +211,8 @@ static bool cli_bad_session_request(int fd,
 	uint8_t *inbuf;
 	int err;
 	bool ret = false;
+	uint8_t message_type;
+	uint8_t error;
 
 	frame = talloc_stackframe();
 
@@ -262,8 +264,23 @@ static bool cli_bad_session_request(int fd,
 		goto fail;
 	}
 
-        if (CVAL(inbuf,0) != 0x82) {
-                /* This is the wrong place to put the error... JRA. */
+	message_type = CVAL(inbuf, 0);
+	if (message_type != 0x83) {
+		d_fprintf(stderr, "Expected msg type 0x83, got 0x%2.2x\n",
+			  message_type);
+		goto fail;
+        }
+
+	if (smb_len(inbuf) != 1) {
+		d_fprintf(stderr, "Expected smb_len 1, got %d\n",
+			  (int)smb_len(inbuf));
+		goto fail;
+        }
+
+	error = CVAL(inbuf, 4);
+	if (error !=  0x82) {
+		d_fprintf(stderr, "Expected error 0x82, got %d\n",
+			  (int)error);
 		goto fail;
         }
 
