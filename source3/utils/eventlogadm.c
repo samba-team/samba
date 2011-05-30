@@ -365,14 +365,11 @@ static int DoDumpCommand(int argc, char **argv, bool debugflag, char *exename)
 {
 	ELOG_TDB *etdb;
 	TALLOC_CTX *mem_ctx = talloc_tos();
-	const char *tdb_filename;
 	uint32_t count = 1;
 
 	if (argc > 2) {
 		return -1;
 	}
-
-	tdb_filename = argv[0];
 
 	if (argc > 1) {
 		count = atoi(argv[1]);
