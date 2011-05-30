@@ -113,9 +113,8 @@
 
 	<programlisting>
 	[global]
-	idmap backend = tdb2
-	idmap uid = 1000000-2000000
-	idmap gid = 1000000-2000000
+	idmap config * : backend = tdb2
+	idmap config * : range = 1000000-2000000
 	</programlisting>
 </refsect1>
 
