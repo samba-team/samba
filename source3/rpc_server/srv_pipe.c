@@ -625,14 +625,12 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *ntlmssp_ctx,
 				enum dcerpc_AuthLevel auth_level,
 				struct client_address *client_id,
-				struct ndr_syntax_id *syntax,
 				struct auth_serversupplied_info **session_info)
 {
 	NTSTATUS status;
 	bool ret;
 
-	DEBUG(5, (__location__ ": pipe %s checking user details\n",
-		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
+	DEBUG(5, (__location__ ": checking user details\n"));
 
 	/* Finally - if the pipe negotiated integrity (sign) or privacy (seal)
 	   ensure the underlying NTLMSSP flags are also set. If not we should
@@ -645,8 +643,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 						DCERPC_AUTH_LEVEL_PRIVACY));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": Client failed to negotatie proper "
-			  "security for pipe %s\n",
-			  get_pipe_name_from_syntax(talloc_tos(), syntax)));
+			  "security for rpc connection\n"));
 		return false;
 	}
 
@@ -777,7 +774,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 						    struct auth_ntlmssp_state);
 		if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
 						p->auth.auth_level,
-						p->client_id, &p->syntax,
+						p->client_id,
 						&p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -823,7 +820,6 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 			if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
 							p->auth.auth_level,
 							p->client_id,
-							&p->syntax,
 							&p->session_info)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -1694,8 +1690,8 @@ void set_incoming_fault(struct pipes_struct *p)
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu.length = 0;
 	p->fault_state = True;
-	DEBUG(10, ("set_incoming_fault: Setting fault state on pipe %s\n",
-		   get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+
+	DEBUG(10, ("Setting fault state\n"));
 }
 
 static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
@@ -1829,8 +1825,7 @@ void process_complete_pdu(struct pipes_struct *p)
 	bool reply = False;
 
 	if(p->fault_state) {
-		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(10,("RPC connection in fault state.\n"));
 		goto done;
 	}
 
@@ -1862,7 +1857,7 @@ void process_complete_pdu(struct pipes_struct *p)
 	/* Store the call_id */
 	p->call_id = pkt->call_id;
 
-	DEBUG(10, ("Processing packet type %d\n", (int)pkt->ptype));
+	DEBUG(10, ("Processing packet type %u\n", (unsigned int)pkt->ptype));
 
 	switch (pkt->ptype) {
 	case DCERPC_PKT_REQUEST:
@@ -1870,19 +1865,12 @@ void process_complete_pdu(struct pipes_struct *p)
 		break;
 
 	case DCERPC_PKT_PING: /* CL request - ignore... */
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "Connectionless packet type %d received on "
-			  "pipe %s.\n", (int)pkt->ptype,
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - Connectionless packet type %u received\n",
+			  (unsigned int)pkt->ptype));
 		break;
 
 	case DCERPC_PKT_RESPONSE: /* No responses here. */
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_RESPONSE received from client "
-			  "on pipe %s.\n",
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_RESPONSE received from client"));
 		break;
 
 	case DCERPC_PKT_FAULT:
@@ -1895,11 +1883,8 @@ void process_complete_pdu(struct pipes_struct *p)
 	case DCERPC_PKT_CL_CANCEL:
 	case DCERPC_PKT_FACK:
 	case DCERPC_PKT_CANCEL_ACK:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "Connectionless packet type %u received on "
-			  "pipe %s.\n", (unsigned int)pkt->ptype,
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - Connectionless packet type %u received\n",
+			  (unsigned int)pkt->ptype));
 		break;
 
 	case DCERPC_PKT_BIND:
@@ -1913,12 +1898,9 @@ void process_complete_pdu(struct pipes_struct *p)
 
 	case DCERPC_PKT_BIND_ACK:
 	case DCERPC_PKT_BIND_NAK:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK "
-			  "packet type %u received on pipe %s.\n",
-			  (unsigned int)pkt->ptype,
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK "
+			  "packet type %u received.\n",
+			  (unsigned int)pkt->ptype));
 		break;
 
 
@@ -1932,11 +1914,8 @@ void process_complete_pdu(struct pipes_struct *p)
 		break;
 
 	case DCERPC_PKT_ALTER_RESP:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_ALTER_RESP on pipe %s: "
-			  "Should only be server -> client.\n",
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_ALTER_RESP received: "
+			  "Should only be server -> client.\n"));
 		break;
 
 	case DCERPC_PKT_AUTH3:
@@ -1949,11 +1928,8 @@ void process_complete_pdu(struct pipes_struct *p)
 		break;
 
 	case DCERPC_PKT_SHUTDOWN:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_SHUTDOWN on pipe %s: "
-			  "Should only be server -> client.\n",
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_SHUTDOWN received: "
+			  "Should only be server -> client.\n"));
 		break;
 
 	case DCERPC_PKT_CO_CANCEL:
@@ -1998,9 +1974,7 @@ void process_complete_pdu(struct pipes_struct *p)
 
 done:
 	if (!reply) {
-		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on "
-			 "pipe %s\n", get_pipe_name_from_syntax(talloc_tos(),
-								&p->syntax)));
+		DEBUG(3,("DCE/RPC fault sent!"));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		TALLOC_FREE(pkt);
