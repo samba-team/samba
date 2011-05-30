@@ -21,6 +21,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _GROUPDB_PROTO_H_
+#define _GROUPDB_PROTO_H_
+
 /* The following definitions come from groupdb/mapping.c  */
 
 NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum lsa_SidType sid_name_use, const char *nt_name, const char *comment);
@@ -95,3 +98,5 @@ NTSTATUS pdb_create_builtin_alias(uint32 rid);
 /* The following definitions come from groupdb/mapping_tdb.c  */
 
 const struct mapping_backend *groupdb_tdb_init(void);
+
+#endif /* _GROUPDB_PROTO_H_ */
