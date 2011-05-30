@@ -1414,22 +1414,6 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 	return;
 }
 
-/****************************************************************************
- Routine to free a namearray.
-****************************************************************************/
-
-void free_namearray(name_compare_entry *name_array)
-{
-	int i;
-
-	if(name_array == NULL)
-		return;
-
-	for(i=0; name_array[i].name!=NULL; i++)
-		SAFE_FREE(name_array[i].name);
-	SAFE_FREE(name_array);
-}
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 

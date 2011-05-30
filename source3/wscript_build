@@ -75,6 +75,7 @@ LIB_SRC = '''
           lib/wins_srv.c
           lib/util_sid.c
           lib/util_file.c
+          lib/namearray.c
           lib/util.c lib/util_cmdline.c lib/util_names.c
           lib/util_sock.c lib/sock_exec.c lib/util_sec.c
           lib/substitute.c lib/substitute_generic.c lib/dbwrap_util.c
