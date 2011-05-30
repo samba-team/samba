@@ -74,7 +74,7 @@ LIB_SRC = '''
           lib/wins_srv.c
           lib/util_sid.c
           lib/util_file.c
-          lib/util.c lib/util_cmdline.c lib/util_names.c
+          lib/util.c lib/util_cmdline.c
           lib/util_sock.c lib/sock_exec.c
           lib/substitute.c lib/substitute_generic.c
           lib/ms_fnmatch.c
@@ -98,7 +98,7 @@ POPT_LIB_SRC = '''lib/popt_common.c'''
 PARAM_UTIL_SRC = '''param/util.c'''
 
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/loadparm_server_role.c
-                           lib/sharesec.c lib/ldap_debug_handler.c'''
+                           lib/sharesec.c lib/ldap_debug_handler.c lib/util_names.c'''
 
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c libsmb/clikrb5.c'''
 
@@ -865,7 +865,7 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
 bld.SAMBA3_LIBRARY('smbconf',
                    source=LIB_SMBCONF_SRC,
                    deps='''LIBSMBCONF smbregistry REG_SMBCONF talloc PARAM_WITHOUT_REG
-                   util_reg samba-util-common errors3 CHARSET''',
+                   util_reg samba-util-common errors3 CHARSET SAMBA_VERSION''',
                    public_headers='../lib/smbconf/smbconf.h',
                    vnum='0')
 
