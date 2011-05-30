@@ -88,9 +88,8 @@
 	workgroup = CUSTOMER
 	realm = CUSTOMER.COM
 
-	idmap backend = autorid
-	idmap uid = 1000000-1999999
-	idmap gid = 1000000-1999999
+	idmap config * : backend = autorid
+	idmap config * : range = 1000000-1999999
 
 	</programlisting>
 
@@ -108,10 +107,9 @@
 	workgroup = CUSTOMER
 	realm = CUSTOMER.COM
 
-	idmap backend = autorid
+	idmap config * : backend = autorid
+	idmap config * : range = 1000000-19999999
 	autorid:rangesize = 1000000
-	idmap uid = 1000000-19999999
-	idmap gid = 1000000-19999999
 
 	idmap config TRUSTED : backend  = ad
 	idmap config TRUSTED : range    = 50000 - 99999
