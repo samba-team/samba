@@ -45,7 +45,7 @@
 	<para>Even if winbind is not used for nsswitch, it still provides a
 	service to <command>smbd</command>, <command>ntlm_auth</command>
 	and the <command>pam_winbind.so</command> PAM module, by managing connections to
-	domain controllers.  In this configuraiton the
+	domain controllers.  In this configuration the
 	<smbconfoption name="idmap uid"/> and
 	<smbconfoption name="idmap gid"/>
 	parameters are not required. (This is known as `netlogon proxy only mode'.)</para>
