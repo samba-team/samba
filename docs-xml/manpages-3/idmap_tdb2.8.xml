@@ -41,9 +41,6 @@
 		<listitem><para>
 			Defines the available matching uid and gid range for which the
 			backend is authoritative.
-			If the parameter is absent, Winbind fails over to use
-			the &quot;idmap uid&quot; and &quot;idmap gid&quot; options
-			from smb.conf.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
