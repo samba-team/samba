@@ -29,6 +29,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _LIBADS_ADS_PROTO_H_
+#define _LIBADS_ADS_PROTO_H_
+
 /* The following definitions come from libads/ads_struct.c  */
 
 char *ads_build_path(const char *realm, const char *sep, const char *field, int reverse);
@@ -183,3 +186,5 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
 /* The following definitions come from libads/util.c  */
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal);
+
+#endif /* _LIBADS_ADS_PROTO_H_ */
