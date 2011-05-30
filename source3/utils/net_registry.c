@@ -1100,7 +1100,6 @@ static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
 	struct registry_value *valvalue = NULL;
 	char *valname = NULL;
 
-	struct registry_key* subkey = NULL;
 	char *subkey_name = NULL;
 	NTTIME modtime = 0;
 
@@ -1126,6 +1125,8 @@ static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
 		     W_ERROR_IS_OK(werr);
 	     count++)
 	{
+		struct registry_key* subkey = NULL;
+
 		werr = reg_openkey(ctx, key, subkey_name, REG_KEY_READ,
 				   &subkey);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -1135,6 +1136,7 @@ static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
 		}
 
 		registry_export(ctx, subkey, f);
+		TALLOC_FREE(subkey);
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		d_fprintf(stderr, _("reg_enumkey failed: %s\n"),
