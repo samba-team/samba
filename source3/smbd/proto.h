@@ -43,6 +43,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _SMBD_PROTO_H_
+#define _SMBD_PROTO_H_
+
 /* The following definitions come from smbd/signing.c  */
 
 struct smbd_server_connection;
@@ -1177,3 +1180,5 @@ void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 /* The following definitions come from smbd/msg_idmap.c */
 
 void msg_idmap_register_msgs(struct messaging_context *ctx);
+
+#endif /* _SMBD_PROTO_H_ */
