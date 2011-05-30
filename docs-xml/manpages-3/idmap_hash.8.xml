@@ -52,9 +52,8 @@
 
 	<programlisting>
 	[global]
-	idmap backend = hash
-	idmap uid = 1000-4000000000
-	idmap gid = 1000-4000000000
+	idmap config * : backend = hash
+	idmap config * : range = 1000-4000000000
 
 	winbind nss info = hash
 	winbind normalize names = yes
