@@ -77,10 +77,9 @@
 
 	<programlisting>
 	[global]
-	# "idmap backend = tdb" is redundant here since it is the default
-	idmap backend = tdb
-	idmap uid = 1000000-2000000
-	idmap gid = 1000000-2000000
+	# "backend = tdb" is redundant here since it is the default
+	idmap config * : backend = tdb
+	idmap config * : range = 1000000-2000000
 	</programlisting>
 
 	<para>
@@ -95,11 +94,9 @@
 
 	<programlisting>
 	[global]
-	idmap backend = ldap
-	idmap uid = 1000000-2000000
-	idmap gid = 1000000-2000000
+	idmap config * : backend = ldap
+	idmap config * : range = 1000000-2000000
 	# use a different uid/gid allocator:
-	idmap alloc backend = tdb
 
 	idmap config DOM1 : backend = tdb
 	idmap config DOM1 : range = 1000000-2000000
