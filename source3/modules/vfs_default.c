@@ -84,7 +84,10 @@ static int vfswrap_set_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_T
 #endif
 }
 
-static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
+static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					struct shadow_copy_data *shadow_copy_data,
+					bool labels)
 {
 	errno = ENOSYS;
 	return -1;  /* Not implemented. */

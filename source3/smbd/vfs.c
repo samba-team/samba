@@ -1174,7 +1174,7 @@ int smb_vfs_call_set_quota(struct vfs_handle_struct *handle,
 
 int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
-				      SHADOW_COPY_DATA *shadow_copy_data,
+				      struct shadow_copy_data *shadow_copy_data,
 				      bool labels)
 {
 	VFS_FIND(get_shadow_copy_data);

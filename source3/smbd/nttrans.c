@@ -2214,7 +2214,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 * Allocate the correct amount and return the pointer to let
 		 * it be deallocated when we return.
 		 */
-		SHADOW_COPY_DATA *shadow_data = NULL;
+		struct shadow_copy_data *shadow_data = NULL;
 		TALLOC_CTX *shadow_mem_ctx = NULL;
 		bool labels = False;
 		uint32 labels_data_count = 0;
@@ -2243,7 +2243,8 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			return;
 		}
 
-		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,SHADOW_COPY_DATA);
+		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,
+					    struct shadow_copy_data);
 		if (shadow_data == NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));
 			talloc_destroy(shadow_mem_ctx);
