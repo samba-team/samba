@@ -138,17 +138,19 @@ static WERROR registry_enumkey(struct registry_key* parent, const char* keyname,
 		goto done;
 	}
 
-	printf("[%s]\n", key->key->name);
-
-	for (count = 0;
-	     werr = reg_enumkey(ctx, key, count, &subkey_name, &modtime),
-	     W_ERROR_IS_OK(werr);
-	     count++)
-	{
-		print_registry_key(subkey_name, &modtime);
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		goto done;
+	if (recursive) {
+		printf("[%s]\n\n", key->key->name);
+	} else {
+		for (count = 0;
+		     werr = reg_enumkey(ctx, key, count, &subkey_name, &modtime),
+		     W_ERROR_IS_OK(werr);
+		     count++)
+		{
+			print_registry_key(subkey_name, &modtime);
+		}
+		if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+			goto done;
+		}
 	}
 
 	for (count = 0;
@@ -180,7 +182,9 @@ static WERROR registry_enumkey(struct registry_key* parent, const char* keyname,
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		goto done;
 	}
+
 	werr = WERR_OK;
+
 done:
 	TALLOC_FREE(ctx);
 	return werr;
