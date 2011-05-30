@@ -740,7 +740,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC,
-                    deps='''PARAM_UTIL smbd_conn''',
+                    deps='''PARAM_UTIL smbd_conn ldap lber''',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('param',
