@@ -253,7 +253,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 			continue;
 		}
 
-		tlabels = (SHADOW_COPY_LABEL *)TALLOC_REALLOC(shadow_copy_data->mem_ctx,
+		tlabels = (SHADOW_COPY_LABEL *)TALLOC_REALLOC(shadow_copy_data,
 									shadow_copy_data->labels,
 									(shadow_copy_data->num_volumes+1)*sizeof(SHADOW_COPY_LABEL));
 		if (tlabels == NULL) {
