@@ -926,3 +926,32 @@ char *standard_sub_conn(TALLOC_CTX *ctx, connection_struct *conn, const char *st
 				"",
 				str);
 }
+
+/******************************************************************************
+ version of standard_sub_basic() for string lists; uses talloc_sub_basic()
+ for the work
+ *****************************************************************************/
+
+bool str_list_sub_basic( char **list, const char *smb_name,
+			 const char *domain_name )
+{
+	TALLOC_CTX *ctx = list;
+	char *s, *tmpstr;
+
+	while ( *list ) {
+		s = *list;
+		tmpstr = talloc_sub_basic(ctx, smb_name, domain_name, s);
+		if ( !tmpstr ) {
+			DEBUG(0,("str_list_sub_basic: "
+				"alloc_sub_basic() return NULL!\n"));
+			return false;
+		}
+
+		TALLOC_FREE(*list);
+		*list = tmpstr;
+
+		list++;
+	}
+
+	return true;
+}

@@ -227,97 +227,6 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 	return ret;
 }
 
-void fstring_sub(char *s,const char *pattern,const char *insert)
-{
-	string_sub(s, pattern, insert, sizeof(fstring));
-}
-
-/**
- Similar to string_sub2, but it will accept only allocated strings
- and may realloc them so pay attention at what you pass on no
- pointers inside strings, no const may be passed
- as string.
-**/
-
-char *realloc_string_sub2(char *string,
-			const char *pattern,
-			const char *insert,
-			bool remove_unsafe_characters,
-			bool allow_trailing_dollar)
-{
-	char *p, *in;
-	char *s;
-	ssize_t ls,lp,li,ld, i;
-
-	if (!insert || !pattern || !*pattern || !string || !*string)
-		return NULL;
-
-	s = string;
-
-	in = SMB_STRDUP(insert);
-	if (!in) {
-		DEBUG(0, ("realloc_string_sub: out of memory!\n"));
-		return NULL;
-	}
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-	ld = li - lp;
-	for (i=0;i<li;i++) {
-		switch (in[i]) {
-			case '$':
-				/* allow a trailing $
-				 * (as in machine accounts) */
-				if (allow_trailing_dollar && (i == li - 1 )) {
-					break;
-				}
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '%':
-			case '\r':
-			case '\n':
-				if ( remove_unsafe_characters ) {
-					in[i] = '_';
-					break;
-				}
-			default:
-				/* ok */
-				break;
-		}
-	}
-
-	while ((p = strstr_m(s,pattern))) {
-		if (ld > 0) {
-			int offset = PTR_DIFF(s,string);
-			string = (char *)SMB_REALLOC(string, ls + ld + 1);
-			if (!string) {
-				DEBUG(0, ("realloc_string_sub: "
-					"out of memory!\n"));
-				SAFE_FREE(in);
-				return NULL;
-			}
-			p = string + offset + (p - s);
-		}
-		if (li != lp) {
-			memmove(p+li,p+lp,strlen(p+lp)+1);
-		}
-		memcpy(p, in, li);
-		s = p + li;
-		ls += ld;
-	}
-	SAFE_FREE(in);
-	return string;
-}
-
-char *realloc_string_sub(char *string,
-			const char *pattern,
-			const char *insert)
-{
-	return realloc_string_sub2(string, pattern, insert, true, false);
-}
-
 /*
  * Internal guts of talloc_string_sub and talloc_all_string_sub.
  * talloc version of string_sub2.
@@ -348,7 +257,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 
 	s = string;
 
-	in = SMB_STRDUP(insert);
+	in = talloc_strdup(mem_ctx, insert);
 	if (!in) {
 		DEBUG(0, ("talloc_string_sub2: ENOMEM\n"));
 		return NULL;
@@ -391,7 +300,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			if (!string) {
 				DEBUG(0, ("talloc_string_sub: out of "
 					  "memory!\n"));
-				SAFE_FREE(in);
+				TALLOC_FREE(in);
 				return NULL;
 			}
 			p = string + offset + (p - s);
@@ -407,7 +316,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			break;
 		}
 	}
-	SAFE_FREE(in);
+	TALLOC_FREE(in);
 	return string;
 }
 
@@ -685,35 +594,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 **/
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
-
-/******************************************************************************
- version of standard_sub_basic() for string lists; uses talloc_sub_basic()
- for the work
- *****************************************************************************/
-
-bool str_list_sub_basic( char **list, const char *smb_name,
-			 const char *domain_name )
-{
-	TALLOC_CTX *ctx = list;
-	char *s, *tmpstr;
-
-	while ( *list ) {
-		s = *list;
-		tmpstr = talloc_sub_basic(ctx, smb_name, domain_name, s);
-		if ( !tmpstr ) {
-			DEBUG(0,("str_list_sub_basic: "
-				"alloc_sub_basic() return NULL!\n"));
-			return false;
-		}
-
-		TALLOC_FREE(*list);
-		*list = tmpstr;
-
-		list++;
-	}
-
-	return true;
-}
 
 /******************************************************************************
  substitute a specific pattern in a string list

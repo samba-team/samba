@@ -464,7 +464,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  ../lib/util/charset/util_unistr_w.o ../lib/util/charset/codepoints.o ../lib/util/charset/util_str.o lib/util_file.o \
 	  lib/util.o lib/util_cmdline.o lib/util_names.o \
 	  lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
-	  lib/substitute.o ../lib/util/substitute.o lib/dbwrap_util.o \
+	  lib/substitute.o lib/substitute_generic.o ../lib/util/substitute.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o ../lib/util/ms_fnmatch.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o \
 	  libsmb/clisigning.o libsmb/smb_signing.o \
