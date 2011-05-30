@@ -20,6 +20,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _LOCKING_PROTO_H_
+#define _LOCKING_PROTO_H_
+
 /* The following definitions come from locking/brlock.c  */
 
 bool brl_same_context(const struct lock_context *ctx1,
@@ -220,3 +223,5 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 				const struct lock_context *lock_ctx,
 				const struct lock_struct *plocks,
 				int num_locks);
+
+#endif /* _LOCKING_PROTO_H_ */
