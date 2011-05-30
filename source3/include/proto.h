@@ -897,7 +897,6 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 int asprintf_strupper_m(char **strp, const char *fmt, ...);
 char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...);
 char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...);
-char *sstring_sub(const char *src, char front, char back);
 bool validate_net_name( const char *name,
 		const char *invalid_chars,
 		int max_len);

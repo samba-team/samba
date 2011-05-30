@@ -1143,33 +1143,6 @@ char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...)
 }
 
 
-/*
-   Returns the substring from src between the first occurrence of
-   the char "front" and the first occurence of the char "back".
-   Mallocs the return string which must be freed.  Not for use
-   with wide character strings.
-*/
-char *sstring_sub(const char *src, char front, char back)
-{
-	char *temp1, *temp2, *temp3;
-	ptrdiff_t len;
-
-	temp1 = strchr(src, front);
-	if (temp1 == NULL) return NULL;
-	temp2 = strchr(src, back);
-	if (temp2 == NULL) return NULL;
-	len = temp2 - temp1;
-	if (len <= 0) return NULL;
-	temp3 = (char*)SMB_MALLOC(len);
-	if (temp3 == NULL) {
-		DEBUG(1,("Malloc failure in sstring_sub\n"));
-		return NULL;
-	}
-	memcpy(temp3, temp1+1, len-1);
-	temp3[len-1] = '\0';
-	return temp3;
-}
-
 /********************************************************************
  Check a string for any occurrences of a specified list of invalid
  characters.
