@@ -1506,7 +1506,8 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 }
 
 static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
-		       const struct api_struct *api_rpc_cmds, int n_cmds);
+		       const struct api_struct *api_rpc_cmds, int n_cmds,
+		       const struct ndr_syntax_id *syntax);
 
 /****************************************************************************
  Find the correct RPC function to call for this request.
@@ -1543,7 +1544,8 @@ static bool api_pipe_request(struct pipes_struct *p,
 		DEBUG(5, ("Requested %s rpc service\n",
 			  get_pipe_name_from_syntax(talloc_tos(), &pipe_fns->syntax)));
 
-		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds);
+		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
+				 &pipe_fns->syntax);
 
 		TALLOC_FREE(frame);
 	}
@@ -1565,20 +1567,21 @@ static bool api_pipe_request(struct pipes_struct *p,
  ********************************************************************/
 
 static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
-		       const struct api_struct *api_rpc_cmds, int n_cmds)
+		       const struct api_struct *api_rpc_cmds, int n_cmds,
+		       const struct ndr_syntax_id *syntax)
 {
 	int fn_num;
 	uint32_t offset1;
 
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+		 get_pipe_name_from_syntax(talloc_tos(), syntax),
 		 pkt->u.request.opnum));
 
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "in_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
+			 get_pipe_name_from_syntax(talloc_tos(), syntax));
 		dump_pdu_region(name, pkt->u.request.opnum,
 				&p->in_data.data, 0,
 				p->in_data.data.length);
@@ -1611,7 +1614,7 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+			 get_pipe_name_from_syntax(talloc_tos(), syntax),
 			 api_rpc_cmds[fn_num].name));
 		data_blob_free(&p->out_data.rdata);
 		return False;
@@ -1634,14 +1637,14 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "out_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
+			 get_pipe_name_from_syntax(talloc_tos(), syntax));
 		dump_pdu_region(name, pkt->u.request.opnum,
 				&p->out_data.rdata, offset1,
 				p->out_data.rdata.length);
 	}
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
 
 	/* Check for buffer underflow in rpc parsing */
 	if ((DEBUGLEVEL >= 10) &&
