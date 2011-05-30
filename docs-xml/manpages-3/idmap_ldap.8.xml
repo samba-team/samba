@@ -128,20 +128,17 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	The follow sets of a LDAP configuration which uses two LDAP
-	directories, one for storing the ID mappings and one for retrieving
-	new IDs.
+	The following example shows how an ldap directory is used as the
+	default idmap backend. It also configures the idmap range and base
+	directory suffix.
 	</para>
 
 	<programlisting>
 	[global]
-	idmap backend = ldap:ldap://localhost/
-	idmap uid = 1000000-1999999
-	idmap gid = 1000000-1999999
-
-	idmap alloc backend = ldap
-	idmap alloc config : ldap_url	= ldap://id-master/
-	idmap alloc config : ldap_base_dn = ou=idmap,dc=example,dc=com
+	idmap config * : backend      = ldap
+	idmap config * : range        = 1000000-1999999
+	idmap config * : ldap_url     = ldap://localhost/
+	idmap config * : ldap_base_dn = ou=idmap,dc=example,dc=com
 	</programlisting>
 </refsect1>
 
