@@ -111,7 +111,6 @@ static const struct {
 #ifdef ENOTSUP
         { ENOTSUP, NT_STATUS_NOT_SUPPORTED},
 #endif
-	{ 0, NT_STATUS_OK }
 };
 
 /*********************************************************************
@@ -134,10 +133,10 @@ NTSTATUS map_nt_error_from_unix(int unix_error)
 	}
 
 	/* Look through list */
-	while(unix_nt_errmap[i].unix_error != 0) {
-		if (unix_nt_errmap[i].unix_error == unix_error)
+	for (i=0;i<ARRAY_SIZE(unix_nt_errmap);i++) {
+		if (unix_nt_errmap[i].unix_error == unix_error) {
 			return unix_nt_errmap[i].nt_error;
-		i++;
+		}
 	}
 
 	/* Default return */
@@ -254,7 +253,6 @@ static const struct {
 #ifdef EXDEV
 	{NT_STATUS_NOT_SAME_DEVICE, EXDEV},
 #endif
-	{NT_STATUS(0), 0}
 };
 
 int map_errno_from_nt_status(NTSTATUS status)
@@ -269,7 +267,7 @@ int map_errno_from_nt_status(NTSTATUS status)
 		return 0;
 	}
 
-	for (i=0;nt_errno_map[i].error;i++) {
+	for (i=0;i<ARRAY_SIZE(nt_errno_map);i++) {
 		if (NT_STATUS_V(nt_errno_map[i].status) ==
 			    NT_STATUS_V(status)) {
 			return nt_errno_map[i].error;
