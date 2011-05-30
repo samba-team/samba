@@ -162,7 +162,6 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	struct security_descriptor *sec, *new_sec;
 	TALLOC_CTX *ctx = state;
 	int result, i;
-	uint32 sd_size;
 	size_t size_new_sec;
 
 	if (!data.dptr || data.dsize == 0) {
@@ -235,9 +234,6 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	}
 
 	/* store it back */
-
-	sd_size = ndr_size_security_descriptor(sd_store->sd, 0)
-		+ sizeof(struct sec_desc_buf);
 
 	status = marshall_sec_desc_buf(ctx, sd_store, &data.dptr, &data.dsize);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -936,10 +936,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_dcs; i++) {
 		uint16_t val;
-		int dgm_id;
 
 		generate_random_buffer((uint8_t *)&val, 2);
-		dgm_id = val;
 
 		ip_list.ss = dclist[i].ss;
 		ip_list.port = 0;

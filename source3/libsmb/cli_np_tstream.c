@@ -479,9 +479,8 @@ static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq)
 		tevent_req_data(req, struct tstream_cli_np_writev_state);
 	struct tstream_cli_np *cli_nps =
 		tstream_context_data(state->stream, struct tstream_cli_np);
-	NTSTATUS status;
 
-	status = cli_close_recv(subreq);
+	cli_close_recv(subreq);
 	TALLOC_FREE(subreq);
 
 	cli_nps->cli = NULL;
@@ -853,9 +852,8 @@ static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq)
 		tevent_req_data(req, struct tstream_cli_np_readv_state);
 	struct tstream_cli_np *cli_nps =
 		tstream_context_data(state->stream, struct tstream_cli_np);
-	NTSTATUS status;
 
-	status = cli_close_recv(subreq);
+	cli_close_recv(subreq);
 	TALLOC_FREE(subreq);
 
 	cli_nps->cli = NULL;
