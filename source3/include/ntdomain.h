@@ -86,7 +86,8 @@ typedef struct pipe_rpc_fns {
 
 	const struct api_struct *cmds;
 	int n_cmds;
-	uint32 context_id;
+	uint32_t context_id;
+	struct ndr_syntax_id syntax;
 
 } PIPE_RPC_FNS;
 
