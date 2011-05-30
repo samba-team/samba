@@ -30,6 +30,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _AUTH_PROTO_H_
+#define _AUTH_PROTO_H_
+
 /* The following definitions come from auth/auth.c  */
 
 NTSTATUS smb_register_auth(int version, const char *name, auth_init_function init);
@@ -297,3 +300,5 @@ NTSTATUS make_server_info_krb5(TALLOC_CTX *mem_ctx,
 				struct PAC_LOGON_INFO *logon_info,
 				bool mapped_to_guest,
 				struct auth_serversupplied_info **server_info);
+
+#endif /* _AUTH_PROTO_H_ */
