@@ -144,7 +144,7 @@ static int smb_time_audit_set_quota(struct vfs_handle_struct *handle,
 
 static int smb_time_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 					       struct files_struct *fsp,
-					       SHADOW_COPY_DATA *shadow_copy_data,
+					       struct shadow_copy_data *shadow_copy_data,
 					       bool labels)
 {
 	int result;
