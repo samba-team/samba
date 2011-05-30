@@ -1532,9 +1532,6 @@ static bool api_pipe_request(struct pipes_struct *p,
 		changed_user = True;
 	}
 
-	DEBUG(5, ("Requested \\PIPE\\%s\n",
-		  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
-
 	/* get the set of RPC functions for this context */
 
 	pipe_fns = find_pipe_fns_by_context(p->contexts,
@@ -1542,15 +1539,18 @@ static bool api_pipe_request(struct pipes_struct *p,
 
 	if ( pipe_fns ) {
 		TALLOC_CTX *frame = talloc_stackframe();
+
+		DEBUG(5, ("Requested %s rpc service\n",
+			  get_pipe_name_from_syntax(talloc_tos(), &pipe_fns->syntax)));
+
 		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds);
+
 		TALLOC_FREE(frame);
 	}
 	else {
 		DEBUG(0, ("No rpc function table associated with context "
-			  "[%d] on pipe [%s]\n",
-			  pkt->u.request.context_id,
-			  get_pipe_name_from_syntax(talloc_tos(),
-						    &p->syntax)));
+			  "[%d]\n",
+			  pkt->u.request.context_id));
 	}
 
 	if (changed_user) {
