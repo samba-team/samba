@@ -256,16 +256,24 @@ Changes since 3.6.0rc1
 ----------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 6911: Fix Kerberos authentication from Vista to Samba.
+    * BUG 7054: Fix X account flag when "pwdlastset" is "0".
     * BUG 8133: Fix strange behavior for the file (whose filename first
       character is period ) in SMB2 case.
     * BUG 8144: Fix setting timestamp when touching files with CIFS clients.
+    * BUG 8150: Ban "dos charset = utf8".
     * BUG 8153: Fix setting up getaddrinfo on IPv6-only machines.
     * BUG 8156: Fix 'net ads join' using the user's Kerberos ticket.
     * BUG 8157: Fix parsing a cups printcap file.
+    * BUG 8163: Fix our asn.1 parser to handle negative numbers.
 
 
 o   Christian Ambach <ambi@samba.org>
     * BUG 8152: Fix smbd crash in release_ip().
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8151: Deprecate security parameters.
 
 
 o   Sumit Bose <sbose@redhat.com>
@@ -274,6 +282,7 @@ o   Sumit Bose <sbose@redhat.com>
 
 o   Holger Hetterich <hhetter@novell.com>
     * BUG 8148: Default to protocol version 2 for SMB Traffic Analyzer.
+    * BUG 8154: Actually make use of SMBTA subversion numbers.
 
 
 o   Stefan Metzmacher <metze@samba.org>
