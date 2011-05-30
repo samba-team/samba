@@ -71,11 +71,10 @@ LIB_SRC = '''
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
           lib/access.c lib/smbrun.c
-          lib/bitmap.c lib/dprintf.c
+          lib/dprintf.c
           lib/wins_srv.c
           lib/util_sid.c
           lib/util_file.c
-          lib/namearray.c
           lib/util.c lib/util_cmdline.c lib/util_names.c
           lib/util_sock.c lib/sock_exec.c lib/util_sec.c
           lib/substitute.c lib/substitute_generic.c lib/dbwrap_util.c
@@ -83,7 +82,7 @@ LIB_SRC = '''
           lib/tallocmsg.c lib/dmallocmsg.c
           libsmb/clisigning.c libsmb/smb_signing.c
           intl/lang_tdb.c
-          lib/conn_tdb.c lib/adt_tree.c lib/gencache.c
+          lib/conn_tdb.c lib/gencache.c
           lib/sessionid_tdb.c
           lib/module.c lib/events.c
           lib/server_contexts.c
@@ -732,6 +731,7 @@ bld.SAMBA3_LIBRARY('passdb',
                    source=PASSDB_SRC,
                    deps='SECRETS3 SMBLDAP GROUPDB pdb wbclient LIBCLI_AUTH flag_mapping',
                    private_library=True,
+                   allow_undefined_symbols=False,
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
@@ -743,11 +743,10 @@ bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
                     deps='''PARAM_UTIL smbd_conn ldap lber''',
                     vars=locals())
 
-bld.SAMBA3_LIBRARY('param',
-                   source='',
-                   deps='PARAM_WITHOUT_REG samba-util smbconf',
-                   private_library=True,
-                   vars=locals())
+bld.SAMBA3_SUBSYSTEM('param',
+                     source='',
+                     deps='PARAM_WITHOUT_REG samba-util smbconf',
+                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('param_service',
                      source='param/service.c',
@@ -766,10 +765,10 @@ bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
 bld.SAMBA3_LIBRARY('smbregistry',
                    source=REG_BASE_SRC,
                    deps='''LIB_NONSMBD tdb-wrap3 NDR_SECURITY UTIL_TDB talloc
-                   replace samba3core util_reg samba-util-common security
-                   errors3 CHARSET3''',
-                   private_library=True,
-                   vars=locals())
+                   replace util_reg samba-util-common security
+                   errors3 adt_tree''',
+                   vars=locals(),
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
                     source=REG_SMBCONF_SRC,
@@ -792,15 +791,13 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     public_deps='KRB5_WRAP k5crypto',
                     vars=locals())
 
-bld.SAMBA3_LIBRARY('samba3core',
+bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg passdb PTHREADPOOL interfaces cap string_init',
-                   private_library=True,
+                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIB_NONSMBD',
                     source=LIB_NONSMBD_SRC,
-                    deps='samba3core',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBSMB_ERR',
@@ -830,9 +827,9 @@ bld.SAMBA3_SUBSYSTEM('CLDAP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SECRETS3',
-                    source=SECRETS_SRC,
-                    deps='NDR_SECRETS',
-                    vars=locals())
+                   source=SECRETS_SRC,
+                   deps='NDR_SECRETS param samba3core passdb',
+                   vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SMBLDAP',
                     source=SMBLDAP_SRC,
@@ -869,13 +866,13 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
 bld.SAMBA3_LIBRARY('smbconf',
                    source=LIB_SMBCONF_SRC,
                    deps='''LIBSMBCONF smbregistry REG_SMBCONF talloc PARAM_WITHOUT_REG
-                   util_reg samba-util-common errors3 CHARSET3''',
+                   util_reg samba-util-common errors3 CHARSET''',
                    public_headers='../lib/smbconf/smbconf.h',
                    vnum='0')
 
 bld.SAMBA3_LIBRARY('smbd_conn',
                    source='smbd/conn.c',
-                   deps='samba3core string_init',
+                   deps='string_init bitmap namearray',
                    allow_undefined_symbols=False,
                    private_library=True)
 
@@ -893,6 +890,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     LIBCLI_SMB_COMMON RPC_SERVER smbd_conn param_service
                     ''',
                     private_library=True,
+                   allow_undefined_symbols=False,
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LOCKING',
@@ -995,13 +993,42 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                      deps='tdb-wrap',
                     vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('string_init',
-                     source='''lib/string_init.c''')
+bld.SAMBA3_LIBRARY('string_init',
+                   source='''lib/string_init.c''',
+                   deps='samba-util-common',
+                   private_library=True,
+                   allow_undefined_symbols=False)
 
-bld.SAMBA3_SUBSYSTEM('CHARSET3',
-                    source='''lib/util_str.c lib/charcnv.c lib/fstring.c''',
-                    public_deps='ICONV_WRAPPER samba3core CHARSET',
-                    deps='samba-util')
+bld.SAMBA3_LIBRARY('util_str',
+                   source='''lib/util_str.c''',
+                   deps='samba-util-common CHARSET',
+                   private_library=True,
+                   allow_undefined_symbols=False)
+
+bld.SAMBA3_LIBRARY('bitmap',
+                   source='lib/bitmap.c',
+                   deps='samba-util-common',
+                   private_library=True,
+                   allow_undefined_symbols=False)
+
+bld.SAMBA3_LIBRARY('namearray',
+                   source='lib/namearray.c',
+                   deps='samba-util-common',
+                   private_library=True,
+                   allow_undefined_symbols=False)
+
+bld.SAMBA3_LIBRARY('adt_tree',
+                   source='lib/adt_tree.c',
+                   deps='samba-util-common',
+                   private_library=True,
+                   allow_undefined_symbols=False)
+
+bld.SAMBA3_LIBRARY('CHARSET3',
+                    source='''lib/charcnv.c lib/fstring.c''',
+                    public_deps='ICONV_WRAPPER CHARSET',
+                    deps='samba-util util_str',
+                   private_library=True,
+                   allow_undefined_symbols=False)
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
                     source='lib/ldb_compat.c',
