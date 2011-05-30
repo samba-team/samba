@@ -177,5 +177,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 	outdyn = security_buffer;
 
+	req->sconn->using_smb2 = true;
+
 	return smbd_smb2_request_done(req, outbody, &outdyn);
 }
