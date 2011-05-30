@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/security/secdesc.h"
 
 /****************************************************************************
   query the security descriptor for a open file

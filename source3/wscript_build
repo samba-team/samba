@@ -87,7 +87,6 @@ LIB_SRC = '''
           lib/module.c lib/events.c
           lib/server_contexts.c
           lib/ldap_escape.c
-          lib/secdesc.c
           lib/fncall.c
           libads/krb5_errs.c lib/system_smbd.c lib/audit.c
           lib/file_id.c lib/idmap_cache.c'''

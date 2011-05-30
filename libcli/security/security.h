@@ -100,6 +100,7 @@ struct object_tree {
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/secace.h"
 #include "libcli/security/secacl.h"
+#include "libcli/security/secdesc.h"
 #include "libcli/security/security_descriptor.h"
 #include "libcli/security/security_token.h"
 #include "libcli/security/sddl.h"

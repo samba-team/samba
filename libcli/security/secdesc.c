@@ -1,28 +1,28 @@
-/* 
+/*
  *  Unix SMB/Netbios implementation.
  *  SEC_DESC handling functions
  *  Copyright (C) Andrew Tridgell              1992-1998,
  *  Copyright (C) Jeremy R. Allison            1995-2003.
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
  *  Copyright (C) Paul Ashton                  1997-1998.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "includes.h"
-#include "../librpc/gen_ndr/ndr_security.h"
-#include "../libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
 #define ALL_SECURITY_INFORMATION (SECINFO_OWNER|SECINFO_GROUP|\
 					SECINFO_DACL|SECINFO_SACL|\
@@ -68,7 +68,7 @@ uint32_t get_sec_info(const struct security_descriptor *sd)
 
 
 /*******************************************************************
- Merge part of security descriptor old_sec in to the empty sections of 
+ Merge part of security descriptor old_sec in to the empty sections of
  security descriptor new_sec.
 ********************************************************************/
 
@@ -78,7 +78,7 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 	struct sec_desc_buf *return_sdb;
 	struct security_acl *dacl, *sacl;
 	struct security_descriptor *psd = NULL;
-	uint16 secdesc_type;
+	uint16_t secdesc_type;
 	size_t secdesc_size;
 
 	/* Copy over owner and group sids.  There seems to be no flag for
@@ -89,11 +89,11 @@ struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *ne
 
 	group_sid = new_sdb->sd->group_sid ? new_sdb->sd->group_sid :
 		old_sdb->sd->group_sid;
-	
+
 	secdesc_type = new_sdb->sd->type;
 
 	/* Ignore changes to the system ACL.  This has the effect of making
-	   changes through the security tab audit button not sticking. 
+	   changes through the security tab audit button not sticking.
 	   Perhaps in future Samba could implement these settings somehow. */
 
 	sacl = NULL;
@@ -122,7 +122,7 @@ struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_desc
 	struct dom_sid *owner_sid, *group_sid;
 	struct security_acl *dacl, *sacl;
 	struct security_descriptor *psd = NULL;
-	uint16 secdesc_type;
+	uint16_t secdesc_type;
 	size_t secdesc_size;
 
 	/* Copy over owner and group sids.  There seems to be no flag for
@@ -162,20 +162,20 @@ struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_desc
  Creates a struct security_descriptor structure
 ********************************************************************/
 
-#define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16) + 4 * sizeof(uint32))
+#define  SEC_DESC_HEADER_SIZE (2 * sizeof(uint16_t) + 4 * sizeof(uint32_t))
 
 struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,
-			uint16 type,
+			uint16_t type,
 			const struct dom_sid *owner_sid, const struct dom_sid *grp_sid,
 			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size)
 {
 	struct security_descriptor *dst;
-	uint32 offset     = 0;
+	uint32_t offset     = 0;
 
 	*sd_size = 0;
 
-	if(( dst = TALLOC_ZERO_P(ctx, struct security_descriptor)) == NULL)
+	if(( dst = talloc_zero(ctx, struct security_descriptor)) == NULL)
 		return NULL;
 
 	dst->revision = revision;
@@ -254,7 +254,7 @@ struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_
 ********************************************************************/
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 			   struct security_descriptor *secdesc,
-			   uint8 **data, size_t *len)
+			   uint8_t **data, size_t *len)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -303,7 +303,7 @@ NTSTATUS marshall_sec_desc_buf(TALLOC_CTX *mem_ctx,
 /*******************************************************************
  Parse a byte stream into a secdesc
 ********************************************************************/
-NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
+NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 			     struct security_descriptor **psecdesc)
 {
 	DATA_BLOB blob;
@@ -314,7 +314,7 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = TALLOC_ZERO_P(mem_ctx, struct security_descriptor);
+	result = talloc_zero(mem_ctx, struct security_descriptor);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -350,7 +350,7 @@ NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = TALLOC_ZERO_P(mem_ctx, struct sec_desc_buf);
+	result = talloc_zero(mem_ctx, struct sec_desc_buf);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -391,12 +391,12 @@ struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct secur
 {
 	struct sec_desc_buf *dst;
 
-	if((dst = TALLOC_ZERO_P(ctx, struct sec_desc_buf)) == NULL)
+	if((dst = talloc_zero(ctx, struct sec_desc_buf)) == NULL)
 		return NULL;
 
 	/* max buffer size (allocated size) */
-	dst->sd_size = (uint32)len;
-	
+	dst->sd_size = (uint32_t)len;
+
 	if(sec_desc && ((dst->sd = dup_sec_desc(ctx, sec_desc)) == NULL)) {
 		return NULL;
 	}
@@ -420,7 +420,7 @@ struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
  Add a new SID with its permissions to struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, const struct dom_sid *sid, uint32 mask, size_t *sd_size)
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, const struct dom_sid *sid, uint32_t mask, size_t *sd_size)
 {
 	struct security_descriptor *sd   = 0;
 	struct security_acl  *dacl = 0;
@@ -433,14 +433,14 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, con
 	*sd_size = 0;
 
 	status = sec_ace_add_sid(ctx, &ace, psd[0]->dacl->aces, &psd[0]->dacl->num_aces, sid, mask);
-	
+
 	if (!NT_STATUS_IS_OK(status))
 		return status;
 
 	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
 		return NT_STATUS_UNSUCCESSFUL;
-	
-	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid, 
+
+	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid,
 		psd[0]->group_sid, psd[0]->sacl, dacl, sd_size)))
 		return NT_STATUS_UNSUCCESSFUL;
 
@@ -453,7 +453,7 @@ NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, con
  Modify a SID's permissions in a struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32 mask)
+NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32_t mask)
 {
 	NTSTATUS status;
 
@@ -464,7 +464,7 @@ NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, u
 
 	if (!NT_STATUS_IS_OK(status))
 		return status;
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -483,7 +483,7 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, str
 		return NT_STATUS_INVALID_PARAMETER;
 
 	*sd_size = 0;
-	
+
 	status = sec_ace_del_sid(ctx, &ace, psd[0]->dacl->aces, &psd[0]->dacl->num_aces, sid);
 
 	if (!NT_STATUS_IS_OK(status))
@@ -491,8 +491,8 @@ NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, str
 
 	if (!(dacl = make_sec_acl(ctx, psd[0]->dacl->revision, psd[0]->dacl->num_aces, ace)))
 		return NT_STATUS_UNSUCCESSFUL;
-	
-	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid, 
+
+	if (!(sd = make_sec_desc(ctx, psd[0]->revision, psd[0]->type, psd[0]->owner_sid,
 		psd[0]->group_sid, psd[0]->sacl, dacl, sd_size)))
 		return NT_STATUS_UNSUCCESSFUL;
 
@@ -560,6 +560,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	struct security_ace *new_ace_list = NULL;
 	unsigned int new_ace_list_ndx = 0, i;
 
+	TALLOC_CTX *frame;
+
 	*ppsd = NULL;
 	*psize = 0;
 
@@ -574,20 +576,22 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!(new_ace_list = TALLOC_ARRAY(ctx, struct security_ace,
-						2*the_acl->num_aces))) {
+		if (!(new_ace_list = talloc_array(ctx, struct security_ace,
+						  2*the_acl->num_aces))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
 		new_ace_list = NULL;
 	}
 
+	frame = talloc_stackframe();
+
 	for (i = 0; i < the_acl->num_aces; i++) {
 		const struct security_ace *ace = &the_acl->aces[i];
 		struct security_ace *new_ace = &new_ace_list[new_ace_list_ndx];
 		const struct dom_sid *ptrustee = &ace->trustee;
 		const struct dom_sid *creator = NULL;
-		uint8 new_flags = ace->flags;
+		uint8_t new_flags = ace->flags;
 
 		if (!is_inheritable_ace(ace, container)) {
 			continue;
@@ -621,15 +625,15 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 			/* First add the regular ACE entry. */
 			init_sec_ace(new_ace, ptrustee, ace->type,
-			     	ace->access_mask, 0);
+				ace->access_mask, 0);
 
 			DEBUG(5,("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x"
-				" inherited as %s:%d/0x%02x/0x%08x\n",
-				sid_string_dbg(&ace->trustee),
-				ace->type, ace->flags, ace->access_mask,
-				sid_string_dbg(&new_ace->trustee),
-				new_ace->type, new_ace->flags,
-				new_ace->access_mask));
+				 " inherited as %s:%d/0x%02x/0x%08x\n",
+				 dom_sid_string(frame, &ace->trustee),
+				 ace->type, ace->flags, ace->access_mask,
+				 dom_sid_string(frame, &new_ace->trustee),
+				 new_ace->type, new_ace->flags,
+				 new_ace->access_mask));
 
 			new_ace_list_ndx++;
 
@@ -638,6 +642,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 			ptrustee = creator;
 			new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+
 		} else if (container &&
 				!(ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
 			ptrustee = &ace->trustee;
@@ -648,14 +653,16 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
 			  " inherited as %s:%d/0x%02x/0x%08x\n",
-			  sid_string_dbg(&ace->trustee),
+			  dom_sid_string(frame, &ace->trustee),
 			  ace->type, ace->flags, ace->access_mask,
-			  sid_string_dbg(&ace->trustee),
+			  dom_sid_string(frame, &ace->trustee),
 			  new_ace->type, new_ace->flags,
 			  new_ace->access_mask));
 
 		new_ace_list_ndx++;
 	}
+
+	talloc_free(frame);
 
 	/* Create child security descriptor to return */
 	if (new_ace_list_ndx) {

@@ -474,7 +474,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
 	  lib/server_contexts.o \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/secdesc.o ../libcli/security/access_check.o \
+	  ../libcli/security/secdesc.o ../libcli/security/access_check.o \
 	  ../libcli/security/secace.o ../libcli/security/object_tree.o \
 	  ../libcli/security/sddl.o \
 	  ../libcli/security/secacl.o @PTHREADPOOL_OBJ@ \

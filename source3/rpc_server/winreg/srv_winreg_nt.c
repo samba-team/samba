@@ -30,6 +30,7 @@
 #include "rpc_misc.h"
 #include "auth.h"
 #include "lib/privileges.h"
+#include "libcli/security/secdesc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

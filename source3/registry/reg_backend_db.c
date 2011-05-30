@@ -30,6 +30,7 @@
 #include "nt_printing.h"
 #include "util_tdb.h"
 #include "dbwrap.h"
+#include "../libcli/security/secdesc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

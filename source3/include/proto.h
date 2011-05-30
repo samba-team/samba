@@ -236,47 +236,6 @@ ssize_t sys_recvfile(int fromfd,
 			size_t count);
 ssize_t drain_socket(int sockfd, size_t count);
 
-/* The following definitions come from lib/secdesc.c  */
-
-uint32_t get_sec_info(const struct security_descriptor *sd);
-struct security_descriptor *sec_desc_merge(TALLOC_CTX *ctx, struct security_descriptor *new_sdb, struct security_descriptor *old_sdb);
-struct sec_desc_buf *sec_desc_merge_buf(TALLOC_CTX *ctx, struct sec_desc_buf *new_sdb, struct sec_desc_buf *old_sdb);
-struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
-			enum security_descriptor_revision revision,
-			uint16 type,
-			const struct dom_sid *owner_sid, const struct dom_sid *grp_sid,
-			struct security_acl *sacl, struct security_acl *dacl, size_t *sd_size);
-struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_descriptor *src);
-NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
-			   struct security_descriptor *secdesc,
-			   uint8 **data, size_t *len);
-NTSTATUS marshall_sec_desc_buf(TALLOC_CTX *mem_ctx,
-			       struct sec_desc_buf *secdesc_buf,
-			       uint8_t **data, size_t *len);
-NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
-			     struct security_descriptor **psecdesc);
-NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
-				 struct sec_desc_buf **psecdesc_buf);
-struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const struct dom_sid *owner_sid, const struct dom_sid *grp_sid,
-				 struct security_acl *dacl, size_t *sd_size);
-struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct security_descriptor *sec_desc);
-struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src);
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, const struct dom_sid *sid, uint32 mask, size_t *sd_size);
-NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32 mask);
-NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, size_t *sd_size);
-bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr, bool container);
-NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
-                                        struct security_descriptor **ppsd,
-					size_t *psize,
-                                        const struct security_descriptor *parent_ctr,
-                                        const struct dom_sid *owner_sid,
-                                        const struct dom_sid *group_sid,
-                                        bool container);
-NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
-					struct sec_desc_buf **ppsdb,
-					const struct security_descriptor *parent_ctr,
-					bool container);
-
 /* The following definitions come from lib/sendfile.c  */
 
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
