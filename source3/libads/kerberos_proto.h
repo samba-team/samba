@@ -27,6 +27,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _LIBADS_KERBEROS_PROTO_H_
+#define _LIBADS_KERBEROS_PROTO_H_
+
 struct PAC_LOGON_INFO;
 
 #include "libads/ads_status.h"
@@ -98,3 +101,5 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 				 const char *auth_principal, const char *auth_password,
 				 const char *target_principal, const char *new_password,
 				 int time_offset);
+
+#endif /* _LIBADS_KERBEROS_PROTO_H_ */
