@@ -73,7 +73,6 @@ int bitmap_find(struct bitmap *bm, unsigned ofs);
 /* The following definitions come from lib/charcnv.c  */
 
 void gfree_charcnv(void);
-void init_iconv(void);
 bool convert_string(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen,

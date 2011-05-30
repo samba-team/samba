@@ -31,20 +31,6 @@ void gfree_charcnv(void)
 }
 
 /**
- * Initialize iconv conversion descriptors.
- *
- * This is called the first time it is needed, and also called again
- * every time the configuration is reloaded, because the charset or
- * codepage might have changed.
- **/
-void init_iconv(void)
-{
-	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
-								lp_unix_charset(), lp_display_charset(),
-								true, global_iconv_handle);
-}
-
-/**
  * Copy a string from a char* unix src to a dos codepage string destination.
  *
  * @return the number of bytes occupied by the string in the destination.

@@ -7523,6 +7523,20 @@ static bool handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
 	return ret;
 }
 
+/**
+ * Initialize iconv conversion descriptors.
+ *
+ * This is called the first time it is needed, and also called again
+ * every time the configuration is reloaded, because the charset or
+ * codepage might have changed.
+ **/
+static void init_iconv(void)
+{
+	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
+						      lp_unix_charset(), lp_display_charset(),
+						      true, global_iconv_handle);
+}
+
 static bool handle_charset(int snum, const char *pszParmValue, char **ptr)
 {
 	if (strcmp(*ptr, pszParmValue) != 0) {
