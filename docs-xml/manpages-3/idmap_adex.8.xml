@@ -66,9 +66,8 @@
 
 	<programlisting>
 	[global]
-	idmap backend = adex
-	idmap uid = 1000-4000000000
-	idmap gid = 1000-4000000000
+	idmap config * : backend = adex
+	idmap config * : range = 1000-4000000000
 
 	winbind nss info = adex
 	winbind normalize names = yes
