@@ -77,7 +77,7 @@ LIB_SRC = '''
           lib/util_file.c
           lib/util.c lib/util_cmdline.c lib/util_names.c
           lib/util_sock.c lib/sock_exec.c lib/util_sec.c
-          lib/substitute.c lib/substitute_generic.c lib/dbwrap_util.c
+          lib/substitute.c lib/substitute_generic.c
           lib/ms_fnmatch.c
           lib/tallocmsg.c lib/dmallocmsg.c
           libsmb/clisigning.c libsmb/smb_signing.c
@@ -793,7 +793,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3',
+                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3 dbwrap_util',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIB_NONSMBD',
@@ -992,6 +992,12 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
                      deps='tdb-wrap',
                     vars=locals())
+
+bld.SAMBA3_LIBRARY('dbwrap_util',
+                   source='lib/dbwrap_util.c',
+                   deps='samba-util-common UTIL_TDB errors',
+                   private_library=True,
+                   allow_undefined_symbols=False)
 
 bld.SAMBA3_LIBRARY('string_init',
                    source='''lib/string_init.c''',
