@@ -34,6 +34,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _PASSDB_PROTO_H_
+#define _PASSDB_PROTO_H_
 
 /* The following definitions come from passdb/account_pol.c  */
 
@@ -336,3 +338,5 @@ NTSTATUS pdb_tdbsam_init(void);
 
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
 NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
+
+#endif /* _PASSDB_PROTO_H_ */
