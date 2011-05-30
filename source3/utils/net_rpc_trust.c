@@ -419,19 +419,22 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 	struct other_dom_data *other_dom_data;
 	struct net_context *other_net_ctx = NULL;
 	struct dom_data dom_data[2];
+	void (*usage)(void);
+
+	switch (op) {
+		case TRUST_CREATE:
+			usage = print_trust_usage;
+			break;
+		case TRUST_DELETE:
+			usage = print_trust_delete_usage;
+			break;
+		default:
+			DEBUG(0, ("Unsupported trust operation.\n"));
+			return -1;
+	}
 
 	if (net_ctx->display_usage) {
-		switch (op) {
-			case TRUST_CREATE:
-				print_trust_usage();
-				break;
-			case TRUST_DELETE:
-				print_trust_delete_usage();
-				break;
-			default:
-				DEBUG(0, ("Unsupported trust operation.\n"));
-				return -1;
-		}
+		usage();
 		return 0;
 	}
 
@@ -444,7 +447,7 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 	ret = parse_trust_args(mem_ctx, argc, argv, &other_dom_data, &trust_pw);
 	if (ret != 0) {
 		if (ret == EINVAL) {
-			print_trust_usage();
+			usage();
 		} else {
 			DEBUG(0, ("Failed to parse arguments.\n"));
 		}
@@ -471,7 +474,7 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 		     (dom_data[1].domain_name == NULL ||
 		      dom_data[1].dns_domain_name == NULL))) {
 			DEBUG(0, ("Missing required argument.\n"));
-			print_trust_usage();
+			usage();
 			goto done;
 		}
 	}
