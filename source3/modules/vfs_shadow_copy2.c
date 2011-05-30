@@ -918,7 +918,7 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 			continue;
 		}
 
-		tlabels = talloc_realloc(shadow_copy2_data->mem_ctx,
+		tlabels = talloc_realloc(shadow_copy2_data,
 					 shadow_copy2_data->labels,
 					 SHADOW_COPY_LABEL, shadow_copy2_data->num_volumes+1);
 		if (tlabels == NULL) {

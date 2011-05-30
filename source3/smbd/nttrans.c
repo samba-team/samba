@@ -2215,7 +2215,6 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 * it be deallocated when we return.
 		 */
 		struct shadow_copy_data *shadow_data = NULL;
-		TALLOC_CTX *shadow_mem_ctx = NULL;
 		bool labels = False;
 		uint32 labels_data_count = 0;
 		uint32 i;
@@ -2236,29 +2235,19 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			labels = True;
 		}
 
-		shadow_mem_ctx = talloc_init("SHADOW_COPY_DATA");
-		if (shadow_mem_ctx == NULL) {
-			DEBUG(0,("talloc_init(SHADOW_COPY_DATA) failed!\n"));
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,
+		shadow_data = TALLOC_ZERO_P(talloc_tos(),
 					    struct shadow_copy_data);
 		if (shadow_data == NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));
-			talloc_destroy(shadow_mem_ctx);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
-
-		shadow_data->mem_ctx = shadow_mem_ctx;
 
 		/*
 		 * Call the VFS routine to actually do the work.
 		 */
 		if (SMB_VFS_GET_SHADOW_COPY_DATA(fsp, shadow_data, labels)!=0) {
-			talloc_destroy(shadow_data->mem_ctx);
+			TALLOC_FREE(shadow_data);
 			if (errno == ENOSYS) {
 				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n", 
 					conn->connectpath));
@@ -2283,14 +2272,14 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		if (max_data_count<data_count) {
 			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) too small (%u) bytes needed!\n",
 				max_data_count,data_count));
-			talloc_destroy(shadow_data->mem_ctx);
+			TALLOC_FREE(shadow_data);
 			reply_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 			return;
 		}
 
 		pdata = nttrans_realloc(ppdata, data_count);
 		if (pdata == NULL) {
-			talloc_destroy(shadow_data->mem_ctx);
+			TALLOC_FREE(shadow_data);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
@@ -2323,7 +2312,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			}
 		}
 
-		talloc_destroy(shadow_data->mem_ctx);
+		TALLOC_FREE(shadow_data);
 
 		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
 				pdata, data_count);
