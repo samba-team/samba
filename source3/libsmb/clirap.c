@@ -1079,7 +1079,7 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name,
 		return status;
 	}
 
-	clistr_pull(rdata, name, rdata+4, namelen, IVAL(rdata, 0),
+	clistr_pull((const char *)rdata, name, rdata+4, namelen, IVAL(rdata, 0),
 		    STR_UNICODE);
 	TALLOC_FREE(rdata);
 	return NT_STATUS_OK;
