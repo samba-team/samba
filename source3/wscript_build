@@ -765,7 +765,7 @@ bld.SAMBA3_LIBRARY('smbregistry',
                    source=REG_BASE_SRC,
                    deps='''LIB_NONSMBD tdb-wrap3 NDR_SECURITY UTIL_TDB talloc
                    replace util_reg samba-util-common security
-                   errors3 adt_tree''',
+                   errors3 adt_tree dbwrap_util util_str util_sec''',
                    vars=locals(),
                    private_library=True)
 
