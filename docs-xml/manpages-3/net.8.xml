@@ -795,7 +795,127 @@ appear in your system.
 <para>List all interdomain trust relationships.</para>
 
 </refsect3>
+<refsect3>
+<title>RPC TRUSTDOM LIST</title>
 
+<para>List all interdomain trust relationships.</para>
+
+</refsect3>
+</refsect2>
+
+<refsect2>
+<title>RPC TRUST</title>
+
+<refsect3>
+<title>RPC TRUST CREATE</title>
+
+<para>Create a trust trust object by calling lsaCreateTrustedDomainEx2.
+The can be done on a single server or on two servers at once with the
+possibility to use a random trust password.</para>
+
+<variablelist><title>Options:</title>
+<varlistentry>
+<term>otherserver</term>
+<listitem><para>Domain controller of the second domain</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>otheruser</term>
+<listitem><para>Admin user in the second domain</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>otherdomainsid</term>
+<listitem><para>SID of the second domain</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>other_netbios_domain</term>
+<listitem><para>NetBIOS (short) name of the second domain</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>otherdomain</term>
+<listitem><para>DNS (full) name of the second domain</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>trustpw</term>
+<listitem><para>Trust password</para></listitem>
+</varlistentry>
+</variablelist>
+
+<variablelist><title>Examples:</title>
+<varlistentry>
+<term>Create a trust object on srv1.dom1.dom for the domain dom2</term>
+<listitem><literallayout>
+net rpc trust create \
+    otherdomainsid=S-x-x-xx-xxxxxxxxxx-xxxxxxxxxx-xxxxxxxxx \
+    other_netbios_domain=dom2 \
+    otherdomain=dom2.dom \
+    trustpw=12345678 \
+    -S srv1.dom1.dom
+</literallayout></listitem>
+</varlistentry>
+<varlistentry>
+<term>Create a trust relationship between dom1 and dom2</term>
+<listitem><literallayout>
+net rpc trust create \
+    otherserver=srv2.dom2.test \
+    otheruser=dom2adm \
+    -S srv1.dom1.dom
+</literallayout></listitem>
+</varlistentry>
+</variablelist>
+</refsect3>
+
+<refsect3>
+<title>RPC TRUST DELETE</title>
+
+<para>Delete a trust trust object by calling lsaDeleteTrustedDomain.
+The can be done on a single server or on two servers at once.</para>
+
+<variablelist><title>Options:</title>
+<varlistentry>
+<term>otherserver</term>
+<listitem><para>Domain controller of the second domain</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>otheruser</term>
+<listitem><para>Admin user in the second domain</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>otherdomainsid</term>
+<listitem><para>SID of the second domain</para></listitem>
+</varlistentry>
+</variablelist>
+
+<variablelist><title>Examples:</title>
+<varlistentry>
+<term>Delete a trust object on srv1.dom1.dom for the domain dom2</term>
+<listitem><literallayout>
+net rpc trust delete \
+    otherdomainsid=S-x-x-xx-xxxxxxxxxx-xxxxxxxxxx-xxxxxxxxx \
+    -S srv1.dom1.dom
+</literallayout></listitem>
+</varlistentry>
+<varlistentry>
+<term>Delete a trust relationship between dom1 and dom2</term>
+<listitem><literallayout>
+net rpc trust delete \
+    otherserver=srv2.dom2.test \
+    otheruser=dom2adm \
+    -S srv1.dom1.dom
+</literallayout></listitem>
+</varlistentry>
+</variablelist>
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <refsect3>
 <title>RPC RIGHTS</title>
 
