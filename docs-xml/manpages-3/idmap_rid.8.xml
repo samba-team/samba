@@ -106,9 +106,8 @@
 	security = domain
 	workgroup = MAIN
 
-	idmap backend = tdb
-	idmap uid = 1000000-1999999
-	idmap gid = 1000000-1999999
+	idmap config * : backend        = tdb
+	idmap config * : range          = 1000000-1999999
 
 	idmap config MAIN : backend     = rid
 	idmap config MAIN : range       = 10000 - 49999
