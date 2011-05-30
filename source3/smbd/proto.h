@@ -1,3 +1,47 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  Main SMB server routines
+ *
+ *  Copyright (C) Andrew Tridgell			1992-2002,2006
+ *  Copyright (C) Jeremy Allison			1992-2010
+ *  Copyright (C) Volker Lendecke			1993-2009
+ *  Copyright (C) John H Terpstra			1995-1998
+ *  Copyright (C) Luke Kenneth Casson Leighton		1996-1998
+ *  Copyright (C) Paul Ashton				1997-1998
+ *  Copyright (C) Tim Potter				1999-2000
+ *  Copyright (C) T.D.Lee@durham.ac.uk			1999
+ *  Copyright (C) Ying Chen				2000
+ *  Copyright (C) Shirish Kalele			2000
+ *  Copyright (C) Andrew Bartlett			2001-2003
+ *  Copyright (C) Alexander Bokovoy			2002,2005
+ *  Copyright (C) Simo Sorce				2001-2002,2009
+ *  Copyright (C) Andreas Gruenbacher			2002
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2002
+ *  Copyright (C) Martin Pool				2002
+ *  Copyright (C) Luke Howard				2003
+ *  Copyright (C) Stefan (metze) Metzmacher		2003,2009
+ *  Copyright (C) Steve French				2005
+ *  Copyright (C) Gerald (Jerry) Carter			2006
+ *  Copyright (C) James Peach				2006-2007
+ *  Copyright (C) Jelmer Vernooij			2002-2003
+ *  Copyright (C) Michael Adam				2007
+ *  Copyright (C) Rishi Srivatsavai			2007
+ *  Copyright (C) Tim Prouty				2009
+ *  Copyright (C) Gregor Beck				2011
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /* The following definitions come from smbd/signing.c  */
 
