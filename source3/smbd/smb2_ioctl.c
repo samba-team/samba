@@ -244,8 +244,9 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	state->in_max_output = in_max_output;
 	state->out_output = data_blob_null;
 
-	DEBUG(10,("smbd_smb2_ioctl: file_id[0x%016llX]\n",
-		  (unsigned long long)in_file_id_volatile));
+	DEBUG(10, ("smbd_smb2_ioctl: ctl_code[0x%08x] file_id[0x%016llX]\n",
+		   (unsigned)in_ctl_code,
+		   (unsigned long long)in_file_id_volatile));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
