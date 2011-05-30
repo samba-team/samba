@@ -18,6 +18,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _LIBGPO_GPO_PROTO_H_
+#define _LIBGPO_GPO_PROTO_H_
+
 /* The following definitions come from libgpo/gpo_filesync.c  */
 
 NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
@@ -94,3 +97,5 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 				struct gp_registry_entry *entry,
 				const struct security_token *token,
 				uint32_t flags);
+
+#endif /* _LIBGPO_GPO_PROTO_H_ */
