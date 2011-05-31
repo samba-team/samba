@@ -23,6 +23,7 @@
 #include "libcli/security/dom_sid.h"
 #include "../librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/samr.h"
+#include "secrets.h"
 
 #include "smbldap.h"
 
@@ -717,9 +718,11 @@ static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pd
 							  TALLOC_CTX *mem_ctx)
 {
 	struct pdb_domain_info *info;
-	NTSTATUS status;
 	struct ldapsam_privates *ldap_state =
 			(struct ldapsam_privates *)pdb_methods->private_data;
+	char sid_buf[24];
+	DATA_BLOB sid_blob;
+	NTSTATUS status;
 
 	info = talloc(mem_ctx, struct pdb_domain_info);
 	if (info == NULL) {
@@ -738,9 +741,27 @@ static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pd
 	}
 	strlower_m(info->dns_domain);
 	info->dns_forest = talloc_strdup(info, info->dns_domain);
+
+	/* we expect a domain SID to have 4 sub IDs */
+	if (ldap_state->domain_sid.num_auths != 4) {
+		goto fail;
+	}
+
 	sid_copy(&info->sid, &ldap_state->domain_sid);
 
-	status = GUID_from_string("testguid", &info->guid);
+	if (!sid_linearize(sid_buf, sizeof(sid_buf), &info->sid)) {
+		goto fail;
+	}
+
+	/* the first 8 bytes of the linearized SID are not random,
+	 * so we skip them */
+	sid_blob.data = (uint8_t *) sid_buf + 8 ;
+	sid_blob.length = 16;
+
+	status = GUID_from_ndr_blob(&sid_blob, &info->guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
 
 	return info;
 
