@@ -1878,7 +1878,7 @@ string.</member>
 
 <refsect3>
   <title>REGISTRY ENUMERATE <replaceable>key</replaceable> </title>
-  <para>Enumerate subkeys and values of <emphasis>key</emphasis>
+  <para>Enumerate subkeys and values of <emphasis>key</emphasis>.
   </para>
 </refsect3>
 
