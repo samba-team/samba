@@ -260,6 +260,29 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 
 		if (pfd->revents & (POLLIN|POLLHUP|POLLERR)) {
 			flags |= EVENT_FD_READ;
+
+			if ((fde->flags & EVENT_FD_READ) == 0) {
+				/*
+				 * This one is a bit subtle. If a socket is
+				 * not being asked for readability and dies
+				 * with POLLHUP|POLLERR, then the write
+				 * handler must be activated to detect the
+				 * dead socket with a failed write(2)
+				 * call. The error I've seen is winbind
+				 * spinning in poll trying to send something
+				 * to a DC on a dead socket. poll gave
+				 * POLLHUP|POLLERR, but because winbind at
+				 * this moment only had asked for socket
+				 * writability, it spun.
+				 *
+				 * We can't activate EVENT_FD_WRITE though
+				 * whenever we have an error condition via
+				 * POLLHUP|POLLERR, because at least smbd
+				 * monitors EVENT_FD_WRITE in its callback,
+				 * doing nothing.
+				 */
+				flags |= EVENT_FD_WRITE;
+			}
 		}
 		if (pfd->revents & POLLOUT) {
 			flags |= EVENT_FD_WRITE;
