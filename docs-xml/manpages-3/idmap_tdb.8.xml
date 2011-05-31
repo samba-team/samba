@@ -50,8 +50,7 @@
 
 	<para>
 	This example shows how tdb is used as a the default idmap backend.
-	It configures the idmap range through the global options for all
-	domains encountered. This same range is used for uid/gid allocation.
+	This configured range is used for uid and gid allocation.
 	</para>
 
 	<programlisting>
@@ -59,26 +58,6 @@
 	# "backend = tdb" is redundant here since it is the default
 	idmap config * : backend = tdb
 	idmap config * : range = 1000000-2000000
-	</programlisting>
-
-	<para>
-	This (rather theoretical) example shows how tdb can be used as the
-	allocating backend while ldap is the default backend used to store
-	the mappings.
-	It adds an explicit configuration for some domain DOM1, that
-	uses the tdb idmap backend. Note that the same range as the
-	default uid/gid range is used, since the allocator has to serve
-	both the default backend and the explicitly configured domain DOM1.
-	</para>
-
-	<programlisting>
-	[global]
-	idmap config * : backend = ldap
-	idmap config * : range = 1000000-2000000
-	# use a different uid/gid allocator:
-
-	idmap config DOM1 : backend = tdb
-	idmap config DOM1 : range = 1000000-2000000
 	</programlisting>
 </refsect1>
 
