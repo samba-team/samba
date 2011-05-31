@@ -239,10 +239,10 @@
 #define SMB_VFS_NEXT_CHDIR(handle, path) \
 	smb_vfs_call_chdir((handle)->next, (path))
 
-#define SMB_VFS_GETWD(conn, buf) \
-	smb_vfs_call_getwd((conn)->vfs_handles, (buf))
-#define SMB_VFS_NEXT_GETWD(handle, buf) \
-	smb_vfs_call_getwd((handle)->next, (buf))
+#define SMB_VFS_GETWD(conn) \
+	smb_vfs_call_getwd((conn)->vfs_handles)
+#define SMB_VFS_NEXT_GETWD(handle) \
+	smb_vfs_call_getwd((handle)->next)
 
 #define SMB_VFS_NTIMES(conn, path, ts) \
 	smb_vfs_call_ntimes((conn)->vfs_handles, (path), (ts))

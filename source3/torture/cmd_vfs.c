@@ -889,13 +889,14 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 
 static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	char buf[PATH_MAX];
-	if (SMB_VFS_GETWD(vfs->conn, buf) == NULL) {
+	char *buf = SMB_VFS_GETWD(vfs->conn);
+	if (buf == NULL) {
 		printf("getwd: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	printf("getwd: %s\n", buf);
+	SAFE_FREE(buf);
 	return NT_STATUS_OK;
 }
 

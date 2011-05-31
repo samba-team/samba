@@ -795,15 +795,13 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
-        char s[PATH_MAX+1];
+        char *current_dir = NULL;
 	char *result = NULL;
 	DATA_BLOB cache_value;
 	struct file_id key;
 	struct smb_filename *smb_fname_dot = NULL;
 	struct smb_filename *smb_fname_full = NULL;
 	NTSTATUS status;
-
-	*s = 0;
 
 	if (!lp_getwd_cache()) {
 		goto nocache;
@@ -866,7 +864,8 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	 * systems, or the not quite so bad getwd.
 	 */
 
-	if (!SMB_VFS_GETWD(conn,s)) {
+	current_dir = SMB_VFS_GETWD(conn);
+	if (current_dir == NULL) {
 		DEBUG(0, ("vfs_GetWd: SMB_VFS_GETWD call failed: %s\n",
 			  strerror(errno)));
 		goto out;
@@ -877,10 +876,11 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 
 		memcache_add(smbd_memcache(), GETWD_CACHE,
 			     data_blob_const(&key, sizeof(key)),
-			     data_blob_const(s, strlen(s)+1));
+			     data_blob_const(current_dir,
+						strlen(current_dir)+1));
 	}
 
-	result = talloc_strdup(ctx, s);
+	result = talloc_strdup(ctx, current_dir);
 	if (result == NULL) {
 		errno = ENOMEM;
 	}
@@ -888,6 +888,7 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
  out:
 	TALLOC_FREE(smb_fname_dot);
 	TALLOC_FREE(smb_fname_full);
+	SAFE_FREE(current_dir);
 	return result;
 }
 
@@ -1553,10 +1554,10 @@ int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path)
 	return handle->fns->chdir(handle, path);
 }
 
-char *smb_vfs_call_getwd(struct vfs_handle_struct *handle, char *buf)
+char *smb_vfs_call_getwd(struct vfs_handle_struct *handle)
 {
 	VFS_FIND(getwd);
-	return handle->fns->getwd(handle, buf);
+	return handle->fns->getwd(handle);
 }
 
 int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,

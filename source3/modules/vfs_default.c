@@ -748,16 +748,14 @@ static int vfswrap_chdir(vfs_handle_struct *handle,  const char *path)
 	return result;
 }
 
-static char *vfswrap_getwd(vfs_handle_struct *handle,  char *path)
+static char *vfswrap_getwd(vfs_handle_struct *handle)
 {
 	char *result;
 
 	START_PROFILE(syscall_getwd);
 	result = sys_getwd();
 	END_PROFILE(syscall_getwd);
-	/* FIXME - with a VFS change. JRA !! */
-	strlcpy(path, result, PATH_MAX);
-	return path;
+	return result;
 }
 
 /*********************************************************************

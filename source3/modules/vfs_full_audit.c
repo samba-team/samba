@@ -1208,14 +1208,14 @@ static int smb_full_audit_chdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *smb_full_audit_getwd(vfs_handle_struct *handle,
-			 char *path)
+static char *smb_full_audit_getwd(vfs_handle_struct *handle)
 {
 	char *result;
 
-	result = SMB_VFS_NEXT_GETWD(handle, path);
+	result = SMB_VFS_NEXT_GETWD(handle);
 	
-	do_log(SMB_VFS_OP_GETWD, (result != NULL), handle, "%s", path);
+	do_log(SMB_VFS_OP_GETWD, (result != NULL), handle, "%s",
+		result == NULL? "" : result);
 
 	return result;
 }
