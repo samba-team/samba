@@ -27,6 +27,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _RPC_SERVER_SRV_ACCESS_CHECK_H_
+#define _RPC_SERVER_SRV_ACCESS_CHECK_H_
+
 /* The following definitions come from rpc_server/srv_access_check.c */
 
 NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
@@ -37,3 +40,5 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 void map_max_allowed_access(const struct security_token *nt_token,
 			    const struct security_unix_token *unix_token,
 			    uint32_t *pacc_requested);
+
+#endif /* _RPC_SERVER_SRV_ACCESS_CHECK_H_ */
