@@ -2602,6 +2602,17 @@ if test x"$samba_cv_HAVE_LINUX_FALLOCATE64" = x"yes" && test x"$ac_cv_func_fallo
     AC_DEFINE(HAVE_LINUX_FALLOCATE64,1,[Whether the Linux 'fallocate64' function is available])
 fi
 
+AC_CACHE_CHECK([for getcwd takes NULL],samba_cv_GETCWD_TAKES_NULL,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+main() { char *s = getcwd(NULL,0); if (s) exit(0); exit(1); }],
+samba_cv_GETCWD_TAKES_NULL=yes,samba_cv_GETCWD_TAKES_NULL=no,samba_cv_GETCWD_TAKES_NULL=cross)])
+if test x"$samba_cv_GETCWD_TAKES_NULL" = x"yes"; then
+    AC_DEFINE(GETCWD_TAKES_NULL,1,[Whether the getcwd function takes NULL as an argument])
+fi
+
 ICONV_LOOK_DIRS="/usr /usr/local /sw /opt"
 AC_ARG_WITH(libiconv,
 [AS_HELP_STRING([--with-libiconv=BASEDIR], [Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto)])],

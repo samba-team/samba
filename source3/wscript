@@ -1420,6 +1420,16 @@ main() {
                 conf.DEFINE('AIX_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
 
+    # Check for getcwd allowing a NULL arg.
+    conf.CHECK_CODE('''
+#include <unistd.h>
+main() {
+	char *s = getcwd(NULL,0);
+        exit(s != NULL ?  0 : 1);
+}''', 'GETCWD_TAKES_NULL', addmain=False, execute=True,
+        msg="getcwd takes a NULL argument")
+
+
     conf.CHECK_CODE('''enum TDB_ERROR err = TDB_ERR_NESTING''',
 		    'HAVE_TDB_ERR_NESTING',
 		    headers='tdb.h',
