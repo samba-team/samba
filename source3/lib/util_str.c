@@ -868,7 +868,6 @@ uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
  */
 uint64_t conv_str_size(const char * str)
 {
-	uint64_t lval_orig;
         uint64_t lval;
 	char * end;
 
@@ -885,8 +884,6 @@ uint64_t conv_str_size(const char * str)
         if (*end == '\0') {
 		return lval;
 	}
-
-	lval_orig = lval;
 
 	if (strwicmp(end, "K") == 0) {
 		lval *= 1024ULL;

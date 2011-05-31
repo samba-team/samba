@@ -4179,10 +4179,9 @@ static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
 				      struct spoolss_PrinterInfo6 *r,
 				      int snum)
 {
-	int count;
 	print_status_struct status;
 
-	count = print_queue_length(msg_ctx, snum, &status);
+	print_queue_length(msg_ctx, snum, &status);
 
 	r->status = nt_printq_status(status.status);
 

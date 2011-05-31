@@ -6501,7 +6501,6 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	NTSTATUS nt_status, result;
 	const char *domain_name = NULL;
-	struct dom_sid *queried_dom_sid;
 	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
 
@@ -6593,8 +6592,6 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
-
-	queried_dom_sid = info->account_domain.sid;
 
 	/*
 	 * Keep calling LsaEnumTrustdom over opened pipe until
