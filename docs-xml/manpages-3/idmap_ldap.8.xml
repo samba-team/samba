@@ -48,8 +48,14 @@
 		<varlistentry>
 		<term>ldap_user_dn = DN</term>
 		<listitem><para>
-			Defines the user DN to be used for authentication. If absent an
-			anonymous bind will be performed.
+			Defines the user DN to be used for authentication.
+			The secret for authenticating this user should be
+			stored with net idmap secret
+			(see <citerefentry><refentrytitle>net</refentrytitle>
+			<manvolnum>8</manvolnum></citerefentry>).
+			If absent, the ldap credentials from the ldap passdb configuration
+			are used, and if these are also absent, an anonymous
+			bind will be performed as last fallback.
 		</para></listitem>
 		</varlistentry>
 
@@ -78,7 +84,8 @@
 	<para>
 	The following example shows how an ldap directory is used as the
 	default idmap backend. It also configures the idmap range and base
-	directory suffix.
+	directory suffix. The secret for the ldap_user_dn has to be set with
+	&quot;net idmap secret '*' password&quot;.
 	</para>
 
 	<programlisting>
@@ -87,6 +94,7 @@
 	idmap config * : range        = 1000000-1999999
 	idmap config * : ldap_url     = ldap://localhost/
 	idmap config * : ldap_base_dn = ou=idmap,dc=example,dc=com
+	idmap config * : ldap_user_dn = cn=idmap_admin,dc=example,dc=com
 	</programlisting>
 
 	<para>
