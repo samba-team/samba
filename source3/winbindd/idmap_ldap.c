@@ -232,8 +232,8 @@ done:
  Allocate a new uid or gid
 ********************************/
 
-static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
-				       struct unixid *xid)
+static NTSTATUS idmap_ldap_allocate_id_internal(struct idmap_domain *dom,
+						struct unixid *xid)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -405,7 +405,7 @@ static NTSTATUS idmap_ldap_get_new_id(struct idmap_domain *dom,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	ret = idmap_ldap_allocate_id(dom, id);
+	ret = idmap_ldap_allocate_id_internal(dom, id);
 
 	return ret;
 }
