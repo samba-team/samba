@@ -1625,8 +1625,8 @@ bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
  Is this directory empty ?
 *****************************************************************/
 
-NTSTATUS can_delete_directory(struct connection_struct *conn,
-				const char *dirname)
+NTSTATUS smbd_can_delete_directory(struct connection_struct *conn,
+				   const char *dirname)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	long dirpos = 0;

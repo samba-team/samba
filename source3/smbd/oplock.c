@@ -849,7 +849,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	TALLOC_FREE(lck);
 }
 
-void contend_level2_oplocks_begin(files_struct *fsp,
+void smbd_contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type)
 {
 	if (koplocks && koplocks->ops->contend_level2_oplocks_begin) {
@@ -860,7 +860,7 @@ void contend_level2_oplocks_begin(files_struct *fsp,
 	contend_level2_oplocks_begin_default(fsp, type);
 }
 
-void contend_level2_oplocks_end(files_struct *fsp,
+void smbd_contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type)
 {
 	/* Only kernel oplocks implement this so far */

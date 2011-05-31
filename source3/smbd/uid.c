@@ -345,7 +345,7 @@ bool change_to_user_by_session(connection_struct *conn,
  but modify the current_user entries.
 ****************************************************************************/
 
-bool change_to_root_user(void)
+bool smbd_change_to_root_user(void)
 {
 	set_root_sec_ctx();
 
@@ -441,7 +441,7 @@ static void pop_conn_ctx(void)
  restores the connection context.
 ****************************************************************************/
 
-void become_root(void)
+void smbd_become_root(void)
 {
 	 /*
 	  * no good way to handle push_sec_ctx() failing without changing
@@ -456,7 +456,7 @@ void become_root(void)
 
 /* Unbecome the root user */
 
-void unbecome_root(void)
+void smbd_unbecome_root(void)
 {
 	pop_sec_ctx();
 	pop_conn_ctx();

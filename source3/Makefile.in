@@ -486,7 +486,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  ../libcli/security/security_token.o ../libcli/security/util_sid.o \
 	  ../libcli/smb/util.o
 
-LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyparam.o lib/dummyroot.o
+LIB_DUMMY_OBJ = lib/smbd_shim.o lib/dummyparam.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
 
 READLINE_OBJ = ../libcli/smbreadline/smbreadline.o
@@ -907,6 +907,7 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       lib/sysquotas.o lib/sysquotas_linux.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
 	       lib/sysquotas_nfs.o \
+	       lib/smbd_shim.o \
 	       smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o $(AFS_OBJ) smbd/msdfs.o \
 	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \

@@ -3,6 +3,7 @@
    RPC pipe client
 
    Copyright (C) Gerald (Jerry) Carter          2004.
+   Copyright (C) Andrew Bartlett                2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,30 +19,52 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* Stupid dummy functions required due to the horrible dependency mess
+/* Shim functions required due to the horrible dependency mess
    in Samba. */
 
 #include "includes.h"
+#include "smbd_shim.h"
+#include "smbd/proto.h"
+
+static struct smbd_shim shim;
+
+void set_smbd_shim(const struct smbd_shim *shim_functions)
+{
+	shim = *shim_functions;
+}
 
 void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			struct byte_range_lock *br_lck,
 			enum file_close_type close_type)
 {
+	if (shim.cancel_pending_lock_requests_by_fid) {
+
+		shim.cancel_pending_lock_requests_by_fid(fsp, br_lck, close_type);
+	}
 }
 
 void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name)
 {
+	if (shim.send_stat_cache_delete_message) {
+		shim.send_stat_cache_delete_message(msg_ctx, name);
+	}
 }
 
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname)
 {
+	if (shim.can_delete_directory) {
+		return shim.can_delete_directory(conn, dirname);
+	}
 	return NT_STATUS_OK;
 }
 
 bool change_to_root_user(void)
 {
+	if (shim.change_to_root_user) {
+		return shim.change_to_root_user();
+	}
 	return false;
 }
 
@@ -55,11 +78,33 @@ bool change_to_root_user(void)
 void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type)
 {
+	if (shim.contend_level2_oplocks_begin) {
+		shim.contend_level2_oplocks_begin(fsp, type);
+	}
 	return;
 }
 
 void contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type)
 {
+	if (shim.contend_level2_oplocks_end) {
+		shim.contend_level2_oplocks_end(fsp, type);
+	}
+	return;
+}
+
+void become_root(void)
+{
+	if (shim.become_root) {
+		shim.become_root();
+	}
+        return;
+}
+
+void unbecome_root(void)
+{
+	if (shim.unbecome_root) {
+		shim.unbecome_root();
+	}
 	return;
 }

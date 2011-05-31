@@ -110,6 +110,9 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint64_t offset,
 		uint64_t count,
 		uint64_t blocking_smblctx);
+void smbd_cancel_pending_lock_requests_by_fid(files_struct *fsp,
+			struct byte_range_lock *br_lck,
+			enum file_close_type close_type);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			struct byte_range_lock *br_lck,
 			enum file_close_type close_type);
@@ -235,6 +238,8 @@ long TellDir(struct smb_Dir *dirp);
 void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
 bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
+				const char *dirname);
+NTSTATUS smbd_can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
 
 /* The following definitions come from smbd/dmapi.c  */
@@ -670,6 +675,10 @@ void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
 void contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type);
+void smbd_contend_level2_oplocks_begin(files_struct *fsp,
+				  enum level2_contention_type type);
+void smbd_contend_level2_oplocks_end(files_struct *fsp,
+				enum level2_contention_type type);
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);
 void message_to_share_mode_entry(struct share_mode_entry *e, char *msg);
 bool init_oplocks(struct messaging_context *msg_ctx);
@@ -1046,6 +1055,8 @@ bool stat_cache_lookup(connection_struct *conn,
 			char **pp_dirpath,
 			char **pp_start,
 			SMB_STRUCT_STAT *pst);
+void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
+				    const char *name);
 void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);
 void stat_cache_delete(const char *name);
@@ -1106,10 +1117,13 @@ bool change_to_user(connection_struct *conn, uint16 vuid);
 bool change_to_user_by_session(connection_struct *conn,
 			       const struct auth_serversupplied_info *session_info);
 bool change_to_root_user(void);
+bool smbd_change_to_root_user(void);
 bool become_authenticated_pipe_user(struct auth_serversupplied_info *session_info);
 bool unbecome_authenticated_pipe_user(void);
 void become_root(void);
 void unbecome_root(void);
+void smbd_become_root(void);
+void smbd_unbecome_root(void);
 bool become_user(connection_struct *conn, uint16 vuid);
 bool become_user_by_session(connection_struct *conn,
 			    const struct auth_serversupplied_info *session_info);
