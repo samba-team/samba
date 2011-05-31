@@ -753,9 +753,11 @@ static char *vfswrap_getwd(vfs_handle_struct *handle,  char *path)
 	char *result;
 
 	START_PROFILE(syscall_getwd);
-	result = sys_getwd(path);
+	result = sys_getwd();
 	END_PROFILE(syscall_getwd);
-	return result;
+	/* FIXME - with a VFS change. JRA !! */
+	strlcpy(path, result, PATH_MAX);
+	return path;
 }
 
 /*********************************************************************

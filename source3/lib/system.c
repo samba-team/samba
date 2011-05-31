@@ -959,18 +959,45 @@ int sys_waitpid(pid_t pid,int *status,int options)
 }
 
 /*******************************************************************
- System wrapper for getwd
+ System wrapper for getwd. Always returns MALLOC'ed memory, or NULL
+ on error (malloc fail usually).
 ********************************************************************/
 
-char *sys_getwd(char *s)
+char *sys_getwd(void)
 {
-	char *wd;
-#ifdef HAVE_GETCWD
-	wd = (char *)getcwd(s, PATH_MAX);
-#else
-	wd = (char *)getwd(s);
-#endif
+#ifdef GETCWD_TAKES_NULL
+	return getcwd(NULL, 0);
+#elif HAVE_GETCWD
+	char *wd = NULL, *s = NULL;
+	size_t allocated = PATH_MAX;
+
+	while (1) {
+		s = SMB_REALLOC_ARRAY(s, char, allocated);
+		if (s == NULL) {
+			return NULL;
+		}
+		wd = getcwd(s, allocated);
+		if (wd) {
+			break;
+		}
+		if (errno != ERANGE) {
+			SAFE_FREE(s);
+			break;
+		}
+		allocated *= 2;
+		if (allocated < PATH_MAX) {
+			SAFE_FREE(s);
+			break;
+		}
+	}
 	return wd;
+#else
+	char *s = SMB_MALLOC_ARRAY(char, PATH_MAX);
+	if (s == NULL) {
+		return NULL;
+	}
+	return getwd(s);
+#endif
 }
 
 #if defined(HAVE_POSIX_CAPABILITIES)

@@ -3876,11 +3876,12 @@ static int cmd_lcd(void)
 				buf, strerror(errno));
 		}
 	}
-	d = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
+	d = sys_getwd();
 	if (!d) {
 		return 1;
 	}
-	DEBUG(2,("the local directory is now %s\n",sys_getwd(d)));
+	DEBUG(2,("the local directory is now %s\n",d));
+	SAFE_FREE(d);
 	return 0;
 }
 

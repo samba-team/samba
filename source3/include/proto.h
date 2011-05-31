@@ -391,7 +391,7 @@ void sys_rewinddir(SMB_STRUCT_DIR *dirp);
 int sys_closedir(SMB_STRUCT_DIR *dirp);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
 int sys_waitpid(pid_t pid,int *status,int options);
-char *sys_getwd(char *s);
+char *sys_getwd(void);
 void set_effective_capability(enum smbd_capability capability);
 void drop_effective_capability(enum smbd_capability capability);
 long sys_random(void);
