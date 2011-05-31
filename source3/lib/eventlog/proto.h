@@ -21,6 +21,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _LIB_EVENTLOG_PROTO_H_
+#define _LIB_EVENTLOG_PROTO_H_
+
 /* The following definitions come from lib/eventlog/eventlog.c  */
 
 TDB_CONTEXT *elog_init_tdb( char *tdbfilename );
@@ -55,3 +58,5 @@ NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
 				  ELOG_TDB *etdb,
 				  DATA_BLOB *blob_p,
 				  uint32_t *num_records_p);
+
+#endif /* _LIB_EVENTLOG_PROTO_H_ */
