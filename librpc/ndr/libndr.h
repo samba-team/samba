@@ -122,6 +122,7 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_CONFORMANT	(1<<10)
 #define LIBNDR_FLAG_STR_CHARLEN		(1<<11)
 #define LIBNDR_FLAG_STR_UTF8		(1<<12)
+#define LIBNDR_FLAG_STR_RAW8		(1<<13)
 #define LIBNDR_STRING_FLAGS		(0x7FFC)
 
 /* set if relative pointers should *not* be marshalled in reverse order */

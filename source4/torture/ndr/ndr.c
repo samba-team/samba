@@ -355,6 +355,7 @@ struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 	torture_suite_add_suite(suite, ndr_nbt_suite(suite));
 	torture_suite_add_suite(suite, ndr_ntlmssp_suite(suite));
 	torture_suite_add_suite(suite, ndr_backupkey_suite(suite));
+	torture_suite_add_suite(suite, ndr_string_suite(suite));
 
 	torture_suite_add_simple_test(suite, "string terminator",
 				      test_check_string_terminator);

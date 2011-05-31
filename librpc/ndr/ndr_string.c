@@ -31,7 +31,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
 	size_t conv_src_len = 0, converted_size;
-	int chset = CH_UTF16;
+	int do_convert = 1, chset = CH_UTF16;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
 	unsigned c_len_term = 0;
@@ -54,6 +54,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		chset = CH_UTF8;
 		byte_mul = 1;
 		flags &= ~LIBNDR_FLAG_STR_UTF8;
+	}
+
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		do_convert = 0;
+		byte_mul = 1;
+		flags &= ~LIBNDR_FLAG_STR_RAW8;
 	}
 
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
@@ -138,7 +144,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	if (conv_src_len == 0) {
 		as = talloc_strdup(ndr->current_mem_ctx, "");
 	} else {
-		if (!convert_string_talloc(ndr->current_mem_ctx, chset,
+		if (!do_convert) {
+			as = talloc_strndup(ndr->current_mem_ctx,
+			                    ndr->data + ndr->offset,
+					    conv_src_len);
+		} else if (!convert_string_talloc(ndr->current_mem_ctx, chset,
 					   CH_UNIX, ndr->data + ndr->offset,
 					   conv_src_len * byte_mul,
 					   (void **)(void *)&as,
@@ -174,7 +184,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 {
 	ssize_t s_len, c_len;
 	size_t d_len;
-	int chset = CH_UTF16;
+	int do_convert = 1, chset = CH_UTF16;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;
 	uint8_t *dest = NULL;
@@ -201,12 +211,22 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 		flags &= ~LIBNDR_FLAG_STR_UTF8;
 	}
 
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		do_convert = 0;
+		byte_mul = 1;
+		flags &= ~LIBNDR_FLAG_STR_RAW8;
+	}
+
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 
 	if (!(flags & LIBNDR_FLAG_STR_NOTERM)) {
 		s_len++;
 	}
-	if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
+
+	if (!do_convert) {
+		d_len = s_len;
+		dest = talloc_strndup(ndr, s, s_len);
+	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
 				   (void **)(void *)&dest, &d_len))
 	{
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
@@ -276,9 +296,13 @@ _PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 	unsigned byte_mul = 2;
 	unsigned c_len_term = 1;
 
-	c_len = s?strlen_m(s):0;
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		c_len = s?strlen(s):0;
+	} else {
+		c_len = s?strlen_m(s):0;
+	}
 
-	if (flags & (LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_UTF8)) {
+	if (flags & (LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_UTF8)) {
 		byte_mul = 1;
 	}
 
@@ -484,16 +508,22 @@ _PUBLIC_ size_t ndr_size_string_array(const char **a, uint32_t count, int flags)
 {
 	uint32_t i;
 	size_t size = 0;
+	int rawbytes = 0;
+
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		rawbytes = 1;
+		flags &= ~LIBNDR_FLAG_STR_RAW8;
+	}
 
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_NULLTERM:
 		for (i = 0; i < count; i++) {
-			size += strlen_m_term(a[i]);
+			size += rawbytes?strlen(a[i]) + 1:strlen_m_term(a[i]);
 		}
 		break;
 	case LIBNDR_FLAG_STR_NOTERM:
 		for (i = 0; i < count; i++) {
-			size += strlen_m(a[i]);
+			size += rawbytes?strlen(a[i]):strlen_m(a[i]);
 		}
 		break;
 	default:
