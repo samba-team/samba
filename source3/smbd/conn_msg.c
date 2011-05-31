@@ -45,5 +45,5 @@ void msg_force_tdis(struct messaging_context *msg,
 		return;
 	}
 
-	return conn_force_tdis(sconn, sharename);
+	conn_force_tdis(sconn, sharename);
 }
