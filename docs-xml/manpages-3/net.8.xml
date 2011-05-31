@@ -1856,6 +1856,7 @@ Manipulate Samba's registry.
 <member>net registry enumerate   - Enumerate registry keys and values.</member>
 <member>net registry createkey   - Create a new registry key.</member>
 <member>net registry deletekey   - Delete a registry key.</member>
+<member>net registry deletekey_recursive - Delete a registry key with subkeys.</member>
 <member>net registry getvalue    - Print a registry value.</member>
 <member>net registry getvalueraw - Print a registry value (raw format).</member>
 <member>net registry setvalue    - Set a new registry value.</member>
@@ -1890,6 +1891,13 @@ string.</member>
 
 <refsect3>
   <title>REGISTRY DELETEKEY <replaceable>key</replaceable> </title>
+  <para>Delete the given <emphasis>key</emphasis> and its
+  values from the registry, if it has no subkeys.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY DELETEKEY_RECURSIVE <replaceable>key</replaceable> </title>
   <para>Delete the given <emphasis>key</emphasis> and all of its
   subkeys and values from the registry.
   </para>
