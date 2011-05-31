@@ -792,7 +792,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3 dbwrap_util util_sec',
+                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3 dbwrap_util util_sec util_malloc',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIB_NONSMBD',
@@ -995,6 +995,12 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
 bld.SAMBA3_LIBRARY('dbwrap_util',
                    source='lib/dbwrap_util.c lib/dbwrap_rbt.c',
                    deps='samba-util-common UTIL_TDB errors',
+                   private_library=True,
+                   allow_undefined_symbols=False)
+
+bld.SAMBA3_LIBRARY('util_malloc',
+                   source='''lib/util_malloc.c''',
+                   deps='samba-util-common',
                    private_library=True,
                    allow_undefined_symbols=False)
 
