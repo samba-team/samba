@@ -319,9 +319,9 @@ void close_policy_by_pipe(struct pipes_struct *p)
 		 */
 		TALLOC_FREE(p->pipe_handles);
 
-		DEBUG(10,("close_policy_by_pipe: deleted handle list for "
-			  "pipe %s\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(10,("Deleted handle list for RPC connection %s\n",
+			  get_pipe_name_from_syntax(talloc_tos(),
+						    &p->contexts->syntax)));
 	}
 }
 
@@ -362,9 +362,10 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 	void *data;
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
-		DEBUG(0, ("policy_handle_create: ERROR: too many handles (%d) "
-			  "on pipe %s.\n", (int)p->pipe_handles->count,
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(0, ("ERROR: Too many handles (%d) for RPC connection %s\n",
+			  get_pipe_name_from_syntax(talloc_tos(),
+						    &p->contexts->syntax),
+			  (int) p->pipe_handles->count));
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
