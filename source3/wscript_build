@@ -57,7 +57,6 @@ REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 LIB_SRC = '''
           lib/messages.c lib/messages_local.c
           lib/messages_ctdbd.c lib/ctdb_packet.c lib/ctdbd_conn.c
-          lib/memcache.c
           lib/talloc_dict.c
           lib/util_sconn.c
           lib/serverid.c
@@ -792,7 +791,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3 dbwrap_util util_sec util_malloc',
+                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3 dbwrap_util util_sec util_malloc memcache',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIB_NONSMBD',
@@ -1037,6 +1036,12 @@ bld.SAMBA3_LIBRARY('namearray',
 bld.SAMBA3_LIBRARY('adt_tree',
                    source='lib/adt_tree.c',
                    deps='samba-util-common',
+                   private_library=True,
+                   allow_undefined_symbols=False)
+
+bld.SAMBA3_LIBRARY('memcache',
+                   source='lib/memcache.c',
+                   deps='samba-util-common util_malloc',
                    private_library=True,
                    allow_undefined_symbols=False)
 
