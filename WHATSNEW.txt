@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.5.9
-			   , 2011
+			   June 14, 2011
                    =============================
 
 
@@ -13,7 +13,71 @@ o
 Changes since 3.5.8:
 --------------------
 
-o   
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7080: Quota only shown when logged as root.
+    * BUG 7987: ACL can get lost when files are being renamed.
+    * BUG 7996: sgid bit lost on folder rename.
+    * BUG 8040: Fix 'smbclient' segfaults when a Cyrillic netbios name or
+      workgroup is configured.
+    * BUG 8072: Fix panic in create_file_acl_common.
+    * BUG 8088: Fix segfault in rpccli_samr_chng_pswd_auth_crap if any input
+      blobs are null.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8008: Fix a segfault in the krb5 locator plugin.
+    * BUG 8012: Use getgrset() instead of initgroups() + getgroups() when
+      getgrouplist() is not defined.
+    * BUG 8031: Convert gpfs:sharemodes and gpfs:leases parameters from a
+      global setting to a per share setting.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 8074: Fix debug message.
+
+
+o   Dmitry Butskoy <dmitry@butskoy.name>
+    * BUG 6966: Respect "allow trusted domains = no" in Winbind.
+
+
+o   Marc A. Dahlhaus <mad@wol.de>
+    * BUG 8047: Fix mdns registration if "interfaces=" is used.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 8085: Fix incorrect timeout handling in ncacn_ip_tcp client code.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8033: Add explicit configure option whether to enable dmapi
+      support or not.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8009: Fix getting username in 'net rap session'.
+    * BUG 8011: Fix memory corruption in shadow_copy2.
+    * BUG 8016: Fix gpfs_get_xattr.
+    * BUG 8042: File creation on OS/X.
+    * BUG 8054: Winbind cache stores/retrieves wrong sizes for 16-bit ints.
+    * BUG 8066: Fix wrong output in 'smbget'.
+
+
+o   Nikolay Martynov <mar.kolya@gmail.com>
+    * BUG 8010: Fix inode generation so nautilus can count total dir size
+      correctly.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8034: SEC_STD_DELETE is always granted to the owner of a file.
+
+
+o   Larry Reid <lcreid@jadesystems.ca>
+    * BUG 8055: Can't see Parts of DFS CIFS share.
+
+
+o   Martin Vogt <martin.vogt@itwm.fraunhofer.de>
+    * BUG 6762: Fix ctdb on gpfs error with MS Office.
+
 
 
 ######################################################################
