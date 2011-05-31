@@ -36,12 +36,6 @@ const char *nt_errstr(NTSTATUS nt_code)
 	int idx = 0;
 	char *result;
 
-#ifdef HAVE_LDAP
-	if (NT_STATUS_IS_LDAP(nt_code)) {
-		return ldap_err2string(NT_STATUS_LDAP_CODE(nt_code));
-	}
-#endif
-
 	if (NT_STATUS_IS_DOS(nt_code)) {
 		return smb_dos_err_name(NT_STATUS_DOS_CLASS(nt_code),
 					NT_STATUS_DOS_CODE(nt_code));
