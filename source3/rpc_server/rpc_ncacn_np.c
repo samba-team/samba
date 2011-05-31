@@ -33,6 +33,7 @@
 #include "ntdomain.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "rpc_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -127,6 +128,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      struct messaging_context *msg_ctx)
 {
 	struct pipes_struct *p;
+	struct pipe_rpc_fns *context_fns;
 
 	DEBUG(4,("Create pipe requested %s\n",
 		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
@@ -172,6 +174,21 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	p->syntax = *syntax;
 	p->transport = NCALRPC;
 
+	context_fns = SMB_MALLOC_P(struct pipe_rpc_fns);
+	if (context_fns == NULL) {
+		DEBUG(0,("malloc() failed!\n"));
+		return False;
+	}
+
+	context_fns->next = context_fns->prev = NULL;
+	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(syntax);
+	context_fns->cmds = rpc_srv_get_pipe_cmds(syntax);
+	context_fns->context_id = 0;
+	context_fns->syntax = *syntax;
+
+	/* add to the list of open contexts */
+	DLIST_ADD(p->contexts, context_fns);
+
 	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
 		 get_pipe_name_from_syntax(talloc_tos(), syntax), pipes_open));
 
@@ -186,8 +203,9 @@ static NTSTATUS rpcint_dispatch(struct pipes_struct *p,
 				const DATA_BLOB *in_data,
 				DATA_BLOB *out_data)
 {
-	uint32_t num_cmds = rpc_srv_get_pipe_num_cmds(&p->syntax);
-	const struct api_struct *cmds = rpc_srv_get_pipe_cmds(&p->syntax);
+	struct pipe_rpc_fns *fns = find_pipe_fns_by_context(p->contexts, 0);
+	uint32_t num_cmds = fns->n_cmds;
+	const struct api_struct *cmds = fns->cmds;
 	uint32_t i;
 	bool ok;
 
