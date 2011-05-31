@@ -143,11 +143,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_PULL_NEED_BYTES(ndr, conv_src_len * byte_mul);
 	if (conv_src_len == 0) {
 		as = talloc_strdup(ndr->current_mem_ctx, "");
+		converted_size = 0;
 	} else {
 		if (!do_convert) {
 			as = talloc_strndup(ndr->current_mem_ctx,
 			                    ndr->data + ndr->offset,
 					    conv_src_len);
+			if (!as) {
+				return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+						      "Failed to talloc_strndup() in RAW8 ndr_string_pull()");
+			}
+			converted_size = MIN(strlen(as)+1, conv_src_len);
 		} else if (!convert_string_talloc(ndr->current_mem_ctx, chset,
 					   CH_UNIX, ndr->data + ndr->offset,
 					   conv_src_len * byte_mul,
@@ -161,12 +167,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	/* this is a way of detecting if a string is sent with the wrong
 	   termination */
 	if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-		if (strlen(as) < conv_src_len) {
-			DEBUG(6,("short string '%s'\n", as));
+		if (as && converted_size > 0 && as[converted_size-1] == '\0') {
+			DEBUG(6,("short string '%s', sent with NULL termination despite NOTERM flag in IDL\n", as));
 		}
 	} else {
-		if (strlen(as) == conv_src_len) {
-			DEBUG(6,("long string '%s'\n", as));
+		if (as && converted_size > 0 && as[converted_size-1] != '\0') {
+			DEBUG(6,("long string '%s', send without NULL termination (which was expected)\n", as));
 		}
 	}
 
