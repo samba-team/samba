@@ -99,7 +99,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	p->syntax = null_ndr_syntax_id;
 	p->transport = transport;
 	p->ncalrpc_as_system = ncalrpc_as_system;
 

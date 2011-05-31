@@ -116,7 +116,6 @@ struct pipes_struct {
 	struct auth_serversupplied_info *session_info;
 	struct messaging_context *msg_ctx;
 
-	struct ndr_syntax_id syntax;
 	struct dcesrv_ep_entry_list *ep_entries;
 
 	/* linked list of rpc dispatch tables associated 

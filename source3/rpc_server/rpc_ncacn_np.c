@@ -171,7 +171,6 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
-	p->syntax = *syntax;
 	p->transport = NCALRPC;
 
 	context_fns = SMB_MALLOC_P(struct pipe_rpc_fns);
