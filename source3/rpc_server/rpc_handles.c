@@ -84,15 +84,28 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
 	for (plist = get_first_internal_pipe();
 	     plist;
 	     plist = get_next_internal_pipe(plist)) {
-		if (ndr_syntax_id_equal(syntax, &plist->syntax)) {
-			break;
+		struct pipe_rpc_fns *p_ctx;
+		bool stop = false;
+
+		for (p_ctx = plist->contexts;
+		     p_ctx != NULL;
+		     p_ctx = p_ctx->next) {
+			if (ndr_syntax_id_equal(syntax, &p_ctx->syntax)) {
+				stop = true;
+				break;
+			}
+			if (is_samr_lsa_pipe(&p_ctx->syntax)
+			    && is_samr_lsa_pipe(syntax)) {
+				/*
+				 * samr and lsa share a handle space (same process
+				 * under Windows?)
+				 */
+				stop = true;
+				break;
+			}
 		}
-		if (is_samr_lsa_pipe(&plist->syntax)
-		    && is_samr_lsa_pipe(syntax)) {
-			/*
-			 * samr and lsa share a handle space (same process
-			 * under Windows?)
-			 */
+
+		if (stop) {
 			break;
 		}
 	}
