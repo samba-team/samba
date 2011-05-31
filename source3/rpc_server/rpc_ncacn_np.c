@@ -38,8 +38,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static int pipes_open;
-
 static struct pipes_struct *InternalPipes;
 
 /* TODO
@@ -188,8 +186,8 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	/* add to the list of open contexts */
 	DLIST_ADD(p->contexts, context_fns);
 
-	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
-		 get_pipe_name_from_syntax(talloc_tos(), syntax), pipes_open));
+	DEBUG(4,("Created internal pipe %s\n",
+		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
 
 	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
 
