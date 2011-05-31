@@ -18,6 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _LIB_IDMAP_CACHE_H_
+#define _LIB_IDMAP_CACHE_H_
+
 /* The following definitions come from lib/idmap_cache.c  */
 
 bool idmap_cache_find_sid2uid(const struct dom_sid *sid, uid_t *puid,
@@ -32,3 +35,5 @@ void idmap_cache_set_sid2gid(const struct dom_sid *sid, gid_t gid);
 bool idmap_cache_del_uid(uid_t uid);
 bool idmap_cache_del_gid(gid_t gid);
 bool idmap_cache_del_sid(const struct dom_sid *sid);
+
+#endif /* _LIB_IDMAP_CACHE_H_ */
