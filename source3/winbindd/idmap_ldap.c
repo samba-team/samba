@@ -484,7 +484,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 	ctx->rw_ops = talloc_zero(ctx, struct idmap_rw_ops);
 	CHECK_ALLOC_DONE(ctx->rw_ops);
 
-	ctx->rw_ops->get_new_id = idmap_ldap_allocate_id;
+	ctx->rw_ops->get_new_id = idmap_ldap_allocate_id_internal;
 	ctx->rw_ops->set_mapping = idmap_ldap_set_mapping;
 
 	ret = smbldap_init(ctx, winbind_event_context(), ctx->url,
