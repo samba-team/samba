@@ -42,6 +42,7 @@
 #include "auth.h"
 #include "ntdomain.h"
 #include "rpc_server/srv_pipe.h"
+#include "rpc_server/rpc_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -1507,26 +1508,6 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	data_blob_free(&p->out_data.frag);
 	TALLOC_FREE(auth_blob.data);
 	return setup_bind_nak(p, pkt);
-}
-
-/****************************************************************************
- Find the set of RPC functions associated with this context_id
-****************************************************************************/
-
-static PIPE_RPC_FNS* find_pipe_fns_by_context( PIPE_RPC_FNS *list, uint32 context_id )
-{
-	PIPE_RPC_FNS *fns = NULL;
-
-	if ( !list ) {
-		DEBUG(0,("find_pipe_fns_by_context: ERROR!  No context list for pipe!\n"));
-		return NULL;
-	}
-
-	for (fns=list; fns; fns=fns->next ) {
-		if ( fns->context_id == context_id )
-			return fns;
-	}
-	return NULL;
 }
 
 static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
