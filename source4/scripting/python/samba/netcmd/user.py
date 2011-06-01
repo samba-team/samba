@@ -108,7 +108,12 @@ class cmd_user_enable(Command):
 
         samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)
-        samdb.enable_account(filter)
+        try:
+            samdb.enable_account(filter)
+        except Exception, msg:
+            raise CommandError("Failed to enable user %s: %s" % (username or filter, msg))
+        print("Enabled user %s" % (username or filter))
+
 
 class cmd_user_setexpiry(Command):
     """Sets the expiration of a user account"""
