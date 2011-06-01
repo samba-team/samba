@@ -363,9 +363,9 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
 		DEBUG(0, ("ERROR: Too many handles (%d) for RPC connection %s\n",
+			  (int) p->pipe_handles->count,
 			  get_pipe_name_from_syntax(talloc_tos(),
-						    &p->contexts->syntax),
-			  (int) p->pipe_handles->count));
+						    &p->contexts->syntax)));
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
