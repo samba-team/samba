@@ -147,7 +147,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	} else {
 		if (!do_convert) {
 			as = talloc_strndup(ndr->current_mem_ctx,
-			                    ndr->data + ndr->offset,
+			                    (char *)ndr->data + ndr->offset,
 					    conv_src_len);
 			if (!as) {
 				return ndr_pull_error(ndr, NDR_ERR_ALLOC,
@@ -231,7 +231,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 
 	if (!do_convert) {
 		d_len = s_len;
-		dest = talloc_strndup(ndr, s, s_len);
+		dest = (uint8_t *)talloc_strndup(ndr, s, s_len);
 	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
 				   (void **)(void *)&dest, &d_len))
 	{
