@@ -5565,9 +5565,9 @@ static char *lp_string(const char *s)
  char fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
 FN_GLOBAL_STRING(lp_smb_ports, &Globals.smb_ports)
-FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
-FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
-FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
+FN_GLOBAL_CONST_STRING(lp_dos_charset, &Globals.dos_charset)
+FN_GLOBAL_CONST_STRING(lp_unix_charset, &Globals.unix_charset)
+FN_GLOBAL_CONST_STRING(lp_display_charset, &Globals.display_charset)
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
