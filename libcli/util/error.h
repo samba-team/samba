@@ -23,9 +23,6 @@
 #include "libcli/util/doserr.h"
 #include "libcli/util/ntstatus.h"
 
-/** NT error on DOS connection! (NT_STATUS_OK) */
-bool ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2);
-
 /*****************************************************************************
 convert a NT status code to a dos class/code
  *****************************************************************************/
