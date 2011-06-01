@@ -1207,7 +1207,7 @@ char *lp_set_quota_command(void);
 char *lp_auto_services(void);
 char *lp_passwd_program(void);
 char *lp_passwd_chat(void);
-char *lp_passwordserver(void);
+const char *lp_passwordserver(void);
 char *lp_name_resolve_order(void);
 char *lp_realm(void);
 const char *lp_afs_username_map(void);
