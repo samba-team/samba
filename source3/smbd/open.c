@@ -2172,9 +2172,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
-		if (lck != NULL) {
-			TALLOC_FREE(lck);
-		}
+		TALLOC_FREE(lck);
 		return fsp_open;
 	}
 
