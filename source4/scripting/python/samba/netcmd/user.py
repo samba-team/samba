@@ -151,7 +151,11 @@ class cmd_user_setexpiry(Command):
         samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)
 
-        samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
+        try:
+            samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
+        except Exception, msg:
+            raise CommandError("Failed to set expiry for user %s: %s" % (username or filter, msg))
+        print("Set expiry for user %s to %u days" % (username or filter, days))
 
 class cmd_user(SuperCommand):
     """User management [server connection needed]"""
