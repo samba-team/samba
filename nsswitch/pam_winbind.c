@@ -1212,7 +1212,7 @@ out:
 static void _pam_setup_krb5_env(struct pwb_context *ctx,
 				struct wbcLogonUserInfo *info)
 {
-	char var[PATH_MAX];
+	char *var = NULL;
 	int ret;
 	uint32_t i;
 	const char *krb5ccname = NULL;
@@ -1239,7 +1239,7 @@ static void _pam_setup_krb5_env(struct pwb_context *ctx,
 	_pam_log_debug(ctx, LOG_DEBUG,
 		       "request returned KRB5CCNAME: %s", krb5ccname);
 
-	if (snprintf(var, sizeof(var), "KRB5CCNAME=%s", krb5ccname) == -1) {
+	if (asprintf(&var, "KRB5CCNAME=%s", krb5ccname) == -1) {
 		return;
 	}
 
@@ -1249,6 +1249,7 @@ static void _pam_setup_krb5_env(struct pwb_context *ctx,
 			 "failed to set KRB5CCNAME to %s: %s",
 			 var, pam_strerror(ctx->pamh, ret));
 	}
+	free(var);
 }
 
 /**
