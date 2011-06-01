@@ -2257,8 +2257,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			struct deferred_open_record state;
 
-			fd_close(fsp);
-
 			state.delayed_for_oplocks = False;
 			state.id = id;
 
@@ -2274,6 +2272,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					   req, &state);
 			}
 			TALLOC_FREE(lck);
+			fd_close(fsp);
 			return status;
 		}
 
