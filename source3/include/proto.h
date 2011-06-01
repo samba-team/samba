@@ -1210,6 +1210,7 @@ char *lp_passwd_chat(void);
 const char *lp_passwordserver(void);
 const char *lp_name_resolve_order(void);
 const char *lp_realm(void);
+const char *lp_dnsdomain(void);
 const char *lp_afs_username_map(void);
 int lp_afs_token_lifetime(void);
 char *lp_log_nt_token_command(void);
@@ -1661,6 +1662,10 @@ char* lp_perfcount_module(void);
 void lp_set_passdb_backend(const char *backend);
 void widelinks_warning(int snum);
 const char *lp_ncalrpc_dir(void);
+
+/* The following definitions come from param/loadparm_ctx.c  */
+
+const struct loadparm_s3_context *loadparm_s3_context(void);
 
 /* The following definitions come from param/loadparm_server_role.c  */
 

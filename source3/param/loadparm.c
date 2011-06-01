@@ -159,6 +159,8 @@ struct global {
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szRealm;
+	char *szRealmUpper;
+	char *szDnsDomain;
 	char *szAfsUsernameMap;
 	int iAfsTokenLifetime;
 	char *szLogNtTokenCommand;
@@ -705,6 +707,7 @@ static bool handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_debug_list( int snum, const char *pszParmValue, char **ptr );
 static bool handle_workgroup( int snum, const char *pszParmValue, char **ptr );
+static bool handle_realm( int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
 static bool handle_charset( int snum, const char *pszParmValue, char **ptr );
@@ -1019,7 +1022,7 @@ static struct parm_struct parm_table[] = {
 		.type		= P_USTRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szRealm,
-		.special	= NULL,
+		.special	= handle_realm,
 		.enum_list	= NULL,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
@@ -5616,7 +5619,8 @@ FN_GLOBAL_STRING(lp_passwd_program, &Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_CONST_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_CONST_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
-FN_GLOBAL_CONST_STRING(lp_realm, &Globals.szRealm)
+FN_GLOBAL_CONST_STRING(lp_realm, &Globals.szRealmUpper)
+FN_GLOBAL_CONST_STRING(lp_dnsdomain, &Globals.szDnsDomain)
 FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_INTEGER(lp_afs_token_lifetime, &Globals.iAfsTokenLifetime)
 FN_GLOBAL_STRING(lp_log_nt_token_command, &Globals.szLogNtTokenCommand)
@@ -7589,6 +7593,21 @@ static bool handle_workgroup(int snum, const char *pszParmValue, char **ptr)
 
 	ret = set_global_myworkgroup(pszParmValue);
 	string_set(&Globals.szWorkgroup,lp_workgroup());
+
+	return ret;
+}
+
+static bool handle_realm(int snum, const char *pszParmValue, char **ptr)
+{
+	bool ret = true;
+	char *realm = strupper_talloc(talloc_tos(), pszParmValue);
+	char *dnsdomain = strlower_talloc(talloc_tos(), pszParmValue);
+
+	ret &= string_set(&Globals.szRealm, pszParmValue);
+	ret &= string_set(&Globals.szRealmUpper, realm);
+	ret &= string_set(&Globals.szDnsDomain, dnsdomain);
+	TALLOC_FREE(realm);
+	TALLOC_FREE(dnsdomain);
 
 	return ret;
 }

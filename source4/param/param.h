@@ -20,6 +20,8 @@
 #ifndef _PARAM_H /* _PARAM_H */
 #define _PARAM_H 
 
+struct loadparm_s3_context;
+
 struct parmlist_entry;
 
 struct param_context {
