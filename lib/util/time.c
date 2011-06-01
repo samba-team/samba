@@ -580,6 +580,15 @@ _PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
 }
 
 /**
+  return a timeval milliseconds into the future
+*/
+_PUBLIC_ struct timeval timeval_current_ofs_msec(uint32_t msecs)
+{
+	struct timeval tv = timeval_current();
+	return timeval_add(&tv, msecs / 1000, (msecs % 1000) * 1000);
+}
+
+/**
   compare two timeval structures. 
   Return -1 if tv1 < tv2
   Return 0 if tv1 == tv2

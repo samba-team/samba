@@ -213,6 +213,11 @@ struct timeval timeval_sum(const struct timeval *tv1,
 _PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs);
 
 /**
+  return a timeval milliseconds into the future
+*/
+_PUBLIC_ struct timeval timeval_current_ofs_msec(uint32_t msecs);
+
+/**
   compare two timeval structures. 
   Return -1 if tv1 < tv2
   Return 0 if tv1 == tv2

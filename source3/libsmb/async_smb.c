@@ -340,8 +340,7 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	state->iov_count = iov_count + 3;
 
 	if (cli->timeout) {
-		endtime = timeval_current_ofs(cli->timeout / 1000,
-					      (cli->timeout % 1000) * 1000);
+		endtime = timeval_current_ofs_msec(cli->timeout);
 		if (!tevent_req_set_endtime(result, ev, endtime)) {
 			tevent_req_nomem(NULL, result);
 		}

@@ -208,8 +208,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		blr->expire_time.tv_sec = 0;
 		blr->expire_time.tv_usec = 0; /* Never expire. */
 	} else {
-		blr->expire_time = timeval_current_ofs(lock_timeout/1000,
-					(lock_timeout % 1000) * 1000);
+		blr->expire_time = timeval_current_ofs_msec(lock_timeout);
 	}
 	blr->lock_num = lock_num;
 	blr->smblctx = smblctx;

@@ -324,8 +324,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		pending->req = req;
 
 		pending->end_time = 
-			timeval_current_ofs(lck->lockx.in.timeout/1000,
-					    1000*(lck->lockx.in.timeout%1000));
+			timeval_current_ofs_msec(lck->lockx.in.timeout);
 	}
 
 	if (lck->lockx.in.mode & LOCKING_ANDX_SHARED_LOCK) {

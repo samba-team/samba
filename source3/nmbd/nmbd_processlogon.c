@@ -604,8 +604,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				  source_name, source_addr,
 				  lp_init_logon_delay()));
 
-			when = timeval_current_ofs(0,
-				lp_init_logon_delay() * 1000);
+			when = timeval_current_ofs_msec(lp_init_logon_delay());
 			p->locked = true;
 			event_add_timed(nmbd_event_context(),
 					NULL,
