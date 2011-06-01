@@ -1208,7 +1208,7 @@ char *lp_auto_services(void);
 char *lp_passwd_program(void);
 char *lp_passwd_chat(void);
 const char *lp_passwordserver(void);
-char *lp_name_resolve_order(void);
+const char *lp_name_resolve_order(void);
 char *lp_realm(void);
 const char *lp_afs_username_map(void);
 int lp_afs_token_lifetime(void);
