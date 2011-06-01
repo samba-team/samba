@@ -29,7 +29,7 @@ ldbmodify="$samba4bindir/ldbmodify$EXEEXT"
 ldbsearch="$samba4bindir/ldbsearch$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
-enableaccount="$samba_tool enableaccount"
+enableaccount="$samba_tool user enable"
 machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
 
 . `dirname $0`/subunit.sh
