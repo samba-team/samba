@@ -2346,6 +2346,7 @@ static void smbd_server_echo_handler(struct event_context *ev,
 	}
 }
 
+#ifdef CLUSTER_SUPPORT
 /****************************************************************************
 received when we should release a specific IP
 ****************************************************************************/
@@ -2375,7 +2376,6 @@ static void release_ip(const char *ip, void *priv)
 	}
 }
 
-#ifdef CLUSTER_SUPPORT
 static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
 			       struct sockaddr_storage *client)
 {
