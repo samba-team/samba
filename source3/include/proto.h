@@ -1352,7 +1352,7 @@ bool lp_send_spnego_principal(void);
 bool lp_hostname_lookups(void);
 bool lp_change_notify(const struct share_params *p );
 bool lp_kernel_change_notify(const struct share_params *p );
-char * lp_dedicated_keytab_file(void);
+const char * lp_dedicated_keytab_file(void);
 int lp_kerberos_method(void);
 bool lp_defer_sharing_violations(void);
 bool lp_enable_privileges(void);
