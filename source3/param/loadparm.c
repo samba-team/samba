@@ -5579,7 +5579,7 @@ FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
 FN_GLOBAL_STRING(lp_os2_driver_map, &Globals.szOs2DriverMap)
-FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
+FN_GLOBAL_CONST_STRING(lp_lockdir, &Globals.szLockDir)
 /* If lp_statedir() and lp_cachedir() are explicitely set during the
  * build process or in smb.conf, we use that value.  Otherwise they
  * default to the value of lp_lockdir(). */

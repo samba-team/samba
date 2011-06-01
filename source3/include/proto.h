@@ -1190,7 +1190,7 @@ char *lp_enumports_cmd(void);
 char *lp_addprinter_cmd(void);
 char *lp_deleteprinter_cmd(void);
 char *lp_os2_driver_map(void);
-char *lp_lockdir(void);
+const char *lp_lockdir(void);
 char *lp_statedir(void);
 char *lp_cachedir(void);
 char *lp_piddir(void);
