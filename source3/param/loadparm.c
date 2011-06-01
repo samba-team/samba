@@ -5592,14 +5592,14 @@ const char *lp_statedir(void) {
 		return(*(char **)(&Globals.szLockDir) ?
 		       *(char **)(&Globals.szLockDir) : "");
 }
-char *lp_cachedir(void) {
+const char *lp_cachedir(void) {
 	if ((strcmp(get_dyn_CACHEDIR(), get_dyn_LOCKDIR()) != 0) ||
 	    (strcmp(get_dyn_CACHEDIR(), Globals.szCacheDir) != 0))
-		return(lp_string(*(char **)(&Globals.szCacheDir) ?
-		    *(char **)(&Globals.szCacheDir) : ""));
+		return(*(char **)(&Globals.szCacheDir) ?
+		       *(char **)(&Globals.szCacheDir) : "");
 	else
-		return(lp_string(*(char **)(&Globals.szLockDir) ?
-		    *(char **)(&Globals.szLockDir) : ""));
+		return(*(char **)(&Globals.szLockDir) ?
+		       *(char **)(&Globals.szLockDir) : "");
 }
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
