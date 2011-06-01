@@ -135,7 +135,8 @@
 /* Leave at 28 - not yet released. Add fdopendir. JRA. */
 /* Leave at 28 - not yet released. Rename open function to open_fn. - gd */
 /* Leave at 28 - not yet released. Make getwd function always return malloced memory. JRA. */
-#define SMB_VFS_INTERFACE_VERSION 28
+/* Bump to version 29 - Samba 3.6.0 will ship with interface version 28. */
+#define SMB_VFS_INTERFACE_VERSION 29
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
