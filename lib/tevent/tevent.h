@@ -1218,7 +1218,7 @@ struct timeval tevent_timeval_current(void);
  *
  * @param[in]  secs     The seconds to set.
  *
- * @param[in]  usecs    The milliseconds to set.
+ * @param[in]  usecs    The microseconds to set.
  *
  * @return              A timeval structure with the given values.
  */
@@ -1253,7 +1253,7 @@ bool tevent_timeval_is_zero(const struct timeval *tv);
  *
  * @param[in]  secs      The seconds to add to the timeval.
  *
- * @param[in]  usecs     The milliseconds to add to the timeval.
+ * @param[in]  usecs     The microseconds to add to the timeval.
  *
  * @return               The timeval structure with the new time.
  */
@@ -1265,7 +1265,7 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
  *
  * @param[in]  secs     The seconds of the offset from now.
  *
- * @param[in]  usecs    The milliseconds of the offset from now.
+ * @param[in]  usecs    The microseconds of the offset from now.
  *
  * @return              A timval with the given offset in the future.
  */
