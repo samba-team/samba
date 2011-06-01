@@ -5583,14 +5583,14 @@ FN_GLOBAL_CONST_STRING(lp_lockdir, &Globals.szLockDir)
 /* If lp_statedir() and lp_cachedir() are explicitely set during the
  * build process or in smb.conf, we use that value.  Otherwise they
  * default to the value of lp_lockdir(). */
-char *lp_statedir(void) {
+const char *lp_statedir(void) {
 	if ((strcmp(get_dyn_STATEDIR(), get_dyn_LOCKDIR()) != 0) ||
 	    (strcmp(get_dyn_STATEDIR(), Globals.szStateDir) != 0))
-		return(lp_string(*(char **)(&Globals.szStateDir) ?
-		    *(char **)(&Globals.szStateDir) : ""));
+		return(*(char **)(&Globals.szStateDir) ?
+		       *(char **)(&Globals.szStateDir) : "");
 	else
-		return(lp_string(*(char **)(&Globals.szLockDir) ?
-		    *(char **)(&Globals.szLockDir) : ""));
+		return(*(char **)(&Globals.szLockDir) ?
+		       *(char **)(&Globals.szLockDir) : "");
 }
 char *lp_cachedir(void) {
 	if ((strcmp(get_dyn_CACHEDIR(), get_dyn_LOCKDIR()) != 0) ||
