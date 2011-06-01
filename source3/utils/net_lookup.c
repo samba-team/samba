@@ -293,7 +293,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
                 realm.data = discard_const_p(char, argv[0]);
 		realm.length = strlen(argv[0]);
 	} else if (lp_realm() && *lp_realm()) {
-		realm.data = lp_realm();
+		realm.data = discard_const_p(char, lp_realm());
 		realm.length = strlen((const char *)realm.data);
 	} else {
 		rc = krb5_get_host_realm(ctx, NULL, &realms);
