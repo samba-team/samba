@@ -2023,7 +2023,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	ADS_STRUCT *ads;
 	const char *auth_principal = c->opt_user_name;
 	const char *auth_password = c->opt_password;
-	char *realm = NULL;
+	const char *realm = NULL;
 	const char *new_password = NULL;
 	char *chr, *prompt;
 	const char *user;
