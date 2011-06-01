@@ -1056,18 +1056,8 @@ static bool delay_for_exclusive_oplocks(files_struct *fsp,
 	return false;
 }
 
-static bool file_has_brlocks(files_struct *fsp)
-{
-	struct byte_range_lock *br_lck;
-
-	br_lck = brl_get_locks_readonly(fsp);
-	if (!br_lck)
-		return false;
-
-	return br_lck->num_locks > 0 ? true : false;
-}
-
 static void grant_fsp_oplock_type(files_struct *fsp,
+				const struct byte_range_lock *br_lck,
 				int oplock_request,
 				bool got_level2_oplock,
 				bool got_a_none_oplock)
@@ -1085,7 +1075,7 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
 			fsp->oplock_type, fsp_str_dbg(fsp)));
 		return;
-	} else if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
+	} else if (br_lck && br_lck->num_locks > 0) {
 		DEBUG(10,("grant_fsp_oplock_type: file %s has byte range locks\n",
 			fsp_str_dbg(fsp)));
 		fsp->oplock_type = NO_OPLOCK;
@@ -1563,6 +1553,55 @@ void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 	}
 }
 
+/****************************************************************
+ Ensure we get the brlock lock followed by the share mode lock
+ in the correct order to prevent deadlocks if other smbd's are
+ using the brlock database on this file simultaneously with this open
+ (that code also gets the locks in brlock -> share mode lock order).
+****************************************************************/
+
+static bool acquire_ordered_locks(TALLOC_CTX *mem_ctx,
+				files_struct *fsp,
+				const struct file_id id,
+				const char *connectpath,
+				const struct smb_filename *smb_fname,
+				const struct timespec *p_old_write_time,
+				struct share_mode_lock **p_lck,
+				struct byte_range_lock **p_br_lck)
+{
+	/* Ordering - we must get the br_lck for this
+	   file before the share mode. */
+	if (lp_locking(fsp->conn->params)) {
+		*p_br_lck = brl_get_locks_readonly(fsp);
+		if (*p_br_lck == NULL) {
+			DEBUG(0, ("Could not get br_lock\n"));
+			return false;
+		}
+		/* Note - we don't need to free the returned
+		   br_lck explicitly as it was allocated on talloc_tos()
+		   and so will be autofreed (and release the lock)
+		   once the frame context disappears.
+
+		   If it was set to fsp->brlock_rec then it was
+		   talloc_move'd to hang off the fsp pointer and
+		   in this case is guarenteed to not be holding the
+		   lock on the brlock database. */
+	}
+
+	*p_lck = get_share_mode_lock(mem_ctx,
+				id,
+				connectpath,
+				smb_fname,
+				p_old_write_time);
+
+	if (*p_lck == NULL) {
+		DEBUG(0, ("Could not get share mode lock\n"));
+		TALLOC_FREE(*p_br_lck);
+		return false;
+	}
+	return true;
+}
+
 /****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
@@ -1907,6 +1946,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
+		struct byte_range_lock *br_lck = NULL;
 		struct share_mode_entry *batch_entry = NULL;
 		struct share_mode_entry *exclusive_entry = NULL;
 		bool got_level2_oplock = false;
@@ -1915,12 +1955,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		struct timespec old_write_time = smb_fname->st.st_ex_mtime;
 		id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 
-		lck = get_share_mode_lock(talloc_tos(), id,
-					  conn->connectpath,
-					  smb_fname, &old_write_time);
-
-		if (lck == NULL) {
-			DEBUG(0, ("Could not get share mode lock\n"));
+		if (!acquire_ordered_locks(talloc_tos(),
+					fsp,
+					id,
+					conn->connectpath,
+					smb_fname,
+					&old_write_time,
+					&lck,
+					&br_lck)) {
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
@@ -1974,6 +2016,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		grant_fsp_oplock_type(fsp,
+				br_lck,
                                 oplock_request,
                                 got_level2_oplock,
                                 got_a_none_oplock);
@@ -2137,6 +2180,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!file_existed) {
+		struct byte_range_lock *br_lck = NULL;
 		struct share_mode_entry *batch_entry = NULL;
 		struct share_mode_entry *exclusive_entry = NULL;
 		bool got_level2_oplock = false;
@@ -2159,15 +2203,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		id = fsp->file_id;
 
-		lck = get_share_mode_lock(talloc_tos(), id,
-					  conn->connectpath,
-					  smb_fname, &old_write_time);
-
-		if (lck == NULL) {
-			DEBUG(0, ("open_file_ntcreate: Could not get share "
-				  "mode lock for %s\n",
-				  smb_fname_str_dbg(smb_fname)));
-			fd_close(fsp);
+		if (!acquire_ordered_locks(talloc_tos(),
+					fsp,
+					id,
+					conn->connectpath,
+					smb_fname,
+					&old_write_time,
+					&lck,
+					&br_lck)) {
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
@@ -2238,6 +2281,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		grant_fsp_oplock_type(fsp,
+				br_lck,
                                 oplock_request,
                                 got_level2_oplock,
                                 got_a_none_oplock);
