@@ -1312,6 +1312,9 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 	if ((nis_error = yp_match(nis_domain, nis_map, user_name,
 					strlen(user_name), &nis_result,
 					&nis_result_len)) == 0) {
+		if (nis_result_len > 0 && nis_result[nis_result_len] == '\n') {
+			nis_result[nis_result_len] = '\0';
+		}
 		value = talloc_strdup(ctx, nis_result);
 		if (!value) {
 			return NULL;
