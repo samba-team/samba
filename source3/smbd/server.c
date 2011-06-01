@@ -597,7 +597,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 {
 	int num_interfaces = iface_count();
 	int i;
-	char *ports;
+	const char *ports;
 	unsigned dns_port = 0;
 
 #ifdef HAVE_ATEXIT

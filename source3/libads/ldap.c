@@ -529,7 +529,7 @@ ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct dns_rr_srv *gcs_list;
 	int num_gcs;
-	char *realm = ads->server.realm;
+	const char *realm = ads->server.realm;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	int i;
