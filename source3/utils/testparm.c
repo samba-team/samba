@@ -39,7 +39,7 @@
  Check if a directory exists.
 ********************************************************************/
 
-static bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
+static bool directory_exist_stat(const char *dname,SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
 	bool ret;
