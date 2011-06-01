@@ -626,7 +626,8 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	now = tevent_timeval_current();
 	end = now;
 	for (i = 0; i < state->request.count; i++) {
-		end = tevent_timeval_add(&end, 0, state->request.delay);
+		end = tevent_timeval_add(&end, state->request.delay / 1000000,
+					 state->request.delay % 1000000);
 	}
 
 	if (!tevent_req_set_endtime(req, state->caller.cldap->event.ctx, end)) {
@@ -688,7 +689,8 @@ static void cldap_search_state_queue_done(struct tevent_req *subreq)
 		return;
 	}
 
-	next = tevent_timeval_current_ofs(0, state->request.delay);
+	next = tevent_timeval_current_ofs(state->request.delay / 1000000,
+					  state->request.delay % 1000000);
 	subreq = tevent_wakeup_send(state,
 				    state->caller.cldap->event.ctx,
 				    next);
