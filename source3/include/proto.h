@@ -1193,7 +1193,7 @@ char *lp_os2_driver_map(void);
 const char *lp_lockdir(void);
 const char *lp_statedir(void);
 const char *lp_cachedir(void);
-char *lp_piddir(void);
+const char *lp_piddir(void);
 char *lp_mangling_method(void);
 int lp_mangle_prefix(void);
 char *lp_utmpdir(void);

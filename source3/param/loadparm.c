@@ -5601,7 +5601,7 @@ const char *lp_cachedir(void) {
 		return(*(char **)(&Globals.szLockDir) ?
 		       *(char **)(&Globals.szLockDir) : "");
 }
-FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
+FN_GLOBAL_CONST_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 FN_GLOBAL_INTEGER(lp_mangle_prefix, &Globals.mangle_prefix)
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
