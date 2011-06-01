@@ -162,7 +162,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 		   connect attempt state, so it will go away when this
 		   request completes */
 		event_add_timed(result->event_ctx, state,
-				timeval_current_ofs(0, MULTI_PORT_DELAY),
+				timeval_current_ofs_usec(MULTI_PORT_DELAY),
 				connect_multi_timer, result);
 	}
 }

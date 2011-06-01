@@ -338,7 +338,7 @@ _PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 
 	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
 						      transport,
-						      timeval_current_ofs(0, period),
+						      timeval_current_ofs_usec(period),
 						      idle_handler, transport);
 }
 

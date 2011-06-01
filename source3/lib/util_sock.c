@@ -524,7 +524,7 @@ struct open_socket_out_state {
 	struct sockaddr_storage ss;
 	socklen_t salen;
 	uint16_t port;
-	int wait_nsec;
+	int wait_usec;
 };
 
 static void open_socket_out_connected(struct tevent_req *subreq);
@@ -560,7 +560,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->ss = *pss;
 	state->port = port;
-	state->wait_nsec = 10000;
+	state->wait_usec = 10000;
 	state->salen = -1;
 
 	state->fd = socket(state->ss.ss_family, SOCK_STREAM, 0);
@@ -571,7 +571,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(state, open_socket_out_state_destructor);
 
 	if (!tevent_req_set_endtime(
-		    result, ev, timeval_current_ofs(0, timeout*1000))) {
+		    result, ev, timeval_current_ofs_msec(timeout))) {
 		goto fail;
 	}
 
@@ -608,7 +608,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	if ((subreq == NULL)
 	    || !tevent_req_set_endtime(
 		    subreq, state->ev,
-		    timeval_current_ofs(0, state->wait_nsec))) {
+		    timeval_current_ofs(0, state->wait_usec))) {
 		goto fail;
 	}
 	tevent_req_set_callback(subreq, open_socket_out_connected, result);
@@ -650,8 +650,8 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 		 * retry
 		 */
 
-		if (state->wait_nsec < 250000) {
-			state->wait_nsec *= 1.5;
+		if (state->wait_usec < 250000) {
+			state->wait_usec *= 1.5;
 		}
 
 		subreq = async_connect_send(state, state->ev, state->fd,
@@ -662,7 +662,7 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 		}
 		if (!tevent_req_set_endtime(
 			    subreq, state->ev,
-			    timeval_current_ofs(0, state->wait_nsec))) {
+			    timeval_current_ofs_usec(state->wait_usec))) {
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}

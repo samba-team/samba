@@ -1174,7 +1174,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 		*final_timeout = timeval_add(&req->statistics.request_time,
 					     pvfs->oplock_break_timeout,
 					     0);
-		end_time = timeval_current_ofs(0, (pvfs->sharing_violation_delay*4)/5);
+		end_time = timeval_current_ofs_usec((pvfs->sharing_violation_delay*4)/5);
 		end_time = timeval_min(final_timeout, &end_time);
 	} else {
 		return NT_STATUS_INTERNAL_ERROR;

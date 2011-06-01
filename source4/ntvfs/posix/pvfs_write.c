@@ -64,7 +64,7 @@ static void pvfs_trigger_write_time_update(struct pvfs_file_handle *h)
 		return;
 	}
 
-	tv = timeval_current_ofs(0, pvfs->writetime_delay);
+	tv = timeval_current_ofs_usec(pvfs->writetime_delay);
 
 	h->write_time.update_triggered = true;
 	h->write_time.update_on_close = true;
