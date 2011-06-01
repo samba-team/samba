@@ -6048,7 +6048,7 @@ FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
 FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrapping)
 
-FN_GLOBAL_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
+FN_GLOBAL_CONST_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
 
 /* local prototypes */
 
