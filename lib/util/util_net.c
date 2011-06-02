@@ -54,6 +54,15 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 
 	/* By default make sure it supports TCP. */
 	hints.ai_socktype = SOCK_STREAM;
+
+	/* always try as a numeric host first. This prevents unnecessary name
+	 * lookups, and also ensures we accept IPv6 addresses */
+	hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
+	ret = getaddrinfo(str, NULL, &hints, ppres);
+	if (ret == 0) {
+		return true;
+	}
+
 	hints.ai_flags = flags;
 
 	/* Linux man page on getaddrinfo() says port will be
