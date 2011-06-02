@@ -41,7 +41,7 @@ class IDmapDB(samba.Ldb):
 
         self.lp = lp
         if url is None:
-                url = lp.get("idmap database")
+                url = lp.private_path("idmap.ldb")
 
         super(IDmapDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
                 session_info=session_info, credentials=credentials, flags=flags,

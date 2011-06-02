@@ -518,8 +518,7 @@ def provision_paths_from_lp(lp, dnsdomain):
 
     paths.shareconf = os.path.join(paths.private_dir, "share.ldb")
     paths.samdb = os.path.join(paths.private_dir, "sam.ldb")
-    paths.idmapdb = os.path.join(paths.private_dir,
-        lp.get("idmap database") or "idmap.ldb")
+    paths.idmapdb = os.path.join(paths.private_dir, "idmap.ldb")
     paths.secrets = os.path.join(paths.private_dir, "secrets.ldb")
     paths.privilege = os.path.join(paths.private_dir, "privilege.ldb")
     paths.dns = os.path.join(paths.private_dir, "dns", dnsdomain + ".zone")

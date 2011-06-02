@@ -164,7 +164,7 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 	idmap_ctx->lp_ctx = lp_ctx;
 
 	idmap_ctx->ldb_ctx = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
-					      lpcfg_idmap_url(lp_ctx),
+					      "idmap.ldb",
 					      system_session(lp_ctx),
 					      NULL, 0);
 	if (idmap_ctx->ldb_ctx == NULL) {
