@@ -2,6 +2,8 @@
 # dynamic DNS update. It is processed by the samba_dnsupdate script
 A                                                        ${DNSDOMAIN} $IP
 A                                                        ${HOSTNAME} $IP
+AAAA                                                     ${DNSDOMAIN} $IP
+AAAA                                                     ${HOSTNAME} $IP
 CNAME ${NTDSGUID}._msdcs.${DNSDOMAIN}                    ${HOSTNAME}
 SRV _kerberos._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN} ${HOSTNAME} 88
 SRV _ldap._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}     ${HOSTNAME} 389
