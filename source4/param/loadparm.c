@@ -94,7 +94,6 @@ struct loadparm_global
 	char *szAutoServices;
 	char *szPasswdChat;
 	char *szShareBackend;
-	char *szSAM_URL;
 	char *szIDMAP_URL;
 	char *szSECRETS_URL;
 	char *szSPOOLSS_URL;
@@ -372,7 +371,6 @@ static struct parm_struct parm_table[] = {
 	{"null passwords", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNullPasswords), NULL, NULL},
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bObeyPamRestrictions), NULL, NULL},
 	{"password server", P_LIST, P_GLOBAL, GLOBAL_VAR(szPasswordServers), NULL, NULL},
-	{"sam database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSAM_URL), NULL, NULL},
 	{"idmap database", P_STRING, P_GLOBAL, GLOBAL_VAR(szIDMAP_URL), NULL, NULL},
 	{"secrets database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSECRETS_URL), NULL, NULL},
 	{"spoolss database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSPOOLSS_URL), NULL, NULL},
@@ -655,7 +653,6 @@ FN_GLOBAL_INTEGER(web_port, web_port)
 FN_GLOBAL_BOOL(tls_enabled, tls_enabled)
 FN_GLOBAL_STRING(logfile, logfile)
 FN_GLOBAL_STRING(share_backend, szShareBackend)
-FN_GLOBAL_STRING(sam_url, szSAM_URL)
 FN_GLOBAL_STRING(idmap_url, szIDMAP_URL)
 FN_GLOBAL_STRING(secrets_url, szSECRETS_URL)
 FN_GLOBAL_STRING(spoolss_url, szSPOOLSS_URL)
@@ -2437,7 +2434,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "auth methods:member server", "anonymous sam winbind");
 	lpcfg_do_global_parameter(lp_ctx, "auth methods:standalone", "anonymous sam_ignoredomain");
 	lpcfg_do_global_parameter(lp_ctx, "private dir", dyn_PRIVATE_DIR);
-	lpcfg_do_global_parameter(lp_ctx, "sam database", "sam.ldb");
 	lpcfg_do_global_parameter(lp_ctx, "idmap database", "idmap.ldb");
 	lpcfg_do_global_parameter(lp_ctx, "secrets database", "secrets.ldb");
 	lpcfg_do_global_parameter(lp_ctx, "spoolss database", "spoolss.ldb");

@@ -272,6 +272,12 @@ static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_samdb_url(PyObject *self)
+{
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+	return PyString_FromFormat("tdb://%s/sam.ldb", lpcfg_private_dir(lp_ctx));
+}
+
 
 static PyMethodDef py_lp_ctx_methods[] = {
 	{ "load", (PyCFunction)py_lp_ctx_load, METH_VARARGS, 
@@ -298,6 +304,9 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"S.services() -> list" },
 	{ "dump", (PyCFunction)py_lp_dump, METH_VARARGS, 
 		"S.dump(stream, show_defaults=False)" },
+	{ "samdb_url", (PyCFunction)py_samdb_url, METH_NOARGS,
+	        "S.samdb_url() -> string\n"
+	        "Returns the current URL for sam.ldb." },
 	{ NULL }
 };
 

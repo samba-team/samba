@@ -103,9 +103,9 @@ try:
     else:
         credentials = None
 
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), credentials=credentials, lp=lp)
+    samdb = SamDB(url=lp.samdb_url(), session_info=system_session(), credentials=credentials, lp=lp)
 except ldb.LdbError, (num, msg):
-    print("Unable to open sam database %s : %s" % (lp.get("sam database"), msg))
+    print("Unable to open sam database %s : %s" % (lp.samdb_url(), msg))
     sys.exit(1)
 
 

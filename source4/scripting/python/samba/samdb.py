@@ -46,7 +46,7 @@ class SamDB(samba.Ldb):
         if not auto_connect:
             url = None
         elif url is None and lp is not None:
-            url = lp.get("sam database")
+            url = lp.samdb_url()
 
         super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
             session_info=session_info, credentials=credentials, flags=flags,

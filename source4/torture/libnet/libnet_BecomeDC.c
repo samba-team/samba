@@ -44,7 +44,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 	struct ldb_message *msg;
 	int ldb_ret;
 	uint32_t i;
-	char *sam_ldb_path;
+	char *private_dir;
 	const char *address;
 	struct nbt_name name;
 	const char *netbios_name;
@@ -144,13 +144,13 @@ bool torture_net_become_dc(struct torture_context *torture)
 	talloc_unlink(s, ldb);
 
 	lp_ctx = libnet_vampire_cb_lp_ctx(s);
-	sam_ldb_path = talloc_asprintf(s, "%s/%s", location, "private/sam.ldb");
-	lpcfg_set_cmdline(lp_ctx, "sam database", sam_ldb_path);
-	torture_comment(torture, "Reopen the SAM LDB with system credentials and all replicated data: %s\n", sam_ldb_path);
+	private_dir = talloc_asprintf(s, "%s/%s", location, "private");
+	lpcfg_set_cmdline(lp_ctx, "private dir", private_dir);
+	torture_comment(torture, "Reopen the SAM LDB with system credentials and all replicated data: %s\n", private_dir);
 	ldb = samdb_connect(s, torture->ev, lp_ctx, system_session(lp_ctx), 0);
 	torture_assert_goto(torture, ldb != NULL, ret, cleanup,
 				      talloc_asprintf(torture,
-				      "Failed to open '%s'\n", sam_ldb_path));
+				      "Failed to open '%s/sam.ldb'\n", private_dir));
 
 	torture_assert_goto(torture, dsdb_uses_global_schema(ldb), ret, cleanup,
 						"Uses global schema");

@@ -432,7 +432,7 @@ def check_install(lp, session_info, credentials):
     """
     if lp.get("realm") == "":
         raise Exception("Realm empty")
-    samdb = Ldb(lp.get("sam database"), session_info=session_info,
+    samdb = Ldb(lp.samdb_url(), session_info=session_info,
             credentials=credentials, lp=lp)
     if len(samdb.search("(cn=Administrator)")) != 1:
         raise ProvisioningError("No administrator account found")
@@ -517,8 +517,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.keytab = "secrets.keytab"
 
     paths.shareconf = os.path.join(paths.private_dir, "share.ldb")
-    paths.samdb = os.path.join(paths.private_dir,
-        lp.get("sam database") or "samdb.ldb")
+    paths.samdb = os.path.join(paths.private_dir, "sam.ldb")
     paths.idmapdb = os.path.join(paths.private_dir,
         lp.get("idmap database") or "idmap.ldb")
     paths.secrets = os.path.join(paths.private_dir,

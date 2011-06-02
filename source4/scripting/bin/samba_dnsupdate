@@ -222,7 +222,7 @@ def get_subst_vars():
     global lp, am_rodc
     vars = {}
 
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
+    samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
                   lp=lp)
 
     vars['DNSDOMAIN'] = lp.get('realm').lower()

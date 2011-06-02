@@ -104,7 +104,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	struct cli_credentials *credentials;
 	int ret;
 
-	url  = lpcfg_sam_url(lp_ctx);
+	url  = "sam.ldb";
 	credentials = samdb_credentials(lp_ctx);
 
 	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, credentials, flags);
