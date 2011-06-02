@@ -105,7 +105,9 @@ class SimpleTdbTests(TestCase):
     def test_iterator(self):
         self.tdb["bla"] = "1"
         self.tdb["brainslug"] = "2"
-        self.assertEquals(["bla", "brainslug"], list(self.tdb))
+        l = list(self.tdb)
+        l.sort()
+        self.assertEquals(["bla", "brainslug"], l)
 
     def test_transaction_cancel(self):
         self.tdb["bloe"] = "2"
