@@ -17,6 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "librpc/gen_ndr/server_id.h"
+
 struct messaging_context;
 struct server_id;
 void debug_message(struct messaging_context *msg_ctx, void *private_data, uint32_t msg_type, struct server_id src, DATA_BLOB *data);
