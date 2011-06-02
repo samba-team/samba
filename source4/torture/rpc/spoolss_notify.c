@@ -455,7 +455,7 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 
 	lpcfg_set_cmdline(tctx->lp_ctx, "dcerpc endpoint servers", "spoolss");
 
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 	address = iface_list_n_ip(ifaces, 0);
 
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);

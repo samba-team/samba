@@ -1678,7 +1678,7 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 		int i;
 		struct interface *ifaces;
 
-		load_interface_list(dce_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+		load_interface_list(dce_ctx, lp_ctx, &ifaces);
 
 		num_interfaces = iface_list_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {

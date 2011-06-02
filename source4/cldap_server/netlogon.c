@@ -291,7 +291,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	client_site      = samdb_client_site_name(sam_ctx, mem_ctx,
 						  src_address, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(client_site);
-	load_interface_list(mem_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	load_interface_list(mem_ctx, lp_ctx, &ifaces);
 	/*
 	 * TODO: the caller should pass the address which the client
 	 * used to trigger this call, as the client is able to reach

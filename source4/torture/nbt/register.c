@@ -54,7 +54,7 @@ static bool nbt_register_own(struct torture_context *tctx)
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 
 	myaddress = iface_list_best_ip(ifaces, address);
 
@@ -123,7 +123,7 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 	if (!torture_nbt_get_name(tctx, &name, &address))
 		return false;
 	
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 
 	myaddress = iface_list_best_ip(ifaces, address);
 

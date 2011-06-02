@@ -135,7 +135,7 @@ static void samba3_smb_task_init(struct task_server *task)
 		int i;
 		struct interface *ifaces;
 
-		load_interface_list(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+		load_interface_list(task, task->lp_ctx, &ifaces);
 
 		num_interfaces = iface_list_count(ifaces);
 

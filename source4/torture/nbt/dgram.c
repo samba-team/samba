@@ -91,7 +91,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 						   &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 	myaddress = talloc_strdup(dgmsock, iface_list_best_ip(ifaces, address));
 
 
@@ -187,7 +187,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 						   &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 	myaddress = talloc_strdup(dgmsock, iface_list_best_ip(ifaces, address));
 
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,
@@ -458,7 +458,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 						   0, 0, &name, tctx, &address, tctx->ev),
 				   talloc_asprintf(tctx, "Failed to resolve %s", name.name));
 
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 	myaddress = talloc_strdup(dgmsock, iface_list_best_ip(ifaces, address));
 
 	socket_address = socket_address_from_strings(dgmsock, dgmsock->sock->backend_name,

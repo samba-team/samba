@@ -319,7 +319,7 @@ static void websrv_task_init(struct task_server *task)
 		int i;
 		struct interface *ifaces;
 
-		load_interface_list(NULL, lpcfg_interfaces(task->lp_ctx), &ifaces);
+		load_interface_list(NULL, task->lp_ctx, &ifaces);
 
 		num_interfaces = iface_list_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {

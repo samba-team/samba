@@ -41,7 +41,7 @@ static void nbtd_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct interface *ifaces;
 
-	load_interface_list(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+	load_interface_list(task, task->lp_ctx, &ifaces);
 
 	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "nbtd: no network interfaces configured", false);

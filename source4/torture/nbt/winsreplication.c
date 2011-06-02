@@ -615,7 +615,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->nbtsock = nbt_name_socket_init(ctx, tctx->ev);
 	if (!ctx->nbtsock) return NULL;
 
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 
 	ctx->myaddr = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_list_best_ip(ifaces, address), 0);
 	if (!ctx->myaddr) return NULL;

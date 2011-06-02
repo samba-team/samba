@@ -153,7 +153,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	load_interface_list(tmp_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	load_interface_list(tmp_ctx, lp_ctx, &ifaces);
 
 	count = iface_list_count(ifaces);
 

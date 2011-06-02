@@ -65,7 +65,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	struct interface *ifaces;
 	bool low_port = try_low_port;
 
-	load_interface_list(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 
 	myaddress = talloc_strdup(tctx, iface_list_best_ip(ifaces, address));
 

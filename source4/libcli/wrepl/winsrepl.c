@@ -136,7 +136,7 @@ NTSTATUS wrepl_socket_split_stream(struct wrepl_socket *wrepl_socket,
 const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
 {
 	struct interface *ifaces;
-	load_interface_list(lp_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	load_interface_list(lp_ctx, lp_ctx, &ifaces);
 	return iface_list_best_ip(ifaces, peer_ip);
 }
 

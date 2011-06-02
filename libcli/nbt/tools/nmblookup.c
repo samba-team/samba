@@ -357,7 +357,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	load_interface_list(NULL, lpcfg_interfaces(cmdline_lp_ctx), &ifaces);
+	load_interface_list(NULL, cmdline_lp_ctx, &ifaces);
 
 	ev = s4_event_context_init(talloc_autofree_context());
 
