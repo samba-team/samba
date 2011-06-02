@@ -82,7 +82,7 @@ def get_subst_vars(samdb):
 
 try:
     private_dir = lp.get("private dir")
-    secrets_path = os.path.join(private_dir, lp.get("secrets database"))
+    secrets_path = os.path.join(private_dir, "secrets.ldb")
 
     secrets_db = Ldb(url=secrets_path, session_info=system_session(),
                      credentials=creds, lp=lp)

@@ -95,7 +95,6 @@ struct loadparm_global
 	char *szPasswdChat;
 	char *szShareBackend;
 	char *szIDMAP_URL;
-	char *szSECRETS_URL;
 	char *szSPOOLSS_URL;
 	char *szWINS_CONFIG_URL;
 	char *szWINS_URL;
@@ -372,7 +371,6 @@ static struct parm_struct parm_table[] = {
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bObeyPamRestrictions), NULL, NULL},
 	{"password server", P_LIST, P_GLOBAL, GLOBAL_VAR(szPasswordServers), NULL, NULL},
 	{"idmap database", P_STRING, P_GLOBAL, GLOBAL_VAR(szIDMAP_URL), NULL, NULL},
-	{"secrets database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSECRETS_URL), NULL, NULL},
 	{"spoolss database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSPOOLSS_URL), NULL, NULL},
 	{"wins config database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_CONFIG_URL), NULL, NULL},
 	{"wins database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_URL), NULL, NULL},
@@ -654,7 +652,6 @@ FN_GLOBAL_BOOL(tls_enabled, tls_enabled)
 FN_GLOBAL_STRING(logfile, logfile)
 FN_GLOBAL_STRING(share_backend, szShareBackend)
 FN_GLOBAL_STRING(idmap_url, szIDMAP_URL)
-FN_GLOBAL_STRING(secrets_url, szSECRETS_URL)
 FN_GLOBAL_STRING(spoolss_url, szSPOOLSS_URL)
 FN_GLOBAL_STRING(wins_config_url, szWINS_CONFIG_URL)
 FN_GLOBAL_STRING(wins_url, szWINS_URL)
@@ -2435,7 +2432,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "auth methods:standalone", "anonymous sam_ignoredomain");
 	lpcfg_do_global_parameter(lp_ctx, "private dir", dyn_PRIVATE_DIR);
 	lpcfg_do_global_parameter(lp_ctx, "idmap database", "idmap.ldb");
-	lpcfg_do_global_parameter(lp_ctx, "secrets database", "secrets.ldb");
 	lpcfg_do_global_parameter(lp_ctx, "spoolss database", "spoolss.ldb");
 	lpcfg_do_global_parameter(lp_ctx, "wins config database", "wins_config.ldb");
 	lpcfg_do_global_parameter(lp_ctx, "wins database", "wins.ldb");

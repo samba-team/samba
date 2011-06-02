@@ -88,7 +88,7 @@ bool randseed_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
 					struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, NULL, lp_ctx, lpcfg_secrets_url(lp_ctx),
+	return ldb_wrap_connect(mem_ctx, NULL, lp_ctx, "secrets.ldb",
 			       NULL, NULL, 0);
 }
 
