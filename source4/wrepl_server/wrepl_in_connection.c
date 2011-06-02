@@ -468,6 +468,9 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		}
 	} else {
 		address = lpcfg_socket_address(lp_ctx);
+		if (strcmp(address, "") == 0) {
+			address = "0.0.0.0";
+		}
 		status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
 					     model_ops, &wreplsrv_stream_ops,
 					     "ipv4", address, &port, lpcfg_socket_options(task->lp_ctx),
