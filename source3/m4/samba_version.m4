@@ -8,7 +8,7 @@ dnl http://www.gnu.org/licenses/
 dnl
 dnl
 
-SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
+SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep '#define SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
 SAMBA_VERSION_GIT_COMMIT_FULLREV=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_GIT_COMMIT_FULLREV' | cut -d ' ' -f3- | cut -d '"' -f2`
