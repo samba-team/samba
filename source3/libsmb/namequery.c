@@ -1946,6 +1946,183 @@ static NTSTATUS query_wins_list_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+struct resolve_wins_state {
+	int num_sent;
+	int num_received;
+
+	struct sockaddr_storage *addrs;
+	int num_addrs;
+	uint8_t flags;
+};
+
+static void resolve_wins_done(struct tevent_req *subreq);
+
+struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     const char *name,
+				     int name_type)
+{
+	struct tevent_req *req, *subreq;
+	struct resolve_wins_state *state;
+	char **wins_tags = NULL;
+	struct sockaddr_storage src_ss;
+	struct in_addr src_ip;
+	int i, num_wins_tags;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct resolve_wins_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (wins_srv_count() < 1) {
+		DEBUG(3,("resolve_wins: WINS server resolution selected "
+			"and no WINS servers listed.\n"));
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		goto fail;
+	}
+
+	/* the address we will be sending from */
+	if (!interpret_string_addr(&src_ss, lp_socket_address(),
+				AI_NUMERICHOST|AI_PASSIVE)) {
+		zero_sockaddr(&src_ss);
+	}
+
+	if (src_ss.ss_family != AF_INET) {
+		char addr[INET6_ADDRSTRLEN];
+		print_sockaddr(addr, sizeof(addr), &src_ss);
+		DEBUG(3,("resolve_wins: cannot receive WINS replies "
+			"on IPv6 address %s\n",
+			addr));
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		goto fail;
+	}
+
+	src_ip = ((const struct sockaddr_in *)(void *)&src_ss)->sin_addr;
+
+	wins_tags = wins_srv_tags();
+	if (wins_tags == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		goto fail;
+	}
+
+	num_wins_tags = 0;
+	while (wins_tags[num_wins_tags] != NULL) {
+		num_wins_tags += 1;
+	}
+
+	for (i=0; i<num_wins_tags; i++) {
+		int num_servers, num_alive;
+		struct in_addr *servers, *alive;
+		int j;
+
+		if (!wins_server_tag_ips(wins_tags[i], talloc_tos(),
+					 &servers, &num_servers)) {
+			DEBUG(10, ("wins_server_tag_ips failed for tag %s\n",
+				   wins_tags[i]));
+			continue;
+		}
+
+		alive = talloc_array(state, struct in_addr, num_servers);
+		if (tevent_req_nomem(alive, req)) {
+			goto fail;
+		}
+
+		num_alive = 0;
+		for (j=0; j<num_servers; j++) {
+			struct in_addr wins_ip = servers[j];
+
+			if (global_in_nmbd && ismyip_v4(wins_ip)) {
+				/* yikes! we'll loop forever */
+				continue;
+			}
+			/* skip any that have been unresponsive lately */
+			if (wins_srv_is_dead(wins_ip, src_ip)) {
+				continue;
+			}
+			DEBUG(3, ("resolve_wins: using WINS server %s "
+				 "and tag '%s'\n",
+				  inet_ntoa(wins_ip), wins_tags[i]));
+			alive[num_alive] = wins_ip;
+			num_alive += 1;
+		}
+		TALLOC_FREE(servers);
+
+		if (num_alive == 0) {
+			continue;
+		}
+
+		subreq = query_wins_list_send(
+			state, ev, src_ip, name, name_type,
+			alive, num_alive);
+		if (tevent_req_nomem(subreq, req)) {
+			goto fail;
+		}
+		tevent_req_set_callback(subreq, resolve_wins_done, req);
+		state->num_sent += 1;
+	}
+
+	if (state->num_sent == 0) {
+		tevent_req_nterror(req, NT_STATUS_NOT_FOUND);
+		goto fail;
+	}
+
+	wins_srv_tags_free(wins_tags);
+	return req;
+fail:
+	wins_srv_tags_free(wins_tags);
+	return tevent_req_post(req, ev);
+}
+
+static void resolve_wins_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct resolve_wins_state *state = tevent_req_data(
+		req, struct resolve_wins_state);
+	NTSTATUS status;
+
+	status = query_wins_list_recv(subreq, state, &state->addrs,
+				      &state->num_addrs, &state->flags);
+	if (NT_STATUS_IS_OK(status)) {
+		tevent_req_done(req);
+		return;
+	}
+
+	state->num_received += 1;
+
+	if (state->num_received < state->num_sent) {
+		/*
+		 * Wait for the others
+		 */
+		return;
+	}
+	tevent_req_nterror(req, status);
+}
+
+NTSTATUS resolve_wins_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   struct sockaddr_storage **addrs,
+			   int *num_addrs, uint8_t *flags)
+{
+	struct resolve_wins_state *state = tevent_req_data(
+		req, struct resolve_wins_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (addrs != NULL) {
+		*addrs = talloc_move(mem_ctx, &state->addrs);
+	}
+	if (num_addrs != NULL) {
+		*num_addrs = state->num_addrs;
+	}
+	if (flags != NULL) {
+		*flags = state->flags;
+	}
+	return NT_STATUS_OK;
+}
+
 /********************************************************
  Resolve via "wins" method.
 *********************************************************/

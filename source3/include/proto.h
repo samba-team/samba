@@ -1052,6 +1052,13 @@ NTSTATUS name_resolve_bcast(const char *name,
 			TALLOC_CTX *mem_ctx,
 			struct sockaddr_storage **return_iplist,
 			int *return_count);
+struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     const char *name,
+				     int name_type);
+NTSTATUS resolve_wins_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   struct sockaddr_storage **addrs,
+			   int *num_addrs, uint8_t *flags);
 NTSTATUS resolve_wins(const char *name,
 		int name_type,
 		TALLOC_CTX *mem_ctx,
