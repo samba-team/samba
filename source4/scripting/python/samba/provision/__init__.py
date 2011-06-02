@@ -709,11 +709,6 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
         privatedir_line = ""
         lockdir_line = ""
 
-    if sid_generator == "internal":
-        sid_generator_line = ""
-    else:
-        sid_generator_line = "sid generator = " + sid_generator
-
     sysvol = os.path.join(lp.get("lock dir"), "sysvol")
     netlogon = os.path.join(sysvol, realm.lower(), "scripts")
 
@@ -725,7 +720,6 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
             "SERVERROLE": serverrole,
             "NETLOGONPATH": netlogon,
             "SYSVOLPATH": sysvol,
-            "SIDGENERATOR_LINE": sid_generator_line,
             "PRIVATEDIR_LINE": privatedir_line,
             "LOCKDIR_LINE": lockdir_line
             })

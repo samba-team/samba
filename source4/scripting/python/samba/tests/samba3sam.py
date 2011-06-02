@@ -65,7 +65,6 @@ class MapBaseTestCase(TestCaseInTempDir):
 
     def setUp(self):
         self.lp = env_loadparm()
-        self.lp.set("sid generator", "backend")
         self.lp.set("workgroup", "TESTS")
         self.lp.set("netbios name", "TESTS")
         super(MapBaseTestCase, self).setUp()
@@ -87,6 +86,7 @@ class MapBaseTestCase(TestCaseInTempDir):
 
             def __init__(self, basedn, dn, lp):
                 self.db = Ldb(lp=lp, session_info=system_session())
+                self.db.set_opaque("skip_allocate_sids", "true");
                 self.basedn = basedn
                 self.basedn_casefold = ldb.Dn(self.db, basedn).get_casefold()
                 self.substvars = {"BASEDN": self.basedn}
@@ -136,12 +136,14 @@ class Samba3SamTestCase(MapBaseTestCase):
     def setUp(self):
         super(Samba3SamTestCase, self).setUp()
         ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
+        ldb.set_opaque("skip_allocate_sids", "true");
         self.samba3.setup_data("samba3.ldif")
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
         self.ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
+        self.ldb.set_opaque("skip_allocate_sids", "true");
 
     def test_search_non_mapped(self):
         """Looking up by non-mapped attribute"""
@@ -303,11 +305,13 @@ class MapTestCase(MapBaseTestCase):
     def setUp(self):
         super(MapTestCase, self).setUp()
         ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
+        ldb.set_opaque("skip_allocate_sids", "true");
         ldif = read_datafile("provision_samba3sam.ldif")
         ldb.add_ldif(self.samba4.subst(ldif))
         self.setup_modules(ldb, self.samba3, self.samba4)
         del ldb
         self.ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
+        self.ldb.set_opaque("skip_allocate_sids", "true");
 
     def test_map_search(self):
         """Running search tests on mapped data."""

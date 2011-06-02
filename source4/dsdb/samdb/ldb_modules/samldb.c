@@ -803,10 +803,9 @@ static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid);
 static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb,
-					 "loadparm"), struct loadparm_context);
+	void *skip_allocate_sids = ldb_get_opaque(ldb,
+						  "skip_allocate_sids");
 	struct ldb_message_element *el, *el2;
-	enum sid_generator sid_generator;
 	struct dom_sid *sid;
 	int ret;
 
@@ -832,12 +831,9 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	}
 
 	/* but generate a new SID when we do have an add operations */
-	if ((sid == NULL) && (ac->req->operation == LDB_ADD)) {
-		sid_generator = lpcfg_sid_generator(lp_ctx);
-		if (sid_generator == SID_GENERATOR_INTERNAL) {
-			ret = samldb_add_step(ac, samldb_allocate_sid);
-			if (ret != LDB_SUCCESS) return ret;
-		}
+	if ((sid == NULL) && (ac->req->operation == LDB_ADD) && !skip_allocate_sids) {
+		ret = samldb_add_step(ac, samldb_allocate_sid);
+		if (ret != LDB_SUCCESS) return ret;
 	}
 
 	if (strcmp(ac->type, "user") == 0) {

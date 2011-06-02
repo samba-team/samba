@@ -47,11 +47,6 @@ typedef NTSTATUS (*init_module_fn) (void);
 
 #include "libds/common/roles.h"
 
-enum sid_generator {
-	SID_GENERATOR_INTERNAL=0,
-	SID_GENERATOR_BACKEND=1,
-};
-
 enum announce_as {/* Types of machine we can announce as. */
 	ANNOUNCE_AS_NT_SERVER=1,
 	ANNOUNCE_AS_WIN95=2,

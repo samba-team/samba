@@ -80,7 +80,6 @@ static bool defaults_saved = false;
 struct loadparm_global
 {
 	enum server_role server_role;
-	enum sid_generator sid_generator;
 
 	const char **smb_ports;
 	char *ncalrpc_dir;
@@ -331,19 +330,11 @@ static const struct enum_list enum_server_role[] = {
 	{-1, NULL}
 };
 
-static const struct enum_list enum_sid_generator[] = {
-	{SID_GENERATOR_INTERNAL, "internal"},
-	{SID_GENERATOR_BACKEND, "backend"},
-	{-1, NULL}
-};
-
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
 static struct parm_struct parm_table[] = {
 	{"server role", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_role), NULL, enum_server_role},
-	{"sid generator", P_ENUM, P_GLOBAL, GLOBAL_VAR(sid_generator), NULL, enum_sid_generator},
-
 	{"dos charset", P_STRING, P_GLOBAL, GLOBAL_VAR(dos_charset), NULL, NULL},
 	{"unix charset", P_STRING, P_GLOBAL, GLOBAL_VAR(unix_charset), NULL, NULL},
 	{"ncalrpc dir", P_STRING, P_GLOBAL, GLOBAL_VAR(ncalrpc_dir), NULL, NULL},
@@ -638,7 +629,6 @@ static struct loadparm_context *global_loadparm_context;
  _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);}
 
 FN_GLOBAL_INTEGER(server_role, server_role)
-FN_GLOBAL_INTEGER(sid_generator, sid_generator)
 FN_GLOBAL_LIST(smb_ports, smb_ports)
 FN_GLOBAL_INTEGER(nbt_port, nbt_port)
 FN_GLOBAL_INTEGER(dgram_port, dgram_port)
