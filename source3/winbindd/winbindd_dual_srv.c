@@ -35,6 +35,17 @@ void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 	*r->out.out_data = r->in.in_data;
 }
 
+static bool reset_cm_connection_on_error(struct winbindd_domain *domain,
+					NTSTATUS status)
+{
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		invalidate_cm_connection(&domain->conn);
+		/* We invalidated the connection. */
+		return true;
+	}
+	return false;
+}
+
 NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
@@ -49,6 +60,7 @@ NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 
 	status = domain->methods->sid_to_name(domain, p->mem_ctx, r->in.sid,
 					      &dom_name, &name, &type);
+	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -62,6 +74,7 @@ NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
@@ -73,21 +86,26 @@ NTSTATUS _wbint_LookupSids(struct pipes_struct *p, struct wbint_LookupSids *r)
 	 * and winbindd_ad call into lsa_lookupsids anyway. Caching is
 	 * done at the wbint RPC layer.
 	 */
-	return rpc_lookup_sids(p->mem_ctx, domain, r->in.sids,
-			       &r->out.domains, &r->out.names);
+	status = rpc_lookup_sids(p->mem_ctx, domain, r->in.sids,
+				 &r->out.domains, &r->out.names);
+	reset_cm_connection_on_error(domain, status);
+	return status;
 }
 
 NTSTATUS _wbint_LookupName(struct pipes_struct *p, struct wbint_LookupName *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	return domain->methods->name_to_sid(
+	status = domain->methods->name_to_sid(
 		domain, p->mem_ctx, r->in.domain, r->in.name, r->in.flags,
 		r->out.sid, r->out.type);
+	reset_cm_connection_on_error(domain, status);
+	return status;
 }
 
 NTSTATUS _wbint_Sid2Uid(struct pipes_struct *p, struct wbint_Sid2Uid *r)
@@ -251,53 +269,65 @@ NTSTATUS _wbint_AllocateGid(struct pipes_struct *p, struct wbint_AllocateGid *r)
 NTSTATUS _wbint_QueryUser(struct pipes_struct *p, struct wbint_QueryUser *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	return domain->methods->query_user(domain, p->mem_ctx, r->in.sid,
-					   r->out.info);
+	status = domain->methods->query_user(domain, p->mem_ctx, r->in.sid,
+					     r->out.info);
+	reset_cm_connection_on_error(domain, status);
+	return status;
 }
 
 NTSTATUS _wbint_LookupUserAliases(struct pipes_struct *p,
 				  struct wbint_LookupUserAliases *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	return domain->methods->lookup_useraliases(
+	status = domain->methods->lookup_useraliases(
 		domain, p->mem_ctx, r->in.sids->num_sids, r->in.sids->sids,
 		&r->out.rids->num_rids, &r->out.rids->rids);
+	reset_cm_connection_on_error(domain, status);
+	return status;
 }
 
 NTSTATUS _wbint_LookupUserGroups(struct pipes_struct *p,
 				 struct wbint_LookupUserGroups *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	return domain->methods->lookup_usergroups(
+	status = domain->methods->lookup_usergroups(
 		domain, p->mem_ctx, r->in.sid,
 		&r->out.sids->num_sids, &r->out.sids->sids);
+	reset_cm_connection_on_error(domain, status);
+	return status;
 }
 
 NTSTATUS _wbint_QuerySequenceNumber(struct pipes_struct *p,
 				    struct wbint_QuerySequenceNumber *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	return domain->methods->sequence_number(domain, r->out.sequence);
+	status = domain->methods->sequence_number(domain, r->out.sequence);
+	reset_cm_connection_on_error(domain, status);
+	return status;
 }
 
 NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
@@ -317,6 +347,7 @@ NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
 	status = domain->methods->lookup_groupmem(
 		domain, p->mem_ctx, r->in.sid, r->in.type,
 		&num_names, &sid_mem, &names, &name_types);
+	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -342,14 +373,17 @@ NTSTATUS _wbint_QueryUserList(struct pipes_struct *p,
 			      struct wbint_QueryUserList *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	return domain->methods->query_user_list(
+	status = domain->methods->query_user_list(
 		domain, p->mem_ctx, &r->out.users->num_userinfos,
 		&r->out.users->userinfos);
+	reset_cm_connection_on_error(domain, status);
+	return status;
 }
 
 NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
@@ -367,6 +401,7 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 
 	status = domain->methods->enum_dom_groups(domain, talloc_tos(),
 						  &num_groups, &groups);
+	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -415,6 +450,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
 
+	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Can't contact the NETLOGON pipe\n"));
 		return status;
@@ -434,6 +470,23 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 			r->in.flags, r->out.dc_info, &werr);
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(werr)) {
 			goto done;
+		}
+		if (reset_cm_connection_on_error(domain, status)) {
+			/* Re-initialize. */
+			status = cm_connect_netlogon(domain, &netlogon_pipe);
+
+			reset_cm_connection_on_error(domain, status);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("Can't contact the NETLOGON pipe\n"));
+				return status;
+			}
+
+			b = netlogon_pipe->binding_handle;
+
+			/* This call can take a long time - allow the server to time out.
+			   35 seconds should do it. */
+
+			orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
 		}
 	}
 
@@ -457,6 +510,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 			r->in.domain_name, &dc_info->dc_unc, &werr);
 	}
 
+	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("dcerpc_netr_Get[Any]DCName failed: %s\n",
 			   nt_errstr(status)));
@@ -496,6 +550,7 @@ NTSTATUS _wbint_LookupRids(struct pipes_struct *p, struct wbint_LookupRids *r)
 	status = domain->methods->rids_to_names(
 		domain, talloc_tos(), &domain->sid, r->in.rids->rids,
 		r->in.rids->num_rids, &domain_name, &names, &types);
+	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -649,6 +704,7 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	}
 
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	reset_cm_connection_on_error(domain, status);
         if (!NT_STATUS_IS_OK(status)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 		return status;
@@ -668,12 +724,7 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 					  logon_server, NETLOGON_CONTROL_QUERY,
 					  2, &info, &werr);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		DEBUG(2, ("dcerpc_netr_LogonControl timed out\n"));
-		invalidate_cm_connection(&domain->conn);
-		return status;
-	}
-
+	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("dcerpc_netr_LogonControl failed: %s\n",
 			nt_errstr(status)));
