@@ -332,7 +332,7 @@ typedef unsigned short int sa_family_t;
      */
 #   define IOV_MAX 512
 #  else
-#   error IOV_MAX and UIO_MAXIOV undefined
+#   warning IOV_MAX and UIO_MAXIOV undefined
 #  endif
 # endif
 #endif
