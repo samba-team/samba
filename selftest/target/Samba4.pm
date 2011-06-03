@@ -658,7 +658,7 @@ nogroup:x:65534:nobody
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
 #Ensure the config file is valid before we start
-	my $testparm = $self->scriptdir_path("bin/testparm");
+	my $testparm = Samba::bindir_path($self, "samba-tool") . " testparm";
 	if (system("$testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
 		system("$testparm -v --suppress-prompt $configuration >&2");
 		warn("Failed to create a valid smb.conf configuration $testparm!");
