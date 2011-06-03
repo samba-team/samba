@@ -62,7 +62,6 @@ static void smbsrv_task_init(struct task_server *task)
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		/* Just bind to lpcfg_socket_address() (usually 0.0.0.0) */
 		const char **wcard;
 		int i;
 		wcard = iface_list_wildcard(task, task->lp_ctx);
