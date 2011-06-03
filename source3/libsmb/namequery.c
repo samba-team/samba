@@ -2133,120 +2133,25 @@ NTSTATUS resolve_wins(const char *name,
 		struct sockaddr_storage **return_iplist,
 		int *return_count)
 {
-	int t, i;
-	char **wins_tags;
-	struct sockaddr_storage src_ss;
-	struct in_addr src_ip;
-	NTSTATUS status;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (lp_disable_netbios()) {
-		DEBUG(5,("resolve_wins(%s#%02x): netbios is disabled\n",
-					name, name_type));
-		return NT_STATUS_INVALID_PARAMETER;
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	*return_iplist = NULL;
-	*return_count = 0;
-
-	DEBUG(3,("resolve_wins: Attempting wins lookup for name %s<0x%x>\n",
-				name, name_type));
-
-	if (wins_srv_count() < 1) {
-		DEBUG(3,("resolve_wins: WINS server resolution selected "
-			"and no WINS servers listed.\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+	req = resolve_wins_send(ev, ev, name, name_type);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	/* we try a lookup on each of the WINS tags in turn */
-	wins_tags = wins_srv_tags();
-
-	if (!wins_tags) {
-		/* huh? no tags?? give up in disgust */
-		return NT_STATUS_INVALID_PARAMETER;
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
 	}
-
-	/* the address we will be sending from */
-	if (!interpret_string_addr(&src_ss, lp_socket_address(),
-				AI_NUMERICHOST|AI_PASSIVE)) {
-		zero_sockaddr(&src_ss);
-	}
-
-	if (src_ss.ss_family != AF_INET) {
-		char addr[INET6_ADDRSTRLEN];
-		print_sockaddr(addr, sizeof(addr), &src_ss);
-		DEBUG(3,("resolve_wins: cannot receive WINS replies "
-			"on IPv6 address %s\n",
-			addr));
-		wins_srv_tags_free(wins_tags);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	src_ip = ((struct sockaddr_in *)&src_ss)->sin_addr;
-
-	/* in the worst case we will try every wins server with every
-	   tag! */
-	for (t=0; wins_tags && wins_tags[t]; t++) {
-		int srv_count = wins_srv_count_tag(wins_tags[t]);
-		for (i=0; i<srv_count; i++) {
-			struct sockaddr_storage wins_ss;
-			struct in_addr wins_ip;
-
-			wins_ip = wins_srv_ip_tag(wins_tags[t], src_ip);
-
-			if (global_in_nmbd && ismyip_v4(wins_ip)) {
-				/* yikes! we'll loop forever */
-				continue;
-			}
-
-			/* skip any that have been unresponsive lately */
-			if (wins_srv_is_dead(wins_ip, src_ip)) {
-				continue;
-			}
-
-			DEBUG(3,("resolve_wins: using WINS server %s "
-				"and tag '%s'\n",
-				inet_ntoa(wins_ip), wins_tags[t]));
-
-			in_addr_to_sockaddr_storage(&wins_ss, wins_ip);
-			status = name_query(name,
-						name_type,
-						false,
-						true,
-						&wins_ss,
-						mem_ctx,
-						return_iplist,
-						return_count,
-						NULL);
-
-			/* exit loop if we got a list of addresses */
-
-			if (NT_STATUS_IS_OK(status)) {
-				goto success;
-			}
-
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_IO_TIMEOUT)) {
-				/* Timed out waiting for WINS server to
-				 * respond.
-				 * Mark it dead. */
-				wins_srv_died(wins_ip, src_ip);
-			} else {
-				/* The name definitely isn't in this
-				   group of WINS servers.
-				   goto the next group  */
-				break;
-			}
-		}
-	}
-
-	wins_srv_tags_free(wins_tags);
-	return NT_STATUS_NO_LOGON_SERVERS;
-
-success:
-
-	status = NT_STATUS_OK;
-	wins_srv_tags_free(wins_tags);
-
+	status = resolve_wins_recv(req, mem_ctx, return_iplist, return_count,
+				   NULL);
+fail:
+	TALLOC_FREE(ev);
 	return status;
 }
 
