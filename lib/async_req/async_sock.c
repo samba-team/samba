@@ -385,6 +385,7 @@ struct writev_state {
 	int count;
 	size_t total_size;
 	uint16_t flags;
+	bool err_on_readability;
 };
 
 static void writev_trigger(struct tevent_req *req, void *private_data);
@@ -412,10 +413,8 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	if (state->iov == NULL) {
 		goto fail;
 	}
-	state->flags = TEVENT_FD_WRITE;
-	if (err_on_readability) {
-		state->flags |= TEVENT_FD_READ;
-	}
+	state->flags = TEVENT_FD_WRITE|TEVENT_FD_READ;
+	state->err_on_readability = err_on_readability;
 
 	if (queue == NULL) {
 		struct tevent_fd *fde;
@@ -461,8 +460,35 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	to_write = 0;
 
 	if ((state->flags & TEVENT_FD_READ) && (flags & TEVENT_FD_READ)) {
-		tevent_req_error(req, EPIPE);
-		return;
+		int ret, value;
+
+		if (state->err_on_readability) {
+			/* Readable and the caller wants an error on read. */
+			tevent_req_error(req, EPIPE);
+			return;
+		}
+
+		/* Might be an error. Check if there are bytes to read */
+		ret = ioctl(state->fd, FIONREAD, &value);
+		/* FIXME - should we also check
+		   for ret == 0 and value == 0 here ? */
+		if (ret == -1) {
+			/* There's an error. */
+			tevent_req_error(req, EPIPE);
+			return;
+		}
+		/* A request for TEVENT_FD_READ will succeed from now and
+		   forevermore until the bytes are read so if there was
+		   an error we'll wait until we do read, then get it in
+		   the read callback function. Until then, remove TEVENT_FD_READ
+		   from the flags we're waiting for. */
+		state->flags &= ~TEVENT_FD_READ;
+		TEVENT_FD_NOT_READABLE(fde);
+
+		/* If not writable, we're done. */
+		if (!(flags & TEVENT_FD_WRITE)) {
+			return;
+		}
 	}
 
 	for (i=0; i<state->count; i++) {
