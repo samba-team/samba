@@ -295,7 +295,7 @@ void load_interface_list(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, s
 	int i;
 	struct iface_struct *ifaces;
 	int total_probed;
-	bool enable_ipv6 = lpcfg_parm_bool(lp_ctx, NULL, "ipv6", "enable", false);
+	bool enable_ipv6 = lpcfg_parm_bool(lp_ctx, NULL, "ipv6", "enable", true);
 
 	*local_interfaces = NULL;
 
@@ -485,7 +485,7 @@ const char **iface_list_wildcard(TALLOC_CTX *mem_ctx, struct loadparm_context *l
 	if (ret == NULL) return NULL;
 
 #ifdef HAVE_IPV6
-	if (lpcfg_parm_bool(lp_ctx, NULL, "ipv6", "enable", false)) {
+	if (lpcfg_parm_bool(lp_ctx, NULL, "ipv6", "enable", true)) {
 		return str_list_add(ret, "::");
 	}
 #endif
