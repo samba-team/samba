@@ -509,13 +509,13 @@ void update_stat_ex_create_time(struct stat_ex *dst,
 }
 
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-static void init_stat_ex_from_stat (struct stat_ex *dst,
-				    const struct stat64 *src,
-				    bool fake_dir_create_times)
+void init_stat_ex_from_stat (struct stat_ex *dst,
+			    const struct stat64 *src,
+			    bool fake_dir_create_times)
 #else
-static void init_stat_ex_from_stat (struct stat_ex *dst,
-				    const struct stat *src,
-				    bool fake_dir_create_times)
+void init_stat_ex_from_stat (struct stat_ex *dst,
+			    const struct stat *src,
+			    bool fake_dir_create_times)
 #endif
 {
 	dst->st_ex_dev = src->st_dev;

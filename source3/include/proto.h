@@ -429,6 +429,19 @@ int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb);
 int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb);
 int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb);
 int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout);
+
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
+struct stat64;
+void init_stat_ex_from_stat (struct stat_ex *dst,
+			    const struct stat64 *src,
+			    bool fake_dir_create_times);
+#else
+struct stat;
+void init_stat_ex_from_stat (struct stat_ex *dst,
+			    const struct stat *src,
+			    bool fake_dir_create_times);
+#endif
+
 /* The following definitions come from lib/system_smbd.c  */
 
 bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
