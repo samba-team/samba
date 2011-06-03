@@ -93,7 +93,9 @@ IP6s = []
 IP4s = []
 for i in IPs:
     if i.find(':') != -1:
-        IP6s.append(i)
+        if i.find('%') == -1:
+            # we don't want link local addresses for DNS updates
+            IP6s.append(i)
     else:
         IP4s.append(i)
 
