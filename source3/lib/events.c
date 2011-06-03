@@ -258,7 +258,20 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 			return false;
 		}
 
-		if (pfd->revents & (POLLIN|POLLHUP|POLLERR)) {
+		if (pfd->revents & (POLLHUP|POLLERR)) {
+			/* If we only wait for EVENT_FD_WRITE, we
+			   should not tell the event handler about it,
+			   and remove the writable flag, as we only
+			   report errors when waiting for read events
+			   to match the select behavior. */
+			if (!(fde->flags & EVENT_FD_READ)) {
+				EVENT_FD_NOT_WRITEABLE(fde);
+				continue;
+			}
+			flags |= EVENT_FD_READ;
+		}
+
+		if (pfd->revents & POLLIN) {
 			flags |= EVENT_FD_READ;
 		}
 		if (pfd->revents & POLLOUT) {
