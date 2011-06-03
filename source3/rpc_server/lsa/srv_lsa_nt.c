@@ -1862,7 +1862,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 					  psd,
 					  r->out.trustdom_handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		pdb_del_trusteddom_pw(r->in.info->netbios_name.string);
+		pdb_del_trusted_domain(r->in.info->netbios_name.string);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
