@@ -296,7 +296,7 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 		/* this is for non-IP sockets, eg. unix domain sockets */
 		socket_address = socket_address_from_strings(stream_socket,
 							     stream_socket->sock->backend_name,
-							     sock_addr, 0);
+							     sock_addr, port?*port:0);
 		NT_STATUS_HAVE_NO_MEMORY(socket_address);
 	}
 
