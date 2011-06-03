@@ -1799,12 +1799,13 @@ NTSTATUS name_resolve_bcast(const char *name,
 
 NTSTATUS resolve_wins(const char *name,
 		int name_type,
-		struct ip_service **return_iplist,
+		TALLOC_CTX *mem_ctx,
+		struct sockaddr_storage **return_iplist,
 		int *return_count)
 {
 	int t, i;
 	char **wins_tags;
-	struct sockaddr_storage src_ss, *ss_list = NULL;
+	struct sockaddr_storage src_ss;
 	struct in_addr src_ip;
 	NTSTATUS status;
 
@@ -1882,8 +1883,8 @@ NTSTATUS resolve_wins(const char *name,
 						false,
 						true,
 						&wins_ss,
-						talloc_tos(),
-						&ss_list,
+						mem_ctx,
+						return_iplist,
 						return_count,
 						NULL);
 
@@ -1914,10 +1915,6 @@ NTSTATUS resolve_wins(const char *name,
 success:
 
 	status = NT_STATUS_OK;
-	if (!convert_ss2service(return_iplist, ss_list, *return_count))
-		status = NT_STATUS_INVALID_PARAMETER;
-
-	TALLOC_FREE(ss_list);
 	wins_srv_tags_free(wins_tags);
 
 	return status;
@@ -2314,11 +2311,18 @@ NTSTATUS internal_resolve_name(const char *name,
 			}
 		} else if(strequal( tok, "wins")) {
 			/* don't resolve 1D via WINS */
+			struct sockaddr_storage *ss_list;
 			if (name_type != 0x1D) {
 				status = resolve_wins(name, name_type,
-						      return_iplist,
+						      talloc_tos(),
+						      &ss_list,
 						      return_count);
 				if (NT_STATUS_IS_OK(status)) {
+					if (!convert_ss2service(return_iplist,
+								ss_list,
+								*return_count)) {
+						status = NT_STATUS_NO_MEMORY;
+					}
 					goto done;
 				}
 			}

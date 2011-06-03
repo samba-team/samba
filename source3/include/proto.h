@@ -1052,7 +1052,8 @@ NTSTATUS name_resolve_bcast(const char *name,
 			int *return_count);
 NTSTATUS resolve_wins(const char *name,
 		int name_type,
-		struct ip_service **return_iplist,
+		TALLOC_CTX *mem_ctx,
+		struct sockaddr_storage **return_iplist,
 		int *return_count);
 NTSTATUS internal_resolve_name(const char *name,
 			        int name_type,

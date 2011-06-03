@@ -31,29 +31,17 @@ static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
 						      const char *name,
 						      int *count)
 {
-	struct ip_service *ret = NULL;
 	struct sockaddr_storage *return_ss = NULL;
-	int j, i;
+	int j;
 	NTSTATUS status;
 
 	*count = 0;
 
 	/* always try with wins first */
-	if (NT_STATUS_IS_OK(resolve_wins(name,0x20,&ret,count))) {
+	status = resolve_wins(name, 0x20, mem_ctx, &return_ss, count);
+	if (NT_STATUS_IS_OK(status)) {
 		if ( *count == 0 )
 			return NULL;
-		return_ss = talloc_array(mem_ctx, struct sockaddr_storage,
-					 *count);
-		if (return_ss == NULL ) {
-			free( ret );
-			return NULL;
-		}
-
-		/* copy the IP addresses */
-		for ( i=0; i<(*count); i++ )
-			return_ss[i] = ret[i].ss;
-
-		free( ret );
 		return return_ss;
 	}
 
