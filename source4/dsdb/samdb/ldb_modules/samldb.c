@@ -2178,15 +2178,22 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	NTSTATUS status;
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "objectSid", NULL };
+	const char *attrs[] = { "objectSid", "isDeleted", NULL };
 	const char *noattrs[] = { NULL };
 
 	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Finds out the SID/RID of the SAM object */
-	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->req->op.del.dn, attrs, DSDB_FLAG_NEXT_MODULE, ac->req);
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->req->op.del.dn,
+					attrs,
+					DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
+					ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
+	}
+
+	if (ldb_msg_check_string_attribute(res->msgs[0], "isDeleted", "TRUE")) {
+		return LDB_SUCCESS;
 	}
 
 	sid = samdb_result_dom_sid(ac, res->msgs[0], "objectSid");
