@@ -3917,6 +3917,11 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(gss_oid_equal, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_inquire_sec_context_by_oid, $KRB5_LIBS)
 
+  # This is for FreeBSD (and possibly others). gss_mech_krb5 is a
+  # #define to GSS_KRB5_MECHANISM, which is defined in -lgssapi_krb5
+  AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS, GSS_KRB5_MECHANISM,
+  		   [KRB5_LIBS="$KRB5_LIBS -lgssapi_krb5"])
+
   # MIT krb5 1.8 does not expose this call (yet)
   AC_CHECK_DECLS(krb5_get_credentials_for_user, [], [], [#include <krb5.h>])
 
