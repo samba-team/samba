@@ -85,3 +85,4 @@
 ^samba4.nbt.winsreplication.owned # fails sometimes, timing related
 ^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
 #^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.*
+^samba4.drs.fsmo.python
