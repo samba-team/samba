@@ -372,42 +372,46 @@ def get_diff_sddls(refsddl, cursddl):
     """
 
     txt = ""
-    hash_new = chunck_sddl(cursddl)
+    hash_cur = chunck_sddl(cursddl)
     hash_ref = chunck_sddl(refsddl)
 
-    if hash_new["owner"] != hash_ref["owner"]:
+    if not hash_cur.has_key("owner"):
+        txt = "\tNo owner in current SD"
+    elif hash_cur["owner"] != hash_ref["owner"]:
         txt = "\tOwner mismatch: %s (in ref) %s" \
-              "(in current)\n" % (hash_ref["owner"], hash_new["owner"])
+              "(in current)\n" % (hash_ref["owner"], hash_cur["owner"])
 
-    if hash_new["group"] != hash_ref["group"]:
+    if not hash_cur.has_key("group"):
+        txt = "%s\tNo group in current SD" % txt
+    elif hash_cur["group"] != hash_ref["group"]:
         txt = "%s\tGroup mismatch: %s (in ref) %s" \
-              "(in current)\n" % (txt, hash_ref["group"], hash_new["group"])
+              "(in current)\n" % (txt, hash_ref["group"], hash_cur["group"])
 
     for part in ["dacl", "sacl"]:
-        if hash_new.has_key(part) and hash_ref.has_key(part):
+        if hash_cur.has_key(part) and hash_ref.has_key(part):
 
             # both are present, check if they contain the same ACE
-            h_new = set()
+            h_cur = set()
             h_ref = set()
-            c_new = chunck_acl(hash_new[part])
+            c_cur = chunck_acl(hash_cur[part])
             c_ref = chunck_acl(hash_ref[part])
 
-            for elem in c_new["aces"]:
-                h_new.add(elem)
+            for elem in c_cur["aces"]:
+                h_cur.add(elem)
 
             for elem in c_ref["aces"]:
                 h_ref.add(elem)
 
             for k in set(h_ref):
-                if k in h_new:
-                    h_new.remove(k)
+                if k in h_cur:
+                    h_cur.remove(k)
                     h_ref.remove(k)
 
-            if len(h_new) + len(h_ref) > 0:
+            if len(h_cur) + len(h_ref) > 0:
                 txt = "%s\tPart %s is different between reference" \
                       " and current here is the detail:\n" % (txt, part)
 
-                for item in h_new:
+                for item in h_cur:
                     txt = "%s\t\t%s ACE is not present in the" \
                           " reference\n" % (txt, item)
 
@@ -415,9 +419,9 @@ def get_diff_sddls(refsddl, cursddl):
                     txt = "%s\t\t%s ACE is not present in the" \
                           " current\n" % (txt, item)
 
-        elif hash_new.has_key(part) and not hash_ref.has_key(part):
+        elif hash_cur.has_key(part) and not hash_ref.has_key(part):
             txt = "%s\tReference ACL hasn't a %s part\n" % (txt, part)
-        elif not hash_new.has_key(part) and hash_ref.has_key(part):
+        elif not hash_cur.has_key(part) and hash_ref.has_key(part):
             txt = "%s\tCurrent ACL hasn't a %s part\n" % (txt, part)
 
     return txt
