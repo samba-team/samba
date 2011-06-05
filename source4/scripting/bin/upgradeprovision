@@ -905,7 +905,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                     cursddl = cursd.as_sddl(names.domainsid)
                     refsd = ndr_unpack(security.descriptor,
                         str(reference[0]["nTSecurityDescriptor"]))
-                    refsddl = cursd.as_sddl(names.domainsid)
+                    refsddl = refsd.as_sddl(names.domainsid)
 
                     if get_diff_sddls(refsddl, cursddl) == "":
                        message(CHANGE, "sd are identical")
