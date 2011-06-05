@@ -369,13 +369,14 @@ static int winbind_open_pipe_sock(int recursing, int need_priv)
 static int winbind_write_sock(void *buffer, int count, int recursing,
 			      int need_priv)
 {
-	int result, nwritten;
+	int fd, result, nwritten;
 
 	/* Open connection to winbind daemon */
 
  restart:
 
-	if (winbind_open_pipe_sock(recursing, need_priv) == -1) {
+	fd = winbind_open_pipe_sock(recursing, need_priv);
+	if (fd == -1) {
 		errno = ENOENT;
 		return -1;
 	}
@@ -391,7 +392,7 @@ static int winbind_write_sock(void *buffer, int count, int recursing,
 		/* Catch pipe close on other end by checking if a read()
 		   call would not block by calling poll(). */
 
-		pfd.fd = winbindd_fd;
+		pfd.fd = fd;
 		pfd.events = POLLIN|POLLHUP;
 
 		ret = poll(&pfd, 1, 0);
@@ -412,8 +413,7 @@ static int winbind_write_sock(void *buffer, int count, int recursing,
 
 		/* Do the write */
 
-		result = write(winbindd_fd,
-			       (char *)buffer + nwritten,
+		result = write(fd, (char *)buffer + nwritten,
 			       count - nwritten);
 
 		if ((result == -1) || (result == 0)) {
@@ -434,10 +434,12 @@ static int winbind_write_sock(void *buffer, int count, int recursing,
 
 static int winbind_read_sock(void *buffer, int count)
 {
+	int fd;
 	int nread = 0;
 	int total_time = 0;
 
-	if (winbindd_fd == -1) {
+	fd = winbind_open_pipe_sock(false, false);
+	if (fd == -1) {
 		return -1;
 	}
 
@@ -449,7 +451,7 @@ static int winbind_read_sock(void *buffer, int count)
 		/* Catch pipe close on other end by checking if a read()
 		   call would not block by calling poll(). */
 
-		pfd.fd = winbindd_fd;
+		pfd.fd = fd;
 		pfd.events = POLLIN|POLLHUP;
 
 		/* Wait for 5 seconds for a reply. May need to parameterise this... */
@@ -475,7 +477,7 @@ static int winbind_read_sock(void *buffer, int count)
 
 			/* Do the Read */
 
-			int result = read(winbindd_fd, (char *)buffer + nread,
+			int result = read(fd, (char *)buffer + nread,
 			      count - nread);
 
 			if ((result == -1) || (result == 0)) {
