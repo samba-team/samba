@@ -427,7 +427,6 @@ static void *pthreadpool_server(void *arg)
 	}
 
 	while (1) {
-		struct timeval tv;
 		struct timespec ts;
 		struct pthreadpool_job *job;
 
@@ -436,9 +435,8 @@ static void *pthreadpool_server(void *arg)
 		 * time, exit this thread.
 		 */
 
-		gettimeofday(&tv, NULL);
-		ts.tv_sec = tv.tv_sec + 1;
-		ts.tv_nsec = tv.tv_usec*1000;
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += 1;
 
 		while ((pool->jobs == NULL) && (pool->shutdown == 0)) {
 
