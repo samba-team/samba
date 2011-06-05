@@ -27,26 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static struct node_status *lookup_byaddr_backend(TALLOC_CTX *mem_ctx,
-						 const char *addr, int *count)
-{
-	struct sockaddr_storage ss;
-	struct nmb_name nname;
-	struct node_status *result;
-	NTSTATUS status;
-
-	make_nmb_name(&nname, "*", 0);
-	if (!interpret_string_addr(&ss, addr, AI_NUMERICHOST)) {
-		return NULL;
-	}
-	status = node_status_query(mem_ctx, &nname, &ss,
-				   &result, count, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
-	}
-	return result;
-}
-
 static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
 						      const char *name,
 						      int *count)
@@ -93,57 +73,6 @@ static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
 	}
 
 	return return_ss;
-}
-
-/* Get hostname from IP  */
-
-void winbindd_wins_byip(struct winbindd_cli_state *state)
-{
-	fstring response;
-	int i, count, maxlen, size;
-	struct node_status *status;
-
-	/* Ensure null termination */
-	state->request->data.winsreq[sizeof(state->request->data.winsreq)-1]='\0';
-
-	DEBUG(3, ("[%5lu]: wins_byip %s\n", (unsigned long)state->pid,
-		state->request->data.winsreq));
-
-	*response = '\0';
-	maxlen = sizeof(response) - 1;
-
-	if ((status = lookup_byaddr_backend(
-		     state->mem_ctx, state->request->data.winsreq, &count))) {
-	    size = strlen(state->request->data.winsreq);
-	    if (size > maxlen) {
-		TALLOC_FREE(status);
-		request_error(state);
-		return;
-	    }
-	    fstrcat(response,state->request->data.winsreq);
-	    fstrcat(response,"\t");
-	    for (i = 0; i < count; i++) {
-		/* ignore group names */
-		if (status[i].flags & 0x80) continue;
-		if (status[i].type == 0x20) {
-			size = sizeof(status[i].name) + strlen(response);
-			if (size > maxlen) {
-			    TALLOC_FREE(status);
-			    request_error(state);
-			    return;
-			}
-			fstrcat(response, status[i].name);
-			fstrcat(response, " ");
-		}
-	    }
-	    /* make last character a newline */
-	    response[strlen(response)-1] = '\n';
-	    TALLOC_FREE(status);
-	}
-	strlcpy(state->response->data.winsresp,
-			response,
-			sizeof(state->response->data.winsresp));
-	request_ok(state);
 }
 
 /* Get IP from hostname */

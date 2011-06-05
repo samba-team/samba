@@ -1349,6 +1349,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_misc.o  \
 		winbindd/winbindd_cm.o    \
 		winbindd/winbindd_wins.o  \
+		winbindd/winbindd_wins_byip.o  \
 		winbindd/winbindd_msrpc.o \
 		winbindd/winbindd_rpc.o   \
 		winbindd/winbindd_reconnect.o \

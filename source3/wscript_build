@@ -255,6 +255,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_misc.c
                    winbindd/winbindd_cm.c
                    winbindd/winbindd_wins.c
+                   winbindd/winbindd_wins_byip.c
                    winbindd/winbindd_msrpc.c
                    winbindd/winbindd_rpc.c
                    winbindd/winbindd_reconnect.c

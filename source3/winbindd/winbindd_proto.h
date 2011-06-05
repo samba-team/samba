@@ -436,7 +436,6 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 
 /* The following definitions come from winbindd/winbindd_wins.c  */
 
-void winbindd_wins_byip(struct winbindd_cli_state *state);
 void winbindd_wins_byname(struct winbindd_cli_state *state);
 
 struct tevent_req *wb_ping_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
@@ -861,6 +860,12 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 					      struct winbindd_request *request);
 NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 				    struct winbindd_response *response);
+struct tevent_req *winbindd_wins_byip_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct winbindd_cli_state *cli,
+					   struct winbindd_request *request);
+NTSTATUS winbindd_wins_byip_recv(struct tevent_req *req,
+				 struct winbindd_response *presp);
 
 
 /* The following definitions come from winbindd/winbindd_samr.c  */
