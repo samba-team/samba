@@ -37,6 +37,7 @@
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/util/util_net.h"
 
 #ifdef class
 #undef class
@@ -136,14 +137,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 				continue;
 			}
 		} else {
-			/* we are only interested in A records */
-			/* TODO: add AAAA support */
-			if (rr->type != rk_ns_t_a) {
+			/* we are only interested in A or AAAA records */
+			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
 				continue;
 			}
 
-			/* verify we actually have a A record here */
-			if (!rr->u.a) {
+			/* verify we actually have a record here */
+			if (!rr->u.data) {
 				continue;
 			}
 		}
@@ -201,14 +201,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			srv_rr[srv_valid] = rr;
 			srv_valid++;
 		} else {
-			/* we are only interested in A records */
-			/* TODO: add AAAA support */
-			if (rr->type != rk_ns_t_a) {
+			/* we are only interested in A or AAAA records */
+			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
 				continue;
 			}
 
-			/* verify we actually have a A record here */
-			if (!rr->u.a) {
+			/* verify we actually have a record record here */
+			if (!rr->u.data) {
 				continue;
 			}
 
@@ -228,13 +227,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 				continue;
 			}
 
-			/* we are only interested in A records */
-			if (rr->type != rk_ns_t_a) {
+			/* we are only interested in A or AAAA records */
+			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
 				continue;
 			}
 
-			/* verify we actually have a A record here */
-			if (!rr->u.a) {
+			/* verify we actually have a record here */
+			if (!rr->u.data) {
 				continue;
 			}
 
@@ -255,6 +254,8 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	first = true;
 	for (i=0; i < addrs_valid; i++) {
 		uint16_t port;
+		char addrstr[INET6_ADDRSTRLEN];
+
 		if (!addrs_rr[i]) {
 			continue;
 		}
@@ -266,9 +267,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			port = state->port;
 		}
 
-		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
+		if (!print_sockaddr_len(addrstr, sizeof(addrstr), (struct sockaddr *)addrs_rr[i]->u.data, addrs_rr[i]->size)) {
+			continue;
+		}
+
+		addrs = talloc_asprintf_append_buffer(addrs, "%s%s@%u/%s",
 						      first?"":",",
-						      inet_ntoa(*addrs_rr[i]->u.a),
+						      addrstr,
 						      port,
 						      addrs_rr[i]->domain);
 		if (!addrs) {
@@ -305,7 +310,6 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 
 	ZERO_STRUCT(hints);
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_family = AF_INET;/* TODO: add AF_INET6 support */
 	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV;
 
 	ret = getaddrinfo(state->name.name, "0", &hints, &res_list);
@@ -333,16 +337,13 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 	}
 	first = true;
 	for (res = res_list; res; res = res->ai_next) {
-		struct sockaddr_in *in;
-
-		if (res->ai_family != AF_INET) {
+		char addrstr[INET6_ADDRSTRLEN];
+		if (!print_sockaddr_len(addrstr, sizeof(addrstr), (struct sockaddr *)res->ai_addr, res->ai_addrlen)) {
 			continue;
 		}
-		in = (struct sockaddr_in *)res->ai_addr;
-
-		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
+		addrs = talloc_asprintf_append_buffer(addrs, "%s%s@%u/%s",
 						      first?"":",",
-						      inet_ntoa(in->sin_addr),
+						      addrstr,
 						      state->port,
 						      state->name.name);
 		if (!addrs) {
@@ -424,7 +425,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 
 	for (i=0; i < num_addrs; i++) {
 		uint32_t port = 0;
-		char *p = strrchr(addrs[i], ':');
+		char *p = strrchr(addrs[i], '@');
 		char *n;
 
 		if (!p) {
@@ -444,8 +445,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		*n = '\0';
 		n++;
 
-		if (strcmp(addrs[i], "0.0.0.0") == 0 ||
-		    inet_addr(addrs[i]) == INADDR_NONE) {
+		if (strcmp(addrs[i], "0.0.0.0") == 0) {
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return;
 		}
@@ -455,7 +455,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			return;
 		}
 		state->addrs[i] = socket_address_from_strings(state->addrs,
-							      "ipv4",
+							      "ip",
 							      addrs[i],
 							      port);
 		if (composite_nomem(state->addrs[i], c)) return;
