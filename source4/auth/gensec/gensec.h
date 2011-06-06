@@ -242,7 +242,7 @@ NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security,
 				  const char *mech_oid);
 const char *gensec_get_name_by_oid(struct gensec_security *gensec_security, const char *oid_string);
 struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security);
-NTSTATUS gensec_init(struct loadparm_context *lp_ctx);
+NTSTATUS gensec_init(void);
 NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security, 
 			      TALLOC_CTX *mem_ctx, 
 			      uint8_t *data, size_t length, 

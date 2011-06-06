@@ -401,9 +401,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		}
 	}
 
-	gensec_init(cmdline_lp_ctx); /* FIXME: */
+	gensec_init(); /* FIXME: */
 
-	ntptr_init(cmdline_lp_ctx);	/* FIXME: maybe run this in the initialization function 
+	ntptr_init();	/* FIXME: maybe run this in the initialization function 
 						of the spoolss RPC server instead? */
 
 	ntvfs_init(cmdline_lp_ctx); 	/* FIXME: maybe run this in the initialization functions 
@@ -411,7 +411,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	process_model_init(cmdline_lp_ctx); 
 
-	shared_init = load_samba_modules(NULL, cmdline_lp_ctx, "service");
+	shared_init = load_samba_modules(NULL, "service");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

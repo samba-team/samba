@@ -299,7 +299,7 @@ static int binary_net(int argc, const char **argv)
 
 	setlinebuf(stdout);
 
-	dcerpc_init(cmdline_lp_ctx);
+	dcerpc_init();
 
 	ev = s4_event_context_init(NULL);
 	if (!ev) {

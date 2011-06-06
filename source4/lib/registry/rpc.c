@@ -485,7 +485,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 	struct dcerpc_pipe *p;
 	struct rpc_registry_context *rctx;
 
-	dcerpc_init(lp_ctx);
+	dcerpc_init();
 
 	rctx = talloc(NULL, struct rpc_registry_context);
 	W_ERROR_HAVE_NO_MEMORY(rctx);

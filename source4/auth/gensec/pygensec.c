@@ -127,7 +127,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 		return NULL;
 	}
 
-	status = gensec_init(settings->lp_ctx);
+	status = gensec_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		PyObject_DEL(self);
@@ -210,7 +210,7 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 		}
 	}
 
-	status = gensec_init(settings->lp_ctx);
+	status = gensec_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		PyObject_DEL(self);

@@ -89,7 +89,7 @@ const struct pvfs_acl_ops *pvfs_acl_backend_byname(const char *name)
 	return NULL;
 }
 
-NTSTATUS pvfs_acl_init(struct loadparm_context *lp_ctx)
+NTSTATUS pvfs_acl_init(void)
 {
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
@@ -100,7 +100,7 @@ NTSTATUS pvfs_acl_init(struct loadparm_context *lp_ctx)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 
-	shared_init = load_samba_modules(NULL, lp_ctx, "pvfs_acl");
+	shared_init = load_samba_modules(NULL, "pvfs_acl");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

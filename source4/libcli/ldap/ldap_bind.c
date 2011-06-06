@@ -221,7 +221,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		NULL 
 	};
 
-	gensec_init(lp_ctx);
+	gensec_init();
 
 	status = gensec_client_start(conn, &conn->gensec,
 				     conn->event.event_ctx, 

@@ -3233,7 +3233,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		}
 	}
 
-	gensec_init(cmdline_lp_ctx);
+	gensec_init();
 
 	if(poptPeekArg(pc)) {
 		char *s = strdup(poptGetArg(pc)); 

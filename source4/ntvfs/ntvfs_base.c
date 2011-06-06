@@ -235,7 +235,7 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	shared_init = load_samba_modules(NULL, lp_ctx, "ntvfs");
+	shared_init = load_samba_modules(NULL, "ntvfs");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

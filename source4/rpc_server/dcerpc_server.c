@@ -1235,7 +1235,7 @@ void dcerpc_server_init(struct loadparm_context *lp_ctx)
 	}
 	initialized = true;
 
-	shared_init = load_samba_modules(NULL, lp_ctx, "dcerpc_server");
+	shared_init = load_samba_modules(NULL, "dcerpc_server");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

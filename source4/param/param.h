@@ -324,7 +324,7 @@ bool run_init_functions(init_module_fn *fns);
  *
  * Will return an array of function pointers to initialization functions
  */
-init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem);
+init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
 const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx);
 struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,

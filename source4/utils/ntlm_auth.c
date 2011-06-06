@@ -1103,7 +1103,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	gensec_init(cmdline_lp_ctx);
+	gensec_init();
 
 	if (opt_domain == NULL) {
 		opt_domain = lpcfg_workgroup(cmdline_lp_ctx);

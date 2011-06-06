@@ -111,7 +111,7 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 	}
 	initialised = true;
 
-	shared_init = load_samba_modules(NULL, lp_ctx, "process_model");
+	shared_init = load_samba_modules(NULL, "process_model");
 	
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

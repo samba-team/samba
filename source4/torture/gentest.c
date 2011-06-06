@@ -3247,7 +3247,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	ev = s4_event_context_init(talloc_autofree_context());
 
-	gensec_init(lp_ctx);
+	gensec_init();
 
 	ret = start_gentest(ev, lp_ctx);
 

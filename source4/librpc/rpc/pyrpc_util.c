@@ -119,7 +119,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		return NULL;
 	}
 
-	status = dcerpc_init(lp_ctx);
+	status = dcerpc_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);

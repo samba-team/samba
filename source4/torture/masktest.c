@@ -360,7 +360,7 @@ static void usage(poptContext pc)
 
 	ev = s4_event_context_init(mem_ctx);
 
-	gensec_init(lp_ctx);
+	gensec_init();
 
 	lpcfg_smbcli_options(lp_ctx, &options);
 	lpcfg_smbcli_session_options(lp_ctx, &session_options);

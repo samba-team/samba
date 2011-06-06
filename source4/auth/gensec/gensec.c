@@ -1406,7 +1406,7 @@ bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism
 /*
   initialise the GENSEC subsystem
 */
-_PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ NTSTATUS gensec_init(void)
 {
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
@@ -1417,7 +1417,7 @@ _PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	shared_init = load_samba_modules(NULL, lp_ctx, "gensec");
+	shared_init = load_samba_modules(NULL, "gensec");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
