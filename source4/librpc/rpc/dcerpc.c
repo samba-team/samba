@@ -76,7 +76,7 @@ struct rpc_request {
 	} async;
 };
 
-_PUBLIC_ NTSTATUS dcerpc_init()
+_PUBLIC_ NTSTATUS dcerpc_init(void)
 {
 	return gensec_init();
 }
