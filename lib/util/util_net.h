@@ -85,6 +85,7 @@ _PUBLIC_ uint32_t interpret_addr(const char *str);
 _PUBLIC_ struct in_addr interpret_addr2(const char *str);
 
 _PUBLIC_ bool is_ipaddress_v4(const char *str);
+_PUBLIC_ bool is_ipaddress_v6(const char *str);
 
 bool is_address_any(const struct sockaddr *psa);
 bool same_net(const struct sockaddr *ip1,

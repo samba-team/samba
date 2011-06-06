@@ -306,10 +306,10 @@ bool is_ipaddress_v4(const char *str)
 }
 
 /**
- * Return true if a string could be an IPv4 or IPv6 address.
+ * Return true if a string could be a IPv6 address.
  */
 
-bool is_ipaddress(const char *str)
+bool is_ipaddress_v6(const char *str)
 {
 #if defined(HAVE_IPV6)
 	int ret = -1;
@@ -337,7 +337,16 @@ bool is_ipaddress(const char *str)
 		}
 	}
 #endif
-	return is_ipaddress_v4(str);
+	return false;
+}
+
+/**
+ * Return true if a string could be an IPv4 or IPv6 address.
+ */
+
+bool is_ipaddress(const char *str)
+{
+	return is_ipaddress_v4(str) || is_ipaddress_v6(str);
 }
 
 /**
