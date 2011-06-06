@@ -171,12 +171,10 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 
 	if (is_ipaddress(state->name.name) || 
 	    strcasecmp(state->name.name, "localhost") == 0) {
-		struct in_addr ip = interpret_addr2(state->name.name);
-
 		state->addrs = talloc_array(state, struct socket_address *, 2);
 		if (composite_nomem(state->addrs, c)) return c;
-		state->addrs[0] = socket_address_from_strings(state->addrs, "ipv4",
-							      inet_ntoa(ip), 0);
+		state->addrs[0] = socket_address_from_strings(state->addrs, "ip",
+							      state->name.name, 0);
 		if (composite_nomem(state->addrs[0], c)) return c;
 		state->addrs[1] = NULL;
 		state->names = talloc_array(state, char *, 2);
