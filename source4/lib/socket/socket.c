@@ -473,6 +473,11 @@ _PUBLIC_ struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (strcmp(family, "ip") == 0 && is_ipaddress_v6(host)) {
+		/* leaving as "ip" would force IPv4 */
+		family = "ipv6";
+	}
+
 	addr->family = family;
 	addr->addr = talloc_strdup(addr, host);
 	if (!addr->addr) {
