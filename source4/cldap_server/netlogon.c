@@ -300,7 +300,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	if (src_address) {
 		pdc_ip = iface_list_best_ip(ifaces, src_address);
 	} else {
-		pdc_ip = iface_list_n_ip(ifaces, 0);
+		pdc_ip = iface_list_first_v4(ifaces);
 	}
 	ZERO_STRUCTP(netlogon);
 
