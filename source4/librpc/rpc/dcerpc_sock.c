@@ -389,7 +389,7 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 	if (!composite_is_ok(c)) return;
 
 	/* prepare server address using host ip:port and transport name */
-	s->srvaddr = socket_address_from_strings(s->conn, "ipv4", s->address, s->port);
+	s->srvaddr = socket_address_from_strings(s->conn, "ip", s->address, s->port);
 	if (composite_nomem(s->srvaddr, c)) return;
 
 	/* resolve_nbt_name gives only ipv4 ... - send socket open request */
@@ -423,7 +423,7 @@ static void continue_ipv6_open_socket(struct composite_context *ctx)
 	talloc_free(s->srvaddr);
 
 	/* prepare server address using host:ip and transport name */
-	s->srvaddr = socket_address_from_strings(s->conn, "ipv4", s->address, s->port);
+	s->srvaddr = socket_address_from_strings(s->conn, "ip", s->address, s->port);
 	if (composite_nomem(s->srvaddr, c)) return;
 
 	/* try IPv4 if IPv6 fails */
