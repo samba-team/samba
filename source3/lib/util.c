@@ -1514,32 +1514,6 @@ char *pid_path(const char *name)
 }
 
 /**
- * @brief Returns an absolute path to a file in the Samba modules directory.
- *
- * @param name File to find, relative to MODULESDIR.
- *
- * @retval Pointer to a string containing the full path.
- **/
-
-char *modules_path(const char *name)
-{
-	return talloc_asprintf(talloc_tos(), "%s/%s", get_dyn_MODULESDIR(), name);
-}
-
-/**
- * @brief Returns an absolute path to a file in the Samba data directory.
- *
- * @param name File to find, relative to CODEPAGEDIR.
- *
- * @retval Pointer to a talloc'ed string containing the full path.
- **/
-
-char *data_path(const char *name)
-{
-	return talloc_asprintf(talloc_tos(), "%s/%s", get_dyn_CODEPAGEDIR(), name);
-}
-
-/**
  * @brief Returns an absolute path to a file in the Samba state directory.
  *
  * @param name File to find, relative to STATEDIR.
@@ -1563,17 +1537,6 @@ char *state_path(const char *name)
 char *cache_path(const char *name)
 {
 	return xx_path(name, lp_cachedir());
-}
-
-/**
- * @brief Returns the platform specific shared library extension.
- *
- * @retval Pointer to a const char * containing the extension.
- **/
-
-const char *shlib_ext(void)
-{
-	return get_dyn_SHLIBEXT();
 }
 
 /*******************************************************************

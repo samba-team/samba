@@ -266,14 +266,6 @@ bool run_init_functions(init_module_fn *fns)
 	return ret;
 }
 
-static char *modules_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
-			  const char *name)
-{
-	return talloc_asprintf(mem_ctx, "%s/%s", 
-			       lpcfg_modulesdir(lp_ctx),
-			       name);
-}
-
 /**
  * Load the initialization functions from DSO files for a specific subsystem.
  *
@@ -282,7 +274,7 @@ static char *modules_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 
 init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem)
 {
-	char *path = modules_path(mem_ctx, lp_ctx, subsystem);
+	char *path = modules_path(mem_ctx, subsystem);
 	init_module_fn *ret;
 
 	ret = load_modules(mem_ctx, path);

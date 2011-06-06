@@ -88,7 +88,7 @@ static const char *torture_get_ldap_base_dn(struct torture_context *tctx, struct
 	}
 
 	ldb_set_modules_dir(ldb,
-		talloc_asprintf(ldb, "%s/ldb", lpcfg_modulesdir(tctx->lp_ctx)));
+			    modules_path(ldb, "ldb"));
 
 	ret = ldb_connect(ldb, ldap_url, 0, NULL);
 	if (ret != LDB_SUCCESS) {

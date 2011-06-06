@@ -131,7 +131,7 @@ bool lang_tdb_init(const char *lang)
 		return True;
 
 	if (asprintf(&msg_path, "%s.msg",
-		     data_path((const char *)lang)) == -1) {
+		     data_path(talloc_tos(), (const char *)lang)) == -1) {
 		DEBUG(0, ("asprintf failed\n"));
 		goto done;
 	}

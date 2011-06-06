@@ -87,7 +87,7 @@ static void init_valid_table(void)
 		return;
 	}
 
-	valid_table = (uint8 *)map_file(data_path("valid.dat"), 0x10000);
+	valid_table = (uint8 *)map_file(data_path(talloc_tos(), "valid.dat"), 0x10000);
 	if (!valid_table) {
 		smb_panic("Could not load valid.dat file required for mangle method=hash");
 		return;

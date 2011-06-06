@@ -570,11 +570,8 @@ void *smb_xmalloc_array(size_t size, unsigned int count);
 char *myhostname(void);
 char *lock_path(const char *name);
 char *pid_path(const char *name);
-char *modules_path(const char *name);
-char *data_path(const char *name);
 char *state_path(const char *name);
 char *cache_path(const char *name);
-const char *shlib_ext(void);
 bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 		    const char **name);
 bool ms_has_wild(const char *s);

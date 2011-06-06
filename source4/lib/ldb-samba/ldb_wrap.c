@@ -126,10 +126,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 		return NULL;
 	}
 
-	ldb_set_modules_dir(ldb,
-			    talloc_asprintf(ldb,
-					    "%s/ldb",
-					    lpcfg_modulesdir(lp_ctx)));
+	ldb_set_modules_dir(ldb, modules_path(ldb, "ldb"));
 
 	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
 

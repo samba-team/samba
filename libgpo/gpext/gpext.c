@@ -492,7 +492,8 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 	SMB_STRUCT_DIR *dir = NULL;
 	SMB_STRUCT_DIRENT *dirent = NULL;
 
-	dir = sys_opendir(modules_path(SAMBA_SUBSYSTEM_GPEXT));
+	dir = sys_opendir(modules_path(talloc_tos(), 
+				       SAMBA_SUBSYSTEM_GPEXT));
 	if (!dir) {
 		return map_nt_error_from_unix(errno);
 	}

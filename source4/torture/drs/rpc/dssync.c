@@ -271,10 +271,7 @@ static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx,
 		return NULL;
 	}
 
-	ldb_set_modules_dir(ldb,
-			    talloc_asprintf(ldb,
-					    "%s/ldb",
-					    lpcfg_modulesdir(tctx->lp_ctx)));
+	ldb_set_modules_dir(ldb, modules_path(ldb, "ldb"));
 
 	if (ldb_set_opaque(ldb, "credentials", credentials)) {
 		talloc_free(ldb);

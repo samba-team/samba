@@ -4,7 +4,7 @@ common_util_sources = '''talloc_stack.c smb_threads.c xfile.c data_blob.c
                     util_file.c time.c rbtree.c rfc1738.c select.c
                     genrand.c fsusage.c blocking.c become_daemon.c
                     signal.c system.c params.c util.c util_id.c util_net.c
-                    util_strlist.c idtree.c debug.c fault.c base64.c
+                    util_strlist.c util_paths.c idtree.c debug.c fault.c base64.c
                     util_str.c util_str_common.c substitute.c ms_fnmatch.c'''
 
 common_util_headers = 'debug.h'
