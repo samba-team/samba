@@ -119,7 +119,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	/* sub_set_smb_name checks for weird internally */
 	sub_set_smb_name(auth_ntlmssp_state->ntlmssp_state->user);
 
-	reload_services(smbd_messaging_context(), -1, True);
+	lp_load(get_dyn_CONFIGFILE(), false, false, true, true);
 
 	nt_status = make_user_info_map(&user_info, 
 				       auth_ntlmssp_state->ntlmssp_state->user, 
