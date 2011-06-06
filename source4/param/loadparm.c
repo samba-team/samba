@@ -815,6 +815,11 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 	if (lp_ctx == NULL)
 		return NULL;
 
+	if (lp_ctx->s3_fns) {
+		SMB_ASSERT(service == NULL);
+		return lp_ctx->s3_fns->get_parametric(type, option);
+	}
+
 	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
 
 	vfskey_tmp = talloc_asprintf(NULL, "%s:%s", type, option);

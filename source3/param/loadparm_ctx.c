@@ -1,5 +1,29 @@
+/* 
+   Unix SMB/CIFS implementation.
+   Parameter loading functions
+   Copyright (C) Andrew Bartlett 2011
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "includes.h"
 #include "../source4/param/s3_param.h"
+
+static const char *get_parametric(const char *type, const char *option)
+{
+	return lp_parm_const_string(-1, type, option, NULL);
+}
 
 /* These are in the order that they appear in the s4 loadparm file.
  * All of the s4 loadparm functions should be here eventually, once
@@ -7,6 +31,8 @@
  * values in particular) and defaults. */
 static const struct loadparm_s3_context s3_fns = 
 {
+	.get_parametric = get_parametric,
+
 	.server_role = lp_server_role,
 
 	.winbind_separator = lp_winbind_separator,
