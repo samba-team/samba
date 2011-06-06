@@ -136,7 +136,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 	if (composite_nomem(state, result)) return;
 
 	state->result = result;
-	result->status = socket_create("ipv4", SOCKET_TYPE_STREAM, &state->sock, 0);
+	result->status = socket_create(multi->server_address->family, SOCKET_TYPE_STREAM, &state->sock, 0);
 	if (!composite_is_ok(result)) return;
 
 	state->addr = socket_address_copy(state, multi->server_address);
