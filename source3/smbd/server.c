@@ -32,7 +32,7 @@
 #include "memcache.h"
 #include "ctdbd_conn.h"
 #include "printing/printer_list.h"
-#include "rpc_server/rpc_ep_setup.h"
+#include "rpc_server/rpc_service_setup.h"
 #include "printing/pcap.h"
 #include "printing.h"
 #include "serverid.h"

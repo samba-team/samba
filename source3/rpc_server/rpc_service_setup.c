@@ -45,7 +45,7 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "rpc_server/svcctl/srv_svcctl_nt.h"
 
-#include "rpc_server/rpc_ep_setup.h"
+#include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
