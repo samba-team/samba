@@ -2061,21 +2061,9 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 		goto fail;
 	}
 
-	state->lp_ctx = loadparm_init(state);
+	state->lp_ctx = loadparm_init_s3(state, loadparm_s3_context());
 	if (state->lp_ctx == NULL) {
-		DEBUG(10, ("loadparm_init failed\n"));
-		goto fail;
-	}
-
-	if (lp_loaded()) {
-		config_file = lp_configfile();
-	}
-	if (!config_file || !config_file[0]) {
-		config_file = get_dyn_CONFIGFILE();
-	}
-
-	if (!lpcfg_load(state->lp_ctx, config_file)) {
-		DEBUG(1, ("s4 lpcfg_load() of s3 config file %s failed", config_file));
+		DEBUG(10, ("loadparm_init_s3 failed\n"));
 		goto fail;
 	}
 
