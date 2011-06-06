@@ -503,7 +503,19 @@ _PUBLIC_ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx
 	if (!addr) {
 		return NULL;
 	}
-	addr->family = NULL; 
+	switch (sockaddr->sa_family) {
+	case AF_INET:
+		addr->family = "ipv4";
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		addr->family = "ipv6";
+		break;
+#endif
+	case AF_UNIX:
+		addr->family = "unix";
+		break;
+	}
 	addr->addr = NULL;
 	addr->port = 0;
 	addr->sockaddr = (struct sockaddr *)talloc_memdup(addr, sockaddr, sockaddrlen);
