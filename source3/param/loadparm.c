@@ -1014,7 +1014,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
-#ifdef WITH_ADS
 	{
 		.label		= "realm",
 		.type		= P_USTRING,
@@ -1024,7 +1023,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
-#endif
 	{
 		.label		= "netbios name",
 		.type		= P_USTRING,
