@@ -1514,19 +1514,6 @@ char *pid_path(const char *name)
 }
 
 /**
- * @brief Returns an absolute path to a file in the Samba lib directory.
- *
- * @param name File to find, relative to LIBDIR.
- *
- * @retval Pointer to a string containing the full path.
- **/
-
-char *lib_path(const char *name)
-{
-	return talloc_asprintf(talloc_tos(), "%s/%s", get_dyn_LIBDIR(), name);
-}
-
-/**
  * @brief Returns an absolute path to a file in the Samba modules directory.
  *
  * @param name File to find, relative to MODULESDIR.

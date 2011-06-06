@@ -570,7 +570,6 @@ void *smb_xmalloc_array(size_t size, unsigned int count);
 char *myhostname(void);
 char *lock_path(const char *name);
 char *pid_path(const char *name);
-char *lib_path(const char *name);
 char *modules_path(const char *name);
 char *data_path(const char *name);
 char *state_path(const char *name);
