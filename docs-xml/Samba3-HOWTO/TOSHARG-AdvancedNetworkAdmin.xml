@@ -265,7 +265,7 @@ is the best tool in your network environment.
 	<para>
 <indexterm><primary>LAN</primary></indexterm>
 <indexterm><primary>thin client</primary></indexterm>
-	ThinLinc an be used both in the LAN environment to implement a Thin Client strategy for an organization, and as
+	ThinLinc can be used both in the LAN environment to implement a Thin Client strategy for an organization, and as
 	secure remote access solution for people working from remote locations, even over smallband connections.
 	ThinLinc is free to use for a single concurrent user.
 	</para>
