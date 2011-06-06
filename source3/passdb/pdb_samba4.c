@@ -325,7 +325,7 @@ static bool pdb_samba4_add_time(struct ldb_message *msg,
 
 	unix_to_nt_time(&nt_time, t);
 
-	return ldb_msg_add_fmt(msg, attrib, "%llu", nt_time);
+	return ldb_msg_add_fmt(msg, attrib, "%llu", (unsigned long long) nt_time);
 }
 
 /* Like in pdb_ldap(), this will need to be a function pointer when we
