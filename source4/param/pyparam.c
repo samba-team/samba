@@ -440,11 +440,18 @@ static PyObject *py_setup_dir(PyObject *self)
     return PyString_FromString(dyn_SETUPDIR);
 }
 
+static PyObject *py_modules_dir(PyObject *self)
+{
+    return PyString_FromString(dyn_MODULESDIR);
+}
+
 static PyMethodDef pyparam_methods[] = {
     { "default_path", (PyCFunction)py_default_path, METH_NOARGS, 
         "Returns the default smb.conf path." },
     { "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
         "Returns the compiled in location of provision tempates." },
+    { "modules_dir", (PyCFunction)py_modules_dir, METH_NOARGS,
+        "Returns the compiled in location of modules." },
     { NULL }
 };
 

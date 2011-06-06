@@ -88,7 +88,6 @@ struct loadparm_global
 	char *unix_charset;
 	char *display_charset;
 	char *szLockDir;
-	char *szModulesDir;
 	char *szPidDir;
 	char *szServerString;
 	char *szAutoServices;
@@ -467,7 +466,6 @@ static struct parm_struct parm_table[] = {
 	{"auto services", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL},
 	{"lock dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL}, 
 	{"lock directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL},
-	{"modules dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szModulesDir), NULL, NULL},
 	{"pid directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szPidDir), NULL, NULL}, 
 
 	{"socket address", P_STRING, P_GLOBAL, GLOBAL_VAR(szSocketAddress), NULL, NULL},
@@ -700,7 +698,6 @@ FN_GLOBAL_BOOL(idmap_trusted_only, bIdmapTrustedOnly)
 FN_GLOBAL_STRING(private_dir, szPrivateDir)
 FN_GLOBAL_STRING(serverstring, szServerString)
 FN_GLOBAL_STRING(lockdir, szLockDir)
-FN_GLOBAL_STRING(modulesdir, szModulesDir)
 FN_GLOBAL_STRING(ncalrpc_dir, ncalrpc_dir)
 FN_GLOBAL_STRING(dos_charset, dos_charset)
 FN_GLOBAL_STRING(unix_charset, unix_charset)
@@ -2489,7 +2486,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "pid directory", dyn_PIDDIR);
 	lpcfg_do_global_parameter(lp_ctx, "lock dir", dyn_LOCKDIR);
-	lpcfg_do_global_parameter(lp_ctx, "modules dir", dyn_MODULESDIR);
 	lpcfg_do_global_parameter(lp_ctx, "ncalrpc dir", dyn_NCALRPCDIR);
 
 	lpcfg_do_global_parameter(lp_ctx, "socket address", "");
