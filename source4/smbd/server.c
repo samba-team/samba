@@ -178,7 +178,8 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 					   struct timeval t, void *private_data)
 {
 	const char *binary_name = (const char *)private_data;
-	DEBUG(0,("%s: maximum runtime exceeded - terminating, current ts: %d\n", binary_name, time(NULL)));
+	DEBUG(0,("%s: maximum runtime exceeded - terminating, current ts: %llu\n",
+	      binary_name, (unsigned long long) time(NULL)));
 	exit(0);
 }
 
@@ -438,7 +439,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		      discard_const(binary_name));
 
 	if (max_runtime) {
-		DEBUG(0,("Called with maxruntime %d - current ts %d\n", max_runtime, time(NULL)));
+		DEBUG(0,("Called with maxruntime %d - current ts %llu\n",
+		      max_runtime, (unsigned long long) time(NULL)));
 		tevent_add_timer(event_ctx, event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,
