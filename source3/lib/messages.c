@@ -205,7 +205,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		status = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2, ("messaging_ctdb_init failed: %s\n",
+			DEBUG(2, ("messaging_ctdbd_init failed: %s\n",
 				  nt_errstr(status)));
 			TALLOC_FREE(ctx);
 			return NULL;
@@ -257,7 +257,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx,
 					      &msg_ctx->remote);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("messaging_ctdb_init failed: %s\n",
+			DEBUG(1, ("messaging_ctdbd_init failed: %s\n",
 				  nt_errstr(status)));
 			return status;
 		}
