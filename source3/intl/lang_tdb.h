@@ -1,3 +1,24 @@
+#ifndef __INTL_LANG_TDB_H__
+#define __INTL_LANG_TDB_H__
+
+/*
+   Unix SMB/CIFS implementation.
+
+   (C) 2011 Samba Team.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 /* The following definitions come from intl/lang_tdb.c  */
 
@@ -5,3 +26,4 @@ bool lang_tdb_init(const char *lang);
 const char *lang_msg(const char *msgid);
 void lang_msg_free(const char *msgstr);
 char *lang_tdb_current(void);
+#endif

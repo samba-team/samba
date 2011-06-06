@@ -1,3 +1,25 @@
+#ifndef __LIB_LDB_LDB_LDB_MAP_LDB_MAP_PRIVATE_H__
+#define __LIB_LDB_LDB_LDB_MAP_LDB_MAP_PRIVATE_H__
+
+/*
+   Unix SMB/CIFS implementation.
+
+   (C) 2011 Samba Team.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
@@ -94,3 +116,4 @@ int map_return_normal_error(struct ldb_request *req,
 			    int error);
 
 int map_return_entry(struct map_context *ac, struct ldb_reply *ares);
+#endif

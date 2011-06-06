@@ -1,6 +1,10 @@
+#ifndef __PRINTING_PCAP_H__
+#define __PRINTING_PCAP_H__
 /*
    Unix SMB/CIFS implementation.
    printcap headers
+
+   (C) 2011 Samba Team.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,3 +59,4 @@ bool sysv_cache_reload(void);
 
 /* The following definitions come from printing/print_standard.c  */
 bool std_pcap_cache_reload(const char *pcap_name);
+#endif

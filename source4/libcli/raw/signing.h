@@ -4,7 +4,7 @@
    Unix SMB/CIFS implementation.
    SMB Signing
 
-   Andrew Bartlett <abartlet@samba.org> 2003-2004
+   (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

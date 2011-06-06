@@ -1,3 +1,25 @@
+#ifndef __INCLUDE_KRB5_PROTOS_H__
+#define __INCLUDE_KRB5_PROTOS_H__
+
+/*
+   Unix SMB/CIFS implementation.
+
+   (C) 2011 Samba Team.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 struct PAC_DATA;
 struct PAC_SIGNATURE_DATA;
 
@@ -152,3 +174,4 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata,
 			   DATA_BLOB *edata_out);
 bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data);
+#endif
