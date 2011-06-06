@@ -45,9 +45,8 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "rpc_server/svcctl/srv_svcctl_nt.h"
 
-#include "librpc/rpc/dcerpc_ep.h"
-
 #include "rpc_server/rpc_ep_setup.h"
+#include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
 
@@ -126,264 +125,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 	return p;
 }
 
-static void rpc_ep_setup_register_loop(struct tevent_req *subreq);
-static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
-					  struct tevent_context *ev_ctx,
-					  struct messaging_context *msg_ctx,
-					  const struct ndr_interface_table *iface,
-					  const char *ncalrpc,
-					  uint16_t port,
-					  struct dcerpc_binding_handle **pbh);
-
-struct rpc_ep_regsiter_state {
-	struct dcerpc_binding_handle *h;
-
-	TALLOC_CTX *mem_ctx;
-	struct tevent_context *ev_ctx;
-	struct messaging_context *msg_ctx;
-
-	const struct ndr_interface_table *iface;
-
-	const char *ncalrpc;
-	uint16_t port;
-
-	uint32_t wait_time;
-};
-
-NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
-			       struct messaging_context *msg_ctx,
-			       const struct ndr_interface_table *iface,
-			       const char *ncalrpc,
-			       uint16_t port)
-{
-	struct rpc_ep_regsiter_state *state;
-	struct tevent_req *req;
-
-	state = talloc(ev_ctx, struct rpc_ep_regsiter_state);
-	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	state->mem_ctx = talloc_named(state,
-				      0,
-				      "ep %s %p",
-				      iface->name, state);
-	if (state->mem_ctx == NULL) {
-		talloc_free(state);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	state->wait_time = 1;
-	state->ev_ctx = ev_ctx;
-	state->msg_ctx = msg_ctx;
-	state->iface = iface;
-	state->ncalrpc = talloc_strdup(state, ncalrpc);
-	state->port = port;
-
-	req = tevent_wakeup_send(state->mem_ctx,
-				 state->ev_ctx,
-				 timeval_current_ofs(1, 0));
-	if (tevent_req_nomem(state->mem_ctx, req)) {
-		talloc_free(state);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	tevent_req_set_callback(req, rpc_ep_setup_register_loop, state);
-
-	return NT_STATUS_OK;
-}
-
-#define MONITOR_WAIT_TIME 15
-static void rpc_ep_setup_monitor_loop(struct tevent_req *subreq);
-
-static void rpc_ep_setup_register_loop(struct tevent_req *subreq)
-{
-	struct rpc_ep_regsiter_state *state =
-		tevent_req_callback_data(subreq, struct rpc_ep_regsiter_state);
-	NTSTATUS status;
-	bool ok;
-
-	ok = tevent_wakeup_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!ok) {
-		talloc_free(state);
-		return;
-	}
-
-	status = rpc_ep_setup_try_register(state->mem_ctx,
-					   state->ev_ctx,
-					   state->msg_ctx,
-					   state->iface,
-					   state->ncalrpc,
-					   state->port,
-					   &state->h);
-	if (NT_STATUS_IS_OK(status)) {
-		/* endpoint registered, monitor the connnection. */
-		subreq = tevent_wakeup_send(state->mem_ctx,
-					    state->ev_ctx,
-					    timeval_current_ofs(MONITOR_WAIT_TIME, 0));
-		if (tevent_req_nomem(state->mem_ctx, subreq)) {
-			talloc_free(state);
-			return;
-		}
-
-		tevent_req_set_callback(subreq, rpc_ep_setup_monitor_loop, state);
-		return;
-	}
-
-	state->wait_time = state->wait_time * 2;
-	if (state->wait_time > 16) {
-		DEBUG(0, ("Failed to register endpoint '%s'!\n",
-			   state->iface->name));
-		state->wait_time = 16;
-	}
-
-	subreq = tevent_wakeup_send(state->mem_ctx,
-				    state->ev_ctx,
-				    timeval_current_ofs(state->wait_time, 0));
-	if (tevent_req_nomem(state->mem_ctx, subreq)) {
-		talloc_free(state);
-		return;
-	}
-
-	tevent_req_set_callback(subreq, rpc_ep_setup_register_loop, state);
-	return;
-}
-
-static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
-					  struct tevent_context *ev_ctx,
-					  struct messaging_context *msg_ctx,
-					  const struct ndr_interface_table *iface,
-					  const char *ncalrpc,
-					  uint16_t port,
-					  struct dcerpc_binding_handle **pbh)
-{
-	struct dcerpc_binding_vector *v = NULL;
-	NTSTATUS status;
-
-	status = dcerpc_binding_vector_create(mem_ctx,
-					      iface,
-					      port,
-					      ncalrpc,
-					      &v);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = dcerpc_ep_register(mem_ctx,
-				    msg_ctx,
-				    iface,
-				    v,
-				    &iface->syntax_id.uuid,
-				    iface->name,
-				    pbh);
-	talloc_free(v);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return status;
-}
-
-/*
- * Monitor the connection to the endpoint mapper and if it goes away, try to
- * register the endpoint.
- */
-static void rpc_ep_setup_monitor_loop(struct tevent_req *subreq)
-{
-	struct rpc_ep_regsiter_state *state =
-		tevent_req_callback_data(subreq, struct rpc_ep_regsiter_state);
-	struct policy_handle entry_handle;
-	struct dcerpc_binding map_binding;
-	struct epm_twr_p_t towers[10];
-	struct epm_twr_t *map_tower;
-	uint32_t num_towers = 0;
-	struct GUID object;
-	NTSTATUS status;
-	uint32_t result = EPMAPPER_STATUS_CANT_PERFORM_OP;
-	TALLOC_CTX *tmp_ctx;
-	bool ok;
-
-	ZERO_STRUCT(object);
-	ZERO_STRUCT(entry_handle);
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		talloc_free(state);
-		return;
-	}
-
-	ok = tevent_wakeup_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!ok) {
-		talloc_free(state);
-		return;
-	}
-
-	/* Create map tower */
-	map_binding.transport = NCACN_NP;
-	map_binding.object = state->iface->syntax_id;
-	map_binding.host = "";
-	map_binding.endpoint = "";
-
-	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
-	if (map_tower == NULL) {
-		talloc_free(tmp_ctx);
-		talloc_free(state);
-		return;
-	}
-
-	status = dcerpc_binding_build_tower(map_tower, &map_binding,
-					    &map_tower->tower);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		talloc_free(state);
-		return;
-	}
-
-	ok = false;
-	status = dcerpc_epm_Map(state->h,
-				tmp_ctx,
-				&object,
-				map_tower,
-				&entry_handle,
-				10,
-				&num_towers,
-				towers,
-				&result);
-	if (NT_STATUS_IS_OK(status)) {
-		ok = true;
-	}
-	if (result == EPMAPPER_STATUS_OK ||
-	    result == EPMAPPER_STATUS_NO_MORE_ENTRIES) {
-		ok = true;
-	}
-	if (num_towers == 0) {
-		ok = false;
-	}
-
-	talloc_free(tmp_ctx);
-
-	subreq = tevent_wakeup_send(state->mem_ctx,
-				    state->ev_ctx,
-				    timeval_current_ofs(MONITOR_WAIT_TIME, 0));
-	if (tevent_req_nomem(state->mem_ctx, subreq)) {
-		talloc_free(state);
-		return;
-	}
-
-	if (ok) {
-		tevent_req_set_callback(subreq, rpc_ep_setup_monitor_loop, state);
-	} else {
-		TALLOC_FREE(state->h);
-		state->wait_time = 1;
-
-		tevent_req_set_callback(subreq, rpc_ep_setup_register_loop, state);
-	}
-
-	return;
-}
-
 static bool epmapper_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
@@ -442,11 +183,11 @@ static bool winreg_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-						ep_ctx->msg_ctx,
-						&ndr_table_winreg,
-						pipe_name,
-						port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_winreg,
+					 pipe_name,
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -490,11 +231,11 @@ static bool srvsvc_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_srvsvc,
-					  pipe_name,
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_srvsvc,
+					 pipe_name,
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -538,11 +279,11 @@ static bool lsarpc_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_lsarpc,
-					  pipe_name,
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_lsarpc,
+					 pipe_name,
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -586,11 +327,11 @@ static bool samr_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_samr,
-					  pipe_name,
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_samr,
+					 pipe_name,
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -634,11 +375,11 @@ static bool netlogon_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_netlogon,
-					  pipe_name,
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_netlogon,
+					 pipe_name,
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -671,7 +412,7 @@ static bool spoolss_init_cb(void *ptr)
 	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status =rpc_ep_setup_register(ep_ctx->ev_ctx,
+		status = rpc_ep_register(ep_ctx->ev_ctx,
 					 ep_ctx->msg_ctx,
 					 &ndr_table_spoolss,
 					 "spoolss",
@@ -715,11 +456,11 @@ static bool svcctl_init_cb(void *ptr)
 	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_svcctl,
-					  "svcctl",
-					  0);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_svcctl,
+					 "svcctl",
+					 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -750,11 +491,11 @@ static bool ntsvcs_init_cb(void *ptr)
 	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_ntsvcs,
-					  "ntsvcs",
-					  0);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_ntsvcs,
+					 "ntsvcs",
+					 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -784,7 +525,7 @@ static bool eventlog_init_cb(void *ptr)
 	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status =rpc_ep_setup_register(ep_ctx->ev_ctx,
+		status = rpc_ep_register(ep_ctx->ev_ctx,
 					 ep_ctx->msg_ctx,
 					 &ndr_table_eventlog,
 					 "eventlog",
@@ -812,11 +553,11 @@ static bool initshutdown_init_cb(void *ptr)
 	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_initshutdown,
-					  "initshutdown",
-					  0);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_initshutdown,
+					 "initshutdown",
+					 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -849,11 +590,11 @@ static bool rpcecho_init_cb(void *ptr) {
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_rpcecho,
-					  "rpcecho",
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_rpcecho,
+					 "rpcecho",
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -898,11 +639,11 @@ static bool netdfs_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_netdfs,
-					  pipe_name,
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_netdfs,
+					 pipe_name,
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -946,11 +687,11 @@ static bool dssetup_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_dssetup,
-					  "dssetup",
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_dssetup,
+					 "dssetup",
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -993,11 +734,11 @@ static bool wkssvc_init_cb(void *ptr)
 			return false;
 		}
 
-		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
-					  ep_ctx->msg_ctx,
-					  &ndr_table_wkssvc,
-					  "wkssvc",
-					  port);
+		status = rpc_ep_register(ep_ctx->ev_ctx,
+					 ep_ctx->msg_ctx,
+					 &ndr_table_wkssvc,
+					 "wkssvc",
+					 port);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}

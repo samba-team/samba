@@ -749,7 +749,7 @@ RPC_RPCECHO_OBJ = rpc_server/echo/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
 
 RPC_EPMAPPER_OBJ = rpc_server/epmapper/srv_epmapper.o librpc/gen_ndr/srv_epmapper.o
 
-RPC_SERVER_REGISTER_OBJ = rpc_server/rpc_ep_setup.o $(DCE_RPC_EP_OBJ)
+RPC_SERVER_REGISTER_OBJ = rpc_server/rpc_ep_register.o $(DCE_RPC_EP_OBJ)
 
 RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 		 $(RPC_DSSETUP_OBJ) $(RPC_WKSSVC_OBJ) $(RPC_SVCCTL_OBJ) \
@@ -765,6 +765,7 @@ RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_SERVER_REGISTER_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
+		 rpc_server/rpc_ep_setup.o \
 		 rpc_client/init_netlogon.o \
 		 rpc_client/init_samr.o
 
