@@ -2041,7 +2041,6 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 	struct pdb_methods *m;
 	struct pdb_samba4_state *state;
 	NTSTATUS status;
-	char *config_file;
 
 	if ( !NT_STATUS_IS_OK(status = make_pdb_method( &m )) ) {
 		return status;
