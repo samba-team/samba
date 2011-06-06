@@ -372,6 +372,23 @@ const char *iface_list_first_v4(struct interface *ifaces)
 }
 
 /**
+  return the first IPv6 interface address we have registered
+  **/
+static const char *iface_list_first_v6(struct interface *ifaces)
+{
+	struct interface *i;
+
+#ifdef HAVE_IPV6
+	for (i=ifaces; i; i=i->next) {
+		if (i->ip.ss_family == AF_INET6) {
+			return i->ip_s;
+		}
+	}
+#endif
+	return NULL;
+}
+
+/**
    check if an interface is IPv4
   **/
 bool iface_list_n_is_v4(struct interface *ifaces, int n)
@@ -435,7 +452,12 @@ const char *iface_list_best_ip(struct interface *ifaces, const char *dest)
 	if (iface) {
 		return iface->ip_s;
 	}
-	return iface_list_n_ip(ifaces, 0);
+#ifdef HAVE_IPV6
+	if (ss.ss_family == AF_INET6) {
+		return iface_list_first_v6(ifaces);
+	}
+#endif
+	return iface_list_first_v4(ifaces);
 }
 
 /**
