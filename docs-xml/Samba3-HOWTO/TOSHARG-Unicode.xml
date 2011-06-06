@@ -366,7 +366,7 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 			In addition, although it is not directly concerned with Samba, since
 			there is a delicate difference between the iconv() function, which is
 			generally used on UNIX, and the functions used on other platforms,
-			such as Windows and Java, so far is concerens the conversion between
+			such as Windows and Java, so far is concerns the conversion between
 			Shift_JIS and Unicode UTF-8 must be done with care and recognition
 			of the limitations involved in the process.
 			</para>
