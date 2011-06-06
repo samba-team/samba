@@ -3716,7 +3716,7 @@ Just put it in a frame and bolt it to the wall with the heading "MY FIRST RPCCLI
 <para>
 <indexterm><primary>adddriver</primary></indexterm>
 The setdriver command will fail if in Samba's mind the queue is not
-already there. A successful installation displys the promising message that the:
+already there. A successful installation displays the promising message that the:
 <screen>
 Printer Driver ABC successfully installed.
 </screen>
