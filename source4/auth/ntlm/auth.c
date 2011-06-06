@@ -488,15 +488,17 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	const char **auth_methods = NULL;
+
 	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_STANDALONE:
-		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "standalone", NULL);
+		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain", NULL);
 		break;
 	case ROLE_DOMAIN_MEMBER:
-		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "member server", NULL);
+		auth_methods = str_list_make(mem_ctx, "anonymous sam winbind", NULL);
 		break;
-	case ROLE_DOMAIN_CONTROLLER:
-		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "domain controller", NULL);
+	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_PDC:
+		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain winbind", NULL);
 		break;
 	}
 	return auth_methods;

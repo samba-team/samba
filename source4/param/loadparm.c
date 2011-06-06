@@ -2464,9 +2464,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "ntptr providor", "simple_ldb");
 	/* the winbind method for domain controllers is for both RODC
 	   auth forwarding and for trusted domains */
-	lpcfg_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain winbind");
-	lpcfg_do_global_parameter(lp_ctx, "auth methods:member server", "anonymous sam winbind");
-	lpcfg_do_global_parameter(lp_ctx, "auth methods:standalone", "anonymous sam_ignoredomain");
 	lpcfg_do_global_parameter(lp_ctx, "private dir", dyn_PRIVATE_DIR);
 	lpcfg_do_global_parameter(lp_ctx, "spoolss database", "spoolss.ldb");
 	lpcfg_do_global_parameter(lp_ctx, "wins config database", "wins_config.ldb");
