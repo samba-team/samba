@@ -1750,8 +1750,6 @@ NTSTATUS name_resolve_bcast(const char *name,
 {
 	struct sockaddr_storage *bcast_addrs;
 	int i, num_addrs, num_bcast_addrs;
-	struct sockaddr_storage *ss_list;
-	NTSTATUS status = NT_STATUS_NOT_FOUND;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_resolve_bcast(%s#%02x): netbios is disabled\n",
