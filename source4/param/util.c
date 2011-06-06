@@ -313,7 +313,8 @@ struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx)
 {
 	switch (lpcfg_server_role(lp_ctx)) {
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_PDC:
 		return lpcfg_workgroup(lp_ctx);
 	default:
 		return lpcfg_netbios_name(lp_ctx);
