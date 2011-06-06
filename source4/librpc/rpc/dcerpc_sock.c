@@ -371,10 +371,7 @@ struct pipe_tcp_state {
 };
 
 
-#if 0 /* disabled till we can resolve names to ipv6 addresses */
-static void continue_ipv6_open_socket(struct composite_context *ctx);
-#endif
-static void continue_ipv4_open_socket(struct composite_context *ctx);
+static void continue_ip_open_socket(struct composite_context *ctx);
 static void continue_ip_resolve_name(struct composite_context *ctx);
 
 static void continue_ip_resolve_name(struct composite_context *ctx)
@@ -383,7 +380,7 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 						      struct composite_context);
 	struct pipe_tcp_state *s = talloc_get_type(c->private_data,
 						   struct pipe_tcp_state);
-	struct composite_context *sock_ipv4_req;
+	struct composite_context *sock_ip_req;
 
 	c->status = resolve_name_recv(ctx, s, &s->address);
 	if (!composite_is_ok(c)) return;
@@ -392,53 +389,19 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 	s->srvaddr = socket_address_from_strings(s->conn, "ip", s->address, s->port);
 	if (composite_nomem(s->srvaddr, c)) return;
 
-	/* resolve_nbt_name gives only ipv4 ... - send socket open request */
-	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, s->localaddr,
+	sock_ip_req = dcerpc_pipe_open_socket_send(c, s->conn, s->localaddr,
 						     s->srvaddr, s->target_hostname,
 						     NULL,
 						     NCACN_IP_TCP);
-	composite_continue(c, sock_ipv4_req, continue_ipv4_open_socket, c);
+	composite_continue(c, sock_ip_req, continue_ip_open_socket, c);
 }
+
 
 /*
   Stage 2 of dcerpc_pipe_open_tcp_send: receive result of pipe open request
-  on IPv6 and send the request on IPv4 unless IPv6 transport succeeded.
+  on IP transport.
 */
-#if 0 /* disabled till we can resolve names to ipv6 addresses */
-static void continue_ipv6_open_socket(struct composite_context *ctx)
-{
-	struct composite_context *c = talloc_get_type(ctx->async.private_data,
-						      struct composite_context);
-	struct pipe_tcp_state *s = talloc_get_type(c->private_data,
-						   struct pipe_tcp_state);
-	struct composite_context *sock_ipv4_req;
-
-	/* receive result of socket open request */
-	c->status = dcerpc_pipe_open_socket_recv(ctx);
-	if (NT_STATUS_IS_OK(c->status)) {
-		composite_done(c);
-		return;
-	}
-
-	talloc_free(s->srvaddr);
-
-	/* prepare server address using host:ip and transport name */
-	s->srvaddr = socket_address_from_strings(s->conn, "ip", s->address, s->port);
-	if (composite_nomem(s->srvaddr, c)) return;
-
-	/* try IPv4 if IPv6 fails */
-	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn, s->localaddr,
-						     s->srvaddr, s->target_hostname, 
-						     NCACN_IP_TCP);
-	composite_continue(c, sock_ipv4_req, continue_ipv4_open_socket, c);
-}
-#endif
-
-/*
-  Stage 2 of dcerpc_pipe_open_tcp_send: receive result of pipe open request
-  on IPv4 transport.
-*/
-static void continue_ipv4_open_socket(struct composite_context *ctx)
+static void continue_ip_open_socket(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
