@@ -255,6 +255,10 @@ o   Andreas Schneider <asn@samba.org>
 Changes since 3.6.0rc1
 ----------------------
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 8200: Add support for multiple writeable ldap idmap domains.
+
+
 o   Jeremy Allison <jra@samba.org>
     * BUG 6911: Fix Kerberos authentication from Vista to Samba.
     * BUG 7054: Fix X account flag when "pwdlastset" is "0".
@@ -266,9 +270,11 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 8156: Fix 'net ads join' using the user's Kerberos ticket.
     * BUG 8157: Fix parsing a cups printcap file.
     * BUG 8163: Fix our asn.1 parser to handle negative numbers.
+    * BUG 8175: Fix smbd deadlock.
     * BUG 8191: Split the ACE flag mapping between nfs4 and Windows into two
       separate functions.
     * BUG 8197: Winbind does not properly detect when a DC connection is dead.
+    * BUG 8203: Winbind needs to reset the DC connection if an RPC times out.
 
 
 o   Christian Ambach <ambi@samba.org>
