@@ -382,6 +382,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
+	bool file_created = false;
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -481,23 +482,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		if ((local_flags & O_CREAT) && !file_existed) {
-
-			/* Inherit the ACL if required */
-			if (lp_inherit_perms(SNUM(conn))) {
-				inherit_access_posix_acl(conn, parent_dir,
-							 smb_fname->base_name,
-							 unx_mode);
-			}
-
-			/* Change the owner if required. */
-			if (lp_inherit_owner(SNUM(conn))) {
-				change_file_owner_to_parent(conn, parent_dir,
-							    fsp);
-			}
-
-			notify_fname(conn, NOTIFY_ACTION_ADDED,
-				     FILE_NOTIFY_CHANGE_FILE_NAME,
-				     smb_fname->base_name);
+			file_created = true;
 		}
 
 	} else {
@@ -606,6 +591,47 @@ static NTSTATUS open_file(files_struct *fsp,
 			status = map_nt_error_from_unix(errno);
 			fd_close(fsp);
 			return status;
+		}
+
+		if (file_created) {
+			bool need_re_stat = false;
+			/* Do all inheritance work after we've
+			   done a successful stat call and filled
+			   in the stat struct in fsp->fsp_name. */
+
+			/* Inherit the ACL if required */
+			if (lp_inherit_perms(SNUM(conn))) {
+				inherit_access_posix_acl(conn, parent_dir,
+							 smb_fname->base_name,
+							 unx_mode);
+				need_re_stat = true;
+			}
+
+			/* Change the owner if required. */
+			if (lp_inherit_owner(SNUM(conn))) {
+				change_file_owner_to_parent(conn, parent_dir,
+							    fsp);
+				need_re_stat = true;
+			}
+
+			if (need_re_stat) {
+				if (fsp->fh->fd == -1) {
+					ret = SMB_VFS_STAT(conn, smb_fname);
+				} else {
+					ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+					/* If we have an fd, this stat should succeed. */
+					if (ret == -1) {
+						DEBUG(0,("Error doing fstat on open file %s "
+							 "(%s)\n",
+							 smb_fname_str_dbg(smb_fname),
+							 strerror(errno) ));
+					}
+				}
+			}
+
+			notify_fname(conn, NOTIFY_ACTION_ADDED,
+				     FILE_NOTIFY_CHANGE_FILE_NAME,
+				     smb_fname->base_name);
 		}
 	}
 
