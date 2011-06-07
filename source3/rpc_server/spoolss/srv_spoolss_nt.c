@@ -1125,7 +1125,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 
 	if ( msg->len != 0 )
 		msg_grp->msgs[new_slot].notify.data = (char *)
-			TALLOC_MEMDUP( ctr->ctx, msg->notify.data, msg->len );
+			talloc_memdup( ctr->ctx, msg->notify.data, msg->len );
 
 	return ctr->num_groups;
 }

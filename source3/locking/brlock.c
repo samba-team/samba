@@ -1521,7 +1521,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 
 			/* Copy the current lock array. */
 			if (br_lck->num_locks) {
-				locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
+				locks_copy = (struct lock_struct *)talloc_memdup(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
 				if (!locks_copy) {
 					smb_panic("brl_close_fnum: talloc failed");
 	 			}

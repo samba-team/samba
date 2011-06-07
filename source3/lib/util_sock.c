@@ -257,7 +257,7 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 	 * discarding elements.
 	 */
 
-	iov_copy = (struct iovec *)TALLOC_MEMDUP(
+	iov_copy = (struct iovec *)talloc_memdup(
 		talloc_tos(), orig_iov, sizeof(struct iovec) * iovcnt);
 
 	if (iov_copy == NULL) {

@@ -475,7 +475,7 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 	fstrcpy(regval->valuename, name);
 	regval->type = type;
 	if (size) {
-		regval->data_p = (uint8_t *)TALLOC_MEMDUP(regval, data_p, size);
+		regval->data_p = (uint8_t *)talloc_memdup(regval, data_p, size);
 		if (!regval->data_p) {
 			TALLOC_FREE(regval);
 			return NULL;

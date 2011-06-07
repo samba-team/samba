@@ -5301,7 +5301,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			}
 
 			/* Copy the lock range data. */
-			lock_data = (char *)TALLOC_MEMDUP(
+			lock_data = (char *)talloc_memdup(
 				req, pdata, total_data);
 			if (!lock_data) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);

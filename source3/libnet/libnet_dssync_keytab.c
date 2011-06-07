@@ -387,7 +387,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		entry = libnet_keytab_search(ctx, principal, 0, ENCTYPE_NULL,
 					     mem_ctx);
 		if (entry) {
-			name = (char *)TALLOC_MEMDUP(mem_ctx,
+			name = (char *)talloc_memdup(mem_ctx,
 						     entry->password.data,
 						     entry->password.length);
 			if (!name) {

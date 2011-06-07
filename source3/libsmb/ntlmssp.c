@@ -117,9 +117,9 @@ NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
 			    const uint8_t nt_hash[16])
 {
 	ntlmssp_state->lm_hash = (uint8_t *)
-		TALLOC_MEMDUP(ntlmssp_state, lm_hash, 16);
+		talloc_memdup(ntlmssp_state, lm_hash, 16);
 	ntlmssp_state->nt_hash = (uint8_t *)
-		TALLOC_MEMDUP(ntlmssp_state, nt_hash, 16);
+		talloc_memdup(ntlmssp_state, nt_hash, 16);
 	if (!ntlmssp_state->lm_hash || !ntlmssp_state->nt_hash) {
 		TALLOC_FREE(ntlmssp_state->lm_hash);
 		TALLOC_FREE(ntlmssp_state->nt_hash);

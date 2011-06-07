@@ -907,7 +907,7 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 	dst->utok.gid = src->utok.gid;
 	dst->utok.ngroups = src->utok.ngroups;
 	if (src->utok.ngroups != 0) {
-		dst->utok.groups = (gid_t *)TALLOC_MEMDUP(
+		dst->utok.groups = (gid_t *)talloc_memdup(
 			dst, src->utok.groups,
 			sizeof(gid_t)*dst->utok.ngroups);
 	} else {

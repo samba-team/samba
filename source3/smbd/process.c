@@ -321,7 +321,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 		/* Copy the header we've written. */
 
-		*buffer = (char *)TALLOC_MEMDUP(mem_ctx,
+		*buffer = (char *)talloc_memdup(mem_ctx,
 				writeX_header,
 				sizeof(writeX_header));
 

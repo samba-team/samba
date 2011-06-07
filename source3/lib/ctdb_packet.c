@@ -153,7 +153,7 @@ bool ctdb_packet_handler(struct ctdb_packet_context *ctx,
 		ctx->in.data = NULL;
 		ctx->in.length = 0;
 	} else {
-		buf = (uint8_t *)TALLOC_MEMDUP(ctx, ctx->in.data, length);
+		buf = (uint8_t *)talloc_memdup(ctx, ctx->in.data, length);
 		if (buf == NULL) {
 			*status = NT_STATUS_NO_MEMORY;
 			return true;

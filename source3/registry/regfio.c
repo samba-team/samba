@@ -1720,7 +1720,7 @@ static bool create_vk_record(REGF_FILE *file, REGF_VK_REC *vk,
 	if ( vk->data_size > sizeof(uint32) ) {
 		uint32 data_size = ( (vk->data_size+sizeof(uint32)) & 0xfffffff8 ) + 8;
 
-		vk->data = (uint8 *)TALLOC_MEMDUP( file->mem_ctx,
+		vk->data = (uint8 *)talloc_memdup( file->mem_ctx,
 						   regval_data_p(value),
 						   vk->data_size );
 		if (vk->data == NULL) {

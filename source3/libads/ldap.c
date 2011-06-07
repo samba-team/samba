@@ -790,7 +790,7 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
 	if (in_val->bv_len == 0) return value;
 
 	value->bv_len = in_val->bv_len;
-	value->bv_val = (char *)TALLOC_MEMDUP(ctx, in_val->bv_val,
+	value->bv_val = (char *)talloc_memdup(ctx, in_val->bv_val,
 					      in_val->bv_len);
 	return value;
 }
