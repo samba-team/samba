@@ -481,9 +481,21 @@ bool iface_list_is_local(struct interface *ifaces, const char *dest)
 */
 bool iface_list_same_net(const char *ip1, const char *ip2, const char *netmask)
 {
-	return same_net_v4(interpret_addr2(ip1),
-			interpret_addr2(ip2),
-			interpret_addr2(netmask));
+	struct sockaddr_storage ip1_ss, ip2_ss, nm_ss;
+
+	if (!interpret_string_addr(&ip1_ss, ip1, AI_NUMERICHOST)) {
+		return false;
+	}
+	if (!interpret_string_addr(&ip2_ss, ip2, AI_NUMERICHOST)) {
+		return false;
+	}
+	if (!interpret_string_addr(&nm_ss, netmask, AI_NUMERICHOST)) {
+		return false;
+	}
+
+	return same_net((struct sockaddr *)&ip1_ss,
+			(struct sockaddr *)&ip2_ss,
+			(struct sockaddr *)&nm_ss);
 }
 
 /**
