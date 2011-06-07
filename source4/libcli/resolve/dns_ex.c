@@ -267,7 +267,22 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			port = state->port;
 		}
 
-		if (!print_sockaddr_len(addrstr, sizeof(addrstr), (struct sockaddr *)addrs_rr[i]->u.data, addrs_rr[i]->size)) {
+		switch (rr->type) {
+		case rk_ns_t_a:
+			if (inet_ntop(AF_INET, addrs_rr[i]->u.a,
+				      addrstr, sizeof(addrstr)) == NULL) {
+				continue;
+			}
+			break;
+#ifdef HAVE_IPV6
+		case rk_ns_t_aaaa:
+			if (inet_ntop(AF_INET6, (struct in6_addr *)addrs_rr[i]->u.data,
+				      addrstr, sizeof(addrstr)) == NULL) {
+				continue;
+			}
+			break;
+#endif
+		default:
 			continue;
 		}
 
