@@ -523,6 +523,65 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			gss_release_buffer(&min_stat2, &output_token);
 			
 			return NT_STATUS_MORE_PROCESSING_REQUIRED;
+		} else if (maj_stat == GSS_S_CONTEXT_EXPIRED) {
+			gss_cred_id_t creds;
+			gss_name_t name;
+			gss_buffer_desc buffer;
+			OM_uint32 lifetime = 0;
+			gss_cred_usage_t usage;
+			const char *role = NULL;
+			DEBUG(0, ("GSS %s Update(krb5)(%d) Update failed, credentials expired during GSSAPI handshake!\n",
+				  role,
+				  gensec_gssapi_state->gss_exchange_count));
+
+			
+			switch (gensec_security->gensec_role) {
+			case GENSEC_CLIENT:
+				creds = gensec_gssapi_state->client_cred->creds;
+				role = "client";
+			case GENSEC_SERVER:
+				creds = gensec_gssapi_state->server_cred->creds;
+				role = "server";
+			}
+
+			maj_stat = gss_inquire_cred(&min_stat, 
+						    creds,
+						    &name, &lifetime, &usage, NULL);
+
+			if (maj_stat == GSS_S_COMPLETE) {
+				const char *usage_string;
+				switch (usage) {
+				case GSS_C_BOTH:
+					usage_string = "GSS_C_BOTH";
+					break;
+				case GSS_C_ACCEPT:
+					usage_string = "GSS_C_ACCEPT";
+					break;
+				case GSS_C_INITIATE:
+					usage_string = "GSS_C_INITIATE";
+					break;
+				}
+				maj_stat = gss_display_name(&min_stat, name, &buffer, NULL);
+				if (maj_stat) {
+					buffer.value = NULL;
+					buffer.length = 0;
+				}
+				if (lifetime > 0) {
+					DEBUG(0, ("GSSAPI gss_inquire_cred indicates expiry of %*.*s in %u sec for %s\n", 
+						  (int)buffer.length, (int)buffer.length, (char *)buffer.value, 
+						  lifetime, usage_string));
+				} else {
+					DEBUG(0, ("GSSAPI gss_inquire_cred indicates %*.*s has already expired for %s\n", 
+						  (int)buffer.length, (int)buffer.length, (char *)buffer.value, 
+						  usage_string));
+				}
+				gss_release_buffer(&min_stat, &buffer);
+				gss_release_name(&min_stat, &name);
+			} else if (maj_stat != GSS_S_COMPLETE) {
+				DEBUG(0, ("inquiry of credential lifefime via GSSAPI gss_inquire_cred failed: %s\n",
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			}
+			return NT_STATUS_INVALID_PARAMETER;
 		} else if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
 			switch (min_stat) {
 			case KRB5KRB_AP_ERR_TKT_NYV:
