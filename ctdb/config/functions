@@ -5,6 +5,9 @@ PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
 [ -z "$CTDB_VARDIR" ] && {
     export CTDB_VARDIR="/var/ctdb"
 }
+[ -z "$CTDB_ETCDIR" ] && {
+    export CTDB_ETCDIR="/etc"
+}
 
 #######################################
 # pull in a system config file, if any
@@ -19,11 +22,10 @@ _loadconfig() {
 	loadconfig "ctdb"
     fi
 
-
-    if [ -f /etc/sysconfig/$1 ]; then
-	. /etc/sysconfig/$1
-    elif [ -f /etc/default/$1 ]; then
-	. /etc/default/$1
+    if [ -f $CTDB_ETCDIR/sysconfig/$1 ]; then
+	. $CTDB_ETCDIR/sysconfig/$1
+    elif [ -f $CTDB_ETCDIR/default/$1 ]; then
+	. $CTDB_ETCDIR/default/$1
     elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
 	. $CTDB_BASE/sysconfig/$1
     fi
@@ -50,7 +52,10 @@ detect_init_style() {
 
 ######################################################
 # simulate /sbin/service on platforms that don't have it
-service() { 
+# _service() makes it easier to hook the service() function for
+# testing.
+_service ()
+{
   _service_name="$1"
   _op="$2"
 
@@ -58,30 +63,26 @@ service() {
   [ -z "$_service_name" ] && return
 
   if [ -x /sbin/service ]; then
-      /sbin/service "$_service_name" "$_op"
-  elif [ -x /etc/init.d/$_service_name ]; then
-      /etc/init.d/$_service_name "$_op"
-  elif [ -x /etc/rc.d/init.d/$_service_name ]; then
-      /etc/rc.d/init.d/$_service_name "$_op"
+      $_nice /sbin/service "$_service_name" "$_op"
+  elif [ -x $CTDB_ETCDIR/init.d/$_service_name ]; then
+      $_nice $CTDB_ETCDIR/init.d/$_service_name "$_op"
+  elif [ -x $CTDB_ETCDIR/rc.d/init.d/$_service_name ]; then
+      $_nice $CTDB_ETCDIR/rc.d/init.d/$_service_name "$_op"
   fi
+}
+
+service()
+{
+    _nice=""
+    _service "$@"
 }
 
 ######################################################
 # simulate /sbin/service (niced) on platforms that don't have it
-nice_service() { 
-  _service_name="$1"
-  _op="$2"
-
-  # do nothing, when no service was specified
-  [ -z "$_service_name" ] && return
-
-  if [ -x /sbin/service ]; then
-      nice /sbin/service "$_service_name" "$_op"
-  elif [ -x /etc/init.d/$_service_name ]; then
-      nice /etc/init.d/$_service_name "$_op"
-  elif [ -x /etc/rc.d/init.d/$_service_name ]; then
-      nice /etc/rc.d/init.d/$_service_name "$_op"
-  fi
+nice_service()
+{
+    _nice="nice"
+    _service "$@"
 }
 
 ######################################################
@@ -362,10 +363,10 @@ tickle_tcp_connections() {
 ########################################################
 startstop_nfs() {
 	PLATFORM="unknown"
-	[ -x /etc/init.d/nfsserver ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
 		PLATFORM="sles"
 	}
-	[ -x /etc/init.d/nfslock ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfslock ] && {
 		PLATFORM="rhel"
 	}
 
@@ -418,10 +419,10 @@ startstop_nfs() {
 ########################################################
 startstop_nfslock() {
 	PLATFORM="unknown"
-	[ -x /etc/init.d/nfsserver ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
 		PLATFORM="sles"
 	}
-	[ -x /etc/init.d/nfslock ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfslock ] && {
 		PLATFORM="rhel"
 	}
 
