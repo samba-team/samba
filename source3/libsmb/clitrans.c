@@ -52,8 +52,9 @@ struct cli_trans_state {
 	struct trans_recvblob rdata;
 	uint16_t recv_flags2;
 
-	struct iovec iov[4];
+	struct iovec iov[6];
 	uint8_t pad[4];
+	uint8_t zero_pad[4];
 	uint16_t vwv[32];
 };
 
@@ -173,7 +174,10 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	uint16_t *vwv = state->vwv;
 	uint32_t param_offset;
 	uint32_t this_param = 0;
+	uint32_t param_pad;
+	uint32_t data_offset;
 	uint32_t this_data = 0;
+	uint32_t data_pad;
 	uint32_t useable_space;
 	uint8_t cmd;
 
@@ -221,7 +225,18 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		break;
 	}
 
-	useable_space = state->cli->max_xmit - smb_size - sizeof(uint16_t)*wct;
+	param_offset += wct * sizeof(uint16_t);
+	useable_space = state->cli->max_xmit - param_offset;
+
+	param_pad = param_offset % 4;
+	if (param_pad > 0) {
+		param_pad = MIN(param_pad, useable_space);
+		iov[0].iov_base = (void *)state->zero_pad;
+		iov[0].iov_len = param_pad;
+		iov += 1;
+		param_offset += param_pad;
+	}
+	useable_space = state->cli->max_xmit - param_offset;
 
 	if (state->param_sent < state->num_param) {
 		this_param = MIN(state->num_param - state->param_sent,
@@ -231,27 +246,41 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		iov += 1;
 	}
 
+	data_offset = param_offset + this_param;
+	useable_space = state->cli->max_xmit - data_offset;
+
+	data_pad = data_offset % 4;
+	if (data_pad > 0) {
+		data_pad = MIN(data_pad, useable_space);
+		iov[0].iov_base = (void *)state->zero_pad;
+		iov[0].iov_len = data_pad;
+		iov += 1;
+		data_offset += data_pad;
+	}
+	useable_space = state->cli->max_xmit - data_offset;
+
 	if (state->data_sent < state->num_data) {
 		this_data = MIN(state->num_data - state->data_sent,
-				useable_space - this_param);
+				useable_space);
 		iov[0].iov_base = (void *)(state->data + state->data_sent);
 		iov[0].iov_len = this_data;
 		iov += 1;
 	}
 
-	param_offset += wct * sizeof(uint16_t);
-
 	DEBUG(10, ("num_setup=%u, max_setup=%u, "
 		   "param_total=%u, this_param=%u, max_param=%u, "
 		   "data_total=%u, this_data=%u, max_data=%u, "
-		   "param_offset=%u, param_disp=%u, data_disp=%u\n",
+		   "param_offset=%u, param_pad=%u, param_disp=%u, "
+		   "data_offset=%u, data_pad=%u, data_disp=%u\n",
 		   (unsigned)state->num_setup, (unsigned)state->max_setup,
 		   (unsigned)state->num_param, (unsigned)this_param,
 		   (unsigned)state->rparam.max,
 		   (unsigned)state->num_data, (unsigned)this_data,
 		   (unsigned)state->rdata.max,
-		   (unsigned)param_offset,
-		   (unsigned)state->param_sent, (unsigned)state->data_sent));
+		   (unsigned)param_offset, (unsigned)param_pad,
+		   (unsigned)state->param_sent,
+		   (unsigned)data_offset, (unsigned)data_pad,
+		   (unsigned)state->data_sent));
 
 	switch (cmd) {
 	case SMBtrans:
@@ -268,7 +297,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		SSVAL(vwv + 9, 0, this_param);
 		SSVAL(vwv +10, 0, param_offset);
 		SSVAL(vwv +11, 0, this_data);
-		SSVAL(vwv +12, 0, param_offset + this_param);
+		SSVAL(vwv +12, 0, data_offset);
 		SCVAL(vwv +13, 0, state->num_setup);
 		SCVAL(vwv +13, 1, 0);	/* reserved */
 		memcpy(vwv + 14, state->setup,
@@ -282,7 +311,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		SSVAL(vwv + 3, 0, param_offset);
 		SSVAL(vwv + 4, 0, state->param_sent);
 		SSVAL(vwv + 5, 0, this_data);
-		SSVAL(vwv + 6, 0, param_offset + this_param);
+		SSVAL(vwv + 6, 0, data_offset);
 		SSVAL(vwv + 7, 0, state->data_sent);
 		if (cmd == SMBtranss2) {
 			SSVAL(vwv + 8, 0, state->fid);
@@ -298,7 +327,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		SIVAL(vwv + 9, 1, this_param);
 		SIVAL(vwv +11, 1, param_offset);
 		SIVAL(vwv +13, 1, this_data);
-		SIVAL(vwv +15, 1, param_offset + this_param);
+		SIVAL(vwv +15, 1, data_offset);
 		SCVAL(vwv +17, 1, state->num_setup);
 		SSVAL(vwv +18, 0, state->function);
 		memcpy(vwv + 19, state->setup,
@@ -313,7 +342,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		SIVAL(vwv + 7, 1, param_offset);
 		SIVAL(vwv + 9, 1, state->param_sent);
 		SIVAL(vwv +11, 1, this_data);
-		SIVAL(vwv +13, 1, param_offset + this_param);
+		SIVAL(vwv +13, 1, data_offset);
 		SIVAL(vwv +15, 1, state->data_sent);
 		SCVAL(vwv +17, 1, 0); /* reserved */
 		break;
