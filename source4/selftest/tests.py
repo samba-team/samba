@@ -61,11 +61,20 @@ print "OPTIONS %s" % " ".join(torture_options)
 for options in ['-U"$USERNAME%$PASSWORD" --option=socket:testnonblock=true', '-U"$USERNAME%$PASSWORD"', '-U"$USERNAME%$PASSWORD" -k yes', '-U"$USERNAME%$PASSWORD" -k no', '-U"$USERNAME%$PASSWORD" -k no --sign', '-U"$USERNAME%$PASSWORD" -k no --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --sign']:
     plantestsuite("samba4.ldb.ldap with options %s(dc)" % options, "dc", "%s/test_ldb.sh ldap $SERVER %s" % (bbdir, options))
 
-# see if we support ldaps
+# see if we support ADS on the Samba3 side
 try:
     config_h = os.environ["CONFIG_H"]
 except KeyError:
-    config_h = os.path.join(samba4bindir, "default/source4/include/config.h")
+    config_h = os.path.join(samba4bindir, "default/include/config.h")
+
+f = open(config_h, 'r')
+try:
+    # The other parts of the HAVE_ADS test are always supplied by the top level build
+    have_ads_support = ("HAVE_LDAP 1" in f.read())
+finally:
+    f.close()
+
+# see if we support ldaps
 f = open(config_h, 'r')
 try:
     have_tls_support = ("ENABLE_GNUTLS 1" in f.read())
@@ -309,8 +318,9 @@ for mech in [
     "-k yes"]:
     signoptions = "%s --signing=off" % mech
     name = "smb.signing disabled on with %s" % signoptions
-    for env in [ "s4member", "s3member" ]:
-        plantestsuite_loadlist("samba4.%s domain-creds" % name, env, [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+    plantestsuite_loadlist("samba4.%s domain-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+    if have_ads_support:
+        plantestsuite_loadlist("samba4.%s domain-creds" % name, "s3member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
 
 for mech in [
     "-k no",
@@ -319,8 +329,9 @@ for mech in [
     signoptions = "%s --signing=off" % mech
     name = "smb.signing on with %s" % signoptions
     plantestsuite_loadlist("samba4.%s local-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$NETBIOSNAME/$USERNAME%$PASSWORD', 'base.xcopy'])
-    plantestsuite_loadlist("samba4.%s" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$USERNAME%$PASSWORD', 'base.xcopy'])
-    plantestsuite_loadlist("samba4.%s administrator" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+    if have_ads_support:
+        plantestsuite_loadlist("samba4.%s" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$USERNAME%$PASSWORD', 'base.xcopy'])
+        plantestsuite_loadlist("samba4.%s administrator" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
 plantestsuite_loadlist("samba4.smb.signing --signing=yes anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=yes', '-U%', 'base.xcopy'])
 plantestsuite_loadlist("samba4.smb.signing --signing=required anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=required', '-U%', 'base.xcopy'])
 plantestsuite_loadlist("samba4.smb.signing --signing=no anon", "s4member",  [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=no', '-U%', 'base.xcopy'])
