@@ -71,9 +71,8 @@ for f; do
 	    t="*FAILED*"
 	fi
 	if $with_desc ; then
-	    f="${f#./}" ; f="${f%%[./]*}"
 	    desc=$(tail -n +4 $tf | head -n 1)
-	    f="${f} ${desc}"
+	    f="$desc"
 	fi
 	echo "$t $f" >>"$sf"
     fi
