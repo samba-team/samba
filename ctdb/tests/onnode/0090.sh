@@ -4,7 +4,7 @@
 
 cmd="$ONNODE natgw hostname"
 
-echo "$cmd - no natgw"
+define_test "$cmd" "no natgw"
 
 ctdb_set_output <<EOF
 -1 0.0.0.0

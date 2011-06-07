@@ -4,7 +4,7 @@
 
 cmd="$ONNODE ok hostname"
 
-echo "$cmd - 2nd node disconnected, extra status columns"
+define_test "$cmd" "2nd node disconnected, extra status columns"
 
 ctdb_set_output <<EOF
 :Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:X1:X2:X3:X4:

@@ -4,7 +4,7 @@
 
 cmd="$ONNODE lvsmaster hostname"
 
-echo "$cmd - no lvsmaster"
+define_test "$cmd" "no lvsmaster"
 
 ctdb_set_output 255 <<EOF
 There is no LVS master

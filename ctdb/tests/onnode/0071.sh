@@ -4,7 +4,7 @@
 
 cmd="$ONNODE ok hostname"
 
-echo "$cmd - 2nd node disconnected"
+define_test "$cmd" "2nd node disconnected"
 
 ctdb_set_output  <<EOF 
 ctdb_set_output <<EOF

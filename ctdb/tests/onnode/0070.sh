@@ -4,7 +4,7 @@
 
 cmd="$ONNODE ok hostname"
 
-echo "$cmd - all nodes OK"
+define_test "$cmd" "all nodes OK"
 
 ctdb_set_output <<EOF
 :Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:

@@ -4,7 +4,7 @@
 
 cmd="$ONNODE natgw hostname"
 
-echo "$cmd - node 2 (192.168.1.103) is natgw"
+define_test "$cmd" "node 2 (192.168.1.103) is natgw"
 
 ctdb_set_output <<EOF
 2 192.168.1.103

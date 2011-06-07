@@ -4,7 +4,7 @@
 
 cmd="$ONNODE recmaster hostname"
 
-echo "$cmd - node 1 (192.168.1.102) is recmaster"
+define_test "$cmd" "node 1 (192.168.1.102) is recmaster"
 
 ctdb_set_output <<EOF
 1

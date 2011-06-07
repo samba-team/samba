@@ -42,6 +42,16 @@ if [ -z "$CTDB_BASE" ] ; then
     export CTDB_BASE=$(dirname "$CTDB_NODES_FILE")
 fi
 
+define_test ()
+{
+    _f="$0"
+    _f="${_f#./}"  # strip leading ./
+    _f="${_f%%/*}" # if subdir, strip off file
+    _f="${_f%.sh}" # strip off .sh suffix if any
+
+    echo "$_f $1 - $2"
+}
+
 # Set output for ctdb command.  Option 1st argument is return code.
 ctdb_set_output ()
 {

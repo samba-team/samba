@@ -4,7 +4,7 @@
 
 cmd="$ONNODE -pq all hostname"
 
-echo "$cmd - all nodes OK"
+define_test "$cmd" "all nodes OK"
 
 required_result <<EOF
 -n 192.168.1.101 hostname

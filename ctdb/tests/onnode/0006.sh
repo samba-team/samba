@@ -4,7 +4,7 @@
 
 cmd="$ONNODE -v 3 hostname"
 
-echo "$cmd - all nodes OK"
+define_test "$cmd" "all nodes OK"
 
 required_result <<EOF
 
