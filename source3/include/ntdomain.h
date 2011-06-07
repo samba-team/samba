@@ -100,6 +100,8 @@ struct gse_context;
 
 struct dcesrv_ep_entry_list;
 
+struct tsocket_address;
+
 /*
  * DCE/RPC-specific samba-internal-specific handling of data on
  * NamedPipes.
@@ -110,6 +112,8 @@ struct pipes_struct {
 
 	struct client_address *client_id;
 	struct client_address *server_id;
+	const struct tsocket_address *local_address;
+	const struct tsocket_address *remote_address;
 
 	enum dcerpc_transport_t transport;
 

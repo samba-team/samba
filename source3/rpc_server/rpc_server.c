@@ -81,8 +81,8 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    const char *pipe_name,
 				    enum dcerpc_transport_t transport,
 				    bool ncalrpc_as_system,
-				    const char *client_address,
-				    const char *server_address,
+				    const struct tsocket_address *local_address,
+				    const struct tsocket_address *remote_address,
 				    struct auth_session_info *session_info,
 				    struct pipes_struct **_p,
 				    int *perrno)
@@ -167,40 +167,64 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	 * regardless of what we just calculated */
 	p->session_info->security_token = talloc_move(p->session_info, &session_info->security_token);
 
-	p->client_id = talloc_zero(p, struct client_address);
-	if (!p->client_id) {
-		TALLOC_FREE(p);
-		*perrno = ENOMEM;
-		return -1;
-	}
-	strlcpy(p->client_id->addr,
-		client_address, sizeof(p->client_id->addr));
-	p->client_id->name = talloc_strdup(p->client_id, client_address);
-	if (p->client_id->name == NULL) {
+	p->remote_address = tsocket_address_copy(remote_address, p);
+	if (p->remote_address == NULL) {
 		TALLOC_FREE(p);
 		*perrno = ENOMEM;
 		return -1;
 	}
 
-	if (server_address != NULL) {
+	p->client_id = talloc_zero(p, struct client_address);
+	if (p->client_id == NULL) {
+		TALLOC_FREE(p);
+		*perrno = ENOMEM;
+		return -1;
+	}
+
+	if (tsocket_address_is_inet(p->remote_address, "ip")) {
+		p->client_id->name = tsocket_address_inet_addr_string(p->remote_address,
+								      p->client_id);
+	} else {
+		p->client_id->name = talloc_strdup(p->client_id, "");
+	}
+	if (p->client_id->name == NULL) {
+		TALLOC_FREE(p);
+		*perrno = ENOMEM;
+		return -1;
+	}
+	strlcpy(p->client_id->addr,
+		p->client_id->name, sizeof(p->client_id->addr));
+	p->client_id->name = talloc_strdup(p->client_id, p->client_id->name);
+
+	if (local_address != NULL) {
+		p->local_address = tsocket_address_copy(local_address, p);
+		if (p->local_address == NULL) {
+			TALLOC_FREE(p);
+			*perrno = ENOMEM;
+			return -1;
+		}
+
 		p->server_id = talloc_zero(p, struct client_address);
-		if (p->client_id == NULL) {
+		if (p->server_id == NULL) {
+			TALLOC_FREE(p);
+			*perrno = ENOMEM;
+			return -1;
+		}
+		if (tsocket_address_is_inet(p->local_address, "ip")) {
+			p->server_id->name = tsocket_address_inet_addr_string(p->local_address,
+									      p->server_id);
+		} else {
+			p->server_id->name = talloc_strdup(p->server_id, "");
+		}
+		if (p->server_id->name == NULL) {
 			TALLOC_FREE(p);
 			*perrno = ENOMEM;
 			return -1;
 		}
 
 		strlcpy(p->server_id->addr,
-			server_address,
+			p->server_id->name,
 			sizeof(p->server_id->addr));
-
-		p->server_id->name = talloc_strdup(p->server_id,
-						   server_address);
-		if (p->server_id->name == NULL) {
-			TALLOC_FREE(p);
-			*perrno = ENOMEM;
-			return -1;
-		}
 	}
 
 	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
@@ -357,6 +381,7 @@ struct named_pipe_client {
 	char *client_name;
 	struct tsocket_address *server;
 	char *server_name;
+
 	struct auth_session_info *session_info;
 
 	struct pipes_struct *p;
@@ -428,7 +453,6 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	struct auth_session_info_transport *session_info_transport;
 	struct named_pipe_client *npc =
 		tevent_req_callback_data(subreq, struct named_pipe_client);
-	const char *cli_addr;
 	int error;
 	int ret;
 
@@ -450,20 +474,9 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (tsocket_address_is_inet(npc->client, "ip")) {
-		cli_addr = tsocket_address_inet_addr_string(npc->client,
-							    subreq);
-		if (cli_addr == NULL) {
-			TALLOC_FREE(npc);
-			return;
-		}
-	} else {
-		cli_addr = "";
-	}
-
 	ret = make_server_pipes_struct(npc,
 				       npc->pipe_name, NCACN_NP,
-					false, cli_addr, NULL, npc->session_info,
+					false, npc->server, npc->client, npc->session_info,
 					&npc->p, &error);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to create pipes_struct! (%s)\n",
@@ -1155,8 +1168,8 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				      pipe_name,
 				      ncacn_conn->transport,
 				      system_user,
-				      cli_str,
-				      srv_str,
+				      ncacn_conn->server,
+				      ncacn_conn->client,
 				      ncacn_conn->session_info,
 				      &ncacn_conn->p,
 				      &sys_errno);
