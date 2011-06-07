@@ -448,10 +448,14 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	struct security_descriptor *psd = NULL;
 	struct dom_sid *owner_sid = NULL;
 	struct dom_sid *group_sid = NULL;
+	uint32_t security_info_sent = (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL);
 	bool inherit_owner = lp_inherit_owner(SNUM(handle->conn));
+	bool inheritable_components = sd_has_inheritable_components(parent_desc,
+					is_directory);
 	size_t size;
 
-	if (!sd_has_inheritable_components(parent_desc, is_directory)) {
+	if (!inheritable_components && !inherit_owner) {
+		/* Nothing to inherit and not setting owner. */
 		return NT_STATUS_OK;
 	}
 
@@ -487,6 +491,17 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		return status;
 	}
 
+	/* If inheritable_components == false,
+	   se_create_child_secdesc()
+	   creates a security desriptor with a NULL dacl
+	   entry, but with SEC_DESC_DACL_PRESENT. We need
+	   to remove that flag. */
+
+	if (!inheritable_components) {
+		security_info_sent &= ~SECINFO_DACL;
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
+	}
+
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("inherit_new_acl: child acl for %s is:\n",
 			fsp_str_dbg(fsp) ));
@@ -498,9 +513,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		become_root();
 	}
 	status = SMB_VFS_FSET_NT_ACL(fsp,
-				(SECINFO_OWNER |
-				 SECINFO_GROUP |
-				 SECINFO_DACL),
+				security_info_sent,
 				psd);
 	if (inherit_owner) {
 		unbecome_root();
