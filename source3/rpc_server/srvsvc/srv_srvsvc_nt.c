@@ -101,7 +101,7 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 		return 1;
 	}
 
-	f = TALLOC_REALLOC_ARRAY(fenum->ctx, fenum->ctr3->array,
+	f = talloc_realloc(fenum->ctx, fenum->ctr3->array,
 				 struct srvsvc_NetFileInfo3, i+1);
 	if ( !f ) {
 		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
@@ -179,7 +179,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 		return;
 	}
 
-	f = TALLOC_REALLOC_ARRAY(fenum->ctx, fenum->ctr3->array,
+	f = talloc_realloc(fenum->ctx, fenum->ctr3->array,
 				 struct srvsvc_NetFileInfo3, i+1);
 	if ( !f ) {
 		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
@@ -816,7 +816,7 @@ static WERROR init_srv_sess_info_0(struct pipes_struct *p,
 
 	for (; resume_handle < *total_entries; resume_handle++) {
 
-		ctr0->array = TALLOC_REALLOC_ARRAY(p->mem_ctx,
+		ctr0->array = talloc_realloc(p->mem_ctx,
 						   ctr0->array,
 						   struct srvsvc_NetSessInfo0,
 						   num_entries+1);
@@ -914,7 +914,7 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 		num_files = net_count_files(pw->pw_uid, session_list[resume_handle].pid);
 		guest = strequal( session_list[resume_handle].username, lp_guestaccount() );
 
-		ctr1->array = TALLOC_REALLOC_ARRAY(p->mem_ctx,
+		ctr1->array = talloc_realloc(p->mem_ctx,
 						   ctr1->array,
 						   struct srvsvc_NetSessInfo1,
 						   num_entries+1);
@@ -969,7 +969,7 @@ static WERROR init_srv_conn_info_0(struct srvsvc_NetConnCtr0 *ctr0,
 
 	for (; resume_handle < *total_entries; resume_handle++) {
 
-		ctr0->array = TALLOC_REALLOC_ARRAY(talloc_tos(),
+		ctr0->array = talloc_realloc(talloc_tos(),
 						   ctr0->array,
 						   struct srvsvc_NetConnInfo0,
 						   num_entries+1);
@@ -1023,7 +1023,7 @@ static WERROR init_srv_conn_info_1(struct srvsvc_NetConnCtr1 *ctr1,
 
 	for (; resume_handle < *total_entries; resume_handle++) {
 
-		ctr1->array = TALLOC_REALLOC_ARRAY(talloc_tos(),
+		ctr1->array = talloc_realloc(talloc_tos(),
 						   ctr1->array,
 						   struct srvsvc_NetConnInfo1,
 						   num_entries+1);

@@ -298,7 +298,7 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 		goto send;
 	}
 
-	state->data = TALLOC_REALLOC_ARRAY(state, state->data, uint8_t,
+	state->data = talloc_realloc(state, state->data, uint8_t,
 					   state->max_read);
 	if (state->data == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);

@@ -96,7 +96,7 @@ static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 	do {
 		dm_sessid_t *new_sessions;
 		nsessions *= 2;
-		new_sessions = TALLOC_REALLOC_ARRAY(tmp_ctx, sessions, 
+		new_sessions = talloc_realloc(tmp_ctx, sessions, 
 						    dm_sessid_t, nsessions);
 		if (new_sessions == NULL) {
 			talloc_free(tmp_ctx);

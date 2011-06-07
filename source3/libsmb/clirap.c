@@ -998,7 +998,7 @@ static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 		struct stream_struct *tmp;
 		uint8_t *tmp_buf;
 
-		tmp = TALLOC_REALLOC_ARRAY(mem_ctx, streams,
+		tmp = talloc_realloc(mem_ctx, streams,
 					   struct stream_struct,
 					   num_streams+1);
 

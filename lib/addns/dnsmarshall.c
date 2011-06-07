@@ -78,7 +78,7 @@ void dns_marshall_buffer(struct dns_buffer *buf, const uint8 *data,
 
 		new_size += (64 - (new_size % 64));
 
-		if (!(new_data = TALLOC_REALLOC_ARRAY(buf, buf->data, uint8,
+		if (!(new_data = talloc_realloc(buf, buf->data, uint8,
 						      new_size))) {
 			buf->error = ERROR_DNS_NO_MEMORY;
 			return;

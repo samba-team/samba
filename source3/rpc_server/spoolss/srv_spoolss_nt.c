@@ -1094,7 +1094,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 	if ( i == ctr->num_groups ) {
 		ctr->num_groups++;
 
-		if ( !(groups = TALLOC_REALLOC_ARRAY( ctr->ctx, ctr->msg_groups, SPOOLSS_NOTIFY_MSG_GROUP, ctr->num_groups)) ) {
+		if ( !(groups = talloc_realloc( ctr->ctx, ctr->msg_groups, SPOOLSS_NOTIFY_MSG_GROUP, ctr->num_groups)) ) {
 			DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed!\n"));
 			return 0;
 		}
@@ -1112,7 +1112,7 @@ static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MS
 
 	msg_grp->num_msgs++;
 
-	if ( !(msg_list = TALLOC_REALLOC_ARRAY( ctr->ctx, msg_grp->msgs, SPOOLSS_NOTIFY_MSG, msg_grp->num_msgs )) ) {
+	if ( !(msg_list = talloc_realloc( ctr->ctx, msg_grp->msgs, SPOOLSS_NOTIFY_MSG, msg_grp->num_msgs )) ) {
 		DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed for new message [%d]!\n", msg_grp->num_msgs));
 		return 0;
 	}
@@ -3438,7 +3438,7 @@ static bool construct_notify_printer_info(struct messaging_context *msg_ctx,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		info->notifies = TALLOC_REALLOC_ARRAY(info, info->notifies,
+		info->notifies = talloc_realloc(info, info->notifies,
 						      struct spoolss_Notify,
 						      info->count + 1);
 		if (info->notifies == NULL) {
@@ -3498,7 +3498,7 @@ static bool construct_notify_jobs_info(struct messaging_context *msg_ctx,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		info->notifies = TALLOC_REALLOC_ARRAY(info, info->notifies,
+		info->notifies = talloc_realloc(info, info->notifies,
 						      struct spoolss_Notify,
 						      info->count + 1);
 		if (info->notifies == NULL) {
@@ -4307,7 +4307,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 
-		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+		info = talloc_realloc(mem_ctx, info,
 					    union spoolss_PrinterInfo,
 					    count + 1);
 		if (!info) {
@@ -5347,7 +5347,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 	*count_p = 0;
 
 	if (strlen(driver->driver_path)) {
-		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+		info = talloc_realloc(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
 		W_ERROR_HAVE_NO_MEMORY(info);
@@ -5362,7 +5362,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	if (strlen(driver->config_file)) {
-		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+		info = talloc_realloc(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
 		W_ERROR_HAVE_NO_MEMORY(info);
@@ -5377,7 +5377,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	if (strlen(driver->data_file)) {
-		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+		info = talloc_realloc(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
 		W_ERROR_HAVE_NO_MEMORY(info);
@@ -5392,7 +5392,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	if (strlen(driver->help_file)) {
-		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+		info = talloc_realloc(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
 		W_ERROR_HAVE_NO_MEMORY(info);
@@ -5407,7 +5407,7 @@ static WERROR spoolss_DriverFileInfo_from_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; driver->dependent_files[i] && driver->dependent_files[i][0] != '\0'; i++) {
-		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+		info = talloc_realloc(mem_ctx, info,
 					    struct spoolss_DriverFileInfo,
 					    count + 1);
 		W_ERROR_HAVE_NO_MEMORY(info);
@@ -7292,7 +7292,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			  num_drivers, architecture, version));
 
 		if (num_drivers != 0) {
-			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+			info = talloc_realloc(mem_ctx, info,
 						    union spoolss_DriverInfo,
 						    count + num_drivers);
 			if (!info) {

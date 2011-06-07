@@ -325,7 +325,7 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 		return NULL;
 	}
 
-	domains = TALLOC_REALLOC_ARRAY(
+	domains = talloc_realloc(
 		mem_ctx, domains, struct wb_lookupsids_domain, num_domains+1);
 	if (domains == NULL) {
 		return NULL;
@@ -354,7 +354,7 @@ fail:
 	/*
 	 * Realloc to the state it was in before
 	 */
-	*pdomains = TALLOC_REALLOC_ARRAY(
+	*pdomains = talloc_realloc(
 		mem_ctx, domains, struct wb_lookupsids_domain, num_domains);
 	return NULL;
 }

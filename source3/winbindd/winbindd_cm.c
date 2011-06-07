@@ -1082,7 +1082,7 @@ static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 			    (struct sockaddr *)(void *)pss))
 			return False;
 
-	*dcs = TALLOC_REALLOC_ARRAY(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);
+	*dcs = talloc_realloc(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);
 
 	if (*dcs == NULL)
 		return False;
@@ -1097,7 +1097,7 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 				  struct sockaddr_storage *pss, uint16 port,
 				  struct sockaddr_storage **addrs, int *num)
 {
-	*addrs = TALLOC_REALLOC_ARRAY(mem_ctx, *addrs, struct sockaddr_storage, (*num)+1);
+	*addrs = talloc_realloc(mem_ctx, *addrs, struct sockaddr_storage, (*num)+1);
 
 	if (*addrs == NULL) {
 		*num = 0;

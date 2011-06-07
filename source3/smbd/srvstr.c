@@ -56,7 +56,7 @@ ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
 	 */
 	grow_size = (strlen(str) + 2) * 4;
 
-	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, *outbuf, uint8,
+	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8,
 					 buf_size + grow_size))) {
 		DEBUG(0, ("talloc failed\n"));
 		return -1;

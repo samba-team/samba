@@ -901,7 +901,7 @@ bool add_gp_registry_entry_to_array(TALLOC_CTX *mem_ctx,
 				    struct gp_registry_entry **entries,
 				    size_t *num)
 {
-	*entries = TALLOC_REALLOC_ARRAY(mem_ctx, *entries,
+	*entries = talloc_realloc(mem_ctx, *entries,
 					struct gp_registry_entry,
 					(*num)+1);
 

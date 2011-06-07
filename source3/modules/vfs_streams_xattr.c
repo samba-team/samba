@@ -731,7 +731,7 @@ static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 {
 	struct stream_struct *tmp;
 
-	tmp = TALLOC_REALLOC_ARRAY(mem_ctx, *streams, struct stream_struct,
+	tmp = talloc_realloc(mem_ctx, *streams, struct stream_struct,
 				   (*num_streams)+1);
 	if (tmp == NULL) {
 		return false;
@@ -880,7 +880,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
         if ((offset + n) > ea.value.length-1) {
 		uint8 *tmp;
 
-		tmp = TALLOC_REALLOC_ARRAY(talloc_tos(), ea.value.data, uint8,
+		tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8,
 					   offset + n + 1);
 
 		if (tmp == NULL) {
@@ -986,7 +986,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	tmp = TALLOC_REALLOC_ARRAY(talloc_tos(), ea.value.data, uint8,
+	tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8,
 				   offset + 1);
 
 	if (tmp == NULL) {

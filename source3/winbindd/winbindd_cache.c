@@ -4206,7 +4206,7 @@ static bool add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
 			list = TALLOC_ARRAY( NULL, struct winbindd_tdc_domain, 1 );
 			idx = 0;
 		} else {
-			list = TALLOC_REALLOC_ARRAY( *domains, *domains, 
+			list = talloc_realloc( *domains, *domains, 
 						     struct winbindd_tdc_domain,  
 						     (*num_domains)+1);
 			idx = *num_domains;		

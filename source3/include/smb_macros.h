@@ -229,7 +229,6 @@ copy an IP address from one buffer to another
 #define TALLOC_ZERO_SIZE(ctx, size) _talloc_zero(ctx, size, __location__)
 
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
-#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define talloc_destroy(ctx) talloc_free(ctx)
 #ifndef TALLOC_FREE
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
@@ -292,7 +291,7 @@ copy an IP address from one buffer to another
 #define ADD_TO_ARRAY(mem_ctx, type, elem, array, num) \
 do { \
 	*(array) = ((mem_ctx) != NULL) ? \
-		TALLOC_REALLOC_ARRAY(mem_ctx, (*(array)), type, (*(num))+1) : \
+		talloc_realloc(mem_ctx, (*(array)), type, (*(num))+1) : \
 		SMB_REALLOC_ARRAY((*(array)), type, (*(num))+1); \
 	SMB_ASSERT((*(array)) != NULL); \
 	(*(array))[*(num)] = (elem); \

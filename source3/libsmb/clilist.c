@@ -387,7 +387,7 @@ static void cli_list_old_done(struct tevent_req *subreq)
 
 		dirlist_len = talloc_get_size(state->dirlist);
 
-		tmp = TALLOC_REALLOC_ARRAY(
+		tmp = talloc_realloc(
 			state, state->dirlist, uint8_t,
 			dirlist_len + received * DIR_STRUCT_SIZE);
 		if (tevent_req_nomem(tmp, req)) {
@@ -654,7 +654,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 
 	old_num_finfo = talloc_array_length(state->finfo);
 
-	tmp = TALLOC_REALLOC_ARRAY(state, state->finfo, struct file_info,
+	tmp = talloc_realloc(state, state->finfo, struct file_info,
 				   old_num_finfo + ff_searchcount);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
@@ -711,7 +711,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	/*
 	 * Shrink state->finfo to the real length we received
 	 */
-	tmp = TALLOC_REALLOC_ARRAY(state, state->finfo, struct file_info,
+	tmp = talloc_realloc(state, state->finfo, struct file_info,
 				   old_num_finfo + i);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
@@ -736,7 +736,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 
 	nlen = 2*(strlen(state->mask) + 1);
 
-	param = TALLOC_REALLOC_ARRAY(state, state->param, uint8_t,
+	param = talloc_realloc(state, state->param, uint8_t,
 				     12 + nlen + last_name_raw.length + 2);
 	if (tevent_req_nomem(param, req)) {
 		return;

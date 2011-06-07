@@ -52,7 +52,7 @@ static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
 		/*
 		 * We're pushing into an SMB buffer, align odd
 		 */
-		buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t, buflen + 1);
+		buf = talloc_realloc(NULL, buf, uint8_t, buflen + 1);
 		if (buf == NULL) {
 			return NULL;
 		}
@@ -67,7 +67,7 @@ static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
 		return NULL;
 	}
 
-	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
+	buf = talloc_realloc(NULL, buf, uint8_t,
 				   buflen + converted_size);
 	if (buf == NULL) {
 		TALLOC_FREE(converted);
@@ -108,7 +108,7 @@ uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
 	}
 	buflen = talloc_get_size(buf);
 
-	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
+	buf = talloc_realloc(NULL, buf, uint8_t,
 				   buflen + 1 + num_bytes);
 	if (buf == NULL) {
 		return NULL;
@@ -1031,7 +1031,7 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	bytes = TALLOC_REALLOC_ARRAY(state, bytes, uint8_t,
+	bytes = talloc_realloc(state, bytes, uint8_t,
 			talloc_get_size(bytes)+1);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -1153,7 +1153,7 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	bytes = TALLOC_REALLOC_ARRAY(state, bytes, uint8_t,
+	bytes = talloc_realloc(state, bytes, uint8_t,
 			talloc_get_size(bytes)+1);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -3349,7 +3349,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
-	bytes = TALLOC_REALLOC_ARRAY(state, bytes, uint8_t,
+	bytes = talloc_realloc(state, bytes, uint8_t,
 			talloc_get_size(bytes)+1);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);

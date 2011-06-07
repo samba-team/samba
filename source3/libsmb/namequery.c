@@ -1317,7 +1317,7 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 		return false;
 	}
 
-	tmp_addrs = TALLOC_REALLOC_ARRAY(
+	tmp_addrs = talloc_realloc(
 		state, state->addrs, struct sockaddr_storage,
 		state->num_addrs + nmb->answers->rdlength/6);
 	if (tmp_addrs == NULL) {

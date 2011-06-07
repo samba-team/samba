@@ -308,7 +308,7 @@ DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 {
 	struct dns_rrec **new_records;
 
-	if (!(new_records = TALLOC_REALLOC_ARRAY(mem_ctx, *records,
+	if (!(new_records = talloc_realloc(mem_ctx, *records,
 						 struct dns_rrec *,
 						 (*num_records)+1))) {
 		return ERROR_DNS_NO_MEMORY;

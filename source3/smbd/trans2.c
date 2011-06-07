@@ -129,7 +129,7 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
  again:
 
-	val = TALLOC_REALLOC_ARRAY(mem_ctx, val, char, attr_size);
+	val = talloc_realloc(mem_ctx, val, char, attr_size);
 	if (!val) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -200,7 +200,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 	while (ea_namelist_size <= 65536) {
 
-		ea_namelist = TALLOC_REALLOC_ARRAY(
+		ea_namelist = talloc_realloc(
 			names, ea_namelist, char, ea_namelist_size);
 		if (ea_namelist == NULL) {
 			DEBUG(0, ("talloc failed\n"));
@@ -259,7 +259,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		num_names += 1;
 	}
 
-	tmp = TALLOC_REALLOC_ARRAY(mem_ctx, names, char *, num_names);
+	tmp = talloc_realloc(mem_ctx, names, char *, num_names);
 	if (tmp == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(names);

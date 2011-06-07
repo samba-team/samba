@@ -231,7 +231,7 @@ bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 	va_end(ap);
 
 	if (mem_ctx != NULL) {
-		*buf = TALLOC_REALLOC_ARRAY(mem_ctx, *buf, uint8,
+		*buf = talloc_realloc(mem_ctx, *buf, uint8,
 					    (*len) + len1);
 	} else {
 		*buf = SMB_REALLOC_ARRAY(*buf, uint8, (*len) + len1);

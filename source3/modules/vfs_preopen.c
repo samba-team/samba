@@ -166,7 +166,7 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 		nread += thistime;
 
 		if (nread == talloc_get_size(namebuf)) {
-			namebuf = TALLOC_REALLOC_ARRAY(
+			namebuf = talloc_realloc(
 				NULL, namebuf, char,
 				talloc_get_size(namebuf) * 2);
 			if (namebuf == NULL) {

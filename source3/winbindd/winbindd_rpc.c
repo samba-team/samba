@@ -89,7 +89,7 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 
 		num_info += num_dom_users;
 
-		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+		info = talloc_realloc(mem_ctx,
 					    info,
 					    struct wbint_userinfo,
 					    num_info);
@@ -181,7 +181,7 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+		info = talloc_realloc(mem_ctx,
 					    info,
 					    struct wb_acct_info,
 					    num_info + count);
@@ -241,7 +241,7 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+		info = talloc_realloc(mem_ctx,
 					    info,
 					    struct wb_acct_info,
 					    num_info + count);

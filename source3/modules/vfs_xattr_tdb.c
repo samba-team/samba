@@ -299,12 +299,12 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 			return -1;
 		}
 
-		tmp = TALLOC_REALLOC_ARRAY(
+		tmp = talloc_realloc(
 			attribs, attribs->eas, struct xattr_EA,
 			attribs->num_eas+ 1);
 
 		if (tmp == NULL) {
-			DEBUG(0, ("TALLOC_REALLOC_ARRAY failed\n"));
+			DEBUG(0, ("talloc_realloc failed\n"));
 			TALLOC_FREE(rec);
 			errno = ENOMEM;
 			return -1;

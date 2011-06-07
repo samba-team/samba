@@ -376,7 +376,7 @@ static bool _reg_perfcount_add_object(struct PERF_DATA_BLOCK *block,
 	bool success = True;
 	struct PERF_OBJECT_TYPE *obj;
 
-	block->objects = (struct PERF_OBJECT_TYPE *)TALLOC_REALLOC_ARRAY(mem_ctx,
+	block->objects = (struct PERF_OBJECT_TYPE *)talloc_realloc(mem_ctx,
 								  block->objects,
 								  struct PERF_OBJECT_TYPE,
 								  block->NumObjectTypes+1);
@@ -547,7 +547,7 @@ static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
 	SAFE_FREE(data.dptr);
 
 	obj->counter_data.ByteLength += dsize + padding;
-	obj->counter_data.data = TALLOC_REALLOC_ARRAY(mem_ctx,
+	obj->counter_data.data = talloc_realloc(mem_ctx,
 						      obj->counter_data.data,
 						      uint8,
 						      obj->counter_data.ByteLength - sizeof(uint32));
@@ -635,7 +635,7 @@ static bool _reg_perfcount_add_counter(struct PERF_DATA_BLOCK *block,
 				  parent, num));
 			return False;
 		}
-		obj->counters = (struct PERF_COUNTER_DEFINITION *)TALLOC_REALLOC_ARRAY(mem_ctx,
+		obj->counters = (struct PERF_COUNTER_DEFINITION *)talloc_realloc(mem_ctx,
 										obj->counters,
 										struct PERF_COUNTER_DEFINITION,
 										obj->NumCounters+1);
@@ -687,7 +687,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 		return False;
 	}
 	inst->counter_data.ByteLength = data.dsize + sizeof(inst->counter_data.ByteLength);
-	inst->counter_data.data = TALLOC_REALLOC_ARRAY(mem_ctx,
+	inst->counter_data.data = talloc_realloc(mem_ctx,
 						       inst->counter_data.data,
 						       uint8,
 						       data.dsize);
@@ -719,7 +719,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 			SAFE_FREE(data.dptr);
 			return False;
 		}
-		inst->data = TALLOC_REALLOC_ARRAY(mem_ctx,
+		inst->data = talloc_realloc(mem_ctx,
 						  inst->data,
 						  uint8,
 						  inst->NameLength);
@@ -741,7 +741,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 	if((pad = (inst->ByteLength % 8)))
 	{
 		pad = 8 - pad;
-		inst->data = TALLOC_REALLOC_ARRAY(mem_ctx,
+		inst->data = talloc_realloc(mem_ctx,
 						  inst->data,
 						  uint8,
 						  inst->NameLength + pad);
@@ -763,7 +763,7 @@ static bool _reg_perfcount_add_instance(struct PERF_OBJECT_TYPE *obj,
 	struct PERF_INSTANCE_DEFINITION *inst;
 
 	if(obj->instances == NULL) {
-		obj->instances = TALLOC_REALLOC_ARRAY(mem_ctx,
+		obj->instances = talloc_realloc(mem_ctx,
 						      obj->instances,
 						      struct PERF_INSTANCE_DEFINITION,
 						      obj->NumInstances);
@@ -993,7 +993,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *block
 				counter_data = &(instance->counter_data);
 				counter = &(object[obj].counters[object[obj].NumCounters - 1]);
 				counter_data->ByteLength = counter->CounterOffset + counter->CounterSize + sizeof(counter_data->ByteLength);
-				temp = TALLOC_REALLOC_ARRAY(mem_ctx,
+				temp = talloc_realloc(mem_ctx,
 							    temp, 
 							    char, 
 							    counter_data->ByteLength- sizeof(counter_data->ByteLength));
@@ -1014,7 +1014,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *block
 				{
 					pad = 8 - pad;
 				}
-				counter_data->data = TALLOC_REALLOC_ARRAY(mem_ctx,
+				counter_data->data = talloc_realloc(mem_ctx,
 									 counter_data->data,
 									 uint8,
 									 counter_data->ByteLength - sizeof(counter_data->ByteLength) + pad);
@@ -1034,7 +1034,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *block
 			if((pad = (object[obj].counter_data.ByteLength % 8)))
 			{
 				pad = 8 - pad;
-				object[obj].counter_data.data = TALLOC_REALLOC_ARRAY(mem_ctx,
+				object[obj].counter_data.data = talloc_realloc(mem_ctx,
 										     object[obj].counter_data.data,
 										     uint8, 
 										     object[obj].counter_data.ByteLength + pad);

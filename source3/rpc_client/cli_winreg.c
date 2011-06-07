@@ -615,7 +615,7 @@ NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
 	/* count the elements */
 	for (p = a, i = 0; p && *p; p++, i++);
 
-	p = TALLOC_REALLOC_ARRAY(mem_ctx, a, const char *, i + 2);
+	p = talloc_realloc(mem_ctx, a, const char *, i + 2);
 	if (p == NULL) {
 		*pwerr = WERR_NOMEM;
 		return NT_STATUS_OK;

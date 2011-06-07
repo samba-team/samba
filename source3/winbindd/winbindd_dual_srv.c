@@ -148,22 +148,22 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 			}
 		}
 
-		ids = TALLOC_REALLOC_ARRAY(talloc_tos(), ids,
+		ids = talloc_realloc(talloc_tos(), ids,
 					   struct id_map, num_ids);
 		if (ids == NULL) {
 			goto nomem;
 		}
-		id_ptrs = TALLOC_REALLOC_ARRAY(talloc_tos(), id_ptrs,
+		id_ptrs = talloc_realloc(talloc_tos(), id_ptrs,
 					       struct id_map *, num_ids+1);
 		if (id_ptrs == NULL) {
 			goto nomem;
 		}
-		id_idx = TALLOC_REALLOC_ARRAY(talloc_tos(), id_idx,
+		id_idx = talloc_realloc(talloc_tos(), id_idx,
 					      uint32_t, num_ids);
 		if (id_idx == NULL) {
 			goto nomem;
 		}
-		sids = TALLOC_REALLOC_ARRAY(talloc_tos(), sids,
+		sids = talloc_realloc(talloc_tos(), sids,
 					    struct dom_sid, num_ids);
 		if (sids == NULL) {
 			goto nomem;

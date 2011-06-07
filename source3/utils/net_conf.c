@@ -212,7 +212,7 @@ static sbcErr import_process_service(struct net_context *c,
 
 	for (idx = 0; idx < service->num_params; idx ++) {
 		if (strequal(service->param_names[idx], "include")) {
-			includes = TALLOC_REALLOC_ARRAY(mem_ctx,
+			includes = talloc_realloc(mem_ctx,
 							includes,
 							char *,
 							num_includes+1);

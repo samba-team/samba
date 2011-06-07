@@ -122,7 +122,7 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 	ref->count = num + 1;
 	ref->max_size = LSA_REF_DOMAIN_LIST_MULTIPLIER;
 
-	ref->domains = TALLOC_REALLOC_ARRAY(mem_ctx, ref->domains,
+	ref->domains = talloc_realloc(mem_ctx, ref->domains,
 					    struct lsa_DomainInfo, ref->count);
 	if (!ref->domains) {
 		return -1;

@@ -259,7 +259,7 @@ void reply_sendtxt(struct smb_request *req)
 
 	len = MIN(SVAL(msg, 0), smbreq_bufrem(req, msg+2));
 
-	tmp = TALLOC_REALLOC_ARRAY(smbd_msg_state, smbd_msg_state->msg,
+	tmp = talloc_realloc(smbd_msg_state, smbd_msg_state->msg,
 				   char, old_len + len);
 
 	if (tmp == NULL) {

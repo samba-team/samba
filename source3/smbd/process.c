@@ -1894,7 +1894,7 @@ static bool smb_splice_chain(uint8_t **poutbuf, uint8_t smb_command,
 		return false;
 	}
 
-	outbuf = TALLOC_REALLOC_ARRAY(NULL, *poutbuf, uint8_t, new_size);
+	outbuf = talloc_realloc(NULL, *poutbuf, uint8_t, new_size);
 	if (outbuf == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return false;
@@ -1908,7 +1908,7 @@ static bool smb_splice_chain(uint8_t **poutbuf, uint8_t smb_command,
 
 		if (!find_andx_cmd_ofs(outbuf, &andx_cmd_ofs)) {
 			DEBUG(1, ("invalid command chain\n"));
-			*poutbuf = TALLOC_REALLOC_ARRAY(
+			*poutbuf = talloc_realloc(
 				NULL, *poutbuf, uint8_t, old_size);
 			return false;
 		}
@@ -1996,7 +1996,7 @@ void chain_reply(struct smb_request *req)
 
 	if ((req->wct < 2) || (CVAL(req->outbuf, smb_wct) < 2)) {
 		if (req->chain_outbuf == NULL) {
-			req->chain_outbuf = TALLOC_REALLOC_ARRAY(
+			req->chain_outbuf = talloc_realloc(
 				req, req->outbuf, uint8_t,
 				smb_len(req->outbuf) + 4);
 			if (req->chain_outbuf == NULL) {
@@ -2028,7 +2028,7 @@ void chain_reply(struct smb_request *req)
 		 * over-allocated (reply_pipe_read_and_X used to be such an
 		 * example).
 		 */
-		req->chain_outbuf = TALLOC_REALLOC_ARRAY(
+		req->chain_outbuf = talloc_realloc(
 			req, req->outbuf, uint8_t, smb_len(req->outbuf) + 4);
 		if (req->chain_outbuf == NULL) {
 			smb_panic("talloc failed");

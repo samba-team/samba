@@ -55,7 +55,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 
   again:
 
-	tmp = TALLOC_REALLOC_ARRAY(ctx, val, uint8_t, size);
+	tmp = talloc_realloc(ctx, val, uint8_t, size);
 	if (tmp == NULL) {
 		TALLOC_FREE(val);
 		return NT_STATUS_NO_MEMORY;

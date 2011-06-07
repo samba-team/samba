@@ -540,7 +540,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 						return NT_STATUS_NO_MEMORY;
 					}
 				} else {
-					if ((tmp_ss_s = TALLOC_REALLOC_ARRAY(dcs,
+					if ((tmp_ss_s = talloc_realloc(dcs,
 							dcs[i].ss_s,
 							struct sockaddr_storage,
 							dcs[i].num_ips+1))

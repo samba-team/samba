@@ -787,11 +787,11 @@ done:
 		msg_tmp = TALLOC_ARRAY(NULL, LDAPMessage*, 1);
 		BAIL_ON_PTR_ERROR(msg_tmp, nt_status);
 	} else {
-		ads_tmp = TALLOC_REALLOC_ARRAY(*ads_list, *ads_list, ADS_STRUCT*,
+		ads_tmp = talloc_realloc(*ads_list, *ads_list, ADS_STRUCT*,
 					       count+1);
 		BAIL_ON_PTR_ERROR(ads_tmp, nt_status);
 
-		msg_tmp = TALLOC_REALLOC_ARRAY(*msg_list, *msg_list, LDAPMessage*,
+		msg_tmp = talloc_realloc(*msg_list, *msg_list, LDAPMessage*,
 					       count+1);
 		BAIL_ON_PTR_ERROR(msg_tmp, nt_status);
 	}

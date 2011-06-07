@@ -226,7 +226,7 @@ ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob)
 	size_t newlen = smb_len(*outbuf) + 4 + blob.length;
 	uint8 *tmp;
 
-	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, *outbuf, uint8, newlen))) {
+	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8, newlen))) {
 		DEBUG(0, ("talloc failed\n"));
 		return -1;
 	}

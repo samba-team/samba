@@ -1532,7 +1532,7 @@ static void append_attr(TALLOC_CTX *mem_ctx, const char ***attr_list,
 		;
 	}
 
-	(*attr_list) = TALLOC_REALLOC_ARRAY(mem_ctx, (*attr_list),
+	(*attr_list) = talloc_realloc(mem_ctx, (*attr_list),
 					    const char *,  i+2);
 	SMB_ASSERT((*attr_list) != NULL);
 	(*attr_list)[i] = talloc_strdup((*attr_list), new_attr);

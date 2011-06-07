@@ -716,7 +716,7 @@ static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 {
 	struct stream_struct *tmp;
 
-	tmp = TALLOC_REALLOC_ARRAY(mem_ctx, *streams, struct stream_struct,
+	tmp = talloc_realloc(mem_ctx, *streams, struct stream_struct,
 				   (*num_streams)+1);
 	if (tmp == NULL) {
 		return false;

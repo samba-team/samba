@@ -211,7 +211,7 @@ WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
 		return WERR_OK;
 	}
 
-	if (!(newkeys = TALLOC_REALLOC_ARRAY(ctr, ctr->subkeys, char *,
+	if (!(newkeys = talloc_realloc(ctr, ctr->subkeys, char *,
 					     ctr->num_subkeys+1))) {
 		return WERR_NOMEM;
 	}
@@ -507,7 +507,7 @@ int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint32_t type,
 	if (  ctr->num_values == 0 ) {
 		ctr->values = TALLOC_P( ctr, struct regval_blob *);
 	} else {
-		ctr->values = TALLOC_REALLOC_ARRAY(ctr, ctr->values,
+		ctr->values = talloc_realloc(ctr, ctr->values,
 						   struct regval_blob *,
 						   ctr->num_values+1);
 	}

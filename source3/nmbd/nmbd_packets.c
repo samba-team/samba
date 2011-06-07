@@ -1885,7 +1885,7 @@ bool listen_for_packets(bool run_election)
 	 * create_listen_pollfds.
 	 */
 
-	fds = TALLOC_REALLOC_ARRAY(NULL, fds, struct pollfd, listen_number);
+	fds = talloc_realloc(NULL, fds, struct pollfd, listen_number);
 	if (fds == NULL) {
 		return true;
 	}
@@ -1894,7 +1894,7 @@ bool listen_for_packets(bool run_election)
 #ifndef SYNC_DNS
 	dns_fd = asyncdns_fd();
 	if (dns_fd != -1) {
-		fds = TALLOC_REALLOC_ARRAY(NULL, fds, struct pollfd, num_sockets+1);
+		fds = talloc_realloc(NULL, fds, struct pollfd, num_sockets+1);
 		if (fds == NULL) {
 			return true;
 		}

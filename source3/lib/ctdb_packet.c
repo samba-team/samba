@@ -82,7 +82,7 @@ NTSTATUS ctdb_packet_fd_read(struct ctdb_packet_context *ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!(in = TALLOC_REALLOC_ARRAY(ctx, ctx->in.data, uint8, new_size))) {
+	if (!(in = talloc_realloc(ctx, ctx->in.data, uint8, new_size))) {
 		DEBUG(10, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -245,7 +245,7 @@ NTSTATUS ctdb_packet_send(struct ctdb_packet_context *ctx, int num_blobs, ...)
 		return NT_STATUS_OK;
 	}
 
-	if (!(out = TALLOC_REALLOC_ARRAY(ctx, ctx->out.data, uint8, len))) {
+	if (!(out = talloc_realloc(ctx, ctx->out.data, uint8, len))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

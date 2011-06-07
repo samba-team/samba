@@ -424,7 +424,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		return;
 	}
 
-	if (!(changes = TALLOC_REALLOC_ARRAY(
+	if (!(changes = talloc_realloc(
 		      fsp->notify, fsp->notify->changes,
 		      struct notify_change, fsp->notify->num_changes+1))) {
 		DEBUG(0, ("talloc_realloc failed\n"));

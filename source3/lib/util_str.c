@@ -948,7 +948,7 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 	}
 
 	if (increased) {
-		*string = TALLOC_REALLOC_ARRAY(mem_ctx, *string, char,
+		*string = talloc_realloc(mem_ctx, *string, char,
 					       *bufsize);
 		if (*string == NULL) {
 			goto error;
@@ -1253,7 +1253,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 
 			lsize += S_LIST_ABS;
 
-			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *,
+			tmp = talloc_realloc(mem_ctx, list, char *,
 						   lsize + 1);
 			if (tmp == NULL) {
 				DEBUG(0,("str_list_make: "

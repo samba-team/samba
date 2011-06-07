@@ -722,7 +722,7 @@ NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
 		SIVAL(vwv+2, 0, offset);
 		SSVAL(vwv+4, 0, 0);
 
-		bytes = TALLOC_REALLOC_ARRAY(talloc_tos(), bytes, uint8_t,
+		bytes = talloc_realloc(talloc_tos(), bytes, uint8_t,
 					     size+3);
 		if (bytes == NULL) {
 			return NT_STATUS_NO_MEMORY;

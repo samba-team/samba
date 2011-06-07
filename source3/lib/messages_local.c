@@ -371,7 +371,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	if (!(rec = TALLOC_REALLOC_ARRAY(talloc_tos(), msg_array->messages,
+	if (!(rec = talloc_realloc(talloc_tos(), msg_array->messages,
 					 struct messaging_rec,
 					 msg_array->num_messages+1))) {
 		status = NT_STATUS_NO_MEMORY;

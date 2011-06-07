@@ -1200,12 +1200,12 @@ static NTSTATUS ldif_realloc_maps(TALLOC_CTX *mem_ctx,
 				  uint32_t num_entries)
 {
 	/* Re-allocate memory for groupmap and accountmap arrays */
-	l->groupmap = TALLOC_REALLOC_ARRAY(mem_ctx,
+	l->groupmap = talloc_realloc(mem_ctx,
 					   l->groupmap,
 					   GROUPMAP,
 					   num_entries + l->num_alloced);
 
-	l->accountmap = TALLOC_REALLOC_ARRAY(mem_ctx,
+	l->accountmap = talloc_realloc(mem_ctx,
 					     l->accountmap,
 					     ACCOUNTMAP,
 					     num_entries + l->num_alloced);

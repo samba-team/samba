@@ -66,7 +66,7 @@ static void fileid_load_mount_entries(struct fileid_handle_data *data)
 			m->mnt_fsname += 5;
 		}
 
-		data->mount_entries = TALLOC_REALLOC_ARRAY(data,
+		data->mount_entries = talloc_realloc(data,
 							   data->mount_entries,
 							   struct fileid_mount_entry,
 							   data->num_mount_entries+1);

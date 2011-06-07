@@ -1494,7 +1494,7 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 		}
 
 		privs.count++;
-		set = TALLOC_REALLOC_ARRAY(mem_ctx, set,
+		set = talloc_realloc(mem_ctx, set,
 					   struct lsa_LUIDAttribute,
 					   privs.count);
 		if (!set) {
@@ -1592,7 +1592,7 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 		}
 
 		privs.count++;
-		set = TALLOC_REALLOC_ARRAY(mem_ctx, set,
+		set = talloc_realloc(mem_ctx, set,
 					   struct lsa_LUIDAttribute,
 					   privs.count);
 		if (!set) {

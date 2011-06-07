@@ -231,7 +231,7 @@ static int gather_sessioninfo(const char *key, struct sessionid *session,
 {
 	struct session_list *sesslist = (struct session_list *)private_data;
 
-	sesslist->sessions = TALLOC_REALLOC_ARRAY(
+	sesslist->sessions = talloc_realloc(
 		sesslist->mem_ctx, sesslist->sessions, struct sessionid,
 		sesslist->count+1);
 
