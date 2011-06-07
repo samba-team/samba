@@ -449,7 +449,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	enum_values = TALLOC_ARRAY(tmp_ctx, struct spoolss_PrinterEnumValues, num_values);
+	enum_values = talloc_array(tmp_ctx, struct spoolss_PrinterEnumValues, num_values);
 	if (enum_values == NULL) {
 		result = WERR_NOMEM;
 		goto error;
@@ -3084,7 +3084,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	info = TALLOC_ARRAY(tmp_ctx, union spoolss_FormInfo, num_builtin + num_values);
+	info = talloc_array(tmp_ctx, union spoolss_FormInfo, num_builtin + num_values);
 	if (info == NULL) {
 		result = WERR_NOMEM;
 		goto done;

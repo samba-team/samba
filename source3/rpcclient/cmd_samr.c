@@ -2087,7 +2087,7 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 
 	num_names = argc - 2;
 
-	if ((names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names)) == NULL) {
+	if ((names = talloc_array(mem_ctx, struct lsa_String, num_names)) == NULL) {
 		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 		status = NT_STATUS_NO_MEMORY;
@@ -2167,7 +2167,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	num_rids = argc - 2;
 
-	if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+	if ((rids = talloc_array(mem_ctx, uint32, num_rids)) == NULL) {
 		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 		status = NT_STATUS_NO_MEMORY;

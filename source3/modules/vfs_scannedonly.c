@@ -632,7 +632,7 @@ static SMB_STRUCT_DIRENT *scannedonly_readdir(vfs_handle_struct *handle,
 		ctx,"%s %s",result->d_name,
 		STRUCTSCANO(handle->data)->scanning_message);
 	namelen = strlen(notify_name);
-	newdirent = (SMB_STRUCT_DIRENT *)TALLOC_ARRAY(
+	newdirent = (SMB_STRUCT_DIRENT *)talloc_array(
 		ctx, char, sizeof(SMB_STRUCT_DIRENT) + namelen + 1);
 	if (!newdirent) {
 		return NULL;

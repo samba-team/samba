@@ -145,7 +145,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 	len = tdb_pack(NULL, 0, "ddff",
 		map->gid, map->sid_name_use, map->nt_name, map->comment);
 
-	buf = TALLOC_ARRAY(key, char, len);
+	buf = talloc_array(key, char, len);
 	if (!buf) {
 		TALLOC_FREE(key);
 		return false;

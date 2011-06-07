@@ -3572,7 +3572,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	sid_array.num_sids = rid_array->count + 1;
-	sid_array.sids = TALLOC_ARRAY(ctx, struct lsa_SidPtr, sid_array.num_sids);
+	sid_array.sids = talloc_array(ctx, struct lsa_SidPtr, sid_array.num_sids);
 	if (!sid_array.sids) {
 		werr = WERR_NOMEM;
 		goto done;

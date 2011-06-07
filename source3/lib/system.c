@@ -1382,7 +1382,7 @@ static char **extract_args(TALLOC_CTX *mem_ctx, const char *command)
 
 	TALLOC_FREE(trunc_cmd);
 
-	if (!(argl = TALLOC_ARRAY(mem_ctx, char *, argcl + 1))) {
+	if (!(argl = talloc_array(mem_ctx, char *, argcl + 1))) {
 		goto nomem;
 	}
 

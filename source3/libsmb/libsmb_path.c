@@ -88,7 +88,7 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
 		newlen++;
 	}
 
-	dest = TALLOC_ARRAY(ctx, char, newlen);
+	dest = talloc_array(ctx, char, newlen);
 	if (!dest) {
 		return err_count;
 	}

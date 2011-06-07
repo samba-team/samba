@@ -605,7 +605,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 	gid_to_sid(&group_sid, psbuf->st_ex_gid);
 
 	if (afs_acl->num_aces) {
-		nt_ace_list = TALLOC_ARRAY(mem_ctx, struct security_ace, afs_acl->num_aces);
+		nt_ace_list = talloc_array(mem_ctx, struct security_ace, afs_acl->num_aces);
 
 		if (nt_ace_list == NULL)
 			return 0;

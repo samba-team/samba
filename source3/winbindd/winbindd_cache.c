@@ -309,7 +309,7 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		smb_panic_fn("centry_string");
 	}
 
-	ret = TALLOC_ARRAY(mem_ctx, char, len+1);
+	ret = talloc_array(mem_ctx, char, len+1);
 	if (!ret) {
 		smb_panic_fn("centry_string out of memory\n");
 	}
@@ -339,7 +339,7 @@ static char *centry_hash16(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	ret = TALLOC_ARRAY(mem_ctx, char, 16);
+	ret = talloc_array(mem_ctx, char, 16);
 	if (!ret) {
 		smb_panic_fn("centry_hash out of memory\n");
 	}
@@ -1436,7 +1436,7 @@ do_fetch_cache:
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = TALLOC_ARRAY(mem_ctx, struct wbint_userinfo, *num_entries);
+	(*info) = talloc_array(mem_ctx, struct wbint_userinfo, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("query_user_list out of memory");
 	}
@@ -1588,7 +1588,7 @@ do_fetch_cache:
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = TALLOC_ARRAY(mem_ctx, struct wb_acct_info, *num_entries);
+	(*info) = talloc_array(mem_ctx, struct wb_acct_info, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("enum_dom_groups out of memory");
 	}
@@ -1683,7 +1683,7 @@ do_fetch_cache:
 	if (*num_entries == 0)
 		goto do_cached;
 
-	(*info) = TALLOC_ARRAY(mem_ctx, struct wb_acct_info, *num_entries);
+	(*info) = talloc_array(mem_ctx, struct wb_acct_info, *num_entries);
 	if (! (*info)) {
 		smb_panic_fn("enum_dom_groups out of memory");
 	}
@@ -2006,8 +2006,8 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	*names = TALLOC_ARRAY(mem_ctx, char *, num_rids);
-	*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
+	*names = talloc_array(mem_ctx, char *, num_rids);
+	*types = talloc_array(mem_ctx, enum lsa_SidType, num_rids);
 
 	if ((*names == NULL) || (*types == NULL)) {
 		result = NT_STATUS_NO_MEMORY;
@@ -4203,7 +4203,7 @@ static bool add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
 
 	if ( !set_only ) {
 		if ( !*domains ) {
-			list = TALLOC_ARRAY( NULL, struct winbindd_tdc_domain, 1 );
+			list = talloc_array( NULL, struct winbindd_tdc_domain, 1 );
 			idx = 0;
 		} else {
 			list = talloc_realloc( *domains, *domains, 
@@ -4346,7 +4346,7 @@ static size_t unpack_tdc_domains( unsigned char *buf, int buflen,
 		return 0;
 	}
 
-	list = TALLOC_ARRAY( NULL, struct winbindd_tdc_domain, num_domains );
+	list = talloc_array( NULL, struct winbindd_tdc_domain, num_domains );
 	if ( !list ) {
 		DEBUG(0,("unpack_tdc_domains: Failed to talloc() domain list!\n"));
 		return 0;		

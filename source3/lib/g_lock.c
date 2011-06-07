@@ -393,7 +393,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		 * sys_poll and in the clustering case we might have to add
 		 * the ctdb fd. This avoids the realloc then.
 		 */
-		pollfds = TALLOC_ARRAY(talloc_tos(), struct pollfd, 2);
+		pollfds = talloc_array(talloc_tos(), struct pollfd, 2);
 		if (pollfds == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			break;

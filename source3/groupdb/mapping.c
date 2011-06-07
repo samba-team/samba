@@ -635,7 +635,7 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 		return NT_STATUS_OK;
 	}
 
-	*pp_alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
+	*pp_alias_rids = talloc_array(mem_ctx, uint32, num_alias_sids);
 	if (*pp_alias_rids == NULL)
 		return NT_STATUS_NO_MEMORY;
 

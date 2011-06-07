@@ -262,7 +262,7 @@ static DNS_ERROR dns_receive_tcp(TALLOC_CTX *mem_ctx,
 	buf->size = ntohs(len);
 
 	if (buf->size) {
-		if (!(buf->data = TALLOC_ARRAY(buf, uint8, buf->size))) {
+		if (!(buf->data = talloc_array(buf, uint8, buf->size))) {
 			TALLOC_FREE(buf);
 			return ERROR_DNS_NO_MEMORY;
 		}
@@ -295,7 +295,7 @@ static DNS_ERROR dns_receive_udp(TALLOC_CTX *mem_ctx,
 	 * UDP based DNS can only be 512 bytes
 	 */
 
-	if (!(buf->data = TALLOC_ARRAY(buf, uint8, 512))) {
+	if (!(buf->data = talloc_array(buf, uint8, 512))) {
 		TALLOC_FREE(buf);
 		return ERROR_DNS_NO_MEMORY;
 	}

@@ -333,8 +333,8 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if ((!(names = TALLOC_ARRAY(mem_ctx, char *, num_values))) ||
-	    (!(values = TALLOC_ARRAY(mem_ctx, struct registry_value *,
+	if ((!(names = talloc_array(mem_ctx, char *, num_values))) ||
+	    (!(values = talloc_array(mem_ctx, struct registry_value *,
 				     num_values)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto error;
@@ -456,8 +456,8 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if ((!(names = TALLOC_ARRAY(mem_ctx, char *, num_values))) ||
-	    (!(values = TALLOC_ARRAY(mem_ctx, struct regval_blob *,
+	if ((!(names = talloc_array(mem_ctx, char *, num_values))) ||
+	    (!(values = talloc_array(mem_ctx, struct regval_blob *,
 				     num_values)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto error;

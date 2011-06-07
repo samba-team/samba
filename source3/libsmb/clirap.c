@@ -1023,7 +1023,7 @@ static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 		 * convert_string_talloc??
 		 */
 
-		tmp_buf = TALLOC_ARRAY(streams, uint8_t, nlen+2);
+		tmp_buf = talloc_array(streams, uint8_t, nlen+2);
 		if (tmp_buf == NULL) {
 			goto fail;
 		}

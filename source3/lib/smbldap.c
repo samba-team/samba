@@ -239,7 +239,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		i++;
 	i++;
 
-	names = TALLOC_ARRAY( mem_ctx, const char*, i );
+	names = talloc_array( mem_ctx, const char*, i );
 	if ( !names ) {
 		DEBUG(0,("get_attr_list: out of memory\n"));
 		return NULL;

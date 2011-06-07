@@ -640,7 +640,7 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 		return status;
 	}
 
-	token_sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, 1);
+	token_sids = talloc_array(mem_ctx, struct dom_sid, 1);
 	ADS_ERROR_HAVE_NO_MEMORY(token_sids);
 
 	status = ADS_ERROR_NT(add_sid_to_array_unique(mem_ctx,

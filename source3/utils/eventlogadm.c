@@ -171,7 +171,7 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	if ( !already_in ) {
 		/* make a new list with an additional entry; copy values, add another */
-		wp = TALLOC_ARRAY(ctx, const char *, numsources + 2 );
+		wp = talloc_array(ctx, const char *, numsources + 2 );
 
 		if ( !wp ) {
 			d_printf("talloc() failed \n");

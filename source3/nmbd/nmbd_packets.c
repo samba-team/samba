@@ -1714,7 +1714,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 		return true;
 	}
 
-	attrs = TALLOC_ARRAY(NULL, struct socket_attributes, count);
+	attrs = talloc_array(NULL, struct socket_attributes, count);
 	if (fds == NULL) {
 		DEBUG(1, ("create_listen_pollfds: malloc fail for attrs. "
 			  "size %d\n", count));

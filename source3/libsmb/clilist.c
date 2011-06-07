@@ -452,7 +452,7 @@ static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	num_received = talloc_array_length(state->dirlist) / DIR_STRUCT_SIZE;
 
-	finfo = TALLOC_ARRAY(mem_ctx, struct file_info, num_received);
+	finfo = talloc_array(mem_ctx, struct file_info, num_received);
 	if (finfo == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -573,7 +573,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	state->setup[0] = TRANSACT2_FINDFIRST;
 
 	nlen = 2*(strlen(mask)+1);
-	state->param = TALLOC_ARRAY(state, uint8_t, 12+nlen+2);
+	state->param = talloc_array(state, uint8_t, 12+nlen+2);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}

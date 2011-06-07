@@ -88,7 +88,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 		return WERR_NOMEM;
 	}
 
-	jn->referral_list = TALLOC_ARRAY(ctx, struct referral, jn->referral_count);
+	jn->referral_list = talloc_array(ctx, struct referral, jn->referral_count);
 	if(jn->referral_list == NULL) {
 		DEBUG(0,("init_reply_dfs_add: talloc failed for referral list!\n"));
 		return WERR_DFS_INTERNAL_ERROR;
@@ -233,7 +233,7 @@ static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 
 	/* also enumerate the stores */
 	if (j->referral_count) {
-		dfs3->stores = TALLOC_ARRAY(mem_ctx, struct dfs_StorageInfo, j->referral_count);
+		dfs3->stores = talloc_array(mem_ctx, struct dfs_StorageInfo, j->referral_count);
 		if (!dfs3->stores)
 			return False;
 		memset(dfs3->stores, '\0', j->referral_count * sizeof(struct dfs_StorageInfo));
@@ -295,7 +295,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 	switch (r->in.level) {
 	case 1:
 		if (num_jn) {
-			if ((r->out.info->e.info1->s = TALLOC_ARRAY(ctx, struct dfs_Info1, num_jn)) == NULL) {
+			if ((r->out.info->e.info1->s = talloc_array(ctx, struct dfs_Info1, num_jn)) == NULL) {
 				return WERR_NOMEM;
 			}
 		} else {
@@ -305,7 +305,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 		break;
 	case 2:
 		if (num_jn) {
-			if ((r->out.info->e.info2->s = TALLOC_ARRAY(ctx, struct dfs_Info2, num_jn)) == NULL) {
+			if ((r->out.info->e.info2->s = talloc_array(ctx, struct dfs_Info2, num_jn)) == NULL) {
 				return WERR_NOMEM;
 			}
 		} else {
@@ -315,7 +315,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 		break;
 	case 3:
 		if (num_jn) {
-			if ((r->out.info->e.info3->s = TALLOC_ARRAY(ctx, struct dfs_Info3, num_jn)) == NULL) {
+			if ((r->out.info->e.info3->s = talloc_array(ctx, struct dfs_Info3, num_jn)) == NULL) {
 				return WERR_NOMEM;
 			}
 		} else {

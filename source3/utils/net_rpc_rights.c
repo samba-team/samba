@@ -506,7 +506,7 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 		return status;
 
 	rights.count = argc-1;
-	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
 				    rights.count);
 	if (!rights.names) {
 		return NT_STATUS_NO_MEMORY;
@@ -579,7 +579,7 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 		return status;
 
 	rights.count = argc-1;
-	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
 				    rights.count);
 	if (!rights.names) {
 		return NT_STATUS_NO_MEMORY;

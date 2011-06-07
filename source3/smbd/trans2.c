@@ -192,7 +192,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	 * TALLOC the result early to get the talloc hierarchy right.
 	 */
 
-	names = TALLOC_ARRAY(mem_ctx, char *, 1);
+	names = talloc_array(mem_ctx, char *, 1);
 	if (names == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -4768,7 +4768,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_UNIX_LINK:
 			{
 				int len;
-				char *buffer = TALLOC_ARRAY(mem_ctx, char, PATH_MAX+1);
+				char *buffer = talloc_array(mem_ctx, char, PATH_MAX+1);
 
 				if (!buffer) {
 					return NT_STATUS_NO_MEMORY;

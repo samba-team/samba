@@ -3998,7 +3998,7 @@ static bool parse_ea_blob(TALLOC_CTX *ctx, const uint8_t *rdata,
 		return true;
 	}
 
-	ea_list = TALLOC_ARRAY(ctx, struct ea_struct, num_eas);
+	ea_list = talloc_array(ctx, struct ea_struct, num_eas);
 	if (!ea_list) {
 		return false;
 	}

@@ -6924,7 +6924,7 @@ static WERROR enumjobs_level1(TALLOC_CTX *mem_ctx,
 	int i;
 	WERROR result = WERR_OK;
 
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_JobInfo, num_queues);
+	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = num_queues;
@@ -6968,7 +6968,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 	int i;
 	WERROR result = WERR_OK;
 
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_JobInfo, num_queues);
+	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = num_queues;
@@ -7023,7 +7023,7 @@ static WERROR enumjobs_level3(TALLOC_CTX *mem_ctx,
 	int i;
 	WERROR result = WERR_OK;
 
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_JobInfo, num_queues);
+	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = num_queues;
@@ -7632,7 +7632,7 @@ static WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines)
 	/* if no hook then just fill in the default port */
 
 	if ( !*cmd ) {
-		if (!(qlines = TALLOC_ARRAY( NULL, char*, 2 ))) {
+		if (!(qlines = talloc_array( NULL, char*, 2 ))) {
 			return WERR_NOMEM;
 		}
 		if (!(qlines[0] = talloc_strdup(qlines, SAMBA_PRINTER_PORT_NAME ))) {
@@ -7693,7 +7693,7 @@ static WERROR enumports_level_1(TALLOC_CTX *mem_ctx,
 	}
 
 	if (numlines) {
-		info = TALLOC_ARRAY(mem_ctx, union spoolss_PortInfo, numlines);
+		info = talloc_array(mem_ctx, union spoolss_PortInfo, numlines);
 		if (!info) {
 			DEBUG(10,("Returning WERR_NOMEM\n"));
 			result = WERR_NOMEM;
@@ -7745,7 +7745,7 @@ static WERROR enumports_level_2(TALLOC_CTX *mem_ctx,
 	}
 
 	if (numlines) {
-		info = TALLOC_ARRAY(mem_ctx, union spoolss_PortInfo, numlines);
+		info = talloc_array(mem_ctx, union spoolss_PortInfo, numlines);
 		if (!info) {
 			DEBUG(10,("Returning WERR_NOMEM\n"));
 			result = WERR_NOMEM;
@@ -8672,7 +8672,7 @@ static WERROR enumprintprocessors_level_1(TALLOC_CTX *mem_ctx,
 	union spoolss_PrintProcessorInfo *info;
 	WERROR result;
 
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_PrintProcessorInfo, 1);
+	info = talloc_array(mem_ctx, union spoolss_PrintProcessorInfo, 1);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = 1;
@@ -8774,7 +8774,7 @@ static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
 	WERROR result;
 	union spoolss_PrintProcDataTypesInfo *info;
 
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_PrintProcDataTypesInfo, 1);
+	info = talloc_array(mem_ctx, union spoolss_PrintProcDataTypesInfo, 1);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = 1;
@@ -8890,7 +8890,7 @@ static WERROR enumprintmonitors_level_1(TALLOC_CTX *mem_ctx,
 	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
 
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
+	info = talloc_array(mem_ctx, union spoolss_MonitorInfo, 2);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = 2;
@@ -8930,7 +8930,7 @@ static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
 
-	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
+	info = talloc_array(mem_ctx, union spoolss_MonitorInfo, 2);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = 2;

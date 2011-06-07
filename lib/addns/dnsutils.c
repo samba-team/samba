@@ -138,7 +138,7 @@ char *dns_generate_keyname( TALLOC_CTX *mem_ctx )
 	/*
 	 * uuid_unparse gives 36 bytes plus '\0'
 	 */
-	if (!(result = TALLOC_ARRAY(mem_ctx, char, 37))) {
+	if (!(result = talloc_array(mem_ctx, char, 37))) {
 		return NULL;
 	}
 

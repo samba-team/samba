@@ -237,8 +237,8 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	}	
 
 	*domain_name = talloc_strdup(mem_ctx, dom_name);
-	*names       = TALLOC_ARRAY(mem_ctx, const char*, num_rids);
-	*types       = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
+	*names       = talloc_array(mem_ctx, const char*, num_rids);
+	*types       = talloc_array(mem_ctx, enum lsa_SidType, num_rids);
 
 	for(i=0; i<num_rids; i++) {
 		(*names)[i] = talloc_strdup(*names, namelist[i]);
@@ -284,7 +284,7 @@ bool winbind_get_groups(TALLOC_CTX * mem_ctx, const char *account, uint32_t *num
 	if (ret != WBC_ERR_SUCCESS)
 		return false;
 
-	*_groups = TALLOC_ARRAY(mem_ctx, gid_t, ngroups);
+	*_groups = talloc_array(mem_ctx, gid_t, ngroups);
 	if (*_groups == NULL) {
 	    wbcFreeMemory(group_list);
 	    return false;
@@ -313,7 +313,7 @@ bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
 
 	memcpy(&domain_sid, dom_sid, sizeof(*dom_sid));
 
-	sid_list = TALLOC_ARRAY(mem_ctx, struct wbcDomainSid, num_members);
+	sid_list = talloc_array(mem_ctx, struct wbcDomainSid, num_members);
 
 	for (i=0; i < num_members; i++) {
 	    memcpy(&sid_list[i], &members[i], sizeof(sid_list[i]));
@@ -328,7 +328,7 @@ bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	*pp_alias_rids = TALLOC_ARRAY(mem_ctx, uint32_t, num_rids);
+	*pp_alias_rids = talloc_array(mem_ctx, uint32_t, num_rids);
 	if (*pp_alias_rids == NULL) {
 		wbcFreeMemory(rids);
 		return false;

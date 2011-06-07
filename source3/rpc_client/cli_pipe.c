@@ -606,7 +606,7 @@ static void cli_api_pipe_write_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->rdata = TALLOC_ARRAY(state, uint8_t, RPC_HEADER_LEN);
+	state->rdata = talloc_array(state, uint8_t, RPC_HEADER_LEN);
 	if (tevent_req_nomem(state->rdata, req)) {
 		return;
 	}
@@ -2565,7 +2565,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* allocate further parameters for the epm_Map call */
 
-	res_towers = TALLOC_ARRAY(tmp_ctx, struct epm_twr_t, max_towers);
+	res_towers = talloc_array(tmp_ctx, struct epm_twr_t, max_towers);
 	if (res_towers == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

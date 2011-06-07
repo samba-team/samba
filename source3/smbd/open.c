@@ -3124,7 +3124,7 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	streams = TALLOC_ARRAY(talloc_tos(), files_struct *, num_streams);
+	streams = talloc_array(talloc_tos(), files_struct *, num_streams);
 	if (streams == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;
@@ -3637,7 +3637,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 		 * Copy in the base directory name.
 		 */
 
-		parent_fname = TALLOC_ARRAY(talloc_tos(), char,
+		parent_fname = talloc_array(talloc_tos(), char,
 		    dir_name_len+2);
 		if (parent_fname == NULL) {
 			status = NT_STATUS_NO_MEMORY;

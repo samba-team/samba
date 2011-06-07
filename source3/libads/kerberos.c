@@ -964,7 +964,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			if (S_ISLNK(sbuf.st_ex_mode) && sbuf.st_ex_size) {
 				int lret;
 				size_t alloc_size = sbuf.st_ex_size + 1;
-				char *linkpath = TALLOC_ARRAY(talloc_tos(), char,
+				char *linkpath = talloc_array(talloc_tos(), char,
 						alloc_size);
 				if (!linkpath) {
 					goto done;

@@ -168,7 +168,7 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 
 	if (statbuf.st_size != 0) {
 		result->value.dsize = statbuf.st_size;
-		result->value.dptr = TALLOC_ARRAY(result, uint8,
+		result->value.dptr = talloc_array(result, uint8,
 						  statbuf.st_size);
 		if (result->value.dptr == NULL) {
 			DEBUG(1, ("talloc failed\n"));

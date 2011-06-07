@@ -71,7 +71,7 @@ bool init_service_op_table( void )
 	int num_services = SVCCTL_NUM_INTERNAL_SERVICES + str_list_length( service_list );
 	int i;
 
-	if ( !(svcctl_ops = TALLOC_ARRAY( NULL, struct service_control_op, num_services+1)) ) {
+	if ( !(svcctl_ops = talloc_array( NULL, struct service_control_op, num_services+1)) ) {
 		DEBUG(0,("init_service_op_table: talloc() failed!\n"));
 		return False;
 	}
@@ -421,7 +421,7 @@ static int enumerate_status(TALLOC_CTX *ctx,
 	while ( svcctl_ops[num_services].name )
 		num_services++;
 
-	if ( !(st = TALLOC_ARRAY( ctx, struct ENUM_SERVICE_STATUSW, num_services )) ) {
+	if ( !(st = talloc_array( ctx, struct ENUM_SERVICE_STATUSW, num_services )) ) {
 		DEBUG(0,("enumerate_status: talloc() failed!\n"));
 		return -1;
 	}

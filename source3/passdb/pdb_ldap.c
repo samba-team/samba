@@ -208,7 +208,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((attrs = TALLOC_ARRAY(mem_ctx, const char *, 2)) == NULL) {
+	if ((attrs = talloc_array(mem_ctx, const char *, 2)) == NULL) {
 		ntstatus = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -887,7 +887,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
-		char *history_string = TALLOC_ARRAY(ctx, char,
+		char *history_string = talloc_array(ctx, char,
 						MAX_PW_HISTORY_LEN*64);
 
 		if (!history_string) {
@@ -896,7 +896,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
-		pwhist = TALLOC_ARRAY(ctx, uint8,
+		pwhist = talloc_array(ctx, uint8,
 				      pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (pwhist == NULL) {
 			DEBUG(0, ("init_sam_from_ldap: talloc failed!\n"));
@@ -4340,7 +4340,7 @@ static const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 		num += 1;
 	va_end(ap);
 
-	if ((result = TALLOC_ARRAY(mem_ctx, const char *, num+1)) == NULL) {
+	if ((result = talloc_array(mem_ctx, const char *, num+1)) == NULL) {
 		return NULL;
 	}
 
@@ -6356,7 +6356,7 @@ static NTSTATUS ldapsam_enum_trusteddoms(struct pdb_methods *methods,
 	}
 
 	*num_domains = 0;
-	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct trustdom_info *, 1))) {
+	if (!(*domains = talloc_array(mem_ctx, struct trustdom_info *, 1))) {
 		DEBUG(1, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

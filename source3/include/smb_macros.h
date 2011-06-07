@@ -220,7 +220,6 @@ copy an IP address from one buffer to another
 
 #define TALLOC(ctx, size) talloc_named_const(ctx, size, __location__)
 #define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
 #define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup(ctx, ptr, size, __location__)
 #define TALLOC_ZERO(ctx, size) _talloc_zero(ctx, size, __location__)
 #define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)

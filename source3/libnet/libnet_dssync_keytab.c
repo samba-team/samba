@@ -276,7 +276,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		if (attr->attid == DRSUAPI_ATTID_servicePrincipalName) {
 			uint32_t count;
 			num_spns = attr->value_ctr.num_values;
-			spn = TALLOC_ARRAY(mem_ctx, char *, num_spns);
+			spn = talloc_array(mem_ctx, char *, num_spns);
 			for (count = 0; count < num_spns; count++) {
 				blob = attr->value_ctr.values[count].blob;
 				pull_string_talloc(spn, NULL, 0,

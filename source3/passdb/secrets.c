@@ -459,7 +459,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 	 * exists
 	 */
 
-	if (!(state.domains = TALLOC_ARRAY(
+	if (!(state.domains = talloc_array(
 		      mem_ctx, struct trustdom_info *, 1))) {
 		return NT_STATUS_NO_MEMORY;
 	}

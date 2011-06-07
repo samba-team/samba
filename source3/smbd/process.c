@@ -346,7 +346,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	 * talloc and return.
 	 */
 
-	*buffer = TALLOC_ARRAY(mem_ctx, char, len+4);
+	*buffer = talloc_array(mem_ctx, char, len+4);
 
 	if (*buffer == NULL) {
 		DEBUG(0, ("Could not allocate inbuf of length %d\n",
@@ -415,7 +415,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	 * The +4 here can't wrap, we've checked the length above already.
 	 */
 
-	*buffer = TALLOC_ARRAY(mem_ctx, char, len+4);
+	*buffer = talloc_array(mem_ctx, char, len+4);
 
 	if (*buffer == NULL) {
 		DEBUG(0, ("Could not allocate inbuf of length %d\n",
@@ -1356,7 +1356,7 @@ static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 		smb_panic(msg);
 	}
 
-	*outbuf = TALLOC_ARRAY(mem_ctx, char,
+	*outbuf = talloc_array(mem_ctx, char,
 			       smb_size + num_words*2 + num_bytes);
 	if (*outbuf == NULL) {
 		return false;

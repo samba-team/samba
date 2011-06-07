@@ -8204,7 +8204,7 @@ static bool run_local_wbclient(int dummy)
 		goto fail;
 	}
 
-	wb_ctx = TALLOC_ARRAY(ev, struct wb_context *, nprocs);
+	wb_ctx = talloc_array(ev, struct wb_context *, nprocs);
 	if (wb_ctx == NULL) {
 		goto fail;
 	}

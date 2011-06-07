@@ -742,7 +742,7 @@ void reply_trans(struct smb_request *req)
 			goto bad_param;
 		}
 
-		if((state->setup = TALLOC_ARRAY(
+		if((state->setup = talloc_array(
 			    state, uint16, state->setup_count)) == NULL) {
 			DEBUG(0,("reply_trans: setup malloc fail for %u "
 				 "bytes !\n", (unsigned int)

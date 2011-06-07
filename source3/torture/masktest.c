@@ -386,8 +386,8 @@ static void test_mask(int argc, char *argv[],
 	while (1) {
 		l1 = 1 + random() % 20;
 		l2 = 1 + random() % 20;
-		mask = TALLOC_ARRAY(ctx, char, strlen("\\masktest\\")+1+22);
-		file = TALLOC_ARRAY(ctx, char, strlen("\\masktest\\")+1+22);
+		mask = talloc_array(ctx, char, strlen("\\masktest\\")+1+22);
+		file = talloc_array(ctx, char, strlen("\\masktest\\")+1+22);
 		if (!mask || !file) {
 			goto finished;
 		}

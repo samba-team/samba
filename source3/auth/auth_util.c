@@ -519,7 +519,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	t = session_info->security_token;
 
-	ids = TALLOC_ARRAY(talloc_tos(), struct wbcUnixId,
+	ids = talloc_array(talloc_tos(), struct wbcUnixId,
 			   t->num_sids);
 	if (ids == NULL) {
 		return NT_STATUS_NO_MEMORY;

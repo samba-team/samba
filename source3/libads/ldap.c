@@ -2433,7 +2433,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 
 	*num_values = ldap_count_values(values);
 
-	ret = TALLOC_ARRAY(mem_ctx, char *, *num_values + 1);
+	ret = talloc_array(mem_ctx, char *, *num_values + 1);
 	if (!ret) {
 		ldap_value_free(values);
 		return NULL;
@@ -2669,7 +2669,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		/* nop */ ;
 
 	if (i) {
-		(*sids) = TALLOC_ARRAY(mem_ctx, struct dom_sid, i);
+		(*sids) = talloc_array(mem_ctx, struct dom_sid, i);
 		if (!(*sids)) {
 			ldap_value_free_len(values);
 			return 0;

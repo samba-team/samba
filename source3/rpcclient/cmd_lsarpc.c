@@ -400,7 +400,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 	/* Convert arguments to sids */
 
-	sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, argc - 1);
+	sids = talloc_array(mem_ctx, struct dom_sid, argc - 1);
 
 	if (!sids) {
 		printf("could not allocate memory for %d sids\n", argc - 1);
@@ -978,7 +978,7 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 		goto done;
 
 	rights.count = argc-2;
-	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
 				    rights.count);
 	if (!rights.names) {
 		return NT_STATUS_NO_MEMORY;
@@ -1036,7 +1036,7 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 		goto done;
 
 	rights.count = argc-2;
-	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
 				    rights.count);
 	if (!rights.names) {
 		return NT_STATUS_NO_MEMORY;

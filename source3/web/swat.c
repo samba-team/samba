@@ -101,7 +101,7 @@ static const char *fix_quotes(TALLOC_CTX *ctx, char *str)
 		}
 		++p;
 	}
-	newstring = TALLOC_ARRAY(ctx, char, newstring_len);
+	newstring = talloc_array(ctx, char, newstring_len);
 	if (!newstring) {
 		return "";
 	}

@@ -342,7 +342,7 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 	DEBUG(3, ("msrpc_rids_to_names: domain %s\n", domain->name ));
 
 	if (num_rids) {
-		sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_rids);
+		sids = talloc_array(mem_ctx, struct dom_sid, num_rids);
 		if (sids == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}

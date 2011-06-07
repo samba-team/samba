@@ -193,7 +193,7 @@ static bool preopen_helper(int fd, size_t to_read)
 	char *namebuf;
 	void *readbuf;
 
-	namebuf = TALLOC_ARRAY(NULL, char, 1024);
+	namebuf = talloc_array(NULL, char, 1024);
 	if (namebuf == NULL) {
 		return false;
 	}
@@ -261,7 +261,7 @@ static NTSTATUS preopen_init_helpers(TALLOC_CTX *mem_ctx, size_t to_read,
 	}
 
 	result->num_helpers = num_helpers;
-	result->helpers = TALLOC_ARRAY(result, struct preopen_helper,
+	result->helpers = talloc_array(result, struct preopen_helper,
 				       num_helpers);
 	if (result->helpers == NULL) {
 		TALLOC_FREE(result);

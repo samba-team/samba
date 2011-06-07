@@ -463,7 +463,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_d
 	/* Add the number of ',' characters to get the number of aces. */
 	num_aces += count_chars(pacl,',');
 
-	ace_list = TALLOC_ARRAY(ctx, struct security_ace, num_aces);
+	ace_list = talloc_array(ctx, struct security_ace, num_aces);
 	if (!ace_list) {
 		return False;
 	}

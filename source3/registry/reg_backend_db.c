@@ -1820,7 +1820,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 		goto done;
 	}
 
-	data.dptr = TALLOC_ARRAY(ctx, uint8, len);
+	data.dptr = talloc_array(ctx, uint8, len);
 	data.dsize = len;
 
 	len = regdb_pack_values(values, data.dptr, data.dsize);

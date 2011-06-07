@@ -5298,7 +5298,7 @@ NTSTATUS _samr_GetAliasMembership(struct pipes_struct *p,
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	if (r->in.sids->num_sids) {
-		members = TALLOC_ARRAY(p->mem_ctx, struct dom_sid, r->in.sids->num_sids);
+		members = talloc_array(p->mem_ctx, struct dom_sid, r->in.sids->num_sids);
 
 		if (members == NULL)
 			return NT_STATUS_NO_MEMORY;

@@ -224,7 +224,7 @@ bool should_notify_deferred_opens()
 static char *new_break_message_smb1(TALLOC_CTX *mem_ctx,
 				   files_struct *fsp, int cmd)
 {
-	char *result = TALLOC_ARRAY(mem_ctx, char, smb_size + 8*2 + 0);
+	char *result = talloc_array(mem_ctx, char, smb_size + 8*2 + 0);
 
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));

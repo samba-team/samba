@@ -624,7 +624,7 @@ bool str_list_substitute(char **list, const char *pattern, const char *insert)
 			t = *list;
 			d = p -t;
 			if (ld) {
-				t = TALLOC_ARRAY(ctx, char, ls +ld +1);
+				t = talloc_array(ctx, char, ls +ld +1);
 				if (!t) {
 					DEBUG(0,("str_list_substitute: "
 						"Unable to allocate memory"));
@@ -926,7 +926,7 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 		if (*bufsize == 0)
 			*bufsize = 128;
 
-		*string = TALLOC_ARRAY(mem_ctx, char, *bufsize);
+		*string = talloc_array(mem_ctx, char, *bufsize);
 		if (*string == NULL)
 			goto error;
 	}
@@ -1229,7 +1229,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	if (!string || !*string)
 		return NULL;
 
-	list = TALLOC_ARRAY(mem_ctx, char *, S_LIST_ABS+1);
+	list = talloc_array(mem_ctx, char *, S_LIST_ABS+1);
 	if (list == NULL) {
 		return NULL;
 	}

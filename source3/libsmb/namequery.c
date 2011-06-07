@@ -237,7 +237,7 @@ static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
 	if (*num_names == 0)
 		return NULL;
 
-	ret = TALLOC_ARRAY(mem_ctx, struct node_status,*num_names);
+	ret = talloc_array(mem_ctx, struct node_status,*num_names);
 	if (!ret)
 		return NULL;
 
@@ -1117,7 +1117,7 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 static bool prioritize_ipv4_list(struct ip_service *iplist, int count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct ip_service *iplist_new = TALLOC_ARRAY(frame, struct ip_service, count);
+	struct ip_service *iplist_new = talloc_array(frame, struct ip_service, count);
 	int i, j;
 
 	if (iplist_new == NULL) {
@@ -2514,7 +2514,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	*return_ss_arr = TALLOC_ARRAY(ctx,
+	*return_ss_arr = talloc_array(ctx,
 				struct sockaddr_storage,
 				num_entries);
 	if (!(*return_ss_arr)) {

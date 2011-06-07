@@ -32,7 +32,7 @@ DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
 	DNS_ERROR err;
 
 	if (!(req = TALLOC_ZERO_P(mem_ctx, struct dns_request)) ||
-	    !(req->questions = TALLOC_ARRAY(req, struct dns_question *, 1)) ||
+	    !(req->questions = talloc_array(req, struct dns_question *, 1)) ||
 	    !(req->questions[0] = talloc(req->questions,
 					 struct dns_question))) {
 		TALLOC_FREE(req);
@@ -65,7 +65,7 @@ DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 	DNS_ERROR err;
 
 	if (!(req = TALLOC_ZERO_P(mem_ctx, struct dns_update_request)) ||
-	    !(req->zones = TALLOC_ARRAY(req, struct dns_zone *, 1)) ||
+	    !(req->zones = talloc_array(req, struct dns_zone *, 1)) ||
 	    !(req->zones[0] = talloc(req->zones, struct dns_zone))) {
 		TALLOC_FREE(req);
 		return ERROR_DNS_NO_MEMORY;
@@ -240,7 +240,7 @@ DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 	if (!ERR_DNS_IS_OK(buf.error)) goto error;
 
 	if (tkey->key_length) {
-		if (!(tkey->key = TALLOC_ARRAY(tkey, uint8, tkey->key_length))) {
+		if (!(tkey->key = talloc_array(tkey, uint8, tkey->key_length))) {
 			buf.error = ERROR_DNS_NO_MEMORY;
 			goto error;
 		}

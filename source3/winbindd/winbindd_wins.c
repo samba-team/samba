@@ -42,7 +42,7 @@ static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_OK(resolve_wins(name,0x20,&ret,count))) {
 		if ( *count == 0 )
 			return NULL;
-		return_ss = TALLOC_ARRAY(mem_ctx, struct sockaddr_storage,
+		return_ss = talloc_array(mem_ctx, struct sockaddr_storage,
 					 *count);
 		if (return_ss == NULL ) {
 			free( ret );

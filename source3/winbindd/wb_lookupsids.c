@@ -128,7 +128,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->single_sids = TALLOC_ARRAY(state, uint32_t, num_sids);
+	state->single_sids = talloc_array(state, uint32_t, num_sids);
 	if (tevent_req_nomem(state->single_sids, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -137,7 +137,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->res_domains, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->res_domains->domains = TALLOC_ARRAY(
+	state->res_domains->domains = talloc_array(
 		state->res_domains, struct lsa_DomainInfo, num_sids);
 	if (tevent_req_nomem(state->res_domains->domains, req)) {
 		return tevent_req_post(req, ev);
@@ -147,7 +147,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->res_names, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->res_names->names = TALLOC_ARRAY(
+	state->res_names->names = talloc_array(
 		state->res_names, struct lsa_TranslatedName, num_sids);
 	if (tevent_req_nomem(state->res_names->names, req)) {
 		return tevent_req_post(req, ev);
@@ -187,7 +187,7 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 
 		if (sid_check_is_domain(&d->sid)) {
 			state->rids.num_rids = d->sids.num_sids;
-			state->rids.rids = TALLOC_ARRAY(state, uint32_t,
+			state->rids.rids = talloc_array(state, uint32_t,
 							state->rids.num_rids);
 			if (tevent_req_nomem(state->rids.rids, req)) {
 				return false;
@@ -337,13 +337,13 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	sid_split_rid(&domain->sid, NULL);
 	domain->domain = wb_domain;
 
-	domain->sids.sids = TALLOC_ARRAY(domains, struct lsa_SidPtr, num_sids);
+	domain->sids.sids = talloc_array(domains, struct lsa_SidPtr, num_sids);
 	if (domains->sids.sids == NULL) {
 		goto fail;
 	}
 	domain->sids.num_sids = 0;
 
-	domain->sid_indexes = TALLOC_ARRAY(domains, uint32_t, num_sids);
+	domain->sid_indexes = talloc_array(domains, uint32_t, num_sids);
 	if (domain->sid_indexes == NULL) {
 		TALLOC_FREE(domain->sids.sids);
 		goto fail;

@@ -328,7 +328,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 		buf_len = resp_len * sizeof(uint8);
 
 		if (buf_len) {
-			if ((buffer = TALLOC_ARRAY(ctx, uint8, buf_len))
+			if ((buffer = talloc_array(ctx, uint8, buf_len))
 					== NULL ) {
 				DEBUG(0,("ads_dns_lookup_srv: "
 					"talloc() failed!\n"));
@@ -534,7 +534,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 				/* allocate new memory */
 
 				if (dcs[i].num_ips == 0) {
-					if ((dcs[i].ss_s = TALLOC_ARRAY(dcs,
+					if ((dcs[i].ss_s = talloc_array(dcs,
 						struct sockaddr_storage, 1 ))
 							== NULL ) {
 						return NT_STATUS_NO_MEMORY;
@@ -638,7 +638,7 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 		answer_count));
 
 	if (answer_count) {
-		if ((nsarray = TALLOC_ARRAY(ctx, struct dns_rr_ns,
+		if ((nsarray = talloc_array(ctx, struct dns_rr_ns,
 						answer_count)) == NULL ) {
 			DEBUG(0,("ads_dns_lookup_ns: "
 				"talloc() failure for %d char*'s\n",

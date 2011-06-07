@@ -650,7 +650,7 @@ static bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx,
 	num_pids = data.dsize / 8;
 
 	if (num_pids) {
-		if ((pid_list = TALLOC_ARRAY(mem_ctx, pid_t, num_pids)) == NULL) {
+		if ((pid_list = talloc_array(mem_ctx, pid_t, num_pids)) == NULL) {
 			ret = False;
 			goto done;
 		}

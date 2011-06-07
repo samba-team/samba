@@ -781,10 +781,10 @@ done:
 #endif
 
 	if (count == 0) {
-		ads_tmp = TALLOC_ARRAY(NULL, ADS_STRUCT*, 1);
+		ads_tmp = talloc_array(NULL, ADS_STRUCT*, 1);
 		BAIL_ON_PTR_ERROR(ads_tmp, nt_status);
 
-		msg_tmp = TALLOC_ARRAY(NULL, LDAPMessage*, 1);
+		msg_tmp = talloc_array(NULL, LDAPMessage*, 1);
 		BAIL_ON_PTR_ERROR(msg_tmp, nt_status);
 	} else {
 		ads_tmp = talloc_realloc(*ads_list, *ads_list, ADS_STRUCT*,

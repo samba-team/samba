@@ -704,7 +704,7 @@ NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
 	 * 3 bytes prefix
 	 */
 
-	bytes = TALLOC_ARRAY(talloc_tos(), uint8_t, 3);
+	bytes = talloc_array(talloc_tos(), uint8_t, 3);
 	if (bytes == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

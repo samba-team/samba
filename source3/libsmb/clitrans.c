@@ -148,7 +148,7 @@ static NTSTATUS cli_trans_pull_blob(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 		blob->total = total;
-		blob->data = TALLOC_ARRAY(mem_ctx, uint8_t, total);
+		blob->data = talloc_array(mem_ctx, uint8_t, total);
 		if (blob->data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}

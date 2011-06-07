@@ -3094,9 +3094,9 @@ static void send_file_readbraw(connection_struct *conn,
 
 normal_readbraw:
 
-	outbuf = TALLOC_ARRAY(NULL, char, nread+4);
+	outbuf = talloc_array(NULL, char, nread+4);
 	if (!outbuf) {
-		DEBUG(0,("send_file_readbraw: TALLOC_ARRAY failed for size %u.\n",
+		DEBUG(0,("send_file_readbraw: talloc_array failed for size %u.\n",
 			(unsigned)(nread+4)));
 		reply_readbraw_error(sconn);
 		return;
@@ -4018,7 +4018,7 @@ void reply_writebraw(struct smb_request *req)
 	total_written = nwritten;
 
 	/* Allocate a buffer of 64k + length. */
-	buf = TALLOC_ARRAY(NULL, char, 65540);
+	buf = talloc_array(NULL, char, 65540);
 	if (!buf) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		error_to_writebrawerr(req);

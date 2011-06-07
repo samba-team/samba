@@ -85,7 +85,7 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->cached, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->non_cached = TALLOC_ARRAY(state, struct dom_sid,
+	state->non_cached = talloc_array(state, struct dom_sid,
 					 state->num_sids);
 	if (tevent_req_nomem(state->non_cached, req)) {
 		return tevent_req_post(req, ev);
@@ -176,7 +176,7 @@ static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 	}
 
 	state->ids.num_ids = state->num_non_cached;
-	state->ids.ids = TALLOC_ARRAY(state, struct wbint_TransID,
+	state->ids.ids = talloc_array(state, struct wbint_TransID,
 				      state->num_non_cached);
 	if (tevent_req_nomem(state->ids.ids, req)) {
 		return;

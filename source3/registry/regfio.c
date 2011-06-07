@@ -1926,7 +1926,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		nk->values_off = prs_offset( &vlist_hbin->ps ) + vlist_hbin->first_hbin_off - HBIN_HDR_SIZE;
 	
 		if (nk->num_values) {
-			if ( !(nk->values = TALLOC_ARRAY( file->mem_ctx, REGF_VK_REC, nk->num_values )) )
+			if ( !(nk->values = talloc_array( file->mem_ctx, REGF_VK_REC, nk->num_values )) )
 				return NULL;
 		} else {
 			nk->values = NULL;

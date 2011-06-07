@@ -558,7 +558,7 @@ static void add_fd_to_close_entry(files_struct *fsp)
 
 	SMB_ASSERT(rec != NULL);
 
-	new_data = TALLOC_ARRAY(
+	new_data = talloc_array(
 		rec, uint8_t, rec->value.dsize + sizeof(fsp->fh->fd));
 
 	SMB_ASSERT(new_data != NULL);

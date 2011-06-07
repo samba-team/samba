@@ -404,7 +404,7 @@ NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (num_rids > 0) {
-		sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_rids);
+		sids = talloc_array(mem_ctx, struct dom_sid, num_rids);
 		if (sids == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -594,7 +594,7 @@ NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	user_grpsids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_groups);
+	user_grpsids = talloc_array(mem_ctx, struct dom_sid, num_groups);
 	if (user_grpsids == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		return status;

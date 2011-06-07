@@ -858,7 +858,7 @@ static NTSTATUS _lsa_lookup_sids_internal(struct pipes_struct *p,
 		return NT_STATUS_OK;
 	}
 
-	sids = TALLOC_ARRAY(p->mem_ctx, const struct dom_sid *, num_sids);
+	sids = talloc_array(p->mem_ctx, const struct dom_sid *, num_sids);
 	ref = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
 
 	if (sids == NULL || ref == NULL) {
@@ -876,7 +876,7 @@ static NTSTATUS _lsa_lookup_sids_internal(struct pipes_struct *p,
 		return status;
 	}
 
-	names = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedName2, num_sids);
+	names = talloc_array(p->mem_ctx, struct lsa_TranslatedName2, num_sids);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -998,7 +998,7 @@ NTSTATUS _lsa_LookupSids(struct pipes_struct *p,
 	}
 
 	/* Convert from lsa_TranslatedName2 to lsa_TranslatedName */
-	names_out = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedName,
+	names_out = talloc_array(p->mem_ctx, struct lsa_TranslatedName,
 				 num_sids);
 	if (!names_out) {
 		return NT_STATUS_NO_MEMORY;
@@ -1257,7 +1257,7 @@ NTSTATUS _lsa_LookupNames2(struct pipes_struct *p,
 	status = _lsa_LookupNames(p, &q);
 
 	sid_array2->count = sid_array->count;
-	sid_array2->sids = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedSid2, sid_array->count);
+	sid_array2->sids = talloc_array(p->mem_ctx, struct lsa_TranslatedSid2, sid_array->count);
 	if (!sid_array2->sids) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -616,7 +616,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 			}
 
 			pdtl->delete_token->ngroups = token_len / sizeof(gid_t);
-			pdtl->delete_token->groups = TALLOC_ARRAY(pdtl->delete_token, gid_t,
+			pdtl->delete_token->groups = talloc_array(pdtl->delete_token, gid_t,
 						pdtl->delete_token->ngroups);
 			if (pdtl->delete_token->groups == NULL) {
 				DEBUG(0,("parse_delete_tokens_list: talloc failed"));
@@ -782,7 +782,7 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 		sp_len + 1 +
 		bn_len + 1 +
 		sn_len + 1;
-	result.dptr = TALLOC_ARRAY(lck, uint8, result.dsize);
+	result.dptr = talloc_array(lck, uint8, result.dsize);
 
 	if (result.dptr == NULL) {
 		smb_panic("talloc failed");
@@ -1082,7 +1082,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	    sn_len + 1;
 
 	/* Set up the name changed message. */
-	frm = TALLOC_ARRAY(lck, char, msg_len);
+	frm = talloc_array(lck, char, msg_len);
 	if (!frm) {
 		return False;
 	}

@@ -693,9 +693,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		num_group_sids = getgroups_num_group_sids;
 
 		if (num_group_sids) {
-			group_sids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_group_sids);
+			group_sids = talloc_array(tmp_ctx, struct dom_sid, num_group_sids);
 			if (group_sids == NULL) {
-				DEBUG(1, ("TALLOC_ARRAY failed\n"));
+				DEBUG(1, ("talloc_array failed\n"));
 				result = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
@@ -732,9 +732,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		}
 
 		num_group_sids = 1;
-		group_sids = TALLOC_ARRAY(tmp_ctx, struct dom_sid, num_group_sids);
+		group_sids = talloc_array(tmp_ctx, struct dom_sid, num_group_sids);
 		if (group_sids == NULL) {
-			DEBUG(1, ("TALLOC_ARRAY failed\n"));
+			DEBUG(1, ("talloc_array failed\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}

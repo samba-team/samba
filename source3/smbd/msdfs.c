@@ -364,7 +364,7 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 		return False;
 	}
 
-	alt_path = TALLOC_ARRAY(ctx, char *, MAX_REFERRAL_COUNT);
+	alt_path = talloc_array(ctx, char *, MAX_REFERRAL_COUNT);
 	if (!alt_path) {
 		return False;
 	}
@@ -443,7 +443,7 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 
 	if (pp_link_target) {
 		bufsize = 1024;
-		link_target = TALLOC_ARRAY(ctx, char, bufsize);
+		link_target = talloc_array(ctx, char, bufsize);
 		if (!link_target) {
 			return False;
 		}
@@ -1736,7 +1736,7 @@ struct junction_map *enum_msdfs_links(struct smbd_server_connection *sconn,
 	if (jn_count == 0) {
 		return NULL;
 	}
-	jn = TALLOC_ARRAY(ctx,  struct junction_map, jn_count);
+	jn = talloc_array(ctx,  struct junction_map, jn_count);
 	if (!jn) {
 		return NULL;
 	}

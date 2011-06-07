@@ -199,7 +199,7 @@ static bool map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	};
 
 	if (num_vals) {
-		str_values = TALLOC_ARRAY(ctx, char *, num_vals + 1);
+		str_values = talloc_array(ctx, char *, num_vals + 1);
 		if (!str_values) {
 			return False;
 		}

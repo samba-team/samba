@@ -75,7 +75,7 @@ static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle,
 	}
 	DEBUG(3,("cap: cap_readdir: %s\n", newname));
 	newnamelen = strlen(newname)+1;
-	newdirent = (SMB_STRUCT_DIRENT *)TALLOC_ARRAY(talloc_tos(),
+	newdirent = (SMB_STRUCT_DIRENT *)talloc_array(talloc_tos(),
 			char,
 			sizeof(SMB_STRUCT_DIRENT)+
 				newnamelen);
@@ -663,7 +663,7 @@ static char *capencode(TALLOC_CTX *ctx, const char *from)
 	}
 	len++;
 
-	to = TALLOC_ARRAY(ctx, char, len);
+	to = talloc_array(ctx, char, len);
 	if (!to) {
 		return NULL;
 	}
@@ -704,7 +704,7 @@ static char *capdecode(TALLOC_CTX *ctx, const char *from)
 	}
 	len++;
 
-	to = TALLOC_ARRAY(ctx, char, len);
+	to = talloc_array(ctx, char, len);
 	if (!to) {
 		return NULL;
 	}

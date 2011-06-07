@@ -542,7 +542,7 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->string )) == NULL ) {
 			return WERR_NOMEM;
 		}
-		chkmsg = TALLOC_ARRAY(p->mem_ctx, char, strlen(msg)+1);
+		chkmsg = talloc_array(p->mem_ctx, char, strlen(msg)+1);
 		if (!chkmsg) {
 			return WERR_NOMEM;
 		}
