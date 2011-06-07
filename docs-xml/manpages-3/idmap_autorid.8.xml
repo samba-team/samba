@@ -109,7 +109,7 @@
 
 	idmap config * : backend = autorid
 	idmap config * : range = 1000000-19999999
-	autorid:rangesize = 1000000
+	idmap config * : rangesize = 1000000
 
 	idmap config TRUSTED : backend  = ad
 	idmap config TRUSTED : range    = 50000 - 99999
