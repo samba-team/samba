@@ -52,8 +52,6 @@ struct cli_trans_state {
 	struct trans_recvblob rdata;
 	uint16_t recv_flags2;
 
-	TALLOC_CTX *secondary_request_ctx;
-
 	struct iovec iov[4];
 	uint8_t pad[4];
 	uint16_t vwv[32];
