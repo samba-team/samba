@@ -254,7 +254,16 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	msg->elements[0].flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
 
 	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
-	if (ret != LDB_SUCCESS) {
+	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE && !bl->active) {
+		/* we allow LDB_ERR_NO_SUCH_ATTRIBUTE as success to
+		   cope with possible corruption where the backlink has
+		   already been removed */
+		DEBUG(0,("WARNING: backlink from %s already removed from %s - %s\n",
+			 ldb_dn_get_linearized(target_dn),
+			 ldb_dn_get_linearized(source_dn),
+			 ldb_errstring(ldb)));
+		ret = LDB_SUCCESS;
+	} else if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to %s backlink from %s to %s - %s",
 				       bl->active?"add":"remove",
 				       ldb_dn_get_linearized(source_dn),
