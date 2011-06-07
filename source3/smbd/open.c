@@ -350,6 +350,8 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
 			"directory %s to parent directory uid %u.\n",
 			fname, (unsigned int)smb_fname_parent->st.st_ex_uid ));
+		/* Ensure the uid entry is updated. */
+		psbuf->st_ex_uid = smb_fname_parent->st.st_ex_uid;
 	}
 
  chdir:
