@@ -267,7 +267,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			port = state->port;
 		}
 
-		switch (rr->type) {
+		switch (addrs_rr[i]->type) {
 		case rk_ns_t_a:
 			if (inet_ntop(AF_INET, addrs_rr[i]->u.a,
 				      addrstr, sizeof(addrstr)) == NULL) {
