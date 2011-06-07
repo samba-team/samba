@@ -536,7 +536,7 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 	textdomain_init();
 #endif
 
-	r = TALLOC_ZERO_P(NULL, struct pwb_context);
+	r = talloc_zero(NULL, struct pwb_context);
 	if (!r) {
 		return PAM_BUF_ERR;
 	}

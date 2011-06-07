@@ -498,7 +498,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	REGF_HBIN *hbin;
 	uint32 record_size, curr_off, block_size, header;
 	
-	if ( !(hbin = TALLOC_ZERO_P(file->mem_ctx, REGF_HBIN)) ) 
+	if ( !(hbin = talloc_zero(file->mem_ctx, REGF_HBIN)) ) 
 		return NULL;
 	hbin->file_off = offset;
 	hbin->free_off = -1;
@@ -1073,7 +1073,7 @@ static bool hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 			}
 		}
 		
-		if ( !(nk->sec_desc = TALLOC_ZERO_P( file->mem_ctx, REGF_SK_REC )) )
+		if ( !(nk->sec_desc = talloc_zero( file->mem_ctx, REGF_SK_REC )) )
 			return False;
 		nk->sec_desc->sk_off = nk->sk_off;
 		if ( !hbin_prs_sk_rec( "sk_rec", sub_hbin, depth, nk->sec_desc ))
@@ -1379,7 +1379,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 	if ( !file )
 		return NULL;
 		
-	if ( !(nk = TALLOC_ZERO_P( file->mem_ctx, REGF_NK_REC )) ) {
+	if ( !(nk = talloc_zero( file->mem_ctx, REGF_NK_REC )) ) {
 		DEBUG(0,("regfio_rootkey: talloc() failed!\n"));
 		return NULL;
 	}
@@ -1447,7 +1447,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 		return NULL;
 		
 	nk->subkey_index++;
-	if ( !(subkey = TALLOC_ZERO_P( file->mem_ctx, REGF_NK_REC )) )
+	if ( !(subkey = talloc_zero( file->mem_ctx, REGF_NK_REC )) )
 		return NULL;
 		
 	if ( !hbin_prs_key( file, hbin, subkey ) )
@@ -1465,7 +1465,7 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 	REGF_HBIN *hbin;
 	SMB_STRUCT_STAT sbuf;
 
-	if ( !(hbin = TALLOC_ZERO_P( file->mem_ctx, REGF_HBIN )) )
+	if ( !(hbin = talloc_zero( file->mem_ctx, REGF_HBIN )) )
 		return NULL;
 
 	memcpy( hbin->header, "hbin", sizeof(HBIN_HDR_SIZE) );
@@ -1765,7 +1765,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 	REGF_HBIN *vlist_hbin = NULL;
 	uint32 size;
 
-	if ( !(nk = TALLOC_ZERO_P( file->mem_ctx, REGF_NK_REC )) )
+	if ( !(nk = talloc_zero( file->mem_ctx, REGF_NK_REC )) )
 		return NULL;
 
 	memcpy( nk->header, "nk", REC_HDR_SIZE );
@@ -1831,7 +1831,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 				return NULL;
 			}
 
-			if ( !(nk->sec_desc = TALLOC_ZERO_P( file->mem_ctx, REGF_SK_REC )) )
+			if ( !(nk->sec_desc = talloc_zero( file->mem_ctx, REGF_SK_REC )) )
 				return NULL;
 	
 			/* now we have to store the security descriptor in the list and 

@@ -202,7 +202,7 @@ void reply_sendstrt(struct smb_request *req)
 
 	TALLOC_FREE(smbd_msg_state);
 
-	smbd_msg_state = TALLOC_ZERO_P(NULL, struct msg_state);
+	smbd_msg_state = talloc_zero(NULL, struct msg_state);
 
 	if (smbd_msg_state == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);

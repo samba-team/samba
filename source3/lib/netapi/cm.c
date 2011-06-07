@@ -122,7 +122,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
-	p = TALLOC_ZERO_P(ctx, struct client_ipc_connection);
+	p = talloc_zero(ctx, struct client_ipc_connection);
 	if (p == NULL) {
 		return WERR_NOMEM;
 	}

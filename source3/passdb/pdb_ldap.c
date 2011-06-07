@@ -6480,7 +6480,7 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 
 	/* TODO: Setup private data and free */
 
-	if ( !(ldap_state = TALLOC_ZERO_P(*pdb_method, struct ldapsam_privates)) ) {
+	if ( !(ldap_state = talloc_zero(*pdb_method, struct ldapsam_privates)) ) {
 		DEBUG(0, ("pdb_init_ldapsam_common: talloc() failed for ldapsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

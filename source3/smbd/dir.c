@@ -1342,7 +1342,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32 attr)
 {
-	struct smb_Dir *dirp = TALLOC_ZERO_P(mem_ctx, struct smb_Dir);
+	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {
@@ -1386,7 +1386,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32 attr)
 {
-	struct smb_Dir *dirp = TALLOC_ZERO_P(mem_ctx, struct smb_Dir);
+	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {

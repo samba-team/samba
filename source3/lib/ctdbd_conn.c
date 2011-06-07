@@ -494,7 +494,7 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	struct ctdbd_connection *conn;
 	NTSTATUS status;
 
-	if (!(conn = TALLOC_ZERO_P(mem_ctx, struct ctdbd_connection))) {
+	if (!(conn = talloc_zero(mem_ctx, struct ctdbd_connection))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -1862,7 +1862,7 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 		      const char *location,
 		      struct smbldap_state **smbldap_state)
 {
-	*smbldap_state = TALLOC_ZERO_P(mem_ctx, struct smbldap_state);
+	*smbldap_state = talloc_zero(mem_ctx, struct smbldap_state);
 	if (!*smbldap_state) {
 		DEBUG(0, ("talloc() failed for ldapsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;

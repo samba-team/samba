@@ -227,7 +227,7 @@ static bool parse_getdc_response(
 
 	blob = p.smb.body.trans.data;
 
-	r = TALLOC_ZERO_P(mem_ctx, struct netlogon_samlogon_response);
+	r = talloc_zero(mem_ctx, struct netlogon_samlogon_response);
 	if (!r) {
 		return false;
 	}

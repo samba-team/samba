@@ -610,7 +610,7 @@ static WERROR map_buffer_to_alias_info(TALLOC_CTX *mem_ctx,
 	struct LOCALGROUP_INFO_1002 *info1002;
 	union samr_AliasInfo *info = NULL;
 
-	info = TALLOC_ZERO_P(mem_ctx, union samr_AliasInfo);
+	info = talloc_zero(mem_ctx, union samr_AliasInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	switch (level) {

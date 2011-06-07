@@ -183,7 +183,7 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 
 	DEBUGADD(5,("Successfully loaded vfs module [%s] with the new modules system\n", vfs_object));
 
-	handle = TALLOC_ZERO_P(conn, vfs_handle_struct);
+	handle = talloc_zero(conn, vfs_handle_struct);
 	if (!handle) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
 		goto fail;

@@ -231,7 +231,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	char *oldcwd;
 	const char *vfs_user;
 
-	conn = TALLOC_ZERO_P(ctx, connection_struct);
+	conn = talloc_zero(ctx, connection_struct);
 	if (conn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -252,7 +252,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 
 	/* needed for smbd_vfs_init() */
 
-	if (!(conn->params = TALLOC_ZERO_P(conn, struct share_params))) {
+	if (!(conn->params = talloc_zero(conn, struct share_params))) {
 		DEBUG(0, ("TALLOC failed\n"));
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
@@ -794,7 +794,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 	*self_referralp = True;
 
 	jucn->referral_count = 1;
-	if((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
+	if((ref = talloc_zero(ctx, struct referral)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -899,7 +899,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
  		 */
 
 		jucn->referral_count = 1;
-		if ((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
+		if ((ref = talloc_zero(ctx, struct referral)) == NULL) {
 			TALLOC_FREE(pdp);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1233,7 +1233,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 		pathnamep++;
 	}
 
-	junction = TALLOC_ZERO_P(ctx, struct junction_map);
+	junction = talloc_zero(ctx, struct junction_map);
 	if (!junction) {
 		*pstatus = NT_STATUS_NO_MEMORY;
 		talloc_destroy(ctx);
@@ -1630,7 +1630,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	jucn[cnt].comment = "";
 	jucn[cnt].referral_count = 1;
 
-	ref = jucn[cnt].referral_list = TALLOC_ZERO_P(ctx, struct referral);
+	ref = jucn[cnt].referral_list = talloc_zero(ctx, struct referral);
 	if (jucn[cnt].referral_list == NULL) {
 		goto out;
 	}

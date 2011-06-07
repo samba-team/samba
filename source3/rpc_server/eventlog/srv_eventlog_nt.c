@@ -212,7 +212,7 @@ static NTSTATUS elog_open( struct pipes_struct * p, const char *logname, struct 
 	if ( !elog_validate_logname( logname ) )
 		return NT_STATUS_OBJECT_PATH_INVALID;
 
-	if ( !(elog = TALLOC_ZERO_P( NULL, EVENTLOG_INFO )) )
+	if ( !(elog = talloc_zero( NULL, EVENTLOG_INFO )) )
 		return NT_STATUS_NO_MEMORY;
 	talloc_set_destructor(elog, eventlog_info_destructor);
 

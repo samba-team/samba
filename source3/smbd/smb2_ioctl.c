@@ -411,7 +411,7 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 			labels = True;
 		}
 
-		shadow_data = TALLOC_ZERO_P(talloc_tos(),
+		shadow_data = talloc_zero(talloc_tos(),
 					    struct shadow_copy_data);
 		if (tevent_req_nomem(shadow_data, req)) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));

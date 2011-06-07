@@ -2431,7 +2431,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	NTSTATUS status;
 	int fd;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2540,7 +2540,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* create tower for asking the epmapper */
 
-	map_binding = TALLOC_ZERO_P(tmp_ctx, struct dcerpc_binding);
+	map_binding = talloc_zero(tmp_ctx, struct dcerpc_binding);
 	if (map_binding == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2551,7 +2551,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	map_binding->host = host; /* needed? */
 	map_binding->endpoint = "0"; /* correct? needed? */
 
-	map_tower = TALLOC_ZERO_P(tmp_ctx, struct epm_twr_t);
+	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
 	if (map_tower == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2572,7 +2572,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	}
 	towers.twr = res_towers;
 
-	entry_handle = TALLOC_ZERO_P(tmp_ctx, struct policy_handle);
+	entry_handle = talloc_zero(tmp_ctx, struct policy_handle);
 	if (entry_handle == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2756,7 +2756,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	result = TALLOC_ZERO_P(NULL, struct rpc_pipe_client);
+	result = talloc_zero(NULL, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

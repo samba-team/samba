@@ -419,7 +419,7 @@ static NTSTATUS auth_init_ntdomain(struct auth_context *auth_context, const char
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -525,7 +525,7 @@ static NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const c
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

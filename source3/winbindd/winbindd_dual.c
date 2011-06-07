@@ -1483,7 +1483,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			child->domain->startup = False;
 		}
 
-		pfds = TALLOC_ZERO_P(talloc_tos(), struct pollfd);
+		pfds = talloc_zero(talloc_tos(), struct pollfd);
 		if (pfds == NULL) {
 			DEBUG(1, ("talloc failed\n"));
 			_exit(1);

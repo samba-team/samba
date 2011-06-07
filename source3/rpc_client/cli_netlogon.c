@@ -177,7 +177,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCT(ret_creds);
 
-	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
+	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -200,7 +200,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		struct samr_Password lmpassword;
 		struct samr_Password ntpassword;
 
-		password_info = TALLOC_ZERO_P(mem_ctx, struct netr_PasswordInfo);
+		password_info = talloc_zero(mem_ctx, struct netr_PasswordInfo);
 		if (!password_info) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -240,7 +240,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		ZERO_STRUCT(lm);
 		ZERO_STRUCT(nt);
 
-		network_info = TALLOC_ZERO_P(mem_ctx, struct netr_NetworkInfo);
+		network_info = talloc_zero(mem_ctx, struct netr_NetworkInfo);
 		if (!network_info) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -388,12 +388,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
 
-	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
+	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	network_info = TALLOC_ZERO_P(mem_ctx, struct netr_NetworkInfo);
+	network_info = talloc_zero(mem_ctx, struct netr_NetworkInfo);
 	if (!network_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -505,12 +505,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
 
-	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
+	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	network_info = TALLOC_ZERO_P(mem_ctx, struct netr_NetworkInfo);
+	network_info = talloc_zero(mem_ctx, struct netr_NetworkInfo);
 	if (!network_info) {
 		return NT_STATUS_NO_MEMORY;
 	}

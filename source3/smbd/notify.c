@@ -183,7 +183,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 
 	SMB_ASSERT(fsp->notify == NULL);
 
-	if (!(fsp->notify = TALLOC_ZERO_P(NULL, struct notify_change_buf))) {
+	if (!(fsp->notify = talloc_zero(NULL, struct notify_change_buf))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

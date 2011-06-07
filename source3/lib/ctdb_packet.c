@@ -44,7 +44,7 @@ struct ctdb_packet_context *ctdb_packet_init(TALLOC_CTX *mem_ctx, int fd)
 {
 	struct ctdb_packet_context *result;
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct ctdb_packet_context))) {
+	if (!(result = talloc_zero(mem_ctx, struct ctdb_packet_context))) {
 		return NULL;
 	}
 

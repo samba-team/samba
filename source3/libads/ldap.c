@@ -784,7 +784,7 @@ static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
 
 	if (!in_val) return NULL;
 
-	value = TALLOC_ZERO_P(ctx, struct berval);
+	value = talloc_zero(ctx, struct berval);
 	if (value == NULL)
 		return NULL;
 	if (in_val->bv_len == 0) return value;
@@ -1431,7 +1431,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		*mods = (ADS_MODLIST)modlist;
 	}
 
-	if (!(modlist[curmod] = TALLOC_ZERO_P(ctx, LDAPMod)))
+	if (!(modlist[curmod] = talloc_zero(ctx, LDAPMod)))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	modlist[curmod]->mod_type = talloc_strdup(ctx, name);
 	if (mod_op & LDAP_MOD_BVALUES) {

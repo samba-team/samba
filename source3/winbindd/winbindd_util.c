@@ -261,7 +261,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	struct trustdom_state *state;
 	struct tevent_req *req;
 
-	state = TALLOC_ZERO_P(NULL, struct trustdom_state);
+	state = talloc_zero(NULL, struct trustdom_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return;

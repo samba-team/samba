@@ -133,7 +133,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->res_domains = TALLOC_ZERO_P(state, struct lsa_RefDomainList);
+	state->res_domains = talloc_zero(state, struct lsa_RefDomainList);
 	if (tevent_req_nomem(state->res_domains, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -143,7 +143,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->res_names = TALLOC_ZERO_P(state, struct lsa_TransNameArray);
+	state->res_names = talloc_zero(state, struct lsa_TransNameArray);
 	if (tevent_req_nomem(state->res_names, req)) {
 		return tevent_req_post(req, ev);
 	}

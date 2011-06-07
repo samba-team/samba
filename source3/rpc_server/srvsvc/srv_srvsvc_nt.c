@@ -600,7 +600,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 	alloc_entries = num_entries - resume_handle;
 	switch (info_ctr->level) {
 	case 0:
-		ctr.ctr0 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr0);
+		ctr.ctr0 = talloc_zero(ctx, struct srvsvc_NetShareCtr0);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr0);
 
 		ctr.ctr0->count = alloc_entries;
@@ -617,7 +617,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 1:
-		ctr.ctr1 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr1);
+		ctr.ctr1 = talloc_zero(ctx, struct srvsvc_NetShareCtr1);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1);
 
 		ctr.ctr1->count = alloc_entries;
@@ -634,7 +634,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 2:
-		ctr.ctr2 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr2);
+		ctr.ctr2 = talloc_zero(ctx, struct srvsvc_NetShareCtr2);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr2);
 
 		ctr.ctr2->count = alloc_entries;
@@ -651,7 +651,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 501:
-		ctr.ctr501 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr501);
+		ctr.ctr501 = talloc_zero(ctx, struct srvsvc_NetShareCtr501);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr501);
 
 		ctr.ctr501->count = alloc_entries;
@@ -668,7 +668,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 502:
-		ctr.ctr502 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr502);
+		ctr.ctr502 = talloc_zero(ctx, struct srvsvc_NetShareCtr502);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr502);
 
 		ctr.ctr502->count = alloc_entries;
@@ -685,7 +685,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 1004:
-		ctr.ctr1004 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr1004);
+		ctr.ctr1004 = talloc_zero(ctx, struct srvsvc_NetShareCtr1004);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1004);
 
 		ctr.ctr1004->count = alloc_entries;
@@ -702,7 +702,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 1005:
-		ctr.ctr1005 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr1005);
+		ctr.ctr1005 = talloc_zero(ctx, struct srvsvc_NetShareCtr1005);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1005);
 
 		ctr.ctr1005->count = alloc_entries;
@@ -719,7 +719,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 1006:
-		ctr.ctr1006 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr1006);
+		ctr.ctr1006 = talloc_zero(ctx, struct srvsvc_NetShareCtr1006);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1006);
 
 		ctr.ctr1006->count = alloc_entries;
@@ -736,7 +736,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 1007:
-		ctr.ctr1007 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr1007);
+		ctr.ctr1007 = talloc_zero(ctx, struct srvsvc_NetShareCtr1007);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1007);
 
 		ctr.ctr1007->count = alloc_entries;
@@ -753,7 +753,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		break;
 
 	case 1501:
-		ctr.ctr1501 = TALLOC_ZERO_P(ctx, struct srvsvc_NetShareCtr1501);
+		ctr.ctr1501 = talloc_zero(ctx, struct srvsvc_NetShareCtr1501);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1501);
 
 		ctr.ctr1501->count = alloc_entries;
@@ -2062,7 +2062,7 @@ WERROR _srvsvc_NetRemoteTOD(struct pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetRemoteTOD: %d\n", __LINE__));
 
-	if ( !(tod = TALLOC_ZERO_P(p->mem_ctx, struct srvsvc_NetRemoteTODInfo)) )
+	if ( !(tod = talloc_zero(p->mem_ctx, struct srvsvc_NetRemoteTODInfo)) )
 		return WERR_NOMEM;
 
 	*r->out.info = tod;
@@ -2189,7 +2189,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
-	sd_buf = TALLOC_ZERO_P(p->mem_ctx, struct sec_desc_buf);
+	sd_buf = talloc_zero(p->mem_ctx, struct sec_desc_buf);
 	if (!sd_buf) {
 		werr = WERR_NOMEM;
 		goto error_exit;

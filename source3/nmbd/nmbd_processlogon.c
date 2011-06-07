@@ -173,7 +173,7 @@ static void nmbd_proxy_logon(struct nmbd_proxy_logon_context *ctx,
 	fstring source_name;
 	struct dgram_packet *dgram = &p->packet.dgram;
 
-	state = TALLOC_ZERO_P(ctx, struct nmbd_proxy_logon_state);
+	state = talloc_zero(ctx, struct nmbd_proxy_logon_state);
 	if (!state) {
 		DEBUG(0,("failed to allocate nmbd_proxy_logon_state\n"));
 		return;

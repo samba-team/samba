@@ -92,7 +92,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ctx = TALLOC_ZERO_P(result, struct messaging_tdb_context);
+	ctx = talloc_zero(result, struct messaging_tdb_context);
 	if (!ctx) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
@@ -187,7 +187,7 @@ static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct messaging_array))) {
+	if (!(result = talloc_zero(mem_ctx, struct messaging_array))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

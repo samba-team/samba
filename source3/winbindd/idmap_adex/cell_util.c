@@ -110,7 +110,7 @@ static NTSTATUS cell_lookup_forest(struct likewise_cell *c)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((gc = TALLOC_ZERO_P(NULL, struct gc_info)) == NULL) {
+	if ((gc = talloc_zero(NULL, struct gc_info)) == NULL) {
 		nt_status = NT_STATUS_NO_MEMORY;
 		BAIL_ON_NTSTATUS_ERROR(nt_status);
 	}

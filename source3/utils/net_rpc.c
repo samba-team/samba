@@ -3431,7 +3431,7 @@ static WERROR get_share_info(struct net_context *c,
 	{
 		struct srvsvc_NetShareCtr1 *ctr1;
 
-		ctr1 = TALLOC_ZERO_P(mem_ctx, struct srvsvc_NetShareCtr1);
+		ctr1 = talloc_zero(mem_ctx, struct srvsvc_NetShareCtr1);
 		W_ERROR_HAVE_NO_MEMORY(ctr1);
 
 		ctr1->count = 1;
@@ -3445,7 +3445,7 @@ static WERROR get_share_info(struct net_context *c,
 	{
 		struct srvsvc_NetShareCtr2 *ctr2;
 
-		ctr2 = TALLOC_ZERO_P(mem_ctx, struct srvsvc_NetShareCtr2);
+		ctr2 = talloc_zero(mem_ctx, struct srvsvc_NetShareCtr2);
 		W_ERROR_HAVE_NO_MEMORY(ctr2);
 
 		ctr2->count = 1;
@@ -3459,7 +3459,7 @@ static WERROR get_share_info(struct net_context *c,
 	{
 		struct srvsvc_NetShareCtr502 *ctr502;
 
-		ctr502 = TALLOC_ZERO_P(mem_ctx, struct srvsvc_NetShareCtr502);
+		ctr502 = talloc_zero(mem_ctx, struct srvsvc_NetShareCtr502);
 		W_ERROR_HAVE_NO_MEMORY(ctr502);
 
 		ctr502->count = 1;

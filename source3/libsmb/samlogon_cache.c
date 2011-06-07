@@ -217,7 +217,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 		return NULL;
 	}
 
-	info3 = TALLOC_ZERO_P(mem_ctx, struct netr_SamInfo3);
+	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (!info3) {
 		goto done;
 	}

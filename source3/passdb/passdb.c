@@ -74,7 +74,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 {
 	struct samu *user;
 
-	if ( !(user = TALLOC_ZERO_P( ctx, struct samu )) ) {
+	if ( !(user = talloc_zero( ctx, struct samu )) ) {
 		DEBUG(0,("samuser_new: Talloc failed!\n"));
 		return NULL;
 	}

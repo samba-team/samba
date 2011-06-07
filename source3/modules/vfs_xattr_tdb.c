@@ -41,7 +41,7 @@ static NTSTATUS xattr_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	struct tdb_xattrs *result;
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct tdb_xattrs))) {
+	if (!(result = talloc_zero(mem_ctx, struct tdb_xattrs))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

@@ -45,7 +45,7 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 {
 	struct auth_serversupplied_info *result;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct auth_serversupplied_info);
+	result = talloc_zero(mem_ctx, struct auth_serversupplied_info);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;

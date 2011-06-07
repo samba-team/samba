@@ -594,7 +594,7 @@ static bool push_queued_message(struct smb_request *req,
 	int msg_len = smb_len(req->inbuf) + 4;
 	struct pending_message_list *msg;
 
-	msg = TALLOC_ZERO_P(NULL, struct pending_message_list);
+	msg = talloc_zero(NULL, struct pending_message_list);
 
 	if(msg == NULL) {
 		DEBUG(0,("push_message: malloc fail (1)\n"));

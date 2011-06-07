@@ -785,7 +785,7 @@ static void new_connection(int listen_sock, bool privileged)
 
 	/* Create new connection structure */
 
-	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL) {
+	if ((state = talloc_zero(NULL, struct winbindd_cli_state)) == NULL) {
 		close(sock);
 		return;
 	}

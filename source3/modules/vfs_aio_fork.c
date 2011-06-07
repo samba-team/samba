@@ -277,7 +277,7 @@ static struct aio_child_list *init_aio_children(struct vfs_handle_struct *handle
 	}
 
 	if (data == NULL) {
-		data = TALLOC_ZERO_P(NULL, struct aio_child_list);
+		data = talloc_zero(NULL, struct aio_child_list);
 		if (data == NULL) {
 			return NULL;
 		}
@@ -481,7 +481,7 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 
 	fdpair[0] = fdpair[1] = -1;
 
-	result = TALLOC_ZERO_P(children, struct aio_child);
+	result = talloc_zero(children, struct aio_child);
 	NT_STATUS_HAVE_NO_MEMORY(result);
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) == -1) {

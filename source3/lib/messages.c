@@ -184,7 +184,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	struct messaging_context *ctx;
 	NTSTATUS status;
 
-	if (!(ctx = TALLOC_ZERO_P(mem_ctx, struct messaging_context))) {
+	if (!(ctx = talloc_zero(mem_ctx, struct messaging_context))) {
 		return NULL;
 	}
 

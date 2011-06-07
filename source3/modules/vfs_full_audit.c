@@ -611,7 +611,7 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 		return result;
 	}
 
-	pd = TALLOC_ZERO_P(handle, struct vfs_full_audit_private_data);
+	pd = talloc_zero(handle, struct vfs_full_audit_private_data);
 	if (!pd) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		return -1;

@@ -213,7 +213,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 		return NULL;
 	}
 
-	cli = TALLOC_ZERO_P(NULL, struct cli_state);
+	cli = talloc_zero(NULL, struct cli_state);
 	if (!cli) {
 		return NULL;
 	}

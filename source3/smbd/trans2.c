@@ -590,7 +590,7 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 	size_t converted_size, offset = 0;
 
 	while (offset + 2 < data_size) {
-		struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
+		struct ea_list *eal = talloc_zero(ctx, struct ea_list);
 		unsigned int namelen = CVAL(pdata,offset);
 
 		offset++; /* Go past the namelen byte. */
@@ -628,7 +628,7 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 
 struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t data_size, size_t *pbytes_used)
 {
-	struct ea_list *eal = TALLOC_ZERO_P(ctx, struct ea_list);
+	struct ea_list *eal = talloc_zero(ctx, struct ea_list);
 	uint16 val_len;
 	unsigned int namelen;
 	size_t converted_size;

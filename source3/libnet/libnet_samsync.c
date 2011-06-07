@@ -70,7 +70,7 @@ NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
 
 	*ctx_p = NULL;
 
-	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
+	ctx = talloc_zero(mem_ctx, struct samsync_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	if (domain_sid) {
@@ -404,7 +404,7 @@ NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 
 	*str_p = NULL;
 
-	str = TALLOC_ZERO_P(mem_ctx, struct netr_AcctLockStr);
+	str = talloc_zero(mem_ctx, struct netr_AcctLockStr);
 	if (!str) {
 		return NT_STATUS_NO_MEMORY;
 	}

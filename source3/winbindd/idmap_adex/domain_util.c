@@ -71,7 +71,7 @@ static NTSTATUS dc_add_domain(const char *domain)
 		return NT_STATUS_OK;
 	}
 
-	dc = TALLOC_ZERO_P(NULL, struct dc_info);
+	dc = talloc_zero(NULL, struct dc_info);
 	BAIL_ON_PTR_ERROR(dc, nt_status);
 
 	dc->dns_name = talloc_strdup(dc, domain);

@@ -54,7 +54,7 @@ NTSTATUS libnet_dssync_init_context(TALLOC_CTX *mem_ctx,
 {
 	struct dssync_context *ctx;
 
-	ctx = TALLOC_ZERO_P(mem_ctx, struct dssync_context);
+	ctx = talloc_zero(mem_ctx, struct dssync_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	talloc_set_destructor(ctx, libnet_dssync_free_context);
@@ -339,7 +339,7 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 		level = 5;
 	}
 
-	nc = TALLOC_ZERO_P(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
+	nc = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
 	if (!nc) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -351,7 +351,7 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 	if (!ctx->single_object_replication &&
 	    !ctx->force_full_replication && utdv)
 	{
-		cursors = TALLOC_ZERO_P(mem_ctx,
+		cursors = talloc_zero(mem_ctx,
 					 struct drsuapi_DsReplicaCursorCtrEx);
 		if (!cursors) {
 			status = NT_STATUS_NO_MEMORY;
@@ -442,7 +442,7 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *b = ctx->cli->binding_handle;
 
 	if (!ctx->single_object_replication) {
-		new_utdv = TALLOC_ZERO_P(mem_ctx, struct replUpToDateVectorBlob);
+		new_utdv = talloc_zero(mem_ctx, struct replUpToDateVectorBlob);
 		if (!new_utdv) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;

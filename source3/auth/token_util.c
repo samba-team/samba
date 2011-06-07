@@ -338,7 +338,7 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("Create local NT token for %s\n",
 		   sid_string_dbg(user_sid)));
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct security_token))) {
+	if (!(result = talloc_zero(mem_ctx, struct security_token))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}

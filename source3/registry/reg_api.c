@@ -142,9 +142,9 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 
 	SMB_ASSERT(strchr(name, '\\') == NULL);
 
-	if (!(regkey = TALLOC_ZERO_P(mem_ctx, struct registry_key)) ||
+	if (!(regkey = talloc_zero(mem_ctx, struct registry_key)) ||
 	    !(regkey->token = dup_nt_token(regkey, token)) ||
-	    !(regkey->key = TALLOC_ZERO_P(regkey, struct registry_key_handle)))
+	    !(regkey->key = talloc_zero(regkey, struct registry_key_handle)))
 	{
 		result = WERR_NOMEM;
 		goto done;

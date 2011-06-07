@@ -44,7 +44,7 @@ static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, co
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -108,7 +108,7 @@ static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *par
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

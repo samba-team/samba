@@ -351,7 +351,7 @@ NTSTATUS gp_ext_info_add_entry(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct gp_extension_reg_info_entry *entry = NULL;
 
-	entry = TALLOC_ZERO_P(mem_ctx, struct gp_extension_reg_info_entry);
+	entry = talloc_zero(mem_ctx, struct gp_extension_reg_info_entry);
 	NT_STATUS_HAVE_NO_MEMORY(entry);
 
 	status = GUID_from_string(ext_guid, &entry->guid);

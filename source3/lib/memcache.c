@@ -72,7 +72,7 @@ struct memcache *memcache_init(TALLOC_CTX *mem_ctx, size_t max_size)
 {
 	struct memcache *result;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct memcache);
+	result = talloc_zero(mem_ctx, struct memcache);
 	if (result == NULL) {
 		return NULL;
 	}

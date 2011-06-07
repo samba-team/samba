@@ -2020,7 +2020,7 @@ static void brl_revalidate(struct messaging_context *msg_ctx,
 	uint32 i;
 	struct server_id last_pid;
 
-	if (!(state = TALLOC_ZERO_P(NULL, struct brl_revalidate_state))) {
+	if (!(state = talloc_zero(NULL, struct brl_revalidate_state))) {
 		DEBUG(0, ("talloc failed\n"));
 		return;
 	}

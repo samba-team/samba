@@ -202,7 +202,7 @@ static NTSTATUS security_get_reg_config(TALLOC_CTX *mem_ctx,
 		{ NULL, REG_NONE, NULL }
 	};
 
-	info = TALLOC_ZERO_P(mem_ctx, struct gp_extension_reg_info);
+	info = talloc_zero(mem_ctx, struct gp_extension_reg_info);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	status = gp_ext_info_add_entry(mem_ctx, GP_EXT_NAME,

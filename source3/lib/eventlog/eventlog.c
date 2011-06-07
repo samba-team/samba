@@ -416,7 +416,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 			return ptr;
 		}
 
-		if ( !(tdb_node = TALLOC_ZERO_P( NULL, ELOG_TDB)) ) {
+		if ( !(tdb_node = talloc_zero( NULL, ELOG_TDB)) ) {
 			DEBUG(0,("elog_open_tdb: talloc() failure!\n"));
 			tdb_close( tdb );
 			return NULL;

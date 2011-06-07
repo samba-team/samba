@@ -946,7 +946,7 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	r = TALLOC_ZERO_P(mem_ctx, struct samsync_ldif_context);
+	r = talloc_zero(mem_ctx, struct samsync_ldif_context);
 	NT_STATUS_HAVE_NO_MEMORY(r);
 
 	/* Get the ldap suffix */

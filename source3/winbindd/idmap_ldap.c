@@ -443,7 +443,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 		return NT_STATUS_FILE_IS_OFFLINE;
 	}
 
-	ctx = TALLOC_ZERO_P(dom, struct idmap_ldap_context);
+	ctx = talloc_zero(dom, struct idmap_ldap_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;

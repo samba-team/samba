@@ -348,7 +348,7 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
 	struct db_context *result = NULL;
 	struct db_file_ctx *ctx;
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct db_context))) {
+	if (!(result = talloc_zero(mem_ctx, struct db_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}

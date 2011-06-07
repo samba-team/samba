@@ -1025,7 +1025,7 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 		return NULL;
 	}
 
-	if (!(crec = TALLOC_ZERO_P(result, struct db_ctdb_rec))) {
+	if (!(crec = talloc_zero(result, struct db_ctdb_rec))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
@@ -1365,7 +1365,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct db_context))) {
+	if (!(result = talloc_zero(mem_ctx, struct db_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;

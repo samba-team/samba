@@ -469,7 +469,7 @@ int main(int argc, char *argv[])
 
 	/* some basic initialization stuff */
 	sec_init();
-	vfs.conn = TALLOC_ZERO_P(NULL, connection_struct);
+	vfs.conn = talloc_zero(NULL, connection_struct);
 	vfs.conn->params = talloc(vfs.conn, struct share_params);
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;

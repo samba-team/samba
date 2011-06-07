@@ -579,7 +579,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 
 		p += sizeof(token_len);
 
-		pdtl = TALLOC_ZERO_P(lck, struct delete_token_list);
+		pdtl = talloc_zero(lck, struct delete_token_list);
 		if (pdtl == NULL) {
 			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
 			return -1;
@@ -588,7 +588,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 		memcpy(&pdtl->name_hash, p, sizeof(pdtl->name_hash));
 		p += sizeof(pdtl->name_hash);
 
-		pdtl->delete_token = TALLOC_ZERO_P(pdtl, struct security_unix_token);
+		pdtl->delete_token = talloc_zero(pdtl, struct security_unix_token);
 		if (pdtl->delete_token == NULL) {
 			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
 			return -1;
@@ -1513,7 +1513,7 @@ static bool add_delete_on_close_token(struct share_mode_lock *lck,
 {
 	struct delete_token_list *dtl;
 
-	dtl = TALLOC_ZERO_P(lck, struct delete_token_list);
+	dtl = talloc_zero(lck, struct delete_token_list);
 	if (dtl == NULL) {
 		return false;
 	}

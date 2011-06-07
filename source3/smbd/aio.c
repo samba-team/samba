@@ -116,7 +116,7 @@ static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 					files_struct *fsp,
 					size_t buflen)
 {
-	struct aio_extra *aio_ex = TALLOC_ZERO_P(mem_ctx, struct aio_extra);
+	struct aio_extra *aio_ex = talloc_zero(mem_ctx, struct aio_extra);
 
 	if (!aio_ex) {
 		return NULL;

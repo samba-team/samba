@@ -97,7 +97,7 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	tsmd = TALLOC_ZERO_P(handle, struct tsmsm_struct);
+	tsmd = talloc_zero(handle, struct tsmsm_struct);
 	if (!tsmd) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("tsmsm_connect: out of memory!\n"));

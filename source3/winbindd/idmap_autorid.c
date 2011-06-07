@@ -377,7 +377,7 @@ static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
 		return NULL;
 	}
 
-	cfg = TALLOC_ZERO_P(ctx, struct autorid_global_config);
+	cfg = talloc_zero(ctx, struct autorid_global_config);
 	if (!cfg) {
 		return NULL;
 	}
@@ -446,7 +446,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		goto error;
 	}
 
-	config = TALLOC_ZERO_P(frame, struct autorid_global_config);
+	config = talloc_zero(dom, struct autorid_global_config);
 	if (!config) {
 		DEBUG(0, ("Out of memory!\n"));
 		status = NT_STATUS_NO_MEMORY;

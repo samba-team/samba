@@ -628,7 +628,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 		/* return NT_STATUS_ACCESS_DENIED; */
 	}
 
-	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_PolicyInformation);
+	info = talloc_zero(p->mem_ctx, union lsa_PolicyInformation);
 	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -859,7 +859,7 @@ static NTSTATUS _lsa_lookup_sids_internal(struct pipes_struct *p,
 	}
 
 	sids = talloc_array(p->mem_ctx, const struct dom_sid *, num_sids);
-	ref = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
+	ref = talloc_zero(p->mem_ctx, struct lsa_RefDomainList);
 
 	if (sids == NULL || ref == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1168,7 +1168,7 @@ NTSTATUS _lsa_LookupNames(struct pipes_struct *p,
 
 	flags = lsa_lookup_level_to_flags(r->in.level);
 
-	domains = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
+	domains = talloc_zero(p->mem_ctx, struct lsa_RefDomainList);
 	if (!domains) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1235,7 +1235,7 @@ NTSTATUS _lsa_LookupNames2(struct pipes_struct *p,
 	struct lsa_TransSidArray *sid_array = NULL;
 	uint32_t i;
 
-	sid_array = TALLOC_ZERO_P(p->mem_ctx, struct lsa_TransSidArray);
+	sid_array = talloc_zero(p->mem_ctx, struct lsa_TransSidArray);
 	if (!sid_array) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1310,7 +1310,7 @@ NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
 		flags = LOOKUP_NAME_ALL;
 	}
 
-	domains = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
+	domains = talloc_zero(p->mem_ctx, struct lsa_RefDomainList);
 	if (!domains) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2012,7 +2012,7 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 		return status;
 	}
 
-	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_TrustedDomainInfo);
+	info = talloc_zero(p->mem_ctx, union lsa_TrustedDomainInfo);
 	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2299,7 +2299,7 @@ NTSTATUS _lsa_LookupPrivDisplayName(struct pipes_struct *p,
 
 	DEBUG(10,("_lsa_LookupPrivDisplayName: display name = %s\n", description));
 
-	lsa_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_StringLarge);
+	lsa_name = talloc_zero(p->mem_ctx, struct lsa_StringLarge);
 	if (!lsa_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2597,7 +2597,7 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	*r->out.privs = priv_set = TALLOC_ZERO_P(p->mem_ctx, struct lsa_PrivilegeSet);
+	*r->out.privs = priv_set = talloc_zero(p->mem_ctx, struct lsa_PrivilegeSet);
 	if (!priv_set) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2801,7 +2801,7 @@ NTSTATUS _lsa_LookupPrivName(struct pipes_struct *p,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	lsa_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_StringLarge);
+	lsa_name = talloc_zero(p->mem_ctx, struct lsa_StringLarge);
 	if (!lsa_name) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -200,7 +200,7 @@ static  NTSTATUS parse_supplemental_credentials(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	pkb = TALLOC_ZERO_P(mem_ctx, struct package_PrimaryKerberosBlob);
+	pkb = talloc_zero(mem_ctx, struct package_PrimaryKerberosBlob);
 	if (!pkb) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

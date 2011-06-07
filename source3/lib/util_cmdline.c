@@ -34,7 +34,7 @@ struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx)
 {
 	struct user_auth_info *result;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct user_auth_info);
+	result = talloc_zero(mem_ctx, struct user_auth_info);
 	if (result == NULL) {
 		return NULL;
 	}

@@ -111,14 +111,14 @@ static bool gp_reg_entry_from_file_entry(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(*reg_entry);
 
-	data = TALLOC_ZERO_P(mem_ctx, struct registry_value);
+	data = talloc_zero(mem_ctx, struct registry_value);
 	if (!data)
 		return false;
 
 	data->type = r->type;
 	data->data = data_blob_talloc(data, r->data, r->size);
 
-	entry = TALLOC_ZERO_P(mem_ctx, struct gp_registry_entry);
+	entry = talloc_zero(mem_ctx, struct gp_registry_entry);
 	if (!entry)
 		return false;
 
@@ -327,7 +327,7 @@ static NTSTATUS registry_get_reg_config(TALLOC_CTX *mem_ctx,
 		{ NULL, REG_NONE, NULL }
 	};
 
-	info = TALLOC_ZERO_P(mem_ctx, struct gp_extension_reg_info);
+	info = talloc_zero(mem_ctx, struct gp_extension_reg_info);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	status = gp_ext_info_add_entry(mem_ctx, GP_EXT_NAME,

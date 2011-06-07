@@ -390,7 +390,7 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 	uint16 i;
 	DNS_ERROR err;
 
-	if (!(req = TALLOC_ZERO_P(mem_ctx, struct dns_request))) {
+	if (!(req = talloc_zero(mem_ctx, struct dns_request))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
 

@@ -1451,7 +1451,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 		return status;
 	}
 
-	sd = TALLOC_ZERO_P(mem_ctx, struct KeySecurityData);
+	sd = talloc_zero(mem_ctx, struct KeySecurityData);
 	if (!sd) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;

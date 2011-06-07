@@ -4744,7 +4744,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 	struct fd_handle fh;
 	NTSTATUS status;
 
-	conn = TALLOC_ZERO_P(ctx, connection_struct);
+	conn = talloc_zero(ctx, connection_struct);
 	if (conn == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;

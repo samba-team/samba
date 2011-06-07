@@ -666,7 +666,7 @@ static int smb_traffic_analyzer_connect(struct vfs_handle_struct *handle,
 		rf_sock->ref_count++;
 	} else {
 		/* New connection. */
-		rf_sock = TALLOC_ZERO_P(NULL, struct refcounted_sock);
+		rf_sock = talloc_zero(NULL, struct refcounted_sock);
 		if (rf_sock == NULL) {
 			SMB_VFS_NEXT_DISCONNECT(handle);
 			errno = ENOMEM;

@@ -118,7 +118,7 @@ static NTSTATUS nss_domain_list_add_domain(const char *domain,
 {
 	struct nss_domain_entry *nss_domain;
 
-	nss_domain = TALLOC_ZERO_P(nss_domain_list, struct nss_domain_entry);
+	nss_domain = talloc_zero(nss_domain_list, struct nss_domain_entry);
 	if (!nss_domain) {
 		DEBUG(0, ("nss_domain_list_add_domain: talloc() failure!\n"));
 		return NT_STATUS_NO_MEMORY;

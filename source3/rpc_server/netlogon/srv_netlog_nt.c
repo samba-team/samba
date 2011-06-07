@@ -346,7 +346,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 
 	switch (r->in.level) {
 	case 1:
-		info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+		info1 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_1);
 		W_ERROR_HAVE_NO_MEMORY(info1);
 
 		info1->flags			= flags;
@@ -355,7 +355,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		r->out.query->info1 = info1;
 		break;
 	case 2:
-		info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+		info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
 		W_ERROR_HAVE_NO_MEMORY(info2);
 
 		info2->flags			= flags;
@@ -366,7 +366,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		r->out.query->info2 = info2;
 		break;
 	case 3:
-		info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
+		info3 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_3);
 		W_ERROR_HAVE_NO_MEMORY(info3);
 
 		info3->flags			= flags;
@@ -375,7 +375,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		r->out.query->info3 = info3;
 		break;
 	case 4:
-		info4 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_4);
+		info4 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_4);
 		W_ERROR_HAVE_NO_MEMORY(info4);
 
 		info4->trusted_dc_name		= dc_name;
@@ -1421,19 +1421,19 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 
 	switch (r->in.validation_level) {
 	case 2:
-		r->out.validation->sam2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo2);
+		r->out.validation->sam2 = talloc_zero(p->mem_ctx, struct netr_SamInfo2);
 		if (!r->out.validation->sam2) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		break;
 	case 3:
-		r->out.validation->sam3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo3);
+		r->out.validation->sam3 = talloc_zero(p->mem_ctx, struct netr_SamInfo3);
 		if (!r->out.validation->sam3) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		break;
 	case 6:
-		r->out.validation->sam6 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo6);
+		r->out.validation->sam6 = talloc_zero(p->mem_ctx, struct netr_SamInfo6);
 		if (!r->out.validation->sam6) {
 			return NT_STATUS_NO_MEMORY;
 		}

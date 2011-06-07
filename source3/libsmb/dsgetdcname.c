@@ -339,7 +339,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
+	info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo);
 	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -659,7 +659,7 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 {
 	struct netr_DsRGetDCNameInfo *info;
 
-	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
+	info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	if (dc_unc) {
@@ -963,7 +963,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		{
 			struct NETLOGON_SAM_LOGON_RESPONSE_NT40 logon1;
 
-			r = TALLOC_ZERO_P(mem_ctx, struct netlogon_samlogon_response);
+			r = talloc_zero(mem_ctx, struct netlogon_samlogon_response);
 			NT_STATUS_HAVE_NO_MEMORY(r);
 
 			ZERO_STRUCT(logon1);

@@ -131,7 +131,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("Create pipe requested %s\n",
 		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
 
-	p = TALLOC_ZERO_P(mem_ctx, struct pipes_struct);
+	p = talloc_zero(mem_ctx, struct pipes_struct);
 
 	if (!p) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
@@ -563,7 +563,7 @@ static NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *result;
 	NTSTATUS status;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

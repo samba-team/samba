@@ -341,7 +341,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	struct db_context *result = NULL;
 	struct db_tdb_ctx *db_tdb;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct db_context);
+	result = talloc_zero(mem_ctx, struct db_context);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;

@@ -1694,7 +1694,7 @@ static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char 
 
 	/* Setup private data and free function */
 
-	if ( !(privates = TALLOC_ZERO_P( *pdb_method, struct smbpasswd_privates )) ) {
+	if ( !(privates = talloc_zero( *pdb_method, struct smbpasswd_privates )) ) {
 		DEBUG(0, ("talloc() failed for smbpasswd private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

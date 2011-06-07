@@ -2235,7 +2235,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			labels = True;
 		}
 
-		shadow_data = TALLOC_ZERO_P(talloc_tos(),
+		shadow_data = talloc_zero(talloc_tos(),
 					    struct shadow_copy_data);
 		if (shadow_data == NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));

@@ -59,7 +59,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 		return WERR_ACCESS_DENIED;
 	}
 
-	jn = TALLOC_ZERO_P(ctx, struct junction_map);
+	jn = talloc_zero(ctx, struct junction_map);
 	if (!jn) {
 		return WERR_NOMEM;
 	}
@@ -124,7 +124,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		return WERR_ACCESS_DENIED;
 	}
 
-	jn = TALLOC_ZERO_P(ctx, struct junction_map);
+	jn = talloc_zero(ctx, struct junction_map);
 	if (!jn) {
 		return WERR_NOMEM;
 	}
@@ -354,7 +354,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	TALLOC_CTX *ctx = talloc_tos();
 	bool ret;
 
-	jn = TALLOC_ZERO_P(ctx, struct junction_map);
+	jn = talloc_zero(ctx, struct junction_map);
 	if (!jn) {
 		return WERR_NOMEM;
 	}
@@ -372,28 +372,28 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 
 	switch (r->in.level) {
 		case 1:
-			r->out.info->info1 = TALLOC_ZERO_P(ctx,struct dfs_Info1);
+			r->out.info->info1 = talloc_zero(ctx,struct dfs_Info1);
 			if (!r->out.info->info1) {
 				return WERR_NOMEM;
 			}
 			ret = init_reply_dfs_info_1(ctx, jn, r->out.info->info1);
 			break;
 		case 2:
-			r->out.info->info2 = TALLOC_ZERO_P(ctx,struct dfs_Info2);
+			r->out.info->info2 = talloc_zero(ctx,struct dfs_Info2);
 			if (!r->out.info->info2) {
 				return WERR_NOMEM;
 			}
 			ret = init_reply_dfs_info_2(ctx, jn, r->out.info->info2);
 			break;
 		case 3:
-			r->out.info->info3 = TALLOC_ZERO_P(ctx,struct dfs_Info3);
+			r->out.info->info3 = talloc_zero(ctx,struct dfs_Info3);
 			if (!r->out.info->info3) {
 				return WERR_NOMEM;
 			}
 			ret = init_reply_dfs_info_3(ctx, jn, r->out.info->info3);
 			break;
 		case 100:
-			r->out.info->info100 = TALLOC_ZERO_P(ctx,struct dfs_Info100);
+			r->out.info->info100 = talloc_zero(ctx,struct dfs_Info100);
 			if (!r->out.info->info100) {
 				return WERR_NOMEM;
 			}

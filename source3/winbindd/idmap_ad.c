@@ -216,7 +216,7 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 	char *config_option;
 	const char *schema_mode = NULL;	
 
-	ctx = TALLOC_ZERO_P(dom, struct idmap_ad_context);
+	ctx = talloc_zero(dom, struct idmap_ad_context);
 	if (ctx == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -736,7 +736,7 @@ static NTSTATUS nss_ad_generic_init(struct nss_domain_entry *e,
 	if (e->state != NULL) {
 		dom = talloc_get_type(e->state, struct idmap_domain);
 	} else {
-		dom = TALLOC_ZERO_P(e, struct idmap_domain);
+		dom = talloc_zero(e, struct idmap_domain);
 		if (dom == NULL) {
 			DEBUG(0, ("Out of memory!\n"));
 			return NT_STATUS_NO_MEMORY;
@@ -756,7 +756,7 @@ static NTSTATUS nss_ad_generic_init(struct nss_domain_entry *e,
 		ctx = talloc_get_type(dom->private_data,
 				      struct idmap_ad_context);
 	} else {
-		ctx = TALLOC_ZERO_P(dom, struct idmap_ad_context);
+		ctx = talloc_zero(dom, struct idmap_ad_context);
 		if (ctx == NULL) {
 			DEBUG(0, ("Out of memory!\n"));
 			return NT_STATUS_NO_MEMORY;

@@ -209,7 +209,7 @@ static WERROR create_open_service_handle(struct pipes_struct *p,
 	WERROR result = WERR_OK;
 	struct service_control_op *s_op;
 
-	if ( !(info = TALLOC_ZERO_P( NULL, SERVICE_INFO )) )
+	if ( !(info = talloc_zero( NULL, SERVICE_INFO )) )
 		return WERR_NOMEM;
 
 	/* the Service Manager has a NULL name */

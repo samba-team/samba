@@ -1066,7 +1066,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_ERR(result)) {
 		return result;
 	}
-	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
+	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1111,7 +1111,7 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
+	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -42,7 +42,7 @@ static struct tevent_poll_private *tevent_get_poll_private(
 
 	state = (struct tevent_poll_private *)ev->additional_data;
 	if (state == NULL) {
-		state = TALLOC_ZERO_P(ev, struct tevent_poll_private);
+		state = talloc_zero(ev, struct tevent_poll_private);
 		ev->additional_data = (void *)state;
 		if (state == NULL) {
 			DEBUG(10, ("talloc failed\n"));

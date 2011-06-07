@@ -62,7 +62,7 @@ struct regsubkey_ctr {
  context for internal private data.
 
  There is no longer a regval_ctr_intit() and regval_ctr_destroy()
- pair of functions.  Simply TALLOC_ZERO_P() and TALLOC_FREE() the
+ pair of functions.  Simply talloc_zero() and TALLOC_FREE() the
  object.
 
  **********************************************************************/

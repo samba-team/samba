@@ -919,7 +919,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 		}
 
 		/* Setup a synthetic smb_filename struct */
-		smb_fname_new = TALLOC_ZERO_P(mem_ctx, struct smb_filename);
+		smb_fname_new = talloc_zero(mem_ctx, struct smb_filename);
 		if (!smb_fname_new) {
 			ret = WERR_NOMEM;
 			goto out;
