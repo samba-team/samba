@@ -632,6 +632,48 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 	return ret;
 }
 
+static const struct {
+	uint16_t mask;
+	const char *str;
+	const char *desc;
+} sec_desc_ctrl_bits[] = {
+	{SEC_DESC_OWNER_DEFAULTED,       "OD", "Owner Defaulted"},
+	{SEC_DESC_GROUP_DEFAULTED,       "GD", "Group Defaulted"},
+	{SEC_DESC_DACL_PRESENT,          "DP", "DACL Present"},
+	{SEC_DESC_DACL_DEFAULTED,        "DD", "DACL Defaulted"},
+	{SEC_DESC_SACL_PRESENT,          "SP", "SACL Present"},
+	{SEC_DESC_SACL_DEFAULTED,        "SD", "SACL Defaulted"},
+	{SEC_DESC_DACL_TRUSTED,          "DT", "DACL Trusted"},
+	{SEC_DESC_SERVER_SECURITY,       "SS", "Server Security"},
+	{SEC_DESC_DACL_AUTO_INHERIT_REQ, "DR", "DACL Inheritance Required"},
+	{SEC_DESC_SACL_AUTO_INHERIT_REQ, "SR", "SACL Inheritance Required"},
+	{SEC_DESC_DACL_AUTO_INHERITED,   "DI", "DACL Auto Inherited"},
+	{SEC_DESC_SACL_AUTO_INHERITED,   "SI", "SACL Auto Inherited"},
+	{SEC_DESC_DACL_PROTECTED,        "PD", "DACL Protected"},
+	{SEC_DESC_SACL_PROTECTED,        "PS", "SACL Protected"},
+	{SEC_DESC_RM_CONTROL_VALID,      "RM", "RM Control Valid"},
+	{SEC_DESC_SELF_RELATIVE ,        "SR", "Self Relative"},
+};
+
+static void print_acl_ctrl(FILE *file, uint16_t ctrl)
+{
+	int i;
+	const char* separator = "";
+
+	fprintf(file, "CONTROL:");
+	if (numeric) {
+		fprintf(file, "0x%x\n", ctrl);
+		return;
+	}
+
+	for (i = ARRAY_SIZE(sec_desc_ctrl_bits) - 1; i >= 0; i--) {
+		if (ctrl & sec_desc_ctrl_bits[i].mask) {
+			fprintf(file, "%s%s", separator, sec_desc_ctrl_bits[i].str);
+			separator = "|";
+		}
+	}
+	fputc('\n', file);
+}
 
 /* print a ascii version of a security descriptor on a FILE handle */
 static void sec_desc_print(struct cli_state *cli, FILE *f, struct security_descriptor *sd)
@@ -640,7 +682,7 @@ static void sec_desc_print(struct cli_state *cli, FILE *f, struct security_descr
 	uint32 i;
 
 	fprintf(f, "REVISION:%d\n", sd->revision);
-	fprintf(f, "CONTROL:0x%x\n", sd->type);
+	print_acl_ctrl(f, sd->type);
 
 	/* Print owner and group sid */
 
