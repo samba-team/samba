@@ -279,6 +279,8 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_tdb2_context *ctx;
+	char *config_option = NULL;
+	const char * idmap_script = NULL;
 
 	ctx = talloc_zero(dom, struct idmap_tdb2_context);
 	if ( ! ctx) {
@@ -286,27 +288,28 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (strequal(dom->name, "*")) {
-		ctx->script = lp_parm_const_string(-1, "idmap", "script", NULL);
-		if (ctx->script) {
-			DEBUG(1, ("using idmap script '%s'\n", ctx->script));
-		}
-	} else {
-		char *config_option = NULL;
+	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
+	if (config_option == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		ret = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+	ctx->script = lp_parm_const_string(-1, config_option, "script", "NULL");
+	talloc_free(config_option);
 
-		config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
-		if ( ! config_option) {
-			DEBUG(0, ("Out of memory!\n"));
-			ret = NT_STATUS_NO_MEMORY;
-			goto failed;
-		}
+	idmap_script = lp_parm_const_string(-1, "idmap", "script", NULL);
+	if (idmap_script != NULL) {
+		DEBUG(0, ("Warning: 'idmap:script' is deprecated. "
+			  " Please use 'idmap config * : script' instead!\n"));
+	}
 
-		ctx->script = lp_parm_const_string(-1, config_option, "script", NULL);
-		if (ctx->script) {
-			DEBUG(1, ("using idmap script '%s'\n", ctx->script));
-		}
+	if (strequal(dom->name, "*") && ctx->script == NULL) {
+		/* fall back to idmap:script for backwards compatibility */
+		ctx->script = idmap_script;
+	}
 
-		talloc_free(config_option);
+	if (ctx->script) {
+		DEBUG(1, ("using idmap script '%s'\n", ctx->script));
 	}
 
 	ctx->rw_ops = talloc_zero(ctx, struct idmap_rw_ops);
