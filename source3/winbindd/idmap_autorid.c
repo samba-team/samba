@@ -438,6 +438,14 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *config_option = NULL;
 
+	if (!strequal(dom->name, "*")) {
+		DEBUG(0, ("idmap_autorid_initialize: Error: autorid configured "
+			  "for domain '%s'. But autorid can only be used for "
+			  "the default idmap configuration.\n", dom->name));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
 	config = TALLOC_ZERO_P(frame, struct autorid_global_config);
 	if (!config) {
 		DEBUG(0, ("Out of memory!\n"));
