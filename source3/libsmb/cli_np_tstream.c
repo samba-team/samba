@@ -63,7 +63,7 @@ struct tstream_cli_np {
 	struct {
 		off_t ofs;
 		size_t left;
-		uint8_t buf[TSTREAM_CLI_NP_BUF_SIZE];
+		uint8_t *buf;
 	} read, write;
 };
 
@@ -363,9 +363,26 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 		tstream_context_data(state->stream,
 		struct tstream_cli_np);
 	struct tevent_req *subreq;
+	size_t i;
+	size_t left = 0;
+
+	for (i=0; i < state->count; i++) {
+		left += state->vector[i].iov_len;
+	}
+
+	if (left == 0) {
+		TALLOC_FREE(cli_nps->write.buf);
+		tevent_req_done(req);
+		return;
+	}
 
 	cli_nps->write.ofs = 0;
-	cli_nps->write.left = TSTREAM_CLI_NP_BUF_SIZE;
+	cli_nps->write.left = MIN(left, TSTREAM_CLI_NP_BUF_SIZE);
+	cli_nps->write.buf = talloc_realloc(cli_nps, cli_nps->write.buf,
+					    uint8_t, cli_nps->write.left);
+	if (tevent_req_nomem(cli_nps->write.buf, req)) {
+		return;
+	}
 
 	/*
 	 * copy the pending buffer first
@@ -389,11 +406,6 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 		}
 
 		state->ret += len;
-	}
-
-	if (cli_nps->write.ofs == 0) {
-		tevent_req_done(req);
-		return;
 	}
 
 	if (cli_nps->trans.active && state->count == 0) {
@@ -634,6 +646,10 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 		state->ret += len;
 	}
 
+	if (cli_nps->read.left == 0) {
+		TALLOC_FREE(cli_nps->read.buf);
+	}
+
 	if (state->count == 0) {
 		tevent_req_done(req);
 		return;
@@ -740,8 +756,7 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 
 	cli_nps->read.ofs = 0;
 	cli_nps->read.left = received;
-	memcpy(cli_nps->read.buf, rcvbuf, received);
-	TALLOC_FREE(rcvbuf);
+	cli_nps->read.buf = talloc_move(cli_nps, &rcvbuf);
 
 	if (cli_nps->trans.write_req == NULL) {
 		tstream_cli_np_readv_read_next(req);
@@ -817,6 +832,12 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 
 	cli_nps->read.ofs = 0;
 	cli_nps->read.left = received;
+	cli_nps->read.buf = talloc_array(cli_nps, uint8_t, received);
+	if (cli_nps->read.buf == NULL) {
+		TALLOC_FREE(subreq);
+		tevent_req_nomem(cli_nps->read.buf, req);
+		return;
+	}
 	memcpy(cli_nps->read.buf, rcvbuf, received);
 	TALLOC_FREE(subreq);
 
