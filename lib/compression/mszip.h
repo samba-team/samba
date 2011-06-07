@@ -1,5 +1,3 @@
-#ifndef __LIB_COMPRESSION_MSZIP_H__
-#define __LIB_COMPRESSION_MSZIP_H__
 /* mszip decompression - based on cabextract.c code from
  * Stuart Caie
  *
@@ -33,4 +31,3 @@ struct decomp_state *ZIPdecomp_state(TALLOC_CTX *mem_ctx);
 #define DECR_INPUT        (5)
 #define DECR_OUTPUT       (6)
 int ZIPdecompress(struct decomp_state *decomp_state, DATA_BLOB *inbuf, DATA_BLOB *outbuf);
-#endif

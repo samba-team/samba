@@ -1,26 +1,7 @@
-#ifndef __NSSWITCH_PAM_WINBIND_H__
-#define __NSSWITCH_PAM_WINBIND_H__
 /* pam_winbind header file
    (Solaris needs some macros from Linux for common PAM code)
 
-   (C) Shirish Kalele 2000
-*/
-
-/*
-   Unix SMB/CIFS implementation.
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   Shirish Kalele 2000
 */
 
 #include "../lib/replace/replace.h"
@@ -194,4 +175,3 @@ struct pwb_context {
 #endif
 #define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
 #define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-#endif

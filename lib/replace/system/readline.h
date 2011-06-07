@@ -3,8 +3,6 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   (C) 2001 Samba Team.
-
    Readline wrappers
    
      ** NOTE! The following LGPL license applies to the replace

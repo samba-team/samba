@@ -1,5 +1,3 @@
-#ifndef __LIBSMBCLIENT_GET_AUTH_DATA_DN_H__
-#define __LIBSMBCLIENT_GET_AUTH_DATA_DN_H__
 #include <stdlib.h>
 
 static void
@@ -82,4 +80,3 @@ get_auth_data_fn(const char * pServer,
 
     krb5_set = 1;
 }
-#endif
