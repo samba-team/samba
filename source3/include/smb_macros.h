@@ -218,25 +218,6 @@ copy an IP address from one buffer to another
 #define SMB_XMALLOC_P(type) (type *)smb_xmalloc_array(sizeof(type),1)
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))
 
-/* The new talloc is paranoid malloc checker safe. */
-
-#if 0
-
-Disable these now we have checked all code paths and ensured
-NULL returns on zero request. JRA.
-
-#define TALLOC(ctx, size) talloc_zeronull(ctx, size, __location__)
-#define TALLOC_P(ctx, type) (type *)talloc_zeronull(ctx, sizeof(type), #type)
-#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array_zeronull(ctx, sizeof(type), count, #type)
-#define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup_zeronull(ctx, ptr, size, __location__)
-#define TALLOC_ZERO(ctx, size) _talloc_zero_zeronull(ctx, size, __location__)
-#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero_zeronull(ctx, sizeof(type), #type)
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array_zeronull(ctx, sizeof(type), count, #type)
-#define TALLOC_SIZE(ctx, size) talloc_zeronull(ctx, size, __location__)
-#define TALLOC_ZERO_SIZE(ctx, size) _talloc_zero_zeronull(ctx, size, __location__)
-
-#else
-
 #define TALLOC(ctx, size) talloc_named_const(ctx, size, __location__)
 #define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
@@ -246,8 +227,6 @@ NULL returns on zero request. JRA.
 #define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
 #define TALLOC_SIZE(ctx, size) talloc_named_const(ctx, size, __location__)
 #define TALLOC_ZERO_SIZE(ctx, size) _talloc_zero(ctx, size, __location__)
-
-#endif
 
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)

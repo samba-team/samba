@@ -608,11 +608,6 @@ void split_domain_user(TALLOC_CTX *mem_ctx,
 		       const char *full_name,
 		       char **domain,
 		       char **user);
-void *_talloc_zero_zeronull(const void *ctx, size_t size, const char *name);
-void *_talloc_memdup_zeronull(const void *t, const void *p, size_t size, const char *name);
-void *_talloc_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name);
-void *_talloc_zero_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name);
-void *talloc_zeronull(const void *context, size_t size, const char *name);
 const char *strip_hostname(const char *s);
 bool tevent_req_poll_ntstatus(struct tevent_req *req,
 			      struct tevent_context *ev,
