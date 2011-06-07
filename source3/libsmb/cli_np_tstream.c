@@ -45,7 +45,7 @@ static const struct tstream_context_ops tstream_cli_np_ops;
  * otherwise we may get NT_STATUS_PIPE_BUSY on the SMBtrans request
  * from NT4 servers. (See bug #8195)
  */
-#define TSTREAM_CLI_NP_BUF_SIZE 4280
+#define TSTREAM_CLI_NP_MAX_BUF_SIZE 4280
 
 struct tstream_cli_np {
 	struct cli_state *cli;
@@ -377,7 +377,7 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 	}
 
 	cli_nps->write.ofs = 0;
-	cli_nps->write.left = MIN(left, TSTREAM_CLI_NP_BUF_SIZE);
+	cli_nps->write.left = MIN(left, TSTREAM_CLI_NP_MAX_BUF_SIZE);
 	cli_nps->write.buf = talloc_realloc(cli_nps, cli_nps->write.buf,
 					    uint8_t, cli_nps->write.left);
 	if (tevent_req_nomem(cli_nps->write.buf, req)) {
@@ -669,7 +669,7 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 	}
 
 	subreq = cli_read_andx_send(state, state->ev, cli_nps->cli,
-				    cli_nps->fnum, 0, TSTREAM_CLI_NP_BUF_SIZE);
+				    cli_nps->fnum, 0, TSTREAM_CLI_NP_MAX_BUF_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -705,7 +705,7 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 				NULL, 0, 0,
 				cli_nps->write.buf,
 				cli_nps->write.ofs,
-				TSTREAM_CLI_NP_BUF_SIZE);
+				TSTREAM_CLI_NP_MAX_BUF_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -745,7 +745,7 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (received > TSTREAM_CLI_NP_BUF_SIZE) {
+	if (received > TSTREAM_CLI_NP_MAX_BUF_SIZE) {
 		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
 	}
@@ -819,7 +819,7 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (received > TSTREAM_CLI_NP_BUF_SIZE) {
+	if (received > TSTREAM_CLI_NP_MAX_BUF_SIZE) {
 		TALLOC_FREE(subreq);
 		tstream_cli_np_readv_disconnect_now(req, EIO, __location__);
 		return;
