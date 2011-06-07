@@ -268,6 +268,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 8163: Fix our asn.1 parser to handle negative numbers.
     * BUG 8191: Split the ACE flag mapping between nfs4 and Windows into two
       separate functions.
+    * BUG 8197: Winbind does not properly detect when a DC connection is dead.
 
 
 o   Christian Ambach <ambi@samba.org>
