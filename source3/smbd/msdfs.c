@@ -378,7 +378,7 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 	DEBUG(10,("parse_msdfs_symlink: count=%d\n", count));
 
 	if (count) {
-		reflist = *preflist = TALLOC_ZERO_ARRAY(ctx,
+		reflist = *preflist = talloc_zero_array(ctx,
 				struct referral, count);
 		if(reflist == NULL) {
 			TALLOC_FREE(alt_path);

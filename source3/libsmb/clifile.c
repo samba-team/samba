@@ -161,7 +161,7 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 	SSVAL(&state->setup, 0, TRANSACT2_SETPATHINFO);
 
 	/* Setup param array. */
-	state->param = TALLOC_ZERO_ARRAY(state, uint8_t, 6);
+	state->param = talloc_zero_array(state, uint8_t, 6);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}

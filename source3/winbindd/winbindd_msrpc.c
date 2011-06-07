@@ -701,9 +701,9 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 
 #define MAX_LOOKUP_RIDS 900
 
-        *names = TALLOC_ZERO_ARRAY(mem_ctx, char *, *num_names);
-        *name_types = TALLOC_ZERO_ARRAY(mem_ctx, uint32, *num_names);
-        *sid_mem = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, *num_names);
+        *names = talloc_zero_array(mem_ctx, char *, *num_names);
+        *name_types = talloc_zero_array(mem_ctx, uint32, *num_names);
+        *sid_mem = talloc_zero_array(mem_ctx, struct dom_sid, *num_names);
 
 	for (j=0;j<(*num_names);j++)
 		sid_compose(&(*sid_mem)[j], &domain->sid, rid_mem[j]);

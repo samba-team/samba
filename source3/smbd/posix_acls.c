@@ -3687,7 +3687,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 
 	num_aces += parent_sd->dacl->num_aces;
 
-	if((new_ace = TALLOC_ZERO_ARRAY(mem_ctx, struct security_ace,
+	if((new_ace = talloc_zero_array(mem_ctx, struct security_ace,
 					num_aces)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

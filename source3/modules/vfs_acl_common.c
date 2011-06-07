@@ -179,7 +179,7 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 	mode_t dir_mode;
 	mode_t file_mode;
 	mode_t mode;
-	struct security_ace *new_ace_list = TALLOC_ZERO_ARRAY(talloc_tos(),
+	struct security_ace *new_ace_list = talloc_zero_array(talloc_tos(),
 						struct security_ace,
 						num_aces + 3);
 

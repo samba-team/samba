@@ -1898,7 +1898,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		
 		nk->subkeys.num_keys = nk->num_subkeys;
 		if (nk->subkeys.num_keys) {
-			if ( !(nk->subkeys.hashes = TALLOC_ZERO_ARRAY( file->mem_ctx, REGF_HASH_REC, nk->subkeys.num_keys )) )
+			if ( !(nk->subkeys.hashes = talloc_zero_array( file->mem_ctx, REGF_HASH_REC, nk->subkeys.num_keys )) )
 				return NULL;
 		} else {
 			nk->subkeys.hashes = NULL;

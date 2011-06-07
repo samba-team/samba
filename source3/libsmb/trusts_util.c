@@ -208,13 +208,13 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	*num_domains = dom_list.count;
 
-	*domain_names = TALLOC_ZERO_ARRAY(mem_ctx, char *, *num_domains);
+	*domain_names = talloc_zero_array(mem_ctx, char *, *num_domains);
 	if (!*domain_names) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	*sids = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, *num_domains);
+	*sids = talloc_zero_array(mem_ctx, struct dom_sid, *num_domains);
 	if (!*sids) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

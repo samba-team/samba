@@ -1707,7 +1707,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 		}
 	}
 
-	fds = TALLOC_ZERO_ARRAY(NULL, struct pollfd, count);
+	fds = talloc_zero_array(NULL, struct pollfd, count);
 	if (fds == NULL) {
 		DEBUG(1, ("create_listen_pollfds: malloc fail for fds. "
 			  "size %d\n", count));

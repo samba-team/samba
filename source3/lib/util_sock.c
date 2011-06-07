@@ -1521,7 +1521,7 @@ int poll_one_fd(int fd, int events, int timeout, int *revents)
 	int ret;
 	int saved_errno;
 
-	fds = TALLOC_ZERO_ARRAY(talloc_tos(), struct pollfd, 2);
+	fds = talloc_zero_array(talloc_tos(), struct pollfd, 2);
 	if (fds == NULL) {
 		errno = ENOMEM;
 		return -1;

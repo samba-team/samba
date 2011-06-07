@@ -1157,7 +1157,7 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_0_buffer(TALLOC_CTX *mem_ct
 	struct GROUP_INFO_0 *g0;
 	int i;
 
-	g0 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_0, groups->count);
+	g0 = talloc_zero_array(mem_ctx, struct GROUP_INFO_0, groups->count);
 	W_ERROR_HAVE_NO_MEMORY(g0);
 
 	for (i=0; i<groups->count; i++) {
@@ -1183,7 +1183,7 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_1_buffer(TALLOC_CTX *mem_ct
 	struct GROUP_INFO_1 *g1;
 	int i;
 
-	g1 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_1, groups->count);
+	g1 = talloc_zero_array(mem_ctx, struct GROUP_INFO_1, groups->count);
 	W_ERROR_HAVE_NO_MEMORY(g1);
 
 	for (i=0; i<groups->count; i++) {
@@ -1211,7 +1211,7 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_2_buffer(TALLOC_CTX *mem_ct
 	struct GROUP_INFO_2 *g2;
 	int i;
 
-	g2 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_2, groups->count);
+	g2 = talloc_zero_array(mem_ctx, struct GROUP_INFO_2, groups->count);
 	W_ERROR_HAVE_NO_MEMORY(g2);
 
 	for (i=0; i<groups->count; i++) {
@@ -1242,7 +1242,7 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_3_buffer(TALLOC_CTX *mem_ct
 	struct GROUP_INFO_3 *g3;
 	int i;
 
-	g3 = TALLOC_ZERO_ARRAY(mem_ctx, struct GROUP_INFO_3, groups->count);
+	g3 = talloc_zero_array(mem_ctx, struct GROUP_INFO_3, groups->count);
 	W_ERROR_HAVE_NO_MEMORY(g3);
 
 	for (i=0; i<groups->count; i++) {

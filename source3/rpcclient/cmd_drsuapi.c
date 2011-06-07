@@ -40,7 +40,7 @@ static WERROR cracknames(struct rpc_pipe_client *cli,
 	struct drsuapi_DsNameString *names;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
-	names = TALLOC_ZERO_ARRAY(mem_ctx, struct drsuapi_DsNameString, argc);
+	names = talloc_zero_array(mem_ctx, struct drsuapi_DsNameString, argc);
 	W_ERROR_HAVE_NO_MEMORY(names);
 
 	for (i=0; i<argc; i++) {

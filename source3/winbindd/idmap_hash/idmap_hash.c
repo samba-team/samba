@@ -127,7 +127,7 @@ static NTSTATUS be_init(struct idmap_domain *dom)
 
 	/* Create the hash table of domain SIDs */
 
-	hashed_domains = TALLOC_ZERO_ARRAY(dom, struct sid_hash_table, 4096);
+	hashed_domains = talloc_zero_array(dom, struct sid_hash_table, 4096);
 	BAIL_ON_PTR_NT_ERROR(hashed_domains, nt_status);
 
 	/* create the hash table of domain SIDs */

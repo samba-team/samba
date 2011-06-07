@@ -498,7 +498,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	dclist = TALLOC_ZERO_ARRAY(mem_ctx, struct ip_service_name, count);
+	dclist = talloc_zero_array(mem_ctx, struct ip_service_name, count);
 	if (!dclist) {
 		SAFE_FREE(iplist);
 		return NT_STATUS_NO_MEMORY;
@@ -579,7 +579,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		numaddrs += MAX(dcs[i].num_ips,1);
 	}
 
-	dclist = TALLOC_ZERO_ARRAY(mem_ctx,
+	dclist = talloc_zero_array(mem_ctx,
 				   struct ip_service_name,
 				   numaddrs);
 	if (!dclist) {

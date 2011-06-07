@@ -482,7 +482,7 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const struct dom_sid *domain_sid,
 		   sid_string_dbg(domain_sid)));
 
 	if (num_rids) {
-		*names = TALLOC_ZERO_ARRAY(mem_ctx, const char *, num_rids);
+		*names = talloc_zero_array(mem_ctx, const char *, num_rids);
 		*types = talloc_array(mem_ctx, enum lsa_SidType, num_rids);
 
 		if ((*names == NULL) || (*types == NULL)) {
@@ -759,7 +759,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		name_infos = NULL;
 	}
 
-	dom_infos = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_dom_info,
+	dom_infos = talloc_zero_array(mem_ctx, struct lsa_dom_info,
 				      LSA_REF_DOMAIN_LIST_MULTIPLIER);
 	if (dom_infos == NULL) {
 		result = NT_STATUS_NO_MEMORY;

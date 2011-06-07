@@ -442,7 +442,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 		answer_count));
 
 	if (answer_count) {
-		if ((dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv,
+		if ((dcs = talloc_zero_array(ctx, struct dns_rr_srv,
 						answer_count)) == NULL ) {
 			DEBUG(0,("ads_dns_lookup_srv: "
 				"talloc() failure for %d char*'s\n",

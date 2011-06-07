@@ -1518,7 +1518,7 @@ static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 	if (num_uids == 0)
 		return NT_STATUS_OK;
 
-	*pp_member_rids = TALLOC_ZERO_ARRAY(mem_ctx, uint32_t, num_uids);
+	*pp_member_rids = talloc_zero_array(mem_ctx, uint32_t, num_uids);
 
 	for (i=0; i<num_uids; i++) {
 		struct dom_sid sid;

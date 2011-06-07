@@ -1115,7 +1115,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 	ZERO_STRUCT(alias_handle);
 
-	member_sids = TALLOC_ZERO_ARRAY(ctx, struct dom_sid,
+	member_sids = talloc_zero_array(ctx, struct dom_sid,
 					r->in.total_entries);
 	W_ERROR_HAVE_NO_MEMORY(member_sids);
 

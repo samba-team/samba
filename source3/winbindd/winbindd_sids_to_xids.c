@@ -80,7 +80,7 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(10, ("num_sids: %d\n", (int)state->num_sids));
 
-	state->cached = TALLOC_ZERO_ARRAY(state, struct id_map,
+	state->cached = talloc_zero_array(state, struct id_map,
 					  state->num_sids);
 	if (tevent_req_nomem(state->cached, req)) {
 		return tevent_req_post(req, ev);

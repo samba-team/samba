@@ -644,7 +644,7 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 			num_queries, num_query_sids));
 
 		if (num_query_sids) {
-			sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_query_sids);
+			sid_array.sids = talloc_zero_array(mem_ctx, struct lsa_SidPtr, num_query_sids);
 			if (sid_array.sids == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -839,9 +839,9 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 	 * Step #2: Convert list of rids into list of usernames.
 	 */
 	if (num_names > 0) {
-		names = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_names);
-		name_types = TALLOC_ZERO_ARRAY(mem_ctx, uint32_t, num_names);
-		sid_mem = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_names);
+		names = talloc_zero_array(mem_ctx, char *, num_names);
+		name_types = talloc_zero_array(mem_ctx, uint32_t, num_names);
+		sid_mem = talloc_zero_array(mem_ctx, struct dom_sid, num_names);
 		if (names == NULL || name_types == NULL || sid_mem == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}

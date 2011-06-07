@@ -1606,7 +1606,7 @@ static int cmd_altname(void)
 
 static char *attr_str(TALLOC_CTX *mem_ctx, uint16_t mode)
 {
-	char *attrs = TALLOC_ZERO_ARRAY(mem_ctx, char, 17);
+	char *attrs = talloc_zero_array(mem_ctx, char, 17);
 	int i = 0;
 
 	if (!(mode & FILE_ATTRIBUTE_NORMAL)) {

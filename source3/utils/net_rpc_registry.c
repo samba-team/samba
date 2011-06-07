@@ -211,9 +211,9 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if ((!(names = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_subkeys))) ||
-	    (!(classes = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_subkeys))) ||
-	    (!(modtimes = TALLOC_ZERO_ARRAY(mem_ctx, NTTIME *,
+	if ((!(names = talloc_zero_array(mem_ctx, char *, num_subkeys))) ||
+	    (!(classes = talloc_zero_array(mem_ctx, char *, num_subkeys))) ||
+	    (!(modtimes = talloc_zero_array(mem_ctx, NTTIME *,
 					    num_subkeys)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto error;

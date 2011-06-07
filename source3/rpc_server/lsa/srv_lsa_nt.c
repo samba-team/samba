@@ -520,7 +520,7 @@ NTSTATUS _lsa_EnumTrustDom(struct pipes_struct *p,
 		return nt_status;
 	}
 
-	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_DomainInfo, count);
+	entries = talloc_zero_array(p->mem_ctx, struct lsa_DomainInfo, count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -681,7 +681,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 
 		info->audit_events.auditing_mode = true;
 		info->audit_events.count = LSA_AUDIT_NUM_CATEGORIES;
-		info->audit_events.settings = TALLOC_ZERO_ARRAY(p->mem_ctx,
+		info->audit_events.settings = talloc_zero_array(p->mem_ctx,
 								enum lsa_PolicyAuditPolicy,
 								info->audit_events.count);
 		if (!info->audit_events.settings) {
@@ -1174,7 +1174,7 @@ NTSTATUS _lsa_LookupNames(struct pipes_struct *p,
 	}
 
 	if (num_entries) {
-		rids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_TranslatedSid,
+		rids = talloc_zero_array(p->mem_ctx, struct lsa_TranslatedSid,
 					 num_entries);
 		if (!rids) {
 			return NT_STATUS_NO_MEMORY;
@@ -1316,7 +1316,7 @@ NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
 	}
 
 	if (num_entries) {
-		trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_TranslatedSid3,
+		trans_sids = talloc_zero_array(p->mem_ctx, struct lsa_TranslatedSid3,
 					       num_entries);
 		if (!trans_sids) {
 			return NT_STATUS_NO_MEMORY;
@@ -2230,7 +2230,7 @@ NTSTATUS _lsa_EnumPrivs(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (num_privs) {
-		entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_PrivEntry, num_privs);
+		entries = talloc_zero_array(p->mem_ctx, struct lsa_PrivEntry, num_privs);
 		if (!entries) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -2351,7 +2351,7 @@ NTSTATUS _lsa_EnumAccounts(struct pipes_struct *p,
 	}
 
 	if (num_entries - *r->in.resume_handle) {
-		sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_SidPtr,
+		sids = talloc_zero_array(p->mem_ctx, struct lsa_SidPtr,
 					 num_entries - *r->in.resume_handle);
 		if (!sids) {
 			talloc_free(sid_list);
@@ -3030,7 +3030,7 @@ static NTSTATUS init_lsa_right_set(TALLOC_CTX *mem_ctx,
 
 	if (num_priv) {
 
-		r->names = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_StringLarge,
+		r->names = talloc_zero_array(mem_ctx, struct lsa_StringLarge,
 					     num_priv);
 		if (!r->names) {
 			return NT_STATUS_NO_MEMORY;
@@ -3323,7 +3323,7 @@ NTSTATUS _lsa_EnumTrustedDomainsEx(struct pipes_struct *p,
 		return nt_status;
 	}
 
-	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_TrustDomainInfoInfoEx,
+	entries = talloc_zero_array(p->mem_ctx, struct lsa_TrustDomainInfoInfoEx,
 				    count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;

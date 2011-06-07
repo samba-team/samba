@@ -188,7 +188,7 @@ static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
 	struct client_pipe_connection *p;
 	NTSTATUS status;
 
-	p = TALLOC_ZERO_ARRAY(mem_ctx, struct client_pipe_connection, 1);
+	p = talloc_zero_array(mem_ctx, struct client_pipe_connection, 1);
 	if (!p) {
 		return NT_STATUS_NO_MEMORY;
 	}

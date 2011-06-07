@@ -993,8 +993,8 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Allocate initial memory for groupmap and accountmap arrays */
-	r->groupmap = TALLOC_ZERO_ARRAY(mem_ctx, GROUPMAP, 8);
-	r->accountmap = TALLOC_ZERO_ARRAY(mem_ctx, ACCOUNTMAP, 8);
+	r->groupmap = talloc_zero_array(mem_ctx, GROUPMAP, 8);
+	r->accountmap = talloc_zero_array(mem_ctx, ACCOUNTMAP, 8);
 	if (r->groupmap == NULL || r->accountmap == NULL) {
 		DEBUG(1,("GROUPMAP talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;

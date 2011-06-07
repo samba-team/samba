@@ -574,7 +574,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 	num_services = lp_numservices();
 	unbecome_root();
 
-        allowed = TALLOC_ZERO_ARRAY(ctx, bool, num_services);
+        allowed = talloc_zero_array(ctx, bool, num_services);
         W_ERROR_HAVE_NO_MEMORY(allowed);
 
         /* Count the number of entries. */
@@ -604,7 +604,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr0);
 
 		ctr.ctr0->count = alloc_entries;
-		ctr.ctr0->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo0, alloc_entries);
+		ctr.ctr0->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo0, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr0->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -621,7 +621,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1);
 
 		ctr.ctr1->count = alloc_entries;
-		ctr.ctr1->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo1, alloc_entries);
+		ctr.ctr1->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo1, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -638,7 +638,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr2);
 
 		ctr.ctr2->count = alloc_entries;
-		ctr.ctr2->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo2, alloc_entries);
+		ctr.ctr2->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo2, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr2->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -655,7 +655,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr501);
 
 		ctr.ctr501->count = alloc_entries;
-		ctr.ctr501->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo501, alloc_entries);
+		ctr.ctr501->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo501, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr501->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -672,7 +672,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr502);
 
 		ctr.ctr502->count = alloc_entries;
-		ctr.ctr502->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo502, alloc_entries);
+		ctr.ctr502->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo502, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr502->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -689,7 +689,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1004);
 
 		ctr.ctr1004->count = alloc_entries;
-		ctr.ctr1004->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo1004, alloc_entries);
+		ctr.ctr1004->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo1004, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1004->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -706,7 +706,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1005);
 
 		ctr.ctr1005->count = alloc_entries;
-		ctr.ctr1005->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo1005, alloc_entries);
+		ctr.ctr1005->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo1005, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1005->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -723,7 +723,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1006);
 
 		ctr.ctr1006->count = alloc_entries;
-		ctr.ctr1006->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo1006, alloc_entries);
+		ctr.ctr1006->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo1006, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1006->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -740,7 +740,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1007);
 
 		ctr.ctr1007->count = alloc_entries;
-		ctr.ctr1007->array = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetShareInfo1007, alloc_entries);
+		ctr.ctr1007->array = talloc_zero_array(ctx, struct srvsvc_NetShareInfo1007, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1007->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -757,7 +757,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1501);
 
 		ctr.ctr1501->count = alloc_entries;
-		ctr.ctr1501->array = TALLOC_ZERO_ARRAY(ctx, struct sec_desc_buf, alloc_entries);
+		ctr.ctr1501->array = talloc_zero_array(ctx, struct sec_desc_buf, alloc_entries);
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1501->array);
 
 		for (snum = 0; snum < num_services; snum++) {
@@ -2438,7 +2438,7 @@ WERROR _srvsvc_NetDiskEnum(struct pipes_struct *p,
 
 	*r->out.totalentries = init_server_disk_enum(&resume);
 
-	r->out.info->disks = TALLOC_ZERO_ARRAY(ctx, struct srvsvc_NetDiskInfo0,
+	r->out.info->disks = talloc_zero_array(ctx, struct srvsvc_NetDiskInfo0,
 					       MAX_SERVER_DISK_ENTRIES);
 	W_ERROR_HAVE_NO_MEMORY(r->out.info->disks);
 

@@ -1559,7 +1559,7 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 	}
 
 	if (dirp->name_cache == NULL) {
-		dirp->name_cache = TALLOC_ZERO_ARRAY(
+		dirp->name_cache = talloc_zero_array(
 			dirp, struct name_cache_entry, dirp->name_cache_size);
 
 		if (dirp->name_cache == NULL) {

@@ -476,7 +476,7 @@ static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 	d_printf("Group members of %s: ", grp->gr_name);
 
 	if (r->num_rids) {
-		if ((nt_members = TALLOC_ZERO_ARRAY(mem_ctx, char *, r->num_rids)) == NULL) {
+		if ((nt_members = talloc_zero_array(mem_ctx, char *, r->num_rids)) == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			return NT_STATUS_NO_MEMORY;
 		}

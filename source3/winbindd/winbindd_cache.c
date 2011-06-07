@@ -2774,7 +2774,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	}
 
 do_fetch_cache:
-	trusts->array = TALLOC_ZERO_ARRAY(mem_ctx, struct netr_DomainTrust, num_domains);
+	trusts->array = talloc_zero_array(mem_ctx, struct netr_DomainTrust, num_domains);
 	if (!trusts->array) {
 		TALLOC_FREE(dom_list);
 		return NT_STATUS_NO_MEMORY;

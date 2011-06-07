@@ -34,7 +34,7 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 	if (!bm) return NULL;
 
 	bm->n = n;
-	bm->b = TALLOC_ZERO_ARRAY(bm, uint32, (n+31)/32);
+	bm->b = talloc_zero_array(bm, uint32, (n+31)/32);
 	if (!bm->b) {
 		TALLOC_FREE(bm);
 		return NULL;

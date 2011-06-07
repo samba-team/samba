@@ -1436,7 +1436,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_USER(TALLOC_CTX *mem_ctx,
 	struct NET_DISPLAY_USER *user = NULL;
 	int i;
 
-	user = TALLOC_ZERO_ARRAY(mem_ctx,
+	user = talloc_zero_array(mem_ctx,
 				 struct NET_DISPLAY_USER,
 				 info->count);
 	W_ERROR_HAVE_NO_MEMORY(user);
@@ -1480,7 +1480,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_MACHINE(TALLOC_CTX *mem_ctx,
 	struct NET_DISPLAY_MACHINE *machine = NULL;
 	int i;
 
-	machine = TALLOC_ZERO_ARRAY(mem_ctx,
+	machine = talloc_zero_array(mem_ctx,
 				    struct NET_DISPLAY_MACHINE,
 				    info->count);
 	W_ERROR_HAVE_NO_MEMORY(machine);
@@ -1522,7 +1522,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_GROUP(TALLOC_CTX *mem_ctx,
 	struct NET_DISPLAY_GROUP *group = NULL;
 	int i;
 
-	group = TALLOC_ZERO_ARRAY(mem_ctx,
+	group = talloc_zero_array(mem_ctx,
 				  struct NET_DISPLAY_GROUP,
 				  info->count);
 	W_ERROR_HAVE_NO_MEMORY(group);

@@ -2957,7 +2957,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 		return result;
 	}
 
-	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_members);
+	alias_sids = talloc_zero_array(mem_ctx, struct dom_sid, num_members);
 	if (!alias_sids) {
 		d_fprintf(stderr, _("Out of memory\n"));
 		TALLOC_FREE(lsa_pipe);

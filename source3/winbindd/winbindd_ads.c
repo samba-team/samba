@@ -199,7 +199,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*pinfo) = TALLOC_ZERO_ARRAY(mem_ctx, struct wbint_userinfo, count);
+	(*pinfo) = talloc_zero_array(mem_ctx, struct wbint_userinfo, count);
 	if (!*pinfo) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -351,7 +351,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*info) = TALLOC_ZERO_ARRAY(mem_ctx, struct wb_acct_info, count);
+	(*info) = talloc_zero_array(mem_ctx, struct wb_acct_info, count);
 	if (!*info) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -769,7 +769,7 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	group_sids = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_strings + 1);
+	group_sids = talloc_zero_array(mem_ctx, struct dom_sid, num_strings + 1);
 	if (!group_sids) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -1085,10 +1085,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	 * cache. Only the rest is passed to the lsa_lookup_sids call. */
 
 	if (num_members) {
-		(*sid_mem) = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_members);
-		(*names) = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_members);
-		(*name_types) = TALLOC_ZERO_ARRAY(mem_ctx, uint32, num_members);
-		(sid_mem_nocache) = TALLOC_ZERO_ARRAY(tmp_ctx, struct dom_sid, num_members);
+		(*sid_mem) = talloc_zero_array(mem_ctx, struct dom_sid, num_members);
+		(*names) = talloc_zero_array(mem_ctx, char *, num_members);
+		(*name_types) = talloc_zero_array(mem_ctx, uint32, num_members);
+		(sid_mem_nocache) = talloc_zero_array(tmp_ctx, struct dom_sid, num_members);
 
 		if ((members == NULL) || (*sid_mem == NULL) ||
 		    (*names == NULL) || (*name_types == NULL) ||

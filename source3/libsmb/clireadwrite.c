@@ -467,7 +467,7 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	state->num_reqs = MAX(window_size/state->chunk_size, 1);
 	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
 
-	state->reqs = TALLOC_ZERO_ARRAY(state, struct cli_pull_subreq,
+	state->reqs = talloc_zero_array(state, struct cli_pull_subreq,
 					state->num_reqs);
 	if (state->reqs == NULL) {
 		goto failed;
@@ -1149,7 +1149,7 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
 	state->num_reqs = MAX(state->num_reqs, 1);
 
-	state->reqs = TALLOC_ZERO_ARRAY(state, struct cli_push_write_state *,
+	state->reqs = talloc_zero_array(state, struct cli_push_write_state *,
 					state->num_reqs);
 	if (state->reqs == NULL) {
 		goto failed;

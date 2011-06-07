@@ -728,7 +728,7 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	}
 
 	if (num_sids) {
-		sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_sids);
+		sid_array.sids = talloc_zero_array(mem_ctx, struct lsa_SidPtr, num_sids);
 		if (sid_array.sids == NULL)
 			return NT_STATUS_NO_MEMORY;
 	} else {

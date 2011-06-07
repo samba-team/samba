@@ -784,7 +784,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	sam = TALLOC_ZERO_ARRAY(ctx, struct samr_SamEntry, num_entries);
+	sam = talloc_zero_array(ctx, struct samr_SamEntry, num_entries);
 	if (sam == NULL) {
 		DEBUG(0, ("make_user_sam_entry_list: TALLOC_ZERO failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -938,7 +938,7 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx,
 		return;
 	}
 
-	sam = TALLOC_ZERO_ARRAY(ctx, struct samr_SamEntry, num_sam_entries);
+	sam = talloc_zero_array(ctx, struct samr_SamEntry, num_sam_entries);
 	if (sam == NULL) {
 		return;
 	}
@@ -1120,7 +1120,7 @@ static NTSTATUS init_samr_dispinfo_1(TALLOC_CTX *ctx,
 
 	r->count = num_entries;
 
-	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryGeneral, num_entries);
+	r->entries = talloc_zero_array(ctx, struct samr_DispEntryGeneral, num_entries);
 	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1164,7 +1164,7 @@ static NTSTATUS init_samr_dispinfo_2(TALLOC_CTX *ctx,
 
 	r->count = num_entries;
 
-	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryFull, num_entries);
+	r->entries = talloc_zero_array(ctx, struct samr_DispEntryFull, num_entries);
 	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1205,7 +1205,7 @@ static NTSTATUS init_samr_dispinfo_3(TALLOC_CTX *ctx,
 
 	r->count = num_entries;
 
-	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryFullGroup, num_entries);
+	r->entries = talloc_zero_array(ctx, struct samr_DispEntryFullGroup, num_entries);
 	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1246,7 +1246,7 @@ static NTSTATUS init_samr_dispinfo_4(TALLOC_CTX *ctx,
 
 	r->count = num_entries;
 
-	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryAscii, num_entries);
+	r->entries = talloc_zero_array(ctx, struct samr_DispEntryAscii, num_entries);
 	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1282,7 +1282,7 @@ static NTSTATUS init_samr_dispinfo_5(TALLOC_CTX *ctx,
 
 	r->count = num_entries;
 
-	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryAscii, num_entries);
+	r->entries = talloc_zero_array(ctx, struct samr_DispEntryAscii, num_entries);
 	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2050,7 +2050,7 @@ static bool make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
 	*lsa_name_array_p = NULL;
 
 	if (num_names != 0) {
-		lsa_name_array = TALLOC_ZERO_ARRAY(ctx, struct lsa_String, num_names);
+		lsa_name_array = talloc_zero_array(ctx, struct lsa_String, num_names);
 		if (!lsa_name_array) {
 			return false;
 		}
@@ -2100,9 +2100,9 @@ NTSTATUS _samr_LookupRids(struct pipes_struct *p,
 	}
 
 	if (num_rids) {
-		names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
-		attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, enum lsa_SidType, num_rids);
-		wire_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
+		names = talloc_zero_array(p->mem_ctx, const char *, num_rids);
+		attrs = talloc_zero_array(p->mem_ctx, enum lsa_SidType, num_rids);
+		wire_attrs = talloc_zero_array(p->mem_ctx, uint32, num_rids);
 
 		if ((names == NULL) || (attrs == NULL) || (wire_attrs==NULL))
 			return NT_STATUS_NO_MEMORY;
@@ -2293,7 +2293,7 @@ static NTSTATUS init_samr_parameters_string(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->array = TALLOC_ZERO_ARRAY(mem_ctx, uint16_t, blob->length/2);
+	r->array = talloc_zero_array(mem_ctx, uint16_t, blob->length/2);
 	if (!r->array) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4100,7 +4100,7 @@ NTSTATUS _samr_EnumDomains(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	entry_array = TALLOC_ZERO_ARRAY(p->mem_ctx,
+	entry_array = talloc_zero_array(p->mem_ctx,
 					struct samr_SamEntry,
 					num_entries);
 	if (!entry_array) {
@@ -5369,7 +5369,7 @@ NTSTATUS _samr_GetMembersInAlias(struct pipes_struct *p,
 	}
 
 	if (num_sids) {
-		sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_SidPtr, num_sids);
+		sids = talloc_zero_array(p->mem_ctx, struct lsa_SidPtr, num_sids);
 		if (sids == NULL) {
 			TALLOC_FREE(pdb_sids);
 			return NT_STATUS_NO_MEMORY;
@@ -5439,7 +5439,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 		return status;
 
 	if (num_members) {
-		attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
+		attr=talloc_zero_array(p->mem_ctx, uint32, num_members);
 		if (attr == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
