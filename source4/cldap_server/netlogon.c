@@ -37,6 +37,7 @@
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 #include "libds/common/flag_mapping.h"
+#include "lib/util/util_net.h"
 
 /*
   fill in the cldap netlogon union for a given version
@@ -292,16 +293,17 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 						  src_address, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(client_site);
 	load_interface_list(mem_ctx, lp_ctx, &ifaces);
-	/*
-	 * TODO: the caller should pass the address which the client
-	 * used to trigger this call, as the client is able to reach
-	 * this ip.
-	 */
+
 	if (src_address) {
 		pdc_ip = iface_list_best_ip(ifaces, src_address);
 	} else {
 		pdc_ip = iface_list_first_v4(ifaces);
 	}
+	if (pdc_ip == NULL || !is_ipaddress_v4(pdc_ip)) {
+		/* this matches windows behaviour */
+		pdc_ip = "127.0.0.1";
+	}
+
 	ZERO_STRUCTP(netlogon);
 
 	/* check if either of these bits is present */
@@ -325,7 +327,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		netlogon->data.nt5_ex.server_site  = server_site;
 		netlogon->data.nt5_ex.client_site  = client_site;
 		if (version & NETLOGON_NT_VERSION_5EX_WITH_IP) {
-			/* Clearly this needs to be fixed up for IPv6 */
+			/* note that this is always a IPV4 address */
 			extra_flags = NETLOGON_NT_VERSION_5EX_WITH_IP;
 			netlogon->data.nt5_ex.sockaddr.sockaddr_family    = 2;
 			netlogon->data.nt5_ex.sockaddr.pdc_ip       = pdc_ip;
