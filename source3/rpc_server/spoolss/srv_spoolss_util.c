@@ -30,6 +30,7 @@
 #include "../libcli/security/security.h"
 #include "rpc_client/cli_winreg.h"
 #include "../libcli/registry/util_reg.h"
+#include "../lib/tsocket/tsocket.h"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -255,19 +256,26 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 			      struct policy_handle *hive_handle,
 			      struct policy_handle *key_handle)
 {
-	static struct client_address client_id;
+	struct tsocket_address *local;
 	struct dcerpc_binding_handle *binding_handle;
 	struct winreg_String wkey, wkeyclass;
 	char *keyname;
 	NTSTATUS status;
 	WERROR result = WERR_OK;
+	int rc;
 
-	strlcpy(client_id.addr, "127.0.0.1", sizeof(client_id.addr));
-	client_id.name = "127.0.0.1";
+	rc = tsocket_address_inet_from_strings(mem_ctx,
+					       "ip",
+					       "127.0.0.1",
+					       0,
+					       &local);
+	if (rc < 0) {
+		return WERR_NOMEM;
+	}
 
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_winreg,
-				       &client_id,
+				       local,
 				       session_info,
 				       msg_ctx,
 				       &binding_handle);

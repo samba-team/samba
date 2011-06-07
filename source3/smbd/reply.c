@@ -5355,7 +5355,7 @@ void reply_printqueue(struct smb_request *req)
 		status = rpc_pipe_open_interface(conn,
 						 &ndr_table_spoolss.syntax_id,
 						 conn->session_info,
-						 &conn->sconn->client_id,
+						 conn->sconn->remote_address,
 						 conn->sconn->msg_ctx,
 						 &cli);
 		if (!NT_STATUS_IS_OK(status)) {

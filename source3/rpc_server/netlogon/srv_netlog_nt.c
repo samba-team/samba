@@ -44,6 +44,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
+#include "../lib/tsocket/tsocket.h"
 
 extern userdom_struct current_user_info;
 
@@ -417,7 +418,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 
 	status = rpcint_binding_handle(p->mem_ctx,
 				       &ndr_table_lsarpc,
-				       p->client_id,
+				       p->remote_address,
 				       p->session_info,
 				       p->msg_ctx,
 				       &h);
@@ -643,13 +644,15 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	NTSTATUS result = NT_STATUS_OK;
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_binding_handle *h = NULL;
-	static struct client_address client_id;
+	struct tsocket_address *local;
 	struct policy_handle user_handle;
 	uint32_t user_rid;
 	struct dom_sid *domain_sid;
 	uint32_t acct_ctrl;
 	union samr_UserInfo *info;
 	struct auth_serversupplied_info *session_info;
+	int rc;
+
 #if 0
 
     /*
@@ -682,12 +685,19 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 
 	ZERO_STRUCT(user_handle);
 
-	strlcpy(client_id.addr, "127.0.0.1", sizeof(client_id.addr));
-	client_id.name = "127.0.0.1";
+	rc = tsocket_address_inet_from_strings(mem_ctx,
+					       "ip",
+					       "127.0.0.1",
+					       0,
+					       &local);
+	if (rc < 0) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_samr,
-				       &client_id,
+				       local,
 				       session_info,
 				       msg_ctx,
 				       &h);
@@ -1098,21 +1108,29 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	struct dcerpc_binding_handle *h = NULL;
-	static struct client_address client_id;
+	struct tsocket_address *local;
 	struct policy_handle user_handle;
 	uint32_t acct_ctrl;
 	union samr_UserInfo *info;
 	struct samr_UserInfo18 info18;
 	DATA_BLOB in,out;
+	int rc;
 
 	ZERO_STRUCT(user_handle);
 
-	strlcpy(client_id.addr, "127.0.0.1", sizeof(client_id.addr));
-	client_id.name = "127.0.0.1";
+	rc = tsocket_address_inet_from_strings(mem_ctx,
+					       "ip",
+					       "127.0.0.1",
+					       0,
+					       &local);
+	if (rc < 0) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_samr,
-				       &client_id,
+				       local,
 				       session_info,
 				       msg_ctx,
 				       &h);

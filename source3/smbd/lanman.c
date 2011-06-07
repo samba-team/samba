@@ -834,7 +834,7 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1031,7 +1031,7 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2256,7 +2256,7 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_srvsvc.syntax_id,
 					conn->session_info,
-					&conn->sconn->client_id,
+					conn->sconn->remote_address,
 					conn->sconn->msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2367,7 +2367,7 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(
 		talloc_tos(), &ndr_table_samr.syntax_id,
-		conn->session_info, &conn->sconn->client_id,
+		conn->session_info, conn->sconn->remote_address,
 		conn->sconn->msg_ctx, &samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
@@ -2573,7 +2573,7 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(
 		talloc_tos(), &ndr_table_samr.syntax_id,
-		conn->session_info, &conn->sconn->client_id,
+		conn->session_info, conn->sconn->remote_address,
 		conn->sconn->msg_ctx, &samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
@@ -2765,7 +2765,7 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(
 		talloc_tos(), &ndr_table_samr.syntax_id,
-		conn->session_info, &conn->sconn->client_id,
+		conn->session_info, conn->sconn->remote_address,
 		conn->sconn->msg_ctx, &samr_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
@@ -3031,7 +3031,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_samr.syntax_id,
 					conn->session_info,
-					&conn->sconn->client_id,
+					conn->sconn->remote_address,
 					conn->sconn->msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3282,7 +3282,7 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_samr.syntax_id,
 					conn->session_info,
-					&conn->sconn->client_id,
+					conn->sconn->remote_address,
 					conn->sconn->msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3379,7 +3379,7 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3507,7 +3507,7 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3689,7 +3689,7 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3866,7 +3866,7 @@ static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_srvsvc.syntax_id,
 					conn->session_info,
-					&conn->sconn->client_id,
+					conn->sconn->remote_address,
 					conn->sconn->msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4293,7 +4293,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 
 	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_samr.syntax_id,
 					conn->session_info,
-					&conn->sconn->client_id,
+					conn->sconn->remote_address,
 					conn->sconn->msg_ctx,
 					&cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4820,7 +4820,7 @@ static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4962,7 +4962,7 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5162,7 +5162,7 @@ static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5294,7 +5294,7 @@ static bool api_WPrintDestEnum(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5605,7 +5605,7 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_srvsvc.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &cli);
 	if (!NT_STATUS_IS_OK(status)) {

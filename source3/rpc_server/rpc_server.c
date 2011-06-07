@@ -194,7 +194,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	}
 	strlcpy(p->client_id->addr,
 		p->client_id->name, sizeof(p->client_id->addr));
-	p->client_id->name = talloc_strdup(p->client_id, p->client_id->name);
 
 	if (local_address != NULL) {
 		p->local_address = tsocket_address_copy(local_address, p);

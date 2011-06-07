@@ -31,7 +31,6 @@ bool fsp_is_np(struct files_struct *fsp);
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const struct tsocket_address *local_address,
 		 const struct tsocket_address *remote_address,
-		 struct client_address *client_id,
 		 struct auth_serversupplied_info *session_info,
 		 struct messaging_context *msg_ctx,
 		 struct fake_file_handle **phandle);

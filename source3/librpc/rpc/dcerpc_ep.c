@@ -24,6 +24,7 @@
 #include "rpc_client/cli_pipe.h"
 #include "auth.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "../lib/tsocket/tsocket.h"
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
@@ -170,14 +171,21 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 					   "none");
 
 	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
-		static struct client_address client_id;
+		struct tsocket_address *local;
+		int rc;
 
-		strlcpy(client_id.addr, "localhost", sizeof(client_id.addr));
-		client_id.name = "localhost";
+		rc = tsocket_address_inet_from_strings(tmp_ctx,
+						       "ip",
+						       "127.0.0.1",
+						       0,
+						       &local);
+		if (rc < 0) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		status = rpcint_binding_handle(tmp_ctx,
 					       &ndr_table_epmapper,
-					       &client_id,
+					       local,
 					       get_session_info_system(),
 					       server_messaging_context(),
 					       &h);

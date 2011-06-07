@@ -121,7 +121,7 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
-					      struct client_address *client_id,
+					      const struct tsocket_address *remote_address,
 					      const struct auth_serversupplied_info *session_info,
 					      struct messaging_context *msg_ctx)
 {
@@ -165,7 +165,27 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	DLIST_ADD(InternalPipes, p);
 
-	p->client_id = client_id;
+	p->remote_address = tsocket_address_copy(remote_address, p);
+	if (p->remote_address == NULL) {
+		return false;
+	}
+
+	p->client_id = talloc_zero(p, struct client_address);
+	if (p->client_id == NULL) {
+		return false;
+	}
+
+	if (tsocket_address_is_inet(p->remote_address, "ip")) {
+		p->client_id->name = tsocket_address_inet_addr_string(p->remote_address,
+								      p->client_id);
+	} else {
+		p->client_id->name = talloc_strdup(p->client_id, "");
+	}
+	if (p->client_id->name == NULL) {
+		return false;
+	}
+	strlcpy(p->client_id->addr,
+		p->client_id->name, sizeof(p->client_id->addr));
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
@@ -451,7 +471,7 @@ static const struct dcerpc_binding_handle_ops rpcint_bh_ops = {
 static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 			const struct ndr_syntax_id *abstract_syntax,
 			const struct ndr_interface_table *ndr_table,
-			struct client_address *client_id,
+			const struct tsocket_address *remote_address,
 			const struct auth_serversupplied_info *session_info,
 			struct messaging_context *msg_ctx,
 			struct dcerpc_binding_handle **binding_handle)
@@ -475,7 +495,7 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 	}
 	hs->p = make_internal_rpc_pipe_p(hs,
 					 abstract_syntax,
-					 client_id,
+					 remote_address,
 					 session_info,
 					 msg_ctx);
 	if (hs->p == NULL) {
@@ -493,7 +513,7 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  ndr_table Normally the ndr_table_<name>.
  *
- * @param[in]  client_id The info about the connected client.
+ * @param[in]  remote_address The info about the connected client.
  *
  * @param[in]  serversupplied_info The server supplied authentication function.
  *
@@ -511,7 +531,7 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
  *
  *   status = rpcint_binding_handle(tmp_ctx,
  *                                  &ndr_table_winreg,
- *                                  p->client_id,
+ *                                  p->remote_address,
  *                                  p->session_info,
  *                                  p->msg_ctx
  *                                  &winreg_binding);
@@ -519,12 +539,12 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
-			       struct client_address *client_id,
+			       const struct tsocket_address *remote_address,
 			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       struct dcerpc_binding_handle **binding_handle)
 {
-	return rpcint_binding_handle_ex(mem_ctx, NULL, ndr_table, client_id,
+	return rpcint_binding_handle_ex(mem_ctx, NULL, ndr_table, remote_address,
 					session_info, msg_ctx, binding_handle);
 }
 
@@ -544,7 +564,7 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  serversupplied_info The server supplied authentication function.
  *
- * @param[in]  client_id The client address information.
+ * @param[in]  remote_address The client address information.
  *
  * @param[in]  msg_ctx  The messaging context to use.
  *
@@ -556,7 +576,7 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 static NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
 				const struct auth_serversupplied_info *serversupplied_info,
-				struct client_address *client_id,
+				const struct tsocket_address *remote_address,
 				struct messaging_context *msg_ctx,
 				struct rpc_pipe_client **presult)
 {
@@ -571,11 +591,21 @@ static NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
 
-	if (client_id == NULL) {
-		static struct client_address unknown;
-		strlcpy(unknown.addr, "<UNKNOWN>", sizeof(unknown.addr));
-		unknown.name = "<UNKNOWN>";
-		client_id = &unknown;
+	if (remote_address == NULL) {
+		struct tsocket_address *local;
+		int rc;
+
+		rc = tsocket_address_inet_from_strings(mem_ctx,
+						       "ip",
+						       "127.0.0.1",
+						       0,
+						       &local);
+		if (rc < 0) {
+			TALLOC_FREE(result);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		remote_address = local;
 	}
 
 	result->max_xmit_frag = -1;
@@ -584,7 +614,7 @@ static NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	status = rpcint_binding_handle_ex(result,
 					  abstract_syntax,
 					  NULL,
-					  client_id,
+					  remote_address,
 					  serversupplied_info,
 					  msg_ctx,
 					  &result->binding_handle);
@@ -849,7 +879,7 @@ done:
  *
  * @param[in]  serversupplied_info The server supplied authentication function.
  *
- * @param[in]  client_id The client address information.
+ * @param[in]  remote_address The client address information.
  *
  * @param[in]  msg_ctx  The messaging context to use.
  *
@@ -865,7 +895,7 @@ done:
  *   status = rpc_pipe_open_interface(tmp_ctx,
  *                                    &ndr_table_winreg.syntax_id,
  *                                    p->session_info,
- *                                    client_id,
+ *                                    remote_address,
  *                                    &winreg_pipe);
  * @endcode
  */
@@ -873,7 +903,7 @@ done:
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 const struct ndr_syntax_id *syntax,
 				 const struct auth_serversupplied_info *session_info,
-				 struct client_address *client_id,
+				 const struct tsocket_address *remote_address,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe)
 {
@@ -913,7 +943,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 	if (strcasecmp_m(server_type, "embedded") == 0) {
 		status = rpc_pipe_open_internal(tmp_ctx,
 						syntax, session_info,
-						client_id, msg_ctx,
+						remote_address, msg_ctx,
 						&cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;

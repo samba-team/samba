@@ -127,7 +127,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	status = rpc_pipe_open_interface(fsp->conn,
 					 &ndr_table_spoolss.syntax_id,
 					 fsp->conn->session_info,
-					 &fsp->conn->sconn->client_id,
+					 fsp->conn->sconn->remote_address,
 					 fsp->conn->sconn->msg_ctx,
 					 &fsp->conn->spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -311,7 +311,7 @@ void print_spool_terminate(struct connection_struct *conn,
 	status = rpc_pipe_open_interface(conn,
 					 &ndr_table_spoolss.syntax_id,
 					 conn->session_info,
-					 &conn->sconn->client_id,
+					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,
 					 &conn->spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {

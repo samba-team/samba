@@ -72,7 +72,6 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 	status = np_open(fsp, name,
 			 conn->sconn->local_address,
 			 conn->sconn->remote_address,
-			 &conn->sconn->client_id,
 			 conn->session_info,
 			 conn->sconn->msg_ctx,
 			 &fsp->fake_file_handle);

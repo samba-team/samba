@@ -35,7 +35,7 @@ struct np_proxy_state {
 
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
-					      struct client_address *client_id,
+					      const struct tsocket_address *remote_address,
 					      const struct auth_serversupplied_info *session_info,
 					      struct messaging_context *msg_ctx);
 struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
@@ -45,14 +45,14 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				const struct auth_serversupplied_info *session_info);
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
-			       struct client_address *client_id,
+			       const struct tsocket_address *remote_address,
 			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       struct dcerpc_binding_handle **binding_handle);
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 const struct ndr_syntax_id *syntax,
 				 const struct auth_serversupplied_info *session_info,
-				 struct client_address *client_id,
+				 const struct tsocket_address *remote_address,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe);
 

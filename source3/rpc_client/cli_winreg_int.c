@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "rpc_client/cli_winreg_int.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "../lib/tsocket/tsocket.h"
 
 /**
  * Split path into hive name and subkeyname
@@ -95,18 +96,25 @@ static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
 				    struct policy_handle *key_handle,
 				    WERROR *pwerr)
 {
-	static struct client_address client_id;
+	struct tsocket_address *local;
 	struct dcerpc_binding_handle *binding_handle;
 	struct winreg_String wkey, wkeyclass;
 	NTSTATUS status;
 	WERROR result = WERR_OK;
+	int rc;
 
-	strlcpy(client_id.addr, "127.0.0.1", sizeof(client_id.addr));
-	client_id.name = "127.0.0.1";
+	rc = tsocket_address_inet_from_strings(mem_ctx,
+					       "ip",
+					       "127.0.0.1",
+					       0,
+					       &local);
+	if (rc < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_winreg,
-				       &client_id,
+				       local,
 				       session_info,
 				       msg_ctx,
 				       &binding_handle);
