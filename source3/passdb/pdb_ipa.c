@@ -693,7 +693,7 @@ static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
 	for (i = 0; i < *num_domains; i++) {
 		struct trustdom_info *dom_info;
 
-		dom_info = TALLOC_P(*domains, struct trustdom_info);
+		dom_info = talloc(*domains, struct trustdom_info);
 		if (dom_info == NULL) {
 			DEBUG(1, ("talloc failed\n"));
 			return NT_STATUS_NO_MEMORY;

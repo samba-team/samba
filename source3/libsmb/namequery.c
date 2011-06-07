@@ -2479,7 +2479,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	*return_ss_arr = NULL;
 
 	if (is_ipaddress(name)) {
-		*return_ss_arr = TALLOC_P(ctx, struct sockaddr_storage);
+		*return_ss_arr = talloc(ctx, struct sockaddr_storage);
 		if (!*return_ss_arr) {
 			return NT_STATUS_NO_MEMORY;
 		}

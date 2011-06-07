@@ -524,7 +524,7 @@ bool cups_cache_reload(struct tevent_context *ev,
 	struct cups_async_cb_args *cb_args;
 	int *p_pipe_fd;
 
-	cb_args = TALLOC_P(NULL, struct cups_async_cb_args);
+	cb_args = talloc(NULL, struct cups_async_cb_args);
 	if (cb_args == NULL) {
 		return false;
 	}

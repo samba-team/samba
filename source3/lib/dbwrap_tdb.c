@@ -347,7 +347,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	result->private_data = db_tdb = TALLOC_P(result, struct db_tdb_ctx);
+	result->private_data = db_tdb = talloc(result, struct db_tdb_ctx);
 	if (db_tdb == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;

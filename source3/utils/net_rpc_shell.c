@@ -154,7 +154,7 @@ static bool net_sh_process(struct net_context *c,
 		return true;
 	}
 
-	new_ctx = TALLOC_P(ctx, struct rpc_sh_ctx);
+	new_ctx = talloc(ctx, struct rpc_sh_ctx);
 	if (new_ctx == NULL) {
 		d_fprintf(stderr, _("talloc failed\n"));
 		return false;
@@ -234,7 +234,7 @@ int net_rpc_shell(struct net_context *c, int argc, const char **argv)
 		libnetapi_set_use_kerberos(c->netapi_ctx);
 	}
 
-	ctx = TALLOC_P(NULL, struct rpc_sh_ctx);
+	ctx = talloc(NULL, struct rpc_sh_ctx);
 	if (ctx == NULL) {
 		d_fprintf(stderr, _("talloc failed\n"));
 		return -1;

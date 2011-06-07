@@ -305,7 +305,7 @@ static void send_spoolss_notify2_msg(struct tevent_context *ev,
 
 	/* Store the message on the pending queue. */
 
-	pnqueue = TALLOC_P(send_ctx, struct notify_queue);
+	pnqueue = talloc(send_ctx, struct notify_queue);
 	if (!pnqueue) {
 		DEBUG(0,("send_spoolss_notify2_msg: Out of memory.\n"));
 		return;
@@ -313,7 +313,7 @@ static void send_spoolss_notify2_msg(struct tevent_context *ev,
 
 	/* allocate a new msg structure and copy the fields */
 	
-	if ( !(pnqueue->msg = TALLOC_P(send_ctx, SPOOLSS_NOTIFY_MSG)) ) {
+	if ( !(pnqueue->msg = talloc(send_ctx, SPOOLSS_NOTIFY_MSG)) ) {
 		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%lu] failed!\n", 
 			(unsigned long)sizeof(SPOOLSS_NOTIFY_MSG)));
 		return;
@@ -357,7 +357,7 @@ static void send_notify_field_values(struct tevent_context *ev,
 	if (!create_send_ctx())
 		return;
 
-	msg = TALLOC_P(send_ctx, struct spoolss_notify_msg);
+	msg = talloc(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
 
@@ -388,7 +388,7 @@ static void send_notify_field_buffer(struct tevent_context *ev,
 	if (!create_send_ctx())
 		return;
 
-	msg = TALLOC_P(send_ctx, struct spoolss_notify_msg);
+	msg = talloc(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
 

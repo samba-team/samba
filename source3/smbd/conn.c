@@ -134,7 +134,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 	if (sconn->using_smb2) {
 		/* SMB2 */
 		if (!(conn=TALLOC_ZERO_P(NULL, connection_struct)) ||
-		    !(conn->params = TALLOC_P(conn, struct share_params))) {
+		    !(conn->params = talloc(conn, struct share_params))) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));
 			TALLOC_FREE(conn);
 			return NULL;
@@ -189,7 +189,7 @@ find_again:
 	}
 
 	if (!(conn=TALLOC_ZERO_P(NULL, connection_struct)) ||
-	    !(conn->params = TALLOC_P(conn, struct share_params))) {
+	    !(conn->params = talloc(conn, struct share_params))) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
 		TALLOC_FREE(conn);
 		return NULL;

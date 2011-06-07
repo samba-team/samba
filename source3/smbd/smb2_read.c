@@ -308,7 +308,7 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	/* Make a copy of state attached to the smb2req. Attach
 	   the destructor here as this will trigger the sendfile
 	   call when the request is destroyed. */
-	state_copy = TALLOC_P(smb2req, struct smbd_smb2_read_state);
+	state_copy = talloc(smb2req, struct smbd_smb2_read_state);
 	if (!state_copy) {
 		return NT_STATUS_NO_MEMORY;
 	}

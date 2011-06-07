@@ -596,7 +596,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		return NT_STATUS_OK;
 	}
 
-	entry = TALLOC_P(NULL, struct WINBINDD_CCACHE_ENTRY);
+	entry = talloc(NULL, struct WINBINDD_CCACHE_ENTRY);
 	if (!entry) {
 		return NT_STATUS_NO_MEMORY;
 	}

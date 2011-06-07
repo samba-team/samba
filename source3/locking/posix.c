@@ -892,7 +892,7 @@ BECOMES.....
         | l_curr|         | l_new   |
         +-------+         +---------+
 **********************************************/
-				struct lock_list *l_new = TALLOC_P(ctx, struct lock_list);
+				struct lock_list *l_new = talloc(ctx, struct lock_list);
 
 				if(l_new == NULL) {
 					DEBUG(0,("posix_lock_list: talloc fail.\n"));
@@ -1000,7 +1000,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 		return False;
 	}
 
-	if ((ll = TALLOC_P(l_ctx, struct lock_list)) == NULL) {
+	if ((ll = talloc(l_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("set_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
 		talloc_destroy(l_ctx);
 		return False;
@@ -1119,7 +1119,7 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		return False;
 	}
 
-	if ((ul = TALLOC_P(ul_ctx, struct lock_list)) == NULL) {
+	if ((ul = talloc(ul_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("release_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
 		talloc_destroy(ul_ctx);
 		return False;
@@ -1281,7 +1281,7 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 		return False;
 	}
 
-	if ((ul = TALLOC_P(ul_ctx, struct lock_list)) == NULL) {
+	if ((ul = talloc(ul_ctx, struct lock_list)) == NULL) {
 		DEBUG(0,("release_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
 		talloc_destroy(ul_ctx);
 		return False;

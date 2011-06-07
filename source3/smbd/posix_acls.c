@@ -4750,7 +4750,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 		return NULL;
 	}
 
-	if (!(conn->params = TALLOC_P(conn, struct share_params))) {
+	if (!(conn->params = talloc(conn, struct share_params))) {
 		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
 		TALLOC_FREE(conn);
 		return NULL;

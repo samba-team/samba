@@ -252,7 +252,7 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	if ( (schema = TALLOC_P(mem_ctx, struct posix_schema)) == NULL ) {
+	if ( (schema = talloc(mem_ctx, struct posix_schema)) == NULL ) {
 		TALLOC_FREE( ctx );
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}

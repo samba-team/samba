@@ -80,12 +80,12 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 	SMB_ASSERT(ctx->locked_record == NULL);
 
  again:
-	if (!(result = TALLOC_P(mem_ctx, struct db_record))) {
+	if (!(result = talloc(mem_ctx, struct db_record))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
-	if (!(file = TALLOC_P(result, struct db_locked_file))) {
+	if (!(file = talloc(result, struct db_locked_file))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
@@ -353,7 +353,7 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!(ctx = TALLOC_P(result, struct db_file_ctx))) {
+	if (!(ctx = talloc(result, struct db_file_ctx))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;

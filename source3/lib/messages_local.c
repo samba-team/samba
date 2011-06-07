@@ -87,7 +87,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	struct messaging_backend *result;
 	struct messaging_tdb_context *ctx;
 
-	if (!(result = TALLOC_P(mem_ctx, struct messaging_backend))) {
+	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

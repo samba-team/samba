@@ -891,7 +891,7 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 	struct idle_event *result;
 	struct timeval now = timeval_current();
 
-	result = TALLOC_P(mem_ctx, struct idle_event);
+	result = talloc(mem_ctx, struct idle_event);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;

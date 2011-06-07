@@ -692,7 +692,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			bool *ppath_contains_wcard)
 {
 	NTSTATUS status;
-	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
+	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 
 	if (!pdp) {
 		return NT_STATUS_NO_MEMORY;
@@ -825,7 +825,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	bool dummy;
-	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
+	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 	char *oldpath;
 
 	if (!pdp) {
@@ -1318,7 +1318,7 @@ bool create_junction(TALLOC_CTX *ctx,
 {
 	int snum;
 	bool dummy;
-	struct dfs_path *pdp = TALLOC_P(ctx,struct dfs_path);
+	struct dfs_path *pdp = talloc(ctx,struct dfs_path);
 	NTSTATUS status;
 
 	if (!pdp) {

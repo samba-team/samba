@@ -105,12 +105,12 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	struct messaging_ctdbd_context *ctx;
 	NTSTATUS status;
 
-	if (!(result = TALLOC_P(mem_ctx, struct messaging_backend))) {
+	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!(ctx = TALLOC_P(result, struct messaging_ctdbd_context))) {
+	if (!(ctx = talloc(result, struct messaging_ctdbd_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;

@@ -304,7 +304,7 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 		cluster_fatal("got invalid msg length");
 	}
 
-	if (!(result = TALLOC_P(mem_ctx, struct messaging_rec))) {
+	if (!(result = talloc(mem_ctx, struct messaging_rec))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
@@ -433,7 +433,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			goto next_pkt;
 		}
 
-		msg_state = TALLOC_P(NULL, struct deferred_msg_state);
+		msg_state = talloc(NULL, struct deferred_msg_state);
 		if (msg_state == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(hdr);

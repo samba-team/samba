@@ -973,7 +973,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	struct file_id tmp;
 	TDB_DATA key = locking_key(&id, &tmp);
 
-	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
+	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
@@ -1004,7 +1004,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	TDB_DATA key = locking_key(&id, &tmp);
 	TDB_DATA data;
 
-	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
+	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
@@ -1483,7 +1483,7 @@ static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct
 {
 	struct security_unix_token *cpy;
 
-	cpy = TALLOC_P(ctx, struct security_unix_token);
+	cpy = talloc(ctx, struct security_unix_token);
 	if (!cpy) {
 		return NULL;
 	}

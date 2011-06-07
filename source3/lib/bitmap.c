@@ -29,7 +29,7 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 {
 	struct bitmap *bm;
 
-	bm = TALLOC_P(mem_ctx, struct bitmap);
+	bm = talloc(mem_ctx, struct bitmap);
 
 	if (!bm) return NULL;
 

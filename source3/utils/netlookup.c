@@ -78,7 +78,7 @@ static struct con_struct *create_cs(struct net_context *c,
 		return cs;
 	}
 
-	cs = TALLOC_P(ctx, struct con_struct);
+	cs = talloc(ctx, struct con_struct);
 	if (!cs) {
 		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;

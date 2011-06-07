@@ -141,7 +141,7 @@ static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
 		case 2:
 			i2 = (struct SHARE_INFO_2 *)buffer;
 
-			s2 = TALLOC_P(mem_ctx, struct srvsvc_NetShareInfo2);
+			s2 = talloc(mem_ctx, struct srvsvc_NetShareInfo2);
 			NT_STATUS_HAVE_NO_MEMORY(s2);
 
 			s2->name		= i2->shi2_netname;
@@ -159,7 +159,7 @@ static NTSTATUS map_SHARE_INFO_buffer_to_srvsvc_share_info(TALLOC_CTX *mem_ctx,
 		case 1004:
 			i1004 = (struct SHARE_INFO_1004 *)buffer;
 
-			s1004 = TALLOC_P(mem_ctx, struct srvsvc_NetShareInfo1004);
+			s1004 = talloc(mem_ctx, struct srvsvc_NetShareInfo1004);
 			NT_STATUS_HAVE_NO_MEMORY(s1004);
 
 			s1004->comment		= i1004->shi1004_remark;

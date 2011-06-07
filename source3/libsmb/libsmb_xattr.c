@@ -561,7 +561,7 @@ dos_attr_query(SMBCCTX *context,
 	SMB_INO_T inode = 0;
         DOS_ATTR_DESC *ret;
 
-        ret = TALLOC_P(ctx, DOS_ATTR_DESC);
+        ret = talloc(ctx, DOS_ATTR_DESC);
         if (!ret) {
                 errno = ENOMEM;
                 return NULL;

@@ -474,7 +474,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return;
 	}
 
-	handle = TALLOC_P(mem_ctx, LDAPMessage *);
+	handle = talloc(mem_ctx, LDAPMessage *);
 	SMB_ASSERT(handle != NULL);
 
 	*handle = result;
@@ -494,7 +494,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return;
 	}
 
-	handle = TALLOC_P(mem_ctx, LDAPMod **);
+	handle = talloc(mem_ctx, LDAPMod **);
 	SMB_ASSERT(handle != NULL);
 
 	*handle = mod;

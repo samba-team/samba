@@ -249,7 +249,7 @@ static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 		fam_connection_initialized = True;
 	}
 
-	if (!(watch = TALLOC_P(ctx, struct fam_watch_context))) {
+	if (!(watch = talloc(ctx, struct fam_watch_context))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

@@ -266,7 +266,7 @@ struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!(result = TALLOC_P(mem_ctx, struct share_params))) {
+	if (!(result = talloc(mem_ctx, struct share_params))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}

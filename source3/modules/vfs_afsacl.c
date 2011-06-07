@@ -89,7 +89,7 @@ static void free_afs_acl(struct afs_acl *acl)
 
 static struct afs_ace *clone_afs_ace(TALLOC_CTX *mem_ctx, struct afs_ace *ace)
 {
-	struct afs_ace *result = TALLOC_P(mem_ctx, struct afs_ace);
+	struct afs_ace *result = talloc(mem_ctx, struct afs_ace);
 
 	if (result == NULL)
 		return NULL;
@@ -167,7 +167,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = TALLOC_P(mem_ctx, struct afs_ace);
+	result = talloc(mem_ctx, struct afs_ace);
 
 	if (result == NULL) {
 		DEBUG(0, ("Could not talloc AFS ace\n"));

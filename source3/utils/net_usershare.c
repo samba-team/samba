@@ -278,7 +278,7 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 		}
 
 		/* (Finally) - add to list. */
-		fl = TALLOC_P(ctx, struct file_list);
+		fl = talloc(ctx, struct file_list);
 		if (!fl) {
 			sys_closedir(dp);
 			return -1;

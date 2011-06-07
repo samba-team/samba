@@ -1823,7 +1823,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 					files_struct *fsp, bool read_only)
 {
 	TDB_DATA key, data;
-	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
+	struct byte_range_lock *br_lck = talloc(mem_ctx, struct byte_range_lock);
 	bool do_read_only = read_only;
 
 	if (br_lck == NULL) {

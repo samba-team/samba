@@ -4527,7 +4527,7 @@ struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const cha
 			DEBUG(10,("wcache_tdc_fetch_domain: Found domain %s\n",
 				  name));
 
-			d = TALLOC_P( ctx, struct winbindd_tdc_domain );
+			d = talloc( ctx, struct winbindd_tdc_domain );
 			if ( !d )
 				break;			
 
@@ -4577,7 +4577,7 @@ struct winbindd_tdc_domain*
 				   dom_list[i].domain_name,
 				   sid_string_dbg(sid)));
 
-			d = TALLOC_P(ctx, struct winbindd_tdc_domain);
+			d = talloc(ctx, struct winbindd_tdc_domain);
 			if (!d)
 				break;
 

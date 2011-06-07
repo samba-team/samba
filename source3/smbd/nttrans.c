@@ -3020,7 +3020,7 @@ void reply_nttrans(struct smb_request *req)
 		return;
 	}
 
-	if ((state = TALLOC_P(conn, struct trans_state)) == NULL) {
+	if ((state = talloc(conn, struct trans_state)) == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBnttrans);
 		return;

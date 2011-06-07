@@ -520,7 +520,7 @@ struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
 {
 	struct sys_notify_context *ctx;
 
-	if (!(ctx = TALLOC_P(mem_ctx, struct sys_notify_context))) {
+	if (!(ctx = talloc(mem_ctx, struct sys_notify_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}

@@ -466,7 +466,7 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   uint32_t type,
 				   const uint8_t *data_p, size_t size)
 {
-	struct regval_blob *regval = TALLOC_P(ctx, struct regval_blob);
+	struct regval_blob *regval = talloc(ctx, struct regval_blob);
 
 	if (regval == NULL) {
 		return NULL;
@@ -505,7 +505,7 @@ int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint32_t type,
 	/* allocate a slot in the array of pointers */
 
 	if (  ctr->num_values == 0 ) {
-		ctr->values = TALLOC_P( ctr, struct regval_blob *);
+		ctr->values = talloc( ctr, struct regval_blob *);
 	} else {
 		ctr->values = talloc_realloc(ctr, ctr->values,
 						   struct regval_blob *,

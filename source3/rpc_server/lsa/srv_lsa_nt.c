@@ -2412,14 +2412,14 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 		domname = p->session_info->info3->base.domain.string;
 	}
 
-	account_name = TALLOC_P(p->mem_ctx, struct lsa_String);
+	account_name = talloc(p->mem_ctx, struct lsa_String);
 	if (!account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	init_lsa_String(account_name, username);
 
 	if (r->out.authority_name) {
-		authority_name = TALLOC_P(p->mem_ctx, struct lsa_String);
+		authority_name = talloc(p->mem_ctx, struct lsa_String);
 		if (!authority_name) {
 			return NT_STATUS_NO_MEMORY;
 		}

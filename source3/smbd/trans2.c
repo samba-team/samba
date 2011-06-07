@@ -316,7 +316,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 		    || samba_private_attr_name(names[i]))
 			continue;
 
-		listp = TALLOC_P(mem_ctx, struct ea_list);
+		listp = talloc(mem_ctx, struct ea_list);
 		if (listp == NULL) {
 			return NULL;
 		}
@@ -8672,7 +8672,7 @@ void reply_trans2(struct smb_request *req)
 		}
 	}
 
-	if ((state = TALLOC_P(conn, struct trans_state)) == NULL) {
+	if ((state = talloc(conn, struct trans_state)) == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBtrans2);

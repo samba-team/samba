@@ -149,7 +149,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 
 	/* Prepare data */
 
-	if (!(mem_ctx = TALLOC_P( NULL, int))) {
+	if (!(mem_ctx = talloc( NULL, int))) {
 		DEBUG(0,("netsamlogon_cache_store: talloc() failed!\n"));
 		return false;
 	}

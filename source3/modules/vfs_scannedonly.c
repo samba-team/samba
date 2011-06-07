@@ -516,7 +516,7 @@ static SMB_STRUCT_DIR *scannedonly_opendir(vfs_handle_struct * handle,
 		return NULL;
 	}
 
-	sDIR = TALLOC_P(NULL, struct scannedonly_DIR);
+	sDIR = talloc(NULL, struct scannedonly_DIR);
 	if (fname[0] != '/') {
 		sDIR->base = construct_full_path(sDIR,handle, fname, true);
 	} else {
@@ -544,7 +544,7 @@ static SMB_STRUCT_DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
 
 	fname = (const char *)fsp->fsp_name->base_name;
 
-	sDIR = TALLOC_P(NULL, struct scannedonly_DIR);
+	sDIR = talloc(NULL, struct scannedonly_DIR);
 	if (fname[0] != '/') {
 		sDIR->base = construct_full_path(sDIR,handle, fname, true);
 	} else {

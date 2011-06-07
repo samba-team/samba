@@ -1139,7 +1139,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 	case 102: {
 		struct srvsvc_NetSrvInfo102 *info102;
 
-		info102 = TALLOC_P(p->mem_ctx, struct srvsvc_NetSrvInfo102);
+		info102 = talloc(p->mem_ctx, struct srvsvc_NetSrvInfo102);
 		if (!info102) {
 			return WERR_NOMEM;
 		}
@@ -1165,7 +1165,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 	case 101: {
 		struct srvsvc_NetSrvInfo101 *info101;
 
-		info101 = TALLOC_P(p->mem_ctx, struct srvsvc_NetSrvInfo101);
+		info101 = talloc(p->mem_ctx, struct srvsvc_NetSrvInfo101);
 		if (!info101) {
 			return WERR_NOMEM;
 		}
@@ -1184,7 +1184,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 	case 100: {
 		struct srvsvc_NetSrvInfo100 *info100;
 
-		info100 = TALLOC_P(p->mem_ctx, struct srvsvc_NetSrvInfo100);
+		info100 = talloc(p->mem_ctx, struct srvsvc_NetSrvInfo100);
 		if (!info100) {
 			return WERR_NOMEM;
 		}
@@ -1454,47 +1454,47 @@ WERROR _srvsvc_NetShareGetInfo(struct pipes_struct *p,
 
 	switch (r->in.level) {
 		case 0:
-			info->info0 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo0);
+			info->info0 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo0);
 			W_ERROR_HAVE_NO_MEMORY(info->info0);
 			init_srv_share_info_0(p, info->info0, snum);
 			break;
 		case 1:
-			info->info1 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo1);
+			info->info1 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo1);
 			W_ERROR_HAVE_NO_MEMORY(info->info1);
 			init_srv_share_info_1(p, info->info1, snum);
 			break;
 		case 2:
-			info->info2 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo2);
+			info->info2 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo2);
 			W_ERROR_HAVE_NO_MEMORY(info->info2);
 			init_srv_share_info_2(p, info->info2, snum);
 			break;
 		case 501:
-			info->info501 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo501);
+			info->info501 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo501);
 			W_ERROR_HAVE_NO_MEMORY(info->info501);
 			init_srv_share_info_501(p, info->info501, snum);
 			break;
 		case 502:
-			info->info502 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo502);
+			info->info502 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo502);
 			W_ERROR_HAVE_NO_MEMORY(info->info502);
 			init_srv_share_info_502(p, info->info502, snum);
 			break;
 		case 1004:
-			info->info1004 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo1004);
+			info->info1004 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo1004);
 			W_ERROR_HAVE_NO_MEMORY(info->info1004);
 			init_srv_share_info_1004(p, info->info1004, snum);
 			break;
 		case 1005:
-			info->info1005 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo1005);
+			info->info1005 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo1005);
 			W_ERROR_HAVE_NO_MEMORY(info->info1005);
 			init_srv_share_info_1005(p, info->info1005, snum);
 			break;
 		case 1006:
-			info->info1006 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo1006);
+			info->info1006 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo1006);
 			W_ERROR_HAVE_NO_MEMORY(info->info1006);
 			init_srv_share_info_1006(p, info->info1006, snum);
 			break;
 		case 1007:
-			info->info1007 = TALLOC_P(p->mem_ctx, struct srvsvc_NetShareInfo1007);
+			info->info1007 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo1007);
 			W_ERROR_HAVE_NO_MEMORY(info->info1007);
 			init_srv_share_info_1007(p, info->info1007, snum);
 			break;

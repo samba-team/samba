@@ -420,7 +420,7 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 		return 0;
 	}
 
-	if (!(dom_info = TALLOC_P(state->domains, struct trustdom_info))) {
+	if (!(dom_info = talloc(state->domains, struct trustdom_info))) {
 		DEBUG(0, ("talloc failed\n"));
 		return 0;
 	}

@@ -511,7 +511,7 @@ bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum p
 	if (!g_sid)
 		return False;
 
-	if ( !(sampass->group_sid = TALLOC_P( sampass, struct dom_sid )) ) {
+	if ( !(sampass->group_sid = talloc( sampass, struct dom_sid )) ) {
 		return False;
 	}
 
