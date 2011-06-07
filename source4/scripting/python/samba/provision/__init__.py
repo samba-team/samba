@@ -1465,6 +1465,25 @@ def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
     set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp)
 
 
+def interface_ips_v4(lp):
+    '''return only IPv4 IPs'''
+    ips = samba.interface_ips(lp, False)
+    ret = []
+    for i in ips:
+        if i.find(':') == -1:
+            ret.append(i)
+    return ret
+
+def interface_ips_v6(lp, linklocal=False):
+    '''return only IPv6 IPs'''
+    ips = samba.interface_ips(lp, False)
+    ret = []
+    for i in ips:
+        if i.find(':') != -1 and (linklocal or i.find('%') == -1):
+            ret.append(i)
+    return ret
+
+
 def provision(logger, session_info, credentials, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
@@ -1565,15 +1584,23 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     if hostip is None:
         logger.info("Looking up IPv4 addresses")
-        hostips = samba.interface_ips(lp, False)
+        hostips = interface_ips_v4(lp)
         if len(hostips) == 0:
             logger.warning("No external IPv4 address has been found. Using loopback.")
             hostip = '127.0.0.1'
         else:
             hostip = hostips[0]
             if len(hostips) > 1:
-                logger.warning("More than one IPv4 address found. Using %s.",
+                logger.warning("More than one IPv4 address found. Using %s",
                     hostip)
+
+    if hostip6 is None:
+        logger.info("Looking up IPv6 addresses")
+        hostips = interface_ips_v6(lp, linklocal=False)
+        if hostips:
+            hostip6 = hostips[0]
+        if len(hostips) > 1:
+            logger.warning("More than one IPv6 address found. Using %s", hostip6)
 
     if serverrole is None:
         serverrole = lp.get("server role")
