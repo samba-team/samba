@@ -694,6 +694,24 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 	}
 
 	if (state->inbuf == NULL) {
+		if (min_wct != 0) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (pinbuf) {
+			*pinbuf = NULL;
+		}
+		if (pwct) {
+			*pwct = 0;
+		}
+		if (pvwv) {
+			*pvwv = NULL;
+		}
+		if (pnum_bytes) {
+			*pnum_bytes = 0;
+		}
+		if (pbytes) {
+			*pbytes = NULL;
+		}
 		/* This was a request without a reply */
 		return NT_STATUS_OK;
 	}
