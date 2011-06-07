@@ -294,8 +294,38 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 
 	if (cred->ccache_obtained >= cred->ccache_threshold && 
 	    cred->ccache_obtained > CRED_UNINITIALISED) {
-		*ccc = cred->ccache;
-		return 0;
+		time_t lifetime;
+		bool expired = false;
+		ret = krb5_cc_get_lifetime(cred->ccache->smb_krb5_context->krb5_context, 
+					   cred->ccache->ccache, &lifetime);
+		if (ret == KRB5_CC_END) {
+			/* If we have a particular ccache set, without
+			 * an initial ticket, then assume there is a
+			 * good reason */
+		} else if (ret == 0) {
+			if (lifetime == 0) {
+				DEBUG(3, ("Ticket in credentials cache for %s expired, will refresh\n",
+					  cli_credentials_get_principal(cred, cred)));
+				expired = true;
+			} else if (lifetime < 300) {
+				DEBUG(3, ("Ticket in credentials cache for %s will shortly expire (%u secs), will refresh\n", 
+					  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
+				expired = true;
+			}
+		} else {
+			(*error_string) = talloc_asprintf(cred, "failed to get ccache lifetime: %s\n",
+							  smb_get_krb5_error_message(cred->ccache->smb_krb5_context->krb5_context,
+										     ret, cred));
+			return ret;
+		}
+
+		DEBUG(5, ("Ticket in credentials cache for %s will expire in %u secs\n", 
+			  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
+		
+		if (!expired) {
+			*ccc = cred->ccache;
+			return 0;
+		}
 	}
 	if (cli_credentials_is_anonymous(cred)) {
 		(*error_string) = "Cannot get anonymous kerberos credentials";
@@ -422,8 +452,31 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 
 	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold && 
 	    cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
-		*_gcc = cred->client_gss_creds;
-		return 0;
+		bool expired = false;
+		OM_uint32 lifetime = 0;
+		gss_cred_usage_t usage = 0;
+		maj_stat = gss_inquire_cred(&min_stat, cred->client_gss_creds->creds, 
+					    NULL, &lifetime, &usage, NULL);
+		if (maj_stat == GSS_S_CREDENTIALS_EXPIRED) {
+			DEBUG(3, ("Credentials for %s expired, must refresh credentials cache\n", cli_credentials_get_principal(cred, cred)));
+			expired = true;
+		} else if (maj_stat == GSS_S_COMPLETE && lifetime < 300) {
+			DEBUG(3, ("Credentials for %s will expire shortly (%u sec), must refresh credentials cache\n", cli_credentials_get_principal(cred, cred), lifetime));
+			expired = true;
+		} else if (maj_stat != GSS_S_COMPLETE) {
+			*error_string = talloc_asprintf(cred, "inquiry of credential lifefime via GSSAPI gss_inquire_cred failed: %s\n",
+							gssapi_error_string(cred, maj_stat, min_stat, NULL));
+			return EINVAL;
+		}
+		if (expired) {
+			cli_credentials_unconditionally_invalidate_client_gss_creds(cred);
+		} else {
+			DEBUG(5, ("GSSAPI credentials for %s will expire in %u secs\n", 
+				  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
+		
+			*_gcc = cred->client_gss_creds;
+			return 0;
+		}
 	}
 
 	ret = cli_credentials_get_ccache(cred, event_ctx, lp_ctx,
