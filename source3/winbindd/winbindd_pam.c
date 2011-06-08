@@ -37,6 +37,7 @@
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "passdb/machine_sid.h"
 #include "auth.h"
+#include "../lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1115,10 +1116,20 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 					  struct netr_SamInfo3 **pinfo3)
 {
 	struct auth_usersupplied_info *user_info = NULL;
+	struct tsocket_address *local;
 	NTSTATUS status;
+	int rc;
 
+	rc = tsocket_address_inet_from_strings(mem_ctx,
+					       "ip",
+					       "127.0.0.1",
+					       0,
+					       &local);
+	if (rc < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	status = make_user_info(&user_info, user, user, domain, domain,
-				lp_netbios_name(), lm_resp, nt_resp, NULL, NULL,
+				lp_netbios_name(), local, lm_resp, nt_resp, NULL, NULL,
 				NULL, AUTH_PASSWORD_RESPONSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));

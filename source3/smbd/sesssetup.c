@@ -140,7 +140,8 @@ static void reply_sesssetup_blob(struct smb_request *req,
  Do a 'guest' logon, getting back the
 ****************************************************************************/
 
-static NTSTATUS check_guest_password(struct auth_serversupplied_info **server_info)
+static NTSTATUS check_guest_password(const struct tsocket_address *remote_address,
+				     struct auth_serversupplied_info **server_info)
 {
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info = NULL;
@@ -155,7 +156,7 @@ static NTSTATUS check_guest_password(struct auth_serversupplied_info **server_in
 		return nt_status;
 	}
 
-	if (!make_user_info_guest(&user_info)) {
+	if (!make_user_info_guest(remote_address, &user_info)) {
 		TALLOC_FREE(auth_context);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1577,7 +1578,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (!*user) {
 
-		nt_status = check_guest_password(&server_info);
+		nt_status = check_guest_password(sconn->remote_address, &server_info);
 
 	} else if (doencrypt) {
 		struct auth_context *negprot_auth_context = NULL;
@@ -1592,6 +1593,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 		nt_status = make_user_info_for_reply_enc(&user_info, user,
 						domain,
+						sconn->remote_address,
 						lm_resp, nt_resp);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			nt_status = negprot_auth_context->check_ntlm_password(
@@ -1612,7 +1614,9 @@ void reply_sesssetup_and_X(struct smb_request *req)
 					plaintext_auth_context, chal);
 
 			if (!make_user_info_for_reply(&user_info,
-						      user, domain, chal,
+						      user, domain,
+						      sconn->remote_address,
+						      chal,
 						      plaintext_password)) {
 				nt_status = NT_STATUS_NO_MEMORY;
 			}

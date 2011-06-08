@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "auth.h"
 #include "librpc/gen_ndr/samr.h"
+#include "../lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -46,6 +47,7 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
 			const char *client_domain,
 			const char *domain,
 			const char *workstation_name,
+			const struct tsocket_address *remote_address,
 			const DATA_BLOB *lm_pwd,
 			const DATA_BLOB *nt_pwd,
 			const struct samr_Password *lm_interactive_pwd,
@@ -83,6 +85,9 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
 
 	user_info->workstation_name = talloc_strdup(user_info, workstation_name);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info->workstation_name, user_info);
+
+	user_info->remote_host = tsocket_address_copy(remote_address, user_info);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(user_info->remote_host, user_info);
 
 	DEBUG(5,("making blobs for %s's user_info struct\n", internal_username));
 

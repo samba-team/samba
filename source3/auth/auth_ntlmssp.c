@@ -25,7 +25,6 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/netlogon.h"
-#include "smbd/smbd.h"
 #include "../lib/tsocket/tsocket.h"
 
 NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
@@ -122,10 +121,11 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 
 	lp_load(get_dyn_CONFIGFILE(), false, false, true, true);
 
-	nt_status = make_user_info_map(&user_info, 
+	nt_status = make_user_info_map(&user_info,
 				       auth_ntlmssp_state->ntlmssp_state->user, 
 				       auth_ntlmssp_state->ntlmssp_state->domain, 
 				       auth_ntlmssp_state->ntlmssp_state->client.netbios_name,
+				       auth_ntlmssp_state->remote_address,
 	                               auth_ntlmssp_state->ntlmssp_state->lm_resp.data ? &auth_ntlmssp_state->ntlmssp_state->lm_resp : NULL, 
 	                               auth_ntlmssp_state->ntlmssp_state->nt_resp.data ? &auth_ntlmssp_state->ntlmssp_state->nt_resp : NULL, 
 				       NULL, NULL, NULL,

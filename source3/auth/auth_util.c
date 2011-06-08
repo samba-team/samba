@@ -89,6 +89,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			    const char *smb_name,
 			    const char *client_domain,
 			    const char *workstation_name,
+			    const struct tsocket_address *remote_address,
 			    DATA_BLOB *lm_pwd,
 			    DATA_BLOB *nt_pwd,
 			    const struct samr_Password *lm_interactive_pwd,
@@ -137,7 +138,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 
 	result = make_user_info(user_info, smb_name, internal_username,
 			      client_domain, domain, workstation_name,
-			      lm_pwd, nt_pwd,
+			      remote_address, lm_pwd, nt_pwd,
 			      lm_interactive_pwd, nt_interactive_pwd,
 			      plaintext, password_state);
 	if (NT_STATUS_IS_OK(result)) {
@@ -158,6 +159,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *workstation_name,
+				     const struct tsocket_address *remote_address,
 				     uint32 logon_parameters,
 				     const uchar *lm_network_pwd,
 				     int lm_pwd_len,
@@ -172,6 +174,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 	status = make_user_info_map(user_info,
 				    smb_name, client_domain, 
 				    workstation_name,
+				    remote_address,
 				    lm_pwd_len ? &lm_blob : NULL, 
 				    nt_pwd_len ? &nt_blob : NULL,
 				    NULL, NULL, NULL,
@@ -196,6 +199,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *workstation_name,
+					 const struct tsocket_address *remote_address,
 					 uint32 logon_parameters,
 					 const uchar chal[8], 
 					 const uchar lm_interactive_pwd[16], 
@@ -271,6 +275,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 		nt_status = make_user_info_map(
 			user_info, 
 			smb_name, client_domain, workstation_name,
+			remote_address,
 			lm_interactive_pwd ? &local_lm_blob : NULL,
 			nt_interactive_pwd ? &local_nt_blob : NULL,
 			lm_interactive_pwd ? &lm_pwd : NULL,
@@ -296,6 +301,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 			      const char *smb_name, 
 			      const char *client_domain,
+			      const struct tsocket_address *remote_address,
 			      const uint8 chal[8],
 			      DATA_BLOB plaintext_password)
 {
@@ -342,6 +348,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 	ret = make_user_info_map(
 		user_info, smb_name, client_domain, 
 		get_remote_machine_name(),
+		remote_address,
 		local_lm_blob.data ? &local_lm_blob : NULL,
 		local_nt_blob.data ? &local_nt_blob : NULL,
 		NULL, NULL,
@@ -363,12 +370,14 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 
 NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
                                       const char *smb_name,
-                                      const char *client_domain, 
+                                      const char *client_domain,
+				      const struct tsocket_address *remote_address,
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
 	return make_user_info_map(user_info, smb_name, 
 				  client_domain, 
-				  get_remote_machine_name(), 
+				  get_remote_machine_name(),
+				  remote_address,
 				  lm_resp.data && (lm_resp.length > 0) ? &lm_resp : NULL,
 				  nt_resp.data && (nt_resp.length > 0) ? &nt_resp : NULL,
 				  NULL, NULL, NULL,
@@ -379,7 +388,8 @@ NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
  Create a guest user_info blob, for anonymous authenticaion.
 ****************************************************************************/
 
-bool make_user_info_guest(struct auth_usersupplied_info **user_info)
+bool make_user_info_guest(const struct tsocket_address *remote_address,
+			  struct auth_usersupplied_info **user_info)
 {
 	NTSTATUS nt_status;
 
@@ -387,6 +397,7 @@ bool make_user_info_guest(struct auth_usersupplied_info **user_info)
 				   "","", 
 				   "","", 
 				   "", 
+				   remote_address,
 				   NULL, NULL, 
 				   NULL, NULL, 
 				   NULL,

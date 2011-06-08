@@ -495,7 +495,9 @@ static char *validate_group(struct smbd_server_connection *sconn,
 				if (user_ok(user, snum) &&
 				    password_ok(actx, enc,
 						get_session_workgroup(sconn),
-						user,password)) {
+						user,
+						sconn->remote_address,
+						password)) {
 					endnetgrent();
 					return(user);
 				}
@@ -561,7 +563,9 @@ static char *validate_group(struct smbd_server_connection *sconn,
 				if (user_ok(member,snum) &&
 				    password_ok(actx, enc,
 						get_session_workgroup(sconn),
-						member,password)) {
+						member,
+						sconn->remote_address,
+						password)) {
 					char *name = talloc_strdup(talloc_tos(),
 								member);
 					SAFE_FREE(member_list);
@@ -642,7 +646,9 @@ bool authorise_login(struct smbd_server_connection *sconn,
 
 			if (password_ok(actx, enc,
 					get_session_workgroup(sconn),
-					user2,password)) {
+					user2,
+					sconn->remote_address,
+					password)) {
 				ok = True;
 				strlcpy(user,user2,sizeof(fstring));
 				DEBUG(3,("authorise_login: ACCEPTED: session "
@@ -693,7 +699,9 @@ bool authorise_login(struct smbd_server_connection *sconn,
 				if (user_ok(user2,snum) &&
 				    password_ok(actx, enc,
 						get_session_workgroup(sconn),
-						user2,password)) {
+						user2,
+						sconn->remote_address,
+						password)) {
 					ok = True;
 					strlcpy(user,user2,sizeof(fstring));
 					DEBUG(3,("authorise_login: ACCEPTED: "

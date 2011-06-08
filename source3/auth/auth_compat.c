@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "auth.h"
+#include "../lib/tsocket/tsocket.h"
 
 extern struct auth_context *negprot_global_auth_context;
 extern bool global_encrypted_passwords_negotiated;
@@ -36,6 +37,7 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 
 NTSTATUS check_plaintext_password(const char *smb_name,
+				  const struct tsocket_address *remote_address,
 				  DATA_BLOB plaintext_blob,
 				  struct auth_serversupplied_info **server_info)
 {
@@ -54,7 +56,9 @@ NTSTATUS check_plaintext_password(const char *smb_name,
 						   chal);
 
 	if (!make_user_info_for_reply(&user_info, 
-				      smb_name, lp_workgroup(), chal,
+				      smb_name, lp_workgroup(),
+				      remote_address,
+				      chal,
 				      plaintext_blob)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -70,6 +74,7 @@ NTSTATUS check_plaintext_password(const char *smb_name,
 static NTSTATUS pass_check_smb(struct auth_context *actx,
 			       const char *smb_name,
 			       const char *domain, 
+			       const struct tsocket_address *remote_address,
 			       DATA_BLOB lm_pwd,
 			       DATA_BLOB nt_pwd)
 
@@ -82,6 +87,7 @@ static NTSTATUS pass_check_smb(struct auth_context *actx,
 	}
 	make_user_info_for_reply_enc(&user_info, smb_name,
 				     domain,
+				     remote_address,
 				     lm_pwd,
 				     nt_pwd);
 	nt_status = actx->check_ntlm_password(actx, user_info, &server_info);
@@ -97,7 +103,9 @@ return True if the password is correct, False otherwise
 
 bool password_ok(struct auth_context *actx, bool global_encrypted,
 		 const char *session_workgroup,
-		 const char *smb_name, DATA_BLOB password_blob)
+		 const char *smb_name,
+		 const struct tsocket_address *remote_address,
+		 DATA_BLOB password_blob)
 {
 
 	DATA_BLOB null_password = data_blob_null;
@@ -110,24 +118,47 @@ bool password_ok(struct auth_context *actx, bool global_encrypted,
 		 * Vista sends NTLMv2 here - we need to try the client given workgroup.
 		 */
 		if (session_workgroup) {
-			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, null_password, password_blob))) {
+			if (NT_STATUS_IS_OK(pass_check_smb(actx,
+							   smb_name,
+							   session_workgroup,
+							   remote_address,
+							   null_password,
+							   password_blob))) {
 				return True;
 			}
-			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, password_blob, null_password))) {
+			if (NT_STATUS_IS_OK(pass_check_smb(actx,
+							   smb_name,
+							   session_workgroup,
+							   remote_address,
+							   password_blob,
+							   null_password))) {
 				return True;
 			}
 		}
 
-		if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, lp_workgroup(), null_password, password_blob))) {
+		if (NT_STATUS_IS_OK(pass_check_smb(actx,
+						   smb_name,
+						   lp_workgroup(),
+						   remote_address,
+						   null_password,
+						   password_blob))) {
 			return True;
 		}
 
-		if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, lp_workgroup(), password_blob, null_password))) {
+		if (NT_STATUS_IS_OK(pass_check_smb(actx,
+						   smb_name,
+						   lp_workgroup(),
+						   remote_address,
+						   password_blob,
+						   null_password))) {
 			return True;
 		}
 	} else {
 		struct auth_serversupplied_info *server_info = NULL;
-		NTSTATUS nt_status = check_plaintext_password(smb_name, password_blob, &server_info);
+		NTSTATUS nt_status = check_plaintext_password(smb_name,
+							      remote_address,
+							      password_blob,
+							      &server_info);
 		TALLOC_FREE(server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			return True;

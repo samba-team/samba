@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "smbd/globals.h"
+#include "../lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -284,11 +284,19 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		unix_username = (*server_info)->unix_name;
 		if (!(*server_info)->guest) {
+			char *rhost;
+			int rc;
+
+			rhost = tsocket_address_inet_addr_string(user_info->remote_host,
+								 talloc_tos());
+			if (rhost == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
 			/* We might not be root if we are an RPC call */
 			become_root();
-			nt_status = smb_pam_accountcheck(
-				unix_username,
-				smbd_server_conn->client_id.name);
+			nt_status = smb_pam_accountcheck(unix_username,
+							 rhost);
 			unbecome_root();
 
 			if (NT_STATUS_IS_OK(nt_status)) {
