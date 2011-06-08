@@ -171,9 +171,9 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	struct iovec *iov = state->iov;
 	uint8_t *pad = state->pad;
 	uint16_t *vwv = state->vwv;
-	uint16_t param_offset;
-	uint16_t this_param = 0;
-	uint16_t this_data = 0;
+	uint32_t param_offset;
+	uint32_t this_param = 0;
+	uint32_t this_data = 0;
 	uint32_t useable_space;
 	uint8_t cmd;
 
