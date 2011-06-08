@@ -1966,41 +1966,40 @@ bool procid_is_me(const struct server_id *pid)
 struct server_id interpret_pid(const char *pid_string)
 {
 	struct server_id result;
-	int pid;
-	unsigned int vnn;
-	if (sscanf(pid_string, "%u:%d", &vnn, &pid) == 2) {
+	unsigned long long pid;
+	unsigned int vnn, task_id = 0;
+
+	ZERO_STRUCT(result);
+
+	/* We accept either the 2 or 3 componet form for backwards compatability in the smbstatus command line tool */
+	if (sscanf(pid_string, "%u:%llu:%u", &vnn, &pid, &task_id) >= 2) {
 		result.vnn = vnn;
 		result.pid = pid;
-	}
-	else if (sscanf(pid_string, "%d", &pid) == 1) {
+		result.task_id = task_id;
+	} else if (sscanf(pid_string, "%d", &pid) == 1) {
 		result.vnn = get_my_vnn();
 		result.pid = pid;
 	}
 	else {
 		result.vnn = NONCLUSTER_VNN;
-		result.pid = -1;
+		result.pid = (uint64_t)-1;
 	}
-	/* Assigning to result.pid may have overflowed
-	   Map negative pid to -1: i.e. error */
-	if (result.pid < 0) {
-		result.pid = -1;
-	}
-	result.unique_id = 0;
 	return result;
 }
 
 char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
 {
-	if (pid->vnn == NONCLUSTER_VNN) {
+	if (pid->vnn == NONCLUSTER_VNN && pid->task_id == 0) {
 		return talloc_asprintf(mem_ctx,
-				"%d",
-				(int)pid->pid);
+				"%llu",
+				(unsigned long long)pid->pid);
 	}
 	else {
 		return talloc_asprintf(mem_ctx,
-					"%u:%d",
-					(unsigned)pid->vnn,
-					(int)pid->pid);
+				       "%u:%llu:%u",
+				       (unsigned)pid->vnn,
+				       (unsigned long long)pid->pid,
+				       (unsigned)pid->task_id);
 	}
 }
 
@@ -2011,7 +2010,7 @@ char *procid_str_static(const struct server_id *pid)
 
 bool procid_valid(const struct server_id *pid)
 {
-	return (pid->pid != -1);
+	return (pid->pid != (uint64_t)-1);
 }
 
 bool procid_is_local(const struct server_id *pid)
