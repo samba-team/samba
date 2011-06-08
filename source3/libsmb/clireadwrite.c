@@ -28,6 +28,11 @@
 ****************************************************************************/
 static size_t cli_read_max_bufsize(struct cli_state *cli)
 {
+	size_t data_offset = smb_size - 4;
+	size_t wct = 12;
+
+	size_t useable_space;
+
 	if (!client_is_signing_on(cli) && !cli_encryption_on(cli)
 	    && (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
 		return CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
@@ -37,7 +42,13 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 			? CLI_SAMBA_MAX_LARGE_READX_SIZE
 			: CLI_WINDOWS_MAX_LARGE_READX_SIZE;
 	}
-	return (cli->max_xmit - (smb_size+32)) & ~1023;
+
+	data_offset += wct * sizeof(uint16_t);
+	data_offset += 1; /* pad */
+
+	useable_space = cli->max_xmit - data_offset;
+
+	return useable_space;
 }
 
 /****************************************************************************
