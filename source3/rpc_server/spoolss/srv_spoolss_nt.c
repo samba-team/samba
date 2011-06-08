@@ -8831,6 +8831,10 @@ WERROR _spoolss_EnumPrintProcDataTypes(struct pipes_struct *p,
 		return WERR_UNKNOWN_LEVEL;
 	}
 
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
 						     spoolss_EnumPrintProcDataTypes,
 						     *r->out.info, r->in.level,
