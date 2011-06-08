@@ -1022,10 +1022,6 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	*user_sids = NULL;
 	*p_num_groups = 0;
 
-	if (!winbindd_use_cache()) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
 	info3 = netsamlogon_cache_get(mem_ctx, user_sid);
 
 	if (info3 == NULL) {
