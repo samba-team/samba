@@ -510,6 +510,9 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 			info->role = SAMR_ROLE_DOMAIN_BDC;
 		}
 		break;
+	case ROLE_DOMAIN_PDC:
+		info->role = SAMR_ROLE_DOMAIN_PDC;
+		break;
 	case ROLE_DOMAIN_MEMBER:
 		info->role = SAMR_ROLE_DOMAIN_MEMBER;
 		break;
@@ -612,6 +615,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
 		} else {
 			info->role = SAMR_ROLE_DOMAIN_BDC;
 		}
+		break;
+	case ROLE_DOMAIN_PDC:
+		info->role = SAMR_ROLE_DOMAIN_PDC;
 		break;
 	case ROLE_DOMAIN_MEMBER:
 		info->role = SAMR_ROLE_DOMAIN_MEMBER;
