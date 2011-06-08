@@ -716,7 +716,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	if (state->chained_requests == NULL) {
 		state->inbuf = talloc_move(state, &inbuf);
 		talloc_set_destructor(req, NULL);
-		cli_smb_req_destructor(req);
+		cli_smb_req_unset_pending(req);
 		state->chain_num = 0;
 		state->chain_length = 1;
 		tevent_req_done(req);
@@ -760,7 +760,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	while (talloc_array_length(cli->pending) > 0) {
 		req = cli->pending[0];
 		talloc_set_destructor(req, NULL);
-		cli_smb_req_destructor(req);
+		cli_smb_req_unset_pending(req);
 		tevent_req_nterror(req, status);
 	}
 }
