@@ -239,6 +239,14 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 	int num_pending = talloc_array_length(cli->pending);
 	int i;
 
+	if (state->mid != 0) {
+		/*
+		 * This is a [nt]trans[2] request which waits
+		 * for more than one reply.
+		 */
+		return;
+	}
+
 	if (num_pending == 1) {
 		/*
 		 * The pending read_smb tevent_req is a child of
@@ -281,6 +289,13 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 
 static int cli_smb_req_destructor(struct tevent_req *req)
 {
+	struct cli_smb_state *state = tevent_req_data(
+		req, struct cli_smb_state);
+	/*
+	 * Make sure we really remove it from
+	 * the pending array on destruction.
+	 */
+	state->mid = 0;
 	cli_smb_req_unset_pending(req);
 	return 0;
 }
