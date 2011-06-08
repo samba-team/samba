@@ -1419,6 +1419,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 {
 	static const char * const attrs[] = { "nCName", "objectClass",
 					      "systemFlags",
+					      "isDeleted",
 					      "isCriticalSystemObject", NULL };
 	struct ldb_context *ldb;
 	struct ldb_request *search_req;
@@ -1450,7 +1451,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, req->op.del.dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
-				   attrs, NULL,
+				   attrs, req->controls,
 				   ac, get_search_callback,
 				   req);
 	LDB_REQ_SET_LOCATION(search_req);
@@ -1503,6 +1504,17 @@ static int objectclass_do_delete(struct oc_context *ac)
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 		talloc_free(dn);
+	}
+
+	/* Only trusted request from system account are allowed to delete
+	 * deleted objects.
+	 */
+	if (ldb_msg_check_string_attribute(ac->search_res->message, "isDeleted", "TRUE") &&
+			(ldb_req_is_untrusted(ac->req) ||
+				!dsdb_module_am_system(ac->module))) {
+		ldb_asprintf_errstring(ldb, "Delete of '%s' failed",
+						ldb_dn_get_linearized(ac->req->op.del.dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	/* crossRef objects regarding config, schema and default domain NCs */
