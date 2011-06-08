@@ -706,7 +706,6 @@ static bool handle_idmap_backend(int snum, const char *pszParmValue, char **ptr)
 static bool handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_debug_list( int snum, const char *pszParmValue, char **ptr );
-static bool handle_workgroup( int snum, const char *pszParmValue, char **ptr );
 static bool handle_realm( int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
@@ -1013,7 +1012,7 @@ static struct parm_struct parm_table[] = {
 		.type		= P_USTRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szWorkgroup,
-		.special	= handle_workgroup,
+		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
@@ -5213,8 +5212,7 @@ static void init_globals(bool reinit_globals)
 	set_global_myname(myhostname());
 	string_set(&Globals.szNetbiosName,global_myname());
 
-	set_global_myworkgroup(WORKGROUP);
-	string_set(&Globals.szWorkgroup, lp_workgroup());
+	string_set(&Globals.szWorkgroup, WORKGROUP);
 
 	string_set(&Globals.szPasswdProgram, "");
 	string_set(&Globals.szLockDir, get_dyn_LOCKDIR());
@@ -5619,6 +5617,7 @@ FN_GLOBAL_STRING(lp_passwd_program, &Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_CONST_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_CONST_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
+FN_GLOBAL_CONST_STRING(lp_workgroup, &Globals.szWorkgroup)
 FN_GLOBAL_CONST_STRING(lp_realm, &Globals.szRealmUpper)
 FN_GLOBAL_CONST_STRING(lp_dnsdomain, &Globals.szDnsDomain)
 FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
@@ -7583,18 +7582,6 @@ static bool handle_dos_charset(int snum, const char *pszParmValue, char **ptr)
 		init_iconv();
 	}
 	return true;
-}
-
-
-
-static bool handle_workgroup(int snum, const char *pszParmValue, char **ptr)
-{
-	bool ret;
-
-	ret = set_global_myworkgroup(pszParmValue);
-	string_set(&Globals.szWorkgroup,lp_workgroup());
-
-	return ret;
 }
 
 static bool handle_realm(int snum, const char *pszParmValue, char **ptr)

@@ -497,7 +497,6 @@ void gfree_netbios_names(void);
 bool set_global_myname(const char *myname);
 const char *global_myname(void);
 bool set_global_myworkgroup(const char *myworkgroup);
-const char *lp_workgroup(void);
 const char *get_global_sam_name(void);
 
 /* The following definitions come from lib/util.c  */
@@ -1199,6 +1198,7 @@ char *lp_passwd_program(void);
 char *lp_passwd_chat(void);
 const char *lp_passwordserver(void);
 const char *lp_name_resolve_order(void);
+const char *lp_workgroup(void);
 const char *lp_realm(void);
 const char *lp_dnsdomain(void);
 const char *lp_afs_username_map(void);

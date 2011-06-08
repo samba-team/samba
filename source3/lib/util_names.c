@@ -207,25 +207,6 @@ const char *global_myname(void)
 	return smb_myname;
 }
 
-/***********************************************************************
- Allocate and set myworkgroup. Ensure upper case.
-***********************************************************************/
-
-bool set_global_myworkgroup(const char *myworkgroup)
-{
-	SAFE_FREE(smb_myworkgroup);
-	smb_myworkgroup = SMB_STRDUP(myworkgroup);
-	if (!smb_myworkgroup)
-		return False;
-	strupper_m(smb_myworkgroup);
-	return True;
-}
-
-const char *lp_workgroup(void)
-{
-	return smb_myworkgroup;
-}
-
 /******************************************************************
  get the default domain/netbios name to be used when dealing
  with our passdb list of accounts

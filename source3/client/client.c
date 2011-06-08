@@ -5068,7 +5068,6 @@ static int do_message_op(struct user_auth_info *a_info)
 	poptContext pc;
 	char *p;
 	int rc = 0;
-	fstring new_workgroup;
 	bool tar_opt = false;
 	bool service_opt = false;
 	struct poptOption long_options[] = {
@@ -5098,10 +5097,9 @@ static int do_message_op(struct user_auth_info *a_info)
 		exit(ENOMEM);
 	}
 
-	/* initialize the workgroup name so we can determine whether or
+	/* initialize the netbios name so we can determine whether or
 	   not it was set by a command line option */
 
-	set_global_myworkgroup( "" );
 	set_global_myname( "" );
 
         /* set default debug level to 1 regardless of what smb.conf sets */
@@ -5249,13 +5247,6 @@ static int do_message_op(struct user_auth_info *a_info)
 					       poptGetArg(pc));
 	}
 
-	/* save the workgroup...
-
-	   FIXME!! do we need to do this for other options as well
-	   (or maybe a generic way to keep lp_load() from overwriting
-	   everything)?  */
-
-	fstrcpy( new_workgroup, lp_workgroup() );
 	calling_name = talloc_strdup(frame, global_myname() );
 	if (!calling_name) {
 		exit(ENOMEM);
@@ -5292,10 +5283,6 @@ static int do_message_op(struct user_auth_info *a_info)
 			--len;
 			service[len] = '\0';
 		}
-	}
-
-	if ( strlen(new_workgroup) != 0 ) {
-		set_global_myworkgroup( new_workgroup );
 	}
 
 	if ( strlen(calling_name) != 0 ) {

@@ -975,21 +975,13 @@ out_free:
 		goto done;
 	}
 
-	/* save the workgroup...
-
-	   FIXME!! do we need to do this for other options as well
-	   (or maybe a generic way to keep lp_load() from overwriting
-	   everything)?  */
-
-	fstrcpy( new_workgroup, lp_workgroup() );
-
 	/* Load smb.conf file */
 
 	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True))
 		fprintf(stderr, "Can't load %s\n", get_dyn_CONFIGFILE());
 
 	if ( strlen(new_workgroup) != 0 )
-		set_global_myworkgroup( new_workgroup );
+		lp_set_cmdline("workgroup", new_workgroup );
 
 	/*
 	 * Get password
