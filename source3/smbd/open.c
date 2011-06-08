@@ -314,10 +314,9 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 
 	/* Ensure we're pointing at the same place. */
 	if (smb_fname_cwd->st.st_ex_dev != psbuf->st_ex_dev ||
-	    smb_fname_cwd->st.st_ex_ino != psbuf->st_ex_ino ||
-	    smb_fname_cwd->st.st_ex_mode != psbuf->st_ex_mode ) {
+	    smb_fname_cwd->st.st_ex_ino != psbuf->st_ex_ino) {
 		DEBUG(0,("change_dir_owner_to_parent: "
-			 "device/inode/mode on directory %s changed. "
+			 "device/inode on directory %s changed. "
 			 "Refusing to chown !\n", fname ));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto chdir;
