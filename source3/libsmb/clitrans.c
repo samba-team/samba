@@ -56,7 +56,25 @@ struct cli_trans_state {
 	uint8_t pad[4];
 	uint8_t zero_pad[4];
 	uint16_t vwv[32];
+
+	struct tevent_req *primary_subreq;
 };
+
+static void cli_trans_cleanup_primary(struct cli_trans_state *state)
+{
+	if (state->primary_subreq) {
+		cli_smb_req_set_mid(state->primary_subreq, 0);
+		cli_smb_req_unset_pending(state->primary_subreq);
+		cli_state_seqnum_remove(state->cli, state->mid);
+		TALLOC_FREE(state->primary_subreq);
+	}
+}
+
+static int cli_trans_state_destructor(struct cli_trans_state *state)
+{
+	cli_trans_cleanup_primary(state);
+	return 0;
+}
 
 static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 			       uint8_t wct, uint16_t *vwv,
@@ -456,10 +474,15 @@ struct tevent_req *cli_trans_send(
 	 * (including correct SMB signing).
 	 */
 	state->mid = cli_smb_req_mid(subreq);
+	cli_smb_req_set_mid(subreq, state->mid);
 	cli_state_seqnum_persistent(cli, state->mid);
+	state->primary_subreq = subreq;
+	talloc_set_destructor(state, cli_trans_state_destructor);
 
 	return req;
 }
+
+static void cli_trans_done2(struct tevent_req *subreq);
 
 static void cli_trans_done(struct tevent_req *subreq)
 {
@@ -518,8 +541,6 @@ static void cli_trans_done(struct tevent_req *subreq)
 		int iov_count;
 		struct tevent_req *subreq2;
 
-		TALLOC_FREE(subreq);
-
 		cli_trans_format(state, &wct, &iov_count);
 
 		subreq2 = cli_smb_req_create(state, state->ev, state->cli,
@@ -561,23 +582,72 @@ static void cli_trans_done(struct tevent_req *subreq)
 	if ((state->rparam.total == state->rparam.received)
 	    && (state->rdata.total == state->rdata.received)) {
 		state->recv_flags2 = SVAL(inbuf, smb_flg2);
-		TALLOC_FREE(subreq);
-		cli_state_seqnum_remove(state->cli, state->mid);
+		cli_trans_cleanup_primary(state);
 		tevent_req_done(req);
 		return;
 	}
 
 	TALLOC_FREE(inbuf);
 
-	if (!cli_smb_req_set_pending(subreq)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
 	return;
 
  fail:
-	cli_state_seqnum_remove(state->cli, state->mid);
-	TALLOC_FREE(subreq);
+	cli_trans_cleanup_primary(state);
+	tevent_req_nterror(req, status);
+}
+
+static void cli_trans_done2(struct tevent_req *subreq2)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq2, struct tevent_req);
+	struct cli_trans_state *state = tevent_req_data(
+		req, struct cli_trans_state);
+	NTSTATUS status;
+	bool sent_all;
+	uint8_t wct;
+
+	status = cli_smb_recv(subreq2, state, NULL, 0, &wct, NULL,
+			      NULL, NULL);
+	TALLOC_FREE(subreq2);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (wct != 0) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto fail;
+	}
+
+	sent_all = ((state->param_sent == state->num_param)
+		    && (state->data_sent == state->num_data));
+
+	if (!sent_all) {
+		int iov_count;
+
+		cli_trans_format(state, &wct, &iov_count);
+
+		subreq2 = cli_smb_req_create(state, state->ev, state->cli,
+					     state->cmd + 1, 0, wct, state->vwv,
+					     iov_count, state->iov);
+		if (tevent_req_nomem(subreq2, req)) {
+			return;
+		}
+		cli_smb_req_set_mid(subreq2, state->mid);
+
+		status = cli_smb_req_send(subreq2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		tevent_req_set_callback(subreq2, cli_trans_done2, req);
+		return;
+	}
+
+	return;
+
+ fail:
+	cli_trans_cleanup_primary(state);
 	tevent_req_nterror(req, status);
 }
 
@@ -593,6 +663,8 @@ NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct cli_trans_state *state = tevent_req_data(
 		req, struct cli_trans_state);
 	NTSTATUS status;
+
+	cli_trans_cleanup_primary(state);
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
