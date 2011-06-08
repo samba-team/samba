@@ -1058,7 +1058,7 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	if (owner == NULL) {
 		struct interface *ifaces;
 		load_interface_list(nbtsrv->task, nbtsrv->task->lp_ctx, &ifaces);
-		owner = iface_list_n_ip(ifaces, 0);
+		owner = iface_list_first_v4(ifaces);
 	}
 
 	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, nbtsrv->task->event_ctx, 

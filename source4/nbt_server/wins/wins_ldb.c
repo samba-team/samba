@@ -93,7 +93,7 @@ static int wins_ldb_init(struct ldb_module *module)
 	if (!owner) {
 		struct interface *ifaces;
 		load_interface_list(module, lp_ctx, &ifaces);
-		owner = iface_list_n_ip(ifaces, 0);
+		owner = iface_list_first_v4(ifaces);
 		if (!owner) {
 			owner = "0.0.0.0";
 		}
