@@ -40,7 +40,6 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	struct auth_user_info_dc *user_info_dc;
 	struct auth4_context *auth4_context;
 	struct loadparm_context *lp_ctx;
-	const char *config_file;
 
 	lp_ctx = loadparm_init_s3(frame, loadparm_s3_context());
 	if (lp_ctx == NULL) {
