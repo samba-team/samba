@@ -516,25 +516,27 @@ static void cli_trans_done(struct tevent_req *subreq)
 
 	if (!sent_all) {
 		int iov_count;
+		struct tevent_req *subreq2;
 
 		TALLOC_FREE(subreq);
 
 		cli_trans_format(state, &wct, &iov_count);
 
-		subreq = cli_smb_req_create(state, state->ev, state->cli,
-					    state->cmd + 1, 0, wct, state->vwv,
-					    iov_count, state->iov);
-		if (tevent_req_nomem(subreq, req)) {
+		subreq2 = cli_smb_req_create(state, state->ev, state->cli,
+					     state->cmd + 1, 0, wct, state->vwv,
+					     iov_count, state->iov);
+		if (tevent_req_nomem(subreq2, req)) {
 			return;
 		}
-		cli_smb_req_set_mid(subreq, state->mid);
+		cli_smb_req_set_mid(subreq2, state->mid);
 
-		status = cli_smb_req_send(subreq);
+		status = cli_smb_req_send(subreq2);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
-		tevent_req_set_callback(subreq, cli_trans_done, req);
+		tevent_req_set_callback(subreq2, cli_trans_done2, req);
+
 		return;
 	}
 
