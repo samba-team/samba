@@ -487,7 +487,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 
 const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	const char **auth_methods = NULL;
+	char **auth_methods = NULL;
 
 	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -501,7 +501,7 @@ const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *
 		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain winbind", NULL);
 		break;
 	}
-	return auth_methods;
+	return (const char **) auth_methods;
 }
 
 /***************************************************************************
