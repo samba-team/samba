@@ -37,6 +37,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
+#include "lib/socket/netif.h"
 
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -1233,6 +1234,7 @@ static NTSTATUS dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state
 static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonGetCapabilities *r)
 {
+
 	/* we don't support AES yet */
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -1710,6 +1712,8 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	NTSTATUS status;
 	const char *dc_name = NULL;
 	const char *domain_name = NULL;
+	struct interface *ifaces;
+	const char *pdc_ip;
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -1815,10 +1819,15 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	W_ERROR_HAVE_NO_MEMORY(info);
 	info->dc_unc           = talloc_asprintf(mem_ctx, "\\\\%s", dc_name);
 	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
-	info->dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
-					   response.data.nt5_ex.sockaddr.pdc_ip);
+
+	load_interface_list(mem_ctx, lp_ctx, &ifaces);
+	pdc_ip = iface_list_best_ip(ifaces, addr);
+	if (pdc_ip == NULL) {
+		pdc_ip = "127.0.0.1";
+	}
+	info->dc_address = talloc_asprintf(mem_ctx, "\\\\%s", pdc_ip);
 	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
-	info->dc_address_type  = DS_ADDRESS_TYPE_INET; /* TODO: make this dynamic? for ipv6 */
+	info->dc_address_type  = DS_ADDRESS_TYPE_INET;
 	info->domain_guid      = response.data.nt5_ex.domain_uuid;
 	info->domain_name      = domain_name;
 	info->forest_name      = response.data.nt5_ex.forest;
