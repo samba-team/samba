@@ -436,7 +436,7 @@ CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
 			 ../lib/crypto/sha256.o ../lib/crypto/hmacsha256.o \
 			 ../lib/crypto/aes.o ../lib/crypto/rijndael-alg-fst.o
 
-LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
+LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/ctdb_packet.o lib/ctdbd_conn.o \
 	  ../lib/socket/interfaces.o lib/memcache.o \
@@ -576,7 +576,7 @@ LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
 CLDAP_OBJ = libads/cldap.o \
 	../libcli/cldap/cldap.o \
 	../lib/util/idtree.o \
-	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ) $(LIBTSOCKET_OBJ)
+	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ)
 
 TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
 
@@ -1038,7 +1038,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
 		rpc_client/init_lsa.o
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
-		$(LIBSAMBA_OBJ) $(LIBTSOCKET_OBJ) \
+		$(LIBSAMBA_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
 		$(LIBCLI_LDAP_NDR_OBJ) \
 		$(DRSUAPI_OBJ) $(LIBNDR_GEN_OBJ0) \
@@ -1327,7 +1327,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(DRSUAPI_OBJ) $(LIBNDR_GEN_OBJ0) \
-		$(LIBTSOCKET_OBJ) $(PAM_ERRORS_OBJ)
+		$(PAM_ERRORS_OBJ)
 
 IDMAP_RW_OBJ = winbindd/idmap_rw.o
 
@@ -1505,7 +1505,7 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		../lib/util/asn1.o ../libcli/auth/spnego_parse.o libsmb/clikrb5.o ../libcli/auth/krb5_wrap.o libads/kerberos.o \
 		libsmb/samlogon_cache.o \
 		$(LIBADS_SERVER_OBJ) \
-		$(PASSDB_OBJ) $(LIBTSOCKET_OBJ) $(GROUPDB_OBJ) \
+		$(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNMB_OBJ) \
 		$(WBCOMMON_OBJ) \
 		$(LIBCLI_LDAP_NDR_OBJ) \

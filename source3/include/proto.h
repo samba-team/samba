@@ -788,6 +788,13 @@ NTSTATUS open_socket_out_defer_recv(struct tevent_req *req, int *pfd);
 int open_udp_socket(const char *host, int port);
 const char *get_peer_name(int fd, bool force_lookup);
 const char *get_peer_addr(int fd, char *addr, size_t addr_len);
+
+struct tsocket_address;
+
+int get_remote_hostname(const struct tsocket_address *remote_address,
+			char **name,
+			TALLOC_CTX *mem_ctx);
+
 int create_pipe_sock(const char *socket_dir,
 		     const char *socket_name,
 		     mode_t dir_perms);

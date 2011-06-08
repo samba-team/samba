@@ -27,6 +27,7 @@
 #include "lib/socket/interfaces.h"
 #include "../lib/util/tevent_unix.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "../lib/tsocket/tsocket.h"
 
 const char *client_name(int fd)
 {
@@ -1124,6 +1125,113 @@ const char *get_peer_name(int fd, bool force_lookup)
 const char *get_peer_addr(int fd, char *addr, size_t addr_len)
 {
 	return get_peer_addr_internal(fd, addr, addr_len, NULL, NULL);
+}
+
+int get_remote_hostname(const struct tsocket_address *remote_address,
+			char **name,
+			TALLOC_CTX *mem_ctx)
+{
+	char name_buf[MAX_DNS_NAME_LENGTH];
+	char tmp_name[MAX_DNS_NAME_LENGTH];
+	struct name_addr_pair nc;
+	struct sockaddr_storage ss;
+	socklen_t len;
+	int rc;
+
+	if (!lp_hostname_lookups()) {
+		nc.name = tsocket_address_inet_addr_string(remote_address,
+							   mem_ctx);
+		if (nc.name == NULL) {
+			return -1;
+		}
+
+		len = tsocket_address_bsd_sockaddr(remote_address,
+						   (struct sockaddr *) &nc.ss,
+						   sizeof(struct sockaddr_storage));
+		if (len < 0) {
+			return -1;
+		}
+
+		store_nc(&nc);
+		lookup_nc(&nc);
+
+		if (nc.name == NULL) {
+			*name = talloc_strdup(mem_ctx, "UNKNOWN");
+		} else {
+			*name = talloc_strdup(mem_ctx, nc.name);
+		}
+		return 0;
+	}
+
+	lookup_nc(&nc);
+
+	ZERO_STRUCT(ss);
+
+	len = tsocket_address_bsd_sockaddr(remote_address,
+					   (struct sockaddr *) &ss,
+					   sizeof(struct sockaddr_storage));
+	if (len < 0) {
+		return -1;
+	}
+
+	/* it might be the same as the last one - save some DNS work */
+	if (sockaddr_equal((struct sockaddr *)&ss, (struct sockaddr *)&nc.ss)) {
+		if (nc.name == NULL) {
+			*name = talloc_strdup(mem_ctx, "UNKNOWN");
+		} else {
+			*name = talloc_strdup(mem_ctx, nc.name);
+		}
+		return 0;
+	}
+
+	/* Look up the remote host name. */
+	rc = sys_getnameinfo((struct sockaddr *) &ss,
+			     len,
+			     name_buf,
+			     sizeof(name_buf),
+			     NULL,
+			     0,
+			     0);
+	if (rc < 0) {
+		char *p;
+
+		p = tsocket_address_inet_addr_string(remote_address, mem_ctx);
+		if (p == NULL) {
+			return -1;
+		}
+
+		DEBUG(1,("getnameinfo failed for %s with error %s\n",
+			 p,
+			 gai_strerror(rc)));
+		strlcpy(name_buf, p, sizeof(name_buf));
+
+		talloc_free(p);
+	} else {
+		if (!matchname(name_buf, (struct sockaddr *)&ss, len)) {
+			DEBUG(0,("matchname failed on %s\n", name_buf));
+			strlcpy(name_buf, "UNKNOWN", sizeof(name_buf));
+		}
+	}
+
+	strlcpy(tmp_name, name_buf, sizeof(tmp_name));
+	alpha_strcpy(name_buf, tmp_name, "_-.", sizeof(name_buf));
+	if (strstr(name_buf,"..")) {
+		strlcpy(name_buf, "UNKNOWN", sizeof(name_buf));
+	}
+
+	nc.name = name_buf;
+	nc.ss = ss;
+
+	store_nc(&nc);
+	lookup_nc(&nc);
+
+	if (nc.name == NULL) {
+		*name = talloc_strdup(mem_ctx, "UNKOWN");
+	} else {
+		*name = talloc_strdup(mem_ctx, nc.name);
+	}
+
+	return 0;
 }
 
 /*******************************************************************
