@@ -2570,6 +2570,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	char *parent_dir;
 	NTSTATUS status;
 	bool posix_open = false;
+	bool need_re_stat = false;
 
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share "
@@ -2624,6 +2625,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (lp_inherit_perms(SNUM(conn))) {
 		inherit_access_posix_acl(conn, parent_dir,
 					 smb_dname->base_name, mode);
+		need_re_stat = true;
 	}
 
 	if (!posix_open) {
@@ -2638,6 +2640,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			SMB_VFS_CHMOD(conn, smb_dname->base_name,
 				      (smb_dname->st.st_ex_mode |
 					  (mode & ~smb_dname->st.st_ex_mode)));
+			need_re_stat = true;
 		}
 	}
 
@@ -2646,6 +2649,15 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		change_dir_owner_to_parent(conn, parent_dir,
 					   smb_dname->base_name,
 					   &smb_dname->st);
+		need_re_stat = true;
+	}
+
+	if (need_re_stat) {
+		if (SMB_VFS_LSTAT(conn, smb_dname) == -1) {
+			DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
+			  smb_fname_str_dbg(smb_dname), strerror(errno)));
+			return map_nt_error_from_unix(errno);
+		}
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_ADDED, FILE_NOTIFY_CHANGE_DIR_NAME,
