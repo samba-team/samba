@@ -116,18 +116,18 @@ static void add_interface(TALLOC_CTX *mem_ctx, const struct iface_struct *ifs, s
 	/* keep string versions too, to avoid people tripping over the implied
 	   static in inet_ntoa() */
 	print_sockaddr(addr, sizeof(addr), &iface->ip);
-	DEBUG(2,("added interface %s ip=%s ",
+	DEBUG(4,("added interface %s ip=%s ",
 		 iface->name, addr));
 	iface->ip_s = talloc_strdup(iface, addr);
 
 	print_sockaddr(addr, sizeof(addr),
 		       &iface->bcast);
-	DEBUG(2,("bcast=%s ", addr));
+	DEBUG(4,("bcast=%s ", addr));
 	iface->bcast_s = talloc_strdup(iface, addr);
 
 	print_sockaddr(addr, sizeof(addr),
 		       &iface->netmask);
-	DEBUG(2,("netmask=%s\n", addr));
+	DEBUG(4,("netmask=%s\n", addr));
 	iface->nmask_s = talloc_strdup(iface, addr);
 
 	/*
