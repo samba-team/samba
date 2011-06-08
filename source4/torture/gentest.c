@@ -2309,15 +2309,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		info->full_ea_information.in.eas = gen_ea_list();
 		break;
 
-	case RAW_SFILEINFO_GENERIC:
-	case RAW_SFILEINFO_SEC_DESC:
-	case RAW_SFILEINFO_1025:
-	case RAW_SFILEINFO_1029:
-	case RAW_SFILEINFO_1032:
-	case RAW_SFILEINFO_UNIX_BASIC:
-	case RAW_SFILEINFO_UNIX_INFO2:
-	case RAW_SFILEINFO_UNIX_LINK:
-	case RAW_SFILEINFO_UNIX_HLINK:
+	default:
 		/* Untested */
 		break;
 	}

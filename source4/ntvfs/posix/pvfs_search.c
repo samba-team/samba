@@ -220,11 +220,9 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->id_both_directory_info.name.s       = fname;
 		return NT_STATUS_OK;
 
-	case RAW_SEARCH_DATA_GENERIC:
-		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
-
-	return NT_STATUS_INVALID_LEVEL;
 }
 
 
