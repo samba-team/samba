@@ -473,7 +473,7 @@ static void get_credentials_file(struct user_auth_info *auth_info,
 		} else if (strwicmp("username", param) == 0) {
 			set_cmdline_auth_info_username(auth_info, val);
 		} else if (strwicmp("domain", param) == 0) {
-			set_global_myworkgroup(val);
+			set_cmdline_auth_info_domain(val);
 		}
 		memset(buf, 0, sizeof(buf));
 	}
