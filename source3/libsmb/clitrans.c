@@ -441,14 +441,23 @@ struct tevent_req *cli_trans_send(
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->mid = cli_smb_req_mid(subreq);
 	status = cli_smb_req_send(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, state->ev);
 	}
-	cli_state_seqnum_persistent(cli, state->mid);
 	tevent_req_set_callback(subreq, cli_trans_done, req);
+
+	/*
+	 * Now get the MID of the primary request
+	 * and mark it as persistent. This means
+	 * we will able to send and receive multiple
+	 * SMB pdus using this MID in both directions
+	 * (including correct SMB signing).
+	 */
+	state->mid = cli_smb_req_mid(subreq);
+	cli_state_seqnum_persistent(cli, state->mid);
+
 	return req;
 }
 
