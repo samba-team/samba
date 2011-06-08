@@ -750,6 +750,7 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 	}
 
         set_cmdline_auth_info_username(auth_info, user);
+        set_cmdline_auth_info_domain(auth_info, workgroup);
         set_cmdline_auth_info_password(auth_info, password);
         set_cmdline_auth_info_use_kerberos(auth_info, use_kerberos);
         set_cmdline_auth_info_signing_state(auth_info, signing_state);
@@ -757,7 +758,6 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		smbc_getOptionFallbackAfterKerberos(context));
 	set_cmdline_auth_info_use_ccache(
 		auth_info, smbc_getOptionUseCCache(context));
-        set_global_myworkgroup(workgroup);
 
 	TALLOC_FREE(context->internal->auth_info);
 
