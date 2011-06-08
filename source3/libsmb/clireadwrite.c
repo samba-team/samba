@@ -54,7 +54,9 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 /****************************************************************************
   Calculate the recommended write buffer size
 ****************************************************************************/
-static size_t cli_write_max_bufsize(struct cli_state *cli, uint16_t write_mode)
+static size_t cli_write_max_bufsize(struct cli_state *cli,
+				    uint16_t write_mode,
+				    uint8_t wct)
 {
         if (write_mode == 0 &&
 	    !client_is_signing_on(cli) &&
@@ -73,13 +75,15 @@ static size_t cli_write_max_bufsize(struct cli_state *cli, uint16_t write_mode)
 	if (((cli->capabilities & CAP_LARGE_WRITEX) == 0)
 	    || client_is_signing_on(cli)
 	    || strequal(cli->dev, "LPT1:")) {
+		size_t data_offset = smb_size - 4;
+		size_t useable_space;
 
-		/*
-		 * Printer devices are restricted to max_xmit writesize in
-		 * Vista and XPSP3 as are signing connections.
-		 */
+		data_offset += wct * sizeof(uint16_t);
+		data_offset += 1; /* pad */
 
-		return (cli->max_xmit - (smb_size+32)) & ~1023;
+		useable_space = cli->max_xmit - data_offset;
+
+		return useable_space;
 	}
 
 	return CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE;
@@ -799,7 +803,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 	struct cli_write_andx_state *state;
 	bool bigoffset = ((cli->capabilities & CAP_LARGE_FILES) != 0);
 	uint8_t wct = bigoffset ? 14 : 12;
-	size_t max_write = cli_write_max_bufsize(cli, mode);
+	size_t max_write = cli_write_max_bufsize(cli, mode, wct);
 	uint16_t *vwv;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_write_andx_state);
@@ -1155,7 +1159,7 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->pending = 0;
 	state->next_offset = start_offset;
 
-	state->chunk_size = cli_write_max_bufsize(cli, mode);
+	state->chunk_size = cli_write_max_bufsize(cli, mode, 14);
 
 	if (window_size == 0) {
 		window_size = cli->max_mux * state->chunk_size;
