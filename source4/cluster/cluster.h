@@ -41,7 +41,6 @@ typedef void (*cluster_message_fn_t)(struct imessaging_context *, DATA_BLOB);
 
 /* prototypes */
 struct server_id cluster_id(uint64_t id, uint32_t task_id);
-char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id);
 struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *dbname, int flags);
 void *cluster_backend_handle(void);
 

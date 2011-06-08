@@ -217,7 +217,7 @@ static void stream_new_connection(struct tevent_context *ev,
 					stream_socket->ops->name, 
 					tsocket_address_string(srv_conn->remote_address, tmp_ctx),
 					tsocket_address_string(srv_conn->local_address, tmp_ctx),
-					cluster_id_string(tmp_ctx, server_id));
+					server_id_str(tmp_ctx, &server_id));
 		if (title) {
 			stream_connection_set_title(srv_conn, title);
 		}

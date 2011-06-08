@@ -109,7 +109,7 @@ static void irpc_handler(struct imessaging_context *, void *,
 static void ping_message(struct imessaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
-	char *task_id = cluster_id_string(NULL, src);
+	char *task_id = server_id_str(NULL, &src);
 	DEBUG(1,("INFO: Received PING message from server %s [%.*s]\n",
 		 task_id, (int)data->length,
 		 data->data?(const char *)data->data:""));
@@ -134,7 +134,7 @@ static NTSTATUS irpc_uptime(struct irpc_message *msg,
 static char *imessaging_path(struct imessaging_context *msg, struct server_id server_id)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
-	const char *id = cluster_id_string(tmp_ctx, server_id);
+	const char *id = server_id_str(tmp_ctx, &server_id);
 	char *s;
 	if (id == NULL) {
 		return NULL;
@@ -284,8 +284,8 @@ static void imessaging_send_handler(struct imessaging_context *msg)
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_CTX *tmp_ctx = talloc_new(msg);
 			DEBUG(1,("messaging: Lost message from %s to %s of type %u - %s\n", 
-				 cluster_id_string(tmp_ctx, rec->header->from),
-				 cluster_id_string(tmp_ctx, rec->header->to),
+				 server_id_str(tmp_ctx, &rec->header->from),
+				 server_id_str(tmp_ctx, &rec->header->to),
 				 rec->header->msg_type, 
 				 nt_errstr(status)));
 			talloc_free(tmp_ctx);

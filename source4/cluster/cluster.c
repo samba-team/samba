@@ -56,17 +56,6 @@ struct server_id cluster_id(uint64_t pid, uint32_t task_id)
 	return ops->cluster_id(ops, pid, task_id);
 }
 
-
-/*
-  return a server_id as a string
-*/
-char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id)
-{
-	cluster_init();
-	return ops->cluster_id_string(ops, mem_ctx, id);
-}
-
-
 /*
   open a temporary tdb in a cluster friendly manner
 */

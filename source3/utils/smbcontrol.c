@@ -119,7 +119,7 @@ static void print_pid_string_cb(struct messaging_context *msg,
 {
 	char *pidstr;
 
-	pidstr = procid_str(talloc_tos(), &pid);
+	pidstr = server_id_str(talloc_tos(), &pid);
 	printf("PID %s: %.*s", pidstr, (int)data->length,
 	       (const char *)data->data);
 	TALLOC_FREE(pidstr);
@@ -433,7 +433,7 @@ static void pong_cb(struct messaging_context *msg,
 		    struct server_id pid,
 		    DATA_BLOB *data)
 {
-	char *src_string = procid_str(NULL, &pid);
+	char *src_string = server_id_str(NULL, &pid);
 	printf("PONG from pid %s\n", src_string);
 	TALLOC_FREE(src_string);
 	num_replies++;
@@ -1143,7 +1143,7 @@ static void winbind_validate_cache_cb(struct messaging_context *msg,
 				      struct server_id pid,
 				      DATA_BLOB *data)
 {
-	char *src_string = procid_str(NULL, &pid);
+	char *src_string = server_id_str(NULL, &pid);
 	printf("Winbindd cache is %svalid. (answer from pid %s)\n",
 	       (*(data->data) == 0 ? "" : "NOT "), src_string);
 	TALLOC_FREE(src_string);

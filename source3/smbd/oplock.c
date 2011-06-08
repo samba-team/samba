@@ -459,7 +459,7 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock async level 2 break message from pid %s: "
-		   "%s/%lu\n", procid_str(talloc_tos(), &src),
+		   "%s/%lu\n", server_id_str(talloc_tos(), &src),
 		   file_id_string_tos(&msg.id), msg.share_file_id));
 
 	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
@@ -510,7 +510,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock break message from pid %s: %s/%lu\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id));
 
 	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
@@ -617,7 +617,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	file_id = (unsigned long)IVAL(data->data, 24);
 
 	DEBUG(10, ("Got kernel oplock break message from pid %s: %s/%u\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
 	fsp = initial_break_processing(sconn, id, file_id);
@@ -704,7 +704,7 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock break response from pid %s: %s/%lu mid %llu\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id, (unsigned long long)msg.op_mid));
 
 	schedule_deferred_open_message_smb(msg.op_mid);
@@ -732,7 +732,7 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got open retry msg from pid %s: %s mid %llu\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   (unsigned long long)msg.op_mid));
 
 	schedule_deferred_open_message_smb(msg.op_mid);

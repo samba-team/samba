@@ -1987,25 +1987,9 @@ struct server_id interpret_pid(const char *pid_string)
 	return result;
 }
 
-char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
-{
-	if (pid->vnn == NONCLUSTER_VNN && pid->task_id == 0) {
-		return talloc_asprintf(mem_ctx,
-				"%llu",
-				(unsigned long long)pid->pid);
-	}
-	else {
-		return talloc_asprintf(mem_ctx,
-				       "%u:%llu:%u",
-				       (unsigned)pid->vnn,
-				       (unsigned long long)pid->pid,
-				       (unsigned)pid->task_id);
-	}
-}
-
 char *procid_str_static(const struct server_id *pid)
 {
-	return procid_str(talloc_tos(), pid);
+	return server_id_str(talloc_tos(), pid);
 }
 
 bool procid_valid(const struct server_id *pid)

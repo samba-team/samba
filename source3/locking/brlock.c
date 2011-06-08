@@ -51,7 +51,7 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
 			i,
 			(unsigned long long)pls->context.smblctx,
 			(unsigned int)pls->context.tid,
-			procid_str(talloc_tos(), &pls->context.pid) ));
+			server_id_str(talloc_tos(), &pls->context.pid) ));
 
 	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
 		(double)pls->start,

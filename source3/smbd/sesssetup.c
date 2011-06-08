@@ -1223,7 +1223,7 @@ static int shutdown_other_smbds(const struct connections_key *key,
 	struct shutdown_state *state = (struct shutdown_state *)private_data;
 
 	DEBUG(10, ("shutdown_other_smbds: %s, %s\n",
-		   procid_str(talloc_tos(), &crec->pid), crec->addr));
+		   server_id_str(talloc_tos(), &crec->pid), crec->addr));
 
 	if (!process_exists(crec->pid)) {
 		DEBUG(10, ("process does not exist\n"));

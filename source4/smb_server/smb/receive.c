@@ -502,7 +502,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		}
 	}
 
-	task_id = cluster_id_string(NULL, req->smb_conn->connection->server_id);
+	task_id = server_id_str(NULL, &req->smb_conn->connection->server_id);
 	DEBUG(5,("switch message %s (task_id %s)\n",
 		 smb_fn_name(type), task_id));
 	talloc_free(task_id);

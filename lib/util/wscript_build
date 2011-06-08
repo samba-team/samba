@@ -5,7 +5,8 @@ common_util_sources = '''talloc_stack.c smb_threads.c xfile.c data_blob.c
                     genrand.c fsusage.c blocking.c become_daemon.c
                     signal.c system.c params.c util.c util_id.c util_net.c
                     util_strlist.c util_paths.c idtree.c debug.c fault.c base64.c
-                    util_str.c util_str_common.c substitute.c ms_fnmatch.c'''
+                    util_str.c util_str_common.c substitute.c ms_fnmatch.c
+                    server_id.c'''
 
 common_util_headers = 'debug.h'
 common_util_public_deps = 'talloc pthread LIBCRYPTO CHARSET'

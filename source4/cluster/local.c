@@ -42,16 +42,6 @@ static struct server_id local_id(struct cluster_ops *ops, uint64_t pid, uint32_t
 
 
 /*
-  return a server_id as a string
-*/
-static char *local_id_string(struct cluster_ops *ops,
-				   TALLOC_CTX *mem_ctx, struct server_id id)
-{
-	return talloc_asprintf(mem_ctx, "%u.%llu.%u", id.vnn, (unsigned long long)id.pid, id.task_id);
-}
-
-
-/*
   open a tmp tdb for the local node. By using smbd_tmp_path() we don't need
   TDB_CLEAR_IF_FIRST as the tmp path is wiped at startup
 */
@@ -98,7 +88,6 @@ static NTSTATUS local_message_send(struct cluster_ops *ops,
 
 static struct cluster_ops cluster_local_ops = {
 	.cluster_id           = local_id,
-	.cluster_id_string    = local_id_string,
 	.cluster_tdb_tmp_open = local_tdb_tmp_open,
 	.backend_handle       = local_backend_handle,
 	.message_init         = local_message_init,

@@ -26,7 +26,7 @@
 static int net_serverid_list_fn(const struct server_id *id,
 				uint32_t msg_flags, void *priv)
 {
-	char *str = procid_str(talloc_tos(), id);
+	char *str = server_id_str(talloc_tos(), id);
 	d_printf("%s %llu 0x%x\n", str, (unsigned long long)id->unique_id,
 		 (unsigned int)msg_flags);
 	TALLOC_FREE(str);
@@ -51,7 +51,7 @@ static int net_serverid_wipe_fn(struct db_record *rec,
 	}
 	status = rec->delete_rec(rec);
 	if (!NT_STATUS_IS_OK(status)) {
-		char *str = procid_str(talloc_tos(), id);
+		char *str = server_id_str(talloc_tos(), id);
 		DEBUG(1, ("Could not delete serverid.tdb record %s: %s\n",
 			  str, nt_errstr(status)));
 		TALLOC_FREE(str);
@@ -75,13 +75,13 @@ static int net_serverid_wipedbs_conn(
 		NTSTATUS status;
 
 		DEBUG(10, ("Deleting connections.tdb record for pid %s\n",
-			   procid_str(talloc_tos(), &key->pid)));
+			   server_id_str(talloc_tos(), &key->pid)));
 
 		status = rec->delete_rec(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Could not delete connections.tdb record "
 				  "for pid %s: %s\n",
-				  procid_str(talloc_tos(), &key->pid),
+				  server_id_str(talloc_tos(), &key->pid),
 				  nt_errstr(status)));
 		}
 	}
@@ -97,13 +97,13 @@ static int net_serverid_wipedbs_sessionid(struct db_record *rec,
 		NTSTATUS status;
 
 		DEBUG(10, ("Deleting sessionid.tdb record for pid %s\n",
-			   procid_str(talloc_tos(), &session->pid)));
+			   server_id_str(talloc_tos(), &session->pid)));
 
 		status = rec->delete_rec(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Could not delete session.tdb record "
 				  "for pid %s: %s\n",
-				  procid_str(talloc_tos(), &session->pid),
+				  server_id_str(talloc_tos(), &session->pid),
 				  nt_errstr(status)));
 		}
 	}
