@@ -232,11 +232,14 @@ void change_file_owner_to_parent(connection_struct *conn,
 			 "was %s\n", fsp_str_dbg(fsp),
 			 (unsigned int)smb_fname_parent->st.st_ex_uid,
 			 strerror(errno) ));
-	}
-
-	DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
+	} else {
+		DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
 		  "parent directory uid %u.\n", fsp_str_dbg(fsp),
 		  (unsigned int)smb_fname_parent->st.st_ex_uid));
+
+		/* Ensure the uid entry is updated. */
+		fsp->fsp_name->st.st_ex_uid = smb_fname_parent->st.st_ex_uid;
+	}
 
 	TALLOC_FREE(smb_fname_parent);
 }
