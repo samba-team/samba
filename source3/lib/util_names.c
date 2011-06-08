@@ -30,34 +30,8 @@
 
 static char *smb_myname;
 static char *smb_myworkgroup;
-static char *smb_scope;
 static int smb_num_netbios_names;
 static char **smb_my_netbios_names;
-
-/***********************************************************************
- Allocate and set scope. Ensure upper case.
-***********************************************************************/
-
-bool set_global_scope(const char *scope)
-{
-	SAFE_FREE(smb_scope);
-	smb_scope = SMB_STRDUP(scope);
-	if (!smb_scope)
-		return False;
-	strupper_m(smb_scope);
-	return True;
-}
-
-/*********************************************************************
- Ensure scope is never null string.
-*********************************************************************/
-
-const char *global_scope(void)
-{
-	if (!smb_scope)
-		set_global_scope("");
-	return smb_scope;
-}
 
 static void free_netbios_names_array(void)
 {
@@ -102,7 +76,6 @@ static bool set_my_netbios_names(const char *name, int i)
 void gfree_names(void)
 {
 	gfree_netbios_names();
-	SAFE_FREE( smb_scope );
 	free_netbios_names_array();
 	free_local_machine_name();
 }

@@ -143,7 +143,7 @@ static void popt_common_callback(poptContext con,
 
 	case 'i':
 		if (arg) {
-			  set_global_scope(arg);
+			lp_set_cmdline("netbios scope", arg);
 		}
 		break;
 

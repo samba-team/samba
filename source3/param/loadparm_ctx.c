@@ -49,7 +49,7 @@ static const struct loadparm_s3_context s3_fns =
 	.workgroup = lp_workgroup,
 
 	.netbios_name = global_myname,
-	.netbios_scope = global_scope,
+	.netbios_scope = lp_netbios_scope,
 
 	.lanman_auth = lp_lanman_auth,
 	.ntlm_auth = lp_ntlm_auth,

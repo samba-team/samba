@@ -936,7 +936,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 	strupper_m(unix_name);
 	push_ascii(n->name, unix_name, sizeof(n->name), STR_TERMINATE);
 	n->name_type = (unsigned int)type & 0xFF;
-	push_ascii(n->scope,  global_scope(), 64, STR_TERMINATE);
+	push_ascii(n->scope,  lp_netbios_scope(), 64, STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -1261,7 +1261,7 @@ char *name_mangle(TALLOC_CTX *mem_ctx, const char *In, char name_type)
 	char *result;
 	char *p;
 
-	result = talloc_array(mem_ctx, char, 33 + strlen(global_scope()) + 2);
+	result = talloc_array(mem_ctx, char, 33 + strlen(lp_netbios_scope()) + 2);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -1296,8 +1296,8 @@ char *name_mangle(TALLOC_CTX *mem_ctx, const char *In, char name_type)
 	p[0] = '\0';
 
 	/* Add the scope string. */
-	for( i = 0, len = 0; *(global_scope()) != '\0'; i++, len++ ) {
-		switch( (global_scope())[i] ) {
+	for( i = 0, len = 0; *(lp_netbios_scope()) != '\0'; i++, len++ ) {
+		switch( (lp_netbios_scope())[i] ) {
 			case '\0':
 				p[0] = len;
 				if( len > 0 )
@@ -1309,7 +1309,7 @@ char *name_mangle(TALLOC_CTX *mem_ctx, const char *In, char name_type)
 				len  = -1;
 				break;
 			default:
-				p[len+1] = (global_scope())[i];
+				p[len+1] = (lp_netbios_scope())[i];
 				break;
 		}
 	}

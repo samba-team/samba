@@ -708,7 +708,6 @@ static bool handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_debug_list( int snum, const char *pszParmValue, char **ptr );
 static bool handle_realm( int snum, const char *pszParmValue, char **ptr );
 static bool handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
-static bool handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
 static bool handle_charset( int snum, const char *pszParmValue, char **ptr );
 static bool handle_dos_charset( int snum, const char *pszParmValue, char **ptr );
 static bool handle_printing( int snum, const char *pszParmValue, char **ptr);
@@ -1048,7 +1047,7 @@ static struct parm_struct parm_table[] = {
 		.type		= P_USTRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szNetbiosScope,
-		.special	= handle_netbios_scope,
+		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
@@ -5618,6 +5617,7 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_CONST_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_CONST_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_CONST_STRING(lp_workgroup, &Globals.szWorkgroup)
+FN_GLOBAL_CONST_STRING(lp_netbios_scope, &Globals.szNetbiosScope)
 FN_GLOBAL_CONST_STRING(lp_realm, &Globals.szRealmUpper)
 FN_GLOBAL_CONST_STRING(lp_dnsdomain, &Globals.szDnsDomain)
 FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
@@ -7595,16 +7595,6 @@ static bool handle_realm(int snum, const char *pszParmValue, char **ptr)
 	ret &= string_set(&Globals.szDnsDomain, dnsdomain);
 	TALLOC_FREE(realm);
 	TALLOC_FREE(dnsdomain);
-
-	return ret;
-}
-
-static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
-{
-	bool ret;
-
-	ret = set_global_scope(pszParmValue);
-	string_set(&Globals.szNetbiosScope,global_scope());
 
 	return ret;
 }

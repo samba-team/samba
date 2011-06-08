@@ -1073,9 +1073,9 @@ static void process_browse_packet(struct packet_struct *p, const char *buf,int l
 
 	/* Drop the packet if it's a different NetBIOS scope, or the source is from one of our names. */
 	pull_ascii(scope, dgram->dest_name.scope, 64, 64, STR_TERMINATE);
-	if (!strequal(scope, global_scope())) {
+	if (!strequal(scope, lp_netbios_scope())) {
 		DEBUG(7,("process_browse_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), scope, global_scope()));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), scope, lp_netbios_scope()));
 		return;
 	}
 
@@ -1161,9 +1161,9 @@ static void process_lanman_packet(struct packet_struct *p, const char *buf,int l
 	/* Drop the packet if it's a different NetBIOS scope, or the source is from one of our names. */
 
 	pull_ascii(scope, dgram->dest_name.scope, 64, 64, STR_TERMINATE);
-	if (!strequal(scope, global_scope())) {
+	if (!strequal(scope, lp_netbios_scope())) {
 		DEBUG(7,("process_lanman_packet: Discarding datagram from IP %s. Scope (%s) \
-mismatch with our scope (%s).\n", inet_ntoa(p->ip), scope, global_scope()));
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), scope, lp_netbios_scope()));
 		return;
 	}
 
