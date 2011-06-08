@@ -145,6 +145,9 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 		case TARGET_FEDORA_DS:
 			out = talloc_asprintf_append(out, "objectClasses: %s\n", schema_entry);
 			break;
+		default:
+			DEBUG(0, ("Wrong type of target!\n"));
+			return NULL;
 		}
 		talloc_free(mem_ctx);
 	} while (0);
@@ -274,6 +277,9 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 	case TARGET_FEDORA_DS:
 		out = talloc_strdup(mem_ctx, "dn: cn=schema\n");
 		break;
+	default:
+		DEBUG(0, ("Wrong type of target!\n"));
+		return NULL;
 	}
 
 	for (attribute=schema->attributes; attribute; attribute = attribute->next) {
@@ -350,6 +356,9 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 		case TARGET_FEDORA_DS:
 			out = talloc_asprintf_append(out, "attributeTypes: %s\n", schema_entry);
 			break;
+		default:
+			DEBUG(0, ("Wrong type of target!\n"));
+			return NULL;
 		}
 	}
 
