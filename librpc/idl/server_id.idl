@@ -28,6 +28,6 @@ interface server_id
 		hyper pid;
 		uint32 task_id;
 		uint32 vnn;
-		udlong unique_id;
+		hyper unique_id;
 	} server_id;
 }
