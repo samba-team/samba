@@ -435,13 +435,11 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	struct autorid_global_config *storedconfig = NULL;
 	NTSTATUS status;
 	uint32_t hwm;
-	TALLOC_CTX *frame = talloc_stackframe();
 
-	config = talloc_zero(frame, struct autorid_global_config);
+	config = talloc_zero(dom, struct autorid_global_config);
 	if (!config) {
 		DEBUG(0, ("Out of memory!\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto error;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = idmap_autorid_db_init();
@@ -482,7 +480,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		   config->minvalue, config->rangesize, config->maxranges));
 
 	/* read previously stored config and current HWM */
-	storedconfig = idmap_autorid_loadconfig(frame);
+	storedconfig = idmap_autorid_loadconfig(talloc_tos());
 
 	if (!dbwrap_fetch_uint32(autorid_db, HWM, &hwm)) {
 		DEBUG(1, ("Fatal error while fetching current "
@@ -532,7 +530,8 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	return NT_STATUS_OK;
 
       error:
-	talloc_free(frame);
+	talloc_free(config);
+	talloc_free(storedconfig);
 
 	return status;
 }
