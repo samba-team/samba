@@ -26,9 +26,14 @@ char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
 		return talloc_asprintf(mem_ctx,
 				       "%llu",
 				       (unsigned long long)id->pid);
+	} else if (id->vnn == NONCLUSTER_VNN) {
+		return talloc_asprintf(mem_ctx,
+				       "%llu.%u",
+				       (unsigned long long)id->pid,
+				       (unsigned)id->task_id);
 	} else {
 		return talloc_asprintf(mem_ctx,
-				       "%u:%llu:%u",
+				       "%u:%llu.%u",
 				       (unsigned)id->vnn,
 				       (unsigned long long)id->pid,
 				       (unsigned)id->task_id);
