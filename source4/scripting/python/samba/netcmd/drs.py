@@ -233,6 +233,39 @@ class cmd_drs_kcc(Command):
         self.message("Consistency check on %s successful." % DC)
 
 
+def drs_local_replicate(self, SOURCE_DC, NC):
+    '''replicate from a source DC to the local SAM'''
+    self.server = SOURCE_DC
+    drsuapi_connect(self)
+
+    self.local_samdb = SamDB(session_info=system_session(), url=None,
+                             credentials=self.creds, lp=self.lp)
+
+    self.samdb = SamDB(url="ldap://%s" % self.server,
+                       session_info=system_session(),
+                       credentials=self.creds, lp=self.lp)
+
+    # work out the source and destination GUIDs
+    res = self.local_samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+    self.ntds_dn = res[0]["dsServiceName"][0]
+
+    res = self.local_samdb.search(base=self.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+    self.ntds_guid = misc.GUID(self.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
+
+
+    source_dsa_invocation_id = misc.GUID(self.samdb.get_invocation_id())
+    destination_dsa_guid = self.ntds_guid
+
+    self.samdb.transaction_start()
+    repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % self.server, self.lp,
+                                   self.creds, self.local_samdb)
+    try:
+        repl.replicate(NC, source_dsa_invocation_id, destination_dsa_guid)
+    except Exception, e:
+        raise CommandError("Error replicating DN %s" % NC, e)
+    self.samdb.transaction_commit()
+
+
 
 class cmd_drs_replicate(Command):
     """replicate a naming context between two DCs"""
@@ -250,9 +283,10 @@ class cmd_drs_replicate(Command):
     takes_options = [
         Option("--add-ref", help="use ADD_REF to add to repsTo on source", action="store_true"),
         Option("--sync-forced", help="use SYNC_FORCED to force inbound replication", action="store_true"),
+        Option("--local", help="pull changes directly into the local database (destination DC is ignored)", action="store_true"),
         ]
 
-    def run(self, DEST_DC, SOURCE_DC, NC, add_ref=False, sync_forced=False,
+    def run(self, DEST_DC, SOURCE_DC, NC, add_ref=False, sync_forced=False, local=False,
             sambaopts=None,
             credopts=None, versionopts=None, server=None):
 
@@ -260,6 +294,10 @@ class cmd_drs_replicate(Command):
         self.lp = sambaopts.get_loadparm()
 
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        if local:
+            drs_local_replicate(self, SOURCE_DC, NC)
+            return
 
         drsuapi_connect(self)
         samdb_connect(self)
