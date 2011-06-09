@@ -530,10 +530,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 
 	dom->private_data = config;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
-	}
-
 	goto done;
 
 error:
