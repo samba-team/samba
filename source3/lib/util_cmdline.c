@@ -228,7 +228,7 @@ bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_inf
 		return false;
 	}
 
-	if (asprintf(&account, "%s$@%s", global_myname(), lp_realm()) < 0) {
+	if (asprintf(&account, "%s$@%s", lp_netbios_name(), lp_realm()) < 0) {
 		return false;
 	}
 

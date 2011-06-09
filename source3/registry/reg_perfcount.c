@@ -943,7 +943,7 @@ static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 	make_systemtime(&(block->SystemTime), gmtime(&tm));
 	_reg_perfcount_init_data_block_perf(block, names);
 	memset(temp, 0, sizeof(temp));
-	rpcstr_push((void *)temp, global_myname(), sizeof(temp), STR_TERMINATE);
+	rpcstr_push((void *)temp, lp_netbios_name(), sizeof(temp), STR_TERMINATE);
 	block->SystemNameLength = (strlen_w(temp) * 2) + 2;
 	block->data = talloc_zero_array(mem_ctx, uint8, block->SystemNameLength + (8 - (block->SystemNameLength % 8)));
 	if (block->data == NULL) {

@@ -185,7 +185,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	if (workstation) {
 		fstr_sprintf( clnt_name_slash, "\\\\%s", workstation );
 	} else {
-		fstr_sprintf( clnt_name_slash, "\\\\%s", global_myname() );
+		fstr_sprintf( clnt_name_slash, "\\\\%s", lp_netbios_name() );
 	}
 
 	/* Initialise input parameters */
@@ -279,7 +279,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 	status = dcerpc_netr_LogonSamLogon(b, mem_ctx,
 					   cli->srv_name_slash,
-					   global_myname(),
+					   lp_netbios_name(),
 					   &clnt_creds,
 					   &ret_creds,
 					   logon_type,
@@ -441,7 +441,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	status = dcerpc_netr_LogonSamLogon(b, mem_ctx,
 					   server_name_slash,
-					   global_myname(),
+					   lp_netbios_name(),
 					   &clnt_creds,
 					   &ret_creds,
 					   NetlogonNetworkInformation,
@@ -556,7 +556,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 
 	status = dcerpc_netr_LogonSamLogonEx(b, mem_ctx,
 					     server_name_slash,
-					     global_myname(),
+					     lp_netbios_name(),
 					     NetlogonNetworkInformation,
 					     logon,
 					     validation_level,
@@ -608,7 +608,7 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 		result = rpccli_netlogon_setup_creds(cli,
 						     cli->desthost, /* server name */
 						     lp_workgroup(), /* domain */
-						     global_myname(), /* client name */
+						     lp_netbios_name(), /* client name */
 						     account_name, /* machine account name */
 						     orig_trust_passwd_hash,
 						     sec_channel_type,

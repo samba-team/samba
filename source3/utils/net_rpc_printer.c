@@ -2544,7 +2544,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 					if (strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME)) {
 
-						push_reg_sz(mem_ctx, &blob, global_myname());
+						push_reg_sz(mem_ctx, &blob, lp_netbios_name());
 					}
 
 					value = regval_compose(talloc_tos(),

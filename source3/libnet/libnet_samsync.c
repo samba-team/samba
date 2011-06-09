@@ -203,7 +203,7 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 	NTSTATUS result, status;
 	NTSTATUS callback_status;
 	const char *logon_server = ctx->cli->desthost;
-	const char *computername = global_myname();
+	const char *computername = lp_netbios_name();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
 	uint16_t restart_state = 0;

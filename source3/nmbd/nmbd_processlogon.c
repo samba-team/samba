@@ -291,7 +291,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq)
 
 	send_mailslot(true, state->remote_mailslot,
 		      (char *)response.data, response.length,
-		      global_myname(), 0x0,
+		      lp_netbios_name(), 0x0,
 		      state->remote_name,
 		      state->remote_name_type,
 		      state->p->ip,
@@ -338,7 +338,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 	pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
-	pdc_name = talloc_asprintf(talloc_tos(), "\\\\%s", global_myname());
+	pdc_name = talloc_asprintf(talloc_tos(), "\\\\%s", lp_netbios_name());
 	if (!pdc_name) {
 		return;
 	}
@@ -391,7 +391,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		send_mailslot(True, request.req.logon0.mailslot_name,
 				(char *)blob_out.data,
 				blob_out.length,
-				global_myname(), 0x0,
+				lp_netbios_name(), 0x0,
 				source_name,
 				dgram->source_name.name_type,
 				p->ip, ip, p->port);
@@ -411,7 +411,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 			"reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 			request.req.pdc.computer_name,
 			inet_ntoa(p->ip),
-			global_myname(),
+			lp_netbios_name(),
 			lp_workgroup(),
 			NETLOGON_RESPONSE_FROM_PDC,
 			request.req.pdc.nt_version,
@@ -419,9 +419,9 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 			request.req.pdc.lm20_token));
 
 		get_pdc.command			= NETLOGON_RESPONSE_FROM_PDC;
-		get_pdc.pdc_name		= global_myname();
+		get_pdc.pdc_name		= lp_netbios_name();
 		get_pdc._pad			= data_blob_null;
-		get_pdc.unicode_pdc_name	= global_myname();
+		get_pdc.unicode_pdc_name	= lp_netbios_name();
 		get_pdc.domain_name		= lp_workgroup();
 		get_pdc.nt_version		= NETLOGON_NT_VERSION_1;
 		get_pdc.lmnt_token		= 0xffff;
@@ -443,7 +443,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		send_mailslot(True, request.req.pdc.mailslot_name,
 			(char *)blob_out.data,
 			blob_out.length,
-			global_myname(), 0x0,
+			lp_netbios_name(), 0x0,
 			source_name,
 			dgram->source_name.name_type,
 			p->ip, ip, p->port);
@@ -553,7 +553,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 			nt5_ex.dns_domain	= domain;
 			nt5_ex.pdc_dns_name	= hostname;
 			nt5_ex.domain_name	= lp_workgroup();
-			nt5_ex.pdc_name		= global_myname();
+			nt5_ex.pdc_name		= lp_netbios_name();
 			nt5_ex.user_name	= request.req.logon.user_name;
 			nt5_ex.server_site	= "Default-First-Site-Name";
 			nt5_ex.client_site	= "Default-First-Site-Name";
@@ -621,7 +621,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 			send_mailslot(true, request.req.logon.mailslot_name,
 				(char *)blob_out.data,
 				blob_out.length,
-				global_myname(), 0x0,
+				lp_netbios_name(), 0x0,
 				source_name,
 				dgram->source_name.name_type,
 				p->ip, ip, p->port);

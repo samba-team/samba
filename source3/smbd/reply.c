@@ -972,7 +972,7 @@ void reply_ioctl(struct smb_request *req)
 				SSVAL(p, 0, 0);
 			}
 			srvstr_push((char *)req->outbuf, req->flags2, p+2,
-				    global_myname(), 15,
+				    lp_netbios_name(), 15,
 				    STR_TERMINATE|STR_ASCII);
 			if (conn) {
 				srvstr_push((char *)req->outbuf, req->flags2,

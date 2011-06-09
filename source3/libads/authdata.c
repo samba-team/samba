@@ -78,7 +78,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(auth_princ);
 
 	local_service = talloc_asprintf(mem_ctx, "%s$@%s",
-					global_myname(), lp_realm());
+					lp_netbios_name(), lp_realm());
 	NT_STATUS_HAVE_NO_MEMORY(local_service);
 
 	ret = kerberos_kinit_password_ext(auth_princ,

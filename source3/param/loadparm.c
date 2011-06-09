@@ -701,7 +701,6 @@ static int default_server_announce;
 /* prototypes for the special type handlers */
 static bool handle_include( int snum, const char *pszParmValue, char **ptr);
 static bool handle_copy( int snum, const char *pszParmValue, char **ptr);
-static bool handle_netbios_name( int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_backend(int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
 static bool handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
@@ -1029,7 +1028,7 @@ static struct parm_struct parm_table[] = {
 		.type		= P_USTRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szNetbiosName,
-		.special	= handle_netbios_name,
+		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
@@ -5172,6 +5171,7 @@ static void init_globals(bool reinit_globals)
 		}
 	}
 
+
 	string_set(&sDefault.fstype, FSTYPE_STRING);
 	string_set(&sDefault.szPrintjobUsername, "%U");
 
@@ -5179,6 +5179,9 @@ static void init_globals(bool reinit_globals)
 
 
 	DEBUG(3, ("Initialising global parameters\n"));
+
+	/* Must manually force to upper case here, as this does not go via the handler */
+	string_set(&Globals.szNetbiosName, myhostname_upper());
 
 	string_set(&Globals.szSMBPasswdFile, get_dyn_SMB_PASSWD_FILE());
 	string_set(&Globals.szPrivateDir, get_dyn_PRIVATE_DIR());
@@ -5207,9 +5210,6 @@ static void init_globals(bool reinit_globals)
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
 	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
-
-	set_global_myname(myhostname());
-	string_set(&Globals.szNetbiosName,global_myname());
 
 	string_set(&Globals.szWorkgroup, WORKGROUP);
 
@@ -5617,6 +5617,7 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_CONST_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_CONST_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_CONST_STRING(lp_workgroup, &Globals.szWorkgroup)
+FN_GLOBAL_CONST_STRING(lp_netbios_name, &Globals.szNetbiosName)
 FN_GLOBAL_CONST_STRING(lp_netbios_scope, &Globals.szNetbiosScope)
 FN_GLOBAL_CONST_STRING(lp_realm, &Globals.szRealmUpper)
 FN_GLOBAL_CONST_STRING(lp_dnsdomain, &Globals.szDnsDomain)
@@ -7500,29 +7501,6 @@ bool lp_file_list_changed(void)
 	return (False);
 }
 
-
-/***************************************************************************
- Run standard_sub_basic on netbios name... needed because global_myname
- is not accessed through any lp_ macro.
- Note: We must *NOT* use string_set() here as ptr points to global_myname.
-***************************************************************************/
-
-static bool handle_netbios_name(int snum, const char *pszParmValue, char **ptr)
-{
-	bool ret;
-	char *netbios_name = talloc_sub_basic(
-		talloc_tos(), get_current_username(), current_user_info.domain,
-		pszParmValue);
-
-	ret = set_global_myname(netbios_name);
-	TALLOC_FREE(netbios_name);
-	string_set(&Globals.szNetbiosName,global_myname());
-
-	DEBUG(4, ("handle_netbios_name: set global_myname to: %s\n",
-	       global_myname()));
-
-	return ret;
-}
 
 /**
  * Initialize iconv conversion descriptors.

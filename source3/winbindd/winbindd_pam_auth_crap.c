@@ -74,7 +74,7 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 	}
 
 	if (request->data.auth_crap.workstation[0] == '\0') {
-		fstrcpy(request->data.auth_crap.workstation, global_myname());
+		fstrcpy(request->data.auth_crap.workstation, lp_netbios_name());
 	}
 
 	subreq = wb_domain_request_send(state, winbind_event_context(), domain,

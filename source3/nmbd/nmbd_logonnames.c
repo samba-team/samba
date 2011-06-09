@@ -46,10 +46,10 @@ workgroup %s on subnet %s\n", failname, subrec->subnet_name));
 		return;
 	}
 
-	if((servrec = find_server_in_workgroup( work, global_myname())) == NULL) {
+	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
 		DEBUG(0,("become_logon_server_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), failname, subrec->subnet_name));
+			lp_netbios_name(), failname, subrec->subnet_name));
 		work->log_state = LOGON_NONE;
 		return;
 	}
@@ -87,10 +87,10 @@ workgroup %s on subnet %s\n", reg_name, subrec->subnet_name));
 		return;
 	}
 
-	if((servrec = find_server_in_workgroup( work, global_myname())) == NULL) {
+	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
 		DEBUG(0,("become_logon_server_success: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), reg_name, subrec->subnet_name));
+			lp_netbios_name(), reg_name, subrec->subnet_name));
 		work->log_state = LOGON_NONE;
 		return;
 	}

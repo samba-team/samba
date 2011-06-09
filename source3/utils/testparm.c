@@ -77,7 +77,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
-	if (strequal(lp_workgroup(), global_myname())) {
+	if (strequal(lp_workgroup(), lp_netbios_name())) {
 		fprintf(stderr, "WARNING: 'workgroup' and 'netbios name' " \
 			"must differ.\n");
 		ret = 1;

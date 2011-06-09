@@ -141,7 +141,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	struct ntlmssp_state *ntlmssp_state;
 
 	nt_status = ntlmssp_client_start(NULL,
-					 global_myname(),
+					 lp_netbios_name(),
 					 lp_workgroup(),
 					 lp_client_ntlmv2_auth(),
 					 &ntlmssp_state);

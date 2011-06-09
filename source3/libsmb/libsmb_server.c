@@ -713,7 +713,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 
                 zero_sockaddr(&ss);
                 nt_status = cli_full_connection(&ipc_cli,
-						global_myname(), server,
+						lp_netbios_name(), server,
 						&ss, 0, "IPC$", "?????",
 						*pp_username,
 						*pp_workgroup,

@@ -1047,7 +1047,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 						      winreg_handle,
 						      &key_hnd,
 						      SPOOL_REG_SHORTSERVERNAME,
-						      global_myname(),
+						      lp_netbios_name(),
 						      &result);
 			if (!NT_STATUS_IS_OK(status)) {
 				result = ntstatus_to_werror(status);
@@ -1062,9 +1062,9 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			 */
 			dnssuffix = get_mydnsdomname(tmp_ctx);
 			if (dnssuffix != NULL && dnssuffix[0] != '\0') {
-				longname = talloc_asprintf(tmp_ctx, "%s.%s", global_myname(), dnssuffix);
+				longname = talloc_asprintf(tmp_ctx, "%s.%s", lp_netbios_name(), dnssuffix);
 			} else {
-				longname = talloc_strdup(tmp_ctx, global_myname());
+				longname = talloc_strdup(tmp_ctx, lp_netbios_name());
 			}
 			if (longname == NULL) {
 				result = WERR_NOMEM;

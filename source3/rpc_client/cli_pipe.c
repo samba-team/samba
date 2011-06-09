@@ -1087,7 +1087,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	r.Flags				= NL_FLAG_OEM_NETBIOS_DOMAIN_NAME |
 					  NL_FLAG_OEM_NETBIOS_COMPUTER_NAME;
 	r.oem_netbios_domain.a		= cli->auth->domain;
-	r.oem_netbios_computer.a	= global_myname();
+	r.oem_netbios_computer.a	= lp_netbios_name();
 
 	status = dcerpc_push_schannel_bind(cli, &r, auth_token);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2330,7 +2330,7 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	status = auth_ntlmssp_client_start(NULL,
-				      global_myname(),
+				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
 				      &ntlmssp_ctx);

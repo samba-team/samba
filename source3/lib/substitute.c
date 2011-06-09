@@ -80,7 +80,7 @@ bool set_local_machine_name(const char *local_name, bool perm)
 const char *get_local_machine_name(void)
 {
 	if (!local_machine || !*local_machine) {
-		return global_myname();
+		return lp_netbios_name();
 	}
 
 	return local_machine;
@@ -489,7 +489,7 @@ static const char *automount_server(const char *user_name)
 	if (local_machine_name && *local_machine_name) {
 		server_name = talloc_strdup(ctx, local_machine_name);
 	} else {
-		server_name = talloc_strdup(ctx, global_myname());
+		server_name = talloc_strdup(ctx, lp_netbios_name());
 	}
 
 	if (!server_name) {
@@ -638,7 +638,7 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			if (local_machine_name && *local_machine_name) {
 				a_string = realloc_string_sub(a_string, "%L", local_machine_name); 
 			} else {
-				a_string = realloc_string_sub(a_string, "%L", global_myname()); 
+				a_string = realloc_string_sub(a_string, "%L", lp_netbios_name());
 			}
 			break;
 		case 'N':

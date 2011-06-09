@@ -366,7 +366,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 		sec_channel_type = get_sec_channel_type(NULL);
 	}
 
-	fstrcpy(trust_passwd, global_myname());
+	fstrcpy(trust_passwd, lp_netbios_name());
 	strlower_m(trust_passwd);
 
 	/*
@@ -379,7 +379,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
 	result = trust_pw_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup,
-					      global_myname(),
+					      lp_netbios_name(),
 					      orig_trust_passwd_hash,
 					      sec_channel_type);
 
@@ -481,10 +481,10 @@ int net_rpc_join(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (strlen(global_myname()) > 15) {
+	if (strlen(lp_netbios_name()) > 15) {
 		d_printf(_("Our netbios name can be at most 15 chars long, "
 			   "\"%s\" is %u chars long\n"),
-			 global_myname(), (unsigned int)strlen(global_myname()));
+			 lp_netbios_name(), (unsigned int)strlen(lp_netbios_name()));
 		return -1;
 	}
 
@@ -6535,7 +6535,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		domain_name = c->opt_workgroup;
 		c->opt_target_workgroup = c->opt_workgroup;
 	} else {
-		fstrcpy(pdc_name, global_myname());
+		fstrcpy(pdc_name, lp_netbios_name());
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
 		c->opt_target_workgroup = domain_name;
 	};
@@ -6713,7 +6713,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		domain_name = c->opt_workgroup;
 		c->opt_target_workgroup = c->opt_workgroup;
 	} else {
-		fstrcpy(pdc_name, global_myname());
+		fstrcpy(pdc_name, lp_netbios_name());
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
 		c->opt_target_workgroup = domain_name;
 	};
@@ -7089,7 +7089,7 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 		return false;
 
 	status = cli_connect_nb(server_name, &server_ss, 0, 0x20,
-				global_myname(), Undefined, &cli);
+				lp_netbios_name(), Undefined, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}

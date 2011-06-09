@@ -250,7 +250,7 @@ workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
 		const char *name = my_netbios_names(i);
 		int stype = lp_default_server_announce() | (lp_local_master() ?  SV_TYPE_POTENTIAL_BROWSER : 0 );
    
-		if(!strequal(global_myname(), name))
+		if(!strequal(lp_netbios_name(), name))
 			stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
    
 		create_server_on_workgroup(work,name,stype|SV_TYPE_LOCAL_LIST_ONLY, PERMANENT_TTL, 

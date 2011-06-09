@@ -3323,7 +3323,7 @@ static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
 
 	r->oem_information.string	= lp_serverstring();
 	r->domain_name.string		= lp_workgroup();
-	r->primary.string		= global_myname();
+	r->primary.string		= lp_netbios_name();
 	r->sequence_num			= seq_num;
 	r->domain_server_state		= DOMAIN_SERVER_ENABLED;
 	r->role				= (enum samr_Role) samr_get_server_role();
@@ -3390,7 +3390,7 @@ static NTSTATUS query_dom_info_6(TALLOC_CTX *mem_ctx,
 	/* NT returns its own name when a PDC. win2k and later
 	 * only the name of the PDC if itself is a BDC (samba4
 	 * idl) */
-	r->primary.string = global_myname();
+	r->primary.string = lp_netbios_name();
 
 	return NT_STATUS_OK;
 }
@@ -6132,7 +6132,7 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
 			/* make sure the name doesn't already exist as a user
 			   or local group */
 
-			fstr_sprintf( group_name, "%s\\%s", global_myname(), info.acct_name );
+			fstr_sprintf( group_name, "%s\\%s", lp_netbios_name(), info.acct_name );
 			status = can_create( p->mem_ctx, group_name );
 			if ( !NT_STATUS_IS_OK( status ) )
 				return status;

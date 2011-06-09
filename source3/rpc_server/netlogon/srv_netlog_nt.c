@@ -522,7 +522,7 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 	uint32_t rid;
 
 	status = dcerpc_samr_Connect2(b, mem_ctx,
-				      global_myname(),
+				      lp_netbios_name(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,

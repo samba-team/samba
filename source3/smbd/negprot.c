@@ -224,7 +224,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 	} else {
 		fstring myname;
 		char *host_princ_s = NULL;
-		name_to_fqdn(myname, global_myname());
+		name_to_fqdn(myname, lp_netbios_name());
 		strlower_m(myname);
 		if (asprintf(&host_princ_s, "cifs/%s@%s", myname, lp_realm())
 		    == -1) {
@@ -246,7 +246,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 
 	memset(blob_out.data, '\0', 16);
 
-	checked_strlcpy(unix_name, global_myname(), sizeof(unix_name));
+	checked_strlcpy(unix_name, lp_netbios_name(), sizeof(unix_name));
 	strlower_m(unix_name);
 	push_ascii_nstring(dos_name, unix_name);
 	strlcpy((char *)blob_out.data, dos_name, 17);

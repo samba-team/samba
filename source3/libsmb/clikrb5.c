@@ -1273,7 +1273,7 @@ done:
 		return ENOMEM;
 	}
 
-	put_name(buf, global_myname(), ' ', 0x20);
+	put_name(buf, lp_netbios_name(), ' ', 0x20);
 
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	{

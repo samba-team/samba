@@ -193,7 +193,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 static bool init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,struct dfs_Info1* dfs1)
 {
 	dfs1->path = talloc_asprintf(mem_ctx,
-				"\\\\%s\\%s\\%s", global_myname(),
+				"\\\\%s\\%s\\%s", lp_netbios_name(),
 				j->service_name, j->volume_name);
 	if (dfs1->path == NULL)
 		return False;
@@ -205,7 +205,7 @@ static bool init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,st
 static bool init_reply_dfs_info_2(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info2* dfs2)
 {
 	dfs2->path = talloc_asprintf(mem_ctx,
-			"\\\\%s\\%s\\%s", global_myname(), j->service_name, j->volume_name);
+			"\\\\%s\\%s\\%s", lp_netbios_name(), j->service_name, j->volume_name);
 	if (dfs2->path == NULL)
 		return False;
 	dfs2->comment = talloc_strdup(mem_ctx, j->comment);
@@ -219,9 +219,9 @@ static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	int ii;
 	if (j->volume_name[0] == '\0')
 		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
-			global_myname(), j->service_name);
+			lp_netbios_name(), j->service_name);
 	else
-		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s\\%s", global_myname(),
+		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s\\%s", lp_netbios_name(),
 			j->service_name, j->volume_name);
 
 	if (dfs3->path == NULL)

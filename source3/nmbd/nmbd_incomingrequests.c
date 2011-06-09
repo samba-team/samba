@@ -290,14 +290,14 @@ static int status_compare(char *n1,char *n2)
 		;
 	for (l2=0;l2<15 && n2[l2] && n2[l2] != ' ';l2++)
 		;
-	l3 = strlen(global_myname());
+	l3 = strlen(lp_netbios_name());
 
-	if ((l1==l3) && strncmp(n1,global_myname(),l3) == 0 && 
-			(l2!=l3 || strncmp(n2,global_myname(),l3) != 0))
+	if ((l1==l3) && strncmp(n1,lp_netbios_name(),l3) == 0 &&
+			(l2!=l3 || strncmp(n2,lp_netbios_name(),l3) != 0))
 		return -1;
 
-	if ((l2==l3) && strncmp(n2,global_myname(),l3) == 0 && 
-			(l1!=l3 || strncmp(n1,global_myname(),l3) != 0))
+	if ((l2==l3) && strncmp(n2,lp_netbios_name(),l3) == 0 &&
+			(l1!=l3 || strncmp(n1,lp_netbios_name(),l3) != 0))
 		return 1;
 
 	return memcmp(n1,n2,sizeof(name1));

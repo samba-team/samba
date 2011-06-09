@@ -58,7 +58,7 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
 	status = rpccli_netlogon_setup_creds(netlogon_pipe,
 					cli->desthost, /* server name */
 					domain,	       /* domain */
-					global_myname(), /* client name */
+					lp_netbios_name(), /* client name */
 					machine_account, /* machine account name */
 					machine_pwd,
 					sec_chan_type,

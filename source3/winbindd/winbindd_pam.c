@@ -1118,7 +1118,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	status = make_user_info(&user_info, user, user, domain, domain,
-				global_myname(), lm_resp, nt_resp, NULL, NULL,
+				lp_netbios_name(), lm_resp, nt_resp, NULL, NULL,
 				NULL, AUTH_PASSWORD_RESPONSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));
@@ -1348,7 +1348,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 		   'workstation' passed to the actual SamLogon call.
 		*/
 		names_blob = NTLMv2_generate_names_blob(
-			mem_ctx, global_myname(), lp_workgroup());
+			mem_ctx, lp_netbios_name(), lp_workgroup());
 
 		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain,
 				      pass,
@@ -1386,7 +1386,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 					     domain->dcname,
 					     name_user,
 					     name_domain,
-					     global_myname(),
+					     lp_netbios_name(),
 					     chal,
 					     lm_resp,
 					     nt_resp,

@@ -140,7 +140,7 @@ static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
 		my_sid = *sid;
 	}
 
-	my_acct_name = talloc_asprintf(talloc_tos(), "%s$", global_myname());
+	my_acct_name = talloc_asprintf(talloc_tos(), "%s$", lp_netbios_name());
 	if (my_acct_name == NULL) {
 		goto fail;
 	}
@@ -149,7 +149,7 @@ static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
 	s		= &packet.req.logon;
 
 	s->request_count	= 0;
-	s->computer_name	= global_myname();
+	s->computer_name	= lp_netbios_name();
 	s->user_name		= my_acct_name;
 	s->mailslot_name	= my_mailslot;
 	s->acct_control		= ACB_WSTRUST;
@@ -170,7 +170,7 @@ static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
 
 	ret = cli_prep_mailslot(false, NBT_MAILSLOT_NTLOGON, 0,
 				(char *)blob.data, blob.length,
-				global_myname(), 0, domain_name, 0x1c,
+				lp_netbios_name(), 0, domain_name, 0x1c,
 				dc_ss, dgm_id, p);
 fail:
 	TALLOC_FREE(frame);

@@ -6358,7 +6358,7 @@ static bool run_chain2(int dummy)
 	NTSTATUS status;
 
 	printf("starting chain2 test\n");
-	status = cli_start_connection(&cli1, global_myname(), host, NULL,
+	status = cli_start_connection(&cli1, lp_netbios_name(), host, NULL,
 				      port_to_use, Undefined, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;

@@ -36,7 +36,7 @@ static WERROR NetServerGetInfo_l_101(struct libnetapi_ctx *ctx,
 	struct SERVER_INFO_101 i;
 
 	i.sv101_platform_id	= PLATFORM_ID_NT;
-	i.sv101_name		= global_myname();
+	i.sv101_name		= lp_netbios_name();
 	i.sv101_version_major	= lp_major_announce_version();
 	i.sv101_version_minor	= lp_minor_announce_version();
 	i.sv101_type		= lp_default_server_announce();

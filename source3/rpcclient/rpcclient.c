@@ -775,7 +775,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
 						cli->desthost,   /* server name */
 						get_cmdline_auth_info_domain(auth_info),  /* domain */
-						global_myname(), /* client name */
+						lp_netbios_name(), /* client name */
 						machine_account, /* machine account name */
 						trust_password,
 						sec_channel_type,
@@ -1083,7 +1083,7 @@ out_free:
 	}
 
 
-	nt_status = cli_full_connection(&cli, global_myname(), binding->host,
+	nt_status = cli_full_connection(&cli, lp_netbios_name(), binding->host,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
 					get_cmdline_auth_info_username(rpcclient_auth_info),

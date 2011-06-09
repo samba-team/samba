@@ -196,7 +196,7 @@ static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
 			DEBUG(10, ("talloc_asprintf failed\n"));
 			continue;
 		}
-		if (strcmp(machine_name, global_myname()) == 0) {
+		if (strcmp(machine_name, lp_netbios_name()) == 0) {
 			p = session_list[i].username;
 			nm = strstr(p, sep);
 			if (nm) {
@@ -264,7 +264,7 @@ static struct wkssvc_NetWkstaInfo100 *create_wks_info_100(TALLOC_CTX *mem_ctx)
 	info100->version_minor	 = lp_minor_announce_version();
 
 	info100->server_name = talloc_asprintf_strupper_m(
-		info100, "%s", global_myname());
+		info100, "%s", lp_netbios_name());
 	info100->domain_name = talloc_asprintf_strupper_m(
 		info100, "%s", lp_workgroup());
 
@@ -293,7 +293,7 @@ static struct wkssvc_NetWkstaInfo101 *create_wks_info_101(TALLOC_CTX *mem_ctx)
 	info101->version_minor	 = lp_minor_announce_version();
 
 	info101->server_name = talloc_asprintf_strupper_m(
-		info101, "%s", global_myname());
+		info101, "%s", lp_netbios_name());
 	info101->domain_name = talloc_asprintf_strupper_m(
 		info101, "%s", lp_workgroup());
 	info101->lan_root = "";
@@ -324,7 +324,7 @@ static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 	info102->version_minor	 = lp_minor_announce_version();
 
 	info102->server_name = talloc_asprintf_strupper_m(
-		info102, "%s", global_myname());
+		info102, "%s", lp_netbios_name());
 	info102->domain_name = talloc_asprintf_strupper_m(
 		info102, "%s", lp_workgroup());
 	info102->lan_root = "";
@@ -528,7 +528,7 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 		/* For a local user the domain name and logon server are
 		 * both returned as the local machine's NetBIOS name */
 		ctr1->user1[i].logon_domain = ctr1->user1[i].logon_server =
-			talloc_asprintf_strupper_m(ctr1->user1, "%s", global_myname());
+			talloc_asprintf_strupper_m(ctr1->user1, "%s", lp_netbios_name());
 
 		ctr1->user1[i].other_domains = NULL;	/* Maybe in future? */
 	}

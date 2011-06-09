@@ -1145,7 +1145,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 		}
 
 		info102->platform_id	= PLATFORM_ID_NT;
-		info102->server_name	= global_myname();
+		info102->server_name	= lp_netbios_name();
 		info102->version_major	= lp_major_announce_version();
 		info102->version_minor	= lp_minor_announce_version();
 		info102->server_type	= lp_default_server_announce();
@@ -1171,7 +1171,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 		}
 
 		info101->platform_id	= PLATFORM_ID_NT;
-		info101->server_name	= global_myname();
+		info101->server_name	= lp_netbios_name();
 		info101->version_major	= lp_major_announce_version();
 		info101->version_minor	= lp_minor_announce_version();
 		info101->server_type	= lp_default_server_announce();
@@ -1190,7 +1190,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 		}
 
 		info100->platform_id	= PLATFORM_ID_NT;
-		info100->server_name	= global_myname();
+		info100->server_name	= lp_netbios_name();
 
 		r->out.info->info100 = info100;
 

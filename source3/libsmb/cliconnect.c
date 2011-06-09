@@ -1590,7 +1590,7 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	cli_temp_set_signing(cli);
 
 	status = ntlmssp_client_start(state,
-				      global_myname(),
+				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
 				      &state->ntlmssp_state);

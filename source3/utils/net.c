@@ -243,7 +243,7 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 		name = argv[0];
         }
 	else {
-		name = global_myname();
+		name = lp_netbios_name();
 	}
 
 	if(!initialize_password_db(false, NULL)) {
@@ -286,7 +286,7 @@ static int net_setlocalsid(struct net_context *c, int argc, const char **argv)
 		return 1;
 	}
 
-	if (!secrets_store_domain_sid(global_myname(), &sid)) {
+	if (!secrets_store_domain_sid(lp_netbios_name(), &sid)) {
 		DEBUG(0,("Can't store domain SID as a pdc/bdc.\n"));
 		return 1;
 	}
@@ -346,13 +346,13 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 	/* Generate one, if it doesn't exist */
 	get_global_sam_sid();
 
-	if (!secrets_fetch_domain_sid(global_myname(), &domain_sid)) {
+	if (!secrets_fetch_domain_sid(lp_netbios_name(), &domain_sid)) {
 		d_fprintf(stderr, _("Could not fetch local SID\n"));
 		return 1;
 	}
 	sid_to_fstring(sid_str, &domain_sid);
 	d_printf(_("SID for local machine %s is: %s\n"),
-		 global_myname(), sid_str);
+		 lp_netbios_name(), sid_str);
 
 	if (!secrets_fetch_domain_sid(c->opt_workgroup, &domain_sid)) {
 		d_fprintf(stderr, _("Could not fetch domain SID\n"));
@@ -895,7 +895,7 @@ static struct functable net_func[] = {
 	}
 
 	if (c->opt_requester_name) {
-		set_global_myname(c->opt_requester_name);
+		lp_set_cmdline("netbios name", c->opt_requester_name);
 	}
 
 	if (!c->opt_user_name && getenv("LOGNAME")) {

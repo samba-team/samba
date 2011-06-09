@@ -46,7 +46,7 @@ const char *my_sam_name(void)
 {
        /* Standalone servers can only use the local netbios name */
        if ( lp_server_role() == ROLE_STANDALONE )
-               return global_myname();
+               return lp_netbios_name();
 
        /* Default to the DOMAIN name when not specified */
        return lp_workgroup();
@@ -149,7 +149,7 @@ static int count_commas(const char *str)
 static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *pwd, bool create)
 {
 	const char *guest_account = lp_guestaccount();
-	const char *domain = global_myname();
+	const char *domain = lp_netbios_name();
 	char *fullname;
 	uint32_t urid;
 
@@ -2355,7 +2355,7 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 	if (pwd != NULL) {
 		*ret_pwd = pwd;
 		if (account_name != NULL) {
-			*account_name = global_myname();
+			*account_name = lp_netbios_name();
 		}
 
 		return true;
@@ -2393,7 +2393,7 @@ bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
 							channel))
 	{
 		if (account_name != NULL) {
-			*account_name = global_myname();
+			*account_name = lp_netbios_name();
 		}
 
 		return true;

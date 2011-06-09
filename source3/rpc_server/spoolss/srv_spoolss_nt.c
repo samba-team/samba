@@ -2523,7 +2523,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	}
 
 	/* setup the connection */
-	ret = cli_full_connection( &the_cli, global_myname(), remote_machine,
+	ret = cli_full_connection( &the_cli, lp_netbios_name(), remote_machine,
 		&rm_addr, 0, "IPC$", "IPC",
 		"", /* username */
 		"", /* domain */
@@ -6037,7 +6037,7 @@ static bool check_printer_ok(TALLOC_CTX *mem_ctx,
 		info2->location));
 
 	/* we force some elements to "correct" values */
-	info2->servername = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	info2->servername = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (info2->servername == NULL) {
 		return false;
 	}
@@ -6049,7 +6049,7 @@ static bool check_printer_ok(TALLOC_CTX *mem_ctx,
 	/* check to see if we allow printername != sharename */
 	if (lp_force_printername(snum)) {
 		info2->printername = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
-					global_myname(), info2->sharename);
+					lp_netbios_name(), info2->sharename);
 	} else {
 		/* make sure printername is in \\server\printername format */
 		fstrcpy(printername, info2->printername);
@@ -6060,7 +6060,7 @@ static bool check_printer_ok(TALLOC_CTX *mem_ctx,
 		}
 
 		info2->printername = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
-					global_myname(), p);
+					lp_netbios_name(), p);
 	}
 	if (info2->printername == NULL) {
 		return false;
@@ -6446,7 +6446,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 					  buffer.length);
 	}
 
-	push_reg_sz(mem_ctx, &buffer, global_myname());
+	push_reg_sz(mem_ctx, &buffer, lp_netbios_name());
 	winreg_set_printer_dataex(mem_ctx,
 				  session_info,
 				  msg_ctx,
@@ -6461,7 +6461,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	if (dnsdomname != NULL && dnsdomname[0] != '\0') {
 		longname = talloc_strdup(mem_ctx, dnsdomname);
 	} else {
-		longname = talloc_strdup(mem_ctx, global_myname());
+		longname = talloc_strdup(mem_ctx, lp_netbios_name());
 	}
 	if (longname == NULL) {
 		result = WERR_NOMEM;
@@ -6480,7 +6480,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 				  buffer.length);
 
 	uncname = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
-				  global_myname(), printer->sharename);
+				  lp_netbios_name(), printer->sharename);
 	push_reg_sz(mem_ctx, &buffer, uncname);
 	winreg_set_printer_dataex(mem_ctx,
 				  session_info,

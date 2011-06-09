@@ -49,7 +49,6 @@ extern char tar_type;
 static int port = 0;
 static char *service;
 static char *desthost;
-static char *calling_name;
 static bool grepable = false;
 static char *cmdstr = NULL;
 const char *cmd_ptr = NULL;
@@ -5042,7 +5041,7 @@ static int do_message_op(struct user_auth_info *a_info)
 
 	status = cli_connect_nb(desthost, have_ip ? &dest_ss : NULL,
 				port ? port : 139, name_type,
-				calling_name, Undefined, &cli);
+				lp_netbios_name(), Undefined, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
 		return 1;
@@ -5096,11 +5095,6 @@ static int do_message_op(struct user_auth_info *a_info)
 	if (!client_set_cur_dir("\\")) {
 		exit(ENOMEM);
 	}
-
-	/* initialize the netbios name so we can determine whether or
-	   not it was set by a command line option */
-
-	set_global_myname( "" );
 
         /* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbclient", DEBUG_DEFAULT_STDERR );
@@ -5247,11 +5241,6 @@ static int do_message_op(struct user_auth_info *a_info)
 					       poptGetArg(pc));
 	}
 
-	calling_name = talloc_strdup(frame, global_myname() );
-	if (!calling_name) {
-		exit(ENOMEM);
-	}
-
 	if ( override_logfile )
 		setup_logging( lp_logfile(), DEBUG_FILE );
 
@@ -5283,13 +5272,6 @@ static int do_message_op(struct user_auth_info *a_info)
 			--len;
 			service[len] = '\0';
 		}
-	}
-
-	if ( strlen(calling_name) != 0 ) {
-		set_global_myname( calling_name );
-	} else {
-		TALLOC_FREE(calling_name);
-		calling_name = talloc_strdup(frame, global_myname() );
 	}
 
 	smb_encrypt = get_cmdline_auth_info_smb_encrypt(auth_info);

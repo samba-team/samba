@@ -196,7 +196,7 @@ static NTSTATUS make_auth_gss(struct smb_srv_trans_enc_ctx *ec)
 	gss_cred_id_t srv_cred;
 	fstring fqdn;
 
-	name_to_fqdn(fqdn, global_myname());
+	name_to_fqdn(fqdn, lp_netbios_name());
 	strlower_m(fqdn);
 
 	status = get_srv_gss_creds("cifs", fqdn, GSS_C_ACCEPT, &srv_cred);

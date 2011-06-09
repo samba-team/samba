@@ -169,7 +169,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* setup the anonymous connection */
 
-	status = cli_full_connection( &cli, global_myname(), dc_name, &dc_ss, 0, "IPC$", "IPC",
+	status = cli_full_connection( &cli, lp_netbios_name(), dc_name, &dc_ss, 0, "IPC$", "IPC",
 		"", "", "", 0, Undefined);
 	if ( !NT_STATUS_IS_OK(status) )
 		goto done;
@@ -264,7 +264,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 	/* if this next call fails, then give up.  We can't do
 	   password changes on BDC's  --jerry */
 
-	if (!NT_STATUS_IS_OK(cli_full_connection(&cli, global_myname(), dc_name,
+	if (!NT_STATUS_IS_OK(cli_full_connection(&cli, lp_netbios_name(), dc_name,
 					   NULL, 0,
 					   "IPC$", "IPC",
 					   "", "",

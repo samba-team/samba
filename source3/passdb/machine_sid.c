@@ -97,7 +97,7 @@ static struct dom_sid *pdb_generate_sam_sid(void)
 		}
 	}
 
-	if (secrets_fetch_domain_sid(global_myname(), sam_sid)) {
+	if (secrets_fetch_domain_sid(lp_netbios_name(), sam_sid)) {
 
 		/* We got our sid. If not a pdc/bdc, we're done. */
 		if ( !IS_DC )
@@ -120,7 +120,7 @@ static struct dom_sid *pdb_generate_sam_sid(void)
 			/* Domain name sid doesn't match global sam sid. Re-store domain sid as 'local' sid. */
 
 			DEBUG(0,("pdb_generate_sam_sid: Mismatched SIDs as a pdc/bdc.\n"));
-			if (!secrets_store_domain_sid(global_myname(), &domain_sid)) {
+			if (!secrets_store_domain_sid(lp_netbios_name(), &domain_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID for local sid as PDC/BDC.\n"));
 				SAFE_FREE(sam_sid);
 				return NULL;
@@ -139,7 +139,7 @@ static struct dom_sid *pdb_generate_sam_sid(void)
 
 	if (read_sid_from_file(fname, sam_sid)) {
 		/* remember it for future reference and unlink the old MACHINE.SID */
-		if (!secrets_store_domain_sid(global_myname(), sam_sid)) {
+		if (!secrets_store_domain_sid(lp_netbios_name(), sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store SID from file.\n"));
 			SAFE_FREE(fname);
 			SAFE_FREE(sam_sid);
@@ -166,7 +166,7 @@ static struct dom_sid *pdb_generate_sam_sid(void)
            generate one and save it */
 	generate_random_sid(sam_sid);
 
-	if (!secrets_store_domain_sid(global_myname(), sam_sid)) {
+	if (!secrets_store_domain_sid(lp_netbios_name(), sam_sid)) {
 		DEBUG(0,("pdb_generate_sam_sid: Failed to store generated machine SID.\n"));
 		SAFE_FREE(sam_sid);
 		return NULL;

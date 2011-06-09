@@ -194,7 +194,7 @@ static bool make_krb5_skew_error(DATA_BLOB *pblob_out)
 		return False;
 	}
 	/* Create server principal. */
-	asprintf(&host_princ_s, "%s$@%s", global_myname(), lp_realm());
+	asprintf(&host_princ_s, "%s$@%s", lp_netbios_name(), lp_realm());
 	if (!host_princ_s) {
 		goto out;
 	}

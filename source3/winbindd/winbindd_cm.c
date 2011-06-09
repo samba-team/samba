@@ -885,7 +885,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 			(*cli)->use_kerberos = True;
 			DEBUG(5, ("connecting to %s from %s with kerberos principal "
-				  "[%s] and realm [%s]\n", controller, global_myname(),
+				  "[%s] and realm [%s]\n", controller, lp_netbios_name(),
 				  machine_krb5_principal, domain->alt_name));
 
 			winbindd_set_locator_kdc_envs(domain);
@@ -916,7 +916,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		(*cli)->use_kerberos = False;
 
 		DEBUG(5, ("connecting to %s from %s with username "
-			  "[%s]\\[%s]\n",  controller, global_myname(),
+			  "[%s]\\[%s]\n",  controller, lp_netbios_name(),
 			  lp_workgroup(), machine_account));
 
 		ads_status = cli_session_setup_spnego(*cli,
@@ -952,7 +952,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		/* Only try authenticated if we have a username */
 
 		DEBUG(5, ("connecting to %s from %s with username "
-			  "[%s]\\[%s]\n",  controller, global_myname(),
+			  "[%s]\\[%s]\n",  controller, lp_netbios_name(),
 			  ipc_domain, ipc_username));
 
 		if (NT_STATUS_IS_OK(cli_session_setup(
@@ -2627,7 +2627,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		 netlogon_pipe,
 		 domain->dcname, /* server name. */
 		 domain->name,   /* domain name */
-		 global_myname(), /* client name */
+		 lp_netbios_name(), /* client name */
 		 account_name,   /* machine account */
 		 mach_pwd,       /* machine password */
 		 sec_chan_type,  /* from get_trust_pw */

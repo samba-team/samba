@@ -2377,7 +2377,7 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 
 	b = samr_pipe->binding_handle;
 
-	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+	status = dcerpc_samr_Connect2(b, talloc_tos(), lp_netbios_name(),
 				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2583,7 +2583,7 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 
 	b = samr_pipe->binding_handle;
 
-	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+	status = dcerpc_samr_Connect2(b, talloc_tos(), lp_netbios_name(),
 				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2775,7 +2775,7 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 
 	b = samr_pipe->binding_handle;
 
-	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+	status = dcerpc_samr_Connect2(b, talloc_tos(), lp_netbios_name(),
 				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3044,7 +3044,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 	b = cli->binding_handle;
 
 	status = dcerpc_samr_Connect2(b, mem_ctx,
-				      global_myname(),
+				      lp_netbios_name(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,
@@ -3294,7 +3294,7 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 
 	b = cli->binding_handle;
 
-	init_lsa_AsciiString(&server, global_myname());
+	init_lsa_AsciiString(&server, lp_netbios_name());
 	init_lsa_AsciiString(&account, user);
 
 	status = dcerpc_samr_OemChangePasswordUser2(b, mem_ctx,
@@ -4306,7 +4306,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 	b = cli->binding_handle;
 
 	status = dcerpc_samr_Connect2(b, mem_ctx,
-				      global_myname(),
+				      lp_netbios_name(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,

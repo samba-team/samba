@@ -583,7 +583,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS status;
 	const char *logon_server = cli->desthost;
-	const char *computername = global_myname();
+	const char *computername = lp_netbios_name();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
 	enum netr_SamDatabaseID database_id = SAM_DATABASE_DOMAIN;
@@ -654,7 +654,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	uint32_t tmp;
 	const char *logon_server = cli->desthost;
-	const char *computername = global_myname();
+	const char *computername = lp_netbios_name();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
 	enum netr_SamDatabaseID database_id = SAM_DATABASE_DOMAIN;
@@ -1121,8 +1121,8 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 	status = rpccli_netlogon_setup_creds(cli,
 					     server_name, /* server name */
 					     lp_workgroup(), /* domain */
-					     global_myname(), /* client name */
-					     global_myname(), /* machine account name */
+					     lp_netbios_name(), /* client name */
+					     lp_netbios_name(), /* machine account name */
 					     trust_passwd_hash,
 					     sec_channel_type,
 					     &neg_flags);
@@ -1141,7 +1141,7 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 
 	status = dcerpc_netr_DatabaseRedo(b, mem_ctx,
 					  server_name,
-					  global_myname(),
+					  lp_netbios_name(),
 					  &clnt_creds,
 					  &srv_cred,
 					  e,
@@ -1187,7 +1187,7 @@ static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 
 	status = dcerpc_netr_LogonGetCapabilities(b, mem_ctx,
 						  cli->desthost,
-						  global_myname(),
+						  lp_netbios_name(),
 						  &credential,
 						  &return_authenticator,
 						  level,

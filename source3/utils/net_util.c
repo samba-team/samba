@@ -360,7 +360,7 @@ int net_use_krb_machine_account(struct net_context *c)
 
 	c->opt_password = secrets_fetch_machine_password(
 				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
+	if (asprintf(&user_name, "%s$@%s", lp_netbios_name(), lp_realm()) == -1) {
 		return -1;
 	}
 	c->opt_user_name = user_name;
@@ -382,7 +382,7 @@ int net_use_machine_account(struct net_context *c)
 
 	c->opt_password = secrets_fetch_machine_password(
 				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$", global_myname()) == -1) {
+	if (asprintf(&user_name, "%s$", lp_netbios_name()) == -1) {
 		return -1;
 	}
 	c->opt_user_name = user_name;

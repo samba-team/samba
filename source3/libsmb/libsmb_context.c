@@ -599,8 +599,8 @@ smbc_init_context(SMBCCTX *context)
                  * our hostname etc
                  */
                 char *netbios_name;
-                if (global_myname()) {
-                        netbios_name = SMB_STRDUP(global_myname());
+                if (lp_netbios_name()) {
+                        netbios_name = SMB_STRDUP(lp_netbios_name());
                 } else {
                         /*
                          * Hmmm, I want to get hostname as well, but I am too

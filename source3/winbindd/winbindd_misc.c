@@ -404,7 +404,7 @@ void winbindd_netbios_name(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: request netbios name\n",
 		  (unsigned long)state->pid));
 
-	fstrcpy(state->response->data.netbios_name, global_myname());
+	fstrcpy(state->response->data.netbios_name, lp_netbios_name());
 	request_ok(state);
 }
 

@@ -3263,7 +3263,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	}
 	option.types[1].fields[0].field = JOB_NOTIFY_FIELD_PRINTER_NAME;
 
-	clientname = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	clientname = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (!clientname) {
 		result = WERR_NOMEM;
 		goto done;
@@ -3429,7 +3429,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 
 	/* first get the connection to the remote server */
 
-	nt_status = cli_full_connection(&cli_server2, global_myname(), argv[2],
+	nt_status = cli_full_connection(&cli_server2, lp_netbios_name(), argv[2],
 					NULL, 0,
 					"IPC$", "IPC",
 					get_cmdline_auth_info_username(rpcclient_auth_info),

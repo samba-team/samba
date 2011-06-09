@@ -216,7 +216,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	state->called_type =
 		(called_type != -1) ? called_type : 0x20;
 	state->calling_name =
-		(calling_name != NULL) ? calling_name : global_myname();
+		(calling_name != NULL) ? calling_name : lp_netbios_name();
 	state->calling_type =
 		(calling_type != -1) ? calling_type : 0x00;
 

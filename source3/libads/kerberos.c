@@ -352,7 +352,7 @@ char* kerberos_standard_des_salt( void )
 {
 	fstring salt;
 
-	fstr_sprintf( salt, "host/%s.%s@", global_myname(), lp_realm() );
+	fstr_sprintf( salt, "host/%s.%s@", lp_netbios_name(), lp_realm() );
 	strlower_m( salt );
 	fstrcat( salt, lp_realm() );
 

@@ -190,7 +190,7 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 		is_standalone = false;
 	}
 
-	netbios_name = global_myname();
+	netbios_name = lp_netbios_name();
 	netbios_domain = lp_workgroup();
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dns_domain = get_mydnsdomname(talloc_tos());

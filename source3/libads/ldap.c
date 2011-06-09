@@ -657,7 +657,7 @@ got_connection:
 		/* Must use the userPrincipalName value here or sAMAccountName
 		   and not servicePrincipalName; found by Guenther Deschner */
 
-		if (asprintf(&ads->auth.user_name, "%s$", global_myname() ) == -1) {
+		if (asprintf(&ads->auth.user_name, "%s$", lp_netbios_name() ) == -1) {
 			DEBUG(0,("ads_connect: asprintf fail.\n"));
 			ads->auth.user_name = NULL;
 		}
@@ -3325,10 +3325,10 @@ char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine
 	int count = 0;
 	char *name = NULL;
 
-	status = ads_find_machine_acct(ads, &res, global_myname());
+	status = ads_find_machine_acct(ads, &res, lp_netbios_name());
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
-			global_myname()));
+			lp_netbios_name()));
 		goto out;
 	}
 
@@ -3360,7 +3360,7 @@ char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
 	status = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_upn: Failed to find account for %s\n",
-			global_myname()));
+			lp_netbios_name()));
 		goto out;
 	}
 
@@ -3389,10 +3389,10 @@ char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *mach
 	int count = 0;
 	char *name = NULL;
 
-	status = ads_find_machine_acct(ads, &res, global_myname());
+	status = ads_find_machine_acct(ads, &res, lp_netbios_name());
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
-			global_myname()));
+			lp_netbios_name()));
 		goto out;
 	}
 

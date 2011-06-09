@@ -8377,7 +8377,7 @@ static void call_trans2ioctl(connection_struct *conn,
 			SSVAL(pdata, 0, 0);
 		}
 		srvstr_push(pdata, req->flags2, pdata + 2,
-			    global_myname(), 15,
+			    lp_netbios_name(), 15,
 			    STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
 		srvstr_push(pdata, req->flags2, pdata+18,
 			    lp_servicename(SNUM(conn)), 13,

@@ -28,8 +28,6 @@
  Definitions for all names.
 ***********************************************************************/
 
-static char *smb_myname;
-static char *smb_myworkgroup;
 static int smb_num_netbios_names;
 static char **smb_my_netbios_names;
 
@@ -75,7 +73,6 @@ static bool set_my_netbios_names(const char *name, int i)
 
 void gfree_names(void)
 {
-	gfree_netbios_names();
 	free_netbios_names_array();
 	free_local_machine_name();
 }
@@ -93,7 +90,7 @@ bool set_netbios_aliases(const char **str_array)
 	for( namecount=0; str_array && (str_array[namecount] != NULL); namecount++ )
 		;
 
-	if ( global_myname() && *global_myname())
+	if ( lp_netbios_name() && *lp_netbios_name())
 		namecount++;
 
 	/* Allocate space for the netbios aliases */
@@ -102,8 +99,8 @@ bool set_netbios_aliases(const char **str_array)
 
 	/* Use the global_myname string first */
 	namecount=0;
-	if ( global_myname() && *global_myname()) {
-		set_my_netbios_names( global_myname(), namecount );
+	if ( lp_netbios_name() && *lp_netbios_name()) {
+		set_my_netbios_names( lp_netbios_name(), namecount );
 		namecount++;
 	}
 
@@ -138,19 +135,12 @@ bool init_names(void)
 {
 	int n;
 
-	if (global_myname() == NULL || *global_myname() == '\0') {
-		if (!set_global_myname(myhostname())) {
-			DEBUG( 0, ( "init_names: malloc fail.\n" ) );
-			return False;
-		}
-	}
-
 	if (!set_netbios_aliases(lp_netbios_aliases())) {
 		DEBUG( 0, ( "init_names: malloc fail.\n" ) );
 		return False;
 	}
 
-	set_local_machine_name(global_myname(),false);
+	set_local_machine_name(lp_netbios_name(),false);
 
 	DEBUG( 5, ("Netbios name list:-\n") );
 	for( n=0; my_netbios_names(n); n++ ) {
@@ -159,25 +149,6 @@ bool init_names(void)
 	}
 
 	return( True );
-}
-
-/***********************************************************************
- Allocate and set myname. Ensure upper case.
-***********************************************************************/
-
-bool set_global_myname(const char *myname)
-{
-	SAFE_FREE(smb_myname);
-	smb_myname = SMB_STRDUP(myname);
-	if (!smb_myname)
-		return False;
-	strupper_m(smb_myname);
-	return True;
-}
-
-const char *global_myname(void)
-{
-	return smb_myname;
 }
 
 /******************************************************************
@@ -190,11 +161,6 @@ const char *get_global_sam_name(void)
 	if (IS_DC) {
 		return lp_workgroup();
 	}
-	return global_myname();
+	return lp_netbios_name();
 }
 
-void gfree_netbios_names(void)
-{
-	SAFE_FREE( smb_myname );
-	SAFE_FREE( smb_myworkgroup );
-}

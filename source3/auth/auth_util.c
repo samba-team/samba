@@ -668,7 +668,7 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = samu_to_SamInfo3(result, sampass, global_myname(),
+	status = samu_to_SamInfo3(result, sampass, lp_netbios_name(),
 				  &result->info3, &result->extra);
 	TALLOC_FREE(sampass);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -758,7 +758,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 	struct auth_serversupplied_info *server_info;
 	static const char zeros[16] = {0};
 	const char *guest_account = lp_guestaccount();
-	const char *domain = global_myname();
+	const char *domain = lp_netbios_name();
 	struct netr_SamInfo3 info3;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;

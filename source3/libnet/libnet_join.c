@@ -1813,7 +1813,7 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(ctx, libnet_destroy_JoinCtx);
 
-	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	ctx->in.machine_name = talloc_strdup(mem_ctx, lp_netbios_name());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
@@ -1846,7 +1846,7 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(ctx, libnet_destroy_UnjoinCtx);
 
-	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	ctx->in.machine_name = talloc_strdup(mem_ctx, lp_netbios_name());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);

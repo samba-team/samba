@@ -493,10 +493,6 @@ char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user);
 struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user);
 
 /* The following definitions come from lib/util_names.c  */
-void gfree_netbios_names(void);
-bool set_global_myname(const char *myname);
-const char *global_myname(void);
-bool set_global_myworkgroup(const char *myworkgroup);
 const char *get_global_sam_name(void);
 
 /* The following definitions come from lib/util.c  */
@@ -1198,6 +1194,7 @@ char *lp_passwd_chat(void);
 const char *lp_passwordserver(void);
 const char *lp_name_resolve_order(void);
 const char *lp_netbios_scope(void);
+const char *lp_netbios_name(void);
 const char *lp_workgroup(void);
 const char *lp_realm(void);
 const char *lp_dnsdomain(void);

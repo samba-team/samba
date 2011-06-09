@@ -70,7 +70,7 @@ bool smbd_running(void)
 	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 	in_addr_to_sockaddr_storage(&ss, loopback_ip);
 
-	status = cli_connect_nb("localhost", &ss, 0, 0x20, global_myname(),
+	status = cli_connect_nb("localhost", &ss, 0, 0x20, lp_netbios_name(),
 				Undefined, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;

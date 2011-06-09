@@ -99,7 +99,7 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	sp_ctx->mech = SPNEGO_NTLMSSP;
 
 	status = auth_ntlmssp_client_start(sp_ctx,
-					global_myname(),
+					lp_netbios_name(),
 					lp_workgroup(),
 					lp_client_ntlmv2_auth(),
 					&sp_ctx->mech_ctx.ntlmssp_state);

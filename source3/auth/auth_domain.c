@@ -69,7 +69,7 @@ void attempt_machine_password_change(void)
 		DEBUG(0,("attempt_machine_password_change: unable to lock "
 			"the machine account password for machine %s in "
 			"domain %s.\n",
-			global_myname(), lp_workgroup() ));
+			lp_netbios_name(), lp_workgroup() ));
 		return;
 	}
 
@@ -77,7 +77,7 @@ void attempt_machine_password_change(void)
 			trust_passwd_hash, &lct, NULL)) {
 		DEBUG(0,("attempt_machine_password_change: unable to read the "
 			"machine account password for %s in domain %s.\n",
-			global_myname(), lp_workgroup()));
+			lp_netbios_name(), lp_workgroup()));
 		TALLOC_FREE(lock);
 		return;
 	}
@@ -146,7 +146,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	}
 
 	/* Attempt connection */
-	result = cli_full_connection(cli, global_myname(), dc_name, dc_ss, 0, 
+	result = cli_full_connection(cli, lp_netbios_name(), dc_name, dc_ss, 0,
 		"IPC$", "IPC", "", "", "", 0, Undefined);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -219,7 +219,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		result = rpccli_netlogon_setup_creds(netlogon_pipe,
 					dc_name, /* server name */
 					domain, /* domain */
-					global_myname(), /* client name */
+					lp_netbios_name(), /* client name */
 					account_name, /* machine account name */
 					machine_pwd,
 					sec_chan_type,

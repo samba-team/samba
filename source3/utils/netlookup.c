@@ -98,7 +98,7 @@ static struct con_struct *create_cs(struct net_context *c,
 	}
 #endif
 
-	nt_status = cli_full_connection(&cs->cli, global_myname(), global_myname(),
+	nt_status = cli_full_connection(&cs->cli, lp_netbios_name(), lp_netbios_name(),
 					&loopback_ss, 0,
 					"IPC$", "IPC",
 #if 0

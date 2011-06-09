@@ -144,7 +144,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	 * to be our primary workgroup name.
 	 */
 
-	if(strequal(work_name, global_myname()))
+	if(strequal(work_name, lp_netbios_name()))
 		unstrcpy(work_name,lp_workgroup());
 
 	/*
@@ -484,7 +484,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 	 * not needed in the LanMan announce code, but it won't hurt.
 	 */
 
-	if(strequal(work_name, global_myname()))
+	if(strequal(work_name, lp_netbios_name()))
 		unstrcpy(work_name,lp_workgroup());
 
 	/*
@@ -571,7 +571,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
 	/* We always return at least one name - our own. */
 	count = 1;
-	unstrcpy(myname, global_myname());
+	unstrcpy(myname, lp_netbios_name());
 	strupper_m(myname);
 	myname[15]='\0';
 	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
@@ -599,7 +599,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
     if(count >= (unsigned int)max_number_requested)
       break;
 
-    if(strnequal(servrec->serv.name, global_myname(),15))
+    if(strnequal(servrec->serv.name, lp_netbios_name(),15))
       continue;
 
     if(!(servrec->serv.type & SV_TYPE_BACKUP_BROWSER))
@@ -625,7 +625,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
 	send_mailslot(True, BROWSE_MAILSLOT,
 		outbuf,PTR_DIFF(p,outbuf),
-		global_myname(), 0, 
+		lp_netbios_name(), 0,
 		send_to_namestr,0,
 		sendto_ip, subrec->myip, port);
 }

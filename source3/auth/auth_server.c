@@ -85,7 +85,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		}
 
 		status = cli_connect_nb(desthost, &dest_ss, 0, 0x20,
-					global_myname(), Undefined, &cli);
+					lp_netbios_name(), Undefined, &cli);
 		if (NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
@@ -332,7 +332,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		baduser = talloc_asprintf(mem_ctx,
 					"%s%s",
 					INVALID_USER_PREFIX,
-					global_myname());
+					lp_netbios_name());
 		if (!baduser) {
 			return NT_STATUS_NO_MEMORY;
 		}

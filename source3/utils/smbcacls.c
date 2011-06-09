@@ -1150,7 +1150,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 
 	set_cmdline_auth_info_getpass(auth_info);
 
-	nt_status = cli_full_connection(&c, global_myname(), server, 
+	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
 				&ss, 0,
 				share, "?????",
 				get_cmdline_auth_info_username(auth_info),

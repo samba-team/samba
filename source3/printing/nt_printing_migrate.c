@@ -73,7 +73,7 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 
 	DEBUG(2, ("Migrating Form: %s\n", key_name));
 
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (srv_name_slash == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -164,7 +164,7 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 
 	DEBUG(2, ("Migrating Printer Driver: %s\n", key_name));
 
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (srv_name_slash == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

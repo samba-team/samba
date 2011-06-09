@@ -129,7 +129,7 @@ static void popt_common_callback(poptContext con,
 
 	case 'n':
 		if (arg) {
-			set_global_myname(arg);
+			lp_set_cmdline("netbios name", arg);
 		}
 		break;
 

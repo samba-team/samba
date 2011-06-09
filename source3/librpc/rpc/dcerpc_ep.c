@@ -78,7 +78,7 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 
 		switch (b->transport) {
 			case NCACN_NP:
-				b->host = talloc_asprintf(b, "\\\\%s", global_myname());
+				b->host = talloc_asprintf(b, "\\\\%s", lp_netbios_name());
 				if (b->host == NULL) {
 					status = NT_STATUS_NO_MEMORY;
 					goto done;

@@ -90,7 +90,7 @@ static krb5_error_code get_host_principal(krb5_context krbctx,
 	char *host_princ_s = NULL;
 	int err;
 
-	err = asprintf(&host_princ_s, "%s$@%s", global_myname(), lp_realm());
+	err = asprintf(&host_princ_s, "%s$@%s", lp_netbios_name(), lp_realm());
 	if (err == -1) {
 		return -1;
 	}

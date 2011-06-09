@@ -1370,7 +1370,7 @@ bool is_myname_or_ipaddr(const char *s)
 	}
 
 	/* Optimize for the common case */
-	if (strequal(servername, global_myname())) {
+	if (strequal(servername, lp_netbios_name())) {
 		return true;
 	}
 
