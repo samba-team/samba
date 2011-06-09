@@ -7135,10 +7135,14 @@ static void copy_service(struct service *pserviceDest, struct service *pserviceS
 					break;
 
 				case P_USTRING:
+				{
+					char *upper_string = strupper_talloc(talloc_tos(), 
+									     *(char **)src_ptr);
 					string_set((char **)dest_ptr,
-						   *(char **)src_ptr);
-					strupper_m(*(char **)dest_ptr);
+						   upper_string);
+					TALLOC_FREE(upper_string);
 					break;
+				}
 				case P_LIST:
 					TALLOC_FREE(*((char ***)dest_ptr));
 					*((char ***)dest_ptr) = str_list_copy(NULL, 
@@ -8007,10 +8011,13 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_USTRING:
-			string_set((char **)parm_ptr, pszParmValue);
-			strupper_m(*(char **)parm_ptr);
+		{
+			char *upper_string = strupper_talloc(talloc_tos(), 
+							     pszParmValue);
+			string_set((char **)parm_ptr, upper_string);
+			TALLOC_FREE(upper_string);
 			break;
-
+		}
 		case P_ENUM:
 			lp_set_enum_parm( &parm_table[parmnum], pszParmValue, (int*)parm_ptr );
 			break;
