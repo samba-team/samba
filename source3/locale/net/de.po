@@ -415,7 +415,7 @@ msgid "  net getdomainsid"
 msgstr ""
 
 #: ../../utils/net.c:663
-msgid "Display the maximul RID currently used"
+msgid "Display the maximum RID currently used"
 msgstr "Die höchste verwendete RID anzeigen"
 
 #: ../../utils/net.c:664
