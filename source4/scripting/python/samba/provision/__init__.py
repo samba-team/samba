@@ -1585,14 +1585,15 @@ def provision(logger, session_info, credentials, smbconf=None,
     if hostip is None:
         logger.info("Looking up IPv4 addresses")
         hostips = interface_ips_v4(lp)
-        if len(hostips) == 0:
-            logger.warning("No external IPv4 address has been found. Using loopback.")
-            hostip = '127.0.0.1'
-        else:
+        if len(hostips) > 0:
             hostip = hostips[0]
             if len(hostips) > 1:
                 logger.warning("More than one IPv4 address found. Using %s",
                     hostip)
+    if hostip == "127.0.0.1":
+        hostip = None
+    if hostip is None:
+        logger.warning("No IPv4 address will be assigned")
 
     if hostip6 is None:
         logger.info("Looking up IPv6 addresses")
@@ -1601,6 +1602,8 @@ def provision(logger, session_info, credentials, smbconf=None,
             hostip6 = hostips[0]
         if len(hostips) > 1:
             logger.warning("More than one IPv6 address found. Using %s", hostip6)
+    if hostip6 is None:
+        logger.warning("No IPv6 address will be assigned")
 
     if serverrole is None:
         serverrole = lp.get("server role")
@@ -1868,7 +1871,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
         smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
         realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
         configdn=configdn, serverdn=serverdn, domain=domain,
-        hostname=hostname, hostip="127.0.0.1", domainsid=domainsid,
+        hostname=hostname, hostip=None, domainsid=domainsid,
         machinepass=machinepass, serverrole="domain controller",
         sitename=sitename)
     res.lp.set("debuglevel", str(debuglevel))
