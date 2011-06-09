@@ -154,10 +154,6 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 int cli_set_message(char *buf,int num_words,int num_bytes,bool zero);
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
 void cli_set_port(struct cli_state *cli, int port);
-bool cli_state_seqnum_persistent(struct cli_state *cli,
-				 uint16_t mid);
-bool cli_state_seqnum_remove(struct cli_state *cli,
-			     uint16_t mid);
 void cli_setup_packet_buf(struct cli_state *cli, char *buf);
 NTSTATUS cli_set_domain(struct cli_state *cli, const char *domain);
 NTSTATUS cli_set_username(struct cli_state *cli, const char *username);

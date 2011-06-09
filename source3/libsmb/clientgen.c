@@ -68,37 +68,6 @@ bool cli_ucs2(struct cli_state *cli)
 	return ((cli->capabilities & CAP_UNICODE) != 0);
 }
 
-bool cli_state_seqnum_persistent(struct cli_state *cli,
-				 uint16_t mid)
-{
-	struct cli_state_seqnum *c;
-
-	for (c = cli->seqnum; c; c = c->next) {
-		if (c->mid == mid) {
-			c->persistent = true;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool cli_state_seqnum_remove(struct cli_state *cli,
-			     uint16_t mid)
-{
-	struct cli_state_seqnum *c;
-
-	for (c = cli->seqnum; c; c = c->next) {
-		if (c->mid == mid) {
-			DLIST_REMOVE(cli->seqnum, c);
-			TALLOC_FREE(c);
-			return true;
-		}
-	}
-
-	return false;
-}
-
 /****************************************************************************
  Setup basics in a outgoing packet.
 ****************************************************************************/
@@ -233,7 +202,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
 	cli->outbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
-	cli->seqnum = 0;
 	cli->inbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = false;

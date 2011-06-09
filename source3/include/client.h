@@ -46,13 +46,6 @@ struct print_job_info {
 	time_t t;
 };
 
-struct cli_state_seqnum {
-	struct cli_state_seqnum *prev, *next;
-	uint16_t mid;
-	uint32_t seqnum;
-	bool persistent;
-};
-
 struct cli_state {
 	/**
 	 * A list of subsidiary connections for DFS.
@@ -103,7 +96,6 @@ struct cli_state {
 	size_t max_xmit;
 	size_t max_mux;
 	char *outbuf;
-	struct cli_state_seqnum *seqnum;
 	char *inbuf;
 	unsigned int bufsize;
 	int initialised;
