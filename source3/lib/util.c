@@ -2003,7 +2003,7 @@ struct server_id interpret_pid(const char *pid_string)
 		result.vnn = get_my_vnn();
 		result.pid = pid;
 		result.task_id = task_id;
-	} else if (sscanf(pid_string, "%d", &pid) == 1) {
+	} else if (sscanf(pid_string, "%llu", &pid) == 1) {
 		result.vnn = get_my_vnn();
 		result.pid = pid;
 	} else {
