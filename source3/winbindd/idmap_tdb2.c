@@ -579,9 +579,6 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *ma
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* final SAFE_FREE safe */
-	data.dptr = NULL;
-
 	if (keystr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
