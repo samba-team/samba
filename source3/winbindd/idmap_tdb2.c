@@ -601,8 +601,6 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *ma
 		}
 
 		ret = idmap_tdb2_script(ctx, map, "IDTOSID %s", keystr);
-
-		/* store it on shared storage */
 		if (!NT_STATUS_IS_OK(ret)) {
 			goto done;
 		}
