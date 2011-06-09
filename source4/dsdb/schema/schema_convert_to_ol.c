@@ -134,6 +134,7 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 							may,
 							NULL);
 		if (schema_entry == NULL) {
+			talloc_free(mem_ctx);
 			DEBUG(0, ("failed to generate schema description for %s\n", name));
 			return NULL;
 		}
@@ -146,7 +147,8 @@ static char *print_schema_recursive(char *append_to_string, struct dsdb_schema *
 			out = talloc_asprintf_append(out, "objectClasses: %s\n", schema_entry);
 			break;
 		default:
-			DEBUG(0, ("Wrong type of target!\n"));
+			talloc_free(mem_ctx);
+			DEBUG(0,(__location__ " Wrong type of target %u!", (unsigned)target));
 			return NULL;
 		}
 		talloc_free(mem_ctx);
@@ -202,6 +204,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 	} else if (strcasecmp(target_str, "fedora-ds") == 0) {
 		target = TARGET_FEDORA_DS;
 	} else {
+		talloc_free(mem_ctx);
 		DEBUG(0, ("Invalid target type for schema conversion %s\n", target_str));
 		return NULL;
 	}
@@ -266,6 +269,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 
 	schema = dsdb_get_schema(ldb, mem_ctx);
 	if (!schema) {
+		talloc_free(mem_ctx);
 		DEBUG(0, ("No schema on ldb to convert!\n"));
 		return NULL;
 	}
@@ -278,7 +282,8 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 		out = talloc_strdup(mem_ctx, "dn: cn=schema\n");
 		break;
 	default:
-		DEBUG(0, ("Wrong type of target!\n"));
+		talloc_free(mem_ctx);
+		DEBUG(0,(__location__ " Wrong type of target %u!", (unsigned)target));
 		return NULL;
 	}
 
@@ -345,6 +350,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 							    false, false);
 
 		if (schema_entry == NULL) {
+			talloc_free(mem_ctx);
 			DEBUG(0, ("failed to generate attribute description for %s\n", name));
 			return NULL;
 		}
@@ -357,12 +363,16 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 			out = talloc_asprintf_append(out, "attributeTypes: %s\n", schema_entry);
 			break;
 		default:
-			DEBUG(0, ("Wrong type of target!\n"));
+			talloc_free(mem_ctx);
+			DEBUG(0,(__location__ " Wrong type of target %u!", (unsigned)target));
 			return NULL;
 		}
 	}
 
 	out = print_schema_recursive(out, schema, "top", target, attrs_skip, attr_map, oid_map);
+
+	talloc_steal(ldb, out);
+	talloc_free(mem_ctx);
 
 	return out;
 }
