@@ -32,7 +32,6 @@ struct cli_trans_state {
 	struct event_context *ev;
 	uint8_t cmd;
 	uint16_t mid;
-	uint32_t seqnum;
 	const char *pipe_name;
 	uint8_t *pipe_name_conv;
 	size_t pipe_name_conv_len;
@@ -65,7 +64,6 @@ static void cli_trans_cleanup_primary(struct cli_trans_state *state)
 	if (state->primary_subreq) {
 		cli_smb_req_set_mid(state->primary_subreq, 0);
 		cli_smb_req_unset_pending(state->primary_subreq);
-		cli_state_seqnum_remove(state->cli, state->mid);
 		TALLOC_FREE(state->primary_subreq);
 	}
 }
@@ -475,7 +473,6 @@ struct tevent_req *cli_trans_send(
 	 */
 	state->mid = cli_smb_req_mid(subreq);
 	cli_smb_req_set_mid(subreq, state->mid);
-	cli_state_seqnum_persistent(cli, state->mid);
 	state->primary_subreq = subreq;
 	talloc_set_destructor(state, cli_trans_state_destructor);
 
@@ -605,6 +602,14 @@ static void cli_trans_done2(struct tevent_req *subreq2)
 	NTSTATUS status;
 	bool sent_all;
 	uint8_t wct;
+	uint32_t seqnum;
+
+	/*
+	 * First backup the seqnum of the secondary request
+	 * and attach it to the primary request.
+	 */
+	seqnum = cli_smb_req_seqnum(subreq2);
+	cli_smb_req_set_seqnum(state->primary_subreq, seqnum);
 
 	status = cli_smb_recv(subreq2, state, NULL, 0, &wct, NULL,
 			      NULL, NULL);
