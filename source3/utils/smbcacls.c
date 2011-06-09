@@ -42,6 +42,8 @@ static int numeric;
 
 static int sddl;
 
+static const char *domain_sid = NULL;
+
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP, REQUEST_INHERIT};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
@@ -228,14 +230,22 @@ struct dom_sid* get_domain_sid(struct cli_state *cli) {
 		return NULL;
 	}
 
-	status = cli_lsa_lookup_domain_sid(cli, sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(sid);
-		DEBUG(0,("failed to lookup domain sid: %s\n", nt_errstr(status)));
+	if (domain_sid) {
+		if (!dom_sid_parse(domain_sid, sid)) {
+			DEBUG(0,("failed to parse domain sid\n"));
+			TALLOC_FREE(sid);
+		}
 	} else {
-		DEBUG(2,("Domain SID: %s\n", sid_string_dbg(sid)));
+		status = cli_lsa_lookup_domain_sid(cli, sid);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("failed to lookup domain sid: %s\n", nt_errstr(status)));
+			TALLOC_FREE(sid);
+		}
+
 	}
 
+	DEBUG(2,("Domain SID: %s\n", sid_string_dbg(sid)));
 	return sid;
 }
 
@@ -1314,6 +1324,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		{ "numeric", 0, POPT_ARG_NONE, &numeric, 1, "Don't resolve sids or masks to names" },
 		{ "sddl", 0, POPT_ARG_NONE, &sddl, 1, "Output and input acls in sddl format" },
 		{ "test-args", 't', POPT_ARG_NONE, &test_args, 1, "Test arguments"},
+		{ "domain-sid", 0, POPT_ARG_STRING, &domain_sid, 0, "Domain SID for sddl", "SID"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
