@@ -3192,7 +3192,7 @@ bool dsdb_dn_is_deleted_val(const struct ldb_val *val)
  */
 bool dsdb_dn_is_upgraded_link_val(struct ldb_val *val)
 {
-	return memmem(val->data, val->length, "<RMD_ADDTIME=", 13) != NULL;
+	return memmem(val->data, val->length, "<RMD_VERSION=", 13) != NULL;
 }
 
 /*

@@ -360,10 +360,6 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 	la->attid = sa->attributeID_id;
 	la->flags = active?DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:0;
 
-	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->originating_add_time, "RMD_ADDTIME");
-	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
-	}
 	status = dsdb_get_extended_dn_uint32(dsdb_dn->dn, &la->meta_data.version, "RMD_VERSION");
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
@@ -379,6 +375,12 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 	status = dsdb_get_extended_dn_uint64(dsdb_dn->dn, &la->meta_data.originating_usn, "RMD_ORIGINATING_USN");
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
+	}
+
+	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->originating_add_time, "RMD_ADDTIME");
+	if (!NT_STATUS_IS_OK(status)) {
+		/* this is possible for upgraded links */
+		la->originating_add_time = la->meta_data.originating_change_time;
 	}
 
 	werr = dsdb_dn_la_to_blob(sam_ctx, sa, schema, *la_list, dsdb_dn, &la->value.blob);
