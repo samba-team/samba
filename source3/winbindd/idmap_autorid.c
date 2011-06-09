@@ -534,10 +534,12 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		goto error;
 	}
 
-	return NT_STATUS_OK;
+	goto done;
 
-      error:
+error:
 	talloc_free(config);
+
+done:
 	talloc_free(storedconfig);
 
 	return status;
