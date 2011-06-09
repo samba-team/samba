@@ -436,7 +436,6 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	NTSTATUS status;
 	uint32_t hwm;
 	TALLOC_CTX *frame = talloc_stackframe();
-	char *config_option = NULL;
 
 	config = talloc_zero(frame, struct autorid_global_config);
 	if (!config) {
@@ -450,15 +449,8 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		goto error;
 	}
 
-	config_option = talloc_asprintf(frame, "idmap config %s", dom->name);
-	if (config_option == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto error;
-	}
-
 	config->minvalue = dom->low_id;
-	config->rangesize = lp_parm_int(-1, config_option, "rangesize", 100000);
+	config->rangesize = lp_parm_int(-1, "autorid", "rangesize", 100000);
 
 	if (config->rangesize < 2000) {
 		DEBUG(1, ("autorid rangesize must be at least 2000\n"));
