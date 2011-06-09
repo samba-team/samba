@@ -358,6 +358,20 @@ void cli_smb_req_set_mid(struct tevent_req *req, uint16_t mid)
 	state->mid = mid;
 }
 
+uint32_t cli_smb_req_seqnum(struct tevent_req *req)
+{
+	struct cli_smb_state *state = tevent_req_data(
+		req, struct cli_smb_state);
+	return state->seqnum;
+}
+
+void cli_smb_req_set_seqnum(struct tevent_req *req, uint32_t seqnum)
+{
+	struct cli_smb_state *state = tevent_req_data(
+		req, struct cli_smb_state);
+	state->seqnum = seqnum;
+}
+
 static size_t iov_len(const struct iovec *iov, int count)
 {
 	size_t result = 0;
