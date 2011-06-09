@@ -30,6 +30,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "passdb/machine_sid.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 
 static int test_args;
 
@@ -169,6 +170,75 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 	TALLOC_FREE(frame);
 	return status;
 }
+
+
+static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
+					  struct dom_sid *sid)
+{
+	union lsa_PolicyInformation *info = NULL;
+	uint16 orig_cnum = cli_state_get_tid(cli);
+	struct rpc_pipe_client *rpc_pipe = NULL;
+	struct policy_handle handle;
+	NTSTATUS status, result;
+	TALLOC_CTX *frame = talloc_stackframe();
+	const struct ndr_syntax_id *lsarpc_syntax = &ndr_table_lsarpc.syntax_id;
+
+	status = cli_tcon_andx(cli, "IPC$", "?????", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = cli_rpc_pipe_open_noauth(cli, lsarpc_syntax, &rpc_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto tdis;
+	}
+
+	status = rpccli_lsa_open_policy(rpc_pipe, frame, True,
+					GENERIC_EXECUTE_ACCESS, &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto tdis;
+	}
+
+	status = dcerpc_lsa_QueryInfoPolicy2(rpc_pipe->binding_handle,
+					     frame, &handle,
+					     LSA_POLICY_INFO_DOMAIN,
+					     &info, &result);
+
+	if (any_nt_status_not_ok(status, result, &status)) {
+		goto tdis;
+	}
+
+	*sid = *info->domain.sid;
+
+tdis:
+	TALLOC_FREE(rpc_pipe);
+	cli_tdis(cli);
+done:
+	cli_state_set_tid(cli, orig_cnum);
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct dom_sid* get_domain_sid(struct cli_state *cli) {
+	NTSTATUS status;
+
+	struct dom_sid *sid = talloc(talloc_tos(), struct dom_sid);
+	if (sid == NULL) {
+		DEBUG(0, ("Out of memory\n"));
+		return NULL;
+	}
+
+	status = cli_lsa_lookup_domain_sid(cli, sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(sid);
+		DEBUG(0,("failed to lookup domain sid: %s\n", nt_errstr(status)));
+	} else {
+		DEBUG(2,("Domain SID: %s\n", sid_string_dbg(sid)));
+	}
+
+	return sid;
+}
+
 
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(struct cli_state *cli, fstring str, const struct dom_sid *sid)
@@ -825,7 +895,7 @@ static int cacl_dump(struct cli_state *cli, const char *filename)
 	if (sd) {
 		if (sddl) {
 			printf("%s\n", sddl_encode(talloc_tos(), sd,
-					   get_global_sam_sid()));
+					   get_domain_sid(cli)));
 		} else {
 			sec_desc_print(cli, stdout, sd);
 		}
@@ -943,7 +1013,7 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 	int result = EXIT_OK;
 
 	if (sddl) {
-		sd = sddl_decode(talloc_tos(), the_acl, get_global_sam_sid());
+		sd = sddl_decode(talloc_tos(), the_acl, get_domain_sid(cli));
 	} else {
 		sd = sec_desc_parse(talloc_tos(), cli, the_acl);
 	}
