@@ -455,7 +455,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	}
 
 	config->minvalue = dom->low_id;
-	config->rangesize = lp_parm_int(-1, "autorid", "rangesize", 100000);
+	config->rangesize = lp_parm_int(-1, "idmap config *", "rangesize", 100000);
 
 	if (config->rangesize < 2000) {
 		DEBUG(1, ("autorid rangesize must be at least 2000\n"));
