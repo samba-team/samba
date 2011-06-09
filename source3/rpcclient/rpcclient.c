@@ -892,7 +892,6 @@ out_free:
 	struct sockaddr_storage server_ss;
 	NTSTATUS 		nt_status;
 	static int		opt_port = 0;
-	fstring new_workgroup;
 	int result = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	uint32_t flags = 0;
@@ -979,9 +978,6 @@ out_free:
 
 	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True))
 		fprintf(stderr, "Can't load %s\n", get_dyn_CONFIGFILE());
-
-	if ( strlen(new_workgroup) != 0 )
-		lp_set_cmdline("workgroup", new_workgroup );
 
 	/*
 	 * Get password
