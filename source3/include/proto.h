@@ -565,6 +565,7 @@ int set_maxfiles(int requested_max);
 int smb_mkstemp(char *name_template);
 void *smb_xmalloc_array(size_t size, unsigned int count);
 char *myhostname(void);
+char *myhostname_upper(void);
 char *lock_path(const char *name);
 char *pid_path(const char *name);
 char *state_path(const char *name);

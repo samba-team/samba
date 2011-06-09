@@ -1456,6 +1456,22 @@ char *myhostname(void)
 	return ret;
 }
 
+/*****************************************************************
+ Get local hostname and cache result.
+*****************************************************************/
+
+char *myhostname_upper(void)
+{
+	char *name;
+	static char *ret;
+	if (ret == NULL) {
+		name = get_myname(talloc_tos());
+		ret = strupper_talloc(NULL, name);
+		talloc_free(name);
+	}
+	return ret;
+}
+
 /**
  * @brief Returns an absolute path to a file concatenating the provided
  * @a rootpath and @a basename
