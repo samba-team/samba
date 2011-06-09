@@ -51,6 +51,8 @@ void cli_smb_req_unset_pending(struct tevent_req *req);
 bool cli_smb_req_set_pending(struct tevent_req *req);
 uint16_t cli_smb_req_mid(struct tevent_req *req);
 void cli_smb_req_set_mid(struct tevent_req *req, uint16_t mid);
+uint32_t cli_smb_req_seqnum(struct tevent_req *req);
+void cli_smb_req_set_seqnum(struct tevent_req *req, uint32_t seqnum);
 struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
 				uint8_t smb_command, uint8_t additional_flags,
