@@ -218,6 +218,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed writing into read-only directory with error $ret"
+
 	false
 	return
     fi
@@ -233,6 +234,49 @@ EOF
 	echo "failed writing into read-only directory - grep failed with $ret"
 	false
     fi
+}
+
+
+# Test sending a message
+test_message()
+{
+    tmpfile=$PREFIX/message_in.$$
+
+    cat > $tmpfile <<EOF
+Test message from pid $$
+EOF
+
+    cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD -M $SERVER -p 139 $ADDARGS -n msgtest < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed sending message to $SERVER with error $ret"
+	false
+	rm -f $tmpfile
+	return
+    fi
+
+    cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmpguest -p 139 $ADDARGS -c "get message.msgtest $PREFIX/message_out.$$" 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed getting sent message from $SERVER with error $ret"
+	false
+	return
+    fi
+
+    if [ cmp $PREFIX/message_out.$$ $tmpfile != 0 ] ; then
+	echo "failed comparison of message from $SERVER"
+	false
+	return
+    fi
+    true
 }
 
 # Test reading an owner-only file (logon as guest) fails.
@@ -442,6 +486,10 @@ testit "Accessing an MS-DFS link" \
 
 testit "ccache access works for smbclient" \
     test_ccache_access || \
+    failed=`expr $failed + 1`
+
+testit "sending a message to the remote server" \
+    test_message || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \

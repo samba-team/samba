@@ -866,6 +866,8 @@ sub provision($$$$$$$)
 
         resolv:host file = $dns_host_file
 
+        message command = mv %s $shrdir/message.%m
+
 	# Begin extra options
 	$extra_options
 	# End extra options
