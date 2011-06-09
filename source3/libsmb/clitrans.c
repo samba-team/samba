@@ -289,33 +289,33 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		}
 		break;
 	case SMBnttrans:
-		SCVAL(vwv,  0, state->max_setup);
-		SSVAL(vwv,  1, 0); /* reserved */
-		SIVAL(vwv,  3, state->num_param);
-		SIVAL(vwv,  7, state->num_data);
-		SIVAL(vwv, 11, state->rparam.max);
-		SIVAL(vwv, 15, state->rdata.max);
-		SIVAL(vwv, 19, this_param);
-		SIVAL(vwv, 23, param_offset);
-		SIVAL(vwv, 27, this_data);
-		SIVAL(vwv, 31, param_offset + this_param);
-		SCVAL(vwv, 35, state->num_setup);
-		SSVAL(vwv, 36, state->function);
+		SCVAL(vwv + 0, 0, state->max_setup);
+		SSVAL(vwv + 0, 1, 0); /* reserved */
+		SIVAL(vwv + 1, 1, state->num_param);
+		SIVAL(vwv + 3, 1, state->num_data);
+		SIVAL(vwv + 5, 1, state->rparam.max);
+		SIVAL(vwv + 7, 1, state->rdata.max);
+		SIVAL(vwv + 9, 1, this_param);
+		SIVAL(vwv +11, 1, param_offset);
+		SIVAL(vwv +13, 1, this_data);
+		SIVAL(vwv +15, 1, param_offset + this_param);
+		SCVAL(vwv +17, 1, state->num_setup);
+		SSVAL(vwv +18, 0, state->function);
 		memcpy(vwv + 19, state->setup,
 		       sizeof(uint16_t) * state->num_setup);
 		break;
 	case SMBnttranss:
-		SSVAL(vwv,  0, 0); /* reserved */
-		SCVAL(vwv,  2, 0); /* reserved */
-		SIVAL(vwv,  3, state->num_param);
-		SIVAL(vwv,  7, state->num_data);
-		SIVAL(vwv, 11, this_param);
-		SIVAL(vwv, 15, param_offset);
-		SIVAL(vwv, 19, state->param_sent);
-		SIVAL(vwv, 23, this_data);
-		SIVAL(vwv, 27, param_offset + this_param);
-		SIVAL(vwv, 31, state->data_sent);
-		SCVAL(vwv, 35, 0); /* reserved */
+		SSVAL(vwv + 0, 0, 0); /* reserved */
+		SCVAL(vwv + 1, 0, 0); /* reserved */
+		SIVAL(vwv + 1, 1, state->num_param);
+		SIVAL(vwv + 3, 1, state->num_data);
+		SIVAL(vwv + 5, 1, this_param);
+		SIVAL(vwv + 7, 1, param_offset);
+		SIVAL(vwv + 9, 1, state->param_sent);
+		SIVAL(vwv +11, 1, this_data);
+		SIVAL(vwv +13, 1, param_offset + this_param);
+		SIVAL(vwv +15, 1, state->data_sent);
+		SCVAL(vwv +17, 1, 0); /* reserved */
 		break;
 	}
 
