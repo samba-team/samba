@@ -1,6 +1,14 @@
 /*
    Unix SMB/CIFS implementation.
 
+   Copyright (C) Andrew Bartlett 2001-2003
+   Copyright (C) Andrew Tridgell 1994-1998,2000-2001
+   Copyright (C) Gerald (Jerry) Carter 2004
+   Copyright (C) Jelmer Vernooij 2003
+   Copyright (C) Jeremy Allison 2001-2009,2011
+   Copyright (C) Stefan Metzmacher 2003,2009
+   Copyright (C) Volker Lendecke 2011
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
