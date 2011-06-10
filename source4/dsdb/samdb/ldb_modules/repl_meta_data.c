@@ -1643,7 +1643,8 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	if (old_addtime == NULL) {
 		old_addtime = &tval;
 	}
-	if (dsdb_dn != old_dsdb_dn) {
+	if (dsdb_dn != old_dsdb_dn ||
+	    ldb_dn_get_extended_component(dn, "RMD_ADDTIME") == NULL) {
 		ret = ldb_dn_set_extended_component(dn, "RMD_ADDTIME", old_addtime);
 		if (ret != LDB_SUCCESS) return ret;
 	}
