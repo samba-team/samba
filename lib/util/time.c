@@ -738,8 +738,6 @@ static int tm_diff(struct tm *a, struct tm *b)
 }
 
 
-int extra_time_offset=0;
-
 /**
   return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
  */
@@ -753,7 +751,7 @@ _PUBLIC_ int get_time_zone(time_t t)
 	tm = localtime(&t);
 	if (!tm)
 		return 0;
-	return tm_diff(&tm_utc,tm)+60*extra_time_offset;
+	return tm_diff(&tm_utc,tm);
 }
 
 struct timespec nt_time_to_unix_timespec(NTTIME *nt)

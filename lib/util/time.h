@@ -300,7 +300,4 @@ struct timespec convert_time_t_to_timespec(time_t t);
 
 bool null_timespec(struct timespec ts);
 
-/** Extra minutes to add to the normal GMT to local time conversion. */
-extern int extra_time_offset;
-
 #endif /* _SAMBA_TIME_H_ */
