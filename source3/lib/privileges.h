@@ -1,3 +1,28 @@
+/*
+   Unix SMB/CIFS implementation.
+   Privileges handling functions
+   Copyright (C) Jean François Micouleau	1998-2001
+   Copyright (C) Simo Sorce			2002-2003
+   Copyright (C) Gerald (Jerry) Carter          2005
+   Copyright (C) Michael Adam			2007
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef _LIB_PRIVILEGES_H_
+#define _LIB_PRIVILEGES_H_
+
 #include "../libcli/security/privileges.h"
 
 /* The following definitions come from lib/privileges.c  */
@@ -16,3 +41,5 @@ NTSTATUS privilege_create_account(const struct dom_sid *sid );
 NTSTATUS privilege_delete_account(const struct dom_sid *sid);
 bool is_privileged_sid( const struct dom_sid *sid );
 bool grant_all_privileges( const struct dom_sid *sid );
+
+#endif /* _LIB_PRIVILEGES_H_ */
