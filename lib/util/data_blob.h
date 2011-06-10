@@ -1,7 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    DATA BLOB
-   
+
+   Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Andrew Bartlett 2001
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
