@@ -2,6 +2,16 @@
    Unix SMB/CIFS implementation.
    printcap headers
 
+   Copyright (C) Karl Auer 1993-1998
+
+   Re-working by Martin Kiff, 1994
+
+   Re-written again by Andrew Tridgell
+
+   Modified for SVID support by Norm Jacobs, 1997
+
+   Modified for CUPS support by Michael Sweet, 1999
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -15,6 +25,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef _PRINTING_PCAP_H_
+#define _PRINTING_PCAP_H_
 
 struct pcap_cache;
 
@@ -55,3 +68,5 @@ bool sysv_cache_reload(void);
 
 /* The following definitions come from printing/print_standard.c  */
 bool std_pcap_cache_reload(const char *pcap_name);
+
+#endif /* _PRINTING_PCAP_H_ */
