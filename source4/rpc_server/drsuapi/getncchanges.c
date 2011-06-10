@@ -362,18 +362,26 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 
 	status = dsdb_get_extended_dn_uint32(dsdb_dn->dn, &la->meta_data.version, "RMD_VERSION");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_VERSION in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
 	}
 	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->meta_data.originating_change_time, "RMD_CHANGETIME");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_CHANGETIME in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
 	}
 	status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &la->meta_data.originating_invocation_id, "RMD_INVOCID");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_INVOCID in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
 	}
 	status = dsdb_get_extended_dn_uint64(dsdb_dn->dn, &la->meta_data.originating_usn, "RMD_ORIGINATING_USN");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_ORIGINATING_USN in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
 	}
 
