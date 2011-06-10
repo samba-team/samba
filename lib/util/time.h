@@ -1,7 +1,12 @@
 /* 
    Unix SMB/CIFS implementation.
    time utility functions
-   
+
+   Copyright (C) Andrew Tridgell 		1992-2004
+   Copyright (C) Stefan (metze) Metzmacher	2002
+   Copyright (C) Jeremy Allison			2007
+   Copyright (C) Andrew Bartlett                2011
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
