@@ -1,3 +1,20 @@
--I. -I./.. -Iinclude -I./../lib/replace -I./../lib/tevent -I./librpc -I./../lib/talloc -I../lib/tdb/include
--I./../bin/default/include -I./../bin/default/source3 -I./../bin/default
--Iinclude/includes.h.gch
+-I.
+-I./..
+-I./../lib/replace
+-I./../lib/talloc
+-I./../lib/tevent
+-I./../lib/popt
+-I./../lib/iniparser/src
+-I./../lib/popt
+-I./../lib/tdb/include
+-I./include/autoconf
+-I./include
+-I./librpc
+-I./lib
+-DDEBUG_PASSWORD
+-DDEVELOPER
+-DHAVE_CONFIG_H
+-D_GNU_SOURCE
+-D_SAMBA_BUILD_=3
+-D_REENTRANT
+-DUSING_SMBCONTROL
