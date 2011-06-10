@@ -17,7 +17,7 @@ def run_task(t, k):
 def run_named_build_task(cmd):
 	'''run a named build task, matching the cmd name using fnmatch
 	wildcards against inputs and outputs of all build tasks'''
-	bld = fake_build_environment()
+	bld = fake_build_environment(info=False)
 	found = False
 	cwd_node = bld.root.find_dir(os.getcwd())
 	top_node = bld.root.find_dir(bld.srcnode.abspath())
@@ -50,6 +50,28 @@ def run_named_build_task(cmd):
 		raise Utils.WafError("Unable to find build target matching %s" % cmd)
 
 
+def rewrite_compile_targets():
+	'''cope with the bin/ form of compile target'''
+	if not Options.options.compile_targets:
+		return
+
+	bld = fake_build_environment(info=False)
+	targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+	tlist = []
+
+	for t in Options.options.compile_targets.split(','):
+		if not os.path.islink(t):
+			tlist.append(t)
+			continue
+		link = os.readlink(t)
+		list = link.split('/')
+		for name in [list[-1], '/'.join(list[-2:])]:
+			if name in targets:
+				tlist.append(name)
+				continue
+	Options.options.compile_targets = ",".join(tlist)
+
+
 
 def wildcard_main(missing_cmd_fn):
 	'''this replaces main from Scripting, allowing us to override the
@@ -59,6 +81,9 @@ def wildcard_main(missing_cmd_fn):
 	   the name of the requested command
 	   '''
 	Scripting.commands = Options.arg_line[:]
+
+	# rewrite the compile targets to cope with the bin/xx form
+	rewrite_compile_targets()
 
 	while Scripting.commands:
 		x = Scripting.commands.pop(0)
@@ -99,7 +124,7 @@ def wildcard_main(missing_cmd_fn):
 
 
 
-def fake_build_environment():
+def fake_build_environment(info=True, flush=False):
 	"""create all the tasks for the project, but do not run the build
 	return the build context in use"""
 	bld = getattr(Utils.g_module, 'build_context', Utils.Context)()
@@ -119,10 +144,12 @@ def fake_build_environment():
 	bld.load_dirs(proj[SRCDIR], proj[BLDDIR])
 	bld.load_envs()
 
-	Logs.info("Waf: Entering directory `%s'" % bld.bldnode.abspath())
+	if info:
+		Logs.info("Waf: Entering directory `%s'" % bld.bldnode.abspath())
 	bld.add_subdirs([os.path.split(Utils.g_module.root_path)[0]])
 
 	bld.pre_build()
-	bld.flush()
+	if flush:
+		bld.flush()
 	return bld
 
