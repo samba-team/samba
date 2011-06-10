@@ -201,7 +201,7 @@ static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 			break;
 		};
 		t->domain_index = n->sid_index;
-		sid_peek_rid(&state->sids[i], &t->rid);
+		sid_peek_rid(&state->non_cached[i], &t->rid);
 		t->unix_id = (uint64_t)-1;
 	}
 
@@ -268,6 +268,9 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 			}
 		} else {
 			unix_id = state->ids.ids[num_non_cached].unix_id;
+			if (unix_id == -1) {
+				found = false;
+			}
 			switch(state->ids.ids[num_non_cached].type) {
 			case WBC_ID_TYPE_UID:
 				type = 'U';
