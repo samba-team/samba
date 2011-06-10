@@ -585,7 +585,6 @@ static int net_conf_addshare(struct net_context *c,
 	const char *comment = NULL;
 	const char *guest_ok = "no";
 	const char *writeable = "no";
-	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (c->display_usage) {
@@ -681,22 +680,6 @@ static int net_conf_addshare(struct net_context *c,
 	if (path[0] != '/') {
 		d_fprintf(stderr,
 			  _("Error: path '%s' is not an absolute path.\n"),
-			  path);
-		goto done;
-	}
-
-	if (sys_stat(path, &sbuf, false) != 0) {
-		d_fprintf(stderr,
-			  _("ERROR: cannot stat path '%s' to ensure "
-			    "this is a directory.\n"
-			    "Error was '%s'.\n"),
-			  path, strerror(errno));
-		goto done;
-	}
-
-	if (!S_ISDIR(sbuf.st_ex_mode)) {
-		d_fprintf(stderr,
-			  _("ERROR: path '%s' is not a directory.\n"),
 			  path);
 		goto done;
 	}
