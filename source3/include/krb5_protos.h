@@ -1,3 +1,28 @@
+/*
+   Unix SMB/CIFS implementation.
+   simple kerberos5 routines for active directory
+   Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Luke Howard 2002-2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Guenther Deschner 2005-2009
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef _INCLUDE_KRB5_PROTOS_H_
+#define _INCLUDE_KRB5_PROTOS_H_
+
 struct PAC_DATA;
 struct PAC_SIGNATURE_DATA;
 
@@ -38,6 +63,8 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #ifndef HAVE_INITIALIZE_KRB5_ERROR_TABLE
 #define initialize_krb5_error_table()
 #endif
+
+/* The following definitions come from libsmb/clikrb5.c  */
 
 /* Samba wrapper function for krb5 functionality. */
 bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr);
@@ -146,9 +173,9 @@ int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
 			time_t *tgs_expire,
 			const char *impersonate_princ_s);
 
-/* The following definitions come from libsmb/clikrb5.c  */
-
 bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata,
 			   DATA_BLOB *edata_out);
 bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data);
+
+#endif /* _INCLUDE_KRB5_PROTOS_H_ */
