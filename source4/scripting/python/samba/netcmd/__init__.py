@@ -212,3 +212,5 @@ from samba.netcmd.ldapcmp import cmd_ldapcmp
 commands["ldapcmp"] = cmd_ldapcmp()
 from samba.netcmd.testparm import cmd_testparm
 commands["testparm"] =  cmd_testparm()
+from samba.netcmd.dbcheck import cmd_dbcheck
+commands["dbcheck"] =  cmd_dbcheck()
