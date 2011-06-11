@@ -51,7 +51,8 @@ test_ndr_push_string (struct torture_context *tctx, const char *string,
 		torture_assert(tctx, ndr->data != NULL,
 		               "ndr_push_string: succeeded but NULL data");
 
-		torture_assert(tctx, strcmp_pass == !strcmp(string, ndr->data),
+		torture_assert(tctx,
+			       strcmp_pass == !strcmp(string, (char *)ndr->data),
 		               "ndr_push_string: post-push strcmp");
 	}
 
@@ -104,8 +105,6 @@ test_ndr_pull_string (struct torture_context *tctx, const char *string,
 static bool
 torture_ndr_string(struct torture_context *torture)
 {
-	bool ok;
-	int i;
 	const char *saved_dos_cp = lpcfg_dos_charset(torture->lp_ctx);
 
 	torture_assert(torture,
