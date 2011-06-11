@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) Matthieu Patou <mat@matws.net> 2010
+# Copyright (C) Matthieu Patou <mat@matws.net> 2010-2011
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,16 @@ DIRS="private etc sysvol"
 #Number of days to keep the backup
 DAYS=90
 WHEN=`date +%d%m%y`
+
+if [ ! -d $WHERE ]; then
+	echo "Missing backup directorty $WHERE"
+	exit 1
+fi
+
+if [ ! -d $FROMWHERE ]; then
+	echo "Missing or wrong provision directorty $FROMWHERE"
+	exit 1
+fi
 
 cd $FROMWHERE
 for d in $DIRS;do
