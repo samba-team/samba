@@ -162,7 +162,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	struct cvfs_private *p;
 	const char *host, *user, *pass, *domain, *remote_share, *sharename;
-	struct composite_context *creq;
 	struct share_config *scfg = ntvfs->ctx->config;
 	struct smb2_tree *tree;
 	struct cli_credentials *credentials;
