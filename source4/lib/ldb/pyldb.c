@@ -2442,15 +2442,20 @@ static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
 
 static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args)
 {
-	PyObject *name, *ret;
-	if (!PyArg_ParseTuple(args, "O", &name))
+	PyObject *name, *ret, *retobj;
+	retobj = NULL;
+	if (!PyArg_ParseTuple(args, "O|O", &name, &retobj))
 		return NULL;
 
 	ret = py_ldb_msg_getitem_helper(self, name);
 	if (ret == NULL) {
 		if (PyErr_Occurred())
 			return NULL;
-		Py_RETURN_NONE;
+		if (retobj != NULL) {
+			return retobj;
+		} else {
+			Py_RETURN_NONE;
+		}
 	}
 	return ret;
 }
