@@ -4146,7 +4146,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &extra_time_offset,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "NIS homedir",
