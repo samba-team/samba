@@ -262,11 +262,11 @@ static bool smb_raw_setinfo_backend(struct smbcli_tree *tree,
 		return smb_raw_setfileinfo_passthru(mem_ctx, parms->generic.level,
 						    parms, blob);
 
-		/* Unhandled levels */
-
+	/* Unhandled levels */
 	case RAW_SFILEINFO_UNIX_LINK:
 	case RAW_SFILEINFO_UNIX_HLINK:
 	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
+	case RAW_SFILEINFO_LINK_INFORMATION:
 		break;
 	}
 
