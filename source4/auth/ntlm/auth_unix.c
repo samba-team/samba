@@ -607,12 +607,10 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, struct loadparm_context *lp
 {
 	char *username;
 	char *password;
-	char *pwcopy;
 	char *salt;
 	char *crypted;
 	struct passwd *pws;
 	NTSTATUS nt_status;
-	int level = lpcfg_passwordlevel(lp_ctx);
 
 	*ret_passwd = NULL;
 
