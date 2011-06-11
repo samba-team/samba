@@ -437,6 +437,17 @@ class DnTests(unittest.TestCase):
         x = ldb.Dn(self.ldb, "dc=foo26,bar=bloe")
         self.assertEquals("/bloe\nfoo26", x.canonical_ex_str())
 
+    def test_ldb_base_compare(self):
+        """Testing ldb_dn_compare_dn"""
+        dn1 = ldb.Dn(self.ldb, "dc=base")
+        dn2 = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        dn3 = ldb.Dn(self.ldb, "cn=bar,dc=base")
+        dn4 = ldb.Dn(self.ldb, "cn=baz,cn=bar,dc=base")
+
+        self.assertEquals(0, dn2.compare_base(dn1))
+        self.assertEquals(0, dn4.compare_base(dn1))
+        self.assertEquals(0, dn4.compare_base(dn3))
+        self.assertFalse(dn3.compare_base(dn2) == 0)
 
 class LdbMsgTests(unittest.TestCase):
 
