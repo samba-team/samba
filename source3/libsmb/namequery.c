@@ -1423,9 +1423,18 @@ NTSTATUS name_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct name_query_state);
 	NTSTATUS status;
 
-	if (tevent_req_is_nterror(req, &status)
-	    && !NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		return status;
+	if (tevent_req_is_nterror(req, &status)) {
+		if (state->bcast &&
+		    NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			/*
+			 * In the broadcast case we collect replies until the
+			 * timeout.
+			 */
+			status = NT_STATUS_OK;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 	if (state->num_addrs == 0) {
 		return NT_STATUS_NOT_FOUND;
