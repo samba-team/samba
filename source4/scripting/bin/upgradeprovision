@@ -1024,6 +1024,9 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
 
         delta.remove("name")
 
+        if len(delta.items()) == 1:
+            continue
+
         if len(delta.items()) > 1 and usns is not None:
             # Fetch the replPropertyMetaData
             res = samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
