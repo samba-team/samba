@@ -1064,7 +1064,6 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
             modcontrols = []
             relaxedatt = ['iscriticalsystemobject', 'grouptype']
             # Let's try to reduce as much as possible the use of relax control
-            #for checkedatt in relaxedatt:
             for attr in delta.keys():
                 if attr.lower() in relaxedatt:
                     modcontrols = ["relax:0", "provision:0"]
