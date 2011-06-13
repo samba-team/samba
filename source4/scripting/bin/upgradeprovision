@@ -117,6 +117,7 @@ hashOverwrittenAtt = {  "prefixMap": replace, "systemMayContain": replace,
 backlinked = []
 forwardlinked = set()
 dn_syntax_att = []
+not_replicated = []
 def define_what_to_log(opts):
     what = 0
     if opts.debugchange:
@@ -238,6 +239,25 @@ def populate_links(samdb, schemadn):
     for t in linkedAttHash.keys():
         forwardlinked.add(t)
 
+def isReplicated(att):
+    """ Indicate if the attribute is replicated or not
+
+    :param att: Name of the attribute to be tested
+    :return: True is the attribute is replicated, False otherwise
+    """
+
+    return (att not in not_replicated)
+
+def populateNotReplicated(samdb, schemadn):
+    """Populate an array with all the attributes that are not replicated
+
+    :param samdb: A LDB object for sam.ldb file
+    :param schemadn: DN of the schema for the partition"""
+    res = samdb.search(expression="(&(objectclass=attributeSchema)(systemflags:1.2.840.113556.1.4.803:=1))", base=Dn(samdb,
+                        str(schemadn)), scope=SCOPE_SUBTREE,
+                        attrs=["lDAPDisplayName"])
+    for elem in res:
+        not_replicated.append(elem["lDAPDisplayName"])
 
 def populate_dnsyntax(samdb, schemadn):
     """Populate an array with all the attributes that have DN synthax
