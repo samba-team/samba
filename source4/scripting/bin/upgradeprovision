@@ -1054,7 +1054,8 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
 
         delta.dn = dn
         if len(delta.items()) >1:
-            attributes=", ".join(delta.keys())
+            # Skip dn as the value is not really changed ...
+            attributes=", ".join(delta.keys()[1:])
             modcontrols = []
             relaxedatt = ['iscriticalsystemobject', 'grouptype']
             # Let's try to reduce as much as possible the use of relax control
