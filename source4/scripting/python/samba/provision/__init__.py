@@ -266,7 +266,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     names.domaindn=current[0]["defaultNamingContext"]
     names.rootdn=current[0]["rootDomainNamingContext"]
     # default site name
-    res3 = samdb.search(expression="(objectClass=*)",
+    res3 = samdb.search(expression="(objectClass=site)",
         base="CN=Sites," + configdn, scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
     names.sitename = str(res3[0]["cn"])
 
