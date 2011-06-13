@@ -878,6 +878,9 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
     dn = current[0].dn
 
     for att in list(delta):
+        if att == "dn":
+            # dn is not removable
+            continue
         # We have updated by provision usn information so let's exploit
         # replMetadataProperties
         if att in forwardlinked:
