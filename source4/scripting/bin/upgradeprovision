@@ -902,10 +902,22 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
 
         attrUSN = None
         if hash_attr_usn.get(att):
-            attrUSN = hash_attr_usn.get(att)
+            [attrUSN, attInvId] = hash_attr_usn.get(att)
 
-        if att == "forceLogoff" and attrUSN is None:
-            continue
+        if attrUSN is None:
+            # If it's a replicated attribute and we don't have any USN
+            # information about it. It means that we never saw it before
+            # so let's add it !
+            # If it is a replicated attribute but we are not master on it
+            # (ie. not initially added in the provision we masterize).
+            # attrUSN will be -1
+            if isReplicated(att):
+                continue
+            elif att in hashAttrNotCopied.keys():
+                delta.remove(att)
+            else:
+                continue
+
         if attrUSN is None:
             delta.remove(att)
             continue
@@ -956,7 +968,7 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
 
     return delta
 
-def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
+def update_present(ref_samdb, samdb, basedn, listPresent, usns):
     """ This function updates the object that are already present in the
         provision
 
@@ -966,8 +978,8 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                    (ie. DC=foo, DC=bar)
     :param listPresent: A list of object that is present in the provision
     :param usns: A list of USN range modified by previous provision and
-                 upgradeprovision
-    :param invocationid: The value of the invocationid for the current DC"""
+                 upgradeprovision grouped by invocation ID
+    """
 
     # This hash is meant to speedup lookup of attribute name from an oid,
     # it's for the replPropertyMetaData handling
@@ -1026,10 +1038,10 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 # We put in this hash only modification
                 # made on the current host
                 att = hash_oid_name[samdb.get_oid_from_attid(o.attid)]
-                if str(o.originating_invocation_id) == str(invocationid):
-                # Note we could just use 1 here
-                    hash_attr_usn[att] = o.originating_usn
+                if str(o.originating_invocation_id) in usns.keys():
+                    hash_attr_usn[att] = [o.originating_usn, str(o.originating_invocation_id)]
                 else:
+                    hash_attr_usn[att] = [-1, None]
 
         if usns is not None:
             delta = checkKeepAttributeWithMetadata(delta, att, message, reference,
@@ -1160,7 +1172,7 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
         message(SIMPLE, "Schema reloaded!")
 
         changed = update_present(ref_samdb, samdb, basedn, listPresent,
-                                    provisionUSNs, names.invocation)
+                                    provisionUSNs)
         message(SIMPLE, "There are %d changed objects" % (changed))
         return 1
 
@@ -1665,9 +1677,19 @@ if __name__ == '__main__':
         # 4)
         lastProvisionUSNs = get_last_provision_usn(ldbs.sam)
         if lastProvisionUSNs is not None:
-            message(CHANGE,
-                "Find a last provision USN, %d range(s)" % len(lastProvisionUSNs))
+            v = 0
+            for k in lastProvisionUSNs.keys():
+                for r in lastProvisionUSNs[k]:
+                    v = v + 1
 
+            message(CHANGE,
+                "Find last provision USN, %d invocation(s) for a total of %d ranges" % \
+                            (len(lastProvisionUSNs.keys()), v /2 ))
+
+            if lastProvisionUSNs.get("default") != None:
+                message(CHANGE, "Old style for usn ranges used")
+                lastProvisionUSNs[str(names.invocation)] = lastProvisionUSNs["default"]
+                del lastProvisionUSNs["default"]
         # Objects will be created with the admin session
         # (not anymore system session)
         adm_session = admin_session(lp, str(names.domainsid))
@@ -1853,7 +1875,7 @@ if __name__ == '__main__':
             check_for_DNS(newpaths.private_dir, paths.private_dir)
             # 22)
             if lastProvisionUSNs is not None:
-                update_provision_usn(ldbs.sam, minUSN, maxUSN)
+                update_provision_usn(ldbs.sam, minUSN, maxUSN, names.invocation)
             if opts.full and (names.policyid is None or names.policyid_dc is None):
                 update_policyids(names, ldbs.sam)
         if opts.full or opts.resetfileacl or opts.fixntacl:

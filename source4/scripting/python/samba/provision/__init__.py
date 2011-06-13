@@ -322,7 +322,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
         raise ProvisioningError("Unable to find uid/gid for Domain Admins rid")
     return names
 
-def update_provision_usn(samdb, low, high, replace=False):
+def update_provision_usn(samdb, low, high, id, replace=False):
     """Update the field provisionUSN in sam.ldb
 
     This field is used to track range of USN modified by provision and
@@ -333,6 +333,7 @@ def update_provision_usn(samdb, low, high, replace=False):
     :param samdb: An LDB object connect to sam.ldb
     :param low: The lowest USN modified by this upgrade
     :param high: The highest USN modified by this upgrade
+    :param id: The invocation id of the samba's dc
     :param replace: A boolean indicating if the range should replace any
                     existing one or appended (default)
     """
@@ -344,17 +345,24 @@ def update_provision_usn(samdb, low, high, replace=False):
                                 scope=ldb.SCOPE_SUBTREE,
                                 attrs=[LAST_PROVISION_USN_ATTRIBUTE, "dn"])
         for e in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
+            if not re.search(';', e):
+                e = "%s;%s" % (e, id)
             tab.append(str(e))
 
-    tab.append("%s-%s" % (low, high))
+    tab.append("%s-%s;%s" % (low, high, id))
     delta = ldb.Message()
     delta.dn = ldb.Dn(samdb, "@PROVISION")
     delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
         ldb.FLAG_MOD_REPLACE, LAST_PROVISION_USN_ATTRIBUTE)
+    entry = samdb.search(expression="(&(dn=@PROVISION)(provisionnerID=*))",
+                            base="", scope=ldb.SCOPE_SUBTREE,
+                            attrs=["provisionnerID"])
+    if len(entry) == 0 or len(entry[0]) == 0:
+        delta["provisionnerID"] = ldb.MessageElement(id, ldb.FLAG_MOD_ADD, "provisionnerID")
     samdb.modify(delta)
 
 
-def set_provision_usn(samdb, low, high):
+def set_provision_usn(samdb, low, high, id):
     """Set the field provisionUSN in sam.ldb
     This field is used to track range of USN modified by provision and
     upgradeprovision.
@@ -363,9 +371,12 @@ def set_provision_usn(samdb, low, high):
 
     :param samdb: An LDB object connect to sam.ldb
     :param low: The lowest USN modified by this upgrade
-    :param high: The highest USN modified by this upgrade"""
+    :param high: The highest USN modified by this upgrade
+    :param id: The invocationId of the provision"""
+
     tab = []
-    tab.append("%s-%s" % (low, high))
+    tab.append("%s-%s;%s" % (low, high, id))
+
     delta = ldb.Message()
     delta.dn = ldb.Dn(samdb, "@PROVISION")
     delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
@@ -390,25 +401,36 @@ def get_max_usn(samdb,basedn):
 
 
 def get_last_provision_usn(sam):
-    """Get the lastest USN modified by a provision or an upgradeprovision
+    """Get USNs ranges modified by a provision or an upgradeprovision
 
     :param sam: An LDB object pointing to the sam.ldb
-    :return: an integer corresponding to the highest USN modified by
-        (upgrade)provision, 0 is this value is unknown
+    :return: a dictionnary which keys are invocation id and values are an array
+             of integer representing the different ranges
     """
     entry = sam.search(expression="(&(dn=@PROVISION)(%s=*))" %
                         LAST_PROVISION_USN_ATTRIBUTE,
                         base="", scope=ldb.SCOPE_SUBTREE,
-                        attrs=[LAST_PROVISION_USN_ATTRIBUTE])
+                        attrs=[LAST_PROVISION_USN_ATTRIBUTE, "provisionnerID"])
     if len(entry):
-        range = []
-        idx = 0
+        myids = []
+        range = {}
         p = re.compile(r'-')
+        if entry[0].get("provisionnerID"):
+            for e in entry[0]["provisionnerID"]:
+                myids.append(str(e))
         for r in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
-            tab = p.split(str(r))
-            range.append(tab[0])
-            range.append(tab[1])
-            idx = idx + 1
+            tab1 = str(r).split(';')
+            if len(tab1) == 2:
+                id = tab1[1]
+            else:
+                id = "default"
+            if (len(myids) > 0 and id not in myids):
+                continue
+            tab2 = p.split(tab1[0])
+            if range.get(id) == None:
+                range[id] = []
+            range[id].append(tab2[0])
+            range[id].append(tab2[1])
         return range
     else:
         return None
@@ -1780,9 +1802,9 @@ def provision(logger, session_info, credentials, smbconf=None,
             lastProvisionUSNs = get_last_provision_usn(samdb)
             maxUSN = get_max_usn(samdb, str(names.rootdn))
             if lastProvisionUSNs is not None:
-                update_provision_usn(samdb, 0, maxUSN, 1)
+                update_provision_usn(samdb, 0, maxUSN, invocationid, 1)
             else:
-                set_provision_usn(samdb, 0, maxUSN)
+                set_provision_usn(samdb, 0, maxUSN, invocationid)
 
         create_krb5_conf(paths.krb5conf,
                          dnsdomain=names.dnsdomain, hostname=names.hostname,
