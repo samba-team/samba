@@ -918,9 +918,6 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
             else:
                 continue
 
-        if attrUSN is None:
-            delta.remove(att)
-            continue
         if att == "nTSecurityDescriptor":
             cursd = ndr_unpack(security.descriptor,
                 str(current[0]["nTSecurityDescriptor"]))
