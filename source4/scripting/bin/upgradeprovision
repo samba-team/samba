@@ -774,6 +774,167 @@ msg_elt_flag_strs = {
     ldb.FLAG_MOD_REPLACE: "MOD_REPLACE",
     ldb.FLAG_MOD_DELETE: "MOD_DELETE" }
 
+def checkKeepAttributeOldMtd(delta, att, reference, current,
+                                    basedn, samdb):
+    """ Check if we should keep the attribute modification or not.
+        This function didn't use replicationMetadata to take a decision.
+
+        :param delta: A message diff object
+        :param att: An attribute
+        :param reference: A message object for the current entry comming from
+                            the reference provision.
+        :param current: A message object for the current entry commin from
+                            the current provision.
+        :param basedn: The DN of the partition
+        :param samdb: A ldb connection to the sam database of the current provision.
+
+        :return: The modified message diff.
+    """
+    # Old school way of handling things for pre alpha12 upgrade
+    global defSDmodified
+    isFirst = False
+    txt = ""
+    dn = current[0].dn
+
+    for att in list(delta):
+        defSDmodified = True
+        msgElt = delta.get(att)
+
+        if att == "nTSecurityDescriptor":
+            delta.remove(att)
+            continue
+
+        if att == "dn":
+            continue
+
+        if not hashOverwrittenAtt.has_key(att):
+            if msgElt.flags() != FLAG_MOD_ADD:
+                if not handle_special_case(att, delta, reference, current,
+                                            False, basedn, samdb):
+                    if opts.debugchange or opts.debugall:
+                        try:
+                            dump_denied_change(dn, att,
+                                msg_elt_flag_strs[msgElt.flags()],
+                                current[0][att], reference[0][att])
+                        except KeyError:
+                            dump_denied_change(dn, att,
+                                msg_elt_flag_strs[msgElt.flags()],
+                                current[0][att], None)
+                    delta.remove(att)
+                continue
+        else:
+            if hashOverwrittenAtt.get(att)&2**msgElt.flags() :
+                continue
+            elif  hashOverwrittenAtt.get(att)==never:
+                delta.remove(att)
+                continue
+
+    return delta
+
+def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
+                                    hash_attr_usn, basedn, usns, samdb):
+    """ Check if we should keep the attribute modification or not
+
+        :param delta: A message diff object
+        :param att: An attribute
+        :param message: A function to print messages
+        :param reference: A message object for the current entry comming from
+                            the reference provision.
+        :param current: A message object for the current entry commin from
+                            the current provision.
+        :param hash_attr_usn: A dictionnary with attribute name as keys,
+                                USN and invocation id as values.
+        :param basedn: The DN of the partition
+        :param usns: A dictionnary with invocation ID as keys and USN ranges
+                     as values.
+        :param samdb: A ldb object pointing to the sam DB
+
+        :return: The modified message diff.
+    """
+    global defSDmodified
+    isFirst = False
+    txt = ""
+    dn = current[0].dn
+
+    for att in list(delta):
+        # We have updated by provision usn information so let's exploit
+        # replMetadataProperties
+        if att in forwardlinked:
+            curval = current[0].get(att, ())
+            refval = reference[0].get(att, ())
+            handle_links(samdb, att, basedn, current[0]["dn"],
+                            curval, refval, delta)
+            continue
+
+        if isFirst and len(delta.items())>1:
+            isFirst = True
+            txt = "%s\n" % (str(dn))
+
+        keptAttr = ["dn", "rIDAvailablePool", "objectSid", "creationTime", "oEMInformation", "msDs-KeyVersionNumber"]
+        if att in keptAttr:
+            delta.remove(att)
+            continue
+
+        if handle_special_case(att, delta, reference, current, True, None, None):
+            # This attribute is "complicated" to handle and handling
+            # was done in handle_special_case
+            continue
+
+        attrUSN = None
+        if hash_attr_usn.get(att):
+            attrUSN = hash_attr_usn.get(att)
+
+        if att == "forceLogoff" and attrUSN is None:
+            continue
+        if attrUSN is None:
+            delta.remove(att)
+            continue
+        if att == "nTSecurityDescriptor":
+            cursd = ndr_unpack(security.descriptor,
+                str(current[0]["nTSecurityDescriptor"]))
+            cursddl = cursd.as_sddl(names.domainsid)
+            refsd = ndr_unpack(security.descriptor,
+                str(reference[0]["nTSecurityDescriptor"]))
+            refsddl = refsd.as_sddl(names.domainsid)
+
+            if get_diff_sddls(refsddl, cursddl) == "":
+                message(CHANGE, "sd are identical")
+            else:
+                message(CHANGE, "sd are not identical")
+        if attrUSN == -1:
+            # This attribute was last modified by another DC forget
+            # about it
+            message(CHANGE, "%sAttribute: %s has been "
+                    "created/modified/deleted by another DC. "
+                    "Doing nothing" % (txt, att))
+            txt = ""
+            delta.remove(att)
+            continue
+        elif not usn_in_range(int(attrUSN), usns.get(attInvId)):
+            message(CHANGE, "%sAttribute: %s was not "
+                            "created/modified/deleted during a "
+                            "provision or upgradeprovision. Current "
+                            "usn: %d. Doing nothing" % (txt, att,
+                                                        attrUSN))
+            txt = ""
+            delta.remove(att)
+            continue
+        else:
+            if att == "defaultSecurityDescriptor":
+                defSDmodified = True
+            if attrUSN:
+                message(CHANGE, "%sAttribute: %s will be modified"
+                                "/deleted it was last modified "
+                                "during a provision. Current usn: "
+                                "%d" % (txt, att, attrUSN))
+                txt = ""
+            else:
+                message(CHANGE, "%sAttribute: %s will be added because "
+                                "it did not exist before" % (txt, att))
+                txt = ""
+            continue
+
+    return delta
 
 def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
     """ This function updates the object that are already present in the
@@ -788,7 +949,6 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                  upgradeprovision
     :param invocationid: The value of the invocationid for the current DC"""
 
-    global defSDmodified
     # This hash is meant to speedup lookup of attribute name from an oid,
     # it's for the replPropertyMetaData handling
     hash_oid_name = {}
@@ -805,6 +965,8 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
 
     changed = 0
     controls = ["search_options:1:2", "sd_flags:1:2"]
+    if usns is not None:
+            message(CHANGE, "Using replPropertyMetadata for change selection")
     for dn in listPresent:
         reference = ref_samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
                                         scope=SCOPE_SUBTREE,
@@ -825,9 +987,6 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                                     controls=controls)
 
         delta = samdb.msg_diff(current[0], reference[0])
-
-        for att in hashAttrNotCopied.keys():
-            delta.remove(att)
 
         for att in backlinked:
             delta.remove(att)
@@ -851,133 +1010,15 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 # Note we could just use 1 here
                     hash_attr_usn[att] = o.originating_usn
                 else:
-                    hash_attr_usn[att] = -1
 
-        isFirst = 0
-        txt = ""
-
-        for att in list(delta):
-            if usns is not None:
-                # We have updated by provision usn information so let's exploit
-                # replMetadataProperties
-                if att in forwardlinked:
-                    curval = current[0].get(att, ())
-                    refval = reference[0].get(att, ())
-                    handle_links(samdb, att, basedn, current[0]["dn"],
-                                    curval, refval, delta)
-                    continue
-
-                if isFirst == 0 and len(delta.items())>1:
-                    isFirst = 1
-                    txt = "%s\n" % (str(dn))
-                if att == "dn":
-                    # There is always a dn attribute after a msg_diff
-                    continue
-                if att == "rIDAvailablePool":
-                    delta.remove(att)
-                    continue
-                if att == "objectSid":
-                    delta.remove(att)
-                    continue
-                if att == "creationTime":
-                    delta.remove(att)
-                    continue
-                if att == "oEMInformation":
-                    delta.remove(att)
-                    continue
-                if att == "msDs-KeyVersionNumber":
-                # This is the kvno of the computer/user it's a very bad
-                # idea to change it
-                    delta.remove(att)
-                    continue
-                if handle_special_case(att, delta, reference, current, True, basedn, samdb):
-                    # This attribute is "complicated" to handle and handling
-                    # was done in handle_special_case
-                    continue
-                attrUSN = hash_attr_usn.get(att)
-                if att == "forceLogoff" and attrUSN is None:
-                    continue
-                if  attrUSN is None:
-                    delta.remove(att)
-                    continue
-                if att == "nTSecurityDescriptor":
-                    cursd = ndr_unpack(security.descriptor,
-                        str(current[0]["nTSecurityDescriptor"]))
-                    cursddl = cursd.as_sddl(names.domainsid)
-                    refsd = ndr_unpack(security.descriptor,
-                        str(reference[0]["nTSecurityDescriptor"]))
-                    refsddl = refsd.as_sddl(names.domainsid)
-
-                    if get_diff_sddls(refsddl, cursddl) == "":
-                       message(CHANGE, "sd are identical")
-                    else:
-                       message(CHANGE, "sd are not identical")
-                if attrUSN == -1:
-                    # This attribute was last modified by another DC forget
-                    # about it
-                    message(CHANGE, "%sAttribute: %s has been "
-                            "created/modified/deleted by another DC. "
-                            "Doing nothing" % (txt, att))
-                    txt = ""
-                    delta.remove(att)
-                    continue
-                elif not usn_in_range(int(attrUSN), usns):
-                    message(CHANGE, "%sAttribute: %s was not "
-                                    "created/modified/deleted during a "
-                                    "provision or upgradeprovision. Current "
-                                    "usn: %d. Doing nothing" % (txt, att,
-                                                                attrUSN))
-                    txt = ""
-                    delta.remove(att)
-                    continue
-                else:
-                    if att == "defaultSecurityDescriptor":
-                        defSDmodified = True
-                    if attrUSN:
-                        message(CHANGE, "%sAttribute: %s will be modified"
-                                        "/deleted it was last modified "
-                                        "during a provision. Current usn: "
-                                        "%d" % (txt, att, attrUSN))
-                        txt = ""
-                    else:
-                        message(CHANGE, "%sAttribute: %s will be added because "
-                                        "it did not exist before" % (txt, att))
-                        txt = ""
-                    continue
-
-            else:
-            # Old school way of handling things for pre alpha12 upgrade
-                defSDmodified = True
-                msgElt = delta.get(att)
-
-                if att == "nTSecurityDescriptor":
-                    delta.remove(att)
-                    continue
-
-                if att == "dn":
-                    continue
-
-                if not hashOverwrittenAtt.has_key(att):
-                    if msgElt.flags() != FLAG_MOD_ADD:
-                        if not handle_special_case(att, delta, reference, current,
-                                                    False, basedn, samdb):
-                            if opts.debugchange or opts.debugall:
-                                try:
-                                    dump_denied_change(dn, att,
-                                        msg_elt_flag_strs[msgElt.flags()],
-                                        current[0][att], reference[0][att])
-                                except KeyError:
-                                    dump_denied_change(dn, att,
-                                        msg_elt_flag_strs[msgElt.flags()],
-                                        current[0][att], None)
-                            delta.remove(att)
-                        continue
-                else:
-                    if hashOverwrittenAtt.get(att)&2**msgElt.flags() :
-                        continue
-                    elif  hashOverwrittenAtt.get(att)==never:
-                        delta.remove(att)
-                        continue
+        if usns is not None:
+            delta = checkKeepAttributeWithMetadata(delta, att, message, reference,
+                                                    current, hash_attr_usn,
+                                                    basedn, usns, samdb)
+        else:
+            for att in hashAttrNotCopied.keys():
+                delta.remove(att)
+            delta =  checkKeepAttributeOldMtd(delta, att, reference, current, basedn, samdb)
 
         delta.dn = dn
         if len(delta.items()) >1:
