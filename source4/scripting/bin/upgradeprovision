@@ -42,7 +42,7 @@ from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
 from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
-                MessageElement, Message, Dn)
+                MessageElement, Message, Dn, LdbError)
 from samba import param, dsdb, Ldb
 from samba.provision import (get_domain_descriptor, find_provision_key_parameters,
                             get_config_descriptor,
@@ -119,6 +119,8 @@ hashOverwrittenAtt = {  "prefixMap": replace, "systemMayContain": replace,
                         "attributeDisplayNames": replace + add,
                         "versionNumber": add}
 
+dnNotToRecalculate = []
+dnToRecalculate = []
 backlinked = []
 forwardlinked = set()
 dn_syntax_att = []
@@ -822,10 +824,10 @@ def checkKeepAttributeOldMtd(delta, att, reference, current,
     dn = current[0].dn
 
     for att in list(delta):
-        defSDmodified = True
         msgElt = delta.get(att)
 
         if att == "nTSecurityDescriptor":
+            defSDmodified = True
             delta.remove(att)
             continue
 
@@ -929,10 +931,25 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
                 str(reference[0]["nTSecurityDescriptor"]))
             refsddl = refsd.as_sddl(names.domainsid)
 
-            if get_diff_sddls(refsddl, cursddl) == "":
-                message(CHANGE, "sd are identical")
+            diff = get_diff_sddls(refsddl, cursddl)
+            if diff == "":
+                # FIXME find a way to have it only with huge huge verbose mode
+                # message(CHANGE, "%ssd are identical" % txt)
+                # txt = ""
+                delta.remove(att)
+                continue
             else:
-                message(CHANGE, "sd are not identical")
+                delta.remove(att)
+                message(CHANGESD, "%ssd are not identical:\n%s" % (txt, diff))
+                txt = ""
+                if attrUSN == -1:
+                    message(CHANGESD, "But the SD has been changed by someonelse "\
+                                    "so it's impossible to know if the difference"\
+                                    " cames from the modification or from a previous bug")
+                    dnNotToRecalculate.append(str(dn))
+                else:
+                    dnToRecalculate.append(str(dn))
+                continue
 
         if attrUSN == -1:
             # This attribute was last modified by another DC forget
@@ -1219,7 +1236,7 @@ def check_updated_sd(ref_sam, cur_sam, names):
                         str(current[i]["nTSecurityDescriptor"]))
             sddl = cursd.as_sddl(names.domainsid)
             if sddl != hash[key]:
-                txt = get_diff_sddls(hash[key], sddl)
+                txt = get_diff_sddls(hash[key], sddl, False)
                 if txt != "":
                     message(CHANGESD, "On object %s ACL is different"
                                       " \n%s" % (current[i]["dn"], txt))
@@ -1233,37 +1250,38 @@ def fix_partition_sd(samdb, names):
     :param samdb: An LDB object pointing to the sam of the current provision
     :param names: A list of key provision parameters
     """
-    # First update the SD for the rootdn
-    res = samdb.search(expression="objectClass=*", base=str(names.rootdn),
-                         scope=SCOPE_BASE, attrs=["dn", "whenCreated"],
-                         controls=["search_options:1:2"])
-    delta = Message()
-    delta.dn = Dn(samdb, str(res[0]["dn"]))
-    descr = get_domain_descriptor(names.domainsid)
-    delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
-                                                    "nTSecurityDescriptor")
-    samdb.modify(delta)
-    # Then the config dn
-    res = samdb.search(expression="objectClass=*", base=str(names.configdn),
-                        scope=SCOPE_BASE, attrs=["dn", "whenCreated"],
-                        controls=["search_options:1:2"])
-    delta = Message()
-    delta.dn = Dn(samdb, str(res[0]["dn"]))
-    descr = get_config_descriptor(names.domainsid)
-    delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
-                                                    "nTSecurityDescriptor" )
-    samdb.modify(delta)
-    # Then the schema dn
-    res = samdb.search(expression="objectClass=*", base=str(names.schemadn),
-                        scope=SCOPE_BASE, attrs=["dn", "whenCreated"],
-                        controls=["search_options:1:2"])
+    alwaysRecalculate = False
+    if len(dnToRecalculate) == 0 and len(dnNotToRecalculate) == 0:
+        alwaysRecalculate = True
 
-    delta = Message()
-    delta.dn = Dn(samdb, str(res[0]["dn"]))
-    descr = get_schema_descriptor(names.domainsid)
-    delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
-                                                    "nTSecurityDescriptor" )
-    samdb.modify(delta)
+
+    # NC's DN can't be both in dnToRecalculate and dnNotToRecalculate
+    # First update the SD for the rootdn
+    if alwaysRecalculate or str(names.rootdn) in dnToRecalculate:
+        delta = Message()
+        delta.dn = Dn(samdb, str(names.rootdn))
+        descr = get_domain_descriptor(names.domainsid)
+        delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
+                                                        "nTSecurityDescriptor")
+        samdb.modify(delta)
+
+    # Then the config dn
+    if alwaysRecalculate or str(names.configdn) in dnToRecalculate:
+        delta = Message()
+        delta.dn = Dn(samdb, str(names.configdn))
+        descr = get_config_descriptor(names.domainsid)
+        delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
+                                                        "nTSecurityDescriptor" )
+        samdb.modify(delta)
+
+    # Then the schema dn
+    if alwaysRecalculate or str(names.schemadn) in dnToRecalculate:
+        delta = Message()
+        delta.dn = Dn(samdb, str(names.schemadn))
+        descr = get_schema_descriptor(names.domainsid)
+        delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
+                                                        "nTSecurityDescriptor" )
+        samdb.modify(delta)
 
 def rebuild_sd(samdb, names):
     """Rebuild security descriptor of the current provision from scratch
@@ -1276,30 +1294,46 @@ def rebuild_sd(samdb, names):
 
     :param names: List of key provision parameters"""
 
+    fix_partition_sd(samdb, names)
 
+    # List of namming contexts
+    listNC = [str(names.rootdn), str(names.configdn), str(names.schemadn)]
     hash = {}
-    res = samdb.search(expression="objectClass=*", base=str(names.rootdn),
+    if len(dnToRecalculate) == 0:
+        res = samdb.search(expression="objectClass=*", base=str(names.rootdn),
                         scope=SCOPE_SUBTREE, attrs=["dn", "whenCreated"],
                         controls=["search_options:1:2"])
-    for obj in res:
-        if not (str(obj["dn"]) == str(names.rootdn) or
-            str(obj["dn"]) == str(names.configdn) or
-            str(obj["dn"]) == str(names.schemadn)):
-            hash[str(obj["dn"])] = obj["whenCreated"]
+        for obj in res:
+                hash[str(obj["dn"])] = obj["whenCreated"]
+    else:
+        for dn in dnToRecalculate:
+            if hash.has_key(dn):
+                continue
+            # fetch each dn to recalculate and their child within the same partition
+            res = samdb.search(expression="objectClass=*", base=dn,
+                        scope=SCOPE_SUBTREE, attrs=["dn", "whenCreated"])
+            for obj in res:
+                hash[str(obj["dn"])] = obj["whenCreated"]
 
-    listkeys = hash.keys()
-    listkeys.sort(dn_sort)
+    listKeys = list(set(hash.keys()))
+    listKeys.sort(dn_sort)
 
-    for key in listkeys:
+    if len(dnToRecalculate) != 0:
+        message(CHANGESD, "%d DNs have been marked as needed to be recalculated"\
+                            ", recalculating %d due to inheritance"
+                            % (len(dnToRecalculate), len(listKeys)))
+
+    for key in listKeys:
+        if (key in listNC or
+                    key in dnNotToRecalculate):
+            continue
+        delta = Message()
+        delta.dn = Dn(samdb, key)
         try:
-            delta = Message()
-            delta.dn = Dn(samdb, key)
             delta["whenCreated"] = MessageElement(hash[key], FLAG_MOD_REPLACE,
                                                     "whenCreated" )
-            samdb.modify(delta, ["recalculate_sd:0"])
-        except:
-            # XXX: We should always catch an explicit exception.
-            # What could go wrong here?
+            samdb.modify(delta, ["recalculate_sd:0","relax:0"])
+        except LdbError, e:
             samdb.transaction_cancel()
             res = samdb.search(expression="objectClass=*", base=str(names.rootdn),
                                 scope=SCOPE_SUBTREE,
@@ -1307,7 +1341,7 @@ def rebuild_sd(samdb, names):
                                 controls=["search_options:1:2"])
             badsd = ndr_unpack(security.descriptor,
                         str(res[0]["nTSecurityDescriptor"]))
-            print "bad stuff %s" % badsd.as_sddl(names.domainsid)
+            message(ERROR, "On %s bad stuff %s" % (str(delta.dn),badsd.as_sddl(names.domainsid)))
             return
 
 def removeProvisionUSN(samdb):
@@ -1838,12 +1872,12 @@ if __name__ == '__main__':
             message(SIMPLE, "Update machine account")
             update_machine_account_password(ldbs.sam, ldbs.secrets, names)
 
+            dnToRecalculate.sort(dn_sort)
             # 16) SD should be created with admin but as some previous acl were so wrong
             # that admin can't modify them we have first to recreate them with the good
             # form but with system account and then give the ownership to admin ...
-            if not re.match(r'.*alpha(9|\d\d+)', str(oem)):
-                message(SIMPLE, "Fixing old povision SD")
-                fix_partition_sd(ldbs.sam, names)
+            if str(oem) != "" and not re.match(r'.*alpha(9|\d\d+)', str(oem)):
+                message(SIMPLE, "Fixing very old provision SD")
                 rebuild_sd(ldbs.sam, names)
 
             # We calculate the max USN before recalculating the SD because we might
@@ -1854,23 +1888,22 @@ if __name__ == '__main__':
             # 17)
             maxUSN = get_max_usn(ldbs.sam, str(names.rootdn))
 
-            # 18) We rebuild SD only if defaultSecurityDescriptor is modified
-            # But in fact we should do it also if one object has its SD modified as
-            # child might need rebuild
-            if defSDmodified:
-                message(SIMPLE, "Updating SD")
+            # 18) We rebuild SD if a we have a list of DN to recalculate or if the
+            # defSDmodified is set.
+            if defSDmodified or len(dnToRecalculate) >0:
+                message(SIMPLE, "Some defaultSecurityDescriptors and/or"
+                                "securityDescriptor have changed, recalculating SD ")
                 ldbs.sam.set_session_info(adm_session)
-                # Alpha10 was a bit broken still
-                if re.match(r'.*alpha(\d|10)', str(oem)):
-                    fix_partition_sd(ldbs.sam, names)
-                    rebuild_sd(ldbs.sam, names)
+                rebuild_sd(ldbs.sam, names)
 
             # 19)
             # Now we are quite confident in the recalculate process of the SD, we make
-            # it optional.
+            # it optional. And we don't do it if there is DN that we must touch
+            # as we are assured that on this DNs we will have differences !
             # Also the check must be done in a clever way as for the moment we just
             # compare SDDL
-            if opts.debugchangesd:
+            if len(dnNotToRecalculate) == 0 and (opts.debugchangesd or opts.debugall):
+                message(CHANGESD, "Checking recalculated SDs")
                 check_updated_sd(new_ldbs.sam, ldbs.sam, names)
 
             # 20)
