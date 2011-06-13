@@ -94,8 +94,12 @@ replAttrNotCopied = [   "dn", "whenCreated", "whenChanged", "objectGUID",
 nonreplAttrNotCopied = ["uSNCreated", "replPropertyMetaData", "uSNChanged",
                         "nextRid" ,"rIDNextRID"]
 
+nonDSDBAttrNotCopied = ["msDS-KeyVersionNumber", "priorSecret", "priorWhenChanged"]
+
+
 attrNotCopied = replAttrNotCopied
 attrNotCopied.extend(nonreplAttrNotCopied)
+attrNotCopied.extend(nonDSDBAttrNotCopied)
 # Usually for an object that already exists we do not overwrite attributes as
 # they might have been changed for good reasons. Anyway for a few of them it's
 # mandatory to replace them otherwise the provision will be broken somehow.
