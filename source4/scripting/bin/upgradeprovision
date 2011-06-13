@@ -297,7 +297,7 @@ def print_provision_key_parameters(names):
     message(GUESS, "domainlevel :" + str(names.domainlevel))
 
 
-def handle_special_case(att, delta, new, old, usn, basedn, aldb):
+def handle_special_case(att, delta, new, old, useReplMetadata, basedn, aldb):
     """Define more complicate update rules for some attributes
 
     :param att: The attribute to be updated
@@ -305,7 +305,8 @@ def handle_special_case(att, delta, new, old, usn, basedn, aldb):
                   between the updated object and the reference one
     :param new: The reference object
     :param old: The Updated object
-    :param usn: The highest usn modified by a previous (upgrade)provision
+    :param useReplMetadata: A boolean that indicate if the update process
+                use replPropertyMetaData to decide what has to be updated.
     :param basedn: The base DN of the provision
     :param aldb: An ldb object used to build DN
     :return: True to indicate that the attribute should be kept, False for
@@ -315,7 +316,7 @@ def handle_special_case(att, delta, new, old, usn, basedn, aldb):
     # We do most of the special case handle if we do not have the
     # highest usn as otherwise the replPropertyMetaData will guide us more
     # correctly
-    if usn is None:
+    if not useReplMetadata:
         if (att == "sPNMappings" and flag == FLAG_MOD_REPLACE and
             ldb.Dn(aldb, "CN=Directory Service,CN=Windows NT,"
                         "CN=Services,CN=Configuration,%s" % basedn)
@@ -889,7 +890,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 # idea to change it
                     delta.remove(att)
                     continue
-                if handle_special_case(att, delta, reference, current, usns, basedn, samdb):
+                if handle_special_case(att, delta, reference, current, True, basedn, samdb):
                     # This attribute is "complicated" to handle and handling
                     # was done in handle_special_case
                     continue
@@ -959,7 +960,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 if not hashOverwrittenAtt.has_key(att):
                     if msgElt.flags() != FLAG_MOD_ADD:
                         if not handle_special_case(att, delta, reference, current,
-                                                    usns, basedn, samdb):
+                                                    False, basedn, samdb):
                             if opts.debugchange or opts.debugall:
                                 try:
                                     dump_denied_change(dn, att,
