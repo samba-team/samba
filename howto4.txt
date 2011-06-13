@@ -1,7 +1,0 @@
-Samba4 howto
-============
-
-For current versions of the Samba4 HOWTO, please see our wiki:
-
-  http://wiki.samba.org/index.php/Samba4/HOWTO
-
