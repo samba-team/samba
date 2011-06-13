@@ -81,20 +81,21 @@ __docformat__ = "restructuredText"
 # This is most probably because they are populated automatcally when object is
 # created
 # This also apply to imported object from reference provision
-hashAttrNotCopied = {   "dn": 1, "whenCreated": 1, "whenChanged": 1,
-                        "objectGUID": 1, "uSNCreated": 1,
-                        "replPropertyMetaData": 1, "uSNChanged": 1,
-                        "parentGUID": 1, "objectCategory": 1,
-                        "distinguishedName": 1, "nTMixedDomain": 1,
-                        "showInAdvancedViewOnly": 1, "instanceType": 1,
-                        "msDS-Behavior-Version":1, "nextRid":1, "cn": 1,
-                        "lmPwdHistory":1, "pwdLastSet": 1,
-                        "ntPwdHistory":1, "unicodePwd":1,"dBCSPwd":1,
-                        "supplementalCredentials":1, "gPCUserExtensionNames":1,
-                        "gPCMachineExtensionNames":1,"maxPwdAge":1, "secret":1,
-                        "possibleInferiors":1, "privilege":1,
-                        "sAMAccountType":1 }
+replAttrNotCopied = [   "dn", "whenCreated", "whenChanged", "objectGUID",
+                        "parentGUID", "objectCategory", "distinguishedName",
+                        "nTMixedDomain", "showInAdvancedViewOnly",
+                        "instanceType", "msDS-Behavior-Version", "cn",
+                        "lmPwdHistory", "pwdLastSet", "ntPwdHistory",
+                        "unicodePwd", "dBCSPwd", "supplementalCredentials",
+                        "gPCUserExtensionNames", "gPCMachineExtensionNames",
+                        "maxPwdAge", "secret", "possibleInferiors", "privilege",
+                        "sAMAccountType", "oEMInformation", "creationTime" ]
 
+nonreplAttrNotCopied = ["uSNCreated", "replPropertyMetaData", "uSNChanged",
+                        "nextRid" ,"rIDNextRID"]
+
+attrNotCopied = replAttrNotCopied
+attrNotCopied.extend(nonreplAttrNotCopied)
 # Usually for an object that already exists we do not overwrite attributes as
 # they might have been changed for good reasons. Anyway for a few of them it's
 # mandatory to replace them otherwise the provision will be broken somehow.
@@ -606,7 +607,7 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
             m = re.match(r".*-(\d+)$", sid)
             if m and int(m.group(1))>999:
                 delta.remove("objectSid")
-        for att in hashAttrNotCopied.keys():
+        for att in attrNotCopied:
             delta.remove(att)
         for att in backlinked:
             delta.remove(att)
@@ -673,7 +674,7 @@ def add_deletedobj_containers(ref_samdb, samdb, names):
             delta = samdb.msg_diff(empty, reference[0])
 
             delta.dn = Dn(samdb, str(reference[0]["dn"]))
-            for att in hashAttrNotCopied.keys():
+            for att in attrNotCopied:
                 delta.remove(att)
 
             modcontrols = ["relax:0", "provision:0"]
@@ -890,11 +891,6 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
             isFirst = False
             txt = "%s\n" % (str(dn))
 
-        keptAttr = ["dn", "rIDAvailablePool", "objectSid", "creationTime", "oEMInformation", "msDs-KeyVersionNumber"]
-        if att in keptAttr:
-            delta.remove(att)
-            continue
-
         if handle_special_case(att, delta, reference, current, True, None, None):
             # This attribute is "complicated" to handle and handling
             # was done in handle_special_case
@@ -913,9 +909,8 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
             # attrUSN will be -1
             if isReplicated(att):
                 continue
-            elif att in hashAttrNotCopied.keys():
-                delta.remove(att)
             else:
+                message(CHANGE, "Non replicated attribute %s changed" % att)
                 continue
 
         if att == "nTSecurityDescriptor":
@@ -1021,6 +1016,9 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
         for att in backlinked:
             delta.remove(att)
 
+        for att in attrNotCopied:
+            delta.remove(att)
+
         delta.remove("name")
 
         if len(delta.items()) > 1 and usns is not None:
@@ -1046,8 +1044,6 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
                                                     current, hash_attr_usn,
                                                     basedn, usns, samdb)
         else:
-            for att in hashAttrNotCopied.keys():
-                delta.remove(att)
             delta =  checkKeepAttributeOldMtd(delta, att, reference, current, basedn, samdb)
 
         delta.dn = dn
@@ -1611,7 +1607,7 @@ def sync_calculated_attributes(samdb, names):
 # This resulting object is filtered to remove all the back link attribute
 # (ie. memberOf) as they will be created by the other linked object (ie.
 # the one with the member attribute)
-# All attributes specified in the hashAttrNotCopied associative array are
+# All attributes specified in the attrNotCopied array are
 # also removed it's most of the time generated attributes
 
 # After missing entries have been added the update_partition function will
