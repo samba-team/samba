@@ -112,7 +112,14 @@ int count_current_connections( const char *sharename, bool clear  )
 	 * as it leads to deadlock.
 	 */
 
+	/*
+	 * become_root() because we might have to open connections.tdb
+	 * via ctdb, which is not possible without root.
+	 */
+	become_root();
 	ret = connections_forall(count_fn, &cs);
+	unbecome_root();
+
 	if (ret == -1) {
 		DEBUG(0,("count_current_connections: traverse of "
 			 "connections.tdb failed\n"));
