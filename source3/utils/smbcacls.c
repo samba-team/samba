@@ -91,7 +91,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 
 	status = cli_tcon_andx(cli, "IPC$", "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto tcon_fail;
 	}
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
@@ -120,6 +120,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
  fail:
 	TALLOC_FREE(p);
 	cli_tdis(cli);
+ tcon_fail:
 	cli_state_set_tid(cli, orig_cnum);
 	TALLOC_FREE(frame);
 	return status;
@@ -140,7 +141,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 
 	status = cli_tcon_andx(cli, "IPC$", "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto tcon_fail;
 	}
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
@@ -168,6 +169,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
  fail:
 	TALLOC_FREE(p);
 	cli_tdis(cli);
+ tcon_fail:
 	cli_state_set_tid(cli, orig_cnum);
 	TALLOC_FREE(frame);
 	return status;
