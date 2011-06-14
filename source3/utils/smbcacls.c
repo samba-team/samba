@@ -894,25 +894,29 @@ dump the acls for a file
 *******************************************************/
 static int cacl_dump(struct cli_state *cli, const char *filename)
 {
-	int result = EXIT_FAILED;
 	struct security_descriptor *sd;
 
-	if (test_args)
+	if (test_args) {
 		return EXIT_OK;
-
-	sd = get_secdesc(cli, filename);
-
-	if (sd) {
-		if (sddl) {
-			printf("%s\n", sddl_encode(talloc_tos(), sd,
-					   get_domain_sid(cli)));
-		} else {
-			sec_desc_print(cli, stdout, sd);
-		}
-		result = EXIT_OK;
 	}
 
-	return result;
+	sd = get_secdesc(cli, filename);
+	if (sd == NULL) {
+		return EXIT_FAILED;
+	}
+
+	if (sddl) {
+		char *str = sddl_encode(talloc_tos(), sd, get_domain_sid(cli));
+		if (str == NULL) {
+			return EXIT_FAILED;
+		}
+		printf("%s\n", str);
+		TALLOC_FREE(str);
+	} else {
+		sec_desc_print(cli, stdout, sd);
+	}
+
+	return EXIT_OK;
 }
 
 /***************************************************** 
