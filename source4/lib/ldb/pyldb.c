@@ -819,7 +819,7 @@ static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwa
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
+static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_msg;
 	PyObject *py_controls = Py_None;
@@ -829,8 +829,12 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 	struct ldb_message *msg;
 	int ret;
 	TALLOC_CTX *mem_ctx;
+	bool validate=true;
+	const char * const kwnames[] = { "message", "controls", "validate", NULL };
 
-	if (!PyArg_ParseTuple(args, "O|O", &py_msg, &py_controls))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Ob",
+					 discard_const_p(char *, kwnames),
+					 &py_msg, &py_controls, &validate))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -855,11 +859,13 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 	}
 	msg = PyLdbMessage_AsMessage(py_msg);
 
-	ret = ldb_msg_sanity_check(ldb_ctx, msg);
-	if (ret != LDB_SUCCESS) {
-		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
-		talloc_free(mem_ctx);
-		return NULL;
+	if (validate) {
+		ret = ldb_msg_sanity_check(ldb_ctx, msg);
+		if (ret != LDB_SUCCESS) {
+			PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 	}
 
 	ret = ldb_build_mod_req(&req, ldb_ctx, mem_ctx, msg, parsed_controls,
@@ -1586,8 +1592,8 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "connect", (PyCFunction)py_ldb_connect, METH_VARARGS|METH_KEYWORDS, 
 		"S.connect(url, flags=0, options=None) -> None\n"
 		"Connect to a LDB URL." },
-	{ "modify", (PyCFunction)py_ldb_modify, METH_VARARGS, 
-		"S.modify(message) -> None\n"
+	{ "modify", (PyCFunction)py_ldb_modify, METH_VARARGS|METH_KEYWORDS,
+		"S.modify(message, controls=None, validate=False) -> None\n"
 		"Modify an entry." },
 	{ "add", (PyCFunction)py_ldb_add, METH_VARARGS, 
 		"S.add(message) -> None\n"
