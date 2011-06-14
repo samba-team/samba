@@ -964,7 +964,7 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 	return msg;
 }
 
-static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
+static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_obj;
 	int ret;
@@ -974,8 +974,11 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 	PyObject *py_controls = Py_None;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_control **parsed_controls;
+	const char * const kwnames[] = { "message", "controls", NULL };
 
-	if (!PyArg_ParseTuple(args, "O|O", &py_obj, &py_controls ))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O",
+					 discard_const_p(char *, kwnames),
+					 &py_obj, &py_controls))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -1053,7 +1056,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args)
+static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_dn;
 	struct ldb_dn *dn;
@@ -1063,8 +1066,11 @@ static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args)
 	PyObject *py_controls = Py_None;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_control **parsed_controls;
+	const char * const kwnames[] = { "dn", "controls", NULL };
 
-	if (!PyArg_ParseTuple(args, "O|O", &py_dn, &py_controls))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O",
+					 discard_const_p(char *, kwnames),
+					 &py_dn, &py_controls))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -1125,7 +1131,7 @@ static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args)
+static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_dn1, *py_dn2;
 	struct ldb_dn *dn1, *dn2;
@@ -1136,10 +1142,13 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args)
 	struct ldb_control **parsed_controls;
 	struct ldb_context *ldb_ctx;
 	struct ldb_request *req;
+	const char * const kwnames[] = { "dn1", "dn2", "controls", NULL };
 
 	ldb_ctx = PyLdb_AsLdbContext(self);
 
-	if (!PyArg_ParseTuple(args, "OO|O", &py_dn1, &py_dn2, &py_controls))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|O",
+					 discard_const_p(char *, kwnames),
+					 &py_dn1, &py_dn2, &py_controls))
 		return NULL;
 
 
@@ -1595,14 +1604,14 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "modify", (PyCFunction)py_ldb_modify, METH_VARARGS|METH_KEYWORDS,
 		"S.modify(message, controls=None, validate=False) -> None\n"
 		"Modify an entry." },
-	{ "add", (PyCFunction)py_ldb_add, METH_VARARGS, 
-		"S.add(message) -> None\n"
+	{ "add", (PyCFunction)py_ldb_add, METH_VARARGS|METH_KEYWORDS,
+		"S.add(message, controls=None) -> None\n"
 		"Add an entry." },
-	{ "delete", (PyCFunction)py_ldb_delete, METH_VARARGS,
-		"S.delete(dn) -> None\n"
+	{ "delete", (PyCFunction)py_ldb_delete, METH_VARARGS|METH_KEYWORDS,
+		"S.delete(dn, controls=None) -> None\n"
 		"Remove an entry." },
-	{ "rename", (PyCFunction)py_ldb_rename, METH_VARARGS,
-		"S.rename(old_dn, new_dn) -> None\n"
+	{ "rename", (PyCFunction)py_ldb_rename, METH_VARARGS|METH_KEYWORDS,
+		"S.rename(old_dn, new_dn, controls=None) -> None\n"
 		"Rename an entry." },
 	{ "search", (PyCFunction)py_ldb_search, METH_VARARGS|METH_KEYWORDS,
 		"S.search(base=None, scope=None, expression=None, attrs=None, controls=None) -> msgs\n"
