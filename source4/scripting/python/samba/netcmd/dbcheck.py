@@ -51,7 +51,7 @@ def empty_attribute(self, dn, attrname):
     m.dn = dn
     m[attrname] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, attrname)
     try:
-        self.samdb.modify(m, ["relax:0"])
+        self.samdb.modify(m, controls=["relax:0"], validate=False)
     except Exception, msg:
         print("Failed to remove empty attribute %s : %s" % (attrname, msg))
         return
