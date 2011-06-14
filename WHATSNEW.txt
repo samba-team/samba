@@ -52,7 +52,21 @@ Major enhancements in Samba 3.5.9 include:
 o  Sgid bit lost on folder rename (bug #7996).
 o  ACL can get lost when files are being renamed (bug #7987).
 o  Respect "allow trusted domains = no" in Winbind (bug #6966).
+o  Samba now follows windows behaviour as a kerberos client,
+requesting a CIFS/ ticket (bug 7893)
 
+New Kerberos behaviour
+----------------------
+
+A new parameter 'client use spnego principal' defaults to 'no' and
+mean Samba will use CIFS/hostname to obtain a kerberos ticket, acting
+more like Windows when using Kerberos against a CIFS server in
+smbclient, winbind and other Samba client tools.  This will change
+which servers we will successfully negotiate kerberos connections to.
+This is due to Samba no longer trusting a server-provided hint which
+is not available from Windows 2008 or later.  For correct operation
+with all clients, all aliases for a server should be recorded as a as
+a servicePrincipalName on the server's record in AD.
 
 Changes since 3.5.8:
 --------------------
