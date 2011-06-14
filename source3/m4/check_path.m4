@@ -19,7 +19,7 @@ rootsbindir="\${SBINDIR}"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
 ncalrpcdir="\${VARDIR}/ncalrpc"
-nmbdsocketdir="${lockdir}/.nmbd"
+nmbdsocketdir="\${VARDIR}/nmbd"
 test "${mandir}" || mandir="\${prefix}/man"
 logfilebase="\${VARDIR}"
 privatedir="\${prefix}/private"
@@ -169,7 +169,7 @@ AC_ARG_WITH(ncalrpcdir,
 #################################################
 # set nmbd socket directory location
 AC_ARG_WITH(nmbdsocketdir,
-[AS_HELP_STRING([--with-nmbdsocketdir=DIR], [Where to put the nmbd socket directory (${lockdir}/.nmbd)])],
+[AS_HELP_STRING([--with-nmbdsocketdir=DIR], [Where to put the nmbd socket directory ($ac_default_prefix/var/nmbd)])],
 [ case "$withval" in
   yes|no)
   #
