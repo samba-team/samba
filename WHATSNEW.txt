@@ -30,15 +30,16 @@ released in-kernel CIFS client.  To re-enable the poorer NTLM encryption
 set '--option=clientusentlmv2auth=no' on your smbclient command line, or
 set 'client ntlmv2 auth = no' in your smb.conf
 
-The impact of 'client use spnego principal = no' is that we may be able
-to use Kerberos to communicate with a server less often in smbclient,
-winbind and other Samba client tools.  We may fall back to NTLMSSP in
-more situations where we would previously rely on the insecure
-indication from the 'NegProt' CIFS packet.  This mostly occursed when
-connecting to a name alias not recorded as a servicePrincipalName for
-the server.  This indication is not available from Windows 2008 or later
-in any case, and is not used by modern Windows clients, so this makes
-Samba's behaviour consistent with other clients and against all servers.
+The impact of 'client use spnego principal = no' is that Samba will
+use CIFS/hostname to obtain a kerberos ticket, acting more like
+Windows when using Kerberos against a CIFS server in smbclient,
+winbind and other Samba client tools.  This will change which servers
+we will successfully negotiate kerberos connections to.  This is due
+to Samba no longer trusting a server-provided hint which is not
+available from Windows 2008 or later.  For correct operation with all
+clients, all aliases for a server should be recorded as a as a
+servicePrincipalName on the server's record in AD.  (For this reason,
+this behavior change and parameter was also made in Samba 3.5.9)
 
 The impact of 'send spnego principal = no' is to match Windows 2008 and
 not to send this principal, making existing clients give more consistent
