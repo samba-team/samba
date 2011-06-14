@@ -450,10 +450,6 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
 	{ WINBINDD_CCACHE_SAVE, winbindd_ccache_save, "CCACHE_SAVE" },
 
-	/* WINS functions */
-
-	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
-
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
@@ -546,6 +542,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_pam_chng_pswd_auth_crap_recv },
 	{ WINBINDD_WINS_BYIP, "WINS_BYIP",
 	  winbindd_wins_byip_send, winbindd_wins_byip_recv },
+	{ WINBINDD_WINS_BYNAME, "WINS_BYNAME",
+	  winbindd_wins_byname_send, winbindd_wins_byname_recv },
 
 	{ 0, NULL, NULL, NULL }
 };

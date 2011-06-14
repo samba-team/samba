@@ -866,6 +866,12 @@ struct tevent_req *winbindd_wins_byip_send(TALLOC_CTX *mem_ctx,
 					   struct winbindd_request *request);
 NTSTATUS winbindd_wins_byip_recv(struct tevent_req *req,
 				 struct winbindd_response *presp);
+struct tevent_req *winbindd_wins_byname_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct winbindd_cli_state *cli,
+					     struct winbindd_request *request);
+NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
+				   struct winbindd_response *presp);
 
 
 /* The following definitions come from winbindd/winbindd_samr.c  */
