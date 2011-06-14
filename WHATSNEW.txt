@@ -8,7 +8,10 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.9 include:
 
-o  
+o  Sgid bit lost on folder rename (bug #7996).
+o  ACL can get lost when files are being renamed (bug #7987).
+o  Respect "allow trusted domains = no" in Winbind (bug #6966).
+
 
 Changes since 3.5.8:
 --------------------
@@ -32,6 +35,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 8111: CIFS VFS: Fix unexpected error on SMB posix open.
     * BUG 8157: Fix parsing CUPS printcap files in std_pcap_cache_reload().
     * BUG 8163: Fix our asn.1 parser to handle negative numbers.
+    * BUG 8211: "inherit owner = yes" doesn't interact correctly with "inherit
+      permissions = yes".
 
 
 o   Christian Ambach <ambi@samba.org>
@@ -100,6 +105,7 @@ o   Jim McDonough <jmcd@samba.org>
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7383: Normalize IPv4 mapped IPv6 addresses in both directions.
     * BUG 8034: SEC_STD_DELETE is always granted to the owner of a file.
 
 
