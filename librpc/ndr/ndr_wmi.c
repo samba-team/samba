@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dcom.h"
 #include "librpc/gen_ndr/ndr_wmi.h"
+#include "librpc/ndr/ndr_wmi.h"
 
 // Just for debugging
 int NDR_CHECK_depth = 0;
