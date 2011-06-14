@@ -96,6 +96,8 @@ BEGIN {
 
 	print "       output(screen,\"   SMB_PASSWD_FILE: %s\\n\",get_dyn_SMB_PASSWD_FILE());";
 	print "       output(screen,\"   PRIVATE_DIR: %s\\n\",get_dyn_PRIVATE_DIR());";
+	print "       output(screen,\"   NCALRPCDIR: %s\\n\",get_dyn_NCALRPCDIR());";
+	print "       output(screen,\"   NMBDSOCKETDIR: %s\\n\",get_dyn_NMBDSOCKETDIR());";
 	print "";
 
 
