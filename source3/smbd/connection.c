@@ -101,6 +101,7 @@ static int count_fn(struct db_record *rec,
 int count_current_connections( const char *sharename, bool clear  )
 {
 	struct count_stat cs;
+	int ret;
 
 	cs.curr_connections = 0;
 	cs.name = sharename;
@@ -111,10 +112,11 @@ int count_current_connections( const char *sharename, bool clear  )
 	 * as it leads to deadlock.
 	 */
 
-	if (connections_forall(count_fn, &cs) == -1) {
+	ret = connections_forall(count_fn, &cs);
+	if (ret == -1) {
 		DEBUG(0,("count_current_connections: traverse of "
 			 "connections.tdb failed\n"));
-		return False;
+		return 0;
 	}
 
 	return cs.curr_connections;
