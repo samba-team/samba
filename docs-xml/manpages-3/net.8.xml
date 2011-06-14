@@ -795,12 +795,6 @@ appear in your system.
 <para>List all interdomain trust relationships.</para>
 
 </refsect3>
-<refsect3>
-<title>RPC TRUSTDOM LIST</title>
-
-<para>List all interdomain trust relationships.</para>
-
-</refsect3>
 </refsect2>
 
 <refsect2>
