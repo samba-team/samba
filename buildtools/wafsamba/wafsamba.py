@@ -692,6 +692,8 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
                             rule=copy_and_fix_python_path,
                             source=file,
                             target=inst_file)
+        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), bld.env["PYTHONARCHDIR"])
+        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), bld.env["PYTHONDIR"])
         file = inst_file
     if base_name:
         file = os.path.join(base_name, file)
