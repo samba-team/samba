@@ -1808,14 +1808,14 @@ if __name__ == '__main__':
                     doit = True
                 if doit:
                     deltaattr.remove("dn")
-                for att in deltaattr:
-                    if att.lower() == "dn":
-                        continue
-                    if (deltaattr.get(att) is not None
-                        and deltaattr.get(att).flags() != FLAG_MOD_ADD):
-                        doit = False
-                    elif deltaattr.get(att) is None:
-                        doit = False
+                    for att in deltaattr:
+                        if att.lower() == "dn":
+                            continue
+                        if (deltaattr.get(att) is not None
+                            and deltaattr.get(att).flags() != FLAG_MOD_ADD):
+                            doit = False
+                        elif deltaattr.get(att) is None:
+                            doit = False
                 if doit:
                     message(CHANGE, "Applying delta to @ATTRIBUTES")
                     deltaattr.dn = ldb.Dn(basesam, "@ATTRIBUTES")
