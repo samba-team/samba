@@ -137,9 +137,9 @@ def install_library(self):
                    os.path.join(self.path.abspath(bld.env), inst_name))
     if install_link and install_link != install_name:
         # and the symlink if needed
-        bld.symlink_as(os.path.join(install_path, install_link), install_name)
+        bld.symlink_as(os.path.join(install_path, install_link), os.path.basename(install_name))
     if dev_link:
-        bld.symlink_as(os.path.join(install_path, dev_link), install_name)
+        bld.symlink_as(os.path.join(install_path, dev_link), os.path.basename(install_name))
 
 
 @feature('cshlib')
