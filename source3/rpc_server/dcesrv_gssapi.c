@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "rpc_server/dcesrv_gssapi.h"
 #include "../librpc/gen_ndr/ndr_krb5pac.h"
+#include "../lib/tsocket/tsocket.h"
 #include "librpc/crypto/gse.h"
 #include "auth.h"
 #ifdef HAVE_KRB5
@@ -103,7 +104,7 @@ NTSTATUS gssapi_server_check_flags(struct gse_context *gse_ctx)
 
 NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 				     TALLOC_CTX *mem_ctx,
-				     struct client_address *client_id,
+				     const struct tsocket_address *remote_address,
 				     struct auth_serversupplied_info **server_info)
 {
 	TALLOC_CTX *tmp_ctx;
@@ -117,8 +118,10 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 	char *ntuser;
 	char *ntdomain;
 	char *username;
+	char *rhost;
 	struct passwd *pw;
 	NTSTATUS status;
+	int rc;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
@@ -173,7 +176,23 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 		goto done;
 	}
 
-	status = get_user_from_kerberos_info(tmp_ctx, client_id->name,
+	rc = get_remote_hostname(remote_address,
+				 &rhost,
+				 tmp_ctx);
+	if (rc < 0) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	if (strequal(rhost, "UNKNOWN")) {
+		rhost = tsocket_address_inet_addr_string(remote_address,
+							 tmp_ctx);
+		if (rhost == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
+	status = get_user_from_kerberos_info(tmp_ctx, rhost,
 					     princ_name, logon_info,
 					     &is_mapped, &is_guest,
 					     &ntuser, &ntdomain,
@@ -199,7 +218,7 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 	}
 
 	DEBUG(5, (__location__ "OK: user: %s domain: %s client: %s\n",
-		  ntuser, ntdomain, client_id->name));
+		  ntuser, ntdomain, rhost));
 
 	status = NT_STATUS_OK;
 

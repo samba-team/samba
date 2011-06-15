@@ -722,7 +722,7 @@ err:
 
 static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 					 struct gse_context *gse_ctx,
-					 struct client_address *client_id,
+					 const struct tsocket_address *remote_address,
 					 struct auth_serversupplied_info **session_info)
 {
 	NTSTATUS status;
@@ -739,7 +739,7 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 	}
 
 	status = gssapi_server_get_user_info(gse_ctx, mem_ctx,
-					     client_id, session_info);
+					     remote_address, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": failed to obtain the server info "
 			  "for authenticated user: %s\n", nt_errstr(status)));
@@ -783,7 +783,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 		gse_ctx = talloc_get_type_abort(p->auth.auth_ctx,
 						struct gse_context);
 		status = pipe_gssapi_verify_final(p, gse_ctx,
-						  p->client_id,
+						  p->remote_address,
 						  &p->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("gssapi bind failed with: %s",
@@ -806,7 +806,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 			gse_ctx = talloc_get_type_abort(mech_ctx,
 							struct gse_context);
 			status = pipe_gssapi_verify_final(p, gse_ctx,
-							  p->client_id,
+							  p->remote_address,
 							  &p->session_info);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("gssapi bind failed with: %s",

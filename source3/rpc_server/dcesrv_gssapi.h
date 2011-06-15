@@ -36,7 +36,7 @@ NTSTATUS gssapi_server_step(struct gse_context *gse_ctx,
 NTSTATUS gssapi_server_check_flags(struct gse_context *gse_ctx);
 NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 				     TALLOC_CTX *mem_ctx,
-				     struct client_address *client_id,
+				     const struct tsocket_address *remote_address,
 				     struct auth_serversupplied_info **session_info);
 
 #endif /* _DCESRV_GSSAPI_H_ */
