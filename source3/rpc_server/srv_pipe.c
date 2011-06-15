@@ -626,7 +626,6 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *ntlmssp_ctx,
 				enum dcerpc_AuthLevel auth_level,
-				struct client_address *client_id,
 				struct auth_serversupplied_info **session_info)
 {
 	NTSTATUS status;
@@ -776,7 +775,6 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 						    struct auth_ntlmssp_state);
 		if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
 						p->auth.auth_level,
-						p->client_id,
 						&p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -821,7 +819,6 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 						struct auth_ntlmssp_state);
 			if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
 							p->auth.auth_level,
-							p->client_id,
 							&p->session_info)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
