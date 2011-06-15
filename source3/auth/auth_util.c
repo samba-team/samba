@@ -811,7 +811,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 	status = NT_STATUS_OK;
 done:
 	TALLOC_FREE(tmp_ctx);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /***************************************************************************
