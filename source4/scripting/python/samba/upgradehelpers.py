@@ -548,7 +548,7 @@ def getOEMInfo(samdb, rootdn):
     """
     res = samdb.search(expression="(objectClass=*)", base=str(rootdn),
                             scope=SCOPE_BASE, attrs=["dn", "oEMInformation"])
-    if len(res) > 0:
+    if len(res) > 0 and res[0].get("oEMInformation"):
         info = res[0]["oEMInformation"]
         return info
     else:
@@ -565,7 +565,10 @@ def updateOEMInfo(samdb, rootdn):
     res = samdb.search(expression="(objectClass=*)", base=rootdn,
                             scope=SCOPE_BASE, attrs=["dn", "oEMInformation"])
     if len(res) > 0:
-        info = res[0]["oEMInformation"]
+        if res[0].get("oEMInformation"):
+            info = str(res[0]["oEMInformation"])
+        else:
+            info = ""
         info = "%s, upgrade to %s" % (info, version)
         delta = ldb.Message()
         delta.dn = ldb.Dn(samdb, str(res[0]["dn"]))
