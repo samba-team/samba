@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "auth.h"
 #include "system/passwd.h"
-#include "smbd/globals.h"
+#include "../lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -39,8 +39,16 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 {
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
+	char *rhost;
+	int rc;
 
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
+
+	rhost = tsocket_address_inet_addr_string(user_info->remote_host,
+						 talloc_tos());
+	if (rhost == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	become_root();
 	pass = Get_Pwnam_alloc(talloc_tos(), user_info->mapped.account_name);
@@ -49,7 +57,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->mapped.account_name,
-			       smbd_server_conn->client_id.name,
+				rhost,
 				user_info->password.plaintext,
 				true);
 
