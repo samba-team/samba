@@ -459,10 +459,6 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 			  key_name, nt_errstr(status)));
 		return status;
 	}
-	if (W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME, result)) {
-		DEBUG(3, ("Ignoring missing printer %s\n", key_name));
-		return NT_STATUS_OK;
-	}
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
 			  key_name, win_errstr(result)));
@@ -588,13 +584,20 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		}
 
 		if (strncmp((const char *) kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
+			const char *printer_name = (const char *)(kbuf.dptr
+						    + strlen(PRINTERS_PREFIX));
 			status = migrate_printer(mem_ctx,
 						 pipe_hnd,
-						 (const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
+						 printer_name,
 						 dbuf.dptr,
 						 dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
-			if (!NT_STATUS_IS_OK(status)) {
+			/* currently no WERR_INVALID_PRINTER_NAME equivalent */
+			if (NT_STATUS_EQUAL(status,
+			       werror_to_ntstatus(WERR_INVALID_PRINTER_NAME))) {
+				DEBUG(2, ("Skipping migration for non-existent "
+						"printer: %s\n", printer_name));
+			} else if (!NT_STATUS_IS_OK(status)) {
 				tdb_close(tdb);
 				return status;
 			}
@@ -602,13 +605,20 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		}
 
 		if (strncmp((const char *) kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
+			const char *secdesc_name = (const char *)(kbuf.dptr
+						    + strlen(SECDESC_PREFIX));
 			status = migrate_secdesc(mem_ctx,
 						 pipe_hnd,
-						 (const char *) kbuf.dptr + strlen(SECDESC_PREFIX),
+						 secdesc_name,
 						 dbuf.dptr,
 						 dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
-			if (!NT_STATUS_IS_OK(status)) {
+			/* currently no WERR_INVALID_PRINTER_NAME equivalent */
+			if (NT_STATUS_EQUAL(status,
+			       werror_to_ntstatus(WERR_INVALID_PRINTER_NAME))) {
+				DEBUG(2, ("Skipping migration for non-existent "
+						"secdesc: %s\n", secdesc_name));
+			} else if (!NT_STATUS_IS_OK(status)) {
 				tdb_close(tdb);
 				return status;
 			}
