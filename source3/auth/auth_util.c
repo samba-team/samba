@@ -773,6 +773,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 
 	status = get_guest_info3(tmp_ctx, &info3);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("get_guest_info3 failed with %s\n",
+			  nt_errstr(status)));
 		goto done;
 	}
 
@@ -782,6 +784,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 					&server_info,
 					&info3);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("make_server_info_info3 failed with %s\n",
+			  nt_errstr(status)));
 		goto done;
 	}
 
@@ -793,8 +797,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 	status = create_local_token(tmp_ctx, server_info, NULL, session_info);
 	TALLOC_FREE(server_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("create_local_token failed: %s\n",
-			   nt_errstr(status)));
+		DEBUG(0, ("create_local_token failed: %s\n",
+			  nt_errstr(status)));
 		goto done;
 	}
 	talloc_steal(NULL, *session_info);
