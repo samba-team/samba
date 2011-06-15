@@ -44,6 +44,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "rpc_server/srv_access_check.h"
+#include "../lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -1825,7 +1826,9 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	char *user_name = NULL;
+	char *rhost;
 	fstring wks;
+	int rc;
 
 	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
@@ -1846,13 +1849,27 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	rc = get_remote_hostname(p->remote_address,
+				 &rhost,
+				 talloc_tos());
+	if (rc < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (strequal(rhost,"UNKNOWN")) {
+		rhost = tsocket_address_inet_addr_string(p->remote_address,
+							 talloc_tos());
+		if (rhost == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	/*
 	 * UNIX username case mangling not required, pass_oem_change
 	 * is case insensitive.
 	 */
 
 	status = pass_oem_change(user_name,
-				 p->client_id->name,
+				 rhost,
 				 r->in.lm_password->data,
 				 r->in.lm_verifier->hash,
 				 r->in.nt_password->data,
@@ -1878,6 +1895,8 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 	NTSTATUS status;
 	char *user_name = NULL;
 	const char *wks = NULL;
+	char *rhost;
+	int rc;
 
 	DEBUG(5,("_samr_OemChangePasswordUser2: %d\n", __LINE__));
 
@@ -1909,8 +1928,22 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	rc = get_remote_hostname(p->remote_address,
+				 &rhost,
+				 talloc_tos());
+	if (rc < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (strequal(rhost,"UNKNOWN")) {
+		rhost = tsocket_address_inet_addr_string(p->remote_address,
+							 talloc_tos());
+		if (rhost == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	status = pass_oem_change(user_name,
-				 p->client_id->name,
+				 rhost,
 				 r->in.password->data,
 				 r->in.hash->hash,
 				 0,
@@ -1940,6 +1973,8 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
 	uint32_t tmp;
+	char *rhost;
+	int rc;
 
 	DEBUG(5,("_samr_ChangePasswordUser3: %d\n", __LINE__));
 
@@ -1962,13 +1997,27 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	rc = get_remote_hostname(p->remote_address,
+				 &rhost,
+				 talloc_tos());
+	if (rc < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (strequal(rhost,"UNKNOWN")) {
+		rhost = tsocket_address_inet_addr_string(p->remote_address,
+							 talloc_tos());
+		if (rhost == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	/*
 	 * UNIX username case mangling not required, pass_oem_change
 	 * is case insensitive.
 	 */
 
 	status = pass_oem_change(user_name,
-				 p->client_id->name,
+				 rhost,
 				 r->in.lm_password->data,
 				 r->in.lm_verifier->hash,
 				 r->in.nt_password->data,
@@ -5004,6 +5053,8 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	uint32_t acc_required = 0;
 	uint32_t fields = 0;
 	bool ret;
+	char *rhost;
+	int rc;
 
 	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
 
@@ -5084,6 +5135,20 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	if (!ret) {
 		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	rc = get_remote_hostname(p->remote_address,
+				 &rhost,
+				 talloc_tos());
+	if (rc < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (strequal(rhost,"UNKNOWN")) {
+		rhost = tsocket_address_inet_addr_string(p->remote_address,
+							 talloc_tos());
+		if (rhost == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	/* ================ BEGIN Privilege BLOCK ================ */
@@ -5185,7 +5250,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 
 			status = set_user_info_23(p->mem_ctx,
 						  &info->info23,
-						  p->client_id->name,
+						  rhost,
 						  pwd);
 			break;
 
@@ -5200,7 +5265,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			dump_data(100, info->info24.password.data, 516);
 
 			status = set_user_info_24(p->mem_ctx,
-						  p->client_id->name,
+						  rhost,
 						  &info->info24, pwd);
 			break;
 
@@ -5215,7 +5280,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			dump_data(100, info->info25.password.data, 532);
 
 			status = set_user_info_25(p->mem_ctx,
-						  p->client_id->name,
+						  rhost,
 						  &info->info25, pwd);
 			break;
 
@@ -5230,7 +5295,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			dump_data(100, info->info26.password.data, 516);
 
 			status = set_user_info_26(p->mem_ctx,
-						  p->client_id->name,
+						  rhost,
 						  &info->info26, pwd);
 			break;
 
