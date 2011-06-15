@@ -662,7 +662,8 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		return;
 	}
 
-	status = auth_ntlmssp_start(auth_ntlmssp_state);
+	status = auth_ntlmssp_start(sconn->remote_address,
+				    auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
 		invalidate_vuid(sconn, vuid);
@@ -763,7 +764,8 @@ static void reply_spnego_auth(struct smb_request *req,
 	data_blob_free(&secblob);
 
 	if (!*auth_ntlmssp_state) {
-		status = auth_ntlmssp_start(auth_ntlmssp_state);
+		status = auth_ntlmssp_start(sconn->remote_address,
+					    auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
 			invalidate_vuid(sconn, vuid);
@@ -1175,7 +1177,8 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		DATA_BLOB chal;
 
 		if (!vuser->auth_ntlmssp_state) {
-			status = auth_ntlmssp_start(&vuser->auth_ntlmssp_state);
+			status = auth_ntlmssp_start(sconn->remote_address,
+						    &vuser->auth_ntlmssp_state);
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Kill the intermediate vuid */
 				invalidate_vuid(sconn, vuid);

@@ -48,6 +48,8 @@ struct spnego_context {
 	bool do_sign;
 	bool do_seal;
 	bool is_dcerpc;
+
+	struct tsocket_address *remote_address;
 };
 
 NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,

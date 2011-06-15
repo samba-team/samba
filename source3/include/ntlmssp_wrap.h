@@ -25,6 +25,7 @@ struct auth_ntlmssp_state {
 	/* used only by server implementation */
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
+	struct tsocket_address *remote_address;
 
 	/* used by both client and server implementation */
 	struct ntlmssp_state *ntlmssp_state;

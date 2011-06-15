@@ -30,12 +30,13 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   bool is_dcerpc,
 				   DATA_BLOB *token_in,
 				   DATA_BLOB *token_out,
+				   const struct tsocket_address *remote_address,
 				   struct auth_ntlmssp_state **ctx)
 {
 	struct auth_ntlmssp_state *a = NULL;
 	NTSTATUS status;
 
-	status = auth_ntlmssp_start(&a);
+	status = auth_ntlmssp_start(remote_address, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",
 			  nt_errstr(status)));

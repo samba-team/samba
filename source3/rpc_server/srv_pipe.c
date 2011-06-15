@@ -442,6 +442,7 @@ static bool pipe_spnego_auth_bind(struct pipes_struct *p,
 					  true,
 					  &auth_info->credentials,
 					  response,
+					  p->remote_address,
 					  &spnego_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed SPNEGO negotiate (%s)\n",
@@ -596,6 +597,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 					   true,
 					   &auth_info->credentials,
 					   response,
+					   p->remote_address,
 					   &ntlmssp_state);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",

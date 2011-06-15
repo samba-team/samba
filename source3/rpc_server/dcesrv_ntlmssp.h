@@ -28,6 +28,7 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   bool is_dcerpc,
 				   DATA_BLOB *token_in,
 				   DATA_BLOB *token_out,
+				   const struct tsocket_address *remote_address,
 				   struct auth_ntlmssp_state **ctx);
 NTSTATUS ntlmssp_server_step(struct auth_ntlmssp_state *ctx,
 			     TALLOC_CTX *mem_ctx,

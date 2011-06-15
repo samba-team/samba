@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
+#include "../lib/tsocket/tsocket.h"
 #include "dcesrv_ntlmssp.h"
 #include "dcesrv_gssapi.h"
 #include "dcesrv_spnego.h"
@@ -26,12 +27,18 @@
 static NTSTATUS spnego_init_server(TALLOC_CTX *mem_ctx,
 				   bool do_sign, bool do_seal,
 				   bool is_dcerpc,
+				   const struct tsocket_address *remote_address,
 				   struct spnego_context **spnego_ctx)
 {
 	struct spnego_context *sp_ctx = NULL;
 
 	sp_ctx = talloc_zero(mem_ctx, struct spnego_context);
 	if (!sp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sp_ctx->remote_address = tsocket_address_copy(remote_address, sp_ctx);
+	if (sp_ctx->remote_address == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -76,6 +83,7 @@ static NTSTATUS spnego_server_mech_init(struct spnego_context *sp_ctx,
 						   sp_ctx->is_dcerpc,
 						   token_in,
 						   token_out,
+						   sp_ctx->remote_address,
 						   &ntlmssp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to init ntlmssp server "
@@ -210,6 +218,7 @@ NTSTATUS spnego_server_auth_start(TALLOC_CTX *mem_ctx,
 				  bool is_dcerpc,
 				  DATA_BLOB *spnego_in,
 				  DATA_BLOB *spnego_out,
+				  const struct tsocket_address *remote_address,
 				  struct spnego_context **spnego_ctx)
 {
 	struct spnego_context *sp_ctx;
@@ -223,7 +232,12 @@ NTSTATUS spnego_server_auth_start(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = spnego_init_server(mem_ctx, do_sign, do_seal, is_dcerpc, &sp_ctx);
+	status = spnego_init_server(mem_ctx,
+				    do_sign,
+				    do_seal,
+				    is_dcerpc,
+				    remote_address,
+				    &sp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

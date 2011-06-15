@@ -28,6 +28,7 @@ NTSTATUS spnego_server_auth_start(TALLOC_CTX *mem_ctx,
 				  bool is_dcerpc,
 				  DATA_BLOB *spnego_in,
 				  DATA_BLOB *spnego_out,
+				  const struct tsocket_address *remote_address,
 				  struct spnego_context **spnego_ctx);
 NTSTATUS spnego_server_step(struct spnego_context *sp_ctx,
 			    TALLOC_CTX *mem_ctx,

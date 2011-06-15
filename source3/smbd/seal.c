@@ -27,6 +27,7 @@
 #include "../lib/util/asn1.h"
 #include "auth.h"
 #include "libsmb/libsmb.h"
+#include "../lib/tsocket/tsocket.h"
 
 /******************************************************************************
  Server side encryption.
@@ -82,9 +83,11 @@ bool is_encrypted_packet(const uint8_t *inbuf)
  Create an auth_ntlmssp_state and ensure pointer copy is correct.
 ******************************************************************************/
 
-static NTSTATUS make_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
+static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
+				  struct smb_srv_trans_enc_ctx *ec)
 {
-	NTSTATUS status = auth_ntlmssp_start(&ec->auth_ntlmssp_state);
+	NTSTATUS status = auth_ntlmssp_start(remote_address,
+					     &ec->auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
@@ -256,7 +259,9 @@ static void srv_free_encryption_context(struct smb_srv_trans_enc_ctx **pp_ec)
  Create a server encryption context.
 ******************************************************************************/
 
-static NTSTATUS make_srv_encryption_context(enum smb_trans_enc_type smb_enc_type, struct smb_srv_trans_enc_ctx **pp_ec)
+static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote_address,
+					    enum smb_trans_enc_type smb_enc_type,
+					    struct smb_srv_trans_enc_ctx **pp_ec)
 {
 	struct smb_srv_trans_enc_ctx *ec;
 
@@ -277,7 +282,8 @@ static NTSTATUS make_srv_encryption_context(enum smb_trans_enc_type smb_enc_type
 	switch (smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
 			{
-				NTSTATUS status = make_auth_ntlmssp(ec);
+				NTSTATUS status = make_auth_ntlmssp(remote_address,
+								    ec);
 				if (!NT_STATUS_IS_OK(status)) {
 					srv_free_encryption_context(&ec);
 					return status;
@@ -368,7 +374,10 @@ NTSTATUS srv_encrypt_buffer(char *buf, char **buf_out)
 ******************************************************************************/
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob)
+static NTSTATUS srv_enc_spnego_gss_negotiate(const struct tsocket_address *remote_address,
+					     unsigned char **ppdata,
+					     size_t *p_data_size,
+					     DATA_BLOB secblob)
 {
 	OM_uint32 ret;
 	OM_uint32 min;
@@ -380,7 +389,9 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
 	NTSTATUS status;
 
 	if (!partial_srv_trans_enc_ctx) {
-		status = make_srv_encryption_context(SMB_TRANS_ENC_GSS, &partial_srv_trans_enc_ctx);
+		status = make_srv_encryption_context(remote_address,
+						     SMB_TRANS_ENC_GSS,
+						     &partial_srv_trans_enc_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -450,13 +461,19 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(unsigned char **ppdata, size_t *p_d
  Until success we do everything on the partial enc ctx.
 ******************************************************************************/
 
-static NTSTATUS srv_enc_ntlm_negotiate(unsigned char **ppdata, size_t *p_data_size, DATA_BLOB secblob, bool spnego_wrap)
+static NTSTATUS srv_enc_ntlm_negotiate(const struct tsocket_address *remote_address,
+				       unsigned char **ppdata,
+				       size_t *p_data_size,
+				       DATA_BLOB secblob,
+				       bool spnego_wrap)
 {
 	NTSTATUS status;
 	DATA_BLOB chal = data_blob_null;
 	DATA_BLOB response = data_blob_null;
 
-	status = make_srv_encryption_context(SMB_TRANS_ENC_NTLM, &partial_srv_trans_enc_ctx);
+	status = make_srv_encryption_context(remote_address,
+					     SMB_TRANS_ENC_NTLM,
+					     &partial_srv_trans_enc_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -517,14 +534,21 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 		TALLOC_FREE(kerb_mech);
 
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-		status = srv_enc_spnego_gss_negotiate(ppdata, p_data_size, secblob);
+		status = srv_enc_spnego_gss_negotiate(conn->sconn->remote_address,
+						      ppdata,
+						      p_data_size,
+						      secblob);
 #else
 		/* Currently we don't SPNEGO negotiate
 		 * back to NTLMSSP as we do in sessionsetupX. We should... */
 		return NT_STATUS_LOGON_FAILURE;
 #endif
 	} else {
-		status = srv_enc_ntlm_negotiate(ppdata, p_data_size, secblob, true);
+		status = srv_enc_ntlm_negotiate(conn->sconn->remote_address,
+						ppdata,
+						p_data_size,
+						secblob,
+						true);
 	}
 
 	data_blob_free(&secblob);
@@ -628,7 +652,11 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 
 	if (!partial_srv_trans_enc_ctx) {
 		/* This is the initial step. */
-		status = srv_enc_ntlm_negotiate(ppdata, p_data_size, blob, false);
+		status = srv_enc_ntlm_negotiate(conn->sconn->remote_address,
+						ppdata,
+						p_data_size,
+						blob,
+						false);
 		if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
 			srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 			return nt_status_squash(status);
