@@ -466,6 +466,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 		dm.pelsheight              = r.devmode->pelsheight;
 		dm.pelswidth               = r.devmode->pelswidth;
 		dm.printquality            = r.devmode->printquality;
+		dm.size                    = r.devmode->size;
 		dm.scale                   = r.devmode->scale;
 		dm.specversion             = r.devmode->specversion;
 		dm.ttoption                = r.devmode->ttoption;
