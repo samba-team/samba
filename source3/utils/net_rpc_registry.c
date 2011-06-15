@@ -1959,7 +1959,9 @@ static NTSTATUS rpc_registry_import_internal(struct net_context *c,
 		.createkey   = (reg_import_callback_createkey_t)&import_create_key,
 		.deletekey   = (reg_import_callback_deletekey_t)&import_delete_key,
 		.deleteval   = (reg_import_callback_deleteval_t)&import_delete_val,
-		.setval.blob = (reg_import_callback_setval_blob_t)&import_create_val,
+		.setval      = {
+			.blob = (reg_import_callback_setval_blob_t)&import_create_val,
+		},
 		.setval_type = BLOB,
 		.data = &import_ctx
 	};

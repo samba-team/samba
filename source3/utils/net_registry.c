@@ -1039,9 +1039,11 @@ static int net_registry_import(struct net_context *c, int argc,
 		.createkey   = (reg_import_callback_createkey_t)&import_create_key,
 		.deletekey   = (reg_import_callback_deletekey_t)&import_delete_key,
 		.deleteval   = (reg_import_callback_deleteval_t)&import_delete_val,
-		.setval.registry_value = (reg_import_callback_setval_registry_value_t)
-		&import_create_val,
-		.setval_type           = REGISTRY_VALUE,
+		.setval      = {
+			.registry_value = (reg_import_callback_setval_registry_value_t)
+					  &import_create_val,
+		},
+		.setval_type = REGISTRY_VALUE,
 		.data        = &import_ctx
 	};
 
