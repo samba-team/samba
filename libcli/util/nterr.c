@@ -906,3 +906,46 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status)
 		return nt_status;
 	}
 }
+
+/*****************************************************************************
+ Returns an NT error message.  not amazingly helpful, but better than a number.
+
+ This version is const, and so neither allocates memory nor uses a
+ static variable for unknown errors.
+ *****************************************************************************/
+
+const char *nt_errstr_const(NTSTATUS nt_code)
+{
+	static char msg[40];
+	int idx = 0;
+
+	while (nt_errs[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
+		    NT_STATUS_V(nt_code)) {
+			return nt_errs[idx].nt_errstr;
+		}
+		idx++;
+	}
+
+	return "unknown NT_STATUS error";
+}
+
+/************************************************************************
+ Print friendler version fo NT error code
+ ***********************************************************************/
+
+const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
+{
+	int idx = 0;
+
+	while (nt_err_desc[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(nt_err_desc[idx].nt_errcode) == NT_STATUS_V(nt_code)) {
+			return nt_err_desc[idx].nt_errstr;
+		}
+		idx++;
+	}
+
+	/* fall back to NT_STATUS_XXX string */
+
+	return nt_errstr_const(nt_code);
+}

@@ -52,23 +52,3 @@ const char *nt_errstr(NTSTATUS nt_code)
 
 	return msg;
 }
-
-/************************************************************************
- Print friendler version fo NT error code
- ***********************************************************************/
-
-const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
-{
-	int idx = 0;
-
-	while (nt_err_desc[idx].nt_errstr != NULL) {
-		if (NT_STATUS_V(nt_err_desc[idx].nt_errcode) == NT_STATUS_V(nt_code)) {
-			return nt_err_desc[idx].nt_errstr;
-		}
-		idx++;
-	}
-
-	/* fall back to NT_STATUS_XXX string */
-
-	return nt_errstr(nt_code);
-}
