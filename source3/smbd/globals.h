@@ -452,6 +452,7 @@ struct smbd_server_connection {
 	struct client_address client_id;
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
+	const char *remote_hostname;
 	struct messaging_context *msg_ctx;
 	struct {
 		bool got_session;
