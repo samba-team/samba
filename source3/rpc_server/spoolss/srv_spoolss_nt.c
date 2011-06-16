@@ -54,6 +54,7 @@
 #include "util_tdb.h"
 #include "libsmb/libsmb.h"
 #include "printing/printer_list.h"
+#include "../lib/tsocket/tsocket.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
@@ -1711,8 +1712,11 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			      struct spoolss_OpenPrinterEx *r)
 {
 	int snum;
+	char *raddr;
+	char *rhost;
 	struct printer_handle *Printer=NULL;
 	WERROR result;
+	int rc;
 
 	if (!r->in.printername) {
 		return WERR_INVALID_PARAM;
@@ -1877,9 +1881,24 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		}
 
 		/* check smb.conf parameters and the the sec_desc */
+		raddr = tsocket_address_inet_addr_string(p->remote_address,
+							 p->mem_ctx);
+		if (raddr == NULL) {
+			return WERR_NOMEM;
+		}
+
+		rc = get_remote_hostname(p->remote_address,
+					 &rhost,
+					 p->mem_ctx);
+		if (rc < 0) {
+			return WERR_NOMEM;
+		}
+		if (strequal(rhost, "UNKNOWN")) {
+			rhost = raddr;
+		}
 
 		if (!allow_access(lp_hostsdeny(snum), lp_hostsallow(snum),
-				  p->client_id->name, p->client_id->addr)) {
+				  rhost, raddr)) {
 			DEBUG(3, ("access DENIED (hosts allow/deny) for printer open\n"));
 			ZERO_STRUCTP(r->out.handle);
 			return WERR_ACCESS_DENIED;
@@ -2712,6 +2731,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 	int snum = -1;
 	struct spoolss_NotifyOption *option = r->in.notify_options;
 	struct sockaddr_storage client_ss;
+	socklen_t client_len;
 
 	/* store the notify value in the printer struct */
 
@@ -2743,7 +2763,8 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 		return WERR_BADFID;
 
 	DEBUG(10,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
-		"client_address is %s\n", p->client_id->addr));
+		  "remote_address is %s\n",
+		  tsocket_address_string(p->remote_address, p->mem_ctx)));
 
 	if (!lp_print_notify_backchannel(snum)) {
 		DEBUG(10, ("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
@@ -2751,9 +2772,11 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
-	if (!interpret_string_addr(&client_ss, p->client_id->addr,
-				   AI_NUMERICHOST)) {
-		return WERR_SERVER_UNAVAILABLE;
+	client_len = tsocket_address_bsd_sockaddr(p->remote_address,
+						  (struct sockaddr *) &client_ss,
+						  sizeof(struct sockaddr_storage));
+	if (client_len < 0) {
+		return WERR_NOMEM;
 	}
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
@@ -5701,6 +5724,8 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 	int snum;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	WERROR werr;
+	char *rhost;
+	int rc;
 
 	if (!Printer) {
 		DEBUG(2,("_spoolss_StartDocPrinter: "
@@ -5742,9 +5767,23 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
+	rc = get_remote_hostname(p->remote_address,
+				 &rhost,
+				 p->mem_ctx);
+	if (rc < 0) {
+		return WERR_NOMEM;
+	}
+	if (strequal(rhost,"UNKNOWN")) {
+		rhost = tsocket_address_inet_addr_string(p->remote_address,
+							 p->mem_ctx);
+		if (rhost == NULL) {
+			return WERR_NOMEM;
+		}
+	}
+
 	werr = print_job_start(p->session_info,
 			       p->msg_ctx,
-			       p->client_id->name,
+			       rhost,
 			       snum,
 			       info_1->document_name,
 			       info_1->output_file,
@@ -6566,9 +6605,17 @@ static WERROR update_printer(struct pipes_struct *p,
 			 !strequal(printer->portname, old_printer->portname) ||
 			 !strequal(printer->location, old_printer->location)) )
 	{
+		char *raddr;
+
+		raddr = tsocket_address_inet_addr_string(p->remote_address,
+							 p->mem_ctx);
+		if (raddr == NULL) {
+			return WERR_NOMEM;
+		}
+
 		/* add_printer_hook() will call reload_services() */
 		if (!add_printer_hook(tmp_ctx, p->session_info->security_token,
-				      printer, p->client_id->addr,
+				      printer, raddr,
 				      p->msg_ctx)) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
@@ -7884,8 +7931,16 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	   trying to add a printer like this  --jerry */
 
 	if (*lp_addprinter_cmd() ) {
+		char *raddr;
+
+		raddr = tsocket_address_inet_addr_string(p->remote_address,
+							 p->mem_ctx);
+		if (raddr == NULL) {
+			return WERR_NOMEM;
+		}
+
 		if ( !add_printer_hook(p->mem_ctx, p->session_info->security_token,
-				       info2, p->client_id->addr,
+				       info2, raddr,
 				       p->msg_ctx) ) {
 			return WERR_ACCESS_DENIED;
 		}
