@@ -32,6 +32,7 @@
 #include "dbwrap.h"
 #include "session.h"
 #include "auth.h"
+#include "../lib/tsocket/tsocket.h"
 
 /********************************************************************
  called when a session is created
@@ -46,6 +47,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 	fstring keystr;
 	struct db_record *rec;
 	NTSTATUS status;
+	char *raddr;
 
 	vuser->session_keystr = NULL;
 
@@ -128,20 +130,20 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 
 	SMB_ASSERT(rec != NULL);
 
-	/* If 'hostname lookup' == yes, then do the DNS lookup.  This is
-           needed because utmp and PAM both expect DNS names
-
-	   client_name() handles this case internally.
-	*/
+	raddr = tsocket_address_inet_addr_string(sconn->remote_address,
+						 talloc_tos());
+	if (raddr == NULL) {
+		return false;
+	}
 
 	fstrcpy(sessionid.username, vuser->session_info->unix_name);
-	fstrcpy(sessionid.hostname, sconn->client_id.name);
+	fstrcpy(sessionid.hostname, sconn->remote_hostname);
 	sessionid.id_num = i;  /* Only valid for utmp sessions */
 	sessionid.pid = pid;
 	sessionid.uid = vuser->session_info->utok.uid;
 	sessionid.gid = vuser->session_info->utok.gid;
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
-	fstrcpy(sessionid.ip_addr_str, sconn->client_id.addr);
+	fstrcpy(sessionid.ip_addr_str, raddr);
 	sessionid.connect_start = time(NULL);
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str,
