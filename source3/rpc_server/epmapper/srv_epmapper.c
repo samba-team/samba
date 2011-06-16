@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "ntdomain.h"
 #include "../libcli/security/security.h"
+#include "../lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/srv_epmapper.h"
 #include "srv_epmapper.h"
 #include "auth.h"
@@ -528,6 +529,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 	if (r->in.entry_handle == NULL ||
 	    policy_handle_empty(r->in.entry_handle)) {
 		struct GUID *obj;
+		char *srv_addr = NULL;
 
 		DEBUG(7, ("_epm_Lookup: No entry_handle found, creating it.\n"));
 
@@ -543,6 +545,11 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			obj = r->in.object;
 		}
 
+		if (p->local_address != NULL) {
+			srv_addr = tsocket_address_inet_addr_string(p->local_address,
+								    tmp_ctx);
+		}
+
 		switch (r->in.inquiry_type) {
 		case RPC_C_EP_ALL_ELTS:
 			/*
@@ -553,7 +560,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			eps->count = build_ep_list(eps,
 						   endpoint_table,
 						   NULL,
-						   p->server_id == NULL ? NULL : p->server_id->addr,
+						   srv_addr,
 						   &eps->e);
 			break;
 		case RPC_C_EP_MATCH_BY_IF:
@@ -576,7 +583,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			eps->count = build_ep_list(eps,
 						   endpoint_table,
 						   &r->in.interface_id->uuid,
-						   p->server_id == NULL ? NULL : p->server_id->addr,
+						   srv_addr,
 						   &eps->e);
 			break;
 		case RPC_C_EP_MATCH_BY_OBJ:
@@ -587,7 +594,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			eps->count = build_ep_list(eps,
 						   endpoint_table,
 						   r->in.object,
-						   p->server_id == NULL ? NULL : p->server_id->addr,
+						   srv_addr,
 						   &eps->e);
 			break;
 		default:
@@ -909,6 +916,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	if (r->in.entry_handle == NULL ||
 	    policy_handle_empty(r->in.entry_handle)) {
 		struct GUID *obj;
+		char *srv_addr = NULL;
 
 		DEBUG(7, ("_epm_Map: No entry_handle found, creating it.\n"));
 
@@ -936,10 +944,15 @@ error_status_t _epm_Map(struct pipes_struct *p,
 			obj = r->in.object;
 		}
 
+		if (p->local_address != NULL) {
+			srv_addr = tsocket_address_inet_addr_string(p->local_address,
+								    tmp_ctx);
+		}
+
 		eps->count = build_ep_list(eps,
 					   endpoint_table,
 					   obj,
-					   p->server_id == NULL ? NULL : p->server_id->addr,
+					   srv_addr,
 					   &eps->e);
 		if (eps->count == 0) {
 			rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
