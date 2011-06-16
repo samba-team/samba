@@ -179,9 +179,33 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 		return wbsrv_samba3_pam_logoff(s3call);
 
 	/* Unimplemented commands */
-	default:
-		DEBUG(4, ("Unimplemented winbind samba3 request %d\n",
-		      s3call->request->cmd));
+	case WINBINDD_GETPWSID:
+	case WINBINDD_PAM_CHAUTHTOK:
+	case WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP:
+	case WINBINDD_LOOKUPRIDS:
+	case WINBINDD_LOOKUPSIDS:
+	case WINBINDD_SIDS_TO_XIDS:
+	case WINBINDD_ALLOCATE_UID:
+	case WINBINDD_ALLOCATE_GID:
+	case WINBINDD_SHOW_SEQUENCE:
+	case WINBINDD_WINS_BYIP:
+	case WINBINDD_WINS_BYNAME:
+	case WINBINDD_GETGRLST:
+	case WINBINDD_GETSIDALIASES:
+	case WINBINDD_DSGETDCNAME:
+	case WINBINDD_INIT_CONNECTION:
+	case WINBINDD_DUAL_SIDS2XIDS:
+	case WINBINDD_DUAL_USERINFO:
+	case WINBINDD_DUAL_GETSIDALIASES:
+	case WINBINDD_DUAL_NDRCMD:
+	case WINBINDD_CCACHE_NTLMAUTH:
+	case WINBINDD_NUM_CMDS:
+	case WINBINDD_CHANGE_MACHACC:
+	case WINBINDD_PING_DC:
+	case WINBINDD_DC_INFO:
+	case WINBINDD_CCACHE_SAVE:
+		DEBUG(10, ("Unimplemented winbind samba3 request %d\n",
+			   s3call->request->cmd));
 		break;
 	}
 
