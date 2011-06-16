@@ -331,10 +331,14 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		NT_STATUS_HAVE_NO_MEMORY(info->all_info2.out.fname.s);
 		return NT_STATUS_OK;
 
-	default:
+	case RAW_FILEINFO_GENERIC:
+	case RAW_FILEINFO_UNIX_BASIC:
+	case RAW_FILEINFO_UNIX_INFO2:
+	case RAW_FILEINFO_UNIX_LINK:
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
+	return NT_STATUS_INVALID_LEVEL;
 }
 
 /*

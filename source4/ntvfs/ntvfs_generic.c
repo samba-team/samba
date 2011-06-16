@@ -664,9 +664,12 @@ static NTSTATUS ntvfs_map_fsinfo_finish(struct ntvfs_module_context *ntvfs,
 		ZERO_STRUCT(fs->objectid_information.out.unknown);
 		return NT_STATUS_OK;
 
-	default:
+	case RAW_QFS_GENERIC:
+	case RAW_QFS_UNIX_INFO:
 		return NT_STATUS_INVALID_LEVEL;
 	}
+
+	return NT_STATUS_INVALID_LEVEL;
 }
 
 /*
@@ -926,9 +929,16 @@ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
 		info->unix_link_info.out.link_dest = info2->generic.out.link_dest;
 		return NT_STATUS_OK;
 #endif
-	default:
+	case RAW_FILEINFO_GENERIC:
+	case RAW_FILEINFO_SEC_DESC:
+	case RAW_FILEINFO_EA_LIST:
+	case RAW_FILEINFO_UNIX_INFO2:
+	case RAW_FILEINFO_SMB2_ALL_EAS:
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
 		return NT_STATUS_INVALID_LEVEL;
 	}
+
+	return NT_STATUS_INVALID_LEVEL;
 }
 
 /* 
