@@ -30,6 +30,7 @@
 #include "libads/kerberos_proto.h"
 #include "../lib/util/asn1.h"
 #include "auth.h"
+#include "../lib/tsocket/tsocket.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_session_id,
@@ -215,7 +216,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	}
 
 	status = get_user_from_kerberos_info(talloc_tos(),
-					     smb2req->sconn->client_id.name,
+					     session->sconn->remote_hostname,
 					     principal, logon_info,
 					     &username_was_mapped,
 					     &map_domainuser_to_guest,

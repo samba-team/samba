@@ -347,7 +347,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	}
 
 	ret = get_user_from_kerberos_info(talloc_tos(),
-					  sconn->client_id.name,
+					  sconn->remote_hostname,
 					  principal, logon_info,
 					  &username_was_mapped,
 					  &map_domainuser_to_guest,
