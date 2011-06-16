@@ -228,12 +228,22 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
  This function modifies dev, ecode.
 ****************************************************************************/
 
-static NTSTATUS share_sanity_checks(struct client_address *client_id, int snum,
+static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address,
+				    const char *rhost,
+				    int snum,
 				    fstring dev)
 {
-	if (!lp_snum_ok(snum) || 
+	char *raddr;
+
+	raddr = tsocket_address_inet_addr_string(remote_address,
+						 talloc_tos());
+	if (raddr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!lp_snum_ok(snum) ||
 	    !allow_access(lp_hostsdeny(snum), lp_hostsallow(snum),
-			  client_id->name, client_id->addr)) {
+			  rhost, raddr)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -529,7 +539,10 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	fstrcpy(dev, pdev);
 
-	*pstatus = share_sanity_checks(&sconn->client_id, snum, dev);
+	*pstatus = share_sanity_checks(sconn->remote_address,
+				       sconn->remote_hostname,
+				       snum,
+				       dev);
 	if (NT_STATUS_IS_ERR(*pstatus)) {
 		goto err_root_exit;
 	}
@@ -869,7 +882,8 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
-			 conn->sconn->client_id.addr );
+			 tsocket_address_string(conn->sconn->remote_address,
+						talloc_tos()) );
 		dbgtext( "%s", srv_is_signing_active(sconn) ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(snum) );
 		dbgtext( "initially as user %s ",
@@ -1068,7 +1082,8 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 get_remote_machine_name(),
-				 conn->sconn->client_id.addr,
+				 tsocket_address_string(conn->sconn->remote_address,
+							talloc_tos()),
 				 lp_servicename(SNUM(conn))));
 
 	/* Call VFS disconnect hook */    
