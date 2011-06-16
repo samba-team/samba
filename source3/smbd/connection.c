@@ -22,6 +22,7 @@
 #include "smbd/globals.h"
 #include "dbwrap.h"
 #include "auth.h"
+#include "../lib/tsocket/tsocket.h"
 
 /****************************************************************************
  Delete a connection record.
@@ -137,6 +138,7 @@ bool claim_connection(connection_struct *conn, const char *name)
 {
 	struct db_record *rec;
 	struct connections_data crec;
+	char *raddr;
 	TDB_DATA dbuf;
 	NTSTATUS status;
 
@@ -158,8 +160,14 @@ bool claim_connection(connection_struct *conn, const char *name)
 		sizeof(crec.servicename));
 	crec.start = time(NULL);
 
+	raddr = tsocket_address_inet_addr_string(conn->sconn->remote_address,
+						 talloc_tos());
+	if (raddr == NULL) {
+		return false;
+	}
+
 	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
-	strlcpy(crec.addr, conn->sconn->client_id.addr, sizeof(crec.addr));
+	strlcpy(crec.addr, raddr, sizeof(crec.addr));
 
 	dbuf.dptr = (uint8 *)&crec;
 	dbuf.dsize = sizeof(crec);
