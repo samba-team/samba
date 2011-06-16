@@ -39,6 +39,7 @@
 #include "libsmb/nmblib.h"
 #include "auth.h"
 #include "smbprofile.h"
+#include "../lib/tsocket/tsocket.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -572,7 +573,15 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		 */
 		if (strequal(name1, "*SMBSERVER     ")
 		    || strequal(name1, "*SMBSERV       "))  {
-			fstrcpy(name1, sconn->client_id.addr);
+			char *raddr;
+
+			raddr = tsocket_address_inet_addr_string(sconn->remote_address,
+								 talloc_tos());
+			if (raddr == NULL) {
+				exit_server_cleanly("could not allocate raddr");
+			}
+
+			fstrcpy(name1, raddr);
 		}
 
 		set_local_machine_name(name1, True);
