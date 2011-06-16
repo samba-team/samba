@@ -936,7 +936,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 	}
 
 	*r->out.needed = len;
-	r->out.buffer = buffer;
+	memcpy(r->out.buffer, buffer, len);
 
 	return WERR_OK;
 }
