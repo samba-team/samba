@@ -2975,7 +2975,9 @@ void smbd_process(struct smbd_server_connection *sconn)
 				sconn->remote_address,
 				talloc_tos());
 		if (remaddr == NULL) {
-
+			DEBUG(0,("%s: tsocket_address_inet_addr_string remote failed - %s\n",
+				 __location__, strerror(errno)));
+			exit_server_cleanly("tsocket_address_inet_addr_string remote failed.\n");
 		}
 	} else {
 		remaddr = "0.0.0.0";
