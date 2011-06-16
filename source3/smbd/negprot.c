@@ -382,6 +382,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
+		p += ret;
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
 		DATA_BLOB spnego_blob = negprot_spnego();
