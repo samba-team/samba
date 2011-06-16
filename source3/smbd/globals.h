@@ -449,7 +449,6 @@ struct pending_auth_data;
 
 struct smbd_server_connection {
 	int sock;
-	struct client_address client_id;
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
 	const char *remote_hostname;
