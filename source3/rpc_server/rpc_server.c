@@ -174,27 +174,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	p->client_id = talloc_zero(p, struct client_address);
-	if (p->client_id == NULL) {
-		TALLOC_FREE(p);
-		*perrno = ENOMEM;
-		return -1;
-	}
-
-	if (tsocket_address_is_inet(p->remote_address, "ip")) {
-		p->client_id->name = tsocket_address_inet_addr_string(p->remote_address,
-								      p->client_id);
-	} else {
-		p->client_id->name = talloc_strdup(p->client_id, "");
-	}
-	if (p->client_id->name == NULL) {
-		TALLOC_FREE(p);
-		*perrno = ENOMEM;
-		return -1;
-	}
-	strlcpy(p->client_id->addr,
-		p->client_id->name, sizeof(p->client_id->addr));
-
 	if (local_address != NULL) {
 		p->local_address = tsocket_address_copy(local_address, p);
 		if (p->local_address == NULL) {
@@ -202,28 +181,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			*perrno = ENOMEM;
 			return -1;
 		}
-
-		p->server_id = talloc_zero(p, struct client_address);
-		if (p->server_id == NULL) {
-			TALLOC_FREE(p);
-			*perrno = ENOMEM;
-			return -1;
-		}
-		if (tsocket_address_is_inet(p->local_address, "ip")) {
-			p->server_id->name = tsocket_address_inet_addr_string(p->local_address,
-									      p->server_id);
-		} else {
-			p->server_id->name = talloc_strdup(p->server_id, "");
-		}
-		if (p->server_id->name == NULL) {
-			TALLOC_FREE(p);
-			*perrno = ENOMEM;
-			return -1;
-		}
-
-		strlcpy(p->server_id->addr,
-			p->server_id->name,
-			sizeof(p->server_id->addr));
 	}
 
 	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);

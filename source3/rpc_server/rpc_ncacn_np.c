@@ -170,23 +170,6 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	p->client_id = talloc_zero(p, struct client_address);
-	if (p->client_id == NULL) {
-		return false;
-	}
-
-	if (tsocket_address_is_inet(p->remote_address, "ip")) {
-		p->client_id->name = tsocket_address_inet_addr_string(p->remote_address,
-								      p->client_id);
-	} else {
-		p->client_id->name = talloc_strdup(p->client_id, "");
-	}
-	if (p->client_id->name == NULL) {
-		return false;
-	}
-	strlcpy(p->client_id->addr,
-		p->client_id->name, sizeof(p->client_id->addr));
-
 	p->endian = RPC_LITTLE_ENDIAN;
 
 	p->transport = NCALRPC;

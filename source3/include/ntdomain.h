@@ -110,8 +110,6 @@ struct tsocket_address;
 struct pipes_struct {
 	struct pipes_struct *next, *prev;
 
-	struct client_address *client_id;
-	struct client_address *server_id;
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
 
