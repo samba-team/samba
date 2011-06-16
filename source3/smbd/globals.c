@@ -176,32 +176,3 @@ void smbd_init_globals(void)
 	smbd_server_conn->smb1.echo_handler.trusted_fd = -1;
 	smbd_server_conn->smb1.echo_handler.socket_lock_fd = -1;
 }
-
-void smbd_set_server_fd(int fd)
-{
-	struct smbd_server_connection *sconn = smbd_server_conn;
-	char addr[INET6_ADDRSTRLEN];
-	const char *name;
-
-	sconn->sock = fd;
-
-	/*
-	 * Initialize sconn->client_id: If we can't find the client's
-	 * name, default to its address.
-	 */
-
-	client_addr(fd, sconn->client_id.addr, sizeof(sconn->client_id.addr));
-
-	name = client_name(sconn->sock);
-	if (strcmp(name, "UNKNOWN") != 0) {
-		name = talloc_strdup(sconn, name);
-	} else {
-		name = NULL;
-	}
-	sconn->client_id.name =
-		(name != NULL) ? name : sconn->client_id.addr;
-
-	sub_set_socket_ids(sconn->client_id.addr, sconn->client_id.name,
-			   client_socket_addr(sconn->sock, addr,
-					      sizeof(addr)));
-}

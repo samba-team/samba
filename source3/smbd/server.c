@@ -371,6 +371,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 				   uint16_t flags,
 				   void *private_data)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
 	struct sockaddr_storage addr;
@@ -380,8 +381,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	uint64_t unique_id;
 
 	fd = accept(s->fd, (struct sockaddr *)(void *)&addr,&in_addrlen);
-	smbd_set_server_fd(fd);
-
+	sconn->sock = fd;
 	if (fd == -1 && errno == EINTR)
 		return;
 
@@ -392,14 +392,14 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	if (s->parent->interactive) {
-		smbd_process(smbd_server_conn);
+		smbd_process(sconn);
 		exit_server_cleanly("end of interactive mode");
 		return;
 	}
 
 	if (!allowable_number_of_smbd_processes()) {
 		close(fd);
-		smbd_set_server_fd(-1);
+		sconn->sock = -1;
 		return;
 	}
 
@@ -489,8 +489,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		getpeername failure if we reopen the logs
 		and use %I in the filename.
 	*/
-
-	smbd_set_server_fd(-1);
+	sconn->sock = -1;
 
 	if (pid != 0) {
 		add_child_pid(pid);
@@ -1252,7 +1251,7 @@ extern void build_options(bool screen);
 		/* Started from inetd. fd 0 is the socket. */
 		/* We will abort gracefully when the client or remote system
 		   goes away */
-		smbd_set_server_fd(dup(0));
+		smbd_server_conn->sock = dup(0);
 
 		/* close our standard file descriptors */
 		close_low_fds(False); /* Don't close stderr */
