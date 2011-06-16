@@ -639,6 +639,24 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+
+	/*
+	 * The returned names need to match the given sids,
+	 * if not we have a bug in the code!
+	 *
+	 */
+	SMB_ASSERT(state->res_names->count == state->num_sids);
+
+	/*
+	 * Not strictly needed, but it might make debugging in the callers
+	 * easier in future, if the talloc_array_length() returns the
+	 * expected result...
+	 */
+	state->res_domains->domains = talloc_realloc(state->res_domains,
+						     state->res_domains->domains,
+						     struct lsa_DomainInfo,
+						     state->res_domains->count);
+
 	*domains = talloc_move(mem_ctx, &state->res_domains);
 	*names = talloc_move(mem_ctx, &state->res_names);
 	return NT_STATUS_OK;
