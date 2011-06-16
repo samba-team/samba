@@ -28,6 +28,7 @@
 #include "secrets.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "auth.h"
+#include "../lib/tsocket/tsocket.h"
 
 /* abstraction for the send_over_network function */
 enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};
@@ -302,6 +303,7 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	char *timestr = NULL;
 	char *sidstr = NULL;
 	char *usersid = NULL;
+	char *raddr = NULL;
 	char *buf = NULL;
 	char *vfs_operation_str = NULL;
 	const char *service_name = lp_const_servicename(handle->conn->params->service);
@@ -340,7 +342,13 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		common_data_count_str,
 		usersid,
 		handle);
-	
+
+	raddr = tsocket_address_inet_addr_string(handle->conn->sconn->remote_address,
+						 ctx);
+	if (raddr == NULL) {
+		return NULL;
+	}
+
 	/* time stamp */
 	timestr = talloc_asprintf( common_data_count_str, \
 		"%04d-%02d-%02d %02d:%02d:%02d.%03d", \
@@ -369,8 +377,8 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		handle->conn->session_info->info3->base.domain.string,
 		(unsigned int) strlen(timestr),
 		timestr,
-		(unsigned int) strlen(handle->conn->sconn->client_id.addr),
-		handle->conn->sconn->client_id.addr);
+		(unsigned int) strlen(raddr),
+		raddr);
 
 	talloc_free(common_data_count_str);
 
