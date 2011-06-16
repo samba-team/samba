@@ -317,11 +317,6 @@ typedef struct files_struct {
 #include "ntquotas.h"
 #include "sysquotas.h"
 
-struct client_address {
-	char addr[INET6_ADDRSTRLEN];
-	const char *name;
-};
-
 struct vuid_cache_entry {
 	struct auth_serversupplied_info *session_info;
 	uint16_t vuid;
