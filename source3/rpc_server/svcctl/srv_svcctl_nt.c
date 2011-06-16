@@ -668,16 +668,17 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-static WERROR fill_svc_config(TALLOC_CTX *ctx,
+static WERROR fill_svc_config(TALLOC_CTX *mem_ctx,
 			      struct messaging_context *msg_ctx,
 			      struct auth_serversupplied_info *session_info,
 			      const char *name,
 			      struct QUERY_SERVICE_CONFIG *config)
 {
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	const char *result = NULL;
 
 	/* now fill in the individual values */
+
+	ZERO_STRUCTP(config);
 
 	config->displayname = svcctl_lookup_dispname(mem_ctx,
 						     msg_ctx,
@@ -719,9 +720,6 @@ static WERROR fill_svc_config(TALLOC_CTX *ctx,
 		config->start_type = SVCCTL_DISABLED;
 	else
 		config->start_type = SVCCTL_DEMAND_START;
-
-
-	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }
