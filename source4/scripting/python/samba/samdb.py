@@ -507,7 +507,12 @@ accountExpires: %u
         dsdb._dsdb_set_schema_from_ldb(self, ldb_conn)
 
     def dsdb_DsReplicaAttribute(self, ldb, ldap_display_name, ldif_elements):
+        '''convert a list of attribute values to a DRSUAPI DsReplicaAttribute'''
         return dsdb._dsdb_DsReplicaAttribute(ldb, ldap_display_name, ldif_elements)
+
+    def dsdb_normalise_attributes(self, ldb, ldap_display_name, ldif_elements):
+        '''normalise a list of attribute values'''
+        return dsdb._dsdb_normalise_attributes(ldb, ldap_display_name, ldif_elements)
 
     def get_attribute_from_attid(self, attid):
         """ Get from an attid the associated attribute
