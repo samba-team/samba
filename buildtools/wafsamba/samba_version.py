@@ -90,7 +90,7 @@ def git_version_summary(path, env=None):
 
 class SambaVersion(object):
 
-    def __init__(self, version_dict, path, env=None):
+    def __init__(self, version_dict, path, env=None, is_install=True):
         '''Determine the version number of samba
 
 See VERSION for the format.  Entries on that file are 
@@ -152,7 +152,10 @@ also accepted as dictionary entries here
             SAMBA_VERSION_STRING += ("rc%u" % self.RC_RELEASE)
 
         if self.IS_SNAPSHOT:
-            if os.path.exists(os.path.join(path, ".git")):
+            if not is_install:
+                suffix = "DEVELOPERBUILD"
+                self.vcs_fields = {}
+            elif os.path.exists(os.path.join(path, ".git")):
                 suffix, self.vcs_fields = git_version_summary(path, env=env)
             elif os.path.exists(os.path.join(path, ".bzr")):
                 suffix, self.vcs_fields = bzr_version_summary(path)
@@ -234,7 +237,7 @@ also accepted as dictionary entries here
         return string
 
 
-def samba_version_file(version_file, path, env=None):
+def samba_version_file(version_file, path, env=None, is_install=True):
     '''Parse the version information from a VERSION file'''
 
     f = open(version_file, 'r')
@@ -254,16 +257,16 @@ def samba_version_file(version_file, path, env=None):
             print("Failed to parse line %s from %s" % (line, version_file))
             raise
 
-    return SambaVersion(version_dict, path, env=env)
+    return SambaVersion(version_dict, path, env=env, is_install=is_install)
 
 
 
-def load_version(env=None):
+def load_version(env=None, is_install=True):
     '''load samba versions either from ./VERSION or git
     return a version object for detailed breakdown'''
     if not env:
         env = samba_utils.LOAD_ENVIRONMENT()
 
-    version = samba_version_file("./VERSION", ".", env)
+    version = samba_version_file("./VERSION", ".", env, is_install=is_install)
     Utils.g_module.VERSION = version.STRING
     return version

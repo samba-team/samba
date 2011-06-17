@@ -157,7 +157,7 @@ def ctags(ctx):
 # of commands in --help
 def build(bld):
     '''build all targets'''
-    samba_version.load_version(env=bld.env)
+    samba_version.load_version(env=bld.env, is_install=bld.is_install)
     pass
 
 

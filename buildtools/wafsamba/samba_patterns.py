@@ -10,7 +10,7 @@ def write_version_header(task):
     src = task.inputs[0].srcpath(task.env)
     tgt = task.outputs[0].bldpath(task.env)
 
-    version = samba_version_file(src, task.env.srcdir, env=task.env)
+    version = samba_version_file(src, task.env.srcdir, env=task.env, is_install=task.env.is_install)
     string = str(version)
 
     f = open(tgt, 'w')
@@ -26,4 +26,5 @@ def SAMBA_MKVERSION(bld, target):
                             source= 'VERSION',
                             target=target,
                             always=True)
+    t.env.is_install = bld.is_install
 Build.BuildContext.SAMBA_MKVERSION = SAMBA_MKVERSION

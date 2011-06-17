@@ -27,7 +27,7 @@ bld.env.public_headers_skip = ['param/param_proto.h', 'lib/ldb_compat.h']
 # force headers to use SAMBA4 rules
 bld.env.public_headers_replace = { '#if _SAMBA_BUILD_ == 4' : '#if 1 /* _SAMBA_BUILD_ == 4 */' }
 
-samba_version.load_version(bld.env)
+samba_version.load_version(bld.env, is_install=bld.is_install)
 bld.SAMBA_MKVERSION('version.h')
 
 # bld.ENABLE_MAGIC_ORDERING()
