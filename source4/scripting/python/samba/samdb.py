@@ -142,7 +142,7 @@ pwdLastSet: 0
             "objectClass": "group"}
 
         if grouptype is not None:
-            ldbmessage["groupType"] = "%d" % grouptype
+            ldbmessage["groupType"] = self.normalise_int32(grouptype)
 
         if description is not None:
             ldbmessage["description"] = description
@@ -722,3 +722,9 @@ accountExpires: %u
         if sd:
             m["nTSecurityDescriptor"] = ndr_pack(sd)
         self.add(m)
+
+    def normalise_int32(self, ivalue):
+        '''normalise a ldap integer to signed 32 bit'''
+        if int(ivalue) & 0x80000000:
+            return str(int(ivalue) - 0x100000000)
+        return str(ivalue)
