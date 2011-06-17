@@ -607,8 +607,16 @@ static const struct {
 #ifdef EOPNOTSUPP
 	{ EOPNOTSUPP,   NT_STATUS_NOT_SUPPORTED},
 #endif
+	{ EMLINK,       NT_STATUS_TOO_MANY_LINKS },
+	{ ENOSYS,       NT_STATUS_NOT_SUPPORTED },
+#ifdef ELOOP
+	{ ELOOP,        NT_STATUS_OBJECT_PATH_NOT_FOUND },
+#endif
 #ifdef ENODATA
 	{ ENODATA,      NT_STATUS_NOT_FOUND },
+#endif
+#ifdef EFTYPE
+	{ EFTYPE,       NT_STATUS_OBJECT_PATH_NOT_FOUND },
 #endif
 #ifdef EDQUOT
 	{ EDQUOT,       NT_STATUS_DISK_FULL }, /* Windows apps need this, not NT_STATUS_QUOTA_EXCEEDED */
@@ -651,6 +659,9 @@ static const struct {
 #endif
 #ifdef EAFNOSUPPORT
 	{ EAFNOSUPPORT,	NT_STATUS_INVALID_PARAMETER_MIX },
+#endif
+#ifdef ECONNABORTED
+	{ ECONNABORTED, NT_STATUS_CONNECTION_ABORTED},
 #endif
 #ifdef ECONNRESET
 	{ ECONNRESET,   NT_STATUS_CONNECTION_RESET},
