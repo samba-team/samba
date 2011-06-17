@@ -564,7 +564,7 @@ static SMB_OFF_T smb_time_audit_lseek(vfs_handle_struct *handle,
 				      files_struct *fsp,
 				      SMB_OFF_T offset, int whence)
 {
-	ssize_t result;
+	SMB_OFF_T result;
 	struct timespec ts1,ts2;
 	double timediff;
 
@@ -721,7 +721,7 @@ static uint64_t smb_time_audit_get_alloc_size(vfs_handle_struct *handle,
 					      files_struct *fsp,
 					      const SMB_STRUCT_STAT *sbuf)
 {
-	int result;
+	uint64_t result;
 	struct timespec ts1,ts2;
 	double timediff;
 
@@ -2216,7 +2216,7 @@ static ssize_t smb_time_audit_aio_return(struct vfs_handle_struct *handle,
 					 struct files_struct *fsp,
 					 SMB_STRUCT_AIOCB *aiocb)
 {
-	int result;
+	ssize_t result;
 	struct timespec ts1,ts2;
 	double timediff;
 
