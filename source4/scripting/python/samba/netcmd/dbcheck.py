@@ -100,8 +100,9 @@ def check_object(self, dn):
     res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=['*', 'ntSecurityDescriptor'])
     if len(res) != 1:
         print("Object %s disappeared during check" % dn)
-        return
+        return 1
     obj = res[0]
+    error_count = 0
     for attrname in obj:
         if attrname == 'dn':
             continue
@@ -110,6 +111,7 @@ def check_object(self, dn):
         for val in obj[attrname]:
             if val == '':
                 empty_attribute(self, dn, attrname)
+                error_count += 1
                 continue
 
         # check for incorrectly normalised attributes
@@ -117,7 +119,9 @@ def check_object(self, dn):
             normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
             if len(normalised) != 1 or normalised[0] != val:
                 normalise_mismatch(self, dn, attrname, obj[attrname])
+                error_count += 1
                 break
+    return error_count
 
 
 class cmd_dbcheck(Command):
@@ -168,6 +172,9 @@ class cmd_dbcheck(Command):
 
         res = self.samdb.search(base=DN, scope=self.search_scope, attrs=['dn'], controls=controls)
         print('Checking %u objects' % len(res))
+        error_count = 0
         for object in res:
-            check_object(self, object.dn)
-        print('Checked %u objects' % len(res))
+            error_count += check_object(self, object.dn)
+        if error_count != 0 and not self.fix:
+            print("Please use --fix to fix these errors")
+        print('Checked %u objects (%u errors)' % (len(res), error_count))
