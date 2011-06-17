@@ -1069,8 +1069,14 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 						  struct ldb_message_element *out)
 {
 	unsigned int i;
+	const struct dsdb_schema_prefixmap *prefixmap;
 
-	SMB_ASSERT(ctx->pfm_remote);
+	if (ctx->pfm_remote != NULL) {
+		prefixmap = ctx->pfm_remote;
+	} else {
+		prefixmap = ctx->schema->prefixmap;
+	}
+	SMB_ASSERT(prefixmap);
 
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
@@ -1095,7 +1101,7 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 
 		attid = IVAL(in->value_ctr.values[i].blob->data, 0);
 
-		status = dsdb_schema_pfm_oid_from_attid(ctx->pfm_remote, attid,
+		status = dsdb_schema_pfm_oid_from_attid(prefixmap, attid,
 							out->values, &oid);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0,(__location__ ": Error: Unknown ATTID 0x%08X\n",
