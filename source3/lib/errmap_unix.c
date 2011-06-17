@@ -28,6 +28,14 @@ static const struct {
 	int unix_error;
 	NTSTATUS nt_error;
 } unix_nt_errmap[] = {
+	{ EAGAIN,       NT_STATUS_NETWORK_BUSY },
+	{ EINTR,        NT_STATUS_RETRY },
+#ifdef ENOBUFS
+	{ ENOBUFS,      NT_STATUS_INSUFFICIENT_RESOURCES },
+#endif
+#ifdef EWOULDBLOCK
+	{ EWOULDBLOCK,  NT_STATUS_NETWORK_BUSY },
+#endif
 	{ EPERM,        NT_STATUS_ACCESS_DENIED },
 	{ EACCES,       NT_STATUS_ACCESS_DENIED },
 	{ ENOENT,       NT_STATUS_OBJECT_NAME_NOT_FOUND },
@@ -41,8 +49,10 @@ static const struct {
 	{ ENOSPC,       NT_STATUS_DISK_FULL },
 	{ ENOMEM,       NT_STATUS_NO_MEMORY },
 	{ EISDIR,       NT_STATUS_FILE_IS_A_DIRECTORY},
+#ifdef EPIPE
+	{ EPIPE,        NT_STATUS_PIPE_BROKEN},
+#endif
 	{ EMLINK,       NT_STATUS_TOO_MANY_LINKS },
-	{ EINTR,        NT_STATUS_RETRY },
 	{ ENOSYS,       NT_STATUS_NOT_SUPPORTED },
 #ifdef ELOOP
 	{ ELOOP,        NT_STATUS_OBJECT_PATH_NOT_FOUND },
@@ -68,10 +78,6 @@ static const struct {
 #ifdef EFBIG
 	{ EFBIG,        NT_STATUS_DISK_FULL },
 #endif
-#ifdef ENOBUFS
-	{ ENOBUFS,      NT_STATUS_INSUFFICIENT_RESOURCES },
-#endif
-	{ EAGAIN,       NT_STATUS_NETWORK_BUSY },
 #ifdef EADDRINUSE
 	{ EADDRINUSE,   NT_STATUS_ADDRESS_ALREADY_ASSOCIATED},
 #endif
@@ -95,12 +101,6 @@ static const struct {
 #endif
 #ifdef ENODEV
 	{ ENODEV,       NT_STATUS_DEVICE_DOES_NOT_EXIST},
-#endif
-#ifdef EPIPE
-	{ EPIPE,        NT_STATUS_PIPE_BROKEN},
-#endif
-#ifdef EWOULDBLOCK
-	{ EWOULDBLOCK,  NT_STATUS_NETWORK_BUSY },
 #endif
 #ifdef ENOATTR
 	{ ENOATTR,      NT_STATUS_NOT_FOUND },
