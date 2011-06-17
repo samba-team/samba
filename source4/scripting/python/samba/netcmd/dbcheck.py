@@ -58,12 +58,46 @@ def empty_attribute(self, dn, attrname):
     print("Removed empty attribute %s" % attrname)
 
 
+def normalise_mismatch(self, dn, attrname, values):
+    '''fix attribute normalisation errors'''
+    print("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
+    mod_list = []
+    for val in values:
+        normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
+        if len(normalised) != 1:
+            print("Unable to normalise value '%s'" % val)
+            mod_list.append((val, ''))
+        elif (normalised[0] != val):
+            print("value '%s' should be '%s'" % (val, normalised[0]))
+            mod_list.append((val, normalised[0]))
+    if not self.fix:
+        return
+    if not confirm(self, 'Fix normalisation for %s from %s?' % (attrname, dn)):
+        print("Not fixing attribute %s" % attrname)
+        return
+
+    m = ldb.Message()
+    m.dn = dn
+    for i in range(0, len(mod_list)):
+        (val, nval) = mod_list[i]
+        m['value_%u' % i] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        if nval != '':
+            m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
+
+    try:
+        self.samdb.modify(m, controls=["relax:0"], validate=False)
+    except Exception, msg:
+        print("Failed to normalise attribute %s : %s" % (attrname, msg))
+        return
+    print("Normalised attribute %s" % attrname)
+
+
 
 def check_object(self, dn):
     '''check one object'''
     if self.verbose:
         print("Checking object %s" % dn)
-    res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE)
+    res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=['*', 'ntSecurityDescriptor'])
     if len(res) != 1:
         print("Object %s disappeared during check" % dn)
         return
@@ -71,10 +105,19 @@ def check_object(self, dn):
     for attrname in obj:
         if attrname == 'dn':
             continue
+
+        # check for empty attributes
         for val in obj[attrname]:
             if val == '':
                 empty_attribute(self, dn, attrname)
                 continue
+
+        # check for incorrectly normalised attributes
+        for val in obj[attrname]:
+            normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
+            if len(normalised) != 1 or normalised[0] != val:
+                normalise_mismatch(self, dn, attrname, obj[attrname])
+                break
 
 
 class cmd_dbcheck(Command):
@@ -96,11 +139,13 @@ class cmd_dbcheck(Command):
                help='Fix any errors found'),
         Option("--yes", dest="yes", default=False, action='store_true',
                help="don't confirm changes, just do them all"),
+        Option("--cross-ncs", dest="cross_ncs", default=False, action='store_true',
+               help="cross naming context boundaries"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
             help="Print more details of checking"),
         ]
 
-    def run(self, DN=None, verbose=False, fix=False, yes=False,
+    def run(self, DN=None, verbose=False, fix=False, yes=False, cross_ncs=False,
             scope="SUB", credopts=None, sambaopts=None, versionopts=None):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -117,7 +162,12 @@ class cmd_dbcheck(Command):
             raise CommandError("Unknown scope %s" % scope)
         self.search_scope = scope_map[scope]
 
-        res = self.samdb.search(base=DN, scope=self.search_scope, attrs=['dn'])
+        controls = []
+        if cross_ncs:
+            controls.append("search_options:1:2")
+
+        res = self.samdb.search(base=DN, scope=self.search_scope, attrs=['dn'], controls=controls)
+        print('Checking %u objects' % len(res))
         for object in res:
             check_object(self, object.dn)
         print('Checked %u objects' % len(res))
