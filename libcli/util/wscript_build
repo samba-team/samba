@@ -3,6 +3,6 @@
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_ERRORS',
 	source='doserr.c errormap.c nterr.c',
-	public_deps='talloc'
+	public_deps='talloc samba-util-common'
 	)
 

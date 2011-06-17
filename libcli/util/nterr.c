@@ -1,7 +1,10 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
+ *
  *  Copyright (C) Luke Kenneth Casson Leighton 1997-2001.
+ *  Copyright (C) Andrew Bartlett
+ *  Copyright (C) Andrew Tridgell
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -909,15 +912,12 @@ NTSTATUS nt_status_squash(NTSTATUS nt_status)
 
 /*****************************************************************************
  Returns an NT error message.  not amazingly helpful, but better than a number.
-
- This version is const, and so neither allocates memory nor uses a
- static variable for unknown errors.
  *****************************************************************************/
 
-const char *nt_errstr_const(NTSTATUS nt_code)
+const char *nt_errstr(NTSTATUS nt_code)
 {
-	static char msg[40];
 	int idx = 0;
+	char *result;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_V(nt_errs[idx].nt_errcode) ==
@@ -927,7 +927,22 @@ const char *nt_errstr_const(NTSTATUS nt_code)
 		idx++;
 	}
 
-	return "unknown NT_STATUS error";
+	if (!talloc_stackframe_exists()) {
+		/* prevent memory leaks from talloc_tos() by using a
+		 * static area. This means the caller will overwrite
+		 * the string with subsequent calls, which can cause
+		 * display of the wrong error. If that happens the
+		 * caller should have a talloc stackframe
+		 */
+		static char msg[20];
+		snprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
+		return msg;
+	}
+
+	result = talloc_asprintf(talloc_tos(), "NT code 0x%08x",
+				 NT_STATUS_V(nt_code));
+	SMB_ASSERT(result != NULL);
+	return result;
 }
 
 /************************************************************************
@@ -947,5 +962,5 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 
 	/* fall back to NT_STATUS_XXX string */
 
-	return nt_errstr_const(nt_code);
+	return nt_errstr(nt_code);
 }
