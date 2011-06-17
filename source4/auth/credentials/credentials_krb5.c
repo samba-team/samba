@@ -482,7 +482,11 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	ret = cli_credentials_get_ccache(cred, event_ctx, lp_ctx,
 					 &ccache, error_string);
 	if (ret) {
-		DEBUG(1, ("Failed to get CCACHE for GSSAPI client: %s\n", error_message(ret)));
+		if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
+			DEBUG(1, ("Failed to get kerberos credentials (kerberos required): %s\n", error_message(ret)));
+		} else {
+			DEBUG(4, ("Failed to get kerberos credentials: %s\n", error_message(ret)));
+		}
 		return ret;
 	}
 
