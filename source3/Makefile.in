@@ -541,7 +541,7 @@ LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 	     libsmb/namequery.o ../libcli/nbt/lmhosts.o ../libcli/dns/dns_hosts_file.o libsmb/conncache.o \
 	     libads/dns.o libads/sitename_cache.o
 
-NTERR_OBJ = ../libcli/util/nterr.o libsmb/nterr.o libsmb/smberr.o
+NTERR_OBJ = ../libcli/util/nterr.o libsmb/smberr.o
 DOSERR_OBJ = ../libcli/util/doserr.o
 ERRORMAP_OBJ = ../libcli/util/errormap.o libsmb/errormap.o
 DCE_RPC_ERR_OBJ = ../librpc/rpc/dcerpc_error.o

@@ -1064,7 +1064,7 @@ bld.SAMBA3_SUBSYSTEM('ldb3',
                     deps='samba-util-common')
 
 bld.SAMBA3_SUBSYSTEM('errors3',
-                     source='libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c', 
+                     source='libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c',
                      deps='LIBCLI_ERRORS')
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
