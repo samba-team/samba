@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import samba, ldb
+import samba, ldb, sys
 import samba.getopt as options
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -178,3 +178,5 @@ class cmd_dbcheck(Command):
         if error_count != 0 and not self.fix:
             print("Please use --fix to fix these errors")
         print('Checked %u objects (%u errors)' % (len(res), error_count))
+        if error_count != 0:
+            sys.exit(1)
