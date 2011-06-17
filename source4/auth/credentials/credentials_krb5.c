@@ -387,7 +387,7 @@ void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred,
 	}
 	/* Now that we know that the data is 'this specified', then
 	 * don't allow something less 'known' to be returned as a
-	 * ccache.  Ie, if the username is on the commmand line, we
+	 * ccache.  Ie, if the username is on the command line, we
 	 * don't want to later guess to use a file-based ccache */
 	if (obtained > cred->client_gss_creds_threshold) {
 		cred->client_gss_creds_threshold = obtained;
@@ -420,7 +420,7 @@ _PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 	}
 	/* Now that we know that the data is 'this specified', then
 	 * don't allow something less 'known' to be returned as a
-	 * ccache.  Ie, if the username is on the commmand line, we
+	 * ccache.  i.e, if the username is on the command line, we
 	 * don't want to later guess to use a file-based ccache */
 	if (obtained > cred->ccache_threshold) {
 		cred->ccache_threshold  = obtained;
@@ -844,7 +844,7 @@ _PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, c
 	cred->salt_principal = talloc_strdup(cred, principal);
 }
 
-/* The 'impersonate_principal' is used to allow on Kerberos principal
+/* The 'impersonate_principal' is used to allow one Kerberos principal
  * (and it's associated keytab etc) to impersonate another.  The
  * ability to do this is controlled by the KDC, but it is generally
  * permitted to impersonate anyone to yourself.  This allows any

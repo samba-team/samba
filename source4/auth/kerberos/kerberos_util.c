@@ -173,7 +173,7 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 			return ret;
 		}
 		
-		/* This song-and-dance effectivly puts the principal
+		/* This song-and-dance effectively puts the principal
 		 * into talloc, so we can't loose it. */
 		talloc_set_destructor(principals[i], free_principal);
 		i++;
@@ -262,7 +262,7 @@ static krb5_error_code salt_principal_from_msg(TALLOC_CTX *parent_ctx,
 					  upper_realm,
 					  "host", salt_body, NULL);
 		if (ret == 0) {
-			/* This song-and-dance effectivly puts the principal
+			/* This song-and-dance effectively puts the principal
 			 * into talloc, so we can't loose it. */
 			mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
 			mem_ctx->principal = *salt_princ;
@@ -737,7 +737,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 			/* Release the enumeration.  We are going to
 			 * have to start this from the top again,
 			 * because deletes during enumeration may not
-			 * always be consistant.
+			 * always be consistent.
 			 *
 			 * Also, the enumeration locks a FILE: keytab
 			 */
