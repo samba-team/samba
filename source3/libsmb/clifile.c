@@ -48,7 +48,9 @@ static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
 
 	buflen = talloc_get_size(buf);
 
-	if (align_odd && ucs2 && (buflen % 2 == 0)) {
+	if (ucs2 &&
+	    ((align_odd && (buflen % 2 == 0)) ||
+	     (!align_odd && (buflen % 2 == 1)))) {
 		/*
 		 * We're pushing into an SMB buffer, align odd
 		 */
