@@ -440,7 +440,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         of the updated provision
     """
 
-    messagefunc(SIMPLE, "update secrets.ldb")
+    messagefunc(SIMPLE, "Update of secrets.ldb")
     reference = newsecrets_ldb.search(expression="dn=@MODULES", base="",
                                         scope=SCOPE_SUBTREE)
     current = secrets_ldb.search(expression="dn=@MODULES", base="",
