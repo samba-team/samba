@@ -1194,7 +1194,6 @@ dn: CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: sitesContainer
 systemFlags: -2113929216
-nTSecurityDescriptor:: ${SITES_DESCRIPTOR}
 
 dn: CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
