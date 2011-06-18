@@ -8636,6 +8636,7 @@ static struct {
 	{ "CHAIN1", run_chain1, 0},
 	{ "CHAIN2", run_chain2, 0},
 	{ "WINDOWS-WRITE", run_windows_write, 0},
+	{ "NTTRANS-CREATE", run_nttrans_create, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "GETADDRINFO", run_getaddrinfo_send, 0},
 	{ "TLDAP", run_tldap },

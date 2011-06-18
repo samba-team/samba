@@ -563,6 +563,7 @@ SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/
                 torture/test_async_echo.c
                 torture/test_addrchange.c
                 torture/test_posix_append.c
+		torture/test_nttrans_create.c
 		torture/test_case_insensitive.c
 		torture/test_notify_online.c
                 torture/test_smbsock_any_connect.c'''
