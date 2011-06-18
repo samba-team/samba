@@ -557,6 +557,35 @@ NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 uint32_t *pnum_changes,
 			 struct notify_change **pchanges);
 
+struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   struct cli_state *cli,
+					   const char *fname,
+					   uint32_t CreatFlags,
+					   uint32_t DesiredAccess,
+					   uint32_t FileAttributes,
+					   uint32_t ShareAccess,
+					   uint32_t CreateDisposition,
+					   uint32_t CreateOptions,
+					   uint8_t SecurityFlags,
+					   struct security_descriptor *secdesc,
+					   struct ea_struct *eas,
+					   int num_eas);
+NTSTATUS cli_nttrans_create_recv(struct tevent_req *req, uint16_t *fnum);
+NTSTATUS cli_nttrans_create(struct cli_state *cli,
+			    const char *fname,
+			    uint32_t CreatFlags,
+			    uint32_t DesiredAccess,
+			    uint32_t FileAttributes,
+			    uint32_t ShareAccess,
+			    uint32_t CreateDisposition,
+			    uint32_t CreateOptions,
+			    uint8_t SecurityFlags,
+			    struct security_descriptor *secdesc,
+			    struct ea_struct *eas,
+			    int num_eas,
+			    uint16_t *pfid);
+
 /* The following definitions come from libsmb/clifsinfo.c  */
 
 struct tevent_req *cli_unix_extensions_version_send(TALLOC_CTX *mem_ctx,

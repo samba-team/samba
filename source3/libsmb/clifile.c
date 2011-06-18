@@ -26,6 +26,7 @@
 #include "libsmb/clirap.h"
 #include "trans2.h"
 #include "ntioctl.h"
+#include "libcli/security/secdesc.h"
 
 /***********************************************************
  Common function for pushing stings, used by smb_bytes_push_str()
@@ -1901,6 +1902,184 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	}
 
 	status = cli_ntcreate_recv(req, pfid);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct cli_nttrans_create_state {
+	uint16_t fnum;
+};
+
+static void cli_nttrans_create_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   struct cli_state *cli,
+					   const char *fname,
+					   uint32_t CreatFlags,
+					   uint32_t DesiredAccess,
+					   uint32_t FileAttributes,
+					   uint32_t ShareAccess,
+					   uint32_t CreateDisposition,
+					   uint32_t CreateOptions,
+					   uint8_t SecurityFlags,
+					   struct security_descriptor *secdesc,
+					   struct ea_struct *eas,
+					   int num_eas)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_nttrans_create_state *state;
+	uint8_t *param;
+	uint8_t *secdesc_buf;
+	size_t secdesc_len;
+	NTSTATUS status;
+	size_t converted_len;
+
+	req = tevent_req_create(mem_ctx,
+				&state, struct cli_nttrans_create_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (secdesc != NULL) {
+		status = marshall_sec_desc(talloc_tos(), secdesc,
+					   &secdesc_buf, &secdesc_len);
+		if (tevent_req_nterror(req, status)) {
+			DEBUG(10, ("marshall_sec_desc failed: %s\n",
+				   nt_errstr(status)));
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		secdesc_buf = NULL;
+		secdesc_len = 0;
+	}
+
+	if (num_eas != 0) {
+		/*
+		 * TODO ;-)
+		 */
+		tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+		return tevent_req_post(req, ev);
+	}
+
+	param = talloc_array(state, uint8_t, 53);
+	if (tevent_req_nomem(param, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+				      fname, strlen(fname),
+				      &converted_len);
+	if (tevent_req_nomem(param, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	SIVAL(param, 0, CreatFlags);
+	SIVAL(param, 4, 0x0);	/* RootDirectoryFid */
+	SIVAL(param, 8, DesiredAccess);
+	SIVAL(param, 12, 0x0);	/* AllocationSize */
+	SIVAL(param, 16, 0x0);	/* AllocationSize */
+	SIVAL(param, 20, FileAttributes);
+	SIVAL(param, 24, ShareAccess);
+	SIVAL(param, 28, CreateDisposition);
+	SIVAL(param, 32, CreateOptions);
+	SIVAL(param, 36, secdesc_len);
+	SIVAL(param, 40, 0);	 /* EA length*/
+	SIVAL(param, 44, converted_len);
+	SIVAL(param, 48, 0x02); /* ImpersonationLevel */
+	SCVAL(param, 52, SecurityFlags);
+
+	subreq = cli_trans_send(state, ev, cli, SMBnttrans,
+				NULL, -1, /* name, fid */
+				NT_TRANSACT_CREATE, 0,
+				NULL, 0, 0, /* setup */
+				param, talloc_get_size(param), 128, /* param */
+				secdesc_buf, secdesc_len, 0); /* data */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_nttrans_create_done, req);
+	return req;
+}
+
+static void cli_nttrans_create_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_nttrans_create_state *state = tevent_req_data(
+		req, struct cli_nttrans_create_state);
+	uint8_t *param;
+	uint32_t num_param;
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, talloc_tos(), NULL,
+				NULL, 0, NULL, /* rsetup */
+				&param, 69, &num_param,
+				NULL, 0, NULL);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	state->fnum = SVAL(param, 2);
+	TALLOC_FREE(param);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_nttrans_create_recv(struct tevent_req *req, uint16_t *fnum)
+{
+	struct cli_nttrans_create_state *state = tevent_req_data(
+		req, struct cli_nttrans_create_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*fnum = state->fnum;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_nttrans_create(struct cli_state *cli,
+			    const char *fname,
+			    uint32_t CreatFlags,
+			    uint32_t DesiredAccess,
+			    uint32_t FileAttributes,
+			    uint32_t ShareAccess,
+			    uint32_t CreateDisposition,
+			    uint32_t CreateOptions,
+			    uint8_t SecurityFlags,
+			    struct security_descriptor *secdesc,
+			    struct ea_struct *eas,
+			    int num_eas,
+			    uint16_t *pfid)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_nttrans_create_send(frame, ev, cli, fname, CreatFlags,
+				      DesiredAccess, FileAttributes,
+				      ShareAccess, CreateDisposition,
+				      CreateOptions, SecurityFlags,
+				      secdesc, eas, num_eas);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_nttrans_create_recv(req, pfid);
  fail:
 	TALLOC_FREE(frame);
 	return status;
