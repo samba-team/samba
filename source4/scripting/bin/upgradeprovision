@@ -872,7 +872,7 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
         :return: The modified message diff.
     """
     global defSDmodified
-    isFirst = False
+    isFirst = True
     txt = ""
     dn = current[0].dn
 
@@ -887,7 +887,7 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
             continue
 
         if isFirst and len(delta.items())>1:
-            isFirst = True
+            isFirst = False
             txt = "%s\n" % (str(dn))
 
         keptAttr = ["dn", "rIDAvailablePool", "objectSid", "creationTime", "oEMInformation", "msDs-KeyVersionNumber"]
@@ -930,6 +930,7 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
                 message(CHANGE, "sd are identical")
             else:
                 message(CHANGE, "sd are not identical")
+
         if attrUSN == -1:
             # This attribute was last modified by another DC forget
             # about it
@@ -993,7 +994,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
         raise ProvisioningError(msg)
 
     changed = 0
-    controls = ["search_options:1:2", "sd_flags:1:2"]
+    controls = ["search_options:1:2", "sd_flags:1:0"]
     if usns is not None:
             message(CHANGE, "Using replPropertyMetadata for change selection")
     for dn in listPresent:
