@@ -173,7 +173,9 @@ struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 	struct security_descriptor *dst;
 	uint32_t offset     = 0;
 
-	*sd_size = 0;
+	if (sd_size != NULL) {
+		*sd_size = 0;
+	}
 
 	if(( dst = talloc_zero(ctx, struct security_descriptor)) == NULL)
 		return NULL;
@@ -203,6 +205,10 @@ struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 	if(dacl && ((dst->dacl = dup_sec_acl(dst, dacl)) == NULL))
 		goto error_exit;
 
+	if (sd_size == NULL) {
+		return dst;
+	}
+
 	offset = SEC_DESC_HEADER_SIZE;
 
 	/*
@@ -229,7 +235,9 @@ struct security_descriptor *make_sec_desc(TALLOC_CTX *ctx,
 
 error_exit:
 
-	*sd_size = 0;
+	if (sd_size != NULL) {
+		*sd_size = 0;
+	}
 	return NULL;
 }
 
