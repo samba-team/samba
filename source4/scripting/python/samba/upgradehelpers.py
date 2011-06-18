@@ -360,7 +360,7 @@ def chunck_sddl(sddl):
     return hash
 
 
-def get_diff_sddls(refsddl, cursddl):
+def get_diff_sddls(refsddl, cursddl, checkSacl = True):
     """Get the difference between 2 sddl
 
     This function split the textual representation of ACL into smaller
@@ -368,6 +368,7 @@ def get_diff_sddls(refsddl, cursddl):
 
     :param refsddl: First sddl to compare
     :param cursddl: Second sddl to compare
+    :param checkSacl: If false we skip the sacl checks
     :return: A string that explain difference between sddls
     """
 
@@ -387,7 +388,10 @@ def get_diff_sddls(refsddl, cursddl):
         txt = "%s\tGroup mismatch: %s (in ref) %s" \
               "(in current)\n" % (txt, hash_ref["group"], hash_cur["group"])
 
-    for part in ["dacl", "sacl"]:
+    parts = [ "dacl" ]
+    if checkSacl:
+        parts.append("sacl")
+    for part in parts:
         if hash_cur.has_key(part) and hash_ref.has_key(part):
 
             # both are present, check if they contain the same ACE
