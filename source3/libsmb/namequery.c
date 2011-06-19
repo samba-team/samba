@@ -1768,6 +1768,7 @@ NTSTATUS name_resolve_bcast(const char *name,
 {
 	struct sockaddr_storage *bcast_addrs;
 	int i, num_addrs, num_bcast_addrs;
+	NTSTATUS status;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_resolve_bcast(%s#%02x): netbios is disabled\n",
@@ -1805,10 +1806,12 @@ NTSTATUS name_resolve_bcast(const char *name,
 		num_bcast_addrs += 1;
 	}
 
-	return name_queries(name, name_type, true, true,
-			    bcast_addrs, num_bcast_addrs, 0, 1000,
-			    mem_ctx, return_iplist, return_count,
-			    NULL, NULL);
+	status = name_queries(name, name_type, true, true,
+			      bcast_addrs, num_bcast_addrs, 0, 1000,
+			      mem_ctx, return_iplist, return_count,
+			      NULL, NULL);
+	TALLOC_FREE(bcast_addrs);
+	return status;
 }
 
 struct query_wins_list_state {
