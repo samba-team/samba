@@ -20,6 +20,7 @@
 
 import ldb, sys
 import samba.getopt as options
+from samba.common import confirm
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.netcmd import (
@@ -27,14 +28,6 @@ from samba.netcmd import (
     CommandError,
     Option
     )
-
-def confirm(self, msg):
-    '''confirm an action with the user'''
-    if self.yes:
-        print("%s [YES]" % msg)
-        return True
-    v = raw_input(msg + ' [y/N] ')
-    return v.upper() in ['Y', 'YES']
 
 class cmd_dbcheck(Command):
     """check local AD database for errors"""
@@ -98,7 +91,7 @@ class cmd_dbcheck(Command):
         print("ERROR: Empty attribute %s in %s" % (attrname, dn))
         if not self.fix:
             return
-        if not confirm(self, 'Remove empty attribute %s from %s?' % (attrname, dn)):
+        if not confirm('Remove empty attribute %s from %s?' % (attrname, dn), self.yes):
             print("Not fixing empty attribute %s" % attrname)
             return
 
@@ -156,7 +149,7 @@ class cmd_dbcheck(Command):
                 mod_list.append((val, normalised[0]))
         if not self.fix:
             return
-        if not self.confirm(self, 'Fix normalisation for %s from %s?' % (attrname, dn)):
+        if not confirm('Fix normalisation for %s from %s?' % (attrname, dn), self.yes):
             print("Not fixing attribute %s" % attrname)
             return
 
