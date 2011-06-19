@@ -1099,7 +1099,8 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 		}
 
 		for ( j=i+1; j<count; j++ ) {
-			if (sockaddr_equal((struct sockaddr *)&iplist[i].ss, (struct sockaddr *)&iplist[j].ss) &&
+			if (sockaddr_equal((struct sockaddr *)(void *)&iplist[i].ss,
+					   (struct sockaddr *)(void *)&iplist[j].ss) &&
 					iplist[i].port == iplist[j].port) {
 				zero_sockaddr(&iplist[j].ss);
 			}
@@ -1352,8 +1353,8 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 
 		for (j=0; j<state->num_addrs; j++) {
 			if (sockaddr_equal(
-				    (struct sockaddr *)&addr,
-				    (struct sockaddr *)&state->addrs[j])) {
+				    (struct sockaddr *)(void *)&addr,
+				    (struct sockaddr *)(void *)&state->addrs[j])) {
 				break;
 			}
 		}
@@ -2747,7 +2748,7 @@ bool resolve_name(const char *name,
 		if (prefer_ipv4) {
 			for (i=0; i<count; i++) {
 				if (!is_zero_addr(&ss_list[i].ss) &&
-						!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss) &&
+				    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss) &&
 						(ss_list[i].ss.ss_family == AF_INET)) {
 					*return_ss = ss_list[i].ss;
 					SAFE_FREE(ss_list);
@@ -2760,7 +2761,7 @@ bool resolve_name(const char *name,
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
 			if (!is_zero_addr(&ss_list[i].ss) &&
-					!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
+			    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
 				*return_ss = ss_list[i].ss;
 				SAFE_FREE(ss_list);
 				SAFE_FREE(sitename);
@@ -2824,7 +2825,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 	/* only return valid addresses for TCP connections */
 	for (i=0, num_entries = 0; i<count; i++) {
 		if (!is_zero_addr(&ss_list[i].ss) &&
-				!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
+		    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
 			num_entries++;
 		}
 	}
@@ -2843,7 +2844,7 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	for (i=0, num_entries = 0; i<count; i++) {
 		if (!is_zero_addr(&ss_list[i].ss) &&
-				!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss)) {
+		    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
 			(*return_ss_arr)[num_entries++] = ss_list[i].ss;
 		}
 	}
