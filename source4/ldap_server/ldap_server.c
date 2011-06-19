@@ -708,7 +708,7 @@ static struct tevent_req *ldapsrv_process_call_send(TALLOC_CTX *mem_ctx,
 	ok = tevent_queue_add(call_queue, ev, req,
 			      ldapsrv_process_call_trigger, NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 

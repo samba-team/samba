@@ -201,7 +201,7 @@ struct tevent_req *wrepl_connect_send(TALLOC_CTX *mem_ctx,
 			      wrepl_connect_trigger,
 			      NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
@@ -382,7 +382,7 @@ struct tevent_req *wrepl_request_send(TALLOC_CTX *mem_ctx,
 			      wrepl_request_trigger,
 			      NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 

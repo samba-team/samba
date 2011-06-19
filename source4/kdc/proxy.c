@@ -556,7 +556,7 @@ static void kdc_tcp_proxy_read_pdu_done(struct tevent_req *subreq)
 	 */
 	state->out = data_blob_talloc(state, raw.data + 4, raw.length - 4);
 	if (state->out.length != raw.length - 4) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 

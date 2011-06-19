@@ -127,7 +127,7 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 
 	if (!tevent_queue_add(child->queue, ev, req,
 			      wb_child_request_trigger, NULL)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 	return req;

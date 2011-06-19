@@ -481,7 +481,7 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 			    &state->tmp_domains, &state->tmp_names.names[i],
 			    state->res_domains, state->res_names,
 			    res_sid_index)) {
-			tevent_req_nomem(NULL, req);
+			tevent_req_oom(req);
 			return;
 		}
 	}
@@ -544,7 +544,7 @@ static void wb_lookupsids_single_done(struct tevent_req *subreq)
 		    &src_domains, &src_name,
 		    state->res_domains, state->res_names,
 		    res_sid_index)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 	state->single_sids_done += 1;
@@ -619,7 +619,7 @@ static void wb_lookupsids_lookuprids_done(struct tevent_req *subreq)
 			    &src_domains, &src_name,
 			    state->res_domains, state->res_names,
 			    res_sid_index)) {
-			tevent_req_nomem(NULL, req);
+			tevent_req_oom(req);
 			return;
 		}
 	}

@@ -1178,7 +1178,7 @@ static void irpc_bh_raw_call_incoming_handler(struct irpc_request *irpc,
 		m->ndr->data + m->ndr->offset,
 		m->ndr->data_size - m->ndr->offset);
 	if ((m->ndr->data_size - m->ndr->offset) > 0 && !state->out_data.data) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 

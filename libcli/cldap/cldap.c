@@ -631,7 +631,7 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!tevent_req_set_endtime(req, state->caller.cldap->event.ctx, end)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		goto post;
 	}
 
@@ -680,7 +680,7 @@ static void cldap_search_state_queue_done(struct tevent_req *subreq)
 
 	/* wait for incoming traffic */
 	if (!cldap_recvfrom_setup(state->caller.cldap)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 

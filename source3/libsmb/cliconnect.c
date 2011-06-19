@@ -1365,7 +1365,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 		 * More to send
 		 */
 		if (!cli_sesssetup_blob_next(state, &subreq)) {
-			tevent_req_nomem(NULL, req);
+			tevent_req_oom(req);
 			return;
 		}
 		tevent_req_set_callback(subreq, cli_sesssetup_blob_done, req);

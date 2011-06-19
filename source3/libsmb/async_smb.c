@@ -369,7 +369,7 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	if (cli->timeout) {
 		endtime = timeval_current_ofs_msec(cli->timeout);
 		if (!tevent_req_set_endtime(result, ev, endtime)) {
-			tevent_req_nomem(NULL, result);
+			tevent_req_oom(result);
 		}
 	}
 	return result;

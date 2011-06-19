@@ -541,7 +541,7 @@ static void tldap_msg_sent(struct tevent_req *subreq)
 	}
 
 	if (!tldap_msg_set_pending(req)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 }
@@ -1703,7 +1703,7 @@ static void tldap_search_done(struct tevent_req *subreq)
 	case TLDAP_RES_SEARCH_ENTRY:
 	case TLDAP_RES_SEARCH_REFERENCE:
 		if (!tldap_msg_set_pending(subreq)) {
-			tevent_req_nomem(NULL, req);
+			tevent_req_oom(req);
 			return;
 		}
 		tevent_req_notify_callback(req);

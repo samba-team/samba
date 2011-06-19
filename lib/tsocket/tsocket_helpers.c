@@ -73,7 +73,7 @@ struct tevent_req *tdgram_sendto_queue_send(TALLOC_CTX *mem_ctx,
 			      tdgram_sendto_queue_trigger,
 			      NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		goto post;
 	}
 
@@ -346,7 +346,7 @@ struct tevent_req *tstream_readv_pdu_queue_send(TALLOC_CTX *mem_ctx,
 			      tstream_readv_pdu_queue_trigger,
 			      NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		goto post;
 	}
 
@@ -453,7 +453,7 @@ struct tevent_req *tstream_writev_queue_send(TALLOC_CTX *mem_ctx,
 			      tstream_writev_queue_trigger,
 			      NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		goto post;
 	}
 
