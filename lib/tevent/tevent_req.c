@@ -123,6 +123,11 @@ bool _tevent_req_error(struct tevent_req *req,
 	return true;
 }
 
+void _tevent_req_oom(struct tevent_req *req, const char *location)
+{
+	tevent_req_finish(req, TEVENT_REQ_NO_MEMORY, location);
+}
+
 bool _tevent_req_nomem(const void *p,
 		       struct tevent_req *req,
 		       const char *location)
@@ -130,7 +135,7 @@ bool _tevent_req_nomem(const void *p,
 	if (p != NULL) {
 		return false;
 	}
-	tevent_req_finish(req, TEVENT_REQ_NO_MEMORY, location);
+	_tevent_req_oom(req, location);
 	return true;
 }
 

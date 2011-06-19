@@ -995,6 +995,20 @@ bool _tevent_req_nomem(const void *p,
 	_tevent_req_nomem(p, req, __location__)
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Indicate out of memory to a request
+ *
+ * @param[in]  req      The request being processed.
+ */
+void tevent_req_oom(struct tevent_req *req);
+#else
+void _tevent_req_oom(struct tevent_req *req,
+		     const char *location);
+#define tevent_req_oom(req) \
+	_tevent_req_oom(req, __location__)
+#endif
+
 /**
  * @brief Finish a request before the caller had the change to set the callback.
  *
