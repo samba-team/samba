@@ -44,6 +44,7 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn, LdbError)
 from samba import param, dsdb, Ldb
+from samba.common import confirm
 from samba.provision import (get_domain_descriptor, find_provision_key_parameters,
                             get_config_descriptor,
                             ProvisioningError, get_last_provision_usn,
@@ -1729,6 +1730,19 @@ if __name__ == '__main__':
                 message(CHANGE, "Old style for usn ranges used")
                 lastProvisionUSNs[str(names.invocation)] = lastProvisionUSNs["default"]
                 del lastProvisionUSNs["default"]
+        else:
+            message(SIMPLE, "Your provision lacks provision range information")
+            if confirm("Do you want to run findprovisionusnranges to try to find them ?", False):
+                ldbs.groupedRollback()
+                os.system("%s %s %s %s %s" % (os.path.join(os.path.dirname(sys.argv[0]),
+                                            "findprovisionusnranges"),
+                                        "--storedir",
+                                        paths.private_dir,
+                                        "-s",
+                                        smbconf))
+                message(SIMPLE, "Once you applied/adapted the change(s) please restart the upgradeprovision script")
+                sys.exit(0)
+
         # Objects will be created with the admin session
         # (not anymore system session)
         adm_session = admin_session(lp, str(names.domainsid))
