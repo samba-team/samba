@@ -38,58 +38,6 @@ def confirm(self, msg):
     return v.upper() in ['Y', 'YES']
 
 
-def empty_attribute(self, dn, attrname):
-    '''fix empty attributes'''
-    print("ERROR: Empty attribute %s in %s" % (attrname, dn))
-    if not self.fix:
-        return
-    if not confirm(self, 'Remove empty attribute %s from %s?' % (attrname, dn)):
-        print("Not fixing empty attribute %s" % attrname)
-        return
-
-    m = ldb.Message()
-    m.dn = dn
-    m[attrname] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, attrname)
-    try:
-        self.samdb.modify(m, controls=["relax:0"], validate=False)
-    except Exception, msg:
-        print("Failed to remove empty attribute %s : %s" % (attrname, msg))
-        return
-    print("Removed empty attribute %s" % attrname)
-
-
-def normalise_mismatch(self, dn, attrname, values):
-    '''fix attribute normalisation errors'''
-    print("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
-    mod_list = []
-    for val in values:
-        normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
-        if len(normalised) != 1:
-            print("Unable to normalise value '%s'" % val)
-            mod_list.append((val, ''))
-        elif (normalised[0] != val):
-            print("value '%s' should be '%s'" % (val, normalised[0]))
-            mod_list.append((val, normalised[0]))
-    if not self.fix:
-        return
-    if not confirm(self, 'Fix normalisation for %s from %s?' % (attrname, dn)):
-        print("Not fixing attribute %s" % attrname)
-        return
-
-    m = ldb.Message()
-    m.dn = dn
-    for i in range(0, len(mod_list)):
-        (val, nval) = mod_list[i]
-        m['value_%u' % i] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
-        if nval != '':
-            m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
-
-    try:
-        self.samdb.modify(m, controls=["relax:0"], validate=False)
-    except Exception, msg:
-        print("Failed to normalise attribute %s : %s" % (attrname, msg))
-        return
-    print("Normalised attribute %s" % attrname)
 
 
 
@@ -174,9 +122,62 @@ class cmd_dbcheck(Command):
         print('Checking %u objects' % len(res))
         error_count = 0
         for object in res:
-            error_count += check_object(self, object.dn)
+            error_count += self.check_object(self, object.dn)
         if error_count != 0 and not self.fix:
             print("Please use --fix to fix these errors")
         print('Checked %u objects (%u errors)' % (len(res), error_count))
         if error_count != 0:
             sys.exit(1)
+
+    def empty_attribute(self, dn, attrname):
+        '''fix empty attributes'''
+        print("ERROR: Empty attribute %s in %s" % (attrname, dn))
+        if not self.fix:
+            return
+        if not confirm(self, 'Remove empty attribute %s from %s?' % (attrname, dn)):
+            print("Not fixing empty attribute %s" % attrname)
+            return
+
+        m = ldb.Message()
+        m.dn = dn
+        m[attrname] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, attrname)
+        try:
+            self.samdb.modify(m, controls=["relax:0"], validate=False)
+        except Exception, msg:
+            print("Failed to remove empty attribute %s : %s" % (attrname, msg))
+            return
+        print("Removed empty attribute %s" % attrname)
+
+
+    def normalise_mismatch(self, dn, attrname, values):
+        '''fix attribute normalisation errors'''
+        print("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
+        mod_list = []
+        for val in values:
+            normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
+            if len(normalised) != 1:
+                print("Unable to normalise value '%s'" % val)
+                mod_list.append((val, ''))
+            elif (normalised[0] != val):
+                print("value '%s' should be '%s'" % (val, normalised[0]))
+                mod_list.append((val, normalised[0]))
+        if not self.fix:
+            return
+        if not confirm(self, 'Fix normalisation for %s from %s?' % (attrname, dn)):
+            print("Not fixing attribute %s" % attrname)
+            return
+
+        m = ldb.Message()
+        m.dn = dn
+        for i in range(0, len(mod_list)):
+            (val, nval) = mod_list[i]
+            m['value_%u' % i] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+            if nval != '':
+                m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
+
+        try:
+            self.samdb.modify(m, controls=["relax:0"], validate=False)
+        except Exception, msg:
+            print("Failed to normalise attribute %s : %s" % (attrname, msg))
+            return
+        print("Normalised attribute %s" % attrname)
