@@ -1044,6 +1044,13 @@ NTSTATUS name_query(const char *name, int name_type,
 		    TALLOC_CTX *mem_ctx,
 		    struct sockaddr_storage **addrs,
 		    int *num_addrs, uint8_t *flags);
+struct tevent_req *name_resolve_bcast_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   const char *name,
+					   int name_type);
+NTSTATUS name_resolve_bcast_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				 struct sockaddr_storage **addrs,
+				 int *num_addrs);
 NTSTATUS name_resolve_bcast(const char *name,
 			int name_type,
 			TALLOC_CTX *mem_ctx,

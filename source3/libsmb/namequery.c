@@ -1760,34 +1760,47 @@ static NTSTATUS name_queries(const char *name, int name_type,
  Resolve via "bcast" method.
 *********************************************************/
 
-NTSTATUS name_resolve_bcast(const char *name,
-			int name_type,
-			TALLOC_CTX *mem_ctx,
-			struct sockaddr_storage **return_iplist,
-			int *return_count)
+struct name_resolve_bcast_state {
+	struct sockaddr_storage *addrs;
+	int num_addrs;
+};
+
+static void name_resolve_bcast_done(struct tevent_req *subreq);
+
+struct tevent_req *name_resolve_bcast_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   const char *name,
+					   int name_type)
 {
+	struct tevent_req *req, *subreq;
+	struct name_resolve_bcast_state *state;
 	struct sockaddr_storage *bcast_addrs;
 	int i, num_addrs, num_bcast_addrs;
-	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct name_resolve_bcast_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
 	if (lp_disable_netbios()) {
-		DEBUG(5,("name_resolve_bcast(%s#%02x): netbios is disabled\n",
-					name, name_type));
-		return NT_STATUS_INVALID_PARAMETER;
+		DEBUG(5, ("name_resolve_bcast(%s#%02x): netbios is disabled\n",
+			  name, name_type));
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	/*
 	 * "bcast" means do a broadcast lookup on all the local interfaces.
 	 */
 
-	DEBUG(3,("name_resolve_bcast: Attempting broadcast lookup "
-		"for name %s<0x%x>\n", name, name_type));
+	DEBUG(3, ("name_resolve_bcast: Attempting broadcast lookup "
+		  "for name %s<0x%x>\n", name, name_type));
 
 	num_addrs = iface_count();
-	bcast_addrs = talloc_array(talloc_tos(), struct sockaddr_storage,
-				   num_addrs);
-	if (bcast_addrs == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	bcast_addrs = talloc_array(state, struct sockaddr_storage, num_addrs);
+	if (tevent_req_nomem(bcast_addrs, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	/*
@@ -1806,11 +1819,75 @@ NTSTATUS name_resolve_bcast(const char *name,
 		num_bcast_addrs += 1;
 	}
 
-	status = name_queries(name, name_type, true, true,
-			      bcast_addrs, num_bcast_addrs, 0, 1000,
-			      mem_ctx, return_iplist, return_count,
-			      NULL, NULL);
-	TALLOC_FREE(bcast_addrs);
+	subreq = name_queries_send(state, ev, name, name_type, true, true,
+				   bcast_addrs, num_bcast_addrs, 0, 1000);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, name_resolve_bcast_done, req);
+	return req;
+}
+
+static void name_resolve_bcast_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct name_resolve_bcast_state *state = tevent_req_data(
+		req, struct name_resolve_bcast_state);
+	NTSTATUS status;
+
+	status = name_queries_recv(subreq, state,
+				   &state->addrs, &state->num_addrs,
+				   NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS name_resolve_bcast_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				 struct sockaddr_storage **addrs,
+				 int *num_addrs)
+{
+	struct name_resolve_bcast_state *state = tevent_req_data(
+		req, struct name_resolve_bcast_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*addrs = talloc_move(mem_ctx, &state->addrs);
+	*num_addrs = state->num_addrs;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS name_resolve_bcast(const char *name,
+			int name_type,
+			TALLOC_CTX *mem_ctx,
+			struct sockaddr_storage **return_iplist,
+			int *return_count)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = name_resolve_bcast_send(frame, ev, name, name_type);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = name_resolve_bcast_recv(req, mem_ctx, return_iplist,
+					 return_count);
+ fail:
+	TALLOC_FREE(frame);
 	return status;
 }
 
