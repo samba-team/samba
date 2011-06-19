@@ -1723,40 +1723,6 @@ static NTSTATUS name_queries_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS name_queries(const char *name, int name_type,
-			     bool bcast, bool recurse,
-			     const struct sockaddr_storage *addrs,
-			     int num_addrs, int wait_msec, int timeout_msec,
-			     TALLOC_CTX *mem_ctx,
-			     struct sockaddr_storage **result_addrs,
-			     int *num_result_addrs, uint8_t *flags,
-			     int *received_index)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	ev = event_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = name_queries_send(frame, ev, name, name_type, bcast,
-				recurse, addrs, num_addrs, wait_msec,
-				timeout_msec);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = name_queries_recv(req, mem_ctx, result_addrs,
-				   num_result_addrs, flags, received_index);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /********************************************************
  Resolve via "bcast" method.
 *********************************************************/
