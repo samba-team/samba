@@ -246,7 +246,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 {
 	SMBCSRV *srv=NULL;
 	char *workgroup = NULL;
-	struct cli_state *c;
+	struct cli_state *c = NULL;
 	const char *server_n = server;
         int is_ipc = (share != NULL && strcmp(share, "IPC$") == 0);
 	uint32 fs_attrs = 0;
@@ -586,6 +586,10 @@ done:
 		workgroup = *pp_workgroup;
 	}
 	if(!workgroup) {
+		if (c != NULL) {
+			cli_shutdown(c);
+		}
+		SAFE_FREE(srv);
 		return NULL;
 	}
 
