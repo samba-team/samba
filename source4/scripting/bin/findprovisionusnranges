@@ -1,0 +1,174 @@
+#!/usr/bin/python
+#
+# Helper for determining USN ranges created of modified by provision and
+# upgradeprovision.
+# Copyright (C) Matthieu Patou <mat@matws.net> 2009-2011
+#
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+import sys
+import optparse
+import tempfile
+sys.path.insert(0, "bin/python")
+
+from samba.credentials import DONT_USE_KERBEROS
+from samba.auth import system_session
+from samba import Ldb
+import ldb
+                
+import samba.getopt as options
+from samba import param
+from samba import _glue
+from samba.upgradehelpers import get_paths
+from samba.ndr import ndr_unpack
+from samba.dcerpc import drsblobs, misc
+
+parser = optparse.OptionParser("provision [options]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+parser.add_option("--storedir", type="string", help="Directory where to store result files")
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+opts = parser.parse_args()[0]
+lp = sambaopts.get_loadparm()
+smbconf = lp.configfile
+
+creds = credopts.get_credentials(lp)
+creds.set_kerberos_state(DONT_USE_KERBEROS)
+session = system_session()
+paths = get_paths(param, smbconf=smbconf)
+basedn="DC=" + lp.get("realm").replace(".",",DC=")
+samdb = Ldb(paths.samdb, session_info=session, credentials=creds,lp=lp)
+
+hash_id = {}
+ldif = ""
+nb_obj = 0
+
+res = samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+
+invocation = None
+if res and len(res) == 1 and res[0]["dsServiceName"] != None:
+    dn = ldb.Dn(samdb, str(res[0]["dsServiceName"]))
+    res = samdb.search(base=str(dn), scope=ldb.SCOPE_BASE, attrs=["invocationId"],
+                        controls=["search_options:1:2"])
+
+    if res and len(res) == 1 and res[0]["invocationId"]:
+        invocation = str(ndr_unpack(misc.GUID, res[0]["invocationId"][0]))   
+    else:
+        print "Unable to find invocation ID"
+        sys.exit(1)
+else:
+    print "Unable to find attribute dsServiceName in rootDSE"
+    sys.exit(1)
+
+res = samdb.search(base=basedn, expression="objectClass=*",
+                                scope=ldb.SCOPE_SUBTREE,
+                                attrs=["replPropertyMetaData"],
+                                controls=["search_options:1:2"])
+
+for e in res:
+    nb_obj = nb_obj + 1
+    obj = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                        str(e["replPropertyMetaData"])).ctr
+
+    for o in obj.array:
+        # like a timestamp but with the resolution of 1 minute
+        minutestamp =_glue.nttime2unix(o.originating_change_time)/60
+        hash_ts = hash_id.get(str(o.originating_invocation_id))
+        if hash_ts == None:
+            ob = {}
+            ob["min"] = o.originating_usn
+            ob["max"] = o.originating_usn
+            ob["num"] = 1
+            ob["list"] = [str(e.dn)]
+            hash_ts = {}
+        else:
+            ob = hash_ts.get(minutestamp)
+            if ob == None:
+                ob = {}
+                ob["min"] = o.originating_usn
+                ob["max"] = o.originating_usn
+                ob["num"] = 1
+                ob["list"] = [str(e.dn)]
+            else:
+                if ob["min"] > o.originating_usn:
+                    ob["min"] = o.originating_usn
+                if ob["max"] < o.originating_usn:
+                    ob["max"] = o.originating_usn
+                if not (str(e.dn) in ob["list"]):
+                    ob["num"] = ob["num"] + 1
+                    ob["list"].append(str(e.dn))
+        hash_ts[minutestamp] = ob
+        hash_id[str(o.originating_invocation_id)] = hash_ts
+
+minobj = 5
+print "Here is a list of changes that modified more than %d objects in 1 minute." % minobj
+print "Usually changes made by provision and upgradeprovision are those who affect a couple"\
+        " of hundred of objects or more"
+print "Total number of objects: %d" % nb_obj
+print 
+
+for id in hash_id:
+    hash_ts = hash_id[id]
+    sorted_keys = []
+    sorted_keys.extend(hash_ts.keys())
+    sorted_keys.sort()
+
+    kept_record = []
+    for k in sorted_keys:
+        obj = hash_ts[k]
+        if obj["num"] > minobj:
+            dt = _glue.nttime2string(_glue.unix2nttime(k*60))
+            print "%s # of modification: %d  \tmin: %d max: %d" % (dt , obj["num"],
+                                                                obj["min"],
+                                                                obj["max"])
+        if hash_ts[k]["num"] > 600:
+            kept_record.append(k)
+
+    # Let's try to concatenate consecutive block if they are in the almost same minutestamp
+    for i in range(0, len(kept_record)):
+        if i != 0:
+            key1 = kept_record[i]
+            key2 = kept_record[i-1]
+            if key1 - key2 == 1:
+                # previous record is just 1 minute away from current
+                if int(hash_ts[key1]["min"]) == int(hash_ts[key2]["max"]) + 1:
+                    # Copy the highest USN in the previous record
+                    # and mark the current as skipped
+                    hash_ts[key2]["max"] = hash_ts[key1]["max"]
+                    hash_ts[key1]["skipped"] = True
+
+    for k in kept_record:
+            obj = hash_ts[k]
+            if obj.get("skipped") == None:
+                ldif = "%slastProvisionUSN: %d-%d;%s\n" % (ldif, obj["min"],
+                            obj["max"], id) 
+
+if ldif != "":
+    dest = opts.storedir
+    if dest == None:
+        dest = "/tmp"
+
+    file = tempfile.mktemp(dir=dest, prefix="usnprov", suffix=".ldif")        
+    print 
+    print "To track the USNs modified/created by provision and upgrade proivsion,"
+    print " the following ranges are proposed to be added to your provision sam.ldb: \n%s" % ldif
+    print "We recommend to review them, and if it's correct to integrate the following ldif: %s in your sam.ldb" % file
+    print "You can load this file like this: ldbadd -H %s %s\n"%(str(paths.samdb),file)
+    ldif = "dn: @PROVISION\nprovisionnerID: %s\n%s" % (invocation, ldif)
+    open(file,'w').write(ldif)
+
