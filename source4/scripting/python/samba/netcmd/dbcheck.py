@@ -18,11 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import samba, ldb, sys
+import ldb, sys
 import samba.getopt as options
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba.dcerpc import security
 from samba.netcmd import (
     Command,
     CommandError,
