@@ -424,7 +424,11 @@ $ret->{USERNAME} = KTEST\\Administrator
 #Samba4 DC with the same parameters as are being used here.  The
 #domain SID is S-1-5-21-1071277805-689288055-3486227160
 
-	system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb $prefix/private/secrets.tdb");
+	if (defined($ENV{BUILD_TDB2})) {
+	    system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb2 $prefix/private/secrets.tdb");
+	} else {
+	    system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb $prefix/private/secrets.tdb");
+	}
 	chmod 0600, "$prefix/private/secrets.tdb";
 
 #This uses a pre-calculated krb5 credentials cache, obtained by running Samba4 with:

@@ -72,12 +72,21 @@ static PyObject *PyString_FromTDB_DATA(TDB_DATA data)
 		return NULL; \
 	}
 
+static void stderr_log(struct tdb_context *tdb,
+		       enum tdb_log_level level,
+		       const char *message,
+		       void *data)
+{
+	fprintf(stderr, "%s:%s\n", tdb_name(tdb), message);
+}
+
 static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	char *name = NULL;
 	int tdb_flags = TDB_DEFAULT, flags = O_RDWR, mode = 0600;
 	struct tdb_context *ctx;
 	PyTdbObject *ret;
+	union tdb_attribute logattr;
 	const char *kwnames[] = { "name", "tdb_flags", "flags", "mode", NULL };
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|siii", (char **)kwnames, &name, &tdb_flags, &flags, &mode))
@@ -87,7 +96,10 @@ static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwarg
 		tdb_flags |= TDB_INTERNAL;
 	}
 
-	ctx = tdb_open(name, tdb_flags, flags, mode, NULL);
+	logattr.log.base.attr = TDB_ATTRIBUTE_LOG;
+	logattr.log.base.next = NULL;
+	logattr.log.fn = stderr_log;
+	ctx = tdb_open(name, tdb_flags, flags, mode, &logattr);
 	if (ctx == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
 		return NULL;
