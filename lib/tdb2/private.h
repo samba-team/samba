@@ -22,6 +22,19 @@
 #if HAVE_FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
 #endif
+#include <ccan/likely/likely.h>
+#include <ccan/compiler/compiler.h>
+#include <ccan/endian/endian.h>
+#include "tdb2.h"
+
+#ifdef _SAMBA_BUILD_
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/time.h"
+#include "system/shmem.h"
+#include "system/select.h"
+#include "system/wait.h"
+#else
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -35,10 +48,7 @@
 #include <stdio.h>
 #include <utime.h>
 #include <unistd.h>
-#include <ccan/tdb2/tdb2.h>
-#include <ccan/likely/likely.h>
-#include <ccan/compiler/compiler.h>
-#include <ccan/endian/endian.h>
+#endif
 
 #ifndef TEST_IT
 #define TEST_IT(cond)

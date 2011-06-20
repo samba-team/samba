@@ -42,6 +42,8 @@ extern "C" {
 #include <stdbool.h>
 /* For memcmp */
 #include <string.h>
+#else
+#include "replace.h"
 #endif
 #include <ccan/compiler/compiler.h>
 #include <ccan/typesafe_cb/typesafe_cb.h>

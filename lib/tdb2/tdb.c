@@ -1,6 +1,8 @@
 #include "private.h"
+#ifndef _SAMBA_BUILD_
 #include <ccan/asprintf/asprintf.h>
 #include <stdarg.h>
+#endif
 
 static enum TDB_ERROR update_rec_hdr(struct tdb_context *tdb,
 				     tdb_off_t off,
