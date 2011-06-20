@@ -25,7 +25,7 @@ def set_options(opt):
         opt.RECURSE('../lib/nss_wrapper')
         opt.RECURSE('../lib/socket_wrapper')
         opt.RECURSE('../lib/tevent')
-        opt.RECURSE('../lib/tdb')
+        opt.RECURSE('../lib/tdb_compat')
 
     opt.add_option('--with-static-modules',
                    help=("Comma-separated list of names of modules to statically link in"),
@@ -93,7 +93,7 @@ def configure(conf):
         conf.RECURSE('../lib/replace')
         conf.RECURSE('build')
         conf.RECURSE('../lib/ccan')
-        conf.RECURSE('../lib/tdb')
+        conf.RECURSE('../lib/tdb_compat')
         conf.RECURSE('../lib/talloc')
         conf.RECURSE('../lib/tevent')
         conf.RECURSE('../lib/popt')
@@ -105,7 +105,7 @@ def configure(conf):
 
         conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace #lib''')
         if not conf.env.USING_SYSTEM_TDB:
-            conf.ADD_EXTRA_INCLUDES('#lib/tdb/include')
+            conf.ADD_EXTRA_INCLUDES('#lib/tdb_compat')
         if not conf.env.USING_SYSTEM_TEVENT:
             conf.ADD_EXTRA_INCLUDES('#lib/tevent')
         if not conf.env.USING_SYSTEM_TALLOC:

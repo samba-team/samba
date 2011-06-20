@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "lib/util/tdb_wrap.h"
-#include <tdb.h>
+#include "tdb_compat.h"
 #include "vfs_posix.h"
 
 #define XATTR_LIST_ATTR ".xattr_list"

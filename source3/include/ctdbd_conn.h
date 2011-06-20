@@ -20,7 +20,7 @@
 #ifndef _CTDBD_CONN_H
 #define _CTDBD_CONN_H
 
-#include <tdb.h>
+#include "tdb_compat.h"
 
 struct ctdbd_connection;
 struct messaging_context;

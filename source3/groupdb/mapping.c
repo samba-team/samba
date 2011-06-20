@@ -26,7 +26,7 @@
 #include "groupdb/mapping.h"
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"
-#include <tdb.h>
+#include "tdb_compat.h"
 
 static const struct mapping_backend *backend;
 

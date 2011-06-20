@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include <tdb.h>
+#include "../lib/tdb_compat/tdb_compat.h"
 #include "../lib/util/util_tdb.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"

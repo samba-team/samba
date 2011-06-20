@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 
+def set_options(opt):
+    opt.RECURSE('lib/tdb')
+
+def configure(conf):
+    conf.RECURSE('lib/tdb')
+    conf.RECURSE('lib/ccan')
+
 def build(bld):
+    bld.RECURSE('lib/tdb')
+    bld.RECURSE('lib/ccan')
     bld.SAMBA_LIBRARY('tdb_compat',
                       source='tdb_compat.c',
-		      deps='replace tdb',
+		      deps='replace tdb ccan',
                       private_library=True)

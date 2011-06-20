@@ -20,10 +20,8 @@
 */
 
 #include "includes.h"
-#include <tdb.h>
 #include "lib/util/dlinklist.h"
 #include "lib/util/tdb_wrap.h"
-#include <tdb.h>
 
 /*
  Log tdb messages via DEBUG().

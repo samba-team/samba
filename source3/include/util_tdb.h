@@ -20,7 +20,7 @@
 #ifndef __TDBUTIL_H__
 #define __TDBUTIL_H__
 
-#include <tdb.h>
+#include "tdb_compat.h"
 
 #include <talloc.h> /* for tdb_wrap_open() */
 #include "../libcli/util/ntstatus.h" /* for map_nt_error_from_tdb() */

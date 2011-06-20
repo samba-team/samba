@@ -25,7 +25,7 @@
 #include "smbd/smbd.h"
 #include "messages.h"
 #include "smbprofile.h"
-#include <tdb.h>
+#include "tdb_compat.h"
 
 /****************************************************************************
  Stat cache code used in unix_convert.

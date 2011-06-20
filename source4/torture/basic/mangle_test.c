@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/dir.h"
-#include <tdb.h>
+#include "../lib/tdb_compat/tdb_compat.h"
 #include "../lib/util/util_tdb.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"

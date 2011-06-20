@@ -27,7 +27,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smb_share_modes.h"
-#include <tdb.h>
+#include "tdb_compat.h"
 #include <ccan/hash/hash.h>
 
 /* Database context handle. */

@@ -17,7 +17,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <tdb.h>
+#include "tdb_compat.h"
 
 /* Defines for TDB keys */
 #define  EVT_OLDEST_ENTRY  "INFO/oldest_entry"

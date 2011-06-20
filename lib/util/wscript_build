@@ -76,7 +76,7 @@ bld.SAMBA_LIBRARY('wrap_xattr',
 bld.SAMBA_LIBRARY('UTIL_TDB',
 	source='util_tdb.c',
 	local_include=False,
-	public_deps='tdb talloc',
+	public_deps='tdb_compat talloc',
                   private_library=True
 	)
 
@@ -113,7 +113,7 @@ bld.SAMBA_SUBSYSTEM('UTIL_PW',
 
 bld.SAMBA_LIBRARY('tdb-wrap',
                   source='tdb_wrap.c',
-                  deps='tdb talloc samba-util',
+                  deps='tdb_compat talloc samba-util',
                   private_library=True,
                   local_include=False
                   )

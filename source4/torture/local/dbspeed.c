@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include <tdb.h>
+#include "tdb_compat.h"
 #include <ldb.h>
 #include <ldb_errors.h>
 #include "ldb_wrap.h"

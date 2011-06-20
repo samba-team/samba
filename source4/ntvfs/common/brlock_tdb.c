@@ -26,7 +26,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include <tdb.h>
+#include "tdb_compat.h"
 #include "messaging/messaging.h"
 #include "lib/util/tdb_wrap.h"
 #include "lib/messaging/irpc.h"

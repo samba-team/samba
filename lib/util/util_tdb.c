@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include <tdb.h>
+#include "../lib/tdb_compat/tdb_compat.h"
 #include "../lib/util/util_tdb.h"
 
 /* these are little tdb utility functions that are meant to make
