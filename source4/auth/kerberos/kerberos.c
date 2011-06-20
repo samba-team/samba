@@ -98,22 +98,25 @@
 	krb5_creds store_creds;
 	const char *self_service = target_service;
 
-	/* If we are not impersonating, then get this ticket for the
+	/*
+	 * If we are not impersonating, then get this ticket for the
 	 * target service, otherwise a krbtgt, and get the next ticket
-	 * for the target */
-	if ((code = krb5_get_init_creds_password(ctx, &store_creds,
-						 init_principal,
-						 init_password,
-						 NULL, NULL,
-						 0,
-						 impersonate_principal ? NULL : target_service,
-						 krb_options))) {
+	 * for the target
+	 */
+	code = krb5_get_init_creds_password(ctx, &store_creds,
+					    init_principal,
+					    init_password,
+					    NULL, NULL,
+					    0,
+					    impersonate_principal ? NULL : target_service,
+					    krb_options);
+	if (code != 0) {
 		return code;
 	}
 
 	store_principal = init_principal;
 
-	if (code == 0 && impersonate_principal) {
+	if (impersonate_principal) {
 		krb5_ccache tmp_cc;
 		krb5_creds *s4u2self_creds;
 		krb5_principal self_princ;
@@ -129,24 +132,25 @@
 		 * We need to avoid that and use a temporary krb5_ccache
 		 * in order to pass our TGT to the krb5_get_creds() function.
 		 */
-		if ((code = krb5_cc_new_unique(ctx, NULL, NULL, &tmp_cc))) {
+		code = krb5_cc_new_unique(ctx, NULL, NULL, &tmp_cc);
+		if (code != 0) {
 			krb5_free_cred_contents(ctx, &store_creds);
 			return code;
 		}
 
-		if ((code = krb5_cc_initialize(ctx, tmp_cc, store_creds.client))) {
+		code = krb5_cc_initialize(ctx, tmp_cc, store_creds.client);
+		if (code != 0) {
 			krb5_cc_destroy(ctx, tmp_cc);
 			krb5_free_cred_contents(ctx, &store_creds);
 			return code;
 		}
 
-		if ((code = krb5_cc_store_cred(ctx, tmp_cc, &store_creds))) {
-			krb5_cc_destroy(ctx, tmp_cc);
-			krb5_free_cred_contents(ctx, &store_creds);
-			return code;
-		}
-
+		code = krb5_cc_store_cred(ctx, tmp_cc, &store_creds);
 		krb5_free_cred_contents(ctx, &store_creds);
+		if (code != 0) {
+			krb5_cc_destroy(ctx, tmp_cc);
+			return code;
+		}
 
 		/*
 		 * For S4U2Self we need our own service principal,
@@ -155,51 +159,54 @@
 		 */
 		self_realm = krb5_principal_get_realm(ctx, init_principal);
 
-		if ((code = krb5_parse_name(ctx, self_service, &self_princ))) {
+		code = krb5_parse_name(ctx, self_service, &self_princ);
+		if (code != 0) {
 			krb5_cc_destroy(ctx, tmp_cc);
 			return code;
 		}
 
-		if ((code = krb5_principal_set_realm(ctx, self_princ, self_realm))) {
+		code = krb5_principal_set_realm(ctx, self_princ, self_realm);
+		if (code != 0) {
 			krb5_free_principal(ctx, self_princ);
 			krb5_cc_destroy(ctx, tmp_cc);
 			return code;
 		}
 
-		if ((code = krb5_get_creds_opt_alloc(ctx, &options))) {
+		code = krb5_get_creds_opt_alloc(ctx, &options);
+		if (code != 0) {
 			krb5_free_principal(ctx, self_princ);
 			krb5_cc_destroy(ctx, tmp_cc);
 			return code;
 		}
 
-		if ((code = krb5_get_creds_opt_set_impersonate(ctx, options, impersonate_principal))) {
+		code = krb5_get_creds_opt_set_impersonate(ctx, options,
+							  impersonate_principal);
+		if (code != 0) {
 			krb5_get_creds_opt_free(ctx, options);
 			krb5_free_principal(ctx, self_princ);
 			krb5_cc_destroy(ctx, tmp_cc);
 			return code;
 		}
 
-		if ((code = krb5_get_creds(ctx, options, tmp_cc, self_princ, &s4u2self_creds))) {
-			krb5_get_creds_opt_free(ctx, options);
-			krb5_free_principal(ctx, self_princ);
-			krb5_cc_destroy(ctx, tmp_cc);
-			return code;
-		}
-
+		code = krb5_get_creds(ctx, options, tmp_cc,
+				      self_princ, &s4u2self_creds);
 		krb5_get_creds_opt_free(ctx, options);
 		krb5_free_principal(ctx, self_princ);
 		krb5_cc_destroy(ctx, tmp_cc);
+		if (code != 0) {
+			return code;
+		}
 
 		/*
 		 * Now make sure we store the impersonated principal
 		 * and creds instead of the TGT related stuff
 		 * in the krb5_ccache of the caller.
 		 */
-		if ((code = krb5_copy_creds_contents(ctx, s4u2self_creds, &store_creds))) {
-			krb5_free_creds(ctx, s4u2self_creds);
+		code = krb5_copy_creds_contents(ctx, s4u2self_creds, &store_creds);
+		krb5_free_creds(ctx, s4u2self_creds);
+		if (code != 0) {
 			return code;
 		}
-		krb5_free_creds(ctx, s4u2self_creds);
 
 		/*
 		 * It's important to store the principal the KDC
@@ -209,12 +216,14 @@
 		store_principal = store_creds.client;
 	}
 
-	if ((code = krb5_cc_initialize(ctx, store_cc, store_principal))) {
+	code = krb5_cc_initialize(ctx, store_cc, store_principal);
+	if (code != 0) {
 		krb5_free_cred_contents(ctx, &store_creds);
 		return code;
 	}
 
-	if ((code = krb5_cc_store_cred(ctx, store_cc, &store_creds))) {
+	code = krb5_cc_store_cred(ctx, store_cc, &store_creds);
+	if (code != 0) {
 		krb5_free_cred_contents(ctx, &store_creds);
 		return code;
 	}
