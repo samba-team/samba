@@ -57,8 +57,12 @@ def s3_fix_kwargs(bld, kwargs):
                             '../source4/heimdal/lib/gssapi',
                             '../source4/heimdal_build' ]
 
-    if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
-        extra_includes += [ '../lib/tdb/include' ]
+    if bld.CONFIG_SET('BUILD_TDB2'):
+        if not bld.CONFIG_SET('USING_SYSTEM_TDB2'):
+            extra_includes += [ '../lib/tdb2' ]
+    else:
+        if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
+            extra_includes += [ '../lib/tdb/include' ]
 
     if not bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
         extra_includes += [ '../lib/tevent' ]
