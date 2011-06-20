@@ -461,7 +461,7 @@ bool gencache_stabilize(void)
 	}
 
 	res = tdb_transaction_start_nonblock(cache);
-	if (res == -1) {
+	if (res != 0) {
 
 		if (tdb_error(cache) == TDB_ERR_NOLOCK) {
 			/*
@@ -476,7 +476,7 @@ bool gencache_stabilize(void)
 		return false;
 	}
 	res = tdb_transaction_start(cache_notrans);
-	if (res == -1) {
+	if (res != 0) {
 		tdb_transaction_cancel(cache);
 		DEBUG(10, ("Could not start transaction on "
 			   "gencache_notrans.tdb: %s\n",
@@ -505,7 +505,7 @@ bool gencache_stabilize(void)
 	}
 
 	res = tdb_transaction_commit(cache);
-	if (res == -1) {
+	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
 			   "%s\n", tdb_errorstr(cache)));
 		if (tdb_transaction_cancel(cache_notrans) == -1) {
@@ -515,7 +515,7 @@ bool gencache_stabilize(void)
 	}
 
 	res = tdb_transaction_commit(cache_notrans);
-	if (res == -1) {
+	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
 			   "%s\n", tdb_errorstr(cache)));
 		return false;
