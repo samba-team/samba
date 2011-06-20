@@ -605,7 +605,7 @@ static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
 
 	key = string_tdb_data("INFO/jobs_changed");
 
-	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
+	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) != 0)
 		goto out;
 
 	gotlock = True;

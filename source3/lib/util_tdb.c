@@ -78,7 +78,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 		}
 	}
 
-	return ret;
+	return ret == 0 ? 0 : -1;
 }
 
 /****************************************************************************

@@ -352,7 +352,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 
 	key = message_key_pid(frame, pid);
 
-	if (tdb_chainlock(tdb->tdb, key) == -1) {
+	if (tdb_chainlock(tdb->tdb, key) != 0) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
@@ -420,7 +420,7 @@ static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
 	TDB_DATA key = message_key_pid(mem_ctx, id);
 	NTSTATUS status;
 
-	if (tdb_chainlock(msg_tdb, key) == -1) {
+	if (tdb_chainlock(msg_tdb, key) != 0) {
 		TALLOC_FREE(key.dptr);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
