@@ -548,7 +548,7 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 	}
 	if ((timeout < time(NULL)) || (val.dsize == 0)) {
 		res = tdb_delete(cache, key);
-		if ((res == -1) && (tdb_error(cache) == TDB_ERR_NOEXIST)) {
+		if ((res != 0) && (tdb_error(cache) == TDB_ERR_NOEXIST)) {
 			res = 0;
 		} else {
 			state->written = true;
@@ -560,14 +560,14 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 		}
 	}
 
-	if (res == -1) {
+	if (res != 0) {
 		DEBUG(10, ("Transfer to gencache.tdb failed: %s\n",
 			   tdb_errorstr(cache)));
 		state->error = true;
 		return -1;
 	}
 
-	if (tdb_delete(cache_notrans, key) == -1) {
+	if (tdb_delete(cache_notrans, key) != 0) {
 		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
 			   "%s\n", tdb_errorstr(cache_notrans)));
 		state->error = true;

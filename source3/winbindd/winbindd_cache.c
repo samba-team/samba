@@ -4420,7 +4420,7 @@ static bool wcache_tdc_store_list( struct winbindd_tdc_domain *domains, size_t n
 	SAFE_FREE( data.dptr );
 	SAFE_FREE( key.dptr );
 
-	return ( ret != -1 );	
+	return ( ret == 0 );
 }
 
 /*********************************************************************

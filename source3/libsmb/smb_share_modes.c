@@ -450,7 +450,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 		}
 		/* It's ours - just remove the entire record. */
 		free(db_data.dptr);
-		return tdb_delete(db_ctx->smb_tdb, locking_key);
+		return tdb_delete(db_ctx->smb_tdb, locking_key) ? -1 : 0;
 	}
 
 	/* More than one - allocate a new record minus the one we'll delete. */
@@ -489,7 +489,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 		/* None left after pruning. Delete record. */
 		free(db_data.dptr);
 		free(new_data_p);
-		return tdb_delete(db_ctx->smb_tdb, locking_key);
+		return tdb_delete(db_ctx->smb_tdb, locking_key) ? -1 : 0;
 	}
 
 	/* Copy any delete tokens plus the terminating filenames. */

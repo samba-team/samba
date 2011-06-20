@@ -218,7 +218,7 @@ NTSTATUS delete_xattr_tdb(struct pvfs_state *pvfs, const char *attr_name,
 		return status;
 	}
 	
-	if (tdb_delete(pvfs->ea_db->tdb, tkey) == -1) {
+	if (tdb_delete(pvfs->ea_db->tdb, tkey) != 0) {
 		talloc_free(tkey.dptr);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

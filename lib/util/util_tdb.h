@@ -111,7 +111,7 @@ int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA dat
 TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr);
 
 /****************************************************************************
- Delete an entry using a null terminated string key. 
+ Delete an entry using a null terminated string key.  0 on success, -ve on err.
 ****************************************************************************/
 int tdb_delete_bystring(struct tdb_context *tdb, const char *keystr);
 
