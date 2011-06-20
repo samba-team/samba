@@ -238,6 +238,103 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 	return ret;
 }
 
+struct get_set_info {
+	enum lsa_TrustDomInfoEnum info_level;
+	NTSTATUS get_result;
+	NTSTATUS set_result;
+};
+
+static bool get_and_set_info(struct dcerpc_pipe *p,
+			     struct torture_context *tctx,
+			     const char *name)
+{
+	struct policy_handle *handle;
+	NTSTATUS status;
+	struct lsa_QueryTrustedDomainInfoByName qr;
+	struct lsa_SetTrustedDomainInfoByName sr;
+	union lsa_TrustedDomainInfo *info;
+	struct lsa_Close cr;
+	struct policy_handle closed_handle;
+	size_t c;
+
+	struct get_set_info il[] = {
+		{LSA_TRUSTED_DOMAIN_INFO_NAME, NT_STATUS_OK, NT_STATUS_INVALID_PARAMETER},
+		/* {LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS, NT_STATUS_INVALID_PARAMETER, NT_STATUS_INVALID_INFO_CLASS}, */
+		{LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET, NT_STATUS_OK, NT_STATUS_OK},
+		/* {LSA_TRUSTED_DOMAIN_INFO_PASSWORD, NT_STATUS_INVALID_PARAMETER, NT_STATUS_INVALID_INFO_CLASS}, */
+		/* {LSA_TRUSTED_DOMAIN_INFO_BASIC, NT_STATUS_INVALID_PARAMETER, NT_STATUS_INVALID_INFO_CLASS}, */
+		{LSA_TRUSTED_DOMAIN_INFO_INFO_EX, NT_STATUS_OK, NT_STATUS_OK},
+		/* {LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO, NT_STATUS_INVALID_PARAMETER, NT_STATUS_INVALID_INFO_CLASS}, */
+		{LSA_TRUSTED_DOMAIN_INFO_FULL_INFO, NT_STATUS_OK, NT_STATUS_OK},
+		/* {LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL, NT_STATUS_INVALID_PARAMETER, NT_STATUS_INVALID_INFO_CLASS}, */
+		/* {LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL, NT_STATUS_INVALID_PARAMETER, NT_STATUS_INVALID_INFO_CLASS}, */
+		/* {LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL, NT_STATUS_INVALID_PARAMETER, NT_STATUS_INVALID_INFO_CLASS}, */
+		{LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL, NT_STATUS_OK, NT_STATUS_INVALID_PARAMETER},
+		{LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES, NT_STATUS_OK, NT_STATUS_OK},
+		{-1, NT_STATUS_OK}
+	};
+
+	torture_comment(tctx, "\nGetting/Setting dom info\n");
+
+	if(!test_get_policy_handle(tctx, p, LSA_POLICY_VIEW_LOCAL_INFORMATION,
+				   &handle)) {
+		return false;
+	}
+
+	qr.in.handle = handle;
+	qr.in.trusted_domain = talloc_zero(tctx, struct lsa_String);
+	qr.in.trusted_domain->string = name;
+	qr.out.info = &info;
+
+	sr.in.handle = handle;
+	sr.in.trusted_domain = talloc_zero(tctx, struct lsa_String);
+	sr.in.trusted_domain->string = name;
+	sr.in.info = info;
+
+	for (c = 0; il[c].info_level != -1; c++) {
+	torture_comment(tctx, "\nGetting/Setting dom info [%d]\n",il[c].info_level);
+		qr.in.level = il[c].info_level;
+		status = dcerpc_lsa_QueryTrustedDomainInfoByName_r(p->binding_handle,
+								   tctx, &qr);
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
+					      "QueryTrustedDomainInfoByName failed");
+		if (!NT_STATUS_EQUAL(qr.out.result, il[c].get_result)) {
+			torture_comment(tctx, "QueryTrustedDomainInfoByName did not return "
+					      "%s but %s\n",
+					      nt_errstr(il[c].get_result),
+					      nt_errstr(qr.out.result));
+			return false;
+		}
+
+		sr.in.level = il[c].info_level;
+		sr.in.info = info;
+		status = dcerpc_lsa_SetTrustedDomainInfoByName_r(p->binding_handle,
+								 tctx, &sr);
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
+					      "SetTrustedDomainInfoByName failed");
+		if (!NT_STATUS_EQUAL(sr.out.result, il[c].set_result)) {
+			torture_comment(tctx, "SetTrustedDomainInfoByName did not return "
+					      "%s but %s\n",
+					      nt_errstr(il[c].set_result),
+					      nt_errstr(sr.out.result));
+			return false;
+		}
+	}
+
+	cr.in.handle = handle;
+	cr.out.handle = &closed_handle;
+	status =  dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
+				      "Close failed");
+	if (!NT_STATUS_IS_OK(cr.out.result)) {
+		torture_comment(tctx, "Close failed - %s\n",
+				nt_errstr(cr.out.result));
+		return false;
+	}
+
+	return true;
+}
+
 static bool check_name(struct dcerpc_pipe *p, struct torture_context *tctx,
 		       const char *name)
 {
@@ -283,6 +380,7 @@ static bool check_name(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	return true;
 }
+
 static bool get_lsa_policy_info_dns(struct dcerpc_pipe *p,
 				    struct torture_context *tctx,
 				    union lsa_PolicyInformation **info)
@@ -709,6 +807,10 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	}
 
 	if (!get_lsa_policy_info_dns(p, tctx, &dom1_info_dns)) {
+		return false;
+	}
+
+	if (!get_and_set_info(p, tctx, TEST_DOM)) {
 		return false;
 	}
 
