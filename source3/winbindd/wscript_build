@@ -24,7 +24,7 @@ IDMAP_SRC = 'idmap.c idmap_util.c ${IDMAP_RW_SRC}'
 
 bld.SAMBA3_SUBSYSTEM('idmap',
                     source=IDMAP_SRC,
-                    deps='samba-util-common',
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_ADEX',
@@ -34,7 +34,7 @@ bld.SAMBA3_SUBSYSTEM('IDMAP_ADEX',
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
                     source=IDMAP_HASH_SRC,
-                    deps='samba-util-common',
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_AD',
@@ -60,7 +60,7 @@ bld.SAMBA3_MODULE('idmap_rid',
 bld.SAMBA3_MODULE('idmap_passdb',
                  subsystem='idmap',
                  source=IDMAP_PASSDB_SRC,
-                 deps='samba-util-common',
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_passdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_passdb'))
@@ -75,7 +75,7 @@ bld.SAMBA3_MODULE('idmap_ldap',
 bld.SAMBA3_MODULE('idmap_nss',
                  subsystem='idmap',
                  source=IDMAP_NSS_SRC,
-                 deps='samba-util-common',
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_nss'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_nss'))
@@ -83,7 +83,7 @@ bld.SAMBA3_MODULE('idmap_nss',
 bld.SAMBA3_MODULE('idmap_tdb',
                  subsystem='idmap',
                  source=IDMAP_TDB_SRC,
-                 deps='samba-util-common',
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_tdb'))
@@ -91,7 +91,7 @@ bld.SAMBA3_MODULE('idmap_tdb',
 bld.SAMBA3_MODULE('idmap_tdb2',
                  subsystem='idmap',
                  source=IDMAP_TDB2_SRC,
-                 deps='samba-util-common',
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_tdb2'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_tdb2'))
@@ -115,7 +115,7 @@ bld.SAMBA3_MODULE('idmap_adex',
 bld.SAMBA3_MODULE('idmap_autorid',
                  subsystem='idmap',
                  source=IDMAP_AUTORID_SRC,
-                 deps='samba-util-common',
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_autorid'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_autorid'))
@@ -126,13 +126,13 @@ NSS_INFO_SRC = 'nss_info.c'
 
 bld.SAMBA3_SUBSYSTEM('nss_info',
                     source=NSS_INFO_SRC,
-                    deps='samba-util-common',
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_MODULE('nss_info_template',
                  subsystem='nss_info',
                  source=NSS_INFO_TEMPLATE_SRC,
-                 deps='samba-util-common',
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('nss_info_template'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('nss_info_template'))

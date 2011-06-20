@@ -4,4 +4,4 @@ bld.SAMBA_LIBRARY('flag_mapping',
                   source='flag_mapping.c',
 		  private_library=True,
                   public_headers='roles.h',
-		  deps='samba-util-common')
+		  deps='samba-util')
