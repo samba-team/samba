@@ -171,7 +171,7 @@ int psec_getsec(char *printer)
 	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", 
 		 lp_lockdir());
 
-	tdb = tdb_open(tdb_path, 0, 0, O_RDONLY, 0600);
+	tdb = tdb_open_compat(tdb_path, 0, 0, O_RDONLY, 0600, NULL, NULL);
 
 	if (!tdb) {
 		printf("psec: failed to open nt drivers database: %s\n",
@@ -275,7 +275,7 @@ int psec_setsec(char *printer)
 	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntdrivers.tdb", 
 		 lp_lockdir());
 
-	tdb = tdb_open(tdb_path, 0, 0, O_RDWR, 0600);
+	tdb = tdb_open_compat(tdb_path, 0, 0, O_RDWR, 0600, NULL, NULL);
 
 	if (!tdb) {
 		printf("psec: failed to open nt drivers database: %s\n",

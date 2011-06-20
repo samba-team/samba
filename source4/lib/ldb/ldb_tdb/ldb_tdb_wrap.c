@@ -24,29 +24,30 @@
 #include "ldb_tdb.h"
 #include "dlinklist.h"
 
-/*
-  the purpose of this code is to work around the braindead posix locking
-  rules, to allow us to have a ldb open more than once while allowing 
-  locking to work
-*/
-
-struct ltdb_wrap {
-	struct ltdb_wrap *next, *prev;
-	struct tdb_context *tdb;
-	dev_t device;
-	ino_t inode;
-};
-
-static struct ltdb_wrap *tdb_list;
-
-/* destroy the last connection to a tdb */
-static int ltdb_wrap_destructor(struct ltdb_wrap *w)
+/* FIXME: TDB2 does this internally, so no need to wrap multiple opens! */
+#if BUILD_TDB2
+static void ltdb_log_fn(struct tdb_context *tdb,
+			enum tdb_log_level level,
+			const char *message,
+			struct ldb_context *ldb)
 {
-	tdb_close(w->tdb);
-	DLIST_REMOVE(tdb_list, w);
-	return 0;
-}				 
+	enum ldb_debug_level ldb_level;
+	const char *name = tdb_name(tdb);
 
+	switch (level) {
+	case TDB_LOG_WARNING:
+		ldb_level = LDB_DEBUG_WARNING;
+	case TDB_LOG_USE_ERROR:
+	case TDB_LOG_ERROR:
+		ldb_level = LDB_DEBUG_FATAL;
+		break;
+	default:
+		ldb_level = LDB_DEBUG_FATAL;
+	}
+
+	ldb_debug(ldb, ldb_level, "ltdb: tdb(%s): %s", name, message);
+}
+#else /* !TDB2 */
 static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...)
 {
@@ -83,6 +84,32 @@ static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, con
 	ldb_debug(ldb, ldb_level, "ltdb: tdb(%s): %s", name, message);
 	talloc_free(message);
 }
+#endif
+
+/*
+  the purpose of this code is to work around the braindead posix locking
+  rules, to allow us to have a ldb open more than once while allowing
+  locking to work
+
+  TDB2 handles multiple opens, so we don't have this problem there.
+*/
+
+struct ltdb_wrap {
+	struct ltdb_wrap *next, *prev;
+	struct tdb_context *tdb;
+	dev_t device;
+	ino_t inode;
+};
+
+static struct ltdb_wrap *tdb_list;
+
+/* destroy the last connection to a tdb */
+static int ltdb_wrap_destructor(struct ltdb_wrap *w)
+{
+	tdb_close(w->tdb);
+	DLIST_REMOVE(tdb_list, w);
+	return 0;
+}
 
 /*
   wrapped connection to a tdb database. The caller should _not_ free
@@ -98,10 +125,6 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 {
 	struct ltdb_wrap *w;
 	struct stat st;
-	struct tdb_logging_context log_ctx;
-
-	log_ctx.log_fn = ltdb_log_fn;
-	log_ctx.log_private = ldb;
 
 	if (stat(path, &st) == 0) {
 		for (w=tdb_list;w;w=w->next) {
@@ -119,7 +142,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode, &log_ctx, NULL);
+	w->tdb = tdb_open_compat(path, hash_size, tdb_flags, open_flags, mode, ltdb_log_fn, ldb);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;
@@ -140,4 +163,3 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 	
 	return w->tdb;
 }
-

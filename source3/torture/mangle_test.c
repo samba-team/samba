@@ -181,7 +181,7 @@ bool torture_mangle(int dummy)
 	}
 
 	/* we will use an internal tdb to store the names we have used */
-	tdb = tdb_open(NULL, 100000, TDB_INTERNAL, 0, 0);
+	tdb = tdb_open_compat(NULL, 100000, TDB_INTERNAL, 0, 0, NULL, NULL);
 	if (!tdb) {
 		printf("ERROR: Failed to open tdb\n");
 		return False;

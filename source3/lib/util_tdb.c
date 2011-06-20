@@ -372,6 +372,14 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
  Log tdb messages via DEBUG().
 ****************************************************************************/
 
+#ifdef BUILD_TDB2
+static void tdb_log(TDB_CONTEXT *tdb, enum tdb_log_level level,
+		    const char *message, void *unused)
+{
+	DEBUG((int)level, ("tdb(%s): %s",
+			   tdb_name(tdb) ? tdb_name(tdb) : "unnamed", message));
+}
+#else
 static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
@@ -388,6 +396,7 @@ static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *fo
 	DEBUG((int)level, ("tdb(%s): %s", tdb_name(tdb) ? tdb_name(tdb) : "unnamed", ptr));
 	SAFE_FREE(ptr);
 }
+#endif /* TDB1 */
 
 /****************************************************************************
  Like tdb_open() but also setup a logging function that redirects to
@@ -398,13 +407,9 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;
-	struct tdb_logging_context log_ctx;
 
 	if (!lp_use_mmap())
 		tdb_flags |= TDB_NOMMAP;
-
-	log_ctx.log_fn = tdb_log;
-	log_ctx.log_private = NULL;
 
 	if ((hash_size == 0) && (name != NULL)) {
 		const char *base = strrchr_m(name, '/');
@@ -417,8 +422,8 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
 	}
 
-	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-			  open_flags, mode, &log_ctx, NULL);
+	tdb = tdb_open_compat(name, hash_size, tdb_flags,
+			      open_flags, mode, tdb_log, NULL);
 	if (!tdb)
 		return NULL;
 

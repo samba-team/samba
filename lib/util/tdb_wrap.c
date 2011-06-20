@@ -23,6 +23,31 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/tdb_wrap.h"
 
+/* FIXME: TDB2 does this internally, so no need to wrap multiple opens! */
+#if BUILD_TDB2
+static void tdb_wrap_log(struct tdb_context *tdb,
+			 enum tdb_log_level level,
+			 const char *message,
+			 void *unused)
+{
+	int dl;
+	const char *name = tdb_name(tdb);
+
+	switch (level) {
+	case TDB_LOG_USE_ERROR:
+	case TDB_LOG_ERROR:
+		dl = 0;
+		break;
+	case TDB_LOG_WARNING:
+		dl = 2;
+		break;
+	default:
+		dl = 0;
+	}
+
+	DEBUG(dl, ("tdb(%s): %s", name ? name : "unnamed", message));
+}
+#else
 /*
  Log tdb messages via DEBUG().
 */
@@ -64,6 +89,7 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 		free(ptr);
 	}
 }
+#endif
 
 struct tdb_wrap_private {
 	struct tdb_context *tdb;
@@ -89,7 +115,6 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 						      mode_t mode)
 {
 	struct tdb_wrap_private *result;
-	struct tdb_logging_context log_ctx;
 
 	result = talloc(mem_ctx, struct tdb_wrap_private);
 	if (result == NULL) {
@@ -99,8 +124,6 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 	if (result->name == NULL) {
 		goto fail;
 	}
-
-	log_ctx.log_fn = tdb_wrap_log;
 
 #if _SAMBA_BUILD_ == 3	
 	/* This #if _SAMBA_BUILD == 3 is very unfortunate, as it means
@@ -126,8 +149,8 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	result->tdb = tdb_open_ex(name, hash_size, tdb_flags,
-				  open_flags, mode, &log_ctx, NULL);
+	result->tdb = tdb_open_compat(name, hash_size, tdb_flags,
+				      open_flags, mode, tdb_wrap_log, NULL);
 	if (result->tdb == NULL) {
 		goto fail;
 	}

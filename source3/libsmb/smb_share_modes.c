@@ -69,10 +69,12 @@ struct smbdb_ctx *smb_share_mode_db_open(const char *db_path)
 
 	memset(smb_db, '\0', sizeof(struct smbdb_ctx));
 
-	smb_db->smb_tdb = tdb_open(db_path,
-				0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-				O_RDWR|O_CREAT,
-				0644);
+	/* FIXME: We should *never* open a tdb without logging! */
+	smb_db->smb_tdb = tdb_open_compat(db_path,
+					  0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+					  O_RDWR|O_CREAT,
+					  0644,
+					  NULL, NULL);
 
 	if (!smb_db->smb_tdb) {
 		free(smb_db);
