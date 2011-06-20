@@ -544,7 +544,7 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	{ WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, "PAM_CHNG_PSWD_AUTH_CRAP",
 	  winbindd_pam_chng_pswd_auth_crap_send,
 	  winbindd_pam_chng_pswd_auth_crap_recv },
-	{ WINBINDD_WINS_BYIP, "PING",
+	{ WINBINDD_WINS_BYIP, "WINS_BYIP",
 	  winbindd_wins_byip_send, winbindd_wins_byip_recv },
 
 	{ 0, NULL, NULL, NULL }
