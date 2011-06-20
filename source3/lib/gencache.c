@@ -344,11 +344,11 @@ bool gencache_parse(const char *keystr,
 	state.private_data = private_data;
 
 	ret = tdb_parse_record(cache_notrans, key, gencache_parse_fn, &state);
-	if (ret != -1) {
+	if (ret == 0) {
 		return true;
 	}
 	ret = tdb_parse_record(cache, key, gencache_parse_fn, &state);
-	return (ret != -1);
+	return (ret == 0);
 }
 
 struct gencache_get_data_blob_state {
