@@ -951,7 +951,7 @@ const char *get_winbind_pipe_dir(void)
 
 char *get_winbind_priv_pipe_dir(void)
 {
-	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
+	return state_path(WINBINDD_PRIV_SOCKET_SUBDIR);
 }
 
 static bool winbindd_setup_listeners(void)
