@@ -1009,7 +1009,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (lock_db->fetch(lock_db, lck, key, &data) == -1) {
+	if (lock_db->fetch(lock_db, lck, key, &data) != 0) {
 		DEBUG(3, ("Could not fetch share entry\n"));
 		TALLOC_FREE(lck);
 		return NULL;

@@ -250,7 +250,7 @@ bool serverid_exists(const struct server_id *id)
 	state.id = id;
 	state.exists = false;
 
-	if (db->parse_record(db, tdbkey, server_exists_parse, &state) == -1) {
+	if (db->parse_record(db, tdbkey, server_exists_parse, &state) != 0) {
 		return false;
 	}
 	return state.exists;

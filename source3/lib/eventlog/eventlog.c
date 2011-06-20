@@ -781,7 +781,7 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 
 	/* lock */
 	ret = tdb_lock_bystring_with_timeout(tdb, EVT_NEXT_RECORD, 1);
-	if (ret == -1) {
+	if (ret != 0) {
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 

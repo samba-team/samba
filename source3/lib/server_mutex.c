@@ -70,7 +70,7 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 	}
 
 	if (tdb_lock_bystring_with_timeout(result->tdb->tdb, name,
-					   timeout) == -1) {
+					   timeout) != 0) {
 		DEBUG(1, ("Could not get the lock for %s\n", name));
 		TALLOC_FREE(result);
 		return NULL;

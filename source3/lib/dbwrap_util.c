@@ -492,7 +492,7 @@ TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 {
 	TDB_DATA result;
 
-	if (db->fetch(db, mem_ctx, key, &result) == -1) {
+	if (db->fetch(db, mem_ctx, key, &result) != 0) {
 		return make_tdb_data(NULL, 0);
 	}
 

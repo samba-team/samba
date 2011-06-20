@@ -484,7 +484,7 @@ bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
 	ret = tdb_store_bystring(wcache->tdb, key_str,
 				 make_tdb_data(buf, sizeof(buf)), TDB_REPLACE);
 	TALLOC_FREE(key_str);
-	if (ret == -1) {
+	if (ret != 0) {
 		DEBUG(10, ("tdb_store_bystring failed: %s\n",
 			   tdb_errorstr_compat(wcache->tdb)));
 		TALLOC_FREE(key_str);

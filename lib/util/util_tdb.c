@@ -57,7 +57,7 @@ TDB_DATA string_term_tdb_data(const char *string)
 }
 
 /****************************************************************************
- Lock a chain by string. Return -1 if lock failed.
+ Lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 
 int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval)
@@ -79,7 +79,7 @@ void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval)
 }
 
 /****************************************************************************
- Read lock a chain by string. Return -1 if lock failed.
+ Read lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 
 int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval)
@@ -263,7 +263,7 @@ int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int
 	int32_t val;
 	int32_t ret = -1;
 
-	if (tdb_lock_bystring(tdb, keystr) == -1)
+	if (tdb_lock_bystring(tdb, keystr) != 0)
 		return -1;
 
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
@@ -304,7 +304,7 @@ bool tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint3
 	uint32_t val;
 	bool ret = false;
 
-	if (tdb_lock_bystring(tdb, keystr) == -1)
+	if (tdb_lock_bystring(tdb, keystr) != 0)
 		return false;
 
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {

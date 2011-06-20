@@ -67,7 +67,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 		alarm(0);
 		tdb_setalarm_sigptr(tdb, NULL);
 		CatchSignal(SIGALRM, SIG_IGN);
-		if (gotalarm && (ret == -1)) {
+		if (gotalarm && (ret != 0)) {
 			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb_name(tdb)));
 			/* TODO: If we time out waiting for a lock, it might
@@ -82,7 +82,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 }
 
 /****************************************************************************
- Write lock a chain. Return -1 if timeout or lock failed.
+ Write lock a chain. Return non-zero if timeout or lock failed.
 ****************************************************************************/
 
 int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
@@ -99,7 +99,7 @@ int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 }
 
 /****************************************************************************
- Read lock a chain by string. Return -1 if timeout or lock failed.
+ Read lock a chain by string. Return non-zero if timeout or lock failed.
 ****************************************************************************/
 
 int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)

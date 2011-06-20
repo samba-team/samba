@@ -108,7 +108,7 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 
 	if (db_ctx->fetch(db_ctx, mem_ctx,
 			  make_tdb_data(id_buf, sizeof(id_buf)),
-			  &data) == -1) {
+			  &data) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 

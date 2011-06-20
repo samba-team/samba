@@ -51,7 +51,7 @@ static int tdb_validate_child(struct tdb_context *tdb,
 	 * but I don't want to change all the callers...
 	 */
 	ret = tdb_check(tdb, NULL, NULL);
-	if (ret == -1) {
+	if (ret != 0) {
 		v_status.tdb_error = True;
 		v_status.success = False;
 		goto out;

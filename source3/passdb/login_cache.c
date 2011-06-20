@@ -59,10 +59,10 @@ bool login_cache_init(void)
 
 bool login_cache_shutdown(void)
 {
-	/* tdb_close routine returns -1 on error */
+	/* tdb_close routine returns non-zero on error */
 	if (!cache) return False;
 	DEBUG(5, ("Closing cache file\n"));
-	return tdb_close(cache) != -1;
+	return tdb_close(cache) == 0;
 }
 
 /* if we can't read the cache, oh well, no need to return anything */

@@ -1845,7 +1845,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_read_only) {
-		if (brlock_db->fetch(brlock_db, br_lck, key, &data) == -1) {
+		if (brlock_db->fetch(brlock_db, br_lck, key, &data) != 0) {
 			DEBUG(3, ("Could not fetch byte range lock record\n"));
 			TALLOC_FREE(br_lck);
 			return NULL;

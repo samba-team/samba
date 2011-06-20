@@ -183,7 +183,7 @@ static int db_tdb_parse(struct db_context *db, TDB_DATA key,
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_tdb_ctx);
 
-	return tdb_parse_record(ctx->wtdb->tdb, key, parser, private_data) ? -1 : 0;
+	return tdb_parse_record(ctx->wtdb->tdb, key, parser, private_data);
 }
 
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag)
@@ -320,7 +320,7 @@ static int db_tdb_transaction_commit(struct db_context *db)
 {
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	return tdb_transaction_commit(db_ctx->wtdb->tdb) == 0 ? 0 : -1;
+	return tdb_transaction_commit(db_ctx->wtdb->tdb);
 }
 
 static int db_tdb_transaction_cancel(struct db_context *db)

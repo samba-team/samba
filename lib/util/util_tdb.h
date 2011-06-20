@@ -31,7 +31,7 @@ TDB_DATA string_tdb_data(const char *string);
 TDB_DATA string_term_tdb_data(const char *string);
 
 /****************************************************************************
- Lock a chain by string. Return -1 if lock failed.
+ Lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval);
 
@@ -41,7 +41,7 @@ int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval);
 void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval);
 
 /****************************************************************************
- Read lock a chain by string. Return -1 if lock failed.
+ Read lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval);
 

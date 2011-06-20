@@ -574,7 +574,7 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 	
 	if (mapping_db->fetch(mapping_db, NULL,
 			      string_term_tdb_data(sid_string_tos(src)),
-			      &data) == -1) {
+			      &data) != 0) {
 		DEBUG(10, ("could not find mapping for SID %s\n",
 			   sid_string_dbg(src)));
 		return False;

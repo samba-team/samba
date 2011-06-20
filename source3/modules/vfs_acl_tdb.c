@@ -177,7 +177,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	if (db->fetch(db,
 			ctx,
 			make_tdb_data(id_buf, sizeof(id_buf)),
-			&data) == -1) {
+			&data) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 

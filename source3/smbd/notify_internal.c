@@ -843,7 +843,7 @@ void notify_onelevel(struct notify_context *notify, uint32_t action,
 	if (notify->db_onelevel->fetch(
 		    notify->db_onelevel, array,
 		    make_tdb_data((uint8_t *)&fid, sizeof(fid)),
-		    &dbuf) == -1) {
+		    &dbuf) != 0) {
 		TALLOC_FREE(array);
 		return;
 	}

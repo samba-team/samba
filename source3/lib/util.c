@@ -406,7 +406,7 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 	set_need_random_reseed();
 
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
+	if (tdb_reopen_all(parent_longlived ? 1 : 0) != 0) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
 		status = NT_STATUS_OPEN_FAILED;
 		goto done;

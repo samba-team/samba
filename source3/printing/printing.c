@@ -208,7 +208,7 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb)
 			continue;
-		if (tdb_lock_bystring(pdb->tdb, sversion) == -1) {
+		if (tdb_lock_bystring(pdb->tdb, sversion) != 0) {
 			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
 			release_print_db(pdb);
 			return False;
@@ -1516,7 +1516,7 @@ static void print_queue_update_with_lock( struct tevent_context *ev,
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", sharename);
 	/* Only wait 10 seconds for this. */
-	if (tdb_lock_bystring_with_timeout(pdb->tdb, keystr, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(pdb->tdb, keystr, 10) != 0) {
 		DEBUG(0,("print_queue_update_with_lock: Failed to lock printer %s database\n", sharename));
 		release_print_db(pdb);
 		return;
@@ -1885,7 +1885,7 @@ bool print_notify_register_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s\n",
 					printername));
 		if (pdb)
@@ -1975,7 +1975,7 @@ bool print_notify_deregister_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock \
 printer %s database\n", printername));
 		if (pdb)
@@ -2134,7 +2134,7 @@ static bool remove_from_jobs_added(const char* sharename, uint32 jobid)
 
 	key = string_tdb_data("INFO/jobs_added");
 
-	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
+	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) != 0)
 		goto out;
 
 	gotlock = True;
@@ -2561,7 +2561,7 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 		/* Lock the database - only wait 20 seconds. */
 		ret = tdb_lock_bystring_with_timeout(pdb->tdb,
 						     "INFO/nextjob", 20);
-		if (ret == -1) {
+		if (ret != 0) {
 			DEBUG(0, ("allocate_print_jobid: "
 				  "Failed to lock printing database %s\n",
 				  sharename));
@@ -2589,7 +2589,7 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 		jobid = NEXT_JOBID(jobid);
 
 		ret = tdb_store_int32(pdb->tdb, "INFO/nextjob", jobid);
-		if (ret == -1) {
+		if (ret != 0) {
 			terr = tdb_error(pdb->tdb);
 			DEBUG(3, ("allocate_print_jobid: "
 				  "Failed to store INFO/nextjob.\n"));

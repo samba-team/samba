@@ -8348,7 +8348,7 @@ static bool run_local_dbtrans(int dummy)
 	}
 
 	res = db->transaction_start(db);
-	if (res == -1) {
+	if (res != 0) {
 		printf(__location__ "transaction_start failed\n");
 		return false;
 	}
@@ -8375,7 +8375,7 @@ static bool run_local_dbtrans(int dummy)
 	TALLOC_FREE(rec);
 
 	res = db->transaction_commit(db);
-	if (res == -1) {
+	if (res != 0) {
 		printf(__location__ "transaction_commit failed\n");
 		return false;
 	}
@@ -8385,7 +8385,7 @@ static bool run_local_dbtrans(int dummy)
 		int i;
 
 		res = db->transaction_start(db);
-		if (res == -1) {
+		if (res != 0) {
 			printf(__location__ "transaction_start failed\n");
 			break;
 		}
@@ -8415,7 +8415,7 @@ static bool run_local_dbtrans(int dummy)
 		printf("val2=%d\r", val2);
 
 		res = db->transaction_commit(db);
-		if (res == -1) {
+		if (res != 0) {
 			printf(__location__ "transaction_commit failed\n");
 			break;
 		}
