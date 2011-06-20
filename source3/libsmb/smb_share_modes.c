@@ -131,8 +131,9 @@ int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
                                 uint64_t extid)
 {
 	struct locking_key lk;
-	return tdb_chainunlock(db_ctx->smb_tdb,
-			       get_locking_key(&lk, dev, ino, extid));
+	tdb_chainunlock(db_ctx->smb_tdb,
+			get_locking_key(&lk, dev, ino, extid));
+	return 0;
 }
 
 /*

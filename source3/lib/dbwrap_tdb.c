@@ -43,10 +43,7 @@ static int db_tdb_record_destr(struct db_record* data)
 		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
-	if (tdb_chainunlock(ctx->wtdb->tdb, data->key) != 0) {
-		DEBUG(0, ("tdb_chainunlock failed\n"));
-		return -1;
-	}
+	tdb_chainunlock(ctx->wtdb->tdb, data->key);
 	return 0;
 }
 

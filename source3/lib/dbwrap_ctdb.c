@@ -994,10 +994,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
-	if (tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key) != 0) {
-		DEBUG(0, ("tdb_chainunlock failed\n"));
-		return -1;
-	}
+	tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key);
 
 	threshold = lp_ctdb_locktime_warn_threshold();
 	if (threshold != 0) {
