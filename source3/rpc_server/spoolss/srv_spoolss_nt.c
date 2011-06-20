@@ -9187,9 +9187,9 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 	int 			snum = 0;
 	WERROR result = WERR_OK;
 	DATA_BLOB blob;
-	enum winreg_Type val_type;
-	uint8_t *val_data;
-	uint32_t val_size;
+	enum winreg_Type val_type = REG_NONE;
+	uint8_t *val_data = NULL;
+	uint32_t val_size = 0;
 
 
 	DEBUG(4,("_spoolss_GetPrinterDataEx\n"));
