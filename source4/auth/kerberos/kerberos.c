@@ -159,6 +159,8 @@
 		code = krb5_cc_store_cred(ctx, cc, impersonate_creds);
 		krb5_get_creds_opt_free(ctx, options);
 		krb5_free_creds(ctx, impersonate_creds);
+
+		return code;
 	}
 
 	return 0;
