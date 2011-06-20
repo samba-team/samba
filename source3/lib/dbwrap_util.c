@@ -433,7 +433,7 @@ static NTSTATUS dbwrap_trans_traverse_action(struct db_context* db, void* privat
 
 	int ret = db->traverse(db, ctx->f, ctx->private_data);
 
-	return (ret == -1) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
+	return (ret < 0) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
 }
 
 NTSTATUS dbwrap_trans_traverse(struct db_context *db,
@@ -452,7 +452,7 @@ NTSTATUS dbwrap_traverse(struct db_context *db,
 			 void *private_data)
 {
 	int ret = db->traverse(db, f, private_data);
-	return (ret == -1) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
+	return (ret < 0) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
 }
 
 

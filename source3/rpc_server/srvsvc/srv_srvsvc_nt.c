@@ -136,7 +136,7 @@ static WERROR net_enum_pipes(TALLOC_CTX *ctx,
 	fenum.username = username;
 	fenum.ctr3 = *ctr3;
 
-	if (connections_traverse(pipe_enum_fn, &fenum) == -1) {
+	if (connections_traverse(pipe_enum_fn, &fenum) < 0) {
 		DEBUG(0,("net_enum_pipes: traverse of connections.tdb "
 			 "failed\n"));
 		return WERR_NOMEM;

@@ -71,7 +71,7 @@ static int tdb_validate_child(struct tdb_context *tdb,
 	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
 	if (!v_status.success) {
 		goto out;
-	} else if (num_entries == -1) {
+	} else if (num_entries < 0) {
 		v_status.tdb_error = True;
 		v_status.success = False;
 		goto out;

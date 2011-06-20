@@ -482,7 +482,7 @@ static WERROR regdb_upgrade_v1_to_v2(void)
 
 	talloc_destroy(mem_ctx);
 
-	if (rc == -1) {
+	if (rc < 0) {
 		return WERR_REG_IO_FAILURE;
 	}
 

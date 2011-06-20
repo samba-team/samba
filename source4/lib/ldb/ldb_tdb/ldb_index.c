@@ -1569,7 +1569,7 @@ int ltdb_reindex(struct ldb_module *module)
 	 * putting NULL entries in the in-memory tdb
 	 */
 	ret = tdb_traverse(ltdb->tdb, delete_index, module);
-	if (ret == -1) {
+	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1583,7 +1583,7 @@ int ltdb_reindex(struct ldb_module *module)
 
 	/* now traverse adding any indexes for normal LDB records */
 	ret = tdb_traverse(ltdb->tdb, re_index, &ctx);
-	if (ret == -1) {
+	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "reindexing traverse failed: %s", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;

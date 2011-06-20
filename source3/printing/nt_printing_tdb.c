@@ -266,7 +266,7 @@ static bool upgrade_to_version_4(void)
 
 	talloc_destroy( ctx );
 
-	return ( result != -1 );
+	return ( result >= 0 );
 }
 
 /*******************************************************************
@@ -334,7 +334,7 @@ static bool upgrade_to_version_5(void)
 
 	talloc_destroy( ctx );
 
-	return ( result != -1 );
+	return ( result >= 0 );
 }
 
 bool nt_printing_tdb_upgrade(void)

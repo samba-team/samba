@@ -480,7 +480,7 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 		ret = tdb_traverse_read(ltdb->tdb, search_func, ctx);
 	}
 
-	if (ret == -1) {
+	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

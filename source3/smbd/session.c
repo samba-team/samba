@@ -264,7 +264,7 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list)
 	sesslist.sessions = NULL;
 
 	ret = sessionid_traverse_read(gather_sessioninfo, (void *) &sesslist);
-	if (ret == -1) {
+	if (ret < 0) {
 		DEBUG(3, ("Session traverse failed\n"));
 		SAFE_FREE(sesslist.sessions);
 		*session_list = NULL;

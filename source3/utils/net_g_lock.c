@@ -175,7 +175,7 @@ done:
 	TALLOC_FREE(g_ctx);
 	TALLOC_FREE(msg);
 	TALLOC_FREE(ev);
-	return ret;
+	return ret < 0 ? -1 : ret;
 }
 
 int net_g_lock(struct net_context *c, int argc, const char **argv)

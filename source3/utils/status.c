@@ -474,7 +474,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 
 		if (result == 0) {
 			d_printf("No locked files\n");
-		} else if (result == -1) {
+		} else if (result < 0) {
 			d_printf("locked file list truncated\n");
 		}
 

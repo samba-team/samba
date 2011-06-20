@@ -960,7 +960,7 @@ static bool mapping_switch(const char *ldb_path)
 	/* ldb is just a very fancy tdb, read out raw data and perform
 	 * conversion */
 	ret = tdb_traverse(ltdb, convert_ldb_record, NULL);
-	if (ret == -1) goto failed;
+	if (ret < 0) goto failed;
 
 	if (ltdb) {
 		tdb_close(ltdb);

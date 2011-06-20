@@ -488,7 +488,7 @@ bool gencache_stabilize(void)
 	state.written = false;
 
 	res = tdb_traverse(cache_notrans, stabilize_fn, &state);
-	if ((res == -1) || state.error) {
+	if ((res < 0) || state.error) {
 		tdb_transaction_cancel(cache_notrans);
 		tdb_transaction_cancel(cache);
 		return false;

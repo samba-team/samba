@@ -120,7 +120,7 @@ int count_current_connections( const char *sharename, bool clear  )
 	ret = connections_forall(count_fn, &cs);
 	unbecome_root();
 
-	if (ret == -1) {
+	if (ret < 0) {
 		DEBUG(0,("count_current_connections: traverse of "
 			 "connections.tdb failed\n"));
 		return 0;
