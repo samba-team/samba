@@ -294,7 +294,7 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	rec.dsize = sizeof(void *);
 
 	ret = tdb_store(ltdb->idxptr->itdb, key, rec, TDB_INSERT);
-	if (ret == -1) {
+	if (ret != 0) {
 		return ltdb_err_map(tdb_error(ltdb->idxptr->itdb));
 	}
 	return LDB_SUCCESS;

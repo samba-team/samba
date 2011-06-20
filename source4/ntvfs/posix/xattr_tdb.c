@@ -185,7 +185,7 @@ NTSTATUS push_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
 		goto done;
 	}
 
-	if (tdb_store(ea_tdb->tdb, tkey, tdata, TDB_REPLACE) == -1) {
+	if (tdb_store(ea_tdb->tdb, tkey, tdata, TDB_REPLACE) != 0) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 

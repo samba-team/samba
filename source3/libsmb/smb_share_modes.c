@@ -344,7 +344,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 		db_data.dsize = sizeof(struct locking_data) + sizeof(struct share_mode_entry) +
 					strlen(sharepath) + 1 +
 					strlen(filename) + 1;
-		if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_INSERT) == -1) {
+		if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_INSERT) != 0) {
 			free(db_data.dptr);
 			return -1;
 		}
@@ -387,7 +387,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	db_data.dptr = new_data_p;
 	db_data.dsize = new_data_size;
 
-	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
+	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) != 0) {
 		free(db_data.dptr);
 		return -1;
 	}
@@ -510,7 +510,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 	db_data.dsize = sizeof(struct locking_data) + (num_share_modes * sizeof(struct share_mode_entry)) + remaining_size;
 
-	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
+	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) != 0) {
 		free(db_data.dptr);
 		return -1;
 	}
@@ -565,7 +565,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Save modified data. */
-	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
+	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) != 0) {
 		free(db_data.dptr);
 		return -1;
 	}

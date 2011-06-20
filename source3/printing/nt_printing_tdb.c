@@ -245,7 +245,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* 0 to continue and non-zero to stop traversal */
 
-	return (result == -1);
+	return (result != 0);
 }
 
 /*******************************************************************

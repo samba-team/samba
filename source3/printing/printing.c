@@ -624,7 +624,7 @@ static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
 			if (i < job_count -1 )
 				memmove(data.dptr + (i*4), data.dptr + (i*4) + 4, (job_count - i - 1)*4 );
 			data.dsize -= 4;
-			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) == -1)
+			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) != 0)
 				goto out;
 			break;
 		}
@@ -1919,7 +1919,7 @@ bool print_notify_register_pid(int snum)
 	}
 
 	/* Store back the record. */
-	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to update pid \
 list for printer %s\n", printername));
 		goto done;
@@ -2009,7 +2009,7 @@ printer %s database\n", printername));
 		SAFE_FREE(data.dptr);
 
 	/* Store back the record. */
-	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to update pid \
 list for printer %s\n", printername));
 		goto done;
@@ -2153,7 +2153,7 @@ static bool remove_from_jobs_added(const char* sharename, uint32 jobid)
 			if (i < job_count -1 )
 				memmove(data.dptr + (i*4), data.dptr + (i*4) + 4, (job_count - i - 1)*4 );
 			data.dsize -= 4;
-			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) == -1)
+			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) != 0)
 				goto out;
 			break;
 		}
@@ -2622,7 +2622,7 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 		dum.dptr = NULL;
 		dum.dsize = 0;
 		if (tdb_store(pdb->tdb, print_key(jobid, &tmp), dum,
-			      TDB_INSERT) == -1) {
+			      TDB_INSERT) != 0) {
 			DEBUG(3, ("allocate_print_jobid: "
 				  "jobid (%d) failed to store placeholder.\n",
 				  jobid ));

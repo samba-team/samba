@@ -179,7 +179,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	data.dsize = blob.length;
 	data.dptr = blob.data;
 
-	if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) != -1) {
+	if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) == 0) {
 		result = true;
 	}
 

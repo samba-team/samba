@@ -264,7 +264,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	}
 
 	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
-	if (ret == -1) {
+	if (ret != 0) {
 		ret = ltdb_err_map(tdb_error(ltdb->tdb));
 		goto done;
 	}

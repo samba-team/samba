@@ -133,7 +133,7 @@ int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr)
 }
 
 /****************************************************************************
- Store a int32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
+ Store a int32_t value by an arbitrary blob key, return 0 on success, -ve on failure.
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -150,7 +150,7 @@ int tdb_store_int32_byblob(struct tdb_context *tdb, TDB_DATA key, int32_t v)
 }
 
 /****************************************************************************
- Store a int32_t value by string key, return 0 on success, -1 on failure.
+ Store a int32_t value by string key, return 0 on success, -ve on failure.
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -190,7 +190,7 @@ bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *val
 }
 
 /****************************************************************************
- Store a uint32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
+ Store a uint32_t value by an arbitrary blob key, return true on success, false on failure.
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -204,14 +204,14 @@ bool tdb_store_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t val
 	data.dptr = (unsigned char *)&v_store;
 	data.dsize = sizeof(uint32_t);
 
-	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
+	if (tdb_store(tdb, key, data, TDB_REPLACE) != 0)
 		ret = false;
 
 	return ret;
 }
 
 /****************************************************************************
- Store a uint32_t value by string key, return 0 on success, -1 on failure.
+ Store a uint32_t value by string key, return true on success, false on failure.
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -220,7 +220,7 @@ bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t valu
 	return tdb_store_uint32_byblob(tdb, string_term_tdb_data(keystr), value);
 }
 /****************************************************************************
- Store a buffer by a null terminated string key.  Return 0 on success, -1
+ Store a buffer by a null terminated string key.  Return 0 on success, -ve
  on failure.
 ****************************************************************************/
 
@@ -284,7 +284,7 @@ int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int
 	/* Increment value for storage and return next time */
 	val += change_val;
 		
-	if (tdb_store_int32(tdb, keystr, val) == -1)
+	if (tdb_store_int32(tdb, keystr, val) != 0)
 		goto err_out;
 
 	ret = 0;

@@ -804,13 +804,13 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 	ebuf.dptr  = blob.data;
 
 	ret = tdb_store(tdb, kbuf, ebuf, 0);
-	if (ret == -1) {
+	if (ret != 0) {
 		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
 		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
 	}
 
 	ret = tdb_store_int32(tdb, EVT_NEXT_RECORD, r->record_number + 1);
-	if (ret == -1) {
+	if (ret != 0) {
 		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
 		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
 	}

@@ -170,7 +170,7 @@ static int read_rec(FILE *f, TDB_CONTEXT *tdb, int *eof)
 	    || (swallow(f, "}\n", NULL) == -1)) {
 		goto fail;
 	}
-	if (tdb_store(tdb, key, data, TDB_INSERT) == -1) {
+	if (tdb_store(tdb, key, data, TDB_INSERT) != 0) {
 		fprintf(stderr, "TDB error: %s\n", tdb_errorstr(tdb));
 		goto fail;
 	}
