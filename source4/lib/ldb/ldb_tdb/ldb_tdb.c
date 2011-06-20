@@ -50,6 +50,7 @@
  */
 
 #include "ldb_tdb.h"
+#include <lib/tdb_compat/tdb_compat.h>
 
 
 /*
@@ -653,7 +654,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		return LDB_ERR_OTHER;
 	}
 
-	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
+	tdb_data = tdb_fetch_compat(ltdb->tdb, tdb_key);
 	if (!tdb_data.dptr) {
 		talloc_free(tdb_key.dptr);
 		return ltdb_err_map(tdb_error(ltdb->tdb));

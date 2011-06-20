@@ -95,7 +95,7 @@ static bool upgrade_to_version_3(void)
 	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
 			newkey = tdb_nextkey(tdb_drivers, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
-		dbuf = tdb_fetch(tdb_drivers, kbuf);
+		dbuf = tdb_fetch_compat(tdb_drivers, kbuf);
 
 		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving form\n"));

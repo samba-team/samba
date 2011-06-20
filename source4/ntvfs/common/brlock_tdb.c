@@ -333,7 +333,7 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 		}
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
@@ -468,7 +468,7 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_RANGE_NOT_LOCKED;
@@ -568,7 +568,7 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_RANGE_NOT_LOCKED;
@@ -639,7 +639,7 @@ static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
 		return NT_STATUS_INVALID_LOCK_RANGE;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (dbuf.dptr == NULL) {
 		return NT_STATUS_OK;
 	}
@@ -686,7 +686,7 @@ static NTSTATUS brl_tdb_close(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_OK;
@@ -751,7 +751,7 @@ static NTSTATUS brl_tdb_count(struct brl_context *brl, struct brl_handle *brlh,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_OK;

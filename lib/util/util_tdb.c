@@ -111,7 +111,7 @@ int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key)
 	TDB_DATA data;
 	int32_t ret;
 
-	data = tdb_fetch(tdb, key);
+	data = tdb_fetch_compat(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(int32_t)) {
 		SAFE_FREE(data.dptr);
 		return -1;
@@ -168,7 +168,7 @@ bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t *va
 {
 	TDB_DATA data;
 
-	data = tdb_fetch(tdb, key);
+	data = tdb_fetch_compat(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(uint32_t)) {
 		SAFE_FREE(data.dptr);
 		return false;
@@ -240,7 +240,7 @@ TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr)
 {
 	TDB_DATA key = string_term_tdb_data(keystr);
 
-	return tdb_fetch(tdb, key);
+	return tdb_fetch_compat(tdb, key);
 }
 
 /****************************************************************************

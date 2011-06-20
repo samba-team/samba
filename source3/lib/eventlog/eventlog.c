@@ -203,7 +203,7 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32_t needed,
 		/* read a record, add the amt to nbytes */
 		key.dsize = sizeof(int32_t);
 		key.dptr = (unsigned char *)&i;
-		ret = tdb_fetch( the_tdb, key );
+		ret = tdb_fetch_compat( the_tdb, key );
 		if ( ret.dsize == 0 ) {
 			DEBUG( 8,
 			       ( "Can't find a record for the key, record [%d]\n",
@@ -679,7 +679,7 @@ struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
 	key.dptr = (unsigned char *)&srecno;
 	key.dsize = sizeof(int32_t);
 
-	data = tdb_fetch(tdb, key);
+	data = tdb_fetch_compat(tdb, key);
 	if (data.dsize == 0) {
 		DEBUG(8,("evlog_pull_record_tdb: "
 			"Can't find a record for the key, record %d\n",

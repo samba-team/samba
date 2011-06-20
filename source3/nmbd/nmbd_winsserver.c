@@ -241,7 +241,7 @@ struct name_record *find_name_on_wins_subnet(const struct nmb_name *nmbname, boo
 	}
 
 	key = name_to_key(nmbname);
-	data = tdb_fetch(wins_tdb, key);
+	data = tdb_fetch_compat(wins_tdb, key);
 
 	if (data.dsize == 0) {
 		return NULL;

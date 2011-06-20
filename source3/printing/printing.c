@@ -88,7 +88,7 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	key.dptr = (uint8 *)&jinfo;
 	key.dsize = sizeof(jinfo);
 
-	data = tdb_fetch(rap_tdb, key);
+	data = tdb_fetch_compat(rap_tdb, key);
 	if (data.dptr && data.dsize == sizeof(uint16)) {
 		rap_jobid = SVAL(data.dptr, 0);
 		SAFE_FREE(data.dptr);
@@ -125,7 +125,7 @@ bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 	SSVAL(buf,0,rap_jobid);
 	key.dptr = buf;
 	key.dsize = sizeof(rap_jobid);
-	data = tdb_fetch(rap_tdb, key);
+	data = tdb_fetch_compat(rap_tdb, key);
 	if ( data.dptr && data.dsize == sizeof(struct rap_jobid_key) )
 	{
 		struct rap_jobid_key *jinfo = (struct rap_jobid_key*)data.dptr;
@@ -163,7 +163,7 @@ void rap_jobid_delete(const char* sharename, uint32 jobid)
 	key.dptr = (uint8 *)&jinfo;
 	key.dsize = sizeof(jinfo);
 
-	data = tdb_fetch(rap_tdb, key);
+	data = tdb_fetch_compat(rap_tdb, key);
 	if (!data.dptr || (data.dsize != sizeof(uint16))) {
 		DEBUG(10,("rap_jobid_delete: cannot find jobid %u\n",
 			(unsigned int)jobid ));
@@ -441,7 +441,7 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 		return NULL;
 	}
 
-	ret = tdb_fetch(pdb->tdb, print_key(jobid, &tmp));
+	ret = tdb_fetch_compat(pdb->tdb, print_key(jobid, &tmp));
 	release_print_db(pdb);
 
 	if (!ret.dptr) {
@@ -610,7 +610,7 @@ static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
 
 	gotlock = True;
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0))
 		goto out;
@@ -728,7 +728,7 @@ static bool pjob_store(struct tevent_context *ev,
 
 	/* Get old data */
 
-	old_data = tdb_fetch(pdb->tdb, print_key(jobid, &tmp));
+	old_data = tdb_fetch_compat(pdb->tdb, print_key(jobid, &tmp));
 
 	/* Doh!  Now we have to pack/unpack data since the NT_DEVICEMODE was added */
 
@@ -1078,7 +1078,7 @@ static pid_t get_updating_pid(const char *sharename)
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", sharename);
     	key = string_tdb_data(keystr);
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 	release_print_db(pdb);
 	if (!data.dptr || data.dsize != sizeof(pid_t)) {
 		SAFE_FREE(data.dptr);
@@ -1225,7 +1225,7 @@ static TDB_DATA get_jobs_added_data(struct tdb_print_db *pdb)
 
 	ZERO_STRUCT(data);
 
-	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_added"));
+	data = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/jobs_added"));
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0)) {
 		SAFE_FREE(data.dptr);
 		ZERO_STRUCT(data);
@@ -2139,7 +2139,7 @@ static bool remove_from_jobs_added(const char* sharename, uint32 jobid)
 
 	gotlock = True;
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0))
 		goto out;
@@ -2502,7 +2502,7 @@ static int get_queue_status(const char* sharename, print_status_struct *status)
 
 	if (status) {
 		fstr_sprintf(keystr, "STATUS/%s", sharename);
-		data = tdb_fetch(pdb->tdb, string_tdb_data(keystr));
+		data = tdb_fetch_compat(pdb->tdb, string_tdb_data(keystr));
 		if (data.dptr) {
 			if (data.dsize == sizeof(print_status_struct))
 				/* this memcpy is ok since the status struct was
@@ -3038,18 +3038,18 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	ZERO_STRUCT(cgdata);
 
 	/* Get the stored queue data. */
-	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/linear_queue_array"));
+	data = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/linear_queue_array"));
 
 	if (data.dptr && data.dsize >= sizeof(qcount))
 		len += tdb_unpack(data.dptr + len, data.dsize - len, "d", &qcount);
 
 	/* Get the added jobs list. */
-	cgdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_added"));
+	cgdata = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/jobs_added"));
 	if (cgdata.dptr != NULL && (cgdata.dsize % 4 == 0))
 		extra_count = cgdata.dsize/4;
 
 	/* Get the changed jobs list. */
-	jcdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
+	jcdata = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
 	if (jcdata.dptr != NULL && (jcdata.dsize % 4 == 0))
 		changed_count = jcdata.dsize / 4;
 
@@ -3216,7 +3216,7 @@ int print_queue_status(struct messaging_context *msg_ctx, int snum,
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", sharename);
 	key = string_tdb_data(keystr);
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 	if (data.dptr) {
 		if (data.dsize == sizeof(*status)) {
 			/* this memcpy is ok since the status struct was

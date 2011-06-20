@@ -201,8 +201,8 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	*pp_list = NULL;
 	*p_delete_on_close = 0;
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, get_locking_key(&lk, dev, ino,
-							     extid));
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb,
+				   get_locking_key(&lk, dev, ino, extid));
 	if (!db_data.dptr) {
 		return 0;
 	}
@@ -315,7 +315,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 		return -1;
 	}
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
 		db_data.dptr = (uint8 *)malloc(
@@ -432,7 +432,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	size_t i, num_share_modes;
 	const uint8 *remaining_ptr = NULL;
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		return -1; /* Error - missing entry ! */
 	}
@@ -534,7 +534,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 	size_t i;
 	int found_entry = 0;
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		return -1; /* Error - missing entry ! */
 	}

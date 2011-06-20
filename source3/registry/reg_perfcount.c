@@ -95,7 +95,7 @@ uint32 reg_perfcount_get_base_index(void)
 	   and so on.
 	   So last_counter becomes num_counters*2, and last_help will be last_counter+1 */
 	kbuf = string_tdb_data(key);
-	dbuf = tdb_fetch(names, kbuf);
+	dbuf = tdb_fetch_compat(names, kbuf);
 	if(dbuf.dptr == NULL)
 	{
 		DEBUG(1, ("reg_perfcount_get_base_index: failed to find key \'1\' in [%s].\n", fname));
@@ -162,7 +162,7 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	memset(temp, 0, sizeof(temp));
 	snprintf(temp, sizeof(temp), "%d", keyval);
 	kbuf = string_tdb_data(temp);
-	dbuf = tdb_fetch(tdb, kbuf);
+	dbuf = tdb_fetch_compat(tdb, kbuf);
 	if(dbuf.dptr == NULL)
 	{
 		/* If a key isn't there, just bypass it -- this really shouldn't 
@@ -347,7 +347,7 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 	char buf[PERFCOUNT_MAX_LEN];
 
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, objInd, "inst");
-	data = tdb_fetch(names, key);
+	data = tdb_fetch_compat(names, key);
 
 	if(data.dptr == NULL)
 		return (uint32)PERF_NO_INSTANCES;
@@ -421,7 +421,7 @@ static bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 		return False;
 	}    
 
-	*data = tdb_fetch(counters, key);
+	*data = tdb_fetch_compat(counters, key);
 
 	tdb_close(counters);
 
@@ -488,7 +488,7 @@ static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
 	padding = 0;
 
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, CounterIndex, "type");
-	data = tdb_fetch(names, key);
+	data = tdb_fetch_compat(names, key);
 	if(data.dptr == NULL)
 	{
 		DEBUG(3, ("_reg_perfcount_get_counter_info: No type data for counter [%d].\n", CounterIndex));
@@ -701,7 +701,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 	memset(temp, 0, PERFCOUNT_MAX_LEN);
 	snprintf(temp, PERFCOUNT_MAX_LEN, "i%dname", instId);
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, obj->ObjectNameTitleIndex, temp);
-	data = tdb_fetch(names, key);
+	data = tdb_fetch_compat(names, key);
 	if(data.dptr == NULL)
 	{
 		/* Not actually an error, but possibly unintended? -- just logging FYI */
@@ -793,7 +793,7 @@ static int _reg_perfcount_assemble_global(struct PERF_DATA_BLOCK *block,
 	{
 		j = i*2;
 		_reg_perfcount_make_key(&key, keybuf, PERFCOUNT_MAX_LEN, j, "rel");
-		data = tdb_fetch(names, key);
+		data = tdb_fetch_compat(names, key);
 		if(data.dptr != NULL)
 		{
 			if(_reg_perfcount_isparent(data))
@@ -831,7 +831,7 @@ static bool _reg_perfcount_get_64(uint64_t *retval,
 
 	_reg_perfcount_make_key(&key, buf, PERFCOUNT_MAX_LEN, key_part1, key_part2);
 
-	data = tdb_fetch(tdb, key);
+	data = tdb_fetch_compat(tdb, key);
 	if(data.dptr == NULL)
 	{
 		DEBUG(3,("_reg_perfcount_get_64: No data found for key [%s].\n", key.dptr));

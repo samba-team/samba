@@ -238,7 +238,7 @@ static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file)
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
-	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+	dbuf = tdb_fetch_compat(odb->w->tdb, lck->key);
 	if (dbuf.dptr == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}

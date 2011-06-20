@@ -206,7 +206,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	 */
 
 	last_stabilize = 0;
-	databuf = tdb_fetch(cache_notrans, last_stabilize_key());
+	databuf = tdb_fetch_compat(cache_notrans, last_stabilize_key());
 	if ((databuf.dptr != NULL)
 	    && (databuf.dptr[databuf.dsize-1] == '\0')) {
 		last_stabilize = atoi((char *)databuf.dptr);

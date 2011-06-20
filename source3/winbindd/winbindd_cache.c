@@ -638,7 +638,7 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 	TDB_DATA key;
 
 	key = string_tdb_data(kstr);
-	data = tdb_fetch(wcache->tdb, key);
+	data = tdb_fetch_compat(wcache->tdb, key);
 	if (!data.dptr) {
 		/* a cache miss */
 		return NULL;
@@ -1271,7 +1271,7 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct 
 
 	fstr_sprintf(key_str, "CRED/%s", sid_to_fstring(tmp, sid));
 
-	data = tdb_fetch(cache->tdb, string_tdb_data(key_str));
+	data = tdb_fetch_compat(cache->tdb, string_tdb_data(key_str));
 	if (!data.dptr) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -3394,7 +3394,7 @@ NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const
 		TDB_DATA data;
 		time_t t;
 
-		data = tdb_fetch(cache->tdb, string_tdb_data(cred->name));
+		data = tdb_fetch_compat(cache->tdb, string_tdb_data(cred->name));
 		if (!data.dptr) {
 			DEBUG(10,("wcache_remove_oldest_cached_creds: entry for [%s] not found\n", 
 				cred->name));
@@ -4437,7 +4437,7 @@ bool wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_do
 	if ( !key.dptr )
 		return false;
 
-	data = tdb_fetch( wcache->tdb, key );
+	data = tdb_fetch_compat( wcache->tdb, key );
 
 	SAFE_FREE( key.dptr );
 
@@ -4782,7 +4782,7 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	if (!wcache_ndr_key(talloc_tos(), domain->name, opnum, req, &key)) {
 		return false;
 	}
-	data = tdb_fetch(wcache->tdb, key);
+	data = tdb_fetch_compat(wcache->tdb, key);
 	TALLOC_FREE(key.dptr);
 
 	if (data.dptr == NULL) {

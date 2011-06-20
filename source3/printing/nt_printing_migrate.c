@@ -553,7 +553,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
 	{
-		dbuf = tdb_fetch(tdb, kbuf);
+		dbuf = tdb_fetch_compat(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
