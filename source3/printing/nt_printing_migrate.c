@@ -532,7 +532,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 				 struct rpc_pipe_client *pipe_hnd)
 {
 	const char *backup_suffix = ".bak";
-	TDB_DATA kbuf, newkey, dbuf;
+	TDB_DATA kbuf, dbuf;
 	TDB_CONTEXT *tdb;
 	NTSTATUS status;
 	int rc;
@@ -549,9 +549,9 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	for (kbuf = tdb_firstkey(tdb);
+	for (kbuf = tdb_firstkey_compat(tdb);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
+	     kbuf = tdb_nextkey_compat(tdb, kbuf))
 	{
 		dbuf = tdb_fetch_compat(tdb, kbuf);
 		if (!dbuf.dptr) {
