@@ -472,7 +472,7 @@ bool gencache_stabilize(void)
 		}
 
 		DEBUG(10, ("Could not start transaction on gencache.tdb: "
-			   "%s\n", tdb_errorstr(cache)));
+			   "%s\n", tdb_errorstr_compat(cache)));
 		return false;
 	}
 	res = tdb_transaction_start(cache_notrans);
@@ -480,7 +480,7 @@ bool gencache_stabilize(void)
 		tdb_transaction_cancel(cache);
 		DEBUG(10, ("Could not start transaction on "
 			   "gencache_notrans.tdb: %s\n",
-			   tdb_errorstr(cache_notrans)));
+			   tdb_errorstr_compat(cache_notrans)));
 		return false;
 	}
 
@@ -503,7 +503,7 @@ bool gencache_stabilize(void)
 	res = tdb_transaction_commit(cache);
 	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr(cache)));
+			   "%s\n", tdb_errorstr_compat(cache)));
 		tdb_transaction_cancel(cache_notrans);
 		return false;
 	}
@@ -511,7 +511,7 @@ bool gencache_stabilize(void)
 	res = tdb_transaction_commit(cache_notrans);
 	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr(cache)));
+			   "%s\n", tdb_errorstr_compat(cache)));
 		return false;
 	}
 
@@ -556,14 +556,14 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 
 	if (res != 0) {
 		DEBUG(10, ("Transfer to gencache.tdb failed: %s\n",
-			   tdb_errorstr(cache)));
+			   tdb_errorstr_compat(cache)));
 		state->error = true;
 		return -1;
 	}
 
 	if (tdb_delete(cache_notrans, key) != 0) {
 		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
-			   "%s\n", tdb_errorstr(cache_notrans)));
+			   "%s\n", tdb_errorstr_compat(cache_notrans)));
 		state->error = true;
 		return -1;
 	}

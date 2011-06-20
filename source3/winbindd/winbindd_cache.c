@@ -486,7 +486,7 @@ bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
 	TALLOC_FREE(key_str);
 	if (ret == -1) {
 		DEBUG(10, ("tdb_store_bystring failed: %s\n",
-			   tdb_errorstr(wcache->tdb)));
+			   tdb_errorstr_compat(wcache->tdb)));
 		TALLOC_FREE(key_str);
 		return false;
 	}
@@ -3165,7 +3165,7 @@ bool initialize_winbindd_cache(void)
 		/* Write the version. */
 		if (!tdb_store_uint32(wcache->tdb, WINBINDD_CACHE_VERSION_KEYSTR, WINBINDD_CACHE_VERSION)) {
 			DEBUG(0,("initialize_winbindd_cache: version number store failed %s\n",
-				tdb_errorstr(wcache->tdb) ));
+				tdb_errorstr_compat(wcache->tdb) ));
 			return false;
 		}
 	}
