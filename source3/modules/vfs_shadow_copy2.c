@@ -144,7 +144,7 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					time_t snapshot)
 {
 	struct tm snap_tm;
-	char gmt[NAME_MAX+1];
+	fstring gmt;
 	size_t gmt_len;
 
 	if (localtime_r(&snapshot, &snap_tm) == 0) {
