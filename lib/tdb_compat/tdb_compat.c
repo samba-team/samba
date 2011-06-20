@@ -90,6 +90,12 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 		attr = &cif;
 		tdb_flags &= ~TDB_CLEAR_IF_FIRST;
 	}
+
+	/* Testsuite uses this to speed things up. */
+	if (getenv("TDB_NO_FSYNC")) {
+		tdb_flags |= TDB_NOSYNC;
+	}
+
 	return tdb_open(name, tdb_flags|TDB_ALLOW_NESTING, open_flags, mode,
 			attr);
 }
