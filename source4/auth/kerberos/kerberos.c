@@ -101,6 +101,7 @@
 	krb5_principal self_princ;
 	krb5_ccache tmp_cc;
 	const char *self_realm;
+	krb5_principal blacklist_principal = NULL;
 
 	/*
 	 * If we are not impersonating, then get this ticket for the
@@ -150,11 +151,21 @@
 	}
 
 	code = krb5_cc_store_cred(ctx, tmp_cc, &store_creds);
-	krb5_free_cred_contents(ctx, &store_creds);
 	if (code != 0) {
+		krb5_free_cred_contents(ctx, &store_creds);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
 	}
+
+	/*
+	 * we need to remember the client principal of our
+	 * TGT and make sure the KDC does not return this
+	 * in the impersonated tickets. This can happen
+	 * if the KDC does not support S4U2Self and S4U2Proxy.
+	 */
+	blacklist_principal = store_creds.client;
+	store_creds.client = NULL;
+	krb5_free_cred_contents(ctx, &store_creds);
 
 	/*
 	 * For S4U2Self we need our own service principal,
@@ -165,12 +176,14 @@
 
 	code = krb5_parse_name(ctx, self_service, &self_princ);
 	if (code != 0) {
+		krb5_free_principal(ctx, blacklist_principal);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
 	}
 
 	code = krb5_principal_set_realm(ctx, self_princ, self_realm);
 	if (code != 0) {
+		krb5_free_principal(ctx, blacklist_principal);
 		krb5_free_principal(ctx, self_princ);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
@@ -178,6 +191,7 @@
 
 	code = krb5_get_creds_opt_alloc(ctx, &options);
 	if (code != 0) {
+		krb5_free_principal(ctx, blacklist_principal);
 		krb5_free_principal(ctx, self_princ);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
@@ -187,6 +201,7 @@
 						  impersonate_principal);
 	if (code != 0) {
 		krb5_get_creds_opt_free(ctx, options);
+		krb5_free_principal(ctx, blacklist_principal);
 		krb5_free_principal(ctx, self_princ);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
@@ -198,6 +213,7 @@
 	krb5_free_principal(ctx, self_princ);
 	krb5_cc_destroy(ctx, tmp_cc);
 	if (code != 0) {
+		krb5_free_principal(ctx, blacklist_principal);
 		return code;
 	}
 
@@ -210,6 +226,7 @@
 					&store_creds);
 	krb5_free_creds(ctx, s4u2self_creds);
 	if (code != 0) {
+		krb5_free_principal(ctx, blacklist_principal);
 		return code;
 	}
 
@@ -221,6 +238,35 @@
 	store_principal = store_creds.client;
 
  store:
+	if (blacklist_principal &&
+	    krb5_principal_compare(ctx, store_creds.client, blacklist_principal)) {
+		char *sp = NULL;
+		char *ip = NULL;
+
+		code = krb5_unparse_name(ctx, blacklist_principal, &sp);
+		if (code != 0) {
+			sp = NULL;
+		}
+		code = krb5_unparse_name(ctx, impersonate_principal, &ip);
+		if (code != 0) {
+			ip = NULL;
+		}
+		DEBUG(1, ("kerberos_kinit_password_cc: "
+			  "KDC returned self principal[%s] while impersonating [%s]\n",
+			  sp?sp:"<no memory>",
+			  ip?ip:"<no memory>"));
+
+		SAFE_FREE(sp);
+		SAFE_FREE(ip);
+
+		krb5_free_principal(ctx, blacklist_principal);
+		krb5_free_cred_contents(ctx, &store_creds);
+		return KRB5_FWD_BAD_PRINCIPAL;
+	}
+	if (blacklist_principal) {
+		krb5_free_principal(ctx, blacklist_principal);
+	}
+
 	code = krb5_cc_initialize(ctx, store_cc, store_principal);
 	if (code != 0) {
 		krb5_free_cred_contents(ctx, &store_creds);
