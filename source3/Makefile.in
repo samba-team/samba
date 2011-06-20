@@ -1353,7 +1353,6 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_pam.o   \
 		winbindd/winbindd_misc.o  \
 		winbindd/winbindd_cm.o    \
-		winbindd/winbindd_wins.o  \
 		winbindd/winbindd_wins_byip.o  \
 		winbindd/winbindd_wins_byname.o  \
 		winbindd/winbindd_msrpc.o \
