@@ -1,6 +1,7 @@
 #!/usr/bin/perl
-# Simple script for generating prototypes for C functions
-# Written by Jelmer Vernooij
+# Generate loadparm interfaces tables for Samba3/Samba4 integration
+# by Andrew Bartlett
+# based on mkproto.pl Written by Jelmer Vernooij
 # based on the original mkproto.sh by Andrew Tridgell
 
 use strict;
