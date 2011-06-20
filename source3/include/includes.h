@@ -608,8 +608,6 @@ void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,
 /* PRINTFLIKE2 */
 int fstr_sprintf(fstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
-int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
-
 int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
 int asprintf_strupper_m(char **strp, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);

@@ -31,7 +31,7 @@
 #include "includes.h"
 #include "intl/lang_tdb.h"
 
- int d_vfprintf(FILE *f, const char *format, va_list ap)
+static int d_vfprintf(FILE *f, const char *format, va_list ap)
 {
 	char *p = NULL, *p2 = NULL;
 	int ret, maxlen, clen;

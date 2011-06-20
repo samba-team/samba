@@ -45,7 +45,7 @@ void d_set_iconv(smb_iconv_t cd)
 	display_cd = cd;
 }
 
-_PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) 
+static int d_vfprintf(FILE *f, const char *format, va_list ap) 
 {
 	char *p, *p2;
 	int ret, clen;
