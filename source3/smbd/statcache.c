@@ -377,7 +377,7 @@ void stat_cache_delete(const char *name)
  JRA. Use a djb-algorithm hash for speed.
 ***************************************************************/
 
-unsigned int fast_string_hash(struct TDB_DATA *key)
+unsigned int fast_string_hash(TDB_DATA *key)
 {
         unsigned int n = 0;
         const char *p;

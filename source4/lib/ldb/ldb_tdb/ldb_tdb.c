@@ -126,7 +126,7 @@ int ltdb_unlock_read(struct ldb_module *module)
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
+TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TDB_DATA key;

@@ -160,7 +160,7 @@ void close_all_print_db(void)
  messages. data needs freeing on exit.
 ****************************************************************************/
 
-struct TDB_DATA get_printer_notify_pid_list(struct tdb_context *tdb, const char *printer_name, bool cleanlist)
+TDB_DATA get_printer_notify_pid_list(struct tdb_context *tdb, const char *printer_name, bool cleanlist)
 {
 	TDB_DATA data;
 	size_t i;

@@ -74,7 +74,7 @@ static int attribute_storable_values(const struct ldb_message_element *el)
 */
 int ltdb_pack_data(struct ldb_module *module,
 		   const struct ldb_message *message,
-		   struct TDB_DATA *data)
+		   TDB_DATA *data)
 {
 	struct ldb_context *ldb;
 	unsigned int i, j, real_elements=0;
@@ -155,7 +155,7 @@ int ltdb_pack_data(struct ldb_module *module,
   Free with ltdb_unpack_data_free()
 */
 int ltdb_unpack_data(struct ldb_module *module,
-		     const struct TDB_DATA *data,
+		     const TDB_DATA *data,
 		     struct ldb_message *message)
 {
 	struct ldb_context *ldb;
