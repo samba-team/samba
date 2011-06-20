@@ -28,6 +28,7 @@
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
 #include "messages.h"
+#include <ccan/hash/hash.h>
 
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)
@@ -1306,8 +1307,9 @@ const char *tab_depth(int level, int depth)
 
 int str_checksum(const char *s)
 {
-	TDB_DATA key = string_tdb_data(s);
-	return tdb_jenkins_hash(&key);
+	if (s == NULL)
+		return 0;
+	return hash(s, strlen(s), 0);
 }
 
 /*****************************************************************
