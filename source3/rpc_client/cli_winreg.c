@@ -33,7 +33,7 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 				   WERROR *pwerr)
 {
 	struct winreg_String wvalue;
-	enum winreg_Type type;
+	enum winreg_Type type = REG_NONE;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
 	WERROR result = WERR_OK;
@@ -69,7 +69,7 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	blob = data_blob_talloc(mem_ctx, NULL, data_size);
+	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
 		*pwerr = WERR_NOMEM;
 		return status;
@@ -108,13 +108,14 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 				    WERROR *pwerr)
 {
 	struct winreg_String wvalue;
-	enum winreg_Type type;
+	enum winreg_Type type = REG_NONE;
 	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
+	ZERO_STRUCT(wvalue);
 	wvalue.name = value;
 
 	status = dcerpc_winreg_QueryValue(h,
@@ -139,7 +140,7 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	blob = data_blob_talloc(mem_ctx, NULL, data_size);
+	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
 		*pwerr = WERR_NOMEM;
 		return status;
@@ -179,7 +180,7 @@ NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
 				      WERROR *pwerr)
 {
 	struct winreg_String wvalue;
-	enum winreg_Type type;
+	enum winreg_Type type = REG_NONE;
 	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
@@ -210,7 +211,7 @@ NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	blob = data_blob_talloc(mem_ctx, NULL, data_size);
+	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
 		*pwerr = WERR_NOMEM;
 		return status;
@@ -254,7 +255,7 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 				      WERROR *pwerr)
 {
 	struct winreg_String wvalue;
-	enum winreg_Type type;
+	enum winreg_Type type = REG_NONE;
 	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
@@ -285,7 +286,7 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	blob = data_blob_talloc(mem_ctx, NULL, data_size);
+	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
 		*pwerr = WERR_NOMEM;
 		return status;
@@ -380,13 +381,14 @@ NTSTATUS dcerpc_winreg_set_dword(TALLOC_CTX *mem_ctx,
 				 uint32_t data,
 				 WERROR *pwerr)
 {
-	struct winreg_String wvalue = { 0, };
+	struct winreg_String wvalue;
 	DATA_BLOB blob;
 	WERROR result = WERR_OK;
 	NTSTATUS status;
 
+	ZERO_STRUCT(wvalue);
 	wvalue.name = value;
-	blob = data_blob_talloc(mem_ctx, NULL, 4);
+	blob = data_blob_talloc_zero(mem_ctx, 4);
 	SIVAL(blob.data, 0, data);
 
 	status = dcerpc_winreg_SetValue(h,
