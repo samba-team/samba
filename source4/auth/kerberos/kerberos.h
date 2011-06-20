@@ -97,7 +97,9 @@ krb5_error_code ads_krb5_mk_req(krb5_context context,
 bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
 					   krb5_principal principal, const char *password,
-					   krb5_principal impersonate_principal, const char *target_service,
+					   krb5_principal impersonate_principal,
+					   const char *self_service,
+					   const char *target_service,
 					   krb5_get_init_creds_opt *krb_options,
 					   time_t *expire_time, time_t *kdc_time);
 krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,

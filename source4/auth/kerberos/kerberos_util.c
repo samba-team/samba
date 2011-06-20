@@ -408,6 +408,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 							 princ, password,
 							 impersonate_principal,
 							 self_service,
+							 target_service,
 							 krb_options,
 							 NULL, &kdc_time);
 		} else if (impersonate_principal) {
