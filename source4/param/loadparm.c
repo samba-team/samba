@@ -2668,12 +2668,6 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 		unsetenv("SOCKET_TESTNONBLOCK");
 	}
 
-	/* FIXME: Check locale in environment for this: */
-	if (strcmp(lpcfg_display_charset(lp_ctx), lpcfg_unix_charset(lp_ctx)) != 0)
-		d_set_iconv(smb_iconv_open(lpcfg_display_charset(lp_ctx), lpcfg_unix_charset(lp_ctx)));
-	else
-		d_set_iconv((smb_iconv_t)-1);
-
 	return true;
 }
 

@@ -211,13 +211,10 @@ _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
                                          uint32_t num);
 
 /* The following definitions come from lib/util/dprintf.c  */
-#if _SAMBA_BUILD_ == 4
 
-_PUBLIC_ void d_set_iconv(smb_iconv_t);
 _PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 _PUBLIC_ int d_printf(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
 _PUBLIC_ void display_set_stderr(void);
-#endif
 
 /* The following definitions come from lib/util/util_str.c  */
 

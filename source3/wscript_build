@@ -69,7 +69,6 @@ LIB_SRC = '''
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
           lib/access.c lib/smbrun.c
-          lib/dprintf.c
           lib/wins_srv.c
           lib/util_sid.c
           lib/util_file.c

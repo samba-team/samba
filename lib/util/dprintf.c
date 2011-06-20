@@ -33,22 +33,15 @@
 
 #include "includes.h"
 #include "system/locale.h"
-#include "param/param.h"
 
 static smb_iconv_t display_cd = (smb_iconv_t)-1;
-
-void d_set_iconv(smb_iconv_t cd)
-{
-	if (display_cd != (smb_iconv_t)-1)
-		talloc_free(display_cd);
-
-	display_cd = cd;
-}
 
 static int d_vfprintf(FILE *f, const char *format, va_list ap) 
 {
 	char *p, *p2;
-	int ret, clen;
+	int ret;
+	size_t clen;
+	bool cret;
 	va_list ap2;
 
 	/* If there's nothing to convert, take a shortcut */
@@ -56,15 +49,14 @@ static int d_vfprintf(FILE *f, const char *format, va_list ap)
 		return vfprintf(f, format, ap);
 	}
 
-	/* do any message translations */
 	va_copy(ap2, ap);
 	ret = vasprintf(&p, format, ap2);
 	va_end(ap2);
 
 	if (ret <= 0) return ret;
 
-	clen = iconv_talloc(NULL, display_cd, p, ret, (void **)&p2);
-        if (clen == -1) {
+	cret = convert_string_talloc(NULL, CH_UTF8, CH_DISPLAY, p, ret, (void **)&p2, &clen);
+        if (!cret) {
 		/* the string can't be converted - do the best we can,
 		   filling in non-printing chars with '?' */
 		int i;
@@ -100,15 +92,25 @@ _PUBLIC_ int d_fprintf(FILE *f, const char *format, ...)
 	return ret;
 }
 
-_PUBLIC_ int d_printf(const char *format, ...)
+static FILE *outfile;
+
+_PUBLIC_  int d_printf(const char *format, ...)
 {
 	int ret;
-	va_list ap;
-
-	va_start(ap, format);
-	ret = d_vfprintf(stdout, format, ap);
-	va_end(ap);
-
-	return ret;
+       va_list ap;
+       
+       if (!outfile) outfile = stdout;
+       
+       va_start(ap, format);
+       ret = d_vfprintf(outfile, format, ap);
+       va_end(ap);
+       
+       return ret;
 }
 
+/* interactive programs need a way of tell d_*() to write to stderr instead
+   of stdout */
+void display_set_stderr(void)
+{
+	outfile = stderr;
+}
