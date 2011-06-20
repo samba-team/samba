@@ -471,7 +471,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		data_size = max_valbufsize;
 		data = NULL;
 		if (data_size) {
-			data = (uint8_t *) TALLOC(tmp_ctx, data_size);
+			data = (uint8_t *) talloc_zero_size(tmp_ctx, data_size);
 		}
 		length = 0;
 
@@ -2315,9 +2315,9 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
-	enum winreg_Type type_in;
+	enum winreg_Type type_in = REG_NONE;
 	char *path;
-	uint8_t *data_in;
+	uint8_t *data_in = NULL;
 	uint32_t data_in_size = 0;
 	uint32_t value_len = 0;
 	WERROR result = WERR_OK;
@@ -3337,8 +3337,8 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
-	enum winreg_Type type_in;
-	uint8_t *data_in;
+	enum winreg_Type type_in = REG_NONE;
+	uint8_t *data_in = NULL;
 	uint32_t data_in_size = 0;
 	uint32_t value_len = 0;
 	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);
