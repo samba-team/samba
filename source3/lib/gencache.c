@@ -489,18 +489,14 @@ bool gencache_stabilize(void)
 
 	res = tdb_traverse(cache_notrans, stabilize_fn, &state);
 	if ((res == -1) || state.error) {
-		if ((tdb_transaction_cancel(cache_notrans) == -1)
-		    || (tdb_transaction_cancel(cache) == -1)) {
-			smb_panic("tdb_transaction_cancel failed\n");
-		}
+		tdb_transaction_cancel(cache_notrans);
+		tdb_transaction_cancel(cache);
 		return false;
 	}
 
 	if (!state.written) {
-		if ((tdb_transaction_cancel(cache_notrans) == -1)
-		    || (tdb_transaction_cancel(cache) == -1)) {
-			smb_panic("tdb_transaction_cancel failed\n");
-		}
+		tdb_transaction_cancel(cache_notrans);
+		tdb_transaction_cancel(cache);
 		return true;
 	}
 
@@ -508,9 +504,7 @@ bool gencache_stabilize(void)
 	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
 			   "%s\n", tdb_errorstr(cache)));
-		if (tdb_transaction_cancel(cache_notrans) == -1) {
-			smb_panic("tdb_transaction_cancel failed\n");
-		}
+		tdb_transaction_cancel(cache_notrans);
 		return false;
 	}
 

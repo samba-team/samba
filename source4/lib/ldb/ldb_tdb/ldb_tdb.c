@@ -1073,10 +1073,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
-	if (tdb_transaction_cancel(ltdb->tdb) != 0) {
-		return ltdb_err_map(tdb_error(ltdb->tdb));
-	}
-
+	tdb_transaction_cancel(ltdb->tdb);
 	return LDB_SUCCESS;
 }
 

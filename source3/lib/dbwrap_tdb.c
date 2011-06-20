@@ -330,7 +330,8 @@ static int db_tdb_transaction_cancel(struct db_context *db)
 {
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	return tdb_transaction_cancel(db_ctx->wtdb->tdb);
+	tdb_transaction_cancel(db_ctx->wtdb->tdb);
+	return 0;
 }
 
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
