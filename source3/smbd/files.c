@@ -22,6 +22,7 @@
 #include "smbd/globals.h"
 #include "libcli/security/security.h"
 #include "util_tdb.h"
+#include <ccan/hash/hash.h>
 
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < real_max_open_files))
 
@@ -599,7 +600,6 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 NTSTATUS file_name_hash(connection_struct *conn,
 			const char *name, uint32_t *p_name_hash)
 {
-	TDB_DATA key;
 	char *fullpath = NULL;
 
 	/* Set the hash of the full pathname. */
@@ -610,8 +610,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 	if (!fullpath) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	key = string_term_tdb_data(fullpath);
-	*p_name_hash = tdb_jenkins_hash(&key);
+	*p_name_hash = hash(fullpath, strlen(fullpath) + 1, 0);
 
 	DEBUG(10,("file_name_hash: %s hash 0x%x\n",
 		fullpath,
