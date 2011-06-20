@@ -2584,7 +2584,7 @@ showlibs:: showlibsmbclient
 #
 #-------------------------------------------------------------------
 
-LIBSMBSHAREMODES_OBJ0 = libsmb/smb_share_modes.o
+LIBSMBSHAREMODES_OBJ0 = libsmb/smb_share_modes.o ../lib/ccan/hash/hash.o
 
 LIBSMBSHAREMODES_OBJ = $(LIBSMBSHAREMODES_OBJ0)
 

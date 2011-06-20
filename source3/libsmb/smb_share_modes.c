@@ -28,6 +28,7 @@
 #include "system/filesys.h"
 #include "smb_share_modes.h"
 #include <tdb.h>
+#include <ccan/hash/hash.h>
 
 /* Database context handle. */
 struct smbdb_ctx {
@@ -267,7 +268,6 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 
 static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *err)
 {
-	TDB_DATA key;
 	char *fullpath = NULL;
 	size_t sharepath_size = strlen(sharepath);
 	size_t filename_size = strlen(filename);
@@ -283,9 +283,7 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 	fullpath[sharepath_size] = '/';
 	memcpy(&fullpath[sharepath_size + 1], filename, filename_size + 1);
 
-	key.dptr = (uint8_t *)fullpath;
-	key.dsize = strlen(fullpath) + 1;
-	name_hash = tdb_jenkins_hash(&key);
+	name_hash = hash(fullpath, strlen(fullpath) + 1, 0);
 	free(fullpath);
 	return name_hash;
 }
