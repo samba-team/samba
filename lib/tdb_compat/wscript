@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+def build(bld):
+    bld.SAMBA_LIBRARY('tdb_compat',
+                      source='tdb_compat.c',
+		      deps='replace tdb',
+                      private_library=True)
