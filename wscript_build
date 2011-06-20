@@ -124,6 +124,6 @@ bld.RECURSE('source3')
 bld.RECURSE('testsuite/headers')
 
 # install some extra empty directories
-bld.INSTALL_DIRS("", "${LOCKDIR} ${STATEDIR} ${CACHEDIR} ${SWATDIR} ${SYSCONFDIR} ${PIDDIR} ${LOCALSTATEDIR}/lib ${PRIVATEDIR}/smbd.tmp/messaging ${CODEPAGEDIR} ${LOGFILEBASE} ${SETUPDIR}")
+bld.INSTALL_DIRS("", "${LOCKDIR} ${SYSCONFDIR} ${LOCKDIR} ${PIDDIR} ${LOCALSTATEDIR}/lib ${PRIVATEDIR}/smbd.tmp/messaging")
 
 bld.SYMBOL_CHECK()
