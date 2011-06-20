@@ -8,7 +8,7 @@ bld.SAMBA_LIBRARY('ldbsamba',
                   source='ldif_handlers.c',
                   autoproto='ldif_handlers_proto.h',
                   public_deps='ldb',
-                  deps='security ndr NDR_DRSBLOBS NDR_DNSP ldbwrap samdb-common SAMDB_SCHEMA tdb pyldb-util',
+                  deps='security ndr NDR_DRSBLOBS NDR_DNSP ldbwrap samdb-common SAMDB_SCHEMA tdb pyldb-util errors',
                   private_library=True
                   )
 

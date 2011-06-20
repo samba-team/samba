@@ -3,15 +3,6 @@
 bld.RECURSE('ldap')
 bld.RECURSE('wbclient')
 
-bld.SAMBA_LIBRARY('errors',
-                  source='util/errormap.c',
-                  public_headers='../../libcli/util/error.h ../../libcli/util/ntstatus.h ../../libcli/util/doserr.h ../../libcli/util/werror.h',
-                  header_path='core',
-                  deps='talloc LIBCLI_ERRORS',
-                  private_library=True
-                  )
-
-
 bld.SAMBA_SUBSYSTEM('LIBSAMBA_TSOCKET',
 	source='../../libcli/util/tstream.c',
 	public_deps='LIBTSOCKET UTIL_TEVENT'

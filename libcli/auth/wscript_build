@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('cliauth',
                   source='',
-                  deps='NTLMSSP_COMMON MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE KRB5_WRAP',
+                  deps='NTLMSSP_COMMON MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE KRB5_WRAP errors',
                   private_library=True,
                   grouping_library=True)
 

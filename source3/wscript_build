@@ -1066,7 +1066,7 @@ bld.SAMBA3_SUBSYSTEM('ldb3',
 
 bld.SAMBA3_SUBSYSTEM('errors3',
                      source='libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c',
-                     deps='LIBCLI_ERRORS')
+                     deps='errors')
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
@@ -1412,7 +1412,6 @@ bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
 if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('POPT_SAMBA', source='', deps='POPT_SAMBA3')
-    bld.SAMBA3_SUBSYSTEM('errors', source='', deps='errors3')
     bld.SAMBA3_SUBSYSTEM('samba-util', source='', deps='DYNCONFIG')
     bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
     bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
