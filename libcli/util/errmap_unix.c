@@ -140,7 +140,7 @@ static const struct {
 /*********************************************************************
  Map an NT error code from a Unix error code.
 *********************************************************************/
-NTSTATUS map_nt_error_from_unix(int unix_error)
+NTSTATUS map_nt_error_from_unix_common(int unix_error)
 {
 	int i;
 

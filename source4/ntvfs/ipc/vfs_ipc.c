@@ -353,7 +353,7 @@ static void ipc_open_done(struct tevent_req *subreq)
 				       &p->allocation_size);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		goto reply;
 	}
 
@@ -602,7 +602,7 @@ static void ipc_read_done(struct tevent_req *subreq)
 	ret = tstream_readv_pdu_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		goto reply;
 	}
 
@@ -687,7 +687,7 @@ static void ipc_write_done(struct tevent_req *subreq)
 	ret = tstream_writev_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		goto reply;
 	}
 
@@ -1009,7 +1009,7 @@ static void ipc_trans_writev_done(struct tevent_req *subreq)
 		status = NT_STATUS_PIPE_DISCONNECTED;
 		goto reply;
 	} else if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		goto reply;
 	}
 
@@ -1045,7 +1045,7 @@ static void ipc_trans_readv_done(struct tevent_req *subreq)
 	ret = tstream_readv_pdu_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		goto reply;
 	}
 
@@ -1215,7 +1215,7 @@ static void ipc_ioctl_writev_done(struct tevent_req *subreq)
 	ret = tstream_writev_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		goto reply;
 	}
 
@@ -1251,7 +1251,7 @@ static void ipc_ioctl_readv_done(struct tevent_req *subreq)
 	ret = tstream_readv_pdu_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		goto reply;
 	}
 

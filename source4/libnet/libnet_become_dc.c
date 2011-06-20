@@ -769,7 +769,7 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 						lpcfg_cldap_port(s->libnet->lp_ctx),
 						&dest_address);
 	if (ret != 0) {
-		c->status = map_nt_error_from_unix(errno);
+		c->status = map_nt_error_from_unix_common(errno);
 		if (!composite_is_ok(c)) return;
 	}
 

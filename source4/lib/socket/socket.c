@@ -451,7 +451,7 @@ _PUBLIC_ NTSTATUS socket_dup(struct socket_context *sock)
 	}
 	fd = dup(sock->fd);
 	if (fd == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 	close(sock->fd);
 	sock->fd = fd;

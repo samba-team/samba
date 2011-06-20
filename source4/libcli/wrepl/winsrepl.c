@@ -181,7 +181,7 @@ struct tevent_req *wrepl_connect_send(TALLOC_CTX *mem_ctx,
 						our_ip, 0,
 						&state->local_address);
 	if (ret != 0) {
-		NTSTATUS status = map_nt_error_from_unix(errno);
+		NTSTATUS status = map_nt_error_from_unix_common(errno);
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
@@ -190,7 +190,7 @@ struct tevent_req *wrepl_connect_send(TALLOC_CTX *mem_ctx,
 						peer_ip, WINS_REPLICATION_PORT,
 						&state->remote_address);
 	if (ret != 0) {
-		NTSTATUS status = map_nt_error_from_unix(errno);
+		NTSTATUS status = map_nt_error_from_unix_common(errno);
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
@@ -250,7 +250,7 @@ static void wrepl_connect_done(struct tevent_req *subreq)
 	ret = tstream_inet_tcp_connect_recv(subreq, &sys_errno,
 					    state, &state->stream, NULL);
 	if (ret != 0) {
-		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		NTSTATUS status = map_nt_error_from_unix_common(sys_errno);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -443,7 +443,7 @@ static void wrepl_request_writev_done(struct tevent_req *subreq)
 	ret = tstream_writev_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		NTSTATUS status = map_nt_error_from_unix_common(sys_errno);
 		TALLOC_FREE(state->caller.wrepl_socket->stream);
 		tevent_req_nterror(req, status);
 		return;
@@ -494,7 +494,7 @@ static void wrepl_request_disconnect_done(struct tevent_req *subreq)
 	ret = tstream_disconnect_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		NTSTATUS status = map_nt_error_from_unix_common(sys_errno);
 		TALLOC_FREE(state->caller.wrepl_socket->stream);
 		tevent_req_nterror(req, status);
 		return;

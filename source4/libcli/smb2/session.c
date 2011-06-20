@@ -318,7 +318,7 @@ NTSTATUS smb2_session_setup_spnego(struct smb2_session *session,
 
 	ok = tevent_req_poll(subreq, ev);
 	if (!ok) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		TALLOC_FREE(frame);
 		return status;
 	}

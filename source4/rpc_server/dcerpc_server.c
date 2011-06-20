@@ -1353,7 +1353,7 @@ static void dcesrv_sock_reply_done(struct tevent_req *subreq)
 	ret = tstream_writev_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		dcesrv_terminate_connection(substate->dce_conn, nt_errstr(status));
 		return;
 	}
@@ -1436,7 +1436,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 						  socket_get_fd(srv_conn->socket),
 						  &dcesrv_conn->stream);
 		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix_common(errno);
 			DEBUG(0, ("dcesrv_sock_accept: "
 				  "failed to setup tstream: %s\n",
 				  nt_errstr(status)));

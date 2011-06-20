@@ -448,14 +448,14 @@ NTSTATUS kerberos_pac_blob_to_user_info_dc(TALLOC_CTX *mem_ctx,
 			     pac_blob.data, pac_blob.length,
 			     &pac);
 	if (ret) {
-		return map_nt_error_from_unix(ret);
+		return map_nt_error_from_unix_common(ret);
 	}
 
 
 	ret = kerberos_pac_to_user_info_dc(mem_ctx, pac, context, user_info_dc, pac_srv_sig, pac_kdc_sig);
 	krb5_pac_free(context, pac);
 	if (ret) {
-		return map_nt_error_from_unix(ret);
+		return map_nt_error_from_unix_common(ret);
 	}
 	return NT_STATUS_OK;
 }

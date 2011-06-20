@@ -131,13 +131,13 @@ static NTSTATUS linux_lease_setup(struct sys_lease_context *ctx,
 	ret = fcntl(*fd, F_SETSIG, LINUX_LEASE_RT_SIGNAL);
 	if (ret == -1) {
 		talloc_free(p);
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	ret = fcntl(*fd, F_SETLEASE, F_WRLCK);
 	if (ret == -1) {
 		talloc_free(p);
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	DLIST_ADD(leases, p);

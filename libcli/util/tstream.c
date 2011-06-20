@@ -106,7 +106,7 @@ static void tstream_read_pdu_blob_done(struct tevent_req *subreq)
 	ret = tstream_readv_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		tevent_req_nterror(req, status);
 		return;
 	}

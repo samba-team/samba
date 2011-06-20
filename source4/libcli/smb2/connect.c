@@ -381,7 +381,7 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 
 	ok = tevent_req_poll(subreq, ev);
 	if (!ok) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		TALLOC_FREE(frame);
 		return status;
 	}

@@ -518,7 +518,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 	/* setup a pipe to chat to our child */
 	ret = pipe(fd);
 	if (ret == -1) {
-		composite_error(c, map_nt_error_from_unix(errno));
+		composite_error(c, map_nt_error_from_unix_common(errno));
 		return c;
 	}
 
@@ -542,7 +542,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 
 	state->child = fork();
 	if (state->child == (pid_t)-1) {
-		composite_error(c, map_nt_error_from_unix(errno));
+		composite_error(c, map_nt_error_from_unix_common(errno));
 		return c;
 	}
 

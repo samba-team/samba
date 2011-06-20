@@ -490,7 +490,7 @@ static NTSTATUS dns_add_socket(struct dns_server *dns,
 						address, port,
 						&dns_socket->local_address);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		return status;
 	}
 
@@ -519,7 +519,7 @@ static NTSTATUS dns_add_socket(struct dns_server *dns,
 				     dns_udp_socket,
 				     &dns_udp_socket->dgram);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("Failed to bind to %s:%u UDP - %s\n",
 			 address, port, nt_errstr(status)));
 		return status;

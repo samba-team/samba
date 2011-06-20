@@ -47,7 +47,7 @@ static NTSTATUS ipv4_init(struct socket_context *sock)
 
 	sock->fd = socket(PF_INET, type, 0);
 	if (sock->fd == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	sock->backend_name = "ipv4";
@@ -70,16 +70,16 @@ static NTSTATUS ip_connect_complete(struct socket_context *sock, uint32_t flags)
 	   for non-blocking connect */
 	ret = getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &error, &len);
 	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 	if (error != 0) {
-		return map_nt_error_from_unix(error);
+		return map_nt_error_from_unix_common(error);
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
@@ -102,7 +102,7 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 	if (my_address && my_address->sockaddr) {
 		ret = bind(sock->fd, my_address->sockaddr, my_address->sockaddrlen);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	} else if (my_address) {
 		my_ip = interpret_addr2(my_address->addr);
@@ -119,7 +119,7 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 			
 			ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 			if (ret == -1) {
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix_common(errno);
 			}
 		}
 	}
@@ -127,7 +127,7 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 	if (srv_address->sockaddr) {
 		ret = connect(sock->fd, srv_address->sockaddr, srv_address->sockaddrlen);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	} else {
 		srv_ip = interpret_addr2(srv_address->addr);
@@ -147,7 +147,7 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 
 		ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
@@ -186,20 +186,20 @@ static NTSTATUS ipv4_listen(struct socket_context *sock,
 	}
 
 	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	if (sock->type == SOCKET_TYPE_STREAM) {
 		ret = listen(sock->fd, queue_size);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
@@ -220,14 +220,14 @@ static NTSTATUS ipv4_accept(struct socket_context *sock, struct socket_context *
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
 		int ret = set_blocking(new_fd, false);
 		if (ret == -1) {
 			close(new_fd);
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
@@ -268,7 +268,7 @@ static NTSTATUS ip_recv(struct socket_context *sock, void *buf,
 	if (gotlen == 0) {
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	*nread = gotlen;
@@ -311,7 +311,7 @@ static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf,
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
 		talloc_free(src);
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	src->sockaddrlen = from_len;
@@ -342,7 +342,7 @@ static NTSTATUS ip_send(struct socket_context *sock,
 
 	len = send(sock->fd, blob->data, blob->length, 0);
 	if (len == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}	
 
 	*sendlen = len;
@@ -383,7 +383,7 @@ static NTSTATUS ipv4_sendto(struct socket_context *sock,
 			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
 	if (len == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}	
 
 	*sendlen = len;
@@ -518,7 +518,7 @@ static NTSTATUS ip_pending(struct socket_context *sock, size_t *npending)
 		*npending = value;
 		return NT_STATUS_OK;
 	}
-	return map_nt_error_from_unix(errno);
+	return map_nt_error_from_unix_common(errno);
 }
 
 static const struct socket_ops ipv4_ops = {
@@ -604,7 +604,7 @@ static NTSTATUS ipv6_init(struct socket_context *sock)
 
 	sock->fd = socket(PF_INET6, type, 0);
 	if (sock->fd == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	sock->backend_name = "ipv6";
@@ -623,7 +623,7 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 	if (my_address && my_address->sockaddr) {
 		ret = bind(sock->fd, my_address->sockaddr, my_address->sockaddrlen);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	} else if (my_address) {
 		struct in6_addr my_ip;
@@ -638,7 +638,7 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 			
 			ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 			if (ret == -1) {
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix_common(errno);
 			}
 		}
 	}
@@ -661,7 +661,7 @@ static NTSTATUS ipv6_tcp_connect(struct socket_context *sock,
 		ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
 	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	return ip_connect_complete(sock, flags);
@@ -711,20 +711,20 @@ static NTSTATUS ipv6_listen(struct socket_context *sock,
 	}
 
 	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	if (sock->type == SOCKET_TYPE_STREAM) {
 		ret = listen(sock->fd, queue_size);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		ret = set_blocking(sock->fd, false);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
@@ -745,14 +745,14 @@ static NTSTATUS ipv6_tcp_accept(struct socket_context *sock, struct socket_conte
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
 		int ret = set_blocking(new_fd, false);
 		if (ret == -1) {
 			close(new_fd);
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 	}
 
@@ -816,7 +816,7 @@ static NTSTATUS ipv6_recvfrom(struct socket_context *sock, void *buf,
 		return NT_STATUS_END_OF_FILE;
 	} else if (gotlen == -1) {
 		talloc_free(src);
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	src->sockaddrlen = from_len;
@@ -867,7 +867,7 @@ static NTSTATUS ipv6_sendto(struct socket_context *sock,
 			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
 	if (len == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}	
 
 	*sendlen = len;

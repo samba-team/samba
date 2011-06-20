@@ -654,7 +654,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 						address, port,
 						&kdc_socket->local_address);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		return status;
 	}
 
@@ -685,7 +685,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 				     kdc_udp_socket,
 				     &kdc_udp_socket->dgram);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("Failed to bind to %s:%u UDP - %s\n",
 			 address, port, nt_errstr(status)));
 		return status;

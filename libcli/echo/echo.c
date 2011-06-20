@@ -75,20 +75,20 @@ struct tevent_req *echo_request_send(TALLOC_CTX *mem_ctx,
 	ret = tsocket_address_inet_from_strings(state, "ip", NULL, 0,
 						&local_addr);
 	if (ret != 0) {
-		tevent_req_nterror(req, map_nt_error_from_unix(ret));
+		tevent_req_nterror(req, map_nt_error_from_unix_common(ret));
 		return tevent_req_post(req, ev);
 	}
 
 	ret = tsocket_address_inet_from_strings(state, "ip", server_addr_string,
 						ECHO_PORT, &server_addr);
 	if (ret != 0) {
-		tevent_req_nterror(req, map_nt_error_from_unix(ret));
+		tevent_req_nterror(req, map_nt_error_from_unix_common(ret));
 		return tevent_req_post(req, ev);
 	}
 
 	ret = tdgram_inet_udp_socket(local_addr, server_addr, state, &dgram);
 	if (ret != 0) {
-		tevent_req_nterror(req, map_nt_error_from_unix(ret));
+		tevent_req_nterror(req, map_nt_error_from_unix_common(ret));
 		return tevent_req_post(req, ev);
 	}
 
@@ -132,7 +132,7 @@ static void echo_request_get_reply(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (len == -1 && err != 0) {
-		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		tevent_req_nterror(req, map_nt_error_from_unix_common(err));
 		return;
 	}
 
@@ -168,7 +168,7 @@ static void echo_request_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (len == -1 && err != 0) {
-		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		tevent_req_nterror(req, map_nt_error_from_unix_common(err));
 		return;
 	}
 

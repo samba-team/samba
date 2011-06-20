@@ -116,7 +116,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 						lpcfg_cldap_port(lp_ctx),
 						&socket_address);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("invalid address %s:%d - %s:%s\n",
 			 address, lpcfg_cldap_port(lp_ctx),
 			 gai_strerror(ret), nt_errstr(status)));

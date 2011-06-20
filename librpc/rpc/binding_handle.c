@@ -227,7 +227,7 @@ NTSTATUS dcerpc_binding_handle_raw_call(struct dcerpc_binding_handle *h,
 	}
 
 	if (!tevent_req_poll(subreq, ev)) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		talloc_free(frame);
 		return status;
 	}
@@ -540,7 +540,7 @@ NTSTATUS dcerpc_binding_handle_call(struct dcerpc_binding_handle *h,
 	}
 
 	if (!tevent_req_poll(subreq, ev)) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		talloc_free(frame);
 		return status;
 	}

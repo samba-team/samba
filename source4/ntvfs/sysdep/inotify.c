@@ -258,7 +258,7 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 	if (in->fd == -1) {
 		DEBUG(0,("Failed to init inotify - %s\n", strerror(errno)));
 		talloc_free(in);
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 	in->ctx = ctx;
 	in->watches = NULL;
@@ -274,7 +274,7 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 		}
 		DEBUG(0,("Failed to tevent_add_fd() - %s\n", strerror(errno)));
 		talloc_free(in);
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	tevent_fd_set_auto_close(fde);
@@ -373,7 +373,7 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	wd = inotify_add_watch(in->fd, e->path, mask);
 	if (wd == -1) {
 		e->filter = filter;
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	w = talloc(in, struct inotify_watch_context);
