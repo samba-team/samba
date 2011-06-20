@@ -472,6 +472,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
 	  lib/sessionid_tdb.o \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
+	  @CCAN_OBJ@ \
 	  lib/server_contexts.o \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
 	  ../libcli/security/secdesc.o ../libcli/security/access_check.o \

@@ -92,6 +92,7 @@ def configure(conf):
     if not conf.env.toplevel_build:
         conf.RECURSE('../lib/replace')
         conf.RECURSE('build')
+        conf.RECURSE('../lib/ccan')
         conf.RECURSE('../lib/tdb')
         conf.RECURSE('../lib/talloc')
         conf.RECURSE('../lib/tevent')
@@ -102,7 +103,7 @@ def configure(conf):
         conf.RECURSE('../libcli/smbreadline')
         conf.RECURSE('../lib/util')
 
-        conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace''')
+        conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace #lib''')
         if not conf.env.USING_SYSTEM_TDB:
             conf.ADD_EXTRA_INCLUDES('#lib/tdb/include')
         if not conf.env.USING_SYSTEM_TEVENT:

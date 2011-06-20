@@ -1,0 +1,120 @@
+#!/usr/bin/env python
+
+import Logs, sys
+
+def configure(conf):
+    # FIXME: if they don't have -Werror, these will all fail.  But they
+    # probably will anyway...
+    conf.CHECK_CODE('int __attribute__((cold)) func(int x) { return x; }',
+                    addmain=False, link=False, cflags="-Werror",
+                    define='HAVE_ATTRIBUTE_COLD')
+    conf.CHECK_CODE('int __attribute__((const)) func(int x) { return x; }',
+                    addmain=False, link=False, cflags="-Werror",
+                    define='HAVE_ATTRIBUTE_CONST')
+    conf.CHECK_CODE('void __attribute__((noreturn)) func(int x) { exit(x); }',
+                    addmain=False, link=False, cflags="-Werror",
+                    define='HAVE_ATTRIBUTE_NORETURN')
+    conf.CHECK_CODE('void __attribute__((format(__printf__, 1, 2))) func(const char *fmt, ...) { }',
+                    addmain=False, link=False, cflags="-Werror",
+                    define='HAVE_ATTRIBUTE_PRINTF')
+    conf.CHECK_CODE('int __attribute__((unused)) func(int x) { return x; }',
+                    addmain=False, link=False, cflags="-Werror",
+                    define='HAVE_ATTRIBUTE_UNUSED')
+    conf.CHECK_CODE('int __attribute__((used)) func(int x) { return x; }',
+                    addmain=False, link=False, cflags="-Werror",
+                    define='HAVE_ATTRIBUTE_USED')
+    # We try to use headers for a compile-time test.
+    conf.CHECK_CODE(code = """#ifdef __BYTE_ORDER
+                        #define B __BYTE_ORDER
+                        #elif defined(BYTE_ORDER)
+                        #define B BYTE_ORDER
+                        #endif
+
+                        #ifdef __LITTLE_ENDIAN
+                        #define LITTLE __LITTLE_ENDIAN
+                        #elif defined(LITTLE_ENDIAN)
+                        #define LITTLE LITTLE_ENDIAN
+                        #endif
+
+                        #if !defined(LITTLE) || !defined(B) || LITTLE != B
+                        #error Not little endian.
+                        #endif""",
+                           headers="endian.h sys/endian.h",
+                           define="HAVE_LITTLE_ENDIAN")
+    conf.CHECK_CODE(code = """#ifdef __BYTE_ORDER
+                        #define B __BYTE_ORDER
+                        #elif defined(BYTE_ORDER)
+                        #define B BYTE_ORDER
+                        #endif
+
+                        #ifdef __BIG_ENDIAN
+                        #define BIG __BIG_ENDIAN
+                        #elif defined(BIG_ENDIAN)
+                        #define BIG BIG_ENDIAN
+                        #endif
+
+                        #if !defined(BIG) || !defined(B) || BIG != B
+                        #error Not big endian.
+                        #endif""",
+                           headers="endian.h sys/endian.h",
+                           define="HAVE_BIG_ENDIAN")
+
+    if not conf.CONFIG_SET("HAVE_BIG_ENDIAN") and not conf.CONFIG_SET("HAVE_LITTLE_ENDIAN"):
+        # That didn't work!  Do runtime test.
+        conf.CHECK_CODE("""union { int i; char c[sizeof(int)]; } u;
+	  u.i = 0x01020304;
+	  return u.c[0] == 0x04 && u.c[1] == 0x03 && u.c[2] == 0x02 && u.c[3] == 0x01 ? 0 : 1;""",
+                        addmain=True, execute=True,
+                        define='HAVE_LITTLE_ENDIAN',
+                        msg="Checking for HAVE_LITTLE_ENDIAN - runtime")
+        conf.CHECK_CODE("""union { int i; char c[sizeof(int)]; } u;
+	  u.i = 0x01020304;
+	  return u.c[0] == 0x01 && u.c[1] == 0x02 && u.c[2] == 0x03 && u.c[3] == 0x04 ? 0 : 1;""",
+                        addmain=True, execute=True,
+                        define='HAVE_BIG_ENDIAN',
+                        msg="Checking for HAVE_BIG_ENDIAN - runtime")
+
+    # Extra sanity check.
+    if conf.CONFIG_SET("HAVE_BIG_ENDIAN") == conf.CONFIG_SET("HAVE_LITTLE_ENDIAN"):
+        Logs.error("Failed endian determination.  The PDP-11 is back?")
+        sys.exit(1)
+
+    conf.CHECK_CODE('return __builtin_clz(1) == (sizeof(int)*8 - 1) ? 0 : 1;',
+                    link=True,
+                    define='HAVE_BUILTIN_CLZ')
+    conf.CHECK_CODE('return __builtin_clzl(1) == (sizeof(long)*8 - 1) ? 0 : 1;',
+                    link=True,
+                    define='HAVE_BUILTIN_CLZL')
+    conf.CHECK_CODE('return __builtin_clzll(1) == (sizeof(long long)*8 - 1) ? 0 : 1;',
+                    link=True,
+                    define='HAVE_BUILTIN_CLZLL')
+    conf.CHECK_CODE('return __builtin_constant_p(1) ? 0 : 1;',
+                    link=True,
+                    define='HAVE_BUILTIN_CONSTANT_P')
+    conf.CHECK_CODE('return __builtin_expect(main != 0, 1) ? 0 : 1;',
+                    link=True,
+                    define='HAVE_BUILTIN_EXPECT')
+    conf.CHECK_CODE('return __builtin_popcountl(255L) == 8 ? 0 : 1;',
+                    link=True,
+                    define='HAVE_BUILTIN_POPCOUNTL')
+    conf.CHECK_CODE('return __builtin_types_compatible_p(char *, int) ? 1 : 0;',
+                    link=True,
+                    define='HAVE_BUILTIN_TYPES_COMPATIBLE_P')
+    conf.CHECK_CODE('int *foo = (int[]) { 1, 2, 3, 4 }; return foo[0] ? 0 : 1;',
+                    define='HAVE_COMPOUND_LITERALS')
+    conf.CHECK_CODE("""#include <ctype.h>
+	  int main(void) { return isblank(' ') ? 0 : 1; }""",
+                    link=True, addmain=False, add_headers=False,
+                    define='HAVE_ISBLANK')
+    conf.CHECK_CODE('int x = 1; __typeof__(x) i; i = x; return i == x ? 0 : 1;',
+                    link=True,
+                    define='HAVE_TYPEOF')
+    conf.CHECK_CODE('int __attribute__((warn_unused_result)) func(int x) { return x; }',
+                    addmain=False, link=False, cflags="-Werror",
+                    define='HAVE_WARN_UNUSED_RESULT')
+
+def build(bld):
+    bld.SAMBA_LIBRARY('ccan',
+                      vnum="0.1-init-1161-g661d41f",
+                      source=bld.path.ant_glob('*/*.c'),
+                      private_library=True)

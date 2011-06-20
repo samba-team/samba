@@ -26,6 +26,7 @@ AC_LIBREPLACE_CC_CHECKS
 AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR
 
 m4_include(../lib/tevent/libtevent.m4)
+m4_include(../lib/ccan/libccan.m4)
 
 LIBTEVENT_OBJ0=""
 for obj in ${TEVENT_OBJ}; do
@@ -37,6 +38,7 @@ LIBS="${LIBS} ${TEVENT_LIBS}"
 SAMBA_CPPFLAGS="-Iinclude/autoconf -Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TEVENT_CFLAGS}"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${CCAN_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/.."
 
