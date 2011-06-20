@@ -5,6 +5,16 @@ bld.SAMBA_GENERATOR('s3_param_h',
                     target='s3_param.h',
                     rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT}')
 
+bld.SAMBA_GENERATOR('param_local_h',
+                    source= 'loadparm.c ../script/mkparamdefs.pl',
+                    target='param_local.h',
+                    rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT} --generate-scope=LOCAL')
+
+bld.SAMBA_GENERATOR('param_global_h',
+                    source= 'loadparm.c ../script/mkparamdefs.pl',
+                    target='param_global.h',
+                    rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
+
 bld.SAMBA_LIBRARY('samba-hostconfig',
 	source='loadparm.c generic.c util.c',
 	pc_files='samba-hostconfig.pc',

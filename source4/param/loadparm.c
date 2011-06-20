@@ -75,161 +75,32 @@
 static bool do_parameter(const char *, const char *, void *);
 static bool defaults_saved = false;
 
-/**
- * This structure describes global (ie., server-wide) parameters.
- */
-struct loadparm_global
-{
-	enum server_role server_role;
-
-	const char **smb_ports;
-	char *ncalrpc_dir;
-	char *dos_charset;
-	char *unix_charset;
-	char *display_charset;
-	char *szLockDir;
-	char *szPidDir;
-	char *szServerString;
-	char *szAutoServices;
-	char *szPasswdChat;
-	char *szShareBackend;
-	char *szSPOOLSS_URL;
-	char *szWINS_CONFIG_URL;
-	char *szWINS_URL;
-	char *szPrivateDir;
-	const char **szPasswordServers;
-	char *szSocketOptions;
-	char *szRealm;
-	char *szRealm_upper;
-	char *szRealm_lower;
-	const char **szWINSservers;
-	const char **szInterfaces;
-	char *szSocketAddress;
-	char *szAnnounceVersion;	/* This is initialised in init_globals */
-	char *szWorkgroup;
-	char *szNetbiosName;
-	const char **szNetbiosAliases;
-	char *szNetbiosScope;
-	char *szDomainOtherSIDs;
-	const char **szNameResolveOrder;
-	const char **dcerpc_ep_servers;
-	const char **server_services;
-	char *ntptr_providor;
-	char *szWinbindSeparator;
-	char *szWinbinddPrivilegedSocketDirectory;
-	char *szWinbinddSocketDirectory;
-	char *szTemplateShell;
-	char *szTemplateHomedir;
-	int bWinbindSealedPipes;
-	int bIdmapTrustedOnly;
-	int tls_enabled;
-	char *tls_keyfile;
-	char *tls_certfile;
-	char *tls_cafile;
-	char *tls_crlfile;
-	char *tls_dhpfile;
-	char *logfile;
-	char *loglevel;
-	char *panic_action;
-	int max_mux;
-	int debuglevel;
-	int max_xmit;
-	int pwordlevel;
-	int srv_maxprotocol;
-	int srv_minprotocol;
-	int cli_maxprotocol;
-	int cli_minprotocol;
-	int security;
-	int paranoid_server_security;
-	int max_wins_ttl;
-	int min_wins_ttl;
-	int announce_as;	/* This is initialised in init_globals */
-	int nbt_port;
-	int dgram_port;
-	int cldap_port;
-	int krb5_port;
-	int kpasswd_port;
-	int web_port;
-	char *socket_options;
-	int bWINSsupport;
-	int bWINSdnsProxy;
-	char *szWINSHook;
-	int bLocalMaster;
-	int bPreferredMaster;
-	int bEncryptPasswords;
-	int bNullPasswords;
-	int bObeyPamRestrictions;
-	int bLargeReadwrite;
-	int bReadRaw;
-	int bWriteRaw;
-	int bTimeServer;
-	int bBindInterfacesOnly;
-	int bNTSmbSupport;
-	int bNTStatusSupport;
-	int bLanmanAuth;
-	int bNTLMAuth;
-	int bUseSpnego;
-	int server_signing;
-	int client_signing;
-	int bClientPlaintextAuth;
-	int bClientLanManAuth;
-	int bClientNTLMv2Auth;
-	int client_use_spnego_principal;
-	int bHostMSDfs;
-	int bUnicode;
-	int bUnixExtensions;
-	int bDisableNetbios;
-	int bRpcBigEndian;
-	char *szNTPSignDSocketDirectory;
-	const char **szRNDCCommand;
-	const char **szDNSUpdateCommand;
-	const char **szSPNUpdateCommand;
-	const char **szNSUpdateCommand;
-	struct parmlist_entry *param_opt;
-};
-
-
-/**
- * This structure describes a single service.
- */
-struct loadparm_service
-{
-	char *szService;
-	char *szPath;
-	char *szCopy;
-	char *szInclude;
-	char *szPrintername;
-	char **szHostsallow;
-	char **szHostsdeny;
-	char *comment;
-	char *volume;
-	char *fstype;
-	char **ntvfs_handler;
-	int iMaxPrintJobs;
-	int iMaxConnections;
-	int iCSCPolicy;
-	int bAvailable;
-	int bBrowseable;
-	int bRead_only;
-	int bPrint_ok;
-	int bMap_system;
-	int bMap_hidden;
-	int bMap_archive;
-	int bStrictLocking;
-	int bOplocks;
-	int iCreate_mask;
-	int iCreate_force_mode;
-	int iDir_mask;
-	int iDir_force_mode;
-	int *copymap;
-	int bMSDfsRoot;
-	int bStrictSync;
-	int bCIFileSystem;
-	struct parmlist_entry *param_opt;
-
+#define LOADPARM_EXTRA_GLOBALS \
+	struct parmlist_entry *param_opt;				\
+	char *szRealm;							\
+	char *tls_keyfile;						\
+	char *tls_certfile;						\
+	char *tls_cafile;						\
+	char *tls_crlfile;						\
+	char *tls_dhpfile;						\
+	char *loglevel;							\
+	char *panic_action;						\
+	int bPreferredMaster;						\
+	char *szAnnounceVersion;        /* This is initialised in init_globals */
+#define LOADPARM_EXTRA_LOCALS				\
+	struct parmlist_entry *param_opt;		\
+	char *szService;				\
+	char *szCopy;					\
+	char *szInclude;				\
+	char *szPrintername;				\
+	int bAvailable;					\
+	int iMaxPrintJobs;				\
+	char *volume;					\
+	int *copymap;					\
 	char dummy[3];		/* for alignment */
-};
 
+#include "param_global.h"
+#include "param_local.h"
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
