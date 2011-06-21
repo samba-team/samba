@@ -880,6 +880,8 @@ extern void build_options(bool screen);
 	TALLOC_CTX *frame;
 	NTSTATUS status;
 	uint64_t unique_id;
+	struct tevent_context *ev_ctx;
+	struct messaging_context *msg_ctx;
 
 	/*
 	 * Do this before any other talloc operation
@@ -888,9 +890,6 @@ extern void build_options(bool screen);
 	frame = talloc_stackframe();
 
 	load_case_tables();
-
-	/* Initialize the event context, it will panic on error */
-	server_event_context();
 
 	smbd_init_globals();
 
@@ -1029,8 +1028,25 @@ extern void build_options(bool screen);
 	/* Init the security context and global current_user */
 	init_sec_ctx();
 
-	if (smbd_messaging_context() == NULL)
+	/*
+	 * Initialize the event context. The event context needs to be
+	 * initialized before the messaging context, cause the messaging
+	 * context holds an event context.
+	 * FIXME: This should be s3_tevent_context_init()
+	 */
+	ev_ctx = server_event_context();
+	if (ev_ctx == NULL) {
 		exit(1);
+	}
+
+	/*
+	 * Init the messaging context
+	 * FIXME: This should only call messaging_init()
+	 */
+	msg_ctx = server_messaging_context();
+	if (msg_ctx == NULL) {
+		exit(1);
+	}
 
 	/*
 	 * Reloading of the printers will not work here as we don't have a
@@ -1047,7 +1063,7 @@ extern void build_options(bool screen);
 	init_structs();
 
 #ifdef WITH_PROFILE
-	if (!profile_setup(smbd_messaging_context(), False)) {
+	if (!profile_setup(msg_ctx, False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
 		return -1;
 	}
@@ -1096,19 +1112,19 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	status = reinit_after_fork(smbd_messaging_context(),
-				   server_event_context(),
+	status = reinit_after_fork(msg_ctx,
+				   ev_ctx,
 				   procid_self(), false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
 
-	smbd_server_conn->msg_ctx = smbd_messaging_context();
+	smbd_server_conn->msg_ctx = msg_ctx;
 
 	smbd_setup_sig_term_handler();
-	smbd_setup_sig_hup_handler(server_event_context(),
-				   smbd_server_conn->msg_ctx);
+	smbd_setup_sig_hup_handler(ev_ctx,
+				   msg_ctx);
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 
@@ -1121,7 +1137,7 @@ extern void build_options(bool screen);
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
-	if(!initialize_password_db(False, server_event_context()))
+	if(!initialize_password_db(false, ev_ctx))
 		exit(1);
 
 	if (!secrets_init()) {
@@ -1151,15 +1167,15 @@ extern void build_options(bool screen);
 	if (!locking_init())
 		exit(1);
 
-	if (!messaging_tdb_parent_init(server_event_context())) {
+	if (!messaging_tdb_parent_init(ev_ctx)) {
 		exit(1);
 	}
 
-	if (!notify_internal_parent_init(server_event_context())) {
+	if (!notify_internal_parent_init(ev_ctx)) {
 		exit(1);
 	}
 
-	if (!serverid_parent_init(server_event_context())) {
+	if (!serverid_parent_init(ev_ctx)) {
 		exit(1);
 	}
 
@@ -1170,7 +1186,7 @@ extern void build_options(bool screen);
 	if (!W_ERROR_IS_OK(registry_init_full()))
 		exit(1);
 
-	if (!print_backend_init(smbd_messaging_context()))
+	if (!print_backend_init(msg_ctx))
 		exit(1);
 
 	/* Open the share_info.tdb here, so we don't have to open
@@ -1206,18 +1222,16 @@ extern void build_options(bool screen);
 						   "rpc_server", "epmapper",
 						   "none");
 		if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
-			start_epmd(server_event_context(),
-				   smbd_server_conn->msg_ctx);
+			start_epmd(ev_ctx, msg_ctx);
 		}
 	}
 
-	if (!dcesrv_ep_setup(server_event_context(), smbd_server_conn->msg_ctx)) {
+	if (!dcesrv_ep_setup(ev_ctx, msg_ctx)) {
 		exit(1);
 	}
 
 	/* Publish nt printers, this requires a working winreg pipe */
-	pcap_cache_reload(server_event_context(), smbd_messaging_context(),
-			  &reload_printers);
+	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
 
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if
@@ -1226,8 +1240,7 @@ extern void build_options(bool screen);
 
 	if (is_daemon && !interactive
 	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
-		start_background_queue(server_event_context(),
-				       smbd_messaging_context());
+		start_background_queue(ev_ctx, msg_ctx);
 	}
 
 	if (is_daemon && !_lp_disable_spoolss()) {
@@ -1239,8 +1252,7 @@ extern void build_options(bool screen);
 						   "rpc_server", "spoolss",
 						   "embedded");
 		if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
-			start_spoolssd(server_event_context(),
-				       smbd_messaging_context());
+			start_spoolssd(ev_ctx, msg_ctx);
 		}
 	}
 
@@ -1269,13 +1281,13 @@ extern void build_options(bool screen);
 		return(0);
 	}
 
-	parent = talloc_zero(server_event_context(), struct smbd_parent_context);
+	parent = talloc_zero(ev_ctx, struct smbd_parent_context);
 	if (!parent) {
 		exit_server("talloc(struct smbd_parent_context) failed");
 	}
 	parent->interactive = interactive;
 
-	if (!open_sockets_smbd(parent, smbd_messaging_context(), ports))
+	if (!open_sockets_smbd(parent, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
 
 	TALLOC_FREE(frame);
