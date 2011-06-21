@@ -217,37 +217,6 @@ static int close_iconv_handle(struct smb_iconv_handle *data)
 	return 0;
 }
 
-static const char *map_locale(const char *charset)
-{
-	if (strcmp(charset, "LOCALE") != 0) {
-		return charset;
-	}
-#if defined(HAVE_NL_LANGINFO) && defined(CODESET)
-	{
-		const char *ln;
-		smb_iconv_t handle;
-
-		ln = nl_langinfo(CODESET);
-		if (ln == NULL) {
-			DEBUG(1,("Unable to determine charset for LOCALE - using ASCII\n"));
-			return "ASCII";
-		}
-		/* Check whether the charset name is supported
-		   by iconv */
-		handle = smb_iconv_open(ln, "UCS-2LE");
-		if (handle == (smb_iconv_t) -1) {
-			DEBUG(5,("Locale charset '%s' unsupported, using ASCII instead\n", ln));
-			return "ASCII";
-		} else {
-			DEBUG(5,("Substituting charset '%s' for LOCALE\n", ln));
-			smb_iconv_close(handle);
-		}
-		return ln;
-	}
-#endif
-	return "ASCII";
-}
-
 /*
   the old_ic is passed in here as the smb_iconv_handle structure
   is used as a global pointer in some places (eg. python modules). We

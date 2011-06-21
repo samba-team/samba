@@ -131,7 +131,7 @@ def configure(conf):
     conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
     conf.CHECK_FUNCS('fdopendir fdopendir64')
     conf.CHECK_FUNCS('getpwent_r getdents64 setenv strcasecmp fcvt fcvtl')
-    conf.CHECK_FUNCS('syslog vsyslog timegm setlocale nl_langinfo')
+    conf.CHECK_FUNCS('syslog vsyslog timegm setlocale')
     conf.CHECK_FUNCS_IN('nanosleep', 'rt')
     conf.CHECK_FUNCS('lutimes futimes utimensat futimens')
     conf.CHECK_FUNCS('mlock munlock mlockall munlockall')
@@ -289,7 +289,7 @@ inotify_init lgetea lgetxattr listea listxattr llistea llistxattr
 llseek _llseek __llseek lremoveea lremovexattr _lseek __lseek lseek64
 lsetea lsetxattr _lstat __lstat lstat64 _lstat64 __lstat64 lutimes
 __lxstat memalign mknod mknod64 mlock mlockall munlock munlockall
-nl_langinfo _open __open open64 _open64 __open64 _opendir __opendir
+_open __open open64 _open64 __open64 _opendir __opendir
 opendir64 pathconf poll posix_fallocate posix_fallocate64
 posix_memalign prctl pread _pread __pread pread64 _pread64 __pread64
 pwrite _pwrite __pwrite pwrite64 _pwrite64
