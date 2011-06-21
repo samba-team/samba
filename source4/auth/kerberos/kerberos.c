@@ -109,6 +109,7 @@
 	krb5_ccache tmp_cc;
 	const char *self_realm;
 	krb5_principal blacklist_principal = NULL;
+	krb5_principal whitelist_principal = NULL;
 
 	if (impersonate_principal && self_service == NULL) {
 		return EINVAL;
@@ -282,12 +283,22 @@
 			     s4u2self_creds->ticket.length,
 			     &s4u2self_ticket,
 			     &s4u2self_ticketlen);
-	krb5_free_creds(ctx, s4u2self_creds);
 	if (code != 0) {
+		krb5_free_creds(ctx, s4u2self_creds);
 		krb5_free_principal(ctx, blacklist_principal);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
 	}
+
+	/*
+	 * we need to remember the client principal of the
+	 * S4U2Self stage and as it needs to match the one we
+	 * will get for the S4U2Proxy stage. We need this
+	 * in order to detect KDCs which does not support S4U2Proxy.
+	 */
+	whitelist_principal = s4u2self_creds->client;
+	s4u2self_creds->client = NULL;
+	krb5_free_creds(ctx, s4u2self_creds);
 
 	/*
 	 * For S4U2Proxy we also got a target service principal,
@@ -297,6 +308,7 @@
 	code = krb5_parse_name(ctx, target_service, &target_princ);
 	if (code != 0) {
 		free_Ticket(&s4u2self_ticket);
+		krb5_free_principal(ctx, whitelist_principal);
 		krb5_free_principal(ctx, blacklist_principal);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
@@ -306,6 +318,7 @@
 	if (code != 0) {
 		free_Ticket(&s4u2self_ticket);
 		krb5_free_principal(ctx, target_princ);
+		krb5_free_principal(ctx, whitelist_principal);
 		krb5_free_principal(ctx, blacklist_principal);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
@@ -315,6 +328,7 @@
 	if (code != 0) {
 		free_Ticket(&s4u2self_ticket);
 		krb5_free_principal(ctx, target_princ);
+		krb5_free_principal(ctx, whitelist_principal);
 		krb5_free_principal(ctx, blacklist_principal);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
@@ -328,6 +342,7 @@
 	if (code != 0) {
 		krb5_get_creds_opt_free(ctx, options);
 		krb5_free_principal(ctx, target_princ);
+		krb5_free_principal(ctx, whitelist_principal);
 		krb5_free_principal(ctx, blacklist_principal);
 		krb5_cc_destroy(ctx, tmp_cc);
 		return code;
@@ -339,6 +354,7 @@
 	krb5_free_principal(ctx, target_princ);
 	krb5_cc_destroy(ctx, tmp_cc);
 	if (code != 0) {
+		krb5_free_principal(ctx, whitelist_principal);
 		krb5_free_principal(ctx, blacklist_principal);
 		return code;
 	}
@@ -352,6 +368,7 @@
 					&store_creds);
 	krb5_free_creds(ctx, s4u2proxy_creds);
 	if (code != 0) {
+		krb5_free_principal(ctx, whitelist_principal);
 		krb5_free_principal(ctx, blacklist_principal);
 		return code;
 	}
@@ -385,12 +402,42 @@
 		SAFE_FREE(sp);
 		SAFE_FREE(ip);
 
+		krb5_free_principal(ctx, whitelist_principal);
 		krb5_free_principal(ctx, blacklist_principal);
 		krb5_free_cred_contents(ctx, &store_creds);
 		return KRB5_FWD_BAD_PRINCIPAL;
 	}
 	if (blacklist_principal) {
 		krb5_free_principal(ctx, blacklist_principal);
+	}
+
+	if (whitelist_principal &&
+	    !krb5_principal_compare(ctx, store_creds.client, whitelist_principal)) {
+		char *sp = NULL;
+		char *ep = NULL;
+
+		code = krb5_unparse_name(ctx, store_creds.client, &sp);
+		if (code != 0) {
+			sp = NULL;
+		}
+		code = krb5_unparse_name(ctx, whitelist_principal, &ep);
+		if (code != 0) {
+			ep = NULL;
+		}
+		DEBUG(1, ("kerberos_kinit_password_cc: "
+			  "KDC returned wrong principal[%s] we expected [%s]\n",
+			  sp?sp:"<no memory>",
+			  ep?ep:"<no memory>"));
+
+		SAFE_FREE(sp);
+		SAFE_FREE(ep);
+
+		krb5_free_principal(ctx, whitelist_principal);
+		krb5_free_cred_contents(ctx, &store_creds);
+		return KRB5_FWD_BAD_PRINCIPAL;
+	}
+	if (whitelist_principal) {
+		krb5_free_principal(ctx, whitelist_principal);
 	}
 
 	code = krb5_cc_initialize(ctx, store_cc, store_principal);
