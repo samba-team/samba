@@ -19,8 +19,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* Shim functions required due to the horrible dependency mess
-   in Samba. */
+/* 
+   shim functions are used required to allow library code to have
+   references to smbd specific code. The smbd daemon sets up the set
+   of function calls that it wants used by calling
+   set_smbd_shim(). Other executables don't make this call, and get
+   default (dummy) versions of these functions.
+*/
 
 struct smbd_shim
 {
