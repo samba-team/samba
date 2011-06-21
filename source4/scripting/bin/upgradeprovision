@@ -93,7 +93,7 @@ replAttrNotCopied = [   "dn", "whenCreated", "whenChanged", "objectGUID",
                         "sAMAccountType", "oEMInformation", "creationTime" ]
 
 nonreplAttrNotCopied = ["uSNCreated", "replPropertyMetaData", "uSNChanged",
-                        "nextRid" ,"rIDNextRID"]
+                        "nextRid" ,"rIDNextRID", "rIDPreviousAllocationPool"]
 
 nonDSDBAttrNotCopied = ["msDS-KeyVersionNumber", "priorSecret", "priorWhenChanged"]
 
@@ -266,7 +266,8 @@ def populateNotReplicated(samdb, schemadn):
                         str(schemadn)), scope=SCOPE_SUBTREE,
                         attrs=["lDAPDisplayName"])
     for elem in res:
-        not_replicated.append(elem["lDAPDisplayName"])
+        not_replicated.append(str(elem["lDAPDisplayName"]))
+
 
 def populate_dnsyntax(samdb, schemadn):
     """Populate an array with all the attributes that have DN synthax
@@ -1778,6 +1779,7 @@ if __name__ == '__main__':
             new_ldbs = get_ldbs(newpaths, creds, session, lp)
             new_ldbs.startTransactions()
 
+            populateNotReplicated(new_ldbs.sam, names.schemadn)
             # 8) Populate some associative array to ease the update process
             # List of attribute which are link and backlink
             populate_links(new_ldbs.sam, names.schemadn)
