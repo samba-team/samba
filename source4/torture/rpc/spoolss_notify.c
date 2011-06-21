@@ -247,19 +247,12 @@ static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const st
 static bool test_OpenPrinter(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
 			     struct policy_handle *handle,
-			     const char *name)
+			     const char *printername)
 {
 	struct spoolss_OpenPrinter r;
-	const char *printername;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(r);
-
-	if (name) {
-		printername	= talloc_asprintf(tctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
-	} else {
-		printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	}
 
 	r.in.printername	= printername;
 	r.in.datatype		= NULL;
@@ -352,17 +345,17 @@ static bool test_RemoteFindFirstPrinterChangeNotifyEx(struct torture_context *tc
 static bool test_RouterRefreshPrinterChangeNotify(struct torture_context *tctx,
 						  struct dcerpc_binding_handle *b,
 						  struct policy_handle *handle,
-						  struct spoolss_NotifyOption *options)
+						  struct spoolss_NotifyOption *options,
+						  struct spoolss_NotifyInfo **info)
 {
 	struct spoolss_RouterRefreshPrinterChangeNotify r;
-	struct spoolss_NotifyInfo *info;
 
 	torture_comment(tctx, "Testing RouterRefreshPrinterChangeNotify\n");
 
 	r.in.handle = handle;
 	r.in.change_low = 0;
 	r.in.options = options;
-	r.out.info = &info;
+	r.out.info = info;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_RouterRefreshPrinterChangeNotify_r(b, tctx, &r),
 		"RouterRefreshPrinterChangeNotify failed");
@@ -503,31 +496,37 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	struct spoolss_NotifyOption *printer_option = setup_printer_NotifyOption(tctx);
 #endif
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *printername = NULL;
+	struct spoolss_NotifyInfo *info = NULL;
 
 	received_packets = NULL;
 
 	/* Start DCE/RPC server */
 	torture_assert(tctx, test_start_dcerpc_server(tctx, p->conn->event_ctx, &dce_ctx, &address), "");
 
-	torture_assert(tctx, test_OpenPrinter(tctx, p, &handle, NULL), "");
+	printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	torture_assert(tctx, test_OpenPrinter(tctx, p, &handle, printername), "");
 	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, b, &handle, address, server_option), "");
 	torture_assert(tctx, received_packets, "no packets received");
 	torture_assert_int_equal(tctx, received_packets->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
 		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
-	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, NULL), "");
-	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, server_option), "");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, NULL, &info), "");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, b, &handle, server_option, &info), "");
 	torture_assert(tctx, test_ClosePrinter(tctx, b, &handle), "");
 	tmp = last_packet(received_packets);
 	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_REPLYCLOSEPRINTER,
 		"no ReplyClosePrinter packet after ClosePrinter");
 #if 0
+	printername	= talloc_asprintf(tctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
+
 	torture_assert(tctx, test_OpenPrinter(tctx, p, &handle, "Epson AL-2600"), "");
 	torture_assert(tctx, test_RemoteFindFirstPrinterChangeNotifyEx(tctx, p, &handle, address, printer_option), "");
 	tmp = last_packet(received_packets);
 	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_REPLYOPENPRINTER,
 		"no ReplyOpenPrinter packet after RemoteFindFirstPrinterChangeNotifyEx");
-	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, NULL), "");
-	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, printer_option), "");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, NULL, &info), "");
+	torture_assert(tctx, test_RouterRefreshPrinterChangeNotify(tctx, p, &handle, printer_option, &info), "");
 	torture_assert(tctx, test_SetPrinter(tctx, p, &handle), "");
 	tmp = last_packet(received_packets);
 	torture_assert_int_equal(tctx, tmp->opnum, NDR_SPOOLSS_ROUTERREPLYPRINTEREX,
