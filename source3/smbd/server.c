@@ -600,6 +600,7 @@ static bool smbd_parent_housekeeping(const struct timeval *now, void *private_da
 ****************************************************************************/
 
 static bool open_sockets_smbd(struct smbd_parent_context *parent,
+			      struct tevent_context *ev_ctx,
 			      struct messaging_context *msg_ctx,
 			      const char *smb_ports)
 {
@@ -736,7 +737,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		return false;
 	}
 
-	if (!(event_add_idle(server_event_context(), NULL,
+	if (!(event_add_idle(ev_ctx, NULL,
 			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "parent_housekeeping", smbd_parent_housekeeping,
 			     NULL))) {
@@ -750,12 +751,12 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
 	messaging_register(msg_ctx, NULL, MSG_SMB_FILE_RENAME,
 			   msg_file_was_renamed);
-	messaging_register(msg_ctx, server_event_context(), MSG_SMB_CONF_UPDATED,
+	messaging_register(msg_ctx, ev_ctx, MSG_SMB_CONF_UPDATED,
 			   smb_conf_updated);
 	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
 			   smb_stat_cache_delete);
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
-	messaging_register(msg_ctx, server_event_context(), MSG_PRINTER_PCAP,
+	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
 			   smb_pcap_updated);
 	brl_register_msgs(msg_ctx);
 
@@ -774,14 +775,15 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 	if (lp_multicast_dns_register() && (dns_port != 0)) {
 #ifdef WITH_DNSSD_SUPPORT
-		smbd_setup_mdns_registration(server_event_context(),
+		smbd_setup_mdns_registration(ev_ctx,
 					     parent, dns_port);
 #endif
 #ifdef WITH_AVAHI_SUPPORT
 		void *avahi_conn;
 
-		avahi_conn = avahi_start_register(
-			server_event_context(), server_event_context(), dns_port);
+		avahi_conn = avahi_start_register(ev_ctx,
+						  ev_ctx,
+						  dns_port);
 		if (avahi_conn == NULL) {
 			DEBUG(10, ("avahi_start_register failed\n"));
 		}
@@ -1288,7 +1290,7 @@ extern void build_options(bool screen);
 	}
 	parent->interactive = interactive;
 
-	if (!open_sockets_smbd(parent, msg_ctx, ports))
+	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
 
 	TALLOC_FREE(frame);
