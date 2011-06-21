@@ -34,8 +34,6 @@
 #include "includes.h"
 #include "system/locale.h"
 
-static smb_iconv_t display_cd = (smb_iconv_t)-1;
-
 static int d_vfprintf(FILE *f, const char *format, va_list ap) 
 {
 	char *p, *p2;
@@ -43,11 +41,6 @@ static int d_vfprintf(FILE *f, const char *format, va_list ap)
 	size_t clen;
 	bool cret;
 	va_list ap2;
-
-	/* If there's nothing to convert, take a shortcut */
-	if (display_cd == (smb_iconv_t)-1) {
-		return vfprintf(f, format, ap);
-	}
 
 	va_copy(ap2, ap);
 	ret = vasprintf(&p, format, ap2);
