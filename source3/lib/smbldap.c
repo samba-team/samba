@@ -1259,6 +1259,8 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 
 	smbldap_delete_state(ldap_state);
 
+	TALLOC_FREE(ldap_state->idle_event);
+
 	DEBUG(5,("The connection to the LDAP server was closed\n"));
 	/* maybe free the results here --metze */
 
@@ -1771,7 +1773,6 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
 
-	TALLOC_FREE((*ldap_state)->idle_event);
 
 	*ldap_state = NULL;
 
