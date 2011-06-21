@@ -355,6 +355,7 @@ struct smbd_open_socket {
 	struct smbd_parent_context *parent;
 	int fd;
 	struct tevent_fd *fde;
+	struct messaging_context *msg_ctx;
 };
 
 static void smbd_open_socket_close_fn(struct tevent_context *ev,
@@ -374,6 +375,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
+	struct messaging_context *msg_ctx = s->msg_ctx;
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
 	int fd;
@@ -433,8 +435,9 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		talloc_free(s->parent);
 		s = NULL;
 
-		status = reinit_after_fork(smbd_messaging_context(),
-					   server_event_context(), procid_self(),
+		status = reinit_after_fork(msg_ctx,
+					   ev,
+					   procid_self(),
 					   true);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
@@ -457,8 +460,8 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		}
 
 		smbd_setup_sig_term_handler();
-		smbd_setup_sig_hup_handler(server_event_context(),
-					   server_messaging_context());
+		smbd_setup_sig_hup_handler(ev,
+					   msg_ctx);
 
 		if (!serverid_register(procid_self(),
 				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
@@ -557,6 +560,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		return false;
 	}
 
+	s->msg_ctx = msg_ctx;
 	s->fde = tevent_add_fd(ev_ctx,
 			       s,
 			       s->fd, TEVENT_FD_READ,
