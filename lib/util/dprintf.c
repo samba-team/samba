@@ -48,7 +48,7 @@ static int d_vfprintf(FILE *f, const char *format, va_list ap)
 
 	if (ret <= 0) return ret;
 
-	cret = convert_string_talloc(NULL, CH_UTF8, CH_DISPLAY, p, ret, (void **)&p2, &clen);
+	cret = convert_string_talloc(NULL, CH_UNIX, CH_DISPLAY, p, ret, (void **)&p2, &clen);
         if (!cret) {
 		/* the string can't be converted - do the best we can,
 		   filling in non-printing chars with '?' */
