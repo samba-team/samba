@@ -1234,7 +1234,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 	if (ldap_state->event_context != NULL) {
 		ldap_state->idle_event = event_add_timed(
-			ldap_state->event_context, NULL,
+			ldap_state->event_context, ldap_state,
 			timeval_current_ofs(SMBLDAP_IDLE_TIME, 0),
 			smbldap_idle_fn, ldap_state);
 	}
@@ -1745,7 +1745,7 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 		DEBUG(10,("ldap connection not idle...\n"));
 
 		state->idle_event = event_add_timed(
-			event_ctx, NULL,
+			event_ctx, state,
 			timeval_add(&now, SMBLDAP_IDLE_TIME, 0),
 			smbldap_idle_fn,
 			private_data);
