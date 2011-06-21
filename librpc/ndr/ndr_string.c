@@ -645,7 +645,6 @@ _PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset)
 	case CH_UTF16MUNGED:
 	case CH_UTF8:
 		return strlen_m_ext_term((const char *)var, CH_UNIX, chset);
-	case CH_DISPLAY:
 	case CH_DOS:
 	case CH_UNIX:
 		return strlen((const char *)var)+1;

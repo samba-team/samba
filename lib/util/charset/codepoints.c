@@ -168,17 +168,16 @@ struct smb_iconv_handle *get_iconv_handle(void)
 {
 	if (global_iconv_handle == NULL)
 		global_iconv_handle = smb_iconv_handle_reinit(talloc_autofree_context(),
-									"ASCII", "UTF-8", "ASCII", true, NULL);
+							      "ASCII", "UTF-8", true, NULL);
 	return global_iconv_handle;
 }
 
 struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx, 
 						  const char *dos_charset, 
-						  const char *unix_charset, 
-						  const char *display_charset)
+						  const char *unix_charset)
 {
 	return smb_iconv_handle_reinit(mem_ctx,
-				       dos_charset, unix_charset, display_charset, true, NULL);
+				       dos_charset, unix_charset, true, NULL);
 }
 
 /**
@@ -190,7 +189,6 @@ const char *charset_name(struct smb_iconv_handle *ic, charset_t ch)
 	case CH_UTF16: return "UTF-16LE";
 	case CH_UNIX: return ic->unix_charset;
 	case CH_DOS: return ic->dos_charset;
-	case CH_DISPLAY: return ic->display_charset;
 	case CH_UTF8: return "UTF8";
 	case CH_UTF16BE: return "UTF-16BE";
 	case CH_UTF16MUNGED: return "UTF16_MUNGED";
@@ -261,13 +259,10 @@ static const char *map_locale(const char *charset)
 _PUBLIC_ struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 								    const char *dos_charset,
 								    const char *unix_charset,
-								    const char *display_charset,
 								    bool native_iconv,
 								    struct smb_iconv_handle *old_ic)
 {
 	struct smb_iconv_handle *ret;
-
-	display_charset = map_locale(display_charset);
 
 	if (old_ic != NULL) {
 		ret = old_ic;
@@ -297,7 +292,6 @@ _PUBLIC_ struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 
 	ret->dos_charset = talloc_strdup(ret->child_ctx, dos_charset);
 	ret->unix_charset = talloc_strdup(ret->child_ctx, unix_charset);
-	ret->display_charset = talloc_strdup(ret->child_ctx, display_charset);
 	ret->native_iconv = native_iconv;
 
 	return ret;

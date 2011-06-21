@@ -209,7 +209,6 @@ static struct parm_struct parm_table[] = {
 	{"dos charset", P_STRING, P_GLOBAL, GLOBAL_VAR(dos_charset), NULL, NULL},
 	{"unix charset", P_STRING, P_GLOBAL, GLOBAL_VAR(unix_charset), NULL, NULL},
 	{"ncalrpc dir", P_STRING, P_GLOBAL, GLOBAL_VAR(ncalrpc_dir), NULL, NULL},
-	{"display charset", P_STRING, P_GLOBAL, GLOBAL_VAR(display_charset), NULL, NULL},
 	{"comment", P_STRING, P_LOCAL, LOCAL_VAR(comment), NULL, NULL},
 	{"path", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
 	{"directory", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
@@ -572,7 +571,6 @@ FN_GLOBAL_STRING(lockdir, szLockDir)
 FN_GLOBAL_STRING(ncalrpc_dir, ncalrpc_dir)
 FN_GLOBAL_STRING(dos_charset, dos_charset)
 FN_GLOBAL_STRING(unix_charset, unix_charset)
-FN_GLOBAL_STRING(display_charset, display_charset)
 FN_GLOBAL_STRING(piddir, szPidDir)
 FN_GLOBAL_LIST(rndc_command, szRNDCCommand)
 FN_GLOBAL_LIST(dns_update_command, szDNSUpdateCommand)

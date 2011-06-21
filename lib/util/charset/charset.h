@@ -28,7 +28,7 @@
 #include <talloc.h>
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DISPLAY, CH_DOS, CH_UTF8, CH_UTF16BE, CH_UTF16MUNGED} charset_t;
+typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DOS, CH_UTF8, CH_UTF16BE, CH_UTF16MUNGED} charset_t;
 
 #define NUM_CHARSETS 7
 
@@ -182,8 +182,7 @@ extern struct smb_iconv_handle *global_iconv_handle;
 struct smb_iconv_handle *get_iconv_handle(void);
 struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx, 
 						  const char *dos_charset, 
-						  const char *unix_charset, 
-						  const char *display_charset);
+						  const char *unix_charset);
 smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			    charset_t from, charset_t to);
 const char *charset_name(struct smb_iconv_handle *ic, charset_t ch);
@@ -212,7 +211,6 @@ int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 							   const char *dos_charset,
 							   const char *unix_charset,
-							   const char *display_charset,
 							   bool native_iconv,
 							   struct smb_iconv_handle *old_ic);
 

@@ -2693,7 +2693,6 @@ for i in $ICONV_LOOK_DIRS ; do
         export LDFLAGS LIBS CPPFLAGS
 
 	default_dos_charset=no
-	default_display_charset=no
 	default_unix_charset=no
 
 	# check for default dos charset name
@@ -2701,15 +2700,6 @@ for i in $ICONV_LOOK_DIRS ; do
 	    rjs_CHARSET($j)
 	    default_dos_charset="$ICONV_CHARSET"
 	    if test x"$default_dos_charset" = x"$j"; then
-		break
-	    fi
-	done
-
-	# check for default display charset name
-	for j in ASCII 646 ; do
-	    rjs_CHARSET($j)
-	    default_display_charset="$ICONV_CHARSET"
-	    if test x"$default_display_charset" = x"$j"; then
 		break
 	    fi
 	done
@@ -2725,15 +2715,12 @@ for i in $ICONV_LOOK_DIRS ; do
 
 	if test "$default_dos_charset" != "no" -a \
 		"$default_dos_charset" != "cross" -a \
-		"$default_display_charset" != "no" -a \
-		"$default_display_charset" != "cross" -a \
 		"$default_unix_charset" != "no" -a \
 		"$default_unix_charset" != "cross"
 	then
 		samba_cv_HAVE_NATIVE_ICONV=yes
 	else
 	    if test "$default_dos_charset" = "cross" -o \
-		     "$default_display_charset" = "cross" -o \
 		     "$default_unix_charset" = "cross"
 	    then
 		    samba_cv_HAVE_NATIVE_ICONV=cross
@@ -2750,11 +2737,10 @@ for i in $ICONV_LOOK_DIRS ; do
 	# match the results we get at runtime anyway.
 	if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"cross" ; then
 	    default_dos_charset="CP850"
-	    default_display_charset="ASCII"
 	    default_unix_charset="UTF-8"
 	    samba_cv_HAVE_NATIVE_ICONV=yes
 	    AC_MSG_WARN(assuming the libiconv in $iconv_current_LDFLAGS can convert)
-	    AC_MSG_WARN([$default_dos_charset, $default_display_charset and $default_unix_charset to UCS-16LE])
+	    AC_MSG_WARN([$default_dos_charset and $default_unix_charset to UCS-16LE])
 	fi
 
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes" ; then
@@ -2773,12 +2759,10 @@ for i in $ICONV_LOOK_DIRS ; do
 
 	    # Turn the #defines into string literals
 	    default_dos_charset="\"$default_dos_charset\""
-	    default_display_charset="\"$default_display_charset\""
 	    default_unix_charset="\"$default_unix_charset\""
 
 	    AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	    AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
-	    AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,$default_display_charset,[Default display charset name])
 	    AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,$default_unix_charset,[Default unix charset name])
 
            break
@@ -2800,7 +2784,6 @@ if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; th
     AC_MSG_WARN([Sufficient support for iconv function was not found.
     Install libiconv from http://freshmeat.net/projects/libiconv/ for better charset compatibility!])
    AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,"ASCII",[Default dos charset name])
-   AC_DEFINE_UNQUOTED(DEFAULT_DISPLAY_CHARSET,"ASCII",[Default display charset name])
    AC_DEFINE_UNQUOTED(DEFAULT_UNIX_CHARSET,"UTF8",[Default unix charset name])
 fi
 

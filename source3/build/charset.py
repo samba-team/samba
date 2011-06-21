@@ -8,19 +8,12 @@ def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
     '''
     if conf.CHECK_ICONV(define='HAVE_NATIVE_ICONV'):
         default_dos_charset=False
-        default_display_charset=False
         default_unix_charset=False
 
         # check for default dos charset name
         for charset in ['CP850', 'IBM850']:
             if conf.CHECK_CHARSET_EXISTS(charset, headers='iconv.h'):
                 default_dos_charset=charset
-                break
-
-        # check for default display charset name
-        for charset in ['ASCII', '646']:
-            if conf.CHECK_CHARSET_EXISTS(charset, headers='iconv.h'):
-                default_display_charset=charset
                 break
 
         # check for default unix charset name
@@ -37,16 +30,13 @@ def CHECK_SAMBA3_CHARSET(conf, crossbuild=False):
 	# match the results we get at runtime anyway.
 	if crossbuild:
 	    default_dos_charset="CP850"
-	    default_display_charset="ASCII"
 	    default_unix_charset="UTF-8"
             # TODO: this used to warn about the set charset on cross builds
 
         conf.DEFINE('DEFAULT_DOS_CHARSET', default_dos_charset, quote=True)
-        conf.DEFINE('DEFAULT_DISPLAY_CHARSET', default_display_charset, quote=True)
         conf.DEFINE('DEFAULT_UNIX_CHARSET', default_unix_charset, quote=True)
 
     else:
         conf.DEFINE('DEFAULT_DOS_CHARSET', "ASCII", quote=True)
-        conf.DEFINE('DEFAULT_DISPLAY_CHARSET', "ASCII", quote=True)
         conf.DEFINE('DEFAULT_UNIX_CHARSET', "UTF8", quote=True)
 

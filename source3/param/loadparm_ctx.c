@@ -41,7 +41,6 @@ static const struct loadparm_s3_context s3_fns =
 
 	.dos_charset = lp_dos_charset,
 	.unix_charset = lp_unix_charset,
-	.display_charset = lp_display_charset,
 
 	.realm = lp_realm,
 	.dnsdomain = lp_dnsdomain,

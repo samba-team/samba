@@ -36,40 +36,7 @@
 
 static int d_vfprintf(FILE *f, const char *format, va_list ap) 
 {
-	char *p, *p2;
-	int ret;
-	size_t clen;
-	bool cret;
-	va_list ap2;
-
-	va_copy(ap2, ap);
-	ret = vasprintf(&p, format, ap2);
-	va_end(ap2);
-
-	if (ret <= 0) return ret;
-
-	cret = convert_string_talloc(NULL, CH_UNIX, CH_DISPLAY, p, ret, (void **)&p2, &clen);
-        if (!cret) {
-		/* the string can't be converted - do the best we can,
-		   filling in non-printing chars with '?' */
-		int i;
-		for (i=0;i<ret;i++) {
-			if (isprint(p[i]) || isspace(p[i])) {
-				fwrite(p+i, 1, 1, f);
-			} else {
-				fwrite("?", 1, 1, f);
-			}
-		}
-		SAFE_FREE(p);
-		return ret;
-        }
-
-	/* good, its converted OK */
-	SAFE_FREE(p);
-	ret = fwrite(p2, 1, clen, f);
-	talloc_free(p2);
-
-	return ret;
+	return vfprintf(f, format, ap);
 }
 
 

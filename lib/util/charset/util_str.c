@@ -169,7 +169,6 @@ _PUBLIC_ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
 	switch (dst_charset) {
 	case CH_DOS:
 	case CH_UNIX:
-	case CH_DISPLAY:
 		smb_panic("cannot call strlen_m_ext() with a variable dest charset (must be UTF16* or UTF8)");
 	default:
 		break;

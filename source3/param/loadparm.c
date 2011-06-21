@@ -130,7 +130,6 @@ struct global {
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
-	char *display_charset;
 	char *szPrintcapname;
 	char *szAddPortCommand;
 	char *szEnumPortsCommand;
@@ -965,15 +964,6 @@ static struct parm_struct parm_table[] = {
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.unix_charset,
-		.special	= handle_charset,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED
-	},
-	{
-		.label		= "display charset",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.display_charset,
 		.special	= handle_charset,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED
@@ -5186,14 +5176,6 @@ static void init_globals(bool reinit_globals)
 	/* using UTF8 by default allows us to support all chars */
 	string_set(&Globals.unix_charset, DEFAULT_UNIX_CHARSET);
 
-#if defined(HAVE_NL_LANGINFO) && defined(CODESET)
-	/* If the system supports nl_langinfo(), try to grab the value
-	   from the user's locale */
-	string_set(&Globals.display_charset, "LOCALE");
-#else
-	string_set(&Globals.display_charset, DEFAULT_DISPLAY_CHARSET);
-#endif
-
 	/* Use codepage 850 as a default for the dos character set */
 	string_set(&Globals.dos_charset, DEFAULT_DOS_CHARSET);
 
@@ -5556,7 +5538,6 @@ static char *lp_string(const char *s)
 FN_GLOBAL_CONST_STRING(lp_smb_ports, smb_ports)
 FN_GLOBAL_CONST_STRING(lp_dos_charset, dos_charset)
 FN_GLOBAL_CONST_STRING(lp_unix_charset, unix_charset)
-FN_GLOBAL_CONST_STRING(lp_display_charset, display_charset)
 FN_GLOBAL_STRING(lp_logfile, szLogFile)
 FN_GLOBAL_STRING(lp_configfile, szConfigFile)
 FN_GLOBAL_CONST_STRING(lp_smb_passwd_file, szSMBPasswdFile)
@@ -7507,7 +7488,7 @@ bool lp_file_list_changed(void)
 static void init_iconv(void)
 {
 	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
-						      lp_unix_charset(), lp_display_charset(),
+						      lp_unix_charset(),
 						      true, global_iconv_handle);
 }
 
