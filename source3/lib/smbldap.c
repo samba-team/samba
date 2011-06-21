@@ -1847,8 +1847,7 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
 
-
-	*ldap_state = NULL;
+	TALLOC_FREE(*ldap_state);
 
 	/* No need to free any further, as it is talloc()ed */
 }
