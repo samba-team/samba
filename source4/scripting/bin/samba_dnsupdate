@@ -278,7 +278,7 @@ def call_nsupdate(d):
     try:
         cmd = nsupdate_cmd[:]
         cmd.append(tmpfile)
-        ret = subprocess.call(cmd, shell=False)
+        ret = subprocess.call(cmd, shell=False, env={"KRB5CCNAME": ccachename})
         if ret != 0:
             if opts.fail_immediately:
                 sys.exit(1)
