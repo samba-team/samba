@@ -1165,8 +1165,9 @@ static int rebindproc_connect (LDAP * ld, LDAP_CONST char *url, int request,
 /*******************************************************************
  connect to the ldap server under system privilege.
 ******************************************************************/
-static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_struct)
+static int smbldap_connect_system(struct smbldap_state *ldap_state)
 {
+	LDAP *ldap_struct = ldap_state->ldap_struct;
 	int rc;
 	int version;
 
@@ -1177,7 +1178,8 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 		/* get the default dn and password only if they are not set already */
 		if (!fetch_ldap_pw(&bind_dn, &bind_secret)) {
 			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
-			return LDAP_INVALID_CREDENTIALS;
+			rc = LDAP_INVALID_CREDENTIALS;
+			goto done;
 		}
 		smbldap_set_creds(ldap_state, false, bind_dn, bind_secret);
 		SAFE_FREE(bind_dn);
@@ -1223,7 +1225,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 			       ld_error ? ld_error : "(unknown)"));
 		SAFE_FREE(ld_error);
 		ldap_state->num_failures++;
-		return rc;
+		goto done;
 	}
 
 	ldap_state->num_failures = 0;
@@ -1238,6 +1240,11 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	DEBUG(3, ("ldap_connect_system: successful connection to the LDAP server\n"));
 	DEBUGADD(10, ("ldap_connect_system: LDAP server %s support paged results\n", 
 		ldap_state->paged_results ? "does" : "does not"));
+done:
+	if (rc != 0) {
+		ldap_unbind(ldap_struct);
+		ldap_state->ldap_struct = NULL;
+	}
 	return rc;
 }
 
@@ -1292,9 +1299,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 		return rc;
 	}
 
-	if ((rc = smbldap_connect_system(ldap_state, ldap_state->ldap_struct))) {
-		ldap_unbind(ldap_state->ldap_struct);
-		ldap_state->ldap_struct = NULL;
+	if ((rc = smbldap_connect_system(ldap_state))) {
 		return rc;
 	}
 
