@@ -100,23 +100,31 @@ def set_options(opt):
 
 def configure(conf):
     # get all the basic GNU options from the gnu_dirs tool
+
+    explicit_set = {}
+
     for option in dir_options.keys():
+        default = dir_options[option][0]
         varname = get_varname(option)
         value = getattr(Options.options, varname, None)
         conf.ASSERT(value is not None, "Missing configure option %s" % varname)
         conf.ASSERT(varname not in conf.env, "Variable %s already defined" % varname)
         conf.env[varname] = value
+        if value is not default:
+            explicit_set[varname] = "%s:%s" % (default, value)
 
     for f in dyn_cflags.keys():
         v = EXPAND_VARIABLES(conf, dyn_cflags[f])
         conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
-        conf.env[f] = v
+        if f not in explicit_set:
+            conf.env[f] = v
 
     if Options.options.ENABLE_FHS:
         for f in dyn_cflags_fhs.keys():
             v = EXPAND_VARIABLES(conf, dyn_cflags_fhs[f])
             conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
-            conf.env[f] = v
+            if f not in explicit_set:
+                conf.env[f] = v
 
     if (not Options.options.ENABLE_FHS and
         (conf.env.PREFIX == '/usr' or conf.env.PREFIX == '/usr/local')):
