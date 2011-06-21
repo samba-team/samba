@@ -85,14 +85,16 @@ def get_varname(v):
 
 def set_options(opt):
     # get all the basic GNU options from the gnu_dirs tool
-    opt.add_option('--enable-fhs',
+    opt_group=opt.add_option_group('Samba-specific directory layout','')
+
+    opt_group.add_option('--enable-fhs',
                    help=("Use FHS-compliant paths (default no)"),
                    action="store_true", dest='ENABLE_FHS', default=False)
     for option in dir_options.keys():
         default = dir_options[option][0]
         help    = dir_options[option][1]
         varname = get_varname(option)
-        opt.add_option('--%s' % option,
+        opt_group.add_option('--%s' % option,
                        help=(help + ' [%s]' % default),
                        action="store", dest=varname, default=default)
 
