@@ -135,15 +135,6 @@ static const struct enum_list enum_security[] = {
 	{-1, NULL}
 };
 
-static const struct enum_list enum_announce_as[] = {
-	{ANNOUNCE_AS_NT_SERVER, "NT"},
-	{ANNOUNCE_AS_NT_SERVER, "NT Server"},
-	{ANNOUNCE_AS_NT_WORKSTATION, "NT Workstation"},
-	{ANNOUNCE_AS_WIN95, "win95"},
-	{ANNOUNCE_AS_WFW, "WfW"},
-	{-1, NULL}
-};
-
 static const struct enum_list enum_bool_auto[] = {
 	{false, "No"},
 	{false, "False"},
@@ -283,7 +274,6 @@ static struct parm_struct parm_table[] = {
 	{"nt status support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTStatusSupport), NULL, NULL},
 
 	{"announce version", P_STRING, P_GLOBAL, GLOBAL_VAR(szAnnounceVersion), NULL, NULL},
-	{"announce as", P_ENUM, P_GLOBAL, GLOBAL_VAR(announce_as), NULL, enum_announce_as},
 	{"max mux", P_INTEGER, P_GLOBAL, GLOBAL_VAR(max_mux), NULL, NULL},
 	{"max xmit", P_BYTES, P_GLOBAL, GLOBAL_VAR(max_xmit), NULL, NULL},
 
@@ -629,7 +619,6 @@ FN_GLOBAL_INTEGER(cli_maxprotocol, cli_maxprotocol)
 FN_GLOBAL_INTEGER(cli_minprotocol, cli_minprotocol)
 FN_GLOBAL_INTEGER(security, security)
 FN_GLOBAL_BOOL(paranoid_server_security, paranoid_server_security)
-FN_GLOBAL_INTEGER(announce_as, announce_as)
 
 FN_LOCAL_STRING(pathname, szPath)
 FN_LOCAL_LIST(hostsallow, szHostsallow)

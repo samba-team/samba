@@ -260,7 +260,6 @@ struct global {
 	int min_wins_ttl;
 	int lm_announce;
 	int lm_interval;
-	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
 	int map_to_guest;
 	int oplock_break_wait_time;
@@ -795,21 +794,6 @@ static const struct enum_list enum_ldap_passwd_sync[] = {
 	{LDAP_PASSWD_SYNC_ON, "yes"},
 	{LDAP_PASSWD_SYNC_ON, "on"},
 	{LDAP_PASSWD_SYNC_ONLY, "only"},
-	{-1, NULL}
-};
-
-/* Types of machine we can announce as. */
-#define ANNOUNCE_AS_NT_SERVER 1
-#define ANNOUNCE_AS_WIN95 2
-#define ANNOUNCE_AS_WFW 3
-#define ANNOUNCE_AS_NT_WORKSTATION 4
-
-static const struct enum_list enum_announce_as[] = {
-	{ANNOUNCE_AS_NT_SERVER, "NT"},
-	{ANNOUNCE_AS_NT_SERVER, "NT Server"},
-	{ANNOUNCE_AS_NT_WORKSTATION, "NT Workstation"},
-	{ANNOUNCE_AS_WIN95, "win95"},
-	{ANNOUNCE_AS_WFW, "WfW"},
 	{-1, NULL}
 };
 
@@ -2175,15 +2159,6 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.szAnnounceVersion,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
-		.label		= "announce as",
-		.type		= P_ENUM,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.announce_as,
-		.special	= NULL,
-		.enum_list	= enum_announce_as,
 		.flags		= FLAG_ADVANCED,
 	},
 	{
@@ -5273,7 +5248,6 @@ static void init_globals(bool reinit_globals)
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
-	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.bNISHomeMap = False;
 #ifdef WITH_NISPLUS_HOME
@@ -5836,7 +5810,6 @@ FN_GLOBAL_INTEGER(lp_lpqcachetime, lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, iMaxSmbdProcesses)
 FN_GLOBAL_BOOL(_lp_disable_spoolss, bDisableSpoolss)
 FN_GLOBAL_INTEGER(lp_syslog, syslog)
-static FN_GLOBAL_INTEGER(lp_announce_as, announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout, machine_password_timeout)
@@ -9800,22 +9773,8 @@ static void set_default_server_announce_type(void)
 
 	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
 
-	switch (lp_announce_as()) {
-		case ANNOUNCE_AS_NT_SERVER:
-			default_server_announce |= SV_TYPE_SERVER_NT;
-			/* fall through... */
-		case ANNOUNCE_AS_NT_WORKSTATION:
-			default_server_announce |= SV_TYPE_NT;
-			break;
-		case ANNOUNCE_AS_WIN95:
-			default_server_announce |= SV_TYPE_WIN95_PLUS;
-			break;
-		case ANNOUNCE_AS_WFW:
-			default_server_announce |= SV_TYPE_WFW;
-			break;
-		default:
-			break;
-	}
+	default_server_announce |= SV_TYPE_SERVER_NT;
+	default_server_announce |= SV_TYPE_NT;
 
 	switch (lp_server_role()) {
 		case ROLE_DOMAIN_MEMBER:

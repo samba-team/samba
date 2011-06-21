@@ -49,13 +49,6 @@ typedef NTSTATUS (*init_module_fn) (void);
 
 #include "libds/common/roles.h"
 
-enum announce_as {/* Types of machine we can announce as. */
-	ANNOUNCE_AS_NT_SERVER=1,
-	ANNOUNCE_AS_WIN95=2,
-	ANNOUNCE_AS_WFW=3,
-	ANNOUNCE_AS_NT_WORKSTATION=4
-};
-
 struct loadparm_context;
 struct loadparm_service;
 struct smbcli_options;
