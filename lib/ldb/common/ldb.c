@@ -1417,6 +1417,7 @@ int ldb_extended(struct ldb_context *ldb,
 	struct ldb_result *res;
 
 	*_res = NULL;
+	req = NULL;
 
 	res = talloc_zero(ldb, struct ldb_result);
 	if (!res) {
@@ -1427,6 +1428,8 @@ int ldb_extended(struct ldb_context *ldb,
 				     oid, data, NULL,
 				     res, ldb_extended_default_callback,
 				     NULL);
+	ldb_req_set_location(req, "ldb_extended");
+
 	if (ret != LDB_SUCCESS) goto done;
 
 	ldb_set_timeout(ldb, req, 0); /* use default timeout */
@@ -1437,12 +1440,13 @@ int ldb_extended(struct ldb_context *ldb,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
-	talloc_free(req);
-
 done:
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
+		res = NULL;
 	}
+
+	talloc_free(req);
 
 	*_res = res;
 	return ret;
