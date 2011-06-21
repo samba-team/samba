@@ -219,6 +219,10 @@ static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, 
 	if (node_pnn < ctdb->num_nodes) {
 		ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
 	}
+
+	if (node_pnn == ctdb->pnn) {
+		ctdb->capabilities = ctdb->nodes[node_pnn]->capabilities;
+	}
 }
 
 /*
