@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import string, Utils, Options, sys, Build, os, intltool, optparse, textwrap
+import string, Logs, Utils, Options, sys, Build, os, intltool, optparse, textwrap
 from samba_utils import EXPAND_VARIABLES, os_path_relpath
 
 class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
@@ -53,137 +53,285 @@ class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
             result.append("\n")
         return "".join(result)
 
+
 # list of directory options to offer in configure
-dir_options = {
-    'with-piddir'                         : [ '${PREFIX}/var/run', 'where to put pid files' ],
-    'with-privatedir'                     : [ '${PREFIX}/private', 'Where to put sam.ldb and other private files' ],
-    'with-winbindd-socket-dir'            : [ '${PREFIX}/var/lib/winbindd', 'winbind socket directory' ],
-    'with-winbindd-privileged-socket-dir' : [ '${PREFIX}/var/lib/winbindd_privileged', 'winbind privileged socket directory'],
-    'with-ntp-signd-socket-dir'           : [ '${PREFIX}/var/run/ntp_signd', 'NTP signed directory'],
-    'with-lockdir'                        : [ '${PREFIX}/var/locks', 'where to put lock files' ]
-    }
-
-# list of cflags to use for dynconfig.c
-dyn_cflags = {
-    'BINDIR'                         : '${BINDIR}',
-    'SBINDIR'                        : '${SBINDIR}',
-    'SCRIPTSBINDIR'                  : '${SBINDIR}',
-    'CONFIGDIR'                      : '${SYSCONFDIR}',
-    'CONFIGFILE'                     : '${SYSCONFDIR}/smb.conf',
-    'LMHOSTSFILE'                    : '${SYSCONFDIR}/lmhosts',
-    'PRIVATE_DIR'                    : '${PRIVATEDIR}',
-    'LOGFILEBASE'                    : '${LOCALSTATEDIR}',
-    'LOCKDIR'                        : '${LOCALSTATEDIR}/locks',
-    'PIDDIR'                         : '${LOCALSTATEDIR}/run',
-    'DATADIR'                        : '${DATADIR}',
-    'LOCALEDIR'                      : '${LOCALEDIR}',
-    'SETUPDIR'                       : '${DATADIR}/setup',
-    'WINBINDD_SOCKET_DIR'            : '${WINBINDD_SOCKET_DIR}',
-    'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${WINBINDD_PRIVILEGED_SOCKET_DIR}',
-    'NTP_SIGND_SOCKET_DIR'           : '${NTP_SIGND_SOCKET_DIR}',
-    'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
-    'PYTHONDIR'                      : '${PYTHONDIR}',
-    'PYTHONARCHDIR'                  : '${PYTHONARCHDIR}',
-    'MODULESDIR'                     : '${PREFIX}/modules',
-    'INCLUDEDIR'                     : '${PREFIX}/include',
-    'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
-    'SWATDIR'                        : '${DATADIR}/swat',
-    'CODEPAGEDIR'                    : '${LIBDIR}/samba',
-    'LIBDIR'                         : '${LIBDIR}',
-    'LIBEXECDIR'                     : '${MODULESDIR}',
-    'STATEDIR'                       : '${LOCALSTATEDIR}',
-    'CACHEDIR'                       : '${LOCKDIR}',
-    'SMB_PASSWD_FILE'                : '${PRIVATEDIR}/smbpasswd',
-    'NMBDSOCKETDIR'                  : '${LOCALSTATEDIR}/nmbd',
-    }
-
-# changes for when FHS is enabled
-dyn_cflags_fhs = {
-    'BINDIR'                         : '${BINDIR}',
-    'SBINDIR'                        : '${SBINDIR}',
-    'SCRIPTSBINDIR'                  : '${SBINDIR}',
-    'CONFIGDIR'                      : '${SYSCONFDIR}/samba',
-    'CONFIGFILE'                     : '${SYSCONFDIR}/samba/smb.conf',
-    'LMHOSTSFILE'                    : '${SYSCONFDIR}/samba/lmhosts',
-    'PRIVATE_DIR'                    : '${LOCALSTATEDIR}/lib/samba/private',
-    'LOGFILEBASE'                    : '${LOCALSTATEDIR}/log/samba',
-    'LOCKDIR'                        : '${LOCALSTATEDIR}/lib/samba',
-    'PIDDIR'                         : '${LOCALSTATEDIR}/run/samba',
-    'SETUPDIR'                       : '${DATADIR}/samba/setup',
-    'WINBINDD_SOCKET_DIR'            : '${LOCALSTATEDIR}/run/samba/winbindd',
-    'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${LOCALSTATEDIR}/run/samba/winbindd_privileged',
-    'NTP_SIGND_SOCKET_DIR'           : '${LOCALSTATEDIR}/run/samba/ntp_signd',
-    'NCALRPCDIR'                     : '${LOCALSTATEDIR}/run/samba/ncalrpc',
-    'PYTHONARCHDIR'                  : '${PYTHONARCHDIR}',
-    'MODULESDIR'                     : '${LIBDIR}/samba',
-    'LIBEXECDIR'                     : '${MODULESDIR}',
-    'INCLUDEDIR'                     : '${INCLUDEDIR}/samba-4.0',
-    'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
-    'SWATDIR'                        : '${DATADIR}/swat',
-    'CODEPAGEDIR'                    : '${DATADIR}/samba',
-    'NMBDSOCKETDIR'                  : '${LOCALSTATEDIR}/run/samba/nmbd',
-    }
-
-def get_varname(v):
-    '''work out a variable name from a configure option name'''
-    if v.startswith('with-'):
-        v = v[5:]
-    v = v.upper()
-    v = v.replace('-', '_')
-    return v
-
+#
+# 'STD-PATH'  - the default path without --enable-fhs
+# 'FHS-PATH'  - the default path with --enable-fhs
+#
+# 'OPTION'    - the configure option to overwrite the default (optional)
+# 'HELPTEXT'  - the help text of the configure option (optional)
+#
+# 'OVERWRITE' - The option referrs to itself and was already from
+#               the basic GNU options from the gnu_dirs tool.
+#               We may overwrite the related path. (Default: False)
+#
+# 'DELAY'     - The option referrs to other options in the dynconfig list.
+#               We delay the intialization into a later stage. This
+#               makes sure the recursion works. (Default: False)
+#
+dynconfig = {
+    'BINDIR' : {
+         'STD-PATH':  '${BINDIR}',
+         'FHS-PATH':  '${BINDIR}',
+         'OVERWRITE': True,
+    },
+    'SBINDIR' : {
+         'STD-PATH':  '${SBINDIR}',
+         'FHS-PATH':  '${SBINDIR}',
+         'OVERWRITE': True,
+    },
+    'LIBDIR' : {
+         'STD-PATH':  '${LIBDIR}',
+         'FHS-PATH':  '${LIBDIR}',
+         'OVERWRITE': True,
+    },
+    'LIBEXECDIR' : {
+         'STD-PATH':  '${LIBEXECDIR}',
+         'FHS-PATH':  '${LIBEXECDIR}',
+         'OVERWRITE': True,
+    },
+    'DATADIR' : {
+         'STD-PATH':  '${DATADIR}',
+         'FHS-PATH':  '${DATADIR}',
+         'OVERWRITE': True,
+    },
+    'LOCALEDIR' : {
+         'STD-PATH':  '${LOCALEDIR}',
+         'FHS-PATH':  '${LOCALEDIR}',
+         'OVERWRITE': True,
+    },
+    'PYTHONDIR' : {
+         'STD-PATH':  '${PYTHONDIR}',
+         'FHS-PATH':  '${PYTHONDIR}',
+         'OVERWRITE': True,
+    },
+    'PYTHONARCHDIR' : {
+         'STD-PATH':  '${PYTHONARCHDIR}',
+         'FHS-PATH':  '${PYTHONARCHDIR}',
+         'OVERWRITE': True,
+    },
+    'MODULESDIR' : {
+         'STD-PATH':  '${MODULESDIR}',
+         'FHS-PATH':  '${MODULESDIR}/samba',
+         'OVERWRITE': True,
+    },
+    'INCLUDEDIR' : {
+         'STD-PATH':  '${INCLUDEDIR}',
+         'FHS-PATH':  '${INCLUDEDIR}/samba-4.0',
+         'OVERWRITE': True,
+    },
+    'SCRIPTSBINDIR' : {
+         'STD-PATH':  '${SBINDIR}',
+         'FHS-PATH':  '${SBINDIR}',
+    },
+    'SETUPDIR' : {
+         'STD-PATH':  '${DATADIR}/setup',
+         'FHS-PATH':  '${DATADIR}/samba/setup',
+    },
+    'PKGCONFIGDIR' : {
+         'STD-PATH':  '${LIBDIR}/pkgconfig',
+         'FHS-PATH':  '${LIBDIR}/pkgconfig',
+    },
+    'SWATDIR' : {
+         'STD-PATH':  '${DATADIR}/swat',
+         'FHS-PATH':  '${DATADIR}/samba/swat',
+    },
+    'CODEPAGEDIR' : {
+         'STD-PATH':  '${DATADIR}/codepages',
+         'FHS-PATH':  '${DATADIR}/samba/codepages',
+    },
+    'PAMMODULESDIR' : {
+         'STD-PATH':  '${LIBDIR}',
+         'FHS-PATH':  '${LIBDIR}',
+         'OPTION':    '--with-pammodulesdir',
+         'HELPTEXT':  'Which directory to use for PAM modules',
+    },
+    'CONFIGDIR' : {
+         'STD-PATH':  '${SYSCONFDIR}',
+         'FHS-PATH':  '${SYSCONFDIR}/samba',
+         'OPTION':    '--with-configdir',
+         'HELPTEXT':  'Where to put configuration files',
+    },
+    'PRIVATE_DIR' : {
+         'STD-PATH':  '${PREFIX}/private',
+         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba/private',
+         'OPTION':    '--with-privatedir',
+         'HELPTEXT':  'Where to put sam.ldb and other private files',
+    },
+    'LOCKDIR' : {
+         'STD-PATH':  '${LOCALSTATEDIR}/lock',
+         'FHS-PATH':  '${LOCALSTATEDIR}/lock/samba',
+         'OPTION':    '--with-lockdir',
+         'HELPTEXT':  'Where to put short term disposable state files',
+    },
+    'PIDDIR' : {
+         'STD-PATH':  '${LOCALSTATEDIR}/run',
+         'FHS-PATH':  '${LOCALSTATEDIR}/run/samba',
+         'OPTION':    '--with-piddir',
+         'HELPTEXT':  'Where to put pid files',
+    },
+    'STATEDIR' : {
+         'STD-PATH':  '${LOCALSTATEDIR}/locks',
+         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba/',
+         'OPTION':    '--with-statedir',
+         'HELPTEXT':  'Where to put persistent state files',
+    },
+    'CACHEDIR' : {
+         'STD-PATH':  '${LOCALSTATEDIR}/cache',
+         'FHS-PATH':  '${LOCALSTATEDIR}/cache/samba',
+         'OPTION':    '--with-cachedir',
+         'HELPTEXT':  'Where to put temporary cache files',
+    },
+    'LOGFILEBASE' : {
+         'STD-PATH':  '${LOCALSTATEDIR}',
+         'FHS-PATH':  '${LOCALSTATEDIR}/log/samba',
+         'OPTION':    '--with-logfilebase',
+         'HELPTEXT':  'Where to put log files',
+    },
+    'SOCKET_DIR' : {
+         'STD-PATH':  '${LOCALSTATEDIR}/run',
+         'FHS-PATH':  '${LOCALSTATEDIR}/run/samba',
+         'OPTION':    '--with-sockets-dir',
+         'HELPTEXT':  'socket directory',
+    },
+    'PRIVILEGED_SOCKET_DIR' : {
+         'STD-PATH':  '${LOCALSTATEDIR}/lib',
+         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba',
+         'OPTION':    '--with-privileged-socket-dir',
+         'HELPTEXT':  'privileged socket directory',
+    },
+    'WINBINDD_SOCKET_DIR' : {
+         'STD-PATH':  '${SOCKET_DIR}/winbindd',
+         'FHS-PATH':  '${SOCKET_DIR}/winbindd',
+         'DELAY':     True,
+    },
+    'WINBINDD_PRIVILEGED_SOCKET_DIR' : {
+         'STD-PATH':  '${PRIVILEGED_SOCKET_DIR}/winbindd_privileged',
+         'FHS-PATH':  '${PRIVILEGED_SOCKET_DIR}/winbindd_privileged',
+         'DELAY':     True,
+    },
+    'NMBDSOCKETDIR' : {
+         'STD-PATH':  '${SOCKET_DIR}/nmbd',
+         'FHS-PATH':  '${SOCKET_DIR}/nmbd',
+         'DELAY':     True,
+    },
+    'NTP_SIGND_SOCKET_DIR' : {
+         'STD-PATH':  '${SOCKET_DIR}/ntp_signd',
+         'FHS-PATH':  '${SOCKET_DIR}/ntp_signd',
+         'DELAY':     True,
+    },
+    'NCALRPCDIR' : {
+         'STD-PATH':  '${SOCKET_DIR}/ncalrpc',
+         'FHS-PATH':  '${SOCKET_DIR}/ncalrpc',
+         'DELAY':     True,
+    },
+    'CONFIGFILE' : {
+         'STD-PATH':  '${CONFIGDIR}/smb.conf',
+         'FHS-PATH':  '${CONFIGDIR}/smb.conf',
+         'DELAY':     True,
+    },
+    'LMHOSTSFILE' : {
+         'STD-PATH':  '${CONFIGDIR}/lmhosts',
+         'FHS-PATH':  '${CONFIGDIR}/lmhosts',
+         'DELAY':     True,
+    },
+    'SMB_PASSWD_FILE' : {
+         'STD-PATH':  '${PRIVATE_DIR}/smbpasswd',
+         'FHS-PATH':  '${PRIVATE_DIR}/smbpasswd',
+         'DELAY':     True,
+    },
+}
 
 def set_options(opt):
-    # get all the basic GNU options from the gnu_dirs tool
     opt.parser.formatter = SambaIndentedHelpFormatter()
     opt.parser.formatter.width=Utils.get_term_cols()
 
+    # get all the basic GNU options from the gnu_dirs tool
+
     opt_group=opt.add_option_group('Samba-specific directory layout','')
 
-    opt_group.add_option('--enable-fhs',
-                   help=("Use FHS-compliant paths (default no)"),
+    fhs_help  = "Use FHS-compliant paths (default no)\n"
+    fhs_help += "You should consider using this together with:\n"
+    fhs_help += "--prefix=/usr --sysconfdir=/etc --locatestatedir=/var"
+    opt_group.add_option('--enable-fhs', help=fhs_help,
                    action="store_true", dest='ENABLE_FHS', default=False)
-    for option in dir_options.keys():
-        default = dir_options[option][0]
-        help    = dir_options[option][1]
-        varname = get_varname(option)
-        opt_group.add_option('--%s' % option,
-                       help=(help + ' [%s]' % default),
-                       action="store", dest=varname, default=default)
+
+    for varname in dynconfig.keys():
+        if 'OPTION' not in dynconfig[varname]:
+            continue
+        opt = dynconfig[varname]['OPTION']
+        if 'HELPTEXT' in dynconfig[varname]:
+            txt = dynconfig[varname]['HELPTEXT']
+        else:
+            txt = "dynconfig path %s" % (varname)
+        def_std = dynconfig[varname]['STD-PATH']
+        def_fhs = dynconfig[varname]['FHS-PATH']
+
+        help = "%s\n[STD-Default: %s]\n[FHS-Default: %s]" % (txt, def_std, def_fhs)
+        opt_group.add_option(opt, help=help, dest=varname, action="store")
 
 def configure(conf):
     # get all the basic GNU options from the gnu_dirs tool
 
-    explicit_set = {}
-
-    for option in dir_options.keys():
-        default = dir_options[option][0]
-        varname = get_varname(option)
-        value = getattr(Options.options, varname, None)
-        conf.ASSERT(value is not None, "Missing configure option %s" % varname)
-        conf.ASSERT(varname not in conf.env, "Variable %s already defined" % varname)
-        conf.env[varname] = value
-        if value is not default:
-            explicit_set[varname] = "%s:%s" % (default, value)
-
-    for f in dyn_cflags.keys():
-        v = EXPAND_VARIABLES(conf, dyn_cflags[f])
-        conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
-        if f not in explicit_set:
-            conf.env[f] = v
-
     if Options.options.ENABLE_FHS:
-        for f in dyn_cflags_fhs.keys():
-            v = EXPAND_VARIABLES(conf, dyn_cflags_fhs[f])
-            conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
-            if f not in explicit_set:
-                conf.env[f] = v
+        flavor = 'FHS-PATH'
+    else:
+        flavor = 'STD-PATH'
+        if conf.env.PREFIX == '/usr' or conf.env.PREFIX == '/usr/local':
+           Logs.error("Don't install directly under /usr or /usr/local without using the FHS option (--enable-fhs)")
+           raise Utils.WafError("ERROR: invalid --prefix=%s value" % (conf.env.PREFIX))
 
-    if (not Options.options.ENABLE_FHS and
-        (conf.env.PREFIX == '/usr' or conf.env.PREFIX == '/usr/local')):
-        print("ERROR: Don't install directly under /usr or /usr/local without using the FHS option (--enable-fhs)")
-        sys.exit(1)
+    explicit_set ={}
 
+    dyn_vars = {}
+    for varname in dynconfig.keys():
+        dyn_vars[varname] = dynconfig[varname][flavor]
+        if 'OVERWRITE' in dynconfig[varname] and dynconfig[varname]['OVERWRITE']:
+            # we may overwrite this option
+            continue
+        conf.ASSERT(varname not in conf.env, "Variable %s already defined" % varname)
+
+    # the explicit block
+    for varname in dynconfig.keys():
+        if 'OPTION' not in dynconfig[varname]:
+            continue
+        value = getattr(Options.options, varname, None)
+        if value is None:
+           continue
+        conf.ASSERT(value != '', "Empty dynconfig value for %s" % varname)
+        conf.env[varname] = value
+        # mark it as explicit from the command line
+        explicit_set[varname] = value
+
+    # defaults stage 1 after the explicit block
+    for varname in dynconfig.keys():
+        if 'DELAY' in dynconfig[varname] and dynconfig[varname]['DELAY']:
+            # this option referrs to other options,
+            # so it needs to wait for stage 2.
+            continue
+        value = EXPAND_VARIABLES(conf, dyn_vars[varname])
+        conf.ASSERT(value != '', "Empty dynconfig value for %s" % varname)
+        if varname not in explicit_set:
+            # only overwrite if not specified explicitly on the command line
+            conf.env[varname] = value
+
+    # defaults stage 2 after the explicit block
+    for varname in dynconfig.keys():
+        if 'DELAY' not in dynconfig[varname] or not dynconfig[varname]['DELAY']:
+            # this option was already handled in stage 1.
+            continue
+        value = EXPAND_VARIABLES(conf, dyn_vars[varname])
+        conf.ASSERT(value != '', "Empty dynconfig value for %s" % varname)
+        if varname not in explicit_set:
+            # only overwrite if not specified explicitly on the command line
+            conf.env[varname] = value
+
+    # display the expanded pathes for the user
+    for varname in dynconfig.keys():
+        value = conf.env[varname]
+        conf.start_msg("Dynconfig[%s]: " % (varname))
+        conf.end_msg("'%s'" % (value), 'GREEN')
 
 def dynconfig_cflags(bld, list=None):
     '''work out the extra CFLAGS for dynconfig.c'''
@@ -195,14 +343,14 @@ def dynconfig_cflags(bld, list=None):
                  'CODEPAGEDIR'   : os.path.join(bld.env.srcdir, 'codepages'),
                  'SCRIPTSBINDIR' : os.path.join(bld.env.srcdir, 'source4/scripting/bin'),
                  'SETUPDIR'      : os.path.join(bld.env.srcdir, 'source4/setup') }
-    for f in dyn_cflags.keys():
-        if list and not f in list:
+    for varname in dynconfig.keys():
+        if list and not varname in list:
             continue
-        value = bld.env[f]
+        value = bld.env[varname]
         if not Options.is_install:
-            if f in override:
-                value = os.path.join(os.getcwd(), override[f])
-        cflags.append('-D%s="%s"' % (f, value))
+            if varname in override:
+                value = os.path.join(os.getcwd(), override[varname])
+        cflags.append('-D%s="%s"' % (varname, value))
     return cflags
 Build.BuildContext.dynconfig_cflags = dynconfig_cflags
 
@@ -217,3 +365,11 @@ def build(bld):
                         public_headers=os_path_relpath(os.path.join(Options.launch_dir, version_header), bld.curdir),
                         header_path='samba',
                         cflags=cflags)
+
+    # install some extra empty directories
+    bld.INSTALL_DIRS("", "${CONFIGDIR} ${PRIVATE_DIR} ${LOGFILEBASE}");
+    bld.INSTALL_DIRS("", "${PRIVATE_DIR} ${PRIVILEGED_SOCKET_DIR}")
+    bld.INSTALL_DIRS("", "${STATEDIR} ${CACHEDIR}");
+
+    # these might be on non persistent storage
+    bld.INSTALL_DIRS("", "${LOCKDIR} ${PIDDIR} ${SOCKET_DIR}")
