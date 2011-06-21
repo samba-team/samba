@@ -1853,6 +1853,12 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 	/* No need to free any further, as it is talloc()ed */
 }
 
+static int smbldap_state_destructor(struct smbldap_state *state)
+{
+	smbldap_free_struct(&state);
+	return 0;
+}
+
 
 /**********************************************************************
  Intitalise the 'general' ldap structures, on which ldap operations may be conducted
@@ -1876,6 +1882,7 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 
 	(*smbldap_state)->event_context = event_ctx;
 
+	talloc_set_destructor(*smbldap_state, smbldap_state_destructor);
 	return NT_STATUS_OK;
 }
 
