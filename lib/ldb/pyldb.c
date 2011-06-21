@@ -325,8 +325,11 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 }
 
 /**
- * Create a LDB Result from a Python object. 
+ * Create a LDB Result from a Python object.
  * If conversion fails, NULL will be returned and a Python exception set.
+ *
+ * Note: the result object only includes the messages at the moment; extended
+ * result, controls and referrals are ignored.
  *
  * @param mem_ctx Memory context in which to allocate the LDB Result
  * @param obj Python object to convert
