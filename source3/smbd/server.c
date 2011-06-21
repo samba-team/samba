@@ -513,6 +513,8 @@ static void smbd_accept_connection(struct tevent_context *ev,
 }
 
 static bool smbd_open_one_socket(struct smbd_parent_context *parent,
+				 struct tevent_context *ev_ctx,
+				 struct messaging_context *msg_ctx,
 				 const struct sockaddr_storage *ifss,
 				 uint16_t port)
 {
@@ -555,7 +557,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		return false;
 	}
 
-	s->fde = tevent_add_fd(server_event_context(),
+	s->fde = tevent_add_fd(ev_ctx,
 			       s,
 			       s->fd, TEVENT_FD_READ,
 			       smbd_accept_connection,
@@ -663,7 +665,11 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 					dns_port = port;
 				}
 
-				if (!smbd_open_one_socket(parent, ifss, port)) {
+				if (!smbd_open_one_socket(parent,
+							  ev_ctx,
+							  msg_ctx,
+							  ifss,
+							  port)) {
 					return false;
 				}
 			}
@@ -710,7 +716,11 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 					continue;
 				}
 
-				if (!smbd_open_one_socket(parent, &ss, port)) {
+				if (!smbd_open_one_socket(parent,
+							  ev_ctx,
+							  msg_ctx,
+							  &ss,
+							  port)) {
 					return false;
 				}
 			}
