@@ -237,7 +237,9 @@ static void cleanup_timeout_fn(struct event_context *event_ctx,
 	(*cleanup_te) = NULL;
 }
 
-static void remove_child_pid(pid_t pid, bool unclean_shutdown)
+static void remove_child_pid(struct tevent_context *ev_ctx,
+			     pid_t pid,
+			     bool unclean_shutdown)
 {
 	struct child_pid *child;
 	static struct timed_event *cleanup_te;
@@ -253,7 +255,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		if (!cleanup_te) {
 			/* call the cleanup timer, but not too often */
 			int cleanup_time = lp_parm_int(-1, "smbd", "cleanuptime", 20);
-			cleanup_te = event_add_timed(server_event_context(), NULL,
+			cleanup_te = event_add_timed(ev_ctx, NULL,
 						timeval_current_ofs(cleanup_time, 0),
 						cleanup_timeout_fn,
 						&cleanup_te);
@@ -323,7 +325,7 @@ static void smbd_sig_chld_handler(struct tevent_context *ev,
 		if (WIFSIGNALED(status)) {
 			unclean_shutdown = True;
 		}
-		remove_child_pid(pid, unclean_shutdown);
+		remove_child_pid(ev, pid, unclean_shutdown);
 	}
 }
 
