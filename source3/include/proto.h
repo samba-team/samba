@@ -1636,8 +1636,6 @@ bool lp_preferred_master(void);
 void lp_remove_service(int snum);
 void lp_copy_service(int snum, const char *new_name);
 int lp_default_server_announce(void);
-int lp_major_announce_version(void);
-int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(const char *new_order);
 const char *lp_printername(int snum);
 void lp_set_logfile(const char *name);

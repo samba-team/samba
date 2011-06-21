@@ -1146,8 +1146,8 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 
 		info102->platform_id	= PLATFORM_ID_NT;
 		info102->server_name	= lp_netbios_name();
-		info102->version_major	= lp_major_announce_version();
-		info102->version_minor	= lp_minor_announce_version();
+		info102->version_major	= SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+		info102->version_minor	= SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 		info102->server_type	= lp_default_server_announce();
 		info102->comment	= string_truncate(lp_serverstring(),
 						MAX_SERVER_STRING_LENGTH);
@@ -1172,8 +1172,8 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 
 		info101->platform_id	= PLATFORM_ID_NT;
 		info101->server_name	= lp_netbios_name();
-		info101->version_major	= lp_major_announce_version();
-		info101->version_minor	= lp_minor_announce_version();
+		info101->version_major	= SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+		info101->version_minor	= SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 		info101->server_type	= lp_default_server_announce();
 		info101->comment	= string_truncate(lp_serverstring(),
 						MAX_SERVER_STRING_LENGTH);

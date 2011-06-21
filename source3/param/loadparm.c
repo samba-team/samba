@@ -175,7 +175,6 @@ struct global {
 	char *szSocketAddress;
 	bool bNmbdBindExplicitBroadcast;
 	char *szNISHomeMapName;
-	char *szAnnounceVersion;	/* This is initialised in init_globals */
 	char *szWorkgroup;
 	char *szNetbiosName;
 	char **szNetbiosAliases;
@@ -2151,15 +2150,6 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
-	},
-	{
-		.label		= "announce version",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.szAnnounceVersion,
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "map acl inherit",
@@ -5178,12 +5168,6 @@ static void init_globals(bool reinit_globals)
 	}
 	string_set(&Globals.szServerString, s);
 	SAFE_FREE(s);
-	if (asprintf(&s, "%d.%d", DEFAULT_MAJOR_VERSION,
-			DEFAULT_MINOR_VERSION) < 0) {
-		smb_panic("init_globals: ENOMEM");
-	}
-	string_set(&Globals.szAnnounceVersion, s);
-	SAFE_FREE(s);
 #ifdef DEVELOPER
 	string_set(&Globals.szPanicAction, "/bin/sleep 999999999");
 #endif
@@ -5581,7 +5565,6 @@ FN_GLOBAL_BOOL(lp_nmbd_bind_explicit_broadcast, bNmbdBindExplicitBroadcast)
 FN_GLOBAL_LIST(lp_wins_server_list, szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, szInterfaces)
 FN_GLOBAL_STRING(lp_nis_home_map_name, szNISHomeMapName)
-static FN_GLOBAL_STRING(lp_announce_version, szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, szNetbiosAliases)
 /* FN_GLOBAL_STRING(lp_passdb_backend, szPassdbBackend)
  * lp_passdb_backend() should be replace by the this macro again after
@@ -9865,54 +9848,6 @@ void lp_copy_service(int snum, const char *new_name)
 int lp_default_server_announce(void)
 {
 	return default_server_announce;
-}
-
-/*******************************************************************
- Split the announce version into major and minor numbers.
-********************************************************************/
-
-int lp_major_announce_version(void)
-{
-	static bool got_major = False;
-	static int major_version = DEFAULT_MAJOR_VERSION;
-	char *vers;
-	char *p;
-
-	if (got_major)
-		return major_version;
-
-	got_major = True;
-	if ((vers = lp_announce_version()) == NULL)
-		return major_version;
-
-	if ((p = strchr_m(vers, '.')) == 0)
-		return major_version;
-
-	*p = '\0';
-	major_version = atoi(vers);
-	return major_version;
-}
-
-int lp_minor_announce_version(void)
-{
-	static bool got_minor = False;
-	static int minor_version = DEFAULT_MINOR_VERSION;
-	char *vers;
-	char *p;
-
-	if (got_minor)
-		return minor_version;
-
-	got_minor = True;
-	if ((vers = lp_announce_version()) == NULL)
-		return minor_version;
-
-	if ((p = strchr_m(vers, '.')) == 0)
-		return minor_version;
-
-	p++;
-	minor_version = atoi(p);
-	return minor_version;
 }
 
 /***********************************************************

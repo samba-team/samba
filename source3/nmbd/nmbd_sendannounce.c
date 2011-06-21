@@ -109,8 +109,8 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 	strupper_m(upper_server_name);
 	push_string_check(p+5, upper_server_name, 16, STR_ASCII|STR_TERMINATE);
 
-	SCVAL(p,21,lp_major_announce_version()); /* Major version. */
-	SCVAL(p,22,lp_minor_announce_version()); /* Minor version. */
+	SCVAL(p,21,SAMBA_MAJOR_NBT_ANNOUNCE_VERSION); /* Major version. */
+	SCVAL(p,22,SAMBA_MINOR_NBT_ANNOUNCE_VERSION); /* Minor version. */
 
 	SIVAL(p,23,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
 	/* Browse version: got from NT/AS 4.00  - Value defined in smb.h (JHT). */
@@ -140,8 +140,8 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
 
 	SSVAL(p,0,announce_type);
 	SIVAL(p,2,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
-	SCVAL(p,6,lp_major_announce_version()); /* Major version. */
-	SCVAL(p,7,lp_minor_announce_version()); /* Minor version. */
+	SCVAL(p,6,SAMBA_MAJOR_NBT_ANNOUNCE_VERSION); /* Major version. */
+	SCVAL(p,7,SAMBA_MINOR_NBT_ANNOUNCE_VERSION); /* Minor version. */
 	SSVAL(p,8,announce_interval);            /* In seconds - according to spec. */
 
 	p += 10;

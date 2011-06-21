@@ -4027,8 +4027,8 @@ static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
 	}
 	p += 4;
 
-	SCVAL(p,0,lp_major_announce_version()); /* system version - e.g 4 in 4.1 */
-	SCVAL(p,1,lp_minor_announce_version()); /* system version - e.g .1 in 4.1 */
+	SCVAL(p,0,SAMBA_MAJOR_NBT_ANNOUNCE_VERSION); /* system version - e.g 4 in 4.1 */
+	SCVAL(p,1,SAMBA_MINOR_NBT_ANNOUNCE_VERSION); /* system version - e.g .1 in 4.1 */
 	p += 2;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));

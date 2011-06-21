@@ -260,8 +260,8 @@ static struct wkssvc_NetWkstaInfo100 *create_wks_info_100(TALLOC_CTX *mem_ctx)
 	}
 
 	info100->platform_id	 = PLATFORM_ID_NT;	/* unknown */
-	info100->version_major	 = lp_major_announce_version();
-	info100->version_minor	 = lp_minor_announce_version();
+	info100->version_major	 = SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+	info100->version_minor	 = SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 
 	info100->server_name = talloc_asprintf_strupper_m(
 		info100, "%s", lp_netbios_name());
@@ -289,8 +289,8 @@ static struct wkssvc_NetWkstaInfo101 *create_wks_info_101(TALLOC_CTX *mem_ctx)
 	}
 
 	info101->platform_id	 = PLATFORM_ID_NT;	/* unknown */
-	info101->version_major	 = lp_major_announce_version();
-	info101->version_minor	 = lp_minor_announce_version();
+	info101->version_major	 = SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+	info101->version_minor	 = SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 
 	info101->server_name = talloc_asprintf_strupper_m(
 		info101, "%s", lp_netbios_name());
@@ -320,8 +320,8 @@ static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 	}
 
 	info102->platform_id	 = PLATFORM_ID_NT;	/* unknown */
-	info102->version_major	 = lp_major_announce_version();
-	info102->version_minor	 = lp_minor_announce_version();
+	info102->version_major	 = SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+	info102->version_minor	 = SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 
 	info102->server_name = talloc_asprintf_strupper_m(
 		info102, "%s", lp_netbios_name());

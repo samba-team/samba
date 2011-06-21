@@ -1236,8 +1236,8 @@ char *strdup(char *s);
  *        This may change again in Samba-3.0 after further testing. JHT
  */
  
-#define DEFAULT_MAJOR_VERSION 0x04
-#define DEFAULT_MINOR_VERSION 0x09
+#define SAMBA_MAJOR_NBT_ANNOUNCE_VERSION 0x04
+#define SAMBA_MINOR_NBT_ANNOUNCE_VERSION 0x09
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
