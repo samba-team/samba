@@ -1,7 +1,57 @@
 #!/usr/bin/env python
 
-import string, Utils, Options, sys, Build, os, intltool
+import string, Utils, Options, sys, Build, os, intltool, optparse, textwrap
 from samba_utils import EXPAND_VARIABLES, os_path_relpath
+
+class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
+    """Format help with indented section bodies.
+    """
+
+    def __init__(self,
+                 indent_increment=2,
+                 max_help_position=12,
+                 width=None,
+                 short_first=1):
+        optparse.IndentedHelpFormatter.__init__(
+            self, indent_increment, max_help_position, width, short_first)
+
+    def format_option(self, option):
+        # The help for each option consists of two parts:
+        #   * the opt strings and metavars
+        #     eg. ("-x", or "-fFILENAME, --file=FILENAME")
+        #   * the user-supplied help string
+        #     eg. ("turn on expert mode", "read data from FILENAME")
+        #
+        # If possible, we write both of these on the same line:
+        #   -x      turn on expert mode
+        #
+        # But if the opt string list is too long, we put the help
+        # string on a second line, indented to the same column it would
+        # start in if it fit on the first line.
+        #   -fFILENAME, --file=FILENAME
+        #           read data from FILENAME
+        result = []
+        opts = self.option_strings[option]
+        opt_width = self.help_position - self.current_indent - 2
+        if len(opts) > opt_width:
+            opts = "%*s%s\n" % (self.current_indent, "", opts)
+            indent_first = self.help_position
+        else:                       # start help on same line as opts
+            opts = "%*s%-*s  " % (self.current_indent, "", opt_width, opts)
+            indent_first = 0
+        result.append(opts)
+        if option.help:
+            help_text = self.expand_default(option)
+            if string.find(help_text, '\n') == -1:
+                help_lines = textwrap.wrap(help_text, self.help_width)
+            else:
+                help_lines = help_text.splitlines()
+            result.append("%*s%s\n" % (indent_first, "", help_lines[0]))
+            result.extend(["%*s%s\n" % (self.help_position, "", line)
+                           for line in help_lines[1:]])
+        elif opts[-1] != "\n":
+            result.append("\n")
+        return "".join(result)
 
 # list of directory options to offer in configure
 dir_options = {
@@ -85,6 +135,9 @@ def get_varname(v):
 
 def set_options(opt):
     # get all the basic GNU options from the gnu_dirs tool
+    opt.parser.formatter = SambaIndentedHelpFormatter()
+    opt.parser.formatter.width=Utils.get_term_cols()
+
     opt_group=opt.add_option_group('Samba-specific directory layout','')
 
     opt_group.add_option('--enable-fhs',
