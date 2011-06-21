@@ -1143,11 +1143,11 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 
 	ret = ldb_request(ldb_ctx, req);
 	if (ret == LDB_SUCCESS) {
-			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	} 
 
 	if (ret == LDB_SUCCESS) {
-			ret = ldb_transaction_commit(ldb_ctx);
+		ret = ldb_transaction_commit(ldb_ctx);
 	} else {
 		ldb_transaction_cancel(ldb_ctx);
 		if (ldb_ctx->err_string == NULL) {

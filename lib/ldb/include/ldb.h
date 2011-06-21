@@ -1425,8 +1425,6 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 /**
   call an extended operation
 
-  This function deletes a record from the database.
-
   \param ldb the context associated with the database (from ldb_init())
   \param oid the OID of the extended operation.
   \param data a void pointer a the extended operation specific parameters,
