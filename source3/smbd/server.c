@@ -791,7 +791,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	return true;
 }
 
-static void smbd_parent_loop(struct smbd_parent_context *parent)
+static void smbd_parent_loop(struct tevent_context *ev_ctx,
+			     struct smbd_parent_context *parent)
 {
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
@@ -800,7 +801,7 @@ static void smbd_parent_loop(struct smbd_parent_context *parent)
 		int ret;
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		ret = tevent_loop_once(server_event_context());
+		ret = tevent_loop_once(ev_ctx);
 		if (ret != 0) {
 			exit_server_cleanly("tevent_loop_once() error");
 		}
@@ -1294,7 +1295,7 @@ extern void build_options(bool screen);
 	/* make sure we always have a valid stackframe */
 	frame = talloc_stackframe();
 
-	smbd_parent_loop(parent);
+	smbd_parent_loop(ev_ctx, parent);
 
 	exit_server_cleanly(NULL);
 	TALLOC_FREE(frame);
