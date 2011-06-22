@@ -1100,7 +1100,7 @@ AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(shmget shm_open)
 AC_CHECK_FUNCS(gettext dgettext)
-AC_CHECK_FUNCS(bindtextdomain textdomain)
+AC_CHECK_FUNCS(bindtextdomain textdomain bind_textdomain_codeset)
 AC_CHECK_FUNCS(strupr)
 
 # Find a method of generating a stack trace

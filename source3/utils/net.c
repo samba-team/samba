@@ -880,6 +880,16 @@ static struct functable net_func[] = {
 
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
+#if defined(HAVE_BIND_TEXTDOMAIN_CODESET)
+	/* Bind our gettext results to 'unix charset'
+	   
+	   This ensures that the translations and any embedded strings are in the
+	   same charset.  It won't be the one from the user's locale (we no
+	   longer auto-detect that), but it will be self-consistent.
+	*/
+	bind_textdomain_codeset(MODULE_NAME, lp_unix_charset());
+#endif
+
  	argv_new = (const char **)poptGetArgs(pc);
 
 	argc_new = argc;
