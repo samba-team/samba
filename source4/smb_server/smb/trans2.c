@@ -1107,7 +1107,7 @@ static NTSTATUS get_dcs(TALLOC_CTX *ctx, struct ldb_context *ldb,
 	}
 	talloc_free(r);
 
-	if (searched_site != NULL) {
+	if (searched_site != NULL && searched_site[0] != '\0') {
 		ret = ldb_search(ldb, subctx, &r, configdn, LDB_SCOPE_SUBTREE,
 				 attrs_none, "(&(name=%s)(objectClass=site))", searched_site);
 		if (ret != LDB_SUCCESS) {
@@ -1461,7 +1461,7 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 		client_addr = tsocket_address_inet_addr_string(remote_address, context);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(client_addr, context);
 	}
-
+	site_name = samdb_client_site_name(ldb, context, client_addr, NULL);
 	status = get_dcs(context, ldb, site_name, need_fqdn, &set, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("Unable to get list of DCs\n"));
