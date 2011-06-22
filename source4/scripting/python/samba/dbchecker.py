@@ -58,15 +58,14 @@ class dbcheck(object):
         self.yes = yes
         self.quiet = quiet
 
-    def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[]):
+    def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
-        self.search_scope = scope
 
-        res = self.samdb.search(base=DN, scope=self.search_scope, attrs=['dn'], controls=controls)
+        res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
         error_count = 0
         for object in res:
-            error_count += self.check_object(object.dn)
+            error_count += self.check_object(object.dn, attrs=attrs)
         if error_count != 0 and not self.fix:
             self.report("Please use --fix to fix these errors")
         self.report('Checked %u objects (%u errors)' % (len(res), error_count))
@@ -86,6 +85,8 @@ class dbcheck(object):
         '''confirm a change'''
         if not self.fix:
             return False
+        if self.quiet:
+            return self.yes
         return common.confirm(msg, forced=self.yes)
 
 
@@ -268,11 +269,11 @@ class dbcheck(object):
 
     ################################################################
     # check one object - calls to individual error handlers above
-    def check_object(self, dn):
+    def check_object(self, dn, attrs=['*']):
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
-        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=['*', 'ntSecurityDescriptor'])
+        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=attrs)
         if len(res) != 1:
             self.report("Object %s disappeared during check" % dn)
             return 1

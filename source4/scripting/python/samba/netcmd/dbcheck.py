@@ -55,11 +55,12 @@ class cmd_dbcheck(Command):
             help="Print more details of checking"),
         Option("--quiet", dest="quiet", action="store_true", default=False,
             help="don't print details of checking"),
+        Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
         Option("-H", help="LDB URL for database or target server (defaults to local SAM database)", type=str),
         ]
 
     def run(self, H=None, DN=None, verbose=False, fix=False, yes=False, cross_ncs=False, quiet=False,
-            scope="SUB", credopts=None, sambaopts=None, versionopts=None):
+            scope="SUB", credopts=None, sambaopts=None, versionopts=None, attrs=None):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -84,11 +85,16 @@ class cmd_dbcheck(Command):
         if cross_ncs:
             controls.append("search_options:1:2")
 
+        if not attrs:
+            attrs = ['*']
+        else:
+            attrs = attrs.split()
+
         if yes and fix:
             samdb.transaction_start()
 
         chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose, fix=fix, yes=yes, quiet=quiet)
-        error_count = chk.check_database(DN=DN, scope=search_scope, controls=controls)
+        error_count = chk.check_database(DN=DN, scope=search_scope, controls=controls, attrs=attrs)
 
         if yes and fix:
             samdb.transaction_commit()
