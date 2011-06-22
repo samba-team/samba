@@ -79,10 +79,12 @@ class cmd_dbcheck(Command):
                help="cross naming context boundaries"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
             help="Print more details of checking"),
+        Option("--quiet", dest="quiet", action="store_true", default=False,
+            help="don't print details of checking"),
         Option("-H", help="LDB URL for database or target server (defaults to local SAM database)", type=str),
         ]
 
-    def run(self, H=None, DN=None, verbose=False, fix=False, yes=False, cross_ncs=False,
+    def run(self, H=None, DN=None, verbose=False, fix=False, yes=False, cross_ncs=False, quiet=False,
             scope="SUB", credopts=None, sambaopts=None, versionopts=None):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -98,6 +100,7 @@ class cmd_dbcheck(Command):
         self.verbose = verbose
         self.fix = fix
         self.yes = yes
+        self.quiet = quiet
 
         scope_map = { "SUB": ldb.SCOPE_SUBTREE, "BASE":ldb.SCOPE_BASE, "ONE":ldb.SCOPE_ONELEVEL }
         scope = scope.upper()
@@ -115,13 +118,13 @@ class cmd_dbcheck(Command):
             self.samdb.transaction_start()
 
         res = self.samdb.search(base=DN, scope=self.search_scope, attrs=['dn'], controls=controls)
-        print('Checking %u objects' % len(res))
+        self.report('Checking %u objects' % len(res))
         error_count = 0
         for object in res:
             error_count += self.check_object(object.dn)
         if error_count != 0 and not self.fix:
-            print("Please use --fix to fix these errors")
-        print('Checked %u objects (%u errors)' % (len(res), error_count))
+            self.report("Please use --fix to fix these errors")
+        self.report('Checked %u objects (%u errors)' % (len(res), error_count))
 
         if self.yes and self.fix:
             self.samdb.transaction_commit()
@@ -129,6 +132,11 @@ class cmd_dbcheck(Command):
         if error_count != 0:
             sys.exit(1)
 
+
+    def report(self, msg):
+        '''print a message unless quiet is set'''
+        if not self.quiet:
+            print(msg)
 
 
     ################################################################
@@ -144,40 +152,40 @@ class cmd_dbcheck(Command):
     # handle empty attributes
     def err_empty_attribute(self, dn, attrname):
         '''fix empty attributes'''
-        print("ERROR: Empty attribute %s in %s" % (attrname, dn))
+        self.report("ERROR: Empty attribute %s in %s" % (attrname, dn))
         if not self.confirm('Remove empty attribute %s from %s?' % (attrname, dn)):
-            print("Not fixing empty attribute %s" % attrname)
+            self.report("Not fixing empty attribute %s" % attrname)
             return
 
         m = ldb.Message()
         m.dn = dn
         m[attrname] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, attrname)
         if self.verbose:
-            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
             self.samdb.modify(m, controls=["relax:0"], validate=False)
         except Exception, msg:
-            print("Failed to remove empty attribute %s : %s" % (attrname, msg))
+            self.report("Failed to remove empty attribute %s : %s" % (attrname, msg))
             return
-        print("Removed empty attribute %s" % attrname)
+        self.report("Removed empty attribute %s" % attrname)
 
 
     ################################################################
     # handle normalisation mismatches
     def err_normalise_mismatch(self, dn, attrname, values):
         '''fix attribute normalisation errors'''
-        print("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
+        self.report("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
         mod_list = []
         for val in values:
             normalised = self.samdb.dsdb_normalise_attributes(self.local_samdb, attrname, [val])
             if len(normalised) != 1:
-                print("Unable to normalise value '%s'" % val)
+                self.report("Unable to normalise value '%s'" % val)
                 mod_list.append((val, ''))
             elif (normalised[0] != val):
-                print("value '%s' should be '%s'" % (val, normalised[0]))
+                self.report("value '%s' should be '%s'" % (val, normalised[0]))
                 mod_list.append((val, normalised[0]))
         if not self.confirm('Fix normalisation for %s from %s?' % (attrname, dn)):
-            print("Not fixing attribute %s" % attrname)
+            self.report("Not fixing attribute %s" % attrname)
             return
 
         m = ldb.Message()
@@ -189,86 +197,86 @@ class cmd_dbcheck(Command):
                 m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
 
         if self.verbose:
-            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
             self.samdb.modify(m, controls=["relax:0"], validate=False)
         except Exception, msg:
-            print("Failed to normalise attribute %s : %s" % (attrname, msg))
+            self.report("Failed to normalise attribute %s : %s" % (attrname, msg))
             return
-        print("Normalised attribute %s" % attrname)
+        self.report("Normalised attribute %s" % attrname)
 
 
     ################################################################
     # handle a missing GUID extended DN component
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
-        print("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
+        self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
         try:
             res = self.samdb.search(base=dsdb_dn.dn, scope=ldb.SCOPE_BASE,
                                     attrs=[], controls=["extended_dn:1:1"])
         except ldb.LdbError, (enum, estr):
-            print("unable to find object for DN %s - cannot fix (%s)" % (dsdb_dn.dn, estr))
+            self.report("unable to find object for DN %s - cannot fix (%s)" % (dsdb_dn.dn, estr))
             return
         dsdb_dn.dn = res[0].dn
 
         if not self.confirm('Change DN to %s?' % str(dsdb_dn)):
-            print("Not fixing %s" % errstr)
+            self.report("Not fixing %s" % errstr)
             return
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
         if self.verbose:
-            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
             self.samdb.modify(m)
         except Exception, msg:
-            print("Failed to fix %s on attribute %s : %s" % (errstr, attrname, msg))
+            self.report("Failed to fix %s on attribute %s : %s" % (errstr, attrname, msg))
             return
-        print("Fixed %s on attribute %s" % (errstr, attrname))
+        self.report("Fixed %s on attribute %s" % (errstr, attrname))
 
 
     ################################################################
     # handle a DN pointing to a deleted object
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
-        print("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
-        print("Target GUID points at deleted DN %s" % correct_dn)
+        self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
+        self.report("Target GUID points at deleted DN %s" % correct_dn)
         if not self.confirm('Remove DN?'):
-            print("Not removing")
+            self.report("Not removing")
             return
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         if self.verbose:
-            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
             self.samdb.modify(m)
         except Exception, msg:
-            print("Failed to remove deleted DN attribute %s : %s" % (attrname, msg))
+            self.report("Failed to remove deleted DN attribute %s : %s" % (attrname, msg))
             return
-        print("Removed deleted DN on attribute %s" % attrname)
+        self.report("Removed deleted DN on attribute %s" % attrname)
 
 
     ################################################################
     # handle a DN string being incorrect
     def err_dn_target_mismatch(self, dn, attrname, val, dsdb_dn, correct_dn):
-        print("ERROR: incorrect DN string component for %s in object %s - %s" % (attrname, dn, val))
+        self.report("ERROR: incorrect DN string component for %s in object %s - %s" % (attrname, dn, val))
         dsdb_dn.dn = correct_dn
 
         if not self.confirm('Change DN to %s?' % str(dsdb_dn)):
-            print("Not fixing %s" % errstr)
+            self.report("Not fixing %s" % errstr)
             return
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
         if self.verbose:
-            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
             self.samdb.modify(m)
         except Exception, msg:
-            print("Failed to fix incorrect DN string on attribute %s : %s" % (attrname, msg))
+            self.report("Failed to fix incorrect DN string on attribute %s : %s" % (attrname, msg))
             return
-        print("Fixed incorrect DN string on attribute %s" % (attrname))
+        self.report("Fixed incorrect DN string on attribute %s" % (attrname))
 
 
     ################################################################
@@ -322,10 +330,10 @@ class cmd_dbcheck(Command):
     def check_object(self, dn):
         '''check one object'''
         if self.verbose:
-            print("Checking object %s" % dn)
+            self.report("Checking object %s" % dn)
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=['*', 'ntSecurityDescriptor'])
         if len(res) != 1:
-            print("Object %s disappeared during check" % dn)
+            self.report("Object %s disappeared during check" % dn)
             return 1
         obj = res[0]
         error_count = 0
