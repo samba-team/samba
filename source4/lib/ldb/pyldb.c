@@ -7,6 +7,8 @@
    Copyright (C) 2006 Simo Sorce <idra@samba.org>
    Copyright (C) 2007-2010 Jelmer Vernooij <jelmer@samba.org>
    Copyright (C) 2009-2010 Matthias Dieter Wallnöfer
+   Copyright (C) 2009-2011 Andrew Tridgell
+   Copyright (C) 2009-2011 Andrew Bartlett
 
     ** NOTE! The following LGPL license applies to the ldb
     ** library. This does NOT imply that all of Samba is released
@@ -384,6 +386,17 @@ static PyObject *py_ldb_dn_canonical_ex_str(PyLdbDnObject *self)
 	return PyString_FromString(ldb_dn_canonical_ex_string(self->dn, self->dn));
 }
 
+static PyObject *py_ldb_dn_extended_str(PyLdbDnObject *self, PyObject *args, PyObject *kwargs)
+{
+	const char * const kwnames[] = { "mode", NULL };
+	int mode = 1;
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i",
+					 discard_const_p(char *, kwnames),
+					 &mode))
+		return NULL;
+	return PyString_FromString(ldb_dn_get_extended_linearized(self->dn, self->dn, mode));
+}
+
 static PyObject *py_ldb_dn_repr(PyLdbDnObject *self)
 {
 	return PyString_FromFormat("Dn(%s)", PyObject_REPR(PyString_FromString(ldb_dn_get_linearized(self->dn))));
@@ -485,6 +498,9 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "canonical_ex_str", (PyCFunction)py_ldb_dn_canonical_ex_str, METH_NOARGS,
 		"S.canonical_ex_str() -> string\n"
 		"Canonical version of this DN (like a posix path, with terminating newline)." },
+	{ "extended_str", (PyCFunction)py_ldb_dn_extended_str, METH_VARARGS | METH_KEYWORDS,
+		"S.extended_str(mode=1) -> string\n"
+		"Extended version of this DN" },
 	{ "parent", (PyCFunction)py_ldb_dn_get_parent, METH_NOARGS,
    		"S.parent() -> dn\n"
 		"Get the parent for this DN." },
