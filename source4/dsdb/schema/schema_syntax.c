@@ -1983,16 +1983,18 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 			W_ERROR_HAVE_NO_MEMORY(dn);
 		}
 
-		status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(tmp_ctx);
-			return ntstatus_to_werror(status);
-		}
+		if (!GUID_all_zero(&id3.guid)) {
+			status = GUID_to_ndr_blob(&id3.guid, tmp_ctx, &guid_blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(tmp_ctx);
+				return ntstatus_to_werror(status);
+			}
 
-		ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return WERR_FOOBAR;
+			ret = ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return WERR_FOOBAR;
+			}
 		}
 
 		talloc_free(guid_blob.data);
