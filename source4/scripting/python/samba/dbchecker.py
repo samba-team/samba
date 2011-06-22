@@ -147,14 +147,21 @@ class dbcheck(object):
             return
         self.report("Normalised attribute %s" % attrname)
 
+    def is_deleted_objects_dn(self, dsdb_dn):
+        '''see if a dsdb_DN is the special Deleted Objects DN'''
+        return dsdb_dn.prefix == "B:32:18E2EA80684F11D2B9AA00C04F79F805:"
+
 
     ################################################################
     # handle a missing GUID extended DN component
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
+        controls=["extended_dn:1:1"]
+        if self.is_deleted_objects_dn(dsdb_dn):
+            controls.append("show_deleted:1")
         try:
             res = self.samdb.search(base=str(dsdb_dn.dn), scope=ldb.SCOPE_BASE,
-                                    attrs=[], controls=["extended_dn:1:1"])
+                                    attrs=[], controls=controls)
         except ldb.LdbError, (enum, estr):
             self.report("unable to find object for DN %s - cannot fix (%s)" % (dsdb_dn.dn, estr))
             return
@@ -248,7 +255,7 @@ class dbcheck(object):
                 continue
 
             # the target DN might be deleted
-            if (dsdb_dn.prefix != "B:32:18E2EA80684F11D2B9AA00C04F79F805:" and
+            if ((not self.is_deleted_objects_dn(dsdb_dn)) and
                 'isDeleted' in res[0] and
                 res[0]['isDeleted'][0].upper() == "TRUE"):
                 # note that we don't check this for the special wellKnownObjects prefix
