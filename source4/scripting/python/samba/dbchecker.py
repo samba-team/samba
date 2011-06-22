@@ -153,7 +153,7 @@ class dbcheck(object):
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
         try:
-            res = self.samdb.search(base=dsdb_dn.dn, scope=ldb.SCOPE_BASE,
+            res = self.samdb.search(base=str(dsdb_dn.dn), scope=ldb.SCOPE_BASE,
                                     attrs=[], controls=["extended_dn:1:1"])
         except ldb.LdbError, (enum, estr):
             self.report("unable to find object for DN %s - cannot fix (%s)" % (dsdb_dn.dn, estr))
