@@ -3222,4 +3222,14 @@ void initldb(void)
 	PyModule_AddObject(m, "Control", (PyObject *)&PyLdbControl);
 
 	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
+
+#define ADD_LDB_STRING(val)  PyModule_AddObject(m, #val, PyString_FromString(val))
+
+	ADD_LDB_STRING(LDB_SYNTAX_DN);
+	ADD_LDB_STRING(LDB_SYNTAX_DN);
+	ADD_LDB_STRING(LDB_SYNTAX_DIRECTORY_STRING);
+	ADD_LDB_STRING(LDB_SYNTAX_INTEGER);
+	ADD_LDB_STRING(LDB_SYNTAX_BOOLEAN);
+	ADD_LDB_STRING(LDB_SYNTAX_OCTET_STRING);
+	ADD_LDB_STRING(LDB_SYNTAX_UTC_TIME);
 }
