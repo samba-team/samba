@@ -59,7 +59,7 @@ class cmd_dbcheck(Command):
         Option("-H", help="LDB URL for database or target server (defaults to local SAM database)", type=str),
         ]
 
-    def run(self, H=None, DN=None, verbose=False, fix=False, yes=False, cross_ncs=False, quiet=False,
+    def run(self, DN=None, H=None, verbose=False, fix=False, yes=False, cross_ncs=False, quiet=False,
             scope="SUB", credopts=None, sambaopts=None, versionopts=None, attrs=None):
 
         lp = sambaopts.get_loadparm()
