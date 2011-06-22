@@ -86,6 +86,9 @@ class cmd_dbcheck(Command):
         if error_count != 0:
             sys.exit(1)
 
+
+    ################################################################
+    # handle empty attributes
     def empty_attribute(self, dn, attrname):
         '''fix empty attributes'''
         print("ERROR: Empty attribute %s in %s" % (attrname, dn))
@@ -105,36 +108,9 @@ class cmd_dbcheck(Command):
             return
         print("Removed empty attribute %s" % attrname)
 
-    def check_object(self, dn):
-        '''check one object'''
-        if self.verbose:
-            print("Checking object %s" % dn)
-        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=['*', 'ntSecurityDescriptor'])
-        if len(res) != 1:
-            print("Object %s disappeared during check" % dn)
-            return 1
-        obj = res[0]
-        error_count = 0
-        for attrname in obj:
-            if attrname == 'dn':
-                continue
 
-            # check for empty attributes
-            for val in obj[attrname]:
-                if val == '':
-                    self.empty_attribute(dn, attrname)
-                    error_count += 1
-                    continue
-
-            # check for incorrectly normalised attributes
-            for val in obj[attrname]:
-                normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
-                if len(normalised) != 1 or normalised[0] != val:
-                    self.normalise_mismatch(dn, attrname, obj[attrname])
-                    error_count += 1
-                    break
-        return error_count
-
+    ################################################################
+    # handle normalisation mismatches
     def normalise_mismatch(self, dn, attrname, values):
         '''fix attribute normalisation errors'''
         print("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
@@ -167,3 +143,36 @@ class cmd_dbcheck(Command):
             print("Failed to normalise attribute %s : %s" % (attrname, msg))
             return
         print("Normalised attribute %s" % attrname)
+
+
+    ################################################################
+    # check one object - calls to individual error handlers above
+    def check_object(self, dn):
+        '''check one object'''
+        if self.verbose:
+            print("Checking object %s" % dn)
+        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=['*', 'ntSecurityDescriptor'])
+        if len(res) != 1:
+            print("Object %s disappeared during check" % dn)
+            return 1
+        obj = res[0]
+        error_count = 0
+        for attrname in obj:
+            if attrname == 'dn':
+                continue
+
+            # check for empty attributes
+            for val in obj[attrname]:
+                if val == '':
+                    self.empty_attribute(dn, attrname)
+                    error_count += 1
+                    continue
+
+            # check for incorrectly normalised attributes
+            for val in obj[attrname]:
+                normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
+                if len(normalised) != 1 or normalised[0] != val:
+                    self.normalise_mismatch(dn, attrname, obj[attrname])
+                    error_count += 1
+                    break
+        return error_count
