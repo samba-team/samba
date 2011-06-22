@@ -103,6 +103,18 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
+		if (ac->basedn) {
+			/* we have more than one match! This can
+			   happen as S-1-5-17 appears twice in a
+			   normal provision. We need to return
+			   NO_SUCH_OBJECT */
+			const char *str = talloc_asprintf(req, "Duplicate base-DN matches found for '%s'",
+							  ldb_dn_get_extended_linearized(req, ac->req->op.search.base, 1));
+			ldb_set_errstring(ldb_module_get_ctx(ac->module), str);
+			return ldb_module_done(ac->req, NULL, NULL,
+					       LDB_ERR_NO_SUCH_OBJECT);
+		}
+
 		if (!ac->wellknown_object) {
 			ac->basedn = talloc_steal(ac, ares->message->dn);
 			break;
