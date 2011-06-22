@@ -1995,9 +1995,8 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 				talloc_free(tmp_ctx);
 				return WERR_FOOBAR;
 			}
+			talloc_free(guid_blob.data);
 		}
-
-		talloc_free(guid_blob.data);
 
 		if (id3.__ndr_size_sid) {
 			DATA_BLOB sid_blob;
