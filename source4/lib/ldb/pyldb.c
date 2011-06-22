@@ -397,6 +397,51 @@ static PyObject *py_ldb_dn_extended_str(PyLdbDnObject *self, PyObject *args, PyO
 	return PyString_FromString(ldb_dn_get_extended_linearized(self->dn, self->dn, mode));
 }
 
+static PyObject *py_ldb_dn_get_extended_component(PyLdbDnObject *self, PyObject *args)
+{
+	char *name;
+	const struct ldb_val *val;
+
+	if (!PyArg_ParseTuple(args, "s", &name))
+		return NULL;
+	val = ldb_dn_get_extended_component(self->dn, name);
+	if (val == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	return PyString_FromStringAndSize((const char *)val->data, val->length);
+}
+
+static PyObject *py_ldb_dn_set_extended_component(PyLdbDnObject *self, PyObject *args)
+{
+	char *name;
+	PyObject *value;
+	int err;
+
+	if (!PyArg_ParseTuple(args, "sO", &name, &value))
+		return NULL;
+
+	if (value == Py_None) {
+		err = ldb_dn_set_extended_component(self->dn, name, NULL);
+	} else {
+		struct ldb_val val;
+		if (!PyString_Check(value)) {
+			PyErr_SetString(PyExc_TypeError, "Expected a string argument");
+			return NULL;
+		}
+		val.data = (uint8_t *)PyString_AsString(value);
+		val.length = PyString_Size(value);
+		err = ldb_dn_set_extended_component(self->dn, name, &val);
+	}
+
+	if (err != LDB_SUCCESS) {
+		PyErr_SetString(PyExc_TypeError, "Failed to set extended component");
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_ldb_dn_repr(PyLdbDnObject *self)
 {
 	return PyString_FromFormat("Dn(%s)", PyObject_REPR(PyString_FromString(ldb_dn_get_linearized(self->dn))));
@@ -513,6 +558,12 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "check_special", (PyCFunction)py_ldb_dn_check_special, METH_VARARGS,
 		"S.check_special(name) -> bool\n\n"
 		"Check if name is a special DN name"},
+	{ "get_extended_component", (PyCFunction)py_ldb_dn_get_extended_component, METH_VARARGS,
+		"S.get_extended_component(name) -> string\n\n"
+		"returns a DN extended component as a binary string"},
+	{ "set_extended_component", (PyCFunction)py_ldb_dn_set_extended_component, METH_VARARGS,
+		"S.set_extended_component(name, value) -> string\n\n"
+		"set a DN extended component as a binary string"},
 	{ NULL }
 };
 
