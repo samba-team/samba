@@ -389,9 +389,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 
 /*
  * A little trick to allow to use constants defined in headers rather than
- * hardwritten in the file hardwritten in the file
- * sizeof will return the \0 char as well so it will take the place of ":" in the
- * length of the string
+ * hardwritten in the file.
+ * "sizeof" will return the \0 char as well so it will take the place of ":"
+ * in the length of the string.
  */
 #define LDB_CONTROL_CMP(control, NAME) strncmp(control, NAME ":", sizeof(NAME))
 
@@ -999,14 +999,6 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 	 */
 	return NULL;
 }
-
-/*
- * A little trick to allow to use constants defined in headers rather than
- * hardwritten in the file hardwritten in the file
- * sizeof will return the \0 char as well so it will take the place of ":" in the
- * length of the string
- */
-#define LDB_CONTROL_CMP(control, NAME) strncmp(control, NAME ":", sizeof(NAME))
 
 /* Parse controls from the format used on the command line and in ejs */
 struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char **control_strings)
