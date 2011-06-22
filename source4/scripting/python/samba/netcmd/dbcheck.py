@@ -79,15 +79,22 @@ class cmd_dbcheck(Command):
                help="cross naming context boundaries"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
             help="Print more details of checking"),
+        Option("-H", help="LDB URL for database or target server (defaults to local SAM database)", type=str),
         ]
 
-    def run(self, DN=None, verbose=False, fix=False, yes=False, cross_ncs=False,
+    def run(self, H=None, DN=None, verbose=False, fix=False, yes=False, cross_ncs=False,
             scope="SUB", credopts=None, sambaopts=None, versionopts=None):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
-        self.samdb = SamDB(session_info=system_session(), url=None,
+        self.samdb = SamDB(session_info=system_session(), url=H,
                            credentials=self.creds, lp=self.lp)
+        if H is None:
+            self.local_samdb = self.samdb
+        else:
+            self.local_samdb = SamDB(session_info=system_session(), url=None,
+                                     credentials=self.creds, lp=self.lp)
+
         self.verbose = verbose
         self.fix = fix
         self.yes = yes
@@ -99,6 +106,8 @@ class cmd_dbcheck(Command):
         self.search_scope = scope_map[scope]
 
         controls = []
+        if H is not None:
+            controls.append('paged_results:1:1000')
         if cross_ncs:
             controls.append("search_options:1:2")
 
@@ -160,7 +169,7 @@ class cmd_dbcheck(Command):
         print("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
         mod_list = []
         for val in values:
-            normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
+            normalised = self.samdb.dsdb_normalise_attributes(self.local_samdb, attrname, [val])
             if len(normalised) != 1:
                 print("Unable to normalise value '%s'" % val)
                 mod_list.append((val, ''))
@@ -333,7 +342,7 @@ class cmd_dbcheck(Command):
 
             # get the syntax oid for the attribute, so we can can have
             # special handling for some specific attribute types
-            syntax_oid = self.samdb.get_syntax_oid_from_lDAPDisplayName(attrname)
+            syntax_oid = self.local_samdb.get_syntax_oid_from_lDAPDisplayName(attrname)
 
             if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
                                dsdb.DSDB_SYNTAX_STRING_DN, ldb.LDB_SYNTAX_DN ]:
@@ -342,7 +351,7 @@ class cmd_dbcheck(Command):
 
             # check for incorrectly normalised attributes
             for val in obj[attrname]:
-                normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
+                normalised = self.samdb.dsdb_normalise_attributes(self.local_samdb, attrname, [val])
                 if len(normalised) != 1 or normalised[0] != val:
                     self.err_normalise_mismatch(dn, attrname, obj[attrname])
                     error_count += 1
