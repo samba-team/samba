@@ -20,14 +20,41 @@
 
 import ldb, sys
 import samba.getopt as options
+from samba import dsdb
 from samba.common import confirm
 from samba.auth import system_session
 from samba.samdb import SamDB
+from samba.dcerpc import misc
 from samba.netcmd import (
     Command,
     CommandError,
     Option
     )
+
+
+class dsdb_DN(object):
+    '''a class to manipulate DN components'''
+
+    def __init__(self, samdb, dnstring, syntax_oid):
+        if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_STRING_DN ]:
+            colons = dnstring.split(':')
+            if len(colons) < 4:
+                raise Exception("invalid DN prefix")
+            prefix_len = 4 + len(colons[1]) + int(colons[1])
+            self.prefix = dnstring[0:prefix_len]
+            self.dnstring = dnstring[prefix_len:]
+        else:
+            self.dnstring = dnstring
+            self.prefix = ''
+        try:
+            self.dn = ldb.Dn(samdb, self.dnstring)
+        except Exception, msg:
+            print("ERROR: bad DN string '%s'" % self.dnstring)
+            raise
+
+    def __str__(self):
+        return self.prefix + str(self.dn.extended_str(mode=1))
+
 
 class cmd_dbcheck(Command):
     """check local AD database for errors"""
@@ -89,7 +116,7 @@ class cmd_dbcheck(Command):
 
     ################################################################
     # handle empty attributes
-    def empty_attribute(self, dn, attrname):
+    def err_empty_attribute(self, dn, attrname):
         '''fix empty attributes'''
         print("ERROR: Empty attribute %s in %s" % (attrname, dn))
         if not self.fix:
@@ -101,6 +128,8 @@ class cmd_dbcheck(Command):
         m = ldb.Message()
         m.dn = dn
         m[attrname] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, attrname)
+        if self.verbose:
+            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
             self.samdb.modify(m, controls=["relax:0"], validate=False)
         except Exception, msg:
@@ -111,7 +140,7 @@ class cmd_dbcheck(Command):
 
     ################################################################
     # handle normalisation mismatches
-    def normalise_mismatch(self, dn, attrname, values):
+    def err_normalise_mismatch(self, dn, attrname, values):
         '''fix attribute normalisation errors'''
         print("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
         mod_list = []
@@ -137,12 +166,63 @@ class cmd_dbcheck(Command):
             if nval != '':
                 m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
 
+        if self.verbose:
+            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
             self.samdb.modify(m, controls=["relax:0"], validate=False)
         except Exception, msg:
             print("Failed to normalise attribute %s : %s" % (attrname, msg))
             return
         print("Normalised attribute %s" % attrname)
+
+
+    ################################################################
+    # handle a missing GUID extended DN component
+    def err_missing_dn_GUID(self, dn, attrname, val, dsdb_dn):
+        print("ERROR: missing GUID component for %s in object %s - %s" % (attrname, dn, val))
+        try:
+            res = self.samdb.search(base=dsdb_dn.dn, scope=ldb.SCOPE_BASE, attrs=['objectGUID'])
+        except LdbError, (enum, estr):
+            print("unable to find object for DN %s - cannot fix (%s)" % (dsdb_dn.dn, estr))
+            return
+        guid = res[0]['objectGUID'][0]
+        guidstr = str(misc.GUID(guid))
+        dsdb_dn.dn.set_extended_component("GUID", guid)
+
+        if not confirm('Add GUID %s giving DN %s?' % (guidstr, str(dsdb_dn))):
+            print("Not fixing missing GUID")
+            return
+        m = ldb.Message()
+        m.dn = dn
+        m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
+        if self.verbose:
+            print(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+        try:
+            self.samdb.modify(m)
+        except Exception, msg:
+            print("Failed to fix missing GUID on attribute %s : %s" % (attrname, msg))
+            return
+        print("Fixed missing GUID on attribute %s" % attrname)
+
+
+
+    ################################################################
+    # specialised checking for a dn attribute
+    def check_dn(self, obj, attrname, syntax_oid):
+        '''check a DN attribute for correctness'''
+        error_count = 0
+        for val in obj[attrname]:
+            dsdb_dn = dsdb_DN(self.samdb, val, syntax_oid)
+
+            # all DNs should have a GUID component
+            guid = dsdb_dn.dn.get_extended_component("GUID")
+            if guid is None:
+                error_count += 1
+                self.err_missing_dn_GUID(obj.dn, attrname, val, dsdb_dn)
+
+        return 0
+
 
 
     ################################################################
@@ -164,15 +244,24 @@ class cmd_dbcheck(Command):
             # check for empty attributes
             for val in obj[attrname]:
                 if val == '':
-                    self.empty_attribute(dn, attrname)
+                    self.err_empty_attribute(dn, attrname)
                     error_count += 1
                     continue
+
+            # get the syntax oid for the attribute, so we can can have
+            # special handling for some specific attribute types
+            syntax_oid = self.samdb.get_syntax_oid_from_lDAPDisplayName(attrname)
+
+            if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
+                               dsdb.DSDB_SYNTAX_STRING_DN, ldb.LDB_SYNTAX_DN ]:
+                # it's some form of DN, do specialised checking on those
+                error_count += self.check_dn(obj, attrname, syntax_oid)
 
             # check for incorrectly normalised attributes
             for val in obj[attrname]:
                 normalised = self.samdb.dsdb_normalise_attributes(self.samdb, attrname, [val])
                 if len(normalised) != 1 or normalised[0] != val:
-                    self.normalise_mismatch(dn, attrname, obj[attrname])
+                    self.err_normalise_mismatch(dn, attrname, obj[attrname])
                     error_count += 1
                     break
         return error_count
