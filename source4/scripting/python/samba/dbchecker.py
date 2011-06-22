@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import ldb, sys
+import ldb
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
