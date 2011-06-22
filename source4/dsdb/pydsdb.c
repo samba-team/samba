@@ -331,6 +331,38 @@ static PyObject *py_dsdb_get_attid_from_lDAPDisplayName(PyObject *self, PyObject
 }
 
 /*
+  return the attribute syntax oid as a string from the attribute name
+ */
+static PyObject *py_dsdb_get_syntax_oid_from_lDAPDisplayName(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	const char *ldap_display_name;
+	const struct dsdb_attribute *attribute;
+
+	if (!PyArg_ParseTuple(args, "Os", &py_ldb, &ldap_display_name))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
+	if (attribute == NULL) {
+		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		return NULL;
+	}
+
+	return PyString_FromString(attribute->syntax->ldap_oid);
+}
+
+/*
   convert a python string to a DRSUAPI drsuapi_DsReplicaAttribute attribute
  */
 static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
@@ -802,6 +834,8 @@ static PyMethodDef py_dsdb_methods[] = {
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_attid_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_attid_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
+	{ "_dsdb_get_syntax_oid_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_syntax_oid_from_lDAPDisplayName,
+		METH_VARARGS, NULL },
 	{ "_dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
 		NULL },
@@ -966,4 +1000,10 @@ void initdsdb(void)
 	ADD_DSDB_FLAG(GPO_FLAG_MACHINE_DISABLE);
 	ADD_DSDB_FLAG(GPO_INHERIT);
 	ADD_DSDB_FLAG(GPO_BLOCK_INHERITANCE);
+
+#define ADD_DSDB_STRING(val)  PyModule_AddObject(m, #val, PyString_FromString(val))
+
+	ADD_DSDB_STRING(DSDB_SYNTAX_BINARY_DN);
+	ADD_DSDB_STRING(DSDB_SYNTAX_STRING_DN);
+	ADD_DSDB_STRING(DSDB_SYNTAX_OR_NAME);
 }

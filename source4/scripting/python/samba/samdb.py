@@ -476,8 +476,13 @@ accountExpires: %u
 
     def get_attid_from_lDAPDisplayName(self, ldap_display_name,
             is_schema_nc=False):
+        '''return the attribute ID for a LDAP attribute as an integer as found in DRSUAPI'''
         return dsdb._dsdb_get_attid_from_lDAPDisplayName(self,
             ldap_display_name, is_schema_nc)
+
+    def get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name):
+        '''return the syntax OID for a LDAP attribute as a string'''
+        return dsdb._dsdb_get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name)
 
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
