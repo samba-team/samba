@@ -373,17 +373,16 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 	 */
 	if (control->data == NULL) {
 		/*
-		 * We don't know the control but there is no real data attached to it
-		 * so we can represent it with local_oid:oid:criticity
+		 * We don't know the control but there is no real data attached
+		 * to it so we can represent it with local_oid:oid:criticity.
 		 */
 		res = talloc_asprintf(mem_ctx, "local_oid:%s:%d",
 					control->oid,
 					control->critical);
-		return res;
-	}
-
+	} else {
 		res = talloc_asprintf(mem_ctx, "unknown oid:%s",
 					control->oid);
+	}
 	return res;
 }
 
