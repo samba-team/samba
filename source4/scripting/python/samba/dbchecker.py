@@ -207,7 +207,7 @@ class dbcheck(object):
 
     ################################################################
     # handle a DN string being incorrect
-    def err_dn_target_mismatch(self, dn, attrname, val, dsdb_dn, correct_dn):
+    def err_dn_target_mismatch(self, dn, attrname, val, dsdb_dn, correct_dn, errstr):
         self.report("ERROR: incorrect DN string component for %s in object %s - %s" % (attrname, dn, val))
         dsdb_dn.dn = correct_dn
 
@@ -267,7 +267,8 @@ class dbcheck(object):
             # check the DN matches in string form
             if res[0].dn.extended_str() != dsdb_dn.dn.extended_str():
                 error_count += 1
-                self.err_dn_target_mismatch(obj.dn, attrname, val, dsdb_dn, res[0].dn)
+                self.err_dn_target_mismatch(obj.dn, attrname, val, dsdb_dn,
+                                            res[0].dn, "incorrect string version of DN")
                 continue
 
         return error_count
