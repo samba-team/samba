@@ -3004,6 +3004,7 @@ static int cmd_symlink(void)
 	char *buf = NULL;
 	char *buf2 = NULL;
 	struct cli_state *newcli;
+	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
 	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
@@ -3032,9 +3033,10 @@ static int cmd_symlink(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_symlink(newcli, oldname, newname))) {
+	status = cli_posix_symlink(newcli, oldname, newname);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(newcli), newname, newname);
+			 nt_errstr(status), newname, newname);
 		return 1;
 	}
 
