@@ -376,7 +376,9 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 			errno = ENOMEM;
 			return false;
 		}
-		*converted_size = destlen;
+		if (converted_size != NULL) {
+			*converted_size = destlen;
+		}
 		*dest = ob;
 		return true;
 	}
@@ -470,7 +472,9 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 		}
 	}
 
-	*converted_size = destlen;
+	if (converted_size != NULL) {
+		*converted_size = destlen;
+	}
 	return true;
 }
 
