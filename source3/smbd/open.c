@@ -86,6 +86,16 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
 
+	if ((access_mask & DELETE_ACCESS) && !lp_acl_check_permissions(SNUM(conn))) {
+		*access_granted = access_mask;
+
+		DEBUG(10,("smbd_check_open_rights: not checking ACL "
+			"on DELETE_ACCESS on file %s. Granting 0x%x\n",
+			smb_fname_str_dbg(smb_fname),
+			(unsigned int)*access_granted ));
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 			(OWNER_SECURITY_INFORMATION |
 			GROUP_SECURITY_INFORMATION |
@@ -2967,8 +2977,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	/* Setting FILE_SHARE_DELETE is the hint. */
 
-	if (lp_acl_check_permissions(SNUM(conn))
-	    && (create_disposition != FILE_CREATE)
+	if ((create_disposition != FILE_CREATE)
 	    && (access_mask & DELETE_ACCESS)
 	    && (!(can_delete_file_in_directory(conn, smb_fname) ||
 		 can_access_file_acl(conn, smb_fname, DELETE_ACCESS)))) {

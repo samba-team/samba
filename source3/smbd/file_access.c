@@ -77,6 +77,11 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		return False;
 	}
 
+	if (!lp_acl_check_permissions(SNUM(conn))) {
+		/* This option means don't check. */
+		return true;
+	}
+
 	/* Get the parent directory permission mask and owners. */
 	if (!parent_dirname(ctx, smb_fname->base_name, &dname, NULL)) {
 		return False;
