@@ -35,6 +35,7 @@
 #define LDAP_ATTRIBUTE_TRUST_TYPE "sambaTrustType"
 #define LDAP_ATTRIBUTE_TRUST_ATTRIBUTES "sambaTrustAttributes"
 #define LDAP_ATTRIBUTE_TRUST_DIRECTION "sambaTrustDirection"
+#define LDAP_ATTRIBUTE_TRUST_POSIX_OFFSET "sambaTrustPosixOffset"
 #define LDAP_ATTRIBUTE_TRUST_PARTNER "sambaTrustPartner"
 #define LDAP_ATTRIBUTE_FLAT_NAME "sambaFlatName"
 #define LDAP_ATTRIBUTE_TRUST_AUTH_OUTGOING "sambaTrustAuthOutgoing"
@@ -364,6 +365,17 @@ static bool fill_pdb_trusted_domain(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
+	td->trust_posix_offset = talloc(td, uint32_t);
+	if (td->trust_posix_offset == NULL) {
+		return false;
+	}
+	res = get_uint32_t_from_ldap_msg(ldap_state, entry,
+					 LDAP_ATTRIBUTE_TRUST_POSIX_OFFSET,
+					 td->trust_posix_offset);
+	if (!res) {
+		return false;
+	}
+
 	get_data_blob_from_ldap_msg(td, ldap_state, entry,
 				    LDAP_ATTRIBUTE_TRUST_FOREST_TRUST_INFO,
 				    &td->trust_forest_trust_info);
@@ -515,6 +527,16 @@ static NTSTATUS ipasam_set_trusted_domain(struct pdb_methods *methods,
 						&mods,
 						LDAP_ATTRIBUTE_TRUST_DIRECTION,
 						td->trust_direction);
+		if (!res) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	if (td->trust_posix_offset != NULL) {
+		res = smbldap_make_mod_uint32_t(priv2ld(ldap_state), entry,
+						&mods,
+						LDAP_ATTRIBUTE_TRUST_POSIX_OFFSET,
+						*td->trust_posix_offset);
 		if (!res) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
