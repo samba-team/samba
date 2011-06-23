@@ -72,7 +72,7 @@ LIB_SRC = '''
           lib/wins_srv.c
           lib/util_sid.c
           lib/util_file.c
-          lib/util.c lib/util_cmdline.c
+          lib/util.c
           lib/util_sock.c lib/sock_exec.c
           lib/substitute.c lib/substitute_generic.c
           lib/ms_fnmatch.c
@@ -743,7 +743,7 @@ if bld.env.toplevel_build:
 
 bld.SAMBA3_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC,
-                    deps='''PARAM_UTIL smbd_conn ldap lber LOADPARM_CTX''',
+                    deps='''PARAM_UTIL smbd_conn ldap lber LOADPARM_CTX samba3core''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('param',
@@ -785,8 +785,13 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
 
 bld.SAMBA3_LIBRARY('POPT_SAMBA3',
                    source=POPT_LIB_SRC,
-                   deps='popt samba-util',
+                   deps='popt samba-util UTIL_CMDLINE',
                    vars=locals(),
+                   private_library=True)
+
+bld.SAMBA3_LIBRARY('UTIL_CMDLINE',
+                   source='lib/util_cmdline.c',
+                   deps='SECRETS3',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
@@ -796,7 +801,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
-                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray SECRETS3 dbwrap_util util_sec util_malloc memcache ccan',
+                   deps='LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray dbwrap_util util_sec util_malloc memcache ccan',
                    vars=locals())
 
 bld.SAMBA3_LIBRARY('smbd_shim',
@@ -816,7 +821,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
 
 bld.SAMBA3_LIBRARY('LIBSMB',
                    source=LIBSMB_SRC,
-                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON',
+                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON UTIL_CMDLINE',
                    vars=locals(),
                    private_library=True)
 
