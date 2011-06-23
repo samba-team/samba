@@ -36,6 +36,7 @@
 #include "libsmb/clirap.h"
 #include "trans2.h"
 #include "libsmb/nmblib.h"
+#include "include/ntioctl.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -3014,26 +3015,25 @@ static int cmd_symlink(void)
 	/* Oldname (link target) must be an untouched blob. */
 	oldname = buf;
 
-	newname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			buf2);
-	if (!newname) {
-		return 1;
+	if (SERVER_HAS_UNIX_CIFS(cli)) {
+		newname = talloc_asprintf(ctx, "%s%s", client_get_cur_dir(),
+					  buf2);
+		if (!newname) {
+			return 1;
+		}
+		/* New name must be present in share namespace. */
+		if (!cli_resolve_path(ctx, "", auth_info, cli, newname,
+				      &newcli, &newname)) {
+			d_printf("link %s: %s\n", oldname, cli_errstr(cli));
+			return 1;
+		}
+		status = cli_posix_symlink(newcli, oldname, newname);
+	} else {
+		status = cli_symlink(
+			cli, oldname, buf2,
+			buf2[0] == '\\' ? 0 : SYMLINK_FLAG_RELATIVE);
 	}
 
-	/* New name must be present in share namespace. */
-	if (!cli_resolve_path(ctx, "", auth_info, cli, newname, &newcli, &newname)) {
-		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
-		return 1;
-	}
-
-	if (!SERVER_HAS_UNIX_CIFS(newcli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
-	status = cli_posix_symlink(newcli, oldname, newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s symlinking files (%s -> %s)\n",
 			 nt_errstr(status), newname, newname);
