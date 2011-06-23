@@ -324,105 +324,6 @@ static char * realloc_expand_env_var(char *str, char *p)
 }
 
 /*******************************************************************
-*******************************************************************/
-
-static char *longvar_domainsid( void )
-{
-	struct dom_sid sid;
-	fstring tmp;
-	char *sid_string;
-
-	if ( !secrets_fetch_domain_sid( lp_workgroup(), &sid ) ) {
-		return NULL;
-	}
-
-	sid_string = SMB_STRDUP( sid_to_fstring( tmp, &sid ) );
-
-	if ( !sid_string ) {
-		DEBUG(0,("longvar_domainsid: failed to dup SID string!\n"));
-	}
-
-	return sid_string;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-struct api_longvar {
-	const char *name;
-	char* (*fn)( void );
-};
-
-static struct api_longvar longvar_table[] = {
-	{ "DomainSID",		longvar_domainsid },
-	{ NULL, 		NULL }
-};
-
-static char *get_longvar_val( const char *varname )
-{
-	int i;
-
-	DEBUG(7,("get_longvar_val: expanding variable [%s]\n", varname));
-
-	for ( i=0; longvar_table[i].name; i++ ) {
-		if ( strequal( longvar_table[i].name, varname ) ) {
-			return longvar_table[i].fn();
-		}
-	}
-
-	return NULL;
-}
-
-/*******************************************************************
- Expand the long smb.conf variable names given a pointer to a %(NAME).
- Return the number of characters by which the pointer should be advanced.
- When this is called p points at the '%' character.
-********************************************************************/
-
-static char *realloc_expand_longvar(char *str, char *p)
-{
-	fstring varname;
-	char *value;
-	char *q, *r;
-	int copylen;
-
-	if ( p[0] != '%' || p[1] != '(' ) {
-		return str;
-	}
-
-	/* Look for the terminating ')'.*/
-
-	if ((q = strchr_m(p,')')) == NULL) {
-		DEBUG(0,("realloc_expand_longvar: Unterminated environment variable [%s]\n", p));
-		return str;
-	}
-
-	/* Extract the name from within the %(NAME) string.*/
-
-	r = p+2;
-	copylen = MIN( (q-r), (sizeof(varname)-1) );
-	strncpy(varname, r, copylen);
-	varname[copylen] = '\0';
-
-	if ((value = get_longvar_val(varname)) == NULL) {
-		DEBUG(0,("realloc_expand_longvar: Variable [%s] not set.  Skipping\n", varname));
-		return str;
-	}
-
-	/* Copy the full %(NAME) into envname so it can be replaced.*/
-
-	copylen = MIN( (q+1-p),(sizeof(varname)-1) );
-	strncpy( varname, p, copylen );
-	varname[copylen] = '\0';
-	r = realloc_string_sub(str, varname, value);
-	SAFE_FREE( value );
-
-	/* skip over the %(varname) */
-
-	return r;
-}
-
-/*******************************************************************
  Patch from jkf@soton.ac.uk
  Added this to implement %p (NIS auto-map version of %H)
 *******************************************************************/
@@ -679,9 +580,6 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		case '$' :
 			a_string = realloc_expand_env_var(a_string, p); /* Expand environment variables */
-			break;
-		case '(':
-			a_string = realloc_expand_longvar( a_string, p );
 			break;
 		case 'V' :
 			slprintf(vnnstr,sizeof(vnnstr)-1, "%u", get_my_vnn());
