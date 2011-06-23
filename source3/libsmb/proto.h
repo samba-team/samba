@@ -860,4 +860,16 @@ bool symlink_reparse_buffer_parse(
 	const uint8_t *src, size_t srclen, TALLOC_CTX *mem_ctx,
 	char **psubstitute_name, char **pprint_name, uint32_t *pflags);
 
+/* The following definitions come from libsmb/clisymlink.c  */
+
+struct tevent_req *cli_symlink_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct cli_state *cli,
+				    const char *oldpath,
+				    const char *newpath,
+				    uint32_t flags);
+NTSTATUS cli_symlink_recv(struct tevent_req *req);
+NTSTATUS cli_symlink(struct cli_state *cli, const char *oldname,
+		     const char *newname, uint32_t flags);
+
 #endif /* _LIBSMB_PROTO_H_ */
