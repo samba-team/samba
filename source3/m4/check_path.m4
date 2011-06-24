@@ -15,7 +15,6 @@ AC_LIBREPLACE_LOCATION_CHECKS
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
-rootsbindir="\${SBINDIR}"
 lockdir="\${VARDIR}/locks"
 piddir="\${VARDIR}/locks"
 ncalrpcdir="\${VARDIR}/ncalrpc"
@@ -67,22 +66,6 @@ AC_ARG_WITH(privatedir,
   ;;
   * )
     privatedir="$withval"
-    ;;
-  esac])
-
-#################################################
-# set root sbin directory location
-AC_ARG_WITH(rootsbindir,
-[AS_HELP_STRING([--with-rootsbindir=DIR], [Which directory to use for root sbin ($ac_default_prefix/sbin)])],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody calls it without argument
-  #
-    AC_MSG_WARN([--with-rootsbindir called without argument - will use default])
-  ;;
-  * )
-    rootsbindir="$withval"
     ;;
   esac])
 
@@ -325,7 +308,6 @@ AC_SUBST(sbindir)
 AC_SUBST(codepagedir)
 AC_SUBST(statedir)
 AC_SUBST(cachedir)
-AC_SUBST(rootsbindir)
 AC_SUBST(pammodulesdir)
 AC_SUBST(modulesdir)
 AC_SUBST(localedir)

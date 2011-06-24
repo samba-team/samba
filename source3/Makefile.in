@@ -121,7 +121,6 @@ BASEDIR= @prefix@
 BINDIR = @bindir@
 # sbindir is mapped to bindir when compiling SAMBA in 2.0.x compatibility mode.
 SBINDIR = @sbindir@
-ROOTSBINDIR = @rootsbindir@
 LIBDIR = @libdir@
 MODULESDIR = @modulesdir@
 INCLUDEDIR=@includedir@
