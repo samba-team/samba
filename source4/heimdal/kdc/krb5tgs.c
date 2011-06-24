@@ -901,7 +901,7 @@ tgs_make_reply(krb5_context context,
     ret = krb5_copy_keyblock_contents(context, sessionkey, &et.key);
     if (ret)
 	goto out;
-    et.crealm = tgt->crealm;
+    et.crealm = tgt_name->realm;
     et.cname = tgt_name->name;
 	
     ek.key = et.key;
