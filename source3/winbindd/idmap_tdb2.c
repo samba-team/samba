@@ -108,11 +108,7 @@ static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 		return NT_STATUS_OK;
 	}
 
-	db_path = lp_parm_talloc_string(-1, "tdb", "idmap2.tdb", NULL);
-	if (db_path == NULL) {
-		/* fall back to the private directory */
-		db_path = talloc_asprintf(NULL, "%s/idmap2.tdb", lp_private_dir());
-	}
+	db_path = talloc_asprintf(NULL, "%s/idmap2.tdb", lp_private_dir());
 	NT_STATUS_HAVE_NO_MEMORY(db_path);
 
 	/* Open idmap repository */
