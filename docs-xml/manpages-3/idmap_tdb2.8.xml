@@ -43,6 +43,16 @@
 			backend is authoritative.
 		</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>script</term>
+		<listitem><para>
+			This option can be used to configure an external program
+			for performing id mappings instead of using the tdb
+			counter. The mappings are then stored int tdb2 idmap
+			database. For details see the section on IDMAP SCRIPT below.
+		</para></listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 
@@ -50,8 +60,12 @@
 	<title>IDMAP SCRIPT</title>
 
 	<para>
-	The tdb2 idmap backend supports a script for performing id mappings
-	through the smb.conf option <parameter>idmap : script</parameter>.
+	The tdb2 idmap backend supports an external program for performing id mappings
+	through the smb.conf option <parameter>idmap config * : script</parameter> or
+	its deprecated legacy form <parameter>idmap : script</parameter>.
+	</para>
+
+	<para>
 	The script should accept the following command line options.
 	</para>
 
