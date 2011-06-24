@@ -3036,7 +3036,7 @@ static int cmd_symlink(void)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			 nt_errstr(status), newname, newname);
+			 nt_errstr(status), oldname, newname);
 		return 1;
 	}
 
