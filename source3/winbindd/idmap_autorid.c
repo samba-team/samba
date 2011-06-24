@@ -28,6 +28,7 @@
 #include "dbwrap.h"
 #include "idmap.h"
 #include "../libcli/security/dom_sid.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -376,7 +377,7 @@ static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
 		return NULL;
 	}
 
-	cfg = TALLOC_ZERO_P(ctx, struct autorid_global_config);
+	cfg = talloc_zero(ctx, struct autorid_global_config);
 	if (!cfg) {
 		return NULL;
 	}
@@ -435,7 +436,14 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	NTSTATUS status;
 	uint32_t hwm;
 
-	config = TALLOC_ZERO_P(dom, struct autorid_global_config);
+	if (!strequal(dom->name, "*")) {
+		DEBUG(0, ("idmap_autorid_initialize: Error: autorid configured "
+			  "for domain '%s'. But autorid can only be used for "
+			  "the default idmap configuration.\n", dom->name));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	config = talloc_zero(dom, struct autorid_global_config);
 	if (!config) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -447,7 +455,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	}
 
 	config->minvalue = dom->low_id;
-	config->rangesize = lp_parm_int(-1, "autorid", "rangesize", 100000);
+	config->rangesize = lp_parm_int(-1, "idmap config *", "rangesize", 100000);
 
 	if (config->rangesize < 2000) {
 		DEBUG(1, ("autorid rangesize must be at least 2000\n"));
@@ -522,14 +530,12 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 
 	dom->private_data = config;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto error;
-	}
+	goto done;
 
-	return NT_STATUS_OK;
-
-      error:
+error:
 	talloc_free(config);
+
+done:
 	talloc_free(storedconfig);
 
 	return status;

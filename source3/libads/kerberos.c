@@ -223,8 +223,8 @@ int kerberos_kinit_password_ext(const char *principal,
 		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
 	}
 
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, CONST_DISCARD(char *,password), 
-						 kerb_prompter, CONST_DISCARD(char *,password),
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, discard_const_p(char,password), 
+						 kerb_prompter, discard_const_p(char, password),
 						 0, NULL, opt))) {
 		goto out;
 	}
@@ -352,7 +352,7 @@ char* kerberos_standard_des_salt( void )
 {
 	fstring salt;
 
-	fstr_sprintf( salt, "host/%s.%s@", global_myname(), lp_realm() );
+	fstr_sprintf( salt, "host/%s.%s@", lp_netbios_name(), lp_realm() );
 	strlower_m( salt );
 	fstrcat( salt, lp_realm() );
 
@@ -958,22 +958,37 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	/* Insanity, sheer insanity..... */
 
 	if (strequal(realm, lp_realm())) {
-		char linkpath[PATH_MAX+1];
-		int lret;
+		SMB_STRUCT_STAT sbuf;
 
-		lret = readlink(SYSTEM_KRB5_CONF_PATH, linkpath, sizeof(linkpath)-1);
-		if (lret != -1) {
-			linkpath[lret] = '\0';
-		}
+		if (sys_lstat(SYSTEM_KRB5_CONF_PATH, &sbuf, false) == 0) {
+			if (S_ISLNK(sbuf.st_ex_mode) && sbuf.st_ex_size) {
+				int lret;
+				size_t alloc_size = sbuf.st_ex_size + 1;
+				char *linkpath = talloc_array(talloc_tos(), char,
+						alloc_size);
+				if (!linkpath) {
+					goto done;
+				}
+				lret = readlink(SYSTEM_KRB5_CONF_PATH, linkpath,
+						alloc_size - 1);
+				if (lret == -1) {
+					TALLOC_FREE(linkpath);
+					goto done;
+				}
+				linkpath[lret] = '\0';
 
-		if (lret != -1 || strcmp(linkpath, fname) == 0) {
-			/* Symlink already exists. */
-			goto done;
+				if (strcmp(linkpath, fname) == 0) {
+					/* Symlink already exists. */
+					TALLOC_FREE(linkpath);
+					goto done;
+				}
+				TALLOC_FREE(linkpath);
+			}
 		}
 
 		/* Try and replace with a symlink. */
 		if (symlink(fname, SYSTEM_KRB5_CONF_PATH) == -1) {
-			const char *newpath = SYSTEM_KRB5_CONF_PATH ## ".saved";
+			const char *newpath = SYSTEM_KRB5_CONF_PATH ".saved";
 			if (errno != EEXIST) {
 				DEBUG(0,("create_local_private_krb5_conf_for_domain: symlink "
 					"of %s to %s failed. Errno %s\n",

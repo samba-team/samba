@@ -178,13 +178,8 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 					   struct timeval t, void *private_data)
 {
 	const char *binary_name = (const char *)private_data;
-	struct timeval tv;
-	struct timezone tz;
-	if (gettimeofday(&tv, &tz) == 0) {
-		DEBUG(0,("%s: maximum runtime exceeded - terminating, current ts: %d\n", binary_name, (int)tv.tv_sec));
-	} else {
-		DEBUG(0,("%s: maximum runtime exceeded - terminating\n", binary_name));
-	}
+	DEBUG(0,("%s: maximum runtime exceeded - terminating, current ts: %llu\n",
+	      binary_name, (unsigned long long) time(NULL)));
 	exit(0);
 }
 
@@ -221,11 +216,11 @@ static NTSTATUS samba_terminate(struct irpc_message *msg,
 static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx, 
 				       struct loadparm_context *lp_ctx)
 {
-	struct messaging_context *msg;
+	struct imessaging_context *msg;
 	NTSTATUS status;
 
-	msg = messaging_init(talloc_autofree_context(), 
-			     lpcfg_messaging_path(event_ctx, lp_ctx),
+	msg = imessaging_init(talloc_autofree_context(),
+			     lpcfg_imessaging_path(event_ctx, lp_ctx),
 			     cluster_id(0, SAMBA_PARENT_TASKID), event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
@@ -388,10 +383,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	pidfile_create(lpcfg_piddir(cmdline_lp_ctx), binary_name);
 
-	/* Do *not* remove this, until you have removed
-	 * passdb/secrets.c, and proved that Samba still builds... */
-	/* Setup the SECRETS subsystem */
-	if (secrets_init(talloc_autofree_context(), cmdline_lp_ctx) == NULL) {
+	/* Set up a database to hold a random seed, in case we don't
+	 * have /dev/urandom */
+	if (!randseed_init(talloc_autofree_context(), cmdline_lp_ctx)) {
 		return 1;
 	}
 
@@ -402,9 +396,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		}
 	}
 
-	gensec_init(cmdline_lp_ctx); /* FIXME: */
+	gensec_init(); /* FIXME: */
 
-	ntptr_init(cmdline_lp_ctx);	/* FIXME: maybe run this in the initialization function 
+	ntptr_init();	/* FIXME: maybe run this in the initialization function 
 						of the spoolss RPC server instead? */
 
 	ntvfs_init(cmdline_lp_ctx); 	/* FIXME: maybe run this in the initialization functions 
@@ -412,7 +406,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	process_model_init(cmdline_lp_ctx); 
 
-	shared_init = load_samba_modules(NULL, cmdline_lp_ctx, "service");
+	shared_init = load_samba_modules(NULL, "service");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);
@@ -445,14 +439,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		      discard_const(binary_name));
 
 	if (max_runtime) {
-		struct timeval tv;
-		struct timezone tz;
-
-		if (gettimeofday(&tv, &tz) == 0) {
-			DEBUG(0,("Called with maxruntime %d - current ts %d\n", max_runtime, (int)tv.tv_sec));
-		} else {
-			DEBUG(0,("Called with maxruntime %d\n", max_runtime));
-		}
+		DEBUG(0,("Called with maxruntime %d - current ts %llu\n",
+		      max_runtime, (unsigned long long) time(NULL)));
 		tevent_add_timer(event_ctx, event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,

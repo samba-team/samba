@@ -28,25 +28,7 @@
 	<para>
 	In contrast to read only backends like idmap_rid, it is an allocating
 	backend: This means that it needs to allocate new user and group IDs in
-	order to create new mappings. The allocator can be provided by the
-	idmap_tdb2 backend itself or by any other allocating backend like
-	idmap_tdb or idmap_ldap. This is configured with the
-	parameter <parameter>idmap alloc backend</parameter>.
-	</para>
-
-	<para>
-	Note that in order for this (or any other allocating) backend to
-	function at all, the default backend needs to be writeable.
-	The ranges used for uid and gid allocation are the default ranges
-	configured by &quot;idmap uid&quot; and &quot;idmap gid&quot;.
-	</para>
-
-	<para>
-	Furthermore, since there is only one global allocating backend
-	responsible for all domains using writeable idmap backends,
-	any explicitly configured domain with idmap backend tdb2
-	should have the same range as the default range, since it needs
-	to use the global uid / gid allocator. See the example below.
+	order to create new mappings.
 	</para>
 </refsynopsisdiv>
 
@@ -59,9 +41,6 @@
 		<listitem><para>
 			Defines the available matching uid and gid range for which the
 			backend is authoritative.
-			If the parameter is absent, Winbind fails over to use
-			the &quot;idmap uid&quot; and &quot;idmap gid&quot; options
-			from smb.conf.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -108,14 +87,13 @@
 	<para>
 	This example shows how tdb2 is used as a the default idmap backend.
 	It configures the idmap range through the global options for all
-	domains encountered. This same range is used for uid/gid allocation.
+	domains encountered.
 	</para>
 
 	<programlisting>
 	[global]
-	idmap backend = tdb2
-	idmap uid = 1000000-2000000
-	idmap gid = 1000000-2000000
+	idmap config * : backend = tdb2
+	idmap config * : range = 1000000-2000000
 	</programlisting>
 </refsect1>
 

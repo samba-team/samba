@@ -20,17 +20,5 @@
 */
 
 #include "system/network.h"
-
-struct iface_struct {
-	char name[16];
-	struct in_addr ip;
-	struct in_addr netmask;
-};
-
-struct interface;
-
-#define MAX_INTERFACES 128
-
-#ifndef AUTOCONF_TEST
+#include "lib/socket/interfaces.h"
 #include "lib/socket/netif_proto.h"
-#endif

@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "secrets.h"
@@ -456,11 +457,11 @@ smbc_option_get(SMBCCTX *context,
                 switch(smbc_getOptionSmbEncryptionLevel(context))
                 {
                 case 0:
-                        return (void *) "none";
+                        return discard_const_p(void, "none");
                 case 1:
-                        return (void *) "request";
+                        return discard_const_p(void, "request");
                 case 2:
-                        return (void *) "require";
+                        return discard_const_p(void, "require");
                 }
 
         } else if (strcmp(option_name, "smb_encrypt_on") == 0) {
@@ -598,8 +599,8 @@ smbc_init_context(SMBCCTX *context)
                  * our hostname etc
                  */
                 char *netbios_name;
-                if (global_myname()) {
-                        netbios_name = SMB_STRDUP(global_myname());
+                if (lp_netbios_name()) {
+                        netbios_name = SMB_STRDUP(lp_netbios_name());
                 } else {
                         /*
                          * Hmmm, I want to get hostname as well, but I am too
@@ -749,6 +750,7 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 	}
 
         set_cmdline_auth_info_username(auth_info, user);
+        set_cmdline_auth_info_domain(auth_info, workgroup);
         set_cmdline_auth_info_password(auth_info, password);
         set_cmdline_auth_info_use_kerberos(auth_info, use_kerberos);
         set_cmdline_auth_info_signing_state(auth_info, signing_state);
@@ -756,7 +758,6 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		smbc_getOptionFallbackAfterKerberos(context));
 	set_cmdline_auth_info_use_ccache(
 		auth_info, smbc_getOptionUseCCache(context));
-        set_global_myworkgroup(workgroup);
 
 	TALLOC_FREE(context->internal->auth_info);
 

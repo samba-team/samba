@@ -141,7 +141,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	struct ntlmssp_state *ntlmssp_state;
 
 	nt_status = ntlmssp_client_start(NULL,
-					 global_myname(),
+					 lp_netbios_name(),
 					 lp_workgroup(),
 					 lp_client_ntlmv2_auth(),
 					 &ntlmssp_state);
@@ -388,7 +388,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 	uint32 minor_status;
 	int gss_rc, rc;
 	gss_OID_desc krb5_mech_type =
-	{9, CONST_DISCARD(char *, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
+	{9, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
 	gss_OID mech_type = &krb5_mech_type;
 	gss_OID actual_mech_type = GSS_C_NULL_OID;
 	const char *spnego_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, OID_NTLMSSP, NULL};
@@ -722,7 +722,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 	gss_buffer_desc input_name;
 	/* GSS_KRB5_NT_PRINCIPAL_NAME */
 	gss_OID_desc nt_principal =
-	{10, CONST_DISCARD(char *, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01")};
+	{10, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01")};
 	uint32 minor_status;
 	int gss_rc;
 #endif

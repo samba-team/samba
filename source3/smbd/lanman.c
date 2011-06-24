@@ -34,17 +34,15 @@
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
-#include "../librpc/gen_ndr/srv_samr.h"
-#include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/util/binsearch.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "rpc_client/init_lsa.h"
-#include "rpc_server/rpc_ncacn_np.h"
 #include "../libcli/security/security.h"
 #include "printing.h"
 #include "passdb/machine_sid.h"
 #include "auth.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
@@ -614,9 +612,9 @@ static void fill_printq_info_52(struct spoolss_DriverInfo3 *driver,
 {
 	int 				i;
 	fstring 			location;
-	trim_string((char *)driver->driver_path, "\\print$\\WIN40\\0\\", 0);
-	trim_string((char *)driver->data_file, "\\print$\\WIN40\\0\\", 0);
-	trim_string((char *)driver->help_file, "\\print$\\WIN40\\0\\", 0);
+	trim_string(discard_const_p(char, driver->driver_path), "\\print$\\WIN40\\0\\", 0);
+	trim_string(discard_const_p(char, driver->data_file), "\\print$\\WIN40\\0\\", 0);
+	trim_string(discard_const_p(char, driver->help_file), "\\print$\\WIN40\\0\\", 0);
 
 	PACKI(desc, "W", 0x0400);                     /* don't know */
 	PACKS(desc, "z", driver->driver_name);        /* long printer name */
@@ -643,7 +641,7 @@ static void fill_printq_info_52(struct spoolss_DriverInfo3 *driver,
 
 	for ( i=0; i<count && driver->dependent_files && *driver->dependent_files[i]; i++)
 	{
-		trim_string((char *)driver->dependent_files[i], "\\print$\\WIN40\\0\\", 0);
+		trim_string(discard_const_p(char, driver->dependent_files[i]), "\\print$\\WIN40\\0\\", 0);
 		PACKS(desc,"z",driver->dependent_files[i]);         /* driver files to copy */
 		DEBUG(3,("Dependent File: %s:\n", driver->dependent_files[i]));
 	}
@@ -1429,7 +1427,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 
 static int srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
 {
-	return StrCaseCmp(s1->name,s2->name);
+	return strcasecmp_m(s1->name,s2->name);
 }
 
 /****************************************************************************
@@ -1598,7 +1596,7 @@ static int srv_name_match(const char *n1, const char *n2)
 	 *  the server will return a list of servers that exist on
 	 *  the network greater than or equal to the FirstNameToReturn.
 	 */
-	int ret = StrCaseCmp(n1, n2);
+	int ret = strcasecmp_m(n1, n2);
 
 	if (ret <= 0) {
 		return 0;
@@ -1710,7 +1708,7 @@ static bool api_RNetServerEnum3(struct smbd_server_connection *sconn,
 			 */
 			for (;first > 0;) {
 				int ret;
-				ret = StrCaseCmp(first_name,
+				ret = strcasecmp_m(first_name,
 						 servers[first-1].name);
 				if (ret > 0) {
 					break;
@@ -2094,7 +2092,7 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	load_registry_shares();
-	count = load_usershare_shares();
+	count = load_usershare_shares(sconn);
 	unbecome_root();
 
 	data_len = fixed_len = string_len = 0;
@@ -2256,7 +2254,7 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 		return false;
 	}
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_srvsvc.syntax_id,
+	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_srvsvc.syntax_id,
 					conn->session_info,
 					&conn->sconn->client_id,
 					conn->sconn->msg_ctx,
@@ -2367,7 +2365,7 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	status = rpc_pipe_open_internal(
+	status = rpc_pipe_open_interface(
 		talloc_tos(), &ndr_table_samr.syntax_id,
 		conn->session_info, &conn->sconn->client_id,
 		conn->sconn->msg_ctx, &samr_pipe);
@@ -2379,7 +2377,7 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 
 	b = samr_pipe->binding_handle;
 
-	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+	status = dcerpc_samr_Connect2(b, talloc_tos(), lp_netbios_name(),
 				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2573,7 +2571,7 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 	p = *rdata;
 	endp = *rdata + *rdata_len;
 
-	status = rpc_pipe_open_internal(
+	status = rpc_pipe_open_interface(
 		talloc_tos(), &ndr_table_samr.syntax_id,
 		conn->session_info, &conn->sconn->client_id,
 		conn->sconn->msg_ctx, &samr_pipe);
@@ -2585,7 +2583,7 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 
 	b = samr_pipe->binding_handle;
 
-	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+	status = dcerpc_samr_Connect2(b, talloc_tos(), lp_netbios_name(),
 				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2765,7 +2763,7 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 	p = *rdata;
 	endp = *rdata + *rdata_len;
 
-	status = rpc_pipe_open_internal(
+	status = rpc_pipe_open_interface(
 		talloc_tos(), &ndr_table_samr.syntax_id,
 		conn->session_info, &conn->sconn->client_id,
 		conn->sconn->msg_ctx, &samr_pipe);
@@ -2777,7 +2775,7 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 
 	b = samr_pipe->binding_handle;
 
-	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+	status = dcerpc_samr_Connect2(b, talloc_tos(), lp_netbios_name(),
 				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3031,7 +3029,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 	ZERO_STRUCT(domain_handle);
 	ZERO_STRUCT(user_handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_samr.syntax_id,
 					conn->session_info,
 					&conn->sconn->client_id,
 					conn->sconn->msg_ctx,
@@ -3046,7 +3044,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 	b = cli->binding_handle;
 
 	status = dcerpc_samr_Connect2(b, mem_ctx,
-				      global_myname(),
+				      lp_netbios_name(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,
@@ -3282,7 +3280,7 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 	memcpy(password.data, data, 516);
 	memcpy(hash.hash, data+516, 16);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_samr.syntax_id,
 					conn->session_info,
 					&conn->sconn->client_id,
 					conn->sconn->msg_ctx,
@@ -3296,7 +3294,7 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 
 	b = cli->binding_handle;
 
-	init_lsa_AsciiString(&server, global_myname());
+	init_lsa_AsciiString(&server, lp_netbios_name());
 	init_lsa_AsciiString(&account, user);
 
 	status = dcerpc_samr_OemChangePasswordUser2(b, mem_ctx,
@@ -3866,7 +3864,7 @@ static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
 	p = *rdata;
 	p2 = p + struct_len;
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_srvsvc.syntax_id,
+	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_srvsvc.syntax_id,
 					conn->session_info,
 					&conn->sconn->client_id,
 					conn->sconn->msg_ctx,
@@ -4029,8 +4027,8 @@ static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
 	}
 	p += 4;
 
-	SCVAL(p,0,lp_major_announce_version()); /* system version - e.g 4 in 4.1 */
-	SCVAL(p,1,lp_minor_announce_version()); /* system version - e.g .1 in 4.1 */
+	SCVAL(p,0,SAMBA_MAJOR_NBT_ANNOUNCE_VERSION); /* system version - e.g 4 in 4.1 */
+	SCVAL(p,1,SAMBA_MINOR_NBT_ANNOUNCE_VERSION); /* system version - e.g .1 in 4.1 */
 	p += 2;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));
@@ -4293,7 +4291,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 	ZERO_STRUCT(domain_handle);
 	ZERO_STRUCT(user_handle);
 
-	status = rpc_pipe_open_internal(mem_ctx, &ndr_table_samr.syntax_id,
+	status = rpc_pipe_open_interface(mem_ctx, &ndr_table_samr.syntax_id,
 					conn->session_info,
 					&conn->sconn->client_id,
 					conn->sconn->msg_ctx,
@@ -4308,7 +4306,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 	b = cli->binding_handle;
 
 	status = dcerpc_samr_Connect2(b, mem_ctx,
-				      global_myname(),
+				      lp_netbios_name(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,

@@ -239,10 +239,10 @@
 #define SMB_VFS_NEXT_CHDIR(handle, path) \
 	smb_vfs_call_chdir((handle)->next, (path))
 
-#define SMB_VFS_GETWD(conn, buf) \
-	smb_vfs_call_getwd((conn)->vfs_handles, (buf))
-#define SMB_VFS_NEXT_GETWD(handle, buf) \
-	smb_vfs_call_getwd((handle)->next, (buf))
+#define SMB_VFS_GETWD(conn) \
+	smb_vfs_call_getwd((conn)->vfs_handles)
+#define SMB_VFS_NEXT_GETWD(handle) \
+	smb_vfs_call_getwd((handle)->next)
 
 #define SMB_VFS_NTIMES(conn, path, ts) \
 	smb_vfs_call_ntimes((conn)->vfs_handles, (path), (ts))
@@ -363,9 +363,6 @@
 	smb_vfs_call_translate_name((conn)->vfs_handles, (name), (direction), (mem_ctx), (mapped_name))
 #define SMB_VFS_NEXT_TRANSLATE_NAME(handle, name, direction, mem_ctx, mapped_name) \
 	smb_vfs_call_translate_name((handle)->next, (name), (direction), (mem_ctx), (mapped_name))
-
-#define SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock) \
-	smb_vfs_call_strict_unlock((handle)->next, (fsp), (plock))
 
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) \
 	smb_vfs_call_fget_nt_acl((fsp)->conn->vfs_handles, (fsp), (security_info), (ppdesc))

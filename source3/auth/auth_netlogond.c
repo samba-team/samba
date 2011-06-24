@@ -133,7 +133,7 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 		p, p,
 		user_info->logon_parameters,           /* flags such as 'allow
 					                * workstation logon' */
-		global_myname(),                       /* server name */
+		lp_netbios_name(),                       /* server name */
 		user_info->client.account_name,        /* user name logging on. */
 		user_info->client.domain_name,         /* domain name */
 		user_info->workstation_name,           /* workstation name */
@@ -234,7 +234,7 @@ static NTSTATUS mymachinepw(uint8_t pwd[16])
 	DEBUG(10, ("default_nc = %s\n", default_nc));
 
 	myname = talloc_asprintf_strupper_m(talloc_tos(), "%s$",
-					    global_myname());
+					    lp_netbios_name());
 	if (myname == NULL) {
 		DEBUG(10, ("talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;
@@ -375,8 +375,8 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 	dump_data(10, machine_password, 16);
 
 	status = rpccli_netlogon_setup_creds(
-		p, global_myname(), lp_workgroup(), global_myname(),
-		global_myname(), machine_password, SEC_CHAN_BDC, &neg_flags);
+		p, lp_netbios_name(), lp_workgroup(), lp_netbios_name(),
+		lp_netbios_name(), machine_password, SEC_CHAN_BDC, &neg_flags);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("rpccli_netlogon_setup_creds failed: %s\n",
@@ -429,7 +429,7 @@ static NTSTATUS auth_init_netlogond(struct auth_context *auth_context,
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

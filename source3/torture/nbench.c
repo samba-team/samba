@@ -19,7 +19,9 @@
 
 #include "includes.h"
 #include "torture/proto.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 static long long int ival(const char *str)
 {
@@ -94,7 +96,7 @@ static struct nbench_cmd_struct *nbench_parse(TALLOC_CTX *mem_ctx,
 	char *cmd;
 	char *status;
 
-	result = TALLOC_P(mem_ctx, struct nbench_cmd_struct);
+	result = talloc(mem_ctx, struct nbench_cmd_struct);
 	if (result == NULL) {
 		return NULL;
 	}

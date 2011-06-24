@@ -60,7 +60,7 @@ static struct txt_private_data *pd(struct smbconf_ctx *ctx)
 
 static bool smbconf_txt_do_section(const char *section, void *private_data)
 {
-	WERROR werr;
+	sbcErr err;
 	uint32_t idx;
 	struct txt_private_data *tpd = (struct txt_private_data *)private_data;
 	struct txt_cache *cache = tpd->cache;
@@ -72,9 +72,9 @@ static bool smbconf_txt_do_section(const char *section, void *private_data)
 		return true;
 	}
 
-	werr = smbconf_add_string_to_array(cache, &(cache->share_names),
-					   cache->num_shares, section);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_add_string_to_array(cache, &(cache->share_names),
+					  cache->num_shares, section);
+	if (!SBC_ERROR_IS_OK(err)) {
 		return false;
 	}
 	cache->current_share = cache->num_shares;
@@ -114,7 +114,7 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 				     const char *param_value,
 				     void *private_data)
 {
-	WERROR werr;
+	sbcErr err;
 	char **param_names, **param_values;
 	uint32_t num_params;
 	uint32_t idx;
@@ -146,17 +146,17 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 		}
 		return true;
 	}
-	werr = smbconf_add_string_to_array(cache,
+	err = smbconf_add_string_to_array(cache,
 				&(cache->param_names[cache->current_share]),
 				num_params, param_name);
-	if (!W_ERROR_IS_OK(werr)) {
+	if (!SBC_ERROR_IS_OK(err)) {
 		return false;
 	}
-	werr = smbconf_add_string_to_array(cache,
+	err = smbconf_add_string_to_array(cache,
 				&(cache->param_values[cache->current_share]),
 				num_params, param_value);
 	cache->num_params[cache->current_share]++;
-	return W_ERROR_IS_OK(werr);
+	return SBC_ERROR_IS_OK(err);
 }
 
 static void smbconf_txt_flush_cache(struct smbconf_ctx *ctx)
@@ -165,7 +165,7 @@ static void smbconf_txt_flush_cache(struct smbconf_ctx *ctx)
 	pd(ctx)->cache = NULL;
 }
 
-static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_init_cache(struct smbconf_ctx *ctx)
 {
 	if (pd(ctx)->cache != NULL) {
 		smbconf_txt_flush_cache(ctx);
@@ -174,40 +174,40 @@ static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
 	pd(ctx)->cache = talloc_zero(pd(ctx), struct txt_cache);
 
 	if (pd(ctx)->cache == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
-static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_load_file(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
+	sbcErr err;
 	uint64_t new_csn;
 
 	if (!file_exist(ctx->path)) {
-		return WERR_BADFILE;
+		return SBC_ERR_BADFILE;
 	}
 
 	new_csn = (uint64_t)file_modtime(ctx->path);
 	if (new_csn == pd(ctx)->csn) {
-		return WERR_OK;
+		return SBC_ERR_OK;
 	}
 
-	werr = smbconf_txt_init_cache(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_init_cache(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	if (!pm_process(ctx->path, smbconf_txt_do_section,
 			smbconf_txt_do_parameter, pd(ctx)))
 	{
-		return WERR_CAN_NOT_COMPLETE;
+		return SBC_ERR_CAN_NOT_COMPLETE;
 	}
 
 	pd(ctx)->csn = new_csn;
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 
@@ -220,24 +220,24 @@ static WERROR smbconf_txt_load_file(struct smbconf_ctx *ctx)
 /**
  * initialize the text based smbconf backend
  */
-static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
+static sbcErr smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
 {
 	if (path == NULL) {
-		return WERR_BADFILE;
+		return SBC_ERR_BADFILE;
 	}
 	ctx->path = talloc_strdup(ctx, path);
 	if (ctx->path == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
 	ctx->data = talloc_zero(ctx, struct txt_private_data);
 	if (ctx->data == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
 	pd(ctx)->verbatim = true;
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 static int smbconf_txt_shutdown(struct smbconf_ctx *ctx)
@@ -256,7 +256,7 @@ static bool smbconf_txt_is_writeable(struct smbconf_ctx *ctx)
 	return false;
 }
 
-static WERROR smbconf_txt_open(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_open(struct smbconf_ctx *ctx)
 {
 	return smbconf_txt_load_file(ctx);
 }
@@ -285,15 +285,15 @@ static void smbconf_txt_get_csn(struct smbconf_ctx *ctx,
 /**
  * Drop the whole configuration (restarting empty)
  */
-static WERROR smbconf_txt_drop(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_drop(struct smbconf_ctx *ctx)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**
  * get the list of share names defined in the configuration.
  */
-static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 					  TALLOC_CTX *mem_ctx,
 					  uint32_t *num_shares,
 					  char ***share_names)
@@ -301,17 +301,16 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 	uint32_t count;
 	uint32_t added_count = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
-	WERROR werr = WERR_OK;
+	sbcErr err = SBC_ERR_OK;
 	char **tmp_share_names = NULL;
 
 	if ((num_shares == NULL) || (share_names == NULL)) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -320,18 +319,18 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 	 * possibly after NULL section */
 
 	if (smbconf_share_exists(ctx, NULL)) {
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
-						   0, NULL);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+						  0, NULL);
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 		added_count++;
 	}
 
 	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
 						   added_count, GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 		added_count++;
@@ -344,10 +343,10 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 			continue;
 		}
 
-		werr = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
+		err = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
 					added_count,
 					pd(ctx)->cache->share_names[count]);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 		added_count++;
@@ -362,7 +361,7 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 /**
@@ -371,10 +370,10 @@ done:
 static bool smbconf_txt_share_exists(struct smbconf_ctx *ctx,
 				     const char *servicename)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		return false;
 	}
 
@@ -386,29 +385,29 @@ static bool smbconf_txt_share_exists(struct smbconf_ctx *ctx,
 /**
  * Add a service if it does not already exist
  */
-static WERROR smbconf_txt_create_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_create_share(struct smbconf_ctx *ctx,
 				       const char *servicename)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**
  * get a definition of a share (service) from configuration.
  */
-static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *servicename,
 				    struct smbconf_service **service)
 {
-	WERROR werr;
+	sbcErr err;
 	uint32_t sidx, count;
 	bool found;
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct smbconf_service *tmp_service = NULL;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	found = smbconf_find_in_array(servicename,
@@ -416,38 +415,38 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 				      pd(ctx)->cache->num_shares,
 				      &sidx);
 	if (!found) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	tmp_ctx = talloc_stackframe();
 
 	tmp_service = talloc_zero(tmp_ctx, struct smbconf_service);
 	if (tmp_service == NULL) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 
 	if (servicename != NULL) {
 		tmp_service->name = talloc_strdup(tmp_service, servicename);
 		if (tmp_service->name == NULL) {
-			werr = WERR_NOMEM;
+			err = SBC_ERR_NOMEM;
 			goto done;
 		}
 	}
 
 	for (count = 0; count < pd(ctx)->cache->num_params[sidx]; count++) {
-		werr = smbconf_add_string_to_array(tmp_service,
+		err = smbconf_add_string_to_array(tmp_service,
 				&(tmp_service->param_names),
 				count,
 				pd(ctx)->cache->param_names[sidx][count]);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
-		werr = smbconf_add_string_to_array(tmp_service,
+		err = smbconf_add_string_to_array(tmp_service,
 				&(tmp_service->param_values),
 				count,
 				pd(ctx)->cache->param_values[sidx][count]);
-		if (!W_ERROR_IS_OK(werr)) {
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 	}
@@ -457,45 +456,45 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 /**
  * delete a service from configuration
  */
-static WERROR smbconf_txt_delete_share(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_delete_share(struct smbconf_ctx *ctx,
 				       const char *servicename)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**
  * set a configuration parameter to the value provided.
  */
-static WERROR smbconf_txt_set_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_set_parameter(struct smbconf_ctx *ctx,
 					const char *service,
 					const char *param,
 					const char *valstr)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
 /**
  * get the value of a configuration parameter as a string
  */
-static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 					TALLOC_CTX *mem_ctx,
 					const char *service,
 					const char *param,
 					char **valstr)
 {
-	WERROR werr;
+	sbcErr err;
 	bool found;
 	uint32_t share_index, param_index;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	found = smbconf_find_in_array(service,
@@ -503,7 +502,7 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 				      pd(ctx)->cache->num_shares,
 				      &share_index);
 	if (!found) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	found = smbconf_reverse_find_in_array(param,
@@ -511,45 +510,45 @@ static WERROR smbconf_txt_get_parameter(struct smbconf_ctx *ctx,
 				pd(ctx)->cache->num_params[share_index],
 				&param_index);
 	if (!found) {
-		return WERR_INVALID_PARAM;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
 	*valstr = talloc_strdup(mem_ctx,
 			pd(ctx)->cache->param_values[share_index][param_index]);
 
 	if (*valstr == NULL) {
-		return WERR_NOMEM;
+		return SBC_ERR_NOMEM;
 	}
 
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 /**
  * delete a parameter from configuration
  */
-static WERROR smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_delete_parameter(struct smbconf_ctx *ctx,
 					   const char *service,
 					   const char *param)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
-static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 				       TALLOC_CTX *mem_ctx,
 				       const char *service,
 				       uint32_t *num_includes,
 				       char ***includes)
 {
-	WERROR werr;
+	sbcErr err;
 	bool found;
 	uint32_t sidx, count;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint32_t tmp_num_includes = 0;
 	char **tmp_includes = NULL;
 
-	werr = smbconf_txt_load_file(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_txt_load_file(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	found = smbconf_find_in_array(service,
@@ -557,7 +556,7 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 				      pd(ctx)->cache->num_shares,
 				      &sidx);
 	if (!found) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -566,11 +565,11 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 		if (strequal(pd(ctx)->cache->param_names[sidx][count],
 			     "include"))
 		{
-			werr = smbconf_add_string_to_array(tmp_ctx,
+			err = smbconf_add_string_to_array(tmp_ctx,
 				&tmp_includes,
 				tmp_num_includes,
 				pd(ctx)->cache->param_values[sidx][count]);
-			if (!W_ERROR_IS_OK(werr)) {
+			if (!SBC_ERROR_IS_OK(err)) {
 				goto done;
 			}
 			tmp_num_includes++;
@@ -581,47 +580,47 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 	if (*num_includes > 0) {
 		*includes = talloc_move(mem_ctx, &tmp_includes);
 		if (*includes == NULL) {
-			werr = WERR_NOMEM;
+			err = SBC_ERR_NOMEM;
 			goto done;
 		}
 	} else {
 		*includes = NULL;
 	}
 
-	werr = WERR_OK;
+	err = SBC_ERR_OK;
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
-static WERROR smbconf_txt_set_includes(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_set_includes(struct smbconf_ctx *ctx,
 				       const char *service,
 				       uint32_t num_includes,
 				       const char **includes)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
-static WERROR smbconf_txt_delete_includes(struct smbconf_ctx *ctx,
+static sbcErr smbconf_txt_delete_includes(struct smbconf_ctx *ctx,
 					  const char *service)
 {
-	return WERR_NOT_SUPPORTED;
+	return SBC_ERR_NOT_SUPPORTED;
 }
 
-static WERROR smbconf_txt_transaction_start(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_transaction_start(struct smbconf_ctx *ctx)
 {
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
-static WERROR smbconf_txt_transaction_commit(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_transaction_commit(struct smbconf_ctx *ctx)
 {
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
-static WERROR smbconf_txt_transaction_cancel(struct smbconf_ctx *ctx)
+static sbcErr smbconf_txt_transaction_cancel(struct smbconf_ctx *ctx)
 {
-	return WERR_OK;
+	return SBC_ERR_OK;
 }
 
 static struct smbconf_ops smbconf_ops_txt = {
@@ -654,15 +653,15 @@ static struct smbconf_ops smbconf_ops_txt = {
  * initialize the smbconf text backend
  * the only function that is exported from this module
  */
-WERROR smbconf_init_txt(TALLOC_CTX *mem_ctx,
+sbcErr smbconf_init_txt(TALLOC_CTX *mem_ctx,
 			struct smbconf_ctx **conf_ctx,
 			const char *path)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+	err = smbconf_init_internal(mem_ctx, conf_ctx, path, &smbconf_ops_txt);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
 	return smbconf_txt_load_file(*conf_ctx);

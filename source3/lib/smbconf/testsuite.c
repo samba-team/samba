@@ -40,17 +40,17 @@ static void print_strings(const char *prefix,
 
 static bool test_get_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
+	sbcErr err;
 	bool ret = false;
 	uint32_t num_includes = 0;
 	char **includes = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	printf("TEST: get_includes\n");
-	werr = smbconf_get_global_includes(ctx, mem_ctx,
-					   &num_includes, &includes);
-	if (!W_ERROR_IS_OK(werr)) {
-		printf("FAIL: get_includes - %s\n", win_errstr(werr));
+	err = smbconf_get_global_includes(ctx, mem_ctx,
+					  &num_includes, &includes);
+	if (!SBC_ERROR_IS_OK(err)) {
+		printf("FAIL: get_includes - %s\n", sbcErrorString(err));
 		goto done;
 	}
 
@@ -68,7 +68,7 @@ done:
 
 static bool test_set_get_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
+	sbcErr err;
 	uint32_t count;
 	bool ret = false;
 	const char *set_includes[] = {
@@ -82,18 +82,18 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 
 	printf("TEST: set_get_includes\n");
 
-	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: get_set_includes (setting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
-	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
-					   &get_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
+					  &get_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: get_set_includes (getting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
@@ -125,7 +125,7 @@ done:
 
 static bool test_delete_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
+	sbcErr err;
 	bool ret = false;
 	const char *set_includes[] = {
 		"/path/to/include",
@@ -137,25 +137,25 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 
 	printf("TEST: delete_includes\n");
 
-	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (setting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
-	werr = smbconf_delete_global_includes(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_delete_global_includes(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (deleting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
-	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
-					   &get_includes);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
+					  &get_includes);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (getting includes) - %s\n",
-		       win_errstr(werr));
+		       sbcErrorString(err));
 		goto done;
 	}
 
@@ -164,10 +164,10 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 		goto done;
 	}
 
-	werr = smbconf_delete_global_includes(ctx);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_delete_global_includes(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
 		printf("FAIL: delete_includes (delete empty includes) - "
-		       "%s\n", win_errstr(werr));
+		       "%s\n", sbcErrorString(err));
 		goto done;
 	}
 
@@ -203,7 +203,7 @@ static bool create_conf_file(const char *filename)
 
 static bool torture_smbconf_txt(void)
 {
-	WERROR werr;
+	sbcErr err;
 	bool ret = true;
 	const char *filename = "/tmp/smb.conf.smbconf_testsuite";
 	struct smbconf_ctx *conf_ctx = NULL;
@@ -217,9 +217,9 @@ static bool torture_smbconf_txt(void)
 	}
 
 	printf("TEST: init\n");
-	werr = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
-	if (!W_ERROR_IS_OK(werr)) {
-		printf("FAIL: text backend failed: %s\n", win_errstr(werr));
+	err = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
+	if (!SBC_ERROR_IS_OK(err)) {
+		printf("FAIL: text backend failed: %s\n", sbcErrorString(err));
 		ret = false;
 		goto done;
 	}
@@ -245,7 +245,7 @@ done:
 
 static bool torture_smbconf_reg(void)
 {
-	WERROR werr;
+	sbcErr err;
 	bool ret = true;
 	struct smbconf_ctx *conf_ctx = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -253,9 +253,9 @@ static bool torture_smbconf_reg(void)
 	printf("test: registry backend\n");
 
 	printf("TEST: init\n");
-	werr = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
-	if (!W_ERROR_IS_OK(werr)) {
-		printf("FAIL: init failed: %s\n", win_errstr(werr));
+	err = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
+	if (!SBC_ERROR_IS_OK(err)) {
+		printf("FAIL: init failed: %s\n", sbcErrorString(err));
 		ret = false;
 		goto done;
 	}

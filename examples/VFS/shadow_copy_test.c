@@ -59,7 +59,7 @@ static int test_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fs
 	
 	if (labels) {	
 		if (num) {
-			shadow_copy_data->labels = TALLOC_ZERO_ARRAY(shadow_copy_data->mem_ctx,SHADOW_COPY_LABEL,num);
+			shadow_copy_data->labels = talloc_zero_array(shadow_copy_data->mem_ctx,SHADOW_COPY_LABEL,num);
 		} else {
 			shadow_copy_data->labels = NULL;
 		}

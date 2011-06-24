@@ -10,19 +10,9 @@ bld.SAMBA3_SUBSYSTEM('NDR_LIBNET_JOIN',
 	public_deps='ndr'
 	)
 
-bld.SAMBA3_SUBSYSTEM('NDR_SERVER_ID',
-	source='gen_ndr/ndr_server_id.c',
-	public_deps='ndr'
-	)
-
 bld.SAMBA3_SUBSYSTEM('NDR_MESSAGING',
 	source='gen_ndr/ndr_messaging.c',
 	public_deps='ndr NDR_SERVER_ID'
-	)
-
-bld.SAMBA3_SUBSYSTEM('NDR_NOTIFY3',
-	source='gen_ndr/ndr_notify.c',
-	public_deps='ndr NDR_FILE_ID NDR_SERVER_ID'
 	)
 
 bld.SAMBA3_SUBSYSTEM('NDR_SECRETS',

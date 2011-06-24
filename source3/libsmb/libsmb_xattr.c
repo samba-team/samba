@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
@@ -320,9 +321,9 @@ parse_ace(struct cli_state *ipc_cli,
 		return false;
 	}
 
-	if (StrnCaseCmp(tok, "ALLOWED", strlen("ALLOWED")) == 0) {
+	if (strncasecmp_m(tok, "ALLOWED", strlen("ALLOWED")) == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	} else if (StrnCaseCmp(tok, "DENIED", strlen("DENIED")) == 0) {
+	} else if (strncasecmp_m(tok, "DENIED", strlen("DENIED")) == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_DENIED;
 	} else {
 		TALLOC_FREE(frame);
@@ -435,12 +436,12 @@ sec_desc_parse(TALLOC_CTX *ctx,
 
 	while (next_token_talloc(ctx, &p, &tok, "\t,\r\n")) {
 
-		if (StrnCaseCmp(tok,"REVISION:", 9) == 0) {
+		if (strncasecmp_m(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
 			continue;
 		}
 
-		if (StrnCaseCmp(tok,"OWNER:", 6) == 0) {
+		if (strncasecmp_m(tok,"OWNER:", 6) == 0) {
 			if (owner_sid) {
 				DEBUG(5,("OWNER specified more than once!\n"));
 				goto done;
@@ -456,7 +457,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (StrnCaseCmp(tok,"OWNER+:", 7) == 0) {
+		if (strncasecmp_m(tok,"OWNER+:", 7) == 0) {
 			if (owner_sid) {
 				DEBUG(5,("OWNER specified more than once!\n"));
 				goto done;
@@ -472,7 +473,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (StrnCaseCmp(tok,"GROUP:", 6) == 0) {
+		if (strncasecmp_m(tok,"GROUP:", 6) == 0) {
 			if (group_sid) {
 				DEBUG(5,("GROUP specified more than once!\n"));
 				goto done;
@@ -488,7 +489,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (StrnCaseCmp(tok,"GROUP+:", 7) == 0) {
+		if (strncasecmp_m(tok,"GROUP+:", 7) == 0) {
 			if (group_sid) {
 				DEBUG(5,("GROUP specified more than once!\n"));
 				goto done;
@@ -504,7 +505,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (StrnCaseCmp(tok,"ACL:", 4) == 0) {
+		if (strncasecmp_m(tok,"ACL:", 4) == 0) {
 			struct security_ace ace;
 			if (!parse_ace(ipc_cli, pol, &ace, numeric, tok+4)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
@@ -517,7 +518,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (StrnCaseCmp(tok,"ACL+:", 5) == 0) {
+		if (strncasecmp_m(tok,"ACL+:", 5) == 0) {
 			struct security_ace ace;
 			if (!parse_ace(ipc_cli, pol, &ace, False, tok+5)) {
 				DEBUG(5, ("Failed to parse ACL %s\n", tok));
@@ -560,14 +561,14 @@ dos_attr_query(SMBCCTX *context,
 	SMB_INO_T inode = 0;
         DOS_ATTR_DESC *ret;
 
-        ret = TALLOC_P(ctx, DOS_ATTR_DESC);
+        ret = talloc(ctx, DOS_ATTR_DESC);
         if (!ret) {
                 errno = ENOMEM;
                 return NULL;
         }
 
         /* Obtain the DOS attributes */
-        if (!SMBC_getatr(context, srv, CONST_DISCARD(char *, filename),
+        if (!SMBC_getatr(context, srv, filename,
                          &mode, &size,
                          &create_time_ts,
                          &access_time_ts,
@@ -636,7 +637,7 @@ dos_attr_parse(SMBCCTX *context,
 
 	frame = talloc_stackframe();
 	while (next_token_talloc(frame, &p, &tok, "\t,\r\n")) {
-		if (StrnCaseCmp(tok, "MODE:", 5) == 0) {
+		if (strncasecmp_m(tok, "MODE:", 5) == 0) {
                         long request = strtol(tok+5, NULL, 16);
                         if (request == 0) {
                                 dad->mode = (request |
@@ -649,32 +650,32 @@ dos_attr_parse(SMBCCTX *context,
 			continue;
 		}
 
-		if (StrnCaseCmp(tok, "SIZE:", 5) == 0) {
+		if (strncasecmp_m(tok, "SIZE:", 5) == 0) {
                         dad->size = (SMB_OFF_T)atof(tok+5);
 			continue;
 		}
 
                 n = strlen(attr_strings.access_time_attr);
-                if (StrnCaseCmp(tok, attr_strings.access_time_attr, n) == 0) {
+                if (strncasecmp_m(tok, attr_strings.access_time_attr, n) == 0) {
                         dad->access_time = (time_t)strtol(tok+n+1, NULL, 10);
 			continue;
 		}
 
                 n = strlen(attr_strings.change_time_attr);
-                if (StrnCaseCmp(tok, attr_strings.change_time_attr, n) == 0) {
+                if (strncasecmp_m(tok, attr_strings.change_time_attr, n) == 0) {
                         dad->change_time = (time_t)strtol(tok+n+1, NULL, 10);
 			continue;
 		}
 
                 n = strlen(attr_strings.write_time_attr);
-                if (StrnCaseCmp(tok, attr_strings.write_time_attr, n) == 0) {
+                if (strncasecmp_m(tok, attr_strings.write_time_attr, n) == 0) {
                         dad->write_time = (time_t)strtol(tok+n+1, NULL, 10);
 			continue;
 		}
 
 		if (attr_strings.create_time_attr != NULL) {
 			n = strlen(attr_strings.create_time_attr);
-			if (StrnCaseCmp(tok, attr_strings.create_time_attr,
+			if (strncasecmp_m(tok, attr_strings.create_time_attr,
 					n) == 0) {
 				dad->create_time = (time_t)strtol(tok+n+1,
 								  NULL, 10);
@@ -682,7 +683,7 @@ dos_attr_parse(SMBCCTX *context,
 			}
 		}
 
-		if (StrnCaseCmp(tok, "INODE:", 6) == 0) {
+		if (strncasecmp_m(tok, "INODE:", 6) == 0) {
                         dad->inode = (SMB_INO_T)atof(tok+6);
 			continue;
 		}
@@ -700,8 +701,8 @@ cacl_get(SMBCCTX *context,
          SMBCSRV *srv,
          struct cli_state *ipc_cli,
          struct policy_handle *pol,
-         char *filename,
-         char *attr_name,
+         const char *filename,
+         const char *attr_name,
          char *buf,
          int bufsize)
 {
@@ -799,12 +800,12 @@ cacl_get(SMBCCTX *context,
                 *pExclude++ = '\0';
         }
 
-        all = (StrnCaseCmp(name, "system.*", 8) == 0);
-        all_nt = (StrnCaseCmp(name, "system.nt_sec_desc.*", 20) == 0);
-        all_nt_acls = (StrnCaseCmp(name, "system.nt_sec_desc.acl.*", 24) == 0);
-        all_dos = (StrnCaseCmp(name, "system.dos_attr.*", 17) == 0);
-        some_nt = (StrnCaseCmp(name, "system.nt_sec_desc.", 19) == 0);
-        some_dos = (StrnCaseCmp(name, "system.dos_attr.", 16) == 0);
+        all = (strncasecmp_m(name, "system.*", 8) == 0);
+        all_nt = (strncasecmp_m(name, "system.nt_sec_desc.*", 20) == 0);
+        all_nt_acls = (strncasecmp_m(name, "system.nt_sec_desc.acl.*", 24) == 0);
+        all_dos = (strncasecmp_m(name, "system.dos_attr.*", 17) == 0);
+        some_nt = (strncasecmp_m(name, "system.nt_sec_desc.", 19) == 0);
+        some_dos = (strncasecmp_m(name, "system.dos_attr.", 16) == 0);
         numeric = (* (name + strlen(name) - 1) != '+');
 
         /* Look for exclusions from "all" requests */
@@ -821,48 +822,48 @@ cacl_get(SMBCCTX *context,
                         }
 
                         /* Which exclusion name is this? */
-                        if (StrCaseCmp(pExclude,
+                        if (strcasecmp_m(pExclude,
                                        "nt_sec_desc.revision") == 0) {
                                 exclude_nt_revision = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             "nt_sec_desc.owner") == 0) {
                                 exclude_nt_owner = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             "nt_sec_desc.group") == 0) {
                                 exclude_nt_group = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             "nt_sec_desc.acl") == 0) {
                                 exclude_nt_acl = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             "dos_attr.mode") == 0) {
                                 exclude_dos_mode = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             "dos_attr.size") == 0) {
                                 exclude_dos_size = True;
                         }
                         else if (excl_attr_strings.create_time_attr != NULL &&
-                                 StrCaseCmp(pExclude,
+                                 strcasecmp_m(pExclude,
                                             excl_attr_strings.change_time_attr) == 0) {
                                 exclude_dos_create_time = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             excl_attr_strings.access_time_attr) == 0) {
                                 exclude_dos_access_time = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             excl_attr_strings.write_time_attr) == 0) {
                                 exclude_dos_write_time = True;
                         }
-                        else if (StrCaseCmp(pExclude,
+                        else if (strcasecmp_m(pExclude,
                                             excl_attr_strings.change_time_attr) == 0) {
                                 exclude_dos_change_time = True;
                         }
-                        else if (StrCaseCmp(pExclude, "dos_attr.inode") == 0) {
+                        else if (strcasecmp_m(pExclude, "dos_attr.inode") == 0) {
                                 exclude_dos_inode = True;
                         }
                         else {
@@ -932,7 +933,7 @@ cacl_get(SMBCCTX *context,
                                                      "REVISION:%d",
                                                      sd->revision);
                                 }
-                        } else if (StrCaseCmp(name, "revision") == 0) {
+                        } else if (strcasecmp_m(name, "revision") == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "%d",
                                                             sd->revision);
@@ -981,7 +982,7 @@ cacl_get(SMBCCTX *context,
                                         n = snprintf(buf, bufsize,
                                                      ",OWNER:%s", sidstr);
                                 }
-                        } else if (StrnCaseCmp(name, "owner", 5) == 0) {
+                        } else if (strncasecmp_m(name, "owner", 5) == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "%s", sidstr);
                                         if (!p) {
@@ -1027,7 +1028,7 @@ cacl_get(SMBCCTX *context,
                                         n = snprintf(buf, bufsize,
                                                      ",GROUP:%s", sidstr);
                                 }
-                        } else if (StrnCaseCmp(name, "group", 5) == 0) {
+                        } else if (strncasecmp_m(name, "group", 5) == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "%s", sidstr);
                                         if (!p) {
@@ -1084,10 +1085,10 @@ cacl_get(SMBCCTX *context,
                                                         ace->flags,
                                                         ace->access_mask);
                                         }
-                                } else if ((StrnCaseCmp(name, "acl", 3) == 0 &&
-                                            StrCaseCmp(name+3, sidstr) == 0) ||
-                                           (StrnCaseCmp(name, "acl+", 4) == 0 &&
-                                            StrCaseCmp(name+4, sidstr) == 0)) {
+                                } else if ((strncasecmp_m(name, "acl", 3) == 0 &&
+                                            strcasecmp_m(name+3, sidstr) == 0) ||
+                                           (strncasecmp_m(name, "acl+", 4) == 0 &&
+                                            strcasecmp_m(name+4, sidstr) == 0)) {
                                         if (determine_size) {
                                                 p = talloc_asprintf(
                                                         ctx, 
@@ -1192,7 +1193,7 @@ cacl_get(SMBCCTX *context,
                                                       : ""),
                                                      mode);
                                 }
-                        } else if (StrCaseCmp(name, "mode") == 0) {
+                        } else if (strcasecmp_m(name, "mode") == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "0x%x", mode);
                                         if (!p) {
@@ -1233,7 +1234,7 @@ cacl_get(SMBCCTX *context,
                                                      ",SIZE:%.0f",
                                                      (double)size);
                                 }
-                        } else if (StrCaseCmp(name, "size") == 0) {
+                        } else if (strcasecmp_m(name, "size") == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(
                                                 ctx,
@@ -1280,7 +1281,7 @@ cacl_get(SMBCCTX *context,
                                                      attr_strings.create_time_attr,
                                                      (unsigned long) create_time);
                                 }
-                        } else if (StrCaseCmp(name, attr_strings.create_time_attr) == 0) {
+                        } else if (strcasecmp_m(name, attr_strings.create_time_attr) == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "%lu", (unsigned long) create_time);
                                         if (!p) {
@@ -1322,7 +1323,7 @@ cacl_get(SMBCCTX *context,
                                                      attr_strings.access_time_attr,
                                                      (unsigned long) access_time);
                                 }
-                        } else if (StrCaseCmp(name, attr_strings.access_time_attr) == 0) {
+                        } else if (strcasecmp_m(name, attr_strings.access_time_attr) == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "%lu", (unsigned long) access_time);
                                         if (!p) {
@@ -1364,7 +1365,7 @@ cacl_get(SMBCCTX *context,
                                                      attr_strings.write_time_attr,
                                                      (unsigned long) write_time);
                                 }
-                        } else if (StrCaseCmp(name, attr_strings.write_time_attr) == 0) {
+                        } else if (strcasecmp_m(name, attr_strings.write_time_attr) == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "%lu", (unsigned long) write_time);
                                         if (!p) {
@@ -1406,7 +1407,7 @@ cacl_get(SMBCCTX *context,
                                                      attr_strings.change_time_attr,
                                                      (unsigned long) change_time);
                                 }
-                        } else if (StrCaseCmp(name, attr_strings.change_time_attr) == 0) {
+                        } else if (strcasecmp_m(name, attr_strings.change_time_attr) == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(ctx, "%lu", (unsigned long) change_time);
                                         if (!p) {
@@ -1447,7 +1448,7 @@ cacl_get(SMBCCTX *context,
                                                      ",INODE:%.0f",
                                                      (double) ino);
                                 }
-                        } else if (StrCaseCmp(name, "inode") == 0) {
+                        } else if (strcasecmp_m(name, "inode") == 0) {
                                 if (determine_size) {
                                         p = talloc_asprintf(
                                                 ctx,
@@ -1774,8 +1775,8 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         /*
          * Are they asking to set the entire set of known attributes?
          */
-        if (StrCaseCmp(name, "system.*") == 0 ||
-            StrCaseCmp(name, "system.*+") == 0) {
+        if (strcasecmp_m(name, "system.*") == 0 ||
+            strcasecmp_m(name, "system.*+") == 0) {
                 /* Yup. */
                 char *namevalue =
                         talloc_asprintf(talloc_tos(), "%s:%s",
@@ -1834,11 +1835,11 @@ SMBC_setxattr_ctx(SMBCCTX *context,
          * Are they asking to set an access control element or to set
          * the entire access control list?
          */
-        if (StrCaseCmp(name, "system.nt_sec_desc.*") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.*+") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.revision") == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.acl", 22) == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0) {
+        if (strcasecmp_m(name, "system.nt_sec_desc.*") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.*+") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.revision") == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.acl", 22) == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.acl+", 23) == 0) {
 
                 /* Yup. */
                 char *namevalue =
@@ -1867,8 +1868,8 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         /*
          * Are they asking to set the owner?
          */
-        if (StrCaseCmp(name, "system.nt_sec_desc.owner") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.owner+") == 0) {
+        if (strcasecmp_m(name, "system.nt_sec_desc.owner") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.owner+") == 0) {
 
                 /* Yup. */
                 char *namevalue =
@@ -1893,8 +1894,8 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         /*
          * Are they asking to set the group?
          */
-        if (StrCaseCmp(name, "system.nt_sec_desc.group") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.group+") == 0) {
+        if (strcasecmp_m(name, "system.nt_sec_desc.group") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.group+") == 0) {
 
                 /* Yup. */
                 char *namevalue =
@@ -1935,13 +1936,13 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         /*
          * Are they asking to set a DOS attribute?
          */
-        if (StrCaseCmp(name, "system.dos_attr.*") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.mode") == 0 ||
+        if (strcasecmp_m(name, "system.dos_attr.*") == 0 ||
+            strcasecmp_m(name, "system.dos_attr.mode") == 0 ||
             (attr_strings.create_time_attr != NULL &&
-             StrCaseCmp(name, attr_strings.create_time_attr) == 0) ||
-            StrCaseCmp(name, attr_strings.access_time_attr) == 0 ||
-            StrCaseCmp(name, attr_strings.write_time_attr) == 0 ||
-            StrCaseCmp(name, attr_strings.change_time_attr) == 0) {
+             strcasecmp_m(name, attr_strings.create_time_attr) == 0) ||
+            strcasecmp_m(name, attr_strings.access_time_attr) == 0 ||
+            strcasecmp_m(name, attr_strings.write_time_attr) == 0 ||
+            strcasecmp_m(name, attr_strings.change_time_attr) == 0) {
 
                 /* get a DOS Attribute Descriptor with current attributes */
                 dad = dos_attr_query(context, talloc_tos(), path, srv);
@@ -2080,39 +2081,39 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         }
 
         /* Are they requesting a supported attribute? */
-        if (StrCaseCmp(name, "system.*") == 0 ||
-            StrnCaseCmp(name, "system.*!", 9) == 0 ||
-            StrCaseCmp(name, "system.*+") == 0 ||
-            StrnCaseCmp(name, "system.*+!", 10) == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.*") == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.*!", 21) == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.*+") == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.*+!", 22) == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.revision") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.owner") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.owner+") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.group") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.group+") == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.acl", 22) == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0 ||
-            StrCaseCmp(name, "system.dos_attr.*") == 0 ||
-            StrnCaseCmp(name, "system.dos_attr.*!", 18) == 0 ||
-            StrCaseCmp(name, "system.dos_attr.mode") == 0 ||
-            StrCaseCmp(name, "system.dos_attr.size") == 0 ||
+        if (strcasecmp_m(name, "system.*") == 0 ||
+            strncasecmp_m(name, "system.*!", 9) == 0 ||
+            strcasecmp_m(name, "system.*+") == 0 ||
+            strncasecmp_m(name, "system.*+!", 10) == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.*") == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.*!", 21) == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.*+") == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.*+!", 22) == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.revision") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.owner") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.owner+") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.group") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.group+") == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.acl", 22) == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.acl+", 23) == 0 ||
+            strcasecmp_m(name, "system.dos_attr.*") == 0 ||
+            strncasecmp_m(name, "system.dos_attr.*!", 18) == 0 ||
+            strcasecmp_m(name, "system.dos_attr.mode") == 0 ||
+            strcasecmp_m(name, "system.dos_attr.size") == 0 ||
             (attr_strings.create_time_attr != NULL &&
-             StrCaseCmp(name, attr_strings.create_time_attr) == 0) ||
-            StrCaseCmp(name, attr_strings.access_time_attr) == 0 ||
-            StrCaseCmp(name, attr_strings.write_time_attr) == 0 ||
-            StrCaseCmp(name, attr_strings.change_time_attr) == 0 ||
-            StrCaseCmp(name, "system.dos_attr.inode") == 0) {
+             strcasecmp_m(name, attr_strings.create_time_attr) == 0) ||
+            strcasecmp_m(name, attr_strings.access_time_attr) == 0 ||
+            strcasecmp_m(name, attr_strings.write_time_attr) == 0 ||
+            strcasecmp_m(name, attr_strings.change_time_attr) == 0 ||
+            strcasecmp_m(name, "system.dos_attr.inode") == 0) {
 
                 /* Yup. */
-                char *filename = (char *) name;
+                const char *filename = name;
                 ret = cacl_get(context, talloc_tos(), srv,
                                ipc_srv == NULL ? NULL : ipc_srv->cli, 
                                &ipc_srv->pol, path,
                                filename,
-                               CONST_DISCARD(char *, value),
+                               discard_const_p(char, value),
                                size);
                 if (ret < 0 && errno == 0) {
                         errno = SMBC_errno(context, srv->cli);
@@ -2205,8 +2206,8 @@ SMBC_removexattr_ctx(SMBCCTX *context,
         }
 
         /* Are they asking to set the entire ACL? */
-        if (StrCaseCmp(name, "system.nt_sec_desc.*") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.*+") == 0) {
+        if (strcasecmp_m(name, "system.nt_sec_desc.*") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.*+") == 0) {
 
                 /* Yup. */
                 ret = cacl_set(context, talloc_tos(), srv->cli,
@@ -2220,18 +2221,18 @@ SMBC_removexattr_ctx(SMBCCTX *context,
          * Are they asking to remove one or more spceific security descriptor
          * attributes?
          */
-        if (StrCaseCmp(name, "system.nt_sec_desc.revision") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.owner") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.owner+") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.group") == 0 ||
-            StrCaseCmp(name, "system.nt_sec_desc.group+") == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.acl", 22) == 0 ||
-            StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0) {
+        if (strcasecmp_m(name, "system.nt_sec_desc.revision") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.owner") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.owner+") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.group") == 0 ||
+            strcasecmp_m(name, "system.nt_sec_desc.group+") == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.acl", 22) == 0 ||
+            strncasecmp_m(name, "system.nt_sec_desc.acl+", 23) == 0) {
 
                 /* Yup. */
                 ret = cacl_set(context, talloc_tos(), srv->cli,
                                ipc_srv->cli, &ipc_srv->pol, path,
-                               CONST_DISCARD(char *, name) + 19,
+                               discard_const_p(char, name) + 19,
                                SMBC_XATTR_MODE_REMOVE, 0);
 		TALLOC_FREE(frame);
                 return ret;

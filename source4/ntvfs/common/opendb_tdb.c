@@ -40,9 +40,9 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include <tdb.h>
+#include "../lib/tdb_compat/tdb_compat.h"
 #include "messaging/messaging.h"
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_opendb.h"
 #include "ntvfs/ntvfs.h"
@@ -74,13 +74,13 @@ struct odb_lock {
 	} can_open;
 };
 
-static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
+static NTSTATUS odb_oplock_break_send(struct imessaging_context *msg_ctx,
 				      struct opendb_entry *e,
 				      uint8_t level);
 
 /*
   Open up the openfiles.tdb database. Close it down using
-  talloc_free(). We need the messaging_ctx to allow for pending open
+  talloc_free(). We need the imessaging_ctx to allow for pending open
   notifications.
 */
 static struct odb_context *odb_tdb_init(TALLOC_CTX *mem_ctx, 
@@ -238,7 +238,7 @@ static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file)
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
-	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+	dbuf = tdb_fetch_compat(odb->w->tdb, lck->key);
 	if (dbuf.dptr == NULL) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -294,7 +294,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 /*
   send an oplock break to a client
 */
-static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
+static NTSTATUS odb_oplock_break_send(struct imessaging_context *msg_ctx,
 				      struct opendb_entry *e,
 				      uint8_t level)
 {
@@ -311,7 +311,7 @@ static NTSTATUS odb_oplock_break_send(struct messaging_context *msg_ctx,
 
 	blob = data_blob_const(&op_break, sizeof(op_break));
 
-	status = messaging_send(msg_ctx, e->server,
+	status = imessaging_send(msg_ctx, e->server,
 				MSG_NTVFS_OPLOCK_BREAK, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -611,7 +611,7 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle,
 
 	/* send any pending notifications, removing them once sent */
 	for (i=0;i<lck->file.num_pending;i++) {
-		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+		imessaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
 				   lck->file.pending[i].server,
 				   MSG_PVFS_RETRY_OPEN,
 				   lck->file.pending[i].notify_ptr);
@@ -666,7 +666,7 @@ static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
 
 	/* send any pending notifications, removing them once sent */
 	for (i=0;i<lck->file.num_pending;i++) {
-		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+		imessaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
 				   lck->file.pending[i].server,
 				   MSG_PVFS_RETRY_OPEN,
 				   lck->file.pending[i].notify_ptr);

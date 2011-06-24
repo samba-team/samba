@@ -314,7 +314,7 @@ size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 char **pp_dest, const char *src, int flags,
 				 NTSTATUS *err, bool *contains_wcard)
 {
-	return srvstr_get_path_wcard(mem_ctx, (char *)req->inbuf, req->flags2,
+	return srvstr_get_path_wcard(mem_ctx, (const char *)req->inbuf, req->flags2,
 				     pp_dest, src, smbreq_bufrem(req, src),
 				     flags, err, contains_wcard);
 }
@@ -491,6 +491,13 @@ static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 	return ret;
 }
 
+static void reply_called_name_not_present(char *outbuf)
+{
+	smb_setlen(outbuf, 1);
+	SCVAL(outbuf, 0, 0x83);
+	SCVAL(outbuf, 4, 0x82);
+}
+
 /****************************************************************************
  Reply to a (netbios-level) special message. 
 ****************************************************************************/
@@ -531,11 +538,13 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		name_len1 = name_len((unsigned char *)(inbuf+4),inbuf_size - 4);
 		if (name_len1 <= 0 || name_len1 > inbuf_size - 4) {
 			DEBUG(0,("Invalid name length in session request\n"));
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 		name_len2 = name_len((unsigned char *)(inbuf+4+name_len1),inbuf_size - 4 - name_len1);
 		if (name_len2 <= 0 || name_len2 > inbuf_size - 4 - name_len1) {
 			DEBUG(0,("Invalid name length in session request\n"));
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 
@@ -546,6 +555,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 
 		if (name_type1 == -1 || name_type2 == -1) {
 			DEBUG(0,("Invalid name type in session request\n"));
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 
@@ -575,7 +585,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		if (name_type2 == 'R') {
 			/* We are being asked for a pathworks session --- 
 			   no thanks! */
-			SCVAL(outbuf, 0,0x83);
+			reply_called_name_not_present(outbuf);
 			break;
 		}
 
@@ -614,6 +624,10 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		    msg_type, msg_flags));
 
 	srv_send_smb(sconn, outbuf, false, 0, false, NULL);
+
+	if (CVAL(outbuf, 0) != 0x82) {
+		exit_server_cleanly("invalid netbios session");
+	}
 	return;
 }
 
@@ -873,7 +887,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		 service));
 
 	/* set the incoming and outgoing tid to the just created one */
-	SSVAL(req->inbuf,smb_tid,conn->cnum);
+	SSVAL(discard_const_p(uint8_t, req->inbuf),smb_tid,conn->cnum);
 	SSVAL(req->outbuf,smb_tid,conn->cnum);
 
 	END_PROFILE(SMBtconX);
@@ -958,7 +972,7 @@ void reply_ioctl(struct smb_request *req)
 				SSVAL(p, 0, 0);
 			}
 			srvstr_push((char *)req->outbuf, req->flags2, p+2,
-				    global_myname(), 15,
+				    lp_netbios_name(), 15,
 				    STR_TERMINATE|STR_ASCII);
 			if (conn) {
 				srvstr_push((char *)req->outbuf, req->flags2,
@@ -1108,9 +1122,9 @@ void reply_getatr(struct smb_request *req)
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
 		under WfWg - weird! */
 	if (*fname == '\0') {
-		mode = aHIDDEN | aDIR;
+		mode = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
 		if (!CAN_WRITE(conn)) {
-			mode |= aRONLY;
+			mode |= FILE_ATTRIBUTE_READONLY;
 		}
 		size = 0;
 		mtime = 0;
@@ -1156,7 +1170,7 @@ void reply_getatr(struct smb_request *req)
 		}
 
 		mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
-		if (mode & aDIR) {
+		if (mode & FILE_ATTRIBUTE_DIRECTORY) {
 			size = 0;
 		}
 	}
@@ -1257,9 +1271,9 @@ void reply_setatr(struct smb_request *req)
 
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
 		if (VALID_STAT_OF_DIR(smb_fname->st))
-			mode |= aDIR;
+			mode |= FILE_ATTRIBUTE_DIRECTORY;
 		else
-			mode &= ~aDIR;
+			mode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
 		if (file_set_dosmode(conn, smb_fname, mode, NULL,
 				     false) != 0) {
@@ -1428,7 +1442,7 @@ void reply_search(struct smb_request *req)
 	status_len = SVAL(p, 0);
 	p += 2;
 
-	/* dirtype &= ~aDIR; */
+	/* dirtype &= ~FILE_ATTRIBUTE_DIRECTORY; */
 
 	if (status_len == 0) {
 		nt_status = filename_convert(ctx, conn,
@@ -1520,11 +1534,11 @@ void reply_search(struct smb_request *req)
 	/* Initialize per SMBsearch/SMBffirst/SMBfunique operation data */
 	dptr_init_search_op(dirptr);
 
-	if ((dirtype&0x1F) == aVOLID) {
+	if ((dirtype&0x1F) == FILE_ATTRIBUTE_VOLUME) {
 		char buf[DIR_STRUCT_SIZE];
 		memcpy(buf,status,21);
 		if (!make_dir_struct(ctx,buf,"???????????",volume_label(SNUM(conn)),
-				0,aVOLID,0,!allow_long_path_components)) {
+				0,FILE_ATTRIBUTE_VOLUME,0,!allow_long_path_components)) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
 		}
@@ -1820,7 +1834,7 @@ void reply_open(struct smb_request *req)
 
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 
-	if (fattr & aDIR) {
+	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 		DEBUG(3,("attempt to open a directory %s\n",
 			 fsp_str_dbg(fsp)));
 		close_file(req, fsp, ERROR_CLOSE);
@@ -2004,7 +2018,7 @@ void reply_open_and_X(struct smb_request *req)
 
 	fattr = dos_mode(conn, fsp->fsp_name);
 	mtime = convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_mtime);
-	if (fattr & aDIR) {
+	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
@@ -2160,7 +2174,7 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
-	if (fattr & aVOLID) {
+	if (fattr & FILE_ATTRIBUTE_VOLUME) {
 		DEBUG(0,("Attempt to create file (%s) with volid set - "
 			 "please report this\n",
 			 smb_fname_str_dbg(smb_fname)));
@@ -2381,15 +2395,18 @@ void reply_ctemp(struct smb_request *req)
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 			uint16 dirtype)
 {
-	uint32 fmode;
-
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	fmode = dos_mode(conn, fsp->fsp_name);
-	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM)) {
-		return NT_STATUS_NO_SUCH_FILE;
+	if ((dirtype & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) !=
+			(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
+		/* Only bother to read the DOS attribute if we might deny the
+		   rename on the grounds of attribute missmatch. */
+		uint32_t fmode = dos_mode(conn, fsp->fsp_name);
+		if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
+			return NT_STATUS_NO_SUCH_FILE;
+		}
 	}
 
 	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
@@ -2449,16 +2466,16 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	fattr = dos_mode(conn, smb_fname);
 
 	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
-		dirtype = aDIR|aARCH|aRONLY;
+		dirtype = FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY;
 	}
 
-	dirtype &= (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM);
+	dirtype &= (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM);
 	if (!dirtype) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
 	if (!dir_check_ftype(conn, fattr, dirtype)) {
-		if (fattr & aDIR) {
+		if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 			return NT_STATUS_FILE_IS_A_DIRECTORY;
 		}
 		return NT_STATUS_NO_SUCH_FILE;
@@ -2489,13 +2506,13 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	}
 
 	/* Can't delete a directory. */
-	if (fattr & aDIR) {
+	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 #endif
 
 #if 0 /* JRATEST */
-	else if (dirtype & aDIR) /* Asked for a directory and it isn't. */
+	else if (dirtype & FILE_ATTRIBUTE_DIRECTORY) /* Asked for a directory and it isn't. */
 		return NT_STATUS_OBJECT_NAME_INVALID;
 #endif /* JRATEST */
 
@@ -2632,7 +2649,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		const char *dname = NULL;
 		char *talloced = NULL;
 
-		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == aDIR) {
+		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == FILE_ATTRIBUTE_DIRECTORY) {
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 			goto out;
 		}
@@ -3077,9 +3094,9 @@ static void send_file_readbraw(connection_struct *conn,
 
 normal_readbraw:
 
-	outbuf = TALLOC_ARRAY(NULL, char, nread+4);
+	outbuf = talloc_array(NULL, char, nread+4);
 	if (!outbuf) {
-		DEBUG(0,("send_file_readbraw: TALLOC_ARRAY failed for size %u.\n",
+		DEBUG(0,("send_file_readbraw: talloc_array failed for size %u.\n",
 			(unsigned)(nread+4)));
 		reply_readbraw_error(sconn);
 		return;
@@ -3213,7 +3230,7 @@ void reply_readbraw(struct smb_request *req)
 				"(%x << 32) used and we don't support "
 				"64 bit offsets.\n",
 			(unsigned int)IVAL(req->vwv+8, 0) ));
-			reply_readbraw_error();
+			reply_readbraw_error(sconn);
 			END_PROFILE(SMBreadbraw);
 			return;
 		}
@@ -3896,7 +3913,7 @@ void reply_writebraw(struct smb_request *req)
 	size_t numtowrite=0;
 	size_t tcount;
 	SMB_OFF_T startpos;
-	char *data=NULL;
+	const char *data=NULL;
 	bool write_through;
 	files_struct *fsp;
 	struct lock_struct lock;
@@ -3909,7 +3926,7 @@ void reply_writebraw(struct smb_request *req)
 	 * type of SMBwritec, not SMBwriteBraw, as this tells the client
 	 * we're finished.
 	 */
-	SCVAL(req->inbuf,smb_com,SMBwritec);
+	SCVAL(discard_const_p(uint8_t, req->inbuf),smb_com,SMBwritec);
 
 	if (srv_is_signing_active(req->sconn)) {
 		END_PROFILE(SMBwritebraw);
@@ -3955,8 +3972,8 @@ void reply_writebraw(struct smb_request *req)
 		on whether we are using the core+ or lanman1.0 protocol */
 
 	if(get_Protocol() <= PROTOCOL_COREPLUS) {
-		numtowrite = SVAL(smb_buf(req->inbuf),-2);
-		data = smb_buf(req->inbuf);
+		numtowrite = SVAL(smb_buf_const(req->inbuf),-2);
+		data = smb_buf_const(req->inbuf);
 	} else {
 		numtowrite = SVAL(req->vwv+10, 0);
 		data = smb_base(req->inbuf) + SVAL(req->vwv+11, 0);
@@ -4001,7 +4018,7 @@ void reply_writebraw(struct smb_request *req)
 	total_written = nwritten;
 
 	/* Allocate a buffer of 64k + length. */
-	buf = TALLOC_ARRAY(NULL, char, 65540);
+	buf = talloc_array(NULL, char, 65540);
 	if (!buf) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		error_to_writebrawerr(req);
@@ -4474,7 +4491,7 @@ void reply_write_and_X(struct smb_request *req)
 	ssize_t nwritten;
 	unsigned int smb_doff;
 	unsigned int smblen;
-	char *data;
+	const char *data;
 	NTSTATUS status;
 	int saved_errno = 0;
 
@@ -5815,7 +5832,7 @@ static void rename_open_files(connection_struct *conn,
 	files_struct *fsp;
 	bool did_rename = False;
 	NTSTATUS status;
-	uint32_t new_name_hash;
+	uint32_t new_name_hash = 0;
 
 	for(fsp = file_find_di_first(conn->sconn, lck->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
@@ -6405,7 +6422,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 		/* Quick check for "." and ".." */
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
-			if (attrs & aDIR) {
+			if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
 				sysdir_entry = True;
 			} else {
 				TALLOC_FREE(talloced);
@@ -7971,7 +7988,7 @@ void reply_getattrE(struct smb_request *req)
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv4,
 			  convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_mtime));
 
-	if (mode & aDIR) {
+	if (mode & FILE_ATTRIBUTE_DIRECTORY) {
 		SIVAL(req->outbuf, smb_vwv6, 0);
 		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {

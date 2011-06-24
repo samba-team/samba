@@ -231,7 +231,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	char *oldcwd;
 	const char *vfs_user;
 
-	conn = TALLOC_ZERO_P(ctx, connection_struct);
+	conn = talloc_zero(ctx, connection_struct);
 	if (conn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -252,7 +252,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 
 	/* needed for smbd_vfs_init() */
 
-	if (!(conn->params = TALLOC_ZERO_P(conn, struct share_params))) {
+	if (!(conn->params = talloc_zero(conn, struct share_params))) {
 		DEBUG(0, ("TALLOC failed\n"));
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
@@ -364,7 +364,7 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 		return False;
 	}
 
-	alt_path = TALLOC_ARRAY(ctx, char *, MAX_REFERRAL_COUNT);
+	alt_path = talloc_array(ctx, char *, MAX_REFERRAL_COUNT);
 	if (!alt_path) {
 		return False;
 	}
@@ -378,7 +378,7 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 	DEBUG(10,("parse_msdfs_symlink: count=%d\n", count));
 
 	if (count) {
-		reflist = *preflist = TALLOC_ZERO_ARRAY(ctx,
+		reflist = *preflist = talloc_zero_array(ctx,
 				struct referral, count);
 		if(reflist == NULL) {
 			TALLOC_FREE(alt_path);
@@ -443,7 +443,7 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 
 	if (pp_link_target) {
 		bufsize = 1024;
-		link_target = TALLOC_ARRAY(ctx, char, bufsize);
+		link_target = talloc_array(ctx, char, bufsize);
 		if (!link_target) {
 			return False;
 		}
@@ -692,7 +692,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			bool *ppath_contains_wcard)
 {
 	NTSTATUS status;
-	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
+	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 
 	if (!pdp) {
 		return NT_STATUS_NO_MEMORY;
@@ -794,7 +794,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 	*self_referralp = True;
 
 	jucn->referral_count = 1;
-	if((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
+	if((ref = talloc_zero(ctx, struct referral)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -825,7 +825,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	bool dummy;
-	struct dfs_path *pdp = TALLOC_P(ctx, struct dfs_path);
+	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 	char *oldpath;
 
 	if (!pdp) {
@@ -899,7 +899,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
  		 */
 
 		jucn->referral_count = 1;
-		if ((ref = TALLOC_ZERO_P(ctx, struct referral)) == NULL) {
+		if ((ref = talloc_zero(ctx, struct referral)) == NULL) {
 			TALLOC_FREE(pdp);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1233,7 +1233,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 		pathnamep++;
 	}
 
-	junction = TALLOC_ZERO_P(ctx, struct junction_map);
+	junction = talloc_zero(ctx, struct junction_map);
 	if (!junction) {
 		*pstatus = NT_STATUS_NO_MEMORY;
 		talloc_destroy(ctx);
@@ -1318,7 +1318,7 @@ bool create_junction(TALLOC_CTX *ctx,
 {
 	int snum;
 	bool dummy;
-	struct dfs_path *pdp = TALLOC_P(ctx,struct dfs_path);
+	struct dfs_path *pdp = talloc(ctx,struct dfs_path);
 	NTSTATUS status;
 
 	if (!pdp) {
@@ -1630,7 +1630,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	jucn[cnt].comment = "";
 	jucn[cnt].referral_count = 1;
 
-	ref = jucn[cnt].referral_list = TALLOC_ZERO_P(ctx, struct referral);
+	ref = jucn[cnt].referral_list = talloc_zero(ctx, struct referral);
 	if (jucn[cnt].referral_list == NULL) {
 		goto out;
 	}
@@ -1709,7 +1709,8 @@ out:
 	return cnt;
 }
 
-struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
+struct junction_map *enum_msdfs_links(struct smbd_server_connection *sconn,
+				      TALLOC_CTX *ctx, size_t *p_num_jn)
 {
 	struct junction_map *jn = NULL;
 	int i=0;
@@ -1724,7 +1725,7 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	load_registry_shares();
-	sharecount = load_usershare_shares();
+	sharecount = load_usershare_shares(sconn);
 	unbecome_root();
 
 	for(i=0;i < sharecount;i++) {
@@ -1735,7 +1736,7 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
 	if (jn_count == 0) {
 		return NULL;
 	}
-	jn = TALLOC_ARRAY(ctx,  struct junction_map, jn_count);
+	jn = talloc_array(ctx,  struct junction_map, jn_count);
 	if (!jn) {
 		return NULL;
 	}
@@ -1786,7 +1787,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 		 * Once srvstr_get_path() uses talloc it'll
 		 * be a talloced ptr anyway.
 		 */
-		*pp_name_out = CONST_DISCARD(char *,name_in);
+		*pp_name_out = discard_const_p(char, name_in);
 	}
 	return status;
 }

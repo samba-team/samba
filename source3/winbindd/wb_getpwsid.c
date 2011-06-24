@@ -74,8 +74,7 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 
 	status = wb_queryuser_recv(subreq, state, &state->userinfo);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -118,8 +117,7 @@ static void wb_getpwsid_lookupsid_done(struct tevent_req *subreq)
 	status = wb_lookupsid_recv(subreq, state->userinfo, &type, &domain,
 				   &state->userinfo->acct_name);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	subreq = wb_fill_pwent_send(state, state->ev, state->userinfo,
@@ -137,8 +135,7 @@ static void wb_getpwsid_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = wb_fill_pwent_recv(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);

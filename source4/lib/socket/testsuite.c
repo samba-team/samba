@@ -42,7 +42,7 @@ static bool test_udp(struct torture_context *tctx)
 	TALLOC_CTX *mem_ctx = tctx;
 	struct interface *ifaces;
 
-	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock1, 0);
 	torture_assert_ntstatus_ok(tctx, status, "creating DGRAM IP socket 1");
@@ -53,7 +53,7 @@ static bool test_udp(struct torture_context *tctx)
 	talloc_steal(mem_ctx, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
-						iface_best_ip(ifaces, "127.0.0.1"), 0);
+						iface_list_best_ip(ifaces, "127.0.0.1"), 0);
 
 	torture_assert(tctx, localhost, "Localhost not found");
 
@@ -62,10 +62,10 @@ static bool test_udp(struct torture_context *tctx)
 
 	srv_addr = socket_get_my_addr(sock1, mem_ctx);
 	torture_assert(tctx, srv_addr != NULL && 
-		       strcmp(srv_addr->addr, iface_best_ip(ifaces, "127.0.0.1")) == 0,
+		       strcmp(srv_addr->addr, iface_list_best_ip(ifaces, "127.0.0.1")) == 0,
 				   talloc_asprintf(tctx, 
 		"Expected server address of %s but got %s",
-		      iface_best_ip(ifaces, "127.0.0.1"), srv_addr ? srv_addr->addr : NULL));
+		      iface_list_best_ip(ifaces, "127.0.0.1"), srv_addr ? srv_addr->addr : NULL));
 
 	torture_comment(tctx, "server port is %d\n", srv_addr->port);
 
@@ -135,9 +135,9 @@ static bool test_tcp(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "creating IP stream socket 1");
 	talloc_steal(mem_ctx, sock2);
 
-	load_interfaces(tctx, lpcfg_interfaces(tctx->lp_ctx), &ifaces);
+	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
-						iface_best_ip(ifaces, "127.0.0.1"), 0);
+						iface_list_best_ip(ifaces, "127.0.0.1"), 0);
 	torture_assert(tctx, localhost, "Localhost not found");
 
 	status = socket_listen(sock1, localhost, 0, 0);
@@ -147,7 +147,7 @@ static bool test_tcp(struct torture_context *tctx)
 	torture_assert(tctx, srv_addr && srv_addr->addr, 
 				   "Unexpected socket_get_my_addr NULL\n");
 
-	torture_assert_str_equal(tctx, srv_addr->addr, iface_best_ip(ifaces, "127.0.0.1"), 
+	torture_assert_str_equal(tctx, srv_addr->addr, iface_list_best_ip(ifaces, "127.0.0.1"),
 			"Unexpected server address");
 
 	torture_comment(tctx, "server port is %d\n", srv_addr->port);

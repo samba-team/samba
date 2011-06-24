@@ -4,13 +4,6 @@ bld.RECURSE('../../librpc/idl')
 bld.RECURSE('../../librpc/tools')
 bld.RECURSE('idl')
 
-bld.SAMBA_SUBSYSTEM('NDR_SERVER_ID4',
-	source='gen_ndr/ndr_server_id4.c',
-	deps='ndr',
-	public_headers='gen_ndr/server_id4.h',
-	header_path='gen_ndr'
-	)
-
 
 bld.SAMBA_SUBSYSTEM('NDR_WINSTATION',
 	source='gen_ndr/ndr_winstation.c',
@@ -50,12 +43,6 @@ bld.SAMBA_SUBSYSTEM('NDR_OPENDB',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
-	source='gen_ndr/ndr_s4_notify.c',
-	public_deps='ndr NDR_SERVER_ID4'
-	)
-
-
 bld.SAMBA_SUBSYSTEM('NDR_NTP_SIGND',
 	source='gen_ndr/ndr_ntp_signd.c',
 	public_deps='ndr'
@@ -76,7 +63,7 @@ bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
 # create a grouping library to consolidate our samba4 specific NDR code
 bld.SAMBA_LIBRARY('ndr-samba4',
 	source=[],
-	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY ndr-table',
+	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB ndr-table',
 	private_library=True,
 	grouping_library=True
 	)
@@ -92,11 +79,6 @@ bld.SAMBA_LIBRARY('dcerpc-samba4',
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 
-if bld.env.enable_s3build:
-    s3_ndr = "NDR_WBINT"
-else:
-    s3_ndr = ""
-
 bld.SAMBA_SUBSYSTEM('ndr-table',
 	source='../../librpc/ndr/ndr_table.c gen_ndr/tables.c',
         public_deps='''ndr-standard NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
@@ -109,7 +91,7 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
         NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI
         NDR_FRSTRANS NDR_NFS4ACL NDR_NTP_SIGND NDR_DCOM NDR_WMI
         NDR_NAMED_PIPE_AUTH NDR_NTLMSSP NDR_DFSBLOBS NDR_DNSP
-        NDR_NTPRINTING NDR_DNS NDR_BACKUPKEY NDR_PREG ''' + s3_ndr,
+        NDR_NTPRINTING NDR_DNS NDR_BACKUPKEY NDR_PREG NDR_WBINT''',
         depends_on='GEN_NDR_TABLES'
         )
 

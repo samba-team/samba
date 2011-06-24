@@ -316,7 +316,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		goto out;
 	}
 
-	my_fqdn = ads_get_dnshostname(ads, tmpctx, global_myname());
+	my_fqdn = ads_get_dnshostname(ads, tmpctx, lp_netbios_name());
 	if (!my_fqdn) {
 		DEBUG(0, (__location__ ": unable to determine machine "
 			  "account's dns name in AD!\n"));
@@ -324,7 +324,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		goto out;
 	}
 
-	machine_name = ads_get_samaccountname(ads, tmpctx, global_myname());
+	machine_name = ads_get_samaccountname(ads, tmpctx, lp_netbios_name());
 	if (!machine_name) {
 		DEBUG(0, (__location__ ": unable to determine machine "
 			  "account's short name in AD!\n"));
@@ -380,7 +380,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 				  "'%s'\n", princ_s));
 
 			aderr = ads_add_service_principal_name(ads,
-					global_myname(), my_fqdn, srvPrinc);
+					lp_netbios_name(), my_fqdn, srvPrinc);
 			if (!ADS_ERR_OK(aderr)) {
 				DEBUG(1, (__location__ ": failed to "
 					 "ads_add_service_principal_name.\n"));
@@ -389,7 +389,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		}
 	}
 
-	kvno = (krb5_kvno)ads_get_machine_kvno(ads, global_myname());
+	kvno = (krb5_kvno)ads_get_machine_kvno(ads, lp_netbios_name());
 	if (kvno == -1) {
 		/* -1 indicates failure, everything else is OK */
 		DEBUG(1, (__location__ ": ads_get_machine_kvno failed to "
@@ -458,7 +458,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		goto out;
 	}
 
-	kvno = (krb5_kvno)ads_get_machine_kvno(ads, global_myname());
+	kvno = (krb5_kvno)ads_get_machine_kvno(ads, lp_netbios_name());
 	if (kvno == -1) {
 		/* -1 indicates a failure */
 		DEBUG(1, (__location__ ": Error determining the kvno.\n"));
@@ -472,7 +472,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		goto out;
 	}
 
-	aderr = ads_clear_service_principal_names(ads, global_myname());
+	aderr = ads_clear_service_principal_names(ads, lp_netbios_name());
 	if (!ADS_ERR_OK(aderr)) {
 		DEBUG(1, (__location__ ": Error while clearing service "
 			  "principal listings in LDAP.\n"));
@@ -547,7 +547,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	machine_name = talloc_strdup(tmpctx, global_myname());
+	machine_name = talloc_strdup(tmpctx, lp_netbios_name());
 	if (!machine_name) {
 		ret = -1;
 		goto done;

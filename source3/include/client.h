@@ -46,13 +46,6 @@ struct print_job_info {
 	time_t t;
 };
 
-struct cli_state_seqnum {
-	struct cli_state_seqnum *prev, *next;
-	uint16_t mid;
-	uint32_t seqnum;
-	bool persistent;
-};
-
 struct cli_state {
 	/**
 	 * A list of subsidiary connections for DFS.
@@ -71,7 +64,7 @@ struct cli_state {
 	int rap_error;
 	int privileges;
 
-	fstring desthost;
+	char *desthost;
 
 	/* The credentials used to open the cli_state connection. */
 	char *domain;
@@ -83,12 +76,12 @@ struct cli_state {
 	 * ones returned by the server if
 	 * the protocol > NT1.
 	 */
-	fstring server_type;
-	fstring server_os;
-	fstring server_domain;
+	char *server_type;
+	char *server_os;
+	char *server_domain;
 
-	fstring share;
-	fstring dev;
+	char *share;
+	char *dev;
 	struct nmb_name called;
 	struct nmb_name calling;
 	struct sockaddr_storage dest_ss;
@@ -103,12 +96,12 @@ struct cli_state {
 	size_t max_xmit;
 	size_t max_mux;
 	char *outbuf;
-	struct cli_state_seqnum *seqnum;
 	char *inbuf;
 	unsigned int bufsize;
 	int initialised;
 	int win95;
 	bool is_samba;
+	bool is_guestlogin;
 	uint32 capabilities;
 	/* What the server offered. */
 	uint32_t server_posix_capabilities;

@@ -644,7 +644,7 @@ static void usage(poptContext pc)
 
 	ev = s4_event_context_init(talloc_autofree_context());
 
-	gensec_init(lp_ctx);
+	gensec_init();
 
 	DEBUG(0,("seed=%u base=%d range=%d min_length=%d\n", 
 		 seed, lock_base, lock_range, min_length));

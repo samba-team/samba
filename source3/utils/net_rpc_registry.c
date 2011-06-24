@@ -31,6 +31,7 @@
 #include <assert.h>
 #include "../libcli/security/display_sec.h"
 #include "../libcli/registry/util_reg.h"
+#include "client.h"
 
 
 /*******************************************************************
@@ -210,9 +211,9 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if ((!(names = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_subkeys))) ||
-	    (!(classes = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_subkeys))) ||
-	    (!(modtimes = TALLOC_ZERO_ARRAY(mem_ctx, NTTIME *,
+	if ((!(names = talloc_zero_array(mem_ctx, char *, num_subkeys))) ||
+	    (!(classes = talloc_zero_array(mem_ctx, char *, num_subkeys))) ||
+	    (!(modtimes = talloc_zero_array(mem_ctx, NTTIME *,
 					    num_subkeys)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto error;
@@ -332,8 +333,8 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if ((!(names = TALLOC_ARRAY(mem_ctx, char *, num_values))) ||
-	    (!(values = TALLOC_ARRAY(mem_ctx, struct registry_value *,
+	if ((!(names = talloc_array(mem_ctx, char *, num_values))) ||
+	    (!(values = talloc_array(mem_ctx, struct registry_value *,
 				     num_values)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto error;
@@ -455,8 +456,8 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if ((!(names = TALLOC_ARRAY(mem_ctx, char *, num_values))) ||
-	    (!(values = TALLOC_ARRAY(mem_ctx, struct regval_blob *,
+	if ((!(names = talloc_array(mem_ctx, char *, num_values))) ||
+	    (!(values = talloc_array(mem_ctx, struct regval_blob *,
 				     num_values)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto error;
@@ -1450,7 +1451,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 		return status;
 	}
 
-	sd = TALLOC_ZERO_P(mem_ctx, struct KeySecurityData);
+	sd = talloc_zero(mem_ctx, struct KeySecurityData);
 	if (!sd) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -1958,7 +1959,9 @@ static NTSTATUS rpc_registry_import_internal(struct net_context *c,
 		.createkey   = (reg_import_callback_createkey_t)&import_create_key,
 		.deletekey   = (reg_import_callback_deletekey_t)&import_delete_key,
 		.deleteval   = (reg_import_callback_deleteval_t)&import_delete_val,
-		.setval.blob = (reg_import_callback_setval_blob_t)&import_create_val,
+		.setval      = {
+			.blob = (reg_import_callback_setval_blob_t)&import_create_val,
+		},
 		.setval_type = BLOB,
 		.data = &import_ctx
 	};

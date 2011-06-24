@@ -26,12 +26,9 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "winbindd_rpc.h"
-
 #include "rpc_client/rpc_client.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "librpc/gen_ndr/srv_samr.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
-#include "librpc/gen_ndr/srv_lsa.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../libcli/security/security.h"
@@ -92,7 +89,7 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 
 		num_info += num_dom_users;
 
-		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+		info = talloc_realloc(mem_ctx,
 					    info,
 					    struct wbint_userinfo,
 					    num_info);
@@ -184,7 +181,7 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+		info = talloc_realloc(mem_ctx,
 					    info,
 					    struct wb_acct_info,
 					    num_info + count);
@@ -244,7 +241,7 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		info = TALLOC_REALLOC_ARRAY(mem_ctx,
+		info = talloc_realloc(mem_ctx,
 					    info,
 					    struct wb_acct_info,
 					    num_info + count);
@@ -407,7 +404,7 @@ NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (num_rids > 0) {
-		sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_rids);
+		sids = talloc_array(mem_ctx, struct dom_sid, num_rids);
 		if (sids == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -597,7 +594,7 @@ NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	user_grpsids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_groups);
+	user_grpsids = talloc_array(mem_ctx, struct dom_sid, num_groups);
 	if (user_grpsids == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		return status;
@@ -647,7 +644,7 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 			num_queries, num_query_sids));
 
 		if (num_query_sids) {
-			sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_query_sids);
+			sid_array.sids = talloc_zero_array(mem_ctx, struct lsa_SidPtr, num_query_sids);
 			if (sid_array.sids == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -842,9 +839,9 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 	 * Step #2: Convert list of rids into list of usernames.
 	 */
 	if (num_names > 0) {
-		names = TALLOC_ZERO_ARRAY(mem_ctx, char *, num_names);
-		name_types = TALLOC_ZERO_ARRAY(mem_ctx, uint32_t, num_names);
-		sid_mem = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_names);
+		names = talloc_zero_array(mem_ctx, char *, num_names);
+		name_types = talloc_zero_array(mem_ctx, uint32_t, num_names);
+		sid_mem = talloc_zero_array(mem_ctx, struct dom_sid, num_names);
 		if (names == NULL || name_types == NULL || sid_mem == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1069,7 +1066,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_ERR(result)) {
 		return result;
 	}
-	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
+	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1114,7 +1111,7 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	names = TALLOC_ZERO_P(mem_ctx, struct lsa_TransNameArray);
+	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

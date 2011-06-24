@@ -26,7 +26,6 @@
 #include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
-#include "ntdomain.h"
 
 /**********************************************************************
  convencience wrapper around rpccli_spoolss_OpenPrinterEx
@@ -48,7 +47,7 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(devmode_ctr);
 
 	level1.size	= 28;
-	level1.client	= talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	level1.client	= talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	W_ERROR_HAVE_NO_MEMORY(level1.client);
 	level1.user	= cli->auth->user_name;
 	level1.build	= 1381;
@@ -231,7 +230,7 @@ WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	level1.major		= 2;
 	level1.minor		= 0;
 	level1.processor	= 0;
-	level1.client		= talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	level1.client		= talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	W_ERROR_HAVE_NO_MEMORY(level1.client);
 	level1.user		= cli->auth->user_name;
 

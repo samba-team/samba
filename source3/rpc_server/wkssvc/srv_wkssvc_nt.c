@@ -23,6 +23,7 @@
 /* This is the implementation of the wks interface. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "librpc/gen_ndr/libnet_join.h"
 #include "libnet/libnet_join.h"
 #include "../libcli/auth/libcli_auth.h"
@@ -31,7 +32,6 @@
 #include "session.h"
 #include "smbd/smbd.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -196,7 +196,7 @@ static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
 			DEBUG(10, ("talloc_asprintf failed\n"));
 			continue;
 		}
-		if (strcmp(machine_name, global_myname()) == 0) {
+		if (strcmp(machine_name, lp_netbios_name()) == 0) {
 			p = session_list[i].username;
 			nm = strstr(p, sep);
 			if (nm) {
@@ -260,11 +260,11 @@ static struct wkssvc_NetWkstaInfo100 *create_wks_info_100(TALLOC_CTX *mem_ctx)
 	}
 
 	info100->platform_id	 = PLATFORM_ID_NT;	/* unknown */
-	info100->version_major	 = lp_major_announce_version();
-	info100->version_minor	 = lp_minor_announce_version();
+	info100->version_major	 = SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+	info100->version_minor	 = SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 
 	info100->server_name = talloc_asprintf_strupper_m(
-		info100, "%s", global_myname());
+		info100, "%s", lp_netbios_name());
 	info100->domain_name = talloc_asprintf_strupper_m(
 		info100, "%s", lp_workgroup());
 
@@ -289,11 +289,11 @@ static struct wkssvc_NetWkstaInfo101 *create_wks_info_101(TALLOC_CTX *mem_ctx)
 	}
 
 	info101->platform_id	 = PLATFORM_ID_NT;	/* unknown */
-	info101->version_major	 = lp_major_announce_version();
-	info101->version_minor	 = lp_minor_announce_version();
+	info101->version_major	 = SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+	info101->version_minor	 = SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 
 	info101->server_name = talloc_asprintf_strupper_m(
-		info101, "%s", global_myname());
+		info101, "%s", lp_netbios_name());
 	info101->domain_name = talloc_asprintf_strupper_m(
 		info101, "%s", lp_workgroup());
 	info101->lan_root = "";
@@ -320,11 +320,11 @@ static struct wkssvc_NetWkstaInfo102 *create_wks_info_102(TALLOC_CTX *mem_ctx)
 	}
 
 	info102->platform_id	 = PLATFORM_ID_NT;	/* unknown */
-	info102->version_major	 = lp_major_announce_version();
-	info102->version_minor	 = lp_minor_announce_version();
+	info102->version_major	 = SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
+	info102->version_minor	 = SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 
 	info102->server_name = talloc_asprintf_strupper_m(
-		info102, "%s", global_myname());
+		info102, "%s", lp_netbios_name());
 	info102->domain_name = talloc_asprintf_strupper_m(
 		info102, "%s", lp_workgroup());
 	info102->lan_root = "";
@@ -528,7 +528,7 @@ static struct wkssvc_NetWkstaEnumUsersCtr1 *create_enum_users1(
 		/* For a local user the domain name and logon server are
 		 * both returned as the local machine's NetBIOS name */
 		ctr1->user1[i].logon_domain = ctr1->user1[i].logon_server =
-			talloc_asprintf_strupper_m(ctr1->user1, "%s", global_myname());
+			talloc_asprintf_strupper_m(ctr1->user1, "%s", lp_netbios_name());
 
 		ctr1->user1[i].other_domains = NULL;	/* Maybe in future? */
 	}

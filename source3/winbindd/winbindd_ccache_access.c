@@ -55,7 +55,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 	DATA_BLOB dummy_msg, reply;
 
 	status = ntlmssp_client_start(NULL,
-				      global_myname(),
+				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
 				      &ntlmssp_state);

@@ -200,7 +200,7 @@ static  NTSTATUS parse_supplemental_credentials(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	pkb = TALLOC_ZERO_P(mem_ctx, struct package_PrimaryKerberosBlob);
+	pkb = talloc_zero(mem_ctx, struct package_PrimaryKerberosBlob);
 	if (!pkb) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -276,7 +276,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		if (attr->attid == DRSUAPI_ATTID_servicePrincipalName) {
 			uint32_t count;
 			num_spns = attr->value_ctr.num_values;
-			spn = TALLOC_ARRAY(mem_ctx, char *, num_spns);
+			spn = talloc_array(mem_ctx, char *, num_spns);
 			for (count = 0; count < num_spns; count++) {
 				blob = attr->value_ctr.values[count].blob;
 				pull_string_talloc(spn, NULL, 0,
@@ -387,7 +387,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		entry = libnet_keytab_search(ctx, principal, 0, ENCTYPE_NULL,
 					     mem_ctx);
 		if (entry) {
-			name = (char *)TALLOC_MEMDUP(mem_ctx,
+			name = (char *)talloc_memdup(mem_ctx,
 						     entry->password.data,
 						     entry->password.length);
 			if (!name) {

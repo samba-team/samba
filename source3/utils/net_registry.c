@@ -122,50 +122,35 @@ done:
 	return werr;
 }
 
-/*
- *
- * the main "net registry" function implementations
- *
- */
-
-static int net_registry_enumerate(struct net_context *c, int argc,
-				  const char **argv)
+static WERROR registry_enumkey(struct registry_key* parent, const char* keyname, bool recursive)
 {
 	WERROR werr;
-	struct registry_key *key = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	char *subkey_name;
+	char*  subkey_name;
 	NTTIME modtime;
 	uint32_t count;
-	char *valname = NULL;
+	char* valname = NULL;
 	struct registry_value *valvalue = NULL;
-	int ret = -1;
+	struct registry_key* key = NULL;
 
-	if (argc != 1 || c->display_usage) {
-		d_printf("%s\n%s",
-			 _("Usage:"),
-			 _("net registry enumerate <path>\n"));
-		d_printf("%s\n%s",
-			 _("Example:"),
-			 _("net registry enumerate 'HKLM\\Software\\Samba'\n"));
-		goto done;
-	}
-
-	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
+	werr = reg_openkey(ctx, parent, keyname, REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
 		goto done;
 	}
 
-	for (count = 0;
-	     werr = reg_enumkey(ctx, key, count, &subkey_name, &modtime),
-	     W_ERROR_IS_OK(werr);
-	     count++)
-	{
-		print_registry_key(subkey_name, &modtime);
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		goto done;
+	if (recursive) {
+		printf("[%s]\n\n", key->key->name);
+	} else {
+		for (count = 0;
+		     werr = reg_enumkey(ctx, key, count, &subkey_name, &modtime),
+		     W_ERROR_IS_OK(werr);
+		     count++)
+		{
+			print_registry_key(subkey_name, &modtime);
+		}
+		if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+			goto done;
+		}
 	}
 
 	for (count = 0;
@@ -179,11 +164,107 @@ static int net_registry_enumerate(struct net_context *c, int argc,
 		goto done;
 	}
 
-	ret = 0;
+	if (!recursive) {
+		werr = WERR_OK;
+		goto done;
+	}
+
+	for (count = 0;
+	     werr = reg_enumkey(ctx, key, count, &subkey_name, &modtime),
+	     W_ERROR_IS_OK(werr);
+	     count++)
+	{
+		werr = registry_enumkey(key, subkey_name, recursive);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+done:
+	TALLOC_FREE(ctx);
+	return werr;
+}
+
+
+
+/*
+ *
+ * the main "net registry" function implementations
+ *
+ */
+static int net_registry_enumerate(struct net_context *c, int argc,
+				  const char **argv)
+{
+	WERROR werr;
+	struct registry_key *key = NULL;
+	char* name = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	int ret = -1;
+
+	if (argc != 1 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net registry enumerate <path>\n"));
+		d_printf("%s\n%s",
+			 _("Example:"),
+			 _("net registry enumerate 'HKLM\\Software\\Samba'\n"));
+		goto done;
+	}
+
+	werr = open_hive(ctx, argv[0], REG_KEY_READ, &key, &name);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
+		goto done;
+	}
+
+	werr = registry_enumkey(key, name, c->opt_reboot);
+	if (W_ERROR_IS_OK(werr)) {
+		ret = 0;
+	}
 done:
 	TALLOC_FREE(ctx);
 	return ret;
 }
+
+static int net_registry_enumerate_recursive(struct net_context *c, int argc,
+					    const char **argv)
+{
+	WERROR werr;
+	struct registry_key *key = NULL;
+	char* name = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	int ret = -1;
+
+	if (argc != 1 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net registry enumerate <path>\n"));
+		d_printf("%s\n%s",
+			 _("Example:"),
+			 _("net registry enumerate 'HKLM\\Software\\Samba'\n"));
+		goto done;
+	}
+
+	werr = open_hive(ctx, argv[0], REG_KEY_READ, &key, &name);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
+		goto done;
+	}
+
+	werr = registry_enumkey(key, name, true);
+	if (W_ERROR_IS_OK(werr)) {
+		ret = 0;
+	}
+done:
+	TALLOC_FREE(ctx);
+	return ret;
+}
+
 
 static int net_registry_createkey(struct net_context *c, int argc,
 				  const char **argv)
@@ -958,9 +1039,11 @@ static int net_registry_import(struct net_context *c, int argc,
 		.createkey   = (reg_import_callback_createkey_t)&import_create_key,
 		.deletekey   = (reg_import_callback_deletekey_t)&import_delete_key,
 		.deleteval   = (reg_import_callback_deleteval_t)&import_delete_val,
-		.setval.registry_value = (reg_import_callback_setval_registry_value_t)
-		&import_create_val,
-		.setval_type           = REGISTRY_VALUE,
+		.setval      = {
+			.registry_value = (reg_import_callback_setval_registry_value_t)
+					  &import_create_val,
+		},
+		.setval_type = REGISTRY_VALUE,
 		.data        = &import_ctx
 	};
 
@@ -1019,7 +1102,6 @@ static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
 	struct registry_value *valvalue = NULL;
 	char *valname = NULL;
 
-	struct registry_key* subkey = NULL;
 	char *subkey_name = NULL;
 	NTTIME modtime = 0;
 
@@ -1045,6 +1127,8 @@ static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
 		     W_ERROR_IS_OK(werr);
 	     count++)
 	{
+		struct registry_key* subkey = NULL;
+
 		werr = reg_openkey(ctx, key, subkey_name, REG_KEY_READ,
 				   &subkey);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -1054,6 +1138,7 @@ static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
 		}
 
 		registry_export(ctx, subkey, f);
+		TALLOC_FREE(subkey);
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		d_fprintf(stderr, _("reg_enumkey failed: %s\n"),
@@ -1171,6 +1256,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			NET_TRANSPORT_LOCAL,
 			N_("Enumerate registry keys and values"),
 			N_("net registry enumerate\n"
+			   "    Enumerate registry keys and values")
+		},
+		{
+			"enumerate_recursive",
+			net_registry_enumerate_recursive,
+			NET_TRANSPORT_LOCAL,
+			N_("Enumerate registry keys and values"),
+			N_("net registry enumerate_recursive\n"
 			   "    Enumerate registry keys and values")
 		},
 		{

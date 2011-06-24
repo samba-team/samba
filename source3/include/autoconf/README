@@ -1,0 +1,5 @@
+This directory added so that the autoconf build can generate a
+config.h in a location that the recursive waf build for smbtorture
+won't find.
+
+Andrew Bartlett

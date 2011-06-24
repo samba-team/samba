@@ -4,20 +4,19 @@
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
    Copyright (C) Jeremy Allison 1994-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
 */
 
 /* this file handles asynchronous browse synchronisation requests. The
@@ -30,6 +29,7 @@
 #include "system/filesys.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "nmbd/nmbd.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "smbprofile.h"
 
@@ -72,7 +72,6 @@ static void sync_child(char *name, int nm_type,
 	fstring unix_workgroup;
 	struct cli_state *cli;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
-	struct nmb_name called, calling;
 	struct sockaddr_storage ss;
 	NTSTATUS status;
 
@@ -80,25 +79,12 @@ static void sync_child(char *name, int nm_type,
 	 * Patch from Andy Levine andyl@epicrealm.com.
 	 */
 
-	cli = cli_initialise();
-	if (!cli) {
-		return;
-	}
-
-	cli_set_port(cli, 139);
-
 	in_addr_to_sockaddr_storage(&ss, ip);
-	status = cli_connect(cli, name, &ss);
+
+	status = cli_connect_nb(name, &ss, 139, nm_type,
+				get_local_machine_name(), Undefined,
+				&cli);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_shutdown(cli);
-		return;
-	}
-
-	make_nmb_name(&calling, get_local_machine_name(), 0x0);
-	make_nmb_name(&called , name, nm_type);
-
-	if (!cli_session_request(cli, &calling, &called)) {
-		cli_shutdown(cli);
 		return;
 	}
 
@@ -126,7 +112,7 @@ static void sync_child(char *name, int nm_type,
 	cli_NetServerEnum(cli, unix_workgroup,
 			  local_type|SV_TYPE_DOMAIN_ENUM, 
 			  callback, NULL);
-	
+
 	/* Now fetch a server list. */
 	if (servers) {
 		fstrcpy(unix_workgroup, workgroup);
@@ -134,7 +120,7 @@ static void sync_child(char *name, int nm_type,
 				  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
 				  callback, NULL);
 	}
-	
+
 	cli_shutdown(cli);
 }
 

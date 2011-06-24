@@ -31,112 +31,6 @@ void gfree_charcnv(void)
 }
 
 /**
- * Initialize iconv conversion descriptors.
- *
- * This is called the first time it is needed, and also called again
- * every time the configuration is reloaded, because the charset or
- * codepage might have changed.
- **/
-void init_iconv(void)
-{
-	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
-								lp_unix_charset(), lp_display_charset(),
-								true, global_iconv_handle);
-}
-
-/**
- talloc_strdup() a unix string to upper case.
-**/
-
-char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
-{
-	char *out_buffer = talloc_strdup(ctx,s);
-	const unsigned char *p = (const unsigned char *)s;
-	unsigned char *q = (unsigned char *)out_buffer;
-
-	if (!q) {
-		return NULL;
-	}
-
-	/* this is quite a common operation, so we want it to be
-	   fast. We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-
-	while (*p) {
-		if (*p & 0x80)
-			break;
-		*q++ = toupper_ascii_fast(*p);
-		p++;
-	}
-
-	if (*p) {
-		/* MB case. */
-		size_t converted_size, converted_size2;
-		smb_ucs2_t *ubuf = NULL;
-
-		/* We're not using the ascii buffer above. */
-		TALLOC_FREE(out_buffer);
-
-		if (!convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE, s,
-					   strlen(s)+1, (void *)&ubuf,
-					   &converted_size))
-		{
-			return NULL;
-		}
-
-		strupper_w(ubuf);
-
-		if (!convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, ubuf,
-					   converted_size, (void *)&out_buffer,
-					   &converted_size2))
-		{
-			TALLOC_FREE(ubuf);
-			return NULL;
-		}
-
-		/* Don't need the intermediate buffer
- 		 * anymore.
- 		 */
-		TALLOC_FREE(ubuf);
-	}
-
-	return out_buffer;
-}
-
-char *strupper_talloc(TALLOC_CTX *ctx, const char *s) {
-	return talloc_strdup_upper(ctx, s);
-}
-
-
-char *talloc_strdup_lower(TALLOC_CTX *ctx, const char *s)
-{
-	size_t converted_size;
-	smb_ucs2_t *buffer = NULL;
-	char *out_buffer;
-
-	if (!push_ucs2_talloc(ctx, &buffer, s, &converted_size)) {
-		return NULL;
-	}
-
-	strlower_w(buffer);
-
-	if (!pull_ucs2_talloc(ctx, &out_buffer, buffer, &converted_size)) {
-		TALLOC_FREE(buffer);
-		return NULL;
-	}
-
-	TALLOC_FREE(buffer);
-
-	return out_buffer;
-}
-
-char *strlower_talloc(TALLOC_CTX *ctx, const char *s) {
-	return talloc_strdup_lower(ctx, s);
-}
-
-
-/**
  * Copy a string from a char* unix src to a dos codepage string destination.
  *
  * @return the number of bytes occupied by the string in the destination.
@@ -188,15 +82,6 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 /********************************************************************
  Push and malloc an ascii string. src and dest null terminated.
 ********************************************************************/
-
-bool push_ascii_talloc(TALLOC_CTX *mem_ctx, char **dest, const char *src, size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(mem_ctx, CH_UNIX, CH_DOS, src, src_len,
-				     (void **)dest, converted_size);
-}
 
 /**
  * Copy a string from a dos codepage source to a unix char* destination.
@@ -317,7 +202,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 			/* Have we got space to append the '\0' ? */
 			if (size <= dest_len) {
 				/* No, realloc. */
-				dest = TALLOC_REALLOC_ARRAY(ctx, dest, char,
+				dest = talloc_realloc(ctx, dest, char,
 						dest_len+1);
 				if (!dest) {
 					/* talloc fail. */
@@ -354,7 +239,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
  * destination.
  **/
 
-size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
+static size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
 	size_t src_len;
@@ -413,48 +298,6 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 }
 
 
-/**
- * Copy a string from a unix char* src to a UCS2 destination,
- * allocating a buffer using talloc().
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
-		      size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16LE, src, src_len,
-				     (void **)dest, converted_size);
-}
-
-
-/**
- * Copy a string from a unix char* src to a UTF-8 destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		      size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len,
-				     (void**)dest, converted_size);
-}
 
 /**
  Copy a string from a ucs2 source to a unix char* destination.
@@ -606,7 +449,7 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 			/* Have we got space to append the '\0' ? */
 			if (size <= dest_len) {
 				/* No, realloc. */
-				dest = TALLOC_REALLOC_ARRAY(ctx, dest, char,
+				dest = talloc_realloc(ctx, dest, char,
 						dest_len+1);
 				if (!dest) {
 					/* talloc fail. */
@@ -624,70 +467,6 @@ static size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 
 	*ppdest = dest;
 	return src_len + ucs2_align_len;
-}
-
-/**
- * Copy a string from a UCS2 src to a unix char * destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
-		      size_t *converted_size)
-{
-	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, src, src_len,
-				     (void **)dest, converted_size);
-}
-
-/**
- * Copy a string from a UTF-8 src to a unix char * destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		      size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len,
-				     (void **)dest, converted_size);
-}
-
- 
-/**
- * Copy a string from a DOS src to a unix char * destination, allocating a buffer using talloc
- *
- * @param dest always set at least to NULL 
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
- *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
-bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
-		       size_t *converted_size)
-{
-	size_t src_len = strlen(src)+1;
-
-	*dest = NULL;
-	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len,
-				     (void **)dest, converted_size);
 }
 
 /**
@@ -739,36 +518,6 @@ size_t push_string_base(const char *base, uint16 flags2,
 		return push_ucs2(base, dest, src, dest_len, flags);
 	}
 	return push_ascii(dest, src, dest_len, flags);
-}
-
-/**
- Copy a string from a char* src to a unicode or ascii
- dos codepage destination choosing unicode or ascii based on the 
- flags supplied
- Return the number of bytes occupied by the string in the destination.
- flags can have:
-  STR_TERMINATE means include the null termination.
-  STR_UPPER     means uppercase in the destination.
-  STR_ASCII     use ascii even with unicode packet.
-  STR_NOALIGN   means don't do alignment.
- dest_len is the maximum length allowed in the destination. If dest_len
- is -1 then no maxiumum is used.
-**/
-
-ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
-{
-	size_t ret;
-
-	if (!(flags & STR_ASCII) && \
-	    (flags & STR_UNICODE)) {
-		ret = push_ucs2(NULL, dest, src, dest_len, flags);
-	} else {
-		ret = push_ascii(dest, src, dest_len, flags);
-	}
-	if (ret == (size_t)-1) {
-		return -1;
-	}
-	return ret;
 }
 
 /**

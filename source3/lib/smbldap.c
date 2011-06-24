@@ -239,7 +239,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		i++;
 	i++;
 
-	names = TALLOC_ARRAY( mem_ctx, const char*, i );
+	names = talloc_array( mem_ctx, const char*, i );
 	if ( !names ) {
 		DEBUG(0,("get_attr_list: out of memory\n"));
 		return NULL;
@@ -405,7 +405,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 			return NULL;
 		}
 
-		if (StrCaseCmp(tmp, result) < 0) {
+		if (strcasecmp_m(tmp, result) < 0) {
 			TALLOC_FREE(result);
 			result = tmp;
 		} else {
@@ -474,7 +474,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return;
 	}
 
-	handle = TALLOC_P(mem_ctx, LDAPMessage *);
+	handle = talloc(mem_ctx, LDAPMessage *);
 	SMB_ASSERT(handle != NULL);
 
 	*handle = result;
@@ -494,7 +494,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return;
 	}
 
-	handle = TALLOC_P(mem_ctx, LDAPMod **);
+	handle = talloc(mem_ctx, LDAPMod **);
 	SMB_ASSERT(handle != NULL);
 
 	*handle = mod;
@@ -654,7 +654,7 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 			equal = (newblob && (data_blob_cmp(&oldblob, newblob) == 0));
 		} else {
 			/* all of our string attributes are case insensitive */
-			equal = (newval && (StrCaseCmp(oldval, newval) == 0));
+			equal = (newval && (strcasecmp_m(oldval, newval) == 0));
 		}
 
 		if (equal) {
@@ -1480,7 +1480,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
-				       CONST_DISCARD(char **, attrs),
+				       discard_const_p(char *, attrs),
 				       attrsonly, sctrls, cctrls, &timeout,
 				       sizelimit, res);
 		if (rc != LDAP_SUCCESS) {
@@ -1562,7 +1562,7 @@ int smbldap_search_paged(struct smbldap_state *ldap_state,
 	}
 	ber_flatten(cookie_be, &cookie_bv);
 
-	pr.ldctl_oid = CONST_DISCARD(char *, ADS_PAGE_CTL_OID);
+	pr.ldctl_oid = discard_const_p(char, ADS_PAGE_CTL_OID);
 	pr.ldctl_iscritical = (char) critical;
 	pr.ldctl_value.bv_len = cookie_bv->bv_len;
 	pr.ldctl_value.bv_val = cookie_bv->bv_val;
@@ -1862,7 +1862,7 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 		      const char *location,
 		      struct smbldap_state **smbldap_state)
 {
-	*smbldap_state = TALLOC_ZERO_P(mem_ctx, struct smbldap_state);
+	*smbldap_state = talloc_zero(mem_ctx, struct smbldap_state);
 	if (!*smbldap_state) {
 		DEBUG(0, ("talloc() failed for ldapsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -1924,7 +1924,7 @@ static bool smbldap_check_root_dse(LDAP *ld, const char **attrs, const char *val
 	}
 
 	rc = ldap_search_s(ld, "", LDAP_SCOPE_BASE, 
-			   "(objectclass=*)", CONST_DISCARD(char **, attrs), 0 , &msg);
+			   "(objectclass=*)", discard_const_p(char *, attrs), 0 , &msg);
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(3,("smbldap_check_root_dse: Could not search rootDSE\n"));

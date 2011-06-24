@@ -152,7 +152,7 @@ int set_arg_argv(const char * argv)
 			}
 			break;
 		case ARG_SIZE:
-			if (!conv_str_size(val, &arg->arg_val.nval)) {
+			if (!conv_str_size_error(val, &arg->arg_val.nval)) {
 				goto fail;
 			}
 			break;
@@ -597,7 +597,7 @@ int main(int argc, const char ** argv)
 
 	ev = s4_event_context_init(talloc_autofree_context());
 
-	gensec_init(cmdline_lp_ctx);
+	gensec_init();
 	dump_args();
 
 	if (check_arg_numeric("ibs") == 0 || check_arg_numeric("ibs") == 0) {

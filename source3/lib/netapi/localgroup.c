@@ -610,7 +610,7 @@ static WERROR map_buffer_to_alias_info(TALLOC_CTX *mem_ctx,
 	struct LOCALGROUP_INFO_1002 *info1002;
 	union samr_AliasInfo *info = NULL;
 
-	info = TALLOC_ZERO_P(mem_ctx, union samr_AliasInfo);
+	info = talloc_zero(mem_ctx, union samr_AliasInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	switch (level) {
@@ -1115,7 +1115,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 	ZERO_STRUCT(alias_handle);
 
-	member_sids = TALLOC_ZERO_ARRAY(ctx, struct dom_sid,
+	member_sids = talloc_zero_array(ctx, struct dom_sid,
 					r->in.total_entries);
 	W_ERROR_HAVE_NO_MEMORY(member_sids);
 
@@ -1344,7 +1344,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (is_valid_policy_hnd(&alias_handle)) {
+	if (b && is_valid_policy_hnd(&alias_handle)) {
 		dcerpc_samr_Close(b, talloc_tos(), &alias_handle, &result);
 	}
 

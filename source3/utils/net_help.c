@@ -60,7 +60,7 @@ int net_help(struct net_context *c, int argc, const char **argv)
 		return net_usage(c, argc, argv);
 	}
 
-	if (StrCaseCmp(argv[0], "help") == 0) {
+	if (strcasecmp_m(argv[0], "help") == 0) {
 		return net_help_usage(c, argc, argv);
 	}
 

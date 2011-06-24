@@ -549,7 +549,7 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 			}
 			if(*p == ':') {
 				p++;
-				if(*p && (StrnCaseCmp((char *)p, "LCT-", 4)==0)) {
+				if(*p && (strncasecmp_m((char *)p, "LCT-", 4)==0)) {
 					int i;
 					p += 4;
 					for(i = 0; i < 8; i++) {
@@ -975,7 +975,7 @@ This is no longer supported.!\n", pwd->smb_name));
 			p++;
 
 			/* We should be pointing at the LCT entry. */
-			if((linebuf_len > (PTR_DIFF(p, linebuf) + 13)) && (StrnCaseCmp((char *)p, "LCT-", 4) == 0)) {
+			if((linebuf_len > (PTR_DIFF(p, linebuf) + 13)) && (strncasecmp_m((char *)p, "LCT-", 4) == 0)) {
 				p += 4;
 				for(i = 0; i < 8; i++) {
 					if(p[i] == '\0' || !isxdigit(p[i])) {
@@ -990,7 +990,7 @@ This is no longer supported.!\n", pwd->smb_name));
 					 */
 					got_pass_last_set_time = True;
 				} /* i == 8 */
-			} /* *p && StrnCaseCmp() */
+			} /* *p && strncasecmp_m() */
 		} /* p == ':' */
 	} /* p == '[' */
 
@@ -1694,7 +1694,7 @@ static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char 
 
 	/* Setup private data and free function */
 
-	if ( !(privates = TALLOC_ZERO_P( *pdb_method, struct smbpasswd_privates )) ) {
+	if ( !(privates = talloc_zero( *pdb_method, struct smbpasswd_privates )) ) {
 		DEBUG(0, ("talloc() failed for smbpasswd private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

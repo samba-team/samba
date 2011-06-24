@@ -190,7 +190,7 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(TALLOC_CTX *mem_ctx,
 		if (port == 0) continue;
 		status = stream_setup_socket(mem_ctx, event_context, lp_ctx,
 					     model_ops, &smb_stream_ops, 
-					     "ipv4", address, &port, 
+					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
 					     NULL);
 		NT_STATUS_NOT_OK_RETURN(status);

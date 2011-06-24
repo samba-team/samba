@@ -18,8 +18,8 @@
  */
 
 #include "includes.h"
+#include "../lib/tsocket/tsocket.h"
 #include "rpc_client/rpc_transport.h"
-#include "../lib/async_req/async_sock.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI

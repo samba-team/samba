@@ -38,6 +38,7 @@
 #include "krb5_env.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
+#include "libsmb/libsmb.h"
 
 /****************************************************************
 ****************************************************************/
@@ -1074,7 +1075,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					  &user_info,
 					  &result);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
 
 		/* retry with level 24 */
 
@@ -1291,7 +1292,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
 	union samr_UserInfo *info = NULL;
-	struct dcerpc_binding_handle *b;
+	struct dcerpc_binding_handle *b = NULL;
 
 	ZERO_STRUCT(sam_pol);
 	ZERO_STRUCT(domain_pol);
@@ -1432,7 +1433,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 
 done:
-	if (pipe_hnd) {
+	if (pipe_hnd && b) {
 		if (is_valid_policy_hnd(&domain_pol)) {
 			dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		}
@@ -1454,40 +1455,61 @@ done:
 
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
-	WERROR werr;
+	WERROR werr = WERR_OK;
+	sbcErr err;
 	struct smbconf_ctx *ctx;
 
-	werr = smbconf_init_reg(r, &ctx, NULL);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_init_reg(r, &ctx, NULL);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
-		werr = smbconf_set_global_parameter(ctx, "security", "user");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "security", "user");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
-		werr = smbconf_set_global_parameter(ctx, "workgroup",
-						    r->in.domain_name);
+		err = smbconf_set_global_parameter(ctx, "workgroup",
+						   r->in.domain_name);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
 		smbconf_delete_global_parameter(ctx, "realm");
 		goto done;
 	}
 
-	werr = smbconf_set_global_parameter(ctx, "security", "domain");
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	err = smbconf_set_global_parameter(ctx, "security", "domain");
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
+	}
 
-	werr = smbconf_set_global_parameter(ctx, "workgroup",
-					    r->out.netbios_domain_name);
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	err = smbconf_set_global_parameter(ctx, "workgroup",
+					   r->out.netbios_domain_name);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
+	}
 
 	if (r->out.domain_is_ad) {
-		werr = smbconf_set_global_parameter(ctx, "security", "ads");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "security", "ads");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
-		werr = smbconf_set_global_parameter(ctx, "realm",
-						    r->out.dns_domain_name);
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "realm",
+						   r->out.dns_domain_name);
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 	}
 
  done:
@@ -1501,20 +1523,28 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 {
 	WERROR werr = WERR_OK;
+	sbcErr err;
 	struct smbconf_ctx *ctx;
 
-	werr = smbconf_init_reg(r, &ctx, NULL);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_init_reg(r, &ctx, NULL);
+	if (!SBC_ERROR_IS_OK(err)) {
+		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		werr = smbconf_set_global_parameter(ctx, "security", "user");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_set_global_parameter(ctx, "security", "user");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
-		werr = smbconf_delete_global_parameter(ctx, "workgroup");
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		err = smbconf_delete_global_parameter(ctx, "workgroup");
+		if (!SBC_ERROR_IS_OK(err)) {
+			werr = WERR_NO_SUCH_SERVICE;
+			goto done;
+		}
 
 		smbconf_delete_global_parameter(ctx, "realm");
 	}
@@ -1741,7 +1771,7 @@ static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 	}
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (krb5_cc_env && StrCaseCmp(krb5_cc_env, "MEMORY:libnetjoin")) {
+	if (krb5_cc_env && strcasecmp_m(krb5_cc_env, "MEMORY:libnetjoin")) {
 		unsetenv(KRB5_ENV_CCNAME);
 	}
 
@@ -1760,7 +1790,7 @@ static int libnet_destroy_UnjoinCtx(struct libnet_UnjoinCtx *r)
 	}
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (krb5_cc_env && StrCaseCmp(krb5_cc_env, "MEMORY:libnetjoin")) {
+	if (krb5_cc_env && strcasecmp_m(krb5_cc_env, "MEMORY:libnetjoin")) {
 		unsetenv(KRB5_ENV_CCNAME);
 	}
 
@@ -1783,7 +1813,7 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(ctx, libnet_destroy_JoinCtx);
 
-	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	ctx->in.machine_name = talloc_strdup(mem_ctx, lp_netbios_name());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
@@ -1816,7 +1846,7 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(ctx, libnet_destroy_UnjoinCtx);
 
-	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	ctx->in.machine_name = talloc_strdup(mem_ctx, lp_netbios_name());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);

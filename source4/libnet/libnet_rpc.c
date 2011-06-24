@@ -109,6 +109,10 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	case LIBNET_RPC_CONNECT_SERVER:
 	case LIBNET_RPC_CONNECT_SERVER_ADDRESS:
 		b->flags = r->in.dcerpc_flags;
+		break;
+	default:
+		/* other types have already been checked before */
+		break;
 	}
 
 	if (DEBUGLEVEL >= 10) {

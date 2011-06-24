@@ -23,6 +23,8 @@
 #ifndef __TORTURE_H__
 #define __TORTURE_H__
 
+struct cli_state;
+
 /* The following definitions come from torture/denytest.c  */
 
 bool torture_denytest1(int dummy);
@@ -87,5 +89,7 @@ bool run_nbench2(int dummy);
 bool run_async_echo(int dummy);
 bool run_smb_any_connect(int dummy);
 bool run_addrchange(int dummy);
+bool run_notify_online(int dummy);
+bool run_nttrans_create(int dummy);
 
 #endif /* __TORTURE_H__ */

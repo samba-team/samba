@@ -1,6 +1,26 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   tdb utility functions
+
+   Copyright (C) Andrew Tridgell 1992-2006
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef _____LIB_UTIL_UTIL_TDB_H__
 #define _____LIB_UTIL_UTIL_TDB_H__
-
 
 /***************************************************************
  Make a TDB_DATA and keep the const warning in one place
@@ -11,7 +31,7 @@ TDB_DATA string_tdb_data(const char *string);
 TDB_DATA string_term_tdb_data(const char *string);
 
 /****************************************************************************
- Lock a chain by string. Return -1 if lock failed.
+ Lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval);
 
@@ -21,7 +41,7 @@ int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval);
 void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval);
 
 /****************************************************************************
- Read lock a chain by string. Return -1 if lock failed.
+ Read lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval);
 
@@ -43,13 +63,13 @@ int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key);
 int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
 
 /****************************************************************************
- Store a int32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
+ Store a int32_t value by an arbitrary blob key, return 0 on success, -ve on failure.
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 int tdb_store_int32_byblob(struct tdb_context *tdb, TDB_DATA key, int32_t v);
 
 /****************************************************************************
- Store a int32_t value by string key, return 0 on success, -1 on failure.
+ Store a int32_t value by string key, return 0 on success, -ve on failure.
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v);
@@ -67,19 +87,19 @@ bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t *va
 bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value);
 
 /****************************************************************************
- Store a uint32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
+ Store a uint32_t value by an arbitrary blob key, return true on success, false on failure.
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 bool tdb_store_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t value);
 
 /****************************************************************************
- Store a uint32_t value by string key, return 0 on success, -1 on failure.
+ Store a uint32_t value by string key, return true on success, false on failure.
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value);
 
 /****************************************************************************
- Store a buffer by a null terminated string key.  Return 0 on success, -1
+ Store a buffer by a null terminated string key.  Return 0 on success, -ve
  on failure.
 ****************************************************************************/
 int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA data, int flags);
@@ -91,7 +111,7 @@ int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA dat
 TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr);
 
 /****************************************************************************
- Delete an entry using a null terminated string key. 
+ Delete an entry using a null terminated string key.  0 on success, -ve on err.
 ****************************************************************************/
 int tdb_delete_bystring(struct tdb_context *tdb, const char *keystr);
 

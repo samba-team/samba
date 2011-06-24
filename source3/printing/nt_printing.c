@@ -20,12 +20,7 @@
  */
 
 #include "includes.h"
-#include "printing/pcap.h"
 #include "printing/nt_printing_tdb.h"
-#include "printing/nt_printing_migrate.h"
-#include "registry.h"
-#include "registry/reg_objects.h"
-#include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_server/spoolss/srv_spoolss_util.h"
 #include "nt_printing.h"
@@ -36,7 +31,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "messages.h"
-#include "ntdomain.h"
+#include "rpc_server/spoolss/srv_spoolss_nt.h"
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -152,7 +147,7 @@ const char *get_short_archi(const char *long_archi)
         do {
                 i++;
         } while ( (archi_table[i].long_archi!=NULL ) &&
-                  StrCaseCmp(long_archi, archi_table[i].long_archi) );
+                  strcasecmp_m(long_archi, archi_table[i].long_archi) );
 
         if (archi_table[i].long_archi==NULL) {
                 DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
@@ -578,7 +573,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32 get_correct_cversion(struct pipes_struct *p,
+static uint32 get_correct_cversion(struct auth_serversupplied_info *session_info,
 				   const char *architecture,
 				   const char *driverpath_in,
 				   WERROR *perr)
@@ -621,7 +616,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 
 	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
 				       lp_pathname(printdollar_snum),
-				       p->session_info, &oldcwd);
+				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -636,7 +631,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		goto error_free_conn;
 	}
 
-	if (!become_user_by_session(conn, p->session_info)) {
+	if (!become_user_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_free_conn;
@@ -766,7 +761,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 } while (0);
 
 static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
-					   struct pipes_struct *rpc_pipe,
+					   struct auth_serversupplied_info *session_info,
 					   const char *architecture,
 					   const char **driver_path,
 					   const char **data_file,
@@ -826,7 +821,7 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	 *	NT2K: cversion=3
 	 */
 
-	*version = get_correct_cversion(rpc_pipe, short_architecture,
+	*version = get_correct_cversion(session_info, short_architecture,
 					*driver_path, &err);
 	if (*version == -1) {
 		return err;
@@ -839,12 +834,12 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
-			      struct pipes_struct *rpc_pipe,
+			      struct auth_serversupplied_info *session_info,
 			      struct spoolss_AddDriverInfoCtr *r)
 {
 	switch (r->level) {
 	case 3:
-		return clean_up_driver_struct_level(mem_ctx, rpc_pipe,
+		return clean_up_driver_struct_level(mem_ctx, session_info,
 						    r->info.info3->architecture,
 						    &r->info.info3->driver_path,
 						    &r->info.info3->data_file,
@@ -853,7 +848,7 @@ WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 						    r->info.info3->dependent_files,
 						    &r->info.info3->version);
 	case 6:
-		return clean_up_driver_struct_level(mem_ctx, rpc_pipe,
+		return clean_up_driver_struct_level(mem_ctx, session_info,
 						    r->info.info6->architecture,
 						    &r->info.info6->driver_path,
 						    &r->info.info6->data_file,
@@ -924,7 +919,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 		}
 
 		/* Setup a synthetic smb_filename struct */
-		smb_fname_new = TALLOC_ZERO_P(mem_ctx, struct smb_filename);
+		smb_fname_new = talloc_zero(mem_ctx, struct smb_filename);
 		if (!smb_fname_new) {
 			ret = WERR_NOMEM;
 			goto out;
@@ -958,7 +953,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-WERROR move_driver_to_download_area(struct pipes_struct *p,
+WERROR move_driver_to_download_area(struct auth_serversupplied_info *session_info,
 				    struct spoolss_AddDriverInfoCtr *r)
 {
 	struct spoolss_AddDriverInfo3 *driver;
@@ -1004,7 +999,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
 				       lp_pathname(printdollar_snum),
-				       p->session_info, &oldcwd);
+				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -1019,7 +1014,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		goto err_free_conn;
 	}
 
-	if (!become_user_by_session(conn, p->session_info)) {
+	if (!become_user_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		err = WERR_ACCESS_DENIED;
 		goto err_free_conn;

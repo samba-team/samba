@@ -290,10 +290,10 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (argc>0) {
-                realm.data = CONST_DISCARD(char *, argv[0]);
+                realm.data = discard_const_p(char, argv[0]);
 		realm.length = strlen(argv[0]);
 	} else if (lp_realm() && *lp_realm()) {
-		realm.data = lp_realm();
+		realm.data = discard_const_p(char, lp_realm());
 		realm.length = strlen((const char *)realm.data);
 	} else {
 		rc = krb5_get_host_realm(ctx, NULL, &realms);
@@ -457,7 +457,7 @@ int net_lookup(struct net_context *c, int argc, const char **argv)
 		return net_lookup_usage(c, argc, argv);
 	}
 	for (i=0; table[i].funcname; i++) {
-		if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+		if (strcasecmp_m(argv[0], table[i].funcname) == 0)
 			return table[i].fn(c, argc-1, argv+1);
 	}
 

@@ -18,97 +18,14 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "../lib/async_req/async_sock.h"
+#include "../lib/util/tevent_ntstatus.h"
+#include "../lib/util/tevent_unix.h"
 #include "async_smb.h"
 #include "smb_crypt.h"
 #include "libsmb/nmblib.h"
-
-/*
- * Read an smb packet asynchronously, discard keepalives
- */
-
-struct read_smb_state {
-	struct tevent_context *ev;
-	int fd;
-	uint8_t *buf;
-};
-
-static ssize_t read_smb_more(uint8_t *buf, size_t buflen, void *private_data);
-static void read_smb_done(struct tevent_req *subreq);
-
-static struct tevent_req *read_smb_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					int fd)
-{
-	struct tevent_req *result, *subreq;
-	struct read_smb_state *state;
-
-	result = tevent_req_create(mem_ctx, &state, struct read_smb_state);
-	if (result == NULL) {
-		return NULL;
-	}
-	state->ev = ev;
-	state->fd = fd;
-
-	subreq = read_packet_send(state, ev, fd, 4, read_smb_more, NULL);
-	if (subreq == NULL) {
-		goto fail;
-	}
-	tevent_req_set_callback(subreq, read_smb_done, result);
-	return result;
- fail:
-	TALLOC_FREE(result);
-	return NULL;
-}
-
-static ssize_t read_smb_more(uint8_t *buf, size_t buflen, void *private_data)
-{
-	if (buflen > 4) {
-		return 0;	/* We've been here, we're done */
-	}
-	return smb_len_large(buf);
-}
-
-static void read_smb_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct read_smb_state *state = tevent_req_data(
-		req, struct read_smb_state);
-	ssize_t len;
-	int err;
-
-	len = read_packet_recv(subreq, state, &state->buf, &err);
-	TALLOC_FREE(subreq);
-	if (len == -1) {
-		tevent_req_error(req, err);
-		return;
-	}
-
-	if (CVAL(state->buf, 0) == SMBkeepalive) {
-		subreq = read_packet_send(state, state->ev, state->fd, 4,
-					  read_smb_more, NULL);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, read_smb_done, req);
-		return;
-	}
-	tevent_req_done(req);
-}
-
-static ssize_t read_smb_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			     uint8_t **pbuf, int *perrno)
-{
-	struct read_smb_state *state = tevent_req_data(
-		req, struct read_smb_state);
-
-	if (tevent_req_is_unix_error(req, perrno)) {
-		return -1;
-	}
-	*pbuf = talloc_move(mem_ctx, &state->buf);
-	return talloc_get_size(*pbuf);
-}
+#include "read_smb.h"
 
 /**
  * Fetch an error out of a NBT packet
@@ -236,6 +153,14 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 	int num_pending = talloc_array_length(cli->pending);
 	int i;
 
+	if (state->mid != 0) {
+		/*
+		 * This is a [nt]trans[2] request which waits
+		 * for more than one reply.
+		 */
+		return;
+	}
+
 	if (num_pending == 1) {
 		/*
 		 * The pending read_smb tevent_req is a child of
@@ -263,9 +188,7 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 	/*
 	 * Remove ourselves from the cli->pending array
 	 */
-	if (num_pending > 1) {
-		cli->pending[i] = cli->pending[num_pending-1];
-	}
+	cli->pending[i] = cli->pending[num_pending-1];
 
 	/*
 	 * No NULL check here, we're shrinking by sizeof(void *), and
@@ -278,6 +201,13 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 
 static int cli_smb_req_destructor(struct tevent_req *req)
 {
+	struct cli_smb_state *state = tevent_req_data(
+		req, struct cli_smb_state);
+	/*
+	 * Make sure we really remove it from
+	 * the pending array on destruction.
+	 */
+	state->mid = 0;
 	cli_smb_req_unset_pending(req);
 	return 0;
 }
@@ -338,6 +268,20 @@ void cli_smb_req_set_mid(struct tevent_req *req, uint16_t mid)
 	struct cli_smb_state *state = tevent_req_data(
 		req, struct cli_smb_state);
 	state->mid = mid;
+}
+
+uint32_t cli_smb_req_seqnum(struct tevent_req *req)
+{
+	struct cli_smb_state *state = tevent_req_data(
+		req, struct cli_smb_state);
+	return state->seqnum;
+}
+
+void cli_smb_req_set_seqnum(struct tevent_req *req, uint32_t seqnum)
+{
+	struct cli_smb_state *state = tevent_req_data(
+		req, struct cli_smb_state);
+	state->seqnum = seqnum;
 }
 
 static size_t iov_len(const struct iovec *iov, int count)
@@ -423,9 +367,9 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	state->iov_count = iov_count + 3;
 
 	if (cli->timeout) {
-		endtime = timeval_current_ofs(0, cli->timeout * 1000);
+		endtime = timeval_current_ofs_msec(cli->timeout);
 		if (!tevent_req_set_endtime(result, ev, endtime)) {
-			tevent_req_nomem(NULL, result);
+			tevent_req_oom(result);
 		}
 	}
 	return result;
@@ -496,8 +440,8 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 		if (buf == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = cli_encrypt_message(state->cli, (char *)buf,
-					     &enc_buf);
+		status = common_encrypt_buffer(state->cli->trans_enc_state,
+					       (char *)buf, &enc_buf);
 		TALLOC_FREE(buf);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Error in encrypting client message: %s\n",
@@ -544,7 +488,7 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 	struct iovec iov;
 	NTSTATUS status;
 
-	iov.iov_base = CONST_DISCARD(void *, bytes);
+	iov.iov_base = discard_const_p(void, bytes);
 	iov.iov_len = num_bytes;
 
 	req = cli_smb_req_create(mem_ctx, ev, cli, smb_command,
@@ -712,7 +656,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	if (state->chained_requests == NULL) {
 		state->inbuf = talloc_move(state, &inbuf);
 		talloc_set_destructor(req, NULL);
-		cli_smb_req_destructor(req);
+		cli_smb_req_unset_pending(req);
 		state->chain_num = 0;
 		state->chain_length = 1;
 		tevent_req_done(req);
@@ -756,7 +700,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	while (talloc_array_length(cli->pending) > 0) {
 		req = cli->pending[0];
 		talloc_set_destructor(req, NULL);
-		cli_smb_req_destructor(req);
+		cli_smb_req_unset_pending(req);
 		tevent_req_nterror(req, status);
 	}
 }
@@ -779,6 +723,24 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 	}
 
 	if (state->inbuf == NULL) {
+		if (min_wct != 0) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (pinbuf) {
+			*pinbuf = NULL;
+		}
+		if (pwct) {
+			*pwct = 0;
+		}
+		if (pvwv) {
+			*pvwv = NULL;
+		}
+		if (pnum_bytes) {
+			*pnum_bytes = 0;
+		}
+		if (pbytes) {
+			*pbytes = NULL;
+		}
 		/* This was a request without a reply */
 		return NT_STATUS_OK;
 	}
@@ -820,6 +782,8 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 	}
 
 	status = cli_pull_error((char *)state->inbuf);
+
+	cli_set_error(state->cli, status);
 
 	if (!have_andx_command((char *)state->inbuf, wct_ofs)) {
 

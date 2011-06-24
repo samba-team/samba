@@ -155,17 +155,17 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
 	/* we print from the directory path to give the best chance of
            parsing the lpq output */
-	current_directory = TALLOC_ARRAY(ctx,
-					char,
-					PATH_MAX+1);
-	if (!current_directory) {
-		return -1;
-	}
-	wd = sys_getwd(current_directory);
+	wd = sys_getwd();
 	if (!wd) {
 		return -1;
 	}
 
+	current_directory = talloc_strdup(ctx, wd);
+	SAFE_FREE(wd);
+
+	if (!current_directory) {
+		return -1;
+	}
 	print_directory = talloc_strdup(ctx, pjob->filename);
 	if (!print_directory) {
 		return -1;
@@ -205,7 +205,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
  out:
 
-	if (chdir(wd) == -1) {
+	if (chdir(current_directory) == -1) {
 		smb_panic("chdir failed in generic_job_submit");
 	}
 	TALLOC_FREE(current_directory);

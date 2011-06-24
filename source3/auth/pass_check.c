@@ -502,8 +502,8 @@ it assumes the string starts lowercased
 ****************************************************************************/
 static NTSTATUS string_combinations2(char *s, int offset,
 				     NTSTATUS (*fn)(const char *s,
-						    void *private_data),
-				     int N, void *private_data)
+						    const void *private_data),
+				     int N, const void *private_data)
 {
 	int len = strlen(s);
 	int i;
@@ -540,8 +540,8 @@ it assumes the string starts lowercased
 ****************************************************************************/
 static NTSTATUS string_combinations(char *s,
 				    NTSTATUS (*fn)(const char *s,
-						   void *private_data),
-				    int N, void *private_data)
+						   const void *private_data),
+				    int N, const void *private_data)
 {
 	int n;
 	NTSTATUS nt_status;
@@ -558,7 +558,7 @@ static NTSTATUS string_combinations(char *s,
 /****************************************************************************
 core of password checking routine
 ****************************************************************************/
-static NTSTATUS password_check(const char *password, void *private_data)
+static NTSTATUS password_check(const char *password, const void *private_data)
 {
 #ifdef WITH_PAM
 	const char *rhost = (const char *)private_data;
@@ -840,7 +840,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 #endif /* defined(WITH_PAM) */
 
 	/* try it as it came to us */
-	nt_status = password_check(password, (void *)rhost);
+	nt_status = password_check(password, (const void *)rhost);
         if NT_STATUS_IS_OK(nt_status) {
 		return (nt_status);
 	} else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -868,7 +868,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 	/* try all lowercase if it's currently all uppercase */
 	if (strhasupper(pass2)) {
 		strlower_m(pass2);
-		nt_status = password_check(pass2, (void *)rhost);
+		nt_status = password_check(pass2, (const void *)rhost);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			return (nt_status);
 		}
@@ -883,7 +883,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 	strlower_m(pass2);
 
 	nt_status = string_combinations(pass2, password_check, level,
-					(void *)rhost);
+					(const void *)rhost);
         if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

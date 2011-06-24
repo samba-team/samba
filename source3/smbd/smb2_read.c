@@ -24,6 +24,8 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "libcli/security/security.h"
+#include "../lib/util/tevent_ntstatus.h"
+#include "rpc_server/srv_pipe_hnd.h"
 
 static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
@@ -306,7 +308,7 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	/* Make a copy of state attached to the smb2req. Attach
 	   the destructor here as this will trigger the sendfile
 	   call when the request is destroyed. */
-	state_copy = TALLOC_P(smb2req, struct smbd_smb2_read_state);
+	state_copy = talloc(smb2req, struct smbd_smb2_read_state);
 	if (!state_copy) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -442,7 +444,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		subreq = np_read_send(state, smbd_event_context(),
+		subreq = np_read_send(state, server_event_context(),
 				      fsp->fake_file_handle,
 				      state->out_data.data,
 				      state->out_data.length);

@@ -240,7 +240,7 @@ WERROR libnetapi_samr_open_builtin_domain(struct libnetapi_ctx *mem_ctx,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					connect_handle,
 					builtin_mask,
-					CONST_DISCARD(struct dom_sid *, &global_sid_Builtin),
+					discard_const_p(struct dom_sid, &global_sid_Builtin),
 					builtin_handle,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {

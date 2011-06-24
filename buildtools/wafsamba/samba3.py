@@ -51,14 +51,18 @@ def s3_fix_kwargs(bld, kwargs):
     s3reldir = os_path_relpath(s3dir, bld.curdir)
 
     # the extra_includes list is relative to the source3 directory
-    extra_includes = [ '.', 'include', 'lib' ]
+    extra_includes = [ '.', 'include', 'lib', '../lib/tdb_compat' ]
     if bld.env.use_intree_heimdal:
         extra_includes += [ '../source4/heimdal/lib/com_err',
                             '../source4/heimdal/lib/gssapi',
                             '../source4/heimdal_build' ]
 
-    if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
-        extra_includes += [ '../lib/tdb/include' ]
+    if bld.CONFIG_SET('BUILD_TDB2'):
+        if not bld.CONFIG_SET('USING_SYSTEM_TDB2'):
+            extra_includes += [ '../lib/tdb2' ]
+    else:
+        if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
+            extra_includes += [ '../lib/tdb/include' ]
 
     if not bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
         extra_includes += [ '../lib/tevent' ]
@@ -89,13 +93,13 @@ def s3_fix_kwargs(bld, kwargs):
 
 def SAMBA3_LIBRARY(bld, name, *args, **kwargs):
 	s3_fix_kwargs(bld, kwargs)
-	kwargs['allow_undefined_symbols'] = True
 	return bld.SAMBA_LIBRARY(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_LIBRARY = SAMBA3_LIBRARY
 
 def SAMBA3_MODULE(bld, name, *args, **kwargs):
 	s3_fix_kwargs(bld, kwargs)
-	kwargs['allow_undefined_symbols'] = True
+        if not 'allow_undefined_symbols' in kwargs:
+            kwargs['allow_undefined_symbols'] = True
 	return bld.SAMBA_MODULE(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_MODULE = SAMBA3_MODULE
 

@@ -154,7 +154,7 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	     (lpcfg_server_role(service->task->lp_ctx) == ROLE_DOMAIN_CONTROLLER)) &&
 	    (dom_sid_equal(state->domain->info->sid,
 			   state->service->primary_sid))) {
-		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL;
+		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL | DCERPC_SCHANNEL_128;
 
 		/* For debugging, it can be a real pain if all the traffic is encrypted */
 		if (lpcfg_winbind_sealed_pipes(service->task->lp_ctx)) {

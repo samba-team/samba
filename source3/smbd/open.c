@@ -77,6 +77,16 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
 
+	if ((access_mask & DELETE_ACCESS) && !lp_acl_check_permissions(SNUM(conn))) {
+		*access_granted = access_mask;
+
+		DEBUG(10,("smbd_check_open_rights: not checking ACL "
+			"on DELETE_ACCESS on file %s. Granting 0x%x\n",
+			smb_fname_str_dbg(smb_fname),
+			(unsigned int)*access_granted ));
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 			(SECINFO_OWNER |
 			SECINFO_GROUP |
@@ -241,6 +251,8 @@ void change_file_owner_to_parent(connection_struct *conn,
 		DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
 			"parent directory uid %u.\n", fsp_str_dbg(fsp),
 			(unsigned int)smb_fname_parent->st.st_ex_uid));
+		/* Ensure the uid entry is updated. */
+		fsp->fsp_name->st.st_ex_uid = smb_fname_parent->st.st_ex_uid;
 	}
 
 	TALLOC_FREE(smb_fname_parent);
@@ -316,10 +328,9 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 
 	/* Ensure we're pointing at the same place. */
 	if (smb_fname_cwd->st.st_ex_dev != psbuf->st_ex_dev ||
-	    smb_fname_cwd->st.st_ex_ino != psbuf->st_ex_ino ||
-	    smb_fname_cwd->st.st_ex_mode != psbuf->st_ex_mode ) {
+	    smb_fname_cwd->st.st_ex_ino != psbuf->st_ex_ino) {
 		DEBUG(0,("change_dir_owner_to_parent: "
-			 "device/inode/mode on directory %s changed. "
+			 "device/inode on directory %s changed. "
 			 "Refusing to chown !\n", fname ));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto chdir;
@@ -350,6 +361,8 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
 			"directory %s to parent directory uid %u.\n",
 			fname, (unsigned int)smb_fname_parent->st.st_ex_uid ));
+		/* Ensure the uid entry is updated. */
+		psbuf->st_ex_uid = smb_fname_parent->st.st_ex_uid;
 	}
 
  chdir:
@@ -378,6 +391,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
+	bool file_created = false;
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -477,23 +491,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		if ((local_flags & O_CREAT) && !file_existed) {
-
-			/* Inherit the ACL if required */
-			if (lp_inherit_perms(SNUM(conn))) {
-				inherit_access_posix_acl(conn, parent_dir,
-							 smb_fname->base_name,
-							 unx_mode);
-			}
-
-			/* Change the owner if required. */
-			if (lp_inherit_owner(SNUM(conn))) {
-				change_file_owner_to_parent(conn, parent_dir,
-							    fsp);
-			}
-
-			notify_fname(conn, NOTIFY_ACTION_ADDED,
-				     FILE_NOTIFY_CHANGE_FILE_NAME,
-				     smb_fname->base_name);
+			file_created = true;
 		}
 
 	} else {
@@ -602,6 +600,47 @@ static NTSTATUS open_file(files_struct *fsp,
 			status = map_nt_error_from_unix(errno);
 			fd_close(fsp);
 			return status;
+		}
+
+		if (file_created) {
+			bool need_re_stat = false;
+			/* Do all inheritance work after we've
+			   done a successful stat call and filled
+			   in the stat struct in fsp->fsp_name. */
+
+			/* Inherit the ACL if required */
+			if (lp_inherit_perms(SNUM(conn))) {
+				inherit_access_posix_acl(conn, parent_dir,
+							 smb_fname->base_name,
+							 unx_mode);
+				need_re_stat = true;
+			}
+
+			/* Change the owner if required. */
+			if (lp_inherit_owner(SNUM(conn))) {
+				change_file_owner_to_parent(conn, parent_dir,
+							    fsp);
+				need_re_stat = true;
+			}
+
+			if (need_re_stat) {
+				if (fsp->fh->fd == -1) {
+					ret = SMB_VFS_STAT(conn, smb_fname);
+				} else {
+					ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+					/* If we have an fd, this stat should succeed. */
+					if (ret == -1) {
+						DEBUG(0,("Error doing fstat on open file %s "
+							 "(%s)\n",
+							 smb_fname_str_dbg(smb_fname),
+							 strerror(errno) ));
+					}
+				}
+			}
+
+			notify_fname(conn, NOTIFY_ACTION_ADDED,
+				     FILE_NOTIFY_CHANGE_FILE_NAME,
+				     smb_fname->base_name);
 		}
 	}
 
@@ -949,7 +988,9 @@ static NTSTATUS send_break_message(files_struct *fsp,
  * Do internal consistency checks on the share mode for a file.
  */
 
-static void find_oplock_types(struct share_mode_lock *lck,
+static void find_oplock_types(files_struct *fsp,
+				int oplock_request,
+				struct share_mode_lock *lck,
 				struct share_mode_entry **pp_batch,
 				struct share_mode_entry **pp_ex_or_batch,
 				bool *got_level2,
@@ -962,8 +1003,24 @@ static void find_oplock_types(struct share_mode_lock *lck,
 	*got_level2 = false;
 	*got_no_oplock = false;
 
+	/* Ignore stat or internal opens, as is done in
+		delay_for_batch_oplocks() and
+		delay_for_exclusive_oplocks().
+	 */
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
+		return;
+	}
+
 	for (i=0; i<lck->num_share_modes; i++) {
 		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
+			continue;
+		}
+
+		if (lck->share_modes[i].op_type == NO_OPLOCK &&
+				is_stat_open(lck->share_modes[i].access_mask)) {
+			/* We ignore stat opens in the table - they
+			   always have NO_OPLOCK and never get or
+			   cause breaks. JRA. */
 			continue;
 		}
 
@@ -1037,18 +1094,8 @@ static bool delay_for_exclusive_oplocks(files_struct *fsp,
 	return false;
 }
 
-static bool file_has_brlocks(files_struct *fsp)
-{
-	struct byte_range_lock *br_lck;
-
-	br_lck = brl_get_locks_readonly(fsp);
-	if (!br_lck)
-		return false;
-
-	return br_lck->num_locks > 0 ? true : false;
-}
-
 static void grant_fsp_oplock_type(files_struct *fsp,
+				const struct byte_range_lock *br_lck,
 				int oplock_request,
 				bool got_level2_oplock,
 				bool got_a_none_oplock)
@@ -1066,7 +1113,7 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
 			fsp->oplock_type, fsp_str_dbg(fsp)));
 		return;
-	} else if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
+	} else if (br_lck && br_lck->num_locks > 0) {
 		DEBUG(10,("grant_fsp_oplock_type: file %s has byte range locks\n",
 			fsp_str_dbg(fsp)));
 		fsp->oplock_type = NO_OPLOCK;
@@ -1544,6 +1591,55 @@ void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 	}
 }
 
+/****************************************************************
+ Ensure we get the brlock lock followed by the share mode lock
+ in the correct order to prevent deadlocks if other smbd's are
+ using the brlock database on this file simultaneously with this open
+ (that code also gets the locks in brlock -> share mode lock order).
+****************************************************************/
+
+static bool acquire_ordered_locks(TALLOC_CTX *mem_ctx,
+				files_struct *fsp,
+				const struct file_id id,
+				const char *connectpath,
+				const struct smb_filename *smb_fname,
+				const struct timespec *p_old_write_time,
+				struct share_mode_lock **p_lck,
+				struct byte_range_lock **p_br_lck)
+{
+	/* Ordering - we must get the br_lck for this
+	   file before the share mode. */
+	if (lp_locking(fsp->conn->params)) {
+		*p_br_lck = brl_get_locks_readonly(fsp);
+		if (*p_br_lck == NULL) {
+			DEBUG(0, ("Could not get br_lock\n"));
+			return false;
+		}
+		/* Note - we don't need to free the returned
+		   br_lck explicitly as it was allocated on talloc_tos()
+		   and so will be autofreed (and release the lock)
+		   once the frame context disappears.
+
+		   If it was set to fsp->brlock_rec then it was
+		   talloc_move'd to hang off the fsp pointer and
+		   in this case is guarenteed to not be holding the
+		   lock on the brlock database. */
+	}
+
+	*p_lck = get_share_mode_lock(mem_ctx,
+				id,
+				connectpath,
+				smb_fname,
+				p_old_write_time);
+
+	if (*p_lck == NULL) {
+		DEBUG(0, ("Could not get share mode lock\n"));
+		TALLOC_FREE(*p_br_lck);
+		return false;
+	}
+	return true;
+}
+
 /****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
@@ -1622,9 +1718,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		unx_mode = (mode_t)(new_dos_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 		new_dos_attributes = 0;
 	} else {
-		/* We add aARCH to this as this mode is only used if the file is
+		/* We add FILE_ATTRIBUTE_ARCHIVE to this as this mode is only used if the file is
 		 * created new. */
-		unx_mode = unix_mode(conn, new_dos_attributes | aARCH,
+		unx_mode = unix_mode(conn, new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
 				     smb_fname, parent_dir);
 	}
 
@@ -1888,6 +1984,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
+		struct byte_range_lock *br_lck = NULL;
 		struct share_mode_entry *batch_entry = NULL;
 		struct share_mode_entry *exclusive_entry = NULL;
 		bool got_level2_oplock = false;
@@ -1896,17 +1993,21 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		struct timespec old_write_time = smb_fname->st.st_ex_mtime;
 		id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 
-		lck = get_share_mode_lock(talloc_tos(), id,
-					  conn->connectpath,
-					  smb_fname, &old_write_time);
-
-		if (lck == NULL) {
-			DEBUG(0, ("Could not get share mode lock\n"));
+		if (!acquire_ordered_locks(talloc_tos(),
+					fsp,
+					id,
+					conn->connectpath,
+					smb_fname,
+					&old_write_time,
+					&lck,
+					&br_lck)) {
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
 		/* Get the types we need to examine. */
-		find_oplock_types(lck,
+		find_oplock_types(fsp,
+				oplock_request,
+				lck,
 				&batch_entry,
 				&exclusive_entry,
 				&got_level2_oplock,
@@ -1953,6 +2054,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		grant_fsp_oplock_type(fsp,
+				br_lck,
                                 oplock_request,
                                 got_level2_oplock,
                                 got_a_none_oplock);
@@ -2109,13 +2211,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
-		if (lck != NULL) {
-			TALLOC_FREE(lck);
-		}
+		TALLOC_FREE(lck);
 		return fsp_open;
 	}
 
 	if (!file_existed) {
+		struct byte_range_lock *br_lck = NULL;
 		struct share_mode_entry *batch_entry = NULL;
 		struct share_mode_entry *exclusive_entry = NULL;
 		bool got_level2_oplock = false;
@@ -2138,20 +2239,21 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		id = fsp->file_id;
 
-		lck = get_share_mode_lock(talloc_tos(), id,
-					  conn->connectpath,
-					  smb_fname, &old_write_time);
-
-		if (lck == NULL) {
-			DEBUG(0, ("open_file_ntcreate: Could not get share "
-				  "mode lock for %s\n",
-				  smb_fname_str_dbg(smb_fname)));
-			fd_close(fsp);
+		if (!acquire_ordered_locks(talloc_tos(),
+					fsp,
+					id,
+					conn->connectpath,
+					smb_fname,
+					&old_write_time,
+					&lck,
+					&br_lck)) {
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
 		/* Get the types we need to examine. */
-		find_oplock_types(lck,
+		find_oplock_types(fsp,
+				oplock_request,
+				lck,
 				&batch_entry,
 				&exclusive_entry,
 				&got_level2_oplock,
@@ -2194,8 +2296,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			struct deferred_open_record state;
 
-			fd_close(fsp);
-
 			state.delayed_for_oplocks = False;
 			state.id = id;
 
@@ -2211,10 +2311,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					   req, &state);
 			}
 			TALLOC_FREE(lck);
+			fd_close(fsp);
 			return status;
 		}
 
 		grant_fsp_oplock_type(fsp,
+				br_lck,
                                 oplock_request,
                                 got_level2_oplock,
                                 got_a_none_oplock);
@@ -2335,7 +2437,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		new_file_created = True;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn), 0,
+	set_share_mode(lck, fsp, get_current_uid(conn),
+			req ? req->mid : 0,
 		       fsp->oplock_type);
 
 	/* Handle strange delete on close create semantics. */
@@ -2361,7 +2464,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		    lp_store_dos_attributes(SNUM(conn))) {
 			if (!posix_open) {
 				if (file_set_dosmode(conn, smb_fname,
-					    new_dos_attributes | aARCH,
+					    new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
 					    parent_dir, true) == 0) {
 					unx_mode = smb_fname->st.st_ex_mode;
 				}
@@ -2475,6 +2578,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	char *parent_dir;
 	NTSTATUS status;
 	bool posix_open = false;
+	bool need_re_stat = false;
 
 	if(!CAN_WRITE(conn)) {
 		DEBUG(5,("mkdir_internal: failing create on read-only share "
@@ -2496,7 +2600,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		posix_open = true;
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 	} else {
-		mode = unix_mode(conn, aDIR, smb_dname, parent_dir);
+		mode = unix_mode(conn, FILE_ATTRIBUTE_DIRECTORY, smb_dname, parent_dir);
 	}
 
 	if (SMB_VFS_MKDIR(conn, smb_dname->base_name, mode) != 0) {
@@ -2521,7 +2625,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (lp_store_dos_attributes(SNUM(conn))) {
 		if (!posix_open) {
 			file_set_dosmode(conn, smb_dname,
-					 file_attributes | aDIR,
+					 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
 					 parent_dir, true);
 		}
 	}
@@ -2529,6 +2633,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (lp_inherit_perms(SNUM(conn))) {
 		inherit_access_posix_acl(conn, parent_dir,
 					 smb_dname->base_name, mode);
+		need_re_stat = true;
 	}
 
 	if (!posix_open) {
@@ -2543,6 +2648,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			SMB_VFS_CHMOD(conn, smb_dname->base_name,
 				      (smb_dname->st.st_ex_mode |
 					  (mode & ~smb_dname->st.st_ex_mode)));
+			need_re_stat = true;
 		}
 	}
 
@@ -2551,6 +2657,15 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		change_dir_owner_to_parent(conn, parent_dir,
 					   smb_dname->base_name,
 					   &smb_dname->st);
+		need_re_stat = true;
+	}
+
+	if (need_re_stat) {
+		if (SMB_VFS_LSTAT(conn, smb_dname) == -1) {
+			DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
+			  smb_fname_str_dbg(smb_dname), strerror(errno)));
+			return map_nt_error_from_unix(errno);
+		}
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_ADDED, FILE_NOTIFY_CHANGE_DIR_NAME,
@@ -2828,7 +2943,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn), 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, get_current_uid(conn),
+			req ? req->mid : 0, NO_OPLOCK);
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
@@ -3018,7 +3134,7 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	streams = TALLOC_ARRAY(talloc_tos(), files_struct *, num_streams);
+	streams = talloc_array(talloc_tos(), files_struct *, num_streams);
 	if (streams == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;
@@ -3172,8 +3288,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	/* Setting FILE_SHARE_DELETE is the hint. */
 
-	if (lp_acl_check_permissions(SNUM(conn))
-	    && (create_disposition != FILE_CREATE)
+	if ((create_disposition != FILE_CREATE)
 	    && (access_mask & DELETE_ACCESS)
 	    && (!(can_delete_file_in_directory(conn, smb_fname) ||
 		 can_access_file_acl(conn, smb_fname, DELETE_ACCESS)))) {
@@ -3531,7 +3646,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 		 * Copy in the base directory name.
 		 */
 
-		parent_fname = TALLOC_ARRAY(talloc_tos(), char,
+		parent_fname = talloc_array(talloc_tos(), char,
 		    dir_name_len+2);
 		if (parent_fname == NULL) {
 			status = NT_STATUS_NO_MEMORY;

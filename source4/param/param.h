@@ -20,6 +20,8 @@
 #ifndef _PARAM_H /* _PARAM_H */
 #define _PARAM_H 
 
+struct loadparm_s3_context;
+
 struct parmlist_entry;
 
 struct param_context {
@@ -45,23 +47,7 @@ typedef NTSTATUS (*init_module_fn) (void);
    function init_module() which makes a system call */
 #define SAMBA_INIT_MODULE "samba_init_module"
 
-enum server_role {
-	ROLE_STANDALONE=0,
-	ROLE_DOMAIN_MEMBER=1,
-	ROLE_DOMAIN_CONTROLLER=2,
-};
-
-enum sid_generator {
-	SID_GENERATOR_INTERNAL=0,
-	SID_GENERATOR_BACKEND=1,
-};
-
-enum announce_as {/* Types of machine we can announce as. */
-	ANNOUNCE_AS_NT_SERVER=1,
-	ANNOUNCE_AS_WIN95=2,
-	ANNOUNCE_AS_WFW=3,
-	ANNOUNCE_AS_NT_WORKSTATION=4
-};
+#include "libds/common/roles.h"
 
 struct loadparm_context;
 struct loadparm_service;
@@ -211,7 +197,7 @@ struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
 /**
  * A useful volume label function.
  */
-const char *volume_label(struct loadparm_service *service, struct loadparm_service *sDefault);
+const char *lp_cfg_volume_label(struct loadparm_service *service, struct loadparm_service *sDefault);
 
 /**
  * If we are PDC then prefer us as DMB
@@ -274,7 +260,7 @@ bool lpcfg_is_myname(struct loadparm_context *lp_ctx, const char *name);
 /**
  A useful function for returning a path in the Samba lock directory.
 **/
-char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			 const char *name);
 
 /**
@@ -284,7 +270,7 @@ char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *lpcfg_config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			   const char *name);
 
 /**
@@ -295,7 +281,7 @@ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-char *private_path(TALLOC_CTX* mem_ctx, 
+char *lpcfg_private_path(TALLOC_CTX* mem_ctx,
 			    struct loadparm_context *lp_ctx,
 			    const char *name);
 
@@ -331,8 +317,8 @@ bool run_init_functions(init_module_fn *fns);
  *
  * Will return an array of function pointers to initialization functions
  */
-init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem);
-const char *lpcfg_messaging_path(TALLOC_CTX *mem_ctx,
+init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
+const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx);
 struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
 							      struct loadparm_context *lp_ctx,

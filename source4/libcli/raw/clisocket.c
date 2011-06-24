@@ -229,7 +229,7 @@ _PUBLIC_ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, cons
 
 	make_nbt_name(&nbt_name, host, name_type);
 	
-	status = resolve_name(resolve_ctx, &nbt_name, tmp_ctx, &address, event_ctx);
+	status = resolve_name_ex(resolve_ctx, 0, 0, &nbt_name, tmp_ctx, &address, event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return NULL;

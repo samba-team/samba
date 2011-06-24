@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "libnet/libnet_samsync.h"
-#include "../lib/crypto/crypto.h"
 #include "../libcli/samsync/samsync.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "rpc_client/rpc_client.h"
@@ -71,7 +70,7 @@ NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
 
 	*ctx_p = NULL;
 
-	ctx = TALLOC_ZERO_P(mem_ctx, struct samsync_context);
+	ctx = talloc_zero(mem_ctx, struct samsync_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	if (domain_sid) {
@@ -204,7 +203,7 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 	NTSTATUS result, status;
 	NTSTATUS callback_status;
 	const char *logon_server = ctx->cli->desthost;
-	const char *computername = global_myname();
+	const char *computername = lp_netbios_name();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
 	uint16_t restart_state = 0;
@@ -405,7 +404,7 @@ NTSTATUS pull_netr_AcctLockStr(TALLOC_CTX *mem_ctx,
 
 	*str_p = NULL;
 
-	str = TALLOC_ZERO_P(mem_ctx, struct netr_AcctLockStr);
+	str = talloc_zero(mem_ctx, struct netr_AcctLockStr);
 	if (!str) {
 		return NT_STATUS_NO_MEMORY;
 	}

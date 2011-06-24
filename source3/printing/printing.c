@@ -32,6 +32,7 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
@@ -87,7 +88,7 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	key.dptr = (uint8 *)&jinfo;
 	key.dsize = sizeof(jinfo);
 
-	data = tdb_fetch(rap_tdb, key);
+	data = tdb_fetch_compat(rap_tdb, key);
 	if (data.dptr && data.dsize == sizeof(uint16)) {
 		rap_jobid = SVAL(data.dptr, 0);
 		SAFE_FREE(data.dptr);
@@ -124,7 +125,7 @@ bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 	SSVAL(buf,0,rap_jobid);
 	key.dptr = buf;
 	key.dsize = sizeof(rap_jobid);
-	data = tdb_fetch(rap_tdb, key);
+	data = tdb_fetch_compat(rap_tdb, key);
 	if ( data.dptr && data.dsize == sizeof(struct rap_jobid_key) )
 	{
 		struct rap_jobid_key *jinfo = (struct rap_jobid_key*)data.dptr;
@@ -162,7 +163,7 @@ void rap_jobid_delete(const char* sharename, uint32 jobid)
 	key.dptr = (uint8 *)&jinfo;
 	key.dsize = sizeof(jinfo);
 
-	data = tdb_fetch(rap_tdb, key);
+	data = tdb_fetch_compat(rap_tdb, key);
 	if (!data.dptr || (data.dsize != sizeof(uint16))) {
 		DEBUG(10,("rap_jobid_delete: cannot find jobid %u\n",
 			(unsigned int)jobid ));
@@ -207,7 +208,7 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb)
 			continue;
-		if (tdb_lock_bystring(pdb->tdb, sversion) == -1) {
+		if (tdb_lock_bystring(pdb->tdb, sversion) != 0) {
 			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
 			release_print_db(pdb);
 			return False;
@@ -440,7 +441,7 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 		return NULL;
 	}
 
-	ret = tdb_fetch(pdb->tdb, print_key(jobid, &tmp));
+	ret = tdb_fetch_compat(pdb->tdb, print_key(jobid, &tmp));
 	release_print_db(pdb);
 
 	if (!ret.dptr) {
@@ -604,12 +605,12 @@ static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
 
 	key = string_tdb_data("INFO/jobs_changed");
 
-	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
+	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) != 0)
 		goto out;
 
 	gotlock = True;
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0))
 		goto out;
@@ -623,7 +624,7 @@ static bool remove_from_jobs_changed(const char* sharename, uint32_t jobid)
 			if (i < job_count -1 )
 				memmove(data.dptr + (i*4), data.dptr + (i*4) + 4, (job_count - i - 1)*4 );
 			data.dsize -= 4;
-			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) == -1)
+			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) != 0)
 				goto out;
 			break;
 		}
@@ -727,7 +728,7 @@ static bool pjob_store(struct tevent_context *ev,
 
 	/* Get old data */
 
-	old_data = tdb_fetch(pdb->tdb, print_key(jobid, &tmp));
+	old_data = tdb_fetch_compat(pdb->tdb, print_key(jobid, &tmp));
 
 	/* Doh!  Now we have to pack/unpack data since the NT_DEVICEMODE was added */
 
@@ -1077,7 +1078,7 @@ static pid_t get_updating_pid(const char *sharename)
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", sharename);
     	key = string_tdb_data(keystr);
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 	release_print_db(pdb);
 	if (!data.dptr || data.dsize != sizeof(pid_t)) {
 		SAFE_FREE(data.dptr);
@@ -1224,7 +1225,7 @@ static TDB_DATA get_jobs_added_data(struct tdb_print_db *pdb)
 
 	ZERO_STRUCT(data);
 
-	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_added"));
+	data = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/jobs_added"));
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0)) {
 		SAFE_FREE(data.dptr);
 		ZERO_STRUCT(data);
@@ -1515,7 +1516,7 @@ static void print_queue_update_with_lock( struct tevent_context *ev,
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", sharename);
 	/* Only wait 10 seconds for this. */
-	if (tdb_lock_bystring_with_timeout(pdb->tdb, keystr, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(pdb->tdb, keystr, 10) != 0) {
 		DEBUG(0,("print_queue_update_with_lock: Failed to lock printer %s database\n", sharename));
 		release_print_db(pdb);
 		return;
@@ -1884,7 +1885,7 @@ bool print_notify_register_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock printer %s\n",
 					printername));
 		if (pdb)
@@ -1918,7 +1919,7 @@ bool print_notify_register_pid(int snum)
 	}
 
 	/* Store back the record. */
-	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to update pid \
 list for printer %s\n", printername));
 		goto done;
@@ -1974,7 +1975,7 @@ bool print_notify_deregister_pid(int snum)
 		tdb = pdb->tdb;
 	}
 
-	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to lock \
 printer %s database\n", printername));
 		if (pdb)
@@ -2008,7 +2009,7 @@ printer %s database\n", printername));
 		SAFE_FREE(data.dptr);
 
 	/* Store back the record. */
-	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) == -1) {
+	if (tdb_store_bystring(tdb, NOTIFY_PID_LIST_KEY, data, TDB_REPLACE) != 0) {
 		DEBUG(0,("print_notify_register_pid: Failed to update pid \
 list for printer %s\n", printername));
 		goto done;
@@ -2133,12 +2134,12 @@ static bool remove_from_jobs_added(const char* sharename, uint32 jobid)
 
 	key = string_tdb_data("INFO/jobs_added");
 
-	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
+	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) != 0)
 		goto out;
 
 	gotlock = True;
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 
 	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0))
 		goto out;
@@ -2152,7 +2153,7 @@ static bool remove_from_jobs_added(const char* sharename, uint32 jobid)
 			if (i < job_count -1 )
 				memmove(data.dptr + (i*4), data.dptr + (i*4) + 4, (job_count - i - 1)*4 );
 			data.dsize -= 4;
-			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) == -1)
+			if (tdb_store(pdb->tdb, key, data, TDB_REPLACE) != 0)
 				goto out;
 			break;
 		}
@@ -2501,7 +2502,7 @@ static int get_queue_status(const char* sharename, print_status_struct *status)
 
 	if (status) {
 		fstr_sprintf(keystr, "STATUS/%s", sharename);
-		data = tdb_fetch(pdb->tdb, string_tdb_data(keystr));
+		data = tdb_fetch_compat(pdb->tdb, string_tdb_data(keystr));
 		if (data.dptr) {
 			if (data.dsize == sizeof(print_status_struct))
 				/* this memcpy is ok since the status struct was
@@ -2560,7 +2561,7 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 		/* Lock the database - only wait 20 seconds. */
 		ret = tdb_lock_bystring_with_timeout(pdb->tdb,
 						     "INFO/nextjob", 20);
-		if (ret == -1) {
+		if (ret != 0) {
 			DEBUG(0, ("allocate_print_jobid: "
 				  "Failed to lock printing database %s\n",
 				  sharename));
@@ -2588,7 +2589,7 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 		jobid = NEXT_JOBID(jobid);
 
 		ret = tdb_store_int32(pdb->tdb, "INFO/nextjob", jobid);
-		if (ret == -1) {
+		if (ret != 0) {
 			terr = tdb_error(pdb->tdb);
 			DEBUG(3, ("allocate_print_jobid: "
 				  "Failed to store INFO/nextjob.\n"));
@@ -2621,7 +2622,7 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 		dum.dptr = NULL;
 		dum.dsize = 0;
 		if (tdb_store(pdb->tdb, print_key(jobid, &tmp), dum,
-			      TDB_INSERT) == -1) {
+			      TDB_INSERT) != 0) {
 			DEBUG(3, ("allocate_print_jobid: "
 				  "jobid (%d) failed to store placeholder.\n",
 				  jobid ));
@@ -3037,18 +3038,18 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	ZERO_STRUCT(cgdata);
 
 	/* Get the stored queue data. */
-	data = tdb_fetch(pdb->tdb, string_tdb_data("INFO/linear_queue_array"));
+	data = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/linear_queue_array"));
 
 	if (data.dptr && data.dsize >= sizeof(qcount))
 		len += tdb_unpack(data.dptr + len, data.dsize - len, "d", &qcount);
 
 	/* Get the added jobs list. */
-	cgdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_added"));
+	cgdata = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/jobs_added"));
 	if (cgdata.dptr != NULL && (cgdata.dsize % 4 == 0))
 		extra_count = cgdata.dsize/4;
 
 	/* Get the changed jobs list. */
-	jcdata = tdb_fetch(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
+	jcdata = tdb_fetch_compat(pdb->tdb, string_tdb_data("INFO/jobs_changed"));
 	if (jcdata.dptr != NULL && (jcdata.dsize % 4 == 0))
 		changed_count = jcdata.dsize / 4;
 
@@ -3215,7 +3216,7 @@ int print_queue_status(struct messaging_context *msg_ctx, int snum,
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", sharename);
 	key = string_tdb_data(keystr);
 
-	data = tdb_fetch(pdb->tdb, key);
+	data = tdb_fetch_compat(pdb->tdb, key);
 	if (data.dptr) {
 		if (data.dsize == sizeof(*status)) {
 			/* this memcpy is ok since the status struct was

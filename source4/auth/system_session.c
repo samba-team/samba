@@ -190,7 +190,7 @@ static NTSTATUS auth_domain_admin_user_info_dc(TALLOC_CTX *mem_ctx,
 	sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX], DOMAIN_RID_ADMINISTRATOR);
 
 	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX] = *domain_sid;
-	sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX], DOMAIN_RID_USERS);
+	sid_append_rid(&user_info_dc->sids[PRIMARY_GROUP_SID_INDEX], DOMAIN_RID_USERS);
 
 	user_info_dc->sids[2] = global_sid_Builtin_Administrators;
 

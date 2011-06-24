@@ -222,11 +222,10 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 					  struct loadparm_context);
 		char *ldap_service_name, *hostname;
 
-		hostname = talloc_strdup(msg, lpcfg_netbios_name(lp_ctx));
+		hostname = strlower_talloc(msg, lpcfg_netbios_name(lp_ctx));
 		if (hostname == NULL) {
 			goto failed;
 		}
-		strlower_m(hostname);
 
 		ldap_service_name = talloc_asprintf(msg, "%s:%s$@%s",
 						    samdb_forest_name(ldb, msg),
@@ -613,7 +612,11 @@ static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request
 			continue;
 		}
 
-		if (is_registered) {
+		/* If the control is DIRSYNC control then we keep the critical
+		 * flag as the dirsync module will need to act upon it
+		 */
+		if (is_registered && strcmp(req->controls[i]->oid,
+					LDB_CONTROL_DIRSYNC_OID)!= 0) {
 			req->controls[i]->critical = 0;
 		}
 	}
@@ -1195,7 +1198,7 @@ static int rootdse_become_master(struct ldb_module *module,
 				 struct ldb_request *req,
 				 enum drepl_role_master role)
 {
-	struct messaging_context *msg;
+	struct imessaging_context *msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
@@ -1223,10 +1226,10 @@ static int rootdse_become_master(struct ldb_module *module,
 				 "RODC cannot become a role master.");
 	}
 
-	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
+	msg = imessaging_client_init(tmp_ctx, lpcfg_imessaging_path(tmp_ctx, lp_ctx),
 				    ldb_get_event_context(ldb));
 	if (!msg) {
-		ldb_asprintf_errstring(ldb, "Failed to generate client messaging context in %s", lpcfg_messaging_path(tmp_ctx, lp_ctx));
+		ldb_asprintf_errstring(ldb, "Failed to generate client messaging context in %s", lpcfg_imessaging_path(tmp_ctx, lp_ctx));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, msg,

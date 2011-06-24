@@ -441,16 +441,19 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		int i;
 		struct interface *ifaces;
 
-		load_interfaces(task, lpcfg_interfaces(lp_ctx), &ifaces);
+		load_interface_list(task, lp_ctx, &ifaces);
 
-		num_interfaces = iface_count(ifaces);
+		num_interfaces = iface_list_count(ifaces);
 
 		/* We have been given an interfaces line, and been 
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			address = iface_n_ip(ifaces, i);
+			if (!iface_list_n_is_v4(ifaces, i)) {
+				continue;
+			}
+			address = iface_list_n_ip(ifaces, i);
 			status = stream_setup_socket(task, task->event_ctx,
 						     task->lp_ctx, model_ops,
 						     &wreplsrv_stream_ops,
@@ -465,6 +468,9 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		}
 	} else {
 		address = lpcfg_socket_address(lp_ctx);
+		if (strcmp(address, "") == 0) {
+			address = "0.0.0.0";
+		}
 		status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
 					     model_ops, &wreplsrv_stream_ops,
 					     "ipv4", address, &port, lpcfg_socket_options(task->lp_ctx),

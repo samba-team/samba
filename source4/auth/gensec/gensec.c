@@ -514,7 +514,7 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
 			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
- 			     struct auth_context *auth_context,
+ 			     struct auth4_context *auth_context,
 			     struct gensec_security **gensec_security)
 {
 	if (ev == NULL) {
@@ -604,7 +604,7 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 				      struct tevent_context *ev,
 				      struct gensec_settings *settings,
-				      struct auth_context *auth_context,
+				      struct auth4_context *auth_context,
 				      struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
@@ -639,7 +639,7 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 		if (gensec_security->ops->client_start) {
 			status = gensec_security->ops->client_start(gensec_security);
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(2, ("Failed to start GENSEC client mech %s: %s\n",
+				DEBUG(gensec_security->subcontext?4:2, ("Failed to start GENSEC client mech %s: %s\n",
 					  gensec_security->ops->name, nt_errstr(status))); 
 			}
 			return status;
@@ -1406,7 +1406,7 @@ bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism
 /*
   initialise the GENSEC subsystem
 */
-_PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ NTSTATUS gensec_init(void)
 {
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
@@ -1417,7 +1417,7 @@ _PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	shared_init = load_samba_modules(NULL, lp_ctx, "gensec");
+	shared_init = load_samba_modules(NULL, "gensec");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

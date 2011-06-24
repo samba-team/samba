@@ -21,11 +21,108 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "util_tdb.h"
+
 #undef malloc
 #undef realloc
 #undef calloc
 #undef strdup
 
+#ifdef BUILD_TDB2
+static struct flock flock_struct;
+
+/* Return a value which is none of v1, v2 or v3. */
+static inline short int invalid_value(short int v1, short int v2, short int v3)
+{
+	short int try = (v1+v2+v3)^((v1+v2+v3) << 16);
+	while (try == v1 || try == v2 || try == v3)
+		try++;
+	return try;
+}
+
+/* We invalidate in as many ways as we can, so the OS rejects it */
+static void invalidate_flock_struct(int signum)
+{
+	flock_struct.l_type = invalid_value(F_RDLCK, F_WRLCK, F_UNLCK);
+	flock_struct.l_whence = invalid_value(SEEK_SET, SEEK_CUR, SEEK_END);
+	flock_struct.l_start = -1;
+	/* A large negative. */
+	flock_struct.l_len = (((off_t)1 << (sizeof(off_t)*CHAR_BIT - 1)) + 1);
+}
+
+static int timeout_lock(int fd, int rw, off_t off, off_t len, bool waitflag,
+			void *_timeout)
+{
+	int ret, saved_errno;
+	unsigned int timeout = *(unsigned int *)_timeout;
+
+	flock_struct.l_type = rw;
+	flock_struct.l_whence = SEEK_SET;
+	flock_struct.l_start = off;
+	flock_struct.l_len = len;
+
+	CatchSignal(SIGALRM, invalidate_flock_struct);
+	alarm(timeout);
+
+	for (;;) {
+		if (waitflag)
+			ret = fcntl(fd, F_SETLKW, &flock_struct);
+		else
+			ret = fcntl(fd, F_SETLK, &flock_struct);
+
+		if (ret == 0)
+			break;
+
+		/* Not signalled?  Something else went wrong. */
+		if (flock_struct.l_len == len) {
+			if (errno == EAGAIN || errno == EINTR)
+				continue;
+			saved_errno = errno;
+			break;
+		} else {
+			saved_errno = EINTR;
+			break;
+		}
+	}
+
+	alarm(0);
+	errno = saved_errno;
+	return ret;
+}
+
+static int tdb_chainlock_with_timeout_internal(struct tdb_context *tdb,
+					       TDB_DATA key,
+					       unsigned int timeout,
+					       int rw_type)
+{
+	union tdb_attribute locking;
+	enum TDB_ERROR ecode;
+
+	if (timeout) {
+		locking.base.attr = TDB_ATTRIBUTE_FLOCK;
+		ecode = tdb_get_attribute(tdb, &locking);
+		if (ecode != TDB_SUCCESS)
+			return ecode;
+
+		/* Replace locking function with our own. */
+		locking.flock.data = &timeout;
+		locking.flock.lock = timeout_lock;
+
+		ecode = tdb_set_attribute(tdb, &locking);
+		if (ecode != TDB_SUCCESS)
+			return ecode;
+	}
+	if (rw_type == F_RDLCK)
+		ecode = tdb_chainlock_read(tdb, key);
+	else
+		ecode = tdb_chainlock(tdb, key);
+
+	if (timeout) {
+		tdb_unset_attribute(tdb, TDB_ATTRIBUTE_FLOCK);
+	}
+	return ecode == TDB_SUCCESS ? 0 : -1;
+}
+#else
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
@@ -65,7 +162,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 		alarm(0);
 		tdb_setalarm_sigptr(tdb, NULL);
 		CatchSignal(SIGALRM, SIG_IGN);
-		if (gotalarm && (ret == -1)) {
+		if (gotalarm && (ret != 0)) {
 			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb_name(tdb)));
 			/* TODO: If we time out waiting for a lock, it might
@@ -76,11 +173,12 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 		}
 	}
 
-	return ret;
+	return ret == 0 ? 0 : -1;
 }
+#endif /* TDB1 */
 
 /****************************************************************************
- Write lock a chain. Return -1 if timeout or lock failed.
+ Write lock a chain. Return non-zero if timeout or lock failed.
 ****************************************************************************/
 
 int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
@@ -97,7 +195,7 @@ int tdb_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
 }
 
 /****************************************************************************
- Read lock a chain by string. Return -1 if timeout or lock failed.
+ Read lock a chain by string. Return non-zero if timeout or lock failed.
 ****************************************************************************/
 
 int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout)
@@ -229,7 +327,7 @@ bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 	va_end(ap);
 
 	if (mem_ctx != NULL) {
-		*buf = TALLOC_REALLOC_ARRAY(mem_ctx, *buf, uint8,
+		*buf = talloc_realloc(mem_ctx, *buf, uint8,
 					    (*len) + len1);
 	} else {
 		*buf = SMB_REALLOC_ARRAY(*buf, uint8, (*len) + len1);
@@ -370,6 +468,14 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
  Log tdb messages via DEBUG().
 ****************************************************************************/
 
+#ifdef BUILD_TDB2
+static void tdb_log(TDB_CONTEXT *tdb, enum tdb_log_level level,
+		    const char *message, void *unused)
+{
+	DEBUG((int)level, ("tdb(%s): %s",
+			   tdb_name(tdb) ? tdb_name(tdb) : "unnamed", message));
+}
+#else
 static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
@@ -386,6 +492,7 @@ static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *fo
 	DEBUG((int)level, ("tdb(%s): %s", tdb_name(tdb) ? tdb_name(tdb) : "unnamed", ptr));
 	SAFE_FREE(ptr);
 }
+#endif /* TDB1 */
 
 /****************************************************************************
  Like tdb_open() but also setup a logging function that redirects to
@@ -396,13 +503,9 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;
-	struct tdb_logging_context log_ctx;
 
 	if (!lp_use_mmap())
 		tdb_flags |= TDB_NOMMAP;
-
-	log_ctx.log_fn = tdb_log;
-	log_ctx.log_private = NULL;
 
 	if ((hash_size == 0) && (name != NULL)) {
 		const char *base = strrchr_m(name, '/');
@@ -415,8 +518,8 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
 	}
 
-	tdb = tdb_open_ex(name, hash_size, tdb_flags, 
-			  open_flags, mode, &log_ctx, NULL);
+	tdb = tdb_open_compat(name, hash_size, tdb_flags,
+			      open_flags, mode, tdb_log, NULL);
 	if (!tdb)
 		return NULL;
 
@@ -440,9 +543,7 @@ int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 
 	if ((res = tdb_store(tdb, key, dbuf, flag)) != 0) {
 		DEBUG(10, ("tdb_store failed\n"));
-		if (tdb_transaction_cancel(tdb) != 0) {
-			smb_panic("Cancelling transaction failed");
-		}
+		tdb_transaction_cancel(tdb);
 		return res;
 	}
 
@@ -469,9 +570,7 @@ int tdb_trans_delete(struct tdb_context *tdb, TDB_DATA key)
 
 	if ((res = tdb_delete(tdb, key)) != 0) {
 		DEBUG(10, ("tdb_delete failed\n"));
-		if (tdb_transaction_cancel(tdb) != 0) {
-			smb_panic("Cancelling transaction failed");
-		}
+		tdb_transaction_cancel(tdb);
 		return res;
 	}
 
@@ -480,165 +579,6 @@ int tdb_trans_delete(struct tdb_context *tdb, TDB_DATA key)
 	}
 
 	return res;
-}
-
-/*
- Log tdb messages via DEBUG().
-*/
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
-			 const char *format, ...) PRINTF_ATTRIBUTE(3,4);
-
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
-			 const char *format, ...)
-{
-	va_list ap;
-	char *ptr = NULL;
-	int debuglevel = 0;
-	int ret;
-
-	switch (level) {
-	case TDB_DEBUG_FATAL:
-		debuglevel = 0;
-		break;
-	case TDB_DEBUG_ERROR:
-		debuglevel = 1;
-		break;
-	case TDB_DEBUG_WARNING:
-		debuglevel = 2;
-		break;
-	case TDB_DEBUG_TRACE:
-		debuglevel = 5;
-		break;
-	default:
-		debuglevel = 0;
-	}		
-
-	va_start(ap, format);
-	ret = vasprintf(&ptr, format, ap);
-	va_end(ap);
-
-	if (ret != -1) {
-		const char *name = tdb_name(tdb);
-		DEBUG(debuglevel, ("tdb(%s): %s", name ? name : "unnamed", ptr));
-		free(ptr);
-	}
-}
-
-struct tdb_wrap_private {
-	struct tdb_context *tdb;
-	const char *name;
-	struct tdb_wrap_private *next, *prev;
-};
-
-static struct tdb_wrap_private *tdb_list;
-
-/* destroy the last connection to a tdb */
-static int tdb_wrap_private_destructor(struct tdb_wrap_private *w)
-{
-	tdb_close(w->tdb);
-	DLIST_REMOVE(tdb_list, w);
-	return 0;
-}				 
-
-static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
-						      const char *name,
-						      int hash_size,
-						      int tdb_flags,
-						      int open_flags,
-						      mode_t mode)
-{
-	struct tdb_wrap_private *result;
-	struct tdb_logging_context log_ctx;
-
-	result = talloc(mem_ctx, struct tdb_wrap_private);
-	if (result == NULL) {
-		return NULL;
-	}
-	result->name = talloc_strdup(result, name);
-	if (result->name == NULL) {
-		goto fail;
-	}
-
-	log_ctx.log_fn = tdb_wrap_log;
-
-	if (!lp_use_mmap()) {
-		tdb_flags |= TDB_NOMMAP;
-	}
-
-	if ((hash_size == 0) && (name != NULL)) {
-		const char *base;
-		base = strrchr_m(name, '/');
-
-		if (base != NULL) {
-			base += 1;
-		} else {
-			base = name;
-		}
-		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
-	}
-
-	result->tdb = tdb_open_ex(name, hash_size, tdb_flags,
-				  open_flags, mode, &log_ctx, NULL);
-	if (result->tdb == NULL) {
-		goto fail;
-	}
-	talloc_set_destructor(result, tdb_wrap_private_destructor);
-	DLIST_ADD(tdb_list, result);
-	return result;
-
-fail:
-	TALLOC_FREE(result);
-	return NULL;
-}
-
-/*
-  wrapped connection to a tdb database
-  to close just talloc_free() the tdb_wrap pointer
- */
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
-			       const char *name, int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode)
-{
-	struct tdb_wrap *result;
-	struct tdb_wrap_private *w;
-
-	result = talloc(mem_ctx, struct tdb_wrap);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	for (w=tdb_list;w;w=w->next) {
-		if (strcmp(name, w->name) == 0) {
-			break;
-		}
-	}
-
-	if (w == NULL) {
-		w = tdb_wrap_private_open(result, name, hash_size, tdb_flags,
-					  open_flags, mode);
-	} else {
-		/*
-		 * Correctly use talloc_reference: The tdb will be
-		 * closed when "w" is being freed. The caller never
-		 * sees "w", so an incorrect use of talloc_free(w)
-		 * instead of calling talloc_unlink is not possible.
-		 * To avoid having to refcount ourselves, "w" will
-		 * have multiple parents that hang off all the
-		 * tdb_wrap's being returned from here. Those parents
-		 * can be freed without problem.
-		 */
-		if (talloc_reference(result, w) == NULL) {
-			goto fail;
-		}
-	}
-	if (w == NULL) {
-		goto fail;
-	}
-	result->tdb = w->tdb;
-	return result;
-fail:
-	TALLOC_FREE(result);
-	return NULL;
 }
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
@@ -672,6 +612,7 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 		result = NT_STATUS_FILE_LOCK_CONFLICT;
 		break;
 
+#ifndef BUILD_TDB2
 	case TDB_ERR_NOLOCK:
 	case TDB_ERR_LOCK_TIMEOUT:
 		/*
@@ -679,6 +620,7 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 		 */
 		result = NT_STATUS_FILE_LOCK_CONFLICT;
 		break;
+#endif
 	case TDB_ERR_NOEXIST:
 		result = NT_STATUS_NOT_FOUND;
 		break;
@@ -688,9 +630,11 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 	case TDB_ERR_RDONLY:
 		result = NT_STATUS_ACCESS_DENIED;
 		break;
+#ifndef BUILD_TDB2
 	case TDB_ERR_NESTING:
 		result = NT_STATUS_INTERNAL_ERROR;
 		break;
+#endif
 	};
 	return result;
 }

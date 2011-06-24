@@ -88,7 +88,7 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS status;
 
 	status = auth_context->get_challenge(auth_context, chal);
@@ -111,7 +111,7 @@ static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 
 	return auth_context->challenge_may_be_modified(auth_context);
 }
@@ -125,7 +125,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS nt_status;
 	const uint8_t *chal;
 
@@ -155,7 +155,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
 	NTSTATUS nt_status;
 	struct auth_usersupplied_info *user_info;
 
@@ -308,26 +308,26 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	ntlmssp_state->server.netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
 
 	{
-		char dnsdomname[MAXHOSTNAMELEN], dnsname[MAXHOSTNAMELEN];
-
-		/* Find out the DNS domain name */
-		dnsdomname[0] = '\0';
-		safe_strcpy(dnsdomname, lpcfg_dnsdomain(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
+		const char *dnsdomain = lpcfg_dnsdomain(gensec_security->settings->lp_ctx);
+		char *dnsname, *lower_netbiosname;
+		lower_netbiosname = strlower_talloc(ntlmssp_state, ntlmssp_state->server.netbios_name);
 
 		/* Find out the DNS host name */
-		safe_strcpy(dnsname, ntlmssp_state->server.netbios_name, sizeof(dnsname) - 1);
-		if (dnsdomname[0] != '\0') {
-			safe_strcat(dnsname, ".", sizeof(dnsname) - 1);
-			safe_strcat(dnsname, dnsdomname, sizeof(dnsname) - 1);
+		if (dnsdomain && dnsdomain[0] != '\0') {
+			dnsname = talloc_asprintf(ntlmssp_state, "%s.%s",
+						  lower_netbiosname,
+						  dnsdomain);
+			talloc_free(lower_netbiosname);
+			ntlmssp_state->server.dns_name = dnsname;
+		} else {
+			ntlmssp_state->server.dns_name = lower_netbiosname;
 		}
-		strlower_m(dnsname);
 
-		ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state,
-								      dnsname);
 		NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_name);
 
-		ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state,
-								        dnsdomname);
+		ntlmssp_state->server.dns_domain
+			= talloc_strdup(ntlmssp_state,
+					lpcfg_dnsdomain(gensec_security->settings->lp_ctx));
 		NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_domain);
 	}
 

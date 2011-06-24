@@ -76,9 +76,9 @@ struct rpc_request {
 	} async;
 };
 
-_PUBLIC_ NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ NTSTATUS dcerpc_init(void)
 {
-	return gensec_init(lp_ctx);
+	return gensec_init();
 }
 
 static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS status);

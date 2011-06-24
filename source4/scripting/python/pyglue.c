@@ -25,6 +25,10 @@
 
 void init_glue(void);
 
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
+
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
 	int len;
@@ -149,28 +153,52 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	load_interfaces(tmp_ctx, lpcfg_interfaces(lp_ctx), &ifaces);
+	load_interface_list(tmp_ctx, lp_ctx, &ifaces);
 
-	count = iface_count(ifaces);
+	count = iface_list_count(ifaces);
 
 	/* first count how many are not loopback addresses */
 	for (ifcount = i = 0; i<count; i++) {
-		const char *ip = iface_n_ip(ifaces, i);
-		if (!(!all_interfaces && iface_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
+		const char *ip = iface_list_n_ip(ifaces, i);
+		if (!(!all_interfaces && iface_list_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
 			ifcount++;
 		}
 	}
 
 	pylist = PyList_New(ifcount);
 	for (ifcount = i = 0; i<count; i++) {
-		const char *ip = iface_n_ip(ifaces, i);
-		if (!(!all_interfaces && iface_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
+		const char *ip = iface_list_n_ip(ifaces, i);
+		if (!(!all_interfaces && iface_list_same_net(ip, "127.0.0.1", "255.0.0.0"))) {
 			PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
 			ifcount++;
 		}
 	}
 	talloc_free(tmp_ctx);
 	return pylist;
+}
+
+static PyObject *py_strcasecmp_m(PyObject *self, PyObject *args)
+{
+	char *s1, *s2;
+
+	if (!PyArg_ParseTuple(args, "ss", &s1, &s2))
+		return NULL;
+
+	return PyInt_FromLong(strcasecmp_m(s1, s2));
+}
+
+static PyObject *py_strstr_m(PyObject *self, PyObject *args)
+{
+	char *s1, *s2, *ret;
+
+	if (!PyArg_ParseTuple(args, "ss", &s1, &s2))
+		return NULL;
+
+	ret = strstr_m(s1, s2);
+	if (!ret) {
+		Py_RETURN_NONE;
+	}
+	return PyString_FromString(ret);
 }
 
 static PyMethodDef py_misc_methods[] = {
@@ -192,6 +220,10 @@ static PyMethodDef py_misc_methods[] = {
 		"get debug level" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
+	{ "strcasecmp_m", (PyCFunction)py_strcasecmp_m, METH_VARARGS,
+		"(for testing) compare two strings using Samba's strcasecmp_m()"},
+	{ "strstr_m", (PyCFunction)py_strstr_m, METH_VARARGS,
+		"(for testing) find one string in another with Samba's strstr_m()"},
 	{ NULL }
 };
 

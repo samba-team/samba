@@ -224,7 +224,7 @@ bool should_notify_deferred_opens()
 static char *new_break_message_smb1(TALLOC_CTX *mem_ctx,
 				   files_struct *fsp, int cmd)
 {
-	char *result = TALLOC_ARRAY(mem_ctx, char, smb_size + 8*2 + 0);
+	char *result = talloc_array(mem_ctx, char, smb_size + 8*2 + 0);
 
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
@@ -353,7 +353,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 
 	fsp->oplock_timeout =
-		event_add_timed(smbd_event_context(), fsp,
+		event_add_timed(server_event_context(), fsp,
 				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
 				oplock_timeout_handler, fsp);
 
@@ -459,7 +459,7 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock async level 2 break message from pid %s: "
-		   "%s/%lu\n", procid_str(talloc_tos(), &src),
+		   "%s/%lu\n", server_id_str(talloc_tos(), &src),
 		   file_id_string_tos(&msg.id), msg.share_file_id));
 
 	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
@@ -510,7 +510,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock break message from pid %s: %s/%lu\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id));
 
 	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
@@ -617,7 +617,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	file_id = (unsigned long)IVAL(data->data, 24);
 
 	DEBUG(10, ("Got kernel oplock break message from pid %s: %s/%u\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
 	fsp = initial_break_processing(sconn, id, file_id);
@@ -704,7 +704,7 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock break response from pid %s: %s/%lu mid %llu\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id, (unsigned long long)msg.op_mid));
 
 	schedule_deferred_open_message_smb(msg.op_mid);
@@ -732,7 +732,7 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got open retry msg from pid %s: %s mid %llu\n",
-		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
+		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   (unsigned long long)msg.op_mid));
 
 	schedule_deferred_open_message_smb(msg.op_mid);
@@ -849,7 +849,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	TALLOC_FREE(lck);
 }
 
-void contend_level2_oplocks_begin(files_struct *fsp,
+void smbd_contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type)
 {
 	if (koplocks && koplocks->ops->contend_level2_oplocks_begin) {
@@ -860,7 +860,7 @@ void contend_level2_oplocks_begin(files_struct *fsp,
 	contend_level2_oplocks_begin_default(fsp, type);
 }
 
-void contend_level2_oplocks_end(files_struct *fsp,
+void smbd_contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type)
 {
 	/* Only kernel oplocks implement this so far */

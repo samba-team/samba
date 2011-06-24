@@ -27,26 +27,9 @@
 	<para>
 	In contrast to read only backends like idmap_rid, it is an allocating
 	backend: This means that it needs to allocate new user and group IDs in
-	order to create new mappings. The allocator can be provided by the
-	idmap_ldap backend itself or by any other allocating backend like
-	idmap_tdb or idmap_tdb2. This is configured with the
-	parameter <parameter>idmap alloc backend</parameter>.
+	order to create new mappings.
 	</para>
 
-	<para>
-	Note that in order for this (or any other allocating) backend to
-	function at all, the default backend needs to be writeable.
-	The ranges used for uid and gid allocation are the default ranges
-	configured by &quot;idmap uid&quot; and &quot;idmap gid&quot;.
-	</para>
-
-	<para>
-	Furthermore, since there is only one global allocating backend
-	responsible for all domains using writeable idmap backends,
-	any explicitly configured domain with idmap backend ldap
-	should have the same range as the default range, since it needs
-	to use the global uid / gid allocator. See the example below.
-	</para>
 </refsynopsisdiv>
 
 <refsect1>
@@ -56,7 +39,7 @@
 		<varlistentry>
 		<term>ldap_base_dn = DN</term>
 		<listitem><para>
-			Defines the directory base suffix to use when searching for
+			Defines the directory base suffix to use for
 			SID/uid/gid mapping entries.  If not defined, idmap_ldap will default
 			to using the &quot;ldap idmap suffix&quot; option from smb.conf.
 		</para></listitem>
@@ -65,15 +48,21 @@
 		<varlistentry>
 		<term>ldap_user_dn = DN</term>
 		<listitem><para>
-			Defines the user DN to be used for authentication. If absent an
-			anonymous bind will be performed.
+			Defines the user DN to be used for authentication.
+			The secret for authenticating this user should be
+			stored with net idmap secret
+			(see <citerefentry><refentrytitle>net</refentrytitle>
+			<manvolnum>8</manvolnum></citerefentry>).
+			If absent, the ldap credentials from the ldap passdb configuration
+			are used, and if these are also absent, an anonymous
+			bind will be performed as last fallback.
 		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>ldap_url = ldap://server/</term>
 		<listitem><para>
-			Specifies the LDAP server to use when searching for existing
+			Specifies the LDAP server to use for
 			SID/uid/gid map entries. If not defined, idmap_ldap will
 			assume that ldap://localhost/ should be used.
 		</para></listitem>
@@ -84,43 +73,8 @@
                 <listitem><para>
 			Defines the available matching uid and gid range for which the
 			backend is authoritative.
-			If the parameter is absent, Winbind fails over to use the
-			&quot;idmap uid&quot; and &quot;idmap gid&quot; options
-			from smb.conf.
                 </para></listitem>
                 </varlistentry>
-	</variablelist>
-</refsect1>
-
-<refsect1>
-	<title>IDMAP ALLOC OPTIONS</title>
-
-	<variablelist>
-		<varlistentry>
-		<term>ldap_base_dn = DN</term>
-		<listitem><para>
-			Defines the directory base suffix under which new SID/uid/gid mapping
-			entries should be stored.  If not defined, idmap_ldap will default
-			to using the &quot;ldap idmap suffix&quot; option from smb.conf.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>ldap_user_dn = DN</term>
-		<listitem><para>
-			Defines the user DN to be used for authentication. If absent an
-			anonymous bind will be performed.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>ldap_url = ldap://server/</term>
-		<listitem><para>
-			Specifies the LDAP server to which modify/add/delete requests should
-			be sent.  If not defined, idmap_ldap will assume that ldap://localhost/
-			should be used.
-		</para></listitem>
-		</varlistentry>
 	</variablelist>
 </refsect1>
 
@@ -128,20 +82,41 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	The follow sets of a LDAP configuration which uses two LDAP
-	directories, one for storing the ID mappings and one for retrieving
-	new IDs.
+	The following example shows how an ldap directory is used as the 
+	default idmap backend. It also configures the idmap range and base 
+	directory suffix. The secret for the ldap_user_dn has to be set with
+	&quot;net idmap secret '*' password&quot;.
 	</para>
 
 	<programlisting>
 	[global]
-	idmap backend = ldap:ldap://localhost/
-	idmap uid = 1000000-1999999
-	idmap gid = 1000000-1999999
+	idmap config * : backend      = ldap
+	idmap config * : range        = 1000000-1999999
+	idmap config * : ldap_url     = ldap://localhost/
+	idmap config * : ldap_base_dn = ou=idmap,dc=example,dc=com
+	idmap config * : ldap_user_dn = cn=idmap_admin,dc=example,dc=com
+	</programlisting>
 
-	idmap alloc backend = ldap
-	idmap alloc config : ldap_url	= ldap://id-master/
-	idmap alloc config : ldap_base_dn = ou=idmap,dc=example,dc=com
+	<para>
+	This example shows how ldap can be used as a readonly backend while
+	tdb is the default backend used to store the mappings.
+	It adds an explicit configuration for some domain DOM1, that
+	uses the ldap idmap backend. Note that a range disjoint from the
+	default range is used.
+	</para>
+
+	<programlisting>
+	[global]
+	# "backend = tdb" is redundant here since it is the default
+	idmap config * : backend = tdb
+	idmap config * : range = 1000000-1999999
+
+	idmap config DOM1 : backend = ldap
+	idmap config DOM1 : range = 2000000-2999999
+	idmap config DOM1 : read only = yes
+	idmap config DOM1 : ldap_url = ldap://server/
+	idmap config DOM1 : ldap_base_dn = ou=idmap,dc=dom1,dc=example,dc=com
+	idmap config DOM1 : ldap_user_dn = cn=idmap_admin,dc=dom1,dc=example,dc=com
 	</programlisting>
 </refsect1>
 

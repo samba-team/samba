@@ -34,6 +34,7 @@
 #include "lib/util/util.h"
 #else
 #include "libgpo/gpo_proto.h"
+#include "libsmb/libsmb.h"
 #endif
 
 /****************************************************************
@@ -142,7 +143,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
 
 
 	result = cli_full_connection(&cli,
-			global_myname(),
+			lp_netbios_name(),
 			server,
 			NULL, 0,
 			service, "A:",

@@ -84,7 +84,10 @@ static int vfswrap_set_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_T
 #endif
 }
 
-static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
+static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					struct shadow_copy_data *shadow_copy_data,
+					bool labels)
 {
 	errno = ENOSYS;
 	return -1;  /* Not implemented. */
@@ -745,12 +748,12 @@ static int vfswrap_chdir(vfs_handle_struct *handle,  const char *path)
 	return result;
 }
 
-static char *vfswrap_getwd(vfs_handle_struct *handle,  char *path)
+static char *vfswrap_getwd(vfs_handle_struct *handle)
 {
 	char *result;
 
 	START_PROFILE(syscall_getwd);
-	result = sys_getwd(path);
+	result = sys_getwd();
 	END_PROFILE(syscall_getwd);
 	return result;
 }
@@ -1512,12 +1515,12 @@ static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle, const char *p
 	return sys_listxattr(path, list, size);
 }
 
-ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
+static ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
 {
 	return sys_llistxattr(path, list, size);
 }
 
-ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
+static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
 	return sys_flistxattr(fsp->fh->fd, list, size);
 }

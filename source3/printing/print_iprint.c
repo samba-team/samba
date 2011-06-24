@@ -297,7 +297,7 @@ static int iprint_cache_add_printer(http_t *http,
 		*/
 
 		if (name != NULL && !secure && smb_enabled) 
-			pcap_cache_add(name, info);
+			pcap_cache_add(name, info, NULL);
 	}
 
  out:

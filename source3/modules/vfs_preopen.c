@@ -166,7 +166,7 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 		nread += thistime;
 
 		if (nread == talloc_get_size(namebuf)) {
-			namebuf = TALLOC_REALLOC_ARRAY(
+			namebuf = talloc_realloc(
 				NULL, namebuf, char,
 				talloc_get_size(namebuf) * 2);
 			if (namebuf == NULL) {
@@ -193,7 +193,7 @@ static bool preopen_helper(int fd, size_t to_read)
 	char *namebuf;
 	void *readbuf;
 
-	namebuf = TALLOC_ARRAY(NULL, char, 1024);
+	namebuf = talloc_array(NULL, char, 1024);
 	if (namebuf == NULL) {
 		return false;
 	}
@@ -237,7 +237,7 @@ static NTSTATUS preopen_init_helper(struct preopen_helper *h)
 	}
 	close(fdpair[1]);
 	h->fd = fdpair[0];
-	h->fde = event_add_fd(smbd_event_context(), h->state, h->fd,
+	h->fde = event_add_fd(server_event_context(), h->state, h->fd,
 			      EVENT_FD_READ, preopen_helper_readable, h);
 	if (h->fde == NULL) {
 		close(h->fd);
@@ -261,7 +261,7 @@ static NTSTATUS preopen_init_helpers(TALLOC_CTX *mem_ctx, size_t to_read,
 	}
 
 	result->num_helpers = num_helpers;
-	result->helpers = TALLOC_ARRAY(result, struct preopen_helper,
+	result->helpers = talloc_array(result, struct preopen_helper,
 				       num_helpers);
 	if (result->helpers == NULL) {
 		TALLOC_FREE(result);
@@ -322,7 +322,7 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 		return NULL;
 	}
 
-	set_namearray(&state->preopen_names, (char *)namelist);
+	set_namearray(&state->preopen_names, namelist);
 
 	if (state->preopen_names == NULL) {
 		TALLOC_FREE(state);

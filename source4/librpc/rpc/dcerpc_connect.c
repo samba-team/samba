@@ -186,16 +186,18 @@ static void continue_pipe_open_smb2(struct composite_context *ctx)
 /*
   Stage 2 of ncacn_np_smb2: Open a named pipe after successful smb2 connection
 */
-static void continue_smb2_connect(struct composite_context *ctx)
+static void continue_smb2_connect(struct tevent_req *subreq)
 {
 	struct composite_context *open_req;
-	struct composite_context *c = talloc_get_type(ctx->async.private_data,
-						      struct composite_context);
+	struct composite_context *c =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
 	struct pipe_np_smb2_state *s = talloc_get_type(c->private_data,
 						       struct pipe_np_smb2_state);
 
 	/* receive result of smb2 connect request */
-	c->status = smb2_connect_recv(ctx, c, &s->tree);
+	c->status = smb2_connect_recv(subreq, c, &s->tree);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare named pipe open parameters */
@@ -220,7 +222,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 {
 	struct composite_context *c;
 	struct pipe_np_smb2_state *s;
-	struct composite_context *conn_req;
+	struct tevent_req *subreq;
 	struct smbcli_options options;
 
 	/* composite context allocation and setup */
@@ -247,17 +249,17 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	lpcfg_smbcli_options(lp_ctx, &options);
 
 	/* send smb2 connect request */
-	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, 
+	subreq = smb2_connect_send(s, c->event_ctx,
+			s->io.binding->host,
 			lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "smb2", "ports", NULL),
-					"IPC$", 
-				     s->io.resolve_ctx,
-				     s->io.creds,
-				     c->event_ctx,
-				     &options,
-					 lpcfg_socket_options(lp_ctx),
-					 lpcfg_gensec_settings(mem_ctx, lp_ctx)
-					 );
-	composite_continue(c, conn_req, continue_smb2_connect, c);
+			"IPC$",
+			s->io.resolve_ctx,
+			s->io.creds,
+			&options,
+			lpcfg_socket_options(lp_ctx),
+			lpcfg_gensec_settings(mem_ctx, lp_ctx));
+	if (composite_nomem(subreq, c)) return c;
+	tevent_req_set_callback(subreq, continue_smb2_connect, c);
 	return c;
 }
 

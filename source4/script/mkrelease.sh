@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ ! -d ".git" -o `dirname $0` != "./source4/script" ]; then
 	echo "Run this script from the top-level directory in the"
@@ -6,8 +6,7 @@ if [ ! -d ".git" -o `dirname $0` != "./source4/script" ]; then
 	exit 1
 fi
 
-cd source4
-../buildtools/bin/waf dist
+./buildtools/bin/waf dist
 TGZFILE="`echo *.tar.gz`"
 gunzip $TGZFILE
 TARFILE="`echo *.tar`"

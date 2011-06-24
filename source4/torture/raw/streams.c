@@ -1629,6 +1629,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	return ret;
 }
 
+#if 0
 /* Test streaminfo with enough streams on a file to fill up the buffer.  */
 static bool test_stream_large_streaminfo(struct torture_context *tctx,
 					 struct smbcli_state *cli)
@@ -1674,6 +1675,7 @@ static bool test_stream_large_streaminfo(struct torture_context *tctx,
 	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
+#endif
 
 /* Test the effect of setting attributes on a stream. */
 static bool test_stream_attributes(struct torture_context *tctx,
@@ -1913,8 +1915,10 @@ struct torture_suite *torture_raw_streams(TALLOC_CTX *tctx)
 	torture_suite_add_1smb_test(suite, "attr", test_stream_attributes);
 	torture_suite_add_1smb_test(suite, "sumtab", test_stream_summary_tab);
 
-	/* torture_suite_add_1smb_test(suite, "LARGESTREAMINFO", */
-	/*     test_stream_large_streaminfo); */
+#if 0
+	torture_suite_add_1smb_test(suite, "LARGESTREAMINFO",
+		test_stream_large_streaminfo);
+#endif
 
 	return suite;
 }

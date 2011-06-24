@@ -276,7 +276,7 @@ static NTSTATUS nbtd_add_wins_socket(struct nbtd_server *nbtsrv)
 NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_context *lp_ctx,
 				 struct interface *ifaces)
 {
-	int num_interfaces = iface_count(ifaces);
+	int num_interfaces = iface_list_count(ifaces);
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(nbtsrv);
 	NTSTATUS status;
@@ -286,15 +286,16 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
 		const char *primary_address;
 
+		primary_address = iface_list_first_v4(ifaces);
+
 		/* the primary address is the address we will return
 		   for non-WINS queries not made on a specific
 		   interface */
-		if (num_interfaces > 0) {
-			primary_address = iface_n_ip(ifaces, 0);
-		} else {
+		if (primary_address == NULL) {
 			primary_address = inet_ntoa(interpret_addr2(
-							lpcfg_netbios_name(lp_ctx)));
+							    lpcfg_netbios_name(lp_ctx)));
 		}
+
 		primary_address = talloc_strdup(tmp_ctx, primary_address);
 		NT_STATUS_HAVE_NO_MEMORY(primary_address);
 
@@ -308,15 +309,21 @@ NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv, struct loadparm_con
 	}
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *bcast = iface_n_bcast(ifaces, i);
+		const char *bcast;
 		const char *address, *netmask;
 
+		if (!iface_list_n_is_v4(ifaces, i)) {
+			/* v4 only for NBT protocol */
+			continue;
+		}
+
+		bcast = iface_list_n_bcast(ifaces, i);
 		/* we can't assume every interface is broadcast capable */
 		if (bcast == NULL) continue;
 
-		address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+		address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 		bcast   = talloc_strdup(tmp_ctx, bcast);
-		netmask = talloc_strdup(tmp_ctx, iface_n_netmask(ifaces, i));
+		netmask = talloc_strdup(tmp_ctx, iface_list_n_netmask(ifaces, i));
 
 		status = nbtd_add_socket(nbtsrv, lp_ctx,
 					 address, address, bcast, netmask);
@@ -346,7 +353,7 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 	bool is_loopback = false;
 
 	if (iface->ip_address) {
-		is_loopback = iface_same_net(iface->ip_address, "127.0.0.1", "255.0.0.0");
+		is_loopback = iface_list_same_net(iface->ip_address, "127.0.0.1", "255.0.0.0");
 		ret = str_list_add(ret, iface->ip_address);
 	}
 
@@ -356,7 +363,7 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 		if (!iface2->ip_address) continue;
 
 		if (!is_loopback) {
-			if (iface_same_net(iface2->ip_address, "127.0.0.1", "255.0.0.0")) {
+			if (iface_list_same_net(iface2->ip_address, "127.0.0.1", "255.0.0.0")) {
 				continue;
 			}
 		}
@@ -380,7 +387,7 @@ struct nbtd_interface *nbtd_find_request_iface(struct nbtd_server *nbtd_server,
 
 	/* try to find a exact match */
 	for (cur=nbtd_server->interfaces;cur;cur=cur->next) {
-		if (iface_same_net(address, cur->ip_address, cur->netmask)) {
+		if (iface_list_same_net(address, cur->ip_address, cur->netmask)) {
 			DEBUG(10,("find interface for dst[%s] ip: %s/%s (iface[%p])\n",
 				  address, cur->ip_address, cur->netmask, cur));
 			return cur;

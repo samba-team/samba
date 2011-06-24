@@ -628,17 +628,6 @@ def ENABLE_TIMESTAMP_DEPENDENCIES(conf):
     Utils.h_file = h_file
 
 
-
-t = Task.simple_task_type('copy_script', 'rm -f "${LINK_TARGET}" && ln -s "${SRC[0].abspath(env)}" ${LINK_TARGET}',
-                          shell=True, color='PINK', ext_in='.bin')
-t.quiet = True
-
-@feature('copy_script')
-@before('apply_link')
-def copy_script(self):
-    tsk = self.create_task('copy_script', self.allnodes[0])
-    tsk.env.TARGET = self.target
-
 def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
     '''used to copy scripts from the source tree into the build directory
        for use by selftest'''
@@ -653,14 +642,16 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
         target = os.path.join(installdir, iname)
         tgtdir = os.path.dirname(os.path.join(bld.srcnode.abspath(bld.env), '..', target))
         mkdir_p(tgtdir)
-        t = bld(features='copy_script',
-                source       = s,
-                target       = target,
-                always       = True,
-                install_path = None)
-        t.env.LINK_TARGET = target
-
+        link_src = os.path.normpath(os.path.join(bld.curdir, s))
+        link_dst = os.path.join(tgtdir, os.path.basename(iname))
+        if os.path.islink(link_dst) and os.readlink(link_dst) == link_src:
+            continue
+        if os.path.exists(link_dst):
+            os.unlink(link_dst)
+        Logs.info("symlink: %s -> %s/%s" % (s, installdir, iname))
+        os.symlink(link_src, link_dst)
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
+
 
 def copy_and_fix_python_path(task):
     pattern='sys.path.insert(0, "bin/python")'
@@ -701,6 +692,8 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
                             rule=copy_and_fix_python_path,
                             source=file,
                             target=inst_file)
+        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), bld.env["PYTHONARCHDIR"])
+        bld.add_manual_dependency(bld.path.find_or_declare(inst_file), bld.env["PYTHONDIR"])
         file = inst_file
     if base_name:
         file = os.path.join(base_name, file)

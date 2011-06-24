@@ -367,8 +367,7 @@ int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen)
 	uint32_t ia;
 
 	if (!sid) {
-		strlcpy(buf, "(NULL SID)", buflen);
-		return 10;	/* strlen("(NULL SID)") */
+		return strlcpy(buf, "(NULL SID)", buflen);
 	}
 
 	ia = (sid->id_auth[5]) +

@@ -151,10 +151,10 @@ static bool ads_keytab_verify_ticket(krb5_context context,
 	 * clients might want to use for authenticating to the file
 	 * service.  We allow name$,{host,cifs}/{name,fqdn,name.REALM}. */
 
-	fstrcpy(my_name, global_myname());
+	fstrcpy(my_name, lp_netbios_name());
 
 	my_fqdn[0] = '\0';
-	name_to_fqdn(my_fqdn, global_myname());
+	name_to_fqdn(my_fqdn, lp_netbios_name());
 
 	err = asprintf(&valid_princ_formats[0],
 			"%s$@%s", my_name, lp_realm());
@@ -534,7 +534,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		krb5_auth_con_setflags( context, auth_context, flags );
 	}
 
-	if (asprintf(&host_princ_s, "%s$", global_myname()) == -1) {
+	if (asprintf(&host_princ_s, "%s$", lp_netbios_name()) == -1) {
 		goto out;
 	}
 

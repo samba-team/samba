@@ -50,7 +50,7 @@ int net_user(struct net_context *c, int argc, const char **argv)
 	if (argc < 1)
 		return net_user_usage(c, argc, argv);
 
-	if (StrCaseCmp(argv[0], "HELP") == 0) {
+	if (strcasecmp_m(argv[0], "HELP") == 0) {
 		net_user_usage(c, argc, argv);
 		return 0;
 	}

@@ -26,9 +26,9 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include <tdb.h>
+#include "tdb_compat.h"
 #include "messaging/messaging.h"
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"
@@ -48,7 +48,7 @@
 struct brl_context {
 	struct tdb_wrap *w;
 	struct server_id server;
-	struct messaging_context *messaging_ctx;
+	struct imessaging_context *imessaging_ctx;
 };
 
 /*
@@ -89,12 +89,12 @@ static bool brl_invalid_lock_range(uint64_t start, uint64_t size)
 
 /*
   Open up the brlock.tdb database. Close it down using
-  talloc_free(). We need the messaging_ctx to allow for
+  talloc_free(). We need the imessaging_ctx to allow for
   pending lock notifications.
 */
 static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 					struct loadparm_context *lp_ctx,
-				    struct messaging_context *messaging_ctx)
+				    struct imessaging_context *imessaging_ctx)
 {
 	struct brl_context *brl;
 
@@ -110,7 +110,7 @@ static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id se
 	}
 
 	brl->server = server;
-	brl->messaging_ctx = messaging_ctx;
+	brl->imessaging_ctx = imessaging_ctx;
 
 	return brl;
 }
@@ -333,7 +333,7 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 		}
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
@@ -419,7 +419,7 @@ static void brl_tdb_notify_unlock(struct brl_context *brl,
 			if (locks[i].lock_type == PENDING_WRITE_LOCK) {
 				last_notice = i;
 			}
-			messaging_send_ptr(brl->messaging_ctx, locks[i].context.server, 
+			imessaging_send_ptr(brl->imessaging_ctx, locks[i].context.server,
 					   MSG_BRL_RETRY, locks[i].notify_ptr);
 		}
 	}
@@ -468,7 +468,7 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_RANGE_NOT_LOCKED;
@@ -568,7 +568,7 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_RANGE_NOT_LOCKED;
@@ -639,7 +639,7 @@ static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
 		return NT_STATUS_INVALID_LOCK_RANGE;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (dbuf.dptr == NULL) {
 		return NT_STATUS_OK;
 	}
@@ -686,7 +686,7 @@ static NTSTATUS brl_tdb_close(struct brl_context *brl,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_OK;
@@ -751,7 +751,7 @@ static NTSTATUS brl_tdb_count(struct brl_context *brl, struct brl_handle *brlh,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
 	if (!dbuf.dptr) {
 		tdb_chainunlock(brl->w->tdb, kbuf);
 		return NT_STATUS_OK;
@@ -779,5 +779,5 @@ static const struct brlock_ops brlock_tdb_ops = {
 
 void brl_tdb_init_ops(void)
 {
-	brl_set_ops(&brlock_tdb_ops);
+	brlock_set_ops(&brlock_tdb_ops);
 }

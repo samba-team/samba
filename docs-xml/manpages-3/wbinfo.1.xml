@@ -423,7 +423,7 @@
 		<term>-U|--uid-to-sid <replaceable>uid</replaceable></term>
 		<listitem><para>Try to convert a UNIX user id to a Windows NT
 		SID.  If the uid specified does not refer to one within
-		the idmap uid range then the operation will fail. </para></listitem>
+		the idmap range then the operation will fail. </para></listitem>
 		</varlistentry>
 
 		<varlistentry>

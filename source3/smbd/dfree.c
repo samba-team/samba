@@ -207,7 +207,7 @@ uint64_t get_dfree_info(connection_struct *conn,
 
 	/* No cached info or time to refresh. */
 	if (!dfc) {
-		dfc = TALLOC_P(conn, struct dfree_cached_info);
+		dfc = talloc(conn, struct dfree_cached_info);
 		if (!dfc) {
 			return dfree_ret;
 		}

@@ -89,6 +89,10 @@ def build_dependencies(self):
             for f in self.env.undefined_ldflags:
                 self.ldflags.remove(f)
 
+        if getattr(self, 'allow_undefined_symbols', False) and self.env.undefined_ignore_ldflags:
+            for f in self.env.undefined_ignore_ldflags:
+                self.ldflags.append(f)
+
         debug('deps: computed dependencies for target %s: uselib=%s uselib_local=%s add_objects=%s',
               self.sname, self.uselib, self.uselib_local, self.add_objects)
 

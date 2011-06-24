@@ -173,7 +173,7 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 			return ret;
 		}
 		
-		/* This song-and-dance effectivly puts the principal
+		/* This song-and-dance effectively puts the principal
 		 * into talloc, so we can't loose it. */
 		talloc_set_destructor(principals[i], free_principal);
 		i++;
@@ -262,7 +262,7 @@ static krb5_error_code salt_principal_from_msg(TALLOC_CTX *parent_ctx,
 					  upper_realm,
 					  "host", salt_body, NULL);
 		if (ret == 0) {
-			/* This song-and-dance effectivly puts the principal
+			/* This song-and-dance effectively puts the principal
 			 * into talloc, so we can't loose it. */
 			mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
 			mem_ctx->principal = *salt_princ;
@@ -338,7 +338,9 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 				 const char **error_string)
 {
 	krb5_error_code ret;
-	const char *password, *target_service;
+	const char *password;
+	const char *self_service;
+	const char *target_service;
 	time_t kdc_time = 0;
 	krb5_principal princ;
 	krb5_principal impersonate_principal;
@@ -363,6 +365,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		return ret;
 	}
 
+	self_service = cli_credentials_get_self_service(credentials);
 	target_service = cli_credentials_get_target_service(credentials);
 
 	password = cli_credentials_get_password(credentials);
@@ -403,7 +406,9 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		if (password) {
 			ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
 							 princ, password,
-							 impersonate_principal, target_service,
+							 impersonate_principal,
+							 self_service,
+							 target_service,
 							 krb_options,
 							 NULL, &kdc_time);
 		} else if (impersonate_principal) {
@@ -733,7 +738,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 			/* Release the enumeration.  We are going to
 			 * have to start this from the top again,
 			 * because deletes during enumeration may not
-			 * always be consistant.
+			 * always be consistent.
 			 *
 			 * Also, the enumeration locks a FILE: keytab
 			 */

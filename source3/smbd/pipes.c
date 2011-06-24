@@ -29,6 +29,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "libcli/security/security.h"
+#include "rpc_server/srv_pipe_hnd.h"
 
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
@@ -202,7 +203,7 @@ void reply_pipe_write(struct smb_request *req)
 	DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n", (int)fsp->fnum,
 		  fsp_str_dbg(fsp), (int)state->numtowrite));
 
-	subreq = np_write_send(state, smbd_event_context(),
+	subreq = np_write_send(state, server_event_context(),
 			       fsp->fake_file_handle, data, state->numtowrite);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -269,7 +270,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+2, 0));
 	int smb_doff = SVAL(req->vwv+11, 0);
-	uint8_t *data;
+	const uint8_t *data;
 	struct pipe_write_andx_state *state;
 	struct tevent_req *subreq;
 
@@ -298,7 +299,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 	DEBUG(6, ("reply_pipe_write_and_X: %x name: %s len: %d\n",
 		  (int)fsp->fnum, fsp_str_dbg(fsp), (int)state->numtowrite));
 
-	data = (uint8_t *)smb_base(req->inbuf) + smb_doff;
+	data = (const uint8_t *)smb_base(req->inbuf) + smb_doff;
 
 	if (state->pipe_start_message_raw) {
 		/*
@@ -318,7 +319,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		state->numtowrite -= 2;
 	}
 
-	subreq = np_write_send(state, smbd_event_context(),
+	subreq = np_write_send(state, server_event_context(),
 			       fsp->fake_file_handle, data, state->numtowrite);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -425,7 +426,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	state->outbuf = req->outbuf;
 	req->outbuf = NULL;
 
-	subreq = np_read_send(state, smbd_event_context(),
+	subreq = np_read_send(state, server_event_context(),
 			      fsp->fake_file_handle, data,
 			      state->smb_maxcnt);
 	if (subreq == NULL) {

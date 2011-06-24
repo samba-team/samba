@@ -122,6 +122,7 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_CONFORMANT	(1<<10)
 #define LIBNDR_FLAG_STR_CHARLEN		(1<<11)
 #define LIBNDR_FLAG_STR_UTF8		(1<<12)
+#define LIBNDR_FLAG_STR_RAW8		(1<<13)
 #define LIBNDR_STRING_FLAGS		(0x7FFC)
 
 /* set if relative pointers should *not* be marshalled in reverse order */
@@ -374,6 +375,8 @@ struct ndr_interface_list {
 	const struct ndr_interface_table *table;
 };
 
+struct sockaddr_storage;
+
 /*********************************************************************
  Map an NT error code from a NDR error code.
 *********************************************************************/
@@ -395,6 +398,7 @@ enum ndr_err_code ndr_pull_dom_sid0(struct ndr_pull *ndr, int ndr_flags, struct 
 void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
+void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
 bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax_id *i2); 
 enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p, ndr_push_flags_fn_t fn);
 enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, uint32_t level, ndr_push_flags_fn_t fn);

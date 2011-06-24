@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 
 size_t clistr_push_fn(struct cli_state *cli,
 			void *dest,
@@ -73,9 +74,4 @@ size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 				  src,
 				  src_len,
 				  flags);
-}
-
-size_t clistr_align_out(struct cli_state *cli, const void *p, int flags)
-{
-	return align_string(cli->outbuf, (const char *)p, flags);
 }

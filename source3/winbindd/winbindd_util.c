@@ -261,7 +261,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	struct trustdom_state *state;
 	struct tevent_req *req;
 
-	state = TALLOC_ZERO_P(NULL, struct trustdom_state);
+	state = talloc_zero(NULL, struct trustdom_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return;
@@ -892,31 +892,6 @@ bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 	*domain = talloc_strdup(mem_ctx, fstr_domain);
 	*user = talloc_strdup(mem_ctx, fstr_user);
 	return ((*domain != NULL) && (*user != NULL));
-}
-
-/* add a domain user name to a buffer */
-void parse_add_domuser(void *buf, char *domuser, int *len)
-{
-	fstring domain;
-	char *p, *user;
-
-	user = domuser;
-	p = strchr(domuser, *lp_winbind_separator());
-
-	if (p) {
-
-		fstrcpy(domain, domuser);
-		domain[PTR_DIFF(p, domuser)] = 0;
-		p++;
-
-		if (assume_domain(domain)) {
-
-			user = p;
-			*len -= (PTR_DIFF(p, domuser));
-		}
-	}
-
-	safe_strcpy((char *)buf, user, *len);
 }
 
 /* Ensure an incoming username from NSS is fully qualified. Replace the

@@ -25,6 +25,8 @@
 #ifndef _LIBSMB_CLIRAP_H
 #define _LIBSMB_CLIRAP_H
 
+struct cli_state;
+
 /* The following definitions come from libsmb/clirap.c  */
 
 bool cli_api(struct cli_state *cli,

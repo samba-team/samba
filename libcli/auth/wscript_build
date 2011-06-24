@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('cliauth',
                   source='',
-                  deps='NTLMSSP_COMMON MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE KRB5_WRAP',
+                  deps='NTLMSSP_COMMON MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE KRB5_WRAP errors',
                   private_library=True,
                   grouping_library=True)
 
@@ -40,5 +40,5 @@ bld.SAMBA_SUBSYSTEM('SPNEGO_PARSE',
                     deps='asn1util')
 
 bld.SAMBA_SUBSYSTEM('KRB5_WRAP',
-                    source='krb5_wrap.c kerberos_pac.c',
-                    deps='krb5 ndr-krb5pac com_err')
+                    source='krb5_wrap.c',
+                    deps='gssapi_krb5 krb5 ndr-krb5pac com_err KRB5_PAC')

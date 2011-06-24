@@ -5,17 +5,17 @@
 
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1992-2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -51,8 +51,8 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
 			i,
 			(unsigned long long)pls->context.smblctx,
 			(unsigned int)pls->context.tid,
-			procid_str(talloc_tos(), &pls->context.pid) ));
-	
+			server_id_str(talloc_tos(), &pls->context.pid) ));
+
 	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
 		(double)pls->start,
 		(double)pls->size,
@@ -180,7 +180,7 @@ static bool brl_conflict1(const struct lock_struct *lck1,
 	    lck2->start >= (lck1->start + lck1->size)) {
 		return False;
 	}
-	    
+
 	return True;
 } 
 #endif
@@ -1521,7 +1521,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 
 			/* Copy the current lock array. */
 			if (br_lck->num_locks) {
-				locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
+				locks_copy = (struct lock_struct *)talloc_memdup(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
 				if (!locks_copy) {
 					smb_panic("brl_close_fnum: talloc failed");
 	 			}
@@ -1823,7 +1823,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 					files_struct *fsp, bool read_only)
 {
 	TDB_DATA key, data;
-	struct byte_range_lock *br_lck = TALLOC_P(mem_ctx, struct byte_range_lock);
+	struct byte_range_lock *br_lck = talloc(mem_ctx, struct byte_range_lock);
 	bool do_read_only = read_only;
 
 	if (br_lck == NULL) {
@@ -1845,7 +1845,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_read_only) {
-		if (brlock_db->fetch(brlock_db, br_lck, key, &data) == -1) {
+		if (brlock_db->fetch(brlock_db, br_lck, key, &data) != 0) {
 			DEBUG(3, ("Could not fetch byte range lock record\n"));
 			TALLOC_FREE(br_lck);
 			return NULL;
@@ -1881,7 +1881,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 
 		memcpy(br_lck->lock_data, data.dptr, data.dsize);
 	}
-	
+
 	if (!fsp->lockdb_clean) {
 		int orig_num_locks = br_lck->num_locks;
 
@@ -1993,8 +1993,8 @@ static void brl_revalidate_collect(struct file_id id, struct server_id pid,
 
 static int compare_procids(const void *p1, const void *p2)
 {
-	const struct server_id *i1 = (struct server_id *)p1;
-	const struct server_id *i2 = (struct server_id *)p2;
+	const struct server_id *i1 = (const struct server_id *)p1;
+	const struct server_id *i2 = (const struct server_id *)p2;
 
 	if (i1->pid < i2->pid) return -1;
 	if (i2->pid > i2->pid) return 1;
@@ -2020,7 +2020,7 @@ static void brl_revalidate(struct messaging_context *msg_ctx,
 	uint32 i;
 	struct server_id last_pid;
 
-	if (!(state = TALLOC_ZERO_P(NULL, struct brl_revalidate_state))) {
+	if (!(state = talloc_zero(NULL, struct brl_revalidate_state))) {
 		DEBUG(0, ("talloc failed\n"));
 		return;
 	}

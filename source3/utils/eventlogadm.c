@@ -171,14 +171,14 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	if ( !already_in ) {
 		/* make a new list with an additional entry; copy values, add another */
-		wp = TALLOC_ARRAY(ctx, const char *, numsources + 2 );
+		wp = talloc_array(ctx, const char *, numsources + 2 );
 
 		if ( !wp ) {
 			d_printf("talloc() failed \n");
 			return False;
 		}
 		memcpy( wp, wrklist, sizeof( char * ) * numsources );
-		*( wp + numsources ) = ( char * ) sourcename;
+		*( wp + numsources ) = (const char * ) sourcename;
 		*( wp + numsources + 1 ) = NULL;
 		if (!push_reg_multi_sz(ctx, &blob, wp)) {
 			return false;
@@ -365,14 +365,11 @@ static int DoDumpCommand(int argc, char **argv, bool debugflag, char *exename)
 {
 	ELOG_TDB *etdb;
 	TALLOC_CTX *mem_ctx = talloc_tos();
-	const char *tdb_filename;
 	uint32_t count = 1;
 
 	if (argc > 2) {
 		return -1;
 	}
-
-	tdb_filename = argv[0];
 
 	if (argc > 1) {
 		count = atoi(argv[1]);
@@ -475,16 +472,16 @@ int main( int argc, char *argv[] )
 
 	/*  note that the separate command types should call usage if they need to... */
 	while ( 1 ) {
-		if ( !StrCaseCmp( opname, "addsource" ) ) {
+		if ( !strcasecmp_m( opname, "addsource" ) ) {
 			rc = DoAddSourceCommand( argc, argv, opt_debug,
 						 exename );
 			break;
 		}
-		if ( !StrCaseCmp( opname, "write" ) ) {
+		if ( !strcasecmp_m( opname, "write" ) ) {
 			rc = DoWriteCommand( argc, argv, opt_debug, exename );
 			break;
 		}
-		if ( !StrCaseCmp( opname, "dump" ) ) {
+		if ( !strcasecmp_m( opname, "dump" ) ) {
 			rc = DoDumpCommand( argc, argv, opt_debug, exename );
 			break;
 		}

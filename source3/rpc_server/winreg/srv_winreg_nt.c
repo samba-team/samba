@@ -21,6 +21,7 @@
 /* Implementation of registry functions. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "registry.h"
 #include "registry/reg_api.h"
@@ -28,8 +29,8 @@
 #include "registry/reg_perfcount.h"
 #include "rpc_misc.h"
 #include "auth.h"
-#include "ntdomain.h"
 #include "lib/privileges.h"
+#include "libcli/security/secdesc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -541,7 +542,7 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->string )) == NULL ) {
 			return WERR_NOMEM;
 		}
-		chkmsg = TALLOC_ARRAY(p->mem_ctx, char, strlen(msg)+1);
+		chkmsg = talloc_array(p->mem_ctx, char, strlen(msg)+1);
 		if (!chkmsg) {
 			return WERR_NOMEM;
 		}

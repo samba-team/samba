@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "dbwrap.h"
+#include "lib/util/tdb_wrap.h"
 
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;
@@ -42,10 +43,7 @@ static int db_tdb_record_destr(struct db_record* data)
 		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
-	if (tdb_chainunlock(ctx->wtdb->tdb, data->key) != 0) {
-		DEBUG(0, ("tdb_chainunlock failed\n"));
-		return -1;
-	}
+	tdb_chainunlock(ctx->wtdb->tdb, data->key);
 	return 0;
 }
 
@@ -329,7 +327,8 @@ static int db_tdb_transaction_cancel(struct db_context *db)
 {
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	return tdb_transaction_cancel(db_ctx->wtdb->tdb);
+	tdb_transaction_cancel(db_ctx->wtdb->tdb);
+	return 0;
 }
 
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
@@ -340,13 +339,13 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	struct db_context *result = NULL;
 	struct db_tdb_ctx *db_tdb;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct db_context);
+	result = talloc_zero(mem_ctx, struct db_context);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
 
-	result->private_data = db_tdb = TALLOC_P(result, struct db_tdb_ctx);
+	result->private_data = db_tdb = talloc(result, struct db_tdb_ctx);
 	if (db_tdb == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;

@@ -22,32 +22,18 @@
     the most common setting needed when talking to Windows 98 and 
     Windows NT.</para>
 
-    <para>The alternatives are <command moreinfo="none">security = share</command>,
-    <command moreinfo="none">security = server</command> or <command moreinfo="none">security = domain
-    </command>.</para>
+    <para>The alternatives are
+    <command moreinfo="none">security = ads</command> or <command moreinfo="none">security = domain
+    </command>, which support joining Samba to a Windows domain, along with <command moreinfo="none">security = share</command> and <command moreinfo="none">security = server</command>, both of which are deprecated.</para>
 
     <para>In versions of Samba prior to 2.0.0, the default was 
     <command moreinfo="none">security = share</command> mainly because that was
     the only option at one stage.</para>
 
-    <para>There is a bug in WfWg that has relevance to this 
-    setting. When in user or server level security a WfWg client 
-    will totally ignore the username and password you type in the &quot;connect 
-    drive&quot; dialog box. This makes it very difficult (if not impossible) 
-    to connect to a Samba service as anyone except the user that 
-    you are logged into WfWg as.</para>
-
-    <para>If your PCs use usernames that are the same as their 
-    usernames on the UNIX machine then you will want to use 
-    <command moreinfo="none">security = user</command>. If you mostly use usernames 
-    that don't exist on the UNIX box then use <command moreinfo="none">security = 
-    share</command>.</para>
-
-    <para>You should also use <command moreinfo="none">security = share</command> if you 
+    <para>You should use <command moreinfo="none">security = user</command> and 
+    <smbconfoption name="map to guest"/> if you 
     want to mainly setup shares without a password (guest shares). This 
-    is commonly used for a shared printer server. It is more difficult 
-    to setup guest shares with <command moreinfo="none">security = user</command>, see 
-    the <smbconfoption name="map to guest"/> parameter for details.</para>
+    is commonly used for a shared printer server. </para>
 		
     <para>It is possible to use <command moreinfo="none">smbd</command> in a <emphasis>
     hybrid mode</emphasis> where it is offers both user and share 
@@ -56,7 +42,62 @@
     <para>The different settings will now be explained.</para>
 
 
+    <para><anchor id="SECURITYEQUALSUSER"/><emphasis>SECURITY = USER</emphasis></para>
+
+    <para>This is the default security setting in Samba. 
+    With user-level security a client must first &quot;log-on&quot; with a 
+    valid username and password (which can be mapped using the <smbconfoption name="username map"/> 
+    parameter). Encrypted passwords (see the <smbconfoption name="encrypted passwords"/> parameter) can also
+    be used in this security mode. Parameters such as <smbconfoption name="user"/> and <smbconfoption
+	name="guest only"/> if set	are then applied and 
+    may change the UNIX user to use on this connection, but only after 
+    the user has been successfully authenticated.</para>
+
+    <para><emphasis>Note</emphasis> that the name of the resource being 
+    requested is <emphasis>not</emphasis> sent to the server until after 
+    the server has successfully authenticated the client. This is why 
+    guest shares don't work in user level security without allowing 
+    the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
+    See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
+
+    <para>See also the section <link linkend="VALIDATIONSECT">NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
+
+    <para><anchor id="SECURITYEQUALSDOMAIN"/><emphasis>SECURITY = DOMAIN</emphasis></para>
+
+    <para>This mode will only work correctly if <citerefentry><refentrytitle>net</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> has been used to add this
+    machine into a Windows NT Domain. It expects the <smbconfoption name="encrypted passwords"/>
+	parameter to be set to <constant>yes</constant>. In this 
+    mode Samba will try to validate the username/password by passing
+    it to a Windows NT Primary or Backup Domain Controller, in exactly 
+    the same way that a Windows NT Server would do.</para>
+
+    <para><emphasis>Note</emphasis> that a valid UNIX user must still 
+    exist as well as the account on the Domain Controller to allow 
+    Samba to have a valid UNIX account to map file access to.</para>
+
+    <para><emphasis>Note</emphasis> that from the client's point 
+    of view <command moreinfo="none">security = domain</command> is the same 
+    as <command moreinfo="none">security = user</command>. It only 
+    affects how the server deals with the authentication, 
+    it does not in any way affect what the client sees.</para>
+
+    <para><emphasis>Note</emphasis> that the name of the resource being 
+    requested is <emphasis>not</emphasis> sent to the server until after 
+    the server has successfully authenticated the client. This is why 
+    guest shares don't work in user level security without allowing 
+    the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
+    See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
+
+    <para>See also the section <link linkend="VALIDATIONSECT">
+    NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
+
+    <para>See also the <smbconfoption name="password server"/> parameter and
+	 the <smbconfoption name="encrypted passwords"/> parameter.</para>
+
     <para><anchor id="SECURITYEQUALSSHARE"/><emphasis>SECURITY = SHARE</emphasis></para> 
+
+    <note><para>This option is deprecated as it is incompatible with SMB2</para></note>
 		
     <para>When clients connect to a share level security server, they 
     need not log onto the server with a valid username and password before 
@@ -135,63 +176,10 @@
     <para>See also the section <link linkend="VALIDATIONSECT">
     NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
-    <para><anchor id="SECURITYEQUALSUSER"/><emphasis>SECURITY = USER</emphasis></para>
-
-    <para>This is the default security setting in Samba 3.0. 
-    With user-level security a client must first &quot;log-on&quot; with a 
-    valid username and password (which can be mapped using the <smbconfoption name="username map"/> 
-    parameter). Encrypted passwords (see the <smbconfoption name="encrypted passwords"/> parameter) can also
-    be used in this security mode. Parameters such as <smbconfoption name="user"/> and <smbconfoption
-	name="guest only"/> if set	are then applied and 
-    may change the UNIX user to use on this connection, but only after 
-    the user has been successfully authenticated.</para>
-
-    <para><emphasis>Note</emphasis> that the name of the resource being 
-    requested is <emphasis>not</emphasis> sent to the server until after 
-    the server has successfully authenticated the client. This is why 
-    guest shares don't work in user level security without allowing 
-    the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
-    See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
-
-    <para>See also the section <link linkend="VALIDATIONSECT">NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
-
-    <para><anchor id="SECURITYEQUALSDOMAIN"/><emphasis>SECURITY = DOMAIN</emphasis></para>
-
-    <para>This mode will only work correctly if <citerefentry><refentrytitle>net</refentrytitle>
-    <manvolnum>8</manvolnum></citerefentry> has been used to add this
-    machine into a Windows NT Domain. It expects the <smbconfoption name="encrypted passwords"/>
-	parameter to be set to <constant>yes</constant>. In this 
-    mode Samba will try to validate the username/password by passing
-    it to a Windows NT Primary or Backup Domain Controller, in exactly 
-    the same way that a Windows NT Server would do.</para>
-
-    <para><emphasis>Note</emphasis> that a valid UNIX user must still 
-    exist as well as the account on the Domain Controller to allow 
-    Samba to have a valid UNIX account to map file access to.</para>
-
-    <para><emphasis>Note</emphasis> that from the client's point 
-    of view <command moreinfo="none">security = domain</command> is the same 
-    as <command moreinfo="none">security = user</command>. It only 
-    affects how the server deals with the authentication, 
-    it does not in any way affect what the client sees.</para>
-
-    <para><emphasis>Note</emphasis> that the name of the resource being 
-    requested is <emphasis>not</emphasis> sent to the server until after 
-    the server has successfully authenticated the client. This is why 
-    guest shares don't work in user level security without allowing 
-    the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
-    See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
-
-    <para>See also the section <link linkend="VALIDATIONSECT">
-    NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
-
-    <para>See also the <smbconfoption name="password server"/> parameter and
-	 the <smbconfoption name="encrypted passwords"/> parameter.</para>
-
     <para><anchor id="SECURITYEQUALSSERVER"/><emphasis>SECURITY = SERVER</emphasis></para>
 
     <para>
-	In this mode Samba will try to validate the username/password by passing it to another SMB server, such as an
+	In this depicted mode Samba will try to validate the username/password by passing it to another SMB server, such as an
 	NT box. If this fails it will revert to <command moreinfo="none">security = user</command>. It expects the
 	<smbconfoption name="encrypted passwords"/> parameter to be set to <constant>yes</constant>, unless the remote
 	server does not support them.  However note that if encrypted passwords have been negotiated then Samba cannot
@@ -203,11 +191,14 @@
 	<note><para>This mode of operation has
     significant pitfalls since it is more vulnerable to
     man-in-the-middle attacks and server impersonation.  In particular,
-    this mode of operation can cause significant resource consuption on
+    this mode of operation can cause significant resource consumption on
     the PDC, as it must maintain an active connection for the duration
     of the user's session.  Furthermore, if this connection is lost,
-    there is no way to reestablish it, and futher authentications to the
+    there is no way to reestablish it, and further authentications to the
     Samba server may fail (from a single client, till it disconnects).
+	</para></note>
+
+	<note><para>If the client selects NTLMv2 authentication, then this mode of operation <emphasis>will fail</emphasis>
 	</para></note>
 
 	<note><para>From the client's point of 
@@ -215,6 +206,8 @@
     same as <command moreinfo="none">security = user</command>.  It
     only affects how the server deals  with the authentication, it does
 	not in any way affect what the  client sees.</para></note>
+
+    <note><para>This option is deprecated, and may be removed in future</para></note>
 
     <para><emphasis>Note</emphasis> that the name of the resource being 
     requested is <emphasis>not</emphasis> sent to the server until after 

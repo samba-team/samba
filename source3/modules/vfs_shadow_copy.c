@@ -216,7 +216,10 @@ static int shadow_copy_closedir(vfs_handle_struct *handle, SMB_STRUCT_DIR *_dirp
 	return 0;	
 }
 
-static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
+static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
+					    files_struct *fsp,
+					    struct shadow_copy_data *shadow_copy_data,
+					    bool labels)
 {
 	SMB_STRUCT_DIR *p = SMB_VFS_NEXT_OPENDIR(handle,fsp->conn->connectpath,NULL,0);
 
@@ -250,7 +253,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_str
 			continue;
 		}
 
-		tlabels = (SHADOW_COPY_LABEL *)TALLOC_REALLOC(shadow_copy_data->mem_ctx,
+		tlabels = (SHADOW_COPY_LABEL *)TALLOC_REALLOC(shadow_copy_data,
 									shadow_copy_data->labels,
 									(shadow_copy_data->num_volumes+1)*sizeof(SHADOW_COPY_LABEL));
 		if (tlabels == NULL) {

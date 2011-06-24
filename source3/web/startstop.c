@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "web/swat_proto.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 
 
 /** Startup smbd from web interface. */

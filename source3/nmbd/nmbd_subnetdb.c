@@ -296,7 +296,7 @@ bool create_subnets(void)
 		 * ignore it here. JRA.
 		 */
 
-		if (is_loopback_addr((struct sockaddr *)&iface->ip)) {
+		if (is_loopback_addr((const struct sockaddr *)&iface->ip)) {
 			DEBUG(2,("create_subnets: Ignoring loopback interface.\n" ));
 			continue;
 		}

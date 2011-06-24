@@ -36,6 +36,7 @@
 #include "secrets.h"
 #include "krb5_env.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 
 #ifdef HAVE_ADS
 
@@ -60,7 +61,8 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	if ( !ads_cldap_netlogon_5(talloc_tos(), addr, ads->server.realm, &reply ) ) {
+
+	if ( !ads_cldap_netlogon_5(talloc_tos(), &ads->ldap.ss, ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, _("CLDAP query failed!\n"));
 		return -1;
 	}
@@ -154,7 +156,7 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ads->config.realm) {
-		ads->config.realm = CONST_DISCARD(char *, c->opt_target_workgroup);
+		ads->config.realm = discard_const_p(char, c->opt_target_workgroup);
 		ads->ldap.port = 389;
 	}
 
@@ -383,7 +385,6 @@ int net_ads_check(struct net_context *c)
 static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	char addr[INET6_ADDRSTRLEN];
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX reply;
 
 	if (c->display_usage) {
@@ -401,12 +402,11 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ads->config.realm) {
-		ads->config.realm = CONST_DISCARD(char *, c->opt_target_workgroup);
+		ads->config.realm = discard_const_p(char, c->opt_target_workgroup);
 		ads->ldap.port = 389;
 	}
 
-	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	if ( !ads_cldap_netlogon_5(talloc_tos(), addr, ads->server.realm, &reply ) ) {
+	if ( !ads_cldap_netlogon_5(talloc_tos(), &ads->ldap.ss, ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, _("CLDAP query failed!\n"));
 		ads_destroy(&ads);
 		return -1;
@@ -441,10 +441,10 @@ static bool usergrp_display(ADS_STRUCT *ads, char *field, void **values, void *d
 	}
 	if (!values) /* must be new field, indicate string field */
 		return true;
-	if (StrCaseCmp(field, "sAMAccountName") == 0) {
+	if (strcasecmp_m(field, "sAMAccountName") == 0) {
 		disp_fields[0] = SMB_STRDUP((char *) values[0]);
 	}
-	if (StrCaseCmp(field, "description") == 0)
+	if (strcasecmp_m(field, "description") == 0)
 		disp_fields[1] = SMB_STRDUP((char *) values[0]);
 	return true;
 }
@@ -915,7 +915,7 @@ static int net_ads_status(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	rc = ads_find_machine_acct(ads, &res, global_myname());
+	rc = ads_find_machine_acct(ads, &res, lp_netbios_name());
 	if (!ADS_ERR_OK(rc)) {
 		d_fprintf(stderr, _("ads_find_machine_acct: %s\n"), ads_errstr(rc));
 		ads_destroy(&ads);
@@ -923,7 +923,7 @@ static int net_ads_status(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (ads_count_replies(ads, res) == 0) {
-		d_fprintf(stderr, _("No machine account for '%s' found\n"), global_myname());
+		d_fprintf(stderr, _("No machine account for '%s' found\n"), lp_netbios_name());
 		ads_destroy(&ads);
 		return -1;
 	}
@@ -1100,10 +1100,10 @@ static WERROR check_ads_config( void )
 		return WERR_INVALID_DOMAIN_ROLE;
 	}
 
-	if (strlen(global_myname()) > 15) {
+	if (strlen(lp_netbios_name()) > 15) {
 		d_printf(_("Our netbios name can be at most 15 chars long, "
-			   "\"%s\" is %u chars long\n"), global_myname(),
-			 (unsigned int)strlen(global_myname()));
+			   "\"%s\" is %u chars long\n"), lp_netbios_name(),
+			 (unsigned int)strlen(lp_netbios_name()));
 		return WERR_INVALID_COMPUTERNAME;
 	}
 
@@ -1244,7 +1244,7 @@ static NTSTATUS net_update_dns_ext(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
 	if (hostname) {
 		fstrcpy(machine_name, hostname);
 	} else {
-		name_to_fqdn( machine_name, global_myname() );
+		name_to_fqdn( machine_name, lp_netbios_name() );
 	}
 	strlower_m( machine_name );
 
@@ -1349,25 +1349,25 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	/* process additional command line args */
 
 	for ( i=0; i<argc; i++ ) {
-		if ( !StrnCaseCmp(argv[i], "createupn", strlen("createupn")) ) {
+		if ( !strncasecmp_m(argv[i], "createupn", strlen("createupn")) ) {
 			createupn = true;
 			machineupn = get_string_param(argv[i]);
 		}
-		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
+		else if ( !strncasecmp_m(argv[i], "createcomputer", strlen("createcomputer")) ) {
 			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, _("Please supply a valid OU path.\n"));
 				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "osName", strlen("osName")) ) {
+		else if ( !strncasecmp_m(argv[i], "osName", strlen("osName")) ) {
 			if ( (os_name = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, _("Please supply a operating system name.\n"));
 				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
-		else if ( !StrnCaseCmp(argv[i], "osVer", strlen("osVer")) ) {
+		else if ( !strncasecmp_m(argv[i], "osVer", strlen("osVer")) ) {
 			if ( (os_version = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, _("Please supply a valid operating system version.\n"));
 				werr = WERR_INVALID_PARAM;
@@ -1468,7 +1468,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			/* kinit with the machine password */
 
 			use_in_memory_ccache();
-			if (asprintf( &ads_dns->auth.user_name, "%s$", global_myname()) == -1) {
+			if (asprintf( &ads_dns->auth.user_name, "%s$", lp_netbios_name()) == -1) {
 				goto fail;
 			}
 			ads_dns->auth.password = secrets_fetch_machine_password(
@@ -1756,7 +1756,7 @@ static int net_ads_printer_info(struct net_context *c, int argc, const char **ar
 	if (argc > 1) {
 		servername =  argv[1];
 	} else {
-		servername = global_myname();
+		servername = lp_netbios_name();
 	}
 
 	rc = ads_find_printer_on_server(ads, &res, printername, servername);
@@ -1819,14 +1819,14 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	if (argc == 2) {
 		servername = argv[1];
 	} else {
-		servername = global_myname();
+		servername = lp_netbios_name();
 	}
 
 	/* Get printer data from SPOOLSS */
 
 	resolve_name(servername, &server_ss, 0x20, false);
 
-	nt_status = cli_full_connection(&cli, global_myname(), servername,
+	nt_status = cli_full_connection(&cli, lp_netbios_name(), servername,
 					&server_ss, 0,
 					"IPC$", "IPC",
 					c->opt_user_name, c->opt_workgroup,
@@ -1942,7 +1942,7 @@ static int net_ads_printer_remove(struct net_context *c, int argc, const char **
 	if (argc > 1) {
 		servername = argv[1];
 	} else {
-		servername = global_myname();
+		servername = lp_netbios_name();
 	}
 
 	rc = ads_find_printer_on_server(ads, &res, argv[0], servername);
@@ -2023,8 +2023,8 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	ADS_STRUCT *ads;
 	const char *auth_principal = c->opt_user_name;
 	const char *auth_password = c->opt_password;
-	char *realm = NULL;
-	char *new_password = NULL;
+	const char *realm = NULL;
+	const char *new_password = NULL;
 	char *chr, *prompt;
 	const char *user;
 	ADS_STATUS ret;
@@ -2083,7 +2083,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (argv[1]) {
-		new_password = (char *)argv[1];
+		new_password = (const char *)argv[1];
 	} else {
 		if (asprintf(&prompt, _("Enter new password for %s:"), user) == -1) {
 			return -1;
@@ -2135,7 +2135,7 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	fstrcpy(my_name, global_myname());
+	fstrcpy(my_name, lp_netbios_name());
 	strlower_m(my_name);
 	if (asprintf(&host_principal, "%s$@%s", my_name, ads->config.realm) == -1) {
 		ads_destroy(&ads);

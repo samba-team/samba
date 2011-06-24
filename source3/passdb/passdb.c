@@ -29,6 +29,7 @@
 #include "secrets.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -45,7 +46,7 @@ const char *my_sam_name(void)
 {
        /* Standalone servers can only use the local netbios name */
        if ( lp_server_role() == ROLE_STANDALONE )
-               return global_myname();
+               return lp_netbios_name();
 
        /* Default to the DOMAIN name when not specified */
        return lp_workgroup();
@@ -73,7 +74,7 @@ struct samu *samu_new( TALLOC_CTX *ctx )
 {
 	struct samu *user;
 
-	if ( !(user = TALLOC_ZERO_P( ctx, struct samu )) ) {
+	if ( !(user = talloc_zero( ctx, struct samu )) ) {
 		DEBUG(0,("samuser_new: Talloc failed!\n"));
 		return NULL;
 	}
@@ -148,7 +149,7 @@ static int count_commas(const char *str)
 static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *pwd, bool create)
 {
 	const char *guest_account = lp_guestaccount();
-	const char *domain = global_myname();
+	const char *domain = lp_netbios_name();
 	char *fullname;
 	uint32_t urid;
 
@@ -384,9 +385,9 @@ void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32_t acct_ctrl)
 			slprintf(&p[i*2], 3, "%02X", pwd[i]);
 	} else {
 		if (acct_ctrl & ACB_PWNOTREQ)
-			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 32);
+			strlcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
 		else
-			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 32);
+			strlcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
 	}
 }
 
@@ -435,7 +436,7 @@ void pdb_sethexhours(char *p, const unsigned char *hours)
 			slprintf(&p[i*2], 3, "%02X", hours[i]);
 		}
 	} else {
-		safe_strcpy(p, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 43);
+		strlcpy(p, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 44);
 	}
 }
 
@@ -2354,7 +2355,7 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 	if (pwd != NULL) {
 		*ret_pwd = pwd;
 		if (account_name != NULL) {
-			*account_name = global_myname();
+			*account_name = lp_netbios_name();
 		}
 
 		return true;
@@ -2392,7 +2393,7 @@ bool get_trust_pw_hash(const char *domain, uint8_t ret_pwd[16],
 							channel))
 	{
 		if (account_name != NULL) {
-			*account_name = global_myname();
+			*account_name = lp_netbios_name();
 		}
 
 		return true;

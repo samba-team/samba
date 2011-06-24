@@ -37,7 +37,6 @@
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "passdb/machine_sid.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -386,9 +385,9 @@ static void fill_in_password_policy(struct winbindd_response *r,
 	r->data.auth.policy.password_properties =
 		p->password_properties;
 	r->data.auth.policy.expire	=
-		nt_time_to_unix_abs((NTTIME *)&(p->max_password_age));
+		nt_time_to_unix_abs((const NTTIME *)&(p->max_password_age));
 	r->data.auth.policy.min_passwordage =
-		nt_time_to_unix_abs((NTTIME *)&(p->min_password_age));
+		nt_time_to_unix_abs((const NTTIME *)&(p->min_password_age));
 }
 
 static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
@@ -994,7 +993,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 
 	}
 
-	/* User does *NOT* know the correct password, modify info3 accordingly */
+	/* User does *NOT* know the correct password, modify info3 accordingly, but only if online */
+	if (domain->online == false) {
+		goto failed;
+	}
 
 	/* failure of this is not critical */
 	result = get_max_bad_attempts_from_lockout_policy(domain, state->mem_ctx, &max_allowed_bad_attempts);
@@ -1116,7 +1118,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	status = make_user_info(&user_info, user, user, domain, domain,
-				global_myname(), lm_resp, nt_resp, NULL, NULL,
+				lp_netbios_name(), lm_resp, nt_resp, NULL, NULL,
 				NULL, AUTH_PASSWORD_RESPONSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));
@@ -1248,7 +1250,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					info3);
 		}
 
-		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
+		if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)
 		    && domain->can_do_samlogon_ex) {
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
@@ -1346,7 +1348,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 		   'workstation' passed to the actual SamLogon call.
 		*/
 		names_blob = NTLMv2_generate_names_blob(
-			mem_ctx, global_myname(), lp_workgroup());
+			mem_ctx, lp_netbios_name(), lp_workgroup());
 
 		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain,
 				      pass,
@@ -1384,7 +1386,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 					     domain->dcname,
 					     name_user,
 					     name_domain,
-					     global_myname(),
+					     lp_netbios_name(),
 					     chal,
 					     lm_resp,
 					     nt_resp,
@@ -1515,8 +1517,8 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		fstr_sprintf( domain_user, "%s%c%s", name_domain,
 			*lp_winbind_separator(),
 			name_user );
-		safe_strcpy( state->request->data.auth.user, domain_user,
-			     sizeof(state->request->data.auth.user)-1 );
+		strlcpy( state->request->data.auth.user, domain_user,
+			     sizeof(state->request->data.auth.user));
 	}
 
 	if (!domain->online) {
@@ -1938,10 +1940,10 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	 * short to comply with the samr_ChangePasswordUser3 idl - gd */
 
 	/* only fallback when the chgpasswd_user3 call is not supported */
-	if ((NT_STATUS_EQUAL(result, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR))) ||
-		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) ||
-		   (NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL)) ||
-		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED))) {
+	if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE) ||
+	    NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) ||
+	    NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL) ||
+	    NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
 
 		DEBUG(10,("Password change with chgpasswd_user3 failed with: %s, retrying chgpasswd_user2\n",
 			nt_errstr(result)));
@@ -2136,7 +2138,7 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	}
 
 	if (!*domain && lp_winbind_use_default_domain()) {
-		fstrcpy(domain,(char *)lp_workgroup());
+		fstrcpy(domain,lp_workgroup());
 	}
 
 	if(!*user) {

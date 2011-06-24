@@ -235,9 +235,15 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 
 	if (!ccache_name) {
 		must_free_cc_name = true;
-		ccache_name = talloc_asprintf(ccc, "MEMORY:%p", 
-					      ccc);
-		
+
+		if (lpcfg_parm_bool(lp_ctx, NULL, "credentials", "krb5_cc_file", false)) {
+			ccache_name = talloc_asprintf(ccc, "FILE:/tmp/krb5_cc_samba_%u_%p", 
+						      (unsigned int)getpid(), ccc);
+		} else {
+			ccache_name = talloc_asprintf(ccc, "MEMORY:%p", 
+						      ccc);
+		}
+
 		if (!ccache_name) {
 			talloc_free(ccc);
 			(*error_string) = strerror(ENOMEM);
@@ -288,8 +294,38 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 
 	if (cred->ccache_obtained >= cred->ccache_threshold && 
 	    cred->ccache_obtained > CRED_UNINITIALISED) {
-		*ccc = cred->ccache;
-		return 0;
+		time_t lifetime;
+		bool expired = false;
+		ret = krb5_cc_get_lifetime(cred->ccache->smb_krb5_context->krb5_context, 
+					   cred->ccache->ccache, &lifetime);
+		if (ret == KRB5_CC_END) {
+			/* If we have a particular ccache set, without
+			 * an initial ticket, then assume there is a
+			 * good reason */
+		} else if (ret == 0) {
+			if (lifetime == 0) {
+				DEBUG(3, ("Ticket in credentials cache for %s expired, will refresh\n",
+					  cli_credentials_get_principal(cred, cred)));
+				expired = true;
+			} else if (lifetime < 300) {
+				DEBUG(3, ("Ticket in credentials cache for %s will shortly expire (%u secs), will refresh\n", 
+					  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
+				expired = true;
+			}
+		} else {
+			(*error_string) = talloc_asprintf(cred, "failed to get ccache lifetime: %s\n",
+							  smb_get_krb5_error_message(cred->ccache->smb_krb5_context->krb5_context,
+										     ret, cred));
+			return ret;
+		}
+
+		DEBUG(5, ("Ticket in credentials cache for %s will expire in %u secs\n", 
+			  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
+		
+		if (!expired) {
+			*ccc = cred->ccache;
+			return 0;
+		}
 	}
 	if (cli_credentials_is_anonymous(cred)) {
 		(*error_string) = "Cannot get anonymous kerberos credentials";
@@ -351,7 +387,7 @@ void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred,
 	}
 	/* Now that we know that the data is 'this specified', then
 	 * don't allow something less 'known' to be returned as a
-	 * ccache.  Ie, if the username is on the commmand line, we
+	 * ccache.  Ie, if the username is on the command line, we
 	 * don't want to later guess to use a file-based ccache */
 	if (obtained > cred->client_gss_creds_threshold) {
 		cred->client_gss_creds_threshold = obtained;
@@ -384,7 +420,7 @@ _PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 	}
 	/* Now that we know that the data is 'this specified', then
 	 * don't allow something less 'known' to be returned as a
-	 * ccache.  Ie, if the username is on the commmand line, we
+	 * ccache.  i.e, if the username is on the command line, we
 	 * don't want to later guess to use a file-based ccache */
 	if (obtained > cred->ccache_threshold) {
 		cred->ccache_threshold  = obtained;
@@ -416,14 +452,41 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 
 	if (cred->client_gss_creds_obtained >= cred->client_gss_creds_threshold && 
 	    cred->client_gss_creds_obtained > CRED_UNINITIALISED) {
-		*_gcc = cred->client_gss_creds;
-		return 0;
+		bool expired = false;
+		OM_uint32 lifetime = 0;
+		gss_cred_usage_t usage = 0;
+		maj_stat = gss_inquire_cred(&min_stat, cred->client_gss_creds->creds, 
+					    NULL, &lifetime, &usage, NULL);
+		if (maj_stat == GSS_S_CREDENTIALS_EXPIRED) {
+			DEBUG(3, ("Credentials for %s expired, must refresh credentials cache\n", cli_credentials_get_principal(cred, cred)));
+			expired = true;
+		} else if (maj_stat == GSS_S_COMPLETE && lifetime < 300) {
+			DEBUG(3, ("Credentials for %s will expire shortly (%u sec), must refresh credentials cache\n", cli_credentials_get_principal(cred, cred), lifetime));
+			expired = true;
+		} else if (maj_stat != GSS_S_COMPLETE) {
+			*error_string = talloc_asprintf(cred, "inquiry of credential lifefime via GSSAPI gss_inquire_cred failed: %s\n",
+							gssapi_error_string(cred, maj_stat, min_stat, NULL));
+			return EINVAL;
+		}
+		if (expired) {
+			cli_credentials_unconditionally_invalidate_client_gss_creds(cred);
+		} else {
+			DEBUG(5, ("GSSAPI credentials for %s will expire in %u secs\n", 
+				  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
+		
+			*_gcc = cred->client_gss_creds;
+			return 0;
+		}
 	}
 
 	ret = cli_credentials_get_ccache(cred, event_ctx, lp_ctx,
 					 &ccache, error_string);
 	if (ret) {
-		DEBUG(1, ("Failed to get CCACHE for GSSAPI client: %s\n", error_message(ret)));
+		if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
+			DEBUG(1, ("Failed to get kerberos credentials (kerberos required): %s\n", error_message(ret)));
+		} else {
+			DEBUG(4, ("Failed to get kerberos credentials: %s\n", error_message(ret)));
+		}
 		return ret;
 	}
 
@@ -781,26 +844,43 @@ _PUBLIC_ void cli_credentials_set_salt_principal(struct cli_credentials *cred, c
 	cred->salt_principal = talloc_strdup(cred, principal);
 }
 
-/* The 'impersonate_principal' is used to allow on Kerberos principal
+/* The 'impersonate_principal' is used to allow one Kerberos principal
  * (and it's associated keytab etc) to impersonate another.  The
  * ability to do this is controlled by the KDC, but it is generally
  * permitted to impersonate anyone to yourself.  This allows any
  * member of the domain to get the groups of a user.  This is also
  * known as S4U2Self */
 
-const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred)
+_PUBLIC_ const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred)
 {
 	return cred->impersonate_principal;
 }
 
-_PUBLIC_ void cli_credentials_set_impersonate_principal(struct cli_credentials *cred, const char *principal)
+/*
+ * The 'self_service' is the service principal that
+ * represents the same object (by its objectSid)
+ * as the client principal (typically our machine account).
+ * When trying to impersonate 'impersonate_principal' with
+ * S4U2Self.
+ */
+_PUBLIC_ const char *cli_credentials_get_self_service(struct cli_credentials *cred)
+{
+	return cred->self_service;
+}
+
+_PUBLIC_ void cli_credentials_set_impersonate_principal(struct cli_credentials *cred,
+							const char *principal,
+							const char *self_service)
 {
 	talloc_free(cred->impersonate_principal);
 	cred->impersonate_principal = talloc_strdup(cred, principal);
+	talloc_free(cred->self_service);
+	cred->self_service = talloc_strdup(cred, self_service);
+	cli_credentials_set_kerberos_state(cred, CRED_MUST_USE_KERBEROS);
 }
 
-/* when impersonating for S4U2Self we need to set the target principal
- * to ourself, as otherwise we would need additional rights.
+/*
+ * when impersonating for S4U2proxy we need to set the target principal.
  * Similarly, we may only be authorized to do general impersonation to
  * some particular services.
  *

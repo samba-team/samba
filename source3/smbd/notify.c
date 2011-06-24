@@ -183,7 +183,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 
 	SMB_ASSERT(fsp->notify == NULL);
 
-	if (!(fsp->notify = TALLOC_ZERO_P(NULL, struct notify_change_buf))) {
+	if (!(fsp->notify = talloc_zero(NULL, struct notify_change_buf))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -424,7 +424,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		return;
 	}
 
-	if (!(changes = TALLOC_REALLOC_ARRAY(
+	if (!(changes = talloc_realloc(
 		      fsp->notify, fsp->notify->changes,
 		      struct notify_change, fsp->notify->num_changes+1))) {
 		DEBUG(0, ("talloc_realloc failed\n"));
@@ -520,7 +520,7 @@ struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
 {
 	struct sys_notify_context *ctx;
 
-	if (!(ctx = TALLOC_P(mem_ctx, struct sys_notify_context))) {
+	if (!(ctx = talloc(mem_ctx, struct sys_notify_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}

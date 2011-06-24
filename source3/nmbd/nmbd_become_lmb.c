@@ -85,10 +85,10 @@ subnet %s.\n", workgroup_name, subrec->subnet_name ));
 		return;
 	}
 
-	if((servrec = find_server_in_workgroup( work, global_myname())) == NULL) {
+	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
 		DEBUG(0,("reset_workgroup_state: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name));
 		work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
 		return;
 	}
@@ -149,7 +149,7 @@ static void unbecome_local_master_success(struct subnet_record *subrec,
 
 	if( DEBUGLVL( 0 ) ) {
 		dbgtext( "*****\n\n" );
-		dbgtext( "Samba name server %s ", global_myname() );
+		dbgtext( "Samba name server %s ", lp_netbios_name() );
 		dbgtext( "has stopped being a local master browser " );
 		dbgtext( "for workgroup %s ", relname );
 		dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
@@ -185,7 +185,7 @@ Removing from namelist anyway.\n", nmb_namestr(fail_name)));
 
 	if( DEBUGLVL( 0 ) ) {
 		dbgtext( "*****\n\n" );
-		dbgtext( "Samba name server %s ", global_myname() );
+		dbgtext( "Samba name server %s ", lp_netbios_name() );
 		dbgtext( "has stopped being a local master browser " );
 		dbgtext( "for workgroup %s ", failname );
 		dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
@@ -280,10 +280,10 @@ void unbecome_local_master_browser(struct subnet_record *subrec, struct work_rec
 	DEBUG(2,("unbecome_local_master_browser: unbecoming local master for workgroup %s \
 on subnet %s\n",work->work_group, subrec->subnet_name));
   
-	if(find_server_in_workgroup( work, global_myname()) == NULL) {
+	if(find_server_in_workgroup( work, lp_netbios_name()) == NULL) {
 		DEBUG(0,("unbecome_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name));
 			work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
 		return;
 	}
@@ -342,10 +342,10 @@ workgroup %s on subnet %s\n", regname, subrec->subnet_name));
 		return;
 	}
 
-	if((servrec = find_server_in_workgroup( work, global_myname())) == NULL) {
+	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
 		DEBUG(0,("become_local_master_stage2: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), regname, subrec->subnet_name));
+			lp_netbios_name(), regname, subrec->subnet_name));
 			work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
 		return;
 	}
@@ -363,7 +363,7 @@ on subnet %s\n", work->work_group, subrec->subnet_name));
 	subrec->work_changed = True;
 
 	/* Add this name to the workgroup as local master browser. */
-	set_workgroup_local_master_browser_name( work, global_myname());
+	set_workgroup_local_master_browser_name( work, lp_netbios_name());
 
 	/* Count the number of servers we have on our list. If it's
 		less than 10 (just a heuristic) request the servers
@@ -396,7 +396,7 @@ on subnet %s\n", work->work_group, subrec->subnet_name));
 
 	if( DEBUGLVL( 0 ) ) {
 		dbgtext( "*****\n\n" );
-		dbgtext( "Samba name server %s ", global_myname() );
+		dbgtext( "Samba name server %s ", lp_netbios_name() );
 		dbgtext( "is now a local master browser " );
 		dbgtext( "for workgroup %s ", work->work_group );
 		dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
@@ -487,10 +487,10 @@ workgroup %s on subnet %s\n", work_name, subrec->subnet_name));
 		return;
 	}
 
-	if(find_server_in_workgroup(work, global_myname()) == NULL) {
+	if(find_server_in_workgroup(work, lp_netbios_name()) == NULL) {
 		DEBUG(0,("become_local_master_fail1: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name));
 		return;
 	}
 
@@ -527,10 +527,10 @@ void become_local_master_browser(struct subnet_record *subrec, struct work_recor
 		return;
 	}
 
-	if(find_server_in_workgroup( work, global_myname()) == NULL) {
+	if(find_server_in_workgroup( work, lp_netbios_name()) == NULL) {
 		DEBUG(0,("become_local_master_browser: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name));
 		return;
 	}
 
@@ -554,7 +554,7 @@ in workgroup %s on subnet %s\n",
 	userdata->copy_fn = NULL;
 	userdata->free_fn = NULL;
 	userdata->userdata_len = strlen(work->work_group)+1;
-	overmalloc_safe_strcpy(userdata->data, work->work_group, size - sizeof(*userdata) - 1);
+	strlcpy(userdata->data, work->work_group, size - sizeof(*userdata));
 
 	/* Register the special browser group name. */
 	register_name(subrec, MSBROWSE, 0x01, samba_nb_type|NB_GROUP,

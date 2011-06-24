@@ -43,7 +43,8 @@ static int audit_syslog_facility(vfs_handle_struct *handle)
 		{ LOG_LOCAL4, "LOCAL4" },
 		{ LOG_LOCAL5, "LOCAL5" },
 		{ LOG_LOCAL6, "LOCAL6" },
-		{ LOG_LOCAL7, "LOCAL7" }
+		{ LOG_LOCAL7, "LOCAL7" },
+		{ -1, NULL}
 	};
 
 	int facility;
@@ -64,7 +65,8 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 		{ LOG_WARNING, "WARNING" },
 		{ LOG_NOTICE, "NOTICE" },
 		{ LOG_INFO, "INFO" },
-		{ LOG_DEBUG, "DEBUG" }
+		{ LOG_DEBUG, "DEBUG" },
+		{ -1, NULL}
 	};
 
 	int priority;

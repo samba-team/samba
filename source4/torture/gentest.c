@@ -2318,6 +2318,18 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	case RAW_SFILEINFO_UNIX_INFO2:
 	case RAW_SFILEINFO_UNIX_LINK:
 	case RAW_SFILEINFO_UNIX_HLINK:
+	case RAW_SFILEINFO_LINK_INFORMATION:
+	case RAW_SFILEINFO_PIPE_INFORMATION:
+	case RAW_SFILEINFO_VALID_DATA_INFORMATION:
+	case RAW_SFILEINFO_SHORT_NAME_INFORMATION:
+	case RAW_SFILEINFO_1027:
+	case RAW_SFILEINFO_1030:
+	case RAW_SFILEINFO_1031:
+	case RAW_SFILEINFO_1036:
+	case RAW_SFILEINFO_1041:
+	case RAW_SFILEINFO_1042:
+	case RAW_SFILEINFO_1043:
+	case RAW_SFILEINFO_1044:
 		/* Untested */
 		break;
 	}
@@ -3247,7 +3259,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	ev = s4_event_context_init(talloc_autofree_context());
 
-	gensec_init(lp_ctx);
+	gensec_init();
 
 	ret = start_gentest(ev, lp_ctx);
 

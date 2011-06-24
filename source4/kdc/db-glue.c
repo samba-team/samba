@@ -159,6 +159,20 @@ static HDBFlags uf2HDBFlags(krb5_context context, uint32_t userAccountControl, e
 	if (userAccountControl & UF_TRUSTED_FOR_DELEGATION) {
 		flags.ok_as_delegate = 1;
 	}
+	if (userAccountControl & UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION) {
+		/*
+		 * this is confusing...
+		 *
+		 * UF_TRUSTED_FOR_DELEGATION
+		 * => ok_as_delegate
+		 *
+		 * and
+		 *
+		 * UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
+		 * => trusted_for_delegation
+		 */
+		flags.trusted_for_delegation = 1;
+	}
 	if (!(userAccountControl & UF_NOT_DELEGATED)) {
 		flags.forwardable = 1;
 		flags.proxiable = 1;
@@ -1521,14 +1535,12 @@ krb5_error_code samba_kdc_nextkey(krb5_context context,
 /* Check if a given entry may delegate or do s4u2self to this target principal
  *
  * This is currently a very nasty hack - allowing only delegation to itself.
- *
- * This is shared between the constrained delegation and S4U2Self code.
  */
 krb5_error_code
-samba_kdc_check_identical_client_and_server(krb5_context context,
-					    struct samba_kdc_db_context *kdc_db_ctx,
-					    hdb_entry_ex *entry,
-					    krb5_const_principal target_principal)
+samba_kdc_check_s4u2self(krb5_context context,
+			 struct samba_kdc_db_context *kdc_db_ctx,
+			 hdb_entry_ex *entry,
+			 krb5_const_principal target_principal)
 {
 	krb5_error_code ret;
 	krb5_principal enterprise_prinicpal = NULL;
@@ -1541,11 +1553,11 @@ samba_kdc_check_identical_client_and_server(krb5_context context,
 		"objectSid", NULL
 	};
 
-	TALLOC_CTX *mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_check_constrained_delegation");
+	TALLOC_CTX *mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_check_s4u2self");
 
 	if (!mem_ctx) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "samba_kdc_fetch: talloc_named() failed!");
+		krb5_set_error_message(context, ret, "samba_kdc_check_s4u2self: talloc_named() failed!");
 		return ret;
 	}
 
@@ -1553,7 +1565,7 @@ samba_kdc_check_identical_client_and_server(krb5_context context,
 		/* Need to reparse the enterprise principal to find the real target */
 		if (target_principal->name.name_string.len != 1) {
 			ret = KRB5_PARSE_MALFORMED;
-			krb5_set_error_message(context, ret, "samba_kdc_check_constrained_delegation: request for delegation to enterprise principal with wrong (%d) number of components",
+			krb5_set_error_message(context, ret, "samba_kdc_check_s4u2self: request for delegation to enterprise principal with wrong (%d) number of components",
 					       target_principal->name.name_string.len);
 			talloc_free(mem_ctx);
 			return ret;
@@ -1643,6 +1655,19 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 
 	talloc_free(mem_ctx);
 	return ret;
+}
+
+/*
+ * Check if a given entry may delegate to this target principal
+ * with S4U2Proxy.
+ */
+krb5_error_code
+samba_kdc_check_s4u2proxy(krb5_context context,
+			  struct samba_kdc_db_context *kdc_db_ctx,
+			  hdb_entry_ex *entry,
+			  krb5_const_principal target_principal)
+{
+	return KRB5KDC_ERR_BADOPTION;
 }
 
 NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_context *base_ctx,

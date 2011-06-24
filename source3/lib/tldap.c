@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "tldap.h"
 #include "../lib/util/asn1.h"
+#include "../lib/tsocket/tsocket.h"
+#include "../lib/util/tevent_unix.h"
 
 static int tldap_simple_recv(struct tevent_req *req);
 
@@ -187,7 +189,7 @@ bool tldap_context_setattr(struct tldap_context *ld,
 	struct tldap_ctx_attribute *tmp, *attr;
 	char *tmpname;
 	int num_attrs;
-	void **pptr = (void **)_pptr;
+	void **pptr = (void **)discard_const_p(void,_pptr);
 
 	attr = tldap_context_findattr(ld, name);
 	if (attr != NULL) {
@@ -539,7 +541,7 @@ static void tldap_msg_sent(struct tevent_req *subreq)
 	}
 
 	if (!tldap_msg_set_pending(req)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 }
@@ -933,10 +935,10 @@ struct tevent_req *tldap_simple_bind_send(TALLOC_CTX *mem_ctx,
 	DATA_BLOB cred;
 
 	if (passwd != NULL) {
-		cred.data = (uint8_t *)passwd;
+		cred.data = discard_const_p(uint8_t, passwd);
 		cred.length = strlen(passwd);
 	} else {
-		cred.data = (uint8_t *)"";
+		cred.data = discard_const_p(uint8_t, "");
 		cred.length = 0;
 	}
 	return tldap_sasl_bind_send(mem_ctx, ev, ld, dn, NULL, &cred, NULL, 0,
@@ -954,10 +956,10 @@ int tldap_simple_bind(struct tldap_context *ld, const char *dn,
 	DATA_BLOB cred;
 
 	if (passwd != NULL) {
-		cred.data = (uint8_t *)passwd;
+		cred.data = discard_const_p(uint8_t, passwd);
 		cred.length = strlen(passwd);
 	} else {
-		cred.data = (uint8_t *)"";
+		cred.data = discard_const_p(uint8_t, "");
 		cred.length = 0;
 	}
 	return tldap_sasl_bind(ld, dn, NULL, &cred, NULL, 0, NULL, 0);
@@ -1373,7 +1375,7 @@ static bool tldap_push_filter_basic(struct tldap_context *ld,
 				return false;
 			}
 
-			if (StrnCaseCmp(dn, "dn:", 3) != 0) {
+			if (strncasecmp_m(dn, "dn:", 3) != 0) {
 				if (rule == e) {
 					rule = dn;
 					dn = NULL;
@@ -1701,7 +1703,7 @@ static void tldap_search_done(struct tevent_req *subreq)
 	case TLDAP_RES_SEARCH_ENTRY:
 	case TLDAP_RES_SEARCH_REFERENCE:
 		if (!tldap_msg_set_pending(subreq)) {
-			tevent_req_nomem(NULL, req);
+			tevent_req_oom(req);
 			return;
 		}
 		tevent_req_notify_callback(req);

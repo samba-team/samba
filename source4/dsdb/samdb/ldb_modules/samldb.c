@@ -3,7 +3,7 @@
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Simo Sorce  2004-2008
-   Copyright (C) Matthias Dieter Wallnöfer 2009-2010
+   Copyright (C) Matthias Dieter Wallnöfer 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -790,6 +790,8 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid);
+
 /*
  * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
  *
@@ -801,10 +803,9 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb,
-					 "loadparm"), struct loadparm_context);
+	void *skip_allocate_sids = ldb_get_opaque(ldb,
+						  "skip_allocate_sids");
 	struct ldb_message_element *el, *el2;
-	enum sid_generator sid_generator;
 	struct dom_sid *sid;
 	int ret;
 
@@ -830,12 +831,9 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	}
 
 	/* but generate a new SID when we do have an add operations */
-	if ((sid == NULL) && (ac->req->operation == LDB_ADD)) {
-		sid_generator = lpcfg_sid_generator(lp_ctx);
-		if (sid_generator == SID_GENERATOR_INTERNAL) {
-			ret = samldb_add_step(ac, samldb_allocate_sid);
-			if (ret != LDB_SUCCESS) return ret;
-		}
+	if ((sid == NULL) && (ac->req->operation == LDB_ADD) && !skip_allocate_sids) {
+		ret = samldb_add_step(ac, samldb_allocate_sid);
+		if (ret != LDB_SUCCESS) return ret;
 	}
 
 	if (strcmp(ac->type, "user") == 0) {
@@ -897,6 +895,16 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				return LDB_ERR_OTHER;
 			}
 
+			/* Workstation and (read-only) DC objects do need objectclass "computer" */
+			if ((samdb_find_attribute(ldb, ac->msg,
+						  "objectclass", "computer") == NULL) &&
+			    (user_account_control &
+			     (UF_SERVER_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT))) {
+				ldb_set_errstring(ldb,
+						  "samldb: Requested account type does need objectclass 'computer'!");
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			}
+
 			account_type = ds_uf2atype(user_account_control);
 			if (account_type == 0) {
 				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
@@ -911,11 +919,20 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
 			el2->flags = LDB_FLAG_MOD_REPLACE;
 
+			/* "isCriticalSystemObject" might be set */
 			if (user_account_control &
 			    (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
-				ret = samdb_msg_set_string(ldb, ac->msg, ac->msg,
-							   "isCriticalSystemObject",
-							   "TRUE");
+				ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+							 "TRUE");
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+				el2 = ldb_msg_find_element(ac->msg,
+							   "isCriticalSystemObject");
+				el2->flags = LDB_FLAG_MOD_REPLACE;
+			} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
+				ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+							 "FALSE");
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
@@ -927,6 +944,18 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			/* Step 1.4: "userAccountControl" -> "primaryGroupID" mapping */
 			if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
 				uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+
+				/*
+				 * Older AD deployments don't know about the
+				 * RODC group
+				 */
+				if (rid == DOMAIN_RID_READONLY_DCS) {
+					ret = samldb_prim_group_tester(ac, rid);
+					if (ret != LDB_SUCCESS) {
+						return ret;
+					}
+				}
+
 				ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 							 "primaryGroupID", rid);
 				if (ret != LDB_SUCCESS) {
@@ -1009,25 +1038,13 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
  * ac->msg contains the "add"/"modify" message
  */
 
-static int samldb_prim_group_set(struct samldb_ctx *ac)
+static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	uint32_t rid;
 	struct dom_sid *sid;
 	struct ldb_result *res;
 	int ret;
 	const char *noattrs[] = { NULL };
-
-	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
-	if (rid == (uint32_t) -1) {
-		/* we aren't affected of any primary group set */
-		return LDB_SUCCESS;
-
-	} else if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-		ldb_set_errstring(ldb,
-				  "The primary group isn't settable on add operations!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
 
 	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
 	if (sid == NULL) {
@@ -1054,6 +1071,25 @@ static int samldb_prim_group_set(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+static int samldb_prim_group_set(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	uint32_t rid;
+
+	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	if (rid == (uint32_t) -1) {
+		/* we aren't affected of any primary group set */
+		return LDB_SUCCESS;
+
+	} else if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		ldb_set_errstring(ldb,
+				  "The primary group isn't settable on add operations!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	return samldb_prim_group_tester(ac, rid);
+}
+
 static int samldb_prim_group_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
@@ -1076,13 +1112,10 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	/* Fetch information from the existing object */
 
-	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
+				    DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
-	}
-	if (res->count != 1) {
-		return ldb_operr(ldb);
 	}
 
 	/* Finds out the DN of the old primary group */
@@ -1219,13 +1252,22 @@ static int samldb_prim_group_trigger(struct samldb_ctx *ac)
 	return ret;
 }
 
+
+/**
+ * This function is called on LDB modify operations. It performs some additions/
+ * replaces on the current LDB message when "userAccountControl" changes.
+ */
 static int samldb_user_account_control_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	uint32_t user_account_control, account_type;
+	uint32_t user_account_control, old_user_account_control, account_type;
 	struct ldb_message_element *el;
 	struct ldb_message *tmp_msg;
 	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { "userAccountControl", "objectClass", NULL };
+	unsigned int i;
+	bool is_computer = false;
 
 	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
 					 ac->req->operation);
@@ -1253,6 +1295,49 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		return LDB_ERR_OTHER;
 	}
 
+	/* Fetch the old "userAccountControl" and "objectClass" */
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
+				    DSDB_FLAG_NEXT_MODULE, ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	old_user_account_control = ldb_msg_find_attr_as_uint(res->msgs[0], "userAccountControl", 0);
+	if (old_user_account_control == 0) {
+		return ldb_operr(ldb);
+	}
+	el = ldb_msg_find_element(res->msgs[0], "objectClass");
+	if (el == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	/* When we do not have objectclass "computer" we cannot switch to a (read-only) DC */
+	for (i = 0; i < el->num_values; i++) {
+		if (ldb_attr_cmp((char *)el->values[i].data, "computer") == 0) {
+			is_computer = true;
+			break;
+		}
+	}
+	if (!is_computer &&
+	    (user_account_control & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT))) {
+		ldb_set_errstring(ldb,
+				  "samldb: Requested account type does need objectclass 'computer'!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/*
+	 * The functions "ds_uf2atype" and "ds_uf2prim_group_rid" are used as
+	 * detectors for account type changes.
+	 * So if the account type does change then we need to adjust the
+	 * "sAMAccountType", the "isCriticalSystemObject" and the
+	 * "primaryGroupID" attribute.
+	 */
+	if ((ds_uf2atype(user_account_control)
+	     == ds_uf2atype(old_user_account_control)) &&
+	    (ds_uf2prim_group_rid(user_account_control)
+	     == ds_uf2prim_group_rid(old_user_account_control))) {
+		return LDB_SUCCESS;
+	}
+
 	account_type = ds_uf2atype(user_account_control);
 	if (account_type == 0) {
 		ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
@@ -1266,6 +1351,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
+	/* "isCriticalSystemObject" might be set/changed */
 	if (user_account_control
 	    & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
 		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
@@ -1276,10 +1362,28 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		el = ldb_msg_find_element(ac->msg,
 					   "isCriticalSystemObject");
 		el->flags = LDB_FLAG_MOD_REPLACE;
+	} else if (user_account_control & UF_WORKSTATION_TRUST_ACCOUNT) {
+		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+					 "FALSE");
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el = ldb_msg_find_element(ac->msg,
+					   "isCriticalSystemObject");
+		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
 		uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+
+		/* Older AD deployments don't know about the RODC group */
+		if (rid == DOMAIN_RID_READONLY_DCS) {
+			ret = samldb_prim_group_tester(ac, rid);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "primaryGroupID", rid);
 		if (ret != LDB_SUCCESS) {
@@ -1977,7 +2081,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
 	if (el != NULL) {
-		ret = samldb_prim_group_change(ac);
+		ret = samldb_prim_group_trigger(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

@@ -22,6 +22,7 @@
 
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
+#include "libsmb/libsmb.h"
 #include "rpc_client/cli_pipe.h"
 
 /********************************************************************
@@ -121,7 +122,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
-	p = TALLOC_ZERO_P(ctx, struct client_ipc_connection);
+	p = talloc_zero(ctx, struct client_ipc_connection);
 	if (p == NULL) {
 		return WERR_NOMEM;
 	}
@@ -187,7 +188,7 @@ static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
 	struct client_pipe_connection *p;
 	NTSTATUS status;
 
-	p = TALLOC_ZERO_ARRAY(mem_ctx, struct client_pipe_connection, 1);
+	p = talloc_zero_array(mem_ctx, struct client_pipe_connection, 1);
 	if (!p) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -51,10 +51,10 @@ workgroup %s on subnet %s\n", failname, subrec->subnet_name));
 	/* Set the state back to DOMAIN_NONE. */
 	work->dom_state = DOMAIN_NONE;
 
-	if((servrec = find_server_in_workgroup( work, global_myname())) == NULL) {
+	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
 		DEBUG(0,("become_domain_master_fail: Error - cannot find server %s \
 in workgroup %s on subnet %s\n",
-			global_myname(), work->work_group, subrec->subnet_name));
+			lp_netbios_name(), work->work_group, subrec->subnet_name));
 		return;
 	}
 
@@ -92,10 +92,10 @@ workgroup %s on subnet %s\n", regname, subrec->subnet_name));
 		return;
 	}
 
-	if((servrec = find_server_in_workgroup( work, global_myname())) == NULL) {
+	if((servrec = find_server_in_workgroup( work, lp_netbios_name())) == NULL) {
 		DEBUG(0,("become_domain_master_stage2: Error - cannot find server %s \
 in workgroup %s on subnet %s\n", 
-		global_myname(), regname, subrec->subnet_name));
+		lp_netbios_name(), regname, subrec->subnet_name));
 		work->dom_state = DOMAIN_NONE;
 		return;
 	}
@@ -110,7 +110,7 @@ in workgroup %s on subnet %s\n",
 	subrec->work_changed = True;
 
 	if( DEBUGLVL( 0 ) ) {
-		dbgtext( "*****\n\nSamba server %s ", global_myname() );
+		dbgtext( "*****\n\nSamba server %s ", lp_netbios_name() );
 		dbgtext( "is now a domain master browser for " );
 		dbgtext( "workgroup %s ", work->work_group );
 		dbgtext( "on subnet %s\n\n*****\n", subrec->subnet_name );
@@ -126,7 +126,7 @@ in workgroup %s on subnet %s\n",
 		   will stop us syncing with ourself if we are also
 		   a local master browser. */
 
-		make_nmb_name(&nmbname, global_myname(), 0x20);
+		make_nmb_name(&nmbname, lp_netbios_name(), 0x20);
 
 		work->dmb_name = nmbname;
 

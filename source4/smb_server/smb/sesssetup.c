@@ -34,7 +34,7 @@
 #include "lib/stream/packet.h"
 
 struct sesssetup_context {
-	struct auth_context *auth_context;
+	struct auth4_context *auth_context;
 	struct smbsrv_request *req;
 };
 

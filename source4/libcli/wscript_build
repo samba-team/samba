@@ -3,15 +3,6 @@
 bld.RECURSE('ldap')
 bld.RECURSE('wbclient')
 
-bld.SAMBA_LIBRARY('errors',
-                  source='../../libcli/util/doserr.c util/errormap.c util/nterr.c',
-                  public_headers='../../libcli/util/error.h ../../libcli/util/ntstatus.h ../../libcli/util/doserr.h ../../libcli/util/werror.h',
-                  header_path='core',
-                  deps='talloc',
-                  private_library=True
-                  )
-
-
 bld.SAMBA_SUBSYSTEM('LIBSAMBA_TSOCKET',
 	source='../../libcli/util/tstream.c',
 	public_deps='LIBTSOCKET UTIL_TEVENT'
@@ -36,8 +27,8 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_COMPOSITE',
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB_COMPOSITE',
 	source='smb_composite/loadfile.c smb_composite/savefile.c smb_composite/connect.c smb_composite/sesssetup.c smb_composite/fetchfile.c smb_composite/appendacl.c smb_composite/fsinfo.c smb_composite/smb2.c',
 	autoproto='smb_composite/proto.h',
-	deps='LIBCLI_SMB2',
-	public_deps='LIBCLI_COMPOSITE credentials gensec LIBCLI_RESOLVE'
+	deps='LIBCLI_SMB2 UTIL_TEVENT',
+	public_deps='LIBCLI_COMPOSITE credentials gensec LIBCLI_RESOLVE tevent'
 	)
 
 
@@ -83,11 +74,12 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SMB',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('LIBCLI_RAW',
+bld.SAMBA_LIBRARY('LIBCLI_RAW',
 	source='raw/rawfile.c raw/smb_signing.c raw/clisocket.c raw/clitransport.c raw/clisession.c raw/clitree.c raw/clierror.c raw/rawrequest.c raw/rawreadwrite.c raw/rawsearch.c raw/rawsetfileinfo.c raw/raweas.c raw/rawtrans.c raw/clioplock.c raw/rawnegotiate.c raw/rawfsinfo.c raw/rawfileinfo.c raw/rawnotify.c raw/rawioctl.c raw/rawacl.c raw/rawdate.c raw/rawlpq.c raw/rawshadow.c',
 	autoproto='raw/raw_proto.h',
 	public_deps='samba_socket LIBPACKET LIBCRYPTO',
-	deps='LIBCLI_COMPOSITE LIBCLI_RESOLVE security ndr samba-util errors CHARSET talloc LIBCLI_SMB_COMPOSITE tevent NDR_NBT_BUF LIBCLI_SMB_COMMON'
+	deps='LIBCLI_COMPOSITE LIBCLI_RESOLVE security ndr samba-util errors CHARSET talloc LIBCLI_SMB_COMPOSITE tevent NDR_NBT_BUF LIBCLI_SMB_COMMON',
+                  private_library=True
 	)
 
 bld.RECURSE('smb2')

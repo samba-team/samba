@@ -47,7 +47,8 @@ struct fsp_singleton_cache {
 extern const struct mangle_fns *mangle_fns;
 
 extern unsigned char *chartest;
-extern TDB_CONTEXT *tdb_mangled_cache;
+struct tdb_context;
+extern struct tdb_context *tdb_mangled_cache;
 
 /*
   this determines how many characters are used from the original filename

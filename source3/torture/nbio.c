@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 
 #define MAX_FILES 1000
@@ -134,10 +135,13 @@ void nb_setup(struct cli_state *cli)
 
 void nb_unlink(const char *fname)
 {
-	if (!NT_STATUS_IS_OK(cli_unlink(c, fname, aSYSTEM | aHIDDEN))) {
+	NTSTATUS status;
+
+	status = cli_unlink(c, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
 #if NBDEBUG
 		printf("(%d) unlink %s failed (%s)\n", 
-		       line_count, fname, cli_errstr(c));
+		       line_count, fname, nt_errstr(status));
 #endif
 	}
 }
@@ -165,7 +169,7 @@ void nb_createx(const char *fname,
 				create_options, 0, &fd);
 	if (!NT_STATUS_IS_OK(status) && handle != -1) {
 		printf("ERROR: cli_ntcreate failed for %s - %s\n",
-		       fname, cli_errstr(c));
+		       fname, nt_errstr(status));
 		exit(1);
 	}
 	if (NT_STATUS_IS_OK(status) && handle == -1) {
@@ -189,13 +193,17 @@ void nb_createx(const char *fname,
 void nb_writex(int handle, int offset, int size, int ret_size)
 {
 	int i;
+	NTSTATUS status;
 
 	if (buf[0] == 0) memset(buf, 1, sizeof(buf));
 
 	i = find_handle(handle);
-	if (cli_write(c, ftable[i].fd, 0, buf, offset, size) != ret_size) {
-		printf("(%d) ERROR: write failed on handle %d, fd %d \
-errno %d (%s)\n", line_count, handle, ftable[i].fd, errno, strerror(errno));
+	status = cli_writeall(c, ftable[i].fd, 0, (uint8_t *)buf, offset, size,
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%d) ERROR: write failed on handle %d, fd %d "
+		       "error %s\n", line_count, handle, ftable[i].fd,
+		       nt_errstr(status));
 		exit(1);
 	}
 
@@ -228,18 +236,24 @@ void nb_close(int handle)
 
 void nb_rmdir(const char *fname)
 {
-	if (!NT_STATUS_IS_OK(cli_rmdir(c, fname))) {
+	NTSTATUS status;
+
+	status = cli_rmdir(c, fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: rmdir %s failed (%s)\n", 
-		       fname, cli_errstr(c));
+		       fname, nt_errstr(status));
 		exit(1);
 	}
 }
 
 void nb_rename(const char *oldname, const char *newname)
 {
-	if (!NT_STATUS_IS_OK(cli_rename(c, oldname, newname))) {
+	NTSTATUS status;
+
+	status = cli_rename(c, oldname, newname);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: rename %s %s failed (%s)\n", 
-		       oldname, newname, cli_errstr(c));
+		       oldname, newname, nt_errstr(status));
 		exit(1);
 	}
 }
@@ -301,13 +315,13 @@ static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
 		printf("asprintf failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		char *s2;
 		if (asprintf(&s2, "%s\\*", s) == -1) {
 			printf("asprintf failed\n");
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = cli_list(c, s2, aDIR, delete_fn, NULL);
+		status = cli_list(c, s2, FILE_ATTRIBUTE_DIRECTORY, delete_fn, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			free(n);
 			free(s2);
@@ -332,7 +346,7 @@ void nb_deltree(const char *dname)
 	}
 
 	total_deleted = 0;
-	cli_list(c, mask, aDIR, delete_fn, NULL);
+	cli_list(c, mask, FILE_ATTRIBUTE_DIRECTORY, delete_fn, NULL);
 	free(mask);
 	cli_rmdir(c, dname);
 

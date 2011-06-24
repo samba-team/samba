@@ -10,9 +10,11 @@ use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
 use SocketWrapper;
+use target::Samba;
+use target::Samba3;
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $ldap, $srcdir, $exeext, $server_maxtime) = @_;
+	my ($classname, $bindir, $binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime) = @_;
 	$exeext = "" unless defined($exeext);
 
 	my $self = {
@@ -20,10 +22,10 @@ sub new($$$$$) {
 		ldap => $ldap,
 		bindir => $bindir,
 		binary_mapping => $binary_mapping,
-		bindir_path => $bindir_path,
 		srcdir => $srcdir,
 		exeext => $exeext,
-		server_maxtime => $server_maxtime
+		server_maxtime => $server_maxtime,
+		target3 => new Samba3($bindir, $binary_mapping, $srcdir, $exeext, $server_maxtime)
 	};
 	bless $self;
 	return $self;
@@ -41,7 +43,7 @@ sub slapd_start($$)
 {
 	my $count = 0;
 	my ($self, $env_vars) = @_;
-	my $ldbsearch = $self->bindir_path($self, "ldbsearch");
+	my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
 
 	my $uri = $env_vars->{LDAP_URI};
 
@@ -131,7 +133,7 @@ sub check_or_start($$)
 		if (defined($ENV{SAMBA_OPTIONS})) {
 			$optarg.= " $ENV{SAMBA_OPTIONS}";
 		}
-		my $samba = $self->{bindir_path}->($self, "samba");
+		my $samba =  Samba::bindir_path($self, "samba");
 
 		# allow selection of the process model using
 		# the environment varibale SAMBA_PROCESS_MODEL
@@ -179,7 +181,7 @@ sub wait_for_start($$)
 
 	# This will return quickly when things are up, but be slow if we
 	# need to wait for (eg) SSL init
-	my $nmblookup = $self->{bindir_path}->($self, "nmblookup");
+	my $nmblookup =  Samba::bindir_path($self, "nmblookup");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
@@ -200,7 +202,7 @@ sub write_ldb_file($$$)
 {
 	my ($self, $file, $ldif) = @_;
 
-	my $ldbadd = $self->{bindir_path}->($self, "ldbadd");
+	my $ldbadd =  Samba::bindir_path($self, "ldbadd");
 	open(LDIF, "|$ldbadd -H $file >/dev/null");
 	print LDIF $ldif;
 	return(close(LDIF));
@@ -452,56 +454,6 @@ Wfz/8alZ5aMezCQzXJyIaJsCLeKABosSwHcpAFmxlQ==
 EOF
 }
 
-sub mk_krb5_conf($$)
-{
-	my ($self, $ctx) = @_;
-
-	unless (open(KRB5CONF, ">$ctx->{krb5_conf}")) {
-		warn("can't open $ctx->{krb5_conf}$?");
-		return undef;
-	}
-	print KRB5CONF "
-#Generated krb5.conf for $ctx->{realm}
-
-[libdefaults]
- default_realm = $ctx->{realm}
- dns_lookup_realm = false
- dns_lookup_kdc = false
- ticket_lifetime = 24h
- forwardable = yes
- allow_weak_crypto = yes
-
-[realms]
- $ctx->{realm} = {
-  kdc = $ctx->{kdc_ipv4}:88
-  admin_server = $ctx->{kdc_ipv4}:88
-  default_domain = $ctx->{dnsname}
- }
- $ctx->{dnsname} = {
-  kdc = $ctx->{kdc_ipv4}:88
-  admin_server = $ctx->{kdc_ipv4}:88
-  default_domain = $ctx->{dnsname}
- }
- $ctx->{domain} = {
-  kdc = $ctx->{kdc_ipv4}:88
-  admin_server = $ctx->{kdc_ipv4}:88
-  default_domain = $ctx->{dnsname}
- }
-
-[appdefaults]
-	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
-
-[kdc]
-	enable-pkinit = true
-	pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
-	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
-
-[domain_realm]
- .$ctx->{dnsname} = $ctx->{realm}
-";
-	close(KRB5CONF);
-}
-
 sub provision_raw_prepare($$$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $netbiosname, 
@@ -570,7 +522,6 @@ sub provision_raw_prepare($$$$$$$$$$)
 	push(@{$ctx->{directories}}, $ctx->{privatedir});
 	push(@{$ctx->{directories}}, $ctx->{etcdir});
 	push(@{$ctx->{directories}}, $ctx->{piddir});
-	push(@{$ctx->{directories}}, $ctx->{ncalrpcdir});
 	push(@{$ctx->{directories}}, $ctx->{lockdir});
 
 	$ctx->{smb_conf_extra_options} = "";
@@ -627,8 +578,11 @@ sub provision_raw_step1($$)
 		warn("can't open $ctx->{smb_conf}$?");
 		return undef;
 	}
+	my $acl = "false";
+	$acl = "true" if (defined $ENV{WITH_ACL});
 	print CONFFILE "
 [global]
+	acl:search = $acl
 	netbios name = $ctx->{netbiosname}
 	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	workgroup = $ctx->{domain}
@@ -681,7 +635,7 @@ sub provision_raw_step1($$)
              $ctx->{kdc_ipv4} = $ctx->{ipv4};
         }
 
-	$self->mk_krb5_conf($ctx);
+	Samba::mk_krb5_conf($ctx);
 
 	open(PWD, ">$ctx->{nsswrap_passwd}");
 	print PWD "
@@ -704,7 +658,7 @@ nogroup:x:65534:nobody
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
 #Ensure the config file is valid before we start
-	my $testparm = $self->scriptdir_path("bin/testparm");
+	my $testparm = Samba::bindir_path($self, "samba-tool") . " testparm";
 	if (system("$testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
 		system("$testparm -v --suppress-prompt $configuration >&2");
 		warn("Failed to create a valid smb.conf configuration $testparm!");
@@ -889,7 +843,7 @@ sub provision_member($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -921,7 +875,7 @@ sub provision_rpc_proxy($$$)
 	my ($self, $prefix, $dcvars) = @_;
 	print "PROVISIONING RPC PROXY...";
 
-	my $extra_smbconf_options = "dcerpc_remote:binding = ncacn_ip_tcp:localdc
+	my $extra_smbconf_options = "dcerpc_remote:binding = ncacn_ip_tcp:$dcvars->{SERVER}
        dcerpc endpoint servers = epmapper, remote
        dcerpc_remote:interfaces = rpcecho
 ";
@@ -941,7 +895,7 @@ sub provision_rpc_proxy($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -1001,7 +955,7 @@ sub provision_vampire_dc($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -1173,7 +1127,7 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
-	my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
@@ -1190,7 +1144,7 @@ sub provision_rodc($$$)
 	# so that use the RODC as kdc and test
 	# the proxy code
 	$ctx->{kdc_ipv4} = $ret->{SERVER_IP};
-	$self->mk_krb5_conf($ctx);
+	Samba::mk_krb5_conf($ctx);
 
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
 	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
@@ -1201,6 +1155,40 @@ sub provision_rodc($$$)
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+
+	return $ret;
+}
+
+sub provision_plugin_s4_dc($$)
+{
+	my ($self, $prefix) = @_;
+
+	my $extra_smbconf_options = "
+server services = -winbind, -smb
+";
+
+	print "PROVISIONING PLUGIN S4 DC...";
+	my $ret = $self->provision($prefix,
+				   "domain controller",
+				   "plugindc",
+				   "PLUGINDOMAIN",
+				   "plugin.samba.example.com",
+				   "2008",
+				   30,
+				   "locDCpass1",
+				   undef, $extra_smbconf_options);
+
+	return undef unless(defined $ret);
+	unless($self->add_wins_config("$prefix/private")) {
+		warn("Unable to add wins configuration");
+		return undef;
+	}
+
+	$ret->{DC_SERVER} = $ret->{SERVER};
+	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $ret->{USERNAME};
+	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
 
 	return $ret;
 }
@@ -1272,6 +1260,7 @@ sub check_env($$)
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
+	my $target3 = $self->{target3};
 
 	$ENV{ENVNAME} = $envname;
 
@@ -1303,6 +1292,13 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_rodc("$path/rodc", $self->{vars}->{dc});
+	} elsif ($envname eq "s3member") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
+	} elsif ($envname eq "plugin_s4_dc") {
+		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc");
 	} elsif ($envname eq "all") {
 		if (not defined($self->{vars}->{dc})) {
 			$ENV{ENVNAME} = "dc";
@@ -1348,6 +1344,18 @@ sub setup_env($$$)
 			$ret->{FL2008R2DC_NETBIOSNAME} = $fl2008r2dc_ret->{NETBIOSNAME};
 			$ret->{FL2008R2DC_USERNAME} = $fl2008r2dc_ret->{USERNAME};
 			$ret->{FL2008R2DC_PASSWORD} = $fl2008r2dc_ret->{PASSWORD};
+		}
+		if (not defined($self->{vars}->{s3member})) {
+			$ENV{ENVNAME} = "s3member";
+			my $s3member_ret = $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
+			$self->{vars}->{s3member} = $s3member_ret;
+
+			$ret->{S3MEMBER_SERVER} = $s3member_ret->{SERVER};
+			$ret->{S3MEMBER_SERVER_IP} = $s3member_ret->{SERVER_IP};
+			$ret->{S3MEMBER_NETBIOSNAME} = $s3member_ret->{NETBIOSNAME};
+			$ret->{S3MEMBER_NETBIOSALIAS} = $s3member_ret->{NETBIOSALIAS};
+			$ret->{S3MEMBER_USERNAME} = $s3member_ret->{USERNAME};
+			$ret->{S3MEMBER_PASSWORD} = $s3member_ret->{PASSWORD};
 		}
 		return $ret;
 	} else {
@@ -1467,7 +1475,7 @@ sub setup_vampire_dc($$$)
 
 		# force replicated DC to update repsTo/repsFrom
 		# for vampired partitions
-		my $samba_tool = $self->{bindir_path}->($self, "samba-tool");
+		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 		my $cmd = "";
 		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
@@ -1518,6 +1526,26 @@ sub setup_rodc($$$)
 
 	$self->{vars}->{rodc} = $env;
 
+	return $env;
+}
+
+sub setup_plugin_s4_dc($$)
+{
+	my ($self, $path) = @_;
+
+	my $env = $self->provision_plugin_s4_dc($path);
+	if (defined $env) {
+		$self->check_or_start($env);
+
+		$self->wait_for_start($env);
+
+		my $s3_part_env = $self->{target3}->setup_plugin_s4_dc($path, $env, 30);
+		if (not defined($s3_part_env)) {
+		    return undef;
+		}
+
+		$self->{vars}->{plugin_s4_dc} = $s3_part_env;
+	}
 	return $env;
 }
 

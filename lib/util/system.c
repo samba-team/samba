@@ -22,6 +22,8 @@
 #include "system/network.h"
 #include "system/filesys.h"
 
+#undef malloc
+
 /*
    The idea is that this file will eventually have wrappers around all
    important system calls in samba. The aims are:
@@ -36,6 +38,42 @@
      the OS within the SMB model. In general whatever file/printer/variable
      expansions/etc make sense to the OS should be acceptable to Samba.
 */
+
+/*******************************************************************
+ A wrapper for memalign
+********************************************************************/
+
+void *sys_memalign( size_t align, size_t size )
+{
+#if defined(HAVE_POSIX_MEMALIGN)
+	void *p = NULL;
+	int ret = posix_memalign( &p, align, size );
+	if ( ret == 0 )
+		return p;
+
+	return NULL;
+#elif defined(HAVE_MEMALIGN)
+	return memalign( align, size );
+#else
+	/* On *BSD systems memaligns doesn't exist, but memory will
+	 * be aligned on allocations of > pagesize. */
+#if defined(SYSCONF_SC_PAGESIZE)
+	size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
+#elif defined(HAVE_GETPAGESIZE)
+	size_t pagesize = (size_t)getpagesize();
+#else
+	size_t pagesize = (size_t)-1;
+#endif
+	if (pagesize == (size_t)-1) {
+		DEBUG(0,("memalign functionalaity not available on this platform!\n"));
+		return NULL;
+	}
+	if (size < pagesize) {
+		size = pagesize;
+	}
+	return malloc(size);
+#endif
+}
 
 /**************************************************************************
 A wrapper for gethostbyname() that tries avoids looking up hostnames 
@@ -117,3 +155,76 @@ _PUBLIC_ pid_t sys_getpid(void)
 
 	return mypid;
 }
+
+
+_PUBLIC_ int sys_getpeereid( int s, uid_t *uid)
+{
+#if defined(HAVE_PEERCRED)
+	struct ucred cred;
+	socklen_t cred_len = sizeof(struct ucred);
+	int ret;
+
+	ret = getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred, &cred_len);
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (cred_len != sizeof(struct ucred)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*uid = cred.uid;
+	return 0;
+#else
+#if defined(HAVE_GETPEEREID)
+	gid_t gid;
+	return getpeereid(s, uid, &gid);
+#endif
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+_PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
+			     int salen,
+			     char *host,
+			     size_t hostlen,
+			     char *service,
+			     size_t servlen,
+			     int flags)
+{
+	/*
+	 * For Solaris we must make sure salen is the
+	 * correct length for the incoming sa_family.
+	 */
+
+	if (salen == sizeof(struct sockaddr_storage)) {
+		salen = sizeof(struct sockaddr_in);
+#if defined(HAVE_IPV6)
+		if (psa->sa_family == AF_INET6) {
+			salen = sizeof(struct sockaddr_in6);
+		}
+#endif
+	}
+	return getnameinfo(psa, salen, host, hostlen, service, servlen, flags);
+}
+
+_PUBLIC_ int sys_connect(int fd, const struct sockaddr * addr)
+{
+	socklen_t salen = (socklen_t)-1;
+
+	if (addr->sa_family == AF_INET) {
+	    salen = sizeof(struct sockaddr_in);
+	} else if (addr->sa_family == AF_UNIX) {
+	    salen = sizeof(struct sockaddr_un);
+	}
+#if defined(HAVE_IPV6)
+	else if (addr->sa_family == AF_INET6) {
+	    salen = sizeof(struct sockaddr_in6);
+	}
+#endif
+
+	return connect(fd, addr, salen);
+}
+

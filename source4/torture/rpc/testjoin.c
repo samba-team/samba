@@ -583,14 +583,14 @@ static NTSTATUS torture_leave_ads_domain(struct torture_context *torture,
 	ldb_set_opaque(ldb_ctx, "loadparm", cmdline_lp_ctx);
 
 	rtn = ldb_connect(ldb_ctx, remote_ldb_url, 0, NULL);
-	if (rtn != 0) {
+	if (rtn != LDB_SUCCESS) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	rtn = ldb_delete(ldb_ctx, server_dn);
-	if (rtn != 0) {
+	if (rtn != LDB_SUCCESS) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;

@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+
+APPNAME = 'tdb'
+VERSION = '2.0-alpha'
+
+blddir = 'bin'
+
+import sys, os
+
+# find the buildtools directory
+srcdir = '.'
+while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
+    srcdir = '../' + srcdir
+sys.path.insert(0, srcdir + '/buildtools/wafsamba')
+
+import wafsamba, samba_dist, Options, Logs
+
+samba_dist.DIST_DIRS('lib/tdb2:. lib/replace:lib/replace buildtools:buildtools')
+
+def set_options(opt):
+    opt.BUILTIN_DEFAULT('replace')
+    opt.PRIVATE_EXTENSION_DEFAULT('tdb2', noextension='tdb2')
+    opt.RECURSE('lib/replace')
+    opt.add_option('--enable-tdb2-breaks-compat',
+                   help=("Build tdb2 instead of tdb1 (BREAKS TDB1!) [False]"),
+                   action="store_true", dest='BUILD_TDB2', default=False)
+    if opt.IN_LAUNCH_DIR():
+        opt.add_option('--disable-python',
+                       help=("disable the pytdb module"),
+                       action="store_true", dest='disable_python', default=False)
+
+def configure(conf):
+    if conf.env.BUILD_TDB2:
+        conf.DEFINE('BUILD_TDB2', 1)
+        conf.RECURSE('lib/replace')
+        conf.RECURSE('lib/ccan')
+
+        conf.env.standalone_tdb2 = conf.IN_LAUNCH_DIR()
+        conf.env.disable_python = getattr(Options.options, 'disable_python', False)
+
+#        if not conf.env.standalone_tdb2:
+#            if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
+#                                         implied_deps='replace'):
+#                conf.define('USING_SYSTEM_TDB2', 1)
+
+        conf.SAMBA_CONFIG_H()
+
+def build(bld):
+    if bld.env.BUILD_TDB2:
+        bld.RECURSE('lib/replace')
+
+        if bld.env.standalone_tdb2:
+            bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+            bld.PKG_CONFIG_FILES('tdb2.pc', vnum=VERSION)
+            bld.INSTALL_FILES('${INCLUDEDIR}', 'tdb2.h', flat=True)
+            private_library = False
+        else:
+            private_library = True
+
+        if not bld.CONFIG_SET('USING_SYSTEM_TDB2'):
+            # FIXME: hide_symbols=True, abi_directory='ABI', abi_match='tdb_*',  vnum=VERSION,
+            bld.SAMBA_LIBRARY('tdb',
+                              '''check.c free.c hash.c io.c lock.c open.c
+                                 summary.c tdb.c transaction.c traverse.c''',
+                              deps='replace ccan',
+                              private_library=private_library)
+
+            bld.SAMBA_BINARY('tdb2torture',
+                             'tools/tdb2torture.c',
+                             'tdb',
+                             install=False)
+
+            bld.SAMBA_BINARY('tdb2tool',
+                             'tools/tdb2tool.c',
+                             'tdb')
+
+            bld.SAMBA_BINARY('tdb2dump',
+                             'tools/tdb2dump.c',
+                             'tdb')
+
+            bld.SAMBA_BINARY('tdb2restore',
+                             'tools/tdb2restore.c',
+                             'tdb')
+
+        bld.SAMBA_PYTHON('pytdb',
+                         'pytdb.c',
+                         deps='tdb',
+                         enabled=not bld.env.disable_python,
+                         realname='tdb.so',
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+
+def dist():
+    '''makes a tarball for distribution'''
+    samba_dist.dist()
+
+def reconfigure(ctx):
+    '''reconfigure if config scripts have changed'''
+    import samba_utils
+    samba_utils.reconfigure(ctx)

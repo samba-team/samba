@@ -107,6 +107,7 @@ static int process_options(int argc, char **argv, int local_flags)
 			break;
 		case 'c':
 			configfile = optarg;
+			set_dyn_CONFIGFILE(optarg);
 			break;
 		case 'a':
 			local_flags |= LOCAL_ADD_USER;
@@ -378,7 +379,7 @@ static int process_root(int local_flags)
 		 */
 
 		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
-		fstrcpy(user_name, buf);
+		strlcpy(user_name, buf, sizeof(user_name));
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
 		static fstring buf;
 
@@ -395,7 +396,7 @@ static int process_root(int local_flags)
 
 		/* prepare uppercased and '$' terminated username */
 		slprintf(buf, sizeof(buf) - 1, "%s$", user_name);
-		fstrcpy(user_name, buf);
+		strlcpy(user_name, buf, sizeof(user_name));
 
 	} else {
 

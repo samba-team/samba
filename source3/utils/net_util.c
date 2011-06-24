@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/ndr_dssetup_c.h"
 #include "secrets.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     TALLOC_CTX *mem_ctx, struct cli_state *cli,
@@ -359,7 +360,7 @@ int net_use_krb_machine_account(struct net_context *c)
 
 	c->opt_password = secrets_fetch_machine_password(
 				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
+	if (asprintf(&user_name, "%s$@%s", lp_netbios_name(), lp_realm()) == -1) {
 		return -1;
 	}
 	c->opt_user_name = user_name;
@@ -381,7 +382,7 @@ int net_use_machine_account(struct net_context *c)
 
 	c->opt_password = secrets_fetch_machine_password(
 				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$", global_myname()) == -1) {
+	if (asprintf(&user_name, "%s$", lp_netbios_name()) == -1) {
 		return -1;
 	}
 	c->opt_user_name = user_name;
@@ -585,7 +586,7 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 
 	if (argc != 0) {
 		for (i=0; table[i].funcname != NULL; i++) {
-			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+			if (strcasecmp_m(argv[0], table[i].funcname) == 0)
 				return table[i].fn(c, argc-1, argv+1);
 		}
 	}

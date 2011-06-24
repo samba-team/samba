@@ -27,6 +27,7 @@
 #include "winbindd.h"
 #include "nsswitch/winbind_client.h"
 #include "nsswitch/wb_reqtrans.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "secrets.h"
@@ -378,6 +379,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 {
 	uint8 ret;
 	pid_t child_pid;
+	NTSTATUS status;
 
 	DEBUG(10, ("winbindd_msg_validate_cache: got validate-cache "
 		   "message.\n"));
@@ -404,7 +406,10 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 
 	/* child */
 
-	if (!winbindd_reinit_after_fork(NULL)) {
+	status = winbindd_reinit_after_fork(NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("winbindd_reinit_after_fork failed: %s\n",
+			  nt_errstr(status)));
 		_exit(0);
 	}
 
@@ -444,11 +449,6 @@ static struct winbindd_dispatch_table {
 	/* Credential cache access */
 	{ WINBINDD_CCACHE_NTLMAUTH, winbindd_ccache_ntlm_auth, "NTLMAUTH" },
 	{ WINBINDD_CCACHE_SAVE, winbindd_ccache_save, "CCACHE_SAVE" },
-
-	/* WINS functions */
-
-	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
-	{ WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
 
 	/* End of list */
 
@@ -540,6 +540,10 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	{ WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, "PAM_CHNG_PSWD_AUTH_CRAP",
 	  winbindd_pam_chng_pswd_auth_crap_send,
 	  winbindd_pam_chng_pswd_auth_crap_recv },
+	{ WINBINDD_WINS_BYIP, "WINS_BYIP",
+	  winbindd_wins_byip_send, winbindd_wins_byip_recv },
+	{ WINBINDD_WINS_BYNAME, "WINS_BYNAME",
+	  winbindd_wins_byname_send, winbindd_wins_byname_recv },
 
 	{ 0, NULL, NULL, NULL }
 };
@@ -779,7 +783,7 @@ static void new_connection(int listen_sock, bool privileged)
 
 	/* Create new connection structure */
 
-	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL) {
+	if ((state = talloc_zero(NULL, struct winbindd_cli_state)) == NULL) {
 		close(sock);
 		return;
 	}
@@ -940,12 +944,12 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 
 const char *get_winbind_pipe_dir(void)
 {
-	return lp_parm_const_string(-1, "winbindd", "socket dir", WINBINDD_SOCKET_DIR);
+	return lp_parm_const_string(-1, "winbindd", "socket dir", get_dyn_WINBINDD_SOCKET_DIR());
 }
 
 char *get_winbind_priv_pipe_dir(void)
 {
-	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
+	return state_path(WINBINDD_PRIV_SOCKET_SUBDIR);
 }
 
 static bool winbindd_setup_listeners(void)

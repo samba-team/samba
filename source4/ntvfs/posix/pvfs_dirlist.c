@@ -199,7 +199,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 	if (*ofs == DIR_OFFSET_DOT) {
 		(*ofs) = DIR_OFFSET_DOTDOT;
 		dir->offset = *ofs;
-		if (ms_fnmatch(dir->pattern, ".", protocol) == 0) {
+		if (ms_fnmatch_protocol(dir->pattern, ".", protocol) == 0) {
 			dcache_add(dir, ".");
 			return ".";
 		}
@@ -208,7 +208,7 @@ const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 	if (*ofs == DIR_OFFSET_DOTDOT) {
 		(*ofs) = DIR_OFFSET_BASE;
 		dir->offset = *ofs;
-		if (ms_fnmatch(dir->pattern, "..", protocol) == 0) {
+		if (ms_fnmatch_protocol(dir->pattern, "..", protocol) == 0) {
 			dcache_add(dir, "..");
 			return "..";
 		}
@@ -228,10 +228,10 @@ const char *pvfs_list_next(struct pvfs_dir *dir, off_t *ofs)
 			continue;
 		}
 
-		if (ms_fnmatch(dir->pattern, dname, protocol) != 0) {
+		if (ms_fnmatch_protocol(dir->pattern, dname, protocol) != 0) {
 			char *short_name = pvfs_short_name_component(dir->pvfs, dname);
 			if (short_name == NULL ||
-			    ms_fnmatch(dir->pattern, short_name, protocol) != 0) {
+			    ms_fnmatch_protocol(dir->pattern, short_name, protocol) != 0) {
 				talloc_free(short_name);
 				continue;
 			}

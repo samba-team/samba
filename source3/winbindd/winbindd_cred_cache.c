@@ -596,7 +596,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		return NT_STATUS_OK;
 	}
 
-	entry = TALLOC_P(NULL, struct WINBINDD_CCACHE_ENTRY);
+	entry = talloc(NULL, struct WINBINDD_CCACHE_ENTRY);
 	if (!entry) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -908,7 +908,7 @@ static NTSTATUS winbindd_add_memory_creds_internal(const char *username,
 		return winbindd_replace_memory_creds_internal(memcredp, pass);
 	}
 
-	memcredp = TALLOC_ZERO_P(NULL, struct WINBINDD_MEMORY_CREDS);
+	memcredp = talloc_zero(NULL, struct WINBINDD_MEMORY_CREDS);
 	if (!memcredp) {
 		return NT_STATUS_NO_MEMORY;
 	}

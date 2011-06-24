@@ -80,12 +80,12 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(10, ("num_sids: %d\n", (int)state->num_sids));
 
-	state->cached = TALLOC_ZERO_ARRAY(state, struct id_map,
+	state->cached = talloc_zero_array(state, struct id_map,
 					  state->num_sids);
 	if (tevent_req_nomem(state->cached, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->non_cached = TALLOC_ARRAY(state, struct dom_sid,
+	state->non_cached = talloc_array(state, struct dom_sid,
 					 state->num_sids);
 	if (tevent_req_nomem(state->non_cached, req)) {
 		return tevent_req_post(req, ev);
@@ -171,13 +171,12 @@ static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 	status = wb_lookupsids_recv(subreq, state, &state->domains,
 				    &state->names);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
 	state->ids.num_ids = state->num_non_cached;
-	state->ids.ids = TALLOC_ARRAY(state, struct wbint_TransID,
+	state->ids.ids = talloc_array(state, struct wbint_TransID,
 				      state->num_non_cached);
 	if (tevent_req_nomem(state->ids.ids, req)) {
 		return;
@@ -202,7 +201,7 @@ static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 			break;
 		};
 		t->domain_index = n->sid_index;
-		sid_peek_rid(&state->sids[i], &t->rid);
+		sid_peek_rid(&state->non_cached[i], &t->rid);
 		t->unix_id = (uint64_t)-1;
 	}
 
@@ -269,6 +268,9 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 			}
 		} else {
 			unix_id = state->ids.ids[num_non_cached].unix_id;
+			if (unix_id == -1) {
+				found = false;
+			}
 			switch(state->ids.ids[num_non_cached].type) {
 			case WBC_ID_TYPE_UID:
 				type = 'U';

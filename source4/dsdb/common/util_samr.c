@@ -342,6 +342,11 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
+	if (ldb_transaction_start(ldb) != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to start transaction in dsdb_add_domain_alias(): %s\n", ldb_errstring(ldb)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	/* Check if alias already exists */
 	name = samdb_search_string(ldb, tmp_ctx, NULL,
 				   "sAMAccountName",
@@ -350,12 +355,14 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 
 	if (name != NULL) {
 		talloc_free(tmp_ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_ALIAS_EXISTS;
 	}
 
 	msg = ldb_msg_new(tmp_ctx);
 	if (msg == NULL) {
 		talloc_free(tmp_ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -364,6 +371,7 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 	ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=Users", alias_name);
 	if (!msg->dn) {
 		talloc_free(tmp_ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -378,15 +386,18 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 		break;
 	case LDB_ERR_ENTRY_ALREADY_EXISTS:
 		talloc_free(tmp_ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_ALIAS_EXISTS;
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		talloc_free(tmp_ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_ACCESS_DENIED;
 	default:
 		DEBUG(0,("Failed to create alias record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
 			 ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -394,9 +405,16 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 	alias_sid = samdb_search_dom_sid(ldb, tmp_ctx,
 					 msg->dn, "objectSid", NULL);
 
+	if (ldb_transaction_commit(ldb) != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to commit transaction in dsdb_add_domain_alias(): %s\n",
+			  ldb_errstring(ldb)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	*dn = talloc_steal(mem_ctx, msg->dn);
 	*sid = talloc_steal(mem_ctx, alias_sid);
 	talloc_free(tmp_ctx);
+
 
 	return NT_STATUS_OK;
 }

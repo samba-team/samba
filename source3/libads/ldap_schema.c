@@ -76,11 +76,11 @@ static ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads,
 		goto out;
 	}
 
-	if (((*names) = TALLOC_ARRAY(mem_ctx, char *, *count)) == NULL) {
+	if (((*names) = talloc_array(mem_ctx, char *, *count)) == NULL) {
 		status = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
-	if (((*OIDs_out) = TALLOC_ARRAY(mem_ctx, char *, *count)) == NULL) {
+	if (((*OIDs_out) = talloc_array(mem_ctx, char *, *count)) == NULL) {
 		status = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
@@ -252,7 +252,7 @@ ADS_STATUS ads_check_posix_schema_mapping(TALLOC_CTX *mem_ctx,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	if ( (schema = TALLOC_P(mem_ctx, struct posix_schema)) == NULL ) {
+	if ( (schema = talloc(mem_ctx, struct posix_schema)) == NULL ) {
 		TALLOC_FREE( ctx );
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}

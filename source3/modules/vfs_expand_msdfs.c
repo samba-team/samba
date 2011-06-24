@@ -178,7 +178,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	int result;
-	char *target = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
+	char *target = talloc_array(ctx, char, PATH_MAX+1);
 	size_t len;
 
 	if (!target) {

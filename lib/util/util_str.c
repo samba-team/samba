@@ -32,87 +32,6 @@
  **/
 
 /**
- Safe string copy into a known length string. maxlength does not
- include the terminating zero.
-**/
-_PUBLIC_ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
-{
-	size_t len;
-
-	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
-		return NULL;
-	}
-
-#ifdef DEVELOPER
-	/* We intentionally write out at the extremity of the destination
-	 * string.  If the destination is too short (e.g. pstrcpy into mallocd
-	 * or fstring) then this should cause an error under a memory
-	 * checker. */
-	dest[maxlength] = '\0';
-	if (PTR_DIFF(&len, dest) > 0) {  /* check if destination is on the stack, ok if so */
-		log_suspicious_usage("safe_strcpy", src);
-	}
-#endif
-
-	if (!src) {
-		*dest = 0;
-		return dest;
-	}  
-
-	len = strlen(src);
-
-	if (len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by %u (%u - %u) in safe_strcpy [%.50s]\n",
-			 (unsigned int)(len-maxlength), (unsigned)len, (unsigned)maxlength, src));
-		len = maxlength;
-	}
-      
-	memmove(dest, src, len);
-	dest[len] = 0;
-	return dest;
-}  
-
-/**
- Safe string cat into a string. maxlength does not
- include the terminating zero.
-**/
-_PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength)
-{
-	size_t src_len, dest_len;
-
-	if (!dest) {
-		DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
-		return NULL;
-	}
-
-	if (!src)
-		return dest;
-	
-#ifdef DEVELOPER
-	if (PTR_DIFF(&src_len, dest) > 0) {  /* check if destination is on the stack, ok if so */
-		log_suspicious_usage("safe_strcat", src);
-	}
-#endif
-	src_len = strlen(src);
-	dest_len = strlen(dest);
-
-	if (src_len + dest_len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
-			 (int)(src_len + dest_len - maxlength), src));
-		if (maxlength > dest_len) {
-			memcpy(&dest[dest_len], src, maxlength - dest_len);
-		}
-		dest[maxlength] = 0;
-		return NULL;
-	}
-	
-	memcpy(&dest[dest_len], src, src_len);
-	dest[dest_len + src_len] = 0;
-	return dest;
-}
-
-/**
   format a string into length-prefixed dotted domain format, as used in NBT
   and in some ADS structures
 **/
@@ -175,7 +94,7 @@ _PUBLIC_ bool conv_str_bool(const char * str, bool * val)
 /**
  * Convert a size specification like 16K into an integral number of bytes. 
  **/
-_PUBLIC_ bool conv_str_size(const char * str, uint64_t * val)
+_PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;
@@ -246,6 +165,6 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2)
 	if (!s1 || !s2)
 		return false;
   
-	return strcasecmp(s1,s2) == 0;
+	return strcasecmp_m(s1,s2) == 0;
 }
 

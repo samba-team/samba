@@ -26,26 +26,32 @@ bld.SAMBA3_SUBSYSTEM('rpc',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_NCACN_NP',
-                    source='rpc_ncacn_np.c rpc_handles.c',
-                    deps='auth_sam_reply')
+                    source='rpc_ncacn_np.c rpc_handles.c rpc_contexts.c',
+                    deps='auth_sam_reply RPC_PIPE_REGISTER AUTH_COMMON npa_tstream')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
-                    source='rpc_server.c')
+                    source='rpc_server.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CRYPTO',
-                    source='dcesrv_ntlmssp.c dcesrv_gssapi.c dcesrv_spnego.c')
+                     source='dcesrv_ntlmssp.c dcesrv_gssapi.c dcesrv_spnego.c',
+                     deps = 'KRB5_PAC')
 
 bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
-                    source='srv_pipe_register.c')
+                    source='srv_pipe_register.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
-                    source='rpc_ep_setup.c ../librpc/rpc/dcerpc_ep.c')
+                    source='rpc_ep_setup.c ../librpc/rpc/dcerpc_ep.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('EPMD',
-		     source='epmd.c')
+                    source='epmd.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
-                    source='srv_access_check.c')
+                    source='srv_access_check.c',
+                    deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SAMR',
                     source=RPC_SAMR_SRC,
@@ -64,10 +70,12 @@ bld.SAMBA3_SUBSYSTEM('RPC_WINREG',
 
 bld.SAMBA3_SUBSYSTEM('RPC_INITSHUTDOWN',
                     source=RPC_INITSHUTDOWN_SRC,
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_DSSETUP',
                     source=RPC_DSSETUP_SRC,
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
@@ -82,23 +90,27 @@ bld.SAMBA3_SUBSYSTEM('RPC_SVCCTL',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NTSVCS',
                     source=RPC_NTSVCS_SRC,
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETLOGON',
                     source=RPC_NETLOGON_SRC,
+                     deps='RPC_NCACN_NP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
                     source=RPC_NETDFS_SRC,
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
                     source=RPC_SRVSVC_SRC,
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source=RPC_SPOOLSS_SRC,
-                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG',
+                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG RPC_NCACN_NP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',
@@ -108,10 +120,12 @@ bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',
 
 bld.SAMBA3_SUBSYSTEM('RPC_RPCECHO',
                     source=RPC_RPCECHO_SRC,
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_EPMAPPER',
                     source=RPC_EPMAPPER_SRC,
+                    deps='samba-util',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER',

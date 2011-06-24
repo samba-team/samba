@@ -374,7 +374,7 @@ error_exit_file:
 				[0x%x], got attr 0x%x, should be 0x%x\n",
 			        open_attrs_table[j],
 			        (uint16_t)attr,
-			        open_attrs_table[j]|FILE_ATTRIBUTE_DIRECTORY);
+			        (unsigned int)(open_attrs_table[j]|FILE_ATTRIBUTE_DIRECTORY));
 			CHECK_MAX_FAILURES(error_exit_dir);
 		}
 

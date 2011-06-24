@@ -49,13 +49,6 @@
 
 
 /*
- * Virtual Node Numbers are identifying a node within a cluster. Ctdbd sets
- * this, we retrieve our vnn from it.
- */
-
-#define NONCLUSTER_VNN (0xFFFFFFFF)
-
-/*
  * ctdb gives us 64-bit server ids for messaging_send. This is done to avoid
  * pid clashes and to be able to register for special messages like "all
  * smbds".

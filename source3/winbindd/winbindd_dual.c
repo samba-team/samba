@@ -35,7 +35,7 @@
 #include "../libcli/security/security.h"
 #include "system/select.h"
 #include "messages.h"
-#include "ntdomain.h"
+#include "../lib/util/tevent_unix.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -127,7 +127,7 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 
 	if (!tevent_queue_add(child->queue, ev, req,
 			      wb_child_request_trigger, NULL)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 	return req;
@@ -510,6 +510,11 @@ void winbind_child_died(pid_t pid)
 
 	DLIST_REMOVE(winbindd_children, child);
 	child->pid = 0;
+
+	if (child->sock != -1) {
+		close(child->sock);
+		child->sock = -1;
+	}
 }
 
 /* Ensure any negative cache entries with the netbios or realm names are removed. */
@@ -741,7 +746,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	}
 
 	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
-			   (uint8 *)message, strlen(message) + 1);
+			   (const uint8 *)message, strlen(message) + 1);
 
 	talloc_destroy(mem_ctx);
 }
@@ -818,7 +823,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 
 		messaging_send_buf(msg_ctx, *sender,
 				   MSG_WINBIND_DUMP_DOMAIN_LIST,
-				   (uint8_t *)message, strlen(message) + 1);
+				   (const uint8_t *)message, strlen(message) + 1);
 
 		talloc_destroy(mem_ctx);
 
@@ -1166,7 +1171,8 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 	dump_event_list(winbind_event_context());
 }
 
-bool winbindd_reinit_after_fork(const char *logfilename)
+NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
+				    const char *logfilename)
 {
 	struct winbindd_domain *domain;
 	struct winbindd_child *cl;
@@ -1179,7 +1185,7 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 		true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
-		return false;
+		return status;
 	}
 
 	close_conns_after_fork();
@@ -1190,10 +1196,10 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 	}
 
 	if (!winbindd_setup_sig_term_handler(false))
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	if (!winbindd_setup_sig_hup_handler(override_logfile ? NULL :
 					    logfilename))
-		return false;
+		return NT_STATUS_NO_MEMORY;
 
 	/* Stop zombies in children */
 	CatchChild();
@@ -1241,6 +1247,14 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 		 * go through the parent.
 		 */
 		cl->pid = (pid_t)0;
+
+		/*
+		 * Close service sockets to all other children
+		 */
+		if ((cl != myself) && (cl->sock != -1)) {
+			close(cl->sock);
+			cl->sock = -1;
+		}
         }
 	/*
 	 * This is a little tricky, children must not
@@ -1261,7 +1275,7 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 	cl = idmap_child();
 	cl->pid = (pid_t)0;
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -1281,6 +1295,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 	struct winbindd_request request;
 	struct winbindd_response response;
 	struct winbindd_domain *primary_domain = NULL;
+	NTSTATUS status;
+	ssize_t nwritten;
 
 	if (child->domain) {
 		DEBUG(10, ("fork_domain_child called for domain '%s'\n",
@@ -1309,7 +1325,25 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	if (child->pid != 0) {
 		/* Parent */
+		ssize_t nread;
+
 		close(fdpair[0]);
+
+		nread = read(fdpair[1], &status, sizeof(status));
+		if (nread != sizeof(status)) {
+			DEBUG(1, ("fork_domain_child: Could not read child status: "
+				  "nread=%d, error=%s\n", (int)nread,
+				  strerror(errno)));
+			close(fdpair[1]);
+			return false;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("fork_domain_child: Child status is %s\n",
+				  nt_errstr(status)));
+			close(fdpair[1]);
+			return false;
+		}
+
 		child->next = child->prev = NULL;
 		DLIST_ADD(winbindd_children, child);
 		child->sock = fdpair[1];
@@ -1324,7 +1358,18 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	if (!winbindd_reinit_after_fork(child->logfilename)) {
+	status = winbindd_reinit_after_fork(child, child->logfilename);
+
+	nwritten = write(state.sock, &status, sizeof(status));
+	if (nwritten != sizeof(status)) {
+		DEBUG(1, ("fork_domain_child: Could not write status: "
+			  "nwritten=%d, error=%s\n", (int)nwritten,
+			  strerror(errno)));
+		_exit(0);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("winbindd_reinit_after_fork failed: %s\n",
+			  nt_errstr(status)));
 		_exit(0);
 	}
 
@@ -1424,7 +1469,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct iovec iov[2];
 		int iov_count;
-		NTSTATUS status;
 
 		if (run_events_poll(winbind_event_context(), 0, NULL, 0)) {
 			TALLOC_FREE(frame);
@@ -1439,7 +1483,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			child->domain->startup = False;
 		}
 
-		pfds = TALLOC_ZERO_P(talloc_tos(), struct pollfd);
+		pfds = talloc_zero(talloc_tos(), struct pollfd);
 		if (pfds == NULL) {
 			DEBUG(1, ("talloc failed\n"));
 			_exit(1);

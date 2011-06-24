@@ -27,12 +27,12 @@
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
-#include "registry.h"
 #include "registry/reg_objects.h"
 #include "nt_printing.h"
 #include "../libcli/security/display_sec.h"
 #include "../libcli/security/security_descriptor.h"
 #include "../libcli/registry/util_reg.h"
+#include "libsmb/libsmb.h"
 
 #define RPCCLIENT_PRINTERNAME(_printername, _cli, _arg) \
 { \
@@ -83,7 +83,7 @@ static const char *cmd_spoolss_get_short_archi(const char *long_archi)
         do {
                 i++;
         } while ( (archi_table[i].long_archi!=NULL ) &&
-                  StrCaseCmp(long_archi, archi_table[i].long_archi) );
+                  strcasecmp_m(long_archi, archi_table[i].long_archi) );
 
         if (archi_table[i].long_archi==NULL) {
                 DEBUGADD(10,("Unknown architecture [%s] !\n", long_archi));
@@ -1616,7 +1616,7 @@ static char *get_driver_3_param(TALLOC_CTX *mem_ctx, char *str,
 	   parameter because two consecutive delimiters
 	   will not return an empty string.  See man strtok(3)
 	   for details */
-	if (ptr && (StrCaseCmp(ptr, "NULL") == 0)) {
+	if (ptr && (strcasecmp_m(ptr, "NULL") == 0)) {
 		ptr = NULL;
 	}
 
@@ -3263,7 +3263,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	}
 	option.types[1].fields[0].field = JOB_NOTIFY_FIELD_PRINTER_NAME;
 
-	clientname = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	clientname = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (!clientname) {
 		result = WERR_NOMEM;
 		goto done;
@@ -3429,7 +3429,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 
 	/* first get the connection to the remote server */
 
-	nt_status = cli_full_connection(&cli_server2, global_myname(), argv[2],
+	nt_status = cli_full_connection(&cli_server2, lp_netbios_name(), argv[2],
 					NULL, 0,
 					"IPC$", "IPC",
 					get_cmdline_auth_info_username(rpcclient_auth_info),

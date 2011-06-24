@@ -83,7 +83,7 @@ static char *fix_backslash(const char *str)
 	return newstring;
 }
 
-static const char *fix_quotes(TALLOC_CTX *ctx, const char *str)
+static const char *fix_quotes(TALLOC_CTX *ctx, char *str)
 {
 	char *newstring = NULL;
 	char *p = NULL;
@@ -101,7 +101,7 @@ static const char *fix_quotes(TALLOC_CTX *ctx, const char *str)
 		}
 		++p;
 	}
-	newstring = TALLOC_ARRAY(ctx, char, newstring_len);
+	newstring = talloc_array(ctx, char, newstring_len);
 	if (!newstring) {
 		return "";
 	}

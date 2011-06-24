@@ -49,7 +49,7 @@ static bool reg_match_one(struct smbcli_state *cli, const char *pattern, const c
 
 	if (ISDOTDOT(file)) file = ".";
 
-	return ms_fnmatch(pattern, file, cli->transport->negotiate.protocol)==0;
+	return ms_fnmatch_protocol(pattern, file, cli->transport->negotiate.protocol)==0;
 }
 
 static char *reg_test(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *pattern, const char *long_name, const char *short_name)
@@ -153,10 +153,8 @@ static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 			listfn, &state);
 
 	if (f_info_hit) {
-		*short_name = talloc_strdup(mem_ctx, last_hit.short_name);
-		strlower(*short_name);
-		*long_name = talloc_strdup(mem_ctx, last_hit.long_name);
-		strlower(*long_name);
+		*short_name = strlower_talloc(mem_ctx, last_hit.short_name);
+		*long_name = strlower_talloc(mem_ctx, last_hit.long_name);
 	}
 
 	if (*short_name == '\0') {
@@ -177,7 +175,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 
 	count++;
 
-	safe_strcpy(res1, "---", sizeof(res1));
+	strlcpy(res1, "---", sizeof(res1));
 
 	state.mem_ctx = mem_ctx;
 
@@ -191,7 +189,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 	resultp = res1;
 	short_name = talloc_strdup(mem_ctx, "");
 	get_real_name(mem_ctx, cli, &long_name, &short_name);
-	safe_strcpy(res1, "---", sizeof(res1));
+	strlcpy(res1, "---", sizeof(res1));
 	smbcli_list_new(cli->tree, mask,
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
@@ -362,7 +360,7 @@ static void usage(poptContext pc)
 
 	ev = s4_event_context_init(mem_ctx);
 
-	gensec_init(lp_ctx);
+	gensec_init();
 
 	lpcfg_smbcli_options(lp_ctx, &options);
 	lpcfg_smbcli_session_options(lp_ctx, &session_options);

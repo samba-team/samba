@@ -130,7 +130,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	if ((v) != (finfo.all_info.out.field)) { \
 		torture_result(tctx, TORTURE_FAIL, \
 		       "(%s) wrong value for field %s  0x%x - 0x%x\n", \
-		       __location__, #field, (int)v, (int)(finfo.all_info.out.field)); \
+		       __location__, #field, (unsigned int)(v), (unsigned int)(finfo.all_info.out.field)); \
 		dump_all_info(tctx, &finfo); \
 		ret = false; \
 	}} while (0)
@@ -139,7 +139,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	if ((v) != (correct)) { \
 		torture_result(tctx, TORTURE_FAIL, \
 		       "(%s) wrong value for %s  0x%x - should be 0x%x\n", \
-		       __location__, #v, (int)(v), (int)correct); \
+		       __location__, #v, (unsigned int)(v), (unsigned int)(correct)); \
 		ret = false; \
 	}} while (0)
 
@@ -152,7 +152,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 	status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	if (!NT_STATUS_IS_OK(status)) { \
 		torture_warning(tctx, "(%s) Failed to set attrib 0x%x on %s\n", \
-		       __location__, sattrib, fname); \
+		       __location__, (unsigned int)(sattrib), fname); \
 	}} while (0)
 
 /*
@@ -337,7 +337,7 @@ static bool test_openx(struct torture_context *tctx, struct smbcli_state *cli)
 				__location__, nt_errstr(status),
 				nt_errstr(open_funcs[i].correct_status),
 				i, (int)open_funcs[i].with_file,
-				(int)open_funcs[i].open_func);
+				open_funcs[i].open_func);
 			ret = false;
 		}
 		if (NT_STATUS_IS_OK(status)) {
@@ -602,7 +602,7 @@ static bool test_t2open(struct torture_context *tctx, struct smbcli_state *cli)
 				 __location__, nt_errstr(status),
 				nt_errstr(open_funcs[i].correct_status),
 				i, (int)open_funcs[i].with_file,
-				(int)open_funcs[i].open_func);
+				open_funcs[i].open_func);
 			ret = false;
 		}
 		if (NT_STATUS_IS_OK(status)) {

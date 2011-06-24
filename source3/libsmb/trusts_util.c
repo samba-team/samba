@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "secrets.h"
 #include "passdb.h"
+#include "libsmb/libsmb.h"
 
 /*********************************************************
  Change the domain password on the PDC.
@@ -168,7 +169,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* setup the anonymous connection */
 
-	status = cli_full_connection( &cli, global_myname(), dc_name, &dc_ss, 0, "IPC$", "IPC",
+	status = cli_full_connection( &cli, lp_netbios_name(), dc_name, &dc_ss, 0, "IPC$", "IPC",
 		"", "", "", 0, Undefined);
 	if ( !NT_STATUS_IS_OK(status) )
 		goto done;
@@ -207,20 +208,20 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	*num_domains = dom_list.count;
 
-	*domain_names = TALLOC_ZERO_ARRAY(mem_ctx, char *, *num_domains);
+	*domain_names = talloc_zero_array(mem_ctx, char *, *num_domains);
 	if (!*domain_names) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	*sids = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, *num_domains);
+	*sids = talloc_zero_array(mem_ctx, struct dom_sid, *num_domains);
 	if (!*sids) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	for (i=0; i< *num_domains; i++) {
-		(*domain_names)[i] = CONST_DISCARD(char *, dom_list.domains[i].name.string);
+		(*domain_names)[i] = discard_const_p(char, dom_list.domains[i].name.string);
 		(*sids)[i] = *dom_list.domains[i].sid;
 	}
 
@@ -263,7 +264,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 	/* if this next call fails, then give up.  We can't do
 	   password changes on BDC's  --jerry */
 
-	if (!NT_STATUS_IS_OK(cli_full_connection(&cli, global_myname(), dc_name,
+	if (!NT_STATUS_IS_OK(cli_full_connection(&cli, lp_netbios_name(), dc_name,
 					   NULL, 0,
 					   "IPC$", "IPC",
 					   "", "",

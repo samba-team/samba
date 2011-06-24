@@ -4,22 +4,23 @@
 
 if [ $# -lt 7 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID LOCAL_PATH PREFIX SMBCLIENT
+Usage: test_smbclient_s3.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD USERID LOCAL_PATH PREFIX SMBCLIENT
 EOF
 exit 1;
 fi
 
 SERVER="$1"
 SERVER_IP="$2"
-USERNAME="$3"
-PASSWORD="$4"
-USERID="$5"
-LOCAL_PATH="$6"
-PREFIX="$7"
-SMBCLIENT="$8"
+DOMAIN="$3"
+USERNAME="$4"
+PASSWORD="$5"
+USERID="$6"
+LOCAL_PATH="$7"
+PREFIX="$8"
+SMBCLIENT="$9"
 SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 WBINFO="$VALGRIND ${WBINFO:-$BINDIR/wbinfo}"
-shift 8
+shift 9
 ADDARGS="$*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
@@ -218,6 +219,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed writing into read-only directory with error $ret"
+
 	false
 	return
     fi
@@ -233,6 +235,49 @@ EOF
 	echo "failed writing into read-only directory - grep failed with $ret"
 	false
     fi
+}
+
+
+# Test sending a message
+test_message()
+{
+    tmpfile=$PREFIX/message_in.$$
+
+    cat > $tmpfile <<EOF
+Test message from pid $$
+EOF
+
+    cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD -M $SERVER -p 139 $ADDARGS -n msgtest < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed sending message to $SERVER with error $ret"
+	false
+	rm -f $tmpfile
+	return
+    fi
+
+    cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmpguest -p 139 $ADDARGS -c "get message.msgtest $PREFIX/message_out.$$" 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed getting sent message from $SERVER with error $ret"
+	false
+	return
+    fi
+
+    if [ cmp $PREFIX/message_out.$$ $tmpfile != 0 ] ; then
+	echo "failed comparison of message from $SERVER"
+	false
+	return
+    fi
+    true
 }
 
 # Test reading an owner-only file (logon as guest) fails.
@@ -389,6 +434,43 @@ test_ccache_access()
     $WBINFO --logoff
 }
 
+# Test authenticating using the winbind ccache
+test_auth_file()
+{
+    tmpfile=$PREFIX/smbclient.in.$$
+    cat > $tmpfile <<EOF
+username=${USERNAME}
+password=${PASSWORD}
+domain=${DOMAIN}
+EOF
+    $SMBCLIENT //$SERVER_IP/tmp --authentication-file=$tmpfile \
+	-c quit 2>&1
+    ret=$?
+    rm $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "smbclient failed to use auth file"
+	false
+	return
+    fi
+
+    cat > $tmpfile <<EOF
+username=${USERNAME}
+password=xxxx
+domain=${DOMAIN}
+EOF
+    $SMBCLIENT //$SERVER_IP/tmp --authentication-file=$tmpfile\
+	-c quit 2>&1
+    ret=$?
+    rm $tmpfile
+
+    if [ $ret -eq 0 ] ; then
+	echo "smbclient succeeded with wrong auth file credentials"
+	false
+	return
+    fi
+}
+
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -442,6 +524,14 @@ testit "Accessing an MS-DFS link" \
 
 testit "ccache access works for smbclient" \
     test_ccache_access || \
+    failed=`expr $failed + 1`
+
+testit "sending a message to the remote server" \
+    test_message || \
+    failed=`expr $failed + 1`
+
+testit "using an authentication file" \
+    test_auth_file || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \

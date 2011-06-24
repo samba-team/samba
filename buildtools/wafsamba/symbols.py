@@ -447,7 +447,7 @@ def check_dependencies(bld, t):
 
     deps = set(t.samba_deps)
     for d in t.samba_deps:
-        if targets[d] in [ 'EMPTY', 'DISABLED', 'SYSLIB' ]:
+        if targets[d] in [ 'EMPTY', 'DISABLED', 'SYSLIB', 'GENERATOR' ]:
             continue
         bld.ASSERT(d in bld.env.public_symbols, "Failed to find symbol list for dependency '%s'" % d)
         diff = remaining.intersection(bld.env.public_symbols[d])

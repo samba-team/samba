@@ -46,7 +46,7 @@ class SamDB(samba.Ldb):
         if not auto_connect:
             url = None
         elif url is None and lp is not None:
-            url = lp.get("sam database")
+            url = lp.samdb_url()
 
         super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
             session_info=session_info, credentials=credentials, flags=flags,
@@ -79,6 +79,8 @@ class SamDB(samba.Ldb):
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter, attrs=["userAccountControl"])
+        if len(res) == 0:
+                raise Exception('Unable to find user "%s"' % search_filter)
         assert(len(res) == 1)
         user_dn = res[0].dn
 
@@ -106,6 +108,8 @@ userAccountControl: %u
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter, attrs=[])
+        if len(res) == 0:
+                raise Exception('Unable to find user "%s"' % search_filter)
         assert(len(res) == 1)
         user_dn = res[0].dn
 
@@ -138,7 +142,7 @@ pwdLastSet: 0
             "objectClass": "group"}
 
         if grouptype is not None:
-            ldbmessage["groupType"] = "%d" % grouptype
+            ldbmessage["groupType"] = self.normalise_int32(grouptype)
 
         if description is not None:
             ldbmessage["description"] = description
@@ -409,6 +413,8 @@ unicodePwd:: %s
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter,
                           attrs=["userAccountControl", "accountExpires"])
+            if len(res) == 0:
+                raise Exception('Unable to find user "%s"' % search_filter)
             assert(len(res) == 1)
             user_dn = res[0].dn
 
@@ -470,8 +476,13 @@ accountExpires: %u
 
     def get_attid_from_lDAPDisplayName(self, ldap_display_name,
             is_schema_nc=False):
+        '''return the attribute ID for a LDAP attribute as an integer as found in DRSUAPI'''
         return dsdb._dsdb_get_attid_from_lDAPDisplayName(self,
             ldap_display_name, is_schema_nc)
+
+    def get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name):
+        '''return the syntax OID for a LDAP attribute as a string'''
+        return dsdb._dsdb_get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name)
 
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
@@ -501,7 +512,12 @@ accountExpires: %u
         dsdb._dsdb_set_schema_from_ldb(self, ldb_conn)
 
     def dsdb_DsReplicaAttribute(self, ldb, ldap_display_name, ldif_elements):
+        '''convert a list of attribute values to a DRSUAPI DsReplicaAttribute'''
         return dsdb._dsdb_DsReplicaAttribute(ldb, ldap_display_name, ldif_elements)
+
+    def dsdb_normalise_attributes(self, ldb, ldap_display_name, ldif_elements):
+        '''normalise a list of attribute values'''
+        return dsdb._dsdb_normalise_attributes(ldb, ldap_display_name, ldif_elements)
 
     def get_attribute_from_attid(self, attid):
         """ Get from an attid the associated attribute
@@ -711,3 +727,9 @@ accountExpires: %u
         if sd:
             m["nTSecurityDescriptor"] = ndr_pack(sd)
         self.add(m)
+
+    def normalise_int32(self, ivalue):
+        '''normalise a ldap integer to signed 32 bit'''
+        if int(ivalue) & 0x80000000:
+            return str(int(ivalue) - 0x100000000)
+        return str(ivalue)

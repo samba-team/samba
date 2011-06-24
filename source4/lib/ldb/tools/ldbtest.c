@@ -126,7 +126,7 @@ static void add_records(struct ldb_context *ldb,
 
 		ldb_delete(ldb, msg.dn);
 
-		if (ldb_add(ldb, &msg) != 0) {
+		if (ldb_add(ldb, &msg) != LDB_SUCCESS) {
 			printf("Add of %s failed - %s\n", name, ldb_errstring(ldb));
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -183,7 +183,7 @@ static void modify_records(struct ldb_context *ldb,
 		vals[2].data = (uint8_t *)talloc_asprintf(tmp_ctx, "%s@other2.example.com", name);
 		vals[2].length = strlen((char *)vals[2].data);
 
-		if (ldb_modify(ldb, &msg) != 0) {
+		if (ldb_modify(ldb, &msg) != LDB_SUCCESS) {
 			printf("Modify of %s failed - %s\n", name, ldb_errstring(ldb));
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -213,7 +213,7 @@ static void delete_records(struct ldb_context *ldb,
 		printf("Deleting uid Test%d\r", i);
 		fflush(stdout);
 
-		if (ldb_delete(ldb, dn) != 0) {
+		if (ldb_delete(ldb, dn) != LDB_SUCCESS) {
 			printf("Delete of %s failed - %s\n", ldb_dn_get_linearized(dn), ldb_errstring(ldb));
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -304,7 +304,7 @@ static void start_test_index(struct ldb_context **ldb)
 	struct ldb_dn *indexlist;
 	struct ldb_dn *basedn;
 	int ret;
-	int flags = 0;
+	unsigned int flags = 0;
 	const char *specials;
 
 	specials = getenv("LDB_SPECIALS");
@@ -343,7 +343,7 @@ static void start_test_index(struct ldb_context **ldb)
 	ldb_msg_add_string(msg, "uid", strdup("test"));
 	ldb_msg_add_string(msg, "objectClass", strdup("OpenLDAPperson"));
 
-	if (ldb_add(*ldb, msg) != 0) {
+	if (ldb_add(*ldb, msg) != LDB_SUCCESS) {
 		printf("Add of %s failed - %s\n", ldb_dn_get_linearized(msg->dn), ldb_errstring(*ldb));
 		exit(LDB_ERR_OPERATIONS_ERROR);
 	}
@@ -356,7 +356,7 @@ static void start_test_index(struct ldb_context **ldb)
 	(*ldb) = ldb_init(options, NULL);
 
 	ret = ldb_connect(*ldb, options->url, flags, NULL);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		printf("failed to connect to %s\n", options->url);
 		exit(LDB_ERR_OPERATIONS_ERROR);
 	}

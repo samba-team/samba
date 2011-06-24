@@ -22,8 +22,8 @@
 /* This is the interface to the rpcecho pipe. */
 
 #include "includes.h"
-#include "../librpc/gen_ndr/srv_echo.h"
 #include "ntdomain.h"
+#include "../librpc/gen_ndr/srv_echo.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -48,7 +48,7 @@ void _echo_EchoData(struct pipes_struct *p, struct echo_EchoData *r)
 		return;
 	}
 
-	r->out.out_data = TALLOC_ARRAY(p->mem_ctx, uint8, r->in.len);
+	r->out.out_data = talloc_array(p->mem_ctx, uint8, r->in.len);
 	memcpy( r->out.out_data, r->in.in_data, r->in.len );
 	return;
 }
@@ -76,7 +76,7 @@ void _echo_SourceData(struct pipes_struct *p, struct echo_SourceData *r)
 		return;
 	}
 
-	r->out.data = TALLOC_ARRAY(p->mem_ctx, uint8, r->in.len );
+	r->out.data = talloc_array(p->mem_ctx, uint8, r->in.len );
 
 	for (i = 0; i < r->in.len; i++ ) {
 		r->out.data[i] = i & 0xff;

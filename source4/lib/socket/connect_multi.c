@@ -136,7 +136,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 	if (composite_nomem(state, result)) return;
 
 	state->result = result;
-	result->status = socket_create("ipv4", SOCKET_TYPE_STREAM, &state->sock, 0);
+	result->status = socket_create(multi->server_address->family, SOCKET_TYPE_STREAM, &state->sock, 0);
 	if (!composite_is_ok(result)) return;
 
 	state->addr = socket_address_copy(state, multi->server_address);
@@ -162,7 +162,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 		   connect attempt state, so it will go away when this
 		   request completes */
 		event_add_timed(result->event_ctx, state,
-				timeval_current_ofs(0, MULTI_PORT_DELAY),
+				timeval_current_ofs_usec(MULTI_PORT_DELAY),
 				connect_multi_timer, result);
 	}
 }

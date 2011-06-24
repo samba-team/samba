@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "msdfs.h"
 #include "trans2.h"
@@ -87,10 +88,6 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					int name_type)
 {
 	struct cli_state *c = NULL;
-	struct nmb_name called, calling;
-	const char *called_str;
-	const char *server_n;
-	struct sockaddr_storage ss;
 	char *servicename;
 	char *sharename;
 	char *newserver, *newshare;
@@ -106,7 +103,6 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	sharename = servicename;
 	if (*sharename == '\\') {
 		sharename += 2;
-		called_str = sharename;
 		if (server == NULL) {
 			server = sharename;
 		}
@@ -116,36 +112,19 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		}
 		*sharename = 0;
 		sharename++;
-	} else {
-		called_str = server;
 	}
-
-	server_n = server;
-
-	zero_sockaddr(&ss);
-
-	make_nmb_name(&calling, global_myname(), 0x0);
-	make_nmb_name(&called , called_str, name_type);
-
- again:
-	zero_sockaddr(&ss);
-
-	/* have to open a new connection */
-	c = cli_initialise_ex(get_cmdline_auth_info_signing_state(auth_info));
-	if (c == NULL) {
-		d_printf("Connection to %s failed\n", server_n);
+	if (server == NULL) {
 		return NULL;
 	}
-	if (port) {
-		cli_set_port(c, port);
-	}
 
-	status = cli_connect(c, server_n, &ss);
+	status = cli_connect_nb(
+		server, NULL, port, name_type, NULL,
+		get_cmdline_auth_info_signing_state(auth_info), &c);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed (Error %s)\n",
-				server_n,
+				server,
 				nt_errstr(status));
-		cli_shutdown(c);
 		return NULL;
 	}
 
@@ -157,23 +136,6 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	c->fallback_after_kerberos =
 		get_cmdline_auth_info_fallback_after_kerberos(auth_info);
 	c->use_ccache = get_cmdline_auth_info_use_ccache(auth_info);
-
-	if (!cli_session_request(c, &calling, &called)) {
-		char *p;
-		d_printf("session request to %s failed (%s)\n",
-			 called.name, cli_errstr(c));
-		cli_shutdown(c);
-		c = NULL;
-		if ((p=strchr_m(called.name, '.'))) {
-			*p = 0;
-			goto again;
-		}
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
 
 	DEBUG(4,(" session request ok\n"));
 

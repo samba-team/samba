@@ -30,6 +30,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
+#include "libsmb/libsmb.h"
 
 /* Macro for checking RPC error codes to make things more readable */
 
@@ -306,7 +307,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 		      "could not open domain");
 
 	/* Create domain user */
-	if ((acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname())) == NULL) {
+	if ((acct_name = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name())) == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -442,8 +443,8 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	status = rpccli_netlogon_setup_creds(pipe_hnd,
 					cli->desthost, /* server name */
 					domain,        /* domain */
-					global_myname(), /* client name */
-					global_myname(), /* machine account name */
+					lp_netbios_name(), /* client name */
+					lp_netbios_name(), /* machine account name */
                                         md4_trust_password,
                                         sec_channel_type,
                                         &neg_flags);
@@ -457,7 +458,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr, _("Please make sure that no computer "
 					    "account\nnamed like this machine "
 					    "(%s) exists in the domain\n"),
-				 global_myname());
+				 lp_netbios_name());
 		}
 
 		goto done;
@@ -486,7 +487,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 						    "computer account\nnamed "
 						    "like this machine (%s) "
 						    "exists in the domain\n"),
-					 global_myname());
+					 lp_netbios_name());
 			}
 
 			goto done;
@@ -498,7 +499,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* Now store the secret in the secrets database */
 
-	strupper_m(CONST_DISCARD(char *, domain));
+	strupper_m(discard_const_p(char, domain));
 
 	if (!secrets_store_domain_sid(domain, domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));

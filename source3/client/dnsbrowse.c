@@ -124,7 +124,7 @@ do_smb_browse_reply(DNSServiceRef sdRef, DNSServiceFlags flags,
 		return;
 	}
 
-	bresult = TALLOC_ARRAY(talloc_tos(), struct mdns_smbsrv_result, 1);
+	bresult = talloc_array(talloc_tos(), struct mdns_smbsrv_result, 1);
 	if (bresult == NULL) {
 		return;
 	}

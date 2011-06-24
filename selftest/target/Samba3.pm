@@ -9,14 +9,14 @@ use strict;
 use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
+use target::Samba;
 
 sub new($$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $srcdir, $exeext, $server_maxtime) = @_;
+	my ($classname, $bindir, $binary_mapping, $srcdir, $exeext, $server_maxtime) = @_;
 	$exeext = "" unless defined($exeext);
 	my $self = { vars => {},
 		     bindir => $bindir,
 		     binary_mapping => $binary_mapping,
-		     bindir_path => $bindir_path,
 		     srcdir => $srcdir,
 		     exeext => $exeext,
 		     server_maxtime => $server_maxtime
@@ -172,13 +172,16 @@ sub setup_member($$$)
 
 	$ret or return undef;
 
-	my $net = $self->{bindir_path}->($self, "net");
+	my $net = Samba::bindir_path($self, "net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION} $s3dcvars->{DOMAIN} member";
 	$cmd .= " -U$s3dcvars->{USERNAME}\%$s3dcvars->{PASSWORD}";
 
-	system($cmd) == 0 or die("Join failed\n$cmd");
+	if (system($cmd) != 0) {
+	    warn("Join failed\n$cmd");
+	    return undef;
+	}
 
 	$self->check_or_start($ret, "yes", "yes", "yes");
 
@@ -191,6 +194,125 @@ sub setup_member($$$)
 	$ret->{DC_NETBIOSNAME} = $s3dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $s3dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $s3dcvars->{PASSWORD};
+
+	return $ret;
+}
+
+sub setup_admember($$$$)
+{
+	my ($self, $prefix, $dcvars, $iface) = @_;
+
+	print "PROVISIONING S3 AD MEMBER$iface...";
+
+	my $member_options = "
+	security = ads
+	server signing = on
+        workgroup = $dcvars->{DOMAIN}
+        realm = $dcvars->{REALM}
+";
+
+	my $ret = $self->provision($prefix,
+				   "LOCALADMEMBER$iface",
+				   $iface,
+				   "loCalMember${iface}Pass",
+				   $member_options);
+
+	$ret or return undef;
+
+	close(USERMAP);
+	$ret->{DOMAIN} = $dcvars->{DOMAIN};
+	$ret->{REALM} = $dcvars->{REALM};
+
+	my $ctx;
+	my $prefix_abs = abs_path($prefix);
+	$ctx = {};
+	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{domain} = $dcvars->{DOMAIN};
+	$ctx->{realm} = $dcvars->{REALM};
+	$ctx->{dnsname} = lc($dcvars->{REALM});
+	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
+	Samba::mk_krb5_conf($ctx);
+
+	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+
+	my $net = Samba::bindir_path($self, "net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$net join $ret->{CONFIGURATION}";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+
+	if (system($cmd) != 0) {
+	    warn("Join failed\n$cmd");
+	    return undef;
+	}
+
+	# We need world access to this share, as otherwise the domain
+	# administrator from the AD domain provided by Samba4 can't
+	# access the share for tests.
+	chmod 0777, "$prefix/share";
+
+	$self->check_or_start($ret,
+			      "yes", "yes", "yes");
+
+	$self->wait_for_start($ret);
+
+	$ret->{DC_SERVER} = $dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
+	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
+	$ret->{target} = $self;
+
+	return $ret;
+}
+
+sub setup_plugin_s4_dc($$$$)
+{
+	my ($self, $prefix, $dcvars, $iface) = @_;
+
+	print "PROVISIONING S4 PLUGIN AD DC$iface...";
+
+	my $plugin_s4_dc_options = "
+        workgroup = $dcvars->{DOMAIN}
+        realm = $dcvars->{REALM}
+        security=ads
+        passdb backend = samba4
+        auth methods = guest samba4
+        domain logons = yes
+        rpc_server:lsarpc = external
+        rpc_server:netlogon = external
+        rpc_server:samr = external
+	server signing = on
+";
+
+	my $ret = $self->provision($prefix,
+				   "plugindc",
+				   $iface,
+				   "pluGin${iface}Pass",
+				   $plugin_s4_dc_options, 1);
+
+	$ret or return undef;
+
+	close(USERMAP);
+	$ret->{DOMAIN} = $dcvars->{DOMAIN};
+	$ret->{REALM} = $dcvars->{REALM};
+	$ret->{KRB5_CONFIG} = $dcvars->{KRB5_CONFIG};
+
+	# We need world access to this share, as otherwise the domain
+	# administrator from the AD domain provided by Samba4 can't
+	# access the share for tests.
+	chmod 0777, "$prefix/share";
+
+	$self->check_or_start($ret,
+			      "no", "yes", "yes");
+
+	$self->wait_for_start($ret);
+
+	# Special case, this is called from Samba4.pm but needs to use the Samba3 check_env and get_log_env
+	$ret->{target} = $self;
 
 	return $ret;
 }
@@ -261,7 +383,7 @@ sub setup_secserver($$$)
 
 sub setup_ktest($$$)
 {
-	my ($self, $prefix, $s3dcvars) = @_;
+	my ($self, $prefix) = @_;
 
 	print "PROVISIONING server with security=ads...";
 
@@ -280,6 +402,18 @@ sub setup_ktest($$$)
 
 	$ret or return undef;
 
+	my $ctx;
+	my $prefix_abs = abs_path($prefix);
+	$ctx = {};
+	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{domain} = "KTEST";
+	$ctx->{realm} = "KTEST.SAMBA.EXAMPLE.COM";
+	$ctx->{dnsname} = lc($ctx->{realm});
+	$ctx->{kdc_ipv4} = "0.0.0.0";
+	Samba::mk_krb5_conf($ctx);
+
+	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+
 	open(USERMAP, ">$prefix/lib/username.map") or die("Unable to open $prefix/lib/username.map");
 	print USERMAP "
 $ret->{USERNAME} = KTEST\\Administrator
@@ -290,7 +424,11 @@ $ret->{USERNAME} = KTEST\\Administrator
 #Samba4 DC with the same parameters as are being used here.  The
 #domain SID is S-1-5-21-1071277805-689288055-3486227160
 
-	system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb $prefix/private/secrets.tdb");
+	if (defined($ENV{BUILD_TDB2})) {
+	    system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb2 $prefix/private/secrets.tdb");
+	} else {
+	    system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb $prefix/private/secrets.tdb");
+	}
 	chmod 0600, "$prefix/private/secrets.tdb";
 
 #This uses a pre-calculated krb5 credentials cache, obtained by running Samba4 with:
@@ -373,6 +511,7 @@ sub check_or_start($$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
@@ -395,14 +534,14 @@ sub check_or_start($$$$) {
 			@optargs = split(/ /, $ENV{NMBD_OPTIONS});
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "nmbd");
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "nmbd");
 
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
+		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{NMBD_VALGRIND})) { 
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
 
-		exec(@preargs, $self->{bindir_path}->($self, "nmbd"), "-F", "--no-process-group", "-S", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
+		exec(@preargs, Samba::bindir_path($self, "nmbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
@@ -416,6 +555,7 @@ sub check_or_start($$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
@@ -438,14 +578,16 @@ sub check_or_start($$$$) {
 			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "winbindd");
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "winbindd");
 
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
+		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{WINBINDD_VALGRIND})) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
 
-		exec(@preargs, $self->{bindir_path}->($self, "winbindd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+		print "Starting winbindd with config $env_vars->{SERVERCONFFILE})\n";
+
+		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "--stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
 	write_pid($env_vars, "winbindd", $pid);
 	print "DONE\n";
@@ -459,6 +601,7 @@ sub check_or_start($$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
@@ -476,16 +619,16 @@ sub check_or_start($$$$) {
 			exit 0;
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $self->{bindir_path}->($self, "smbd");
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "smbd");
 		my @optargs = ("-d0");
 		if (defined($ENV{SMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{SMBD_OPTIONS});
 		}
-		my @preargs = ($self->{bindir_path}->($self, "timelimit"), $self->{server_maxtime});
+		my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}
-		exec(@preargs, $self->{bindir_path}->($self, "smbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
+		exec(@preargs, Samba::bindir_path($self, "smbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
@@ -493,9 +636,9 @@ sub check_or_start($$$$) {
 	return 0;
 }
 
-sub provision($$$$$$)
+sub provision($$$$$$$)
 {
-	my ($self, $prefix, $server, $swiface, $password, $extra_options) = @_;
+	my ($self, $prefix, $server, $swiface, $password, $extra_options, $no_delete_prefix) = @_;
 
 	##
 	## setup the various environment variables we need
@@ -514,6 +657,8 @@ sub provision($$$$$$)
 	my $prefix_abs = abs_path($prefix);
 	my $bindir_abs = abs_path($self->{bindir});
 	my $vfs_modulesdir_abs = ($ENV{VFSLIBDIR} or $bindir_abs);
+
+	my $dns_host_file = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 
 	my @dirs = ();
 
@@ -571,7 +716,9 @@ sub provision($$$$$$)
 
 	mkdir($prefix_abs, 0777);
 	print "CREATE TEST ENVIRONMENT IN '$prefix'...";
-	system("rm -rf $prefix_abs/*");
+	if (not defined($no_delete_prefix) or not $no_delete_prefix) {
+	    system("rm -rf $prefix_abs/*");
+	}
 	mkdir($_, 0777) foreach(@dirs);
 
 	##
@@ -580,12 +727,18 @@ sub provision($$$$$$)
 
 	chmod 0755, $ro_shrdir;
 	my $unreadable_file = "$ro_shrdir/unreadable_file";
-	open(UNREADABLE_FILE, ">$unreadable_file") or die("Unable to open $unreadable_file");
+	unless (open(UNREADABLE_FILE, ">$unreadable_file")) {
+	        warn("Unable to open $unreadable_file");
+		return undef;
+	}
 	close(UNREADABLE_FILE);
 	chmod 0600, $unreadable_file;
 
 	my $msdfs_target = "$ro_shrdir/msdfs-target";
-	open(MSDFS_TARGET, ">$msdfs_target") or die("Unable to open $msdfs_target");
+	unless (open(MSDFS_TARGET, ">$msdfs_target")) {
+	        warn("Unable to open $msdfs_target");
+		return undef;
+	}
 	close(MSDFS_TARGET);
 	chmod 0666, $msdfs_target;
 	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/msdfs-src1";
@@ -633,7 +786,10 @@ sub provision($$$$$$)
 	## create conffile
 	##
 
-	open(CONF, ">$conffile") or die("Unable to open $conffile");
+	unless (open(CONF, ">$conffile")) {
+	        warn("Unable to open $conffile");
+		return undef;
+	}
 	print CONF "
 [global]
 	netbios name = $server
@@ -650,8 +806,6 @@ sub provision($$$$$$)
 	log level = 0
 	debug pid = yes
         max log size = 0
-
-	name resolve order = bcast
 
 	state directory = $lockdir
 	cache directory = $lockdir
@@ -711,8 +865,12 @@ sub provision($$$$$$)
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
 
-	ncalrpc dir = $lockdir/ncalrpc
+	ncalrpc dir = $prefix_abs/ncalrpc
 	rpc_server:epmapper = embedded
+
+        resolv:host file = $dns_host_file
+
+        message command = mv %s $shrdir/message.%m
 
 	# Begin extra options
 	$extra_options
@@ -778,7 +936,10 @@ sub provision($$$$$$)
 	## create a test account
 	##
 
-	open(PASSWD, ">$nss_wrapper_passwd") or die("Unable to open $nss_wrapper_passwd");
+	unless (open(PASSWD, ">$nss_wrapper_passwd")) {
+           warn("Unable to open $nss_wrapper_passwd");
+           return undef;
+        } 
 	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix_abs:/bin/false
 $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 ";
@@ -787,7 +948,10 @@ $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 	}
 	close(PASSWD);
 
-	open(GROUP, ">$nss_wrapper_group") or die("Unable to open $nss_wrapper_group");
+	unless (open(GROUP, ">$nss_wrapper_group")) {
+             warn("Unable to open $nss_wrapper_group");
+             return undef;
+        }
 	print GROUP "nobody:x:$gid_nobody:
 nogroup:x:$gid_nogroup:nobody
 $unix_name-group:x:$unix_gids[0]:
@@ -808,10 +972,16 @@ domusers:X:$gid_domusers:
 	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 
-	open(PWD, "|".$self->{bindir_path}->($self, "smbpasswd")." -c $conffile -L -s -a $unix_name >/dev/null");
+        my $cmd = Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name > /dev/null";
+	unless (open(PWD, "|$cmd")) {
+             warn("Unable to set password for test account\n$cmd");
+             return undef;
+        }
 	print PWD "$password\n$password\n";
-	close(PWD) or die("Unable to set password for test account");
-
+	unless (close(PWD)) {
+             warn("Unable to set password for test account\n$cmd");
+             return undef; 
+        }
 	print "DONE\n";
 
 	open(HOSTS, ">>$ENV{SELFTEST_PREFIX}/dns_host_file") or die("Unable to open $ENV{SELFTEST_PREFIX}/dns_host_file");
@@ -843,7 +1013,7 @@ domusers:X:$gid_domusers:
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$ret{NSS_WRAPPER_WINBIND_SO_PATH} = $ENV{NSS_WRAPPER_WINBIND_SO_PATH};
         if (not defined($ret{NSS_WRAPPER_WINBIND_SO_PATH})) {
-	        $ret{NSS_WRAPPER_WINBIND_SO_PATH} = $self->{bindir_path}->($self, "default/nsswitch/libnss-winbind.so");
+	        $ret{NSS_WRAPPER_WINBIND_SO_PATH} = Samba::bindir_path($self, "default/nsswitch/libnss-winbind.so");
         }
 	$ret{LOCAL_PATH} = "$shrdir";
 
@@ -858,11 +1028,11 @@ sub wait_for_start($$)
 	print "delaying for nbt name registration\n";
 	sleep(10);
 	# This will return quickly when things are up, but be slow if we need to wait for (eg) SSL init 
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} __SAMBA__");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
-	system($self->{bindir_path}->($self, "nmblookup3") ." $envvars->{CONFIGURATION} $envvars->{SERVER}");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} __SAMBA__");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
+	system(Samba::bindir_path($self, "nmblookup3") ." $envvars->{CONFIGURATION} $envvars->{SERVER}");
 
 	# make sure smbd is also up set
 	print "wait for smbd\n";
@@ -870,7 +1040,7 @@ sub wait_for_start($$)
 	my $count = 0;
 	my $ret;
 	do {
-	    $ret = system($self->{bindir_path}->($self, "smbclient3") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
+	    $ret = system(Samba::bindir_path($self, "smbclient3") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
 	    if ($ret != 0) {
 		sleep(2);
 	    }
@@ -882,7 +1052,7 @@ sub wait_for_start($$)
 	    return 0;
 	}
 	# Ensure we have domain users mapped.
-	$ret = system($self->{bindir_path}->($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
+	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
 	if ($ret != 0) {
 	    return 1;
 	}

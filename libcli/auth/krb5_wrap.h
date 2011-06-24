@@ -31,7 +31,6 @@ int create_kerberos_key_from_string_direct(krb5_context context,
 					   krb5_enctype enctype);
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
-char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
 
  krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
@@ -54,6 +53,10 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 					 krb5_checksum *cksum,
 					 uint8_t *data,
 					  size_t length);
+char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
+			  OM_uint32 maj_stat, OM_uint32 min_stat, 
+			  const gss_OID mech);
+char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
 
 krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB pac_data,
@@ -69,3 +72,8 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     krb5_const_principal client_principal,
 			     time_t tgs_authtime,
 			     struct PAC_DATA **pac_data_out);
+
+NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
+				gss_ctx_id_t gssapi_context,
+				gss_name_t gss_client_name,
+				DATA_BLOB *pac_data);

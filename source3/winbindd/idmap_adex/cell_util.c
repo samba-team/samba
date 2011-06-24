@@ -38,7 +38,7 @@
 	for (i = 0; i < num_lines; i++) {
 		/* make sure to avoid substring matches like uid
 		   and uidNumber */
-		if ((StrnCaseCmp(list[i], substr, cmplen) == 0) &&
+		if ((strncasecmp_m(list[i], substr, cmplen) == 0) &&
 		    (list[i][cmplen] == '=')) {
 			/* Don't return an empty string */
 			if (list[i][cmplen + 1] != '\0')
@@ -110,7 +110,7 @@ static NTSTATUS cell_lookup_forest(struct likewise_cell *c)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((gc = TALLOC_ZERO_P(NULL, struct gc_info)) == NULL) {
+	if ((gc = talloc_zero(NULL, struct gc_info)) == NULL) {
 		nt_status = NT_STATUS_NO_MEMORY;
 		BAIL_ON_NTSTATUS_ERROR(nt_status);
 	}
@@ -230,7 +230,7 @@ done:
 	while (next_token_talloc(frame, &tmp_dn, &buffer, ",")) {
 
 		/* skip everything up the where DC=... begins */
-		if (StrnCaseCmp(buffer, "DC=", 3) != 0)
+		if (strncasecmp_m(buffer, "DC=", 3) != 0)
 			continue;
 
 		if (!domain) {

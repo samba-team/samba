@@ -29,10 +29,6 @@
 /* Size (in bytes) of the required fields in the SMBwhoami response. */
 #define WHOAMI_REQUIRED_SIZE	40
 
-enum smb_whoami_flags {
-    SMB_WHOAMI_GUEST = 0x1 /* Logged in as (or squashed to) guest */
-};
-
 /*
    SMBWhoami - Query the user mapping performed by the server for the
    connected tree. This is a subcommand of the TRANS2_QFSINFO.

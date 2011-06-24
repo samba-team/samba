@@ -1,212 +1,129 @@
-                   =================================
-                   Release Notes for Samba 3.6.0pre1
-                             July 28, 2010
-                   =================================
+What's new in Samba 4 alpha16
+=============================
+
+Samba 4.0 will be the next version of the Samba suite and incorporates
+all the technology found in both the Samba4 alpha series and the
+stable 3.x series. The primary additional features over Samba 3.6 are
+support for the Active Directory logon protocols used by Windows 2000
+and above.
+
+WARNINGS
+========
+
+Samba4 alpha16 is not a final Samba release, however we are now making
+good progress towards a Samba 4.0 release, of which this is a preview.
+Be aware the this release contains both the technology of Samba 3.6
+(that you can reasonably expect to upgrade existing Samba 3.x releases
+to) and the AD domain controller work previously known as 'samba4'.
+No migration path is currently provided between these two sets of
+technology.  These missing migration paths will be the focus of
+development between now and a Samba 4.0 release.
+
+While binaries for the stable file server are provided in this
+release, for a stable, supported file server, Samba3 domain or AD
+domain member installation, please run a Samba 3.x release, as we are
+still bedding down the new single build system.
+
+Samba4 is subjected to an awesome battery of tests on an automated
+basis, we have found Samba 4.0 to be very stable in it's behavior.
+However, we still recommend against upgrading production servers from
+Samba 3.x release to Samba 4.0 alpha at this stage.
+
+If you are upgrading, or looking to develop, test or deploy Samba 4.0
+alpha releases, you should backup all configuration and data.
+
+NEW FEATURES
+============
+
+Samba 4.0 alpha supports the server-side of the Active Directory logon
+environment used by Windows 2000 and later, so we can do full domain
+join and domain logon operations with these clients.
+
+Our Domain Controller (DC) implementation includes our own built-in
+LDAP server and Kerberos Key Distribution Center (KDC) as well as the
+Samba3-like logon services provided over CIFS.  We correctly generate
+the infamous Kerberos PAC, and include it with the Kerberos tickets we
+issue.
+
+Samba 4.0 alpha ships with two distinct file servers.  The file server
+from the Samba 3.x series is 'smbd', and works with the binaries users
+would expect from that series (nmbd, winbindd, smbpasswd).
+
+Samba 4.0 also ships with a new file server, which is tuned to match
+the requirements of an AD domain controller.  Users should not use the
+file server in the 'samba' binary for non-DC related tasks.
+
+A new scripting interface has been added to Samba 4, allowing Python
+programs to interface to Samba's internals, and many tools and
+internal workings of the DC code is now implemented in python.
 
 
-This is the first preview release of Samba 3.6.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
+CHANGES SINCE alpha15
+=====================
 
+For a list of changes since alpha 15, please see the git log.
 
-Major enhancements in Samba 3.6.0 include:
+$ git clone git://git.samba.org/samba.git
+$ cd samba.git
+$ git log release-4-0-0alpha15..release-4-0-0alpha16
 
+The biggest user-visible change is that binaries from the Samba 3.x
+series of development are now built and installed.  These binaries
+(smbd, nmbd, winbindd, net, testparm, etc) operate much as they do in
+the Samba 3.6 release candidates. 
 
-Changed security defaults
--------------------------
-
-Samba 3.6 has adopted a number of improved security defaults that will
-impact on existing users of Samba.
-
- client ntlmv2 auth = yes
- client use spnego principal = no
- send spnego principal = no
-
-The impact of 'client ntlmv2 auth = yes' is that by default we will not
-use NTLM authentication as a client.  This applies to the Samba client
-tools such as smbclient and winbind, but does not change the separately
-released in-kernel CIFS client.  To re-enable the poorer NTLM encryption
-set '--option=clientusentlmv2auth=no' on your smbclient command line, or
-set 'client ntlmv2 auth = no' in your smb.conf
-
-The impact of 'client use spnego principal = no' is that we may be able
-to use Kerberos to communicate with a server less often in smbclient,
-winbind and other Samba client tools.  We may fall back to NTLMSSP in
-more situations where we would previously rely on the insecure
-indication from the 'NegProt' CIFS packet.  This mostly occursed when
-connecting to a name alias not recorded as a servicePrincipalName for
-the server.  This indication is not available from Windows 2008 or later
-in any case, and is not used by modern Windows clients, so this makes
-Samba's behaviour consistent with other clients and against all servers.
-
-The impact of 'send spnego principal = no' is to match Windows 2008 and
-not to send this principal, making existing clients give more consistent
-behaviour (more likely to fall back to NTLMSSP) between Samba and
-Windows 2008, and between Windows versions that did and no longer use
-this insecure hint.
-
-
-SMB2 support
-------------
-
-SMB2 support in 3.6.0 is fully functional (with one omission),
-and can be enabled by setting:
-
-max protocol = SMB2
-
-in the [global] section of your smb.conf and re-starting
-Samba. All features should work over SMB2 except the modification
-of user quotas using the Windows quota management tools.
-
-As this is the first release containing what we consider
-to be a fully featured SMB2 protocol, we are not enabling
-this by default, but encourage users to enable SMB2 and
-test it. Once we have enough confirmation from Samba
-users and OEMs that SMB2 support is stable in wide user
-testing we will enable SMB2 by default in a future Samba
-release.
-
-
-Internal Winbind passdb changes
--------------------------------
-
-Winbind has been changed to use the internal samr and lsa rpc pipe to get
-local user and group information instead of calling passdb functions. The
-reason is to use more of our infrastructure and test this infrastructure by
-using it. With this approach more code in Winbind is shared.
-
-
-New Spoolss code
-----------------
-
-The spoolss and the old RAP printing code have been completely
-overhauled and refactored.
-
-All calls from lanman/printing code has been changed to go through the
-spoolss RPC interfaces, this allows us to keep all checks in one place
-and avoid special cases in the main printing code.
-Printing code has been therefore confined within the spoolss code.
-
-All the printing code, including the spoolss RPC interfaces has been
-changed to use the winreg RPC interfaces to store all data.
-All data has been migrated from custom, arbitrary TDB files to the
-registry interface. This transition allow us to present correct data to
-windows client accessing the server registry through the winreg RPC
-interfaces to query for printer data. Data is served out from a real
-registry implementation and therefore arguably 100% forward compatible.
-
-Migration code from the previous TDB files formats is provided. This
-code is automatically invoked the first time the new code is run on the
-server. Although manual migration is also available using the 'net
-printer migrate' command.
-
-These changes not only make all the spoolss code much more closer to
-"the spec", it also greatly improves our internal testing of both
-spoolss and winreg interfaces, and reduces overall code duplication.
-
-As part of this work, new tests have been also added to increase
-coverage.
-
-This code will also allow, in future, an easy transition to split out
-the spooling functions into a separate daemon for those OEMs that do not
-need printing functionality in their appliances, reducing the code
-footprint.
-
-
-ID Mapping Changes
-------------------
-
-The id mapping configuration has been a source of much grief in the past.
-For this release, id mapping has ben rewritten yet again with the goal
-of making the configuration more simple and more coherent while keeping
-the needed flexibility and even adding to the flexibility in some respects.
-
-The major change that implies the configuration simplifications is at
-the heart of the id mapping system: The separation of the "idmap alloc
-system" that is responsible for the unix id counters in the tdb, tdb2
-and ldap idmap backends from the id mapping code itself has been removed.
-The sids_to_unixids operation is now atomic and encapsulates (if needed)
-the action of allocating a unix id for a mapping that is to be created.
-Consequently all idmap alloc configuration parameters have vanished and
-it is hence now also not possible any more to specify an idmap alloc
-backend different from the idmap backend. Each idmap backend uses its
-own idmap unixid creation mechanism transparently.
-
-As a consequence of the id mapping changes, the methods that are used
-for storing and deleting id mappings have been removed from the winbindd
-API. The "net idmap dump/restore" commands have been rewritten to
-not speak through winbindd any more but directly act on the databases.
-This is currently available for the tdb and tdb2 backends, the implementation
-for ldap still missing.
-
-The allocate_id functionality is preserved for the unix id creator of the
-default idmap configuration is also used as the source of unix ids
-for the group mapping database and for the posix attributes in a
-ldapsam:editposix setup.
-
-As part of the changes, the default idmap configuration has been
-changed to be more coherent with the per-domain configuration.
-The parameters "idmap uid", "idmap gid" and "idmap range" are now
-deprecated in favour of the systematic "idmap config * : range"
-and "idmap config * : backend" parameters. The reason for this change
-is that the old options only provided an incomplete and hence deceiving
-backwards compatibility, which was a source of many problems with
-updgrades. By introducing this change in configuration, it should be
-brought to the conciousness of the users that even the simple
-id mapping is not working exactly as in Samba 3.0 versions any more.
-
-
-SMB Traffic Analyzer
---------------------
-
-Added the new SMB Traffic Analyzer (SMBTA) VFS module protocol 2
-featuring encryption, multiple arguments, and easier parseability. A new
-tool 'smbta-util' has been created to control the encryption behaviour
-of SMBTA. For compatibility, SMBTA by default operates on version 1.
-There are programs consuming the data that the module sends.
-
-More information can be found on
-http://holger123.wordpress.com/smb-traffic-analyzer/
-
-
-NFS quota backend on Linux
---------------------------
-
-A new nfs quota backend for Linux has been added that is based
-on the existing Solaris/FreeBSD implementation. This allows samba
-to communicate correct diskfree information for nfs imports that
-are re-exported as samba shares.
-
-
-######################################################################
-Changes
-#######
+CHANGES
+=======
 
 smb.conf changes
 ----------------
 
    Parameter Name                      Description     Default
    --------------                      -----------     -------
+   announce version 		       Removed
+   announce as	 		       Removed
 
-   async smb echo handler	       New	       No
-   client ntlmv2 auth		       Changed Default Yes
-   client use spnego principal	       New	       No
-   ctdb locktime warn threshold	       New	       0
-   idmap alloc backend		       Removed
-   log writeable files on exit	       New	       No
-   multicast dns register	       New	       Yes
-   ncalrpc dir			       New
-   send spnego principal	       New	       No
-   smb2 max credits		       New	       128
-   smb2 max read		       New	       1048576
-   smb2 max trans		       New	       1048576
-   smb2 max write		       New	       1048576
-   username map cache time	       New	       0
-   winbind max clients		       New	       200
+Those familiar with Samba 3 can find a list of user-visible changes
+between the two technology sets provided in the NEWS file.
 
+KNOWN ISSUES
+============
 
-######################################################################
+- Domain member support in the 'samba' binary is in it's infancy, and
+  is not comparable to the support found in winbindd.  As such, do not
+  use the 'samba' binary (provided for the AD server) on a member
+  server.
+
+- There is no printing support in the 'samba' binary (use smbd instead)
+
+- There is no NetBIOS browsing support in the 'samba' binary (use nmbd
+  and smbd instead)
+
+- Clock Synchronisation is critical.  Many 'wrong password' errors are
+  actually due to Kerberos objecting to a clock skew between client
+  and server.  (The NTP work in the previous alphas are partly to assist
+  with this problem).
+
+- The DRS replication code may fail.  Please contact the team if you
+  experience issues with DRS replication, as we have fixed many issues
+  here in response to feedback from our production users. 
+
+- Users upgrading existing databases to Samba4 should carefully
+  consult upgrading-samba4.txt.  We have made a number of changes in
+  this release that should make it easier to upgrade in future.
+  Btw: there exists also a script under the "setup" directory of the
+  source distribution called "upgrade_from_s3" which should allow a step-up
+  from Samba3 to Samba4. It's not included yet in the binary distributions
+  since it's completely experimental!
+
+RUNNING Samba 4.0 as an AD DC
+=============================
+
+A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
+
+  http://wiki.samba.org/index.php/Samba4/HOWTO
+
+#######################################
 Reporting bugs & Development Discussion
 #######################################
 
@@ -216,7 +133,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 3.6 product in the project's Bugzilla
+be filed under the Samba 4.0 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 

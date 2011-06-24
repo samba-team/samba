@@ -79,7 +79,7 @@ static void dnsupdate_rndc_done(struct tevent_req *subreq)
 	ret = samba_runcmd_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		service->confupdate.status = map_nt_error_from_unix(sys_errno);
+		service->confupdate.status = map_nt_error_from_unix_common(sys_errno);
 	} else {
 		service->confupdate.status = NT_STATUS_OK;
 	}
@@ -123,12 +123,12 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 
 	path = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "path");
 	if (path == NULL) {
-		path = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update");
+		path = lpcfg_private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update");
 	}
 
 	path_static = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "extra_static_grant_rules");
 	if (path_static == NULL) {
-		path_static = private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update.static");
+		path_static = lpcfg_private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update.static");
 	}
 
 	tmp_path = talloc_asprintf(tmp_ctx, "%s.tmp", path);
@@ -242,7 +242,7 @@ static void dnsupdate_nameupdate_done(struct tevent_req *subreq)
 	ret = samba_runcmd_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		service->nameupdate.status = map_nt_error_from_unix(sys_errno);
+		service->nameupdate.status = map_nt_error_from_unix_common(sys_errno);
 	} else {
 		service->nameupdate.status = NT_STATUS_OK;
 	}
@@ -271,7 +271,7 @@ static void dnsupdate_spnupdate_done(struct tevent_req *subreq)
 	ret = samba_runcmd_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		service->nameupdate.status = map_nt_error_from_unix(sys_errno);
+		service->nameupdate.status = map_nt_error_from_unix_common(sys_errno);
 	} else {
 		service->nameupdate.status = NT_STATUS_OK;
 	}
@@ -381,7 +381,7 @@ static void dnsupdate_RODC_callback(struct tevent_req *req)
 	ret = samba_runcmd_recv(req, &sys_errno);
 	talloc_free(req);
 	if (ret != 0) {
-		st->r->out.result = map_nt_error_from_unix(sys_errno);
+		st->r->out.result = map_nt_error_from_unix_common(sys_errno);
 		DEBUG(2,(__location__ ": RODC DNS Update failed: %s\n", nt_errstr(st->r->out.result)));
 	} else {
 		st->r->out.result = NT_STATUS_OK;

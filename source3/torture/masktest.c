@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    mask_match tester
    Copyright (C) Andrew Tridgell 1999
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "trans2.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/nmblib.h"
 
 static fstring password;
@@ -166,10 +167,8 @@ return a connection to a server
 static struct cli_state *connect_one(char *share)
 {
 	struct cli_state *c;
-	struct nmb_name called, calling;
 	char *server_n;
 	char *server;
-	struct sockaddr_storage ss;
 	NTSTATUS status;
 
 	server = share+2;
@@ -180,39 +179,15 @@ static struct cli_state *connect_one(char *share)
 
 	server_n = server;
 
-	zero_sockaddr(&ss);
-
-	make_nmb_name(&calling, "masktest", 0x0);
-	make_nmb_name(&called , server, 0x20);
-
- again:
-        zero_sockaddr(&ss);
-
-	/* have to open a new connection */
-	if (!(c=cli_initialise())) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
-		return NULL;
-	}
-
-	status = cli_connect(c, server_n, &ss);
+	status = cli_connect_nb(server, NULL, 0, 0x20, "masktest", Undefined,
+				&c);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Connection to %s failed. Error %s\n", server_n, nt_errstr(status) ));
+		DEBUG(0,("Connection to %s failed. Error %s\n", server_n,
+			 nt_errstr(status)));
 		return NULL;
 	}
 
 	c->protocol = max_protocol;
-
-	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
-		cli_shutdown(c);
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
 
 	status = cli_negprot(c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -313,11 +288,11 @@ static void get_real_name(struct cli_state *cli,
 	*pp_long_name = NULL;
 	/* nasty hack to force level 260 listings - tridge */
 	if (max_protocol <= PROTOCOL_LANMAN1) {
-		cli_list_trans(cli, "\\masktest\\*.*", aHIDDEN | aDIR,
+		cli_list_trans(cli, "\\masktest\\*.*", FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO, listfn,
 			       &state);
 	} else {
-		cli_list_trans(cli, "\\masktest\\*", aHIDDEN | aDIR,
+		cli_list_trans(cli, "\\masktest\\*", FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			       SMB_FIND_FILE_BOTH_DIRECTORY_INFO,
 			       listfn, &state);
 	}
@@ -359,7 +334,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 		return;
 	}
 	fstrcpy(res1, "---");
-	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
+	cli_list(cli, mask, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 
@@ -371,7 +346,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 		if (die_on_error) exit(1);
 	}
 
-	cli_unlink(cli, file, aSYSTEM | aHIDDEN);
+	cli_unlink(cli, file, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
 	SAFE_FREE(long_name);
@@ -388,7 +363,7 @@ static void test_mask(int argc, char *argv[],
 
 	cli_mkdir(cli, "\\masktest");
 
-	cli_unlink(cli, "\\masktest\\*", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\masktest\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
 	if (argc >= 2) {
 		while (argc >= 2) {
@@ -411,8 +386,8 @@ static void test_mask(int argc, char *argv[],
 	while (1) {
 		l1 = 1 + random() % 20;
 		l2 = 1 + random() % 20;
-		mask = TALLOC_ARRAY(ctx, char, strlen("\\masktest\\")+1+22);
-		file = TALLOC_ARRAY(ctx, char, strlen("\\masktest\\")+1+22);
+		mask = talloc_array(ctx, char, strlen("\\masktest\\")+1+22);
+		file = talloc_array(ctx, char, strlen("\\masktest\\")+1+22);
 		if (!mask || !file) {
 			goto finished;
 		}

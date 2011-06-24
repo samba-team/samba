@@ -867,24 +867,14 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 					     const char *dfs_path,
 					     const char *server_path, int isfirstoffset)
 {
-
+	ZERO_STRUCTP(ref);
 	switch (version) {
-	case 3:
-		ZERO_STRUCTP(ref);
-		ref->version = version;
-		ref->referral.v3.data.server_type = DFS_SERVER_NON_ROOT;
-		/* "normal" referral seems to always include the GUID */
-		ref->referral.v3.size = 34;
-
-		ref->referral.v3.data.entry_flags = 0;
-		ref->referral.v3.data.ttl = 600; /* As w2k3 */
-		ref->referral.v3.data.referrals.r1.DFS_path = dfs_path;
-		ref->referral.v3.data.referrals.r1.DFS_alt_path = dfs_path;
-		ref->referral.v3.data.referrals.r1.netw_address = server_path;
-		return NT_STATUS_OK;
 	case 4:
-		ZERO_STRUCTP(ref);
-		ref->version = version;
+		version = 3;
+# if 0
+		/* For the moment there is a bug with XP that don't seems to appriciate much
+		 * level4 so we return just level 3 for everyone
+		 */
 		ref->referral.v4.server_type = DFS_SERVER_NON_ROOT;
 		/* "normal" referral seems to always include the GUID */
 		ref->referral.v4.size = 34;
@@ -892,11 +882,23 @@ static NTSTATUS fill_normal_dfs_referraltype(struct dfs_referral_type *ref,
 		if (isfirstoffset) {
 			ref->referral.v4.entry_flags =  DFS_HEADER_FLAG_TARGET_BCK;
 		}
-		ref->referral.v4.ttl = 600; /* As w2k3 */
-		ref->referral.v4.r1.DFS_path = dfs_path;
-		ref->referral.v4.r1.DFS_alt_path = dfs_path;
-		ref->referral.v4.r1.netw_address = server_path;
+		ref->referral.v4.ttl = 900; /* As w2k8r2 */
+		ref->referral.v4.referrals.r1.DFS_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v4.referrals.r1.DFS_alt_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v4.referrals.r1.netw_address = talloc_strdup(ref, server_path);
+		return NT_STATUS_OK;
+#endif
+	case 3:
+		ref->version = version;
+		ref->referral.v3.server_type = DFS_SERVER_NON_ROOT;
+		/* "normal" referral seems to always include the GUID */
+		ref->referral.v3.size = 34;
 
+		ref->referral.v3.entry_flags = 0;
+		ref->referral.v3.ttl = 600; /* As w2k3 */
+		ref->referral.v3.referrals.r1.DFS_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v3.referrals.r1.DFS_alt_path = talloc_strdup(ref, dfs_path);
+		ref->referral.v3.referrals.r1.netw_address = talloc_strdup(ref, server_path);
 		return NT_STATUS_OK;
 	}
 	return NT_STATUS_INVALID_LEVEL;
@@ -914,18 +916,25 @@ static NTSTATUS fill_domain_dfs_referraltype(struct dfs_referral_type *ref,
 	switch (version) {
 	case 3:
 		ZERO_STRUCTP(ref);
+		DEBUG(8, ("Called fill_domain_dfs_referraltype\n"));
 		ref->version = version;
-		ref->referral.v3.data.server_type = DFS_SERVER_NON_ROOT;
+		ref->referral.v3.server_type = DFS_SERVER_NON_ROOT;
 		/* It's hard coded ... don't think it's a good way but the sizeof return not the
 		 * correct values
 		 *
 		 * We have 18 if the GUID is not included 34 otherwise
 		*/
-		ref->referral.v3.size = 18;
-		ref->referral.v3.data.entry_flags = DFS_FLAG_REFERRAL_DOMAIN_RESP;
-		ref->referral.v3.data.ttl = 600; /* As w2k3 */
-		ref->referral.v3.data.referrals.r2.special_name = domain;
-		ref->referral.v3.data.referrals.r2.nb_expanded_names = numnames;
+		if (numnames == 0) {
+			/* Windows return without the guid when returning domain list
+			 */
+			ref->referral.v3.size = 18;
+		} else {
+			ref->referral.v3.size = 34;
+		}
+		ref->referral.v3.entry_flags = DFS_FLAG_REFERRAL_DOMAIN_RESP;
+		ref->referral.v3.ttl = 600; /* As w2k3 */
+		ref->referral.v3.referrals.r2.special_name = domain;
+		ref->referral.v3.referrals.r2.nb_expanded_names = numnames;
 		/* Put the final terminator */
 		if (names) {
 			const char **names2 = talloc_array(ref, const char *, numnames+1);
@@ -935,8 +944,8 @@ static NTSTATUS fill_domain_dfs_referraltype(struct dfs_referral_type *ref,
 				names2[i] = talloc_asprintf(names2, "\\%s", names[i]);
 				NT_STATUS_HAVE_NO_MEMORY(names2[i]);
 			}
-			names2[numnames] = 0;
-			ref->referral.v3.data.referrals.r2.expanded_names = names2;
+			names2[numnames] = NULL;
+			ref->referral.v3.referrals.r2.expanded_names = names2;
 		}
 		return NT_STATUS_OK;
 	}
@@ -1098,7 +1107,7 @@ static NTSTATUS get_dcs(TALLOC_CTX *ctx, struct ldb_context *ldb,
 	}
 	talloc_free(r);
 
-	if (searched_site != NULL) {
+	if (searched_site != NULL && searched_site[0] != '\0') {
 		ret = ldb_search(ldb, subctx, &r, configdn, LDB_SCOPE_SUBTREE,
 				 attrs_none, "(&(name=%s)(objectClass=site))", searched_site);
 		if (ret != LDB_SUCCESS) {
@@ -1342,7 +1351,7 @@ static NTSTATUS dodomain_referral(TALLOC_CTX *ctx,
 		}
 
 		if (!ok && resp.nb_referrals == 2) {
-			DEBUG(0, (__location__ "; Not able to fit the domain and realm in DFS a "
+			DEBUG(8, (__location__ "; Not able to fit the domain and realm in DFS a "
 				  " 56K buffer, something must be broken"));
 			talloc_free(context);
 			return NT_STATUS_INTERNAL_ERROR;
@@ -1363,6 +1372,8 @@ static NTSTATUS dodomain_referral(TALLOC_CTX *ctx,
  */
 static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 					const struct dfs_GetDFSReferral_in dfsreq,
+					const char* requesteddomain,
+					const char* requestedshare,
 					const char* requestedname,
 					struct ldb_context *ldb,
 					struct smb_trans2 *trans,
@@ -1378,16 +1389,13 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 	NTSTATUS status;
 	unsigned int num_domain = 1;
 	enum ndr_err_code ndr_err;
-	const char *requesteddomain;
 	const char *realm = lpcfg_realm(lp_ctx);
 	const char *domain = lpcfg_workgroup(lp_ctx);
 	const char *site_name = NULL; /* Name of the site where the client is */
-	char *share = NULL;
 	bool found = false;
 	bool need_fqdn = false;
 	bool dc_referral = true;
 	unsigned int i;
-	char *tmp;
 	struct dc_set **set;
 	char const **domain_list;
 	struct tsocket_address *remote_address;
@@ -1407,24 +1415,13 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 	context = talloc_new(ctx);
 	NT_STATUS_HAVE_NO_MEMORY(context);
 
-	if (requestedname[0] == '\\' && !strchr(requestedname+1,'\\')) {
-		requestedname++;
-	}
-	requesteddomain = requestedname;
+	DEBUG(10, ("in this we have request for %s and share %s requested is %s\n",
+				requesteddomain,
+				requestedshare,
+				requestedname));
 
-	if (strchr(requestedname,'\\')) {
-		char *subpart;
-		/* we have a second part */
-		requesteddomain = talloc_strdup(context, requestedname+1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(requesteddomain, context);
-		subpart = strchr(requesteddomain,'\\');
-		subpart[0] = '\0';
-	}
-	tmp = strchr(requestedname + 1,'\\'); /* To get second \ if any */
-
-	if (tmp != NULL) {
-		/* There was a share */
-		share = tmp+1;
+	if (requestedshare) {
+		DEBUG(10, ("Have a non DC domain referal\n"));
 		dc_referral = false;
 	}
 
@@ -1464,7 +1461,7 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 		client_addr = tsocket_address_inet_addr_string(remote_address, context);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(client_addr, context);
 	}
-
+	site_name = samdb_client_site_name(ldb, context, client_addr, NULL);
 	status = get_dcs(context, ldb, site_name, need_fqdn, &set, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("Unable to get list of DCs\n"));
@@ -1508,8 +1505,13 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 		referral = talloc(context, struct dfs_referral_type);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral, context);
 
-		referral_str = talloc_asprintf(referral, "\\%s",
-					       requestedname);
+		if (requestedname[0] == '\\') {
+			referral_str = talloc_asprintf(referral, "%s",
+						       requestedname);
+		} else {
+			referral_str = talloc_asprintf(referral, "\\%s",
+						       requestedname);
+		}
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral_str, context);
 
 		status = fill_domain_dfs_referraltype(referral,  3,
@@ -1564,12 +1566,14 @@ static NTSTATUS dodc_or_sysvol_referral(TALLOC_CTX *ctx,
 				NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral, context);
 
 				referral_str = talloc_asprintf(referral, "\\%s\\%s",
-							       set[i]->names[j], share);
+							       set[i]->names[j], requestedshare);
+				DEBUG(8, ("Doing a dfs referral for %s with this value %s requested %s\n",  set[i]->names[j], referral_str, requestedname));
 				NT_STATUS_HAVE_NO_MEMORY_AND_FREE(referral_str, context);
 
 				status = fill_normal_dfs_referraltype(referral,
 						dfsreq.max_referral_level,
 						requestedname, referral_str, j==0);
+
 				if (!NT_STATUS_IS_OK(status)) {
 					DEBUG(2, (__location__ ": Unable to fill a normal dfs referral object"));
 					talloc_free(context);
@@ -1616,7 +1620,7 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 	struct ldb_context *ldb;
 	struct loadparm_context *lp_ctx;
 	const char *realm, *nbname, *requestedname;
-	char *fqdn, *tmp;
+	char *fqdn, *share, *domain, *tmp;
 	NTSTATUS status;
 
 	lp_ctx = req->tcon->ntvfs->lp_ctx;
@@ -1645,7 +1649,7 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 		return status;
 	}
 
-	DEBUG(10, ("Requested DFS name: %s length: %u\n",
+	DEBUG(8, ("Requested DFS name: %s length: %u\n",
 		   dfsreq.servername, (unsigned int)strlen(dfsreq.servername)));
 
 	/*
@@ -1679,31 +1683,41 @@ static NTSTATUS trans2_getdfsreferral(struct smbsrv_request *req,
 	}
 	talloc_free(fqdn);
 
-	tmp = strchr(requestedname + 1,'\\'); /* To get second \ if any */
+	domain = talloc_strdup(context, requestedname);
+	while(*domain && *domain == '\\') {
+		domain++;
+	}
 
+	tmp = strchr(domain,'\\'); /* To get second \ if any */
+	share = NULL;
+	if (tmp) {
+		/*
+		 * We are finishing properly the domain string
+		 * and the share one will start after the \
+		 */
+		tmp[0] = '\\';
+		tmp++;
+		share = talloc_strdup(context, tmp);
+	}
 	/*
-	 * If we have no slash at the first position or (foo.bar.domain.net)
-	 * a slash at the first position but no other slash (\foo.bar.domain.net)
-	 * or a slash at the first position and another slash
-	 * and netlogon or sysvol after the second slash
-	 * (\foo.bar.domain.net\sysvol) then we will handle it because
-	 * it's either a dc referral or a sysvol/netlogon referral
+	 * Here we have filtered the thing the requested name don't contain our DNS name.
+	 * So if the share == NULL or if share in ("sysvol", "netlogon")
+	 * then we proceed. In the first case it will be a dc refereal in the second it will
+	 * be just a sysvol/netlogon referral.
 	 */
-	if (requestedname[0] != '\\' ||
-	    tmp == NULL ||
-	    strcasecmp(tmp+1, "sysvol") == 0 ||
-	    strcasecmp(tmp+1, "netlogon") == 0) {
-		status = dodc_or_sysvol_referral(op, dfsreq, requestedname,
+	if (share == NULL ||
+	    strcasecmp(share, "sysvol") == 0 ||
+	    strcasecmp(share, "netlogon") == 0) {
+		status = dodc_or_sysvol_referral(op, dfsreq, domain, share, requestedname,
 					       ldb, trans, req, lp_ctx);
 		talloc_free(context);
 		return status;
 	}
 
-	if (requestedname[0] == '\\' &&
-	    tmp &&
-	    strchr(tmp+1, '\\') &&
-	    (strncasecmp(tmp+1, "sysvol", 6) == 0 ||
-	     strncasecmp(tmp+1, "netlogon", 8) == 0)) {
+	tmp = strchr(share, '\\');
+	if (tmp &&
+	    (strncasecmp(share, "sysvol", 6) == 0 ||
+	     strncasecmp(share, "netlogon", 8) == 0)) {
 		/*
 		 * We have more than two \ so it something like
 		 * \domain\sysvol\foobar

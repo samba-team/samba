@@ -29,6 +29,8 @@
 #include "dbwrap.h"
 #include "smbd/smbd.h"
 #include "messages.h"
+#include "lib/util/tdb_wrap.h"
+#include "util_tdb.h"
 
 struct notify_context {
 	struct db_context *db_recursive;
@@ -196,7 +198,7 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	notify->seqnum = seqnum;
 
 	talloc_free(notify->array);
-	notify->array = TALLOC_ZERO_P(notify, struct notify_array);
+	notify->array = talloc_zero(notify, struct notify_array);
 	NT_STATUS_HAVE_NO_MEMORY(notify->array);
 
 	if (!rec) {
@@ -529,7 +531,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 
 	depth = count_chars(e.path, '/');
 
-	listel = TALLOC_ZERO_P(notify, struct notify_list);
+	listel = talloc_zero(notify, struct notify_list);
 	if (listel == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -597,7 +599,7 @@ NTSTATUS notify_remove_onelevel(struct notify_context *notify,
 
 	rec = notify->db_onelevel->fetch_locked(
 		notify->db_onelevel, array,
-		make_tdb_data((uint8_t *)fid, sizeof(*fid)));
+		make_tdb_data((const uint8_t *)fid, sizeof(*fid)));
 	if (rec == NULL) {
 		DEBUG(10, ("notify_remove_onelevel: fetch_locked for %s failed"
 			   "\n", file_id_string_tos(fid)));
@@ -841,7 +843,7 @@ void notify_onelevel(struct notify_context *notify, uint32_t action,
 	if (notify->db_onelevel->fetch(
 		    notify->db_onelevel, array,
 		    make_tdb_data((uint8_t *)&fid, sizeof(fid)),
-		    &dbuf) == -1) {
+		    &dbuf) != 0) {
 		TALLOC_FREE(array);
 		return;
 	}

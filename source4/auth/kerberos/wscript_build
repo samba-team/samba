@@ -4,7 +4,7 @@ bld.SAMBA_LIBRARY('authkrb5',
                   source='kerberos.c kerberos_heimdal.c kerberos_pac.c gssapi_parse.c krb5_init_context.c keytab_copy.c',
                   autoproto='proto.h',
                   public_deps='krb5 ndr-krb5pac samba_socket LIBCLI_RESOLVE com_err asn1',
-                  deps='asn1util auth_sam_reply tevent LIBPACKET ndr ldb KRB5_WRAP',
+                  deps='asn1util auth_sam_reply tevent LIBPACKET ndr ldb KRB5_WRAP errors',
                   private_library=True
                   )
 

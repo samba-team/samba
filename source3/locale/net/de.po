@@ -415,7 +415,7 @@ msgid "  net getdomainsid"
 msgstr ""
 
 #: ../../utils/net.c:663
-msgid "Display the maximul RID currently used"
+msgid "Display the maximum RID currently used"
 msgstr "Die höchste verwendete RID anzeigen"
 
 #: ../../utils/net.c:664
@@ -924,7 +924,7 @@ msgstr ""
 #: ../../utils/net_ads.c:1070
 #, c-format
 msgid "Join is OK\n"
-msgstr "Beitritt ist OK\n"
+msgstr "Mitgliedschaft ist OK\n"
 
 #: ../../utils/net_ads.c:1081
 msgid "Host is not configured as a member server.\n"

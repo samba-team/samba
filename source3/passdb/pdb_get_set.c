@@ -123,8 +123,7 @@ time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 
 bool pdb_get_pass_can_change(const struct samu *sampass)
 {
-	if (sampass->pass_can_change_time == get_time_t_max() &&
-	    sampass->pass_last_set_time != 0)
+	if (sampass->pass_can_change_time == get_time_t_max())
 		return False;
 	return True;
 }
@@ -512,7 +511,7 @@ bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum p
 	if (!g_sid)
 		return False;
 
-	if ( !(sampass->group_sid = TALLOC_P( sampass, struct dom_sid )) ) {
+	if ( !(sampass->group_sid = talloc( sampass, struct dom_sid )) ) {
 		return False;
 	}
 

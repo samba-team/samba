@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "lib/eventlog/eventlog.h"
 #include "../libcli/security/security.h"
+#include "util_tdb.h"
 
 /* maintain a list of open eventlog tdbs with reference counts */
 
@@ -202,7 +203,7 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32_t needed,
 		/* read a record, add the amt to nbytes */
 		key.dsize = sizeof(int32_t);
 		key.dptr = (unsigned char *)&i;
-		ret = tdb_fetch( the_tdb, key );
+		ret = tdb_fetch_compat( the_tdb, key );
 		if ( ret.dsize == 0 ) {
 			DEBUG( 8,
 			       ( "Can't find a record for the key, record [%d]\n",
@@ -415,7 +416,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 			return ptr;
 		}
 
-		if ( !(tdb_node = TALLOC_ZERO_P( NULL, ELOG_TDB)) ) {
+		if ( !(tdb_node = talloc_zero( NULL, ELOG_TDB)) ) {
 			DEBUG(0,("elog_open_tdb: talloc() failure!\n"));
 			tdb_close( tdb );
 			return NULL;
@@ -678,7 +679,7 @@ struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
 	key.dptr = (unsigned char *)&srecno;
 	key.dsize = sizeof(int32_t);
 
-	data = tdb_fetch(tdb, key);
+	data = tdb_fetch_compat(tdb, key);
 	if (data.dsize == 0) {
 		DEBUG(8,("evlog_pull_record_tdb: "
 			"Can't find a record for the key, record %d\n",
@@ -780,7 +781,7 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 
 	/* lock */
 	ret = tdb_lock_bystring_with_timeout(tdb, EVT_NEXT_RECORD, 1);
-	if (ret == -1) {
+	if (ret != 0) {
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
@@ -803,13 +804,13 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 	ebuf.dptr  = blob.data;
 
 	ret = tdb_store(tdb, kbuf, ebuf, 0);
-	if (ret == -1) {
+	if (ret != 0) {
 		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
 		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
 	}
 
 	ret = tdb_store_int32(tdb, EVT_NEXT_RECORD, r->record_number + 1);
-	if (ret == -1) {
+	if (ret != 0) {
 		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
 		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
 	}

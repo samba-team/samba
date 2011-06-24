@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 
 /*****************************************************************************
@@ -65,16 +66,16 @@ int cli_print_queue(struct cli_state *cli,
 	p = param;
 	SSVAL(p,0,76);         /* API function number 76 (DosPrintJobEnum) */
 	p += 2;
-	safe_strcpy_base(p,"zWrLeh", param, sizeof(param));   /* parameter description? */
+	strlcpy_base(p,"zWrLeh", param, sizeof(param));   /* parameter description? */
 	p = skip_string(param,sizeof(param),p);
-	safe_strcpy_base(p,"WWzWWDDzz", param, sizeof(param));  /* returned data format */
+	strlcpy_base(p,"WWzWWDDzz", param, sizeof(param));  /* returned data format */
 	p = skip_string(param,sizeof(param),p);
-	safe_strcpy_base(p,cli->share, param, sizeof(param));    /* name of queue */
+	strlcpy_base(p,cli->share, param, sizeof(param));    /* name of queue */
 	p = skip_string(param,sizeof(param),p);
 	SSVAL(p,0,2);   /* API function level 2, PRJINFO_2 data structure */
 	SSVAL(p,2,1000); /* size of bytes of returned data buffer */
 	p += 4;
-	safe_strcpy_base(p,"", param,sizeof(param));   /* subformat */
+	strlcpy_base(p,"", param,sizeof(param));   /* subformat */
 	p = skip_string(param,sizeof(param),p);
 
 	DEBUG(4,("doing cli_print_queue for %s\n", cli->share));
@@ -136,9 +137,9 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	p = param;
 	SSVAL(p,0,81);		/* DosPrintJobDel() */
 	p += 2;
-	safe_strcpy_base(p,"W", param,sizeof(param));
+	strlcpy_base(p,"W", param,sizeof(param));
 	p = skip_string(param,sizeof(param),p);
-	safe_strcpy_base(p,"", param,sizeof(param));
+	strlcpy_base(p,"", param,sizeof(param));
 	p = skip_string(param,sizeof(param),p);
 	SSVAL(p,0,job);
 	p += 2;

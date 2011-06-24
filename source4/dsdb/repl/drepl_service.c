@@ -497,7 +497,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICAMOD, dreplsrv_replica_mod, service);
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TAKEFSMOROLE, drepl_take_FSMO_role, service);
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TRIGGER_REPL_SECRET, drepl_trigger_repl_secret, service);
-	messaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);
+	imessaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);
 }
 
 /*

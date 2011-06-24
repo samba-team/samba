@@ -312,7 +312,7 @@ static struct security_descriptor* parse_acl_string(TALLOC_CTX *mem_ctx, const c
 	pacl = szACL;
 	num_ace = count_chars( pacl, ',' ) + 1;
 
-	if ( !(ace = TALLOC_ZERO_ARRAY( mem_ctx, struct security_ace, num_ace )) )
+	if ( !(ace = talloc_zero_array( mem_ctx, struct security_ace, num_ace )) )
 		return NULL;
 
 	for ( i=0; i<num_ace; i++ ) {

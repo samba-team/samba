@@ -38,6 +38,7 @@
 #include "system/filesys.h"
 #include "clitar.h"
 #include "client/client_proto.h"
+#include "libsmb/libsmb.h"
 
 static int clipfind(char **aret, int ret, char *tok);
 
@@ -70,7 +71,7 @@ extern struct cli_state *cli;
 #define ATTRSET 1
 #define ATTRRESET 0
 
-static uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+static uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 #ifndef CLIENT_TIMEOUT
 #define CLIENT_TIMEOUT (30*1000)
@@ -101,7 +102,7 @@ char tar_type='\0';
 static char **cliplist=NULL;
 static int clipn=0;
 static bool must_free_cliplist = False;
-extern const char *cmd_ptr;
+extern char *cmd_ptr;
 
 extern bool lowercase;
 extern uint16 cnum;
@@ -135,23 +136,6 @@ static void unfixtarname(char *tptr, char *fp, int l, bool first);
 /*
  * tar specific utitlities
  */
-
-/*******************************************************************
-Create  a string of size size+1 (for the null)
-*******************************************************************/
-
-static char *string_create_s(int size)
-{
-	char *tmp;
-
-	tmp = (char *)SMB_MALLOC(size+1);
-
-	if (tmp == NULL) {
-		DEBUG(0, ("Out of memory in string_create_s\n"));
-	}
-
-	return(tmp);
-}
 
 /****************************************************************************
 Write a tar header to buffer
@@ -197,7 +181,7 @@ static void writetarheader(int f, const char *aname, uint64_t size, time_t mtime
 	/* write out a "standard" tar format header */
 
 	hb.dbuf.name[NAMSIZ-1]='\0';
-	safe_strcpy(hb.dbuf.mode, amode, sizeof(hb.dbuf.mode)-1);
+	strlcpy(hb.dbuf.mode, amode ? amode : "", sizeof(hb.dbuf.mode));
 	oct_it((uint64_t)0, 8, hb.dbuf.uid);
 	oct_it((uint64_t)0, 8, hb.dbuf.gid);
 	oct_it((uint64_t) size, 13, hb.dbuf.size);
@@ -263,12 +247,12 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, const char *prefi
 		return -1;
 	}
 
-	if ((finfo->name = string_create_s(strlen(prefix) + strlen(hb -> dbuf.name) + 3)) == NULL) {
+	if ((finfo->name = SMB_MALLOC(strlen(prefix) + strlen(hb -> dbuf.name) + 4)) == NULL) {
 		DEBUG(0, ("Out of space creating file_info2 for %s\n", hb -> dbuf.name));
 		return(-1);
 	}
 
-	safe_strcpy(finfo->name, prefix, strlen(prefix) + strlen(hb -> dbuf.name) + 3);
+	strlcpy(finfo->name, prefix, strlen(prefix) + strlen(hb -> dbuf.name) + 4);
 
 	/* use l + 1 to do the null too; do prefix - prefcnt to zap leading slash */
 	unfixtarname(finfo->name + strlen(prefix), hb->dbuf.name,
@@ -294,7 +278,7 @@ of link other than a GNUtar Longlink - ignoring\n"));
 
 	if ((unoct(hb->dbuf.mode, sizeof(hb->dbuf.mode)) & S_IFDIR) ||
 				(*(finfo->name+strlen(finfo->name)-1) == '\\')) {
-		finfo->mode=aDIR;
+		finfo->mode=FILE_ATTRIBUTE_DIRECTORY;
 	} else {
 		finfo->mode=0; /* we don't care about mode at the moment, we'll
 				* just make it a regular file */
@@ -521,14 +505,16 @@ static bool ensurepath(const char *fname)
 	/* ensures path exists */
 
 	char *partpath, *ffname;
+	size_t fnamelen = strlen(fname)+1;
 	const char *p=fname;
 	char *basehack;
 	char *saveptr;
+	NTSTATUS status;
 
 	DEBUG(5, ( "Ensurepath called with: %s\n", fname));
 
-	partpath = string_create_s(strlen(fname));
-	ffname = string_create_s(strlen(fname));
+	partpath = SMB_MALLOC(fnamelen);
+	ffname = SMB_MALLOC(fnamelen);
 
 	if ((partpath == NULL) || (ffname == NULL)){
 		DEBUG(0, ("Out of memory in ensurepath: %s\n", fname));
@@ -541,7 +527,7 @@ static bool ensurepath(const char *fname)
 
 	/* fname copied to ffname so can strtok_r */
 
-	safe_strcpy(ffname, fname, strlen(fname));
+	strlcpy(ffname, fname, fnamelen);
 
 	/* do a `basename' on ffname, so don't try and make file name directory */
 	if ((basehack=strrchr_m(ffname, '\\')) == NULL) {
@@ -555,20 +541,22 @@ static bool ensurepath(const char *fname)
 	p=strtok_r(ffname, "\\", &saveptr);
 
 	while (p) {
-		safe_strcat(partpath, p, strlen(fname) + 1);
+		strlcat(partpath, p, fnamelen);
 
-		if (!NT_STATUS_IS_OK(cli_chkpath(cli, partpath))) {
-			if (!NT_STATUS_IS_OK(cli_mkdir(cli, partpath))) {
+		status = cli_chkpath(cli, partpath);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = cli_mkdir(cli, partpath);
+			if (!NT_STATUS_IS_OK(status)) {
 				SAFE_FREE(partpath);
 				SAFE_FREE(ffname);
-				DEBUG(0, ("Error mkdir %s\n", cli_errstr(cli)));
+				DEBUG(0, ("Error mkdir %s\n", nt_errstr(status)));
 				return False;
 			} else {
 				DEBUG(3, ("mkdirhiering %s\n", partpath));
 			}
 		}
 
-		safe_strcat(partpath, "\\", strlen(fname) + 1);
+		strlcat(partpath, "\\", fnamelen);
 		p = strtok_r(NULL, "/\\", &saveptr);
 	}
 
@@ -596,6 +584,7 @@ static int padit(char *buf, uint64_t bufsize, uint64_t padsize)
 static void do_setrattr(char *name, uint16 attr, int set)
 {
 	uint16 oldattr;
+	NTSTATUS status;
 
 	if (!NT_STATUS_IS_OK(cli_getatr(cli, name, &oldattr, NULL, NULL))) {
 		return;
@@ -607,8 +596,9 @@ static void do_setrattr(char *name, uint16 attr, int set)
 		attr = oldattr & ~attr;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_setatr(cli, name, attr, 0))) {
-		DEBUG(1,("setatr failed: %s\n", cli_errstr(cli)));
+	status = cli_setatr(cli, name, attr, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("setatr failed: %s\n", nt_errstr(status)));
 	}
 }
 
@@ -671,28 +661,26 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 	status = cli_open(cli, rname, O_RDONLY, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",
-				cli_errstr(cli),rname, client_get_cur_dir()));
+				nt_errstr(status),rname, client_get_cur_dir()));
 		goto cleanup;
 	}
 
-	finfo.name = string_create_s(strlen(rname));
+	finfo.name = smb_xstrdup(rname);
 	if (finfo.name == NULL) {
 		DEBUG(0, ("Unable to allocate space for finfo.name in do_atar\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto cleanup;
 	}
 
-	safe_strcpy(finfo.name,rname, strlen(rname));
-
 	DEBUG(3,("file %s attrib 0x%X\n",finfo.name,finfo.mode));
 
-	if (tar_inc && !(finfo.mode & aARCH)) {
+	if (tar_inc && !(finfo.mode & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(4, ("skipping %s - archive bit not set\n", finfo.name));
 		shallitime=0;
-	} else if (!tar_system && (finfo.mode & aSYSTEM)) {
+	} else if (!tar_system && (finfo.mode & FILE_ATTRIBUTE_SYSTEM)) {
 		DEBUG(4, ("skipping %s - system bit is set\n", finfo.name));
 		shallitime=0;
-	} else if (!tar_hidden && (finfo.mode & aHIDDEN)) {
+	} else if (!tar_hidden && (finfo.mode & FILE_ATTRIBUTE_HIDDEN)) {
 		DEBUG(4, ("skipping %s - hidden bit is set\n", finfo.name));
 		shallitime=0;
 	} else {
@@ -784,7 +772,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 
 		/* if shallitime is true then we didn't skip */
 		if (tar_reset && !dry_run)
-			(void) do_setrattr(finfo.name, aARCH, ATTRRESET);
+			(void) do_setrattr(finfo.name, FILE_ATTRIBUTE_ARCHIVE, ATTRRESET);
 
 		clock_gettime_mono(&tp_end);
 		this_time = (tp_end.tv_sec - tp_start.tv_sec)*1000 + (tp_end.tv_nsec - tp_start.tv_nsec)/1000000;
@@ -852,7 +840,7 @@ static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 		TALLOC_FREE(exclaim);
 	}
 
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		char *saved_curdir = NULL;
 		char *new_cd = NULL;
 		char *mtar_mask = NULL;
@@ -934,9 +922,12 @@ static void unfixtarname(char *tptr, char *fp, int l, bool first)
 			fp++;
 			l--;
 		}
+		if (l <= 0) {
+			return;
+		}
 	}
 
-	safe_strcpy(tptr, fp, l);
+	strlcpy(tptr, fp, l);
 	string_replace(tptr, '/', '\\');
 }
 
@@ -1045,8 +1036,12 @@ static int get_file(file_info2 finfo)
 		dsize = MIN(dsize, rsize);  /* Should be only what is left */
 		DEBUG(5, ("writing %i bytes, bpos = %i ...\n", dsize, bpos));
 
-		if (cli_write(cli, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
-			DEBUG(0, ("Error writing remote file\n"));
+		status = cli_writeall(cli, fnum, 0,
+				      (uint8_t *)(buffer_p + bpos), pos,
+				      dsize, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Error writing remote file: %s\n",
+				  nt_errstr(status)));
 			return 0;
 		}
 
@@ -1092,10 +1087,10 @@ static int get_file(file_info2 finfo)
 	}
 
 	/* Now close the file ... */
-
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Error %s closing remote file\n",
-			cli_errstr(cli)));
+			nt_errstr(status)));
 		return(False);
 	}
 
@@ -1166,7 +1161,8 @@ static char *get_longfilename(file_info2 finfo)
 			return(NULL);
 		}
 
-		unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size), first--);
+		unfixtarname(longname + offset, buffer_p,
+			namesize - offset, first--);
 		DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, buffer_p));
 
 		offset += TBLOCK;
@@ -1301,7 +1297,7 @@ int cmd_block(void)
 	char *buf;
 	int block;
 
-	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	if (!next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		DEBUG(0, ("blocksize <n>\n"));
 		return 1;
 	}
@@ -1326,7 +1322,7 @@ int cmd_tarmode(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 
-	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	while (next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		if (strequal(buf, "full"))
 			tar_inc=False;
 		else if (strequal(buf, "inc"))
@@ -1376,7 +1372,7 @@ int cmd_setmode(void)
 
 	attra[0] = attra[1] = 0;
 
-	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	if (!next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
 		return 1;
 	}
@@ -1389,7 +1385,7 @@ int cmd_setmode(void)
 		return 1;
 	}
 
-	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	while (next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		q=buf;
 
 		while(*q) {
@@ -1401,16 +1397,16 @@ int cmd_setmode(void)
 					direct=0;
 					break;
 				case 'r':
-					attra[direct]|=aRONLY;
+					attra[direct]|=FILE_ATTRIBUTE_READONLY;
 					break;
 				case 'h':
-					attra[direct]|=aHIDDEN;
+					attra[direct]|=FILE_ATTRIBUTE_HIDDEN;
 					break;
 				case 's':
-					attra[direct]|=aSYSTEM;
+					attra[direct]|=FILE_ATTRIBUTE_SYSTEM;
 					break;
 				case 'a':
-					attra[direct]|=aARCH;
+					attra[direct]|=FILE_ATTRIBUTE_ARCHIVE;
 					break;
 				default:
 					DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
@@ -1491,7 +1487,7 @@ int cmd_tar(void)
 	int argcl = 0;
 	int ret;
 
-	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+	if (!next_token_talloc(ctx, (const char **)&cmd_ptr,&buf,NULL)) {
 		DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
 		return 1;
 	}
@@ -1717,7 +1713,7 @@ static int read_inclusion_file(char *filename)
 			}
 		}
 
-		safe_strcpy(inclusion_buffer + inclusion_buffer_sofar, buf, inclusion_buffer_size - inclusion_buffer_sofar);
+		strlcpy(inclusion_buffer + inclusion_buffer_sofar, buf, inclusion_buffer_size - inclusion_buffer_sofar);
 		inclusion_buffer_sofar += strlen(buf) + 1;
 		clipn++;
 	}

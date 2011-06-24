@@ -482,10 +482,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		}
 
 		/* w2k3 seems to ignore the parameter,
-			* but w2k sends a wrong cookie when this value is to small
-			* this would cause looping forever, while getting
-			* the same data and same cookie forever
-			*/
+		 * but w2k sends a wrong cookie when this value is to small
+		 * this would cause looping forever, while getting
+		 * the same data and same cookie forever
+		 */
 		if (max_attrs == 0) max_attrs = 0x0FFFFFFF;
 
 		ctrl->oid = LDB_CONTROL_DIRSYNC_OID;

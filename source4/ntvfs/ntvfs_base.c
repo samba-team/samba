@@ -153,7 +153,7 @@ bool ntvfs_interface_differs(const struct ntvfs_critical_sizes *const iface)
 NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, enum ntvfs_type type,
 			       enum protocol_types protocol,
 			       uint64_t ntvfs_client_caps,
-			       struct tevent_context *ev, struct messaging_context *msg,
+			       struct tevent_context *ev, struct imessaging_context *msg,
 			       struct loadparm_context *lp_ctx,
 			       struct server_id server_id, struct ntvfs_context **_ctx)
 {
@@ -235,7 +235,7 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	shared_init = load_samba_modules(NULL, lp_ctx, "ntvfs");
+	shared_init = load_samba_modules(NULL, "ntvfs");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

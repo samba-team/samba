@@ -1136,7 +1136,7 @@ static int lsql_modify(struct lsql_context *ctx)
 	for (i = 0; i < msg->num_elements; i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
 		const struct ldb_schema_attribute *a;
-		int flags = el->flags & LDB_FLAG_MOD_MASK;
+		unsigned int flags = el->flags & LDB_FLAG_MOD_MASK;
 		char *attr;
 		char *mod;
 		unsigned int j;
@@ -1596,7 +1596,8 @@ static const struct ldb_module_ops lsqlite3_ops = {
  */
 
 static int initialize(struct lsqlite3_private *lsqlite3,
-		      struct ldb_context *ldb, const char *url, int flags)
+		      struct ldb_context *ldb, const char *url,
+		      unsigned int flags)
 {
 	TALLOC_CTX *local_ctx;
         long long queryInt;

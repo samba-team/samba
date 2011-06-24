@@ -24,7 +24,6 @@
 #include "krb5_env.h"
 
 struct libnetapi_ctx *stat_ctx = NULL;
-TALLOC_CTX *frame = NULL;
 static bool libnetapi_initialized = false;
 
 /****************************************************************
@@ -38,7 +37,7 @@ static NET_API_STATUS libnetapi_init_private_context(struct libnetapi_ctx *ctx)
 		return W_ERROR_V(WERR_INVALID_PARAM);
 	}
 
-	priv = TALLOC_ZERO_P(ctx, struct libnetapi_private_ctx);
+	priv = talloc_zero(ctx, struct libnetapi_private_ctx);
 	if (!priv) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
@@ -57,6 +56,8 @@ were not expecting it.
 
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
+	NET_API_STATUS ret;
+	TALLOC_CTX *frame;
 	if (stat_ctx && libnetapi_initialized) {
 		*context = stat_ctx;
 		return NET_API_STATUS_SUCCESS;
@@ -76,7 +77,7 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 	lp_set_cmdline("log level", "0");
 	setup_logging("libnetapi", DEBUG_STDERR);
 
-	if (!lp_load(get_dyn_CONFIGFILE(), true, false, false, false)) {
+	if (!lp_load(get_dyn_CONFIGFILE(), true, false, false, true)) {
 		TALLOC_FREE(frame);
 		fprintf(stderr, "error loading %s\n", get_dyn_CONFIGFILE() );
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
@@ -88,7 +89,9 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	BlockSignals(True, SIGPIPE);
 
-	return libnetapi_net_init(context);
+	ret = libnetapi_net_init(context);
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 /****************************************************************
@@ -105,7 +108,7 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 	struct libnetapi_ctx *ctx = NULL;
 	char *krb5_cc_env = NULL;
 
-	frame = talloc_stackframe();
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
 	if (!ctx) {
@@ -117,14 +120,14 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 
 	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
 	if (!krb5_cc_env || (strlen(krb5_cc_env) == 0)) {
-		ctx->krb5_cc_env = talloc_strdup(frame, "MEMORY:libnetapi");
+		ctx->krb5_cc_env = talloc_strdup(ctx, "MEMORY:libnetapi");
 		setenv(KRB5_ENV_CCNAME, ctx->krb5_cc_env, 1);
 	}
 
 	if (getenv("USER")) {
-		ctx->username = talloc_strdup(frame, getenv("USER"));
+		ctx->username = talloc_strdup(ctx, getenv("USER"));
 	} else {
-		ctx->username = talloc_strdup(frame, "");
+		ctx->username = talloc_strdup(ctx, "");
 	}
 	if (!ctx->username) {
 		TALLOC_FREE(frame);
@@ -140,8 +143,10 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 
 	libnetapi_initialized = true;
 
+	talloc_steal(NULL, ctx);
 	*context = stat_ctx = ctx;
-
+	
+	TALLOC_FREE(frame);
 	return NET_API_STATUS_SUCCESS;
 }
 
@@ -187,8 +192,10 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 
 	secrets_shutdown();
 
+	if (ctx == stat_ctx) {
+		stat_ctx = NULL;
+	}
 	TALLOC_FREE(ctx);
-	TALLOC_FREE(frame);
 
 	gfree_debugsyms();
 
@@ -202,10 +209,14 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 					const char *debuglevel)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	ctx->debuglevel = talloc_strdup(ctx, debuglevel);
+	
 	if (!lp_set_cmdline("log level", debuglevel)) {
+		TALLOC_FREE(frame);
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
+	TALLOC_FREE(frame);
 	return NET_API_STATUS_SUCCESS;
 }
 
@@ -272,15 +283,22 @@ NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 }
 
 /****************************************************************
+Return a libnetapi error as a string, caller must free with NetApiBufferFree
 ****************************************************************/
 
-const char *libnetapi_errstr(NET_API_STATUS status)
+char *libnetapi_errstr(NET_API_STATUS status)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *ret;
 	if (status & 0xc0000000) {
-		return get_friendly_nt_error_msg(NT_STATUS(status));
+		ret = talloc_strdup(NULL, 
+				     get_friendly_nt_error_msg(NT_STATUS(status)));
+	} else {
+		ret = talloc_strdup(NULL,
+				    get_friendly_werror_msg(W_ERROR(status)));
 	}
-
-	return get_friendly_werror_msg(W_ERROR(status));
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 /****************************************************************
@@ -304,9 +322,10 @@ NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
 }
 
 /****************************************************************
+Return a libnetapi_errstr(), caller must free with NetApiBufferFree
 ****************************************************************/
 
-const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
+char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
 				       NET_API_STATUS status_in)
 {
 	NET_API_STATUS status;
@@ -320,7 +339,7 @@ const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
 	}
 
 	if (tmp_ctx->error_string) {
-		return tmp_ctx->error_string;
+		return talloc_strdup(NULL, tmp_ctx->error_string);
 	}
 
 	return libnetapi_errstr(status_in);

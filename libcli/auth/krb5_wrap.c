@@ -5,6 +5,7 @@
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2011
    Copyright (C) Guenther Deschner 2005-2009
+   Copyright (C) Simo Sorce 2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -119,13 +120,15 @@ int create_kerberos_key_from_string_direct(krb5_context context,
 	krb5_error_code ret;
 	char *utf8_name;
 	size_t converted_size;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!push_utf8_talloc(talloc_tos(), &utf8_name, name, &converted_size)) {
+	if (!push_utf8_talloc(frame, &utf8_name, name, &converted_size)) {
+		talloc_free(frame);
 		return ENOMEM;
 	}
 
 	ret = krb5_parse_name(context, utf8_name, principal);
-	TALLOC_FREE(utf8_name);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -202,8 +205,8 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < len1; i++) {
 
-		p1 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ1), i);
-		p2 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ2), i);
+		p1 = krb5_princ_component(context, (krb5_principal)discard_const(princ1), i);
+		p2 = krb5_princ_component(context, (krb5_principal)discard_const(princ2), i);
 
 		if (p1->length != p2->length ||	memcmp(p1->data, p2->data, p1->length))
 			return False;
@@ -306,6 +309,44 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 
 	return ret;
 }
+
+char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
+			  OM_uint32 maj_stat, OM_uint32 min_stat, 
+			  const gss_OID mech)
+{
+	OM_uint32 disp_min_stat, disp_maj_stat;
+	gss_buffer_desc maj_error_message;
+	gss_buffer_desc min_error_message;
+	char *maj_error_string, *min_error_string;
+	OM_uint32 msg_ctx = 0;
+
+	char *ret;
+
+	maj_error_message.value = NULL;
+	min_error_message.value = NULL;
+	maj_error_message.length = 0;
+	min_error_message.length = 0;
+	
+	disp_maj_stat = gss_display_status(&disp_min_stat, maj_stat, GSS_C_GSS_CODE,
+			   mech, &msg_ctx, &maj_error_message);
+	disp_maj_stat = gss_display_status(&disp_min_stat, min_stat, GSS_C_MECH_CODE,
+			   mech, &msg_ctx, &min_error_message);
+	
+	maj_error_string = talloc_strndup(mem_ctx, (char *)maj_error_message.value, maj_error_message.length);
+
+	min_error_string = talloc_strndup(mem_ctx, (char *)min_error_message.value, min_error_message.length);
+
+	ret = talloc_asprintf(mem_ctx, "%s: %s", maj_error_string, min_error_string);
+
+	talloc_free(maj_error_string);
+	talloc_free(min_error_string);
+
+	gss_release_buffer(&disp_min_stat, &maj_error_message);
+	gss_release_buffer(&disp_min_stat, &min_error_message);
+
+	return ret;
+}
+
 
  char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx)
 {

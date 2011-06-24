@@ -27,22 +27,22 @@
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/messaging/irpc.h"
-#include "tdb_wrap.h"
+#include "lib/util/tdb_wrap.h"
 #include "../lib/util/unix_privs.h"
 #include "librpc/rpc/dcerpc.h"
-#include <tdb.h>
+#include "../lib/tdb_compat/tdb_compat.h"
 #include "../lib/util/util_tdb.h"
 #include "cluster/cluster.h"
 #include "../lib/util/tevent_ntstatus.h"
 
 /* change the message version with any incompatible changes in the protocol */
-#define MESSAGING_VERSION 1
+#define IMESSAGING_VERSION 1
 
 /*
   a pending irpc call
 */
 struct irpc_request {
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 	int callid;
 	struct {
 		void (*handler)(struct irpc_request *irpc, struct irpc_message *m);
@@ -50,7 +50,7 @@ struct irpc_request {
 	} incoming;
 };
 
-struct messaging_context {
+struct imessaging_context {
 	struct server_id server_id;
 	struct socket_context *sock;
 	const char *base_path;
@@ -58,8 +58,8 @@ struct messaging_context {
 	struct dispatch_fn **dispatch;
 	uint32_t num_types;
 	struct idr_context *dispatch_tree;
-	struct messaging_rec *pending;
-	struct messaging_rec *retry_queue;
+	struct imessaging_rec *pending;
+	struct imessaging_rec *retry_queue;
 	struct irpc_list *irpc;
 	struct idr_context *idr;
 	const char **names;
@@ -81,12 +81,12 @@ struct dispatch_fn {
 };
 
 /* an individual message */
-struct messaging_rec {
-	struct messaging_rec *next, *prev;
-	struct messaging_context *msg;
+struct imessaging_rec {
+	struct imessaging_rec *next, *prev;
+	struct imessaging_context *msg;
 	const char *path;
 
-	struct messaging_header {
+	struct imessaging_header {
 		uint32_t version;
 		uint32_t msg_type;
 		struct server_id from;
@@ -99,20 +99,22 @@ struct messaging_rec {
 };
 
 
-static void irpc_handler(struct messaging_context *, void *, 
+static void irpc_handler(struct imessaging_context *, void *,
 			 uint32_t, struct server_id, DATA_BLOB *);
 
 
 /*
  A useful function for testing the message system.
 */
-static void ping_message(struct messaging_context *msg, void *private_data,
+static void ping_message(struct imessaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
-	DEBUG(1,("INFO: Received PING message from server %u.%u [%.*s]\n",
-		 (unsigned int)src.node, (unsigned int)src.id, (int)data->length,
+	char *task_id = server_id_str(NULL, &src);
+	DEBUG(1,("INFO: Received PING message from server %s [%.*s]\n",
+		 task_id, (int)data->length,
 		 data->data?(const char *)data->data:""));
-	messaging_send(msg, src, MSG_PONG, data);
+	talloc_free(task_id);
+	imessaging_send(msg, src, MSG_PONG, data);
 }
 
 /*
@@ -121,7 +123,7 @@ static void ping_message(struct messaging_context *msg, void *private_data,
 static NTSTATUS irpc_uptime(struct irpc_message *msg, 
 			    struct irpc_uptime *r)
 {
-	struct messaging_context *ctx = talloc_get_type(msg->private_data, struct messaging_context);
+	struct imessaging_context *ctx = talloc_get_type(msg->private_data, struct imessaging_context);
 	*r->out.start_time = timeval_to_nttime(&ctx->start_time);
 	return NT_STATUS_OK;
 }
@@ -129,10 +131,10 @@ static NTSTATUS irpc_uptime(struct irpc_message *msg,
 /* 
    return the path to a messaging socket
 */
-static char *messaging_path(struct messaging_context *msg, struct server_id server_id)
+static char *imessaging_path(struct imessaging_context *msg, struct server_id server_id)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
-	const char *id = cluster_id_string(tmp_ctx, server_id);
+	const char *id = server_id_str(tmp_ctx, &server_id);
 	char *s;
 	if (id == NULL) {
 		return NULL;
@@ -149,7 +151,7 @@ static char *messaging_path(struct messaging_context *msg, struct server_id serv
   per message. That allows a single messasging context to register
   (for example) a debug handler for more than one piece of code
 */
-static void messaging_dispatch(struct messaging_context *msg, struct messaging_rec *rec)
+static void imessaging_dispatch(struct imessaging_context *msg, struct imessaging_rec *rec)
 {
 	struct dispatch_fn *d, *next;
 
@@ -176,18 +178,18 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
 /*
   handler for messages that arrive from other nodes in the cluster
 */
-static void cluster_message_handler(struct messaging_context *msg, DATA_BLOB packet)
+static void cluster_message_handler(struct imessaging_context *msg, DATA_BLOB packet)
 {
-	struct messaging_rec *rec;
+	struct imessaging_rec *rec;
 
-	rec = talloc(msg, struct messaging_rec);
+	rec = talloc(msg, struct imessaging_rec);
 	if (rec == NULL) {
-		smb_panic("Unable to allocate messaging_rec");
+		smb_panic("Unable to allocate imessaging_rec");
 	}
 
 	rec->msg           = msg;
 	rec->path          = msg->path;
-	rec->header        = (struct messaging_header *)packet.data;
+	rec->header        = (struct imessaging_header *)packet.data;
 	rec->packet        = packet;
 	rec->retries       = 0;
 
@@ -198,7 +200,7 @@ static void cluster_message_handler(struct messaging_context *msg, DATA_BLOB pac
 		return;
 	}
 
-	messaging_dispatch(msg, rec);
+	imessaging_dispatch(msg, rec);
 	talloc_free(rec);
 }
 
@@ -207,9 +209,9 @@ static void cluster_message_handler(struct messaging_context *msg, DATA_BLOB pac
 /*
   try to send the message
 */
-static NTSTATUS try_send(struct messaging_rec *rec)
+static NTSTATUS try_send(struct imessaging_rec *rec)
 {
-	struct messaging_context *msg = rec->msg;
+	struct imessaging_context *msg = rec->msg;
 	size_t nsent;
 	void *priv;
 	NTSTATUS status;
@@ -238,15 +240,15 @@ static NTSTATUS try_send(struct messaging_rec *rec)
 static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te, 
 			    struct timeval t, void *private_data)
 {
-	struct messaging_context *msg = talloc_get_type(private_data,
-							struct messaging_context);
+	struct imessaging_context *msg = talloc_get_type(private_data,
+							struct imessaging_context);
 	msg->retry_te = NULL;
 
 	/* put the messages back on the main queue */
 	while (msg->retry_queue) {
-		struct messaging_rec *rec = msg->retry_queue;
+		struct imessaging_rec *rec = msg->retry_queue;
 		DLIST_REMOVE(msg->retry_queue, rec);
-		DLIST_ADD_END(msg->pending, rec, struct messaging_rec *);
+		DLIST_ADD_END(msg->pending, rec, struct imessaging_rec *);
 	}
 
 	EVENT_FD_WRITEABLE(msg->event.fde);	
@@ -255,10 +257,10 @@ static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te,
 /*
   handle a socket write event
 */
-static void messaging_send_handler(struct messaging_context *msg)
+static void imessaging_send_handler(struct imessaging_context *msg)
 {
 	while (msg->pending) {
-		struct messaging_rec *rec = msg->pending;
+		struct imessaging_rec *rec = msg->pending;
 		NTSTATUS status;
 		status = try_send(rec);
 		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
@@ -268,7 +270,7 @@ static void messaging_send_handler(struct messaging_context *msg)
 				   backoff this record */
 				DLIST_REMOVE(msg->pending, rec);
 				DLIST_ADD_END(msg->retry_queue, rec, 
-					      struct messaging_rec *);
+					      struct imessaging_rec *);
 				if (msg->retry_te == NULL) {
 					msg->retry_te = 
 						event_add_timed(msg->event.ev, msg, 
@@ -282,8 +284,8 @@ static void messaging_send_handler(struct messaging_context *msg)
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_CTX *tmp_ctx = talloc_new(msg);
 			DEBUG(1,("messaging: Lost message from %s to %s of type %u - %s\n", 
-				 cluster_id_string(tmp_ctx, rec->header->from),
-				 cluster_id_string(tmp_ctx, rec->header->to),
+				 server_id_str(tmp_ctx, &rec->header->from),
+				 server_id_str(tmp_ctx, &rec->header->to),
 				 rec->header->msg_type, 
 				 nt_errstr(status)));
 			talloc_free(tmp_ctx);
@@ -299,9 +301,9 @@ static void messaging_send_handler(struct messaging_context *msg)
 /*
   handle a new incoming packet
 */
-static void messaging_recv_handler(struct messaging_context *msg)
+static void imessaging_recv_handler(struct imessaging_context *msg)
 {
-	struct messaging_rec *rec;
+	struct imessaging_rec *rec;
 	NTSTATUS status;
 	DATA_BLOB packet;
 	size_t msize;
@@ -332,15 +334,15 @@ static void messaging_recv_handler(struct messaging_context *msg)
 		return;
 	}
 
-	rec = talloc(msg, struct messaging_rec);
+	rec = talloc(msg, struct imessaging_rec);
 	if (rec == NULL) {
-		smb_panic("Unable to allocate messaging_rec");
+		smb_panic("Unable to allocate imessaging_rec");
 	}
 
 	talloc_steal(rec, packet.data);
 	rec->msg           = msg;
 	rec->path          = msg->path;
-	rec->header        = (struct messaging_header *)packet.data;
+	rec->header        = (struct imessaging_header *)packet.data;
 	rec->packet        = packet;
 	rec->retries       = 0;
 
@@ -351,7 +353,7 @@ static void messaging_recv_handler(struct messaging_context *msg)
 		return;
 	}
 
-	messaging_dispatch(msg, rec);
+	imessaging_dispatch(msg, rec);
 	talloc_free(rec);
 }
 
@@ -359,16 +361,16 @@ static void messaging_recv_handler(struct messaging_context *msg)
 /*
   handle a socket event
 */
-static void messaging_handler(struct tevent_context *ev, struct tevent_fd *fde, 
+static void imessaging_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			      uint16_t flags, void *private_data)
 {
-	struct messaging_context *msg = talloc_get_type(private_data,
-							struct messaging_context);
+	struct imessaging_context *msg = talloc_get_type(private_data,
+							struct imessaging_context);
 	if (flags & EVENT_FD_WRITE) {
-		messaging_send_handler(msg);
+		imessaging_send_handler(msg);
 	}
 	if (flags & EVENT_FD_READ) {
-		messaging_recv_handler(msg);
+		imessaging_recv_handler(msg);
 	}
 }
 
@@ -376,7 +378,7 @@ static void messaging_handler(struct tevent_context *ev, struct tevent_fd *fde,
 /*
   Register a dispatch function for a particular message type.
 */
-NTSTATUS messaging_register(struct messaging_context *msg, void *private_data,
+NTSTATUS imessaging_register(struct imessaging_context *msg, void *private_data,
 			    uint32_t msg_type, msg_callback_t fn)
 {
 	struct dispatch_fn *d;
@@ -409,7 +411,7 @@ NTSTATUS messaging_register(struct messaging_context *msg, void *private_data,
   register a temporary message handler. The msg_type is allocated
   above MSG_TMP_BASE
 */
-NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private_data,
+NTSTATUS imessaging_register_tmp(struct imessaging_context *msg, void *private_data,
 				msg_callback_t fn, uint32_t *msg_type)
 {
 	struct dispatch_fn *d;
@@ -435,7 +437,7 @@ NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private_dat
 /*
   De-register the function for a particular message type.
 */
-void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private_data)
+void imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, void *private_data)
 {
 	struct dispatch_fn *d, *next;
 
@@ -460,14 +462,14 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
 /*
   Send a message to a particular server
 */
-NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server, 
+NTSTATUS imessaging_send(struct imessaging_context *msg, struct server_id server,
 			uint32_t msg_type, const DATA_BLOB *data)
 {
-	struct messaging_rec *rec;
+	struct imessaging_rec *rec;
 	NTSTATUS status;
 	size_t dlength = data?data->length:0;
 
-	rec = talloc(msg, struct messaging_rec);
+	rec = talloc(msg, struct imessaging_rec);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -480,10 +482,10 @@ NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
 
 	rec->retries       = 0;
 	rec->msg              = msg;
-	rec->header           = (struct messaging_header *)rec->packet.data;
+	rec->header           = (struct imessaging_header *)rec->packet.data;
 	/* zero padding */
 	ZERO_STRUCTP(rec->header);
-	rec->header->version  = MESSAGING_VERSION;
+	rec->header->version  = IMESSAGING_VERSION;
 	rec->header->msg_type = msg_type;
 	rec->header->from     = msg->server_id;
 	rec->header->to       = server;
@@ -501,7 +503,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
 		return status;
 	}
 
-	rec->path = messaging_path(msg, server);
+	rec->path = imessaging_path(msg, server);
 	talloc_steal(rec, rec->path);
 
 	if (msg->pending != NULL) {
@@ -514,7 +516,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
 		if (msg->pending == NULL) {
 			EVENT_FD_WRITEABLE(msg->event.fde);
 		}
-		DLIST_ADD_END(msg->pending, rec, struct messaging_rec *);
+		DLIST_ADD_END(msg->pending, rec, struct imessaging_rec *);
 		return NT_STATUS_OK;
 	}
 
@@ -526,7 +528,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server,
 /*
   Send a message to a particular server, with the message containing a single pointer
 */
-NTSTATUS messaging_send_ptr(struct messaging_context *msg, struct server_id server, 
+NTSTATUS imessaging_send_ptr(struct imessaging_context *msg, struct server_id server,
 			    uint32_t msg_type, void *ptr)
 {
 	DATA_BLOB blob;
@@ -534,14 +536,14 @@ NTSTATUS messaging_send_ptr(struct messaging_context *msg, struct server_id serv
 	blob.data = (uint8_t *)&ptr;
 	blob.length = sizeof(void *);
 
-	return messaging_send(msg, server, msg_type, &blob);
+	return imessaging_send(msg, server, msg_type, &blob);
 }
 
 
 /*
   destroy the messaging context
 */
-static int messaging_destructor(struct messaging_context *msg)
+static int imessaging_destructor(struct imessaging_context *msg)
 {
 	unlink(msg->path);
 	while (msg->names && msg->names[0]) {
@@ -553,12 +555,12 @@ static int messaging_destructor(struct messaging_context *msg)
 /*
   create the listening socket and setup the dispatcher
 */
-struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
+struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 					 const char *dir,
 					 struct server_id server_id, 
 					 struct tevent_context *ev)
 {
-	struct messaging_context *msg;
+	struct imessaging_context *msg;
 	NTSTATUS status;
 	struct socket_address *path;
 
@@ -566,7 +568,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	msg = talloc_zero(mem_ctx, struct messaging_context);
+	msg = talloc_zero(mem_ctx, struct imessaging_context);
 	if (msg == NULL) {
 		return NULL;
 	}
@@ -582,7 +584,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	mkdir(dir, 0700);
 
 	msg->base_path     = talloc_reference(msg, dir);
-	msg->path          = messaging_path(msg, server_id);
+	msg->path          = imessaging_path(msg, server_id);
 	msg->server_id     = server_id;
 	msg->idr           = idr_init(msg);
 	msg->dispatch_tree = idr_init(msg);
@@ -617,13 +619,13 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->event.ev   = ev;
 	msg->event.fde	= event_add_fd(ev, msg, socket_get_fd(msg->sock), 
-				       EVENT_FD_READ, messaging_handler, msg);
+				       EVENT_FD_READ, imessaging_handler, msg);
 	tevent_fd_set_auto_close(msg->event.fde);
 
-	talloc_set_destructor(msg, messaging_destructor);
+	talloc_set_destructor(msg, imessaging_destructor);
 	
-	messaging_register(msg, NULL, MSG_PING, ping_message);
-	messaging_register(msg, NULL, MSG_IRPC, irpc_handler);
+	imessaging_register(msg, NULL, MSG_PING, ping_message);
+	imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
 	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
 
 	return msg;
@@ -632,14 +634,14 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 /* 
    A hack, for the short term until we get 'client only' messaging in place 
 */
-struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
+struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 						const char *dir,
 						struct tevent_context *ev)
 {
 	struct server_id id;
 	ZERO_STRUCT(id);
-	id.id = random() % 0x10000000;
-	return messaging_init(mem_ctx, dir, id, ev);
+	id.pid = random() % 0x10000000;
+	return imessaging_init(mem_ctx, dir, id, ev);
 }
 /*
   a list of registered irpc server functions
@@ -657,7 +659,7 @@ struct irpc_list {
 /*
   register a irpc server function
 */
-NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
+NTSTATUS irpc_register(struct imessaging_context *msg_ctx,
 		       const struct ndr_interface_table *table, 
 		       int callnum, irpc_function_t fn, void *private_data)
 {
@@ -688,7 +690,7 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 /*
   handle an incoming irpc reply message
 */
-static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_message *m)
+static void irpc_handler_reply(struct imessaging_context *msg_ctx, struct irpc_message *m)
 {
 	struct irpc_request *irpc;
 
@@ -734,7 +736,7 @@ NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status)
 
 	/* send the reply message */
 	packet = ndr_push_blob(push);
-	status = messaging_send(m->msg_ctx, m->from, MSG_IRPC, &packet);
+	status = imessaging_send(m->msg_ctx, m->from, MSG_IRPC, &packet);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 failed:
@@ -745,7 +747,7 @@ failed:
 /*
   handle an incoming irpc request message
 */
-static void irpc_handler_request(struct messaging_context *msg_ctx, 
+static void irpc_handler_request(struct imessaging_context *msg_ctx,
 				 struct irpc_message *m)
 {
 	struct irpc_list *i;
@@ -809,7 +811,7 @@ failed:
 /*
   handle an incoming irpc message
 */
-static void irpc_handler(struct messaging_context *msg_ctx, void *private_data,
+static void irpc_handler(struct imessaging_context *msg_ctx, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *packet)
 {
 	struct irpc_message *m;
@@ -856,7 +858,7 @@ static int irpc_destructor(struct irpc_request *irpc)
 /*
   open the naming database
 */
-static struct tdb_wrap *irpc_namedb_open(struct messaging_context *msg_ctx)
+static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx)
 {
 	struct tdb_wrap *t;
 	char *path = talloc_asprintf(msg_ctx, "%s/names.tdb", msg_ctx->base_path);
@@ -872,7 +874,7 @@ static struct tdb_wrap *irpc_namedb_open(struct messaging_context *msg_ctx)
 /*
   add a string name that this irpc server can be called on
 */
-NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
+NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 {
 	struct tdb_wrap *t;
 	TDB_DATA rec;
@@ -912,7 +914,7 @@ NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
 /*
   return a list of server ids for a server name
 */
-struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx,
+struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 				      TALLOC_CTX *mem_ctx,
 				      const char *name)
 {
@@ -957,7 +959,7 @@ struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx,
 /*
   remove a name from a messaging context
 */
-void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
+void irpc_remove_name(struct imessaging_context *msg_ctx, const char *name)
 {
 	struct tdb_wrap *t;
 	TDB_DATA rec;
@@ -1005,13 +1007,13 @@ void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
 	talloc_free(t);
 }
 
-struct server_id messaging_get_server_id(struct messaging_context *msg_ctx)
+struct server_id imessaging_get_server_id(struct imessaging_context *msg_ctx)
 {
 	return msg_ctx->server_id;
 }
 
 struct irpc_bh_state {
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 	struct server_id server_id;
 	const struct ndr_interface_table *table;
 	uint32_t timeout;
@@ -1137,7 +1139,7 @@ static struct tevent_req *irpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 
 	/* and send it */
 	state->in_packet = ndr_push_blob(ndr);
-	status = messaging_send(hs->msg_ctx, hs->server_id,
+	status = imessaging_send(hs->msg_ctx, hs->server_id,
 				MSG_IRPC, &state->in_packet);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -1176,7 +1178,7 @@ static void irpc_bh_raw_call_incoming_handler(struct irpc_request *irpc,
 		m->ndr->data + m->ndr->offset,
 		m->ndr->data_size - m->ndr->offset);
 	if ((m->ndr->data_size - m->ndr->offset) > 0 && !state->out_data.data) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 
@@ -1270,7 +1272,7 @@ static const struct dcerpc_binding_handle_ops irpc_bh_ops = {
 
 /* initialise a irpc binding handle */
 struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
-					struct messaging_context *msg_ctx,
+					struct imessaging_context *msg_ctx,
 					struct server_id server_id,
 					const struct ndr_interface_table *table)
 {
@@ -1298,7 +1300,7 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 }
 
 struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
-					struct messaging_context *msg_ctx,
+					struct imessaging_context *msg_ctx,
 					const char *dest_task,
 					const struct ndr_interface_table *table)
 {
@@ -1312,7 +1314,7 @@ struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
 		errno = EADDRNOTAVAIL;
 		return NULL;
 	}
-	if (sids[0].id == 0) {
+	if (sids[0].pid == 0) {
 		talloc_free(sids);
 		errno = EADDRNOTAVAIL;
 		return NULL;

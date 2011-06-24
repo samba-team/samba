@@ -17,7 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "smbd/smbd.h"
 
 /**
  * XXX: This is temporary and there should be no callers of this outside of
@@ -61,8 +60,8 @@ NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
 	ZERO_STRUCT(smb_fname_loc);
 
 	/* Setup the base_name/stream_name. */
-	smb_fname_loc.base_name = CONST_DISCARD(char *, base_name);
-	smb_fname_loc.stream_name = CONST_DISCARD(char *, stream_name);
+	smb_fname_loc.base_name = discard_const_p(char, base_name);
+	smb_fname_loc.stream_name = discard_const_p(char, stream_name);
 
 	/* Copy the psbuf if one was given. */
 	if (psbuf)
@@ -203,5 +202,5 @@ bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
 		return false;
 	}
 
-	return StrCaseCmp(smb_fname->stream_name, "::$DATA") == 0;
+	return strcasecmp_m(smb_fname->stream_name, "::$DATA") == 0;
 }

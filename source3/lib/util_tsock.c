@@ -18,6 +18,8 @@
 */
 
 #include "includes.h"
+#include "../lib/tsocket/tsocket.h"
+#include "../lib/util/tevent_unix.h"
 
 struct tstream_read_packet_state {
 	struct tevent_context *ev;

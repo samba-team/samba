@@ -57,7 +57,7 @@ static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *o
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -117,7 +117,7 @@ static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, co
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -171,7 +171,7 @@ static NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, con
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

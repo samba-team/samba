@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "fake_file.h"
 #include "../libcli/security/security.h"
@@ -88,7 +89,7 @@ static bool parse_user_quota_record(const uint8_t *rdata,
 	/* the hard quotas 8 bytes (uint64_t)*/
 	qt.hardlim = BVAL(rdata,32);
 
-	if (!sid_parse((char *)rdata+40,sid_len,&qt.sid)) {
+	if (!sid_parse((const char *)rdata+40,sid_len,&qt.sid)) {
 		return false;
 	}
 
@@ -262,19 +263,19 @@ NTSTATUS cli_list_user_quota(struct cli_state *cli, int quota_fnum,
 		((curdata)&&(curdata_count>=8)&&(offset>0));
 		curdata +=offset,curdata_count -= offset) {
 		ZERO_STRUCT(qt);
-		if (!parse_user_quota_record((uint8_t *)curdata, curdata_count,
+		if (!parse_user_quota_record((const uint8_t *)curdata, curdata_count,
 					     &offset, &qt)) {
 			DEBUG(1,("Failed to parse the quota record\n"));
 			goto cleanup;
 		}
 
-		if ((tmp_list_ent=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
+		if ((tmp_list_ent=talloc_zero(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed\n"));
 			talloc_destroy(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if ((tmp_list_ent->quotas=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
+		if ((tmp_list_ent->quotas=talloc_zero(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed\n"));
 			talloc_destroy(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -318,20 +319,20 @@ NTSTATUS cli_list_user_quota(struct cli_state *cli, int quota_fnum,
 			((curdata)&&(curdata_count>=8)&&(offset>0));
 			curdata +=offset,curdata_count -= offset) {
 			ZERO_STRUCT(qt);
-			if (!parse_user_quota_record((uint8_t *)curdata,
+			if (!parse_user_quota_record((const uint8_t *)curdata,
 						     curdata_count, &offset,
 						     &qt)) {
 				DEBUG(1,("Failed to parse the quota record\n"));
 				goto cleanup;
 			}
 
-			if ((tmp_list_ent=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
+			if ((tmp_list_ent=talloc_zero(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
 				DEBUG(0,("TALLOC_ZERO() failed\n"));
 				talloc_destroy(mem_ctx);
 				goto cleanup;
 			}
 
-			if ((tmp_list_ent->quotas=TALLOC_ZERO_P(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
+			if ((tmp_list_ent->quotas=talloc_zero(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
 				DEBUG(0,("TALLOC_ZERO() failed\n"));
 				talloc_destroy(mem_ctx);
 				goto cleanup;

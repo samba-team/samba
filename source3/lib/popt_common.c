@@ -129,7 +129,7 @@ static void popt_common_callback(poptContext con,
 
 	case 'n':
 		if (arg) {
-			set_global_myname(arg);
+			lp_set_cmdline("netbios name", arg);
 		}
 		break;
 
@@ -143,13 +143,13 @@ static void popt_common_callback(poptContext con,
 
 	case 'i':
 		if (arg) {
-			  set_global_scope(arg);
+			lp_set_cmdline("netbios scope", arg);
 		}
 		break;
 
 	case 'W':
 		if (arg) {
-			set_global_myworkgroup(arg);
+			lp_set_cmdline("workgroup", arg);
 		}
 		break;
 	}
@@ -473,7 +473,7 @@ static void get_credentials_file(struct user_auth_info *auth_info,
 		} else if (strwicmp("username", param) == 0) {
 			set_cmdline_auth_info_username(auth_info, val);
 		} else if (strwicmp("domain", param) == 0) {
-			set_global_myworkgroup(val);
+			set_cmdline_auth_info_domain(auth_info, val);
 		}
 		memset(buf, 0, sizeof(buf));
 	}

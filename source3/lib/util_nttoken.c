@@ -39,7 +39,7 @@ struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_t
 	if (!ptoken)
 		return NULL;
 
-	token = TALLOC_ZERO_P(mem_ctx, struct security_token);
+	token = talloc_zero(mem_ctx, struct security_token);
 	if (token == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
@@ -80,7 +80,7 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	token = TALLOC_ZERO_P(mem_ctx, struct security_token);
+	token = talloc_zero(mem_ctx, struct security_token);
 	NT_STATUS_HAVE_NO_MEMORY(token);
 
 	for (i=0; i < token_1->num_sids; i++) {

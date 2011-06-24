@@ -30,6 +30,7 @@
 /* This is the implementation of the lsa server code. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/netlogon.h"
@@ -43,7 +44,6 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "passdb.h"
 #include "auth.h"
-#include "ntdomain.h"
 #include "lib/privileges.h"
 #include "rpc_server/srv_access_check.h"
 
@@ -122,7 +122,7 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 	ref->count = num + 1;
 	ref->max_size = LSA_REF_DOMAIN_LIST_MULTIPLIER;
 
-	ref->domains = TALLOC_REALLOC_ARRAY(mem_ctx, ref->domains,
+	ref->domains = talloc_realloc(mem_ctx, ref->domains,
 					    struct lsa_DomainInfo, ref->count);
 	if (!ref->domains) {
 		return -1;
@@ -520,7 +520,7 @@ NTSTATUS _lsa_EnumTrustDom(struct pipes_struct *p,
 		return nt_status;
 	}
 
-	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_DomainInfo, count);
+	entries = talloc_zero_array(p->mem_ctx, struct lsa_DomainInfo, count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -628,7 +628,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 		/* return NT_STATUS_ACCESS_DENIED; */
 	}
 
-	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_PolicyInformation);
+	info = talloc_zero(p->mem_ctx, union lsa_PolicyInformation);
 	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -681,7 +681,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 
 		info->audit_events.auditing_mode = true;
 		info->audit_events.count = LSA_AUDIT_NUM_CATEGORIES;
-		info->audit_events.settings = TALLOC_ZERO_ARRAY(p->mem_ctx,
+		info->audit_events.settings = talloc_zero_array(p->mem_ctx,
 								enum lsa_PolicyAuditPolicy,
 								info->audit_events.count);
 		if (!info->audit_events.settings) {
@@ -858,8 +858,8 @@ static NTSTATUS _lsa_lookup_sids_internal(struct pipes_struct *p,
 		return NT_STATUS_OK;
 	}
 
-	sids = TALLOC_ARRAY(p->mem_ctx, const struct dom_sid *, num_sids);
-	ref = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
+	sids = talloc_array(p->mem_ctx, const struct dom_sid *, num_sids);
+	ref = talloc_zero(p->mem_ctx, struct lsa_RefDomainList);
 
 	if (sids == NULL || ref == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -876,7 +876,7 @@ static NTSTATUS _lsa_lookup_sids_internal(struct pipes_struct *p,
 		return status;
 	}
 
-	names = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedName2, num_sids);
+	names = talloc_array(p->mem_ctx, struct lsa_TranslatedName2, num_sids);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -998,7 +998,7 @@ NTSTATUS _lsa_LookupSids(struct pipes_struct *p,
 	}
 
 	/* Convert from lsa_TranslatedName2 to lsa_TranslatedName */
-	names_out = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedName,
+	names_out = talloc_array(p->mem_ctx, struct lsa_TranslatedName,
 				 num_sids);
 	if (!names_out) {
 		return NT_STATUS_NO_MEMORY;
@@ -1168,13 +1168,13 @@ NTSTATUS _lsa_LookupNames(struct pipes_struct *p,
 
 	flags = lsa_lookup_level_to_flags(r->in.level);
 
-	domains = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
+	domains = talloc_zero(p->mem_ctx, struct lsa_RefDomainList);
 	if (!domains) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (num_entries) {
-		rids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_TranslatedSid,
+		rids = talloc_zero_array(p->mem_ctx, struct lsa_TranslatedSid,
 					 num_entries);
 		if (!rids) {
 			return NT_STATUS_NO_MEMORY;
@@ -1235,7 +1235,7 @@ NTSTATUS _lsa_LookupNames2(struct pipes_struct *p,
 	struct lsa_TransSidArray *sid_array = NULL;
 	uint32_t i;
 
-	sid_array = TALLOC_ZERO_P(p->mem_ctx, struct lsa_TransSidArray);
+	sid_array = talloc_zero(p->mem_ctx, struct lsa_TransSidArray);
 	if (!sid_array) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1257,7 +1257,7 @@ NTSTATUS _lsa_LookupNames2(struct pipes_struct *p,
 	status = _lsa_LookupNames(p, &q);
 
 	sid_array2->count = sid_array->count;
-	sid_array2->sids = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedSid2, sid_array->count);
+	sid_array2->sids = talloc_array(p->mem_ctx, struct lsa_TranslatedSid2, sid_array->count);
 	if (!sid_array2->sids) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1310,13 +1310,13 @@ NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
 		flags = LOOKUP_NAME_ALL;
 	}
 
-	domains = TALLOC_ZERO_P(p->mem_ctx, struct lsa_RefDomainList);
+	domains = talloc_zero(p->mem_ctx, struct lsa_RefDomainList);
 	if (!domains) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (num_entries) {
-		trans_sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_TranslatedSid3,
+		trans_sids = talloc_zero_array(p->mem_ctx, struct lsa_TranslatedSid3,
 					       num_entries);
 		if (!trans_sids) {
 			return NT_STATUS_NO_MEMORY;
@@ -2012,7 +2012,7 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 		return status;
 	}
 
-	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_TrustedDomainInfo);
+	info = talloc_zero(p->mem_ctx, union lsa_TrustedDomainInfo);
 	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2230,7 +2230,7 @@ NTSTATUS _lsa_EnumPrivs(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (num_privs) {
-		entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_PrivEntry, num_privs);
+		entries = talloc_zero_array(p->mem_ctx, struct lsa_PrivEntry, num_privs);
 		if (!entries) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -2299,7 +2299,7 @@ NTSTATUS _lsa_LookupPrivDisplayName(struct pipes_struct *p,
 
 	DEBUG(10,("_lsa_LookupPrivDisplayName: display name = %s\n", description));
 
-	lsa_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_StringLarge);
+	lsa_name = talloc_zero(p->mem_ctx, struct lsa_StringLarge);
 	if (!lsa_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2351,7 +2351,7 @@ NTSTATUS _lsa_EnumAccounts(struct pipes_struct *p,
 	}
 
 	if (num_entries - *r->in.resume_handle) {
-		sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_SidPtr,
+		sids = talloc_zero_array(p->mem_ctx, struct lsa_SidPtr,
 					 num_entries - *r->in.resume_handle);
 		if (!sids) {
 			talloc_free(sid_list);
@@ -2412,14 +2412,14 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 		domname = p->session_info->info3->base.domain.string;
 	}
 
-	account_name = TALLOC_P(p->mem_ctx, struct lsa_String);
+	account_name = talloc(p->mem_ctx, struct lsa_String);
 	if (!account_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	init_lsa_String(account_name, username);
 
 	if (r->out.authority_name) {
-		authority_name = TALLOC_P(p->mem_ctx, struct lsa_String);
+		authority_name = talloc(p->mem_ctx, struct lsa_String);
 		if (!authority_name) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -2597,7 +2597,7 @@ NTSTATUS _lsa_EnumPrivsAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	*r->out.privs = priv_set = TALLOC_ZERO_P(p->mem_ctx, struct lsa_PrivilegeSet);
+	*r->out.privs = priv_set = talloc_zero(p->mem_ctx, struct lsa_PrivilegeSet);
 	if (!priv_set) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2801,7 +2801,7 @@ NTSTATUS _lsa_LookupPrivName(struct pipes_struct *p,
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
-	lsa_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_StringLarge);
+	lsa_name = talloc_zero(p->mem_ctx, struct lsa_StringLarge);
 	if (!lsa_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3030,7 +3030,7 @@ static NTSTATUS init_lsa_right_set(TALLOC_CTX *mem_ctx,
 
 	if (num_priv) {
 
-		r->names = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_StringLarge,
+		r->names = talloc_zero_array(mem_ctx, struct lsa_StringLarge,
 					     num_priv);
 		if (!r->names) {
 			return NT_STATUS_NO_MEMORY;
@@ -3323,7 +3323,7 @@ NTSTATUS _lsa_EnumTrustedDomainsEx(struct pipes_struct *p,
 		return nt_status;
 	}
 
-	entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_TrustDomainInfoInfoEx,
+	entries = talloc_zero_array(p->mem_ctx, struct lsa_TrustDomainInfoInfoEx,
 				    count);
 	if (!entries) {
 		return NT_STATUS_NO_MEMORY;
@@ -3488,7 +3488,7 @@ static int dns_cmp(const char *s1, size_t l1,
 	int cret;
 
 	if (l1 == l2) {
-		if (StrCaseCmp(s1, s2) == 0) {
+		if (strcasecmp_m(s1, s2) == 0) {
 			return DNS_CMP_MATCH;
 		}
 		return DNS_CMP_NO_MATCH;
@@ -3512,7 +3512,7 @@ static int dns_cmp(const char *s1, size_t l1,
 		return DNS_CMP_NO_MATCH;
 	}
 
-	if (StrCaseCmp(&p1[t1 - t2], p2) == 0) {
+	if (strcasecmp_m(&p1[t1 - t2], p2) == 0) {
 		return cret;
 	}
 
@@ -3701,7 +3701,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 				sid_conflict = true;
 			}
 			if (!(trec->flags & LSA_NB_DISABLED_ADMIN) &&
-			    StrCaseCmp(trec->data.info.netbios_name.string,
+			    strcasecmp_m(trec->data.info.netbios_name.string,
 				       nb_name) == 0) {
 				nb_conflict = true;
 			}
@@ -3876,7 +3876,7 @@ NTSTATUS _lsa_lsaRSetForestTrustInformation(struct pipes_struct *p,
 		if (domains[i]->domain_name == NULL) {
 			return NT_STATUS_INVALID_DOMAIN_STATE;
 		}
-		if (StrCaseCmp(domains[i]->domain_name,
+		if (strcasecmp_m(domains[i]->domain_name,
 			       r->in.trusted_domain_name->string) == 0) {
 			break;
 		}

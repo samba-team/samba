@@ -28,6 +28,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "smbprofile.h"
+#include "rpc_server/srv_pipe_hnd.h"
 
 #define NERR_notsupported 50
 
@@ -267,7 +268,7 @@ static void api_dcerpc_cmd(connection_struct *conn, struct smb_request *req,
 	state->num_data = length;
 	state->max_read = max_read;
 
-	subreq = np_write_send(state, smbd_event_context(), state->handle,
+	subreq = np_write_send(state, server_event_context(), state->handle,
 			       state->data, length);
 	if (subreq == NULL) {
 		TALLOC_FREE(state);
@@ -297,14 +298,14 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 		goto send;
 	}
 
-	state->data = TALLOC_REALLOC_ARRAY(state, state->data, uint8_t,
+	state->data = talloc_realloc(state, state->data, uint8_t,
 					   state->max_read);
 	if (state->data == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto send;
 	}
 
-	subreq = np_read_send(req->conn, smbd_event_context(),
+	subreq = np_read_send(req->conn, server_event_context(),
 			      state->handle, state->data, state->max_read);
 	if (subreq == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -644,7 +645,7 @@ void reply_trans(struct smb_request *req)
 		return;
 	}
 
-	if ((state = TALLOC_P(conn, struct trans_state)) == NULL) {
+	if ((state = talloc(conn, struct trans_state)) == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBtrans);
@@ -741,7 +742,7 @@ void reply_trans(struct smb_request *req)
 			goto bad_param;
 		}
 
-		if((state->setup = TALLOC_ARRAY(
+		if((state->setup = talloc_array(
 			    state, uint16, state->setup_count)) == NULL) {
 			DEBUG(0,("reply_trans: setup malloc fail for %u "
 				 "bytes !\n", (unsigned int)
@@ -807,7 +808,7 @@ void reply_transs(struct smb_request *req)
 
 	START_PROFILE(SMBtranss);
 
-	show_msg((char *)req->inbuf);
+	show_msg((const char *)req->inbuf);
 
 	if (req->wct < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

@@ -1,7 +1,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
-#include "tdb.h"
+#include "tdb_compat.h"
 #include "ldb_module.h"
 
 /* this private structure is used by the ltdb backend in the
@@ -21,11 +21,6 @@ struct ltdb_private {
 		struct ldb_message *attributes;
 		bool one_level_indexes;
 		bool attribute_indexes;
-
-		struct {
-			char *name;
-			int flags;
-		} last_attribute;
 	} *cache;
 
 	int in_transaction;
@@ -107,11 +102,11 @@ int ltdb_index_transaction_cancel(struct ldb_module *module);
 
 int ltdb_pack_data(struct ldb_module *module,
 		   const struct ldb_message *message,
-		   struct TDB_DATA *data);
+		   TDB_DATA *data);
 void ltdb_unpack_data_free(struct ldb_module *module,
 			   struct ldb_message *message);
 int ltdb_unpack_data(struct ldb_module *module,
-		     const struct TDB_DATA *data,
+		     const TDB_DATA *data,
 		     struct ldb_message *message);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_search.c  */
@@ -132,7 +127,7 @@ int ltdb_search(struct ltdb_context *ctx);
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
 int ltdb_lock_read(struct ldb_module *module);
 int ltdb_unlock_read(struct ldb_module *module);
-struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
+TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
 int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);

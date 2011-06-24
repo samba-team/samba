@@ -11,8 +11,6 @@
 */
 
 #include "pam_winbind.h"
-#define CONST_DISCARD(type,ptr) ((type)(void *)ptr)
-
 
 static int wbc_error_to_pam_error(wbcErr status)
 {
@@ -412,51 +410,51 @@ static int _pam_parse(const pam_handle_t *pamh,
 		config_file = PAM_WINBIND_CONFIG_FILE;
 	}
 
-	d = iniparser_load(CONST_DISCARD(char *, config_file));
+	d = iniparser_load(discard_const_p(char, config_file));
 	if (d == NULL) {
 		goto config_from_pam;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:debug"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:debug"), false)) {
 		ctrl |= WINBIND_DEBUG_ARG;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:debug_state"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:debug_state"), false)) {
 		ctrl |= WINBIND_DEBUG_STATE;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:cached_login"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:cached_login"), false)) {
 		ctrl |= WINBIND_CACHED_LOGIN;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:krb5_auth"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:krb5_auth"), false)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:silent"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:silent"), false)) {
 		ctrl |= WINBIND_SILENT;
 	}
 
-	if (iniparser_getstr(d, CONST_DISCARD(char *, "global:krb5_ccache_type")) != NULL) {
+	if (iniparser_getstr(d, discard_const_p(char, "global:krb5_ccache_type")) != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 
-	if ((iniparser_getstr(d, CONST_DISCARD(char *, "global:require-membership-of"))
+	if ((iniparser_getstr(d, discard_const_p(char, "global:require-membership-of"))
 	     != NULL) ||
-	    (iniparser_getstr(d, CONST_DISCARD(char *, "global:require_membership_of"))
+	    (iniparser_getstr(d, discard_const_p(char, "global:require_membership_of"))
 	     != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:try_first_pass"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:try_first_pass"), false)) {
 		ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 	}
 
-	if (iniparser_getint(d, CONST_DISCARD(char *, "global:warn_pwd_expire"), 0)) {
+	if (iniparser_getint(d, discard_const_p(char, "global:warn_pwd_expire"), 0)) {
 		ctrl |= WINBIND_WARN_PWD_EXPIRE;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:mkhomedir"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:mkhomedir"), false)) {
 		ctrl |= WINBIND_MKHOMEDIR;
 	}
 
@@ -538,7 +536,7 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 	textdomain_init();
 #endif
 
-	r = TALLOC_ZERO_P(NULL, struct pwb_context);
+	r = talloc_zero(NULL, struct pwb_context);
 	if (!r) {
 		return PAM_BUF_ERR;
 	}
@@ -1214,7 +1212,7 @@ out:
 static void _pam_setup_krb5_env(struct pwb_context *ctx,
 				struct wbcLogonUserInfo *info)
 {
-	char var[PATH_MAX];
+	char *var = NULL;
 	int ret;
 	uint32_t i;
 	const char *krb5ccname = NULL;
@@ -1241,7 +1239,7 @@ static void _pam_setup_krb5_env(struct pwb_context *ctx,
 	_pam_log_debug(ctx, LOG_DEBUG,
 		       "request returned KRB5CCNAME: %s", krb5ccname);
 
-	if (snprintf(var, sizeof(var), "KRB5CCNAME=%s", krb5ccname) == -1) {
+	if (asprintf(&var, "KRB5CCNAME=%s", krb5ccname) == -1) {
 		return;
 	}
 
@@ -1251,6 +1249,7 @@ static void _pam_setup_krb5_env(struct pwb_context *ctx,
 			 "failed to set KRB5CCNAME to %s: %s",
 			 var, pam_strerror(ctx->pamh, ret));
 	}
+	free(var);
 }
 
 /**
@@ -1764,7 +1763,7 @@ static int winbind_auth_request(struct pwb_context *ctx,
 					     &logon.blobs,
 					     "krb5_cc_type",
 					     0,
-					     (uint8_t *)cctype,
+					     discard_const_p(uint8_t, cctype),
 					     strlen(cctype)+1);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			goto done;
@@ -2514,7 +2513,7 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 						     &logoff.blobs,
 						     "ccfilename",
 						     0,
-						     (uint8_t *)ccname,
+						     discard_const_p(uint8_t, ccname),
 						     strlen(ccname)+1);
 			if (!WBC_ERROR_IS_OK(wbc_status)) {
 				goto out;

@@ -22,8 +22,8 @@
 #include "includes.h"
 
 /* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
-#define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
-				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
+#define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((const unsigned char *)(src))[0],\
+				((unsigned char *)(dest))[1] = ((const unsigned char *)(src))[1], (dest))
 
 
 /* return an ascii version of a ucs2 character */
@@ -72,12 +72,12 @@ smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	smb_ucs2_t cp;
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
 		if (c == cp) {
-			return (smb_ucs2_t *)s;
+			return discard_const_p(smb_ucs2_t, s);
 		}
 		s++;
 	}
 	if (c == cp) {
-		return (smb_ucs2_t *)s;
+		return discard_const_p(smb_ucs2_t, s);
 	}
 
 	return NULL;
@@ -104,7 +104,7 @@ smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	p += (len - 1);
 	do {
 		if (c == *(COPY_UCS2_CHAR(&cp,p))) {
-			return (smb_ucs2_t *)p;
+			return discard_const_p(smb_ucs2_t, p);
 		}
 	} while (p-- != s);
 	return NULL;
@@ -232,38 +232,6 @@ static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 		n++;
 	}
 	return (len - n)?(*(COPY_UCS2_CHAR(&cpa,a)) - *(COPY_UCS2_CHAR(&cpb,b))):0;
-}
-
-/*******************************************************************
- Case insensitive string comparison.
-********************************************************************/
-
-int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
-{
-	smb_ucs2_t cpa, cpb;
-
-	while ((*COPY_UCS2_CHAR(&cpb,b)) && toupper_m(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_m(cpb)) {
-		a++;
-		b++;
-	}
-	return (tolower_m(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_m(*(COPY_UCS2_CHAR(&cpb,b))));
-}
-
-/*******************************************************************
- Case insensitive string comparison, length limited.
-********************************************************************/
-
-int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
-{
-	smb_ucs2_t cpa, cpb;
-	size_t n = 0;
-
-	while ((n < len) && *COPY_UCS2_CHAR(&cpb,b) && (toupper_m(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_m(cpb))) {
-		a++;
-		b++;
-		n++;
-	}
-	return (len - n)?(tolower_m(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_m(*(COPY_UCS2_CHAR(&cpb,b)))):0;
 }
 
 /*

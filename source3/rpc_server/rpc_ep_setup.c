@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "ntdomain.h"
 
 #include "../librpc/gen_ndr/ndr_epmapper_c.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
@@ -41,6 +42,8 @@
 #include "printing/nt_printing_migrate.h"
 #include "rpc_server/eventlog/srv_eventlog_reg.h"
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
+#include "rpc_server/spoolss/srv_spoolss_nt.h"
+#include "rpc_server/svcctl/srv_svcctl_nt.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
 
@@ -76,7 +79,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 
 			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							    msg_ctx,
-							    syntax_id,
 							    ifss,
 							    port);
 			if (p == 0) {
@@ -92,7 +94,7 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 		if (strequal(sock_addr, "0.0.0.0") ||
 		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
-			sock_addr = "::";
+			sock_addr = "::,0.0.0.0";
 #else
 			sock_addr = "0.0.0.0";
 #endif
@@ -112,7 +114,6 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 
 			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							    msg_ctx,
-							    syntax_id,
 							    &ss,
 							    port);
 			if (p == 0) {
@@ -130,7 +131,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct ndr_interface_table *iface,
-					  const char *name,
+					  const char *ncalrpc,
 					  uint16_t port,
 					  struct dcerpc_binding_handle **pbh);
 
@@ -253,7 +254,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct ndr_interface_table *iface,
-					  const char *name,
+					  const char *ncalrpc,
 					  uint16_t port,
 					  struct dcerpc_binding_handle **pbh)
 {
@@ -263,7 +264,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 	status = dcerpc_binding_vector_create(mem_ctx,
 					      iface,
 					      port,
-					      name,
+					      ncalrpc,
 					      &v);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -273,7 +274,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 				    iface,
 				    v,
 				    &iface->syntax_id.uuid,
-				    name,
+				    iface->name,
 				    pbh);
 	talloc_free(v);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -420,14 +421,13 @@ static bool winreg_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -468,14 +468,13 @@ static bool srvsvc_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -517,14 +516,13 @@ static bool lsarpc_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -566,14 +564,13 @@ static bool samr_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -615,14 +612,13 @@ static bool netlogon_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -670,8 +666,8 @@ static bool spoolss_init_cb(void *ptr)
 		return false;
 	}
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
 		status =rpc_ep_setup_register(ep_ctx->ev_ctx,
@@ -714,8 +710,8 @@ static bool svcctl_init_cb(void *ptr)
 	/* initialize the control hooks */
 	init_service_op_table();
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
 		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
@@ -749,8 +745,8 @@ static bool ntsvcs_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
 		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
@@ -783,8 +779,8 @@ static bool eventlog_init_cb(void *ptr)
 		return false;
 	}
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
 		status =rpc_ep_setup_register(ep_ctx->ev_ctx,
@@ -811,8 +807,8 @@ static bool initshutdown_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
 		status = rpc_ep_setup_register(ep_ctx->ev_ctx,
@@ -840,8 +836,8 @@ static bool rpcecho_init_cb(void *ptr) {
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 
 		port = _open_sockets(ep_ctx->ev_ctx,
@@ -880,14 +876,13 @@ static bool netdfs_init_cb(void *ptr)
 					   "rpc_server",
 					   "epmapper",
 					   "none");
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -929,14 +924,13 @@ static bool dssetup_init_cb(void *ptr)
 					   "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -977,14 +971,13 @@ static bool wkssvc_init_cb(void *ptr)
 					   "rpc_server",
 					   "epmapper",
 					   "none");
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0 ||
-	    StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		NTSTATUS status;
 		bool ok;
 
 		ok = setup_dcerpc_ncalrpc_socket(ep_ctx->ev_ctx,
 						 ep_ctx->msg_ctx,
-						 abstract_syntax,
 						 pipe_name,
 						 NULL);
 		if (!ok) {
@@ -1053,7 +1046,7 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 					   "rpc_server",
 					   "epmapper",
 					   "none");
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
 		epmapper_cb.init         = epmapper_init_cb;
 		epmapper_cb.shutdown     = epmapper_shutdown_cb;
 		epmapper_cb.private_data = ep_ctx;
@@ -1061,7 +1054,7 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		if (!NT_STATUS_IS_OK(rpc_epmapper_init(&epmapper_cb))) {
 			return false;
 		}
-	} else if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		if (!NT_STATUS_IS_OK(rpc_epmapper_init(NULL))) {
 			return false;
 		}
@@ -1107,15 +1100,15 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 					   "rpc_server",
 					   "spoolss",
 					   "embedded");
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
 		spoolss_cb.init         = spoolss_init_cb;
 		spoolss_cb.shutdown     = spoolss_shutdown_cb;
 		spoolss_cb.private_data = ep_ctx;
 		if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
 			return false;
 		}
-	} else if (StrCaseCmp(rpcsrv_type, "daemon") == 0 ||
-		   StrCaseCmp(rpcsrv_type, "external") == 0) {
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0 ||
+		   strcasecmp_m(rpcsrv_type, "external") == 0) {
 		if (!NT_STATUS_IS_OK(rpc_spoolss_init(NULL))) {
 			return false;
 		}

@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/ndr_epmapper_c.h"
 #include "rpc_client/cli_pipe.h"
 #include "auth.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
@@ -77,7 +78,7 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 
 		switch (b->transport) {
 			case NCACN_NP:
-				b->host = talloc_asprintf(b, "\\\\%s", global_myname());
+				b->host = talloc_asprintf(b, "\\\\%s", lp_netbios_name());
 				if (b->host == NULL) {
 					status = NT_STATUS_NO_MEMORY;
 					goto done;
@@ -168,7 +169,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 					   "rpc_server", "epmapper",
 					   "none");
 
-	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
 		static struct client_address client_id;
 
 		strlcpy(client_id.addr, "localhost", sizeof(client_id.addr));
@@ -185,7 +186,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 				  "epmapper (%s)", nt_errstr(status)));
 			goto done;
 		}
-	} else if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
 		/* Connect to the endpoint mapper locally */
 		ncalrpc_sock = talloc_asprintf(tmp_ctx,
 					      "%s/%s",

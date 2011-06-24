@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "../lib/tsocket/tsocket.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
@@ -193,7 +194,7 @@ static bool make_krb5_skew_error(DATA_BLOB *pblob_out)
 		return False;
 	}
 	/* Create server principal. */
-	asprintf(&host_princ_s, "%s$@%s", global_myname(), lp_realm());
+	asprintf(&host_princ_s, "%s$@%s", lp_netbios_name(), lp_realm());
 	if (!host_princ_s) {
 		goto out;
 	}
@@ -929,12 +930,27 @@ static NTSTATUS check_spnego_blob_complete(struct smbd_server_connection *sconn,
 	}
 
 	asn1_load(data, *pblob);
-	asn1_start_tag(data, pblob->data[0]);
-	if (data->has_error || data->nesting == NULL) {
+	if (asn1_start_tag(data, pblob->data[0])) {
+		/* asn1_start_tag checks if the given
+		   length of the blob is enough to complete
+		   the tag. If it returns true we know
+		   there is nothing to do - the blob is
+		   complete. */
 		asn1_free(data);
-		/* Let caller catch. */
 		return NT_STATUS_OK;
 	}
+
+	if (data->nesting == NULL) {
+		/* Incorrect tag, allocation failed,
+		   or reading the tag length failed.
+		   Let the caller catch. */
+		asn1_free(data);
+		return NT_STATUS_OK;
+	}
+
+	/* Here we know asn1_start_tag() has set data->has_error to true.
+	   asn1_tag_remaining() will have failed due to the given blob
+	   being too short. We need to work out how short. */
 
 	/* Integer wrap paranoia.... */
 
@@ -964,6 +980,13 @@ static NTSTATUS check_spnego_blob_complete(struct smbd_server_connection *sconn,
 
 	if (needed_len <= pblob->length) {
 		/* Nothing to do - blob is complete. */
+		/* THIS SHOULD NOT HAPPEN - asn1_start_tag()
+		   above should have caught this !!! */
+		DEBUG(0,("check_spnego_blob_complete: logic "
+			"error (needed_len = %u, "
+			"pblob->length = %u).\n",
+			(unsigned int)needed_len,
+			(unsigned int)pblob->length ));
 		return NT_STATUS_OK;
 	}
 
@@ -1042,7 +1065,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	file_save("negotiate.dat", blob1.data, blob1.length);
 #endif
 
-	p2 = (char *)req->buf + blob1.length;
+	p2 = (const char *)req->buf + blob1.length;
 
 	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
 				     STR_TERMINATE);
@@ -1200,7 +1223,7 @@ static int shutdown_other_smbds(const struct connections_key *key,
 	struct shutdown_state *state = (struct shutdown_state *)private_data;
 
 	DEBUG(10, ("shutdown_other_smbds: %s, %s\n",
-		   procid_str(talloc_tos(), &crec->pid), crec->addr));
+		   server_id_str(talloc_tos(), &crec->pid), crec->addr));
 
 	if (!process_exists(crec->pid)) {
 		DEBUG(10, ("process does not exist\n"));
@@ -1684,7 +1707,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	data_blob_free(&lm_resp);
 
 	SSVAL(req->outbuf,smb_uid,sess_vuid);
-	SSVAL(req->inbuf,smb_uid,sess_vuid);
+	SSVAL(discard_const_p(char, req->inbuf),smb_uid,sess_vuid);
 	req->vuid = sess_vuid;
 
 	if (!sconn->smb1.sessions.done_sesssetup) {

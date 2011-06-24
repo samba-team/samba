@@ -293,7 +293,7 @@ static int skel_chdir(vfs_handle_struct *handle,  const char *path)
 	return -1;
 }
 
-static char *skel_getwd(vfs_handle_struct *handle,  char *buf)
+static char *skel_getwd(vfs_handle_struct *handle)
 {
 	errno = ENOSYS;
 	return NULL;

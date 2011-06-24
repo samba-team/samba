@@ -112,7 +112,7 @@ static int traverse_fn(struct db_record *rec, const struct server_id *id,
 	 * the msg has already been deleted from the messages.tdb.*/
 
 	status = messaging_send_buf(msg_all->msg_ctx, *id, msg_all->msg_type,
-				    (uint8 *)msg_all->buf, msg_all->len);
+				    (const uint8 *)msg_all->buf, msg_all->len);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		
@@ -184,7 +184,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	struct messaging_context *ctx;
 	NTSTATUS status;
 
-	if (!(ctx = TALLOC_ZERO_P(mem_ctx, struct messaging_context))) {
+	if (!(ctx = talloc_zero(mem_ctx, struct messaging_context))) {
 		return NULL;
 	}
 
@@ -205,7 +205,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		status = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2, ("messaging_ctdb_init failed: %s\n",
+			DEBUG(2, ("messaging_ctdbd_init failed: %s\n",
 				  nt_errstr(status)));
 			TALLOC_FREE(ctx);
 			return NULL;
@@ -257,7 +257,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx,
 					      &msg_ctx->remote);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("messaging_ctdb_init failed: %s\n",
+			DEBUG(1, ("messaging_ctdbd_init failed: %s\n",
 				  nt_errstr(status)));
 			return status;
 		}

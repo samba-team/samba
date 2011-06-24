@@ -1429,7 +1429,7 @@ static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
 {
 	const struct ldb_val *orig_val;
 	uint32_t orig_uint = 0;
-	int flags = 0;
+	unsigned int flags = 0;
 	int ret;
 
 	orig_val = ldb_msg_find_ldb_val(orig, attribute);

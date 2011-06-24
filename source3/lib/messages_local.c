@@ -45,6 +45,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "messages.h"
+#include "lib/util/tdb_wrap.h"
 
 struct messaging_tdb_context {
 	struct messaging_context *msg_ctx;
@@ -86,12 +87,12 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	struct messaging_backend *result;
 	struct messaging_tdb_context *ctx;
 
-	if (!(result = TALLOC_P(mem_ctx, struct messaging_backend))) {
+	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ctx = TALLOC_ZERO_P(result, struct messaging_tdb_context);
+	ctx = talloc_zero(result, struct messaging_tdb_context);
 	if (!ctx) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
@@ -186,11 +187,11 @@ static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct messaging_array))) {
+	if (!(result = talloc_zero(mem_ctx, struct messaging_array))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	data = tdb_fetch(msg_tdb, key);
+	data = tdb_fetch_compat(msg_tdb, key);
 
 	if (data.dptr == NULL) {
 		*presult = result;
@@ -351,7 +352,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 
 	key = message_key_pid(frame, pid);
 
-	if (tdb_chainlock(tdb->tdb, key) == -1) {
+	if (tdb_chainlock(tdb->tdb, key) != 0) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
@@ -370,7 +371,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	if (!(rec = TALLOC_REALLOC_ARRAY(talloc_tos(), msg_array->messages,
+	if (!(rec = talloc_realloc(talloc_tos(), msg_array->messages,
 					 struct messaging_rec,
 					 msg_array->num_messages+1))) {
 		status = NT_STATUS_NO_MEMORY;
@@ -419,7 +420,7 @@ static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
 	TDB_DATA key = message_key_pid(mem_ctx, id);
 	NTSTATUS status;
 
-	if (tdb_chainlock(msg_tdb, key) == -1) {
+	if (tdb_chainlock(msg_tdb, key) != 0) {
 		TALLOC_FREE(key.dptr);
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}

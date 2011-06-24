@@ -82,7 +82,7 @@ static void ldapsrv_starttls_postprocess_done(struct tevent_req *subreq)
 				      conn, &conn->sockets.tls);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		NTSTATUS status = map_nt_error_from_unix_common(sys_errno);
 
 		DEBUG(1,("ldapsrv_starttls_postprocess_done: accept_tls_loop: "
 			 "tstream_tls_accept_recv() - %d:%s => %s",

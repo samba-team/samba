@@ -328,7 +328,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 		buf_len = resp_len * sizeof(uint8);
 
 		if (buf_len) {
-			if ((buffer = TALLOC_ARRAY(ctx, uint8, buf_len))
+			if ((buffer = talloc_array(ctx, uint8, buf_len))
 					== NULL ) {
 				DEBUG(0,("ads_dns_lookup_srv: "
 					"talloc() failed!\n"));
@@ -401,9 +401,17 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
+	const char *dns_hosts_file;
 
 	if ( !ctx || !name || !dclist ) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
+	if (dns_hosts_file) {
+		return resolve_dns_hosts_file_as_dns_rr(dns_hosts_file,
+							name, true, ctx,
+							dclist, numdcs);
 	}
 
 	/* Send the request.  May have to loop several times in case
@@ -434,7 +442,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 		answer_count));
 
 	if (answer_count) {
-		if ((dcs = TALLOC_ZERO_ARRAY(ctx, struct dns_rr_srv,
+		if ((dcs = talloc_zero_array(ctx, struct dns_rr_srv,
 						answer_count)) == NULL ) {
 			DEBUG(0,("ads_dns_lookup_srv: "
 				"talloc() failure for %d char*'s\n",
@@ -526,13 +534,13 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 				/* allocate new memory */
 
 				if (dcs[i].num_ips == 0) {
-					if ((dcs[i].ss_s = TALLOC_ARRAY(dcs,
+					if ((dcs[i].ss_s = talloc_array(dcs,
 						struct sockaddr_storage, 1 ))
 							== NULL ) {
 						return NT_STATUS_NO_MEMORY;
 					}
 				} else {
-					if ((tmp_ss_s = TALLOC_REALLOC_ARRAY(dcs,
+					if ((tmp_ss_s = talloc_realloc(dcs,
 							dcs[i].ss_s,
 							struct sockaddr_storage,
 							dcs[i].num_ips+1))
@@ -590,9 +598,16 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
+	const char *dns_hosts_file;
 
 	if ( !ctx || !dnsdomain || !nslist ) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
+	if (dns_hosts_file) {
+		DEBUG(1, ("NO 'NS' lookup available when using resolv:host file"));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	/* Send the request.  May have to loop several times in case
@@ -623,7 +638,7 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 		answer_count));
 
 	if (answer_count) {
-		if ((nsarray = TALLOC_ARRAY(ctx, struct dns_rr_ns,
+		if ((nsarray = talloc_array(ctx, struct dns_rr_ns,
 						answer_count)) == NULL ) {
 			DEBUG(0,("ads_dns_lookup_ns: "
 				"talloc() failure for %d char*'s\n",

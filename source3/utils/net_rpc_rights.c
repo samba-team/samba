@@ -190,7 +190,7 @@ static NTSTATUS check_privilege_for_user(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	for (i = 0; i < rights.count; i++) {
-		if (StrCaseCmp(rights.names[i].string, right) == 0) {
+		if (strcasecmp_m(rights.names[i].string, right) == 0) {
 			return NT_STATUS_OK;
 		}
 	}
@@ -506,7 +506,7 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 		return status;
 
 	rights.count = argc-1;
-	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
 				    rights.count);
 	if (!rights.names) {
 		return NT_STATUS_NO_MEMORY;
@@ -579,7 +579,7 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 		return status;
 
 	rights.count = argc-1;
-	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
 				    rights.count);
 	if (!rights.names) {
 		return NT_STATUS_NO_MEMORY;

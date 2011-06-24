@@ -654,7 +654,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 						address, port,
 						&kdc_socket->local_address);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		return status;
 	}
 
@@ -685,7 +685,7 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 				     kdc_udp_socket,
 				     &kdc_udp_socket->dgram);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("Failed to bind to %s:%u UDP - %s\n",
 			 address, port, nt_errstr(status)));
 		return status;
@@ -729,29 +729,34 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	num_interfaces = iface_count(ifaces);
+	num_interfaces = iface_list_count(ifaces);
 
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
 	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
-		if (kdc_port) {
-			status = kdc_add_socket(kdc, model_ops,
-						"kdc", "0.0.0.0", kdc_port,
-						kdc_process, false);
-			NT_STATUS_NOT_OK_RETURN(status);
-		}
+		const char **wcard = iface_list_wildcard(kdc, lp_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(wcard);
+		for (i=0; wcard[i]; i++) {
+			if (kdc_port) {
+				status = kdc_add_socket(kdc, model_ops,
+							"kdc", wcard[i], kdc_port,
+							kdc_process, false);
+				NT_STATUS_NOT_OK_RETURN(status);
+			}
 
-		if (kpasswd_port) {
-			status = kdc_add_socket(kdc, model_ops,
-						"kpasswd", "0.0.0.0", kpasswd_port,
-						kpasswdd_process, false);
-			NT_STATUS_NOT_OK_RETURN(status);
+			if (kpasswd_port) {
+				status = kdc_add_socket(kdc, model_ops,
+							"kpasswd", wcard[i], kpasswd_port,
+							kpasswdd_process, false);
+				NT_STATUS_NOT_OK_RETURN(status);
+			}
 		}
+		talloc_free(wcard);
 		done_wildcard = true;
 	}
 
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 
 		if (kdc_port) {
 			status = kdc_add_socket(kdc, model_ops,
@@ -895,9 +900,9 @@ static void kdc_task_init(struct task_server *task)
 		break;
 	}
 
-	load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+	load_interface_list(task, task->lp_ctx, &ifaces);
 
-	if (iface_count(ifaces) == 0) {
+	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "kdc: no network interfaces configured", false);
 		return;
 	}

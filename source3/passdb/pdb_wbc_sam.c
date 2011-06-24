@@ -112,7 +112,7 @@ static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 		smb_panic("primary group missing");
 	}
 
-	*pp_sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, *p_num_groups);
+	*pp_sids = talloc_array(mem_ctx, struct dom_sid, *p_num_groups);
 
 	if (*pp_sids == NULL) {
 		TALLOC_FREE(*pp_gids);

@@ -62,7 +62,7 @@ static NTSTATUS scripts_get_reg_config(TALLOC_CTX *mem_ctx,
 		{ NULL, REG_NONE, NULL },
 	};
 
-	info = TALLOC_ZERO_P(mem_ctx, struct gp_extension_reg_info);
+	info = talloc_zero(mem_ctx, struct gp_extension_reg_info);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	status = gp_ext_info_add_entry(mem_ctx, GP_EXT_NAME,
@@ -89,10 +89,10 @@ static NTSTATUS generate_gp_registry_entry(TALLOC_CTX *mem_ctx,
 	struct gp_registry_entry *entry = NULL;
 	struct registry_value *data = NULL;
 
-	entry = TALLOC_ZERO_P(mem_ctx, struct gp_registry_entry);
+	entry = talloc_zero(mem_ctx, struct gp_registry_entry);
 	NT_STATUS_HAVE_NO_MEMORY(entry);
 
-	data = TALLOC_ZERO_P(mem_ctx, struct registry_value);
+	data = talloc_zero(mem_ctx, struct registry_value);
 	NT_STATUS_HAVE_NO_MEMORY(data);
 
 	data->type = data_type;

@@ -18,7 +18,8 @@
 */
 
 #include "includes.h"
-#include "../lib/async_req/async_sock.h"
+#include "../lib/util/tevent_ntstatus.h"
+#include "client.h"
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
 
@@ -215,7 +216,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	state->called_type =
 		(called_type != -1) ? called_type : 0x20;
 	state->calling_name =
-		(calling_name != NULL) ? calling_name : global_myname();
+		(calling_name != NULL) ? calling_name : lp_netbios_name();
 	state->calling_type =
 		(calling_type != -1) ? calling_type : 0x00;
 
@@ -270,6 +271,7 @@ static int smbsock_connect_state_destructor(
 {
 	if (state->sock != -1) {
 		close(state->sock);
+		state->sock = -1;
 	}
 	return 0;
 }
@@ -368,7 +370,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
 			 const char *called_name, int called_type,
 			 const char *calling_name, int calling_type,
-			 int *pfd, uint16_t *ret_port)
+			 int *pfd, uint16_t *ret_port, int sec_timeout)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
@@ -383,6 +385,11 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
 				   called_name, called_type,
 				   calling_name, calling_type);
 	if (req == NULL) {
+		goto fail;
+	}
+	if ((sec_timeout != 0) &&
+	    !tevent_req_set_endtime(
+		    req, ev, timeval_current_ofs(sec_timeout, 0))) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
@@ -568,7 +575,7 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq)
 	}
 
 	state->num_received += 1;
-	if (state->num_received <= state->num_addrs) {
+	if (state->num_received < state->num_addrs) {
 		/*
 		 * More addrs pending, wait for the others
 		 */
@@ -610,6 +617,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     int *calling_types,
 			     size_t num_addrs,
 			     uint16_t port,
+			     int sec_timeout,
 			     int *pfd, size_t *chosen_index,
 			     uint16_t *chosen_port)
 {
@@ -627,6 +635,11 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 				       calling_names, calling_types,
 				       num_addrs, port);
 	if (req == NULL) {
+		goto fail;
+	}
+	if ((sec_timeout != 0) &&
+	    !tevent_req_set_endtime(
+		    req, ev, timeval_current_ofs(sec_timeout, 0))) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {

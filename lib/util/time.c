@@ -580,6 +580,24 @@ _PUBLIC_ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
 }
 
 /**
+  return a timeval milliseconds into the future
+*/
+_PUBLIC_ struct timeval timeval_current_ofs_msec(uint32_t msecs)
+{
+	struct timeval tv = timeval_current();
+	return timeval_add(&tv, msecs / 1000, (msecs % 1000) * 1000);
+}
+
+/**
+  return a timeval microseconds into the future
+*/
+_PUBLIC_ struct timeval timeval_current_ofs_usec(uint32_t usecs)
+{
+	struct timeval tv = timeval_current();
+	return timeval_add(&tv, usecs / 1000000, usecs % 1000000);
+}
+
+/**
   compare two timeval structures. 
   Return -1 if tv1 < tv2
   Return 0 if tv1 == tv2
@@ -720,8 +738,6 @@ static int tm_diff(struct tm *a, struct tm *b)
 }
 
 
-int extra_time_offset=0;
-
 /**
   return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
  */
@@ -735,7 +751,7 @@ _PUBLIC_ int get_time_zone(time_t t)
 	tm = localtime(&t);
 	if (!tm)
 		return 0;
-	return tm_diff(&tm_utc,tm)+60*extra_time_offset;
+	return tm_diff(&tm_utc,tm);
 }
 
 struct timespec nt_time_to_unix_timespec(NTTIME *nt)

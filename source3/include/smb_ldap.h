@@ -1,3 +1,25 @@
+/*
+   Unix SMB/CIFS implementation.
+   Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Remus Koos 2001
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
+   Copyright (C) Guenther Deschner 2005
+   Copyright (C) Gerald Carter 2006
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef _SMB_LDAP_H
 #define _SMB_LDAP_H
 
@@ -22,6 +44,20 @@ typedef int ber_int_t;
 #ifndef LDAP_CONST
 #define LDAP_CONST const
 #endif
+
+#ifdef HAVE_LDAP_PVT_H
+#include <ldap_pvt.h>
+#endif /* HAVE_LDAP_PVT_H */
+
+#ifdef HAVE_LDAP_INIT_FD
+int ldap_init_fd(ber_socket_t fd, int proto, char *uri, LDAP **ldp);
+#endif
+
+/* function declarations not included in proto.h */
+LDAP *ldap_open_with_timeout(const char *server,
+			     struct sockaddr_storage *ss,
+			     int port, unsigned int to);
+
 #ifndef LDAP_OPT_SUCCESS
 #define LDAP_OPT_SUCCESS 0
 #endif
@@ -35,9 +71,6 @@ typedef int ber_int_t;
 #if !defined(LDAPS_PORT)
 #define LDAPS_PORT 636
 #endif
-
-/* function declarations not included in proto.h */
-LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
 
 #endif /* HAVE_LDAP_H */
 

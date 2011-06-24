@@ -18,6 +18,8 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 
 struct trans_recvblob {
@@ -30,7 +32,6 @@ struct cli_trans_state {
 	struct event_context *ev;
 	uint8_t cmd;
 	uint16_t mid;
-	uint32_t seqnum;
 	const char *pipe_name;
 	uint8_t *pipe_name_conv;
 	size_t pipe_name_conv_len;
@@ -50,12 +51,28 @@ struct cli_trans_state {
 	struct trans_recvblob rdata;
 	uint16_t recv_flags2;
 
-	TALLOC_CTX *secondary_request_ctx;
-
-	struct iovec iov[4];
+	struct iovec iov[6];
 	uint8_t pad[4];
+	uint8_t zero_pad[4];
 	uint16_t vwv[32];
+
+	struct tevent_req *primary_subreq;
 };
+
+static void cli_trans_cleanup_primary(struct cli_trans_state *state)
+{
+	if (state->primary_subreq) {
+		cli_smb_req_set_mid(state->primary_subreq, 0);
+		cli_smb_req_unset_pending(state->primary_subreq);
+		TALLOC_FREE(state->primary_subreq);
+	}
+}
+
+static int cli_trans_state_destructor(struct cli_trans_state *state)
+{
+	cli_trans_cleanup_primary(state);
+	return 0;
+}
 
 static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 			       uint8_t wct, uint16_t *vwv,
@@ -146,7 +163,7 @@ static NTSTATUS cli_trans_pull_blob(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 		blob->total = total;
-		blob->data = TALLOC_ARRAY(mem_ctx, uint8_t, total);
+		blob->data = talloc_array(mem_ctx, uint8_t, total);
 		if (blob->data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -171,9 +188,12 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	struct iovec *iov = state->iov;
 	uint8_t *pad = state->pad;
 	uint16_t *vwv = state->vwv;
-	uint16_t param_offset;
-	uint16_t this_param = 0;
-	uint16_t this_data = 0;
+	uint32_t param_offset;
+	uint32_t this_param = 0;
+	uint32_t param_pad;
+	uint32_t data_offset;
+	uint32_t this_data = 0;
+	uint32_t data_pad;
 	uint32_t useable_space;
 	uint8_t cmd;
 
@@ -221,7 +241,18 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		break;
 	}
 
-	useable_space = state->cli->max_xmit - smb_size - sizeof(uint16_t)*wct;
+	param_offset += wct * sizeof(uint16_t);
+	useable_space = state->cli->max_xmit - param_offset;
+
+	param_pad = param_offset % 4;
+	if (param_pad > 0) {
+		param_pad = MIN(param_pad, useable_space);
+		iov[0].iov_base = (void *)state->zero_pad;
+		iov[0].iov_len = param_pad;
+		iov += 1;
+		param_offset += param_pad;
+	}
+	useable_space = state->cli->max_xmit - param_offset;
 
 	if (state->param_sent < state->num_param) {
 		this_param = MIN(state->num_param - state->param_sent,
@@ -231,27 +262,41 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		iov += 1;
 	}
 
+	data_offset = param_offset + this_param;
+	useable_space = state->cli->max_xmit - data_offset;
+
+	data_pad = data_offset % 4;
+	if (data_pad > 0) {
+		data_pad = MIN(data_pad, useable_space);
+		iov[0].iov_base = (void *)state->zero_pad;
+		iov[0].iov_len = data_pad;
+		iov += 1;
+		data_offset += data_pad;
+	}
+	useable_space = state->cli->max_xmit - data_offset;
+
 	if (state->data_sent < state->num_data) {
 		this_data = MIN(state->num_data - state->data_sent,
-				useable_space - this_param);
+				useable_space);
 		iov[0].iov_base = (void *)(state->data + state->data_sent);
 		iov[0].iov_len = this_data;
 		iov += 1;
 	}
 
-	param_offset += wct * sizeof(uint16_t);
-
 	DEBUG(10, ("num_setup=%u, max_setup=%u, "
 		   "param_total=%u, this_param=%u, max_param=%u, "
 		   "data_total=%u, this_data=%u, max_data=%u, "
-		   "param_offset=%u, param_disp=%u, data_disp=%u\n",
+		   "param_offset=%u, param_pad=%u, param_disp=%u, "
+		   "data_offset=%u, data_pad=%u, data_disp=%u\n",
 		   (unsigned)state->num_setup, (unsigned)state->max_setup,
 		   (unsigned)state->num_param, (unsigned)this_param,
 		   (unsigned)state->rparam.max,
 		   (unsigned)state->num_data, (unsigned)this_data,
 		   (unsigned)state->rdata.max,
-		   (unsigned)param_offset,
-		   (unsigned)state->param_sent, (unsigned)state->data_sent));
+		   (unsigned)param_offset, (unsigned)param_pad,
+		   (unsigned)state->param_sent,
+		   (unsigned)data_offset, (unsigned)data_pad,
+		   (unsigned)state->data_sent));
 
 	switch (cmd) {
 	case SMBtrans:
@@ -268,7 +313,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		SSVAL(vwv + 9, 0, this_param);
 		SSVAL(vwv +10, 0, param_offset);
 		SSVAL(vwv +11, 0, this_data);
-		SSVAL(vwv +12, 0, param_offset + this_param);
+		SSVAL(vwv +12, 0, data_offset);
 		SCVAL(vwv +13, 0, state->num_setup);
 		SCVAL(vwv +13, 1, 0);	/* reserved */
 		memcpy(vwv + 14, state->setup,
@@ -282,40 +327,40 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		SSVAL(vwv + 3, 0, param_offset);
 		SSVAL(vwv + 4, 0, state->param_sent);
 		SSVAL(vwv + 5, 0, this_data);
-		SSVAL(vwv + 6, 0, param_offset + this_param);
+		SSVAL(vwv + 6, 0, data_offset);
 		SSVAL(vwv + 7, 0, state->data_sent);
 		if (cmd == SMBtranss2) {
 			SSVAL(vwv + 8, 0, state->fid);
 		}
 		break;
 	case SMBnttrans:
-		SCVAL(vwv,  0, state->max_setup);
-		SSVAL(vwv,  1, 0); /* reserved */
-		SIVAL(vwv,  3, state->num_param);
-		SIVAL(vwv,  7, state->num_data);
-		SIVAL(vwv, 11, state->rparam.max);
-		SIVAL(vwv, 15, state->rdata.max);
-		SIVAL(vwv, 19, this_param);
-		SIVAL(vwv, 23, param_offset);
-		SIVAL(vwv, 27, this_data);
-		SIVAL(vwv, 31, param_offset + this_param);
-		SCVAL(vwv, 35, state->num_setup);
-		SSVAL(vwv, 36, state->function);
+		SCVAL(vwv + 0, 0, state->max_setup);
+		SSVAL(vwv + 0, 1, 0); /* reserved */
+		SIVAL(vwv + 1, 1, state->num_param);
+		SIVAL(vwv + 3, 1, state->num_data);
+		SIVAL(vwv + 5, 1, state->rparam.max);
+		SIVAL(vwv + 7, 1, state->rdata.max);
+		SIVAL(vwv + 9, 1, this_param);
+		SIVAL(vwv +11, 1, param_offset);
+		SIVAL(vwv +13, 1, this_data);
+		SIVAL(vwv +15, 1, data_offset);
+		SCVAL(vwv +17, 1, state->num_setup);
+		SSVAL(vwv +18, 0, state->function);
 		memcpy(vwv + 19, state->setup,
 		       sizeof(uint16_t) * state->num_setup);
 		break;
 	case SMBnttranss:
-		SSVAL(vwv,  0, 0); /* reserved */
-		SCVAL(vwv,  2, 0); /* reserved */
-		SIVAL(vwv,  3, state->num_param);
-		SIVAL(vwv,  7, state->num_data);
-		SIVAL(vwv, 11, this_param);
-		SIVAL(vwv, 15, param_offset);
-		SIVAL(vwv, 19, state->param_sent);
-		SIVAL(vwv, 23, this_data);
-		SIVAL(vwv, 27, param_offset + this_param);
-		SIVAL(vwv, 31, state->data_sent);
-		SCVAL(vwv, 35, 0); /* reserved */
+		SSVAL(vwv + 0, 0, 0); /* reserved */
+		SCVAL(vwv + 1, 0, 0); /* reserved */
+		SIVAL(vwv + 1, 1, state->num_param);
+		SIVAL(vwv + 3, 1, state->num_data);
+		SIVAL(vwv + 5, 1, this_param);
+		SIVAL(vwv + 7, 1, param_offset);
+		SIVAL(vwv + 9, 1, state->param_sent);
+		SIVAL(vwv +11, 1, this_data);
+		SIVAL(vwv +13, 1, data_offset);
+		SIVAL(vwv +15, 1, state->data_sent);
+		SCVAL(vwv +17, 1, 0); /* reserved */
 		break;
 	}
 
@@ -412,16 +457,29 @@ struct tevent_req *cli_trans_send(
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->mid = cli_smb_req_mid(subreq);
 	status = cli_smb_req_send(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, state->ev);
 	}
-	cli_state_seqnum_persistent(cli, state->mid);
 	tevent_req_set_callback(subreq, cli_trans_done, req);
+
+	/*
+	 * Now get the MID of the primary request
+	 * and mark it as persistent. This means
+	 * we will able to send and receive multiple
+	 * SMB pdus using this MID in both directions
+	 * (including correct SMB signing).
+	 */
+	state->mid = cli_smb_req_mid(subreq);
+	cli_smb_req_set_mid(subreq, state->mid);
+	state->primary_subreq = subreq;
+	talloc_set_destructor(state, cli_trans_state_destructor);
+
 	return req;
 }
+
+static void cli_trans_done2(struct tevent_req *subreq);
 
 static void cli_trans_done(struct tevent_req *subreq)
 {
@@ -478,25 +536,25 @@ static void cli_trans_done(struct tevent_req *subreq)
 
 	if (!sent_all) {
 		int iov_count;
-
-		TALLOC_FREE(subreq);
+		struct tevent_req *subreq2;
 
 		cli_trans_format(state, &wct, &iov_count);
 
-		subreq = cli_smb_req_create(state, state->ev, state->cli,
-					    state->cmd + 1, 0, wct, state->vwv,
-					    iov_count, state->iov);
-		if (tevent_req_nomem(subreq, req)) {
+		subreq2 = cli_smb_req_create(state, state->ev, state->cli,
+					     state->cmd + 1, 0, wct, state->vwv,
+					     iov_count, state->iov);
+		if (tevent_req_nomem(subreq2, req)) {
 			return;
 		}
-		cli_smb_req_set_mid(subreq, state->mid);
+		cli_smb_req_set_mid(subreq2, state->mid);
 
-		status = cli_smb_req_send(subreq);
+		status = cli_smb_req_send(subreq2);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
-		tevent_req_set_callback(subreq, cli_trans_done, req);
+		tevent_req_set_callback(subreq2, cli_trans_done2, req);
+
 		return;
 	}
 
@@ -521,23 +579,80 @@ static void cli_trans_done(struct tevent_req *subreq)
 	if ((state->rparam.total == state->rparam.received)
 	    && (state->rdata.total == state->rdata.received)) {
 		state->recv_flags2 = SVAL(inbuf, smb_flg2);
-		TALLOC_FREE(subreq);
-		cli_state_seqnum_remove(state->cli, state->mid);
+		cli_trans_cleanup_primary(state);
 		tevent_req_done(req);
 		return;
 	}
 
 	TALLOC_FREE(inbuf);
 
-	if (!cli_smb_req_set_pending(subreq)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
 	return;
 
  fail:
-	cli_state_seqnum_remove(state->cli, state->mid);
-	TALLOC_FREE(subreq);
+	cli_trans_cleanup_primary(state);
+	tevent_req_nterror(req, status);
+}
+
+static void cli_trans_done2(struct tevent_req *subreq2)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq2, struct tevent_req);
+	struct cli_trans_state *state = tevent_req_data(
+		req, struct cli_trans_state);
+	NTSTATUS status;
+	bool sent_all;
+	uint8_t wct;
+	uint32_t seqnum;
+
+	/*
+	 * First backup the seqnum of the secondary request
+	 * and attach it to the primary request.
+	 */
+	seqnum = cli_smb_req_seqnum(subreq2);
+	cli_smb_req_set_seqnum(state->primary_subreq, seqnum);
+
+	status = cli_smb_recv(subreq2, state, NULL, 0, &wct, NULL,
+			      NULL, NULL);
+	TALLOC_FREE(subreq2);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (wct != 0) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto fail;
+	}
+
+	sent_all = ((state->param_sent == state->num_param)
+		    && (state->data_sent == state->num_data));
+
+	if (!sent_all) {
+		int iov_count;
+
+		cli_trans_format(state, &wct, &iov_count);
+
+		subreq2 = cli_smb_req_create(state, state->ev, state->cli,
+					     state->cmd + 1, 0, wct, state->vwv,
+					     iov_count, state->iov);
+		if (tevent_req_nomem(subreq2, req)) {
+			return;
+		}
+		cli_smb_req_set_mid(subreq2, state->mid);
+
+		status = cli_smb_req_send(subreq2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		tevent_req_set_callback(subreq2, cli_trans_done2, req);
+		return;
+	}
+
+	return;
+
+ fail:
+	cli_trans_cleanup_primary(state);
 	tevent_req_nterror(req, status);
 }
 
@@ -553,6 +668,8 @@ NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct cli_trans_state *state = tevent_req_data(
 		req, struct cli_trans_state);
 	NTSTATUS status;
+
+	cli_trans_cleanup_primary(state);
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
@@ -644,8 +761,5 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 				rdata, min_rdata, num_rdata);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }

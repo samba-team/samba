@@ -33,7 +33,7 @@
 struct finddcs_nbt_state {
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 
 	const char *my_netbios_name;
 	const char *domain_name;
@@ -70,7 +70,7 @@ struct tevent_req *finddcs_nbt_send(TALLOC_CTX *mem_ctx,
 				struct dom_sid *domain_sid,
 				struct resolve_context *resolve_ctx,
 				struct tevent_context *event_ctx,
-				struct messaging_context *msg_ctx)
+				struct imessaging_context *msg_ctx)
 {
 	struct finddcs_nbt_state *state;
 	struct nbt_name name;
@@ -295,7 +295,7 @@ NTSTATUS finddcs_nbt(TALLOC_CTX *mem_ctx,
 		 struct dom_sid *domain_sid,
 		 struct resolve_context *resolve_ctx,
 		 struct tevent_context *event_ctx,
-		 struct messaging_context *msg_ctx,
+		 struct imessaging_context *msg_ctx,
 		 int *num_dcs, struct nbt_dc_name **dcs)
 {
 	struct tevent_req *req = finddcs_nbt_send(mem_ctx,

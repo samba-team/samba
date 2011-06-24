@@ -54,6 +54,15 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 
 	/* By default make sure it supports TCP. */
 	hints.ai_socktype = SOCK_STREAM;
+
+	/* always try as a numeric host first. This prevents unnecessary name
+	 * lookups, and also ensures we accept IPv6 addresses */
+	hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
+	ret = getaddrinfo(str, NULL, &hints, ppres);
+	if (ret == 0) {
+		return true;
+	}
+
 	hints.ai_flags = flags;
 
 	/* Linux man page on getaddrinfo() says port will be
@@ -297,10 +306,10 @@ bool is_ipaddress_v4(const char *str)
 }
 
 /**
- * Return true if a string could be an IPv4 or IPv6 address.
+ * Return true if a string could be a IPv6 address.
  */
 
-bool is_ipaddress(const char *str)
+bool is_ipaddress_v6(const char *str)
 {
 #if defined(HAVE_IPV6)
 	int ret = -1;
@@ -328,7 +337,16 @@ bool is_ipaddress(const char *str)
 		}
 	}
 #endif
-	return is_ipaddress_v4(str);
+	return false;
+}
+
+/**
+ * Return true if a string could be an IPv4 or IPv6 address.
+ */
+
+bool is_ipaddress(const char *str)
+{
+	return is_ipaddress_v4(str) || is_ipaddress_v6(str);
 }
 
 /**
@@ -405,7 +423,7 @@ bool is_zero_addr(const struct sockaddr_storage *pss)
  */
 void zero_ip_v4(struct in_addr *ip)
 {
-	memset(ip, '\0', sizeof(struct in_addr));
+	ZERO_STRUCTP(ip);
 }
 
 /**
@@ -415,7 +433,7 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip)
 {
 	struct sockaddr_in *sa = (struct sockaddr_in *)ss;
-	memset(ss, '\0', sizeof(*ss));
+	ZERO_STRUCTP(ss);
 	sa->sin_family = AF_INET;
 	sa->sin_addr = ip;
 }
@@ -540,3 +558,319 @@ void set_sockaddr_port(struct sockaddr *psa, uint16_t port)
 }
 
 
+/****************************************************************************
+ Get a port number in host byte order from a sockaddr_storage.
+****************************************************************************/
+
+uint16_t get_sockaddr_port(const struct sockaddr_storage *pss)
+{
+	uint16_t port = 0;
+
+	if (pss->ss_family != AF_INET) {
+#if defined(HAVE_IPV6)
+		/* IPv6 */
+		const struct sockaddr_in6 *sa6 =
+			(const struct sockaddr_in6 *)pss;
+		port = ntohs(sa6->sin6_port);
+#endif
+	} else {
+		const struct sockaddr_in *sa =
+			(const struct sockaddr_in *)pss;
+		port = ntohs(sa->sin_port);
+	}
+	return port;
+}
+
+/****************************************************************************
+ Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
+****************************************************************************/
+
+char *print_sockaddr_len(char *dest,
+			 size_t destlen,
+			const struct sockaddr *psa,
+			socklen_t psalen)
+{
+	if (destlen > 0) {
+		dest[0] = '\0';
+	}
+	(void)sys_getnameinfo(psa,
+			psalen,
+			dest, destlen,
+			NULL, 0,
+			NI_NUMERICHOST);
+	return dest;
+}
+
+/****************************************************************************
+ Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
+****************************************************************************/
+
+char *print_sockaddr(char *dest,
+			size_t destlen,
+			const struct sockaddr_storage *psa)
+{
+	return print_sockaddr_len(dest, destlen, (const struct sockaddr *)psa,
+			sizeof(struct sockaddr_storage));
+}
+
+/****************************************************************************
+ Print out a canonical IPv4 or IPv6 address from a struct sockaddr_storage.
+****************************************************************************/
+
+char *print_canonical_sockaddr(TALLOC_CTX *ctx,
+			const struct sockaddr_storage *pss)
+{
+	char addr[INET6_ADDRSTRLEN];
+	char *dest = NULL;
+	int ret;
+
+	/* Linux getnameinfo() man pages says port is unitialized if
+	   service name is NULL. */
+
+	ret = sys_getnameinfo((const struct sockaddr *)pss,
+			sizeof(struct sockaddr_storage),
+			addr, sizeof(addr),
+			NULL, 0,
+			NI_NUMERICHOST);
+	if (ret != 0) {
+		return NULL;
+	}
+
+	if (pss->ss_family != AF_INET) {
+#if defined(HAVE_IPV6)
+		dest = talloc_asprintf(ctx, "[%s]", addr);
+#else
+		return NULL;
+#endif
+	} else {
+		dest = talloc_asprintf(ctx, "%s", addr);
+	}
+
+	return dest;
+}
+
+/****************************************************************************
+ Return the port number we've bound to on a socket.
+****************************************************************************/
+
+int get_socket_port(int fd)
+{
+	struct sockaddr_storage sa;
+	socklen_t length = sizeof(sa);
+
+	if (fd == -1) {
+		return -1;
+	}
+
+	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
+		int level = (errno == ENOTCONN) ? 2 : 0;
+		DEBUG(level, ("getsockname failed. Error was %s\n",
+			       strerror(errno)));
+		return -1;
+	}
+
+#if defined(HAVE_IPV6)
+	if (sa.ss_family == AF_INET6) {
+		return ntohs(((struct sockaddr_in6 *)&sa)->sin6_port);
+	}
+#endif
+	if (sa.ss_family == AF_INET) {
+		return ntohs(((struct sockaddr_in *)&sa)->sin_port);
+	}
+	return -1;
+}
+
+/****************************************************************************
+ Return the string of an IP address (IPv4 or IPv6).
+****************************************************************************/
+
+static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
+{
+	struct sockaddr_storage sa;
+	socklen_t length = sizeof(sa);
+
+	/* Ok, returning a hard coded IPv4 address
+	 * is bogus, but it's just as bogus as a
+	 * zero IPv6 address. No good choice here.
+	 */
+
+	strlcpy(addr_buf, "0.0.0.0", addr_len);
+
+	if (fd == -1) {
+		return addr_buf;
+	}
+
+	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
+		DEBUG(0,("getsockname failed. Error was %s\n",
+			strerror(errno) ));
+		return addr_buf;
+	}
+
+	return print_sockaddr_len(addr_buf, addr_len, (struct sockaddr *)&sa, length);
+}
+
+const char *client_socket_addr(int fd, char *addr, size_t addr_len)
+{
+	return get_socket_addr(fd, addr, addr_len);
+}
+
+
+enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
+
+typedef struct smb_socket_option {
+	const char *name;
+	int level;
+	int option;
+	int value;
+	int opttype;
+} smb_socket_option;
+
+static const smb_socket_option socket_options[] = {
+  {"SO_KEEPALIVE", SOL_SOCKET, SO_KEEPALIVE, 0, OPT_BOOL},
+  {"SO_REUSEADDR", SOL_SOCKET, SO_REUSEADDR, 0, OPT_BOOL},
+  {"SO_BROADCAST", SOL_SOCKET, SO_BROADCAST, 0, OPT_BOOL},
+#ifdef TCP_NODELAY
+  {"TCP_NODELAY", IPPROTO_TCP, TCP_NODELAY, 0, OPT_BOOL},
+#endif
+#ifdef TCP_KEEPCNT
+  {"TCP_KEEPCNT", IPPROTO_TCP, TCP_KEEPCNT, 0, OPT_INT},
+#endif
+#ifdef TCP_KEEPIDLE
+  {"TCP_KEEPIDLE", IPPROTO_TCP, TCP_KEEPIDLE, 0, OPT_INT},
+#endif
+#ifdef TCP_KEEPINTVL
+  {"TCP_KEEPINTVL", IPPROTO_TCP, TCP_KEEPINTVL, 0, OPT_INT},
+#endif
+#ifdef IPTOS_LOWDELAY
+  {"IPTOS_LOWDELAY", IPPROTO_IP, IP_TOS, IPTOS_LOWDELAY, OPT_ON},
+#endif
+#ifdef IPTOS_THROUGHPUT
+  {"IPTOS_THROUGHPUT", IPPROTO_IP, IP_TOS, IPTOS_THROUGHPUT, OPT_ON},
+#endif
+#ifdef SO_REUSEPORT
+  {"SO_REUSEPORT", SOL_SOCKET, SO_REUSEPORT, 0, OPT_BOOL},
+#endif
+#ifdef SO_SNDBUF
+  {"SO_SNDBUF", SOL_SOCKET, SO_SNDBUF, 0, OPT_INT},
+#endif
+#ifdef SO_RCVBUF
+  {"SO_RCVBUF", SOL_SOCKET, SO_RCVBUF, 0, OPT_INT},
+#endif
+#ifdef SO_SNDLOWAT
+  {"SO_SNDLOWAT", SOL_SOCKET, SO_SNDLOWAT, 0, OPT_INT},
+#endif
+#ifdef SO_RCVLOWAT
+  {"SO_RCVLOWAT", SOL_SOCKET, SO_RCVLOWAT, 0, OPT_INT},
+#endif
+#ifdef SO_SNDTIMEO
+  {"SO_SNDTIMEO", SOL_SOCKET, SO_SNDTIMEO, 0, OPT_INT},
+#endif
+#ifdef SO_RCVTIMEO
+  {"SO_RCVTIMEO", SOL_SOCKET, SO_RCVTIMEO, 0, OPT_INT},
+#endif
+#ifdef TCP_FASTACK
+  {"TCP_FASTACK", IPPROTO_TCP, TCP_FASTACK, 0, OPT_INT},
+#endif
+#ifdef TCP_QUICKACK
+  {"TCP_QUICKACK", IPPROTO_TCP, TCP_QUICKACK, 0, OPT_BOOL},
+#endif
+#ifdef TCP_KEEPALIVE_THRESHOLD
+  {"TCP_KEEPALIVE_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_THRESHOLD, 0, OPT_INT},
+#endif
+#ifdef TCP_KEEPALIVE_ABORT_THRESHOLD
+  {"TCP_KEEPALIVE_ABORT_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_ABORT_THRESHOLD, 0, OPT_INT},
+#endif
+  {NULL,0,0,0,0}};
+
+/****************************************************************************
+ Print socket options.
+****************************************************************************/
+
+static void print_socket_options(int s)
+{
+	int value;
+	socklen_t vlen = 4;
+	const smb_socket_option *p = &socket_options[0];
+
+	/* wrapped in if statement to prevent streams
+	 * leak in SCO Openserver 5.0 */
+	/* reported on samba-technical  --jerry */
+	if ( DEBUGLEVEL >= 5 ) {
+		DEBUG(5,("Socket options:\n"));
+		for (; p->name != NULL; p++) {
+			if (getsockopt(s, p->level, p->option,
+						(void *)&value, &vlen) == -1) {
+				DEBUGADD(5,("\tCould not test socket option %s.\n",
+							p->name));
+			} else {
+				DEBUGADD(5,("\t%s = %d\n",
+							p->name,value));
+			}
+		}
+	}
+ }
+
+/****************************************************************************
+ Set user socket options.
+****************************************************************************/
+
+void set_socket_options(int fd, const char *options)
+{
+	TALLOC_CTX *ctx = talloc_new(NULL);
+	char *tok;
+
+	while (next_token_talloc(ctx, &options, &tok," \t,")) {
+		int ret=0,i;
+		int value = 1;
+		char *p;
+		bool got_value = false;
+
+		if ((p = strchr_m(tok,'='))) {
+			*p = 0;
+			value = atoi(p+1);
+			got_value = true;
+		}
+
+		for (i=0;socket_options[i].name;i++)
+			if (strequal(socket_options[i].name,tok))
+				break;
+
+		if (!socket_options[i].name) {
+			DEBUG(0,("Unknown socket option %s\n",tok));
+			continue;
+		}
+
+		switch (socket_options[i].opttype) {
+		case OPT_BOOL:
+		case OPT_INT:
+			ret = setsockopt(fd,socket_options[i].level,
+					socket_options[i].option,
+					(char *)&value,sizeof(int));
+			break;
+
+		case OPT_ON:
+			if (got_value)
+				DEBUG(0,("syntax error - %s "
+					"does not take a value\n",tok));
+
+			{
+				int on = socket_options[i].value;
+				ret = setsockopt(fd,socket_options[i].level,
+					socket_options[i].option,
+					(char *)&on,sizeof(int));
+			}
+			break;
+		}
+
+		if (ret != 0) {
+			/* be aware that some systems like Solaris return
+			 * EINVAL to a setsockopt() call when the client
+			 * sent a RST previously - no need to worry */
+			DEBUG(2,("Failed to set socket option %s (Error %s)\n",
+				tok, strerror(errno) ));
+		}
+	}
+
+	TALLOC_FREE(ctx);
+	print_socket_options(fd);
+}

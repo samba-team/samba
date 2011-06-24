@@ -26,7 +26,6 @@
 #include "popt_common.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "registry.h"
 #include "registry/reg_init_full.h"
 #include "libcli/auth/schannel.h"
 #include "secrets.h"
@@ -51,40 +50,6 @@ extern void start_spoolssd(struct event_context *ev_ctx,
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
-
-static void smbd_set_server_fd(int fd)
-{
-	struct smbd_server_connection *sconn = smbd_server_conn;
-	char addr[INET6_ADDRSTRLEN];
-	const char *name;
-
-	sconn->sock = fd;
-
-	/*
-	 * Initialize sconn->client_id: If we can't find the client's
-	 * name, default to its address.
-	 */
-
-	client_addr(fd, sconn->client_id.addr, sizeof(sconn->client_id.addr));
-
-	name = client_name(sconn->sock);
-	if (strcmp(name, "UNKNOWN") != 0) {
-		name = talloc_strdup(sconn, name);
-	} else {
-		name = NULL;
-	}
-	sconn->client_id.name =
-		(name != NULL) ? name : sconn->client_id.addr;
-
-	sub_set_socket_ids(sconn->client_id.addr, sconn->client_id.name,
-			   client_socket_addr(sconn->sock, addr,
-					      sizeof(addr)));
-}
-
-struct event_context *smbd_event_context(void)
-{
-	return server_event_context();
-}
 
 /*******************************************************************
  What to do when smb.conf is updated.
@@ -288,7 +253,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		if (!cleanup_te) {
 			/* call the cleanup timer, but not too often */
 			int cleanup_time = lp_parm_int(-1, "smbd", "cleanuptime", 20);
-			cleanup_te = event_add_timed(smbd_event_context(), NULL,
+			cleanup_te = event_add_timed(server_event_context(), NULL,
 						timeval_current_ofs(cleanup_time, 0),
 						cleanup_timeout_fn,
 						&cleanup_te);
@@ -366,8 +331,8 @@ static void smbd_setup_sig_chld_handler(void)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(smbd_event_context(),
-			       smbd_event_context(),
+	se = tevent_add_signal(server_event_context(),
+			       server_event_context(),
 			       SIGCHLD, 0,
 			       smbd_sig_chld_handler,
 			       NULL);
@@ -469,7 +434,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		s = NULL;
 
 		status = reinit_after_fork(smbd_messaging_context(),
-					   smbd_event_context(), procid_self(),
+					   server_event_context(), procid_self(),
 					   true);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
@@ -582,7 +547,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		return false;
 	}
 
-	s->fde = tevent_add_fd(smbd_event_context(),
+	s->fde = tevent_add_fd(server_event_context(),
 			       s,
 			       s->fd, TEVENT_FD_READ,
 			       smbd_accept_connection,
@@ -632,7 +597,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 {
 	int num_interfaces = iface_count();
 	int i;
-	char *ports;
+	const char *ports;
 	unsigned dns_port = 0;
 
 #ifdef HAVE_ATEXIT
@@ -763,7 +728,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		return false;
 	}
 
-	if (!(event_add_idle(smbd_event_context(), NULL,
+	if (!(event_add_idle(server_event_context(), NULL,
 			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "parent_housekeeping", smbd_parent_housekeeping,
 			     NULL))) {
@@ -801,14 +766,14 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 	if (lp_multicast_dns_register() && (dns_port != 0)) {
 #ifdef WITH_DNSSD_SUPPORT
-		smbd_setup_mdns_registration(smbd_event_context(),
+		smbd_setup_mdns_registration(server_event_context(),
 					     parent, dns_port);
 #endif
 #ifdef WITH_AVAHI_SUPPORT
 		void *avahi_conn;
 
 		avahi_conn = avahi_start_register(
-			smbd_event_context(), smbd_event_context(), dns_port);
+			server_event_context(), server_event_context(), dns_port);
 		if (avahi_conn == NULL) {
 			DEBUG(10, ("avahi_start_register failed\n"));
 		}
@@ -827,7 +792,7 @@ static void smbd_parent_loop(struct smbd_parent_context *parent)
 		int ret;
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		ret = tevent_loop_once(smbd_event_context());
+		ret = tevent_loop_once(server_event_context());
 		if (ret != 0) {
 			exit_server_cleanly("tevent_loop_once() error");
 		}
@@ -917,7 +882,7 @@ extern void build_options(bool screen);
 	load_case_tables();
 
 	/* Initialize the event context, it will panic on error */
-	smbd_event_context();
+	server_event_context();
 
 	smbd_init_globals();
 
@@ -1063,7 +1028,7 @@ extern void build_options(bool screen);
 	 * Reloading of the printers will not work here as we don't have a
 	 * server info and rpc services set up. It will be called later.
 	 */
-	if (!reload_services(smbd_messaging_context(), -1, False)) {
+	if (!reload_services(NULL, -1, False)) {
 		exit(1);
 	}
 
@@ -1124,7 +1089,7 @@ extern void build_options(bool screen);
 		pidfile_create("smbd");
 
 	status = reinit_after_fork(smbd_messaging_context(),
-				   smbd_event_context(),
+				   server_event_context(),
 				   procid_self(), false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
@@ -1134,7 +1099,7 @@ extern void build_options(bool screen);
 	smbd_server_conn->msg_ctx = smbd_messaging_context();
 
 	smbd_setup_sig_term_handler();
-	smbd_setup_sig_hup_handler(smbd_event_context(),
+	smbd_setup_sig_hup_handler(server_event_context(),
 				   smbd_server_conn->msg_ctx);
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
@@ -1148,7 +1113,7 @@ extern void build_options(bool screen);
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
-	if(!initialize_password_db(False, smbd_event_context()))
+	if(!initialize_password_db(False, server_event_context()))
 		exit(1);
 
 	if (!secrets_init()) {
@@ -1178,15 +1143,15 @@ extern void build_options(bool screen);
 	if (!locking_init())
 		exit(1);
 
-	if (!messaging_tdb_parent_init(smbd_event_context())) {
+	if (!messaging_tdb_parent_init(server_event_context())) {
 		exit(1);
 	}
 
-	if (!notify_internal_parent_init(smbd_event_context())) {
+	if (!notify_internal_parent_init(server_event_context())) {
 		exit(1);
 	}
 
-	if (!serverid_parent_init(smbd_event_context())) {
+	if (!serverid_parent_init(server_event_context())) {
 		exit(1);
 	}
 
@@ -1232,13 +1197,13 @@ extern void build_options(bool screen);
 		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 						   "rpc_server", "epmapper",
 						   "none");
-		if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-			start_epmd(smbd_event_context(),
+		if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+			start_epmd(server_event_context(),
 				   smbd_server_conn->msg_ctx);
 		}
 	}
 
-	if (!dcesrv_ep_setup(smbd_event_context(), smbd_server_conn->msg_ctx)) {
+	if (!dcesrv_ep_setup(server_event_context(), smbd_server_conn->msg_ctx)) {
 		exit(1);
 	}
 
@@ -1253,7 +1218,7 @@ extern void build_options(bool screen);
 
 	if (is_daemon && !interactive
 	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
-		start_background_queue(smbd_event_context(),
+		start_background_queue(server_event_context(),
 				       smbd_messaging_context());
 	}
 
@@ -1265,8 +1230,8 @@ extern void build_options(bool screen);
 		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 						   "rpc_server", "spoolss",
 						   "embedded");
-		if (StrCaseCmp(rpcsrv_type, "daemon") == 0) {
-			start_spoolssd(smbd_event_context(),
+		if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+			start_spoolssd(server_event_context(),
 				       smbd_messaging_context());
 		}
 	}
@@ -1296,7 +1261,7 @@ extern void build_options(bool screen);
 		return(0);
 	}
 
-	parent = talloc_zero(smbd_event_context(), struct smbd_parent_context);
+	parent = talloc_zero(server_event_context(), struct smbd_parent_context);
 	if (!parent) {
 		exit_server("talloc(struct smbd_parent_context) failed");
 	}

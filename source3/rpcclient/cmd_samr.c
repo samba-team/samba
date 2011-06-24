@@ -284,18 +284,18 @@ static NTSTATUS get_domain_handle(struct rpc_pipe_client *cli,
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER, result;
 
-	if (StrCaseCmp(sam, "domain") == 0) {
+	if (strcasecmp_m(sam, "domain") == 0) {
 		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					      connect_pol,
 					      access_mask,
 					      _domain_sid,
 					      domain_pol,
 					      &result);
-	} else if (StrCaseCmp(sam, "builtin") == 0) {
+	} else if (strcasecmp_m(sam, "builtin") == 0) {
 		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					      connect_pol,
 					      access_mask,
-					      CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+					      discard_const_p(struct dom_sid2, &global_sid_Builtin),
 					      domain_pol,
 					      &result);
 	}
@@ -728,7 +728,7 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	}
 
 	if (num_sids) {
-		sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_sids);
+		sid_array.sids = talloc_zero_array(mem_ctx, struct lsa_SidPtr, num_sids);
 		if (sid_array.sids == NULL)
 			return NT_STATUS_NO_MEMORY;
 	} else {
@@ -2087,7 +2087,7 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 
 	num_names = argc - 2;
 
-	if ((names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names)) == NULL) {
+	if ((names = talloc_array(mem_ctx, struct lsa_String, num_names)) == NULL) {
 		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 		status = NT_STATUS_NO_MEMORY;
@@ -2167,7 +2167,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	num_rids = argc - 2;
 
-	if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+	if ((rids = talloc_array(mem_ctx, uint32, num_rids)) == NULL) {
 		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 		status = NT_STATUS_NO_MEMORY;

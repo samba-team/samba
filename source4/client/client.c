@@ -309,12 +309,12 @@ static bool mask_match(struct smbcli_state *c, const char *string,
 		return false;
 	
 	if (is_case_sensitive)
-		return ms_fnmatch(pattern, string, 
+		return ms_fnmatch_protocol(pattern, string, 
 				  c->transport->negotiate.protocol) == 0;
 
 	p2 = strlower_talloc(NULL, pattern);
 	s2 = strlower_talloc(NULL, string);
-	ret = ms_fnmatch(p2, s2, c->transport->negotiate.protocol) == 0;
+	ret = ms_fnmatch_protocol(p2, s2, c->transport->negotiate.protocol) == 0;
 	talloc_free(p2);
 	talloc_free(s2);
 
@@ -473,8 +473,8 @@ static void add_to_do_list_queue(const char* entry)
 	}
 	if (do_list_queue)
 	{
-		safe_strcpy(do_list_queue + do_list_queue_end, entry, 
-			    do_list_queue_size - do_list_queue_end - 1);
+		strlcpy(do_list_queue + do_list_queue_end, entry ? entry : "",
+			    do_list_queue_size - do_list_queue_end);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
 			 entry, (int)do_list_queue_start, (int)do_list_queue_end));
@@ -696,11 +696,12 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *p_lnam
 	char *lname;
 
 
-	lname = talloc_strdup(ctx, p_lname);
 	GetTimeOfDay(&tp_start);
 
 	if (ctx->lowercase) {
-		strlower(lname);
+		lname = strlower_talloc(ctx, p_lname);
+	} else {
+		lname = talloc_strdup(ctx, p_lname);
 	}
 
 	fnum = smbcli_open(ctx->cli->tree, rname, O_RDONLY, DENY_NONE);
@@ -884,13 +885,14 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 
 	ctx->remote_cur_dir = talloc_asprintf_append_buffer(NULL, "%s\\", finfo->name);
 
-	l_fname = talloc_strdup(ctx, finfo->name);
-
-	string_replace(l_fname, '\\', '/');
 	if (ctx->lowercase) {
-		strlower(l_fname);
+		l_fname = strlower_talloc(ctx, finfo->name);
+	} else {
+		l_fname = talloc_strdup(ctx, finfo->name);
 	}
 	
+	string_replace(l_fname, '\\', '/');
+
 	if (!directory_exist(l_fname) &&
 	    mkdir(l_fname, 0777) != 0) {
 		d_printf("failed to create directory %s\n", l_fname);
@@ -3231,7 +3233,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		}
 	}
 
-	gensec_init(cmdline_lp_ctx);
+	gensec_init();
 
 	if(poptPeekArg(pc)) {
 		char *s = strdup(poptGetArg(pc)); 

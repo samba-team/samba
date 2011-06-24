@@ -705,7 +705,7 @@ static bool hash2_name_to_8_3(const char *name,
 		/* if the name is already a valid 8.3 name then we don't need to
 		 * change anything */
 		if (is_legal_name(name) && is_8_3(name, False, False, p)) {
-			safe_strcpy(new_name, name, 12);
+			strlcpy(new_name, name, 13);
 			return True;
 		}
 	}

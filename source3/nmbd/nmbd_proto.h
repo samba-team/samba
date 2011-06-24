@@ -1,3 +1,28 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  NBT netbios routines and daemon - version 2
+ *
+ *  Copyright (C) Andrew Tridgell			1994-1998
+ *  Copyright (C) Jeremy Allison			1994-2005
+ *  Copyright (C) Luke Kenneth Casson Leighton		1994-1998
+ *  Copyright (C) John H Terpstra			1995-1998
+ *  Copyright (C) Christopher R. Hertel			1998
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2002
+ *  Copyright (C) Jelmer Vernooij			2002,2003
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /* The following definitions come from nmbd/asyncdns.c  */
 
@@ -48,7 +73,7 @@ void sync_all_dmbs(time_t t);
 
 void check_master_browser_exists(time_t t);
 void run_elections(time_t t);
-void process_election(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_election(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
 bool check_elections(void);
 void nmbd_message_election(struct messaging_context *msg,
 			   void *private_data,
@@ -59,18 +84,18 @@ void nmbd_message_election(struct messaging_context *msg,
 /* The following definitions come from nmbd/nmbd_incomingdgrams.c  */
 
 void tell_become_backup(void);
-void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
-void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
-void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf);
+void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
+void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
+void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
 void process_master_browser_announce(struct subnet_record *subrec,
-                                     struct packet_struct *p,char *buf);
-void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len);
+                                     struct packet_struct *p,const char *buf);
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len);
 void process_get_backup_list_request(struct subnet_record *subrec,
-                                     struct packet_struct *p,char *buf);
+                                     struct packet_struct *p,const char *buf);
 void process_reset_browser(struct subnet_record *subrec,
-                                  struct packet_struct *p,char *buf);
-void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf);
-void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len);
+                                  struct packet_struct *p,const char *buf);
+void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf);
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len);
 
 /* The following definitions come from nmbd/nmbd_incomingrequests.c  */
 
@@ -250,7 +275,7 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 
 bool initialize_nmbd_proxy_logon(void);
 
-void process_logon_packet(struct packet_struct *p, char *buf,int len,
+void process_logon_packet(struct packet_struct *p, const char *buf,int len,
                           const char *mailslot);
 
 /* The following definitions come from nmbd/nmbd_responserecordsdb.c  */

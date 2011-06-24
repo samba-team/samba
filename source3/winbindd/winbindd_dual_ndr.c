@@ -29,8 +29,8 @@
 #include "includes.h"
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
-#include "librpc/gen_ndr/srv_wbint.h"
 #include "ntdomain.h"
+#include "librpc/gen_ndr/srv_wbint.h"
 
 struct wbint_bh_state {
 	struct winbindd_domain *domain;
@@ -144,7 +144,7 @@ static void wbint_bh_raw_call_done(struct tevent_req *subreq)
 		state->response->extra_data.data,
 		state->response->length - sizeof(struct winbindd_response));
 	if (state->response->extra_data.data && !state->out_data.data) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 

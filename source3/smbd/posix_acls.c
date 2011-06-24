@@ -3687,7 +3687,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 
 	num_aces += parent_sd->dacl->num_aces;
 
-	if((new_ace = TALLOC_ZERO_ARRAY(mem_ctx, struct security_ace,
+	if((new_ace = talloc_zero_array(mem_ctx, struct security_ace,
 					num_aces)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4744,13 +4744,13 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 	struct fd_handle fh;
 	NTSTATUS status;
 
-	conn = TALLOC_ZERO_P(ctx, connection_struct);
+	conn = talloc_zero(ctx, connection_struct);
 	if (conn == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
-	if (!(conn->params = TALLOC_P(conn, struct share_params))) {
+	if (!(conn->params = talloc(conn, struct share_params))) {
 		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
 		TALLOC_FREE(conn);
 		return NULL;

@@ -53,4 +53,12 @@ TALLOC_CTX *talloc_stackframe_pool(size_t poolsize);
 
 TALLOC_CTX *talloc_tos(void);
 
+/*
+ * return true if a talloc stackframe exists
+ * this can be used to prevent memory leaks for code that can
+ * optionally use a talloc stackframe (eg. nt_errstr())
+ */
+
+bool talloc_stackframe_exists(void);
+
 #endif

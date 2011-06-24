@@ -13,16 +13,6 @@ import wafsamba, Options, samba_dist, Scripting, Utils, samba_version
 
 samba_dist.DIST_DIRS('.')
 
-#This is a list of files that we don't want in the package, for
-#whatever reason.  Directories should be listed with a trailing / to
-#avoid over-exclusion.
-
-#This list includes files that would confuse the recipient of a
-#samba-4.0.0 branded tarball (until the merge is complete) and the
-#core elements of the autotools build system (which is known to
-#produce buggy binaries).
-samba_dist.DIST_BLACKLIST('README Manifest Read-Manifest-Now Roadmap ' +
-                          'packaging/ docs-xml/ examples/ swat/ WHATSNEW.txt MAINTAINERS ')
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
 
@@ -32,7 +22,7 @@ def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('lib/replace')
-    opt.RECURSE('source4/dynconfig')
+    opt.RECURSE('dynconfig')
     opt.RECURSE('source4/lib/ldb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
@@ -47,10 +37,6 @@ def set_options(opt):
                    help='enable special build farm options',
                    action='store_true', dest='BUILD_FARM')
 
-    gr.add_option('--enable-s3build',
-                   help='enable build of s3 binaries',
-                   action='store_true', dest='S3BUILD')
-
     opt.tool_options('python') # options for disabling pyc or pyo compilation
     # enable options related to building python extensions
 
@@ -60,19 +46,17 @@ def configure(conf):
     version = samba_version.load_version(env=conf.env)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
+    conf.DEFINE('_SAMBA_WAF_BUILD_', version.MAJOR)
     conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
 
-    if Options.options.S3BUILD:
-        conf.env.enable_s3build = True
-
     # this enables smbtorture.static for s3 in the build farm
     conf.env.BUILD_FARM = Options.options.BUILD_FARM or os.environ.get('RUN_FROM_BUILD_FARM')
 
-    conf.ADD_EXTRA_INCLUDES('#include/public #source4 #lib #source4/lib #source4/include #include')
+    conf.ADD_EXTRA_INCLUDES('#include/public #source4 #lib #source4/lib #source4/include #include #lib/replace')
 
     conf.RECURSE('lib/replace')
 
@@ -95,12 +79,13 @@ def configure(conf):
     if int(conf.env['PYTHON_VERSION'][0]) >= 3:
         raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 
-    conf.RECURSE('source4/dynconfig')
+    conf.RECURSE('dynconfig')
     conf.RECURSE('source4/lib/ldb')
     conf.RECURSE('source4/heimdal_build')
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
+    conf.RECURSE('lib/ccan')
     conf.RECURSE('lib/zlib')
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')
@@ -113,20 +98,29 @@ def configure(conf):
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('pidl')
     conf.RECURSE('selftest')
-    if conf.env.enable_s3build:
-        conf.RECURSE('source3')
+    conf.RECURSE('source3')
 
     # we don't want any libraries or modules to rely on runtime
     # resolution of symbols
     if sys.platform != "openbsd4":
         conf.env.undefined_ldflags = conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
+    if sys.platform != "openbsd4" and conf.env.undefined_ignore_ldflags == []:
+        if conf.CHECK_LDFLAGS(['-undefined', 'dynamic_lookup']):
+            conf.env.undefined_ignore_ldflags = ['-undefined', 'dynamic_lookup']
+
+
     # gentoo always adds this. We want our normal build to be as
     # strict as the strictest OS we support, so adding this here
     # allows us to find problems on our development hosts faster.
     # It also results in faster load time.
-    if sys.platform != "openbsd4":
-        conf.env.asneeded_ldflags = conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
+
+    # However, until the source3 waf build settles down, this needs to
+    # be disabled, as the bugs mentioned above are hitting too many of
+    # our users
+
+    #if sys.platform != "openbsd4":
+    #    conf.env.asneeded_ldflags = conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
 
     if not conf.CHECK_NEED_LC("-lc not needed"):
         conf.ADD_LDFLAGS('-lc', testflags=False)
@@ -159,7 +153,7 @@ def ctags(ctx):
 # of commands in --help
 def build(bld):
     '''build all targets'''
-    samba_version.load_version(env=bld.env)
+    samba_version.load_version(env=bld.env, is_install=bld.is_install)
     pass
 
 

@@ -401,7 +401,7 @@ struct idmap_domain *idmap_find_domain(const char *domname)
 		/*
 		 * talloc context for all idmap domains
 		 */
-		idmap_domains = TALLOC_ARRAY(NULL, struct idmap_domain *, 1);
+		idmap_domains = talloc_array(NULL, struct idmap_domain *, 1);
 	}
 
 	if (idmap_domains == NULL) {

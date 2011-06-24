@@ -18,6 +18,8 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "trans2.h"
 
@@ -26,6 +28,11 @@
 ****************************************************************************/
 static size_t cli_read_max_bufsize(struct cli_state *cli)
 {
+	size_t data_offset = smb_size - 4;
+	size_t wct = 12;
+
+	size_t useable_space;
+
 	if (!client_is_signing_on(cli) && !cli_encryption_on(cli)
 	    && (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
 		return CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
@@ -35,13 +42,21 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 			? CLI_SAMBA_MAX_LARGE_READX_SIZE
 			: CLI_WINDOWS_MAX_LARGE_READX_SIZE;
 	}
-	return (cli->max_xmit - (smb_size+32)) & ~1023;
+
+	data_offset += wct * sizeof(uint16_t);
+	data_offset += 1; /* pad */
+
+	useable_space = cli->max_xmit - data_offset;
+
+	return useable_space;
 }
 
 /****************************************************************************
   Calculate the recommended write buffer size
 ****************************************************************************/
-static size_t cli_write_max_bufsize(struct cli_state *cli, uint16_t write_mode)
+static size_t cli_write_max_bufsize(struct cli_state *cli,
+				    uint16_t write_mode,
+				    uint8_t wct)
 {
         if (write_mode == 0 &&
 	    !client_is_signing_on(cli) &&
@@ -60,13 +75,15 @@ static size_t cli_write_max_bufsize(struct cli_state *cli, uint16_t write_mode)
 	if (((cli->capabilities & CAP_LARGE_WRITEX) == 0)
 	    || client_is_signing_on(cli)
 	    || strequal(cli->dev, "LPT1:")) {
+		size_t data_offset = smb_size - 4;
+		size_t useable_space;
 
-		/*
-		 * Printer devices are restricted to max_xmit writesize in
-		 * Vista and XPSP3 as are signing connections.
-		 */
+		data_offset += wct * sizeof(uint16_t);
+		data_offset += 1; /* pad */
 
-		return (cli->max_xmit - (smb_size+32)) & ~1023;
+		useable_space = cli->max_xmit - data_offset;
+
+		return useable_space;
 	}
 
 	return CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE;
@@ -196,7 +213,7 @@ static void cli_read_andx_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->buf = (uint8_t *)smb_base(inbuf) + SVAL(vwv+6, 0);
+	state->buf = discard_const_p(uint8_t, smb_base(inbuf)) + SVAL(vwv+6, 0);
 
 	if (trans_oob(smb_len(inbuf), SVAL(vwv+6, 0), state->received)
 	    || ((state->received != 0) && (state->buf < bytes))) {
@@ -465,7 +482,7 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	state->num_reqs = MAX(window_size/state->chunk_size, 1);
 	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
 
-	state->reqs = TALLOC_ZERO_ARRAY(state, struct cli_pull_subreq,
+	state->reqs = talloc_zero_array(state, struct cli_pull_subreq,
 					state->num_reqs);
 	if (state->reqs == NULL) {
 		goto failed;
@@ -663,9 +680,6 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 	status = cli_pull_recv(req, received);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -686,168 +700,9 @@ ssize_t cli_read(struct cli_state *cli, uint16_t fnum, char *buf,
 	status = cli_pull(cli, fnum, offset, size, size,
 			  cli_read_sink, &buf, &ret);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
 		return -1;
 	}
 	return ret;
-}
-
-/****************************************************************************
- Issue a single SMBwrite and don't wait for a reply.
-****************************************************************************/
-
-static bool cli_issue_write(struct cli_state *cli,
-				uint16_t fnum,
-				off_t offset,
-				uint16 mode,
-				const char *buf,
-				size_t size)
-{
-	char *p;
-	bool large_writex = false;
-	/* We can only do direct writes if not signing and not encrypting. */
-	bool direct_writes = !client_is_signing_on(cli) && !cli_encryption_on(cli);
-
-	if (!direct_writes && size + 1 > cli->bufsize) {
-		cli->outbuf = (char *)SMB_REALLOC(cli->outbuf, size + 1024);
-		if (!cli->outbuf) {
-			return False;
-		}
-		cli->inbuf = (char *)SMB_REALLOC(cli->inbuf, size + 1024);
-		if (cli->inbuf == NULL) {
-			SAFE_FREE(cli->outbuf);
-			return False;
-		}
-		cli->bufsize = size + 1024;
-	}
-
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	if (cli->capabilities & CAP_LARGE_FILES) {
-		large_writex = True;
-	}
-
-	if (large_writex) {
-		cli_set_message(cli->outbuf,14,0,True);
-	} else {
-		cli_set_message(cli->outbuf,12,0,True);
-	}
-
-	SCVAL(cli->outbuf,smb_com,SMBwriteX);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SCVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,fnum);
-
-	SIVAL(cli->outbuf,smb_vwv3,offset);
-	SIVAL(cli->outbuf,smb_vwv5,0);
-	SSVAL(cli->outbuf,smb_vwv7,mode);
-
-	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
-	/*
-	 * According to CIFS-TR-1p00, this following field should only
-	 * be set if CAP_LARGE_WRITEX is set. We should check this
-	 * locally. However, this check might already have been
-	 * done by our callers.
-	 */
-	SSVAL(cli->outbuf,smb_vwv9,(size>>16));
-	SSVAL(cli->outbuf,smb_vwv10,size);
-	/* +1 is pad byte. */
-	SSVAL(cli->outbuf,smb_vwv11,
-	      smb_buf(cli->outbuf) - smb_base(cli->outbuf) + 1);
-
-	if (large_writex) {
-		SIVAL(cli->outbuf,smb_vwv12,(((uint64_t)offset)>>32) & 0xffffffff);
-	}
-
-	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11) -1;
-	*p++ = '\0'; /* pad byte. */
-	if (!direct_writes) {
-		memcpy(p, buf, size);
-	}
-	if (size > 0x1FFFF) {
-		/* This is a POSIX 14 word large write. */
-		set_message_bcc(cli->outbuf, 0); /* Set bcc to zero. */
-		_smb_setlen_large(cli->outbuf,smb_size + 28 + 1 /* pad */ + size - 4);
-	} else {
-		cli_setup_bcc(cli, p+size);
-	}
-
-	show_msg(cli->outbuf);
-	if (direct_writes) {
-		/* For direct writes we now need to write the data
-		 * directly out of buf. */
-		return cli_send_smb_direct_writeX(cli, buf, size);
-	} else {
-		return cli_send_smb(cli);
-	}
-}
-
-/****************************************************************************
-  write to a file
-  write_mode: 0x0001 disallow write cacheing
-              0x0002 return bytes remaining
-              0x0004 use raw named pipe protocol
-              0x0008 start of message mode named pipe protocol
-****************************************************************************/
-
-ssize_t cli_write(struct cli_state *cli,
-    	         uint16_t fnum, uint16 write_mode,
-		 const char *buf, off_t offset, size_t size)
-{
-	ssize_t bwritten = 0;
-	unsigned int issued = 0;
-	unsigned int received = 0;
-	int mpx = 1;
-	size_t writesize;
-	int blocks;
-
-	if(cli->max_mux > 1) {
-		mpx = cli->max_mux-1;
-	} else {
-		mpx = 1;
-	}
-
-	writesize = cli_write_max_bufsize(cli, write_mode);
-
-	blocks = (size + (writesize-1)) / writesize;
-
-	while (received < blocks) {
-
-		while ((issued - received < mpx) && (issued < blocks)) {
-			ssize_t bsent = issued * writesize;
-			ssize_t size1 = MIN(writesize, size - bsent);
-
-			if (!cli_issue_write(cli, fnum, offset + bsent,
-			                write_mode,
-			                buf + bsent,
-					size1))
-				return -1;
-			issued++;
-		}
-
-		if (!cli_receive_smb(cli)) {
-			return bwritten;
-		}
-
-		received++;
-
-		if (cli_is_error(cli))
-			break;
-
-		bwritten += SVAL(cli->inbuf, smb_vwv2);
-		if (writesize > 0xFFFF) {
-			bwritten += (((int)(SVAL(cli->inbuf, smb_vwv4)))<<16);
-		}
-	}
-
-	while (received < issued && cli_receive_smb(cli)) {
-		received++;
-	}
-
-	return bwritten;
 }
 
 /****************************************************************************
@@ -864,7 +719,7 @@ NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
 	 * 3 bytes prefix
 	 */
 
-	bytes = TALLOC_ARRAY(talloc_tos(), uint8_t, 3);
+	bytes = talloc_array(talloc_tos(), uint8_t, 3);
 	if (bytes == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -882,7 +737,7 @@ NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
 		SIVAL(vwv+2, 0, offset);
 		SSVAL(vwv+4, 0, 0);
 
-		bytes = TALLOC_REALLOC_ARRAY(talloc_tos(), bytes, uint8_t,
+		bytes = talloc_realloc(talloc_tos(), bytes, uint8_t,
 					     size+3);
 		if (bytes == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -944,7 +799,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 	struct cli_write_andx_state *state;
 	bool bigoffset = ((cli->capabilities & CAP_LARGE_FILES) != 0);
 	uint8_t wct = bigoffset ? 14 : 12;
-	size_t max_write = cli_write_max_bufsize(cli, mode);
+	size_t max_write = cli_write_max_bufsize(cli, mode, wct);
 	uint16_t *vwv;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_write_andx_state);
@@ -981,7 +836,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 	state->pad = 0;
 	state->iov[0].iov_base = (void *)&state->pad;
 	state->iov[0].iov_len = 1;
-	state->iov[1].iov_base = CONST_DISCARD(void *, buf);
+	state->iov[1].iov_base = discard_const_p(void, buf);
 	state->iov[1].iov_len = size;
 
 	subreq = cli_smb_req_create(state, ev, cli, SMBwriteX, 0, wct, vwv,
@@ -1138,9 +993,54 @@ static void cli_writeall_written(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, cli_writeall_written, req);
 }
 
-static NTSTATUS cli_writeall_recv(struct tevent_req *req)
+static NTSTATUS cli_writeall_recv(struct tevent_req *req,
+				  size_t *pwritten)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	struct cli_writeall_state *state = tevent_req_data(
+		req, struct cli_writeall_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (pwritten != NULL) {
+		*pwritten = state->written;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
+		      const uint8_t *buf, off_t offset, size_t size,
+		      size_t *pwritten)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_writeall_send(frame, ev, cli, fnum, mode, buf, offset, size);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+	status = cli_writeall_recv(req, pwritten);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 struct cli_push_write_state {
@@ -1252,7 +1152,7 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->pending = 0;
 	state->next_offset = start_offset;
 
-	state->chunk_size = cli_write_max_bufsize(cli, mode);
+	state->chunk_size = cli_write_max_bufsize(cli, mode, 14);
 
 	if (window_size == 0) {
 		window_size = cli->max_mux * state->chunk_size;
@@ -1264,7 +1164,7 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
 	state->num_reqs = MAX(state->num_reqs, 1);
 
-	state->reqs = TALLOC_ZERO_ARRAY(state, struct cli_push_write_state *,
+	state->reqs = talloc_zero_array(state, struct cli_push_write_state *,
 					state->num_reqs);
 	if (state->reqs == NULL) {
 		goto failed;
@@ -1305,7 +1205,7 @@ static void cli_push_written(struct tevent_req *subreq)
 	state->reqs[idx] = NULL;
 	state->pending -= 1;
 
-	status = cli_writeall_recv(subreq);
+	status = cli_writeall_recv(subreq, NULL);
 	TALLOC_FREE(subreq);
 	TALLOC_FREE(substate);
 	if (tevent_req_nterror(req, status)) {
@@ -1369,8 +1269,5 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	status = cli_push_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }

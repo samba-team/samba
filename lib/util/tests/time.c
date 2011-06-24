@@ -81,29 +81,11 @@ static bool test_timestring(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_get_time_zone(struct torture_context *tctx)
-{
-	time_t t = time(NULL);
-	int old_extra_time_offset = extra_time_offset;
-	int old_offset, new_offset;
-	/* test that extra_time_offset works */
-
-	old_offset = get_time_zone(t);
-	extra_time_offset = 42;
-	new_offset = get_time_zone(t);
-	extra_time_offset = old_extra_time_offset;
-	torture_assert_int_equal(tctx, old_offset+60*42, new_offset,
-				 "time offset not used");
-	return true;
-}
-
-
 struct torture_suite *torture_local_util_time(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "time");
 
 	torture_suite_add_simple_test(suite, "null_time", test_null_time);
-	torture_suite_add_simple_test(suite, "get_time_zone", test_get_time_zone);
 	torture_suite_add_simple_test(suite, "null_nttime", test_null_nttime);
 	torture_suite_add_simple_test(suite, "http_timestring", 
 								  test_http_timestring);

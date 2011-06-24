@@ -1762,7 +1762,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 		allow_list[0] = l_subnet_name;
 
-		if (allow_access(mem_ctx, NULL, allow_list, "", ip_address)) {
+		if (socket_allow_access(mem_ctx, NULL, allow_list, "", ip_address)) {
 			sites_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx,
 							   res->msgs[i],
 							   "siteObject");
@@ -3192,7 +3192,7 @@ bool dsdb_dn_is_deleted_val(const struct ldb_val *val)
  */
 bool dsdb_dn_is_upgraded_link_val(struct ldb_val *val)
 {
-	return memmem(val->data, val->length, "<RMD_ADDTIME=", 13) != NULL;
+	return memmem(val->data, val->length, "<RMD_VERSION=", 13) != NULL;
 }
 
 /*

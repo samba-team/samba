@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "dbwrap.h"
 #include "session.h"
+#include "util_tdb.h"
 
 static struct db_context *session_db_ctx(void)
 {

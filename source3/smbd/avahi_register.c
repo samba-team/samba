@@ -88,7 +88,7 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 		}
 		if (avahi_entry_group_add_service(
 			    state->entry_group, AVAHI_IF_UNSPEC,
-			    AVAHI_PROTO_UNSPEC, 0, global_myname(),
+			    AVAHI_PROTO_UNSPEC, 0, lp_netbios_name(),
 			    "_smb._tcp", NULL, NULL, state->port, NULL) < 0) {
 			error = avahi_client_errno(c);
 			DEBUG(10, ("avahi_entry_group_add_service failed: "

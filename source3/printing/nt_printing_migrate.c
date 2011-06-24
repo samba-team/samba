@@ -25,10 +25,10 @@
 #include "rpc_client/rpc_client.h"
 #include "librpc/gen_ndr/ndr_ntprinting.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
-#include "rpc_client/cli_spoolss.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "auth.h"
+#include "util_tdb.h"
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"
@@ -73,7 +73,7 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 
 	DEBUG(2, ("Migrating Form: %s\n", key_name));
 
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (srv_name_slash == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -164,7 +164,7 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 
 	DEBUG(2, ("Migrating Printer Driver: %s\n", key_name));
 
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (srv_name_slash == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -360,13 +360,13 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 	/* migrate printerdata */
 	for (j = 0; j < r.count; j++) {
 		char *valuename;
-		char *keyname;
+		const char *keyname;
 
 		if (r.printer_data[j].type == REG_NONE) {
 			continue;
 		}
 
-		keyname = CONST_DISCARD(char *, r.printer_data[j].name);
+		keyname = r.printer_data[j].name;
 		valuename = strchr(keyname, '\\');
 		if (valuename == NULL) {
 			continue;
@@ -532,7 +532,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 				 struct rpc_pipe_client *pipe_hnd)
 {
 	const char *backup_suffix = ".bak";
-	TDB_DATA kbuf, newkey, dbuf;
+	TDB_DATA kbuf, dbuf;
 	TDB_CONTEXT *tdb;
 	NTSTATUS status;
 	int rc;
@@ -549,11 +549,11 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	for (kbuf = tdb_firstkey(tdb);
+	for (kbuf = tdb_firstkey_compat(tdb);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
+	     kbuf = tdb_nextkey_compat(tdb, kbuf))
 	{
-		dbuf = tdb_fetch(tdb, kbuf);
+		dbuf = tdb_fetch_compat(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
@@ -651,7 +651,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 		return false;
 	}
 
-	status = rpc_pipe_open_internal(tmp_ctx,
+	status = rpc_pipe_open_interface(tmp_ctx,
 					&ndr_table_spoolss.syntax_id,
 					session_info,
 					NULL,

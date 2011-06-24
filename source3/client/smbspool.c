@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/passwd.h"
+#include "libsmb/libsmb.h"
 
 /*
  * Starting with CUPS 1.3, Kerberos support is provided by cupsd including
@@ -595,14 +596,19 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	tbytes = 0;
 
 	while ((nbytes = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-		if (cli_write(cli, fnum, 0, buffer, tbytes, nbytes) != nbytes) {
-			int status = get_exit_code(cli, cli_nt_error(cli));
+		NTSTATUS status;
 
-			fprintf(stderr, "ERROR: Error writing spool: %s\n", cli_errstr(cli));
-			fprintf(stderr, "DEBUG: Returning status %d...\n", status);
+		status = cli_writeall(cli, fnum, 0, (uint8_t *)buffer,
+				      tbytes, nbytes, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			int ret = get_exit_code(cli, status);
+			fprintf(stderr, "ERROR: Error writing spool: %s\n",
+				nt_errstr(status));
+			fprintf(stderr, "DEBUG: Returning status %d...\n",
+				ret);
 			cli_close(cli, fnum);
 
-			return (status);
+			return (ret);
 		}
 		tbytes += nbytes;
 	}

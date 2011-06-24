@@ -40,7 +40,7 @@ static uint32_t num_backends;
 _PUBLIC_ struct sys_lease_context *sys_lease_context_create(struct share_config *scfg,
 							    TALLOC_CTX *mem_ctx,
 							    struct tevent_context *ev,
-							    struct messaging_context *msg,
+							    struct imessaging_context *msg,
 							    sys_lease_send_break_fn break_send)
 {
 	struct sys_lease_context *ctx;

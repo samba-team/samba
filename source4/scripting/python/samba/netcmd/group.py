@@ -85,6 +85,7 @@ class cmd_group_add(Command):
                           description=description, mailaddress=mail_address, notes=notes)
         except Exception, e:
             raise CommandError('Failed to create group "%s"' % groupname, e)
+        print("Added group %s" % groupname)
 
 
 class cmd_group_delete(Command):
@@ -115,6 +116,7 @@ class cmd_group_delete(Command):
             samdb.deletegroup(groupname)
         except Exception, e:
             raise CommandError('Failed to remove group "%s"' % groupname, e)
+        print("Deleted group %s" % groupname)
 
 
 class cmd_group_add_members(Command):
@@ -146,6 +148,7 @@ class cmd_group_add_members(Command):
             samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=True)
         except Exception, e:
             raise CommandError('Failed to add members "%s" to group "%s"' % (listofmembers, groupname), e)
+        print("Added members to group %s" % groupname)
 
 
 class cmd_group_remove_members(Command):
@@ -177,6 +180,7 @@ class cmd_group_remove_members(Command):
             samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=False)
         except Exception, e:
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
+        print("Removed members from group %s" % groupname)
 
 
 class cmd_group(SuperCommand):

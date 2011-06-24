@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/rap.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "utils/net.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 
 /* The following messages were for error checking that is not properly
@@ -824,7 +825,7 @@ static int rap_user_add(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
-	safe_strcpy((char *)userinfo.user_name, argv[0], sizeof(userinfo.user_name)-1);
+	strlcpy((char *)userinfo.user_name, argv[0], sizeof(userinfo.user_name));
 	if (c->opt_flags == 0)
                 c->opt_flags = 0x21;
 
@@ -969,7 +970,7 @@ static int rap_group_add(struct net_context *c, int argc, const char **argv)
                 return -1;
 
 	/* BB check for length 21 or smaller explicitly ? BB */
-	safe_strcpy((char *)grinfo.group_name, argv[0], sizeof(grinfo.group_name)-1);
+	strlcpy((char *)grinfo.group_name, argv[0], sizeof(grinfo.group_name));
 	grinfo.reserved1 = '\0';
 	grinfo.comment = smb_xstrdup(c->opt_comment ? c->opt_comment : "");
 

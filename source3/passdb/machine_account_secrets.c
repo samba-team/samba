@@ -28,6 +28,7 @@
 #include "secrets.h"
 #include "dbwrap.h"
 #include "../librpc/ndr/libndr.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -56,6 +57,17 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 {
 	bool ret;
 
+#ifdef _SAMBA_WAF_BUILD_
+	if (strequal(domain, get_global_sam_name()) &&
+	    (pdb_capabilities() & PDB_CAP_ADS)) {
+		/* If we have a ADS-capable passdb backend, we
+		 * must never make up our own SID, it will
+		 * already be in the directory */
+		DEBUG(0, ("Refusing to store a Domain SID, this should be read from the directory not stored here\n"));
+		return false;
+	}
+#endif
+
 	ret = secrets_store(domain_sid_keystr(domain), sid, sizeof(struct dom_sid ));
 
 	/* Force a re-query, in case we modified our domain */
@@ -68,6 +80,24 @@ bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid)
 {
 	struct dom_sid  *dyn_sid;
 	size_t size = 0;
+
+#ifdef _SAMBA_WAF_BUILD_
+	if (strequal(domain, get_global_sam_name()) &&
+	    (pdb_capabilities() & PDB_CAP_ADS)) {
+		struct pdb_domain_info *domain_info;
+		domain_info = pdb_get_domain_info(talloc_tos());
+		if (!domain_info) {
+			/* If we have a ADS-capable passdb backend, we
+			 * must never make up our own SID, it will
+			 * already be in the directory */
+			DEBUG(0, ("Unable to fetch a Domain SID from the directory!\n"));
+			return false;
+		}
+
+		*sid = domain_info->sid;
+		return true;
+	}
+#endif
 
 	dyn_sid = (struct dom_sid  *)secrets_fetch(domain_sid_keystr(domain), &size);
 
@@ -88,6 +118,17 @@ bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
 	fstring key;
 
+#ifdef _SAMBA_WAF_BUILD_
+	if (strequal(domain, get_global_sam_name()) &&
+	    (pdb_capabilities() & PDB_CAP_ADS)) {
+		/* If we have a ADS-capable passdb backend, we
+		 * must never make up our own GUID, it will
+		 * already be in the directory */
+		DEBUG(0, ("Refusing to store a Domain GUID, this should be read from the directory not stored here\n"));
+		return false;
+	}
+#endif
+
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
 	return secrets_store(key, guid, sizeof(struct GUID));
@@ -99,6 +140,24 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 	fstring key;
 	size_t size = 0;
 	struct GUID new_guid;
+
+#ifdef _SAMBA_WAF_BUILD_
+	if (strequal(domain, get_global_sam_name()) &&
+	    (pdb_capabilities() & PDB_CAP_ADS)) {
+		struct pdb_domain_info *domain_info;
+		domain_info = pdb_get_domain_info(talloc_tos());
+		if (!domain_info) {
+			/* If we have a ADS-capable passdb backend, we
+			 * must never make up our own SID, it will
+			 * already be in the directory */
+			DEBUG(0, ("Unable to fetch a Domain GUID from the directory!\n"));
+			return false;
+		}
+
+		*guid = domain_info->guid;
+		return true;
+	}
+#endif
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);

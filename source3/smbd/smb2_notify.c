@@ -23,6 +23,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 struct smbd_smb2_notify_state {
 	struct smbd_smb2_request *smb2req;

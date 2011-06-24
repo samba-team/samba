@@ -39,6 +39,7 @@
 #include "lib/netapi/netapi_net.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "passdb.h"
@@ -365,7 +366,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 		sec_channel_type = get_sec_channel_type(NULL);
 	}
 
-	fstrcpy(trust_passwd, global_myname());
+	fstrcpy(trust_passwd, lp_netbios_name());
 	strlower_m(trust_passwd);
 
 	/*
@@ -378,7 +379,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
 	result = trust_pw_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup,
-					      global_myname(),
+					      lp_netbios_name(),
 					      orig_trust_passwd_hash,
 					      sec_channel_type);
 
@@ -480,10 +481,10 @@ int net_rpc_join(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (strlen(global_myname()) > 15) {
+	if (strlen(lp_netbios_name()) > 15) {
 		d_printf(_("Our netbios name can be at most 15 chars long, "
 			   "\"%s\" is %u chars long\n"),
-			 global_myname(), (unsigned int)strlen(global_myname()));
+			 lp_netbios_name(), (unsigned int)strlen(lp_netbios_name()));
 		return -1;
 	}
 
@@ -549,7 +550,7 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1622,7 +1623,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
         if (!NT_STATUS_IS_OK(status)) {
@@ -1976,7 +1977,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 		TALLOC_FREE(pipe_hnd);
 	}
 
-	if (!NT_STATUS_IS_OK(status) && (StrnCaseCmp(name, "S-", 2) == 0)) {
+	if (!NT_STATUS_IS_OK(status) && (strncasecmp_m(name, "S-", 2) == 0)) {
 
 		/* Try as S-1-5-whatever */
 
@@ -2584,7 +2585,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2710,7 +2711,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+					discard_const_p(struct dom_sid2, &global_sid_Builtin),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2956,7 +2957,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 		return result;
 	}
 
-	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, struct dom_sid, num_members);
+	alias_sids = talloc_zero_array(mem_ctx, struct dom_sid, num_members);
 	if (!alias_sids) {
 		d_fprintf(stderr, _("Out of memory\n"));
 		TALLOC_FREE(lsa_pipe);
@@ -3032,7 +3033,7 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3430,7 +3431,7 @@ static WERROR get_share_info(struct net_context *c,
 	{
 		struct srvsvc_NetShareCtr1 *ctr1;
 
-		ctr1 = TALLOC_ZERO_P(mem_ctx, struct srvsvc_NetShareCtr1);
+		ctr1 = talloc_zero(mem_ctx, struct srvsvc_NetShareCtr1);
 		W_ERROR_HAVE_NO_MEMORY(ctr1);
 
 		ctr1->count = 1;
@@ -3444,7 +3445,7 @@ static WERROR get_share_info(struct net_context *c,
 	{
 		struct srvsvc_NetShareCtr2 *ctr2;
 
-		ctr2 = TALLOC_ZERO_P(mem_ctx, struct srvsvc_NetShareCtr2);
+		ctr2 = talloc_zero(mem_ctx, struct srvsvc_NetShareCtr2);
 		W_ERROR_HAVE_NO_MEMORY(ctr2);
 
 		ctr2->count = 1;
@@ -3458,7 +3459,7 @@ static WERROR get_share_info(struct net_context *c,
 	{
 		struct srvsvc_NetShareCtr502 *ctr502;
 
-		ctr502 = TALLOC_ZERO_P(mem_ctx, struct srvsvc_NetShareCtr502);
+		ctr502 = talloc_zero(mem_ctx, struct srvsvc_NetShareCtr502);
 		W_ERROR_HAVE_NO_MEMORY(ctr502);
 
 		ctr502->count = 1;
@@ -3730,7 +3731,7 @@ static NTSTATUS copy_fn(const char *mnt, struct file_info *f,
 	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
 
 	/* DIRECTORY */
-	if (f->mode & aDIR) {
+	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
 
 		DEBUG(3,("got dir: %s\n", f->name));
 
@@ -3763,8 +3764,8 @@ static NTSTATUS copy_fn(const char *mnt, struct file_info *f,
 		}
 
 		/* search below that directory */
-		fstrcpy(new_mask, dir);
-		fstrcat(new_mask, "\\*");
+		strlcpy(new_mask, dir, sizeof(new_mask));
+		strlcat(new_mask, "\\*", sizeof(new_mask));
 
 		old_dir = local_state->cwd;
 		local_state->cwd = dir;
@@ -3968,7 +3969,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 		cp_clistate.cli_share_src = NULL;
 		cp_clistate.cli_share_dst = NULL;
 		cp_clistate.cwd = NULL;
-		cp_clistate.attribute = aSYSTEM | aHIDDEN | aDIR;
+		cp_clistate.attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
 		cp_clistate.c = c;
 
 	        /* open share source */
@@ -4318,7 +4319,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4802,7 +4803,7 @@ static bool get_user_tokens_from_file(FILE *f,
 
 		token = &((*tokens)[*num_tokens-1]);
 
-		fstrcpy(token->name, line);
+		strlcpy(token->name, line, sizeof(token->name));
 		token->token.num_sids = 0;
 		token->token.sids = NULL;
 		continue;
@@ -5803,7 +5804,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5977,7 +5978,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					discard_const_p(struct dom_sid2, domain_sid),
 					&domain_pol,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6500,7 +6501,6 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	NTSTATUS nt_status, result;
 	const char *domain_name = NULL;
-	struct dom_sid *queried_dom_sid;
 	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
 
@@ -6531,11 +6531,11 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	 * or to remote one given in command line
 	 */
 
-	if (StrCaseCmp(c->opt_workgroup, lp_workgroup())) {
+	if (strcasecmp_m(c->opt_workgroup, lp_workgroup())) {
 		domain_name = c->opt_workgroup;
 		c->opt_target_workgroup = c->opt_workgroup;
 	} else {
-		fstrcpy(pdc_name, global_myname());
+		fstrcpy(pdc_name, lp_netbios_name());
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
 		c->opt_target_workgroup = domain_name;
 	};
@@ -6592,8 +6592,6 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
-
-	queried_dom_sid = info->account_domain.sid;
 
 	/*
 	 * Keep calling LsaEnumTrustdom over opened pipe until
@@ -6711,11 +6709,11 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	 * or to remote one given in command line
 	 */
 
-	if (StrCaseCmp(c->opt_workgroup, lp_workgroup())) {
+	if (strcasecmp_m(c->opt_workgroup, lp_workgroup())) {
 		domain_name = c->opt_workgroup;
 		c->opt_target_workgroup = c->opt_workgroup;
 	} else {
-		fstrcpy(pdc_name, global_myname());
+		fstrcpy(pdc_name, lp_netbios_name());
 		domain_name = talloc_strdup(mem_ctx, lp_workgroup());
 		c->opt_target_workgroup = domain_name;
 	};
@@ -6937,7 +6935,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 
 		for (i = 0; i < num_domains; i++) {
 
-			char *str = CONST_DISCARD(char *, trusts->entries[i].name.string);
+			char *str = discard_const_p(char, trusts->entries[i].name.string);
 
 			found_domain = true;
 
@@ -7090,16 +7088,11 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	if (!net_find_server(c, NULL, flags, &server_ss, &server_name))
 		return false;
 
-	if ((cli = cli_initialise()) == NULL) {
+	status = cli_connect_nb(server_name, &server_ss, 0, 0x20,
+				lp_netbios_name(), Undefined, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
-
-	status = cli_connect(cli, server_name, &server_ss);
-	if (!NT_STATUS_IS_OK(status))
-		goto done;
-	if (!attempt_netbios_session_request(&cli, global_myname(),
-					     server_name, &server_ss))
-		goto done;
 	status = cli_negprot(cli);
 	if (!NT_STATUS_IS_OK(status))
 		goto done;

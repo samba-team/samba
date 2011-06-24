@@ -128,26 +128,26 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->single_sids = TALLOC_ARRAY(state, uint32_t, num_sids);
+	state->single_sids = talloc_array(state, uint32_t, num_sids);
 	if (tevent_req_nomem(state->single_sids, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	state->res_domains = TALLOC_ZERO_P(state, struct lsa_RefDomainList);
+	state->res_domains = talloc_zero(state, struct lsa_RefDomainList);
 	if (tevent_req_nomem(state->res_domains, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->res_domains->domains = TALLOC_ARRAY(
+	state->res_domains->domains = talloc_array(
 		state->res_domains, struct lsa_DomainInfo, num_sids);
 	if (tevent_req_nomem(state->res_domains->domains, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	state->res_names = TALLOC_ZERO_P(state, struct lsa_TransNameArray);
+	state->res_names = talloc_zero(state, struct lsa_TransNameArray);
 	if (tevent_req_nomem(state->res_names, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->res_names->names = TALLOC_ARRAY(
+	state->res_names->names = talloc_array(
 		state->res_names, struct lsa_TranslatedName, num_sids);
 	if (tevent_req_nomem(state->res_names->names, req)) {
 		return tevent_req_post(req, ev);
@@ -187,7 +187,7 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 
 		if (sid_check_is_domain(&d->sid)) {
 			state->rids.num_rids = d->sids.num_sids;
-			state->rids.rids = TALLOC_ARRAY(state, uint32_t,
+			state->rids.rids = talloc_array(state, uint32_t,
 							state->rids.num_rids);
 			if (tevent_req_nomem(state->rids.rids, req)) {
 				return false;
@@ -325,7 +325,7 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 		return NULL;
 	}
 
-	domains = TALLOC_REALLOC_ARRAY(
+	domains = talloc_realloc(
 		mem_ctx, domains, struct wb_lookupsids_domain, num_domains+1);
 	if (domains == NULL) {
 		return NULL;
@@ -337,13 +337,13 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	sid_split_rid(&domain->sid, NULL);
 	domain->domain = wb_domain;
 
-	domain->sids.sids = TALLOC_ARRAY(domains, struct lsa_SidPtr, num_sids);
+	domain->sids.sids = talloc_array(domains, struct lsa_SidPtr, num_sids);
 	if (domains->sids.sids == NULL) {
 		goto fail;
 	}
 	domain->sids.num_sids = 0;
 
-	domain->sid_indexes = TALLOC_ARRAY(domains, uint32_t, num_sids);
+	domain->sid_indexes = talloc_array(domains, uint32_t, num_sids);
 	if (domain->sid_indexes == NULL) {
 		TALLOC_FREE(domain->sids.sids);
 		goto fail;
@@ -354,7 +354,7 @@ fail:
 	/*
 	 * Realloc to the state it was in before
 	 */
-	*pdomains = TALLOC_REALLOC_ARRAY(
+	*pdomains = talloc_realloc(
 		mem_ctx, domains, struct wb_lookupsids_domain, num_domains);
 	return NULL;
 }
@@ -428,6 +428,7 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 		req, struct wb_lookupsids_state);
 	struct wb_lookupsids_domain *d;
 	uint32_t i;
+	bool fallback = false;
 
 	NTSTATUS status, result;
 
@@ -437,12 +438,30 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/*
-	 * Ignore "result" here. We depend on the individual states in
-	 * the translated names.
-	 */
-
 	d = &state->domains[state->domains_done];
+
+	if (NT_STATUS_IS_ERR(result)) {
+		fallback = true;
+	} else if (state->tmp_names.count != d->sids.num_sids) {
+		fallback = true;
+	}
+
+	if (fallback) {
+		for (i=0; i < d->sids.num_sids; i++) {
+			uint32_t res_sid_index = d->sid_indexes[i];
+
+			state->single_sids[state->num_single_sids] =
+				res_sid_index;
+			state->num_single_sids += 1;
+		}
+		state->domains_done += 1;
+		wb_lookupsids_next(req, state);
+		return;
+	}
+
+	/*
+	 * Look at the individual states in the translated names.
+	 */
 
 	for (i=0; i<state->tmp_names.count; i++) {
 
@@ -462,7 +481,7 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 			    &state->tmp_domains, &state->tmp_names.names[i],
 			    state->res_domains, state->res_names,
 			    res_sid_index)) {
-			tevent_req_nomem(NULL, req);
+			tevent_req_oom(req);
 			return;
 		}
 	}
@@ -525,7 +544,7 @@ static void wb_lookupsids_single_done(struct tevent_req *subreq)
 		    &src_domains, &src_name,
 		    state->res_domains, state->res_names,
 		    res_sid_index)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 	state->single_sids_done += 1;
@@ -544,6 +563,7 @@ static void wb_lookupsids_lookuprids_done(struct tevent_req *subreq)
 	NTSTATUS status, result;
 	struct wb_lookupsids_domain *d;
 	uint32_t i;
+	bool fallback = false;
 
 	status = dcerpc_wbint_LookupRids_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
@@ -552,6 +572,30 @@ static void wb_lookupsids_lookuprids_done(struct tevent_req *subreq)
 	}
 
 	d = &state->domains[state->domains_done];
+
+	if (NT_STATUS_IS_ERR(result)) {
+		fallback = true;
+	} else if (state->rid_names.num_principals != d->sids.num_sids) {
+		fallback = true;
+	}
+
+	if (fallback) {
+		for (i=0; i < d->sids.num_sids; i++) {
+			uint32_t res_sid_index = d->sid_indexes[i];
+
+			state->single_sids[state->num_single_sids] =
+				res_sid_index;
+			state->num_single_sids += 1;
+		}
+		state->domains_done += 1;
+		wb_lookupsids_next(req, state);
+		return;
+	}
+
+	/*
+	 * Look at the individual states in the translated names.
+	 */
+
 	sid_copy(&src_domain_sid, get_global_sam_sid());
 	src_domain.name.string = get_global_sam_name();
 	src_domain.sid = &src_domain_sid;
@@ -575,7 +619,7 @@ static void wb_lookupsids_lookuprids_done(struct tevent_req *subreq)
 			    &src_domains, &src_name,
 			    state->res_domains, state->res_names,
 			    res_sid_index)) {
-			tevent_req_nomem(NULL, req);
+			tevent_req_oom(req);
 			return;
 		}
 	}
@@ -595,6 +639,24 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+
+	/*
+	 * The returned names need to match the given sids,
+	 * if not we have a bug in the code!
+	 *
+	 */
+	SMB_ASSERT(state->res_names->count == state->num_sids);
+
+	/*
+	 * Not strictly needed, but it might make debugging in the callers
+	 * easier in future, if the talloc_array_length() returns the
+	 * expected result...
+	 */
+	state->res_domains->domains = talloc_realloc(state->res_domains,
+						     state->res_domains->domains,
+						     struct lsa_DomainInfo,
+						     state->res_domains->count);
+
 	*domains = talloc_move(mem_ctx, &state->res_domains);
 	*names = talloc_move(mem_ctx, &state->res_names);
 	return NT_STATUS_OK;

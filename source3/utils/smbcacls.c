@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../libcli/security/security.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "passdb/machine_sid.h"
 
@@ -359,7 +360,12 @@ static bool parse_ace_flags(const char *str, unsigned int *pflags)
 			return false;
 		}
 
-		if (*p != '|' && *p != '\0') {
+		switch (*p) {
+		case '|':
+			p++;
+		case '\0':
+			continue;
+		default:
 			return false;
 		}
 	}
@@ -1044,7 +1050,7 @@ static int inherit(struct cli_state *cli, const char *filename,
 				/* Add inherited flag to all aces */
 				ace->flags=ace->flags|
 				           SEC_ACE_FLAG_INHERITED_ACE;
-				if ((oldattr & aDIR) == aDIR) {
+				if ((oldattr & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
 					if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ==
 					    SEC_ACE_FLAG_CONTAINER_INHERIT) {
 						add_ace(&old->dacl, ace);
@@ -1144,7 +1150,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 
 	set_cmdline_auth_info_getpass(auth_info);
 
-	nt_status = cli_full_connection(&c, global_myname(), server, 
+	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
 				&ss, 0,
 				share, "?????",
 				get_cmdline_auth_info_username(auth_info),

@@ -32,6 +32,7 @@
 #include "cbuf.h"
 #include "srprs.h"
 #include <termios.h>
+#include "util_tdb.h"
 
 static int traverse_commit(struct db_record *diff_rec, void* data);
 static int traverse_check(struct db_record *rec, void* data);
@@ -345,7 +346,7 @@ fetch_record(struct check_ctx* ctx, TALLOC_CTX* mem_ctx, TDB_DATA key)
 {
 	TDB_DATA tmp;
 
-	if (ctx->diff->fetch(ctx->diff, mem_ctx, key, &tmp) == -1) {
+	if (ctx->diff->fetch(ctx->diff, mem_ctx, key, &tmp) != 0) {
 		DEBUG(0, ("Out of memory!\n"));
 		return tdb_null;
 	}
@@ -356,7 +357,7 @@ fetch_record(struct check_ctx* ctx, TALLOC_CTX* mem_ctx, TDB_DATA key)
 		return ret;
 	}
 
-	if (ctx->db->fetch(ctx->db, mem_ctx, key, &tmp) == -1) {
+	if (ctx->db->fetch(ctx->db, mem_ctx, key, &tmp) != 0) {
 		DEBUG(0, ("Out of memory!\n"));
 		return tdb_null;
 	}

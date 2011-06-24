@@ -37,6 +37,7 @@
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/util/util_net.h"
 
 #ifdef class
 #undef class
@@ -87,6 +88,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	struct rk_resource_record **srv_rr;
 	uint32_t addrs_valid = 0;
 	struct rk_resource_record **addrs_rr;
+	struct rk_dns_reply **srv_replies = NULL;
 	char *addrs;
 	bool first;
 	uint32_t i;
@@ -135,14 +137,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 				continue;
 			}
 		} else {
-			/* we are only interested in A records */
-			/* TODO: add AAAA support */
-			if (rr->type != rk_ns_t_a) {
+			/* we are only interested in A or AAAA records */
+			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
 				continue;
 			}
 
-			/* verify we actually have a A record here */
-			if (!rr->u.a) {
+			/* verify we actually have a record here */
+			if (!rr->u.data) {
 				continue;
 			}
 		}
@@ -164,6 +165,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 				     struct rk_resource_record *,
 				     count);
 	if (!addrs_rr) {
+		goto done;
+	}
+
+	srv_replies = talloc_zero_array(state,
+					struct rk_dns_reply *,
+				     	count);
+	if (!srv_replies) {
 		goto done;
 	}
 
@@ -193,14 +201,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			srv_rr[srv_valid] = rr;
 			srv_valid++;
 		} else {
-			/* we are only interested in A records */
-			/* TODO: add AAAA support */
-			if (rr->type != rk_ns_t_a) {
+			/* we are only interested in A or AAAA records */
+			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
 				continue;
 			}
 
-			/* verify we actually have a A record here */
-			if (!rr->u.a) {
+			/* verify we actually have a record record here */
+			if (!rr->u.data) {
 				continue;
 			}
 
@@ -210,19 +217,23 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	}
 
 	for (i=0; i < srv_valid; i++) {
-		for (rr=reply->head;rr;rr=rr->next) {
+		srv_replies[i] = rk_dns_lookup(srv_rr[i]->u.srv->target, "A");
+		if (srv_replies[i] == NULL)
+			continue;
 
+		/* Add first A record to addrs_rr */
+		for (rr=srv_replies[i]->head;rr;rr=rr->next) {
 			if (rr->class != rk_ns_c_in) {
 				continue;
 			}
 
-			/* we are only interested in A records */
-			if (rr->type != rk_ns_t_a) {
+			/* we are only interested in A or AAAA records */
+			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
 				continue;
 			}
 
-			/* verify we actually have a srv record here */
-			if (strcmp(&srv_rr[i]->u.srv->target[0], rr->domain) != 0) {
+			/* verify we actually have a record here */
+			if (!rr->u.data) {
 				continue;
 			}
 
@@ -241,8 +252,10 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		goto done;
 	}
 	first = true;
-	for (i=0; i < count; i++) {
+	for (i=0; i < addrs_valid; i++) {
 		uint16_t port;
+		char addrstr[INET6_ADDRSTRLEN];
+
 		if (!addrs_rr[i]) {
 			continue;
 		}
@@ -254,9 +267,28 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			port = state->port;
 		}
 
-		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
+		switch (addrs_rr[i]->type) {
+		case rk_ns_t_a:
+			if (inet_ntop(AF_INET, addrs_rr[i]->u.a,
+				      addrstr, sizeof(addrstr)) == NULL) {
+				continue;
+			}
+			break;
+#ifdef HAVE_IPV6
+		case rk_ns_t_aaaa:
+			if (inet_ntop(AF_INET6, (struct in6_addr *)addrs_rr[i]->u.data,
+				      addrstr, sizeof(addrstr)) == NULL) {
+				continue;
+			}
+			break;
+#endif
+		default:
+			continue;
+		}
+
+		addrs = talloc_asprintf_append_buffer(addrs, "%s%s@%u/%s",
 						      first?"":",",
-						      inet_ntoa(*addrs_rr[i]->u.a),
+						      addrstr,
 						      port,
 						      addrs_rr[i]->domain);
 		if (!addrs) {
@@ -270,6 +302,12 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	}
 
 done:
+	if (reply != NULL)
+		rk_dns_free_data(reply);
+	for (i=0; i < srv_valid; i++) {
+		if (srv_replies[i] != NULL)
+			rk_dns_free_data(srv_replies[i]);
+	}
 	close(fd);
 }
 
@@ -287,7 +325,6 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 
 	ZERO_STRUCT(hints);
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_family = AF_INET;/* TODO: add AF_INET6 support */
 	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV;
 
 	ret = getaddrinfo(state->name.name, "0", &hints, &res_list);
@@ -315,16 +352,13 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 	}
 	first = true;
 	for (res = res_list; res; res = res->ai_next) {
-		struct sockaddr_in *in;
-
-		if (res->ai_family != AF_INET) {
+		char addrstr[INET6_ADDRSTRLEN];
+		if (!print_sockaddr_len(addrstr, sizeof(addrstr), (struct sockaddr *)res->ai_addr, res->ai_addrlen)) {
 			continue;
 		}
-		in = (struct sockaddr_in *)res->ai_addr;
-
-		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
+		addrs = talloc_asprintf_append_buffer(addrs, "%s%s@%u/%s",
 						      first?"":",",
-						      inet_ntoa(in->sin_addr),
+						      addrstr,
 						      state->port,
 						      state->name.name);
 		if (!addrs) {
@@ -406,7 +440,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 
 	for (i=0; i < num_addrs; i++) {
 		uint32_t port = 0;
-		char *p = strrchr(addrs[i], ':');
+		char *p = strrchr(addrs[i], '@');
 		char *n;
 
 		if (!p) {
@@ -426,8 +460,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		*n = '\0';
 		n++;
 
-		if (strcmp(addrs[i], "0.0.0.0") == 0 ||
-		    inet_addr(addrs[i]) == INADDR_NONE) {
+		if (strcmp(addrs[i], "0.0.0.0") == 0) {
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return;
 		}
@@ -437,7 +470,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			return;
 		}
 		state->addrs[i] = socket_address_from_strings(state->addrs,
-							      "ipv4",
+							      "ip",
 							      addrs[i],
 							      port);
 		if (composite_nomem(state->addrs[i], c)) return;
@@ -485,7 +518,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 	/* setup a pipe to chat to our child */
 	ret = pipe(fd);
 	if (ret == -1) {
-		composite_error(c, map_nt_error_from_unix(errno));
+		composite_error(c, map_nt_error_from_unix_common(errno));
 		return c;
 	}
 
@@ -509,7 +542,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 
 	state->child = fork();
 	if (state->child == (pid_t)-1) {
-		composite_error(c, map_nt_error_from_unix(errno));
+		composite_error(c, map_nt_error_from_unix_common(errno));
 		return c;
 	}
 

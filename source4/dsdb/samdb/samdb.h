@@ -192,4 +192,5 @@ struct dsdb_fsmo_extended_op {
 	struct GUID destination_dsa_guid;
 };
 
+#define DSDB_ACL_CHECKS_DIRSYNC_FLAG 0x1
 #endif /* __SAMDB_H__ */

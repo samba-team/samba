@@ -30,6 +30,8 @@
 #include "talloc_dict.h"
 #include "smb_ldap.h"
 
+#include "../lib/util/tevent_ntstatus.h"
+
 #ifdef HAVE_LIBNSCD
 #include <libnscd.h>
 #endif

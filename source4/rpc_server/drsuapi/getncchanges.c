@@ -360,25 +360,35 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 	la->attid = sa->attributeID_id;
 	la->flags = active?DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:0;
 
-	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->originating_add_time, "RMD_ADDTIME");
-	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
-	}
 	status = dsdb_get_extended_dn_uint32(dsdb_dn->dn, &la->meta_data.version, "RMD_VERSION");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_VERSION in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
 	}
 	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->meta_data.originating_change_time, "RMD_CHANGETIME");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_CHANGETIME in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
 	}
 	status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &la->meta_data.originating_invocation_id, "RMD_INVOCID");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_INVOCID in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
 	}
 	status = dsdb_get_extended_dn_uint64(dsdb_dn->dn, &la->meta_data.originating_usn, "RMD_ORIGINATING_USN");
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ " No RMD_ORIGINATING_USN in linked attribute '%s' in '%s'\n",
+			 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 		return ntstatus_to_werror(status);
+	}
+
+	status = dsdb_get_extended_dn_nttime(dsdb_dn->dn, &la->originating_add_time, "RMD_ADDTIME");
+	if (!NT_STATUS_IS_OK(status)) {
+		/* this is possible for upgraded links */
+		la->originating_add_time = la->meta_data.originating_change_time;
 	}
 
 	werr = dsdb_dn_la_to_blob(sam_ctx, sa, schema, *la_list, dsdb_dn, &la->value.blob);
@@ -993,12 +1003,14 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	msg->dn = drs_ObjectIdentifier_to_dn(msg, ldb, req10->naming_context);
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
+	/* TODO: make sure ntds_dn is a valid nTDSDSA object */
 	ret = dsdb_find_dn_by_guid(ldb, msg, &req10->destination_dsa_guid, &ntds_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, (__location__ ": Unable to find NTDS object for guid %s - %s\n",
 			  GUID_string(mem_ctx, &req10->destination_dsa_guid), ldb_errstring(ldb)));
 		talloc_free(msg);
-		return WERR_DS_DRA_INTERNAL_ERROR;
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_UNKNOWN_CALLER;
+		return WERR_OK;
 	}
 
 	ret = ldb_msg_add_string(msg, "fSMORoleOwner", ldb_dn_get_linearized(ntds_dn));
@@ -1161,6 +1173,91 @@ getncchanges_map_req8(TALLOC_CTX *mem_ctx,
 }
 
 
+/**
+ * Collects object for normal replication cycle.
+ */
+static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
+					   TALLOC_CTX *mem_ctx,
+					   struct drsuapi_DsGetNCChangesRequest10 *req10,
+					   struct ldb_dn *search_dn,
+					   const char *extra_filter,
+					   struct ldb_result **search_res)
+{
+	int ret;
+	char* search_filter;
+	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
+	//const char *extra_filter;
+	struct drsuapi_getncchanges_state *getnc_state = b_state->getncchanges_state;
+	const char *attrs[] = { "uSNChanged",
+				"objectGUID" ,
+				NULL };
+
+	if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
+	    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
+		scope = LDB_SCOPE_BASE;
+	}
+
+	//extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
+
+	//getnc_state->min_usn = req10->highwatermark.highest_usn;
+
+	/* Construct response. */
+	search_filter = talloc_asprintf(mem_ctx,
+					"(uSNChanged>=%llu)",
+					(unsigned long long)(getnc_state->min_usn+1));
+
+	if (extra_filter) {
+		search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
+	}
+
+	if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+		search_filter = talloc_asprintf(mem_ctx,
+						"(&%s(isCriticalSystemObject=TRUE))",
+						search_filter);
+	}
+
+	if (req10->replica_flags & DRSUAPI_DRS_ASYNC_REP) {
+		scope = LDB_SCOPE_BASE;
+	}
+
+	if (!search_dn) {
+		search_dn = getnc_state->ncRoot_dn;
+	}
+
+	DEBUG(2,(__location__ ": getncchanges on %s using filter %s\n",
+		 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
+	ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, search_res,
+					      search_dn, scope, attrs,
+					      search_filter);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	return WERR_OK;
+}
+
+/**
+ * Collects object for normal replication cycle.
+ */
+static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_state,
+						TALLOC_CTX *mem_ctx,
+						struct drsuapi_DsGetNCChangesRequest10 *req10,
+						struct drsuapi_DsGetNCChangesCtr6 *ctr6,
+						struct ldb_dn *search_dn,
+						const char *extra_filter,
+						struct ldb_result **search_res)
+{
+	/* we have nothing to do in case of ex-op failure */
+	if (ctr6->extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+		return WERR_OK;
+	}
+
+	/* TODO: implement extended op specific collection
+	 * of objects. Right now we just normal procedure
+	 * for collecting objects */
+	return getncchanges_collect_objects(b_state, mem_ctx, req10, search_dn, extra_filter, search_res);
+}
+
 /* 
   drsuapi_DsGetNCChanges
 
@@ -1177,9 +1274,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
-	const char *attrs[] = { "uSNChanged",
-				"objectGUID" ,
-				NULL };
 	WERROR werr;
 	struct dcesrv_handle *h;
 	struct drsuapi_bind_state *b_state;	
@@ -1327,6 +1421,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 				     ldb_get_schema_basedn(b_state->sam_ctx));
 		getnc_state->is_schema_nc = (0 == ret);
 
+		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
+			r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
+		}
+
 		/*
 		 * This is the first replication cycle and it is
 		 * a good place to handle extended operations
@@ -1391,64 +1489,39 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	   Work out if this is the start of a new cycle */
 
 	if (getnc_state->guids == NULL) {
-		char* search_filter;
-		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 		const char *extra_filter;
-		struct ldb_result *search_res;
-
-		if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
-		    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
-			scope = LDB_SCOPE_BASE;
-		}
+		struct ldb_result *search_res = NULL;
 
 		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
 		getnc_state->min_usn = req10->highwatermark.highest_usn;
 
-		/* Construct response. */
-		search_filter = talloc_asprintf(mem_ctx,
-						"(uSNChanged>=%llu)",
-						(unsigned long long)(getnc_state->min_usn+1));
-	
-		if (extra_filter) {
-			search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
-		}
-
-		if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
-			search_filter = talloc_asprintf(mem_ctx,
-							"(&%s(isCriticalSystemObject=TRUE))",
-							search_filter);
-		}
-		
-		if (req10->replica_flags & DRSUAPI_DRS_ASYNC_REP) {
-			scope = LDB_SCOPE_BASE;
-		}
-		
-		if (!search_dn) {
-			search_dn = getnc_state->ncRoot_dn;
-		}
-
-		DEBUG(2,(__location__ ": getncchanges on %s using filter %s\n",
-			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
-		ret = drsuapi_search_with_extended_dn(sam_ctx, getnc_state, &search_res,
-						      search_dn, scope, attrs,
-						      search_filter);
-		if (ret != LDB_SUCCESS) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
-			TYPESAFE_QSORT(search_res->msgs,
-				       search_res->count,
-				       site_res_cmp_parent_order);
+		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+			werr = getncchanges_collect_objects(b_state, mem_ctx, req10,
+							    search_dn, extra_filter,
+							    &search_res);
 		} else {
-			TYPESAFE_QSORT(search_res->msgs,
-				       search_res->count,
-				       site_res_cmp_usn_order);
+			werr = getncchanges_collect_objects_exop(b_state, mem_ctx, req10,
+								 &r->out.ctr->ctr6,
+								 search_dn, extra_filter,
+								 &search_res);
+		}
+		W_ERROR_NOT_OK_RETURN(werr);
+
+		if (search_res) {
+			if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
+				TYPESAFE_QSORT(search_res->msgs,
+					       search_res->count,
+					       site_res_cmp_parent_order);
+			} else {
+				TYPESAFE_QSORT(search_res->msgs,
+					       search_res->count,
+					       site_res_cmp_usn_order);
+			}
 		}
 
 		/* extract out the GUIDs list */
-		getnc_state->num_records = search_res->count;
+		getnc_state->num_records = search_res ? search_res->count : 0;
 		getnc_state->guids = talloc_array(getnc_state, struct GUID, getnc_state->num_records);
 		W_ERROR_HAVE_NO_MEMORY(getnc_state->guids);
 
@@ -1705,7 +1778,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		r->out.ctr->ctr6.uptodateness_vector = NULL;
 		r->out.ctr->ctr6.nc_object_count = 0;
 		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
-		r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 	}
 
 	DEBUG(r->out.ctr->ctr6.more_data?4:2,

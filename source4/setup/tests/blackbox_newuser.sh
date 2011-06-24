@@ -26,17 +26,17 @@ testit "newuser" $samba_tool newuser $CONFIG --given-name="User" --surname="Test
 testit "newuser" $samba_tool newuser $CONFIG --use-username-as-cn --given-name="User1" --surname="Tester1" --initials="UT1" --profile-path="\\\\myserver\\my\\profile" --script-path="\\\\myserver\\my\\script" --home-directory="\\\\myserver\\my\\homedir" --job-title="Tester" --department="Testing" --company="Samba.org" --description="Description" --mail-address="tester@samba.org" --internet-address="http://samba.org" --telephone-number="001122334455" --physical-delivery-office="101" --home-drive="H:" NewUser1 testp@ssw0Rd
 
 # check the enable account script
-testit "enableaccount" $samba_tool enableaccount $CONFIG NewUser
-testit "enableaccount" $samba_tool enableaccount $CONFIG NewUser1
+testit "enableaccount" $samba_tool user enable $CONFIG NewUser
+testit "enableaccount" $samba_tool user enable $CONFIG NewUser1
 
 # check the enable account script
 testit "setpassword" $samba_tool setpassword $CONFIG NewUser --newpassword=testp@ssw0Rd2
 testit "setpassword" $samba_tool setpassword $CONFIG NewUser1 --newpassword=testp@ssw0Rd2
 
 # check the setexpiry script
-testit "noexpiry" $samba_tool setexpiry $CONFIG NewUser --noexpiry
-testit "noexpiry" $samba_tool setexpiry $CONFIG NewUser1 --noexpiry
-testit "expiry" $samba_tool setexpiry $CONFIG NewUser --days=7
-testit "expiry" $samba_tool setexpiry $CONFIG NewUser1 --days=7
+testit "noexpiry" $samba_tool user setexpiry $CONFIG NewUser --noexpiry
+testit "noexpiry" $samba_tool user setexpiry $CONFIG NewUser1 --noexpiry
+testit "expiry" $samba_tool user setexpiry $CONFIG NewUser --days=7
+testit "expiry" $samba_tool user setexpiry $CONFIG NewUser1 --days=7
 
 exit $failed

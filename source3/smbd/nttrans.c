@@ -29,6 +29,7 @@
 #include "auth.h"
 #include "ntioctl.h"
 #include "smbprofile.h"
+#include "libsmb/libsmb.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -1363,7 +1364,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 
 	/* Ensure attributes match. */
 	fattr = dos_mode(conn, smb_fname_src);
-	if ((fattr & ~attrs) & (aHIDDEN | aSYSTEM)) {
+	if ((fattr & ~attrs) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
 		status = NT_STATUS_NO_SUCH_FILE;
 		goto out;
 	}
@@ -1450,7 +1451,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
-	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
+	/* Grrr. We have to do this as open_file_ntcreate adds FILE_ATTRIBUTE_ARCHIVE when it
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
 	if (!parent_dirname(talloc_tos(), smb_fname_dst->base_name, &parent,
@@ -2213,8 +2214,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 * Allocate the correct amount and return the pointer to let
 		 * it be deallocated when we return.
 		 */
-		SHADOW_COPY_DATA *shadow_data = NULL;
-		TALLOC_CTX *shadow_mem_ctx = NULL;
+		struct shadow_copy_data *shadow_data = NULL;
 		bool labels = False;
 		uint32 labels_data_count = 0;
 		uint32 i;
@@ -2235,28 +2235,19 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			labels = True;
 		}
 
-		shadow_mem_ctx = talloc_init("SHADOW_COPY_DATA");
-		if (shadow_mem_ctx == NULL) {
-			DEBUG(0,("talloc_init(SHADOW_COPY_DATA) failed!\n"));
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,SHADOW_COPY_DATA);
+		shadow_data = talloc_zero(talloc_tos(),
+					    struct shadow_copy_data);
 		if (shadow_data == NULL) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));
-			talloc_destroy(shadow_mem_ctx);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
-
-		shadow_data->mem_ctx = shadow_mem_ctx;
 
 		/*
 		 * Call the VFS routine to actually do the work.
 		 */
 		if (SMB_VFS_GET_SHADOW_COPY_DATA(fsp, shadow_data, labels)!=0) {
-			talloc_destroy(shadow_data->mem_ctx);
+			TALLOC_FREE(shadow_data);
 			if (errno == ENOSYS) {
 				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n", 
 					conn->connectpath));
@@ -2281,14 +2272,14 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		if (max_data_count<data_count) {
 			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) too small (%u) bytes needed!\n",
 				max_data_count,data_count));
-			talloc_destroy(shadow_data->mem_ctx);
+			TALLOC_FREE(shadow_data);
 			reply_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 			return;
 		}
 
 		pdata = nttrans_realloc(ppdata, data_count);
 		if (pdata == NULL) {
-			talloc_destroy(shadow_data->mem_ctx);
+			TALLOC_FREE(shadow_data);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
@@ -2321,7 +2312,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			}
 		}
 
-		talloc_destroy(shadow_data->mem_ctx);
+		TALLOC_FREE(shadow_data);
 
 		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
 				pdata, data_count);
@@ -2861,7 +2852,7 @@ static void handle_nttrans(connection_struct *conn,
 {
 	if (get_Protocol() >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
-		SSVAL(req->inbuf,smb_flg2,req->flags2);
+		SSVAL(discard_const_p(uint8_t, req->inbuf),smb_flg2,req->flags2);
 	}
 
 
@@ -3029,7 +3020,7 @@ void reply_nttrans(struct smb_request *req)
 		return;
 	}
 
-	if ((state = TALLOC_P(conn, struct trans_state)) == NULL) {
+	if ((state = talloc(conn, struct trans_state)) == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBnttrans);
 		return;
@@ -3203,7 +3194,7 @@ void reply_nttranss(struct smb_request *req)
 
 	START_PROFILE(SMBnttranss);
 
-	show_msg((char *)req->inbuf);
+	show_msg((const char *)req->inbuf);
 
 	if (req->wct < 18) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

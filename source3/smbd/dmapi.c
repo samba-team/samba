@@ -96,7 +96,7 @@ static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 	do {
 		dm_sessid_t *new_sessions;
 		nsessions *= 2;
-		new_sessions = TALLOC_REALLOC_ARRAY(tmp_ctx, sessions, 
+		new_sessions = talloc_realloc(tmp_ctx, sessions, 
 						    dm_sessid_t, nsessions);
 		if (new_sessions == NULL) {
 			talloc_free(tmp_ctx);
@@ -289,7 +289,7 @@ uint32 dmapi_file_flags(const char * const path)
 	become_root();
 #endif
 
-	err = dm_path_to_handle(CONST_DISCARD(char *, path),
+	err = dm_path_to_handle(discard_const_p(char, path),
 		&dm_handle, &dm_handle_len);
 	if (err < 0) {
 		DEBUG(DMAPI_TRACE, ("dm_path_to_handle(%s): %s\n",
@@ -308,7 +308,7 @@ uint32 dmapi_file_flags(const char * const path)
 
 		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
 
-		err = dm_path_to_handle(CONST_DISCARD(char *, path),
+		err = dm_path_to_handle(discard_const_p(char, path),
 			&dm_handle, &dm_handle_len);
 		if (err < 0) {
 			DEBUG(DMAPI_TRACE,

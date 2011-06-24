@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "librpc/rpc/dcerpc.h"
 #include "srv_pipe_internal.h"
+#include "rpc_server/srv_pipe_register.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -197,7 +198,7 @@ NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
 	rpc_entry = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(rpc_lookup, struct rpc_table, rpc_lookup_size);
 	if (NULL == rpc_entry) {
 		rpc_lookup_size--;
-		DEBUG(0, ("rpc_pipe_register_commands: memory allocation failed\n"));
+		DEBUG(0, ("rpc_srv_register: memory allocation failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	} else {
 		rpc_lookup = rpc_entry;

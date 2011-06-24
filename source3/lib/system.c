@@ -48,42 +48,6 @@
 
 
 /*******************************************************************
- A wrapper for memalign
-********************************************************************/
-
-void *sys_memalign( size_t align, size_t size )
-{
-#if defined(HAVE_POSIX_MEMALIGN)
-	void *p = NULL;
-	int ret = posix_memalign( &p, align, size );
-	if ( ret == 0 )
-		return p;
-
-	return NULL;
-#elif defined(HAVE_MEMALIGN)
-	return memalign( align, size );
-#else
-	/* On *BSD systems memaligns doesn't exist, but memory will
-	 * be aligned on allocations of > pagesize. */
-#if defined(SYSCONF_SC_PAGESIZE)
-	size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
-#elif defined(HAVE_GETPAGESIZE)
-	size_t pagesize = (size_t)getpagesize();
-#else
-	size_t pagesize = (size_t)-1;
-#endif
-	if (pagesize == (size_t)-1) {
-		DEBUG(0,("memalign functionalaity not available on this platform!\n"));
-		return NULL;
-	}
-	if (size < pagesize) {
-		size = pagesize;
-	}
-	return SMB_MALLOC(size);
-#endif
-}
-
-/*******************************************************************
  A wrapper for usleep in case we don't have one.
 ********************************************************************/
 
@@ -545,13 +509,13 @@ void update_stat_ex_create_time(struct stat_ex *dst,
 }
 
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-static void init_stat_ex_from_stat (struct stat_ex *dst,
-				    const struct stat64 *src,
-				    bool fake_dir_create_times)
+void init_stat_ex_from_stat (struct stat_ex *dst,
+			    const struct stat64 *src,
+			    bool fake_dir_create_times)
 #else
-static void init_stat_ex_from_stat (struct stat_ex *dst,
-				    const struct stat *src,
-				    bool fake_dir_create_times)
+void init_stat_ex_from_stat (struct stat_ex *dst,
+			    const struct stat *src,
+			    bool fake_dir_create_times)
 #endif
 {
 	dst->st_ex_dev = src->st_dev;
@@ -833,6 +797,15 @@ FILE *sys_fopen(const char *path, const char *type)
 }
 
 
+#if HAVE_KERNEL_SHARE_MODES
+#ifndef LOCK_MAND
+#define LOCK_MAND	32	/* This is a mandatory flock */
+#define LOCK_READ	64	/* ... Which allows concurrent read operations */
+#define LOCK_WRITE	128	/* ... Which allows concurrent write operations */
+#define LOCK_RW		192	/* ... Which allows concurrent read & write ops */
+#endif
+#endif
+
 /*******************************************************************
  A flock() wrapper that will perform the kernel flock.
 ********************************************************************/
@@ -986,18 +959,45 @@ int sys_waitpid(pid_t pid,int *status,int options)
 }
 
 /*******************************************************************
- System wrapper for getwd
+ System wrapper for getwd. Always returns MALLOC'ed memory, or NULL
+ on error (malloc fail usually).
 ********************************************************************/
 
-char *sys_getwd(char *s)
+char *sys_getwd(void)
 {
-	char *wd;
-#ifdef HAVE_GETCWD
-	wd = (char *)getcwd(s, PATH_MAX);
-#else
-	wd = (char *)getwd(s);
-#endif
+#ifdef GETCWD_TAKES_NULL
+	return getcwd(NULL, 0);
+#elif HAVE_GETCWD
+	char *wd = NULL, *s = NULL;
+	size_t allocated = PATH_MAX;
+
+	while (1) {
+		s = SMB_REALLOC_ARRAY(s, char, allocated);
+		if (s == NULL) {
+			return NULL;
+		}
+		wd = getcwd(s, allocated);
+		if (wd) {
+			break;
+		}
+		if (errno != ERANGE) {
+			SAFE_FREE(s);
+			break;
+		}
+		allocated *= 2;
+		if (allocated < PATH_MAX) {
+			SAFE_FREE(s);
+			break;
+		}
+	}
 	return wd;
+#else
+	char *s = SMB_MALLOC_ARRAY(char, PATH_MAX);
+	if (s == NULL) {
+		return NULL;
+	}
+	return getwd(s);
+#endif
 }
 
 #if defined(HAVE_POSIX_CAPABILITIES)
@@ -1382,7 +1382,7 @@ static char **extract_args(TALLOC_CTX *mem_ctx, const char *command)
 
 	TALLOC_FREE(trunc_cmd);
 
-	if (!(argl = TALLOC_ARRAY(mem_ctx, char *, argcl + 1))) {
+	if (!(argl = talloc_array(mem_ctx, char *, argcl + 1))) {
 		goto nomem;
 	}
 
@@ -2367,7 +2367,7 @@ static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 	dirp = fdopendir(newfd);
 
 	while ((de = readdir(dirp))) {
-		size_t listlen = strlen(de->d_name);
+		size_t listlen = strlen(de->d_name) + 1;
 		if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
 			/* we don't want "." and ".." here: */
 			DEBUG(10,("skipped EA %s\n",de->d_name));
@@ -2376,18 +2376,16 @@ static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 
 		if (size == 0) {
 			/* return the current size of the list of extended attribute names*/
-			len += listlen + 1;
+			len += listlen;
 		} else {
 			/* check size and copy entrieѕ + nul into list. */
-			if ((len + listlen + 1) > size) {
+			if ((len + listlen) > size) {
 				errno = ERANGE;
 				len = -1;
 				break;
 			} else {
-				safe_strcpy(list + len, de->d_name, listlen);
+				strlcpy(list + len, de->d_name, listlen);
 				len += listlen;
-				list[len] = '\0';
-				++len;
 			}
 		}
 	}
@@ -2633,74 +2631,3 @@ int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct
 	return -1;
 }
 #endif /* WITH_AIO */
-
-int sys_getpeereid( int s, uid_t *uid)
-{
-#if defined(HAVE_PEERCRED)
-	struct ucred cred;
-	socklen_t cred_len = sizeof(struct ucred);
-	int ret;
-
-	ret = getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred, &cred_len);
-	if (ret != 0) {
-		return -1;
-	}
-
-	if (cred_len != sizeof(struct ucred)) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	*uid = cred.uid;
-	return 0;
-#else
-#if defined(HAVE_GETPEEREID)
-	gid_t gid;
-	return getpeereid(s, uid, &gid);
-#endif
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-int sys_getnameinfo(const struct sockaddr *psa,
-			socklen_t salen,
-			char *host,
-			size_t hostlen,
-			char *service,
-			size_t servlen,
-			int flags)
-{
-	/*
-	 * For Solaris we must make sure salen is the
-	 * correct length for the incoming sa_family.
-	 */
-
-	if (salen == sizeof(struct sockaddr_storage)) {
-		salen = sizeof(struct sockaddr_in);
-#if defined(HAVE_IPV6)
-		if (psa->sa_family == AF_INET6) {
-			salen = sizeof(struct sockaddr_in6);
-		}
-#endif
-	}
-	return getnameinfo(psa, salen, host, hostlen, service, servlen, flags);
-}
-
-int sys_connect(int fd, const struct sockaddr * addr)
-{
-	socklen_t salen = (socklen_t)-1;
-
-	if (addr->sa_family == AF_INET) {
-	    salen = sizeof(struct sockaddr_in);
-	} else if (addr->sa_family == AF_UNIX) {
-	    salen = sizeof(struct sockaddr_un);
-	}
-#if defined(HAVE_IPV6)
-	else if (addr->sa_family == AF_INET6) {
-	    salen = sizeof(struct sockaddr_in6);
-	}
-#endif
-
-	return connect(fd, addr, salen);
-}

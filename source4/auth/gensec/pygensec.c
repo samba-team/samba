@@ -127,7 +127,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 		return NULL;
 	}
 
-	status = gensec_init(settings->lp_ctx);
+	status = gensec_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		PyObject_DEL(self);
@@ -156,7 +156,7 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 	PyObject *py_auth_context = Py_None;
 	struct tevent_context *ev;
 	struct gensec_security *gensec;
-	struct auth_context *auth_context = NULL;
+	struct auth4_context *auth_context = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", discard_const_p(char *, kwnames), &py_settings, &py_auth_context))
 		return NULL;
@@ -201,7 +201,7 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 	}
 
 	if (py_auth_context != Py_None) {
-		auth_context = py_talloc_get_type(py_auth_context, struct auth_context);
+		auth_context = py_talloc_get_type(py_auth_context, struct auth4_context);
 		if (!auth_context) {
 			PyErr_Format(PyExc_TypeError,
 				     "Expected auth.AuthContext for auth_context argument, got %s",
@@ -210,7 +210,7 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 		}
 	}
 
-	status = gensec_init(settings->lp_ctx);
+	status = gensec_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		PyObject_DEL(self);

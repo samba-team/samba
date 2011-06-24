@@ -22,6 +22,7 @@
 #include "includes.h"
 
 #include "serverid.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
@@ -53,7 +54,6 @@ static bool epmd_open_sockets(struct tevent_context *ev_ctx,
 
 			port = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							       msg_ctx,
-							       ndr_table_epmapper.syntax_id,
 							       ifss,
 							       135);
 			if (port == 0) {
@@ -68,7 +68,7 @@ static bool epmd_open_sockets(struct tevent_context *ev_ctx,
 		if (strequal(sock_addr, "0.0.0.0") ||
 		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
-			sock_addr = "::";
+			sock_addr = "::,0.0.0.0";
 #else
 			sock_addr = "0.0.0.0";
 #endif
@@ -88,7 +88,6 @@ static bool epmd_open_sockets(struct tevent_context *ev_ctx,
 
 			port = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
 							       msg_ctx,
-							       ndr_table_epmapper.syntax_id,
 							       &ss,
 							       135);
 			if (port == 0) {
@@ -262,7 +261,6 @@ void start_epmd(struct tevent_context *ev_ctx,
 
 	ok = setup_dcerpc_ncalrpc_socket(ev_ctx,
 					 msg_ctx,
-					 ndr_table_epmapper.syntax_id,
 					 "EPMAPPER",
 					 srv_epmapper_delete_endpoints);
 	if (!ok) {

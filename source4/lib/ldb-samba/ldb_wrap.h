@@ -53,18 +53,18 @@ struct ldb_context *ldb_wrap_find(const char *url,
 								  struct loadparm_context *lp_ctx,
 								  struct auth_session_info *session_info,
 								  struct cli_credentials *credentials,
-								  int flags);
+								  unsigned int flags);
 bool ldb_wrap_add(const char *url, struct tevent_context *ev,
 				  struct loadparm_context *lp_ctx,
 				  struct auth_session_info *session_info,
 				  struct cli_credentials *credentials,
-				  int flags,
+				  unsigned int flags,
 				  struct ldb_context *ldb);
 char *ldb_relative_path(struct ldb_context *ldb,
 				 TALLOC_CTX *mem_ctx,
 				 const char *name);
 
 int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
-		      const char *url, int flags);
+		      const char *url, unsigned int flags);
 
 #endif /* _LDB_WRAP_H_ */

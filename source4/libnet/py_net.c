@@ -41,17 +41,17 @@ typedef struct {
 	struct tevent_context *ev;
 } py_net_Object;
 
-static PyObject *py_net_join(py_net_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
-	struct libnet_Join r;
+	struct libnet_Join_member r;
 	NTSTATUS status;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
-	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", NULL };
+	const char *kwnames[] = { "domain_name", "netbios_name", "level", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssii:Join", discard_const_p(char *, kwnames), 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssi:Join", discard_const_p(char *, kwnames),
 					 &r.in.domain_name, &r.in.netbios_name, 
-					 &r.in.join_type, &r.in.level))
+					 &r.in.level))
 		return NULL;
 
 	mem_ctx = talloc_new(self->mem_ctx);
@@ -60,7 +60,7 @@ static PyObject *py_net_join(py_net_Object *self, PyObject *args, PyObject *kwar
 		return NULL;
 	}
 
-	status = libnet_Join(self->libnet_ctx, mem_ctx, &r);
+	status = libnet_Join_member(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetString(PyExc_RuntimeError, r.out.error_string?r.out.error_string:nt_errstr(status));
 		talloc_free(mem_ctx);
@@ -76,7 +76,7 @@ static PyObject *py_net_join(py_net_Object *self, PyObject *args, PyObject *kwar
 	return result;
 }
 
-static const char py_net_join_doc[] = "join(domain_name, netbios_name, join_type, level) -> (join_password, domain_sid, domain_name)\n\n" \
+static const char py_net_join_member_doc[] = "join_member(domain_name, netbios_name, level) -> (join_password, domain_sid, domain_name)\n\n" \
 "Join the domain with the specified name.";
 
 static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObject *kwargs)
@@ -526,7 +526,7 @@ static const char py_net_finddc_doc[] = "finddc(domain, server_type)\n"
 					 "find a DC with the specified server_type bits. Return the DNS name";
 
 static PyMethodDef net_obj_methods[] = {
-	{"join", (PyCFunction)py_net_join, METH_VARARGS|METH_KEYWORDS, py_net_join_doc},
+	{"join_member", (PyCFunction)py_net_join_member, METH_VARARGS|METH_KEYWORDS, py_net_join_member_doc},
 	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
 	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
 	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},

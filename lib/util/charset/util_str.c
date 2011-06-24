@@ -5,6 +5,8 @@
    Copyright (C) Simo Sorce 2001
    Copyright (C) Andrew Bartlett 2011
    Copyright (C) Jeremy Allison  1992-2007
+   Copyright (C) Martin Pool     2003
+   Copyright (C) James Peach	 2006
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -167,7 +169,6 @@ _PUBLIC_ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
 	switch (dst_charset) {
 	case CH_DOS:
 	case CH_UNIX:
-	case CH_DISPLAY:
 		smb_panic("cannot call strlen_m_ext() with a variable dest charset (must be UTF16* or UTF8)");
 	default:
 		break;
@@ -327,7 +328,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == c)
-			return (char *)s;
+			return discard_const_p(char, s);
 	}
 
 	if (!*s)
@@ -395,7 +396,7 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 					break;
 				}
 				/* No - we have a match ! */
-				return (char *)cp;
+				return discard_const_p(char , cp);
 			}
 		} while (cp-- != s);
 		if (!got_mb)
@@ -472,4 +473,85 @@ _PUBLIC_ bool strhasupper(const char *string)
 {
 	struct smb_iconv_handle *ic = get_iconv_handle();
 	return strhasupper_handle(ic, string);
+}
+
+/***********************************************************************
+ strstr_m - We convert via ucs2 for now.
+***********************************************************************/
+
+char *strstr_m(const char *src, const char *findstr)
+{
+	smb_ucs2_t *p;
+	smb_ucs2_t *src_w, *find_w;
+	const char *s;
+	char *s2;
+	char *retp;
+	size_t converted_size, findstr_len = 0;
+
+	TALLOC_CTX *frame; /* Only set up in the iconv case */
+
+	/* for correctness */
+	if (!findstr[0]) {
+		return discard_const_p(char, src);
+	}
+
+	/* Samba does single character findstr calls a *lot*. */
+	if (findstr[1] == '\0')
+		return strchr_m(src, *findstr);
+
+	/* We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
+		if (*s == *findstr) {
+			if (!findstr_len)
+				findstr_len = strlen(findstr);
+
+			if (strncmp(s, findstr, findstr_len) == 0) {
+				return discard_const_p(char, s);
+			}
+		}
+	}
+
+	if (!*s)
+		return NULL;
+
+#if 1 /* def BROKEN_UNICODE_COMPOSE_CHARACTERS */
+	/* 'make check' fails unless we do this */
+
+	/* With compose characters we must restart from the beginning. JRA. */
+	s = src;
+#endif
+
+	frame = talloc_stackframe();
+
+	if (!push_ucs2_talloc(frame, &src_w, src, &converted_size)) {
+		DEBUG(0,("strstr_m: src malloc fail\n"));
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	if (!push_ucs2_talloc(frame, &find_w, findstr, &converted_size)) {
+		DEBUG(0,("strstr_m: find malloc fail\n"));
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	p = strstr_w(src_w, find_w);
+
+	if (!p) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	*p = 0;
+	if (!pull_ucs2_talloc(frame, &s2, src_w, &converted_size)) {
+		TALLOC_FREE(frame);
+		DEBUG(0,("strstr_m: dest malloc fail\n"));
+		return NULL;
+	}
+	retp = discard_const_p(char, (s+strlen(s2)));
+	TALLOC_FREE(frame);
+	return retp;
 }

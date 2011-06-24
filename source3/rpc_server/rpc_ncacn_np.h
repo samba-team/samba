@@ -20,6 +20,10 @@
 #ifndef _RPC_NCACN_NP_H_
 #define _RPC_NCACN_NP_H_
 
+struct dcerpc_binding_handle;
+struct ndr_interface_table;
+struct tsocket_address;
+
 struct np_proxy_state {
 	uint16_t file_type;
 	uint16_t device_state;
@@ -45,17 +49,16 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       struct dcerpc_binding_handle **binding_handle);
-NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
-				const struct ndr_syntax_id *abstract_syntax,
-				const struct auth_serversupplied_info *serversupplied_info,
-				struct client_address *client_id,
-				struct messaging_context *msg_ctx,
-				struct rpc_pipe_client **presult);
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 const struct ndr_syntax_id *syntax,
 				 const struct auth_serversupplied_info *session_info,
 				 struct client_address *client_id,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe);
+
+struct pipes_struct *get_first_internal_pipe(void);
+struct pipes_struct *get_next_internal_pipe(struct pipes_struct *p);
+bool check_open_pipes(void);
+int close_internal_rpc_pipe_hnd(struct pipes_struct *p);
 
 #endif /* _RPC_NCACN_NP_H_ */

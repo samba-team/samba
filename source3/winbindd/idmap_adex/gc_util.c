@@ -107,6 +107,7 @@ done:
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct sockaddr_storage ss;
 
 	if (!gc || !domain) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -126,8 +127,17 @@ done:
 	nt_status = ads_ntstatus(ads_status);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
+	if (!resolve_name(ads->config.ldap_server_name, &ss, 0x20, true)) {
+		DEBUG(5,("gc_find_forest_root: unable to resolve name %s\n",
+			 ads->config.ldap_server_name));
+		nt_status = NT_STATUS_IO_TIMEOUT;
+		/* This matches the old code which did the resolve in
+		 * ads_cldap_netlogon_5 */
+		BAIL_ON_NTSTATUS_ERROR(nt_status);
+	}
+
 	if (!ads_cldap_netlogon_5(frame,
-				  ads->config.ldap_server_name,
+				  &ss,
 				  ads->config.realm,
 				  &cldap_reply))
 	{
@@ -181,7 +191,7 @@ static NTSTATUS gc_add_forest(const char *domain)
 		return NT_STATUS_OK;
 	}
 
-	if ((gc = TALLOC_ZERO_P(NULL, struct gc_info)) == NULL) {
+	if ((gc = talloc_zero(NULL, struct gc_info)) == NULL) {
 		nt_status = NT_STATUS_NO_MEMORY;
 		BAIL_ON_NTSTATUS_ERROR(nt_status);
 	}
@@ -771,17 +781,17 @@ done:
 #endif
 
 	if (count == 0) {
-		ads_tmp = TALLOC_ARRAY(NULL, ADS_STRUCT*, 1);
+		ads_tmp = talloc_array(NULL, ADS_STRUCT*, 1);
 		BAIL_ON_PTR_ERROR(ads_tmp, nt_status);
 
-		msg_tmp = TALLOC_ARRAY(NULL, LDAPMessage*, 1);
+		msg_tmp = talloc_array(NULL, LDAPMessage*, 1);
 		BAIL_ON_PTR_ERROR(msg_tmp, nt_status);
 	} else {
-		ads_tmp = TALLOC_REALLOC_ARRAY(*ads_list, *ads_list, ADS_STRUCT*,
+		ads_tmp = talloc_realloc(*ads_list, *ads_list, ADS_STRUCT*,
 					       count+1);
 		BAIL_ON_PTR_ERROR(ads_tmp, nt_status);
 
-		msg_tmp = TALLOC_REALLOC_ARRAY(*msg_list, *msg_list, LDAPMessage*,
+		msg_tmp = talloc_realloc(*msg_list, *msg_list, LDAPMessage*,
 					       count+1);
 		BAIL_ON_PTR_ERROR(msg_tmp, nt_status);
 	}

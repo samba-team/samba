@@ -78,7 +78,7 @@ NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 				s, &n);
 			if (!ret) {
 				va_end(ap);
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix_common(errno);
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 2;
@@ -92,7 +92,7 @@ NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 				s, &n);
 			if (!ret) {
 				va_end(ap);
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix_common(errno);
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 1;
@@ -108,7 +108,7 @@ NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 				s, &n);
 			if (!ret) {
 				va_end(ap);
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix_common(errno);
 			}
 			pointers[i].length = n;
 			pointers[i].length -= 2;

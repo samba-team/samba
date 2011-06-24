@@ -61,11 +61,20 @@ print "OPTIONS %s" % " ".join(torture_options)
 for options in ['-U"$USERNAME%$PASSWORD" --option=socket:testnonblock=true', '-U"$USERNAME%$PASSWORD"', '-U"$USERNAME%$PASSWORD" -k yes', '-U"$USERNAME%$PASSWORD" -k no', '-U"$USERNAME%$PASSWORD" -k no --sign', '-U"$USERNAME%$PASSWORD" -k no --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --sign']:
     plantestsuite("samba4.ldb.ldap with options %s(dc)" % options, "dc", "%s/test_ldb.sh ldap $SERVER %s" % (bbdir, options))
 
-# see if we support ldaps
+# see if we support ADS on the Samba3 side
 try:
     config_h = os.environ["CONFIG_H"]
 except KeyError:
-    config_h = os.path.join(samba4bindir, "default/source4/include/config.h")
+    config_h = os.path.join(samba4bindir, "default/include/config.h")
+
+f = open(config_h, 'r')
+try:
+    # The other parts of the HAVE_ADS test are always supplied by the top level build
+    have_ads_support = ("HAVE_LDAP 1" in f.read())
+finally:
+    f.close()
+
+# see if we support ldaps
 f = open(config_h, 'r')
 try:
     have_tls_support = ("ENABLE_GNUTLS 1" in f.read())
@@ -221,7 +230,11 @@ smb2 = smb4torture_testsuites("smb2.")
 raw = filter(lambda x: "raw.qfileinfo.ipc" not in x, smb4torture_testsuites("raw."))
 base = smb4torture_testsuites("base.")
 
-for t in base + raw + smb2:
+netapi = smb4torture_testsuites("netapi.")
+
+libsmbclient = smb4torture_testsuites("libsmbclient.")
+
+for t in base + raw + smb2 + netapi + libsmbclient:
     plansmbtorturetestsuite(t, "dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD' + " " + " ".join(ntvfsargs))
 
 plansmbtorturetestsuite("raw.qfileinfo.ipc", "dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
@@ -306,11 +319,12 @@ for mech in [
     "-k no",
     "-k no --option=usespnego=no",
     "-k no --option=gensec:spengo=no",
-    "-k yes",
-    "-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"]:
+    "-k yes"]:
     signoptions = "%s --signing=off" % mech
-    name = "smb.signing on with %s" % signoptions
+    name = "smb.signing disabled on with %s" % signoptions
     plantestsuite_loadlist("samba4.%s domain-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+    if have_ads_support:
+        plantestsuite_loadlist("samba4.%s domain-creds" % name, "s3member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
 
 for mech in [
     "-k no",
@@ -319,6 +333,9 @@ for mech in [
     signoptions = "%s --signing=off" % mech
     name = "smb.signing on with %s" % signoptions
     plantestsuite_loadlist("samba4.%s local-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$NETBIOSNAME/$USERNAME%$PASSWORD', 'base.xcopy'])
+    if have_ads_support:
+        plantestsuite_loadlist("samba4.%s" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$USERNAME%$PASSWORD', 'base.xcopy'])
+        plantestsuite_loadlist("samba4.%s administrator" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
 plantestsuite_loadlist("samba4.smb.signing --signing=yes anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=yes', '-U%', 'base.xcopy'])
 plantestsuite_loadlist("samba4.smb.signing --signing=required anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=required', '-U%', 'base.xcopy'])
 plantestsuite_loadlist("samba4.smb.signing --signing=no anon", "s4member",  [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=no', '-U%', 'base.xcopy'])
@@ -367,6 +384,7 @@ planpythontestsuite("none", "samba.tests.upgrade")
 planpythontestsuite("none", "samba.tests.core")
 planpythontestsuite("none", "samba.tests.provision")
 planpythontestsuite("none", "samba.tests.samba3")
+planpythontestsuite("none", "samba.tests.strings")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.sam")
 planpythontestsuite("dc:local", "samba.tests.dsdb")
 planpythontestsuite("none", "samba.tests.netcmd")
@@ -385,6 +403,7 @@ plantestsuite("samba4.tokengroups.python(dc)", "dc:local", [python, os.path.join
 plantestsuite("samba4.sam.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 plansambapythontestsuite("samba4.schemaInfo.python(dc)", "dc", os.path.join(samba4srcdir, 'dsdb/tests/python'), 'dsdb_schema_info', extra_args=['-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'])
 plantestsuite("samba4.urgent_replication.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/urgent_replication.py"), '$PREFIX_ABS/dc/private/sam.ldb'], allow_empty_output=True)
+plantestsuite("samba4.ldap.dirsync.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/dirsync.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     plantestsuite("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W", "$DOMAIN"])
@@ -429,3 +448,6 @@ plantestsuite_loadlist("samba4.%s.two" % t, "vampire_dc", [valgrindify(smb4tortu
 plantestsuite_loadlist("samba4.rpc.echo", "rodc", [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME%$PASSWORD', '-W' '$DOMAIN', 'rpc.echo'])
 plantestsuite_loadlist("samba4.rpc.echo", "rodc:local", [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-P', '-W' '$DOMAIN', 'rpc.echo'])
 plantestsuite("samba4.blackbox.provision-backend.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision-backend.sh"), '$PREFIX/provision'])
+
+# Test renaming the DC
+plantestsuite("samba4.blackbox.renamedc.sh", "none", ["PYTHON=%s" % python, os.path.join(bbdir, "renamedc.sh"), '$PREFIX/provision'])

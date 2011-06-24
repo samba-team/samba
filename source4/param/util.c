@@ -75,7 +75,7 @@ bool lpcfg_is_myname(struct loadparm_context *lp_ctx, const char *name)
 /**
  A useful function for returning a path in the Samba lock directory.
 **/
-char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			 const char *name)
 {
 	char *fname, *dname;
@@ -108,7 +108,7 @@ char *lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
 
-char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+char *lpcfg_config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			   const char *name)
 {
 	char *fname, *config_dir, *p;
@@ -139,7 +139,7 @@ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
  *
  * @retval Pointer to a talloc'ed string containing the full path.
  **/
-char *private_path(TALLOC_CTX* mem_ctx, 
+char *lpcfg_private_path(TALLOC_CTX* mem_ctx,
 			    struct loadparm_context *lp_ctx,
 			    const char *name)
 {
@@ -165,7 +165,7 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx,
 {
 	char *fname, *dname;
 
-	dname = private_path(mem_ctx, lp_ctx, "smbd.tmp");
+	dname = lpcfg_private_path(mem_ctx, lp_ctx, "smbd.tmp");
 	if (!directory_exist(dname)) {
 		mkdir(dname,0755);
 	}
@@ -266,23 +266,15 @@ bool run_init_functions(init_module_fn *fns)
 	return ret;
 }
 
-static char *modules_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
-			  const char *name)
-{
-	return talloc_asprintf(mem_ctx, "%s/%s", 
-			       lpcfg_modulesdir(lp_ctx),
-			       name);
-}
-
 /**
  * Load the initialization functions from DSO files for a specific subsystem.
  *
  * Will return an array of function pointers to initialization functions
  */
 
-init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *subsystem)
+init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 {
-	char *path = modules_path(mem_ctx, lp_ctx, subsystem);
+	char *path = modules_path(mem_ctx, subsystem);
 	init_module_fn *ret;
 
 	ret = load_modules(mem_ctx, path);
@@ -292,7 +284,7 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	return ret;
 }
 
-const char *lpcfg_messaging_path(TALLOC_CTX *mem_ctx,
+const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx)
 {
 	return smbd_tmp_path(mem_ctx, lp_ctx, "msg");
@@ -304,7 +296,6 @@ struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
 {
 	return smb_iconv_handle_reinit(mem_ctx, lpcfg_dos_charset(lp_ctx),
 					    lpcfg_unix_charset(lp_ctx),
-					    lpcfg_display_charset(lp_ctx),
 					    lpcfg_parm_bool(lp_ctx, NULL, "iconv", "native", true),
 					    old_ic);
 }
@@ -313,7 +304,8 @@ struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx)
 {
 	switch (lpcfg_server_role(lp_ctx)) {
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_PDC:
 		return lpcfg_workgroup(lp_ctx);
 	default:
 		return lpcfg_netbios_name(lp_ctx);

@@ -254,7 +254,16 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	msg->elements[0].flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
 
 	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
-	if (ret != LDB_SUCCESS) {
+	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE && !bl->active) {
+		/* we allow LDB_ERR_NO_SUCH_ATTRIBUTE as success to
+		   cope with possible corruption where the backlink has
+		   already been removed */
+		DEBUG(0,("WARNING: backlink from %s already removed from %s - %s\n",
+			 ldb_dn_get_linearized(target_dn),
+			 ldb_dn_get_linearized(source_dn),
+			 ldb_errstring(ldb)));
+		ret = LDB_SUCCESS;
+	} else if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to %s backlink from %s to %s - %s",
 				       bl->active?"add":"remove",
 				       ldb_dn_get_linearized(source_dn),
@@ -1634,7 +1643,8 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	if (old_addtime == NULL) {
 		old_addtime = &tval;
 	}
-	if (dsdb_dn != old_dsdb_dn) {
+	if (dsdb_dn != old_dsdb_dn ||
+	    ldb_dn_get_extended_component(dn, "RMD_ADDTIME") == NULL) {
 		ret = ldb_dn_set_extended_component(dn, "RMD_ADDTIME", old_addtime);
 		if (ret != LDB_SUCCESS) return ret;
 	}
@@ -2488,7 +2498,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	if (ret == LDB_ERR_REFERRAL) {
 		struct ldb_dn *olddn = ac->req->op.rename.olddn;
 		struct loadparm_context *lp_ctx;
-		const char *referral;
+		char *referral;
 
 		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 					 struct loadparm_context);

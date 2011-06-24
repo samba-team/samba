@@ -173,10 +173,6 @@
 #include <aio.h>
 #endif
 
-#ifdef WITH_MADVISE_PROTECTED
-#include <sys/mman.h>
-#endif
-
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
 #if HAVE_VALGRIND_MEMCHECK_H
@@ -308,10 +304,10 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 #ifdef LARGE_SMB_INO_T
-#define SINO_T_VAL(p, ofs, v) (SIVAL((p),(ofs),(v)&0xFFFFFFFF), SIVAL((p),(ofs)+4,(v)>>32))
-#define INO_T_VAL(p, ofs) ((SMB_INO_T)(((uint64_t)(IVAL(p,ofs)))| (((uint64_t)(IVAL(p,(ofs)+4))) << 32)))
+#define SINO_T_VAL(p, ofs, v) SBVAL(p, ofs, v)
+#define INO_T_VAL(p, ofs) ((SMB_INO_T)BVAL(p, ofs))
 #else 
-#define SINO_T_VAL(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#define SINO_T_VAL(p, ofs, v) SBVAL(p, ofs, ((uint64_t)(v)) & UINT32_MAX)
 #define INO_T_VAL(p, ofs) ((SMB_INO_T)(IVAL((p),(ofs))))
 #endif
 
@@ -323,11 +319,10 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #  endif
 #endif
 
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#define BIG_UINT(p, ofs) ((((uint64_t) IVAL(p,(ofs)+4))<<32)|IVAL(p,ofs))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF)) | \
-		(( ((uint64_t)(IVAL((buf),(off+4)))) & ((uint64_t)0xFFFFFFFF) ) << 32 ) )
-
+/* TODO: remove this macros */
+#define SBIG_UINT(p, ofs, v) SBVAL(p, ofs, v)
+#define BIG_UINT(p, ofs) BVAL(p, ofs)
+#define IVAL2_TO_SMB_BIG_UINT(p, ofs) BVAL(p, ofs)
 
 /* this should really be a 64 bit type if possible */
 typedef uint64_t br_off;
@@ -515,52 +510,29 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/attr.h"
 #include "../lib/util/tsort.h"
 #include "../lib/util/dlinklist.h"
-#include <tdb.h>
-#include "util_tdb.h"
 
 #include <talloc.h>
 
 #include "event.h"
-#include "../lib/util/tevent_unix.h"
-#include "../lib/util/tevent_ntstatus.h"
-#include "../lib/tsocket/tsocket.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
 #include "../lib/util/debug.h"
 #include "../lib/util/debug_s3.h"
 
-#include "libads/ads_status.h"
+#include "../libcli/util/ntstatus.h"
 #include "../libcli/util/error.h"
 #include "../lib/util/charset/charset.h"
-#include "dynconfig.h"
+#include "dynconfig/dynconfig.h"
 #include "locking.h"
 #include "smb_perfcount.h"
 #include "smb.h"
 #include "../lib/util/byteorder.h"
 
-#include "client.h"
-
 #include "module.h"
 #include "../lib/util/talloc_stack.h"
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
-
-/*
- * Reasons for cache flush.
- */
-
-enum flush_reason_enum {
-    SEEK_FLUSH,
-    READ_FLUSH,
-    WRITE_FLUSH,
-    READRAW_FLUSH,
-    OPLOCK_RELEASE_FLUSH,
-    CLOSE_FLUSH,
-    SYNC_FLUSH,
-    SIZECHANGE_FLUSH,
-    /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
-    NUM_FLUSH_REASONS};
 
 /***** prototypes *****/
 #ifndef NO_PROTO_H
@@ -606,15 +578,6 @@ enum flush_reason_enum {
 #endif
 
 
-#if HAVE_KERNEL_SHARE_MODES
-#ifndef LOCK_MAND 
-#define LOCK_MAND	32	/* This is a mandatory flock */
-#define LOCK_READ	64	/* ... Which allows concurrent read operations */
-#define LOCK_WRITE	128	/* ... Which allows concurrent write operations */
-#define LOCK_RW		192	/* ... Which allows concurrent read & write ops */
-#endif
-#endif
-
 #define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
 
 
@@ -644,8 +607,6 @@ void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,
 
 /* PRINTFLIKE2 */
 int fstr_sprintf(fstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-
-int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
 int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
@@ -685,19 +646,10 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #undef HAVE_MMAP
 #endif
 
-#ifndef CONST_DISCARD
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#endif
-
 void dump_core(void) _NORETURN_;
 void exit_server(const char *const reason) _NORETURN_;
 void exit_server_cleanly(const char *const reason) _NORETURN_;
 void exit_server_fault(void) _NORETURN_;
-
-#if defined(HAVE_IPV6)
-void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
-				  struct in6_addr ip);
-#endif
 
 /* samba3 doesn't use uwrap yet */
 #define uwrap_enabled() 0

@@ -688,7 +688,7 @@ static void nbtd_wins_randomize1Clist(struct loadparm_context *lp_ctx,
 		bool same;
 
 		/* if the current one is in the same subnet, use it */
-		same = iface_same_net(addresses[idx], src->addr, mask);
+		same = iface_list_same_net(addresses[idx], src->addr, mask);
 		if (same) {
 			sidx = idx;
 			break;
@@ -1057,8 +1057,8 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 
 	if (owner == NULL) {
 		struct interface *ifaces;
-		load_interfaces(nbtsrv->task, lpcfg_interfaces(nbtsrv->task->lp_ctx), &ifaces);
-		owner = iface_n_ip(ifaces, 0);
+		load_interface_list(nbtsrv->task, nbtsrv->task->lp_ctx, &ifaces);
+		owner = iface_list_first_v4(ifaces);
 	}
 
 	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv, nbtsrv->task->event_ctx, 

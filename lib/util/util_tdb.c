@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include <tdb.h>
+#include "../lib/tdb_compat/tdb_compat.h"
 #include "../lib/util/util_tdb.h"
 
 /* these are little tdb utility functions that are meant to make
@@ -57,7 +57,7 @@ TDB_DATA string_term_tdb_data(const char *string)
 }
 
 /****************************************************************************
- Lock a chain by string. Return -1 if lock failed.
+ Lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 
 int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval)
@@ -79,7 +79,7 @@ void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval)
 }
 
 /****************************************************************************
- Read lock a chain by string. Return -1 if lock failed.
+ Read lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/
 
 int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval)
@@ -111,7 +111,7 @@ int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key)
 	TDB_DATA data;
 	int32_t ret;
 
-	data = tdb_fetch(tdb, key);
+	data = tdb_fetch_compat(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(int32_t)) {
 		SAFE_FREE(data.dptr);
 		return -1;
@@ -133,7 +133,7 @@ int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr)
 }
 
 /****************************************************************************
- Store a int32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
+ Store a int32_t value by an arbitrary blob key, return 0 on success, -ve on failure.
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -150,7 +150,7 @@ int tdb_store_int32_byblob(struct tdb_context *tdb, TDB_DATA key, int32_t v)
 }
 
 /****************************************************************************
- Store a int32_t value by string key, return 0 on success, -1 on failure.
+ Store a int32_t value by string key, return 0 on success, -ve on failure.
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -168,7 +168,7 @@ bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t *va
 {
 	TDB_DATA data;
 
-	data = tdb_fetch(tdb, key);
+	data = tdb_fetch_compat(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(uint32_t)) {
 		SAFE_FREE(data.dptr);
 		return false;
@@ -190,7 +190,7 @@ bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *val
 }
 
 /****************************************************************************
- Store a uint32_t value by an arbitrary blob key, return 0 on success, -1 on failure.
+ Store a uint32_t value by an arbitrary blob key, return true on success, false on failure.
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -204,14 +204,14 @@ bool tdb_store_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t val
 	data.dptr = (unsigned char *)&v_store;
 	data.dsize = sizeof(uint32_t);
 
-	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
+	if (tdb_store(tdb, key, data, TDB_REPLACE) != 0)
 		ret = false;
 
 	return ret;
 }
 
 /****************************************************************************
- Store a uint32_t value by string key, return 0 on success, -1 on failure.
+ Store a uint32_t value by string key, return true on success, false on failure.
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
@@ -220,7 +220,7 @@ bool tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t valu
 	return tdb_store_uint32_byblob(tdb, string_term_tdb_data(keystr), value);
 }
 /****************************************************************************
- Store a buffer by a null terminated string key.  Return 0 on success, -1
+ Store a buffer by a null terminated string key.  Return 0 on success, -ve
  on failure.
 ****************************************************************************/
 
@@ -240,7 +240,7 @@ TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr)
 {
 	TDB_DATA key = string_term_tdb_data(keystr);
 
-	return tdb_fetch(tdb, key);
+	return tdb_fetch_compat(tdb, key);
 }
 
 /****************************************************************************
@@ -263,7 +263,7 @@ int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int
 	int32_t val;
 	int32_t ret = -1;
 
-	if (tdb_lock_bystring(tdb, keystr) == -1)
+	if (tdb_lock_bystring(tdb, keystr) != 0)
 		return -1;
 
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
@@ -284,7 +284,7 @@ int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int
 	/* Increment value for storage and return next time */
 	val += change_val;
 		
-	if (tdb_store_int32(tdb, keystr, val) == -1)
+	if (tdb_store_int32(tdb, keystr, val) != 0)
 		goto err_out;
 
 	ret = 0;
@@ -304,7 +304,7 @@ bool tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint3
 	uint32_t val;
 	bool ret = false;
 
-	if (tdb_lock_bystring(tdb, keystr) == -1)
+	if (tdb_lock_bystring(tdb, keystr) != 0)
 		return false;
 
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {

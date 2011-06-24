@@ -21,10 +21,10 @@
 
 struct sys_lease_context;
 struct opendb_entry;
-struct messaging_context;
+struct imessaging_context;
 struct tevent_context;
 
-typedef NTSTATUS (*sys_lease_send_break_fn)(struct messaging_context *,
+typedef NTSTATUS (*sys_lease_send_break_fn)(struct imessaging_context *,
 					    struct opendb_entry *,
 					    uint8_t level);
 
@@ -41,7 +41,7 @@ struct sys_lease_ops {
 
 struct sys_lease_context {
 	struct tevent_context *event_ctx;
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 	sys_lease_send_break_fn break_send;
 	void *private_data; /* for use of backend */
 	const struct sys_lease_ops *ops;
@@ -53,7 +53,7 @@ NTSTATUS sys_lease_init(void);
 struct sys_lease_context *sys_lease_context_create(struct share_config *scfg,
 						   TALLOC_CTX *mem_ctx,
 						   struct tevent_context *ev,
-						   struct messaging_context *msg_ctx,
+						   struct imessaging_context *msg_ctx,
 						   sys_lease_send_break_fn break_send);
 
 NTSTATUS sys_lease_setup(struct sys_lease_context *ctx,

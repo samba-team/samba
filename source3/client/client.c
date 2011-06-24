@@ -32,6 +32,7 @@
 #include "../libcli/smbreadline/smbreadline.h"
 #include "../libcli/security/security.h"
 #include "system/select.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "trans2.h"
 #include "libsmb/nmblib.h"
@@ -48,7 +49,6 @@ extern char tar_type;
 static int port = 0;
 static char *service;
 static char *desthost;
-static char *calling_name;
 static bool grepable = false;
 static char *cmdstr = NULL;
 const char *cmd_ptr = NULL;
@@ -505,7 +505,7 @@ static bool do_this_one(struct file_info *finfo)
 		return false;
 	}
 
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		return true;
 	}
 
@@ -520,7 +520,7 @@ static bool do_this_one(struct file_info *finfo)
 		return false;
 	}
 
-	if ((archive_level==1 || archive_level==2) && !(finfo->mode & aARCH)) {
+	if ((archive_level==1 || archive_level==2) && !(finfo->mode & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(3,("archive %s failed\n", finfo->name));
 		return false;
 	}
@@ -547,7 +547,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 	if (!showacls) {
 		d_printf("  %-30s%7.7s %8.0f  %s",
 			 finfo->name,
-			 attrib_string(finfo->mode),
+			 attrib_string(talloc_tos(), finfo->mode),
 		 	(double)finfo->size,
 			time_to_asc(t));
 		dir_total += finfo->size;
@@ -569,7 +569,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 		}
 		/* print file meta date header */
 		d_printf( "FILENAME:%s\n", finfo->name);
-		d_printf( "MODE:%s\n", attrib_string(finfo->mode));
+		d_printf( "MODE:%s\n", attrib_string(talloc_tos(), finfo->mode));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
 		status = cli_ntcreate(cli_state, afname, 0,
@@ -702,7 +702,7 @@ static void add_to_do_list_queue(const char *entry)
 		}
 	}
 	if (do_list_queue) {
-		safe_strcpy_base(do_list_queue + do_list_queue_end,
+		strlcpy_base(do_list_queue + do_list_queue_end,
 				 entry, do_list_queue, do_list_queue_size);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
@@ -752,7 +752,7 @@ static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 		*dir_end = '\0';
 	}
 
-	if (f->mode & aDIR) {
+	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		if (do_list_dirs && do_this_one(f)) {
 			status = do_list_fn(cli_state, f, dir);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -924,7 +924,7 @@ NTSTATUS do_list(const char *mask,
 static int cmd_dir(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	int rc = 1;
@@ -974,7 +974,7 @@ static int cmd_dir(void)
 static int cmd_du(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
+	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status;
@@ -1147,8 +1147,8 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		close(handle);
 	}
 
-	if (archive_level >= 2 && (attr & aARCH)) {
-		cli_setatr(cli, rname, attr & ~(uint16)aARCH, 0);
+	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
+		cli_setatr(cli, rname, attr & ~(uint16)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{
@@ -1233,7 +1233,7 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		if (asprintf(&quest,
 			 "Get directory %s? ",finfo->name) < 0) {
 			return NT_STATUS_NO_MEMORY;
@@ -1251,7 +1251,7 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 	}
 	SAFE_FREE(quest);
 
-	if (!(finfo->mode & aDIR)) {
+	if (!(finfo->mode & FILE_ATTRIBUTE_DIRECTORY)) {
 		rname = talloc_asprintf(ctx,
 				"%s%s",
 				client_get_cur_dir(),
@@ -1306,7 +1306,7 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = do_list(mget_mask, aSYSTEM | aHIDDEN | aDIR,do_mget,false, true);
+	status = do_list(mget_mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,do_mget,false, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1395,13 +1395,13 @@ static int cmd_more(void)
 static int cmd_mget(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mget_mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (recurse) {
-		attribute |= aDIR;
+		attribute |= FILE_ATTRIBUTE_DIRECTORY;
 	}
 
 	abort_mget = false;
@@ -1605,7 +1605,7 @@ static int cmd_altname(void)
 
 static char *attr_str(TALLOC_CTX *mem_ctx, uint16_t mode)
 {
-	char *attrs = TALLOC_ZERO_ARRAY(mem_ctx, char, 17);
+	char *attrs = talloc_zero_array(mem_ctx, char, 17);
 	int i = 0;
 
 	if (!(mode & FILE_ATTRIBUTE_NORMAL)) {
@@ -2306,12 +2306,12 @@ static NTSTATUS do_del(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (finfo->mode & aDIR) {
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		TALLOC_FREE(mask);
 		return NT_STATUS_OK;
 	}
 
-	status = cli_unlink(cli_state, mask, aSYSTEM | aHIDDEN);
+	status = cli_unlink(cli_state, mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s deleting remote file %s\n",
 			 nt_errstr(status), mask);
@@ -2330,10 +2330,10 @@ static int cmd_del(void)
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint16 attribute = aSYSTEM | aHIDDEN;
+	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 	if (recurse) {
-		attribute |= aDIR;
+		attribute |= FILE_ATTRIBUTE_DIRECTORY;
 	}
 
 	mask = talloc_strdup(ctx, client_get_cur_dir());
@@ -3875,11 +3875,12 @@ static int cmd_lcd(void)
 				buf, strerror(errno));
 		}
 	}
-	d = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
+	d = sys_getwd();
 	if (!d) {
 		return 1;
 	}
-	DEBUG(2,("the local directory is now %s\n",sys_getwd(d)));
+	DEBUG(2,("the local directory is now %s\n",d));
+	SAFE_FREE(d);
 	return 0;
 }
 
@@ -4516,7 +4517,7 @@ static NTSTATUS completion_remote_filter(const char *mnt,
 		return NT_STATUS_OK;
 	}
 
-	if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
+	if ((info->dirmask[0] == 0) && !(f->mode & FILE_ATTRIBUTE_DIRECTORY))
 		info->matches[info->count] = SMB_STRDUP(f->name);
 	else {
 		TALLOC_CTX *ctx = talloc_stackframe();
@@ -4532,7 +4533,7 @@ static NTSTATUS completion_remote_filter(const char *mnt,
 			TALLOC_FREE(ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		if (f->mode & aDIR) {
+		if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
 			tmp = talloc_asprintf_append(tmp, "%s",
 						     CLI_DIRSEP_STR);
 		}
@@ -4546,7 +4547,7 @@ static NTSTATUS completion_remote_filter(const char *mnt,
 	if (info->matches[info->count] == NULL) {
 		return NT_STATUS_OK;
 	}
-	if (f->mode & aDIR) {
+	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		smb_readline_ca_char(0);
 	}
 	if (info->count == 1) {
@@ -4629,7 +4630,7 @@ static char **remote_completion(const char *text, int len)
 	if (!cli_resolve_path(ctx, "", auth_info, cli, dirmask, &targetcli, &targetpath)) {
 		goto cleanup;
 	}
-	status = cli_list(targetcli, targetpath, aDIR | aSYSTEM | aHIDDEN,
+	status = cli_list(targetcli, targetpath, FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 			  completion_remote_filter, (void *)&info);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;
@@ -5036,43 +5037,13 @@ static int do_tar_op(const char *base_directory)
 
 static int do_message_op(struct user_auth_info *a_info)
 {
-	struct sockaddr_storage ss;
-	struct nmb_name called, calling;
-	fstring server_name;
-	char name_type_hex[10];
-	int msg_port;
 	NTSTATUS status;
 
-	make_nmb_name(&calling, calling_name, 0x0);
-	make_nmb_name(&called , desthost, name_type);
-
-	fstrcpy(server_name, desthost);
-	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
-	fstrcat(server_name, name_type_hex);
-
-        zero_sockaddr(&ss);
-	if (have_ip)
-		ss = dest_ss;
-
-	/* we can only do messages over port 139 (to windows clients at least) */
-
-	msg_port = port ? port : 139;
-
-	if (!(cli=cli_initialise())) {
-		d_printf("Connection to %s failed\n", desthost);
-		return 1;
-	}
-	cli_set_port(cli, msg_port);
-
-	status = cli_connect(cli, server_name, &ss);
+	status = cli_connect_nb(desthost, have_ip ? &dest_ss : NULL,
+				port ? port : 139, name_type,
+				lp_netbios_name(), Undefined, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
-		return 1;
-	}
-
-	if (!cli_session_request(cli, &calling, &called)) {
-		d_printf("session request failed\n");
-		cli_shutdown(cli);
 		return 1;
 	}
 
@@ -5096,7 +5067,6 @@ static int do_message_op(struct user_auth_info *a_info)
 	poptContext pc;
 	char *p;
 	int rc = 0;
-	fstring new_workgroup;
 	bool tar_opt = false;
 	bool service_opt = false;
 	struct poptOption long_options[] = {
@@ -5125,12 +5095,6 @@ static int do_message_op(struct user_auth_info *a_info)
 	if (!client_set_cur_dir("\\")) {
 		exit(ENOMEM);
 	}
-
-	/* initialize the workgroup name so we can determine whether or
-	   not it was set by a command line option */
-
-	set_global_myworkgroup( "" );
-	set_global_myname( "" );
 
         /* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbclient", DEBUG_DEFAULT_STDERR );
@@ -5277,18 +5241,6 @@ static int do_message_op(struct user_auth_info *a_info)
 					       poptGetArg(pc));
 	}
 
-	/* save the workgroup...
-
-	   FIXME!! do we need to do this for other options as well
-	   (or maybe a generic way to keep lp_load() from overwriting
-	   everything)?  */
-
-	fstrcpy( new_workgroup, lp_workgroup() );
-	calling_name = talloc_strdup(frame, global_myname() );
-	if (!calling_name) {
-		exit(ENOMEM);
-	}
-
 	if ( override_logfile )
 		setup_logging( lp_logfile(), DEBUG_FILE );
 
@@ -5320,17 +5272,6 @@ static int do_message_op(struct user_auth_info *a_info)
 			--len;
 			service[len] = '\0';
 		}
-	}
-
-	if ( strlen(new_workgroup) != 0 ) {
-		set_global_myworkgroup( new_workgroup );
-	}
-
-	if ( strlen(calling_name) != 0 ) {
-		set_global_myname( calling_name );
-	} else {
-		TALLOC_FREE(calling_name);
-		calling_name = talloc_strdup(frame, global_myname() );
 	}
 
 	smb_encrypt = get_cmdline_auth_info_smb_encrypt(auth_info);

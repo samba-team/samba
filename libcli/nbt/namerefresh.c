@@ -331,7 +331,7 @@ _PUBLIC_ NTSTATUS nbt_name_refresh_wins(struct nbt_name_socket *nbtsock,
 	}
 
 	if (!tevent_req_poll(subreq, ev)) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		talloc_free(frame);
 		return status;
 	}

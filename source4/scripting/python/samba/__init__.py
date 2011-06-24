@@ -26,6 +26,7 @@ __docformat__ = "restructuredText"
 
 import os
 import sys
+import samba.param
 
 def source_tree_topdir():
     '''return the top level directory (the one containing the source4 directory)'''
@@ -77,8 +78,8 @@ class Ldb(_Ldb):
 
         if modules_dir is not None:
             self.set_modules_dir(modules_dir)
-        elif lp is not None:
-            self.set_modules_dir(os.path.join(lp.get("modules dir"), "ldb"))
+        else:
+            self.set_modules_dir(os.path.join(samba.param.modules_dir(), "ldb"))
 
         if session_info is not None:
             self.set_session_info(session_info)
@@ -348,3 +349,5 @@ nttime2string = _glue.nttime2string
 nttime2unix = _glue.nttime2unix
 unix2nttime = _glue.unix2nttime
 generate_random_password = _glue.generate_random_password
+strcasecmp_m = _glue.strcasecmp_m
+strstr_m = _glue.strstr_m

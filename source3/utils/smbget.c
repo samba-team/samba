@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "popt_common.h"
 #include "libsmbclient.h"
 
@@ -669,7 +670,7 @@ int main(int argc, const char **argv)
 	if (smb_encrypt) {
 		SMBCCTX *smb_ctx = smbc_set_context(NULL);
 		smbc_option_set(smb_ctx,
-			CONST_DISCARD(char *, "smb_encrypt_level"),
+			discard_const_p(char, "smb_encrypt_level"),
 			"require");
 	}
 

@@ -18,6 +18,8 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "trans2.h"
 
@@ -319,7 +321,7 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), mask,
 				   strlen(mask)+1, NULL);
 
-	bytes = smb_bytes_push_bytes(bytes, 5, (uint8_t *)&zero, 2);
+	bytes = smb_bytes_push_bytes(bytes, 5, (const uint8_t *)&zero, 2);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -385,7 +387,7 @@ static void cli_list_old_done(struct tevent_req *subreq)
 
 		dirlist_len = talloc_get_size(state->dirlist);
 
-		tmp = TALLOC_REALLOC_ARRAY(
+		tmp = talloc_realloc(
 			state, state->dirlist, uint8_t,
 			dirlist_len + received * DIR_STRUCT_SIZE);
 		if (tevent_req_nomem(tmp, req)) {
@@ -450,7 +452,7 @@ static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	num_received = talloc_array_length(state->dirlist) / DIR_STRUCT_SIZE;
 
-	finfo = TALLOC_ARRAY(mem_ctx, struct file_info, num_received);
+	finfo = talloc_array(mem_ctx, struct file_info, num_received);
 	if (finfo == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -512,9 +514,6 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 	}
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -574,7 +573,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	state->setup[0] = TRANSACT2_FINDFIRST;
 
 	nlen = 2*(strlen(mask)+1);
-	state->param = TALLOC_ARRAY(state, uint8_t, 12+nlen+2);
+	state->param = talloc_array(state, uint8_t, 12+nlen+2);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -655,7 +654,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 
 	old_num_finfo = talloc_array_length(state->finfo);
 
-	tmp = TALLOC_REALLOC_ARRAY(state, state->finfo, struct file_info,
+	tmp = talloc_realloc(state, state->finfo, struct file_info,
 				   old_num_finfo + ff_searchcount);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
@@ -712,7 +711,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	/*
 	 * Shrink state->finfo to the real length we received
 	 */
-	tmp = TALLOC_REALLOC_ARRAY(state, state->finfo, struct file_info,
+	tmp = talloc_realloc(state, state->finfo, struct file_info,
 				   old_num_finfo + i);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
@@ -737,7 +736,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 
 	nlen = 2*(strlen(state->mask) + 1);
 
-	param = TALLOC_REALLOC_ARRAY(state, state->param, uint8_t,
+	param = talloc_realloc(state, state->param, uint8_t,
 				     12 + nlen + last_name_raw.length + 2);
 	if (tevent_req_nomem(param, req)) {
 		return;
@@ -841,9 +840,6 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 	}
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -966,8 +962,5 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 	}
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }

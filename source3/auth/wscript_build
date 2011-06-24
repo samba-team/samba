@@ -16,16 +16,20 @@ AUTH_SRC = '''auth.c
 
 bld.SAMBA3_SUBSYSTEM('TOKEN_UTIL',
                     source='token_util.c',
+                    deps='samba-util',
                     vars=locals())
+
+bld.SAMBA3_SUBSYSTEM('USER_UTIL',
+                     source='user_util.c',
+                     deps='TOKEN_UTIL')
 
 bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
                     source='''auth_util.c
-			      user_util.c
 			      check_samsec.c
 			      server_info.c
 			      server_info_sam.c
-			      user_info.c
-			      user_util.c''',
+			      user_info.c''',
+                     deps='TOKEN_UTIL DCUTIL USER_UTIL',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('auth',
@@ -36,6 +40,7 @@ bld.SAMBA3_SUBSYSTEM('auth',
 bld.SAMBA3_MODULE('auth_sam',
                  subsystem='auth',
                  source=AUTH_SAM_SRC,
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_sam'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_sam'))
@@ -43,6 +48,7 @@ bld.SAMBA3_MODULE('auth_sam',
 bld.SAMBA3_MODULE('auth_unix',
                  subsystem='auth',
                  source=AUTH_UNIX_SRC,
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_unix'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_unix'))
@@ -50,6 +56,7 @@ bld.SAMBA3_MODULE('auth_unix',
 bld.SAMBA3_MODULE('auth_winbind',
                  subsystem='auth',
                  source=AUTH_WINBIND_SRC,
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_winbind'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_winbind'))
@@ -57,6 +64,7 @@ bld.SAMBA3_MODULE('auth_winbind',
 bld.SAMBA3_MODULE('auth_wbc',
                  subsystem='auth',
                  source=AUTH_WBC_SRC,
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_wbc'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_wbc'))
@@ -64,6 +72,7 @@ bld.SAMBA3_MODULE('auth_wbc',
 bld.SAMBA3_MODULE('auth_server',
                  subsystem='auth',
                  source=AUTH_SERVER_SRC,
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_server'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_server'))
@@ -79,6 +88,7 @@ bld.SAMBA3_MODULE('auth_domain',
 bld.SAMBA3_MODULE('auth_builtin',
                  subsystem='auth',
                  source=AUTH_BUILTIN_SRC,
+                 deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_builtin'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_builtin'))
@@ -96,3 +106,12 @@ bld.SAMBA3_MODULE('auth_script',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_script'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_script'))
+
+bld.SAMBA3_MODULE('auth_samba4',
+                  subsystem='auth',
+                  source='auth_samba4.c',
+                  init_function='',
+                  deps='auth4',
+                  allow_undefined_symbols=False,
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_samba4'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_samba4'))

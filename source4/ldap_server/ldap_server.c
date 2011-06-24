@@ -708,7 +708,7 @@ static struct tevent_req *ldapsrv_process_call_send(TALLOC_CTX *mem_ctx,
 	ok = tevent_queue_add(call_queue, ev, req,
 			      ldapsrv_process_call_trigger, NULL);
 	if (!ok) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
@@ -815,7 +815,7 @@ static NTSTATUS add_socket(struct task_server *task,
 
 	status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 				     model_ops, &ldap_stream_nonpriv_ops,
-				     "ipv4", address, &port, 
+				     "ip", address, &port,
 				     lpcfg_socket_options(lp_ctx),
 				     ldap_service);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -830,7 +830,7 @@ static NTSTATUS add_socket(struct task_server *task,
 		status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 					     model_ops,
 					     &ldap_stream_nonpriv_ops,
-					     "ipv4", address, &port, 
+					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
 					     ldap_service);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -852,7 +852,7 @@ static NTSTATUS add_socket(struct task_server *task,
 		status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 					     model_ops,
 					     &ldap_stream_nonpriv_ops,
-					     "ipv4", address, &port, 
+					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
 					     ldap_service);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -866,7 +866,7 @@ static NTSTATUS add_socket(struct task_server *task,
 			status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 						     model_ops,
 						     &ldap_stream_nonpriv_ops,
-						     "ipv4", address, &port,
+						     "ip", address, &port,
 						     lpcfg_socket_options(lp_ctx),
 						     ldap_service);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -951,25 +951,34 @@ static void ldapsrv_task_init(struct task_server *task)
 		int num_interfaces;
 		int i;
 
-		load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
-		num_interfaces = iface_count(ifaces);
+		load_interface_list(task, task->lp_ctx, &ifaces);
+		num_interfaces = iface_list_count(ifaces);
 
 		/* We have been given an interfaces line, and been 
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
 		for(i = 0; i < num_interfaces; i++) {
-			const char *address = iface_n_ip(ifaces, i);
+			const char *address = iface_list_n_ip(ifaces, i);
 			status = add_socket(task, task->lp_ctx, model_ops, address, ldap_service);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		status = add_socket(task, task->lp_ctx, model_ops,
-				    lpcfg_socket_address(task->lp_ctx), ldap_service);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		const char **wcard;
+		int i;
+		wcard = iface_list_wildcard(task, task->lp_ctx);
+		if (wcard == NULL) {
+			DEBUG(0,("No wildcard addresses available\n"));
+			goto failed;
+		}
+		for (i=0; wcard[i]; i++) {
+			status = add_socket(task, task->lp_ctx, model_ops, wcard[i], ldap_service);
+			if (!NT_STATUS_IS_OK(status)) goto failed;
+		}
+		talloc_free(wcard);
 	}
 
-	ldapi_path = private_path(ldap_service, task->lp_ctx, "ldapi");
+	ldapi_path = lpcfg_private_path(ldap_service, task->lp_ctx, "ldapi");
 	if (!ldapi_path) {
 		goto failed;
 	}
@@ -986,7 +995,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 #ifdef WITH_LDAPI_PRIV_SOCKET
-	priv_dir = private_path(ldap_service, task->lp_ctx, "ldap_priv");
+	priv_dir = lpcfg_private_path(ldap_service, task->lp_ctx, "ldap_priv");
 	if (priv_dir == NULL) {
 		goto failed;
 	}

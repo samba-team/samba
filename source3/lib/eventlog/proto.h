@@ -1,3 +1,28 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  Eventlog utility  routines
+ *
+ *  Copyright (C) Marcin Krzysztof Porwit    2005
+ *  Copyright (C) Brian Moran                2005
+ *  Copyright (C) Gerald (Jerry) Carter      2005
+ *  Copyright (C) Guenther Deschner          2009
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _LIB_EVENTLOG_PROTO_H_
+#define _LIB_EVENTLOG_PROTO_H_
 
 /* The following definitions come from lib/eventlog/eventlog.c  */
 
@@ -33,3 +58,5 @@ NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
 				  ELOG_TDB *etdb,
 				  DATA_BLOB *blob_p,
 				  uint32_t *num_records_p);
+
+#endif /* _LIB_EVENTLOG_PROTO_H_ */

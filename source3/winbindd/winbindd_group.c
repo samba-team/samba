@@ -60,8 +60,8 @@ bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 
 	/* Group name and password */
 
-	safe_strcpy(gr->gr_name, full_group_name, sizeof(gr->gr_name) - 1);
-	safe_strcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd) - 1);
+	strlcpy(gr->gr_name, full_group_name, sizeof(gr->gr_name));
+	strlcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd));
 
 	return True;
 }

@@ -43,26 +43,12 @@ bool torture_register_suite(struct torture_suite *suite)
 	return torture_suite_add_suite(torture_root, suite);
 }
 
-#ifndef ENABLE_LIBNETAPI
-NTSTATUS torture_libnetapi_init(void)
-{
-	return NT_STATUS_OK;
-}
-#endif
-
-#ifndef ENABLE_LIBSMBCLIENT
-NTSTATUS torture_libsmbclient_init(void)
-{
-	return NT_STATUS_OK;
-}
-#endif
-
 _PUBLIC_ int torture_init(void)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_smbtorture_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_smbtorture_MODULES };
-	init_module_fn *shared_init = load_samba_modules(NULL, cmdline_lp_ctx, "smbtorture");
+	init_module_fn *shared_init = load_samba_modules(NULL, "smbtorture");
 
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

@@ -1,3 +1,37 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  Password and authentication handling
+ *
+ *  Copyright (C) Andrew Tridgell		1992-2001
+ *  Copyright (C) Luke Kenneth Casson Leighton	1996-2000
+ *  Copyright (C) Jeremy Allison		1997-2001
+ *  Copyright (C) John H Terpsta		1999-2001
+ *  Copyright (C) Tim Potter			2000
+ *  Copyright (C) Andrew Bartlett		2001-2003
+ *  Copyright (C) Jelmer Vernooij		2002
+ *  Copyright (C) Rafal Szczesniak		2002
+ *  Copyright (C) Gerald Carter			2003
+ *  Copyright (C) Volker Lendecke		2006,2010
+ *  Copyright (C) Michael Adam			2007
+ *  Copyright (C) Dan Sledz			2009
+ *  Copyright (C) Simo Sorce			2010
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _AUTH_PROTO_H_
+#define _AUTH_PROTO_H_
 
 /* The following definitions come from auth/auth.c  */
 
@@ -270,3 +304,5 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				bool mapped_to_guest, bool username_was_mapped,
 				DATA_BLOB *session_key,
 				struct auth_serversupplied_info **session_info);
+
+#endif /* _AUTH_PROTO_H_ */

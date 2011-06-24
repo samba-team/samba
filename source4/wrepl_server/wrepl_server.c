@@ -38,7 +38,7 @@ static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev_ctx,
 						  struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, private_path(mem_ctx,
+	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lpcfg_private_path(mem_ctx,
 			        lp_ctx, lpcfg_wins_config_url(lp_ctx)),
 				system_session(lp_ctx), NULL, 0);
 }
@@ -78,8 +78,8 @@ static NTSTATUS wreplsrv_open_winsdb(struct wreplsrv_service *service,
 
 	if (owner == NULL) {
 		struct interface *ifaces;
-		load_interfaces(service, lpcfg_interfaces(lp_ctx), &ifaces);
-		owner = iface_n_ip(ifaces, 0);
+		load_interface_list(service, lp_ctx, &ifaces);
+		owner = iface_list_first_v4(ifaces);
 	}
 
 	service->wins_db     = winsdb_connect(service, service->task->event_ctx, lp_ctx, owner, WINSDB_HANDLE_CALLER_WREPL);

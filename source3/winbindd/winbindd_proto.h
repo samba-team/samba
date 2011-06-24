@@ -291,7 +291,8 @@ void winbind_msg_ip_dropped_parent(struct messaging_context *msg_ctx,
 				   uint32_t msg_type,
 				   struct server_id server_id,
 				   DATA_BLOB *data);
-bool winbindd_reinit_after_fork(const char *logfilename);
+NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
+				    const char *logfilename);
 struct winbindd_domain *wb_child_domain(void);
 
 /* The following definitions come from winbindd/winbindd_group.c  */
@@ -391,7 +392,6 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
 bool parse_domain_user(const char *domuser, fstring domain, fstring user);
 bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 			      char **domain, char **user);
-void parse_add_domuser(void *buf, char *domuser, int *len);
 bool canonicalize_username(fstring username_inout, fstring domain, fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume);
 char *fill_domain_username_talloc(TALLOC_CTX *ctx,
@@ -436,7 +436,6 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 
 /* The following definitions come from winbindd/winbindd_wins.c  */
 
-void winbindd_wins_byip(struct winbindd_cli_state *state);
 void winbindd_wins_byname(struct winbindd_cli_state *state);
 
 struct tevent_req *wb_ping_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
@@ -861,6 +860,18 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 					      struct winbindd_request *request);
 NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 				    struct winbindd_response *response);
+struct tevent_req *winbindd_wins_byip_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct winbindd_cli_state *cli,
+					   struct winbindd_request *request);
+NTSTATUS winbindd_wins_byip_recv(struct tevent_req *req,
+				 struct winbindd_response *presp);
+struct tevent_req *winbindd_wins_byname_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct winbindd_cli_state *cli,
+					     struct winbindd_request *request);
+NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
+				   struct winbindd_response *presp);
 
 
 /* The following definitions come from winbindd/winbindd_samr.c  */

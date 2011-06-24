@@ -27,6 +27,7 @@
 #define _SMB_H
 
 #include "libcli/smb/smb_common.h"
+#include "libds/common/roles.h"
 
 /* logged when starting the various Samba daemons */
 #define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2011"
@@ -84,14 +85,6 @@ enum smb_read_errors {
 };
 
 #define DIR_STRUCT_SIZE 43
-
-/* these define the attribute byte as seen by DOS */
-#define aRONLY (1L<<0)		/* 0x01 */
-#define aHIDDEN (1L<<1)		/* 0x02 */
-#define aSYSTEM (1L<<2)		/* 0x04 */
-#define aVOLID (1L<<3)		/* 0x08 */
-#define aDIR (1L<<4)		/* 0x10 */
-#define aARCH (1L<<5)		/* 0x20 */
 
 /* deny modes */
 #define DENY_DOS 0
@@ -402,10 +395,6 @@ struct dptr_struct;
 
 struct share_params {
 	int service;
-};
-
-struct share_iterator {
-	int next_id;
 };
 
 typedef struct connection_struct {
@@ -1084,26 +1073,6 @@ struct bitmap {
 #define FILE_SHARE_WRITE 2
 #define FILE_SHARE_DELETE 4
 
-/* FileAttributesField */
-#define FILE_ATTRIBUTE_READONLY		0x001L
-#define FILE_ATTRIBUTE_HIDDEN		0x002L
-#define FILE_ATTRIBUTE_SYSTEM		0x004L
-#define FILE_ATTRIBUTE_DIRECTORY	0x010L
-#define FILE_ATTRIBUTE_ARCHIVE		0x020L
-#define FILE_ATTRIBUTE_NORMAL		0x080L
-#define FILE_ATTRIBUTE_TEMPORARY	0x100L
-#define FILE_ATTRIBUTE_SPARSE		0x200L
-#define FILE_ATTRIBUTE_REPARSE_POINT    0x400L
-#define FILE_ATTRIBUTE_COMPRESSED	0x800L
-#define FILE_ATTRIBUTE_OFFLINE          0x1000L
-#define FILE_ATTRIBUTE_NONINDEXED	0x2000L
-#define FILE_ATTRIBUTE_ENCRYPTED        0x4000L
-#define SAMBA_ATTRIBUTES_MASK		(FILE_ATTRIBUTE_READONLY|\
-					FILE_ATTRIBUTE_HIDDEN|\
-					FILE_ATTRIBUTE_SYSTEM|\
-					FILE_ATTRIBUTE_DIRECTORY|\
-					FILE_ATTRIBUTE_ARCHIVE)
-
 /* Flags - combined with attributes. */
 #define FILE_FLAG_WRITE_THROUGH    0x80000000L
 #define FILE_FLAG_NO_BUFFERING     0x20000000L
@@ -1232,7 +1201,7 @@ struct bitmap {
 
 
 /* where to find the base of the SMB packet proper */
-#define smb_base(buf) (((char *)(buf))+4)
+#define smb_base(buf) (((const char *)(buf))+4)
 
 /* we don't allow server strings to be longer than 48 characters as
    otherwise NT will not honour the announce packets */
@@ -1267,8 +1236,8 @@ char *strdup(char *s);
  *        This may change again in Samba-3.0 after further testing. JHT
  */
  
-#define DEFAULT_MAJOR_VERSION 0x04
-#define DEFAULT_MINOR_VERSION 0x09
+#define SAMBA_MAJOR_NBT_ANNOUNCE_VERSION 0x04
+#define SAMBA_MINOR_NBT_ANNOUNCE_VERSION 0x09
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
@@ -1321,17 +1290,6 @@ enum protocol_types {
 	PROTOCOL_LANMAN2,
 	PROTOCOL_NT1,
 	PROTOCOL_SMB2
-};
-
-/* security levels */
-enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN,SEC_ADS};
-
-/* server roles */
-enum server_types {
-	ROLE_STANDALONE,
-	ROLE_DOMAIN_MEMBER,
-	ROLE_DOMAIN_BDC,
-	ROLE_DOMAIN_PDC
 };
 
 /* printing types */
@@ -1584,13 +1542,6 @@ typedef struct user_struct {
 	struct auth_ntlmssp_state *auth_ntlmssp_state;
 } user_struct;
 
-struct unix_error_map {
-	int unix_error;
-	int dos_class;
-	int dos_code;
-	NTSTATUS nt_error;
-};
-
 /*
    Do you want session setups at user level security with a invalid
    password to be rejected or allowed in as guest? WinNT rejects them
@@ -1735,5 +1686,21 @@ struct deferred_open_record;
 
 /* Used inside aio code. */
 struct aio_extra;
+
+/*
+ * Reasons for cache flush.
+ */
+
+enum flush_reason_enum {
+    SEEK_FLUSH,
+    READ_FLUSH,
+    WRITE_FLUSH,
+    READRAW_FLUSH,
+    OPLOCK_RELEASE_FLUSH,
+    CLOSE_FLUSH,
+    SYNC_FLUSH,
+    SIZECHANGE_FLUSH,
+    /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
+    NUM_FLUSH_REASONS};
 
 #endif /* _SMB_H */

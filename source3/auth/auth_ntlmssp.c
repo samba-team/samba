@@ -184,13 +184,13 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 	struct auth_ntlmssp_state *ans;
 	struct auth_context *auth_context;
 
-	if ((enum server_types)lp_server_role() == ROLE_STANDALONE) {
+	if ((enum server_role)lp_server_role() == ROLE_STANDALONE) {
 		is_standalone = true;
 	} else {
 		is_standalone = false;
 	}
 
-	netbios_name = global_myname();
+	netbios_name = lp_netbios_name();
 	netbios_domain = lp_workgroup();
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dns_domain = get_mydnsdomname(talloc_tos());

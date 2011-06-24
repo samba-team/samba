@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/glob.h"
+#include "util_tdb.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
@@ -80,14 +81,10 @@ again:
 				return false;
 			}
 			first_try = false;
-			DEBUG(0, ("gencache_init: tdb_check(%s) failed - retry after CLEAR_IF_FIRST\n",
+			DEBUG(0, ("gencache_init: tdb_check(%s) failed - retry after truncate\n",
 				  cache_fname));
-			cache = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, open_flags, 0644);
-			if (cache) {
-				tdb_close(cache);
-				cache = NULL;
-				goto again;
-			}
+			truncate(cache_fname, 0);
+			goto again;
 		}
 	}
 
@@ -125,7 +122,7 @@ again:
 static TDB_DATA last_stabilize_key(void)
 {
 	TDB_DATA result;
-	result.dptr = (uint8_t *)"@LAST_STABILIZED";
+	result.dptr = discard_const_p(uint8_t, "@LAST_STABILIZED");
 	result.dsize = 17;
 	return result;
 }
@@ -209,7 +206,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	 */
 
 	last_stabilize = 0;
-	databuf = tdb_fetch(cache_notrans, last_stabilize_key());
+	databuf = tdb_fetch_compat(cache_notrans, last_stabilize_key());
 	if ((databuf.dptr != NULL)
 	    && (databuf.dptr[databuf.dsize-1] == '\0')) {
 		last_stabilize = atoi((char *)databuf.dptr);
@@ -347,11 +344,11 @@ bool gencache_parse(const char *keystr,
 	state.private_data = private_data;
 
 	ret = tdb_parse_record(cache_notrans, key, gencache_parse_fn, &state);
-	if (ret != -1) {
+	if (ret == 0) {
 		return true;
 	}
 	ret = tdb_parse_record(cache, key, gencache_parse_fn, &state);
-	return (ret != -1);
+	return (ret == 0);
 }
 
 struct gencache_get_data_blob_state {
@@ -464,9 +461,14 @@ bool gencache_stabilize(void)
 	}
 
 	res = tdb_transaction_start_nonblock(cache);
-	if (res == -1) {
+	if (res != 0) {
 
-		if (tdb_error(cache) == TDB_ERR_NOLOCK) {
+#if BUILD_TDB2
+		if (res == TDB_ERR_LOCK)
+#else
+		if (tdb_error(cache) == TDB_ERR_NOLOCK)
+#endif
+		{
 			/*
 			 * Someone else already does the stabilize,
 			 * this does not have to be done twice
@@ -475,15 +477,15 @@ bool gencache_stabilize(void)
 		}
 
 		DEBUG(10, ("Could not start transaction on gencache.tdb: "
-			   "%s\n", tdb_errorstr(cache)));
+			   "%s\n", tdb_errorstr_compat(cache)));
 		return false;
 	}
 	res = tdb_transaction_start(cache_notrans);
-	if (res == -1) {
+	if (res != 0) {
 		tdb_transaction_cancel(cache);
 		DEBUG(10, ("Could not start transaction on "
 			   "gencache_notrans.tdb: %s\n",
-			   tdb_errorstr(cache_notrans)));
+			   tdb_errorstr_compat(cache_notrans)));
 		return false;
 	}
 
@@ -491,36 +493,30 @@ bool gencache_stabilize(void)
 	state.written = false;
 
 	res = tdb_traverse(cache_notrans, stabilize_fn, &state);
-	if ((res == -1) || state.error) {
-		if ((tdb_transaction_cancel(cache_notrans) == -1)
-		    || (tdb_transaction_cancel(cache) == -1)) {
-			smb_panic("tdb_transaction_cancel failed\n");
-		}
+	if ((res < 0) || state.error) {
+		tdb_transaction_cancel(cache_notrans);
+		tdb_transaction_cancel(cache);
 		return false;
 	}
 
 	if (!state.written) {
-		if ((tdb_transaction_cancel(cache_notrans) == -1)
-		    || (tdb_transaction_cancel(cache) == -1)) {
-			smb_panic("tdb_transaction_cancel failed\n");
-		}
+		tdb_transaction_cancel(cache_notrans);
+		tdb_transaction_cancel(cache);
 		return true;
 	}
 
 	res = tdb_transaction_commit(cache);
-	if (res == -1) {
+	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr(cache)));
-		if (tdb_transaction_cancel(cache_notrans) == -1) {
-			smb_panic("tdb_transaction_cancel failed\n");
-		}
+			   "%s\n", tdb_errorstr_compat(cache)));
+		tdb_transaction_cancel(cache_notrans);
 		return false;
 	}
 
 	res = tdb_transaction_commit(cache_notrans);
-	if (res == -1) {
+	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr(cache)));
+			   "%s\n", tdb_errorstr_compat(cache)));
 		return false;
 	}
 
@@ -551,7 +547,7 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 	}
 	if ((timeout < time(NULL)) || (val.dsize == 0)) {
 		res = tdb_delete(cache, key);
-		if ((res == -1) && (tdb_error(cache) == TDB_ERR_NOEXIST)) {
+		if ((res != 0) && (tdb_error(cache) == TDB_ERR_NOEXIST)) {
 			res = 0;
 		} else {
 			state->written = true;
@@ -563,16 +559,16 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 		}
 	}
 
-	if (res == -1) {
+	if (res != 0) {
 		DEBUG(10, ("Transfer to gencache.tdb failed: %s\n",
-			   tdb_errorstr(cache)));
+			   tdb_errorstr_compat(cache)));
 		state->error = true;
 		return -1;
 	}
 
-	if (tdb_delete(cache_notrans, key) == -1) {
+	if (tdb_delete(cache_notrans, key) != 0) {
 		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
-			   "%s\n", tdb_errorstr(cache_notrans)));
+			   "%s\n", tdb_errorstr_compat(cache_notrans)));
 		state->error = true;
 		return -1;
 	}

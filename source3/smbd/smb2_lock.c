@@ -23,6 +23,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "messages.h"
 
 struct smbd_smb2_lock_element {
@@ -567,7 +568,7 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 	}
 
 	sconn->smb2.locks.brl_timeout = event_add_timed(
-				smbd_event_context(),
+				server_event_context(),
 				NULL,
 				next_timeout,
 				brl_timeout_fn,
@@ -627,9 +628,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 		blr->expire_time.tv_sec = 0;
 		blr->expire_time.tv_usec = 0; /* Never expire. */
 	} else {
-		blr->expire_time = timeval_current_ofs(
-			lock_timeout/1000,
-			(lock_timeout % 1000) * 1000);
+		blr->expire_time = timeval_current_ofs_msec(lock_timeout);
 	}
 
 	blr->lock_num = lock_num;

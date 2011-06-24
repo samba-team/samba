@@ -414,16 +414,6 @@ void exit_server_cleanly(const char *const reason)
 
 int last_message = -1;
 
-struct event_context *smbd_event_context(void)
-{
-	static struct event_context *ctx;
-
-	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init smbd event context\n");
-	}
-	return ctx;
-}
-
 /* Main function */
 
 int main(int argc, char *argv[])
@@ -479,8 +469,8 @@ int main(int argc, char *argv[])
 
 	/* some basic initialization stuff */
 	sec_init();
-	vfs.conn = TALLOC_ZERO_P(NULL, connection_struct);
-	vfs.conn->params = TALLOC_P(vfs.conn, struct share_params);
+	vfs.conn = talloc_zero(NULL, connection_struct);
+	vfs.conn->params = talloc(vfs.conn, struct share_params);
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 

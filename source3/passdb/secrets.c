@@ -30,6 +30,7 @@
 #include "secrets.h"
 #include "dbwrap.h"
 #include "../libcli/security/security.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -419,7 +420,7 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 		return 0;
 	}
 
-	if (!(dom_info = TALLOC_P(state->domains, struct trustdom_info))) {
+	if (!(dom_info = talloc(state->domains, struct trustdom_info))) {
 		DEBUG(0, ("talloc failed\n"));
 		return 0;
 	}
@@ -458,7 +459,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 	 * exists
 	 */
 
-	if (!(state.domains = TALLOC_ARRAY(
+	if (!(state.domains = talloc_array(
 		      mem_ctx, struct trustdom_info *, 1))) {
 		return NT_STATUS_NO_MEMORY;
 	}

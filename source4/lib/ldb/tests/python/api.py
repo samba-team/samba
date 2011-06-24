@@ -516,6 +516,11 @@ class LdbMsgTests(unittest.TestCase):
         self.msg["foo"] = ["bar"]
         self.assertEquals("bar", self.msg.get("foo")[0])
 
+    def test_get_default(self):
+        self.assertEquals(None, self.msg.get("tatayoyo"))
+
+        self.assertEquals("anniecordie", self.msg.get("tatayoyo", "anniecordie"))
+
     def test_get_unknown(self):
         self.assertEquals(None, self.msg.get("lalalala"))
 

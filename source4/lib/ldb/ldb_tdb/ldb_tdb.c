@@ -50,6 +50,7 @@
  */
 
 #include "ldb_tdb.h"
+#include <lib/tdb_compat/tdb_compat.h>
 
 
 /*
@@ -67,9 +68,13 @@ int ltdb_err_map(enum TDB_ERROR tdb_code)
 	case TDB_ERR_IO:
 		return LDB_ERR_PROTOCOL_ERROR;
 	case TDB_ERR_LOCK:
+#ifndef BUILD_TDB2
 	case TDB_ERR_NOLOCK:
+#endif
 		return LDB_ERR_BUSY;
+#ifndef BUILD_TDB2
 	case TDB_ERR_LOCK_TIMEOUT:
+#endif
 		return LDB_ERR_TIME_LIMIT_EXCEEDED;
 	case TDB_ERR_EXISTS:
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
@@ -110,7 +115,8 @@ int ltdb_unlock_read(struct ldb_module *module)
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	if (ltdb->in_transaction == 0 && ltdb->read_lock_count == 1) {
-		return tdb_unlockall_read(ltdb->tdb);
+		tdb_unlockall_read(ltdb->tdb);
+		return 0;
 	}
 	ltdb->read_lock_count--;
 	return 0;
@@ -124,7 +130,7 @@ int ltdb_unlock_read(struct ldb_module *module)
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
+TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TDB_DATA key;
@@ -263,7 +269,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	}
 
 	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
-	if (ret == -1) {
+	if (ret != 0) {
 		ret = ltdb_err_map(tdb_error(ltdb->tdb));
 		goto done;
 	}
@@ -653,7 +659,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		return LDB_ERR_OTHER;
 	}
 
-	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
+	tdb_data = tdb_fetch_compat(ltdb->tdb, tdb_key);
 	if (!tdb_data.dptr) {
 		talloc_free(tdb_key.dptr);
 		return ltdb_err_map(tdb_error(ltdb->tdb));
@@ -1072,10 +1078,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
-	if (tdb_transaction_cancel(ltdb->tdb) != 0) {
-		return ltdb_err_map(tdb_error(ltdb->tdb));
-	}
-
+	tdb_transaction_cancel(ltdb->tdb);
 	return LDB_SUCCESS;
 }
 

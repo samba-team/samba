@@ -307,7 +307,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	}
 	DEBUG(10, ("resulting acl is valid.\n"));
 
-	ret = acl(CONST_DISCARD(char *, smb_fname->base_name), ACL_SET, count,
+	ret = acl(discard_const_p(char, smb_fname->base_name), ACL_SET, count,
 		  hpux_acl);
 	if (ret != 0) {
 		DEBUG(0, ("ERROR calling acl: %s\n", strerror(errno)));
@@ -394,7 +394,7 @@ int hpuxacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 		DEBUG(10, ("resulting acl is not valid!\n"));
 		goto done;
 	}
-	ret = acl(CONST_DISCARD(char *, path), ACL_SET, count, hpux_acl);
+	ret = acl(discard_const_p(char, path), ACL_SET, count, hpux_acl);
 	if (ret != 0) {
 		DEBUG(10, ("settinge file acl failed!\n"));
 	}
@@ -682,7 +682,7 @@ static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl,
 	 * instantiated or malloced each time this function is
 	 * called). Btw: the count parameter does not seem to matter...
 	 */
-	*count = acl(CONST_DISCARD(char *, name), ACL_CNT, 0, &dummy_ace);
+	*count = acl(discard_const_p(char, name), ACL_CNT, 0, &dummy_ace);
 	if (*count < 0) {
 		DEBUG(10, ("acl ACL_CNT failed: %s\n", strerror(errno)));
 		goto done;
@@ -692,7 +692,7 @@ static bool hpux_acl_get_file(const char *name, HPUX_ACL_T *hpux_acl,
 		DEBUG(10, ("error allocating memory for hpux acl...\n"));
 		goto done;
 	}
-	*count = acl(CONST_DISCARD(char *, name), ACL_GET, *count, *hpux_acl);
+	*count = acl(discard_const_p(char, name), ACL_GET, *count, *hpux_acl);
 	if (*count < 0) {
 		DEBUG(10, ("acl ACL_GET failed: %s\n", strerror(errno)));
 		goto done;

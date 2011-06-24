@@ -25,6 +25,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level)
 {

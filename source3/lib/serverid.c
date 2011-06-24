@@ -20,10 +20,13 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "serverid.h"
+#include "util_tdb.h"
 #include "dbwrap.h"
+#include "lib/util/tdb_wrap.h"
 
 struct serverid_key {
 	pid_t pid;
+	uint32_t task_id;
 	uint32_t vnn;
 };
 
@@ -70,6 +73,7 @@ static void serverid_fill_key(const struct server_id *id,
 {
 	ZERO_STRUCTP(key);
 	key->pid = id->pid;
+	key->task_id = id->task_id;
 	key->vnn = id->vnn;
 }
 
@@ -246,7 +250,7 @@ bool serverid_exists(const struct server_id *id)
 	state.id = id;
 	state.exists = false;
 
-	if (db->parse_record(db, tdbkey, server_exists_parse, &state) == -1) {
+	if (db->parse_record(db, tdbkey, server_exists_parse, &state) != 0) {
 		return false;
 	}
 	return state.exists;
@@ -273,6 +277,7 @@ static bool serverid_rec_parse(const struct db_record *rec,
 	memcpy(&data, rec->value.dptr, sizeof(data));
 
 	id->pid = key.pid;
+	id->task_id = key.task_id;
 	id->vnn = key.vnn;
 	id->unique_id = data.unique_id;
 	*msg_flags = data.msg_flags;

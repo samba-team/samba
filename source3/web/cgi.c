@@ -118,7 +118,7 @@ void cgi_load_variables(void)
 #ifdef DEBUG_COMMENTS
 	char dummy[100]="";
 	print_title(dummy);
-	d_printf("<!== Start dump in cgi_load_variables() %s ==>\n",__FILE__);
+	printf("<!== Start dump in cgi_load_variables() %s ==>\n",__FILE__);
 #endif
 
 	if (!content_length) {
@@ -275,7 +275,7 @@ static void cgi_setup_error(const char *err, const char *header, const char *inf
 		}
 	}
 
-	d_printf("HTTP/1.0 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n\r\n", err, header, err, err, info);
+	printf("HTTP/1.0 %s\r\n%sConnection: close\r\nContent-Type: text/html\r\n\r\n<HTML><HEAD><TITLE>%s</TITLE></HEAD><BODY><H1>%s</H1>%s<p></BODY></HTML>\r\n\r\n", err, header, err, err, info);
 	fclose(stdin);
 	fclose(stdout);
 	exit(0);

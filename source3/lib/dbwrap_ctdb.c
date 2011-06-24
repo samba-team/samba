@@ -20,6 +20,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/util/tdb_wrap.h"
+#include "util_tdb.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb.h"
 #include "ctdb_private.h"
@@ -89,7 +91,7 @@ static NTSTATUS db_ctdb_ltdb_fetch(struct db_ctdb_ctx *db,
 	TDB_DATA rec;
 	NTSTATUS status;
 
-	rec = tdb_fetch(db->wtdb->tdb, key);
+	rec = tdb_fetch_compat(db->wtdb->tdb, key);
 	if (rec.dsize < sizeof(struct ctdb_ltdb_header)) {
 		status = NT_STATUS_NOT_FOUND;
 		if (data) {
@@ -537,7 +539,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 		return result;
 	}
 
-	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
+	ctdb_data = tdb_fetch_compat(ctx->wtdb->tdb, key);
 	if (ctdb_data.dptr == NULL) {
 		/* create the record */
 		result->value = tdb_null;
@@ -623,7 +625,7 @@ static NTSTATUS db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 	if (!pull_newest_from_marshall_buffer(h->m_write, key, &header,
 					      NULL, NULL)) {
 
-		rec = tdb_fetch(h->ctx->wtdb->tdb, key);
+		rec = tdb_fetch_compat(h->ctx->wtdb->tdb, key);
 
 		if (rec.dptr != NULL) {
 			memcpy(&header, rec.dptr,
@@ -992,10 +994,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
-	if (tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key) != 0) {
-		DEBUG(0, ("tdb_chainunlock failed\n"));
-		return -1;
-	}
+	tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key);
 
 	threshold = lp_ctdb_locktime_warn_threshold();
 	if (threshold != 0) {
@@ -1023,7 +1022,7 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 		return NULL;
 	}
 
-	if (!(crec = TALLOC_ZERO_P(result, struct db_ctdb_rec))) {
+	if (!(crec = talloc_zero(result, struct db_ctdb_rec))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
@@ -1064,7 +1063,7 @@ again:
 	result->delete_rec = db_ctdb_delete;
 	talloc_set_destructor(result, db_ctdb_record_destr);
 
-	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
+	ctdb_data = tdb_fetch_compat(ctx->wtdb->tdb, key);
 
 	/*
 	 * See if we have a valid record and we are the dmaster. If so, we can
@@ -1164,7 +1163,7 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	}
 
 	/* try a direct fetch */
-	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
+	ctdb_data = tdb_fetch_compat(ctx->wtdb->tdb, key);
 
 	/*
 	 * See if we have a valid record and we are the dmaster. If so, we can
@@ -1363,13 +1362,13 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct db_context))) {
+	if (!(result = talloc_zero(mem_ctx, struct db_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
 	}
 
-	if (!(db_ctdb = TALLOC_P(result, struct db_ctdb_ctx))) {
+	if (!(db_ctdb = talloc(result, struct db_ctdb_ctx))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return NULL;

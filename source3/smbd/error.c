@@ -21,9 +21,6 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
-/* From lib/error.c */
-extern struct unix_error_map unix_dos_nt_errmap[];
-
 bool use_nt_status(void)
 {
 	return lp_nt_status_support() && (global_client_caps & CAP_STATUS32);
@@ -80,11 +77,10 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 			 smb_fn_name(CVAL(outbuf,smb_com)),
 			 nt_errstr(ntstatus)));
 	} else {
-		/* We're returning a DOS error only. */
-		if (NT_STATUS_IS_DOS(ntstatus)) {
-			eclass = NT_STATUS_DOS_CLASS(ntstatus);
-			ecode = NT_STATUS_DOS_CODE(ntstatus);
-		} else 	if (eclass == 0 && NT_STATUS_V(ntstatus)) {
+		/* We're returning a DOS error only,
+		 * nt_status_to_dos() pulls DOS error codes out of the
+		 * NTSTATUS */
+		if (NT_STATUS_IS_DOS(ntstatus) || (eclass == 0 && NT_STATUS_V(ntstatus))) {
 			ntstatus_to_dos(ntstatus, &eclass, &ecode);
 		}
 

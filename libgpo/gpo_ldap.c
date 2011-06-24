@@ -582,7 +582,7 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 			}
 		}
 
-		new_gpo = TALLOC_ZERO_P(mem_ctx, struct GROUP_POLICY_OBJECT);
+		new_gpo = talloc_zero(mem_ctx, struct GROUP_POLICY_OBJECT);
 		ADS_ERROR_HAVE_NO_MEMORY(new_gpo);
 
 		status = ads_get_gpo(ads, mem_ctx, gp_link->link_names[i],
@@ -640,7 +640,7 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 		return status;
 	}
 
-	token_sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, 1);
+	token_sids = talloc_array(mem_ctx, struct dom_sid, 1);
 	ADS_ERROR_HAVE_NO_MEMORY(token_sids);
 
 	status = ADS_ERROR_NT(add_sid_to_array_unique(mem_ctx,
@@ -688,7 +688,7 @@ static ADS_STATUS add_local_policy_to_gpo_list(TALLOC_CTX *mem_ctx,
 
 	ADS_ERROR_HAVE_NO_MEMORY(gpo_list);
 
-	gpo = TALLOC_ZERO_P(mem_ctx, struct GROUP_POLICY_OBJECT);
+	gpo = talloc_zero(mem_ctx, struct GROUP_POLICY_OBJECT);
 	ADS_ERROR_HAVE_NO_MEMORY(gpo);
 
 	gpo->name = talloc_strdup(mem_ctx, "Local Policy");

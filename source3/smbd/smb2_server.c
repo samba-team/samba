@@ -24,6 +24,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/tsocket/tsocket.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "smbprofile.h"
 
 #define OUTVEC_ALLOC_SIZE (SMB2_HDR_BODY + 9)
@@ -94,7 +95,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 
 	TALLOC_FREE(sconn->smb1.fde);
 
-	sconn->smb2.event_ctx = smbd_event_context();
+	sconn->smb2.event_ctx = server_event_context();
 
 	sconn->smb2.recv_queue = tevent_queue_create(sconn, "smb2 recv queue");
 	if (sconn->smb2.recv_queue == NULL) {
@@ -268,15 +269,15 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 	memcpy(req->in.nbt_hdr, inbuf, 4);
 
 	ofs = 0;
-	req->in.vector[0].iov_base	= (void *)req->in.nbt_hdr;
+	req->in.vector[0].iov_base	= discard_const_p(void, req->in.nbt_hdr);
 	req->in.vector[0].iov_len	= 4;
 	ofs += req->in.vector[0].iov_len;
 
-	req->in.vector[1].iov_base	= (void *)(inbuf + ofs);
+	req->in.vector[1].iov_base	= discard_const_p(void, (inbuf + ofs));
 	req->in.vector[1].iov_len	= SMB2_HDR_BODY;
 	ofs += req->in.vector[1].iov_len;
 
-	req->in.vector[2].iov_base	= (void *)(inbuf + ofs);
+	req->in.vector[2].iov_base	= discard_const_p(void, (inbuf + ofs));
 	req->in.vector[2].iov_len	= SVAL(inbuf, ofs) & 0xFFFE;
 	ofs += req->in.vector[2].iov_len;
 
@@ -284,7 +285,7 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	req->in.vector[3].iov_base	= (void *)(inbuf + ofs);
+	req->in.vector[3].iov_base	= discard_const_p(void, (inbuf + ofs));
 	req->in.vector[3].iov_len	= size - ofs;
 	ofs += req->in.vector[3].iov_len;
 
@@ -607,7 +608,7 @@ static bool dup_smb2_vec3(TALLOC_CTX *ctx,
 			srcvec[1].iov_base ==
 				((uint8_t *)srcvec[0].iov_base) +
 					SMB2_HDR_BODY) {
-		outvec[1].iov_base = ((uint8_t *)outvec[1].iov_base) +
+		outvec[1].iov_base = ((uint8_t *)outvec[0].iov_base) +
 					SMB2_HDR_BODY;
 		outvec[1].iov_len = 8;
 	} else {
@@ -2017,9 +2018,11 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 				invalid = true;
 			}
 
-			if ((body_size % 2) != 0) {
-				body_size -= 1;
-			}
+			/*
+			 * Mask out the lowest bit, the "dynamic" part
+			 * of body_size.
+			 */
+			body_size &= ~1;
 
 			if (body_size > (full_size - SMB2_HDR_BODY)) {
 				/*

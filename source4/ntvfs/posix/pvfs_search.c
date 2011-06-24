@@ -221,7 +221,9 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SEARCH_DATA_GENERIC:
-		break;
+	case RAW_SEARCH_DATA_UNIX_INFO:
+	case RAW_SEARCH_DATA_UNIX_INFO2:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;

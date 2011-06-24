@@ -37,5 +37,19 @@
 #include <com_err.h>
 #endif
 
+#ifdef HAVE_GSSAPI_GSSAPI_EXT_H
+#include <gssapi/gssapi_ext.h>
+#elif HAVE_GSSAPI_GSSAPI_H
+#include <gssapi/gssapi.h>
+#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
+#include <gssapi/gssapi_generic.h>
+#elif HAVE_GSSAPI_H
+#include <gssapi.h>
+#endif
+
+#if HAVE_GSSAPI_GSSAPI_KRB5_H
+#include <gssapi/gssapi_krb5.h>
+#endif
+
 #endif
 #endif

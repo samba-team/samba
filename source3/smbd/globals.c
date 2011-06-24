@@ -20,8 +20,10 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "lib/smbd_shim.h"
 #include "memcache.h"
 #include "messages.h"
+#include "tdb_compat.h"
 
 #if defined(WITH_AIO)
 struct aio_extra *aio_list_head = NULL;
@@ -144,18 +146,62 @@ struct memcache *smbd_memcache(void)
 	return smbd_memcache_ctx;
 }
 
+static const struct smbd_shim smbd_shim_fns = 
+{
+	.cancel_pending_lock_requests_by_fid = smbd_cancel_pending_lock_requests_by_fid,
+	.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
+	.can_delete_directory = smbd_can_delete_directory,
+	.change_to_root_user = smbd_change_to_root_user,
+	
+	.contend_level2_oplocks_begin = smbd_contend_level2_oplocks_begin,
+	.contend_level2_oplocks_end = smbd_contend_level2_oplocks_end,
+
+	.become_root = smbd_become_root,
+	.unbecome_root = smbd_unbecome_root
+};
 
 void smbd_init_globals(void)
 {
+	set_smbd_shim(&smbd_shim_fns);
+
 	ZERO_STRUCT(conn_ctx_stack);
 
 	ZERO_STRUCT(sec_ctx_stack);
 
-	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
+	smbd_server_conn = talloc_zero(server_event_context(), struct smbd_server_connection);
 	if (!smbd_server_conn) {
 		exit_server("failed to create smbd_server_connection");
 	}
 
 	smbd_server_conn->smb1.echo_handler.trusted_fd = -1;
 	smbd_server_conn->smb1.echo_handler.socket_lock_fd = -1;
+}
+
+void smbd_set_server_fd(int fd)
+{
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	char addr[INET6_ADDRSTRLEN];
+	const char *name;
+
+	sconn->sock = fd;
+
+	/*
+	 * Initialize sconn->client_id: If we can't find the client's
+	 * name, default to its address.
+	 */
+
+	client_addr(fd, sconn->client_id.addr, sizeof(sconn->client_id.addr));
+
+	name = client_name(sconn->sock);
+	if (strcmp(name, "UNKNOWN") != 0) {
+		name = talloc_strdup(sconn, name);
+	} else {
+		name = NULL;
+	}
+	sconn->client_id.name =
+		(name != NULL) ? name : sconn->client_id.addr;
+
+	sub_set_socket_ids(sconn->client_id.addr, sconn->client_id.name,
+			   client_socket_addr(sconn->sock, addr,
+					      sizeof(addr)));
 }

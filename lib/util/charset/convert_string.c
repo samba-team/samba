@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
    Character set conversion Extensions
    Copyright (C) Igor Vergeichik <iverg@mail.ru> 2001
-   Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Andrew Tridgell 2001-2011
+   Copyright (C) Andrew Bartlett 2011
    Copyright (C) Simo Sorce 2001
    Copyright (C) Martin Pool 2003
 
@@ -21,6 +22,7 @@
 
 */
 #include "includes.h"
+#include "system/iconv.h"
 
 /**
  * @file
@@ -177,28 +179,29 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 		size_t slen = srclen;
 		size_t dlen = destlen;
 		unsigned char lastp = '\0';
+		bool ret;
 
-		/* If all characters are ascii, fast path here. */
-		while (((slen == (size_t)-1) || (slen >= 2)) && dlen) {
-			if (((lastp = *p) <= 0x7f) && (p[1] == 0)) {
+		if (slen == (size_t)-1) {
+			while (dlen &&
+			       ((lastp = *p) <= 0x7f) && (p[1] == 0)) {
 				*q++ = *p;
-				if (slen != (size_t)-1) {
-					slen -= 2;
-				}
 				p += 2;
 				dlen--;
 				retval++;
 				if (!lastp)
 					break;
-			} else {
-#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
-				goto general_case;
-#else
-				bool ret = convert_string_internal(ic, from, to, p, slen, q, dlen, converted_size);
-				*converted_size += retval;
-				return ret;
-#endif
 			}
+			if (lastp != 0) goto slow_path;
+		} else {
+			while (slen >= 2 && dlen &&
+			       (*p <= 0x7f) && (p[1] == 0)) {
+				*q++ = *p;
+				slen -= 2;
+				p += 2;
+				dlen--;
+				retval++;
+			}
+			if (slen != 0) goto slow_path;
 		}
 
 		*converted_size = retval;
@@ -212,6 +215,19 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 			}
 		}
 		return true;
+
+	slow_path:
+		/* come here when we hit a character we can't deal
+		 * with in the fast path
+		 */
+#ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
+		goto general_case;
+#else
+		ret = convert_string_internal(ic, from, to, p, slen, q, dlen, converted_size);
+		*converted_size += retval;
+		return ret;
+#endif
+
 	} else if (from != CH_UTF16LE && from != CH_UTF16BE && to == CH_UTF16LE) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
@@ -221,8 +237,8 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 		unsigned char lastp = '\0';
 
 		/* If all characters are ascii, fast path here. */
-		while (slen && (dlen >= 2)) {
-			if ((lastp = *p) <= 0x7F) {
+		while (slen && (dlen >= 1)) {
+			if (dlen >=2 && (lastp = *p) <= 0x7F) {
 				*q++ = *p++;
 				*q++ = '\0';
 				if (slen != (size_t)-1) {
@@ -387,7 +403,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	}
 
 	/* +2 is for ucs2 null termination. */
-	ob = (char *)TALLOC_REALLOC(ctx, ob, destlen + 2);
+	ob = talloc_realloc(ctx, ob, char, destlen + 2);
 
 	if (!ob) {
 		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
@@ -428,7 +444,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	 */
 	if (o_len > 1024) {
 		/* We're shrinking here so we know the +2 is safe from wrap. */
-		ob = (char *)TALLOC_REALLOC(ctx,ob,destlen + 2);
+		ob = talloc_realloc(ctx,ob, char, destlen + 2);
 	}
 
 	if (destlen && !ob) {

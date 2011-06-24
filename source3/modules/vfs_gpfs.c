@@ -32,6 +32,7 @@
 #include <gpfs_gpl.h>
 #include "nfs4_acls.h"
 #include "vfs_gpfs.h"
+#include "system/filesys.h"
 
 struct gpfs_config_data {
 	bool sharemodes;
@@ -998,7 +999,7 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 	}
 
 
-        ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
+        ret = set_gpfs_winattrs(discard_const_p(char, path),
 				GPFS_WINATTR_SET_ATTRS, &attrs);
         if ( ret == -1){
 		if (errno == ENOSYS) {
@@ -1029,7 +1030,7 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
                 return SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size);
         }
 
-        ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
+        ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
         if ( ret == -1){
 		if (errno == ENOSYS) {
 			return SMB_VFS_NEXT_GETXATTR(handle, path, name, value,
@@ -1083,11 +1084,12 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(CONST_DISCARD(char *, fname), &attrs);
+	ret = get_gpfs_winattrs(discard_const_p(char, fname), &attrs);
 	TALLOC_FREE(fname);
 	if (ret == 0) {
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+		smb_fname->st.vfs_private = attrs.winAttrs;
 	}
 	return 0;
 }
@@ -1130,11 +1132,12 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
+	ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
 	TALLOC_FREE(path);
 	if (ret == 0) {
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+		smb_fname->st.vfs_private = attrs.winAttrs;
 	}
 	return 0;
 }
@@ -1170,7 +1173,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
         attrs.creationTime.tv_sec = ft->create_time.tv_sec;
         attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
 
-        ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
+        ret = set_gpfs_winattrs(discard_const_p(char, path),
                                 GPFS_WINATTR_SET_CREATION_TIME, &attrs);
         if(ret == -1 && errno != ENOSYS){
                 DEBUG(1,("vfs_gpfs_ntimes: set GPFS ntimes failed %d\n",ret));
@@ -1199,18 +1202,23 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 	struct gpfs_winattr attrs;
 	char *path = NULL;
 	NTSTATUS status;
-	int ret;
 
 	status = get_full_smb_filename(talloc_tos(), fname, &path);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(path, &attrs);
 
-	if (ret == -1) {
-		TALLOC_FREE(path);
-		return false;
+	if (VALID_STAT(*sbuf)) {
+		attrs.winAttrs = sbuf->vfs_private;
+	} else {
+		int ret;
+		ret = get_gpfs_winattrs(path, &attrs);
+
+		if (ret == -1) {
+			TALLOC_FREE(path);
+			return false;
+		}
 	}
 	if ((attrs.winAttrs & GPFS_WINATTR_OFFLINE) != 0) {
 		DEBUG(10, ("%s is offline\n", path));
@@ -1228,10 +1236,24 @@ static bool vfs_gpfs_aio_force(struct vfs_handle_struct *handle,
 	return vfs_gpfs_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
 }
 
+static ssize_t vfs_gpfs_sendfile(vfs_handle_struct *handle, int tofd,
+				 files_struct *fsp, const DATA_BLOB *hdr,
+				 SMB_OFF_T offset, size_t n)
+{
+	if ((fsp->fsp_name->st.vfs_private & GPFS_WINATTR_OFFLINE) != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, hdr, offset, n);
+}
+
 int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 			const char *user)
 {
 	struct gpfs_config_data *config;
+
+	smbd_gpfs_lib_init();
+
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
 	if (ret < 0) {
@@ -1278,6 +1300,17 @@ static uint32_t vfs_gpfs_capabilities(struct vfs_handle_struct *handle,
 	return next;
 }
 
+static int vfs_gpfs_open(struct vfs_handle_struct *handle,
+			 struct smb_filename *smb_fname, files_struct *fsp,
+			 int flags, mode_t mode)
+{
+	if (lp_parm_bool(fsp->conn->params->service, "gpfs", "syncio",
+			 false)) {
+		flags |= O_SYNC;
+	}
+	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+}
+
 
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.connect_fn = vfs_gpfs_connect,
@@ -1304,6 +1337,8 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.ntimes = vfs_gpfs_ntimes,
 	.is_offline = vfs_gpfs_is_offline,
 	.aio_force = vfs_gpfs_aio_force,
+	.sendfile = vfs_gpfs_sendfile,
+	.open_fn = vfs_gpfs_open,
 	.ftruncate = vfs_gpfs_ftruncate
 };
 

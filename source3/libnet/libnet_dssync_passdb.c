@@ -20,10 +20,10 @@
 #include "includes.h"
 #include "system/passwd.h"
 #include "libnet/libnet_dssync.h"
-#include "libnet/libnet_samsync.h"
 #include "../libcli/security/security.h"
 #include "../libds/common/flags.h"
 #include "../librpc/gen_ndr/ndr_drsuapi.h"
+#include "util_tdb.h"
 #include "dbwrap.h"
 #include "../libds/common/flag_mapping.h"
 #include "passdb.h"
@@ -106,7 +106,7 @@ static struct dssync_passdb_obj *dssync_search_obj_by_guid(struct dssync_passdb 
 	TDB_DATA key;
 	TDB_DATA data;
 
-	key = make_tdb_data((const uint8_t *)(void *)guid,
+	key = make_tdb_data((const uint8_t *)(const void *)guid,
 			     sizeof(*guid));
 
 	ret = db->fetch(db, talloc_tos(), key, &data);
@@ -1531,11 +1531,11 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 		map.sid_name_use = SID_NAME_ALIAS;
 	}
 
-	fstrcpy(map.nt_name, name);
+	strlcpy(map.nt_name, name, sizeof(map.nt_name));
 	if (description) {
-		fstrcpy(map.comment, comment);
+		strlcpy(map.comment, comment, sizeof(map.comment));
 	} else {
-		fstrcpy(map.comment, "");
+		strlcpy(map.comment, "", sizeof(map.comment));
 	}
 
 	if (insert)
@@ -1636,11 +1636,11 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 	map.gid = grp->gr_gid;
 	map.sid = group_sid;
 	map.sid_name_use = SID_NAME_DOM_GRP;
-	fstrcpy(map.nt_name, name);
+	strlcpy(map.nt_name, name, sizeof(map.nt_name));
 	if (description) {
-		fstrcpy(map.comment, comment);
+		strlcpy(map.comment, comment, sizeof(map.comment));
 	} else {
-		fstrcpy(map.comment, "");
+		strlcpy(map.comment, "", sizeof(map.comment));
 	}
 
 	if (insert)

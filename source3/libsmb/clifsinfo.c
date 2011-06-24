@@ -19,8 +19,10 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "smb_crypt.h"
 #include "trans2.h"
@@ -151,9 +153,6 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 						  pcaphigh);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -256,9 +255,6 @@ NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
 	status = cli_set_unix_extensions_capabilities_recv(req);
 fail:
 	TALLOC_FREE(ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -355,9 +351,6 @@ NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 	status = cli_get_fs_attr_info_recv(req, fs_attr);
 fail:
 	TALLOC_FREE(ev);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -599,7 +592,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 	status = ntlmssp_client_start(NULL,
-				      global_myname(),
+				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
 				      &es->s.ntlmssp_state);
@@ -692,7 +685,7 @@ static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
 	NTSTATUS status = NT_STATUS_OK;
 
 	gss_OID_desc nt_hostbased_service =
-	{10, CONST_DISCARD(char *,"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
+	{10, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
 
 	memset(&tok_out, '\0', sizeof(tok_out));
 

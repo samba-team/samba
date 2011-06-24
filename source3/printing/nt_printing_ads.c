@@ -28,6 +28,7 @@
 #include "krb5_env.h"
 #include "../libcli/registry/util_reg.h"
 #include "auth.h"
+#include "../librpc/ndr/libndr.h"
 
 #ifdef HAVE_ADS
 /*****************************************************************
@@ -110,7 +111,7 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 	DEBUG(5, ("publishing printer %s\n", printer));
 
 	/* figure out where to publish */
-	ads_find_machine_acct(ads, &res, global_myname());
+	ads_find_machine_acct(ads, &res, lp_netbios_name());
 
 	/* We use ldap_get_dn here as we need the answer
 	 * in utf8 to call ldap_explode_dn(). JRA. */
@@ -213,7 +214,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 
 	/* remove the printer from the directory */
 	ads_rc = ads_find_printer_on_server(ads, &res,
-					    printer, global_myname());
+					    printer, lp_netbios_name());
 
 	if (ADS_ERR_OK(ads_rc) && res && ads_count_replies(ads, res)) {
 		prt_dn = ads_get_dn(ads, talloc_tos(), res);

@@ -18,7 +18,9 @@
 */
 
 #include "includes.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
+#include "libsmb/libsmb.h"
 
 /****************************************************************************
 send an ack for an oplock break request
@@ -116,9 +118,6 @@ NTSTATUS cli_oplock_ack(struct cli_state *cli, uint16_t fnum, unsigned char leve
 	status = cli_oplock_ack_recv(req);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 

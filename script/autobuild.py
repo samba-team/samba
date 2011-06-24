@@ -14,8 +14,6 @@ samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/g
 
 cleanup_list = []
 
-os.environ['CC'] = "ccache gcc"
-
 builddirs = {
     "samba3"  : "source3",
     "samba3-waf": "source3",
@@ -50,7 +48,7 @@ tasks = {
                  ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
-    "samba4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
+    "samba4" : [ ("configure", "./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
                  ("make", "make -j", "text/plain"),
                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
                  ("install", "make install", "text/plain"),

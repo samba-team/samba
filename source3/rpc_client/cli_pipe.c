@@ -19,12 +19,12 @@
  */
 
 #include "includes.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../librpc/gen_ndr/ndr_dssetup.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
-#include "smb_krb5.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
@@ -33,7 +33,7 @@
 #include "librpc/crypto/spnego.h"
 #include "rpc_dce.h"
 #include "cli_pipe.h"
-#include "ntdomain.h"
+#include "client.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -469,11 +469,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 			  pkt->u.fault.status),
 			  rpccli_pipe_txt(talloc_tos(), cli)));
 
-		if (NT_STATUS_IS_OK(NT_STATUS(pkt->u.fault.status))) {
-			return NT_STATUS_UNSUCCESSFUL;
-		} else {
-			return NT_STATUS(pkt->u.fault.status);
-		}
+		return dcerpc_fault_to_nt_status(pkt->u.fault.status);
 
 	default:
 		DEBUG(0, (__location__ "Unknown packet type %u received "
@@ -610,7 +606,7 @@ static void cli_api_pipe_write_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->rdata = TALLOC_ARRAY(state, uint8_t, RPC_HEADER_LEN);
+	state->rdata = talloc_array(state, uint8_t, RPC_HEADER_LEN);
 	if (tevent_req_nomem(state->rdata, req)) {
 		return;
 	}
@@ -1091,7 +1087,7 @@ static NTSTATUS create_schannel_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	r.Flags				= NL_FLAG_OEM_NETBIOS_DOMAIN_NAME |
 					  NL_FLAG_OEM_NETBIOS_COMPUTER_NAME;
 	r.oem_netbios_domain.a		= cli->auth->domain;
-	r.oem_netbios_computer.a	= global_myname();
+	r.oem_netbios_computer.a	= lp_netbios_name();
 
 	status = dcerpc_push_schannel_bind(cli, &r, auth_token);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2334,7 +2330,7 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	status = auth_ntlmssp_client_start(NULL,
-				      global_myname(),
+				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
 				      &ntlmssp_ctx);
@@ -2435,7 +2431,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	NTSTATUS status;
 	int fd;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2544,7 +2540,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* create tower for asking the epmapper */
 
-	map_binding = TALLOC_ZERO_P(tmp_ctx, struct dcerpc_binding);
+	map_binding = talloc_zero(tmp_ctx, struct dcerpc_binding);
 	if (map_binding == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2555,7 +2551,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	map_binding->host = host; /* needed? */
 	map_binding->endpoint = "0"; /* correct? needed? */
 
-	map_tower = TALLOC_ZERO_P(tmp_ctx, struct epm_twr_t);
+	map_tower = talloc_zero(tmp_ctx, struct epm_twr_t);
 	if (map_tower == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2569,14 +2565,14 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* allocate further parameters for the epm_Map call */
 
-	res_towers = TALLOC_ARRAY(tmp_ctx, struct epm_twr_t, max_towers);
+	res_towers = talloc_array(tmp_ctx, struct epm_twr_t, max_towers);
 	if (res_towers == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 	towers.twr = res_towers;
 
-	entry_handle = TALLOC_ZERO_P(tmp_ctx, struct policy_handle);
+	entry_handle = talloc_zero(tmp_ctx, struct policy_handle);
 	if (entry_handle == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2586,7 +2582,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	status = dcerpc_epm_Map(epm_handle,
 				tmp_ctx,
-				CONST_DISCARD(struct GUID *,
+				discard_const_p(struct GUID,
 					      &(abstract_syntax->uuid)),
 				map_tower,
 				entry_handle,
@@ -2760,7 +2756,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	result = TALLOC_ZERO_P(NULL, struct rpc_pipe_client);
+	result = talloc_zero(NULL, struct rpc_pipe_client);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

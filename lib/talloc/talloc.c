@@ -178,6 +178,32 @@ static struct {
 	TC_INVALIDATE_SHRINK_VALGRIND_CHUNK(_tc, _new_size); \
 } while (0)
 
+#define TC_UNDEFINE_SHRINK_FILL_CHUNK(_tc, _new_size) do { \
+	if (unlikely(talloc_fill.enabled)) { \
+		size_t _flen = (_tc)->size - (_new_size); \
+		char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
+		_fptr += (_new_size); \
+		memset(_fptr, talloc_fill.fill_value, _flen); \
+	} \
+} while (0)
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
+/* Mark the unused bytes as undefined */
+#define TC_UNDEFINE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { \
+	size_t _flen = (_tc)->size - (_new_size); \
+	char *_fptr = (char *)TC_PTR_FROM_CHUNK(_tc); \
+	_fptr += (_new_size); \
+	VALGRIND_MAKE_MEM_UNDEFINED(_fptr, _flen); \
+} while (0)
+#else
+#define TC_UNDEFINE_SHRINK_VALGRIND_CHUNK(_tc, _new_size) do { } while (0)
+#endif
+
+#define TC_UNDEFINE_SHRINK_CHUNK(_tc, _new_size) do { \
+	TC_UNDEFINE_SHRINK_FILL_CHUNK(_tc, _new_size); \
+	TC_UNDEFINE_SHRINK_VALGRIND_CHUNK(_tc, _new_size); \
+} while (0)
+
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
 /* Mark the new bytes as undefined */
 #define TC_UNDEFINE_GROW_VALGRIND_CHUNK(_tc, _new_size) do { \
@@ -683,6 +709,69 @@ _PUBLIC_ void *_talloc_reference_loc(const void *context, const void *ptr, const
 
 static void *_talloc_steal_internal(const void *new_ctx, const void *ptr);
 
+static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
+					const char *location)
+{
+	struct talloc_chunk *pool;
+	void *next_tc;
+	unsigned int *pool_object_count;
+
+	pool = (struct talloc_chunk *)tc->pool;
+	next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
+
+	tc->flags |= TALLOC_FLAG_FREE;
+
+	/* we mark the freed memory with where we called the free
+	 * from. This means on a double free error we can report where
+	 * the first free came from
+	 */
+	tc->name = location;
+
+	TC_INVALIDATE_FULL_CHUNK(tc);
+
+	pool_object_count = talloc_pool_objectcount(pool);
+
+	if (unlikely(*pool_object_count == 0)) {
+		talloc_abort("Pool object count zero!");
+		return;
+	}
+
+	*pool_object_count -= 1;
+
+	if (unlikely(*pool_object_count == 1 && !(pool->flags & TALLOC_FLAG_FREE))) {
+		/*
+		 * if there is just one object left in the pool
+		 * and pool->flags does not have TALLOC_FLAG_FREE,
+		 * it means this is the pool itself and
+		 * the rest is available for new objects
+		 * again.
+		 */
+		pool->pool = TC_POOL_FIRST_CHUNK(pool);
+		TC_INVALIDATE_POOL(pool);
+	} else if (unlikely(*pool_object_count == 0)) {
+		/*
+		 * we mark the freed memory with where we called the free
+		 * from. This means on a double free error we can report where
+		 * the first free came from
+		 */
+		pool->name = location;
+
+		TC_INVALIDATE_FULL_CHUNK(pool);
+		free(pool);
+	} else if (pool->pool == next_tc) {
+		/*
+		 * if pool->pool still points to end of
+		 * 'tc' (which is stored in the 'next_tc' variable),
+		 * we can reclaim the memory of 'tc'.
+		 */
+		pool->pool = tc;
+	}
+}
+
+static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
+						  void *ptr,
+						  const char *location);
+
 /* 
    internal talloc_free call
 */
@@ -753,41 +842,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 
 	tc->flags |= TALLOC_FLAG_LOOP;
 
-	while (tc->child) {
-		/* we need to work out who will own an abandoned child
-		   if it cannot be freed. In priority order, the first
-		   choice is owner of any remaining reference to this
-		   pointer, the second choice is our parent, and the
-		   final choice is the null context. */
-		void *child = TC_PTR_FROM_CHUNK(tc->child);
-		const void *new_parent = null_context;
-		struct talloc_chunk *old_parent = NULL;
-		if (unlikely(tc->child->refs)) {
-			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
-			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
-		}
-		/* finding the parent here is potentially quite
-		   expensive, but the alternative, which is to change
-		   talloc to always have a valid tc->parent pointer,
-		   makes realloc more expensive where there are a
-		   large number of children.
-
-		   The reason we need the parent pointer here is that
-		   if _talloc_free_internal() fails due to references
-		   or a failing destructor we need to re-parent, but
-		   the free call can invalidate the prev pointer.
-		*/
-		if (new_parent == null_context && (tc->child->refs || tc->child->destructor)) {
-			old_parent = talloc_parent_chunk(ptr);
-		}
-		if (unlikely(_talloc_free_internal(child, location) == -1)) {
-			if (new_parent == null_context) {
-				struct talloc_chunk *p = old_parent;
-				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
-			}
-			_talloc_steal_internal(new_parent, child);
-		}
-	}
+	_talloc_free_children_internal(tc, ptr, location);
 
 	tc->flags |= TALLOC_FLAG_FREE;
 
@@ -797,21 +852,10 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	 */	 
 	tc->name = location;
 
-	if (tc->flags & (TALLOC_FLAG_POOL|TALLOC_FLAG_POOLMEM)) {
-		struct talloc_chunk *pool;
-		void *next_tc = NULL;
+	if (tc->flags & TALLOC_FLAG_POOL) {
 		unsigned int *pool_object_count;
 
-		if (unlikely(tc->flags & TALLOC_FLAG_POOL)) {
-			pool = tc;
-		} else {
-			pool = (struct talloc_chunk *)tc->pool;
-			next_tc = TC_POOLMEM_NEXT_CHUNK(tc);
-
-			TC_INVALIDATE_FULL_CHUNK(tc);
-		}
-
-		pool_object_count = talloc_pool_objectcount(pool);
+		pool_object_count = talloc_pool_objectcount(tc);
 
 		if (unlikely(*pool_object_count == 0)) {
 			talloc_abort("Pool object count zero!");
@@ -820,26 +864,12 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 
 		*pool_object_count -= 1;
 
-		if (unlikely(*pool_object_count == 1)) {
-			/*
-			 * if there is just object left in the pool
-			 * it means this is the pool itself and
-			 * the rest is available for new objects
-			 * again.
-			 */
-			pool->pool = TC_POOL_FIRST_CHUNK(pool);
-			TC_INVALIDATE_POOL(pool);
-		} else if (unlikely(*pool_object_count == 0)) {
-			TC_INVALIDATE_FULL_CHUNK(pool);
-			free(pool);
-		} else if (pool->pool == next_tc) {
-			/*
-			 * if pool->pool still points to end of
-			 * 'tc' (which is stored in the 'next_tc' variable),
-			 * we can reclaim the memory of 'tc'.
-			 */
-			pool->pool = tc;
+		if (unlikely(*pool_object_count == 0)) {
+			TC_INVALIDATE_FULL_CHUNK(tc);
+			free(tc);
 		}
+	} else if (tc->flags & TALLOC_FLAG_POOLMEM) {
+		_talloc_free_poolmem(tc, location);
 	} else {
 		TC_INVALIDATE_FULL_CHUNK(tc);
 		free(tc);
@@ -1204,6 +1234,47 @@ _PUBLIC_ void *talloc_init(const char *fmt, ...)
 	return ptr;
 }
 
+static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
+						  void *ptr,
+						  const char *location)
+{
+	while (tc->child) {
+		/* we need to work out who will own an abandoned child
+		   if it cannot be freed. In priority order, the first
+		   choice is owner of any remaining reference to this
+		   pointer, the second choice is our parent, and the
+		   final choice is the null context. */
+		void *child = TC_PTR_FROM_CHUNK(tc->child);
+		const void *new_parent = null_context;
+		struct talloc_chunk *old_parent = NULL;
+		if (unlikely(tc->child->refs)) {
+			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
+			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
+		}
+		/* finding the parent here is potentially quite
+		   expensive, but the alternative, which is to change
+		   talloc to always have a valid tc->parent pointer,
+		   makes realloc more expensive where there are a
+		   large number of children.
+
+		   The reason we need the parent pointer here is that
+		   if _talloc_free_internal() fails due to references
+		   or a failing destructor we need to re-parent, but
+		   the free call can invalidate the prev pointer.
+		*/
+		if (new_parent == null_context && (tc->child->refs || tc->child->destructor)) {
+			old_parent = talloc_parent_chunk(ptr);
+		}
+		if (unlikely(_talloc_free_internal(child, location) == -1)) {
+			if (new_parent == null_context) {
+				struct talloc_chunk *p = old_parent;
+				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
+			}
+			_talloc_steal_internal(new_parent, child);
+		}
+	}
+}
+
 /*
   this is a replacement for the Samba3 talloc_destroy_pool functionality. It
   should probably not be used in new code. It's in here to keep the talloc
@@ -1219,26 +1290,7 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 
 	tc = talloc_chunk_from_ptr(ptr);
 
-	while (tc->child) {
-		/* we need to work out who will own an abandoned child
-		   if it cannot be freed. In priority order, the first
-		   choice is owner of any remaining reference to this
-		   pointer, the second choice is our parent, and the
-		   final choice is the null context. */
-		void *child = TC_PTR_FROM_CHUNK(tc->child);
-		const void *new_parent = null_context;
-		if (unlikely(tc->child->refs)) {
-			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
-			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
-		}
-		if (unlikely(talloc_free(child) == -1)) {
-			if (new_parent == null_context) {
-				struct talloc_chunk *p = talloc_parent_chunk(ptr);
-				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
-			}
-			_talloc_steal_internal(new_parent, child);
-		}
-	}
+	_talloc_free_children_internal(tc, ptr, __location__);
 }
 
 /* 
@@ -1365,7 +1417,16 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			}
 			return ptr;
 		} else if ((tc->size - size) < 1024) {
-			TC_INVALIDATE_SHRINK_CHUNK(tc, size);
+			/*
+			 * if we call TC_INVALIDATE_SHRINK_CHUNK() here
+			 * we would need to call TC_UNDEFINE_GROW_CHUNK()
+			 * after each realloc call, which slows down
+			 * testing a lot :-(.
+			 *
+			 * That is why we only mark memory as undefined here.
+			 */
+			TC_UNDEFINE_SHRINK_CHUNK(tc, size);
+
 			/* do not shrink if we have less than 1k to gain */
 			tc->size = size;
 			return ptr;
@@ -1410,8 +1471,13 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		size_t new_chunk_size = TC_ALIGN16(TC_HDR_SIZE + size);
 		size_t space_needed;
 		size_t space_left;
+		unsigned int chunk_count = *talloc_pool_objectcount(pool_tc);
 
-		if (*talloc_pool_objectcount(pool_tc) == 2) {
+		if (!(pool_tc->flags & TALLOC_FLAG_FREE)) {
+			chunk_count -= 1;
+		}
+
+		if (chunk_count == 1) {
 			/*
 			 * optimize for the case where 'tc' is the only
 			 * chunk in the pool.
@@ -1438,6 +1504,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 				memmove(pool_tc->pool, tc, old_used);
 				new_ptr = pool_tc->pool;
 
+				tc = (struct talloc_chunk *)new_ptr;
 				TC_UNDEFINE_GROW_CHUNK(tc, size);
 
 				/*
@@ -1481,7 +1548,6 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		}
 
 		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE);
-		*talloc_pool_objectcount(pool_tc) -= 1;
 
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
@@ -1490,21 +1556,8 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
-			TC_INVALIDATE_FULL_CHUNK(tc);
 
-			if (*talloc_pool_objectcount(pool_tc) == 1) {
-				/*
-				 * If the pool is empty now reclaim everything.
-				 */
-				pool_tc->pool = TC_POOL_FIRST_CHUNK(pool_tc);
-				TC_INVALIDATE_POOL(pool_tc);
-			} else if (next_tc == pool_tc->pool) {
-				/*
-				 * If it was reallocated and tc was the last
-				 * chunk, we can reclaim the memory of tc.
-				 */
-				pool_tc->pool = tc;
-			}
+			_talloc_free_poolmem(tc, __location__ "_talloc_realloc");
 		}
 	}
 	else {

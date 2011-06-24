@@ -451,7 +451,7 @@ _PUBLIC_ NTSTATUS socket_dup(struct socket_context *sock)
 	}
 	fd = dup(sock->fd);
 	if (fd == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 	close(sock->fd);
 	sock->fd = fd;
@@ -471,6 +471,11 @@ _PUBLIC_ struct socket_address *socket_address_from_strings(TALLOC_CTX *mem_ctx,
 	struct socket_address *addr = talloc(mem_ctx, struct socket_address);
 	if (!addr) {
 		return NULL;
+	}
+
+	if (strcmp(family, "ip") == 0 && is_ipaddress_v6(host)) {
+		/* leaving as "ip" would force IPv4 */
+		family = "ipv6";
 	}
 
 	addr->family = family;
@@ -498,7 +503,19 @@ _PUBLIC_ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx
 	if (!addr) {
 		return NULL;
 	}
-	addr->family = NULL; 
+	switch (sockaddr->sa_family) {
+	case AF_INET:
+		addr->family = "ipv4";
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		addr->family = "ipv6";
+		break;
+#endif
+	case AF_UNIX:
+		addr->family = "unix";
+		break;
+	}
 	addr->addr = NULL;
 	addr->port = 0;
 	addr->sockaddr = (struct sockaddr *)talloc_memdup(addr, sockaddr, sockaddrlen);
@@ -507,6 +524,50 @@ _PUBLIC_ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx
 		return NULL;
 	}
 	addr->sockaddrlen = sockaddrlen;
+	return addr;
+}
+
+
+/*
+   Create a new socket_address from sockaddr_storage
+ */
+_PUBLIC_ struct socket_address *socket_address_from_sockaddr_storage(TALLOC_CTX *mem_ctx,
+								     const struct sockaddr_storage *sockaddr,
+	uint16_t port)
+{
+	struct socket_address *addr = talloc_zero(mem_ctx, struct socket_address);
+	char addr_str[INET6_ADDRSTRLEN+1];
+	const char *str;
+
+	if (!addr) {
+		return NULL;
+	}
+	addr->port = port;
+	switch (sockaddr->ss_family) {
+	case AF_INET:
+		addr->family = "ipv4";
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		addr->family = "ipv6";
+		break;
+#endif
+	default:
+		talloc_free(addr);
+		return NULL;
+	}
+
+	str = print_sockaddr(addr_str, sizeof(addr_str), sockaddr);
+	if (str == NULL) {
+		talloc_free(addr);
+		return NULL;
+	}
+	addr->addr = talloc_strdup(addr, str);
+	if (addr->addr == NULL) {
+		talloc_free(addr);
+		return NULL;
+	}
+
 	return addr;
 }
 
@@ -565,110 +626,6 @@ _PUBLIC_ const struct socket_ops *socket_getops_byname(const char *family, enum 
 	}
 
 	return NULL;
-}
-
-enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
-
-static const struct {
-	const char *name;
-	int level;
-	int option;
-	int value;
-	int opttype;
-} socket_options[] = {
-  {"SO_KEEPALIVE",      SOL_SOCKET,    SO_KEEPALIVE,    0,                 OPT_BOOL},
-  {"SO_REUSEADDR",      SOL_SOCKET,    SO_REUSEADDR,    0,                 OPT_BOOL},
-  {"SO_BROADCAST",      SOL_SOCKET,    SO_BROADCAST,    0,                 OPT_BOOL},
-#ifdef TCP_NODELAY
-  {"TCP_NODELAY",       IPPROTO_TCP,   TCP_NODELAY,     0,                 OPT_BOOL},
-#endif
-#ifdef IPTOS_LOWDELAY
-  {"IPTOS_LOWDELAY",    IPPROTO_IP,    IP_TOS,          IPTOS_LOWDELAY,    OPT_ON},
-#endif
-#ifdef IPTOS_THROUGHPUT
-  {"IPTOS_THROUGHPUT",  IPPROTO_IP,    IP_TOS,          IPTOS_THROUGHPUT,  OPT_ON},
-#endif
-#ifdef SO_REUSEPORT
-  {"SO_REUSEPORT",      SOL_SOCKET,    SO_REUSEPORT,    0,                 OPT_BOOL},
-#endif
-#ifdef SO_SNDBUF
-  {"SO_SNDBUF",         SOL_SOCKET,    SO_SNDBUF,       0,                 OPT_INT},
-#endif
-#ifdef SO_RCVBUF
-  {"SO_RCVBUF",         SOL_SOCKET,    SO_RCVBUF,       0,                 OPT_INT},
-#endif
-#ifdef SO_SNDLOWAT
-  {"SO_SNDLOWAT",       SOL_SOCKET,    SO_SNDLOWAT,     0,                 OPT_INT},
-#endif
-#ifdef SO_RCVLOWAT
-  {"SO_RCVLOWAT",       SOL_SOCKET,    SO_RCVLOWAT,     0,                 OPT_INT},
-#endif
-#ifdef SO_SNDTIMEO
-  {"SO_SNDTIMEO",       SOL_SOCKET,    SO_SNDTIMEO,     0,                 OPT_INT},
-#endif
-#ifdef SO_RCVTIMEO
-  {"SO_RCVTIMEO",       SOL_SOCKET,    SO_RCVTIMEO,     0,                 OPT_INT},
-#endif
-  {NULL,0,0,0,0}};
-
-
-/**
- Set user socket options.
-**/
-_PUBLIC_ void set_socket_options(int fd, const char *options)
-{
-	const char **options_list = (const char **)str_list_make(NULL, options, " \t,");
-	int j;
-
-	if (!options_list)
-		return;
-
-	for (j = 0; options_list[j]; j++) {
-		const char *tok = options_list[j];
-		int ret=0,i;
-		int value = 1;
-		char *p;
-		bool got_value = false;
-
-		if ((p = strchr(tok,'='))) {
-			*p = 0;
-			value = atoi(p+1);
-			got_value = true;
-		}
-
-		for (i=0;socket_options[i].name;i++)
-			if (strequal(socket_options[i].name,tok))
-				break;
-
-		if (!socket_options[i].name) {
-			DEBUG(0,("Unknown socket option %s\n",tok));
-			continue;
-		}
-
-		switch (socket_options[i].opttype) {
-		case OPT_BOOL:
-		case OPT_INT:
-			ret = setsockopt(fd,socket_options[i].level,
-						socket_options[i].option,(char *)&value,sizeof(int));
-			break;
-
-		case OPT_ON:
-			if (got_value)
-				DEBUG(0,("syntax error - %s does not take a value\n",tok));
-
-			{
-				int on = socket_options[i].value;
-				ret = setsockopt(fd,socket_options[i].level,
-							socket_options[i].option,(char *)&on,sizeof(int));
-			}
-			break;	  
-		}
-      
-		if (ret != 0)
-			DEBUG(0,("Failed to set socket option %s (Error %s)\n",tok, strerror(errno) ));
-	}
-
-	talloc_free(options_list);
 }
 
 /*

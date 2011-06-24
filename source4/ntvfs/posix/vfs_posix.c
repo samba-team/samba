@@ -26,8 +26,8 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/security.h"
-#include <tdb.h>
-#include "tdb_wrap.h"
+#include "tdb_compat.h"
+#include "lib/util/tdb_wrap.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 #include "param/param.h"
@@ -212,7 +212,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	 * TODO: call this from ntvfs_posix_init()
 	 *       but currently we don't have a lp_ctx there
 	 */
-	status = pvfs_acl_init(ntvfs->ctx->lp_ctx);
+	status = pvfs_acl_init();
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	pvfs = talloc_zero(ntvfs, struct pvfs_state);
@@ -249,7 +249,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->private_data = pvfs;
 
-	pvfs->brl_context = brl_init(pvfs, 
+	pvfs->brl_context = brlock_init(pvfs, 
 				     pvfs->ntvfs->ctx->server_id,
 				     pvfs->ntvfs->ctx->lp_ctx,
 				     pvfs->ntvfs->ctx->msg_ctx);

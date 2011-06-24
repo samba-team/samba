@@ -10,11 +10,11 @@ use target::Samba3;
 use target::Samba4;
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping, $bindir_path, $ldap, $srcdir, $exeext, $server_maxtime) = @_;
+	my ($classname, $bindir, $binary_mapping,$ldap, $srcdir, $exeext, $server_maxtime) = @_;
 
 	my $self = {
-	    samba3 => new Samba3($bindir,$binary_mapping, $bindir_path, $srcdir, $exeext, $server_maxtime),
-	    samba4 => new Samba4($bindir,$binary_mapping, $bindir_path, $ldap, $srcdir, $exeext, $server_maxtime),
+	    samba3 => new Samba3($bindir,$binary_mapping, $srcdir, $exeext, $server_maxtime),
+	    samba4 => new Samba4($bindir,$binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime),
 	};
 	bless $self;
 	return $self;
@@ -28,11 +28,15 @@ sub setup_env($$$)
 
 	my $env = $self->{samba4}->setup_env($envname, $path);
 	if (defined($env)) {
-	    $env->{target} = $self->{samba4};
+	    if (not defined($env->{target})) {
+		$env->{target} = $self->{samba4};
+	    }
 	} else {
 	   	$env = $self->{samba3}->setup_env($envname, $path);
 		if (defined($env)) {
-		    $env->{target} = $self->{samba3};
+		    if (not defined($env->{target})) {
+			$env->{target} = $self->{samba3};
+		    }
 		}
 	}
 	if (not defined $env) {
@@ -40,6 +44,75 @@ sub setup_env($$$)
 		return undef;
 	}
 	return $env;
+}
+
+sub bindir_path($$) {
+	my ($object, $path) = @_;
+
+	if (defined($object->{binary_mapping}->{$path})) {
+	    $path = $object->{binary_mapping}->{$path};
+	}
+
+	my $valpath = "$object->{bindir}/$path$object->{exeext}";
+
+	return $valpath if (-f $valpath);
+	return $path;
+}
+
+sub mk_krb5_conf($)
+{
+	my ($ctx) = @_;
+
+	unless (open(KRB5CONF, ">$ctx->{krb5_conf}")) {
+	        warn("can't open $ctx->{krb5_conf}$?");
+		return undef;
+	}
+	print KRB5CONF "
+#Generated krb5.conf for $ctx->{realm}
+
+[libdefaults]
+ default_realm = $ctx->{realm}
+ dns_lookup_realm = false
+ dns_lookup_kdc = false
+ ticket_lifetime = 24h
+ forwardable = yes
+ allow_weak_crypto = yes
+
+[realms]
+ $ctx->{realm} = {
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
+  default_domain = $ctx->{dnsname}
+ }
+ $ctx->{dnsname} = {
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
+  default_domain = $ctx->{dnsname}
+ }
+ $ctx->{domain} = {
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
+  default_domain = $ctx->{dnsname}
+ }
+
+[domain_realm]
+ .$ctx->{dnsname} = $ctx->{realm}
+";
+
+        if (defined($ctx->{tlsdir})) {
+	       print KRB5CONF "
+
+[appdefaults]
+	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+
+[kdc]
+	enable-pkinit = true
+	pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
+	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
+
+";
+        }
+	close(KRB5CONF);
 }
 
 1;

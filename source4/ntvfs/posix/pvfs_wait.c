@@ -33,7 +33,7 @@ struct pvfs_wait {
 	void (*handler)(void *, enum pvfs_wait_notice);
 	void *private_data;
 	int msg_type;
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 	struct tevent_context *ev;
 	struct ntvfs_request *req;
 	enum pvfs_wait_notice reason;
@@ -56,7 +56,7 @@ NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
 /*
   receive a completion message for a wait
 */
-static void pvfs_wait_dispatch(struct messaging_context *msg,
+static void pvfs_wait_dispatch(struct imessaging_context *msg,
 			       void *private_data, uint32_t msg_type,
 			       struct server_id src, DATA_BLOB *data)
 {
@@ -66,7 +66,7 @@ static void pvfs_wait_dispatch(struct messaging_context *msg,
 	void *p = NULL;
 
 	/* we need to check that this one is for us. See
-	   messaging_send_ptr() for the other side of this.
+	   imessaging_send_ptr() for the other side of this.
 	 */
 	if (data->length == sizeof(void *)) {
 		void **pp;
@@ -116,7 +116,7 @@ static void pvfs_wait_timeout(struct tevent_context *ev,
 static int pvfs_wait_destructor(struct pvfs_wait *pwait)
 {
 	if (pwait->msg_type != -1) {
-		messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
+		imessaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
 	}
 	DLIST_REMOVE(pwait->pvfs->wait_list, pwait);
 	return 0;
@@ -162,7 +162,7 @@ struct pvfs_wait *pvfs_wait_message(struct pvfs_state *pvfs,
 	/* register with the messaging subsystem for this message
 	   type */
 	if (msg_type != -1) {
-		messaging_register(pwait->msg_ctx,
+		imessaging_register(pwait->msg_ctx,
 				   pwait,
 				   msg_type,
 				   pvfs_wait_dispatch);

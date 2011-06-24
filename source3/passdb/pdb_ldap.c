@@ -208,7 +208,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((attrs = TALLOC_ARRAY(mem_ctx, const char *, 2)) == NULL) {
+	if ((attrs = talloc_array(mem_ctx, const char *, 2)) == NULL) {
 		ntstatus = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -887,7 +887,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
-		char *history_string = TALLOC_ARRAY(ctx, char,
+		char *history_string = talloc_array(ctx, char,
 						MAX_PW_HISTORY_LEN*64);
 
 		if (!history_string) {
@@ -896,7 +896,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
-		pwhist = TALLOC_ARRAY(ctx, uint8,
+		pwhist = talloc_array(ctx, uint8,
 				      pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (pwhist == NULL) {
 			DEBUG(0, ("init_sam_from_ldap: talloc failed!\n"));
@@ -1532,7 +1532,7 @@ static void append_attr(TALLOC_CTX *mem_ctx, const char ***attr_list,
 		;
 	}
 
-	(*attr_list) = TALLOC_REALLOC_ARRAY(mem_ctx, (*attr_list),
+	(*attr_list) = talloc_realloc(mem_ctx, (*attr_list),
 					    const char *,  i+2);
 	SMB_ASSERT((*attr_list) != NULL);
 	(*attr_list)[i] = talloc_strdup((*attr_list), new_attr);
@@ -4340,7 +4340,7 @@ static const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 		num += 1;
 	va_end(ap);
 
-	if ((result = TALLOC_ARRAY(mem_ctx, const char *, num+1)) == NULL) {
+	if ((result = talloc_array(mem_ctx, const char *, num+1)) == NULL) {
 		return NULL;
 	}
 
@@ -4564,7 +4564,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 		return False;
 	}
 	if (!pull_utf8_talloc(mem_ctx,
-			      CONST_DISCARD(char **, &result->account_name),
+			      discard_const_p(char *, &result->account_name),
 			      vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
@@ -4577,7 +4577,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"displayName\" not found\n"));
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **, &result->fullname),
+				   discard_const_p(char *, &result->fullname),
 				   vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
@@ -4590,7 +4590,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"description\" not found\n"));
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **, &result->description),
+				   discard_const_p(char *, &result->description),
 				   vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapuser2displayentry: pull_utf8_talloc failed: %s",
@@ -4724,7 +4724,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 			return False;
 		}
 		if (!pull_utf8_talloc(mem_ctx,
-				      CONST_DISCARD(char **,
+				      discard_const_p(char *,
 						    &result->account_name),
 				      vals[0], &converted_size))
 		{
@@ -4733,7 +4733,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 		}
 	}
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **,
+				   discard_const_p(char *,
 						 &result->account_name),
 				   vals[0], &converted_size))
 	{
@@ -4747,7 +4747,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 	if ((vals == NULL) || (vals[0] == NULL))
 		DEBUG(8, ("\"description\" not found\n"));
 	else if (!pull_utf8_talloc(mem_ctx,
-				   CONST_DISCARD(char **, &result->description),
+				   discard_const_p(char *, &result->description),
 				   vals[0], &converted_size))
 	{
 		DEBUG(0,("ldapgroup2displayentry: pull_utf8_talloc failed: %s",
@@ -6356,7 +6356,7 @@ static NTSTATUS ldapsam_enum_trusteddoms(struct pdb_methods *methods,
 	}
 
 	*num_domains = 0;
-	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct trustdom_info *, 1))) {
+	if (!(*domains = talloc_array(mem_ctx, struct trustdom_info *, 1))) {
 		DEBUG(1, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6368,7 +6368,7 @@ static NTSTATUS ldapsam_enum_trusteddoms(struct pdb_methods *methods,
 		char *dom_name, *dom_sid_str;
 		struct trustdom_info *dom_info;
 
-		dom_info = TALLOC_P(*domains, struct trustdom_info);
+		dom_info = talloc(*domains, struct trustdom_info);
 		if (dom_info == NULL) {
 			DEBUG(1, ("talloc failed\n"));
 			return NT_STATUS_NO_MEMORY;
@@ -6480,7 +6480,7 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 
 	/* TODO: Setup private data and free */
 
-	if ( !(ldap_state = TALLOC_ZERO_P(*pdb_method, struct ldapsam_privates)) ) {
+	if ( !(ldap_state = talloc_zero(*pdb_method, struct ldapsam_privates)) ) {
 		DEBUG(0, ("pdb_init_ldapsam_common: talloc() failed for ldapsam private_data!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

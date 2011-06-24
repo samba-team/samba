@@ -29,6 +29,7 @@ struct web_server_data {
 	void (*http_process_input)(struct web_server_data *wdata, 
 				   struct websrv_context *web);
 	void *private_data;
+	struct task_server *task;
 };
 
 struct http_header {

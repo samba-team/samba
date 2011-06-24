@@ -47,44 +47,6 @@ _PUBLIC_ NTSTATUS gensec_gssapi_init(void);
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
 
-static char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
-				 OM_uint32 maj_stat, OM_uint32 min_stat, 
-				 const gss_OID mech)
-{
-	OM_uint32 disp_min_stat, disp_maj_stat;
-	gss_buffer_desc maj_error_message;
-	gss_buffer_desc min_error_message;
-	char *maj_error_string, *min_error_string;
-	OM_uint32 msg_ctx = 0;
-
-	char *ret;
-
-	maj_error_message.value = NULL;
-	min_error_message.value = NULL;
-	maj_error_message.length = 0;
-	min_error_message.length = 0;
-	
-	disp_maj_stat = gss_display_status(&disp_min_stat, maj_stat, GSS_C_GSS_CODE,
-			   mech, &msg_ctx, &maj_error_message);
-	disp_maj_stat = gss_display_status(&disp_min_stat, min_stat, GSS_C_MECH_CODE,
-			   mech, &msg_ctx, &min_error_message);
-	
-	maj_error_string = talloc_strndup(mem_ctx, (char *)maj_error_message.value, maj_error_message.length);
-
-	min_error_string = talloc_strndup(mem_ctx, (char *)min_error_message.value, min_error_message.length);
-
-	ret = talloc_asprintf(mem_ctx, "%s: %s", maj_error_string, min_error_string);
-
-	talloc_free(maj_error_string);
-	talloc_free(min_error_string);
-
-	gss_release_buffer(&disp_min_stat, &maj_error_message);
-	gss_release_buffer(&disp_min_stat, &min_error_message);
-
-	return ret;
-}
-
-
 static int gensec_gssapi_destructor(struct gensec_gssapi_state *gensec_gssapi_state)
 {
 	OM_uint32 maj_stat, min_stat;
@@ -340,6 +302,10 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 
+	if (cli_credentials_get_impersonate_principal(creds)) {
+		gensec_gssapi_state->want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
+	}
+
 	gensec_gssapi_state->target_principal = gensec_get_target_principal(gensec_security);
 	if (gensec_gssapi_state->target_principal) {
 		name_type = GSS_C_NULL_OID;
@@ -557,6 +523,65 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			gss_release_buffer(&min_stat2, &output_token);
 			
 			return NT_STATUS_MORE_PROCESSING_REQUIRED;
+		} else if (maj_stat == GSS_S_CONTEXT_EXPIRED) {
+			gss_cred_id_t creds;
+			gss_name_t name;
+			gss_buffer_desc buffer;
+			OM_uint32 lifetime = 0;
+			gss_cred_usage_t usage;
+			const char *role = NULL;
+			DEBUG(0, ("GSS %s Update(krb5)(%d) Update failed, credentials expired during GSSAPI handshake!\n",
+				  role,
+				  gensec_gssapi_state->gss_exchange_count));
+
+			
+			switch (gensec_security->gensec_role) {
+			case GENSEC_CLIENT:
+				creds = gensec_gssapi_state->client_cred->creds;
+				role = "client";
+			case GENSEC_SERVER:
+				creds = gensec_gssapi_state->server_cred->creds;
+				role = "server";
+			}
+
+			maj_stat = gss_inquire_cred(&min_stat, 
+						    creds,
+						    &name, &lifetime, &usage, NULL);
+
+			if (maj_stat == GSS_S_COMPLETE) {
+				const char *usage_string;
+				switch (usage) {
+				case GSS_C_BOTH:
+					usage_string = "GSS_C_BOTH";
+					break;
+				case GSS_C_ACCEPT:
+					usage_string = "GSS_C_ACCEPT";
+					break;
+				case GSS_C_INITIATE:
+					usage_string = "GSS_C_INITIATE";
+					break;
+				}
+				maj_stat = gss_display_name(&min_stat, name, &buffer, NULL);
+				if (maj_stat) {
+					buffer.value = NULL;
+					buffer.length = 0;
+				}
+				if (lifetime > 0) {
+					DEBUG(0, ("GSSAPI gss_inquire_cred indicates expiry of %*.*s in %u sec for %s\n", 
+						  (int)buffer.length, (int)buffer.length, (char *)buffer.value, 
+						  lifetime, usage_string));
+				} else {
+					DEBUG(0, ("GSSAPI gss_inquire_cred indicates %*.*s has already expired for %s\n", 
+						  (int)buffer.length, (int)buffer.length, (char *)buffer.value, 
+						  usage_string));
+				}
+				gss_release_buffer(&min_stat, &buffer);
+				gss_release_name(&min_stat, &name);
+			} else if (maj_stat != GSS_S_COMPLETE) {
+				DEBUG(0, ("inquiry of credential lifefime via GSSAPI gss_inquire_cred failed: %s\n",
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			}
+			return NT_STATUS_INVALID_PARAMETER;
 		} else if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
 			switch (min_stat) {
 			case KRB5KRB_AP_ERR_TKT_NYV:
@@ -1262,7 +1287,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
 	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc pac;
 	DATA_BLOB pac_blob;
 	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
 	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
@@ -1277,25 +1301,15 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	mem_ctx = talloc_named(gensec_gssapi_state, 0, "gensec_gssapi_session_info context"); 
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
-	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
-							       gensec_gssapi_state->gssapi_context, 
-							       KRB5_AUTHDATA_WIN2K_PAC,
-							       &pac);
-	
-	
-	if (maj_stat == 0) {
-		pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
-		gss_release_buffer(&min_stat, &pac);
-
-	} else {
-		pac_blob = data_blob(NULL, 0);
-	}
+	nt_status = gssapi_obtain_pac_blob(mem_ctx,  gensec_gssapi_state->gssapi_context,
+					   gensec_gssapi_state->client_name,
+					   &pac_blob);
 	
 	/* IF we have the PAC - otherwise we need to get this
 	 * data from elsewere - local ldb, or (TODO) lookup of some
 	 * kind... 
 	 */
-	if (pac_blob.length) {
+	if (NT_STATUS_IS_OK(nt_status)) {
 		pac_srv_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
 		if (!pac_srv_sig) {
 			talloc_free(mem_ctx);

@@ -246,9 +246,9 @@ static bool process_one(struct loadparm_context *lp_ctx, struct tevent_context *
 	} else {
 		int i, num_interfaces;
 
-		num_interfaces = iface_count(ifaces);
+		num_interfaces = iface_list_count(ifaces);
 		for (i=0;i<num_interfaces;i++) {
-			const char *bcast = iface_n_bcast(ifaces, i);
+			const char *bcast = iface_list_n_bcast(ifaces, i);
 			if (bcast == NULL) continue;
 			status = do_node_query(nbtsock, bcast, nbt_port, 
 					       node_name, node_type, true);
@@ -357,7 +357,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	load_interfaces(NULL, lpcfg_interfaces(cmdline_lp_ctx), &ifaces);
+	load_interface_list(NULL, cmdline_lp_ctx, &ifaces);
 
 	ev = s4_event_context_init(talloc_autofree_context());
 

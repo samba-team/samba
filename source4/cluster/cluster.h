@@ -22,30 +22,29 @@
 #ifndef __CLUSTER_H__
 #define __CLUSTER_H__ 
 
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 
 /*
   test for same cluster id
 */
-#define cluster_id_equal(id_1, id_2) ((id_1)->id == (id_2)->id \
-				    && (id_1)->id2 == (id_2)->id2 \
-				    && (id_1)->node == (id_2)->node)
+#define cluster_id_equal(id_1, id_2) ((id_1)->pid == (id_2)->pid \
+				    && (id_1)->task_id == (id_2)->task_id \
+				    && (id_1)->vnn == (id_2)->vnn)
 
 /*
   test for same cluster node
 */
-#define cluster_node_equal(id1, id2) ((id1)->node == (id2)->node)
+#define cluster_node_equal(id1, id2) ((id1)->vnn == (id2)->vnn)
 
-struct messaging_context;
-typedef void (*cluster_message_fn_t)(struct messaging_context *, DATA_BLOB);
+struct imessaging_context;
+typedef void (*cluster_message_fn_t)(struct imessaging_context *, DATA_BLOB);
 
 /* prototypes */
-struct server_id cluster_id(uint64_t id, uint32_t id2);
-const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id);
+struct server_id cluster_id(uint64_t id, uint32_t task_id);
 struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *dbname, int flags);
 void *cluster_backend_handle(void);
 
-NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,
+NTSTATUS cluster_message_init(struct imessaging_context *msg, struct server_id server,
 			      cluster_message_fn_t handler);
 NTSTATUS cluster_message_send(struct server_id server, DATA_BLOB *data);
 

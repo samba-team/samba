@@ -24,7 +24,7 @@
 #include "auth/ntlm/auth_proto.h"
 #include "libcli/security/security.h"
 
-_PUBLIC_ NTSTATUS auth_developer_init(void);
+_PUBLIC_ NTSTATUS auth4_developer_init(void);
 
 static NTSTATUS name_to_ntstatus_want_check(struct auth_method_context *ctx,
 			      		    TALLOC_CTX *mem_ctx,
@@ -185,7 +185,7 @@ static const struct auth_operations fixed_challenge_auth_ops = {
 	.check_password	= fixed_challenge_check_password
 };
 
-_PUBLIC_ NTSTATUS auth_developer_init(void)
+_PUBLIC_ NTSTATUS auth4_developer_init(void)
 {
 	NTSTATUS ret;
 

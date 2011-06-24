@@ -1,4 +1,38 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  kerberos utility library
+ *
+ *  Copyright (C) Andrew Tridgell			2001
+ *  Copyright (C) Remus Koos (remuskoos@yahoo.com)	2001
+ *  Copyright (C) Luke Howard				2002-2003
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2003
+ *  Copyright (C) Guenther Deschner			2003-2008
+ *  Copyright (C) Andrew Bartlett <abartlet@samba.org>	2004-2005
+ *  Copyright (C) Jeremy Allison			2004,2007
+ *  Copyright (C) Stefan Metzmacher			2004-2005
+ *  Copyright (C) Nalin Dahyabhai <nalin@redhat.com>	2004
+ *  Copyright (C) Gerald Carter				2006
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _LIBADS_KERBEROS_PROTO_H_
+#define _LIBADS_KERBEROS_PROTO_H_
+
 struct PAC_LOGON_INFO;
+
+#include "libads/ads_status.h"
 
 /* The following definitions come from libads/kerberos_verify.c  */
 
@@ -67,3 +101,5 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 				 const char *auth_principal, const char *auth_password,
 				 const char *target_principal, const char *new_password,
 				 int time_offset);
+
+#endif /* _LIBADS_KERBEROS_PROTO_H_ */

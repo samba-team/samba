@@ -108,7 +108,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 	}
 
 	if (write(tmp_fd, data_out, converted_size) != converted_size) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		goto out;
 	}
 

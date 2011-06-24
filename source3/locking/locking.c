@@ -4,17 +4,17 @@
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1992-2006
    Copyright (C) Volker Lendecke 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -43,6 +43,7 @@
 #include "../libcli/security/security.h"
 #include "serverid.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -309,15 +310,15 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 {
 	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
-	
+
 	if (!fsp->can_lock) {
 		return fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
-	
+
 	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_OK;
 	}
-	
+
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum,
 		  fsp_str_dbg(fsp)));
@@ -334,7 +335,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			offset,
 			count,
 			lock_flav);
-   
+
 	TALLOC_FREE(br_lck);
 
 	if (!ok) {
@@ -364,7 +365,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return fsp->is_directory ?
 			NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
 	}
-	
+
 	if (!lp_locking(fsp->conn->params)) {
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
@@ -578,7 +579,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 
 		p += sizeof(token_len);
 
-		pdtl = TALLOC_ZERO_P(lck, struct delete_token_list);
+		pdtl = talloc_zero(lck, struct delete_token_list);
 		if (pdtl == NULL) {
 			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
 			return -1;
@@ -587,7 +588,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 		memcpy(&pdtl->name_hash, p, sizeof(pdtl->name_hash));
 		p += sizeof(pdtl->name_hash);
 
-		pdtl->delete_token = TALLOC_ZERO_P(pdtl, struct security_unix_token);
+		pdtl->delete_token = talloc_zero(pdtl, struct security_unix_token);
 		if (pdtl->delete_token == NULL) {
 			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
 			return -1;
@@ -615,7 +616,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 			}
 
 			pdtl->delete_token->ngroups = token_len / sizeof(gid_t);
-			pdtl->delete_token->groups = TALLOC_ARRAY(pdtl->delete_token, gid_t,
+			pdtl->delete_token->groups = talloc_array(pdtl->delete_token, gid_t,
 						pdtl->delete_token->ngroups);
 			if (pdtl->delete_token->groups == NULL) {
 				DEBUG(0,("parse_delete_tokens_list: talloc failed"));
@@ -671,7 +672,7 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 	}
 
 	lck->share_modes = NULL;
-	
+
 	if (lck->num_share_modes != 0) {
 
 		if (dbuf.dsize < (sizeof(struct locking_data) +
@@ -679,9 +680,9 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 				   sizeof(struct share_mode_entry)))) {
 			smb_panic("parse_share_modes: buffer too short");
 		}
-				  
+
 		lck->share_modes = (struct share_mode_entry *)
-			TALLOC_MEMDUP(lck,
+			talloc_memdup(lck,
 				      dbuf.dptr+sizeof(struct locking_data),
 				      lck->num_share_modes *
 				      sizeof(struct share_mode_entry));
@@ -781,7 +782,7 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 		sp_len + 1 +
 		bn_len + 1 +
 		sn_len + 1;
-	result.dptr = TALLOC_ARRAY(lck, uint8, result.dsize);
+	result.dptr = talloc_array(lck, uint8, result.dsize);
 
 	if (result.dptr == NULL) {
 		smb_panic("talloc failed");
@@ -838,14 +839,17 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 		offset += token_size;
 	}
 
-	safe_strcpy((char *)result.dptr + offset, lck->servicepath,
-		    result.dsize - offset - 1);
+	strlcpy((char *)result.dptr + offset,
+		lck->servicepath ? lck->servicepath : "",
+		result.dsize - offset);
 	offset += sp_len + 1;
-	safe_strcpy((char *)result.dptr + offset, lck->base_name,
-		    result.dsize - offset - 1);
+	strlcpy((char *)result.dptr + offset,
+		lck->base_name ? lck->base_name : "",
+		result.dsize - offset);
 	offset += bn_len + 1;
-	safe_strcpy((char *)result.dptr + offset, lck->stream_name,
-		    result.dsize - offset - 1);
+	strlcpy((char *)result.dptr + offset,
+		lck->stream_name ? lck->stream_name : "",
+		result.dsize - offset);
 
 	if (DEBUGLEVEL >= 10) {
 		print_share_mode_table(data);
@@ -969,7 +973,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	struct file_id tmp;
 	TDB_DATA key = locking_key(&id, &tmp);
 
-	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
+	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
@@ -1000,12 +1004,12 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	TDB_DATA key = locking_key(&id, &tmp);
 	TDB_DATA data;
 
-	if (!(lck = TALLOC_P(mem_ctx, struct share_mode_lock))) {
+	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
-	if (lock_db->fetch(lock_db, lck, key, &data) == -1) {
+	if (lock_db->fetch(lock_db, lck, key, &data) != 0) {
 		DEBUG(3, ("Could not fetch share entry\n"));
 		TALLOC_FREE(lck);
 		return NULL;
@@ -1078,7 +1082,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	    sn_len + 1;
 
 	/* Set up the name changed message. */
-	frm = TALLOC_ARRAY(lck, char, msg_len);
+	frm = talloc_array(lck, char, msg_len);
 	if (!frm) {
 		return False;
 	}
@@ -1087,10 +1091,15 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 
 	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
-	safe_strcpy(&frm[24], lck->servicepath, sp_len);
-	safe_strcpy(&frm[24 + sp_len + 1], lck->base_name, bn_len);
-	safe_strcpy(&frm[24 + sp_len + 1 + bn_len + 1], lck->stream_name,
-		    sn_len);
+	strlcpy(&frm[24],
+		lck->servicepath ? lck->servicepath : "",
+		sp_len+1);
+	strlcpy(&frm[24 + sp_len + 1],
+		lck->base_name ? lck->base_name : "",
+		bn_len+1);
+	strlcpy(&frm[24 + sp_len + 1 + bn_len + 1],
+		lck->stream_name ? lck->stream_name : "",
+		sn_len+1);
 
 	/* Send the messages. */
 	for (i=0; i<lck->num_share_modes; i++) {
@@ -1424,7 +1433,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode)
 	 * Only allow delete on close for writable files.
 	 */
 
-	if ((dosmode & aRONLY) &&
+	if ((dosmode & FILE_ATTRIBUTE_READONLY) &&
 	    !lp_delete_readonly(SNUM(fsp->conn))) {
 		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
 			  "flag set but file attribute is readonly.\n",
@@ -1474,7 +1483,7 @@ static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct
 {
 	struct security_unix_token *cpy;
 
-	cpy = TALLOC_P(ctx, struct security_unix_token);
+	cpy = talloc(ctx, struct security_unix_token);
 	if (!cpy) {
 		return NULL;
 	}
@@ -1484,11 +1493,12 @@ static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct
 	cpy->ngroups = tok->ngroups;
 	if (tok->ngroups) {
 		/* Make this a talloc child of cpy. */
-		cpy->groups = TALLOC_ARRAY(cpy, gid_t, tok->ngroups);
+		cpy->groups = (gid_t *)talloc_memdup(
+			cpy, tok->groups, tok->ngroups * sizeof(gid_t));
 		if (!cpy->groups) {
+			TALLOC_FREE(cpy);
 			return NULL;
 		}
-		memcpy(cpy->groups, tok->groups, tok->ngroups * sizeof(gid_t));
 	}
 	return cpy;
 }
@@ -1503,7 +1513,7 @@ static bool add_delete_on_close_token(struct share_mode_lock *lck,
 {
 	struct delete_token_list *dtl;
 
-	dtl = TALLOC_ZERO_P(lck, struct delete_token_list);
+	dtl = talloc_zero(lck, struct delete_token_list);
 	if (dtl == NULL) {
 		return false;
 	}
@@ -1573,7 +1583,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct security_unix_token *tok)
 {
 	struct share_mode_lock *lck;
-	
+
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
 		  "fnum = %d, file %s\n",
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,

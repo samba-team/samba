@@ -25,6 +25,7 @@
 #include "smbd/smbd.h"
 #include "messages.h"
 #include "smbprofile.h"
+#include "tdb_compat.h"
 
 /****************************************************************************
  Stat cache code used in unix_convert.
@@ -339,8 +340,8 @@ bool stat_cache_lookup(connection_struct *conn,
  Tell all smbd's to delete an entry.
 **************************************************************************/
 
-void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
-				    const char *name)
+void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
+					 const char *name)
 {
 #ifdef DEVELOPER
 	message_send_all(msg_ctx,

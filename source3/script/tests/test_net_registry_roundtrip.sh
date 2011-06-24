@@ -7,7 +7,7 @@
 
 if [ $# -lt 3 ]; then
 cat <<EOF
-Usage: test_net_registry_roundtrip.sh SCRIPTDIR SERVERCONFFILE CONFIGURATION
+Usage: test_net_registry_roundtrip.sh SCRIPTDIR SERVERCONFFILE PREFIX CONFIGURATION
 EOF
 exit 1;
 fi
@@ -144,7 +144,7 @@ conf_roundtrip()
     rm -r $DIR
 }
 
-CONF_FILES=${CONF_FILES:-$(find $SRCDIR/source3 -name '*.conf' | grep -v examples/logon | xargs grep -l "\[global\]")}
+CONF_FILES=$SERVERCONFFILE
 
 # remove old logs:
 for OLDDIR in $(find ${PREFIX} -type d -name "${LOGDIR_PREFIX}_*") ; do

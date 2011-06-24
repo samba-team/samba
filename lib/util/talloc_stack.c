@@ -188,3 +188,20 @@ TALLOC_CTX *talloc_tos(void)
 
 	return ts->talloc_stack[ts->talloc_stacksize-1];
 }
+
+/*
+ * return true if a talloc stackframe exists
+ * this can be used to prevent memory leaks for code that can
+ * optionally use a talloc stackframe (eg. nt_errstr())
+ */
+
+bool talloc_stackframe_exists(void)
+{
+	struct talloc_stackframe *ts =
+		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
+
+	if (ts == NULL || ts->talloc_stacksize == 0) {
+		return false;
+	}
+	return true;
+}

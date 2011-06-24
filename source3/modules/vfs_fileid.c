@@ -66,7 +66,7 @@ static void fileid_load_mount_entries(struct fileid_handle_data *data)
 			m->mnt_fsname += 5;
 		}
 
-		data->mount_entries = TALLOC_REALLOC_ARRAY(data,
+		data->mount_entries = talloc_realloc(data,
 							   data->mount_entries,
 							   struct fileid_mount_entry,
 							   data->num_mount_entries+1);
@@ -144,7 +144,7 @@ static uint64_t fileid_device_mapping_fsname(struct fileid_handle_data *data,
 	if (!m) return dev;
 
 	if (m->devid == (uint64_t)-1) {
-		m->devid = fileid_uint64_hash((uint8_t *)m->mnt_fsname,
+		m->devid = fileid_uint64_hash((const uint8_t *)m->mnt_fsname,
 					      strlen(m->mnt_fsname));
 	}
 

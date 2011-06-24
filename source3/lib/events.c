@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include <tevent_internal.h>
+#include "lib/tevent/tevent_internal.h"
 #include "../lib/util/select.h"
 #include "system/select.h"
 
@@ -42,7 +42,7 @@ static struct tevent_poll_private *tevent_get_poll_private(
 
 	state = (struct tevent_poll_private *)ev->additional_data;
 	if (state == NULL) {
-		state = TALLOC_ZERO_P(ev, struct tevent_poll_private);
+		state = talloc_zero(ev, struct tevent_poll_private);
 		ev->additional_data = (void *)state;
 		if (state == NULL) {
 			DEBUG(10, ("talloc failed\n"));
@@ -90,7 +90,7 @@ bool event_add_to_poll_args(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 	idx_len = max_fd+1;
 
 	if (talloc_array_length(state->pollfd_idx) < idx_len) {
-		state->pollfd_idx = TALLOC_REALLOC_ARRAY(
+		state->pollfd_idx = talloc_realloc(
 			state, state->pollfd_idx, int, idx_len);
 		if (state->pollfd_idx == NULL) {
 			DEBUG(10, ("talloc_realloc failed\n"));
@@ -107,7 +107,7 @@ bool event_add_to_poll_args(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 	 */
 
 	if (talloc_array_length(fds) < num_pollfds + num_fds + 1) {
-		fds = TALLOC_REALLOC_ARRAY(mem_ctx, fds, struct pollfd,
+		fds = talloc_realloc(mem_ctx, fds, struct pollfd,
 					   num_pollfds + num_fds + 1);
 		if (fds == NULL) {
 			DEBUG(10, ("talloc_realloc failed\n"));
@@ -258,7 +258,20 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 			return false;
 		}
 
-		if (pfd->revents & (POLLIN|POLLHUP|POLLERR)) {
+		if (pfd->revents & (POLLHUP|POLLERR)) {
+			/* If we only wait for EVENT_FD_WRITE, we
+			   should not tell the event handler about it,
+			   and remove the writable flag, as we only
+			   report errors when waiting for read events
+			   to match the select behavior. */
+			if (!(fde->flags & EVENT_FD_READ)) {
+				EVENT_FD_NOT_WRITEABLE(fde);
+				continue;
+			}
+			flags |= EVENT_FD_READ;
+		}
+
+		if (pfd->revents & POLLIN) {
 			flags |= EVENT_FD_READ;
 		}
 		if (pfd->revents & POLLOUT) {

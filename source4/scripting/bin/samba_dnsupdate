@@ -89,6 +89,17 @@ if len(IPs) == 0:
     print "No IP interfaces - skipping DNS updates"
     sys.exit(0)
 
+IP6s = []
+IP4s = []
+for i in IPs:
+    if i.find(':') != -1:
+        if i.find('%') == -1:
+            # we don't want link local addresses for DNS updates
+            IP6s.append(i)
+    else:
+        IP4s.append(i)
+
+
 if opts.verbose:
     print "IPs: %s" % IPs
 
@@ -122,7 +133,7 @@ class dnsobj(object):
         if self.type == 'SRV':
             self.dest = list[2].lower()
             self.port = list[3]
-        elif self.type == 'A':
+        elif self.type in ['A', 'AAAA']:
             self.ip   = list[2] # usually $IP, which gets replaced
         elif self.type == 'CNAME':
             self.dest = list[2].lower()
@@ -132,6 +143,7 @@ class dnsobj(object):
 
     def __str__(self):
         if d.type == "A":     return "%s %s %s" % (self.type, self.name, self.ip)
+        if d.type == "AAAA":  return "%s %s %s" % (self.type, self.name, self.ip)
         if d.type == "SRV":   return "%s %s %s %s" % (self.type, self.name, self.dest, self.port)
         if d.type == "CNAME": return "%s %s %s" % (self.type, self.name, self.dest)
 
@@ -178,7 +190,7 @@ def check_dns_name(d):
         if opts.verbose:
             print "Failed to find DNS entry %s" % d
         return False
-    if d.type == 'A':
+    if d.type in ['A', 'AAAA']:
         # we need to be sure that our IP is there
         for rdata in ans:
             if str(rdata) == str(d.ip):
@@ -210,7 +222,7 @@ def get_subst_vars():
     global lp, am_rodc
     vars = {}
 
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
+    samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
                   lp=lp)
 
     vars['DNSDOMAIN'] = lp.get('realm').lower()
@@ -247,6 +259,8 @@ def call_nsupdate(d):
     f = os.fdopen(tmp_fd, 'w')
     if d.type == "A":
         f.write("update add %s %u A %s\n" % (normalised_name, default_ttl, d.ip))
+    if d.type == "AAAA":
+        f.write("update add %s %u AAAA %s\n" % (normalised_name, default_ttl, d.ip))
     if d.type == "SRV":
         if d.existing_port is not None:
             f.write("update delete %s SRV 0 %s %s %s\n" % (normalised_name, d.existing_weight,
@@ -264,7 +278,7 @@ def call_nsupdate(d):
     try:
         cmd = nsupdate_cmd[:]
         cmd.append(tmpfile)
-        ret = subprocess.call(cmd, shell=False)
+        ret = subprocess.call(cmd, shell=False, env={"KRB5CCNAME": ccachename})
         if ret != 0:
             if opts.fail_immediately:
                 sys.exit(1)
@@ -382,16 +396,28 @@ for line in file:
     if line == '' or line[0] == "#":
         continue
     d = parse_dns_line(line, sub_vars)
+    if d.type == 'A' and len(IP4s) == 0:
+        continue
+    if d.type == 'AAAA' and len(IP6s) == 0:
+        continue
     dns_list.append(d)
 
 # now expand the entries, if any are A record with ip set to $IP
 # then replace with multiple entries, one for each interface IP
 for d in dns_list:
-    if d.type == 'A' and d.ip == "$IP":
-        d.ip = IPs[0]
-        for i in range(len(IPs)-1):
+    if d.ip != "$IP":
+        continue
+    if d.type == 'A':
+        d.ip = IP4s[0]
+        for i in range(len(IP4s)-1):
             d2 = dnsobj(str(d))
-            d2.ip = IPs[i+1]
+            d2.ip = IP4s[i+1]
+            dns_list.append(d2)
+    if d.type == 'AAAA':
+        d.ip = IP6s[0]
+        for i in range(len(IP6s)-1):
+            d2 = dnsobj(str(d))
+            d2.ip = IP6s[i+1]
             dns_list.append(d2)
 
 # now check if the entries already exist on the DNS server
@@ -412,7 +438,7 @@ for d in update_list:
     if am_rodc:
         if d.name.lower() == domain.lower():
             continue
-        if d.type != 'A':
+        if not d.type in [ 'A', 'AAAA' ]:
             call_rodc_update(d)
         else:
             call_nsupdate(d)

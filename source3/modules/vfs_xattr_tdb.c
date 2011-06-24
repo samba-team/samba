@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "dbwrap.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -40,7 +41,7 @@ static NTSTATUS xattr_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	struct tdb_xattrs *result;
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct tdb_xattrs))) {
+	if (!(result = talloc_zero(mem_ctx, struct tdb_xattrs))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -107,7 +108,7 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 
 	if (db_ctx->fetch(db_ctx, mem_ctx,
 			  make_tdb_data(id_buf, sizeof(id_buf)),
-			  &data) == -1) {
+			  &data) != 0) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -298,12 +299,12 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 			return -1;
 		}
 
-		tmp = TALLOC_REALLOC_ARRAY(
+		tmp = talloc_realloc(
 			attribs, attribs->eas, struct xattr_EA,
 			attribs->num_eas+ 1);
 
 		if (tmp == NULL) {
-			DEBUG(0, ("TALLOC_REALLOC_ARRAY failed\n"));
+			DEBUG(0, ("talloc_realloc failed\n"));
 			TALLOC_FREE(rec);
 			errno = ENOMEM;
 			return -1;
@@ -314,7 +315,7 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 	}
 
 	attribs->eas[i].name = name;
-	attribs->eas[i].value.data = CONST_DISCARD(uint8 *, value);
+	attribs->eas[i].value.data = discard_const_p(uint8, value);
 	attribs->eas[i].value.length = size;
 
 	status = xattr_tdb_save_attrs(rec, attribs);

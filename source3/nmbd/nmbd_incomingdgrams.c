@@ -95,7 +95,7 @@ void tell_become_backup(void)
   Process an incoming host announcement packet.
 *******************************************************************/
 
-void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
@@ -144,7 +144,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	 * to be our primary workgroup name.
 	 */
 
-	if(strequal(work_name, global_myname()))
+	if(strequal(work_name, lp_netbios_name()))
 		unstrcpy(work_name,lp_workgroup());
 
 	/*
@@ -172,7 +172,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 			/* Update the record. */
 			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
 			update_server_ttl( servrec, ttl);
-			fstrcpy(servrec->serv.comment,comment);
+			strlcpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment));
 		}
 	} else {
 		/*
@@ -195,7 +195,7 @@ done:
   Process an incoming WORKGROUP announcement packet.
 *******************************************************************/
 
-void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_workgroup_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
@@ -252,7 +252,7 @@ done:
   Process an incoming local master browser announcement packet.
 *******************************************************************/
 
-void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_local_master_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
@@ -338,7 +338,7 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 			/* Update the record. */
 			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
 			update_server_ttl(servrec, ttl);
-			fstrcpy(servrec->serv.comment,comment);
+			strlcpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment));
 		}
 	
 		set_workgroup_local_master_browser_name( work, server_name );
@@ -367,7 +367,7 @@ done:
 ******************************************************************/
 
 void process_master_browser_announce(struct subnet_record *subrec, 
-                                     struct packet_struct *p,char *buf)
+                                     struct packet_struct *p,const char *buf)
 {
 	unstring local_master_name;
 	struct work_record *work;
@@ -418,7 +418,7 @@ done:
   Process an incoming LanMan host announcement packet.
 *******************************************************************/
 
-void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len)
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	uint32 servertype = IVAL(buf,1);
@@ -431,7 +431,7 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	unstring work_name;
 	unstring source_name;
 	fstring comment;
-	char *s = get_safe_str_ptr(buf,len,buf,9);
+	char *s = get_safe_str_ptr(buf,len,discard_const_p(char, buf),9);
 
 	START_PROFILE(lm_host_announce);
 	if (!s) {
@@ -484,7 +484,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 	 * not needed in the LanMan announce code, but it won't hurt.
 	 */
 
-	if(strequal(work_name, global_myname()))
+	if(strequal(work_name, lp_netbios_name()))
 		unstrcpy(work_name,lp_workgroup());
 
 	/*
@@ -512,7 +512,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 			/* Update the record. */
 			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
 			update_server_ttl( servrec, ttl);
-			fstrcpy(servrec->serv.comment,comment);
+			strlcpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment));
 		}
 	} else {
 		/*
@@ -571,7 +571,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
 	/* We always return at least one name - our own. */
 	count = 1;
-	unstrcpy(myname, global_myname());
+	unstrcpy(myname, lp_netbios_name());
 	strupper_m(myname);
 	myname[15]='\0';
 	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
@@ -599,7 +599,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
     if(count >= (unsigned int)max_number_requested)
       break;
 
-    if(strnequal(servrec->serv.name, global_myname(),15))
+    if(strnequal(servrec->serv.name, lp_netbios_name(),15))
       continue;
 
     if(!(servrec->serv.type & SV_TYPE_BACKUP_BROWSER))
@@ -625,7 +625,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
 	send_mailslot(True, BROWSE_MAILSLOT,
 		outbuf,PTR_DIFF(p,outbuf),
-		global_myname(), 0, 
+		lp_netbios_name(), 0,
 		send_to_namestr,0,
 		sendto_ip, subrec->myip, port);
 }
@@ -641,7 +641,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 ********************************************************************/
 
 void process_get_backup_list_request(struct subnet_record *subrec,
-                                     struct packet_struct *p,char *buf)
+                                     struct packet_struct *p,const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
@@ -724,7 +724,7 @@ done:
 ******************************************************************/
 
 void process_reset_browser(struct subnet_record *subrec,
-                                  struct packet_struct *p,char *buf)
+                                  struct packet_struct *p,const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int state = CVAL(buf,0);
@@ -776,7 +776,7 @@ request from %s IP %s state=0x%X\n",
   announcement is needed soon.
 ******************************************************************/
 
-void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
@@ -817,7 +817,7 @@ done:
   through the "lm announce" parameter in smb.conf)
 ******************************************************************/
 
-void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf, int len)
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	unstring workgroup_name;

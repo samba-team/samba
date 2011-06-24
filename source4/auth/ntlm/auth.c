@@ -31,7 +31,7 @@
 /***************************************************************************
  Set a fixed challenge
 ***************************************************************************/
-_PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by) 
+_PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by) 
 {
 	auth_ctx->challenge.set_by = talloc_strdup(auth_ctx, set_by);
 	NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.set_by);
@@ -45,7 +45,7 @@ _PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, cons
 /***************************************************************************
  Set a fixed challenge
 ***************************************************************************/
-_PUBLIC_ bool auth_challenge_may_be_modified(struct auth_context *auth_ctx)
+_PUBLIC_ bool auth_challenge_may_be_modified(struct auth4_context *auth_ctx)
 {
 	return auth_ctx->challenge.may_be_modified;
 }
@@ -54,7 +54,7 @@ _PUBLIC_ bool auth_challenge_may_be_modified(struct auth_context *auth_ctx)
  Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
 ****************************************************************************/
-_PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, uint8_t chal[8])
+_PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t chal[8])
 {
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
@@ -104,7 +104,7 @@ PAC isn't available, and for tokenGroups in the DSDB stack.
  Supply either a principal or a DN
 ****************************************************************************/
 _PUBLIC_ NTSTATUS auth_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
-						 struct auth_context *auth_ctx,
+						 struct auth4_context *auth_ctx,
 						 const char *principal,
 						 struct ldb_dn *user_dn,
 						 struct auth_user_info_dc **user_info_dc)
@@ -155,7 +155,7 @@ _PUBLIC_ NTSTATUS auth_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
  *
  **/
 
-_PUBLIC_ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
+_PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info, 
 			     struct auth_user_info_dc **user_info_dc)
@@ -188,7 +188,7 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 }
 
 struct auth_check_password_state {
-	struct auth_context *auth_ctx;
+	struct auth4_context *auth_ctx;
 	const struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_method_context *method;
@@ -225,7 +225,7 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 
 _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
-				struct auth_context *auth_ctx,
+				struct auth4_context *auth_ctx,
 				const struct auth_usersupplied_info *user_info)
 {
 	struct tevent_req *req;
@@ -409,7 +409,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 /* Wrapper because we don't want to expose all callers to needing to
  * know that session_info is generated from the main ldb */
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
-						   struct auth_context *auth_context,
+						   struct auth4_context *auth_context,
 						   struct auth_user_info_dc *user_info_dc,
 						   uint32_t session_info_flags,
 						   struct auth_session_info **session_info)
@@ -425,13 +425,13 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 ***************************************************************************/
 _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
 					      struct tevent_context *ev,
-					      struct messaging_context *msg,
+					      struct imessaging_context *msg,
 					      struct loadparm_context *lp_ctx,
 					      struct ldb_context *sam_ctx,
-					      struct auth_context **auth_ctx)
+					      struct auth4_context **auth_ctx)
 {
 	int i;
-	struct auth_context *ctx;
+	struct auth4_context *ctx;
 
 	auth4_init();
 
@@ -440,7 +440,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ctx = talloc(mem_ctx, struct auth_context);
+	ctx = talloc(mem_ctx, struct auth4_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->challenge.set_by		= NULL;
 	ctx->challenge.may_be_modified	= false;
@@ -487,19 +487,21 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 
 const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	const char **auth_methods = NULL;
+	char **auth_methods = NULL;
+
 	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_STANDALONE:
-		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "standalone", NULL);
+		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain", NULL);
 		break;
 	case ROLE_DOMAIN_MEMBER:
-		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "member server", NULL);
+		auth_methods = str_list_make(mem_ctx, "anonymous sam winbind", NULL);
 		break;
-	case ROLE_DOMAIN_CONTROLLER:
-		auth_methods = lpcfg_parm_string_list(mem_ctx, lp_ctx, NULL, "auth methods", "domain controller", NULL);
+	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_PDC:
+		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain winbind", NULL);
 		break;
 	}
-	return auth_methods;
+	return (const char **) auth_methods;
 }
 
 /***************************************************************************
@@ -508,9 +510,9 @@ const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *
 ***************************************************************************/
 _PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev,
-			     struct messaging_context *msg,
+			     struct imessaging_context *msg,
 			     struct loadparm_context *lp_ctx,
-			     struct auth_context **auth_ctx)
+			     struct auth4_context **auth_ctx)
 {
 	NTSTATUS status;
 	const char **auth_methods;
@@ -533,7 +535,7 @@ _PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
    This allows us not to re-open the LDB when we need to do a some authentication logic (such as tokenGroups)
 
  */
-NTSTATUS auth_context_create_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct auth_context **auth_ctx)
+NTSTATUS auth_context_create_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct auth4_context **auth_ctx)
 {
 	NTSTATUS status;
 	const char **auth_methods;
@@ -620,10 +622,10 @@ const struct auth_operations *auth_backend_byname(const char *name)
 const struct auth_critical_sizes *auth_interface_version(void)
 {
 	static const struct auth_critical_sizes critical_sizes = {
-		AUTH_INTERFACE_VERSION,
+		AUTH4_INTERFACE_VERSION,
 		sizeof(struct auth_operations),
 		sizeof(struct auth_method_context),
-		sizeof(struct auth_context),
+		sizeof(struct auth4_context),
 		sizeof(struct auth_usersupplied_info),
 		sizeof(struct auth_user_info_dc)
 	};

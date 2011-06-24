@@ -150,7 +150,7 @@ static NTSTATUS cifspsx_unlink(struct ntvfs_module_context *ntvfs,
 
 	/* ignoring wildcards ... */
 	if (unlink(unix_path) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	return NT_STATUS_OK;
@@ -179,7 +179,7 @@ static NTSTATUS cifspsx_chkpath(struct ntvfs_module_context *ntvfs,
 	unix_path = cifspsx_unix_path(ntvfs, req, cp->chkpath.in.path);
 
 	if (stat(unix_path, &st) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	if (!S_ISDIR(st.st_mode)) {
@@ -294,7 +294,7 @@ static NTSTATUS cifspsx_qpathinfo(struct ntvfs_module_context *ntvfs,
 	DEBUG(19,("cifspsx_qpathinfo: file %s\n", unix_path));
 	if (stat(unix_path, &st) == -1) {
 		DEBUG(19,("cifspsx_qpathinfo: file %s errno=%d\n", unix_path, errno));
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 	DEBUG(19,("cifspsx_qpathinfo: file %s, stat done\n", unix_path));
 	return cifspsx_map_fileinfo(ntvfs, req, info, &st, unix_path);
@@ -320,7 +320,7 @@ static NTSTATUS cifspsx_qfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 	
 	if (fstat(f->fd, &st) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	return cifspsx_map_fileinfo(ntvfs, req,info, &st, f->name);
@@ -389,13 +389,13 @@ static NTSTATUS cifspsx_open(struct ntvfs_module_context *ntvfs,
 		case NTCREATEX_DISP_CREATE:
 			if (mkdir(unix_path, 0755) == -1) {
 				DEBUG(9,("cifspsx_open: mkdir %s errno=%d\n", unix_path, errno));
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix_common(errno);
 			}
 			break;
 		case NTCREATEX_DISP_OPEN_IF:
 			if (mkdir(unix_path, 0755) == -1 && errno != EEXIST) {
 				DEBUG(9,("cifspsx_open: mkdir %s errno=%d\n", unix_path, errno));
-				return map_nt_error_from_unix(errno);
+				return map_nt_error_from_unix_common(errno);
 			}
 			break;
 		}
@@ -404,13 +404,13 @@ static NTSTATUS cifspsx_open(struct ntvfs_module_context *ntvfs,
 do_open:
 	fd = open(unix_path, flags, 0644);
 	if (fd == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	if (fstat(fd, &st) == -1) {
 		DEBUG(9,("cifspsx_open: fstat errno=%d\n", errno));
 		close(fd);
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	status = ntvfs_handle_new(ntvfs, req, &handle);
@@ -459,7 +459,7 @@ static NTSTATUS cifspsx_mkdir(struct ntvfs_module_context *ntvfs,
 	unix_path = cifspsx_unix_path(ntvfs, req, md->mkdir.in.path);
 
 	if (mkdir(unix_path, 0777) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	return NT_STATUS_OK;
@@ -478,7 +478,7 @@ static NTSTATUS cifspsx_rmdir(struct ntvfs_module_context *ntvfs,
 	unix_path = cifspsx_unix_path(ntvfs, req, rd->in.path);
 
 	if (rmdir(unix_path) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	return NT_STATUS_OK;
@@ -502,7 +502,7 @@ static NTSTATUS cifspsx_rename(struct ntvfs_module_context *ntvfs,
 	unix_path2 = cifspsx_unix_path(ntvfs, req, ren->rename.in.pattern2);
 
 	if (rename(unix_path1, unix_path2) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 	
 	return NT_STATUS_OK;
@@ -541,7 +541,7 @@ static NTSTATUS cifspsx_read(struct ntvfs_module_context *ntvfs,
 		    rd->readx.in.maxcnt,
 		    rd->readx.in.offset);
 	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	rd->readx.out.nread = ret;
@@ -577,7 +577,7 @@ static NTSTATUS cifspsx_write(struct ntvfs_module_context *ntvfs,
 		     wr->writex.in.count,
 		     wr->writex.in.offset);
 	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 		
 	wr->writex.out.nwritten = ret;
@@ -648,7 +648,7 @@ static NTSTATUS cifspsx_close(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (close(f->fd) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	DLIST_REMOVE(p->open_files, f);
@@ -738,7 +738,7 @@ static NTSTATUS cifspsx_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
 		if (ftruncate(f->fd, 
 			      info->end_of_file_info.in.size) == -1) {
-			return map_nt_error_from_unix(errno);
+			return map_nt_error_from_unix_common(errno);
 		}
 		break;
 	case RAW_SFILEINFO_SETATTRE:
@@ -784,7 +784,7 @@ static NTSTATUS cifspsx_fsinfo(struct ntvfs_module_context *ntvfs,
 	if (sys_fsusage(p->connectpath,
 			&fs->generic.out.blocks_free, 
 			&fs->generic.out.blocks_total) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	fs->generic.out.block_size = 512;
@@ -824,7 +824,7 @@ static NTSTATUS cifspsx_fsattr(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (stat(p->connectpath, &st) == -1) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	unix_to_nt_time(&fs->generic.out.create_time, st.st_ctime);

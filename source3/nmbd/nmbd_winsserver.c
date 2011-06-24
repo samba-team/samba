@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "nmbd/nmbd.h"
+#include "util_tdb.h"
 
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1
@@ -74,7 +75,7 @@ static void wins_delete_all_1b_in_memory_records(void)
 }
 
 /****************************************************************************
- Convert a wins.tdb record to a struct name_record. Add in our global_scope().
+ Convert a wins.tdb record to a struct name_record. Add in our lp_netbios_scope().
 *****************************************************************************/
 
 static struct name_record *wins_record_to_name_record(TDB_DATA key, TDB_DATA data)
@@ -127,7 +128,7 @@ static struct name_record *wins_record_to_name_record(TDB_DATA key, TDB_DATA dat
 	push_ascii_nstring(namerec->name.name, (const char *)key.dptr);
 	namerec->name.name_type = key.dptr[sizeof(unstring)];
 	/* Add the scope. */
-	push_ascii(namerec->name.scope, global_scope(), 64, STR_TERMINATE);
+	push_ascii(namerec->name.scope, lp_netbios_scope(), 64, STR_TERMINATE);
 
         /* We're using a byte-by-byte compare, so we must be sure that
          * unused space doesn't have garbage in it.
@@ -240,7 +241,7 @@ struct name_record *find_name_on_wins_subnet(const struct nmb_name *nmbname, boo
 	}
 
 	key = name_to_key(nmbname);
-	data = tdb_fetch(wins_tdb, key);
+	data = tdb_fetch_compat(wins_tdb, key);
 
 	if (data.dsize == 0) {
 		return NULL;

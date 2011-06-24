@@ -284,7 +284,7 @@ static bool cldap_socket_recv_dgram(struct cldap_socket *c,
 nomem:
 	in->recv_errno = ENOMEM;
 error:
-	status = map_nt_error_from_unix(in->recv_errno);
+	status = map_nt_error_from_unix_common(in->recv_errno);
 nterror:
 	/* in connected mode the first pending search gets the error */
 	if (!c->connected) {
@@ -337,7 +337,7 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 							NULL, 0,
 							&any);
 		if (ret != 0) {
-			status = map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix_common(errno);
 			goto nterror;
 		}
 		local_addr = any;
@@ -351,7 +351,7 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 	ret = tdgram_inet_udp_socket(local_addr, remote_addr,
 				     c, &c->sock);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		goto nterror;
 	}
 	talloc_free(any);
@@ -626,11 +626,12 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	now = tevent_timeval_current();
 	end = now;
 	for (i = 0; i < state->request.count; i++) {
-		end = tevent_timeval_add(&end, 0, state->request.delay);
+		end = tevent_timeval_add(&end, state->request.delay / 1000000,
+					 state->request.delay % 1000000);
 	}
 
 	if (!tevent_req_set_endtime(req, state->caller.cldap->event.ctx, end)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		goto post;
 	}
 
@@ -668,7 +669,7 @@ static void cldap_search_state_queue_done(struct tevent_req *subreq)
 	talloc_free(subreq);
 	if (ret == -1) {
 		NTSTATUS status;
-		status = map_nt_error_from_unix(sys_errno);
+		status = map_nt_error_from_unix_common(sys_errno);
 		DLIST_REMOVE(state->caller.cldap->searches.list, state);
 		ZERO_STRUCT(state->caller.cldap);
 		tevent_req_nterror(req, status);
@@ -679,7 +680,7 @@ static void cldap_search_state_queue_done(struct tevent_req *subreq)
 
 	/* wait for incoming traffic */
 	if (!cldap_recvfrom_setup(state->caller.cldap)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return;
 	}
 
@@ -688,7 +689,8 @@ static void cldap_search_state_queue_done(struct tevent_req *subreq)
 		return;
 	}
 
-	next = tevent_timeval_current_ofs(0, state->request.delay);
+	next = tevent_timeval_current_ofs(state->request.delay / 1000000,
+					  state->request.delay % 1000000);
 	subreq = tevent_wakeup_send(state,
 				    state->caller.cldap->event.ctx,
 				    next);

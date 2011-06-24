@@ -355,7 +355,8 @@ static int audit_syslog_facility(vfs_handle_struct *handle)
 		{ LOG_LOCAL4, "LOCAL4" },
 		{ LOG_LOCAL5, "LOCAL5" },
 		{ LOG_LOCAL6, "LOCAL6" },
-		{ LOG_LOCAL7, "LOCAL7" }
+		{ LOG_LOCAL7, "LOCAL7" },
+		{ -1, NULL}
 	};
 
 	int facility;
@@ -375,7 +376,8 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 		{ LOG_WARNING, "WARNING" },
 		{ LOG_NOTICE, "NOTICE" },
 		{ LOG_INFO, "INFO" },
-		{ LOG_DEBUG, "DEBUG" }
+		{ LOG_DEBUG, "DEBUG" },
+		{ -1, NULL}
 	};
 
 	int priority;
@@ -609,13 +611,13 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 		return result;
 	}
 
-	pd = TALLOC_ZERO_P(handle, struct vfs_full_audit_private_data);
+	pd = talloc_zero(handle, struct vfs_full_audit_private_data);
 	if (!pd) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		return -1;
 	}
 
-#ifndef WITH_SYSLOG
+#ifdef WITH_SYSLOG
 	openlog("smbd_audit", 0, audit_syslog_facility(handle));
 #endif
 
@@ -695,7 +697,8 @@ static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 
 static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
-				SHADOW_COPY_DATA *shadow_copy_data, bool labels)
+				struct shadow_copy_data *shadow_copy_data,
+				bool labels)
 {
 	int result;
 
@@ -1205,14 +1208,14 @@ static int smb_full_audit_chdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *smb_full_audit_getwd(vfs_handle_struct *handle,
-			 char *path)
+static char *smb_full_audit_getwd(vfs_handle_struct *handle)
 {
 	char *result;
 
-	result = SMB_VFS_NEXT_GETWD(handle, path);
+	result = SMB_VFS_NEXT_GETWD(handle);
 	
-	do_log(SMB_VFS_OP_GETWD, (result != NULL), handle, "%s", path);
+	do_log(SMB_VFS_OP_GETWD, (result != NULL), handle, "%s",
+		result == NULL? "" : result);
 
 	return result;
 }

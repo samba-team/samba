@@ -53,7 +53,7 @@ static DNS_ERROR LabelList( TALLOC_CTX *mem_ctx,
 		return ERROR_DNS_INVALID_NAME;
 	}
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, struct dns_domain_label))) {
+	if (!(result = talloc_zero(mem_ctx, struct dns_domain_label))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
 
@@ -138,7 +138,7 @@ char *dns_generate_keyname( TALLOC_CTX *mem_ctx )
 	/*
 	 * uuid_unparse gives 36 bytes plus '\0'
 	 */
-	if (!(result = TALLOC_ARRAY(mem_ctx, char, 37))) {
+	if (!(result = talloc_array(mem_ctx, char, 37))) {
 		return NULL;
 	}
 

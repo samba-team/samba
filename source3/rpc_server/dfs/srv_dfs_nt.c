@@ -22,11 +22,12 @@
 /* This is the implementation of the dfs pipe. */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_dfs.h"
 #include "msdfs.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_MSDFS
@@ -58,7 +59,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 		return WERR_ACCESS_DENIED;
 	}
 
-	jn = TALLOC_ZERO_P(ctx, struct junction_map);
+	jn = talloc_zero(ctx, struct junction_map);
 	if (!jn) {
 		return WERR_NOMEM;
 	}
@@ -87,7 +88,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 		return WERR_NOMEM;
 	}
 
-	jn->referral_list = TALLOC_ARRAY(ctx, struct referral, jn->referral_count);
+	jn->referral_list = talloc_array(ctx, struct referral, jn->referral_count);
 	if(jn->referral_list == NULL) {
 		DEBUG(0,("init_reply_dfs_add: talloc failed for referral list!\n"));
 		return WERR_DFS_INTERNAL_ERROR;
@@ -123,7 +124,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		return WERR_ACCESS_DENIED;
 	}
 
-	jn = TALLOC_ZERO_P(ctx, struct junction_map);
+	jn = talloc_zero(ctx, struct junction_map);
 	if (!jn) {
 		return WERR_NOMEM;
 	}
@@ -192,7 +193,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 static bool init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,struct dfs_Info1* dfs1)
 {
 	dfs1->path = talloc_asprintf(mem_ctx,
-				"\\\\%s\\%s\\%s", global_myname(),
+				"\\\\%s\\%s\\%s", lp_netbios_name(),
 				j->service_name, j->volume_name);
 	if (dfs1->path == NULL)
 		return False;
@@ -204,7 +205,7 @@ static bool init_reply_dfs_info_1(TALLOC_CTX *mem_ctx, struct junction_map* j,st
 static bool init_reply_dfs_info_2(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info2* dfs2)
 {
 	dfs2->path = talloc_asprintf(mem_ctx,
-			"\\\\%s\\%s\\%s", global_myname(), j->service_name, j->volume_name);
+			"\\\\%s\\%s\\%s", lp_netbios_name(), j->service_name, j->volume_name);
 	if (dfs2->path == NULL)
 		return False;
 	dfs2->comment = talloc_strdup(mem_ctx, j->comment);
@@ -218,9 +219,9 @@ static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	int ii;
 	if (j->volume_name[0] == '\0')
 		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
-			global_myname(), j->service_name);
+			lp_netbios_name(), j->service_name);
 	else
-		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s\\%s", global_myname(),
+		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s\\%s", lp_netbios_name(),
 			j->service_name, j->volume_name);
 
 	if (dfs3->path == NULL)
@@ -232,7 +233,7 @@ static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 
 	/* also enumerate the stores */
 	if (j->referral_count) {
-		dfs3->stores = TALLOC_ARRAY(mem_ctx, struct dfs_StorageInfo, j->referral_count);
+		dfs3->stores = talloc_array(mem_ctx, struct dfs_StorageInfo, j->referral_count);
 		if (!dfs3->stores)
 			return False;
 		memset(dfs3->stores, '\0', j->referral_count * sizeof(struct dfs_StorageInfo));
@@ -278,7 +279,8 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 	size_t i;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	jn = enum_msdfs_links(ctx, &num_jn);
+	jn = enum_msdfs_links(msg_ctx_to_sconn(p->msg_ctx),
+			      ctx, &num_jn);
 	if (!jn || num_jn == 0) {
 		num_jn = 0;
 		jn = NULL;
@@ -293,7 +295,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 	switch (r->in.level) {
 	case 1:
 		if (num_jn) {
-			if ((r->out.info->e.info1->s = TALLOC_ARRAY(ctx, struct dfs_Info1, num_jn)) == NULL) {
+			if ((r->out.info->e.info1->s = talloc_array(ctx, struct dfs_Info1, num_jn)) == NULL) {
 				return WERR_NOMEM;
 			}
 		} else {
@@ -303,7 +305,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 		break;
 	case 2:
 		if (num_jn) {
-			if ((r->out.info->e.info2->s = TALLOC_ARRAY(ctx, struct dfs_Info2, num_jn)) == NULL) {
+			if ((r->out.info->e.info2->s = talloc_array(ctx, struct dfs_Info2, num_jn)) == NULL) {
 				return WERR_NOMEM;
 			}
 		} else {
@@ -313,7 +315,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 		break;
 	case 3:
 		if (num_jn) {
-			if ((r->out.info->e.info3->s = TALLOC_ARRAY(ctx, struct dfs_Info3, num_jn)) == NULL) {
+			if ((r->out.info->e.info3->s = talloc_array(ctx, struct dfs_Info3, num_jn)) == NULL) {
 				return WERR_NOMEM;
 			}
 		} else {
@@ -352,7 +354,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	TALLOC_CTX *ctx = talloc_tos();
 	bool ret;
 
-	jn = TALLOC_ZERO_P(ctx, struct junction_map);
+	jn = talloc_zero(ctx, struct junction_map);
 	if (!jn) {
 		return WERR_NOMEM;
 	}
@@ -370,28 +372,28 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 
 	switch (r->in.level) {
 		case 1:
-			r->out.info->info1 = TALLOC_ZERO_P(ctx,struct dfs_Info1);
+			r->out.info->info1 = talloc_zero(ctx,struct dfs_Info1);
 			if (!r->out.info->info1) {
 				return WERR_NOMEM;
 			}
 			ret = init_reply_dfs_info_1(ctx, jn, r->out.info->info1);
 			break;
 		case 2:
-			r->out.info->info2 = TALLOC_ZERO_P(ctx,struct dfs_Info2);
+			r->out.info->info2 = talloc_zero(ctx,struct dfs_Info2);
 			if (!r->out.info->info2) {
 				return WERR_NOMEM;
 			}
 			ret = init_reply_dfs_info_2(ctx, jn, r->out.info->info2);
 			break;
 		case 3:
-			r->out.info->info3 = TALLOC_ZERO_P(ctx,struct dfs_Info3);
+			r->out.info->info3 = talloc_zero(ctx,struct dfs_Info3);
 			if (!r->out.info->info3) {
 				return WERR_NOMEM;
 			}
 			ret = init_reply_dfs_info_3(ctx, jn, r->out.info->info3);
 			break;
 		case 100:
-			r->out.info->info100 = TALLOC_ZERO_P(ctx,struct dfs_Info100);
+			r->out.info->info100 = talloc_zero(ctx,struct dfs_Info100);
 			if (!r->out.info->info100) {
 				return WERR_NOMEM;
 			}

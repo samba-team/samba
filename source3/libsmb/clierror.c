@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 
 /*****************************************************
  RAP error codes - a small start but will be extended.
@@ -320,44 +321,6 @@ bool cli_is_dos_error(struct cli_state *cli)
 	}
 
         return cli_is_error(cli) && !(flgs2 & FLAGS2_32_BIT_ERROR_CODES);
-}
-
-/* Return the last error always as an NTSTATUS. */
-
-NTSTATUS cli_get_nt_error(struct cli_state *cli)
-{
-	if (cli_is_nt_error(cli)) {
-		return cli_nt_error(cli);
-	} else if (cli_is_dos_error(cli)) {
-		uint32 ecode;
-		uint8 eclass;
-		cli_dos_error(cli, &eclass, &ecode);
-		return dos_to_ntstatus(eclass, ecode);
-	} else {
-		/* Something went wrong, we don't know what. */
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-}
-
-/* Push an error code into the inbuf to be returned on the next
- * query. */
-
-void cli_set_nt_error(struct cli_state *cli, NTSTATUS status)
-{
-	SSVAL(cli->inbuf,smb_flg2, SVAL(cli->inbuf,smb_flg2)|FLAGS2_32_BIT_ERROR_CODES);
-	SIVAL(cli->inbuf, smb_rcls, NT_STATUS_V(status));
-}
-
-/* Reset an error. */
-
-void cli_reset_error(struct cli_state *cli)
-{
-        if (SVAL(cli->inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES) {
-		SIVAL(cli->inbuf, smb_rcls, NT_STATUS_V(NT_STATUS_OK));
-	} else {
-		SCVAL(cli->inbuf,smb_rcls,0);
-		SSVAL(cli->inbuf,smb_err,0);
-	}
 }
 
 bool cli_state_is_connected(struct cli_state *cli)

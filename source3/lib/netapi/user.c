@@ -322,7 +322,7 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 						  25,
 						  &user_info,
 						  &result);
-		if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
 
 			user_info.info23.info = info21;
 
@@ -575,7 +575,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	status = dcerpc_samr_OpenDomain(b, talloc_tos(),
 					&connect_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					CONST_DISCARD(struct dom_sid *, &global_sid_Builtin),
+					discard_const_p(struct dom_sid, &global_sid_Builtin),
 					&builtin_handle,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1436,7 +1436,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_USER(TALLOC_CTX *mem_ctx,
 	struct NET_DISPLAY_USER *user = NULL;
 	int i;
 
-	user = TALLOC_ZERO_ARRAY(mem_ctx,
+	user = talloc_zero_array(mem_ctx,
 				 struct NET_DISPLAY_USER,
 				 info->count);
 	W_ERROR_HAVE_NO_MEMORY(user);
@@ -1480,7 +1480,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_MACHINE(TALLOC_CTX *mem_ctx,
 	struct NET_DISPLAY_MACHINE *machine = NULL;
 	int i;
 
-	machine = TALLOC_ZERO_ARRAY(mem_ctx,
+	machine = talloc_zero_array(mem_ctx,
 				    struct NET_DISPLAY_MACHINE,
 				    info->count);
 	W_ERROR_HAVE_NO_MEMORY(machine);
@@ -1522,7 +1522,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_GROUP(TALLOC_CTX *mem_ctx,
 	struct NET_DISPLAY_GROUP *group = NULL;
 	int i;
 
-	group = TALLOC_ZERO_ARRAY(mem_ctx,
+	group = talloc_zero_array(mem_ctx,
 				  struct NET_DISPLAY_GROUP,
 				  info->count);
 	W_ERROR_HAVE_NO_MEMORY(group);
@@ -3137,7 +3137,6 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 	size_t num_del_rids = 0;
 
 	uint32_t *member_rids = NULL;
-	size_t num_member_rids = 0;
 
 	struct GROUP_USERS_INFO_0 *i0 = NULL;
 	struct GROUP_USERS_INFO_1 *i1 = NULL;
@@ -3263,7 +3262,6 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	member_rids = group_rids.ids;
-	num_member_rids = group_rids.count;
 
 	status = dcerpc_samr_GetGroupsForUser(b, talloc_tos(),
 					      &user_handle,
@@ -3574,7 +3572,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	sid_array.num_sids = rid_array->count + 1;
-	sid_array.sids = TALLOC_ARRAY(ctx, struct lsa_SidPtr, sid_array.num_sids);
+	sid_array.sids = talloc_array(ctx, struct lsa_SidPtr, sid_array.num_sids);
 	if (!sid_array.sids) {
 		werr = WERR_NOMEM;
 		goto done;

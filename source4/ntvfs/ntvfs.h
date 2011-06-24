@@ -24,7 +24,7 @@
 #include "libcli/raw/interfaces.h"
 #include "param/share.h"
 #include "librpc/gen_ndr/security.h"
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 
 /* modules can use the following to determine if the interface has changed */
 /* version 1 -> 0 - make module stacking easier -- metze */
@@ -201,7 +201,7 @@ struct ntvfs_context {
 	struct server_id server_id;
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *event_ctx;
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 
 	struct {
 		void *private_data;
@@ -330,9 +330,9 @@ struct ntvfs_critical_sizes {
 	.sizeof_ntvfs_handle_data	= sizeof(struct ntvfs_handle_data), \
     }
 
-struct messaging_context;
+struct imessaging_context;
 #include "librpc/gen_ndr/security.h"
-#include "librpc/gen_ndr/s4_notify.h"
+#include "librpc/gen_ndr/notify.h"
 #include "ntvfs/ntvfs_proto.h"
 
 #endif /* _NTVFS_H_ */

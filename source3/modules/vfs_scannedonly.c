@@ -75,12 +75,12 @@ struct Tscannedonly {
 	bool rm_hidden_files_on_rmdir;
 	bool hide_nonscanned_files;
 	bool allow_nonscanned_files;
-	char *socketname;
-	char *scanhost;
-	char *scanning_message;
-	char *p_scanned; /* prefix for scanned files */
-	char *p_virus; /* prefix for virus containing files */
-	char *p_failed; /* prefix for failed to scan files */
+	const char *socketname;
+	const char *scanhost;
+	const char *scanning_message;
+	const char *p_scanned; /* prefix for scanned files */
+	const char *p_virus; /* prefix for virus containing files */
+	const char *p_failed; /* prefix for failed to scan files */
 	char gsendbuffer[SENDBUFFERSIZE + 1];
 };
 
@@ -146,14 +146,15 @@ static char *cachefile_name_f_fullpath(TALLOC_CTX *ctx,
 				       const char *p_scanned)
 {
 	const char *base;
-	char *tmp, *cachefile, *shortname;
+	char *tmp, *cachefile;
+	const char *shortname;
 	tmp = strrchr(fullpath, '/');
 	if (tmp) {
 		base = talloc_strndup(ctx, fullpath, (tmp - fullpath) + 1);
 		shortname = tmp + 1;
 	} else {
 		base = "";
-		shortname = (char *)fullpath;
+		shortname = (const char *)fullpath;
 	}
 	cachefile = cachefile_name(ctx, shortname, base, p_scanned);
 	DEBUG(SCANNEDONLY_DEBUG,
@@ -164,7 +165,7 @@ static char *cachefile_name_f_fullpath(TALLOC_CTX *ctx,
 static char *construct_full_path(TALLOC_CTX *ctx, vfs_handle_struct * handle,
 				 const char *somepath, bool ending_slash)
 {
-	char *tmp;
+	const char *tmp;
 
 	if (!somepath) {
 		return NULL;
@@ -175,7 +176,7 @@ static char *construct_full_path(TALLOC_CTX *ctx, vfs_handle_struct * handle,
 		}
 		return talloc_strdup(ctx,somepath);
 	}
-	tmp=(char *)somepath;
+	tmp = somepath;
 	if (tmp[0]=='.'&&tmp[1]=='/') {
 		tmp+=2;
 	}
@@ -308,14 +309,14 @@ static void flush_sendbuffer(vfs_handle_struct * handle)
 
 static void notify_scanner(vfs_handle_struct * handle, const char *scanfile)
 {
-	char *tmp;
+	const char *tmp;
 	int tmplen, gsendlen;
 	struct Tscannedonly *so = (struct Tscannedonly *)handle->data;
 	TALLOC_CTX *ctx=talloc_tos();
 	if (scanfile[0] != '/') {
 		tmp = construct_full_path(ctx,handle, scanfile, false);
 	} else {
-		tmp = (char *)scanfile;
+		tmp = (const char *)scanfile;
 	}
 	tmplen = strlen(tmp);
 	gsendlen = strlen(so->gsendbuffer);
@@ -515,7 +516,7 @@ static SMB_STRUCT_DIR *scannedonly_opendir(vfs_handle_struct * handle,
 		return NULL;
 	}
 
-	sDIR = TALLOC_P(NULL, struct scannedonly_DIR);
+	sDIR = talloc(NULL, struct scannedonly_DIR);
 	if (fname[0] != '/') {
 		sDIR->base = construct_full_path(sDIR,handle, fname, true);
 	} else {
@@ -543,7 +544,7 @@ static SMB_STRUCT_DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
 
 	fname = (const char *)fsp->fsp_name->base_name;
 
-	sDIR = TALLOC_P(NULL, struct scannedonly_DIR);
+	sDIR = talloc(NULL, struct scannedonly_DIR);
 	if (fname[0] != '/') {
 		sDIR->base = construct_full_path(sDIR,handle, fname, true);
 	} else {
@@ -631,7 +632,7 @@ static SMB_STRUCT_DIRENT *scannedonly_readdir(vfs_handle_struct *handle,
 		ctx,"%s %s",result->d_name,
 		STRUCTSCANO(handle->data)->scanning_message);
 	namelen = strlen(notify_name);
-	newdirent = (SMB_STRUCT_DIRENT *)TALLOC_ARRAY(
+	newdirent = (SMB_STRUCT_DIRENT *)talloc_array(
 		ctx, char, sizeof(SMB_STRUCT_DIRENT) + namelen + 1);
 	if (!newdirent) {
 		return NULL;
@@ -948,15 +949,14 @@ static int scannedonly_connect(struct vfs_handle_struct *handle,
 	so->domain_socket =
 		lp_parm_bool(SNUM(handle->conn), "scannedonly",
 			     "domain_socket", True);
-	so->socketname =
-		(char *)lp_parm_const_string(SNUM(handle->conn),
+	so->socketname = lp_parm_const_string(SNUM(handle->conn),
 					     "scannedonly", "socketname",
 					     "/var/lib/scannedonly/scan");
+
 	so->portnum =
 		lp_parm_int(SNUM(handle->conn), "scannedonly", "portnum",
 			    2020);
-	so->scanhost =
-		(char *)lp_parm_const_string(SNUM(handle->conn),
+	so->scanhost = lp_parm_const_string(SNUM(handle->conn),
 					     "scannedonly", "scanhost",
 					     "localhost");
 
@@ -972,8 +972,7 @@ static int scannedonly_connect(struct vfs_handle_struct *handle,
 	so->allow_nonscanned_files =
 		lp_parm_bool(SNUM(handle->conn), "scannedonly",
 			     "allow_nonscanned_files", False);
-	so->scanning_message =
-		(char *)lp_parm_const_string(SNUM(handle->conn),
+	so->scanning_message = lp_parm_const_string(SNUM(handle->conn),
 					     "scannedonly",
 					     "scanning_message",
 					     "is being scanned for viruses");
@@ -995,17 +994,17 @@ static int scannedonly_connect(struct vfs_handle_struct *handle,
 			    "recheck_tries_readdir", 20);
 
 	so->p_scanned =
-		(char *)lp_parm_const_string(SNUM(handle->conn),
+		lp_parm_const_string(SNUM(handle->conn),
 					     "scannedonly",
 					     "pref_scanned",
 					     ".scanned:");
 	so->p_virus =
-		(char *)lp_parm_const_string(SNUM(handle->conn),
+		lp_parm_const_string(SNUM(handle->conn),
 					     "scannedonly",
 					     "pref_virus",
 					     ".virus:");
 	so->p_failed =
-		(char *)lp_parm_const_string(SNUM(handle->conn),
+		lp_parm_const_string(SNUM(handle->conn),
 					     "scannedonly",
 					     "pref_failed",
 					     ".failed:");

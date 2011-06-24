@@ -71,8 +71,8 @@ source3/exports/libtalloc.syms
 source3/exports/libtdb.syms
 source3/exports/libwbclient.syms
 source3/include/build_env.h
-source3/include/config.h
-source3/include/config.h.in
+source3/include/autoconf/config.h
+source3/include/autoconf/config.h.in
 source3/include/includes.h.gch
 source3/include/stamp-h
 source3/include/version.h

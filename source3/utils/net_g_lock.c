@@ -113,7 +113,7 @@ static int net_g_lock_dump_fn(struct server_id pid, enum g_lock_type lock_type,
 {
 	char *pidstr;
 
-	pidstr = procid_str(talloc_tos(), &pid);
+	pidstr = server_id_str(talloc_tos(), &pid);
 	d_printf("%s: %s (%s)\n", pidstr,
 		 (lock_type & 1) ? "WRITE" : "READ",
 		 (lock_type & G_LOCK_PENDING) ? "pending" : "holder");
@@ -175,7 +175,7 @@ done:
 	TALLOC_FREE(g_ctx);
 	TALLOC_FREE(msg);
 	TALLOC_FREE(ev);
-	return ret;
+	return ret < 0 ? -1 : ret;
 }
 
 int net_g_lock(struct net_context *c, int argc, const char **argv)

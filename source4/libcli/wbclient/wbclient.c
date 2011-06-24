@@ -31,7 +31,7 @@
  * \param
  */
 struct wbc_context *wbc_init(TALLOC_CTX *mem_ctx,
-			     struct messaging_context *msg_ctx,
+			     struct imessaging_context *msg_ctx,
 			     struct tevent_context *event_ctx)
 {
 	struct wbc_context *ctx;

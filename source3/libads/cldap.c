@@ -30,7 +30,7 @@
 *******************************************************************/
 
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
-			const char *server,
+			struct sockaddr_storage *ss,
 			const char *realm,
 			uint32_t nt_version,
 			struct netlogon_samlogon_response **_reply)
@@ -39,18 +39,12 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	struct cldap_netlogon io;
 	struct netlogon_samlogon_response *reply;
 	NTSTATUS status;
-	struct sockaddr_storage ss;
 	char addrstr[INET6_ADDRSTRLEN];
 	const char *dest_str;
 	int ret;
 	struct tsocket_address *dest_addr;
 
-	if (!interpret_string_addr_prefer_ipv4(&ss, server, 0)) {
-		DEBUG(2,("Failed to resolve[%s] into an address for cldap\n",
-			server));
-		return false;
-	}
-	dest_str = print_sockaddr(addrstr, sizeof(addrstr), &ss);
+	dest_str = print_sockaddr(addrstr, sizeof(addrstr), ss);
 
 	ret = tsocket_address_inet_from_strings(mem_ctx, "ip",
 						dest_str, LDAP_PORT,
@@ -113,7 +107,7 @@ failed:
 *******************************************************************/
 
 bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
-			  const char *server,
+			  struct sockaddr_storage *ss,
 			  const char *realm,
 			  struct NETLOGON_SAM_LOGON_RESPONSE_EX *reply5)
 {
@@ -121,7 +115,7 @@ bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 	struct netlogon_samlogon_response *reply = NULL;
 	bool ret;
 
-	ret = ads_cldap_netlogon(mem_ctx, server, realm, nt_version, &reply);
+	ret = ads_cldap_netlogon(mem_ctx, ss, realm, nt_version, &reply);
 	if (!ret) {
 		return false;
 	}

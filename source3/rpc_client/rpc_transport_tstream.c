@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "rpc_client/rpc_transport.h"
 #include "lib/tsocket/tsocket.h"
 #include "libsmb/cli_np_tstream.h"
@@ -201,7 +202,7 @@ static struct tevent_req *rpc_tstream_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	endtime = timeval_current_ofs(0, transp->timeout * 1000);
+	endtime = timeval_current_ofs_msec(transp->timeout);
 	if (!tevent_req_set_endtime(subreq, ev, endtime)) {
 		goto fail;
 	}
@@ -285,7 +286,7 @@ static struct tevent_req *rpc_tstream_write_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	endtime = timeval_current_ofs(0, transp->timeout * 1000);
+	endtime = timeval_current_ofs_msec(transp->timeout);
 	if (!tevent_req_set_endtime(subreq, ev, endtime)) {
 		goto fail;
 	}
@@ -373,7 +374,7 @@ static struct tevent_req *rpc_tstream_trans_send(TALLOC_CTX *mem_ctx,
 	state->req.iov_base = discard_const_p(void *, data);
 	state->max_rdata_len = max_rdata_len;
 
-	endtime = timeval_current_ofs(0, transp->timeout * 1000);
+	endtime = timeval_current_ofs_msec(transp->timeout);
 
 	subreq = tstream_writev_queue_send(state, ev,
 					   transp->stream,

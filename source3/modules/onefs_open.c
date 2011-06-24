@@ -498,9 +498,9 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		unx_mode = (mode_t)(new_dos_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 		new_dos_attributes = 0;
 	} else {
-		/* We add aARCH to this as this mode is only used if the file is
+		/* We add FILE_ATTRIBUTE_ARCHIVE to this as this mode is only used if the file is
 		 * created new. */
-		unx_mode = unix_mode(conn, new_dos_attributes | aARCH,
+		unx_mode = unix_mode(conn, new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
 				     smb_fname, parent_dir);
 	}
 
@@ -587,7 +587,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 	/* Setup dos_attributes to be set by ifs_createfile */
 	if (lp_store_dos_attributes(SNUM(conn))) {
-		createfile_attributes = (new_dos_attributes | aARCH) &
+		createfile_attributes = (new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE) &
 		    ~(FILE_ATTRIBUTE_NONINDEXED | FILE_ATTRIBUTE_COMPRESSED);
 	}
 
@@ -1310,7 +1310,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		new_file_created = True;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn), 0,
+	set_share_mode(lck, fsp, get_current_uid(conn),
+			req ? req->mid : 0,
 		       fsp->oplock_type);
 
 	/* Handle strange delete on close create semantics. */
@@ -1482,7 +1483,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 		file_attributes = 0;
 	} else {
-		mode = unix_mode(conn, aDIR, smb_dname, parent_dir);
+		mode = unix_mode(conn, FILE_ATTRIBUTE_DIRECTORY, smb_dname, parent_dir);
 	}
 
 	/*
@@ -1666,7 +1667,8 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	set_share_mode(lck, fsp, get_current_uid(conn), 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, get_current_uid(conn),
+		req ? req->mid : 0, NO_OPLOCK);
 
 	/*
 	 * For directories the delete on close bit at open time seems

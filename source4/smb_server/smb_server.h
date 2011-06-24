@@ -22,6 +22,7 @@
 #include "libcli/raw/request.h"
 #include "libcli/raw/interfaces.h"
 #include "lib/socket/socket.h"
+#include "libds/common/roles.h"
 #include "../lib/util/dlinklist.h"
 #include "../librpc/gen_ndr/nbt.h"
 
@@ -265,8 +266,6 @@ struct smbsrv_request {
 	struct smb_request_buffer out;
 };
 
-enum security_types {SEC_SHARE,SEC_USER};
-
 /* smb server context structure. This should contain all the state
  * information associated with a SMB server connection 
  */
@@ -300,7 +299,7 @@ struct smbsrv_connection {
 		enum protocol_types protocol;
 
 		/* authentication context for multi-part negprot */
-		struct auth_context *auth_context;
+		struct auth4_context *auth_context;
 	
 		/* reference to the kerberos keytab, or machine trust account */
 		struct cli_credentials *server_credentials;

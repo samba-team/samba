@@ -58,8 +58,8 @@ static int current_version_fetch_values(const char *key, struct regval_ctr *valu
 
 	regval_ctr_addvalue_sz(values, "SystemRoot", sysroot_string);
 
-	fstr_sprintf(sysversion, "%d.%d", lp_major_announce_version(),
-		     lp_minor_announce_version());
+	fstr_sprintf(sysversion, "%d.%d", SAMBA_MAJOR_NBT_ANNOUNCE_VERSION,
+		     SAMBA_MINOR_NBT_ANNOUNCE_VERSION);
 
 	regval_ctr_addvalue_sz(values, "CurrentVersion", sysversion);
 

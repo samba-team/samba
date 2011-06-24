@@ -23,7 +23,7 @@
 #include "cluster/cluster.h"
 #include "cluster/cluster_private.h"
 #include "librpc/gen_ndr/misc.h"
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 
 static struct cluster_ops *ops;
 
@@ -50,22 +50,11 @@ static void cluster_init(void)
 /*
   create a server_id for the local node
 */
-struct server_id cluster_id(uint64_t id, uint32_t id2)
+struct server_id cluster_id(uint64_t pid, uint32_t task_id)
 {
 	cluster_init();
-	return ops->cluster_id(ops, id, id2);
+	return ops->cluster_id(ops, pid, task_id);
 }
-
-
-/*
-  return a server_id as a string
-*/
-const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id)
-{
-	cluster_init();
-	return ops->cluster_id_string(ops, mem_ctx, id);
-}
-
 
 /*
   open a temporary tdb in a cluster friendly manner
@@ -80,7 +69,7 @@ struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_conte
 /*
   register a callback function for a messaging endpoint
 */
-NTSTATUS cluster_message_init(struct messaging_context *msg, struct server_id server,
+NTSTATUS cluster_message_init(struct imessaging_context *msg, struct server_id server,
 			      cluster_message_fn_t handler)
 {
 	cluster_init();

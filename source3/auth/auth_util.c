@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_lsa.h"
@@ -520,7 +519,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	t = session_info->security_token;
 
-	ids = TALLOC_ARRAY(talloc_tos(), struct wbcUnixId,
+	ids = talloc_array(talloc_tos(), struct wbcUnixId,
 			   t->num_sids);
 	if (ids == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -669,7 +668,7 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = samu_to_SamInfo3(result, sampass, global_myname(),
+	status = samu_to_SamInfo3(result, sampass, lp_netbios_name(),
 				  &result->info3, &result->extra);
 	TALLOC_FREE(sampass);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -759,7 +758,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 	struct auth_serversupplied_info *server_info;
 	static const char zeros[16] = {0};
 	const char *guest_account = lp_guestaccount();
-	const char *domain = global_myname();
+	const char *domain = lp_netbios_name();
 	struct netr_SamInfo3 info3;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
@@ -774,6 +773,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 
 	status = get_guest_info3(tmp_ctx, &info3);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("get_guest_info3 failed with %s\n",
+			  nt_errstr(status)));
 		goto done;
 	}
 
@@ -783,6 +784,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 					&server_info,
 					&info3);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("make_server_info_info3 failed with %s\n",
+			  nt_errstr(status)));
 		goto done;
 	}
 
@@ -794,8 +797,8 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 	status = create_local_token(tmp_ctx, server_info, NULL, session_info);
 	TALLOC_FREE(server_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("create_local_token failed: %s\n",
-			   nt_errstr(status)));
+		DEBUG(0, ("create_local_token failed: %s\n",
+			  nt_errstr(status)));
 		goto done;
 	}
 	talloc_steal(NULL, *session_info);
@@ -812,7 +815,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 	status = NT_STATUS_OK;
 done:
 	TALLOC_FREE(tmp_ctx);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /***************************************************************************
@@ -908,7 +911,7 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 	dst->utok.gid = src->utok.gid;
 	dst->utok.ngroups = src->utok.ngroups;
 	if (src->utok.ngroups != 0) {
-		dst->utok.groups = (gid_t *)TALLOC_MEMDUP(
+		dst->utok.groups = (gid_t *)talloc_memdup(
 			dst, src->utok.groups,
 			sizeof(gid_t)*dst->utok.ngroups);
 	} else {

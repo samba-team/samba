@@ -531,7 +531,7 @@ NTSTATUS check_sam_security_info3(const DATA_BLOB *challenge,
 		goto done;
 	}
 
-	info3 = TALLOC_ZERO_P(mem_ctx, struct netr_SamInfo3);
+	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (info3 == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

@@ -56,8 +56,7 @@ that can be either 'domain controller', 'member server' or 'standalone'. Note th
 member server support does not work yet.
 
 The following parameters have been removed:
-- passdb backend: accounts are now stored in a LDB-based SAM database, 
-	see 'sam database' below.
+- passdb backend: accounts are now stored in a LDB-based SAM database
 - update encrypted
 - public
 - guest ok
@@ -400,12 +399,6 @@ The following parameters have been added:
 	Services Samba should provide.
 
 	Default: smb rpc nbt wrepl ldap cldap web kdc
-
-+ sam database
-	Location of the SAM (account database) database. This should be a 
-	LDB URL.
-
-	Default: set at compile-time
 
 + spoolss database
 	Spoolss (printer) DCE/RPC server database. This should be a LDB URL.

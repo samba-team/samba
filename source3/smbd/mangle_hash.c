@@ -25,6 +25,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "mangle.h"
+#include "util_tdb.h"
 
 /* -------------------------------------------------------------------------- **
  * Other stuff...
@@ -86,7 +87,7 @@ static void init_valid_table(void)
 		return;
 	}
 
-	valid_table = (uint8 *)map_file(data_path("valid.dat"), 0x10000);
+	valid_table = (uint8 *)map_file(data_path(talloc_tos(), "valid.dat"), 0x10000);
 	if (!valid_table) {
 		smb_panic("Could not load valid.dat file required for mangle method=hash");
 		return;
@@ -473,7 +474,7 @@ static void cache_mangled_name( const char mangled_name[13],
 		return;
 
 	/* Init the string lengths. */
-	safe_strcpy(mangled_name_key, mangled_name, sizeof(mangled_name_key)-1);
+	strlcpy(mangled_name_key, mangled_name, sizeof(mangled_name_key));
 
 	/* See if the extensions are unmangled.  If so, store the entry
 	 * without the extension, thus creating a "group" reverse map.
@@ -638,7 +639,7 @@ static bool to_8_3(char magic_char, const char *in, char out[13], int default_ca
 
 	if( p ) {
 		if( p == s )
-			safe_strcpy( extension, "___", 3 );
+			strlcpy( extension, "___", 4);
 		else {
 			*p++ = 0;
 			while( *p && extlen < 3 ) {
@@ -670,7 +671,7 @@ static bool to_8_3(char magic_char, const char *in, char out[13], int default_ca
 
 	if( *extension ) {
 		out[baselen+3] = '.';
-		safe_strcpy(&out[baselen+4], extension, 3);
+		strlcpy(&out[baselen+4], extension, 4);
 	}
 
 	SAFE_FREE(s);
@@ -738,7 +739,7 @@ static bool hash_name_to_8_3(const char *in,
 	if (NT_STATUS_IS_OK(is_valid_name(in_ucs2, False, False)) &&
 				NT_STATUS_IS_OK(is_8_3_w(in_ucs2, False))) {
 		TALLOC_FREE(in_ucs2);
-		safe_strcpy(out, in, 12);
+		strlcpy(out, in, 13);
 		return True;
 	}
 
@@ -772,8 +773,13 @@ const struct mangle_fns *mangle_hash_init(void)
 	mangle_reset();
 
 	/* Create the in-memory tdb using our custom hash function. */
+#ifndef BUILD_TDB2
 	tdb_mangled_cache = tdb_open_ex("mangled_cache", 1031, TDB_INTERNAL,
 				(O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
+#else
+	/* FIXME: We should *never* open a tdb without logging! */
+	tdb_mangled_cache = tdb_open("mangled_cache", TDB_INTERNAL, 0, 0, NULL);
+#endif
 
 	return &mangle_hash_fns;
 }

@@ -62,6 +62,8 @@ extern const char *panic_action;
 
 #include "lib/util/memory.h"
 
+#include "lib/util/string_wrappers.h"
+
 /**
  * Write backtrace to debug log
  */
@@ -113,6 +115,8 @@ void CatchChildLeaveStatus(void);
 
 /* The following definitions come from lib/util/system.c  */
 
+void *sys_memalign( size_t align, size_t size );
+
 /**************************************************************************
 A wrapper for gethostbyname() that tries avoids looking up hostnames 
 in the root domain, which can cause dial-on-demand links to come up for no
@@ -131,8 +135,20 @@ _PUBLIC_ pid_t sys_fork(void);
  **/
 _PUBLIC_ pid_t sys_getpid(void);
 
-/* The following definitions come from lib/util/genrand.c  */
+_PUBLIC_ int sys_getpeereid( int s, uid_t *uid);
 
+struct sockaddr;
+
+_PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
+			     int salen,
+			     char *host,
+			     size_t hostlen,
+			     char *service,
+			     size_t servlen,
+			     int flags);
+_PUBLIC_ int sys_connect(int fd, const struct sockaddr * addr);
+
+/* The following definitions come from lib/util/genrand.c  */
 /**
  Copy any user given reseed data.
 **/
@@ -195,14 +211,10 @@ _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
                                          uint32_t num);
 
 /* The following definitions come from lib/util/dprintf.c  */
-#if _SAMBA_BUILD_ == 4
 
-_PUBLIC_ void d_set_iconv(smb_iconv_t);
-_PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 _PUBLIC_ int d_fprintf(FILE *f, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
 _PUBLIC_ int d_printf(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
 _PUBLIC_ void display_set_stderr(void);
-#endif
 
 /* The following definitions come from lib/util/util_str.c  */
 
@@ -231,18 +243,6 @@ _PUBLIC_ bool trim_string(char *s, const char *front, const char *back);
  Find the number of 'c' chars in a string
 **/
 _PUBLIC_ _PURE_ size_t count_chars(const char *s, char c);
-
-/**
- Safe string copy into a known length string. maxlength does not
- include the terminating zero.
-**/
-_PUBLIC_ char *safe_strcpy(char *dest,const char *src, size_t maxlength);
-
-/**
- Safe string cat into a string. maxlength does not
- include the terminating zero.
-**/
-_PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength);
 
 /**
  Routine to get hex characters and turn them into a 16 byte array.
@@ -284,6 +284,8 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 **/
 _PUBLIC_ void string_sub(char *s,const char *pattern, const char *insert, size_t len);
 
+_PUBLIC_ void string_sub_once(char *s, const char *pattern,
+			      const char *insert, size_t len);
 
 _PUBLIC_ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s, 
 				const char *pattern, const char *insert);
@@ -369,12 +371,10 @@ _PUBLIC_ bool set_boolean(const char *boolean_string, bool *boolean);
  */
 _PUBLIC_ bool conv_str_bool(const char * str, bool * val);
 
-#if _SAMBA_BUILD_ == 4
 /**
  * Convert a size specification like 16K into an integral number of bytes. 
  **/
-_PUBLIC_ bool conv_str_size(const char * str, uint64_t * val);
-#endif
+_PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val);
 
 /**
  * Parse a uint64_t value from a string
@@ -775,11 +775,12 @@ enum protocol_types {
 	PROTOCOL_SMB2
 };
 
-int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol);
+#endif
+
+int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol);
 
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string);
-#endif
 
 /* The following definitions come from lib/util/idtree.c  */
 
@@ -885,5 +886,33 @@ int samba_runcmd_recv(struct tevent_req *req, int *perrno);
 #ifdef DEVELOPER
 void samba_start_debugger(void);
 #endif
+
+/**
+ * @brief Returns an absolute path to a file in the Samba modules directory.
+ *
+ * @param name File to find, relative to MODULESDIR.
+ *
+ * @retval Pointer to a string containing the full path.
+ **/
+char *modules_path(TALLOC_CTX *mem_ctx, const char *name);
+
+/**
+ * @brief Returns an absolute path to a file in the Samba data directory.
+ *
+ * @param name File to find, relative to CODEPAGEDIR.
+ *
+ * @retval Pointer to a talloc'ed string containing the full path.
+ **/
+char *data_path(TALLOC_CTX *mem_ctx, const char *name);
+
+/**
+ * @brief Returns the platform specific shared library extension.
+ *
+ * @retval Pointer to a const char * containing the extension.
+ **/
+const char *shlib_ext(void);
+
+struct server_id;
+char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id);
 
 #endif /* _SAMBA_UTIL_H_ */

@@ -27,6 +27,8 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smb_share_modes.h"
+#include "tdb_compat.h"
+#include <ccan/hash/hash.h>
 
 /* Database context handle. */
 struct smbdb_ctx {
@@ -67,10 +69,12 @@ struct smbdb_ctx *smb_share_mode_db_open(const char *db_path)
 
 	memset(smb_db, '\0', sizeof(struct smbdb_ctx));
 
-	smb_db->smb_tdb = tdb_open(db_path,
-				0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-				O_RDWR|O_CREAT,
-				0644);
+	/* FIXME: We should *never* open a tdb without logging! */
+	smb_db->smb_tdb = tdb_open_compat(db_path,
+					  0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+					  O_RDWR|O_CREAT,
+					  0644,
+					  NULL, NULL);
 
 	if (!smb_db->smb_tdb) {
 		free(smb_db);
@@ -120,7 +124,7 @@ int smb_lock_share_mode_entry(struct smbdb_ctx *db_ctx,
 {
 	struct locking_key lk;
 	return tdb_chainlock(db_ctx->smb_tdb, get_locking_key(&lk, dev, ino,
-							      extid));
+							      extid)) == 0 ? 0 : -1;
 }
 
 int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
@@ -129,8 +133,9 @@ int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
                                 uint64_t extid)
 {
 	struct locking_key lk;
-	return tdb_chainunlock(db_ctx->smb_tdb,
-			       get_locking_key(&lk, dev, ino, extid));
+	tdb_chainunlock(db_ctx->smb_tdb,
+			get_locking_key(&lk, dev, ino, extid));
+	return 0;
 }
 
 /*
@@ -199,8 +204,8 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	*pp_list = NULL;
 	*p_delete_on_close = 0;
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, get_locking_key(&lk, dev, ino,
-							     extid));
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb,
+				   get_locking_key(&lk, dev, ino, extid));
 	if (!db_data.dptr) {
 		return 0;
 	}
@@ -266,7 +271,6 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 
 static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *err)
 {
-	TDB_DATA key;
 	char *fullpath = NULL;
 	size_t sharepath_size = strlen(sharepath);
 	size_t filename_size = strlen(filename);
@@ -282,9 +286,7 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 	fullpath[sharepath_size] = '/';
 	memcpy(&fullpath[sharepath_size + 1], filename, filename_size + 1);
 
-	key.dptr = (uint8_t *)fullpath;
-	key.dsize = strlen(fullpath) + 1;
-	name_hash = tdb_jenkins_hash(&key);
+	name_hash = hash(fullpath, strlen(fullpath) + 1, 0);
 	free(fullpath);
 	return name_hash;
 }
@@ -316,7 +318,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 		return -1;
 	}
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
 		db_data.dptr = (uint8 *)malloc(
@@ -345,7 +347,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 		db_data.dsize = sizeof(struct locking_data) + sizeof(struct share_mode_entry) +
 					strlen(sharepath) + 1 +
 					strlen(filename) + 1;
-		if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_INSERT) == -1) {
+		if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_INSERT) != 0) {
 			free(db_data.dptr);
 			return -1;
 		}
@@ -388,7 +390,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	db_data.dptr = new_data_p;
 	db_data.dsize = new_data_size;
 
-	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
+	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) != 0) {
 		free(db_data.dptr);
 		return -1;
 	}
@@ -433,7 +435,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	size_t i, num_share_modes;
 	const uint8 *remaining_ptr = NULL;
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		return -1; /* Error - missing entry ! */
 	}
@@ -451,7 +453,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 		}
 		/* It's ours - just remove the entire record. */
 		free(db_data.dptr);
-		return tdb_delete(db_ctx->smb_tdb, locking_key);
+		return tdb_delete(db_ctx->smb_tdb, locking_key) ? -1 : 0;
 	}
 
 	/* More than one - allocate a new record minus the one we'll delete. */
@@ -490,7 +492,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 		/* None left after pruning. Delete record. */
 		free(db_data.dptr);
 		free(new_data_p);
-		return tdb_delete(db_ctx->smb_tdb, locking_key);
+		return tdb_delete(db_ctx->smb_tdb, locking_key) ? -1 : 0;
 	}
 
 	/* Copy any delete tokens plus the terminating filenames. */
@@ -511,7 +513,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 	db_data.dsize = sizeof(struct locking_data) + (num_share_modes * sizeof(struct share_mode_entry)) + remaining_size;
 
-	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
+	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) != 0) {
 		free(db_data.dptr);
 		return -1;
 	}
@@ -535,7 +537,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 	size_t i;
 	int found_entry = 0;
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		return -1; /* Error - missing entry ! */
 	}
@@ -566,7 +568,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Save modified data. */
-	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
+	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) != 0) {
 		free(db_data.dptr);
 		return -1;
 	}

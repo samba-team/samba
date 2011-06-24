@@ -72,13 +72,13 @@ int ads_kinit_password(ADS_STRUCT *ads)
 		account_name = lp_workgroup();
 	} else {
 		/* always use the sAMAccountName for security = domain */
-		/* global_myname()$@REA.LM */
+		/* lp_netbios_name()$@REA.LM */
 		if ( lp_security() == SEC_DOMAIN ) {
-			fstr_sprintf( acct_name, "%s$", global_myname() );
+			fstr_sprintf( acct_name, "%s$", lp_netbios_name() );
 			account_name = acct_name;
 		}
 		else
-			/* This looks like host/global_myname()@REA.LM */
+			/* This looks like host/lp_netbios_name()@REA.LM */
 			account_name = ads->auth.user_name;
 	}
 

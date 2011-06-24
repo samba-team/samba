@@ -155,7 +155,7 @@ static int ltdb_dn_list_load(struct ldb_module *module,
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
 	key.dsize = strlen((char *)key.dptr);
 
-	rec = tdb_fetch(ltdb->idxptr->itdb, key);
+	rec = tdb_fetch_compat(ltdb->idxptr->itdb, key);
 	if (rec.dptr == NULL) {
 		goto normal_index;
 	}
@@ -261,7 +261,7 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	}
 
 	if (ltdb->idxptr->itdb == NULL) {
-		ltdb->idxptr->itdb = tdb_open(NULL, 1000, TDB_INTERNAL, O_RDWR, 0);
+		ltdb->idxptr->itdb = tdb_open_compat(NULL, 1000, TDB_INTERNAL, O_RDWR, 0, NULL, NULL);
 		if (ltdb->idxptr->itdb == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -270,7 +270,7 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
 	key.dsize = strlen((char *)key.dptr);
 
-	rec = tdb_fetch(ltdb->idxptr->itdb, key);
+	rec = tdb_fetch_compat(ltdb->idxptr->itdb, key);
 	if (rec.dptr != NULL) {
 		list2 = ltdb_index_idxptr(module, rec, false);
 		if (list2 == NULL) {
@@ -294,7 +294,7 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	rec.dsize = sizeof(void *);
 
 	ret = tdb_store(ltdb->idxptr->itdb, key, rec, TDB_INSERT);
-	if (ret == -1) {
+	if (ret != 0) {
 		return ltdb_err_map(tdb_error(ltdb->idxptr->itdb));
 	}
 	return LDB_SUCCESS;
@@ -1569,7 +1569,7 @@ int ltdb_reindex(struct ldb_module *module)
 	 * putting NULL entries in the in-memory tdb
 	 */
 	ret = tdb_traverse(ltdb->tdb, delete_index, module);
-	if (ret == -1) {
+	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1583,7 +1583,7 @@ int ltdb_reindex(struct ldb_module *module)
 
 	/* now traverse adding any indexes for normal LDB records */
 	ret = tdb_traverse(ltdb->tdb, re_index, &ctx);
-	if (ret == -1) {
+	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "reindexing traverse failed: %s", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;

@@ -101,12 +101,11 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 
 	status = dcerpc_wbint_QueryGroupList_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
 		/* Ignore errors here, just log it */
 		DEBUG(10, ("query_user_list for domain %s returned %s\n",
 			   state->gstate->domain->name,
 			   nt_errstr(status)));
-		tevent_req_nterror(req, status);
 		return;
 	}
 	if (!NT_STATUS_IS_OK(result)) {
@@ -169,8 +168,7 @@ static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 	status = wb_getgrsid_recv(subreq, talloc_tos(), &domname, &name,
 				  &state->gr->gr_gid, &state->members);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	if (!fill_grent(talloc_tos(), state->gr, domname, name,

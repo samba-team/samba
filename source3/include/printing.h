@@ -24,6 +24,7 @@
    This file defines the low-level printing system interfaces used by the
    SAMBA printing subsystem.
 */
+#include "tdb_compat.h"
 
 /* Extra fields above "LPQ_PRINTING" are used to map extra NT status codes. */
 
@@ -160,7 +161,7 @@ extern struct printif	iprint_printif;
 
 struct tdb_print_db {
 	struct tdb_print_db *next, *prev;
-	TDB_CONTEXT *tdb;
+	struct tdb_context *tdb;
 	int ref_count;
 	fstring printer_name;
 };
@@ -249,7 +250,7 @@ uint32_t print_parse_jobid(const char *fname);
 struct tdb_print_db *get_print_db_byname(const char *printername);
 void release_print_db( struct tdb_print_db *pdb);
 void close_all_print_db(void);
-TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name, bool cleanlist);
+TDB_DATA get_printer_notify_pid_list(struct tdb_context *tdb, const char *printer_name, bool cleanlist);
 
 void print_queue_receive(struct messaging_context *msg,
 				void *private_data,

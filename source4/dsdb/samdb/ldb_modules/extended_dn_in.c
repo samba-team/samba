@@ -103,6 +103,18 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
+		if (ac->basedn) {
+			/* we have more than one match! This can
+			   happen as S-1-5-17 appears twice in a
+			   normal provision. We need to return
+			   NO_SUCH_OBJECT */
+			const char *str = talloc_asprintf(req, "Duplicate base-DN matches found for '%s'",
+							  ldb_dn_get_extended_linearized(req, ac->req->op.search.base, 1));
+			ldb_set_errstring(ldb_module_get_ctx(ac->module), str);
+			return ldb_module_done(ac->req, NULL, NULL,
+					       LDB_ERR_NO_SUCH_OBJECT);
+		}
+
 		if (!ac->wellknown_object) {
 			ac->basedn = talloc_steal(ac, ares->message->dn);
 			break;
@@ -303,22 +315,15 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		guid_val = ldb_dn_get_extended_component(dn, "GUID");
 		wkguid_val = ldb_dn_get_extended_component(dn, "WKGUID");
 
-		if (sid_val) {
+		/*
+		  prioritise the GUID - we have had instances of
+		  duplicate SIDs in the database in the
+		  ForeignSecurityPrinciples due to provision errors
+		 */
+		if (guid_val) {
 			all_partitions = true;
 			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
-			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)", 
-							 ldb_binary_encode(req, *sid_val));
-			if (!base_dn_filter) {
-				return ldb_oom(ldb_module_get_ctx(module));
-			}
-			base_dn_scope = LDB_SCOPE_SUBTREE;
-			base_dn_attrs = no_attr;
-
-		} else if (guid_val) {
-
-			all_partitions = true;
-			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
-			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)", 
+			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)",
 							 ldb_binary_encode(req, *guid_val));
 			if (!base_dn_filter) {
 				return ldb_oom(ldb_module_get_ctx(module));
@@ -326,6 +331,16 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			base_dn_scope = LDB_SCOPE_SUBTREE;
 			base_dn_attrs = no_attr;
 
+		} else if (sid_val) {
+			all_partitions = true;
+			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
+			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)",
+							 ldb_binary_encode(req, *sid_val));
+			if (!base_dn_filter) {
+				return ldb_oom(ldb_module_get_ctx(module));
+			}
+			base_dn_scope = LDB_SCOPE_SUBTREE;
+			base_dn_attrs = no_attr;
 
 		} else if (wkguid_val) {
 			char *wkguid_dup;

@@ -25,6 +25,7 @@
 #include "nt_printing.h"
 #include "printing/notify.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 static TALLOC_CTX *send_ctx;
 
@@ -253,9 +254,9 @@ static bool copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
 	memcpy( to, from, sizeof(SPOOLSS_NOTIFY_MSG) );
 	
 	if ( from->len ) {
-		to->notify.data = (char *)TALLOC_MEMDUP(send_ctx, from->notify.data, from->len );
+		to->notify.data = (char *)talloc_memdup(send_ctx, from->notify.data, from->len );
 		if ( !to->notify.data ) {
-			DEBUG(0,("copy_notify2_msg: TALLOC_MEMDUP() of size [%d] failed!\n", from->len ));
+			DEBUG(0,("copy_notify2_msg: talloc_memdup() of size [%d] failed!\n", from->len ));
 			return False;
 		}
 	}
@@ -304,7 +305,7 @@ static void send_spoolss_notify2_msg(struct tevent_context *ev,
 
 	/* Store the message on the pending queue. */
 
-	pnqueue = TALLOC_P(send_ctx, struct notify_queue);
+	pnqueue = talloc(send_ctx, struct notify_queue);
 	if (!pnqueue) {
 		DEBUG(0,("send_spoolss_notify2_msg: Out of memory.\n"));
 		return;
@@ -312,7 +313,7 @@ static void send_spoolss_notify2_msg(struct tevent_context *ev,
 
 	/* allocate a new msg structure and copy the fields */
 	
-	if ( !(pnqueue->msg = TALLOC_P(send_ctx, SPOOLSS_NOTIFY_MSG)) ) {
+	if ( !(pnqueue->msg = talloc(send_ctx, SPOOLSS_NOTIFY_MSG)) ) {
 		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%lu] failed!\n", 
 			(unsigned long)sizeof(SPOOLSS_NOTIFY_MSG)));
 		return;
@@ -356,7 +357,7 @@ static void send_notify_field_values(struct tevent_context *ev,
 	if (!create_send_ctx())
 		return;
 
-	msg = TALLOC_P(send_ctx, struct spoolss_notify_msg);
+	msg = talloc(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
 
@@ -387,7 +388,7 @@ static void send_notify_field_buffer(struct tevent_context *ev,
 	if (!create_send_ctx())
 		return;
 
-	msg = TALLOC_P(send_ctx, struct spoolss_notify_msg);
+	msg = talloc(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
 
@@ -398,7 +399,7 @@ static void send_notify_field_buffer(struct tevent_context *ev,
 	msg->field = field;
 	msg->id = id;
 	msg->len = len;
-	msg->notify.data = CONST_DISCARD(char *,buffer);
+	msg->notify.data = discard_const_p(char, buffer);
 
 	send_spoolss_notify2_msg(ev, msg_ctx, msg);
 }
@@ -631,7 +632,7 @@ static bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx,
 		return False;
 	tdb = pdb->tdb;
 
-	if (tdb_read_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_read_lock_bystring_with_timeout(tdb, NOTIFY_PID_LIST_KEY, 10) != 0) {
 		DEBUG(0,("print_notify_pid_list: Failed to lock printer %s database\n",
 					printername));
 		if (pdb)
@@ -649,7 +650,7 @@ static bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx,
 	num_pids = data.dsize / 8;
 
 	if (num_pids) {
-		if ((pid_list = TALLOC_ARRAY(mem_ctx, pid_t, num_pids)) == NULL) {
+		if ((pid_list = talloc_array(mem_ctx, pid_t, num_pids)) == NULL) {
 			ret = False;
 			goto done;
 		}

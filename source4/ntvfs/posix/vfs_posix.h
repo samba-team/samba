@@ -204,7 +204,7 @@ struct pvfs_file {
 	/* a file handle to be used for byte range locking */
 	struct brl_handle *brl_handle;
 
-	/* a count of active locks - used to avoid calling brl_close on
+	/* a count of active locks - used to avoid calling brlock_close on
 	   file close */
 	uint64_t lock_count;
 

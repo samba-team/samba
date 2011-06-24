@@ -1,3 +1,41 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  passdb - password and authentication handling
+ *
+ *  Copyright (C) Andrew Tridgell		1992-1998
+ *  Copyright (C) Jeremy Allison 		1995-2009
+ *  Copyright (C) Luke Kenneth Casson Leighton	1996-1998
+ *  Copyright (C) Jean François Micouleau	1998-2001
+ *  Copyright (C) Gerald (Jerry) Carter		2000-2006
+ *  Copyright (C) Simo Sorce			2000-2003,2006
+ *  Copyright (C) Andrew Bartlett		2001-2002
+ *  Copyright (C) Shahms King			2001
+ *  Copyright (C) Jelmer Vernooij		2002
+ *  Copyright (C) Rafal Szczesniak		2002
+ *  Copyright (C) Stefan (metze) Metzmacher	2002-2003
+ *  Copyright (C) Guenther Deschner		2004-2005
+ *  Copyright (C) Jim McDonough (jmcd@us.ibm.com) 2004-2005
+ *  Copyright (C) Vince Brimhall		2004-2005
+ *  Copyright (C) Volker Lendecke 		2006
+ *  Copyright (C) Michael Adam			2007
+ *  Copyright (C) Dan Sledz			2009
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _PASSDB_PROTO_H_
+#define _PASSDB_PROTO_H_
 
 /* The following definitions come from passdb/account_pol.c  */
 
@@ -300,3 +338,5 @@ NTSTATUS pdb_tdbsam_init(void);
 
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
 NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
+
+#endif /* _PASSDB_PROTO_H_ */

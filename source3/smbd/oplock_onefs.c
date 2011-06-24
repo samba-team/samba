@@ -709,7 +709,7 @@ struct kernel_oplocks *onefs_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 	DEBUG(10, ("oplock event_fd = %d\n", ctx->onefs_event_fd));
 
 	/* Register the oplock event_fd with samba's event system */
-	ctx->read_fde = event_add_fd(smbd_event_context(),
+	ctx->read_fde = event_add_fd(server_event_context(),
 				     ctx,
 				     ctx->onefs_event_fd,
 				     EVENT_FD_READ,

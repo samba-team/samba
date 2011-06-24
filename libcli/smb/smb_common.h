@@ -25,5 +25,7 @@
 #include "../libcli/smb/smb2_constants.h"
 #include "../libcli/smb/smb2_create_blob.h"
 #include "../libcli/smb/smb_constants.h"
+#include "../libcli/smb/smb_util.h"
+#include "../libcli/smb/smb_unix_ext.h"
 
 #endif

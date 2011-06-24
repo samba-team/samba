@@ -41,44 +41,42 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 
 #endif /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
 
-#define safe_strcpy_base(dest, src, base, size) \
-    safe_strcpy(dest, src, size-PTR_DIFF(dest,base)-1)
+#define strlcpy_base(dest, src, base, size) \
+do { \
+	const char *_strlcpy_base_src = (const char *)src; \
+	strlcpy((dest), _strlcpy_base_src? _strlcpy_base_src : "", (size)-PTR_DIFF((dest),(base))); \
+} while (0)
 
 /* String copy functions - macro hell below adds 'type checking' (limited,
    but the best we can do in C) */
 
-#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
-#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
-#define nstrcpy(d,s) safe_strcpy((d), (s),sizeof(nstring)-1)
-#define unstrcpy(d,s) safe_strcpy((d), (s),sizeof(unstring)-1)
+#define fstrcpy(d,s) \
+do { \
+	const char *_fstrcpy_src = (const char *)(s); \
+	strlcpy((d),_fstrcpy_src ? _fstrcpy_src : "",sizeof(fstring)); \
+} while (0)
 
-/* the addition of the DEVELOPER checks in safe_strcpy means we must
- * update a lot of code. To make this a little easier here are some
- * functions that provide the lengths with less pain */
-
-/* overmalloc_safe_strcpy: DEPRECATED!  Used when you know the
- * destination buffer is longer than maxlength, but you don't know how
- * long.  This is not a good situation, because we can't do the normal
- * sanity checks. Don't use in new code! */
-
-#define overmalloc_safe_strcpy(dest,src,maxlength) \
-	safe_strcpy_fn(dest,src,maxlength)
+#define fstrcat(d,s) \
+do { \
+	const char *_fstrcat_src = (const char *)(s); \
+	strlcat((d),_fstrcat_src ? _fstrcat_src : "",sizeof(fstring)); \
+} while (0)
+#define nstrcpy(d,s) \
+do { \
+	const char *_nstrcpy_src = (const char *)(s); \
+	strlcpy((d),_nstrcpy_src ? _nstrcpy_src : "",sizeof(fstring)); \
+} while (0)
+#define unstrcpy(d,s) \
+do { \
+	const char *_unstrcpy_src = (const char *)(s); \
+	strlcpy((d),_unstrcpy_src ? _unstrcpy_src : "",sizeof(fstring)); \
+} while (0)
 
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
 
 /* if the compiler will optimize out function calls, then use this to tell if we are
    have the correct types (this works only where sizeof() returns the size of the buffer, not
    the size of the pointer). */
-
-#define safe_strcpy(d, s, max_len) \
-    (CHECK_STRING_SIZE(d, max_len+1) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcpy_fn((d), (s), (max_len)))
-
-#define safe_strcat(d, s, max_len) \
-    (CHECK_STRING_SIZE(d, max_len+1) \
-    ? __unsafe_string_function_usage_here__() \
-    : safe_strcat_fn((d), (s), (max_len)))
 
 #define push_string_check(dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
@@ -113,8 +111,6 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 
 #else
 
-#define safe_strcpy safe_strcpy_fn
-#define safe_strcat safe_strcat_fn
 #define push_string_check push_string_check_fn
 #define clistr_push clistr_push_fn
 #define clistr_pull clistr_pull_fn

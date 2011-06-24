@@ -623,13 +623,13 @@ static void wbcDomainControllerInfoExDestructor(void *ptr)
 {
 	struct wbcDomainControllerInfoEx *i =
 		(struct wbcDomainControllerInfoEx *)ptr;
-	free((char *)(i->dc_unc));
-	free((char *)(i->dc_address));
-	free((char *)(i->domain_guid));
-	free((char *)(i->domain_name));
-	free((char *)(i->forest_name));
-	free((char *)(i->dc_site_name));
-	free((char *)(i->client_site_name));
+	free(discard_const_p(char, i->dc_unc));
+	free(discard_const_p(char, i->dc_address));
+	free(discard_const_p(char, i->domain_guid));
+	free(discard_const_p(char, i->domain_name));
+	free(discard_const_p(char, i->forest_name));
+	free(discard_const_p(char, i->dc_site_name));
+	free(discard_const_p(char, i->client_site_name));
 }
 
 static wbcErr wbc_create_domain_controller_info_ex(const struct winbindd_response *resp,
@@ -758,7 +758,7 @@ static void wbcNamedBlobDestructor(void *ptr)
 	struct wbcNamedBlob *b = (struct wbcNamedBlob *)ptr;
 
 	while (b->name != NULL) {
-		free((char *)(b->name));
+		free(discard_const_p(char, b->name));
 		free(b->blob.data);
 		b += 1;
 	}

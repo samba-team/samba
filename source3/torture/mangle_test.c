@@ -20,7 +20,9 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/proto.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
+#include "util_tdb.h"
 
 extern int torture_numops;
 
@@ -40,46 +42,53 @@ static bool test_one(struct cli_state *cli, const char *name)
 
 	total++;
 
-	if (!NT_STATUS_IS_OK(cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum))) {
-		printf("open of %s failed (%s)\n", name, cli_errstr(cli));
+	status = cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
 	/* get the short name */
 	status = cli_qpathinfo_alt_name(cli, name, shortname);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("query altname of %s failed (%s)\n", name, cli_errstr(cli));
+		printf("query altname of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
 	fstr_sprintf(name2, "\\mangle_test\\%s", shortname);
-	if (!NT_STATUS_IS_OK(cli_unlink(cli, name2, aSYSTEM | aHIDDEN))) {
+	status = cli_unlink(cli, name2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
-		       name2, name, cli_errstr(cli));
+		       name2, name, nt_errstr(status));
 		return False;
 	}
 
 	/* recreate by short name */
-	if (!NT_STATUS_IS_OK(cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum))) {
-		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli));
+	status = cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open2 of %s failed (%s)\n", name2, nt_errstr(status));
 		return False;
 	}
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
 	/* and unlink by long name */
-	if (!NT_STATUS_IS_OK(cli_unlink(cli, name, aSYSTEM | aHIDDEN))) {
+	status = cli_unlink(cli, name, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("unlink2 of %s  (%s) failed (%s)\n", 
-		       name, name2, cli_errstr(cli));
+		       name, name2, nt_errstr(status));
 		failures++;
-		cli_unlink(cli, name2, aSYSTEM | aHIDDEN);
+		cli_unlink(cli, name2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 		return True;
 	}
 
@@ -98,7 +107,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 	} else {
 		TDB_DATA namedata;
 		/* store it for later */
-		namedata.dptr = CONST_DISCARD(uint8 *, name);
+		namedata.dptr = discard_const_p(uint8, name);
 		namedata.dsize = strlen(name)+1;
 		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}
@@ -172,13 +181,13 @@ bool torture_mangle(int dummy)
 	}
 
 	/* we will use an internal tdb to store the names we have used */
-	tdb = tdb_open(NULL, 100000, TDB_INTERNAL, 0, 0);
+	tdb = tdb_open_compat(NULL, 100000, TDB_INTERNAL, 0, 0, NULL, NULL);
 	if (!tdb) {
 		printf("ERROR: Failed to open tdb\n");
 		return False;
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\mangle_test\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_rmdir(cli, "\\mangle_test");
 
 	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\mangle_test"))) {
@@ -202,7 +211,7 @@ bool torture_mangle(int dummy)
 		}
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\mangle_test\\*", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	if (!NT_STATUS_IS_OK(cli_rmdir(cli, "\\mangle_test"))) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;

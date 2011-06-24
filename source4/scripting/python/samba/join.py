@@ -36,6 +36,11 @@ import talloc
 # this makes debugging easier
 talloc.enable_null_tracking()
 
+class DCJoinException(Exception):
+
+    def __init__(self, msg):
+        super(DCJoinException, self).__init__("Can't join, error: %s" % msg)
+
 
 class dc_join(object):
     '''perform a DC join'''
@@ -61,6 +66,12 @@ class dc_join(object):
         ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                           session_info=system_session(),
                           credentials=ctx.creds, lp=ctx.lp)
+
+        try:
+            ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL, attrs=["dn"])
+        except ldb.LdbError, (enum, estr):
+            raise DCJoinException(estr)
+
 
         ctx.myname = netbios_name
         ctx.samname = "%s$" % ctx.myname

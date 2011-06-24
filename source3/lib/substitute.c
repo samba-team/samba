@@ -80,7 +80,7 @@ bool set_local_machine_name(const char *local_name, bool perm)
 const char *get_local_machine_name(void)
 {
 	if (!local_machine || !*local_machine) {
-		return global_myname();
+		return lp_netbios_name();
 	}
 
 	return local_machine;
@@ -324,105 +324,6 @@ static char * realloc_expand_env_var(char *str, char *p)
 }
 
 /*******************************************************************
-*******************************************************************/
-
-static char *longvar_domainsid( void )
-{
-	struct dom_sid sid;
-	fstring tmp;
-	char *sid_string;
-
-	if ( !secrets_fetch_domain_sid( lp_workgroup(), &sid ) ) {
-		return NULL;
-	}
-
-	sid_string = SMB_STRDUP( sid_to_fstring( tmp, &sid ) );
-
-	if ( !sid_string ) {
-		DEBUG(0,("longvar_domainsid: failed to dup SID string!\n"));
-	}
-
-	return sid_string;
-}
-
-/*******************************************************************
-*******************************************************************/
-
-struct api_longvar {
-	const char *name;
-	char* (*fn)( void );
-};
-
-static struct api_longvar longvar_table[] = {
-	{ "DomainSID",		longvar_domainsid },
-	{ NULL, 		NULL }
-};
-
-static char *get_longvar_val( const char *varname )
-{
-	int i;
-
-	DEBUG(7,("get_longvar_val: expanding variable [%s]\n", varname));
-
-	for ( i=0; longvar_table[i].name; i++ ) {
-		if ( strequal( longvar_table[i].name, varname ) ) {
-			return longvar_table[i].fn();
-		}
-	}
-
-	return NULL;
-}
-
-/*******************************************************************
- Expand the long smb.conf variable names given a pointer to a %(NAME).
- Return the number of characters by which the pointer should be advanced.
- When this is called p points at the '%' character.
-********************************************************************/
-
-static char *realloc_expand_longvar(char *str, char *p)
-{
-	fstring varname;
-	char *value;
-	char *q, *r;
-	int copylen;
-
-	if ( p[0] != '%' || p[1] != '(' ) {
-		return str;
-	}
-
-	/* Look for the terminating ')'.*/
-
-	if ((q = strchr_m(p,')')) == NULL) {
-		DEBUG(0,("realloc_expand_longvar: Unterminated environment variable [%s]\n", p));
-		return str;
-	}
-
-	/* Extract the name from within the %(NAME) string.*/
-
-	r = p+2;
-	copylen = MIN( (q-r), (sizeof(varname)-1) );
-	strncpy(varname, r, copylen);
-	varname[copylen] = '\0';
-
-	if ((value = get_longvar_val(varname)) == NULL) {
-		DEBUG(0,("realloc_expand_longvar: Variable [%s] not set.  Skipping\n", varname));
-		return str;
-	}
-
-	/* Copy the full %(NAME) into envname so it can be replaced.*/
-
-	copylen = MIN( (q+1-p),(sizeof(varname)-1) );
-	strncpy( varname, p, copylen );
-	varname[copylen] = '\0';
-	r = realloc_string_sub(str, varname, value);
-	SAFE_FREE( value );
-
-	/* skip over the %(varname) */
-
-	return r;
-}
-
-/*******************************************************************
  Patch from jkf@soton.ac.uk
  Added this to implement %p (NIS auto-map version of %H)
 *******************************************************************/
@@ -489,7 +390,7 @@ static const char *automount_server(const char *user_name)
 	if (local_machine_name && *local_machine_name) {
 		server_name = talloc_strdup(ctx, local_machine_name);
 	} else {
-		server_name = talloc_strdup(ctx, global_myname());
+		server_name = talloc_strdup(ctx, lp_netbios_name());
 	}
 
 	if (!server_name) {
@@ -632,13 +533,13 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 				sub_sockaddr[0] ? sub_sockaddr : "0.0.0.0");
 			break;
 		case 'L' : 
-			if ( StrnCaseCmp(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {
+			if ( strncasecmp_m(p, "%LOGONSERVER%", strlen("%LOGONSERVER%")) == 0 ) {
 				break;
 			}
 			if (local_machine_name && *local_machine_name) {
 				a_string = realloc_string_sub(a_string, "%L", local_machine_name); 
 			} else {
-				a_string = realloc_string_sub(a_string, "%L", global_myname()); 
+				a_string = realloc_string_sub(a_string, "%L", lp_netbios_name());
 			}
 			break;
 		case 'N':
@@ -679,9 +580,6 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		case '$' :
 			a_string = realloc_expand_env_var(a_string, p); /* Expand environment variables */
-			break;
-		case '(':
-			a_string = realloc_expand_longvar( a_string, p );
 			break;
 		case 'V' :
 			slprintf(vnnstr,sizeof(vnnstr)-1, "%u", get_my_vnn());
@@ -925,4 +823,33 @@ char *standard_sub_conn(TALLOC_CTX *ctx, connection_struct *conn, const char *st
 				get_smb_user_name(),
 				"",
 				str);
+}
+
+/******************************************************************************
+ version of standard_sub_basic() for string lists; uses talloc_sub_basic()
+ for the work
+ *****************************************************************************/
+
+bool str_list_sub_basic( char **list, const char *smb_name,
+			 const char *domain_name )
+{
+	TALLOC_CTX *ctx = list;
+	char *s, *tmpstr;
+
+	while ( *list ) {
+		s = *list;
+		tmpstr = talloc_sub_basic(ctx, smb_name, domain_name, s);
+		if ( !tmpstr ) {
+			DEBUG(0,("str_list_sub_basic: "
+				"alloc_sub_basic() return NULL!\n"));
+			return false;
+		}
+
+		TALLOC_FREE(*list);
+		*list = tmpstr;
+
+		list++;
+	}
+
+	return true;
 }

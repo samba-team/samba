@@ -1,4 +1,5 @@
 
-bld.SAMBA_SUBSYSTEM('util_reg',
+bld.SAMBA_LIBRARY('util_reg',
                     source='util_reg.c',
-                    deps='ndr')
+                    deps='ndr',
+		    private_library=True)

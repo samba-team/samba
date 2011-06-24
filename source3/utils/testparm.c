@@ -39,7 +39,7 @@
  Check if a directory exists.
 ********************************************************************/
 
-static bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
+static bool directory_exist_stat(const char *dname,SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
 	bool ret;
@@ -77,7 +77,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
-	if (strequal(lp_workgroup(), global_myname())) {
+	if (strequal(lp_workgroup(), lp_netbios_name())) {
 		fprintf(stderr, "WARNING: 'workgroup' and 'netbios name' " \
 			"must differ.\n");
 		ret = 1;
@@ -128,18 +128,33 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	 * Password server sanity checks.
 	 */
 
-	if((lp_security() == SEC_SERVER || lp_security() >= SEC_DOMAIN) && !lp_passwordserver()) {
+	if((lp_security() == SEC_SERVER || lp_security() >= SEC_DOMAIN) && !*lp_passwordserver()) {
 		const char *sec_setting;
 		if(lp_security() == SEC_SERVER)
 			sec_setting = "server";
 		else if(lp_security() == SEC_DOMAIN)
 			sec_setting = "domain";
+		else if(lp_security() == SEC_ADS)
+			sec_setting = "ads";
 		else
 			sec_setting = "";
 
-		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set \
-to a valid password server.\n", sec_setting );
+		fprintf(stderr, "ERROR: The setting 'security=%s' requires the 'password server' parameter be set\n"
+			"to the default value * or a valid password server.\n", sec_setting );
 		ret = 1;
+	}
+
+	if((lp_security() >= SEC_DOMAIN) && (strcmp(lp_passwordserver(), "*") != 0)) {
+		const char *sec_setting;
+		if(lp_security() == SEC_DOMAIN)
+			sec_setting = "domain";
+		else if(lp_security() == SEC_ADS)
+			sec_setting = "ads";
+		else
+			sec_setting = "";
+
+		fprintf(stderr, "WARNING: The setting 'security=%s' should NOT be combined with the 'password server' parameter.\n"
+			"(by default Samba will discover the correct DC to contact automatically).\n", sec_setting );
 	}
 
 	/*
@@ -244,6 +259,11 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	
 	if (lp_os_level() > 255) {
 		fprintf(stderr,"WARNING: Maximum value for 'os level' is 255!\n");	
+	}
+
+	if (strequal(lp_dos_charset(), "UTF8") || strequal(lp_dos_charset(), "UTF-8")) {
+		fprintf(stderr, "ERROR: 'dos charset' must not be UTF8\n");
+		ret = 1;
 	}
 
 	return ret;

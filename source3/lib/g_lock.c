@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "g_lock.h"
+#include "util_tdb.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/select.h"
 #include "system/select.h"
@@ -107,7 +108,7 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 	DEBUG(10, ("locks:\n"));
 	for (i=0; i<num_locks; i++) {
 		DEBUGADD(10, ("%s: %s %s\n",
-			      procid_str(talloc_tos(), &locks[i].pid),
+			      server_id_str(talloc_tos(), &locks[i].pid),
 			      ((locks[i].lock_type & 1) == G_LOCK_READ) ?
 			      "read" : "write",
 			      (locks[i].lock_type & G_LOCK_PENDING) ?
@@ -117,7 +118,7 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 		    && !process_exists(locks[i].pid)) {
 
 			DEBUGADD(10, ("lock owner %s died -- discarding\n",
-				      procid_str(talloc_tos(),
+				      server_id_str(talloc_tos(),
 						 &locks[i].pid)));
 
 			if (i < (num_locks-1)) {
@@ -145,7 +146,7 @@ static void g_lock_cleanup(int *pnum_locks, struct g_lock_rec *locks)
 			continue;
 		}
 		DEBUGADD(10, ("%s does not exist -- discarding\n",
-			      procid_str(talloc_tos(), &locks[i].pid)));
+			      server_id_str(talloc_tos(), &locks[i].pid)));
 
 		if (i < (num_locks-1)) {
 			locks[i] = locks[num_locks-1];
@@ -392,7 +393,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		 * sys_poll and in the clustering case we might have to add
 		 * the ctdb fd. This avoids the realloc then.
 		 */
-		pollfds = TALLOC_ARRAY(talloc_tos(), struct pollfd, 2);
+		pollfds = talloc_array(talloc_tos(), struct pollfd, 2);
 		if (pollfds == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			break;
@@ -495,7 +496,7 @@ static void g_lock_got_retry(struct messaging_context *msg,
 	bool *pretry = (bool *)private_data;
 
 	DEBUG(10, ("Got retry message from pid %s\n",
-		   procid_str(talloc_tos(), &server_id)));
+		   server_id_str(talloc_tos(), &server_id)));
 
 	*pretry = true;
 }
@@ -586,7 +587,7 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 						&data_blob_null);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("sending retry to %s failed: %s\n",
-					  procid_str(talloc_tos(),
+					  server_id_str(talloc_tos(),
 						     &locks[i].pid),
 					  nt_errstr(status)));
 			} else {

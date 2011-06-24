@@ -257,7 +257,7 @@ static void insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 	dbuf.dptr = (unsigned char *)data;
 	dbuf.dsize = datalen;
 
-	if (tdb_store(tdb, key, dbuf, TDB_INSERT) == -1) {
+	if (tdb_store(tdb, key, dbuf, TDB_INSERT) != 0) {
 		terror("insert failed");
 	}
 }
@@ -284,7 +284,7 @@ static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 	printf("Storing key:\n");
 	print_rec(tdb, key, dbuf, NULL);
 
-	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
+	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) != 0) {
 		terror("store failed");
 	}
 }
@@ -363,7 +363,7 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 		return;
 	}
 	
-	if ( tdb_store( dst_tdb, key, dbuf, TDB_REPLACE ) == -1 ) {
+	if (tdb_store( dst_tdb, key, dbuf, TDB_REPLACE ) != 0) {
 		terror("failed to move record");
 	}
 	else

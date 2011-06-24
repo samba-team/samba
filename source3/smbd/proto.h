@@ -1,3 +1,50 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  Main SMB server routines
+ *
+ *  Copyright (C) Andrew Tridgell			1992-2002,2006
+ *  Copyright (C) Jeremy Allison			1992-2010
+ *  Copyright (C) Volker Lendecke			1993-2009
+ *  Copyright (C) John H Terpstra			1995-1998
+ *  Copyright (C) Luke Kenneth Casson Leighton		1996-1998
+ *  Copyright (C) Paul Ashton				1997-1998
+ *  Copyright (C) Tim Potter				1999-2000
+ *  Copyright (C) T.D.Lee@durham.ac.uk			1999
+ *  Copyright (C) Ying Chen				2000
+ *  Copyright (C) Shirish Kalele			2000
+ *  Copyright (C) Andrew Bartlett			2001-2003
+ *  Copyright (C) Alexander Bokovoy			2002,2005
+ *  Copyright (C) Simo Sorce				2001-2002,2009
+ *  Copyright (C) Andreas Gruenbacher			2002
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2002
+ *  Copyright (C) Martin Pool				2002
+ *  Copyright (C) Luke Howard				2003
+ *  Copyright (C) Stefan (metze) Metzmacher		2003,2009
+ *  Copyright (C) Steve French				2005
+ *  Copyright (C) Gerald (Jerry) Carter			2006
+ *  Copyright (C) James Peach				2006-2007
+ *  Copyright (C) Jelmer Vernooij			2002-2003
+ *  Copyright (C) Michael Adam				2007
+ *  Copyright (C) Rishi Srivatsavai			2007
+ *  Copyright (C) Tim Prouty				2009
+ *  Copyright (C) Gregor Beck				2011
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _SMBD_PROTO_H_
+#define _SMBD_PROTO_H_
 
 /* The following definitions come from smbd/signing.c  */
 
@@ -23,7 +70,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     size_t smb_maxcnt);
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
-			      files_struct *fsp, char *data,
+			      files_struct *fsp, const char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite);
 NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
@@ -63,6 +110,9 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint64_t offset,
 		uint64_t count,
 		uint64_t blocking_smblctx);
+void smbd_cancel_pending_lock_requests_by_fid(files_struct *fsp,
+			struct byte_range_lock *br_lck,
+			enum file_close_type close_type);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			struct byte_range_lock *br_lck,
 			enum file_close_type close_type);
@@ -94,7 +144,7 @@ NTSTATUS delete_all_streams(connection_struct *conn, const char *fname);
 
 void conn_init(struct smbd_server_connection *sconn);
 int conn_num_open(struct smbd_server_connection *sconn);
-bool conn_snum_used(int snum);
+bool conn_snum_used(struct smbd_server_connection *sconn, int snum);
 connection_struct *conn_find(struct smbd_server_connection *sconn,
 			     unsigned cnum);
 connection_struct *conn_new(struct smbd_server_connection *sconn);
@@ -102,6 +152,7 @@ bool conn_close_all(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint16 vuid);
 void conn_free(connection_struct *conn);
+void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename);
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,
@@ -187,6 +238,8 @@ long TellDir(struct smb_Dir *dirp);
 void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
 bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
+				const char *dirname);
+NTSTATUS smbd_can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
 
 /* The following definitions come from smbd/dmapi.c  */
@@ -407,7 +460,8 @@ bool create_junction(TALLOC_CTX *ctx,
 		struct junction_map *jucn);
 bool create_msdfs_link(const struct junction_map *jucn);
 bool remove_msdfs_link(const struct junction_map *jucn);
-struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn);
+struct junction_map *enum_msdfs_links(struct smbd_server_connection *sconn,
+				      TALLOC_CTX *ctx, size_t *p_num_jn);
 NTSTATUS resolve_dfspath(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			bool dfs_pathnames,
@@ -621,6 +675,10 @@ void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
 void contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type);
+void smbd_contend_level2_oplocks_begin(files_struct *fsp,
+				  enum level2_contention_type type);
+void smbd_contend_level2_oplocks_end(files_struct *fsp,
+				enum level2_contention_type type);
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);
 void message_to_share_mode_entry(struct share_mode_entry *e, char *msg);
 bool init_oplocks(struct messaging_context *msg_ctx);
@@ -750,6 +808,7 @@ size_t req_wct_ofs(struct smb_request *req);
 void chain_reply(struct smb_request *req);
 bool req_is_in_chain(struct smb_request *req);
 void smbd_process(struct smbd_server_connection *sconn);
+bool fork_echo_handler(struct smbd_server_connection *sconn);
 
 /* The following definitions come from smbd/quotas.c  */
 
@@ -996,10 +1055,18 @@ bool stat_cache_lookup(connection_struct *conn,
 			char **pp_dirpath,
 			char **pp_start,
 			SMB_STRUCT_STAT *pst);
+void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
+				    const char *name);
 void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);
 void stat_cache_delete(const char *name);
-unsigned int fast_string_hash(TDB_DATA *key);
+#if BUILD_TDB2
+struct tdb_data;
+unsigned int fast_string_hash(struct tdb_data *key);
+#else
+struct TDB_DATA;
+unsigned int fast_string_hash(struct TDB_DATA *key);
+#endif
 bool reset_stat_cache( void );
 
 /* The following definitions come from smbd/statvfs.c  */
@@ -1046,15 +1113,17 @@ void reply_transs2(struct smb_request *req);
 /* The following definitions come from smbd/uid.c  */
 
 bool change_to_guest(void);
-void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid);
 bool change_to_user(connection_struct *conn, uint16 vuid);
 bool change_to_user_by_session(connection_struct *conn,
 			       const struct auth_serversupplied_info *session_info);
 bool change_to_root_user(void);
-bool become_authenticated_pipe_user(struct pipes_struct *p);
+bool smbd_change_to_root_user(void);
+bool become_authenticated_pipe_user(struct auth_serversupplied_info *session_info);
 bool unbecome_authenticated_pipe_user(void);
 void become_root(void);
 void unbecome_root(void);
+void smbd_become_root(void);
+void smbd_unbecome_root(void);
 bool become_user(connection_struct *conn, uint16 vuid);
 bool become_user_by_session(connection_struct *conn,
 			    const struct auth_serversupplied_info *session_info);
@@ -1130,3 +1199,5 @@ void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 /* The following definitions come from smbd/msg_idmap.c */
 
 void msg_idmap_register_msgs(struct messaging_context *ctx);
+
+#endif /* _SMBD_PROTO_H_ */

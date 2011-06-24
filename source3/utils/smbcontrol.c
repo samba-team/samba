@@ -31,6 +31,7 @@
 #include "printing/notify.h"
 #include "libsmb/nmblib.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 #if HAVE_LIBUNWIND_H
 #include <libunwind.h>
@@ -63,7 +64,7 @@ static bool send_message(struct messaging_context *msg_ctx,
 	if (procid_to_pid(&pid) != 0)
 		return NT_STATUS_IS_OK(
 			messaging_send_buf(msg_ctx, pid, msg_type,
-					   (uint8 *)buf, len));
+					   (const uint8 *)buf, len));
 
 	ret = message_send_all(msg_ctx, msg_type, buf, len, &n_sent);
 	DEBUG(10,("smbcontrol/send_message: broadcast message to "
@@ -118,7 +119,7 @@ static void print_pid_string_cb(struct messaging_context *msg,
 {
 	char *pidstr;
 
-	pidstr = procid_str(talloc_tos(), &pid);
+	pidstr = server_id_str(talloc_tos(), &pid);
 	printf("PID %s: %.*s", pidstr, (int)data->length,
 	       (const char *)data->data);
 	TALLOC_FREE(pidstr);
@@ -432,7 +433,7 @@ static void pong_cb(struct messaging_context *msg,
 		    struct server_id pid,
 		    DATA_BLOB *data)
 {
-	char *src_string = procid_str(NULL, &pid);
+	char *src_string = server_id_str(NULL, &pid);
 	printf("PONG from pid %s\n", src_string);
 	TALLOC_FREE(src_string);
 	num_replies++;
@@ -748,7 +749,7 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 
 		notify_printer_byname(messaging_event_context(msg_ctx),
 				      msg_ctx, argv[2], attribute,
-				      CONST_DISCARD(char *, argv[4]));
+				      discard_const_p(char, argv[4]));
 
 		goto send;
 	}
@@ -1142,7 +1143,7 @@ static void winbind_validate_cache_cb(struct messaging_context *msg,
 				      struct server_id pid,
 				      DATA_BLOB *data)
 {
-	char *src_string = procid_str(NULL, &pid);
+	char *src_string = server_id_str(NULL, &pid);
 	printf("Winbindd cache is %svalid. (answer from pid %s)\n",
 	       (*(data->data) == 0 ? "" : "NOT "), src_string);
 	TALLOC_FREE(src_string);
@@ -1201,7 +1202,7 @@ static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
 	strupper_m(unix_name);
 	push_ascii(n->name, unix_name, sizeof(n->name), STR_TERMINATE);
 	n->name_type = (unsigned int)type & 0xFF;
-	push_ascii(n->scope,  global_scope(), 64, STR_TERMINATE);
+	push_ascii(n->scope,  lp_netbios_scope(), 64, STR_TERMINATE);
 }
 
 static bool do_nodestatus(struct messaging_context *msg_ctx,

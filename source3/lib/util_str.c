@@ -36,164 +36,6 @@ const char toupper_ascii_fast_table[128] = {
 };
 
 /**
- * Case insensitive string compararison.
- *
- * iconv does not directly give us a way to compare strings in
- * arbitrary unix character sets -- all we can is convert and then
- * compare.  This is expensive.
- *
- * As an optimization, we do a first pass that considers only the
- * prefix of the strings that is entirely 7-bit.  Within this, we
- * check whether they have the same value.
- *
- * Hopefully this will often give the answer without needing to copy.
- * In particular it should speed comparisons to literal ascii strings
- * or comparisons of strings that are "obviously" different.
- *
- * If we find a non-ascii character we fall back to converting via
- * iconv.
- *
- * This should never be slower than convering the whole thing, and
- * often faster.
- *
- * A different optimization would be to compare for bitwise equality
- * in the binary encoding.  (It would be possible thought hairy to do
- * both simultaneously.)  But in that case if they turn out to be
- * different, we'd need to restart the whole thing.
- *
- * Even better is to implement strcasecmp for each encoding and use a
- * function pointer.
- **/
-int StrCaseCmp(const char *s, const char *t)
-{
-
-	const char *ps, *pt;
-	size_t size;
-	smb_ucs2_t *buffer_s, *buffer_t;
-	int ret;
-
-	for (ps = s, pt = t; ; ps++, pt++) {
-		char us, ut;
-
-		if (!*ps && !*pt)
-			return 0; /* both ended */
- 		else if (!*ps)
-			return -1; /* s is a prefix */
-		else if (!*pt)
-			return +1; /* t is a prefix */
-		else if ((*ps & 0x80) || (*pt & 0x80))
-			/* not ascii anymore, do it the hard way
-			 * from here on in */
-			break;
-
-		us = toupper_ascii_fast(*ps);
-		ut = toupper_ascii_fast(*pt);
-		if (us == ut)
-			continue;
-		else if (us < ut)
-			return -1;
-		else if (us > ut)
-			return +1;
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_s, ps, &size)) {
-		return strcmp(ps, pt);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive, and it's pretty
-		   close */
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_t, pt, &size)) {
-		TALLOC_FREE(buffer_s);
-		return strcmp(ps, pt);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive, and it's pretty
-		   close */
-	}
-
-	ret = strcasecmp_w(buffer_s, buffer_t);
-	TALLOC_FREE(buffer_s);
-	TALLOC_FREE(buffer_t);
-	return ret;
-}
-
-
-/**
- Case insensitive string compararison, length limited.
-**/
-int StrnCaseCmp(const char *s, const char *t, size_t len)
-{
-	size_t n = 0;
-	const char *ps, *pt;
-	size_t size;
-	smb_ucs2_t *buffer_s, *buffer_t;
-	int ret;
-
-	for (ps = s, pt = t; n < len ; ps++, pt++, n++) {
-		char us, ut;
-
-		if (!*ps && !*pt)
-			return 0; /* both ended */
- 		else if (!*ps)
-			return -1; /* s is a prefix */
-		else if (!*pt)
-			return +1; /* t is a prefix */
-		else if ((*ps & 0x80) || (*pt & 0x80))
-			/* not ascii anymore, do it the
-			 * hard way from here on in */
-			break;
-
-		us = toupper_ascii_fast(*ps);
-		ut = toupper_ascii_fast(*pt);
-		if (us == ut)
-			continue;
-		else if (us < ut)
-			return -1;
-		else if (us > ut)
-			return +1;
-	}
-
-	if (n == len) {
-		return 0;
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_s, ps, &size)) {
-		return strncmp(ps, pt, len-n);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive,
-		   and it's pretty close */
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &buffer_t, pt, &size)) {
-		TALLOC_FREE(buffer_s);
-		return strncmp(ps, pt, len-n);
-		/* Not quite the right answer, but finding the right one
-		   under this failure case is expensive,
-		   and it's pretty close */
-	}
-
-	ret = strncasecmp_w(buffer_s, buffer_t, len-n);
-	TALLOC_FREE(buffer_s);
-	TALLOC_FREE(buffer_t);
-	return ret;
-}
-
-/**
- * Compare 2 strings.
- *
- * @note The comparison is case-insensitive.
- **/
-bool strequal(const char *s1, const char *s2)
-{
-	if (s1 == s2)
-		return(true);
-	if (!s1 || !s2)
-		return(false);
-
-	return(StrCaseCmp(s1,s2)==0);
-}
-
-/**
  * Compare 2 strings up to and including the nth char.
  *
  * @note The comparison is case-insensitive.
@@ -205,7 +47,7 @@ bool strnequal(const char *s1,const char *s2,size_t n)
 	if (!s1 || !s2 || !n)
 		return(false);
 
-	return(StrnCaseCmp(s1,s2,n)==0);
+	return(strncasecmp_m(s1,s2,n)==0);
 }
 
 /**
@@ -328,77 +170,6 @@ bool trim_char(char *s,char cfront,char cback)
 }
 
 /**
- Safe string copy into a known length string. maxlength does not
- include the terminating zero.
-**/
-
-char *safe_strcpy_fn(char *dest,
-		     const char *src,
-		     size_t maxlength)
-{
-	size_t len;
-
-	if (!dest) {
-		smb_panic("ERROR: NULL dest in safe_strcpy");
-	}
-
-	if (!src) {
-		*dest = 0;
-		return dest;
-	}
-
-	len = strnlen(src, maxlength+1);
-
-	if (len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by "
-			"%lu (%lu - %lu) in safe_strcpy [%.50s]\n",
-			 (unsigned long)(len-maxlength), (unsigned long)len,
-			 (unsigned long)maxlength, src));
-		len = maxlength;
-	}
-
-	memmove(dest, src, len);
-	dest[len] = 0;
-	return dest;
-}
-
-/**
- Safe string cat into a string. maxlength does not
- include the terminating zero.
-**/
-char *safe_strcat_fn(char *dest,
-		     const char *src,
-		     size_t maxlength)
-{
-	size_t src_len, dest_len;
-
-	if (!dest) {
-		smb_panic("ERROR: NULL dest in safe_strcat");
-	}
-
-	if (!src)
-		return dest;
-
-	src_len = strnlen(src, maxlength + 1);
-	dest_len = strnlen(dest, maxlength + 1);
-
-	if (src_len + dest_len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by %d "
-			"in safe_strcat [%.50s]\n",
-			 (int)(src_len + dest_len - maxlength), src));
-		if (maxlength > dest_len) {
-			memcpy(&dest[dest_len], src, maxlength - dest_len);
-		}
-		dest[maxlength] = 0;
-		return NULL;
-	}
-
-	memcpy(&dest[dest_len], src, src_len);
-	dest[dest_len + src_len] = 0;
-	return dest;
-}
-
-/**
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
 **/
@@ -446,7 +217,7 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 				break;
 			}
 		} else {
-			if (StrCaseCmp(tok,s) == 0) {
+			if (strcasecmp_m(tok,s) == 0) {
 				ret = true;
 				break;
 			}
@@ -454,235 +225,6 @@ bool in_list(const char *s, const char *list, bool casesensitive)
 	}
 	TALLOC_FREE(frame);
 	return ret;
-}
-
-/* this is used to prevent lots of mallocs of size 1 */
-static const char null_string[] = "";
-
-/**
- Set a string value, allocing the space for the string
-**/
-
-static bool string_init(char **dest,const char *src)
-{
-	size_t l;
-
-	if (!src)
-		src = "";
-
-	l = strlen(src);
-
-	if (l == 0) {
-		*dest = CONST_DISCARD(char*, null_string);
-	} else {
-		(*dest) = SMB_STRDUP(src);
-		if ((*dest) == NULL) {
-			DEBUG(0,("Out of memory in string_init\n"));
-			return false;
-		}
-	}
-	return(true);
-}
-
-/**
- Free a string value.
-**/
-
-void string_free(char **s)
-{
-	if (!s || !(*s))
-		return;
-	if (*s == null_string)
-		*s = NULL;
-	SAFE_FREE(*s);
-}
-
-/**
- Set a string value, deallocating any existing space, and allocing the space
- for the string
-**/
-
-bool string_set(char **dest,const char *src)
-{
-	string_free(dest);
-	return(string_init(dest,src));
-}
-
-/**
- Substitute a string for a pattern in another string. Make sure there is
- enough room!
-
- This routine looks for pattern in s and replaces it with
- insert. It may do multiple replacements or just one.
-
- Any of " ; ' $ or ` in the insert string are replaced with _
- if len==0 then the string cannot be extended. This is different from the old
- use of len==0 which was for no length checks to be done.
-**/
-
-void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
-		 bool remove_unsafe_characters, bool replace_once,
-		 bool allow_trailing_dollar)
-{
-	char *p;
-	ssize_t ls,lp,li, i;
-
-	if (!insert || !pattern || !*pattern || !s)
-		return;
-
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-
-	if (len == 0)
-		len = ls + 1; /* len is number of *bytes* */
-
-	while (lp <= ls && (p = strstr_m(s,pattern))) {
-		if (ls + (li-lp) >= len) {
-			DEBUG(0,("ERROR: string overflow by "
-				"%d in string_sub(%.50s, %d)\n",
-				 (int)(ls + (li-lp) - len),
-				 pattern, (int)len));
-			break;
-		}
-		if (li != lp) {
-			memmove(p+li,p+lp,strlen(p+lp)+1);
-		}
-		for (i=0;i<li;i++) {
-			switch (insert[i]) {
-			case '$':
-				/* allow a trailing $
-				 * (as in machine accounts) */
-				if (allow_trailing_dollar && (i == li - 1 )) {
-					p[i] = insert[i];
-					break;
-				}
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '%':
-			case '\r':
-			case '\n':
-				if ( remove_unsafe_characters ) {
-					p[i] = '_';
-					/* yes this break should be here
-					 * since we want to fall throw if
-					 * not replacing unsafe chars */
-					break;
-				}
-			default:
-				p[i] = insert[i];
-			}
-		}
-		s = p + li;
-		ls += (li-lp);
-
-		if (replace_once)
-			break;
-	}
-}
-
-void string_sub_once(char *s, const char *pattern,
-		const char *insert, size_t len)
-{
-	string_sub2( s, pattern, insert, len, true, true, false );
-}
-
-void string_sub(char *s,const char *pattern, const char *insert, size_t len)
-{
-	string_sub2( s, pattern, insert, len, true, false, false );
-}
-
-void fstring_sub(char *s,const char *pattern,const char *insert)
-{
-	string_sub(s, pattern, insert, sizeof(fstring));
-}
-
-/**
- Similar to string_sub2, but it will accept only allocated strings
- and may realloc them so pay attention at what you pass on no
- pointers inside strings, no const may be passed
- as string.
-**/
-
-char *realloc_string_sub2(char *string,
-			const char *pattern,
-			const char *insert,
-			bool remove_unsafe_characters,
-			bool allow_trailing_dollar)
-{
-	char *p, *in;
-	char *s;
-	ssize_t ls,lp,li,ld, i;
-
-	if (!insert || !pattern || !*pattern || !string || !*string)
-		return NULL;
-
-	s = string;
-
-	in = SMB_STRDUP(insert);
-	if (!in) {
-		DEBUG(0, ("realloc_string_sub: out of memory!\n"));
-		return NULL;
-	}
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-	ld = li - lp;
-	for (i=0;i<li;i++) {
-		switch (in[i]) {
-			case '$':
-				/* allow a trailing $
-				 * (as in machine accounts) */
-				if (allow_trailing_dollar && (i == li - 1 )) {
-					break;
-				}
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
-			case '%':
-			case '\r':
-			case '\n':
-				if ( remove_unsafe_characters ) {
-					in[i] = '_';
-					break;
-				}
-			default:
-				/* ok */
-				break;
-		}
-	}
-
-	while ((p = strstr_m(s,pattern))) {
-		if (ld > 0) {
-			int offset = PTR_DIFF(s,string);
-			string = (char *)SMB_REALLOC(string, ls + ld + 1);
-			if (!string) {
-				DEBUG(0, ("realloc_string_sub: "
-					"out of memory!\n"));
-				SAFE_FREE(in);
-				return NULL;
-			}
-			p = string + offset + (p - s);
-		}
-		if (li != lp) {
-			memmove(p+li,p+lp,strlen(p+lp)+1);
-		}
-		memcpy(p, in, li);
-		s = p + li;
-		ls += ld;
-	}
-	SAFE_FREE(in);
-	return string;
-}
-
-char *realloc_string_sub(char *string,
-			const char *pattern,
-			const char *insert)
-{
-	return realloc_string_sub2(string, pattern, insert, true, false);
 }
 
 /*
@@ -715,7 +257,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 
 	s = string;
 
-	in = SMB_STRDUP(insert);
+	in = talloc_strdup(mem_ctx, insert);
 	if (!in) {
 		DEBUG(0, ("talloc_string_sub2: ENOMEM\n"));
 		return NULL;
@@ -758,7 +300,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			if (!string) {
 				DEBUG(0, ("talloc_string_sub: out of "
 					  "memory!\n"));
-				SAFE_FREE(in);
+				TALLOC_FREE(in);
 				return NULL;
 			}
 			p = string + offset + (p - s);
@@ -774,7 +316,7 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 			break;
 		}
 	}
-	SAFE_FREE(in);
+	TALLOC_FREE(in);
 	return string;
 }
 
@@ -787,48 +329,6 @@ char *talloc_string_sub(TALLOC_CTX *mem_ctx,
 {
 	return talloc_string_sub2(mem_ctx, src, pattern, insert,
 			true, false, false);
-}
-
-/**
- Similar to string_sub() but allows for any character to be substituted.
- Use with caution!
- if len==0 then the string cannot be extended. This is different from the old
- use of len==0 which was for no length checks to be done.
-**/
-
-void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
-{
-	char *p;
-	ssize_t ls,lp,li;
-
-	if (!insert || !pattern || !s)
-		return;
-
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-
-	if (!*pattern)
-		return;
-
-	if (len == 0)
-		len = ls + 1; /* len is number of *bytes* */
-
-	while (lp <= ls && (p = strstr_m(s,pattern))) {
-		if (ls + (li-lp) >= len) {
-			DEBUG(0,("ERROR: string overflow by "
-				"%d in all_string_sub(%.50s, %d)\n",
-				 (int)(ls + (li-lp) - len),
-				 pattern, (int)len));
-			break;
-		}
-		if (li != lp) {
-			memmove(p+li,p+lp,strlen(p+lp)+1);
-		}
-		memcpy(p, insert, li);
-		s = p + li;
-		ls += (li-lp);
-	}
 }
 
 char *talloc_all_string_sub(TALLOC_CTX *ctx,
@@ -898,91 +398,10 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 		/* Too hard to try and get right. */
 		return NULL;
 	}
-	ret = (char *)(s+strlen(s2));
+	ret = discard_const_p(char, (s+strlen(s2)));
 	TALLOC_FREE(ws);
 	TALLOC_FREE(s2);
 	return ret;
-}
-
-/***********************************************************************
- strstr_m - We convert via ucs2 for now.
-***********************************************************************/
-
-char *strstr_m(const char *src, const char *findstr)
-{
-	smb_ucs2_t *p;
-	smb_ucs2_t *src_w, *find_w;
-	const char *s;
-	char *s2;
-	char *retp;
-
-	size_t converted_size, findstr_len = 0;
-
-	/* for correctness */
-	if (!findstr[0]) {
-		return (char*)src;
-	}
-
-	/* Samba does single character findstr calls a *lot*. */
-	if (findstr[1] == '\0')
-		return strchr_m(src, *findstr);
-
-	/* We optimise for the ascii case, knowing that all our
-	   supported multi-byte character sets are ascii-compatible
-	   (ie. they match for the first 128 chars) */
-
-	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
-		if (*s == *findstr) {
-			if (!findstr_len)
-				findstr_len = strlen(findstr);
-
-			if (strncmp(s, findstr, findstr_len) == 0) {
-				return (char *)s;
-			}
-		}
-	}
-
-	if (!*s)
-		return NULL;
-
-#if 1 /* def BROKEN_UNICODE_COMPOSE_CHARACTERS */
-	/* 'make check' fails unless we do this */
-
-	/* With compose characters we must restart from the beginning. JRA. */
-	s = src;
-#endif
-
-	if (!push_ucs2_talloc(talloc_tos(), &src_w, src, &converted_size)) {
-		DEBUG(0,("strstr_m: src malloc fail\n"));
-		return NULL;
-	}
-
-	if (!push_ucs2_talloc(talloc_tos(), &find_w, findstr, &converted_size)) {
-		TALLOC_FREE(src_w);
-		DEBUG(0,("strstr_m: find malloc fail\n"));
-		return NULL;
-	}
-
-	p = strstr_w(src_w, find_w);
-
-	if (!p) {
-		TALLOC_FREE(src_w);
-		TALLOC_FREE(find_w);
-		return NULL;
-	}
-
-	*p = 0;
-	if (!pull_ucs2_talloc(talloc_tos(), &s2, src_w, &converted_size)) {
-		TALLOC_FREE(src_w);
-		TALLOC_FREE(find_w);
-		DEBUG(0,("strstr_m: dest malloc fail\n"));
-		return NULL;
-	}
-	retp = (char *)(s+strlen(s2));
-	TALLOC_FREE(src_w);
-	TALLOC_FREE(find_w);
-	TALLOC_FREE(s2);
-	return retp;
 }
 
 static bool unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
@@ -1005,6 +424,36 @@ static bool unix_strlower(const char *src, size_t srclen, char *dest, size_t des
 	return ret;
 }
 
+#if 0 /* Alternate function that avoid talloc calls for ASCII and non ASCII */
+
+/**
+ Convert a string to lower case.
+**/
+_PUBLIC_ void strlower_m(char *s)
+{
+	char *d;
+	struct smb_iconv_handle *iconv_handle;
+
+	iconv_handle = get_iconv_handle();
+
+	d = s;
+
+	while (*s) {
+		size_t c_size, c_size2;
+		codepoint_t c = next_codepoint_handle(iconv_handle, s, &c_size);
+		c_size2 = push_codepoint_handle(iconv_handle, d, tolower_m(c));
+		if (c_size2 > c_size) {
+			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
+				 c, tolower_m(c), (int)c_size, (int)c_size2));
+			smb_panic("codepoint expansion in strlower_m\n");
+		}
+		s += c_size;
+		d += c_size2;
+	}
+	*d = 0;
+}
+
+#endif
 
 /**
  Convert a string to lower case.
@@ -1059,6 +508,37 @@ static bool unix_strupper(const char *src, size_t srclen, char *dest, size_t des
 	TALLOC_FREE(buffer);
 	return ret;
 }
+
+#if 0 /* Alternate function that avoid talloc calls for ASCII and non ASCII */
+
+/**
+ Convert a string to UPPER case.
+**/
+_PUBLIC_ void strupper_m(char *s)
+{
+	char *d;
+	struct smb_iconv_handle *iconv_handle;
+
+	iconv_handle = get_iconv_handle();
+
+	d = s;
+
+	while (*s) {
+		size_t c_size, c_size2;
+		codepoint_t c = next_codepoint_handle(iconv_handle, s, &c_size);
+		c_size2 = push_codepoint_handle(iconv_handle, d, toupper_m(c));
+		if (c_size2 > c_size) {
+			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
+				 c, toupper_m(c), (int)c_size, (int)c_size2));
+			smb_panic("codepoint expansion in strupper_m\n");
+		}
+		s += c_size;
+		d += c_size2;
+	}
+	*d = 0;
+}
+
+#endif
 
 /**
  Convert a string to upper case.
@@ -1116,35 +596,6 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
 /******************************************************************************
- version of standard_sub_basic() for string lists; uses talloc_sub_basic()
- for the work
- *****************************************************************************/
-
-bool str_list_sub_basic( char **list, const char *smb_name,
-			 const char *domain_name )
-{
-	TALLOC_CTX *ctx = list;
-	char *s, *tmpstr;
-
-	while ( *list ) {
-		s = *list;
-		tmpstr = talloc_sub_basic(ctx, smb_name, domain_name, s);
-		if ( !tmpstr ) {
-			DEBUG(0,("str_list_sub_basic: "
-				"alloc_sub_basic() return NULL!\n"));
-			return false;
-		}
-
-		TALLOC_FREE(*list);
-		*list = tmpstr;
-
-		list++;
-	}
-
-	return true;
-}
-
-/******************************************************************************
  substitute a specific pattern in a string list
  *****************************************************************************/
 
@@ -1173,7 +624,7 @@ bool str_list_substitute(char **list, const char *pattern, const char *insert)
 			t = *list;
 			d = p -t;
 			if (ld) {
-				t = TALLOC_ARRAY(ctx, char, ls +ld +1);
+				t = talloc_array(ctx, char, ls +ld +1);
 				if (!t) {
 					DEBUG(0,("str_list_substitute: "
 						"Unable to allocate memory"));
@@ -1415,25 +866,16 @@ uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
  *
  *  Returns 0 if the string can't be converted.
  */
-SMB_OFF_T conv_str_size(const char * str)
+uint64_t conv_str_size(const char * str)
 {
-	SMB_OFF_T lval_orig;
-        SMB_OFF_T lval;
+        uint64_t lval;
 	char * end;
 
         if (str == NULL || *str == '\0') {
                 return 0;
         }
 
-#ifdef HAVE_STRTOULL
-	if (sizeof(SMB_OFF_T) == 8) {
-		lval = strtoull(str, &end, 10 /* base */);
-	} else {
-		lval = strtoul(str, &end, 10 /* base */);
-	}
-#else
-	lval = strtoul(str, &end, 10 /* base */);
-#endif
+	lval = strtoull(str, &end, 10 /* base */);
 
         if (end == NULL || end == str) {
                 return 0;
@@ -1443,32 +885,21 @@ SMB_OFF_T conv_str_size(const char * str)
 		return lval;
 	}
 
-	lval_orig = lval;
-
 	if (strwicmp(end, "K") == 0) {
-		lval *= (SMB_OFF_T)1024;
+		lval *= 1024ULL;
 	} else if (strwicmp(end, "M") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL);
 	} else if (strwicmp(end, "G") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL *
+			 1024ULL);
 	} else if (strwicmp(end, "T") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024 * (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL *
+			 1024ULL * 1024ULL);
 	} else if (strwicmp(end, "P") == 0) {
-		lval *= ((SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024 * (SMB_OFF_T)1024 *
-			 (SMB_OFF_T)1024);
+		lval *= (1024ULL * 1024ULL *
+			 1024ULL * 1024ULL *
+			 1024ULL);
 	} else {
-		return 0;
-	}
-
-	/*
-	 * Primitive attempt to detect wrapping on platforms with
-	 * 4-byte SMB_OFF_T. It's better to let the caller handle a
-	 * failure than some random number.
-	 */
-	if (lval_orig <= lval) {
 		return 0;
 	}
 
@@ -1495,7 +926,7 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 		if (*bufsize == 0)
 			*bufsize = 128;
 
-		*string = TALLOC_ARRAY(mem_ctx, char, *bufsize);
+		*string = talloc_array(mem_ctx, char, *bufsize);
 		if (*string == NULL)
 			goto error;
 	}
@@ -1517,7 +948,7 @@ void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 	}
 
 	if (increased) {
-		*string = TALLOC_REALLOC_ARRAY(mem_ctx, *string, char,
+		*string = talloc_realloc(mem_ctx, *string, char,
 					       *bufsize);
 		if (*string == NULL) {
 			goto error;
@@ -1588,33 +1019,6 @@ char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...)
 	return ret;
 }
 
-
-/*
-   Returns the substring from src between the first occurrence of
-   the char "front" and the first occurence of the char "back".
-   Mallocs the return string which must be freed.  Not for use
-   with wide character strings.
-*/
-char *sstring_sub(const char *src, char front, char back)
-{
-	char *temp1, *temp2, *temp3;
-	ptrdiff_t len;
-
-	temp1 = strchr(src, front);
-	if (temp1 == NULL) return NULL;
-	temp2 = strchr(src, back);
-	if (temp2 == NULL) return NULL;
-	len = temp2 - temp1;
-	if (len <= 0) return NULL;
-	temp3 = (char*)SMB_MALLOC(len);
-	if (temp3 == NULL) {
-		DEBUG(1,("Malloc failure in sstring_sub\n"));
-		return NULL;
-	}
-	memcpy(temp3, temp1+1, len-1);
-	temp3[len-1] = '\0';
-	return temp3;
-}
 
 /********************************************************************
  Check a string for any occurrences of a specified list of invalid
@@ -1825,7 +1229,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	if (!string || !*string)
 		return NULL;
 
-	list = TALLOC_ARRAY(mem_ctx, char *, S_LIST_ABS+1);
+	list = talloc_array(mem_ctx, char *, S_LIST_ABS+1);
 	if (list == NULL) {
 		return NULL;
 	}
@@ -1849,7 +1253,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 
 			lsize += S_LIST_ABS;
 
-			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *,
+			tmp = talloc_realloc(mem_ctx, list, char *,
 						   lsize + 1);
 			if (tmp == NULL) {
 				DEBUG(0,("str_list_make: "

@@ -22,9 +22,7 @@
 #include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
-#include "registry.h"
 #include "registry/reg_objects.h"
-#include "nt_printing.h"
 
 #ifdef HAVE_ADS
 
@@ -201,7 +199,7 @@ static bool map_multi_sz(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	};
 
 	if (num_vals) {
-		str_values = TALLOC_ARRAY(ctx, char *, num_vals + 1);
+		str_values = talloc_array(ctx, char *, num_vals + 1);
 		if (!str_values) {
 			return False;
 		}
@@ -291,7 +289,7 @@ static void map_regval_to_ads(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	int i;
 
 	for (i=0; map[i].valname; i++) {
-		if (StrCaseCmp(map[i].valname, regval_name(value)) == 0) {
+		if (strcasecmp_m(map[i].valname, regval_name(value)) == 0) {
 			if (!map[i].fn(ctx, mods, value)) {
 				DEBUG(5, ("Add of value %s to modlist failed\n", regval_name(value)));
 			} else {

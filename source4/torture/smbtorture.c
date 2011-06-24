@@ -686,7 +686,7 @@ int main(int argc,char *argv[])
 
 	torture->lp_ctx = cmdline_lp_ctx;
 
-	gensec_init(cmdline_lp_ctx);
+	gensec_init();
 
 	if (shell) {
 		/* In shell mode, just ignore any remaining test names. */

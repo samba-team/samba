@@ -28,7 +28,9 @@
 #include "reg_backend_db.h"
 #include "reg_objects.h"
 #include "nt_printing.h"
+#include "util_tdb.h"
 #include "dbwrap.h"
+#include "../libcli/security/secdesc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
@@ -46,6 +48,8 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 				       struct regval_ctr *values);
 static bool regdb_store_values_internal(struct db_context *db, const char *key,
 					struct regval_ctr *values);
+
+static NTSTATUS create_sorted_subkeys(const char *key);
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -478,7 +482,7 @@ static WERROR regdb_upgrade_v1_to_v2(void)
 
 	talloc_destroy(mem_ctx);
 
-	if (rc == -1) {
+	if (rc < 0) {
 		return WERR_REG_IO_FAILURE;
 	}
 
@@ -831,22 +835,9 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	/*
-	 * Delete a sorted subkey cache for regdb_key_exists, will be
-	 * recreated automatically
+	 * recreate the sorted subkey cache for regdb_key_exists()
 	 */
-	keyname = talloc_asprintf(ctx, "%s\\%s", REG_SORTED_SUBKEYS_PREFIX,
-				  keyname);
-	if (keyname == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	werr = ntstatus_to_werror(dbwrap_delete_bystring(db, keyname));
-
-	/* don't treat WERR_NOT_FOUND as an error here */
-	if (W_ERROR_EQUAL(werr, WERR_NOT_FOUND)) {
-		werr = WERR_OK;
-	}
+	werr = ntstatus_to_werror(create_sorted_subkeys(keyname));
 
 done:
 	TALLOC_FREE(ctx);
@@ -1310,7 +1301,7 @@ done:
 
 static int cmp_keynames(char **p1, char **p2)
 {
-	return StrCaseCmp(*p1, *p2);
+	return strcasecmp_m(*p1, *p2);
 }
 
 struct create_sorted_subkeys_context {
@@ -1407,7 +1398,8 @@ done:
 	return status;
 }
 
-static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
+static NTSTATUS create_sorted_subkeys_internal(const char *key,
+					       const char *sorted_keyname)
 {
 	NTSTATUS status;
 	struct create_sorted_subkeys_context sorted_ctx;
@@ -1419,7 +1411,26 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 				 create_sorted_subkeys_action,
 				 &sorted_ctx);
 
-	return NT_STATUS_IS_OK(status);
+	return status;
+}
+
+static NTSTATUS create_sorted_subkeys(const char *key)
+{
+	char *sorted_subkeys_keyname;
+	NTSTATUS status;
+
+	sorted_subkeys_keyname = talloc_asprintf(talloc_tos(), "%s\\%s",
+						 REG_SORTED_SUBKEYS_PREFIX,
+						 key);
+	if (sorted_subkeys_keyname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = create_sorted_subkeys_internal(key, sorted_subkeys_keyname);
+
+done:
+	return status;
 }
 
 struct scan_subkey_state {
@@ -1499,13 +1510,21 @@ static bool scan_parent_subkeys(struct db_context *db, const char *parent,
 	if (state.scanned) {
 		result = state.found;
 	} else {
+		NTSTATUS status;
+
 		res = db->transaction_start(db);
 		if (res != 0) {
-			DEBUG(0, ("error starting transacion\n"));
+			DEBUG(0, ("error starting transaction\n"));
 			goto fail;
 		}
 
-		if (!create_sorted_subkeys(path, key)) {
+		DEBUG(2, (__location__ " WARNING: recreating the sorted "
+			  "subkeys cache for key '%s' from scan_parent_subkeys "
+			  "this should not happen (too frequently)...\n",
+			  path));
+
+		status = create_sorted_subkeys_internal(path, key);
+		if (!NT_STATUS_IS_OK(status)) {
 			res = db->transaction_cancel(db);
 			if (res != 0) {
 				smb_panic("Failed to cancel transaction.");
@@ -1801,7 +1820,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 		goto done;
 	}
 
-	data.dptr = TALLOC_ARRAY(ctx, uint8, len);
+	data.dptr = talloc_array(ctx, uint8, len);
 	data.dsize = len;
 
 	len = regdb_pack_values(values, data.dptr, data.dsize);

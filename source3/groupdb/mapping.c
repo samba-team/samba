@@ -26,6 +26,7 @@
 #include "groupdb/mapping.h"
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"
+#include "tdb_compat.h"
 
 static const struct mapping_backend *backend;
 
@@ -634,7 +635,7 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 		return NT_STATUS_OK;
 	}
 
-	*pp_alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
+	*pp_alias_rids = talloc_array(mem_ctx, uint32, num_alias_sids);
 	if (*pp_alias_rids == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -777,8 +778,8 @@ NTSTATUS pdb_create_builtin_alias(uint32 rid)
 	map.gid = gid;
 	sid_copy(&map.sid, &sid);
 	map.sid_name_use = SID_NAME_ALIAS;
-	fstrcpy(map.nt_name, groupname);
-	fstrcpy(map.comment, "");
+	strlcpy(map.nt_name, groupname, sizeof(map.nt_name));
+	strlcpy(map.comment, "", sizeof(map.comment));
 
 	status = pdb_add_group_mapping_entry(&map);
 

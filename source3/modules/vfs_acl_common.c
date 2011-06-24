@@ -144,7 +144,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 
 	xacl.version = 3;
 	xacl.info.sd_hs3 = &sd_hs3;
-	xacl.info.sd_hs3->sd = CONST_DISCARD(struct security_descriptor *, psd);
+	xacl.info.sd_hs3->sd = discard_const_p(struct security_descriptor, psd);
 	xacl.info.sd_hs3->hash_type = hash_type;
 	memcpy(&xacl.info.sd_hs3->hash[0], hash, XATTR_SD_HASH_SIZE);
 
@@ -179,7 +179,7 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 	mode_t dir_mode;
 	mode_t file_mode;
 	mode_t mode;
-	struct security_ace *new_ace_list = TALLOC_ZERO_ARRAY(talloc_tos(),
+	struct security_ace *new_ace_list = talloc_zero_array(talloc_tos(),
 						struct security_ace,
 						num_aces + 3);
 
@@ -190,7 +190,7 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 	/* Fake a quick smb_filename. */
 	ZERO_STRUCT(smb_fname);
 	smb_fname.st = *psbuf;
-	smb_fname.base_name = CONST_DISCARD(char *, name);
+	smb_fname.base_name = discard_const_p(char, name);
 
 	dir_mode = unix_mode(conn,
 			FILE_ATTRIBUTE_DIRECTORY, &smb_fname, NULL);
@@ -448,10 +448,14 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	struct security_descriptor *psd = NULL;
 	struct dom_sid *owner_sid = NULL;
 	struct dom_sid *group_sid = NULL;
+	uint32_t security_info_sent = (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL);
 	bool inherit_owner = lp_inherit_owner(SNUM(handle->conn));
+	bool inheritable_components = sd_has_inheritable_components(parent_desc,
+					is_directory);
 	size_t size;
 
-	if (!sd_has_inheritable_components(parent_desc, is_directory)) {
+	if (!inheritable_components && !inherit_owner) {
+		/* Nothing to inherit and not setting owner. */
 		return NT_STATUS_OK;
 	}
 
@@ -487,6 +491,17 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		return status;
 	}
 
+	/* If inheritable_components == false,
+	   se_create_child_secdesc()
+	   creates a security desriptor with a NULL dacl
+	   entry, but with SEC_DESC_DACL_PRESENT. We need
+	   to remove that flag. */
+
+	if (!inheritable_components) {
+		security_info_sent &= ~SECINFO_DACL;
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
+	}
+
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("inherit_new_acl: child acl for %s is:\n",
 			fsp_str_dbg(fsp) ));
@@ -498,9 +513,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		become_root();
 	}
 	status = SMB_VFS_FSET_NT_ACL(fsp,
-				(SECINFO_OWNER |
-				 SECINFO_GROUP |
-				 SECINFO_DACL),
+				security_info_sent,
 				psd);
 	if (inherit_owner) {
 		unbecome_root();
@@ -729,7 +742,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
 			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor,
-			CONST_DISCARD(struct security_descriptor *,orig_psd));
+			discard_const_p(struct security_descriptor, orig_psd));
 	}
 
 	status = get_nt_acl_internal(handle, fsp,
@@ -784,7 +797,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		DEBUG(10,("fset_nt_acl_xattr: storing xattr sd for file %s\n",
 			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor,
-			CONST_DISCARD(struct security_descriptor *,psd));
+			discard_const_p(struct security_descriptor, psd));
 	}
 	create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
 	store_acl_blob_fsp(handle, fsp, &blob);
@@ -836,7 +849,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	}
 
 	ZERO_STRUCT(local_fname);
-	local_fname.base_name = CONST_DISCARD(char *,final_component);
+	local_fname.base_name = discard_const_p(char, final_component);
 
 	/* Must use lstat here. */
 	ret = SMB_VFS_LSTAT(conn, &local_fname);

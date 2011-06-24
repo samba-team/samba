@@ -23,8 +23,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _SMB_H
-#define _SMB_H
+#ifndef _RAW_SMB_H
+#define _RAW_SMB_H
 
 /* deny modes */
 #define DENY_DOS 0
@@ -366,24 +366,6 @@
 #define DESIRED_ACCESS_PIPE 0x2019f
  
 
-/* FileAttributes (search attributes) field */
-#define FILE_ATTRIBUTE_READONLY		0x0001
-#define FILE_ATTRIBUTE_HIDDEN		0x0002
-#define FILE_ATTRIBUTE_SYSTEM		0x0004
-#define FILE_ATTRIBUTE_VOLUME		0x0008
-#define FILE_ATTRIBUTE_DIRECTORY	0x0010
-#define FILE_ATTRIBUTE_ARCHIVE		0x0020
-#define FILE_ATTRIBUTE_DEVICE		0x0040
-#define FILE_ATTRIBUTE_NORMAL		0x0080
-#define FILE_ATTRIBUTE_TEMPORARY	0x0100
-#define FILE_ATTRIBUTE_SPARSE		0x0200
-#define FILE_ATTRIBUTE_REPARSE_POINT	0x0400
-#define FILE_ATTRIBUTE_COMPRESSED	0x0800
-#define FILE_ATTRIBUTE_OFFLINE		0x1000
-#define FILE_ATTRIBUTE_NONINDEXED	0x2000
-#define FILE_ATTRIBUTE_ENCRYPTED	0x4000
-#define FILE_ATTRIBUTE_ALL_MASK 	0x7FFF
-
 /* Flags - combined with attributes. */
 #define FILE_FLAG_WRITE_THROUGH    0x80000000L
 #define FILE_FLAG_NO_BUFFERING     0x20000000L
@@ -472,7 +454,7 @@
 
 /* where to find the base of the SMB packet proper */
 /* REWRITE TODO: smb_base needs to be removed */
-#define smb_base(buf) (((char *)(buf))+4)
+#define smb_base(buf) (((const char *)(buf))+4)
 
 /* we don't allow server strings to be longer than 48 characters as
    otherwise NT will not honour the announce packets */
@@ -600,4 +582,4 @@
 #include "libcli/raw/interfaces.h"
 #include "libcli/smb/smb_common.h"
 
-#endif /* _SMB_H */
+#endif /* _RAW_SMB_H */

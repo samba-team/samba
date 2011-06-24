@@ -23,13 +23,14 @@
  */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "services/services.h"
 #include "services/svc_winreg_glue.h"
 #include "auth.h"
-#include "ntdomain.h"
+#include "rpc_server/svcctl/srv_svcctl_nt.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -70,7 +71,7 @@ bool init_service_op_table( void )
 	int num_services = SVCCTL_NUM_INTERNAL_SERVICES + str_list_length( service_list );
 	int i;
 
-	if ( !(svcctl_ops = TALLOC_ARRAY( NULL, struct service_control_op, num_services+1)) ) {
+	if ( !(svcctl_ops = talloc_array( NULL, struct service_control_op, num_services+1)) ) {
 		DEBUG(0,("init_service_op_table: talloc() failed!\n"));
 		return False;
 	}
@@ -208,7 +209,7 @@ static WERROR create_open_service_handle(struct pipes_struct *p,
 	WERROR result = WERR_OK;
 	struct service_control_op *s_op;
 
-	if ( !(info = TALLOC_ZERO_P( NULL, SERVICE_INFO )) )
+	if ( !(info = talloc_zero( NULL, SERVICE_INFO )) )
 		return WERR_NOMEM;
 
 	/* the Service Manager has a NULL name */
@@ -420,7 +421,7 @@ static int enumerate_status(TALLOC_CTX *ctx,
 	while ( svcctl_ops[num_services].name )
 		num_services++;
 
-	if ( !(st = TALLOC_ARRAY( ctx, struct ENUM_SERVICE_STATUSW, num_services )) ) {
+	if ( !(st = talloc_array( ctx, struct ENUM_SERVICE_STATUSW, num_services )) ) {
 		DEBUG(0,("enumerate_status: talloc() failed!\n"));
 		return -1;
 	}
@@ -667,16 +668,17 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-static WERROR fill_svc_config(TALLOC_CTX *ctx,
+static WERROR fill_svc_config(TALLOC_CTX *mem_ctx,
 			      struct messaging_context *msg_ctx,
 			      struct auth_serversupplied_info *session_info,
 			      const char *name,
 			      struct QUERY_SERVICE_CONFIG *config)
 {
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	const char *result = NULL;
 
 	/* now fill in the individual values */
+
+	ZERO_STRUCTP(config);
 
 	config->displayname = svcctl_lookup_dispname(mem_ctx,
 						     msg_ctx,
@@ -718,9 +720,6 @@ static WERROR fill_svc_config(TALLOC_CTX *ctx,
 		config->start_type = SVCCTL_DISABLED;
 	else
 		config->start_type = SVCCTL_DEMAND_START;
-
-
-	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }
@@ -776,7 +775,8 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 				    struct svcctl_QueryServiceConfig2W *r)
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
-	uint32 buffer_size;
+	uint32_t buffer_size;
+	DATA_BLOB blob = data_blob_null;
 
 	/* perform access checks */
 
@@ -796,7 +796,6 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 			struct SERVICE_DESCRIPTION desc_buf;
 			const char *description;
 			enum ndr_err_code ndr_err;
-			DATA_BLOB blob;
 
 			description = svcctl_lookup_description(p->mem_ctx,
 								p->msg_ctx,
@@ -811,9 +810,6 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 				return WERR_INVALID_PARAM;
 			}
 
-			buffer_size = ndr_size_SERVICE_DESCRIPTION(&desc_buf, 0);
-			r->out.buffer = blob.data;
-
 			break;
 		}
 		break;
@@ -821,7 +817,6 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 		{
 			struct SERVICE_FAILURE_ACTIONS actions;
 			enum ndr_err_code ndr_err;
-			DATA_BLOB blob;
 
 			/* nothing to say...just service the request */
 
@@ -833,9 +828,6 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 				return WERR_INVALID_PARAM;
 			}
 
-			buffer_size = ndr_size_SERVICE_FAILURE_ACTIONS(&actions, 0);
-			r->out.buffer = blob.data;
-
 			break;
 		}
 		break;
@@ -844,11 +836,14 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 		return WERR_UNKNOWN_LEVEL;
 	}
 
+	buffer_size = blob.length;
 	buffer_size += buffer_size % 4;
 	*r->out.needed = (buffer_size > r->in.offered) ? buffer_size : r->in.offered;
 
         if (buffer_size > r->in.offered)
                 return WERR_INSUFFICIENT_BUFFER;
+
+	memcpy(r->out.buffer, blob.data, blob.length);
 
 	return WERR_OK;
 }
@@ -941,7 +936,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 	}
 
 	*r->out.needed = len;
-	r->out.buffer = buffer;
+	memcpy(r->out.buffer, buffer, len);
 
 	return WERR_OK;
 }

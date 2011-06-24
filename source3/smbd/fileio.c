@@ -240,8 +240,8 @@ void trigger_write_time_update(struct files_struct *fsp)
 
 	/* trigger the update 2 seconds later */
 	fsp->update_write_time_event =
-		event_add_timed(smbd_event_context(), NULL,
-				timeval_current_ofs(0, delay),
+		event_add_timed(server_event_context(), NULL,
+				timeval_current_ofs_usec(delay),
 				update_write_time_handler, fsp);
 }
 
@@ -322,7 +322,7 @@ ssize_t write_file(struct smb_request *req,
 				int dosmode = dos_mode(fsp->conn, fsp->fsp_name);
 				if (!IS_DOS_ARCHIVE(dosmode)) {
 					file_set_dosmode(fsp->conn, fsp->fsp_name,
-						 dosmode | aARCH, NULL, false);
+						 dosmode | FILE_ATTRIBUTE_ARCHIVE, NULL, false);
 				}
 			}
 

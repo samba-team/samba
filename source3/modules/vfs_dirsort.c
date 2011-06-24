@@ -24,7 +24,7 @@
 
 static int compare_dirent (const SMB_STRUCT_DIRENT *da, const SMB_STRUCT_DIRENT *db)
 {
-	return StrCaseCmp(da->d_name, db->d_name);
+	return strcasecmp_m(da->d_name, db->d_name);
 }
 
 struct dirsort_privates {

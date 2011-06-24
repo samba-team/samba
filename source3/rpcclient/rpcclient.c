@@ -30,7 +30,7 @@
 #include "../libcli/smbreadline/smbreadline.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
-#include "ntdomain.h"
+#include "libsmb/libsmb.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -240,7 +240,7 @@ static NTSTATUS cmd_listcommands(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	{
 		tmp_set = tmp->cmd_set;
 
-		if (!StrCaseCmp(argv[1], tmp_set->name))
+		if (!strcasecmp_m(argv[1], tmp_set->name))
 		{
 			printf("Available commands on the %s pipe:\n\n", tmp_set->name);
 
@@ -775,7 +775,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
 						cli->desthost,   /* server name */
 						get_cmdline_auth_info_domain(auth_info),  /* domain */
-						global_myname(), /* client name */
+						lp_netbios_name(), /* client name */
 						machine_account, /* machine account name */
 						trust_password,
 						sec_channel_type,
@@ -892,7 +892,6 @@ out_free:
 	struct sockaddr_storage server_ss;
 	NTSTATUS 		nt_status;
 	static int		opt_port = 0;
-	fstring new_workgroup;
 	int result = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	uint32_t flags = 0;
@@ -975,21 +974,10 @@ out_free:
 		goto done;
 	}
 
-	/* save the workgroup...
-
-	   FIXME!! do we need to do this for other options as well
-	   (or maybe a generic way to keep lp_load() from overwriting
-	   everything)?  */
-
-	fstrcpy( new_workgroup, lp_workgroup() );
-
 	/* Load smb.conf file */
 
 	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True))
 		fprintf(stderr, "Can't load %s\n", get_dyn_CONFIGFILE());
-
-	if ( strlen(new_workgroup) != 0 )
-		set_global_myworkgroup( new_workgroup );
 
 	/*
 	 * Get password
@@ -1091,7 +1079,7 @@ out_free:
 	}
 
 
-	nt_status = cli_full_connection(&cli, global_myname(), binding->host,
+	nt_status = cli_full_connection(&cli, lp_netbios_name(), binding->host,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
 					get_cmdline_auth_info_username(rpcclient_auth_info),

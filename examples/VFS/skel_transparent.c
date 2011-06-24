@@ -280,9 +280,9 @@ static int skel_chdir(vfs_handle_struct *handle,  const char *path)
 	return SMB_VFS_NEXT_CHDIR(handle, path);
 }
 
-static char *skel_getwd(vfs_handle_struct *handle,  char *buf)
+static char *skel_getwd(vfs_handle_struct *handle)
 {
-	return SMB_VFS_NEXT_GETWD(handle, buf);
+	return SMB_VFS_NEXT_GETWD(handle);
 }
 
 static int skel_ntimes(vfs_handle_struct *handle,

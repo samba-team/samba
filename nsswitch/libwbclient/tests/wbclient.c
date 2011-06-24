@@ -395,7 +395,7 @@ static bool test_wbc_lookup_rids(struct torture_context *tctx)
 	torture_assert_str_equal(
 		tctx, names[1], "Users", "S-1-5-32-545 not mapped to 'Users'");
 
-	wbcFreeMemory((char *)domain_name);
+	wbcFreeMemory(discard_const_p(char ,domain_name));
 	wbcFreeMemory(names);
 	wbcFreeMemory(types);
 

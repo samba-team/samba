@@ -28,6 +28,7 @@
 #include "rpc_client/cli_spoolss.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "util_tdb.h"
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"
@@ -161,7 +162,7 @@ static int net_printing_dump(struct net_context *c, int argc,
 	int ret = -1;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	TDB_CONTEXT *tdb;
-	TDB_DATA kbuf, newkey, dbuf;
+	TDB_DATA kbuf, dbuf;
 
 	if (argc < 1 || c->display_usage) {
 		d_fprintf(stderr, "%s\nnet printing dump <file.tdb>\n",
@@ -175,11 +176,11 @@ static int net_printing_dump(struct net_context *c, int argc,
 		goto done;
 	}
 
-	for (kbuf = tdb_firstkey(tdb);
+	for (kbuf = tdb_firstkey_compat(tdb);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey)
+	     kbuf = tdb_nextkey_compat(tdb, kbuf))
 	{
-		dbuf = tdb_fetch(tdb, kbuf);
+		dbuf = tdb_fetch_compat(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
@@ -512,7 +513,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		keyname = CONST_DISCARD(char *, r.printer_data[j].name);
+		keyname = discard_const_p(char, r.printer_data[j].name);
 		valuename = strchr(keyname, '\\');
 		if (valuename == NULL) {
 			continue;
@@ -636,7 +637,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 {
 	TALLOC_CTX *tmp_ctx;
 	TDB_CONTEXT *tdb;
-	TDB_DATA kbuf, newkey, dbuf;
+	TDB_DATA kbuf, dbuf;
 	NTSTATUS status;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -651,11 +652,11 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 		goto done;
 	}
 
-	for (kbuf = tdb_firstkey(tdb);
+	for (kbuf = tdb_firstkey_compat(tdb);
 	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
+	     kbuf = tdb_nextkey_compat(tdb, kbuf))
 	{
-		dbuf = tdb_fetch(tdb, kbuf);
+		dbuf = tdb_fetch_compat(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}

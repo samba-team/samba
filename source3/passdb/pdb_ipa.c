@@ -636,7 +636,7 @@ static NTSTATUS ipasam_enum_trusted_domains(struct pdb_methods *methods,
 	}
 
 	*num_domains = 0;
-	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct pdb_trusted_domain *, 1))) {
+	if (!(*domains = talloc_array(mem_ctx, struct pdb_trusted_domain *, 1))) {
 		DEBUG(1, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -684,7 +684,7 @@ static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
 		return NT_STATUS_OK;
 	}
 
-	if (!(*domains = TALLOC_ARRAY(mem_ctx, struct trustdom_info *,
+	if (!(*domains = talloc_array(mem_ctx, struct trustdom_info *,
 				      *num_domains))) {
 		DEBUG(1, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -693,7 +693,7 @@ static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
 	for (i = 0; i < *num_domains; i++) {
 		struct trustdom_info *dom_info;
 
-		dom_info = TALLOC_P(*domains, struct trustdom_info);
+		dom_info = talloc(*domains, struct trustdom_info);
 		if (dom_info == NULL) {
 			DEBUG(1, ("talloc failed\n"));
 			return NT_STATUS_NO_MEMORY;

@@ -2,6 +2,8 @@ dn: ${DOMAINDN}
 changetype: modify
 replace: fSMORoleOwner
 fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+replace: rIDManagerReference
+rIDManagerReference: CN=RID Manager$,CN=System,${DOMAINDN}
 
 dn: ${SCHEMADN}
 changetype: modify

@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 #if defined(WITH_AIO)
 
@@ -80,8 +81,8 @@ static bool initialize_async_io_handler(void)
 	}
 	tried_signal_setup = true;
 
-	aio_signal_event = tevent_add_signal(smbd_event_context(),
-					     smbd_event_context(),
+	aio_signal_event = tevent_add_signal(server_event_context(),
+					     server_event_context(),
 					     RT_SIGNAL_AIO, SA_SIGINFO,
 					     smbd_aio_signal_handler,
 					     NULL);
@@ -115,7 +116,7 @@ static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 					files_struct *fsp,
 					size_t buflen)
 {
-	struct aio_extra *aio_ex = TALLOC_ZERO_P(mem_ctx, struct aio_extra);
+	struct aio_extra *aio_ex = talloc_zero(mem_ctx, struct aio_extra);
 
 	if (!aio_ex) {
 		return NULL;
@@ -250,7 +251,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *smbreq,
-			      files_struct *fsp, char *data,
+			      files_struct *fsp, const char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite)
 {
@@ -328,7 +329,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	/* Now set up the aio record for the write call. */
 
 	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = data;
+	a->aio_buf = discard_const_p(char, data);
 	a->aio_nbytes = numtowrite;
 	a->aio_offset = startpos;
 	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
@@ -1029,7 +1030,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *smbreq,
-			      files_struct *fsp, char *data,
+			      files_struct *fsp, const char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite)
 {

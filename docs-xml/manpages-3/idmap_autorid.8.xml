@@ -88,9 +88,8 @@
 	workgroup = CUSTOMER
 	realm = CUSTOMER.COM
 
-	idmap backend = autorid
-	idmap uid = 1000000-1999999
-	idmap gid = 1000000-1999999
+	idmap config * : backend = autorid
+	idmap config * : range = 1000000-1999999
 
 	</programlisting>
 
@@ -98,7 +97,7 @@
 		This example shows how to configure idmap_autorid as default
 		for all domains with a potentially large amount of users
 		plus a specific configuration for a trusted domain
-		that uses the SFU mapping scheme. Please note that idmap uid/gid
+		that uses the SFU mapping scheme. Please note that idmap 
 		ranges and sfu ranges are not allowed to overlap.
 	</para>
 
@@ -108,10 +107,9 @@
 	workgroup = CUSTOMER
 	realm = CUSTOMER.COM
 
-	idmap backend = autorid
-	autorid:rangesize = 1000000
-	idmap uid = 1000000-19999999
-	idmap gid = 1000000-19999999
+	idmap config * : backend = autorid
+	idmap config * : range = 1000000-19999999
+	idmap config * : rangesize = 1000000
 
 	idmap config TRUSTED : backend  = ad
 	idmap config TRUSTED : range    = 50000 - 99999

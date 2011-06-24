@@ -63,7 +63,7 @@ static const uint8_t dfs_get_ref_out2[] = {
 static bool dfs_referral_out_check(struct torture_context *tctx, struct dfs_referral_resp *r)
 {
 	torture_assert_str_equal(tctx,
-		r->referral_entries[0].referral.v3.data.referrals.r2.special_name,
+		r->referral_entries[0].referral.v3.referrals.r2.special_name,
 		"\\msw2k3.tst", "Special name");
 	ndr_push_struct_blob(&blob, tctx, r, (ndr_push_flags_fn_t)ndr_push_dfs_referral_resp);
 	torture_assert_int_equal(tctx, blob.data[blob.length-2], 0, "expanded names not null terminated");

@@ -36,7 +36,9 @@
 
 /* defining this gives us the posix getpwnam_r() calls on solaris
    Thanks to heimdal for this */
+#ifndef _POSIX_PTHREAD_SEMANTICS
 #define _POSIX_PTHREAD_SEMANTICS
+#endif
 
 #define NSS_WRAPPER_NOT_REPLACE
 #include "../replace/replace.h"

@@ -590,7 +590,7 @@ static NTSTATUS pvfs_brl_locking_handle(TALLOC_CTX *mem_ctx,
 		data_blob_free(&odb_key);
 	}
 
-	h = brl_create_handle(mem_ctx, ntvfs, &key);
+	h = brlock_create_handle(mem_ctx, ntvfs, &key);
 	NT_STATUS_HAVE_NO_MEMORY(h);
 
 	*_h = h;
@@ -1174,7 +1174,7 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 		*final_timeout = timeval_add(&req->statistics.request_time,
 					     pvfs->oplock_break_timeout,
 					     0);
-		end_time = timeval_current_ofs(0, (pvfs->sharing_violation_delay*4)/5);
+		end_time = timeval_current_ofs_usec((pvfs->sharing_violation_delay*4)/5);
 		end_time = timeval_min(final_timeout, &end_time);
 	} else {
 		return NT_STATUS_INTERNAL_ERROR;
@@ -1569,7 +1569,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	f->handle->fd = fd;
 
-	status = brl_count(f->pvfs->brl_context, f->brl_handle, &count);
+	status = brlock_count(f->pvfs->brl_context, f->brl_handle, &count);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		return status;

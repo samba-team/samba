@@ -22,6 +22,8 @@
 #ifndef _SMBD_RPC_CALLBACKS_H
 #define _SMBD_RPC_CALLBACKS_H
 
+struct ndr_interface_table;
+
 /**
  * @brief Register an endpoint at the endpoint mapper.
  *

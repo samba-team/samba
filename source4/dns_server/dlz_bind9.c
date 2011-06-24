@@ -525,7 +525,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 
 	if (options.url == NULL) {
 		options.url = talloc_asprintf(tmp_ctx, "ldapi://%s",
-					      private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
+					      lpcfg_private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
 		if (options.url == NULL) {
 			result = ISC_R_NOMEMORY;
 			goto failed;
@@ -533,7 +533,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 
 	ret = ldb_connect(state->samdb, options.url, 0, NULL);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to connect to %s - %s",
 			   options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;

@@ -27,12 +27,13 @@
  *
  **********************************************************************/
 
-static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
+static sbcErr smbconf_global_check(struct smbconf_ctx *ctx)
 {
 	if (!smbconf_share_exists(ctx, GLOBAL_NAME)) {
 		return smbconf_create_share(ctx, GLOBAL_NAME);
 	}
-	return WERR_OK;
+
+	return SBC_ERR_OK;
 }
 
 
@@ -41,6 +42,41 @@ static WERROR smbconf_global_check(struct smbconf_ctx *ctx)
  * The actual libsmbconf API functions that are exported.
  *
  **********************************************************************/
+
+const char *sbcErrorString(sbcErr error)
+{
+	switch (error) {
+		case SBC_ERR_OK:
+			return "SBC_ERR_OK";
+		case SBC_ERR_NOT_IMPLEMENTED:
+			return "SBC_ERR_NOT_IMPLEMENTED";
+		case SBC_ERR_NOT_SUPPORTED:
+			return "SBC_ERR_NOT_SUPPORTED";
+		case SBC_ERR_UNKNOWN_FAILURE:
+			return "SBC_ERR_UNKNOWN_FAILURE";
+		case SBC_ERR_NOMEM:
+			return "SBC_ERR_NOMEM";
+		case SBC_ERR_INVALID_PARAM:
+			return "SBC_ERR_INVALID_PARAM";
+		case SBC_ERR_BADFILE:
+			return "SBC_ERR_BADFILE";
+		case SBC_ERR_NO_SUCH_SERVICE:
+			return "SBC_ERR_NO_SUCH_SERVICE";
+		case SBC_ERR_IO_FAILURE:
+			return "SBC_ERR_IO_FAILURE";
+		case SBC_ERR_CAN_NOT_COMPLETE:
+			return "SBC_ERR_CAN_NOT_COMPLETE";
+		case SBC_ERR_NO_MORE_ITEMS:
+			return "SBC_ERR_NO_MORE_ITEMS";
+		case SBC_ERR_FILE_EXISTS:
+			return "SBC_ERR_FILE_EXISTS";
+		case SBC_ERR_ACCESS_DENIED:
+			return "SBC_ERR_ACCESS_DENIED";
+	}
+
+	return "unknown sbcErr value";
+}
+
 
 /**
  * Tell whether the backend requires messaging to be set up
@@ -91,7 +127,7 @@ bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
 /**
  * Drop the whole configuration (restarting empty).
  */
-WERROR smbconf_drop(struct smbconf_ctx *ctx)
+sbcErr smbconf_drop(struct smbconf_ctx *ctx)
 {
 	return ctx->ops->drop(ctx);
 }
@@ -105,12 +141,12 @@ WERROR smbconf_drop(struct smbconf_ctx *ctx)
  *  param_names  : list of lists of parameter names for each share
  *  param_values : list of lists of parameter values for each share
  */
-WERROR smbconf_get_config(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_config(struct smbconf_ctx *ctx,
 			  TALLOC_CTX *mem_ctx,
 			  uint32_t *num_shares,
 			  struct smbconf_service ***services)
 {
-	WERROR werr = WERR_OK;
+	sbcErr err;
 	TALLOC_CTX *tmp_ctx = NULL;
 	uint32_t tmp_num_shares;
 	char **tmp_share_names;
@@ -118,36 +154,35 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 	uint32_t count;
 
 	if ((num_shares == NULL) || (services == NULL)) {
-		werr = WERR_INVALID_PARAM;
+		err = SBC_ERR_INVALID_PARAM;
 		goto done;
 	}
 
 	tmp_ctx = talloc_stackframe();
 
-	werr = smbconf_get_share_names(ctx, tmp_ctx, &tmp_num_shares,
-				       &tmp_share_names);
-	if (!W_ERROR_IS_OK(werr)) {
+	err = smbconf_get_share_names(ctx, tmp_ctx, &tmp_num_shares,
+				      &tmp_share_names);
+	if (!SBC_ERROR_IS_OK(err)) {
 		goto done;
 	}
 
 	tmp_services = talloc_array(tmp_ctx, struct smbconf_service *,
 				    tmp_num_shares);
-
 	if (tmp_services == NULL) {
-		werr = WERR_NOMEM;
+		err = SBC_ERR_NOMEM;
 		goto done;
 	}
 
 	for (count = 0; count < tmp_num_shares; count++) {
-		werr = smbconf_get_share(ctx, tmp_services,
-					 tmp_share_names[count],
-					 &tmp_services[count]);
-		if (!W_ERROR_IS_OK(werr)) {
+		err = smbconf_get_share(ctx, tmp_services,
+					tmp_share_names[count],
+					&tmp_services[count]);
+		if (!SBC_ERROR_IS_OK(err)) {
 			goto done;
 		}
 	}
 
-	werr = WERR_OK;
+	err = SBC_ERR_OK;
 
 	*num_shares = tmp_num_shares;
 	if (tmp_num_shares > 0) {
@@ -158,13 +193,13 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	return werr;
+	return err;
 }
 
 /**
  * get the list of share names defined in the configuration.
  */
-WERROR smbconf_get_share_names(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       TALLOC_CTX *mem_ctx,
 			       uint32_t *num_shares,
 			       char ***share_names)
@@ -185,11 +220,11 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx,
 /**
  * Add a service if it does not already exist.
  */
-WERROR smbconf_create_share(struct smbconf_ctx *ctx,
+sbcErr smbconf_create_share(struct smbconf_ctx *ctx,
 			    const char *servicename)
 {
 	if ((servicename != NULL) && smbconf_share_exists(ctx, servicename)) {
-		return WERR_FILE_EXISTS;
+		return SBC_ERR_FILE_EXISTS;
 	}
 
 	return ctx->ops->create_share(ctx, servicename);
@@ -198,7 +233,7 @@ WERROR smbconf_create_share(struct smbconf_ctx *ctx,
 /**
  * get a definition of a share (service) from configuration.
  */
-WERROR smbconf_get_share(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
 			 TALLOC_CTX *mem_ctx,
 			 const char *servicename,
 			 struct smbconf_service **service)
@@ -209,10 +244,10 @@ WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 /**
  * delete a service from configuration
  */
-WERROR smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
+sbcErr smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
 {
 	if (!smbconf_share_exists(ctx, servicename)) {
-		return WERR_NO_SUCH_SERVICE;
+		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 
 	return ctx->ops->delete_share(ctx, servicename);
@@ -221,7 +256,7 @@ WERROR smbconf_delete_share(struct smbconf_ctx *ctx, const char *servicename)
 /**
  * set a configuration parameter to the value provided.
  */
-WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *service,
 			     const char *param,
 			     const char *valstr)
@@ -235,30 +270,31 @@ WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
  *
  * This also creates [global] when it does not exist.
  */
-WERROR smbconf_set_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
+	err = smbconf_set_parameter(ctx, GLOBAL_NAME, param, val);
 
-	return werr;
+	return err;
 }
 
 /**
  * get the value of a configuration parameter as a string
  */
-WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const char *service,
 			     const char *param,
 			     char **valstr)
 {
 	if (valstr == NULL) {
-		return WERR_INVALID_PARAM;
+		return SBC_ERR_INVALID_PARAM;
 	}
 
 	return ctx->ops->get_parameter(ctx, mem_ctx, service, param, valstr);
@@ -269,26 +305,28 @@ WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
  *
  * Create [global] if it does not exist.
  */
-WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
 				    const char *param,
 				    char **valstr)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param,
-					     valstr);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
 
-	return werr;
+	err = smbconf_get_parameter(ctx, mem_ctx, GLOBAL_NAME, param,
+				    valstr);
+
+	return err;
 }
 
 /**
  * delete a parameter from configuration
  */
-WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param)
 {
 	return ctx->ops->delete_parameter(ctx, service, param);
@@ -299,20 +337,21 @@ WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
  *
  * Create [global] if it does not exist.
  */
-WERROR smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
+sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 				       const char *param)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
+	err = smbconf_delete_parameter(ctx, GLOBAL_NAME, param);
 
-	return werr;
+	return err;
 }
 
-WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_includes(struct smbconf_ctx *ctx,
 			    TALLOC_CTX *mem_ctx,
 			    const char *service,
 			    uint32_t *num_includes, char ***includes)
@@ -321,72 +360,75 @@ WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
 				      includes);
 }
 
-WERROR smbconf_get_global_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_get_global_includes(struct smbconf_ctx *ctx,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t *num_includes, char ***includes)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_get_includes(ctx, mem_ctx, GLOBAL_NAME,
-					    num_includes, includes);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
+	err = smbconf_get_includes(ctx, mem_ctx, GLOBAL_NAME,
+				    num_includes, includes);
 
-	return werr;
+	return err;
 }
 
-WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_includes(struct smbconf_ctx *ctx,
 			    const char *service,
 			    uint32_t num_includes, const char **includes)
 {
 	return ctx->ops->set_includes(ctx, service, num_includes, includes);
 }
 
-WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
+sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
 				   uint32_t num_includes,
 				   const char **includes)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_set_includes(ctx, GLOBAL_NAME,
-					    num_includes, includes);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
+	err = smbconf_set_includes(ctx, GLOBAL_NAME,
+				   num_includes, includes);
 
-	return werr;
+	return err;
 }
 
 
-WERROR smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service)
+sbcErr smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service)
 {
 	return ctx->ops->delete_includes(ctx, service);
 }
 
-WERROR smbconf_delete_global_includes(struct smbconf_ctx *ctx)
+sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx)
 {
-	WERROR werr;
+	sbcErr err;
 
-	werr = smbconf_global_check(ctx);
-	if (W_ERROR_IS_OK(werr)) {
-		werr = smbconf_delete_includes(ctx, GLOBAL_NAME);
+	err = smbconf_global_check(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
 	}
+	err = smbconf_delete_includes(ctx, GLOBAL_NAME);
 
-	return werr;
+	return err;
 }
 
-WERROR smbconf_transaction_start(struct smbconf_ctx *ctx)
+sbcErr smbconf_transaction_start(struct smbconf_ctx *ctx)
 {
 	return ctx->ops->transaction_start(ctx);
 }
 
-WERROR smbconf_transaction_commit(struct smbconf_ctx *ctx)
+sbcErr smbconf_transaction_commit(struct smbconf_ctx *ctx)
 {
 	return ctx->ops->transaction_commit(ctx);
 }
 
-WERROR smbconf_transaction_cancel(struct smbconf_ctx *ctx)
+sbcErr smbconf_transaction_cancel(struct smbconf_ctx *ctx)
 {
 	return ctx->ops->transaction_cancel(ctx);
 }

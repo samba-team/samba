@@ -229,7 +229,7 @@ static PyObject *py_lp_ctx_private_path(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	path = private_path(NULL, PyLoadparmContext_AsLoadparmContext(self), name);
+	path = lpcfg_private_path(NULL, PyLoadparmContext_AsLoadparmContext(self), name);
 	ret = PyString_FromString(path);
 	talloc_free(path);
 
@@ -272,6 +272,12 @@ static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_samdb_url(PyObject *self)
+{
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+	return PyString_FromFormat("tdb://%s/sam.ldb", lpcfg_private_dir(lp_ctx));
+}
+
 
 static PyMethodDef py_lp_ctx_methods[] = {
 	{ "load", (PyCFunction)py_lp_ctx_load, METH_VARARGS, 
@@ -298,6 +304,9 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"S.services() -> list" },
 	{ "dump", (PyCFunction)py_lp_dump, METH_VARARGS, 
 		"S.dump(stream, show_defaults=False)" },
+	{ "samdb_url", (PyCFunction)py_samdb_url, METH_NOARGS,
+	        "S.samdb_url() -> string\n"
+	        "Returns the current URL for sam.ldb." },
 	{ NULL }
 };
 
@@ -431,11 +440,18 @@ static PyObject *py_setup_dir(PyObject *self)
     return PyString_FromString(dyn_SETUPDIR);
 }
 
+static PyObject *py_modules_dir(PyObject *self)
+{
+    return PyString_FromString(dyn_MODULESDIR);
+}
+
 static PyMethodDef pyparam_methods[] = {
     { "default_path", (PyCFunction)py_default_path, METH_NOARGS, 
         "Returns the default smb.conf path." },
     { "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
         "Returns the compiled in location of provision tempates." },
+    { "modules_dir", (PyCFunction)py_modules_dir, METH_NOARGS,
+        "Returns the compiled in location of modules." },
     { NULL }
 };
 

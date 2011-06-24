@@ -482,8 +482,8 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const struct dom_sid *domain_sid,
 		   sid_string_dbg(domain_sid)));
 
 	if (num_rids) {
-		*names = TALLOC_ZERO_ARRAY(mem_ctx, const char *, num_rids);
-		*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
+		*names = talloc_zero_array(mem_ctx, const char *, num_rids);
+		*types = talloc_array(mem_ctx, enum lsa_SidType, num_rids);
 
 		if ((*names == NULL) || (*types == NULL)) {
 			return false;
@@ -750,7 +750,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 	}
 
 	if (num_sids) {
-		name_infos = TALLOC_ARRAY(mem_ctx, struct lsa_name_info, num_sids);
+		name_infos = talloc_array(mem_ctx, struct lsa_name_info, num_sids);
 		if (name_infos == NULL) {
 			result = NT_STATUS_NO_MEMORY;
 			goto fail;
@@ -759,7 +759,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		name_infos = NULL;
 	}
 
-	dom_infos = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_dom_info,
+	dom_infos = talloc_zero_array(mem_ctx, struct lsa_dom_info,
 				      LSA_REF_DOMAIN_LIST_MULTIPLIER);
 	if (dom_infos == NULL) {
 		result = NT_STATUS_NO_MEMORY;
@@ -896,7 +896,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		}
 
 		if (dom->num_idxs) {
-			if (!(rids = TALLOC_ARRAY(tmp_ctx, uint32, dom->num_idxs))) {
+			if (!(rids = talloc_array(tmp_ctx, uint32, dom->num_idxs))) {
 				result = NT_STATUS_NO_MEMORY;
 				goto fail;
 			}
@@ -1404,7 +1404,7 @@ bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
 	wbcErr err;
 	bool ret = false;
 
-	wbc_sids = TALLOC_ARRAY(talloc_tos(), struct wbcDomainSid, num_sids);
+	wbc_sids = talloc_array(talloc_tos(), struct wbcDomainSid, num_sids);
 	if (wbc_sids == NULL) {
 		return false;
 	}
@@ -1455,7 +1455,7 @@ bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
 	if (num_not_cached == 0) {
 		goto done;
 	}
-	wbc_ids = TALLOC_ARRAY(talloc_tos(), struct wbcUnixId, num_not_cached);
+	wbc_ids = talloc_array(talloc_tos(), struct wbcUnixId, num_not_cached);
 	if (wbc_ids == NULL) {
 		goto fail;
 	}

@@ -351,7 +351,7 @@ NTSTATUS gp_ext_info_add_entry(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct gp_extension_reg_info_entry *entry = NULL;
 
-	entry = TALLOC_ZERO_P(mem_ctx, struct gp_extension_reg_info_entry);
+	entry = talloc_zero(mem_ctx, struct gp_extension_reg_info_entry);
 	NT_STATUS_HAVE_NO_MEMORY(entry);
 
 	status = GUID_from_string(ext_guid, &entry->guid);
@@ -442,7 +442,7 @@ static WERROR gp_extension_store_reg_entry(TALLOC_CTX *mem_ctx,
 	subkeyname = GUID_string2(mem_ctx, &entry->guid);
 	W_ERROR_HAVE_NO_MEMORY(subkeyname);
 
-	strupper_m(CONST_DISCARD(char *,subkeyname));
+	strupper_m(discard_const_p(char, subkeyname));
 
 	werr = gp_store_reg_subkey(mem_ctx,
 				   subkeyname,
@@ -492,9 +492,10 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 	SMB_STRUCT_DIR *dir = NULL;
 	SMB_STRUCT_DIRENT *dirent = NULL;
 
-	dir = sys_opendir(modules_path(SAMBA_SUBSYSTEM_GPEXT));
+	dir = sys_opendir(modules_path(talloc_tos(), 
+				       SAMBA_SUBSYSTEM_GPEXT));
 	if (!dir) {
-		return map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	while ((dirent = sys_readdir(dir))) {

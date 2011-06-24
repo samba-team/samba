@@ -399,8 +399,14 @@ $prefix =~ s+/$++;
 
 die("using an empty prefix isn't allowed") unless $prefix ne "";
 
-#Ensure we have the test prefix around
-mkdir($prefix, 0777) unless -d $prefix;
+# Ensure we have the test prefix around.
+#
+# We need restrictive
+# permissions on this as some subdirectories in this tree will have
+# wider permissions (ie 0777) and this would allow other users on the
+# host to subvert the test process.
+mkdir($prefix, 0700) unless -d $prefix;
+chmod 0700, $prefix;
 
 my $prefix_abs = abs_path($prefix);
 my $tmpdir_abs = abs_path("$prefix/tmp");
@@ -468,19 +474,6 @@ if ($opt_binary_mapping) {
 
 $ENV{BINARY_MAPPING} = $opt_binary_mapping;
 
-sub bindir_path($$) {
-	my ($self, $path) = @_;
-
-	if (defined($self->{binary_mapping}->{$path})) {
-	    $path = $self->{binary_mapping}->{$path};
-	}
-
-	my $valpath = "$self->{bindir}/$path$self->{exeext}";
-
-	return $valpath if (-f $valpath);
-	return $path;
-}
-
 # After this many seconds, the server will self-terminate.  All tests
 # must terminate in this time, and testenv will only stay alive this
 # long
@@ -496,18 +489,18 @@ if ($opt_target eq "samba") {
 	}
 	$testenv_default = "all";
 	require target::Samba;
-	$target = new Samba($bindir, \%binary_mapping, \&bindir_path, $ldap, $srcdir, $exeext, $server_maxtime);
+	$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
 } elsif ($opt_target eq "samba4") {
 	$testenv_default = "all";
 	require target::Samba4;
-	$target = new Samba4($bindir, \%binary_mapping, \&bindir_path, $ldap, $srcdir, $exeext, $server_maxtime);
+	$target = new Samba4($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
 } elsif ($opt_target eq "samba3") {
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
 	$testenv_default = "member";
 	require target::Samba3;
-	$target = new Samba3($bindir, \%binary_mapping, \&bindir_path, $srcdir_abs, $exeext, $server_maxtime);
+	$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $exeext, $server_maxtime);
 } elsif ($opt_target eq "win") {
 	die("Windows tests will not run with socket wrapper enabled.") 
 		if ($opt_socket_wrapper);
@@ -604,19 +597,23 @@ sub write_clientconf($$$)
 	        mkdir("$clientdir/lockdir", 0777);
 	}
 
+	# this is ugly, but the ncalrpcdir needs exactly 0755
+	# otherwise tests fail.
+	my $mask = umask;
+	umask 0022;
+	if ( -d "$clientdir/ncalrpcdir/np" ) {
+	        unlink <$clientdir/ncalrpcdir/np/*>;
+		rmdir <$clientdir/ncalrpcdir/np>;
+	}
 	if ( -d "$clientdir/ncalrpcdir" ) {
 	        unlink <$clientdir/ncalrpcdir/*>;
-	} else {
-	        mkdir("$clientdir/ncalrpcdir", 0777);
+		rmdir <$clientdir/ncalrpcdir>;
 	}
+	mkdir("$clientdir/ncalrpcdir", 0755);
+	umask $mask;
 
 	open(CF, ">$conffile");
 	print CF "[global]\n";
-	if (defined($ENV{VALGRIND})) {
-		print CF "\ticonv:native = true\n";
-	} else {
-		print CF "\ticonv:native = false\n";
-	}
 	print CF "\tnetbios name = client\n";
 	if (defined($vars->{DOMAIN})) {
 		print CF "\tworkgroup = $vars->{DOMAIN}\n";

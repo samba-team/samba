@@ -66,7 +66,7 @@ krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
 
 	struct libnet_keytab_context *r;
 
-	r = TALLOC_ZERO_P(mem_ctx, struct libnet_keytab_context);
+	r = talloc_zero(mem_ctx, struct libnet_keytab_context);
 	if (!r) {
 		return ENOMEM;
 	}

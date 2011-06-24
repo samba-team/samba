@@ -32,7 +32,6 @@
 
 struct ip_service_name {
 	struct sockaddr_storage ss;
-	unsigned port;
 	const char *hostname;
 };
 
@@ -340,7 +339,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NOT_FOUND;
 	}
 
-	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
+	info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo);
 	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -499,7 +498,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	dclist = TALLOC_ZERO_ARRAY(mem_ctx, struct ip_service_name, count);
+	dclist = talloc_zero_array(mem_ctx, struct ip_service_name, count);
 	if (!dclist) {
 		SAFE_FREE(iplist);
 		return NT_STATUS_NO_MEMORY;
@@ -514,7 +513,6 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 			       &iplist[i].ss);
 
 		r->ss	= iplist[i].ss;
-		r->port = iplist[i].port;
 		r->hostname = talloc_strdup(mem_ctx, addr);
 		if (!r->hostname) {
 			SAFE_FREE(iplist);
@@ -581,7 +579,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		numaddrs += MAX(dcs[i].num_ips,1);
 	}
 
-	dclist = TALLOC_ZERO_ARRAY(mem_ctx,
+	dclist = talloc_zero_array(mem_ctx,
 				   struct ip_service_name,
 				   numaddrs);
 	if (!dclist) {
@@ -598,7 +596,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 
 		struct ip_service_name *r = &dclist[count];
 
-		r->port = dcs[i].port;
 		r->hostname = dcs[i].hostname;
 
 		/* If we don't have an IP list for a name, lookup it up */
@@ -609,7 +606,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 			i++;
 			j = 0;
 		} else {
-			/* use the IP addresses from the SRV sresponse */
+			/* use the IP addresses from the SRV response */
 
 			if (j >= dcs[i].num_ips) {
 				i++;
@@ -623,8 +620,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 
 		/* make sure it is a valid IP.  I considered checking the
 		 * negative connection cache, but this is the wrong place for
-		 * it.  Maybe only as a hac.  After think about it, if all of
-		 * the IP addresses retuend from DNS are dead, what hope does a
+		 * it.  Maybe only as a hack. After think about it, if all of
+		 * the IP addresses returned from DNS are dead, what hope does a
 		 * netbios name lookup have?  The standard reason for falling
 		 * back to netbios lookups is that our DNS server doesn't know
 		 * anything about the DC's   -- jerry */
@@ -662,7 +659,7 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 {
 	struct netr_DsRGetDCNameInfo *info;
 
-	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
+	info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	if (dc_unc) {
@@ -864,9 +861,10 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_dcs; i++) {
 
+
 		DEBUG(10,("LDAP ping to %s\n", dclist[i].hostname));
 
-		if (ads_cldap_netlogon(mem_ctx, dclist[i].hostname,
+		if (ads_cldap_netlogon(mem_ctx, &dclist[i].ss,
 					domain_name,
 					nt_version,
 					&r))
@@ -938,10 +936,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_dcs; i++) {
 		uint16_t val;
-		int dgm_id;
 
 		generate_random_buffer((uint8_t *)&val, 2);
-		dgm_id = val;
 
 		ip_list.ss = dclist[i].ss;
 		ip_list.port = 0;
@@ -967,7 +963,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		{
 			struct NETLOGON_SAM_LOGON_RESPONSE_NT40 logon1;
 
-			r = TALLOC_ZERO_P(mem_ctx, struct netlogon_samlogon_response);
+			r = talloc_zero(mem_ctx, struct netlogon_samlogon_response);
 			NT_STATUS_HAVE_NO_MEMORY(r);
 
 			ZERO_STRUCT(logon1);

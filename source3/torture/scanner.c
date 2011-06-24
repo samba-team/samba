@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/proto.h"
+#include "libsmb/libsmb.h"
 
 #define VERBOSE 0
 #define OP_MIN 0
@@ -172,7 +173,7 @@ static bool scan_trans2(struct cli_state *cli, int op, int level,
 
 	status = try_trans2_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_unlink(cli, "\\newfile.dat", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\newfile.dat", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_rmdir(cli, "\\newfile.dat");
 	if (NT_STATUS_IS_OK(status)) return True;
 
@@ -379,7 +380,7 @@ static bool scan_nttrans(struct cli_state *cli, int op, int level,
 
 	status = try_nttrans_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_unlink(cli, "\\newfile.dat", aSYSTEM | aHIDDEN);
+	cli_unlink(cli, "\\newfile.dat", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_rmdir(cli, "\\newfile.dat");
 	if (NT_STATUS_IS_OK(status)) return True;
 

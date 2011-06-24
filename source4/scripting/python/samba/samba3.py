@@ -50,9 +50,12 @@ class TdbDatabase(object):
     def __init__(self, file):
         """Open a file.
 
-        :param file: Path of the file to open.
+        :param file: Path of the file to open (appending "2" if TDB2 enabled).
         """
-        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+        if tdb.__version__.startswith("2"):
+            self.tdb = tdb.Tdb(file + "2", flags=os.O_RDONLY)
+        else:
+            self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
         self._check_version()
 
     def _check_version(self):

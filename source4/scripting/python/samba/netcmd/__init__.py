@@ -2,6 +2,7 @@
 
 # Unix SMB/CIFS implementation.
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009
+# Copyright (C) Theresa Halloran <theresahalloran@gmail.com> 2011
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -179,10 +180,6 @@ from samba.netcmd.domainlevel import cmd_domainlevel
 commands["domainlevel"] = cmd_domainlevel()
 from samba.netcmd.setpassword import cmd_setpassword
 commands["setpassword"] = cmd_setpassword()
-from samba.netcmd.setexpiry import cmd_setexpiry
-commands["setexpiry"] = cmd_setexpiry()
-from samba.netcmd.enableaccount import cmd_enableaccount
-commands["enableaccount"] = cmd_enableaccount()
 from samba.netcmd.newuser import cmd_newuser
 commands["newuser"] = cmd_newuser()
 from samba.netcmd.netacl import cmd_acl
@@ -215,3 +212,5 @@ from samba.netcmd.ldapcmp import cmd_ldapcmp
 commands["ldapcmp"] = cmd_ldapcmp()
 from samba.netcmd.testparm import cmd_testparm
 commands["testparm"] =  cmd_testparm()
+from samba.netcmd.dbcheck import cmd_dbcheck
+commands["dbcheck"] =  cmd_dbcheck()

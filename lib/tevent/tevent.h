@@ -136,7 +136,7 @@ struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const cha
 const char **tevent_backend_list(TALLOC_CTX *mem_ctx);
 
 /**
- * @brief Set the default tevent backent.
+ * @brief Set the default tevent backend.
  *
  * @param[in]  backend  The name of the backend to set.
  */
@@ -995,6 +995,20 @@ bool _tevent_req_nomem(const void *p,
 	_tevent_req_nomem(p, req, __location__)
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Indicate out of memory to a request
+ *
+ * @param[in]  req      The request being processed.
+ */
+void tevent_req_oom(struct tevent_req *req);
+#else
+void _tevent_req_oom(struct tevent_req *req,
+		     const char *location);
+#define tevent_req_oom(req) \
+	_tevent_req_oom(req, __location__)
+#endif
+
 /**
  * @brief Finish a request before the caller had the change to set the callback.
  *
@@ -1218,7 +1232,7 @@ struct timeval tevent_timeval_current(void);
  *
  * @param[in]  secs     The seconds to set.
  *
- * @param[in]  usecs    The milliseconds to set.
+ * @param[in]  usecs    The microseconds to set.
  *
  * @return              A timeval structure with the given values.
  */
@@ -1253,7 +1267,7 @@ bool tevent_timeval_is_zero(const struct timeval *tv);
  *
  * @param[in]  secs      The seconds to add to the timeval.
  *
- * @param[in]  usecs     The milliseconds to add to the timeval.
+ * @param[in]  usecs     The microseconds to add to the timeval.
  *
  * @return               The timeval structure with the new time.
  */
@@ -1265,7 +1279,7 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
  *
  * @param[in]  secs     The seconds of the offset from now.
  *
- * @param[in]  usecs    The milliseconds of the offset from now.
+ * @param[in]  usecs    The microseconds of the offset from now.
  *
  * @return              A timval with the given offset in the future.
  */

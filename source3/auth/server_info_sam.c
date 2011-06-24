@@ -23,8 +23,6 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "smbd/globals.h"
-#include "../libcli/auth/libcli_auth.h"
 #include "nsswitch/winbind_client.h"
 #include "passdb.h"
 
@@ -51,7 +49,7 @@ static bool is_our_machine_account(const char *username)
 		return false;
 	}
 	truncname[ulen-1] = '\0';
-	ret = strequal(truncname, global_myname());
+	ret = strequal(truncname, lp_netbios_name());
 	SAFE_FREE(truncname);
 	return ret;
 }
@@ -79,7 +77,7 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	status = samu_to_SamInfo3(result, sampass, global_myname(),
+	status = samu_to_SamInfo3(result, sampass, lp_netbios_name(),
 				  &result->info3, &result->extra);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);

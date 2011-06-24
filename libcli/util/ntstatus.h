@@ -601,6 +601,8 @@ typedef uint32_t NTSTATUS;
 #define NT_STATUS_OBJECTID_NOT_FOUND NT_STATUS(0xC0000000 | 0x02F0)
 #define NT_STATUS_NO_SUCH_JOB NT_STATUS(0xC0000000 | 0xEDE) /* scheduler */
 #define NT_STATUS_DOWNGRADE_DETECTED NT_STATUS(0xC0000000 | 0x0388)
+#define NT_STATUS_NO_S4U_PROT_SUPPORT NT_STATUS(0xC0000000 | 0x040A)
+#define NT_STATUS_CROSSREALM_DELEGATION_FAILURE NT_STATUS(0xC0000000 | 0x040B)
 #define NT_STATUS_NO_SUCH_JOB NT_STATUS(0xC0000000 | 0xEDE) /* scheduler */
 #define NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED NT_STATUS(0xC0000000 | 0x20004)
 #define NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX NT_STATUS(0xC0000000 | 0x20026)
@@ -627,6 +629,15 @@ typedef uint32_t NTSTATUS;
 #define NT_STATUS_FOOBAR NT_STATUS_UNSUCCESSFUL
 
 /*****************************************************************************
+ Returns an NT error message.  not amazingly helpful, but better than a number.
+
+ This version is const, and so neither allocates memory nor uses a
+ static variable for unknown errors.
+ *****************************************************************************/
+
+const char *nt_errstr_const(NTSTATUS nt_code);
+
+/*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
 const char *nt_errstr(NTSTATUS nt_code);
@@ -639,15 +650,12 @@ const char *get_friendly_nt_error_msg(NTSTATUS nt_code);
 /*****************************************************************************
  returns an NT_STATUS constant as a string for inclusion in autogen C code
  *****************************************************************************/
-const char *get_nt_error_c_code(NTSTATUS nt_code);
+const char *get_nt_error_c_code(void *mem_ctx, NTSTATUS nt_code);
 
 /*****************************************************************************
  returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
  *****************************************************************************/
 NTSTATUS nt_status_string_to_code(const char *nt_status_str);
-
-/** Used by ntstatus_dos_equal: */
-extern bool ntstatus_check_dos_mapping;
 
 /* we need these here for openchange */
 #ifndef likely
@@ -659,13 +667,7 @@ extern bool ntstatus_check_dos_mapping;
 
 #define NT_STATUS_IS_OK(x) (likely(NT_STATUS_V(x) == 0))
 #define NT_STATUS_IS_ERR(x) (unlikely((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000))
-/* checking for DOS error mapping here is ugly, but unfortunately the
-   alternative is a very intrusive rewrite of the torture code */
-#if _SAMBA_BUILD_ == 4
-#define NT_STATUS_EQUAL(x,y) (NT_STATUS_IS_DOS(x)||NT_STATUS_IS_DOS(y)?ntstatus_dos_equal(x,y):NT_STATUS_V(x) == NT_STATUS_V(y))
-#else
 #define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
-#endif
 
 #define NT_STATUS_HAVE_NO_MEMORY(x) do { \
 	if (unlikely(!(x))) {		\
@@ -729,5 +731,11 @@ extern bool ntstatus_check_dos_mapping;
 #define NT_STATUS_IS_RPC(status) \
 	(((NT_STATUS_V(status) & 0xFFFF) == 0xC0020000) || \
 	 ((NT_STATUS_V(status) & 0xFFFF) == 0xC0030000))
+
+typedef struct
+{
+	const char *nt_errstr;
+	NTSTATUS nt_errcode;
+} nt_err_code_struct;
 
 #endif /* _NTSTATUS_H */

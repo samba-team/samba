@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef AUTH_COMMON_AUTH_H
+#define AUTH_COMMON_AUTH_H
+
 #define USER_INFO_CASE_INSENSITIVE_USERNAME 0x01 /* username may be in any case */
 #define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
 #define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* don't check unix account status */
@@ -59,3 +62,5 @@ struct auth_usersupplied_info
 	} password;
 	uint32_t flags;
 };
+
+#endif

@@ -217,7 +217,7 @@ const char *get_winbind_netbios_name(void)
 	if (winbindd_request_response(WINBINDD_NETBIOS_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(0, ("could not obtain winbind netbios name!\n"));
-		return global_myname();
+		return lp_netbios_name();
 	}
 
 	fstrcpy(winbind_netbios_name, response.data.netbios_name);
@@ -313,13 +313,13 @@ int get_pam_winbind_config()
 		opt_pam_winbind_conf = PAM_WINBIND_CONFIG_FILE;
 	}
 
-	d = iniparser_load(CONST_DISCARD(char *, opt_pam_winbind_conf));
+	d = iniparser_load(discard_const_p(char, opt_pam_winbind_conf));
 
 	if (!d) {
 		return 0;
 	}
 
-	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:krb5_auth"), false)) {
+	if (iniparser_getboolean(d, discard_const_p(char, "global:krb5_auth"), false)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
@@ -657,7 +657,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 	}
 
 	status = ntlmssp_client_start(NULL,
-				      global_myname(),
+				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
 				      client_ntlmssp_state);
@@ -711,7 +711,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(struct ntlmssp_state **ntlmssp_st
 	bool is_standalone = false;
 
 	if (opt_password) {
-		netbios_name = global_myname();
+		netbios_name = lp_netbios_name();
 		netbios_domain = lp_workgroup();
 	} else {
 		netbios_name = get_winbind_netbios_name();
@@ -1182,7 +1182,7 @@ static void offer_gss_spnego_mechs(void) {
 
 	ZERO_STRUCT(spnego);
 
-	myname_lower = talloc_strdup(ctx, global_myname());
+	myname_lower = talloc_strdup(ctx, lp_netbios_name());
 	if (!myname_lower) {
 		return;
 	}
@@ -1722,7 +1722,7 @@ static void manage_client_ntlmssp_targ(struct spnego_data spnego)
 
 	spnego.type = SPNEGO_NEG_TOKEN_TARG;
 	spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-	spnego.negTokenTarg.supportedMech = (char *)OID_NTLMSSP;
+	spnego.negTokenTarg.supportedMech = (const char *)OID_NTLMSSP;
 	spnego.negTokenTarg.responseToken = request;
 	spnego.negTokenTarg.mechListMIC = null_blob;
 
@@ -2063,7 +2063,7 @@ static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
 			if (!NT_STATUS_IS_OK(
 				    contact_winbind_auth_crap(username, 
 							      domain, 
-							      global_myname(),
+							      lp_netbios_name(),
 							      &challenge, 
 							      &lm_response, 
 							      &nt_response, 
@@ -2680,7 +2680,7 @@ enum {
 			break;
 
                 case OPT_REQUIRE_MEMBERSHIP:
-			if (StrnCaseCmp("S-", require_membership_of, 2) == 0) {
+			if (strncasecmp_m("S-", require_membership_of, 2) == 0) {
 				require_membership_of_sid = require_membership_of;
 			}
 			break;

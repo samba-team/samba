@@ -232,8 +232,8 @@ done:
  Allocate a new uid or gid
 ********************************/
 
-static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
-				       struct unixid *xid)
+static NTSTATUS idmap_ldap_allocate_id_internal(struct idmap_domain *dom,
+						struct unixid *xid)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -391,21 +391,21 @@ done:
  * For now this is for the default idmap domain only.
  * Should be extended later on.
  */
-static NTSTATUS idmap_ldap_get_new_id(struct idmap_domain *dom,
-				      struct unixid *id)
+static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
+				       struct unixid *id)
 {
 	NTSTATUS ret;
 
 	if (!strequal(dom->name, "*")) {
-		DEBUG(3, ("idmap_ldap_get_new_id: "
+		DEBUG(3, ("idmap_ldap_allocate_id: "
 			  "Refusing allocation of a new unixid for domain'%s'. "
-			  "Currently only supported for the default "
+			  "This is only supported for the default "
 			  "domain \"*\".\n",
 			   dom->name));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	ret = idmap_ldap_allocate_id(dom, id);
+	ret = idmap_ldap_allocate_id_internal(dom, id);
 
 	return ret;
 }
@@ -443,7 +443,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 		return NT_STATUS_FILE_IS_OFFLINE;
 	}
 
-	ctx = TALLOC_ZERO_P(dom, struct idmap_ldap_context);
+	ctx = talloc_zero(dom, struct idmap_ldap_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -484,7 +484,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 	ctx->rw_ops = talloc_zero(ctx, struct idmap_rw_ops);
 	CHECK_ALLOC_DONE(ctx->rw_ops);
 
-	ctx->rw_ops->get_new_id = idmap_ldap_get_new_id;
+	ctx->rw_ops->get_new_id = idmap_ldap_allocate_id_internal;
 	ctx->rw_ops->set_mapping = idmap_ldap_set_mapping;
 
 	ret = smbldap_init(ctx, winbind_event_context(), ctx->url,
@@ -1144,7 +1144,7 @@ static struct idmap_methods idmap_ldap_methods = {
 	.init = idmap_ldap_db_init,
 	.unixids_to_sids = idmap_ldap_unixids_to_sids,
 	.sids_to_unixids = idmap_ldap_sids_to_unixids,
-	.allocate_id = idmap_ldap_get_new_id,
+	.allocate_id = idmap_ldap_allocate_id,
 };
 
 NTSTATUS idmap_ldap_init(void);

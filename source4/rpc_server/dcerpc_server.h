@@ -23,7 +23,7 @@
 #ifndef SAMBA_DCERPC_SERVER_H
 #define SAMBA_DCERPC_SERVER_H
 
-#include "librpc/gen_ndr/server_id4.h"
+#include "librpc/gen_ndr/server_id.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/ndr/libndr.h"
 
@@ -111,7 +111,7 @@ struct dcesrv_call_state {
 	struct tevent_context *event_ctx;
 
 	/* the message_context that will be used for async replies */
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 
 	/* this is the pointer to the allocated function struct */
 	void *r;
@@ -200,7 +200,7 @@ struct dcesrv_connection {
 	struct tevent_context *event_ctx;
 
 	/* the message_context that will be used for this connection */
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 
 	/* the server_id that will be used for this connection */
 	struct server_id server_id;
@@ -319,7 +319,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct auth_session_info *session_info,
 				 struct tevent_context *event_ctx,
-				 struct messaging_context *msg_ctx,
+				 struct imessaging_context *msg_ctx,
 				 struct server_id server_id,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p);

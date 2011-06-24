@@ -59,8 +59,10 @@ static void nss_wins_init(void)
 
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
-	struct ip_service *address = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct sockaddr_storage *address = NULL;
 	struct in_addr *ret = NULL;
+	NTSTATUS status;
 	int j;
 
 	if (!initialised) {
@@ -70,19 +72,21 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	*count = 0;
 
 	/* always try with wins first */
-	if (NT_STATUS_IS_OK(resolve_wins(name,0x00,&address,count))) {
+	status = resolve_wins(name, 0x00, talloc_tos(),
+			      &address, count);
+	if (NT_STATUS_IS_OK(status)) {
 		if ( (ret = SMB_MALLOC_P(struct in_addr)) == NULL ) {
-			free( address );
+			TALLOC_FREE(frame);
 			return NULL;
 		}
-		if (address[0].ss.ss_family != AF_INET) {
-			free(address);
+		if (address[0].ss_family != AF_INET) {
 			free(ret);
+			TALLOC_FREE(frame);
 			return NULL;
 		}
-		*ret = ((struct sockaddr_in *)(void *)&address[0].ss)
+		*ret = ((struct sockaddr_in *)(void *)address)
 			->sin_addr;
-		free( address );
+		TALLOC_FREE(frame);
 		return ret;
 	}
 
@@ -91,24 +95,23 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		const struct in_addr *bcast = iface_n_bcast_v4(j);
 		struct sockaddr_storage ss;
 		struct sockaddr_storage *pss;
-		NTSTATUS status;
 
 		if (!bcast) {
 			continue;
 		}
 		in_addr_to_sockaddr_storage(&ss, *bcast);
 		status = name_query(name, 0x00, True, True, &ss,
-				    NULL, &pss, count, NULL);
-		if (pss) {
+				    talloc_tos(), &pss, count, NULL);
+		if (NT_STATUS_IS_OK(status) && (*count > 0)) {
 			if ((ret = SMB_MALLOC_P(struct in_addr)) == NULL) {
+				TALLOC_FREE(frame);
 				return NULL;
 			}
 			*ret = ((struct sockaddr_in *)pss)->sin_addr;
-			TALLOC_FREE(pss);
 			break;
 		}
 	}
-
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -180,7 +183,7 @@ int lookup(nsd_file_t *rq)
 	 * response needs to be a string of the following format
 	 * ip_address[ ip_address]*\tname[ alias]*
 	 */
-	if (StrCaseCmp(map,"hosts.byaddr") == 0) {
+	if (strcasecmp_m(map,"hosts.byaddr") == 0) {
 		if ( status = lookup_byaddr_backend(key, &count)) {
 		    size = strlen(key) + 1;
 		    if (size > len) {
@@ -208,7 +211,7 @@ int lookup(nsd_file_t *rq)
 		    response[strlen(response)-1] = '\n';
 		    talloc_free(status);
 		}
-	} else if (StrCaseCmp(map,"hosts.byname") == 0) {
+	} else if (strcasecmp_m(map,"hosts.byname") == 0) {
 	    if (ip_list = lookup_byname_backend(key, &count)) {
 		for (i = count; i ; i--) {
 		    addr = inet_ntoa(ip_list[i-1]);

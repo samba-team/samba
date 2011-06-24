@@ -25,7 +25,6 @@
 #include "libcli/security/security.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 /* what user is current? */
 extern struct current_user current_user;
@@ -180,50 +179,6 @@ static bool check_user_ok(connection_struct *conn,
 	}
 
 	return(True);
-}
-
-/****************************************************************************
- Clear a vuid out of the connection's vuid cache
- This is only called on SMBulogoff.
-****************************************************************************/
-
-void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
-{
-	int i;
-
-	for (i=0; i<VUID_CACHE_SIZE; i++) {
-		struct vuid_cache_entry *ent;
-
-		ent = &conn->vuid_cache.array[i];
-
-		if (ent->vuid == vuid) {
-			ent->vuid = UID_FIELD_INVALID;
-			/*
-			 * We need to keep conn->session_info around
-			 * if it's equal to ent->session_info as a SMBulogoff
-			 * is often followed by a SMBtdis (with an invalid
-			 * vuid). The debug code (or regular code in
-			 * vfs_full_audit) wants to refer to the
-			 * conn->session_info pointer to print debug
-			 * statements. Theoretically this is a bug,
-			 * as once the vuid is gone the session_info
-			 * on the conn struct isn't valid any more,
-			 * but there's enough code that assumes
-			 * conn->session_info is never null that
-			 * it's easier to hold onto the old pointer
-			 * until we get a new sessionsetupX.
-			 * As everything is hung off the
-			 * conn pointer as a talloc context we're not
-			 * leaking memory here. See bug #6315. JRA.
-			 */
-			if (conn->session_info == ent->session_info) {
-				ent->session_info = NULL;
-			} else {
-				TALLOC_FREE(ent->session_info);
-			}
-			ent->read_only = False;
-		}
-	}
 }
 
 /****************************************************************************
@@ -390,7 +345,7 @@ bool change_to_user_by_session(connection_struct *conn,
  but modify the current_user entries.
 ****************************************************************************/
 
-bool change_to_root_user(void)
+bool smbd_change_to_root_user(void)
 {
 	set_root_sec_ctx();
 
@@ -409,14 +364,14 @@ bool change_to_root_user(void)
  user. Doesn't modify current_user.
 ****************************************************************************/
 
-bool become_authenticated_pipe_user(struct pipes_struct *p)
+bool become_authenticated_pipe_user(struct auth_serversupplied_info *session_info)
 {
 	if (!push_sec_ctx())
 		return False;
 
-	set_sec_ctx(p->session_info->utok.uid, p->session_info->utok.gid,
-		    p->session_info->utok.ngroups, p->session_info->utok.groups,
-		    p->session_info->security_token);
+	set_sec_ctx(session_info->utok.uid, session_info->utok.gid,
+		    session_info->utok.ngroups, session_info->utok.groups,
+		    session_info->security_token);
 
 	return True;
 }
@@ -486,7 +441,7 @@ static void pop_conn_ctx(void)
  restores the connection context.
 ****************************************************************************/
 
-void become_root(void)
+void smbd_become_root(void)
 {
 	 /*
 	  * no good way to handle push_sec_ctx() failing without changing
@@ -501,7 +456,7 @@ void become_root(void)
 
 /* Unbecome the root user */
 
-void unbecome_root(void)
+void smbd_unbecome_root(void)
 {
 	pop_sec_ctx();
 	pop_conn_ctx();

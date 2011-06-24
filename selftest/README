@@ -15,7 +15,7 @@ format-subunit, which is used by default as part of "make test".
 Available testsuites
 ====================
 The available testsuites are obtained from a script, usually 
-source{3,4}/selftest/tests.sh. This script should for each testsuite output 
+source{3,4}/selftest/tests.py. This script should for each testsuite output
 the name of the test, the command to run and the environment that should be 
 provided. Use the included "plantest" function to generate the required output.
 
@@ -77,10 +77,10 @@ Tests often need to run against a server with particular things set up,
 a "environment". This environment is provided by the test "target": Samba 3, 
 Samba 4 or Windows.
 
-The following environments are currently available:
+The environments are currently available include
 
  - none: No server set up, no variables set.
- - dc: Domain controller set up. The following environment variables will 
+ - dc,s3dc: Domain controller set up. The following environment variables will
    be set:
 
      * USERNAME: Administrator user name
@@ -92,7 +92,7 @@ The following environments are currently available:
 	 * NETBIOSNAME: DC NetBIOS name
 	 * NETIOSALIAS: DC NetBIOS alias
 
- - member: Domain controller and member server that is joined to it set up. The
+ - member,s4member,s3member: Domain controller and member server that is joined to it set up. The
    following environment variables will be set:
 
      * USERNAME: Domain administrator user name
@@ -101,6 +101,7 @@ The following environments are currently available:
 	 * REALM: Realm name
 	 * SERVER: Name of the member server
 
+See Samba.pm, Samba3.pm and Samba4.pm for the full list.
 
 Running tests
 =============
@@ -109,7 +110,7 @@ To run all the tests use::
 
    make test
 
-To run a quick subset (aiming for about 1 minute of testing) run::
+To run a quicker subset run::
 
    make quicktest
 

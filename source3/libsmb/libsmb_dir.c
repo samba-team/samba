@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/libsmb.h"
 #include "popt_common.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
@@ -245,7 +246,7 @@ dir_list_fn(const char *mnt,
 {
 
 	if (add_dirent((SMBCFILE *)state, finfo->name, "",
-		       (finfo->mode&aDIR?SMBC_DIR:SMBC_FILE)) < 0) {
+		       (finfo->mode&FILE_ATTRIBUTE_DIRECTORY?SMBC_DIR:SMBC_FILE)) < 0) {
 		SMBCFILE *dir = (SMBCFILE *)state;
 		return map_nt_error_from_unix(dir->dir_error);
 	}
@@ -456,9 +457,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
                 int i;
                 int count;
                 int max_lmb_count;
-                struct ip_service *ip_list;
-                struct ip_service server_addr;
+                struct sockaddr_storage *ip_list;
+                struct sockaddr_storage server_addr;
                 struct user_auth_info u_info;
+		NTSTATUS status;
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
 
@@ -498,13 +500,14 @@ SMBC_opendir_ctx(SMBCCTX *context,
                  */
 
                 ip_list = NULL;
-                if (!NT_STATUS_IS_OK(name_resolve_bcast(MSBROWSE, 1, &ip_list,
-                                                        &count)))
+		status = name_resolve_bcast(MSBROWSE, 1, talloc_tos(),
+					    &ip_list, &count);
+                if (!NT_STATUS_IS_OK(status))
 		{
 
-                        SAFE_FREE(ip_list);
+                        TALLOC_FREE(ip_list);
 
-                        if (!find_master_ip(workgroup, &server_addr.ss)) {
+                        if (!find_master_ip(workgroup, &server_addr)) {
 
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -515,8 +518,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                 return NULL;
                         }
 
-			ip_list = (struct ip_service *)memdup(
-				&server_addr, sizeof(server_addr));
+			ip_list = (struct sockaddr_storage *)talloc_memdup(
+				talloc_tos(), &server_addr,
+				sizeof(server_addr));
 			if (ip_list == NULL) {
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -534,7 +538,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			char *wg_ptr = NULL;
                 	struct cli_state *cli = NULL;
 
-			print_sockaddr(addr, sizeof(addr), &ip_list[i].ss);
+			print_sockaddr(addr, sizeof(addr), &ip_list[i]);
                         DEBUG(99, ("Found master browser %d of %d: %s\n",
                                    i+1, MAX(count, max_lmb_count),
                                    addr));
@@ -594,7 +598,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                         }
                 }
 
-                SAFE_FREE(ip_list);
+                TALLOC_FREE(ip_list);
         } else {
                 /*
                  * Server not an empty string ... Check the rest and see what
@@ -816,7 +820,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			}
 
 			status = cli_list(targetcli, targetpath,
-					  aDIR | aSYSTEM | aHIDDEN,
+					  FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 					  dir_list_fn, (void *)dir);
 			if (!NT_STATUS_IS_OK(status)) {
 				if (dir) {
@@ -1345,7 +1349,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 			}
 
 			status = cli_list(targetcli, lpath,
-					  aDIR | aSYSTEM | aHIDDEN,
+					  FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN,
 					  rmdir_list_fn,
 					  &smbc_rmdir_dirempty);
 
@@ -1611,10 +1615,10 @@ SMBC_chmod_ctx(SMBCCTX *context,
 
 	mode = 0;
 
-	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) mode |= aRONLY;
-	if ((newmode & S_IXUSR) && lp_map_archive(-1)) mode |= aARCH;
-	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= aSYSTEM;
-	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= aHIDDEN;
+	if (!(newmode & (S_IWUSR | S_IWGRP | S_IWOTH))) mode |= FILE_ATTRIBUTE_READONLY;
+	if ((newmode & S_IXUSR) && lp_map_archive(-1)) mode |= FILE_ATTRIBUTE_ARCHIVE;
+	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= FILE_ATTRIBUTE_SYSTEM;
+	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= FILE_ATTRIBUTE_HIDDEN;
 
 	if (!NT_STATUS_IS_OK(cli_setatr(targetcli, targetpath, mode, 0))) {
 		errno = SMBC_errno(context, targetcli);
@@ -1803,7 +1807,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>unlink: resolved path as %s\n", targetpath);*/
 
-	if (!NT_STATUS_IS_OK(cli_unlink(targetcli, targetpath, aSYSTEM | aHIDDEN))) {
+	if (!NT_STATUS_IS_OK(cli_unlink(targetcli, targetpath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
 
 		errno = SMBC_errno(context, targetcli);
 
@@ -2009,7 +2013,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 		int eno = SMBC_errno(ocontext, targetcli1);
 
 		if (eno != EEXIST ||
-		    !NT_STATUS_IS_OK(cli_unlink(targetcli1, targetpath2, aSYSTEM | aHIDDEN)) ||
+		    !NT_STATUS_IS_OK(cli_unlink(targetcli1, targetpath2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN)) ||
 		    !NT_STATUS_IS_OK(cli_rename(targetcli1, targetpath1, targetpath2))) {
 
 			errno = eno;

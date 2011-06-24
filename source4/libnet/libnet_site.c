@@ -64,7 +64,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 						&dest_address);
 	if (ret != 0) {
 		r->out.error_string = NULL;
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		return status;
 	}
 
@@ -168,7 +168,9 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	}
 
 	make_nbt_name_client(&name, libnet_r->out.samr_binding->host);
-	status = resolve_name(lpcfg_resolve_context(ctx->lp_ctx), &name, r, &dest_addr, ctx->event_ctx);
+	status = resolve_name_ex(lpcfg_resolve_context(ctx->lp_ctx),
+				 0, 0,
+				 &name, r, &dest_addr, ctx->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

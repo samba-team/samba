@@ -25,6 +25,7 @@
 #include "passdb.h"
 #include "groupdb/mapping.h"
 #include "dbwrap.h"
+#include "util_tdb.h"
 #include "../libcli/security/security.h"
 
 static struct db_context *db; /* used for driver files */
@@ -144,7 +145,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 	len = tdb_pack(NULL, 0, "ddff",
 		map->gid, map->sid_name_use, map->nt_name, map->comment);
 
-	buf = TALLOC_ARRAY(key, char, len);
+	buf = talloc_array(key, char, len);
 	if (!buf) {
 		TALLOC_FREE(key);
 		return false;
@@ -848,7 +849,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 		p += len + 1;
 
 		num_vals = pull_uint32(p, 0);
-		if (StrCaseCmp(name, "member") == 0) {
+		if (strcasecmp_m(name, "member") == 0) {
 			num_mem = num_vals;
 			members = talloc_array(tmp_ctx, struct dom_sid, num_mem);
 			if (members == NULL) {
@@ -881,30 +882,30 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 
 			/* we ignore unknown or uninteresting attributes
 			 * (objectclass, etc.) */
-			if (StrCaseCmp(name, "gidNumber") == 0) {
+			if (strcasecmp_m(name, "gidNumber") == 0) {
 				map.gid = strtoul(val, &q, 10);
 				if (*q) {
 					errno = EIO;
 					goto failed;
 				}
-			} else if (StrCaseCmp(name, "sid") == 0) {
+			} else if (strcasecmp_m(name, "sid") == 0) {
 				if (!string_to_sid(&map.sid, val)) {
 					errno = EIO;
 					goto failed;
 				}
-			} else if (StrCaseCmp(name, "sidNameUse") == 0) {
+			} else if (strcasecmp_m(name, "sidNameUse") == 0) {
 				map.sid_name_use = strtoul(val, &q, 10);
 				if (*q) {
 					errno = EIO;
 					goto failed;
 				}
-			} else if (StrCaseCmp(name, "ntname") == 0) {
+			} else if (strcasecmp_m(name, "ntname") == 0) {
 				strlcpy(map.nt_name, val,
-					sizeof(map.nt_name) -1);
-			} else if (StrCaseCmp(name, "comment") == 0) {
+					sizeof(map.nt_name));
+			} else if (strcasecmp_m(name, "comment") == 0) {
 				strlcpy(map.comment, val,
-					sizeof(map.comment) -1);
-			} else if (StrCaseCmp(name, "member") == 0) {
+					sizeof(map.comment));
+			} else if (strcasecmp_m(name, "member") == 0) {
 				if (!string_to_sid(&members[j], val)) {
 					errno = EIO;
 					goto failed;
@@ -959,7 +960,7 @@ static bool mapping_switch(const char *ldb_path)
 	/* ldb is just a very fancy tdb, read out raw data and perform
 	 * conversion */
 	ret = tdb_traverse(ltdb, convert_ldb_record, NULL);
-	if (ret == -1) goto failed;
+	if (ret < 0) goto failed;
 
 	if (ltdb) {
 		tdb_close(ltdb);

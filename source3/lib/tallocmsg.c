@@ -65,7 +65,7 @@ static void msg_pool_usage_helper(const void *ptr, int depth, int max_depth, int
 			       (unsigned long)talloc_total_blocks(ptr),
 			       talloc_reference_count(ptr),
 			       MIN(50, talloc_get_size(ptr)),
-			       (char *)ptr);
+			       (const char *)ptr);
 		return;
 	}
 

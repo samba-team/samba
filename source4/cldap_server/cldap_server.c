@@ -116,7 +116,7 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 						lpcfg_cldap_port(lp_ctx),
 						&socket_address);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("invalid address %s:%d - %s:%s\n",
 			 address, lpcfg_cldap_port(lp_ctx),
 			 gai_strerror(ret), nt_errstr(status)));
@@ -153,19 +153,24 @@ static NTSTATUS cldapd_startup_interfaces(struct cldapd_server *cldapd, struct l
 	TALLOC_CTX *tmp_ctx = talloc_new(cldapd);
 	NTSTATUS status;
 
-	num_interfaces = iface_count(ifaces);
+	num_interfaces = iface_list_count(ifaces);
 
 	/* if we are allowing incoming packets from any address, then
 	   we need to bind to the wildcard address */
 	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
-		status = cldapd_add_socket(cldapd, lp_ctx, "0.0.0.0");
-		NT_STATUS_NOT_OK_RETURN(status);
+		const char **wcard = iface_list_wildcard(cldapd, lp_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(wcard);
+		for (i=0; wcard[i]; i++) {
+			status = cldapd_add_socket(cldapd, lp_ctx, wcard[i]);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+		talloc_free(wcard);
 	}
 
 	/* now we have to also listen on the specific interfaces,
 	   so that replies always come from the right IP */
 	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 		status = cldapd_add_socket(cldapd, lp_ctx, address);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
@@ -184,9 +189,9 @@ static void cldapd_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct interface *ifaces;
 	
-	load_interfaces(task, lpcfg_interfaces(task->lp_ctx), &ifaces);
+	load_interface_list(task, task->lp_ctx, &ifaces);
 
-	if (iface_count(ifaces) == 0) {
+	if (iface_list_count(ifaces) == 0) {
 		task_server_terminate(task, "cldapd: no network interfaces configured", false);
 		return;
 	}

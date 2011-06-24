@@ -22,6 +22,7 @@
 #include "auth.h"
 #include "system/passwd.h"
 #include "smbd/smbd.h"
+#include "libsmb/libsmb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -43,12 +44,6 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	struct named_mutex *mutex = NULL;
 	NTSTATUS status;
 
-	if (!(cli = cli_initialise()))
-		return NULL;
-
-	/* security = server just can't function with spnego */
-	cli->use_spnego = False;
-
         pserver = talloc_strdup(mem_ctx, lp_passwordserver());
 	p = pserver;
 
@@ -63,12 +58,18 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		}
 		strupper_m(desthost);
 
+		if (strequal(desthost, myhostname())) {
+			DEBUG(1,("Password server loop - disabling "
+				 "password server %s\n", desthost));
+			continue;
+		}
+
 		if(!resolve_name( desthost, &dest_ss, 0x20, false)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
 			continue;
 		}
 
-		if (ismyaddr((struct sockaddr *)&dest_ss)) {
+		if (ismyaddr((struct sockaddr *)(void *)&dest_ss)) {
 			DEBUG(1,("Password server loop - disabling password server %s\n",desthost));
 			continue;
 		}
@@ -80,11 +81,11 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 		mutex = grab_named_mutex(talloc_tos(), desthost, 10);
 		if (mutex == NULL) {
-			cli_shutdown(cli);
 			return NULL;
 		}
 
-		status = cli_connect(cli, desthost, &dest_ss);
+		status = cli_connect_nb(desthost, &dest_ss, 0, 0x20,
+					lp_netbios_name(), Undefined, &cli);
 		if (NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
@@ -97,21 +98,11 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	if (!connected_ok) {
 		DEBUG(0,("password server not available\n"));
-		cli_shutdown(cli);
 		return NULL;
 	}
 
-	if (!attempt_netbios_session_request(&cli, global_myname(),
-					     desthost, &dest_ss)) {
-		TALLOC_FREE(mutex);
-		DEBUG(1,("password server fails session request\n"));
-		cli_shutdown(cli);
-		return NULL;
-	}
-
-	if (strequal(desthost,myhostname())) {
-		exit_server_cleanly("Password server loop!");
-	}
+	/* security = server just can't function with spnego */
+	cli->use_spnego = False;
 
 	DEBUG(3,("got session\n"));
 
@@ -258,7 +249,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 
 		/* The return must be allocated on the caller's mem_ctx, as our own will be
 		   destoyed just after the call. */
-		return data_blob_talloc((TALLOC_CTX *)auth_context, cli->secblob.data,8);
+		return data_blob_talloc(discard_const_p(TALLOC_CTX, auth_context), cli->secblob.data,8);
 	} else {
 		return data_blob_null;
 	}
@@ -341,7 +332,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		baduser = talloc_asprintf(mem_ctx,
 					"%s%s",
 					INVALID_USER_PREFIX,
-					global_myname());
+					lp_netbios_name());
 		if (!baduser) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -426,7 +417,7 @@ use this machine as the password server.\n"));
 	}
 
 	/* if logged in as guest then reject */
-	if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
+	if (cli->is_guestlogin) {
 		DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
 		nt_status = NT_STATUS_LOGON_FAILURE;
 	}
@@ -461,7 +452,7 @@ static NTSTATUS auth_init_smbserver(struct auth_context *auth_context, const cha
 {
 	struct auth_methods *result;
 
-	result = TALLOC_ZERO_P(auth_context, struct auth_methods);
+	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

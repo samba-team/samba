@@ -26,6 +26,7 @@
 #include "include/dbwrap.h"
 #include "system/filesys.h"
 #include "passdb/lookup_sid.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
@@ -50,6 +51,57 @@ typedef struct _SMB_ACL4_INT_T
 	SMB_ACE4_INT_T	*first;
 	SMB_ACE4_INT_T	*last;
 } SMB_ACL4_INT_T;
+
+/************************************************
+ Split the ACE flag mapping between nfs4 and Windows
+ into two separate functions rather than trying to do
+ it inline. Allows us to carefully control what flags
+ are mapped to what in one place.
+************************************************/
+
+static uint32_t map_nfs4_ace_flags_to_windows_ace_flags(uint32_t nfs4_ace_flags)
+{
+	uint32_t win_ace_flags = 0;
+
+	/* The nfs4 flags <= 0xf map perfectly. */
+	win_ace_flags = nfs4_ace_flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
+				      SEC_ACE_FLAG_CONTAINER_INHERIT|
+				      SEC_ACE_FLAG_NO_PROPAGATE_INHERIT|
+				      SEC_ACE_FLAG_INHERIT_ONLY);
+
+	/* flags greater than 0xf have diverged :-(. */
+	/* See the nfs4 ace flag definitions here:
+	   http://www.ietf.org/rfc/rfc3530.txt.
+	   And the Windows ace flag definitions here:
+	   librpc/idl/security.idl. */
+	if (nfs4_ace_flags & SMB_ACE4_INHERITED_ACE) {
+		win_ace_flags |= SEC_ACE_FLAG_INHERITED_ACE;
+	}
+
+	return win_ace_flags;
+}
+
+static uint32_t map_windows_ace_flags_to_nfs4_ace_flags(uint32_t win_ace_flags)
+{
+	uint32_t nfs4_ace_flags = 0;
+
+	/* The windows flags <= 0xf map perfectly. */
+	nfs4_ace_flags = win_ace_flags & (SMB_ACE4_FILE_INHERIT_ACE|
+				      SMB_ACE4_DIRECTORY_INHERIT_ACE|
+				      SMB_ACE4_NO_PROPAGATE_INHERIT_ACE|
+				      SMB_ACE4_INHERIT_ONLY_ACE);
+
+	/* flags greater than 0xf have diverged :-(. */
+	/* See the nfs4 ace flag definitions here:
+	   http://www.ietf.org/rfc/rfc3530.txt.
+	   And the Windows ace flag definitions here:
+	   librpc/idl/security.idl. */
+	if (win_ace_flags & SEC_ACE_FLAG_INHERITED_ACE) {
+		nfs4_ace_flags |= SMB_ACE4_INHERITED_ACE;
+	}
+
+	return nfs4_ace_flags;
+}
 
 static SMB_ACL4_INT_T *get_validated_aclint(SMB4ACL_T *theacl)
 {
@@ -233,7 +285,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 		uint32_t mask;
 		struct dom_sid sid;
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
-		uint32_t mapped_ace_flags;
+		uint32_t win_ace_flags;
 
 		DEBUG(10, ("magic: 0x%x, type: %d, iflags: %x, flags: %x, mask: %x, "
 			"who: %d\n", aceint->magic, ace->aceType, ace->flags,
@@ -270,25 +322,25 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 			ace->aceMask |= SMB_ACE4_DELETE_CHILD;
 		}
 
-		mapped_ace_flags = ace->aceFlags & 0xf;
-		if (!is_directory && (mapped_ace_flags & (SMB_ACE4_FILE_INHERIT_ACE|SMB_ACE4_DIRECTORY_INHERIT_ACE))) {
+		win_ace_flags = map_nfs4_ace_flags_to_windows_ace_flags(ace->aceFlags);
+		if (!is_directory && (win_ace_flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT))) {
 			/*
 			 * GPFS sets inherits dir_inhert and file_inherit flags
 			 * to files, too, which confuses windows, and seems to
 			 * be wrong anyways. ==> Map these bits away for files.
 			 */
 			DEBUG(10, ("removing inherit flags from nfs4 ace\n"));
-			mapped_ace_flags &= ~(SMB_ACE4_FILE_INHERIT_ACE|SMB_ACE4_DIRECTORY_INHERIT_ACE);
+			win_ace_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT);
 		}
-		DEBUG(10, ("mapped ace flags: 0x%x => 0x%x\n",
-		      ace->aceFlags, mapped_ace_flags));
+		DEBUG(10, ("Windows mapped ace flags: 0x%x => 0x%x\n",
+		      ace->aceFlags, win_ace_flags));
 
 		/* Windows clients expect SYNC on acls to
 		   correctly allow rename. See bug #7909. */
 		mask = ace->aceMask | SMB_ACE4_SYNCHRONIZE;
 		init_sec_ace(&nt_ace_list[good_aces++], &sid,
 			ace->aceType, mask,
-			mapped_ace_flags);
+			win_ace_flags);
 	}
 
 	*ppnt_ace_list = nt_ace_list;
@@ -397,13 +449,15 @@ static int smbacl4_get_vfs_params(
 {
 	static const struct enum_list enum_smbacl4_modes[] = {
 		{ e_simple, "simple" },
-		{ e_special, "special" }
+		{ e_special, "special" },
+		{ -1 , NULL }
 	};
 	static const struct enum_list enum_smbacl4_acedups[] = {
 		{ e_dontcare, "dontcare" },
 		{ e_reject, "reject" },
 		{ e_ignore, "ignore" },
 		{ e_merge, "merge" },
+		{ -1 , NULL }
 	};
 
 	memset(params, 0, sizeof(smbacl4_vfs_params));
@@ -520,7 +574,7 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 	
 	if (mapping_db->fetch(mapping_db, NULL,
 			      string_term_tdb_data(sid_string_tos(src)),
-			      &data) == -1) {
+			      &data) != 0) {
 		DEBUG(10, ("could not find mapping for SID %s\n",
 			   sid_string_dbg(src)));
 		return False;
@@ -560,7 +614,7 @@ static bool smbacl4_fill_ace4(
 
 	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
 	ace_v4->aceType = ace_nt->type; /* only ACCESS|DENY supported right now */
-	ace_v4->aceFlags = ace_nt->flags & SEC_ACE_FLAG_VALID_INHERIT;
+	ace_v4->aceFlags = map_windows_ace_flags_to_nfs4_ace_flags(ace_nt->flags);
 	ace_v4->aceMask = ace_nt->access_mask &
 		(SEC_STD_ALL | SEC_FILE_ALL);
 

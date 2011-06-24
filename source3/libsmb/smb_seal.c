@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "smb_crypt.h"
+#include "libsmb/libsmb.h"
 
 /******************************************************************************
  Pull out the encryption context for this packet. 0 means global context.
@@ -463,47 +464,4 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf)
 	 * here we'd look up based on tid.
 	 */
 	common_free_enc_buffer(cli->trans_enc_state, buf);
-}
-
-/******************************************************************************
- Decrypt an incoming buffer.
-******************************************************************************/
-
-NTSTATUS cli_decrypt_message(struct cli_state *cli)
-{
-	NTSTATUS status;
-	uint16 enc_ctx_num;
-
-	/* Ignore non-session messages. */
-	if(CVAL(cli->inbuf,0)) {
-		return NT_STATUS_OK;
-	}
-
-	status = get_enc_ctx_num((const uint8_t *)cli->inbuf, &enc_ctx_num);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (enc_ctx_num != cli->trans_enc_state->enc_ctx_num) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	return common_decrypt_buffer(cli->trans_enc_state, cli->inbuf);
-}
-
-/******************************************************************************
- Encrypt an outgoing buffer. Return the encrypted pointer in buf_out.
-******************************************************************************/
-
-NTSTATUS cli_encrypt_message(struct cli_state *cli, char *buf, char **buf_out)
-{
-	/* Ignore non-session messages. */
-	if (CVAL(buf,0)) {
-		return NT_STATUS_OK;
-	}
-
-	/* If we supported multiple encrytion contexts
-	 * here we'd look up based on tid.
-	 */
-	return common_encrypt_buffer(cli->trans_enc_state, buf, buf_out);
 }

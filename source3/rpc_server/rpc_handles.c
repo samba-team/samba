@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "auth.h"
 #include "ntdomain.h"
+#include "rpc_server/rpc_ncacn_np.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -83,15 +84,28 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
 	for (plist = get_first_internal_pipe();
 	     plist;
 	     plist = get_next_internal_pipe(plist)) {
-		if (ndr_syntax_id_equal(syntax, &plist->syntax)) {
-			break;
+		struct pipe_rpc_fns *p_ctx;
+		bool stop = false;
+
+		for (p_ctx = plist->contexts;
+		     p_ctx != NULL;
+		     p_ctx = p_ctx->next) {
+			if (ndr_syntax_id_equal(syntax, &p_ctx->syntax)) {
+				stop = true;
+				break;
+			}
+			if (is_samr_lsa_pipe(&p_ctx->syntax)
+			    && is_samr_lsa_pipe(syntax)) {
+				/*
+				 * samr and lsa share a handle space (same process
+				 * under Windows?)
+				 */
+				stop = true;
+				break;
+			}
 		}
-		if (is_samr_lsa_pipe(&plist->syntax)
-		    && is_samr_lsa_pipe(syntax)) {
-			/*
-			 * samr and lsa share a handle space (same process
-			 * under Windows?)
-			 */
+
+		if (stop) {
 			break;
 		}
 	}
@@ -229,7 +243,7 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 	for (h = p->pipe_handles->handles; h != NULL; h = h->next) {
 		if (memcmp(&h->wire_handle, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%u] ", count));
-			dump_data(4, (uint8 *)hnd, sizeof(*hnd));
+			dump_data(4, (const uint8 *)hnd, sizeof(*hnd));
 			if (data_p) {
 				*data_p = h->data;
 			}
@@ -239,7 +253,7 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, (uint8_t *)hnd, sizeof(*hnd));
+	dump_data(4, (const uint8_t *)hnd, sizeof(*hnd));
 
 	p->bad_handle_fault_state = true;
 
@@ -293,6 +307,10 @@ bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd)
 
 void close_policy_by_pipe(struct pipes_struct *p)
 {
+	if (p->pipe_handles == NULL) {
+		return;
+	}
+
 	p->pipe_handles->pipe_ref_count--;
 
 	if (p->pipe_handles->pipe_ref_count == 0) {
@@ -301,9 +319,9 @@ void close_policy_by_pipe(struct pipes_struct *p)
 		 */
 		TALLOC_FREE(p->pipe_handles);
 
-		DEBUG(10,("close_policy_by_pipe: deleted handle list for "
-			  "pipe %s\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(10,("Deleted handle list for RPC connection %s\n",
+			  get_pipe_name_from_syntax(talloc_tos(),
+						    &p->contexts->syntax)));
 	}
 }
 
@@ -344,9 +362,10 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 	void *data;
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
-		DEBUG(0, ("policy_handle_create: ERROR: too many handles (%d) "
-			  "on pipe %s.\n", (int)p->pipe_handles->count,
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(0, ("ERROR: Too many handles (%d) for RPC connection %s\n",
+			  (int) p->pipe_handles->count,
+			  get_pipe_name_from_syntax(talloc_tos(),
+						    &p->contexts->syntax)));
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}

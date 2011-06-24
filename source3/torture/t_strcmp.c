@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2003 by Martin Pool
  *
- * Test harness for StrCaseCmp
+ * Test harness for strcasecmp_m
  */
 
 #include "includes.h"
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 
 	if (argc < 3) {
 		fprintf(stderr, "usage: %s STRING1 STRING2 [ITERS]\n"
-			"Compares two strings, prints the results of StrCaseCmp\n",
+			"Compares two strings, prints the results of strcasecmp_m\n",
 			argv[0]);
 		return 2;
 	}
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 		iters = atoi(argv[3]);
 
 	for (i = 0; i < iters; i++)
-		ret = StrCaseCmp(argv[1], argv[2]);
+		ret = strcasecmp_m(argv[1], argv[2]);
 
 	printf("%d\n", ret);
 	

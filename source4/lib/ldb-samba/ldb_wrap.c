@@ -35,7 +35,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "../lib/util/dlinklist.h"
-#include <tdb.h>
+#include "../lib/tdb_compat/tdb_compat.h"
 
 /*
   this is used to catch debug messages from ldb
@@ -126,10 +126,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 		return NULL;
 	}
 
-	ldb_set_modules_dir(ldb,
-			    talloc_asprintf(ldb,
-					    "%s/ldb",
-					    lpcfg_modulesdir(lp_ctx)));
+	ldb_set_modules_dir(ldb, modules_path(ldb, "ldb"));
 
 	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
 
@@ -177,7 +174,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 				   struct loadparm_context *lp_ctx,
 				   struct auth_session_info *session_info,
 				   struct cli_credentials *credentials,
-				   int flags)
+				   unsigned int flags)
 {
 	struct ldb_wrap *w;
 	/* see if we can re-use an existing ldb */
@@ -195,7 +192,7 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 }
 
 int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
-		      const char *url, int flags)
+		      const char *url, unsigned int flags)
 {
 	int ret;
 	char *real_url = NULL;
@@ -209,7 +206,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 		flags |= LDB_FLG_ENABLE_TRACING;
 	}
 
-	real_url = private_path(ldb, lp_ctx, url);
+	real_url = lpcfg_private_path(ldb, lp_ctx, url);
 	if (real_url == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -230,7 +227,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 		   struct loadparm_context *lp_ctx,
 		   struct auth_session_info *session_info,
 		   struct cli_credentials *credentials,
-		   int flags,
+		   unsigned int flags,
 		   struct ldb_context *ldb)
 {
 	struct ldb_wrap *w;

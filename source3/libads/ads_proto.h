@@ -1,3 +1,37 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *  ads (active directory) utility library
+ *
+ *  Copyright (C) Andrew Bartlett			2001
+ *  Copyright (C) Andrew Tridgell			2001
+ *  Copyright (C) Remus Koos (remuskoos@yahoo.com)	2001
+ *  Copyright (C) Alexey Kotovich			2002
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>	2002-2003
+ *  Copyright (C) Luke Howard				2003
+ *  Copyright (C) Guenther Deschner			2003-2008
+ *  Copyright (C) Rakesh Patel				2004
+ *  Copyright (C) Dan Perry				2004
+ *  Copyright (C) Jeremy Allison			2004
+ *  Copyright (C) Gerald Carter				2006
+ *  Copyright (C) Stefan Metzmacher			2007
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _LIBADS_ADS_PROTO_H_
+#define _LIBADS_ADS_PROTO_H_
+
 /* The following definitions come from libads/ads_struct.c  */
 
 char *ads_build_path(const char *realm, const char *sep, const char *field, int reverse);
@@ -152,3 +186,5 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
 /* The following definitions come from libads/util.c  */
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal);
+
+#endif /* _LIBADS_ADS_PROTO_H_ */

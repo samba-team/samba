@@ -3,7 +3,10 @@
    Utility functions for the dbwrap API
    Copyright (C) Volker Lendecke 2007
    Copyright (C) Michael Adam 2009
-   
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2006
+
+   Major code contributions from Aleksey Fedoseev (fedoseev@ru.ibm.com)
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -21,6 +24,7 @@
 
 #include "includes.h"
 #include "dbwrap.h"
+#include "util_tdb.h"
 
 int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr)
 {
@@ -429,7 +433,7 @@ static NTSTATUS dbwrap_trans_traverse_action(struct db_context* db, void* privat
 
 	int ret = db->traverse(db, ctx->f, ctx->private_data);
 
-	return (ret == -1) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
+	return (ret < 0) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
 }
 
 NTSTATUS dbwrap_trans_traverse(struct db_context *db,
@@ -448,9 +452,69 @@ NTSTATUS dbwrap_traverse(struct db_context *db,
 			 void *private_data)
 {
 	int ret = db->traverse(db, f, private_data);
-	return (ret == -1) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
+	return (ret < 0) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
 }
 
+
+
+NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
+{
+	struct db_record *rec;
+	NTSTATUS status;
+
+	rec = db->fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = rec->delete_rec(rec);
+	TALLOC_FREE(rec);
+	return status;
+}
+
+NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
+		      TDB_DATA data, int flags)
+{
+	struct db_record *rec;
+	NTSTATUS status;
+
+	rec = db->fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = rec->store(rec, data, flags);
+	TALLOC_FREE(rec);
+	return status;
+}
+
+TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+		      TDB_DATA key)
+{
+	TDB_DATA result;
+
+	if (db->fetch(db, mem_ctx, key, &result) != 0) {
+		return make_tdb_data(NULL, 0);
+	}
+
+	return result;
+}
+
+NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
+{
+	return dbwrap_delete(db, string_term_tdb_data(key));
+}
+
+NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
+			       TDB_DATA data, int flags)
+{
+	return dbwrap_store(db, string_term_tdb_data(key), data, flags);
+}
+
+TDB_DATA dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
+			       const char *key)
+{
+	return dbwrap_fetch(db, mem_ctx, string_term_tdb_data(key));
+}
 
 
 

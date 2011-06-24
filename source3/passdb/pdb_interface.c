@@ -25,6 +25,8 @@
 #include "passdb.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
+#include "../librpc/gen_ndr/drsblobs.h"
+#include "../librpc/gen_ndr/ndr_drsblobs.h"
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
 #include "../libcli/security/security.h"
@@ -1518,7 +1520,7 @@ static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 	if (num_uids == 0)
 		return NT_STATUS_OK;
 
-	*pp_member_rids = TALLOC_ZERO_ARRAY(mem_ctx, uint32_t, num_uids);
+	*pp_member_rids = talloc_zero_array(mem_ctx, uint32_t, num_uids);
 
 	for (i=0; i<num_uids; i++) {
 		struct dom_sid sid;
@@ -1570,7 +1572,7 @@ static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 		smb_panic("primary group missing");
 	}
 
-	*pp_sids = TALLOC_ARRAY(mem_ctx, struct dom_sid, *p_num_groups);
+	*pp_sids = talloc_array(mem_ctx, struct dom_sid, *p_num_groups);
 
 	if (*pp_sids == NULL) {
 		TALLOC_FREE(*pp_gids);
@@ -2144,7 +2146,62 @@ static NTSTATUS pdb_default_get_trusted_domain(struct pdb_methods *methods,
 					       const char *domain,
 					       struct pdb_trusted_domain **td)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct trustAuthInOutBlob taiob;
+	struct AuthenticationInformation aia;
+	struct pdb_trusted_domain *tdom;
+	enum ndr_err_code ndr_err;
+	time_t last_set_time;
+	char *pwd;
+	bool ok;
+
+	tdom = talloc(mem_ctx, struct pdb_trusted_domain);
+	if (!tdom) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tdom->domain_name = talloc_strdup(tdom, domain);
+	tdom->netbios_name = talloc_strdup(tdom, domain);
+	if (!tdom->domain_name || !tdom->netbios_name) {
+		talloc_free(tdom);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tdom->trust_auth_incoming = data_blob_null;
+
+	ok = pdb_get_trusteddom_pw(domain, &pwd, &tdom->security_identifier,
+				   &last_set_time);
+	if (!ok) {
+		talloc_free(tdom);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ZERO_STRUCT(taiob);
+	ZERO_STRUCT(aia);
+	taiob.count = 1;
+	taiob.current.count = 1;
+	taiob.current.array = &aia;
+	unix_to_nt_time(&aia.LastUpdateTime, last_set_time);
+	aia.AuthType = TRUST_AUTH_TYPE_CLEAR;
+	aia.AuthInfo.clear.password = (uint8_t *) pwd;
+	aia.AuthInfo.clear.size = strlen(pwd);
+	taiob.previous.count = 0;
+	taiob.previous.array = NULL;
+
+	ndr_err = ndr_push_struct_blob(&tdom->trust_auth_outgoing,
+					tdom, &taiob,
+			(ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(tdom);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	tdom->trust_direction = LSA_TRUST_DIRECTION_OUTBOUND;
+	tdom->trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
+	tdom->trust_attributes = 0;
+	tdom->trust_forest_trust_info = data_blob_null;
+
+	*td = tdom;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_default_get_trusted_domain_by_sid(struct pdb_methods *methods,
@@ -2155,11 +2212,54 @@ static NTSTATUS pdb_default_get_trusted_domain_by_sid(struct pdb_methods *method
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+#define IS_NULL_DATA_BLOB(d) ((d).data == NULL && (d).length == 0)
+
 static NTSTATUS pdb_default_set_trusted_domain(struct pdb_methods *methods,
 					       const char* domain,
 					       const struct pdb_trusted_domain *td)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct trustAuthInOutBlob taiob;
+	struct AuthenticationInformation *aia;
+	enum ndr_err_code ndr_err;
+	char *pwd;
+	bool ok;
+
+	if (td->trust_attributes != 0 ||
+	    td->trust_type != LSA_TRUST_TYPE_DOWNLEVEL ||
+	    td->trust_direction != LSA_TRUST_DIRECTION_OUTBOUND ||
+	    !IS_NULL_DATA_BLOB(td->trust_auth_incoming) ||
+	    !IS_NULL_DATA_BLOB(td->trust_forest_trust_info)) {
+	    return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ZERO_STRUCT(taiob);
+	ndr_err = ndr_pull_struct_blob(&td->trust_auth_outgoing, talloc_tos(),
+			      &taiob,
+			      (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	aia = (struct AuthenticationInformation *) taiob.current.array;
+
+	if (taiob.count != 1 || taiob.current.count != 1 ||
+	    taiob.previous.count != 0 ||
+	    aia->AuthType != TRUST_AUTH_TYPE_CLEAR) {
+	    return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	pwd = talloc_strndup(talloc_tos(), (char *) aia->AuthInfo.clear.password,
+			     aia->AuthInfo.clear.size);
+	if (!pwd) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = pdb_set_trusteddom_pw(domain, pwd, &td->security_identifier);
+	if (!ok) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_default_del_trusted_domain(struct pdb_methods *methods,

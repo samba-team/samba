@@ -113,7 +113,11 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 	if (test && !lp_file_list_changed())
 		return(True);
 
-	lp_killunused(conn_snum_used);
+	if (msg_ctx) {
+		lp_killunused(msg_ctx_to_sconn(msg_ctx), conn_snum_used);
+	} else {
+		lp_killunused(NULL, NULL);
+	}
 
 	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 

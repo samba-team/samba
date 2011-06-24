@@ -23,7 +23,6 @@
 #include "nt_printing.h"
 #include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
-#include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "secrets.h"
@@ -450,7 +449,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	enum_values = TALLOC_ARRAY(tmp_ctx, struct spoolss_PrinterEnumValues, num_values);
+	enum_values = talloc_array(tmp_ctx, struct spoolss_PrinterEnumValues, num_values);
 	if (enum_values == NULL) {
 		result = WERR_NOMEM;
 		goto error;
@@ -472,7 +471,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		data_size = max_valbufsize;
 		data = NULL;
 		if (data_size) {
-			data = (uint8_t *) TALLOC(tmp_ctx, data_size);
+			data = (uint8_t *) talloc_zero_size(tmp_ctx, data_size);
 		}
 		length = 0;
 
@@ -1048,7 +1047,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 						      winreg_handle,
 						      &key_hnd,
 						      SPOOL_REG_SHORTSERVERNAME,
-						      global_myname(),
+						      lp_netbios_name(),
 						      &result);
 			if (!NT_STATUS_IS_OK(status)) {
 				result = ntstatus_to_werror(status);
@@ -1063,9 +1062,9 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			 */
 			dnssuffix = get_mydnsdomname(tmp_ctx);
 			if (dnssuffix != NULL && dnssuffix[0] != '\0') {
-				longname = talloc_asprintf(tmp_ctx, "%s.%s", global_myname(), dnssuffix);
+				longname = talloc_asprintf(tmp_ctx, "%s.%s", lp_netbios_name(), dnssuffix);
 			} else {
-				longname = talloc_strdup(tmp_ctx, global_myname());
+				longname = talloc_strdup(tmp_ctx, lp_netbios_name());
 			}
 			if (longname == NULL) {
 				result = WERR_NOMEM;
@@ -2316,9 +2315,9 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
-	enum winreg_Type type_in;
+	enum winreg_Type type_in = REG_NONE;
 	char *path;
-	uint8_t *data_in;
+	uint8_t *data_in = NULL;
 	uint32_t data_in_size = 0;
 	uint32_t value_len = 0;
 	WERROR result = WERR_OK;
@@ -3085,7 +3084,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	info = TALLOC_ARRAY(tmp_ctx, union spoolss_FormInfo, num_builtin + num_values);
+	info = talloc_array(tmp_ctx, union spoolss_FormInfo, num_builtin + num_values);
 	if (info == NULL) {
 		result = WERR_NOMEM;
 		goto done;
@@ -3338,8 +3337,8 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct winreg_String wvalue;
-	enum winreg_Type type_in;
-	uint8_t *data_in;
+	enum winreg_Type type_in = REG_NONE;
+	uint8_t *data_in = NULL;
 	uint32_t data_in_size = 0;
 	uint32_t value_len = 0;
 	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);

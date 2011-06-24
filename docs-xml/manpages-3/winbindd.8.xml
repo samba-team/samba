@@ -45,10 +45,9 @@
 	<para>Even if winbind is not used for nsswitch, it still provides a
 	service to <command>smbd</command>, <command>ntlm_auth</command>
 	and the <command>pam_winbind.so</command> PAM module, by managing connections to
-	domain controllers.  In this configuraiton the
-	<smbconfoption name="idmap uid"/> and
-	<smbconfoption name="idmap gid"/>
-	parameters are not required. (This is known as `netlogon proxy only mode'.)</para>
+	domain controllers.  In this configuration the
+	<smbconfoption name="idmap config * : range"/>
+	parameter is not required. (This is known as `netlogon proxy only mode'.)</para>
 
         <para> The Name Service Switch allows user
 	and system information to be obtained from different databases
@@ -246,11 +245,9 @@ hosts:		files wins
 		<listitem><para>
 		<smbconfoption name="winbind separator"/></para></listitem>
 		<listitem><para>
-		<smbconfoption name="idmap uid"/></para></listitem>
+		<smbconfoption name="idmap config * : range"/></para></listitem>
 		<listitem><para>
-		<smbconfoption name="idmap gid"/></para></listitem>
-		<listitem><para>
-		<smbconfoption name="idmap backend"/></para></listitem>
+		<smbconfoption name="idmap config * : backend"/></para></listitem>
 		<listitem><para>
 		<smbconfoption name="winbind cache time"/></para></listitem>
 		<listitem><para>
@@ -340,8 +337,7 @@ auth  required    /lib/security/pam_unix.so \
         winbind cache time = 10
         template shell = /bin/bash
         template homedir = /home/%D/%U
-        idmap uid = 10000-20000
-        idmap gid = 10000-20000
+        idmap config * : range = 10000-20000
         workgroup = DOMAIN
         security = domain
         password server = *
@@ -374,7 +370,7 @@ auth  required    /lib/security/pam_unix.so \
 	<para>If more than one UNIX machine is running <command>winbindd</command>,
 	then in general the user and groups ids allocated by winbindd will not
 	be the same.  The user and group ids will only be valid for the local
-	machine, unless a shared <smbconfoption name="idmap backend"/> is configured.</para>
+	machine, unless a shared <smbconfoption name="idmap config * : backend"/> is configured.</para>
 
 	<para>If the the Windows NT SID to UNIX user and group id mapping
 	file is damaged or destroyed then the mappings will be lost. </para>

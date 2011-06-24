@@ -32,7 +32,7 @@ struct pvfs_oplock {
 	uint32_t level;
 	struct timeval break_to_level_II;
 	struct timeval break_to_none;
-	struct messaging_context *msg_ctx;
+	struct imessaging_context *msg_ctx;
 };
 
 static NTSTATUS pvfs_oplock_release_internal(struct pvfs_file_handle *h,
@@ -158,7 +158,7 @@ static void pvfs_oplock_break(struct pvfs_oplock *opl, uint8_t level)
 	}
 }
 
-static void pvfs_oplock_break_dispatch(struct messaging_context *msg,
+static void pvfs_oplock_break_dispatch(struct imessaging_context *msg,
 				       void *private_data, uint32_t msg_type,
 				       struct server_id src, DATA_BLOB *data)
 {
@@ -169,7 +169,7 @@ static void pvfs_oplock_break_dispatch(struct messaging_context *msg,
 	ZERO_STRUCT(opb);
 
 	/* we need to check that this one is for us. See
-	   messaging_send_ptr() for the other side of this.
+	   imessaging_send_ptr() for the other side of this.
 	 */
 	if (data->length == sizeof(struct opendb_oplock_break)) {
 		struct opendb_oplock_break *p;
@@ -192,7 +192,7 @@ static void pvfs_oplock_break_dispatch(struct messaging_context *msg,
 
 static int pvfs_oplock_destructor(struct pvfs_oplock *opl)
 {
-	messaging_deregister(opl->msg_ctx, MSG_NTVFS_OPLOCK_BREAK, opl);
+	imessaging_deregister(opl->msg_ctx, MSG_NTVFS_OPLOCK_BREAK, opl);
 	return 0;
 }
 
@@ -228,7 +228,7 @@ NTSTATUS pvfs_setup_oplock(struct pvfs_file *f, uint32_t oplock_granted)
 	opl->level	= level;
 	opl->msg_ctx	= f->pvfs->ntvfs->ctx->msg_ctx;
 
-	status = messaging_register(opl->msg_ctx,
+	status = imessaging_register(opl->msg_ctx,
 				    opl,
 				    MSG_NTVFS_OPLOCK_BREAK,
 				    pvfs_oplock_break_dispatch);

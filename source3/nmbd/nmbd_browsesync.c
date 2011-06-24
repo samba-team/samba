@@ -119,7 +119,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	SCVAL(p,0,ANN_MasterAnnouncement);
 	p++;
 
-	unstrcpy(myname, global_myname());
+	unstrcpy(myname, lp_netbios_name());
 	strupper_m(myname);
 	myname[15]='\0';
 	/* The call below does CH_UNIX -> CH_DOS conversion. JRA */
@@ -137,7 +137,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	/* Target name for send_mailslot must be in UNIX charset. */
 	pull_ascii_nstring(dmb_name, sizeof(dmb_name), work->dmb_name.name);
 	send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-		global_myname(), 0x0, dmb_name, 0x0,
+		lp_netbios_name(), 0x0, dmb_name, 0x0,
 		work->dmb_addr, FIRST_SUBNET->myip, DGRAM_PORT);
 }
 
@@ -330,7 +330,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 	userdata->copy_fn = NULL;
 	userdata->free_fn = NULL;
 	userdata->userdata_len = strlen(work->work_group)+1;
-	overmalloc_safe_strcpy(userdata->data, work->work_group, size - sizeof(*userdata) - 1);
+	strlcpy(userdata->data, work->work_group, size - sizeof(*userdata));
 
 	node_status( subrec, &nmbname, answer_ip, 
 		domain_master_node_status_success,
@@ -435,7 +435,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 			if(!(nb_flags & NB_GROUP) && (name_type == 0x00) && 
 					server_name[0] == 0) {
 				/* this is almost certainly the server netbios name */
-				unstrcpy(server_name, qname);
+				strlcpy(server_name, qname, sizeof(server_name));
 				continue;
 			}
 
@@ -461,7 +461,9 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 						return;
 
 					/* remember who the master is */
-					unstrcpy(work->local_master_browser_name, server_name);
+					strlcpy(work->local_master_browser_name,
+						server_name,
+						sizeof(work->local_master_browser_name));
 					make_nmb_name(&nmbname, server_name, 0x20);
 					work->dmb_name = nmbname;
 					work->dmb_addr = from_ip;

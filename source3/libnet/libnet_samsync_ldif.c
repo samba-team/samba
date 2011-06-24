@@ -68,6 +68,33 @@ struct samsync_ldif_context {
 	int num_alloced;
 };
 
+/*
+   Returns the substring from src between the first occurrence of
+   the char "front" and the first occurence of the char "back".
+   Mallocs the return string which must be freed.  Not for use
+   with wide character strings.
+*/
+static char *sstring_sub(const char *src, char front, char back)
+{
+	char *temp1, *temp2, *temp3;
+	ptrdiff_t len;
+
+	temp1 = strchr(src, front);
+	if (temp1 == NULL) return NULL;
+	temp2 = strchr(src, back);
+	if (temp2 == NULL) return NULL;
+	len = temp2 - temp1;
+	if (len <= 0) return NULL;
+	temp3 = (char*)SMB_MALLOC(len);
+	if (temp3 == NULL) {
+		DEBUG(1,("Malloc failure in sstring_sub\n"));
+		return NULL;
+	}
+	memcpy(temp3, temp1+1, len-1);
+	temp3[len-1] = '\0';
+	return temp3;
+}
+
 /****************************************************************
 ****************************************************************/
 
@@ -919,7 +946,7 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	r = TALLOC_ZERO_P(mem_ctx, struct samsync_ldif_context);
+	r = talloc_zero(mem_ctx, struct samsync_ldif_context);
 	NT_STATUS_HAVE_NO_MEMORY(r);
 
 	/* Get the ldap suffix */
@@ -966,8 +993,8 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Allocate initial memory for groupmap and accountmap arrays */
-	r->groupmap = TALLOC_ZERO_ARRAY(mem_ctx, GROUPMAP, 8);
-	r->accountmap = TALLOC_ZERO_ARRAY(mem_ctx, ACCOUNTMAP, 8);
+	r->groupmap = talloc_zero_array(mem_ctx, GROUPMAP, 8);
+	r->accountmap = talloc_zero_array(mem_ctx, ACCOUNTMAP, 8);
 	if (r->groupmap == NULL || r->accountmap == NULL) {
 		DEBUG(1,("GROUPMAP talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;
@@ -1173,12 +1200,12 @@ static NTSTATUS ldif_realloc_maps(TALLOC_CTX *mem_ctx,
 				  uint32_t num_entries)
 {
 	/* Re-allocate memory for groupmap and accountmap arrays */
-	l->groupmap = TALLOC_REALLOC_ARRAY(mem_ctx,
+	l->groupmap = talloc_realloc(mem_ctx,
 					   l->groupmap,
 					   GROUPMAP,
 					   num_entries + l->num_alloced);
 
-	l->accountmap = TALLOC_REALLOC_ARRAY(mem_ctx,
+	l->accountmap = talloc_realloc(mem_ctx,
 					     l->accountmap,
 					     ACCOUNTMAP,
 					     num_entries + l->num_alloced);

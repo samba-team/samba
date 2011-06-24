@@ -86,7 +86,8 @@ typedef struct pipe_rpc_fns {
 
 	const struct api_struct *cmds;
 	int n_cmds;
-	uint32 context_id;
+	uint32_t context_id;
+	struct ndr_syntax_id syntax;
 
 } PIPE_RPC_FNS;
 
@@ -96,20 +97,6 @@ typedef struct pipe_rpc_fns {
  */
 
 struct gse_context;
-
-/* auth state for all bind types. */
-
-struct pipe_auth_data {
-	enum dcerpc_AuthType auth_type;
-	enum dcerpc_AuthLevel auth_level;
-
-	void *auth_ctx;
-
-	/* Only the client code uses these 3 for now */
-	char *domain;
-	char *user_name;
-	DATA_BLOB user_session_key;
-};
 
 struct dcesrv_ep_entry_list;
 
@@ -129,7 +116,6 @@ struct pipes_struct {
 	struct auth_serversupplied_info *session_info;
 	struct messaging_context *msg_ctx;
 
-	struct ndr_syntax_id syntax;
 	struct dcesrv_ep_entry_list *ep_entries;
 
 	/* linked list of rpc dispatch tables associated 
@@ -206,5 +192,34 @@ struct api_struct {
 	uint8 opnum;
 	bool (*fn) (struct pipes_struct *);
 };
+
+/* The following definitions come from rpc_server/rpc_handles.c  */
+
+size_t num_pipe_handles(struct pipes_struct *p);
+bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *syntax);
+bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
+bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
+			void **data_p);
+bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd);
+void close_policy_by_pipe(struct pipes_struct *p);
+bool pipe_access_check(struct pipes_struct *p);
+
+void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
+			    uint32_t access_granted, size_t data_size,
+			    const char *type, NTSTATUS *pstatus);
+#define policy_handle_create(_p, _hnd, _access, _type, _pstatus) \
+	(_type *)_policy_handle_create((_p), (_hnd), (_access), sizeof(_type), #_type, \
+				       (_pstatus))
+
+void *_policy_handle_find(struct pipes_struct *p,
+			  const struct policy_handle *hnd,
+			  uint32_t access_required, uint32_t *paccess_granted,
+			  const char *name, const char *location,
+			  NTSTATUS *pstatus);
+#define policy_handle_find(_p, _hnd, _access_required, _access_granted, _type, _pstatus) \
+	(_type *)_policy_handle_find((_p), (_hnd), (_access_required), \
+				     (_access_granted), #_type, __location__, (_pstatus))
+
+#include "rpc_server/srv_pipe_register.h"
 
 #endif /* _NT_DOMAIN_H */

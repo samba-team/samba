@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+
+import string, Utils, Options, sys, Build, os, intltool
+from samba_utils import EXPAND_VARIABLES, os_path_relpath
+
+# list of directory options to offer in configure
+dir_options = {
+    'with-piddir'                         : [ '${LOCALSTATEDIR}/run', 'where to put pid files' ],
+    'with-privatedir'                     : [ '${PREFIX}/private', 'Where to put sam.ldb and other private files' ],
+    'with-sockets-dir'                    : [ '${LOCALSTATEDIR}/run', 'sockets directory' ],
+    'with-winbindd-privileged-socket-dir' : [ '${LOCALSTATEDIR}/lib/winbindd_privileged', 'winbind privileged socket directory'],
+    'with-lockdir'                        : [ '${LOCALSTATEDIR}/lock', 'where to put short term disposable state files' ],
+    'with-cachedir'                       : [ '${LOCALSTATEDIR}/cache', 'where to put cache files' ],
+    'with-logfilebase'                    : [ '${LOCALSTATEDIR}', 'Where to put log files' ],
+    'with-pammodulesdir'                  : [ '${LIBDIR}', 'Which directory to use for PAM modules' ],
+    'with-statedir'                       : [ '${LOCALSTATEDIR}/locks', 'where to put persistent state files' ],
+    }
+
+# list of cflags to use for dynconfig.c
+dyn_cflags = {
+    'BINDIR'                         : '${BINDIR}',
+    'SBINDIR'                        : '${SBINDIR}',
+    'SCRIPTSBINDIR'                  : '${SBINDIR}',
+    'CONFIGDIR'                      : '${SYSCONFDIR}',
+    'CONFIGFILE'                     : '${SYSCONFDIR}/smb.conf',
+    'LMHOSTSFILE'                    : '${SYSCONFDIR}/lmhosts',
+    'PRIVATE_DIR'                    : '${PRIVATEDIR}',
+    'LOGFILEBASE'                    : '${LOGFILEBASE}',
+    'LOCKDIR'                        : '${LOCKDIR}',
+    'PIDDIR'                         : '${PIDDIR}',
+    'DATADIR'                        : '${DATADIR}',
+    'LOCALEDIR'                      : '${LOCALEDIR}',
+    'SETUPDIR'                       : '${DATADIR}/setup',
+    'WINBINDD_SOCKET_DIR'            : '${SOCKETS_DIR}/winbindd',
+    'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${WINBINDD_PRIVILEGED_SOCKET_DIR}',
+    'NTP_SIGND_SOCKET_DIR'           : '${SOCKETS_DIR}/ntp_signd',
+    'NCALRPCDIR'                     : '${SOCKETS_DIR}/ncalrpc',
+    'PYTHONDIR'                      : '${PYTHONDIR}',
+    'PYTHONARCHDIR'                  : '${PYTHONARCHDIR}',
+    'MODULESDIR'                     : '${PREFIX}/modules',
+    'INCLUDEDIR'                     : '${PREFIX}/include',
+    'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
+    'SWATDIR'                        : '${DATADIR}/swat',
+    'CODEPAGEDIR'                    : '${DATADIR}/codepages',
+    'LIBDIR'                         : '${LIBDIR}',
+    'LIBEXECDIR'                     : '${LIBEXECDIR}',
+    'STATEDIR'                       : '${STATEDIR}',
+    'CACHEDIR'                       : '${CACHEDIR}',
+    'SMB_PASSWD_FILE'                : '${PRIVATEDIR}/smbpasswd',
+    'NMBDSOCKETDIR'                  : '${SOCKETS_DIR}/nmbd',
+    'PAMMODULESDIR'                  : '${PAMMODULESDIR}',
+    }
+
+def get_varname(v):
+    '''work out a variable name from a configure option name'''
+    if v.startswith('with-'):
+        v = v[5:]
+    v = v.upper()
+    v = v.replace('-', '_')
+    return v
+
+
+def set_options(opt):
+    # get all the basic GNU options from the gnu_dirs tool
+    for option in dir_options.keys():
+        default = dir_options[option][0]
+        help    = dir_options[option][1]
+        varname = get_varname(option)
+        opt.add_option('--%s' % option,
+                       help=(help + ' [%s]' % default),
+                       action="store", dest=varname, default=default)
+
+def configure(conf):
+    # get all the basic GNU options from the gnu_dirs tool
+    for option in dir_options.keys():
+        varname = get_varname(option)
+        value = getattr(Options.options, varname, None)
+        conf.ASSERT(value is not None, "Missing configure option %s" % varname)
+        conf.ASSERT(varname not in conf.env, "Variable %s already defined" % varname)
+        conf.env[varname] = value
+
+    for f in dyn_cflags.keys():
+        v = EXPAND_VARIABLES(conf, dyn_cflags[f])
+        conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
+        conf.env[f] = v
+
+def dynconfig_cflags(bld, list=None):
+    '''work out the extra CFLAGS for dynconfig.c'''
+    cflags = []
+    # override some paths when running from the build directory
+    override = { 'MODULESDIR'    : 'bin/modules',
+                 'PYTHONDIR'     : 'bin/python',
+                 'PYTHONARCHDIR' : 'bin/python',
+                 'CODEPAGEDIR'   : os.path.join(bld.env.srcdir, 'codepages'),
+                 'SCRIPTSBINDIR' : os.path.join(bld.env.srcdir, 'source4/scripting/bin'),
+                 'SETUPDIR'      : os.path.join(bld.env.srcdir, 'source4/setup') }
+    for f in dyn_cflags.keys():
+        if list and not f in list:
+            continue
+        value = bld.env[f]
+        if not Options.is_install:
+            if f in override:
+                value = os.path.join(os.getcwd(), override[f])
+        cflags.append('-D%s="%s"' % (f, value))
+    return cflags
+Build.BuildContext.dynconfig_cflags = dynconfig_cflags
+
+def build(bld):
+    cflags = bld.dynconfig_cflags()
+    bld.SAMBA_SUBSYSTEM('DYNCONFIG',
+                        'dynconfig.c',
+                        deps='replace talloc',
+                        public_headers=os_path_relpath(os.path.join(Options.launch_dir, 'version.h'), bld.curdir),
+                        header_path='samba',
+                        cflags=cflags)

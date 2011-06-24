@@ -77,11 +77,35 @@ shares and printing to SMB printers.
 Summary: Files used by both Samba servers and clients.
 Group: Applications/System
 Provides: samba-common = %{version}-%{release}
+Requires: libtalloc >= 2.0.1
+Requires: libtdb >= 1.2.6
 
 %description common
 Samba-common provides files necessary for both the server and client
 packages of Samba.
 
+
+#######################################################################
+%package libtdb
+Summary: the tdb library
+Group: Applications/System
+Provides: libtdb = LIBTDBVERSION-%{release}
+Obsoletes: libtdb
+#Conflicts: libtdb < LIBTALLOCVERSION
+
+%description libtdb
+Samba's tdb library.
+
+#######################################################################
+%package libtalloc
+Summary: the talloc library
+Group: Applications/System
+Provides: libtalloc = LIBTALLOCVERSION-%{release}
+Obsoletes: libtalloc
+#Conflicts: libtalloc < LIBTALLOCVERSION
+
+%description libtalloc
+Samba's talloc library
 
 #######################################################################
 %package swat
@@ -94,15 +118,6 @@ Provides: samba-swat = %{version}-%{release}
 The samba-swat package includes the new SWAT (Samba Web Administration
 Tool), for remotely managing Samba's smb.conf file using your favorite
 Web browser.
-
-%ifarch x86_64 ppc64
-%package winbind-32bit
-Summary:        Samba winbind compatibility package for 32bit apps on 64bit archs
-Group:          Applications/System
-
-%description winbind-32bit
-Compatibility package for 32 bit apps on 64 bit architecures
-%endif
 
 
 #######################################################################
@@ -146,81 +161,6 @@ export CC
 ./autogen.sh
 
 
-##
-## build the files for the winbind-32bit compat package
-## and copy them to a safe location
-##
-%ifarch x86_64 ppc64
-
-# a directory to store the 32bit compatibility modules for later install
-%define _32bit_tmp_dir %{_tmppath}/%{name}-%{version}-32bit
-
-CC_SAVE="$CC"
-CC="$CC -m32"
-
-CFLAGS="$RPM_OPT_FLAGS -O3 -D_GNU_SOURCE -m32" ./configure \
-	--prefix=%{_prefix} \
-	--localstatedir=/var \
-        --with-configdir=%{_sysconfdir}/samba \
-        --with-libdir=/usr/lib/samba \
-	--with-pammodulesdir=/lib/security \
-        --with-lockdir=/var/lib/samba \
-        --with-logfilebase=/var/log/samba \
-        --with-mandir=%{_mandir} \
-        --with-piddir=/var/run \
-	--with-privatedir=%{_sysconfdir}/samba \
-	--disable-cups \
-        --with-acl-support \
-	--with-ads \
-        --with-automount \
-        --with-fhs \
-	--with-pam_smbpass \
-	--with-libsmbclient \
-	--with-libsmbsharemodes \
-        --without-smbwrapper \
-	--with-pam \
-	--with-quotas \
-	--with-syslog \
-	--with-utmp \
-	--with-cluster-support \
-	--with-ctdb=/usr/include \
-	--without-ldb \
-	--without-dnsupdate \
-	--with-aio-support \
-	--disable-merged-build
-
-make showlayout
-
-make samba3-idl
-
-## check for gcc 3.4 or later
-CC_VERSION=`${CC} --version | head -1 | awk '{print $3}'`
-CC_MAJOR=`echo ${CC_VERSION} | cut -d. -f 1`
-CC_MINOR=`echo ${CC_VERSION} | cut -d. -f 2`
-if [ ${CC_MAJOR} -ge 3 ]; then
-        if [ ${CC_MAJOR} -gt 3 -o ${CC_MINOR} -ge 4 ]; then
-                make pch
-        fi
-fi
-
-make -j%{numcpu} %{?_smp_mflags} \
-	nss_modules pam_modules
-
-rm -rf %{_32bit_tmp_dir}
-mkdir %{_32bit_tmp_dir}
-
-mv ../nsswitch/libnss_winbind.so %{_32bit_tmp_dir}/
-mv bin/pam_winbind.so %{_32bit_tmp_dir}/
-mv bin/libtalloc.so* %{_32bit_tmp_dir}/
-mv bin/libtdb.so* %{_32bit_tmp_dir}/
-mv bin/libwbclient.so* %{_32bit_tmp_dir}/
-
-make clean
-
-CC="$CC_SAVE"
-
-%endif
-
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
@@ -246,7 +186,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs,vfs_tsmsm \
+	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs,vfs_tsmsm,vfs_gpfs_hsm_notify \
 	--with-syslog \
 	--with-utmp \
 	--with-cluster-support \
@@ -254,7 +194,10 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--without-ldb \
 	--without-dnsupdate \
 	--with-aio-support\
-	--disable-merged-build
+	--disable-merged-build \
+	--disable-smbtorture4 \
+	--disable-external-libtalloc \
+	--disable-external-libtdb
 
 make showlayout
 
@@ -335,23 +278,14 @@ install -m 755 nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_win
 
 cp -p source3/bin/winbind_krb5_locator.so ${RPM_BUILD_ROOT}/%{_libarchdir}/krb5/plugins/libkrb5
 
-# install files for winbind-32bit package
-%ifarch x86_64 ppc64
-
-install -m 755 %{_32bit_tmp_dir}/libnss_winbind.so ${RPM_BUILD_ROOT}/lib/libnss_winbind.so.2
-( cd ${RPM_BUILD_ROOT}/lib; ln -sf libnss_winbind.so.2  libnss_winbind.so )
-
-mv %{_32bit_tmp_dir}/libtalloc* ${RPM_BUILD_ROOT}/usr/lib
-mv %{_32bit_tmp_dir}/libtdb* ${RPM_BUILD_ROOT}/usr/lib
-mv %{_32bit_tmp_dir}/libwbclient* ${RPM_BUILD_ROOT}/usr/lib
-mv %{_32bit_tmp_dir}/pam_winbind.so ${RPM_BUILD_ROOT}/lib/security
-
-rm -rf %{_32bit_tmp_dir}
-
-%endif
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
+
+# remove installed but unpackaged files:
+/bin/rm -f $RPM_BUILD_ROOT/usr/lib*/libtalloc.so
+/bin/rm -f $RPM_BUILD_ROOT/usr/lib*/libtdb.so
+
 
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
@@ -482,6 +416,7 @@ exit 0
 %{_libarchdir}/samba/vfs/fileid.so
 %{_libarchdir}/samba/vfs/full_audit.so
 %{_libarchdir}/samba/vfs/gpfs.so
+%{_libarchdir}/samba/vfs/gpfs_hsm_notify.so
 %{_libarchdir}/samba/vfs/linux_xfs_sgid.so
 %{_libarchdir}/samba/vfs/netatalk.so
 %{_libarchdir}/samba/vfs/preopen.so
@@ -579,6 +514,14 @@ exit 0
 
 ##########
 
+%files libtalloc
+%{_libarchdir}/libtalloc.so.LIBTALLOCVERSION
+%{_libarchdir}/libtalloc.so.2
+
+%files libtdb
+%{_libarchdir}/libtdb.so.LIBTDBVERSION
+%{_libarchdir}/libtdb.so.1
+
 %files common
 %defattr(-,root,root)
 %dir %{_sysconfdir}/samba
@@ -620,10 +563,6 @@ exit 0
 %{_includedir}/tdb.h
 %{_libarchdir}/libnetapi.so
 %{_libarchdir}/libnetapi.so.0
-%{_libarchdir}/libtalloc.so
-%{_libarchdir}/libtalloc.so.2
-%{_libarchdir}/libtdb.so
-%{_libarchdir}/libtdb.so.1
 %{_libarchdir}/libwbclient.so
 %{_libarchdir}/libwbclient.so.0
 
@@ -663,19 +602,6 @@ exit 0
 %{_mandir}/man1/ldbrename.1*
 %{_mandir}/man7/winbind_krb5_locator.7*
 %{_mandir}/man8/idmap_*.8*
-
-%ifarch x86_64 ppc64
-%files winbind-32bit
-%attr(755,root,root) /lib/libnss_winbind.so
-%attr(755,root,root) /lib/libnss_winbind.so.2
-%attr(755,root,root) /usr/lib/libtalloc.so
-%attr(755,root,root) /usr/lib/libtalloc.so.2
-%attr(755,root,root) /usr/lib/libtdb.so
-%attr(755,root,root) /usr/lib/libtdb.so.1
-%attr(755,root,root) /usr/lib/libwbclient.so
-%attr(755,root,root) /usr/lib/libwbclient.so.0
-%attr(755,root,root) /lib/security/pam_winbind.so
-%endif
 
 
 

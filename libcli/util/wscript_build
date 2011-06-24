@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+
+bld.SAMBA_LIBRARY('errors',
+                  public_headers='error.h ntstatus.h doserr.h werror.h',
+                  header_path='core',
+                  source='doserr.c errormap.c nterr.c errmap_unix.c',
+                  public_deps='talloc samba-util',
+                  private_library=True
+                  )
+

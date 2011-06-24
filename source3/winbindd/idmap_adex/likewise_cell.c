@@ -85,7 +85,7 @@ static struct likewise_cell *_lw_cell_list = NULL;
 
 	/* Each cell struct is a TALLOC_CTX* */
 
-	c = TALLOC_ZERO_P(NULL, struct likewise_cell);
+	c = talloc_zero(NULL, struct likewise_cell);
 	if (!c) {
 		DEBUG(0,("cell_new: memory allocation failure!\n"));
 		return NULL;

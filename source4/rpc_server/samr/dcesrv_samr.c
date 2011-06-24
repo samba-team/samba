@@ -510,6 +510,9 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 			info->role = SAMR_ROLE_DOMAIN_BDC;
 		}
 		break;
+	case ROLE_DOMAIN_PDC:
+		info->role = SAMR_ROLE_DOMAIN_PDC;
+		break;
 	case ROLE_DOMAIN_MEMBER:
 		info->role = SAMR_ROLE_DOMAIN_MEMBER;
 		break;
@@ -612,6 +615,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
 		} else {
 			info->role = SAMR_ROLE_DOMAIN_BDC;
 		}
+		break;
+	case ROLE_DOMAIN_PDC:
+		info->role = SAMR_ROLE_DOMAIN_PDC;
 		break;
 	case ROLE_DOMAIN_MEMBER:
 		info->role = SAMR_ROLE_DOMAIN_MEMBER;
@@ -1205,7 +1211,6 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	}
 	a_state = talloc(mem_ctx, struct samr_account_state);
 	if (!a_state) {
-		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	a_state->sam_ctx = d_state->sam_ctx;

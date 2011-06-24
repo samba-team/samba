@@ -134,7 +134,9 @@
 		to split out the two possible uses. JRA. */
 /* Leave at 28 - not yet released. Add fdopendir. JRA. */
 /* Leave at 28 - not yet released. Rename open function to open_fn. - gd */
-#define SMB_VFS_INTERFACE_VERSION 28
+/* Leave at 28 - not yet released. Make getwd function always return malloced memory. JRA. */
+/* Bump to version 29 - Samba 3.6.0 will ship with interface version 28. */
+#define SMB_VFS_INTERFACE_VERSION 29
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -250,7 +252,7 @@ struct vfs_fn_pointers {
 	int (*fchown)(struct vfs_handle_struct *handle, struct files_struct *fsp, uid_t uid, gid_t gid);
 	int (*lchown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 	int (*chdir)(struct vfs_handle_struct *handle, const char *path);
-	char *(*getwd)(struct vfs_handle_struct *handle, char *buf);
+	char *(*getwd)(struct vfs_handle_struct *handle);
 	int (*ntimes)(struct vfs_handle_struct *handle,
 		      const struct smb_filename *smb_fname,
 		      struct smb_file_time *ft);
@@ -613,7 +615,7 @@ int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
 int smb_vfs_call_lchown(struct vfs_handle_struct *handle, const char *path,
 			uid_t uid, gid_t gid);
 int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path);
-char *smb_vfs_call_getwd(struct vfs_handle_struct *handle, char *buf);
+char *smb_vfs_call_getwd(struct vfs_handle_struct *handle);
 int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			struct smb_file_time *ft);

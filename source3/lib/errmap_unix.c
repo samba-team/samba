@@ -24,91 +24,93 @@
 
 /* Mapping from Unix, to NT error numbers */
 
-const struct unix_error_map unix_dos_nt_errmap[] = {
-	{ EPERM, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ ENOENT, ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-	{ ENOTDIR, ERRDOS, ERRbadpath,  NT_STATUS_NOT_A_DIRECTORY },
-	{ EIO, ERRHRD, ERRgeneral, NT_STATUS_IO_DEVICE_ERROR },
-	{ EBADF, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
-	{ EINVAL, ERRSRV, ERRsrverror, NT_STATUS_INVALID_PARAMETER },
-	{ EEXIST, ERRDOS, ERRfilexists, NT_STATUS_OBJECT_NAME_COLLISION},
-	{ ENFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ EMFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ ENOSPC, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
-	{ ENOMEM, ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY },
-	{ EISDIR, ERRDOS, ERRnoaccess, NT_STATUS_FILE_IS_A_DIRECTORY},
-	{ EMLINK, ERRDOS, ERRgeneral, NT_STATUS_TOO_MANY_LINKS },
-	{ EINTR,  ERRHRD, ERRgeneral, NT_STATUS_RETRY },
-	{ ENOSYS, ERRDOS, ERRunsup, NT_STATUS_NOT_SUPPORTED },
-#ifdef ELOOP
-	{ ELOOP, ERRDOS, ERRbadpath, NT_STATUS_OBJECT_PATH_NOT_FOUND },
-#endif
-#ifdef EFTYPE
-	{ EFTYPE, ERRDOS, ERRbadpath, NT_STATUS_OBJECT_PATH_NOT_FOUND },
-#endif
-#ifdef EDQUOT
-	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL }, /* Windows apps need this, not NT_STATUS_QUOTA_EXCEEDED */
-#endif
-#ifdef ENOTEMPTY
-	{ ENOTEMPTY, ERRDOS, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
-#endif
-#ifdef EXDEV
-	{ EXDEV, ERRDOS, ERRdiffdevice, NT_STATUS_NOT_SAME_DEVICE },
-#endif
-#ifdef EROFS
-	{ EROFS, ERRHRD, ERRnowrite, NT_STATUS_ACCESS_DENIED },
-#endif
-#ifdef ENAMETOOLONG
-	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
-#endif
-#ifdef EFBIG
-	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
-#endif
+static const struct {
+	int unix_error;
+	NTSTATUS nt_error;
+} unix_nt_errmap[] = {
+	{ EAGAIN,       NT_STATUS_NETWORK_BUSY },
+	{ EINTR,        NT_STATUS_RETRY },
 #ifdef ENOBUFS
-	{ ENOBUFS, ERRDOS, ERRnomem, NT_STATUS_INSUFFICIENT_RESOURCES },
-#endif
-	{ EAGAIN, ERRDOS, 111, NT_STATUS_NETWORK_BUSY },
-#ifdef EADDRINUSE
-	{ EADDRINUSE, ERRDOS, 52, NT_STATUS_ADDRESS_ALREADY_ASSOCIATED},
-#endif
-#ifdef ENETUNREACH
-	{ ENETUNREACH, ERRHRD, ERRgeneral, NT_STATUS_NETWORK_UNREACHABLE},
-#endif
-#ifdef EHOSTUNREACH
-		{ EHOSTUNREACH, ERRHRD, ERRgeneral, NT_STATUS_HOST_UNREACHABLE},
-#endif
-#ifdef ECONNREFUSED
-	{ ECONNREFUSED, ERRHRD, ERRgeneral, NT_STATUS_CONNECTION_REFUSED},
-#endif
-#ifdef ETIMEDOUT
-	{ ETIMEDOUT, ERRHRD, 121, NT_STATUS_IO_TIMEOUT},
-#endif
-#ifdef ECONNABORTED
-	{ ECONNABORTED, ERRHRD, ERRgeneral, NT_STATUS_CONNECTION_ABORTED},
-#endif
-#ifdef ECONNRESET
-	{ ECONNRESET, ERRHRD, ERRgeneral, NT_STATUS_CONNECTION_RESET},
-#endif
-#ifdef ENODEV
-	{ ENODEV, ERRDOS, 55, NT_STATUS_DEVICE_DOES_NOT_EXIST},
-#endif
-#ifdef EPIPE
-	{ EPIPE, ERRDOS, 109, NT_STATUS_PIPE_BROKEN},
+	{ ENOBUFS,      NT_STATUS_INSUFFICIENT_RESOURCES },
 #endif
 #ifdef EWOULDBLOCK
-	{ EWOULDBLOCK, ERRDOS, 111, NT_STATUS_NETWORK_BUSY },
+	{ EWOULDBLOCK,  NT_STATUS_NETWORK_BUSY },
+#endif
+	{ EPERM,        NT_STATUS_ACCESS_DENIED },
+	{ EACCES,       NT_STATUS_ACCESS_DENIED },
+	{ ENOENT,       NT_STATUS_OBJECT_NAME_NOT_FOUND },
+	{ ENOTDIR,      NT_STATUS_NOT_A_DIRECTORY },
+	{ EIO,          NT_STATUS_IO_DEVICE_ERROR },
+	{ EBADF,        NT_STATUS_INVALID_HANDLE },
+	{ EINVAL,       NT_STATUS_INVALID_PARAMETER },
+	{ EEXIST,       NT_STATUS_OBJECT_NAME_COLLISION},
+	{ ENFILE,       NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ EMFILE,       NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ ENOSPC,       NT_STATUS_DISK_FULL },
+	{ ENOMEM,       NT_STATUS_NO_MEMORY },
+	{ EISDIR,       NT_STATUS_FILE_IS_A_DIRECTORY},
+#ifdef EPIPE
+	{ EPIPE,        NT_STATUS_PIPE_BROKEN},
+#endif
+	{ EMLINK,       NT_STATUS_TOO_MANY_LINKS },
+	{ ENOSYS,       NT_STATUS_NOT_SUPPORTED },
+#ifdef ELOOP
+	{ ELOOP,        NT_STATUS_OBJECT_PATH_NOT_FOUND },
+#endif
+#ifdef EFTYPE
+	{ EFTYPE,       NT_STATUS_OBJECT_PATH_NOT_FOUND },
+#endif
+#ifdef EDQUOT
+	{ EDQUOT,       NT_STATUS_DISK_FULL }, /* Windows apps need this, not NT_STATUS_QUOTA_EXCEEDED */
+#endif
+#ifdef ENOTEMPTY
+	{ ENOTEMPTY,    NT_STATUS_DIRECTORY_NOT_EMPTY },
+#endif
+#ifdef EXDEV
+	{ EXDEV,        NT_STATUS_NOT_SAME_DEVICE },
+#endif
+#ifdef EROFS
+	{ EROFS,        NT_STATUS_ACCESS_DENIED },
+#endif
+#ifdef ENAMETOOLONG
+	{ ENAMETOOLONG, NT_STATUS_OBJECT_NAME_INVALID },
+#endif
+#ifdef EFBIG
+	{ EFBIG,        NT_STATUS_DISK_FULL },
+#endif
+#ifdef EADDRINUSE
+	{ EADDRINUSE,   NT_STATUS_ADDRESS_ALREADY_ASSOCIATED},
+#endif
+#ifdef ENETUNREACH
+	{ ENETUNREACH,  NT_STATUS_NETWORK_UNREACHABLE},
+#endif
+#ifdef EHOSTUNREACH
+        { EHOSTUNREACH, NT_STATUS_HOST_UNREACHABLE},
+#endif
+#ifdef ECONNREFUSED
+	{ ECONNREFUSED, NT_STATUS_CONNECTION_REFUSED},
+#endif
+#ifdef ETIMEDOUT
+	{ ETIMEDOUT,    NT_STATUS_IO_TIMEOUT},
+#endif
+#ifdef ECONNABORTED
+	{ ECONNABORTED, NT_STATUS_CONNECTION_ABORTED},
+#endif
+#ifdef ECONNRESET
+	{ ECONNRESET,   NT_STATUS_CONNECTION_RESET},
+#endif
+#ifdef ENODEV
+	{ ENODEV,       NT_STATUS_DEVICE_DOES_NOT_EXIST},
 #endif
 #ifdef ENOATTR
-	{ ENOATTR, ERRDOS, ERRbadfile, NT_STATUS_NOT_FOUND },
+	{ ENOATTR,      NT_STATUS_NOT_FOUND },
 #endif
 #ifdef ECANCELED
-	{ ECANCELED, ERRDOS, ERRbadfid, NT_STATUS_CANCELLED},
+	{ ECANCELED,    NT_STATUS_CANCELLED},
 #endif
 #ifdef ENOTSUP
-        { ENOTSUP, ERRSRV, ERRnosupport, NT_STATUS_NOT_SUPPORTED},
+        { ENOTSUP,      NT_STATUS_NOT_SUPPORTED},
 #endif
-	{ 0, 0, 0, NT_STATUS_OK }
 };
 
 /*********************************************************************
@@ -131,20 +133,14 @@ NTSTATUS map_nt_error_from_unix(int unix_error)
 	}
 
 	/* Look through list */
-	while(unix_dos_nt_errmap[i].unix_error != 0) {
-		if (unix_dos_nt_errmap[i].unix_error == unix_error)
-			return unix_dos_nt_errmap[i].nt_error;
-		i++;
+	for (i=0;i<ARRAY_SIZE(unix_nt_errmap);i++) {
+		if (unix_nt_errmap[i].unix_error == unix_error) {
+			return unix_nt_errmap[i].nt_error;
+		}
 	}
 
 	/* Default return */
 	return NT_STATUS_ACCESS_DENIED;
-}
-
-/* Convert a Unix error code to a WERROR. */
-WERROR unix_to_werror(int unix_error)
-{
-	return ntstatus_to_werror(map_nt_error_from_unix(unix_error));
 }
 
 /* Return a UNIX errno from a NT status code */
@@ -257,7 +253,6 @@ static const struct {
 #ifdef EXDEV
 	{NT_STATUS_NOT_SAME_DEVICE, EXDEV},
 #endif
-	{NT_STATUS(0), 0}
 };
 
 int map_errno_from_nt_status(NTSTATUS status)
@@ -272,7 +267,7 @@ int map_errno_from_nt_status(NTSTATUS status)
 		return 0;
 	}
 
-	for (i=0;nt_errno_map[i].error;i++) {
+	for (i=0;i<ARRAY_SIZE(nt_errno_map);i++) {
 		if (NT_STATUS_V(nt_errno_map[i].status) ==
 			    NT_STATUS_V(status)) {
 			return nt_errno_map[i].error;

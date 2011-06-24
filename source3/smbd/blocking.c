@@ -139,7 +139,7 @@ static bool recalc_brl_timeout(struct smbd_server_connection *sconn)
 		    (int)from_now.tv_sec, (int)from_now.tv_usec));
 	}
 
-	sconn->smb1.locks.brl_timeout = event_add_timed(smbd_event_context(),
+	sconn->smb1.locks.brl_timeout = event_add_timed(server_event_context(),
 							NULL, next_timeout,
 							brl_timeout_fn, sconn);
 	if (sconn->smb1.locks.brl_timeout == NULL) {
@@ -208,8 +208,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		blr->expire_time.tv_sec = 0;
 		blr->expire_time.tv_usec = 0; /* Never expire. */
 	} else {
-		blr->expire_time = timeval_current_ofs(lock_timeout/1000,
-					(lock_timeout % 1000) * 1000);
+		blr->expire_time = timeval_current_ofs_msec(lock_timeout);
 	}
 	blr->lock_num = lock_num;
 	blr->smblctx = smblctx;
@@ -337,7 +336,7 @@ static void reply_lockingX_error(struct blocking_lock_record *blr, NTSTATUS stat
 	uint8_t *data;
 	int i;
 
-	data = (uint8_t *)blr->req->buf
+	data = discard_const_p(uint8_t, blr->req->buf)
 		+ ((large_file_format ? 20 : 10)*num_ulocks);
 
 	/* 
@@ -429,7 +428,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 	uint8_t *data;
 	NTSTATUS status = NT_STATUS_OK;
 
-	data = (uint8_t *)blr->req->buf
+	data = discard_const_p(uint8_t, blr->req->buf)
 		+ ((large_file_format ? 20 : 10)*num_ulocks);
 
 	/* 
@@ -575,9 +574,9 @@ static bool blocking_lock_record_process(struct blocking_lock_record *blr)
  Called when a file is closed.
 *****************************************************************************/
 
-void cancel_pending_lock_requests_by_fid(files_struct *fsp,
-			struct byte_range_lock *br_lck,
-			enum file_close_type close_type)
+void smbd_cancel_pending_lock_requests_by_fid(files_struct *fsp,
+					      struct byte_range_lock *br_lck,
+					      enum file_close_type close_type)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct blocking_lock_record *blr, *blr_cancelled, *next = NULL;

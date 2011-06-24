@@ -20,6 +20,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/util/tdb_wrap.h"
+#include "util_tdb.h"
 
 /* For reasons known only to MS, many of their NT/Win2k versions
    need serialised access only.  Two connections at the same time
@@ -68,7 +70,7 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 	}
 
 	if (tdb_lock_bystring_with_timeout(result->tdb->tdb, name,
-					   timeout) == -1) {
+					   timeout) != 0) {
 		DEBUG(1, ("Could not get the lock for %s\n", name));
 		TALLOC_FREE(result);
 		return NULL;

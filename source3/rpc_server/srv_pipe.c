@@ -41,6 +41,8 @@
 #include "smbd/smbd.h"
 #include "auth.h"
 #include "ntdomain.h"
+#include "rpc_server/srv_pipe.h"
+#include "rpc_server/rpc_contexts.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -330,20 +332,27 @@ bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS fault_status)
 static bool check_bind_req(struct pipes_struct *p,
 			   struct ndr_syntax_id* abstract,
 			   struct ndr_syntax_id* transfer,
-			   uint32 context_id)
+			   uint32_t context_id)
 {
 	struct pipe_rpc_fns *context_fns;
+	bool ok;
 
 	DEBUG(3,("check_bind_req for %s\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		 get_pipe_name_from_syntax(talloc_tos(), abstract)));
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 	if (rpc_srv_pipe_exists_by_id(abstract) &&
 	   ndr_syntax_id_equal(transfer, &ndr_transfer_syntax)) {
-		DEBUG(3, ("check_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-			rpc_srv_get_pipe_cli_name(abstract),
-			rpc_srv_get_pipe_srv_name(abstract)));
+		DEBUG(3, ("check_bind_req: %s -> %s rpc service\n",
+			  rpc_srv_get_pipe_cli_name(abstract),
+			  rpc_srv_get_pipe_srv_name(abstract)));
 	} else {
+		return false;
+	}
+
+	ok = init_pipe_handles(p, abstract);
+	if (!ok) {
+		DEBUG(1, ("Failed to init pipe handles!\n"));
 		return false;
 	}
 
@@ -357,6 +366,7 @@ static bool check_bind_req(struct pipes_struct *p,
 	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(abstract);
 	context_fns->cmds = rpc_srv_get_pipe_cmds(abstract);
 	context_fns->context_id = context_id;
+	context_fns->syntax = *abstract;
 
 	/* add to the list of open contexts */
 
@@ -615,14 +625,12 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *ntlmssp_ctx,
 				enum dcerpc_AuthLevel auth_level,
 				struct client_address *client_id,
-				struct ndr_syntax_id *syntax,
 				struct auth_serversupplied_info **session_info)
 {
 	NTSTATUS status;
 	bool ret;
 
-	DEBUG(5, (__location__ ": pipe %s checking user details\n",
-		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
+	DEBUG(5, (__location__ ": checking user details\n"));
 
 	/* Finally - if the pipe negotiated integrity (sign) or privacy (seal)
 	   ensure the underlying NTLMSSP flags are also set. If not we should
@@ -635,8 +643,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 						DCERPC_AUTH_LEVEL_PRIVACY));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": Client failed to negotatie proper "
-			  "security for pipe %s\n",
-			  get_pipe_name_from_syntax(talloc_tos(), syntax)));
+			  "security for rpc connection\n"));
 		return false;
 	}
 
@@ -767,7 +774,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 						    struct auth_ntlmssp_state);
 		if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
 						p->auth.auth_level,
-						p->client_id, &p->syntax,
+						p->client_id,
 						&p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -813,7 +820,6 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 			if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
 							p->auth.auth_level,
 							p->client_id,
-							&p->syntax,
 							&p->session_info)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -854,9 +860,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
-		DEBUG(2,("api_pipe_bind_req: rejecting bind request on bound "
-			 "pipe %s.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(2,("Rejecting bind request on bound rpc connection\n"));
 		return setup_bind_nak(p, pkt);
 	}
 
@@ -871,38 +875,35 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	 */
 	id = pkt->u.bind.ctx_list[0].abstract_syntax;
 	if (rpc_srv_pipe_exists_by_id(&id)) {
-		DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-			rpc_srv_get_pipe_cli_name(&id),
-			rpc_srv_get_pipe_srv_name(&id)));
+		DEBUG(3, ("api_pipe_bind_req: %s -> %s rpc service\n",
+			  rpc_srv_get_pipe_cli_name(&id),
+			  rpc_srv_get_pipe_srv_name(&id)));
 	} else {
 		status = smb_probe_module(
 			"rpc", get_pipe_name_from_syntax(
 				talloc_tos(),
-				&pkt->u.bind.ctx_list[0].abstract_syntax));
+				&id));
 
 		if (NT_STATUS_IS_ERR(status)) {
-                       DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
-                                get_pipe_name_from_syntax(
-					talloc_tos(),
-					&pkt->u.bind.ctx_list[0].abstract_syntax)));
+			DEBUG(3,("api_pipe_bind_req: Unknown rpc service name "
+                                 "%s in bind request.\n",
+				 get_pipe_name_from_syntax(talloc_tos(), &id)));
 
 			return setup_bind_nak(p, pkt);
 		}
 
 		if (rpc_srv_get_pipe_interface_by_cli_name(
 				get_pipe_name_from_syntax(talloc_tos(),
-							  &p->syntax),
+							  &id),
 				&id)) {
-			DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-				rpc_srv_get_pipe_cli_name(&id),
-				rpc_srv_get_pipe_srv_name(&id)));
+			DEBUG(3, ("api_pipe_bind_req: %s -> %s rpc service\n",
+				  rpc_srv_get_pipe_cli_name(&id),
+				  rpc_srv_get_pipe_srv_name(&id)));
 		} else {
 			DEBUG(0, ("module %s doesn't provide functions for "
 				  "pipe %s!\n",
-				  get_pipe_name_from_syntax(talloc_tos(),
-							    &p->syntax),
-				  get_pipe_name_from_syntax(talloc_tos(),
-							    &p->syntax)));
+				  get_pipe_name_from_syntax(talloc_tos(), &id),
+				  get_pipe_name_from_syntax(talloc_tos(), &id)));
 			return setup_bind_nak(p, pkt);
 		}
 	}
@@ -1507,28 +1508,9 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	return setup_bind_nak(p, pkt);
 }
 
-/****************************************************************************
- Find the set of RPC functions associated with this context_id
-****************************************************************************/
-
-static PIPE_RPC_FNS* find_pipe_fns_by_context( PIPE_RPC_FNS *list, uint32 context_id )
-{
-	PIPE_RPC_FNS *fns = NULL;
-
-	if ( !list ) {
-		DEBUG(0,("find_pipe_fns_by_context: ERROR!  No context list for pipe!\n"));
-		return NULL;
-	}
-
-	for (fns=list; fns; fns=fns->next ) {
-		if ( fns->context_id == context_id )
-			return fns;
-	}
-	return NULL;
-}
-
 static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
-		       const struct api_struct *api_rpc_cmds, int n_cmds);
+		       const struct api_struct *api_rpc_cmds, int n_cmds,
+		       const struct ndr_syntax_id *syntax);
 
 /****************************************************************************
  Find the correct RPC function to call for this request.
@@ -1547,15 +1529,12 @@ static bool api_pipe_request(struct pipes_struct *p,
 	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_NTLMSSP) ||
 	     (p->auth.auth_type == DCERPC_AUTH_TYPE_KRB5) ||
 	     (p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO))) {
-		if(!become_authenticated_pipe_user(p)) {
+		if(!become_authenticated_pipe_user(p->session_info)) {
 			data_blob_free(&p->out_data.rdata);
 			return False;
 		}
 		changed_user = True;
 	}
-
-	DEBUG(5, ("Requested \\PIPE\\%s\n",
-		  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
 
 	/* get the set of RPC functions for this context */
 
@@ -1564,15 +1543,19 @@ static bool api_pipe_request(struct pipes_struct *p,
 
 	if ( pipe_fns ) {
 		TALLOC_CTX *frame = talloc_stackframe();
-		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds);
+
+		DEBUG(5, ("Requested %s rpc service\n",
+			  get_pipe_name_from_syntax(talloc_tos(), &pipe_fns->syntax)));
+
+		ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
+				 &pipe_fns->syntax);
+
 		TALLOC_FREE(frame);
 	}
 	else {
 		DEBUG(0, ("No rpc function table associated with context "
-			  "[%d] on pipe [%s]\n",
-			  pkt->u.request.context_id,
-			  get_pipe_name_from_syntax(talloc_tos(),
-						    &p->syntax)));
+			  "[%d]\n",
+			  pkt->u.request.context_id));
 	}
 
 	if (changed_user) {
@@ -1587,20 +1570,21 @@ static bool api_pipe_request(struct pipes_struct *p,
  ********************************************************************/
 
 static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
-		       const struct api_struct *api_rpc_cmds, int n_cmds)
+		       const struct api_struct *api_rpc_cmds, int n_cmds,
+		       const struct ndr_syntax_id *syntax)
 {
 	int fn_num;
 	uint32_t offset1;
 
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+		 get_pipe_name_from_syntax(talloc_tos(), syntax),
 		 pkt->u.request.opnum));
 
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "in_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
+			 get_pipe_name_from_syntax(talloc_tos(), syntax));
 		dump_pdu_region(name, pkt->u.request.opnum,
 				&p->in_data.data, 0,
 				p->in_data.data.length);
@@ -1633,7 +1617,7 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax),
+			 get_pipe_name_from_syntax(talloc_tos(), syntax),
 			 api_rpc_cmds[fn_num].name));
 		data_blob_free(&p->out_data.rdata);
 		return False;
@@ -1656,14 +1640,14 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 	if (DEBUGLEVEL >= 50) {
 		fstring name;
 		slprintf(name, sizeof(name)-1, "out_%s",
-			 get_pipe_name_from_syntax(talloc_tos(), &p->syntax));
+			 get_pipe_name_from_syntax(talloc_tos(), syntax));
 		dump_pdu_region(name, pkt->u.request.opnum,
 				&p->out_data.rdata, offset1,
 				p->out_data.rdata.length);
 	}
 
 	DEBUG(5,("api_rpcTNP: called %s successfully\n",
-		 get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
 
 	/* Check for buffer underflow in rpc parsing */
 	if ((DEBUGLEVEL >= 10) &&
@@ -1706,8 +1690,8 @@ void set_incoming_fault(struct pipes_struct *p)
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu.length = 0;
 	p->fault_state = True;
-	DEBUG(10, ("set_incoming_fault: Setting fault state on pipe %s\n",
-		   get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+
+	DEBUG(10, ("Setting fault state\n"));
 }
 
 static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
@@ -1841,8 +1825,7 @@ void process_complete_pdu(struct pipes_struct *p)
 	bool reply = False;
 
 	if(p->fault_state) {
-		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
-			  get_pipe_name_from_syntax(talloc_tos(), &p->syntax)));
+		DEBUG(10,("RPC connection in fault state.\n"));
 		goto done;
 	}
 
@@ -1874,7 +1857,7 @@ void process_complete_pdu(struct pipes_struct *p)
 	/* Store the call_id */
 	p->call_id = pkt->call_id;
 
-	DEBUG(10, ("Processing packet type %d\n", (int)pkt->ptype));
+	DEBUG(10, ("Processing packet type %u\n", (unsigned int)pkt->ptype));
 
 	switch (pkt->ptype) {
 	case DCERPC_PKT_REQUEST:
@@ -1882,19 +1865,12 @@ void process_complete_pdu(struct pipes_struct *p)
 		break;
 
 	case DCERPC_PKT_PING: /* CL request - ignore... */
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "Connectionless packet type %d received on "
-			  "pipe %s.\n", (int)pkt->ptype,
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - Connectionless packet type %u received\n",
+			  (unsigned int)pkt->ptype));
 		break;
 
 	case DCERPC_PKT_RESPONSE: /* No responses here. */
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_RESPONSE received from client "
-			  "on pipe %s.\n",
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_RESPONSE received from client"));
 		break;
 
 	case DCERPC_PKT_FAULT:
@@ -1907,11 +1883,8 @@ void process_complete_pdu(struct pipes_struct *p)
 	case DCERPC_PKT_CL_CANCEL:
 	case DCERPC_PKT_FACK:
 	case DCERPC_PKT_CANCEL_ACK:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "Connectionless packet type %u received on "
-			  "pipe %s.\n", (unsigned int)pkt->ptype,
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - Connectionless packet type %u received\n",
+			  (unsigned int)pkt->ptype));
 		break;
 
 	case DCERPC_PKT_BIND:
@@ -1925,12 +1898,9 @@ void process_complete_pdu(struct pipes_struct *p)
 
 	case DCERPC_PKT_BIND_ACK:
 	case DCERPC_PKT_BIND_NAK:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK "
-			  "packet type %u received on pipe %s.\n",
-			  (unsigned int)pkt->ptype,
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_BINDACK/DCERPC_PKT_BINDNACK "
+			  "packet type %u received.\n",
+			  (unsigned int)pkt->ptype));
 		break;
 
 
@@ -1944,11 +1914,8 @@ void process_complete_pdu(struct pipes_struct *p)
 		break;
 
 	case DCERPC_PKT_ALTER_RESP:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_ALTER_RESP on pipe %s: "
-			  "Should only be server -> client.\n",
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_ALTER_RESP received: "
+			  "Should only be server -> client.\n"));
 		break;
 
 	case DCERPC_PKT_AUTH3:
@@ -1961,11 +1928,8 @@ void process_complete_pdu(struct pipes_struct *p)
 		break;
 
 	case DCERPC_PKT_SHUTDOWN:
-		DEBUG(0, ("process_complete_pdu: Error. "
-			  "DCERPC_PKT_SHUTDOWN on pipe %s: "
-			  "Should only be server -> client.\n",
-			 get_pipe_name_from_syntax(talloc_tos(),
-						   &p->syntax)));
+		DEBUG(0, ("Error - DCERPC_PKT_SHUTDOWN received: "
+			  "Should only be server -> client.\n"));
 		break;
 
 	case DCERPC_PKT_CO_CANCEL:
@@ -2010,9 +1974,7 @@ void process_complete_pdu(struct pipes_struct *p)
 
 done:
 	if (!reply) {
-		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on "
-			 "pipe %s\n", get_pipe_name_from_syntax(talloc_tos(),
-								&p->syntax)));
+		DEBUG(3,("DCE/RPC fault sent!"));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		TALLOC_FREE(pkt);

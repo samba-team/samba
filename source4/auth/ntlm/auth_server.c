@@ -27,7 +27,7 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
-_PUBLIC_ NTSTATUS auth_server_init(void);
+_PUBLIC_ NTSTATUS auth4_server_init(void);
 
 /* This version of 'security=server' rewirtten from scratch for Samba4
  * libraries in 2008 */
@@ -223,7 +223,7 @@ static const struct auth_operations server_auth_ops = {
 	.check_password	= server_check_password
 };
 
-_PUBLIC_ NTSTATUS auth_server_init(void)
+_PUBLIC_ NTSTATUS auth4_server_init(void)
 {
 	NTSTATUS ret;
 

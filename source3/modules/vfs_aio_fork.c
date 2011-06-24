@@ -260,7 +260,7 @@ static void aio_child_cleanup(struct event_context *event_ctx,
 		/*
 		 * Re-schedule the next cleanup round
 		 */
-		list->cleanup_event = event_add_timed(smbd_event_context(), list,
+		list->cleanup_event = event_add_timed(server_event_context(), list,
 						      timeval_add(&now, 30, 0),
 						      aio_child_cleanup, list);
 
@@ -277,7 +277,7 @@ static struct aio_child_list *init_aio_children(struct vfs_handle_struct *handle
 	}
 
 	if (data == NULL) {
-		data = TALLOC_ZERO_P(NULL, struct aio_child_list);
+		data = talloc_zero(NULL, struct aio_child_list);
 		if (data == NULL) {
 			return NULL;
 		}
@@ -290,7 +290,7 @@ static struct aio_child_list *init_aio_children(struct vfs_handle_struct *handle
 	 */
 
 	if (data->cleanup_event == NULL) {
-		data->cleanup_event = event_add_timed(smbd_event_context(), data,
+		data->cleanup_event = event_add_timed(server_event_context(), data,
 						      timeval_current_ofs(30, 0),
 						      aio_child_cleanup, data);
 		if (data->cleanup_event == NULL) {
@@ -481,7 +481,7 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 
 	fdpair[0] = fdpair[1] = -1;
 
-	result = TALLOC_ZERO_P(children, struct aio_child);
+	result = talloc_zero(children, struct aio_child);
 	NT_STATUS_HAVE_NO_MEMORY(result);
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) == -1) {
@@ -519,7 +519,7 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 	result->sockfd = fdpair[0];
 	close(fdpair[1]);
 
-	result->sock_event = event_add_fd(smbd_event_context(), result,
+	result->sock_event = event_add_fd(server_event_context(), result,
 					  result->sockfd, EVENT_FD_READ,
 					  handle_aio_completion,
 					  result);

@@ -23,7 +23,9 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "../lib/crypto/arcfour.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
+#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "trans2.h"
 
@@ -687,9 +689,6 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 				     write_time, size, mode);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -865,9 +864,6 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 				     write_time, change_time, size, mode, ino);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -979,9 +975,6 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 					    pstreams);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 
@@ -1005,7 +998,7 @@ static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 		struct stream_struct *tmp;
 		uint8_t *tmp_buf;
 
-		tmp = TALLOC_REALLOC_ARRAY(mem_ctx, streams,
+		tmp = talloc_realloc(mem_ctx, streams,
 					   struct stream_struct,
 					   num_streams+1);
 
@@ -1030,7 +1023,7 @@ static bool parse_streams_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
 		 * convert_string_talloc??
 		 */
 
-		tmp_buf = TALLOC_ARRAY(streams, uint8_t, nlen+2);
+		tmp_buf = talloc_array(streams, uint8_t, nlen+2);
 		if (tmp_buf == NULL) {
 			goto fail;
 		}
@@ -1086,7 +1079,7 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name,
 		return status;
 	}
 
-	clistr_pull(cli->inbuf, name, rdata+4, namelen, IVAL(rdata, 0),
+	clistr_pull((const char *)rdata, name, rdata+4, namelen, IVAL(rdata, 0),
 		    STR_UNICODE);
 	TALLOC_FREE(rdata);
 	return NT_STATUS_OK;
@@ -1247,9 +1240,6 @@ NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 	status = cli_qpathinfo_basic_recv(req, sbuf, attributes);
  fail:
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_set_error(cli, status);
-	}
 	return status;
 }
 

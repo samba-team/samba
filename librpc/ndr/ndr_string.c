@@ -30,8 +30,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	char *as=NULL;
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
-	size_t converted_size;
-	int chset = CH_UTF16;
+	size_t conv_src_len = 0, converted_size;
+	int do_convert = 1, chset = CH_UTF16;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
 	unsigned c_len_term = 0;
@@ -56,6 +56,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		flags &= ~LIBNDR_FLAG_STR_UTF8;
 	}
 
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		do_convert = 0;
+		byte_mul = 1;
+		flags &= ~LIBNDR_FLAG_STR_RAW8;
+	}
+
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 	if (flags & LIBNDR_FLAG_STR_CHARLEN) {
 		c_len_term = 1;
@@ -73,77 +79,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len2));
 		if (len2 > len1) {
-			return ndr_pull_error(ndr, NDR_ERR_STRING, 
-					      "Bad string lengths len1=%u ofs=%u len2=%u\n", 
+			return ndr_pull_error(ndr, NDR_ERR_STRING,
+					      "Bad string lengths len1=%u ofs=%u len2=%u\n",
 					      len1, ofs, len2);
-		}
-		NDR_PULL_NEED_BYTES(ndr, (len2 + c_len_term)*byte_mul);
-		if (len2 == 0) {
-			as = talloc_strdup(ndr->current_mem_ctx, "");
-		} else {
-			if (!convert_string_talloc(ndr->current_mem_ctx, chset,
-						   CH_UNIX,
-						   ndr->data+ndr->offset,
-						   (len2 + c_len_term)*byte_mul,
-						   (void **)(void *)&as,
-						   &converted_size))
-			{
-				return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
-						      "Bad character conversion with flags 0x%x", flags);
-			}
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, (len2 + c_len_term)*byte_mul));
-
-		if (len1 != len2) {
+		} else if (len1 != len2) {
 			DEBUG(6,("len1[%u] != len2[%u] '%s'\n", len1, len2, as));
 		}
-
-		/* this is a way of detecting if a string is sent with the wrong
-		   termination */
-		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < (len2 + c_len_term)) {
-				DEBUG(6,("short string '%s'\n", as));
-			}
-		} else {
-			if (strlen(as) == (len2 + c_len_term)) {
-				DEBUG(6,("long string '%s'\n", as));
-			}
-		}
-		*s = as;
+		conv_src_len = len2 + c_len_term;
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
-		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
-		if (len1 == 0) {
-			as = talloc_strdup(ndr->current_mem_ctx, "");
-		} else {
-			if (!convert_string_talloc(ndr->current_mem_ctx, chset,
-						   CH_UNIX,
-						   ndr->data+ndr->offset,
-						   (len1 + c_len_term)*byte_mul,
-						   (void **)(void *)&as,
-						   &converted_size))
-			{
-				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion with flags 0x%x", flags);
-			}
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
-
-		/* this is a way of detecting if a string is sent with the wrong
-		   termination */
-		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < (len1 + c_len_term)) {
-				DEBUG(6,("short string '%s'\n", as));
-			}
-		} else {
-			if (strlen(as) == (len1 + c_len_term)) {
-				DEBUG(6,("long string '%s'\n", as));
-			}
-		}
-		*s = as;
+		conv_src_len = len1 + c_len_term;
 		break;
 
 	case LIBNDR_FLAG_STR_LEN4:
@@ -154,108 +102,28 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
-		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
-		if (len1 == 0) {
-			as = talloc_strdup(ndr->current_mem_ctx, "");
-		} else {
-			if (!convert_string_talloc(ndr->current_mem_ctx, chset,
-						   CH_UNIX,
-						   ndr->data+ndr->offset,
-						   (len1 + c_len_term)*byte_mul,
-						   (void **)(void *)&as,
-						   &converted_size))
-			{
-				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion with flags 0x%x", flags);
-			}
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
-
-		/* this is a way of detecting if a string is sent with the wrong
-		   termination */
-		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < (len1 + c_len_term)) {
-				DEBUG(6,("short string '%s'\n", as));
-			}
-		} else {
-			if (strlen(as) == (len1 + c_len_term)) {
-				DEBUG(6,("long string '%s'\n", as));
-			}
-		}
-		*s = as;
+		conv_src_len = len1 + c_len_term;
 		break;
-
 
 	case LIBNDR_FLAG_STR_SIZE2:
 	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
-		NDR_PULL_NEED_BYTES(ndr, (len3 + c_len_term)*byte_mul);
-		if (len3 == 0) {
-			as = talloc_strdup(ndr->current_mem_ctx, "");
-		} else {
-			if (!convert_string_talloc(ndr->current_mem_ctx, chset,
-						   CH_UNIX,
-						   ndr->data+ndr->offset,
-						   (len3 + c_len_term)*byte_mul,
-						   (void **)(void *)&as,
-						   &converted_size))
-			{
-				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion with flags 0x%x", flags);
-			}
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, (len3 + c_len_term)*byte_mul));
-
-		/* this is a way of detecting if a string is sent with the wrong
-		   termination */
-		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < (len3 + c_len_term)) {
-				DEBUG(6,("short string '%s'\n", as));
-			}
-		} else {
-			if (strlen(as) == (len3 + c_len_term)) {
-				DEBUG(6,("long string '%s'\n", as));
-			}
-		}
-		*s = as;
+		conv_src_len = len3 + c_len_term;
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_BYTESIZE:
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
-		NDR_PULL_NEED_BYTES(ndr, len3);
-		if (len3 == 0) {
-			as = talloc_strdup(ndr->current_mem_ctx, "");
-		} else {
-			if (!convert_string_talloc(ndr->current_mem_ctx, chset,
-						   CH_UNIX,
-						   ndr->data+ndr->offset, len3,
-						   (void **)(void *)&as,
-						   &converted_size))
-			{
-				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion with flags 0x%x", flags);
-			}
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, len3));
-		*s = as;
+		conv_src_len = len3;
+		byte_mul = 1; /* the length is now absolute */
 		break;
 
 	case LIBNDR_FLAG_STR_NULLTERM:
 		if (byte_mul == 1) {
-			len1 = ascii_len_n((const char *)(ndr->data+ndr->offset), ndr->data_size - ndr->offset);
+			conv_src_len = ascii_len_n((const char *)(ndr->data+ndr->offset), ndr->data_size - ndr->offset);
 		} else {
-			len1 = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
+			conv_src_len = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
-		if (!convert_string_talloc(ndr->current_mem_ctx, chset, CH_UNIX,
-					   ndr->data+ndr->offset, len1,
-					   (void **)(void *)&as,
-					   &converted_size))
-		{
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion with flags 0x%x", flags);
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, len1));
-		*s = as;
+		byte_mul = 1; /* the length is now absolute */
 		break;
 
 	case LIBNDR_FLAG_STR_NOTERM:
@@ -263,32 +131,53 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 			return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x (missing NDR_REMAINING)\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
-
-		len1 = ndr->data_size - ndr->offset;
-
-		NDR_PULL_NEED_BYTES(ndr, len1);
-		if (len1 == 0) {
-			as = talloc_strdup(ndr->current_mem_ctx, "");
-		} else {
-			if (!convert_string_talloc(ndr->current_mem_ctx, chset,
-						   CH_UNIX,
-						   ndr->data+ndr->offset, len1,
-						   (void **)(void *)&as,
-						   &converted_size))
-			{
-				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-						      "Bad character conversion with flags 0x%x", flags);
-			}
-		}
-		NDR_CHECK(ndr_pull_advance(ndr, len1));
-
-		*s = as;
+		conv_src_len = ndr->data_size - ndr->offset;
+		byte_mul = 1; /* the length is now absolute */
 		break;
 
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
 	}
+
+	NDR_PULL_NEED_BYTES(ndr, conv_src_len * byte_mul);
+	if (conv_src_len == 0) {
+		as = talloc_strdup(ndr->current_mem_ctx, "");
+		converted_size = 0;
+	} else {
+		if (!do_convert) {
+			as = talloc_strndup(ndr->current_mem_ctx,
+			                    (char *)ndr->data + ndr->offset,
+					    conv_src_len);
+			if (!as) {
+				return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+						      "Failed to talloc_strndup() in RAW8 ndr_string_pull()");
+			}
+			converted_size = MIN(strlen(as)+1, conv_src_len);
+		} else if (!convert_string_talloc(ndr->current_mem_ctx, chset,
+					   CH_UNIX, ndr->data + ndr->offset,
+					   conv_src_len * byte_mul,
+					   (void **)(void *)&as,
+					   &converted_size)) {
+			return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
+					      "Bad character conversion with flags 0x%x", flags);
+		}
+	}
+
+	/* this is a way of detecting if a string is sent with the wrong
+	   termination */
+	if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
+		if (as && converted_size > 0 && as[converted_size-1] == '\0') {
+			DEBUG(6,("short string '%s', sent with NULL termination despite NOTERM flag in IDL\n", as));
+		}
+	} else {
+		if (as && converted_size > 0 && as[converted_size-1] != '\0') {
+			DEBUG(6,("long string '%s', send without NULL termination (which was expected)\n", as));
+		}
+	}
+
+	NDR_CHECK(ndr_pull_advance(ndr, conv_src_len * byte_mul));
+	*s = as;
 
 	return NDR_ERR_SUCCESS;
 }
@@ -301,7 +190,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 {
 	ssize_t s_len, c_len;
 	size_t d_len;
-	int chset = CH_UTF16;
+	int do_convert = 1, chset = CH_UTF16;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;
 	uint8_t *dest = NULL;
@@ -328,12 +217,22 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 		flags &= ~LIBNDR_FLAG_STR_UTF8;
 	}
 
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		do_convert = 0;
+		byte_mul = 1;
+		flags &= ~LIBNDR_FLAG_STR_RAW8;
+	}
+
 	flags &= ~LIBNDR_FLAG_STR_CONFORMANT;
 
 	if (!(flags & LIBNDR_FLAG_STR_NOTERM)) {
 		s_len++;
 	}
-	if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
+
+	if (!do_convert) {
+		d_len = s_len;
+		dest = (uint8_t *)talloc_strndup(ndr, s, s_len);
+	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
 				   (void **)(void *)&dest, &d_len))
 	{
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
@@ -403,9 +302,13 @@ _PUBLIC_ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 	unsigned byte_mul = 2;
 	unsigned c_len_term = 1;
 
-	c_len = s?strlen_m(s):0;
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		c_len = s?strlen(s):0;
+	} else {
+		c_len = s?strlen_m(s):0;
+	}
 
-	if (flags & (LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_UTF8)) {
+	if (flags & (LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_UTF8)) {
 		byte_mul = 1;
 	}
 
@@ -611,16 +514,22 @@ _PUBLIC_ size_t ndr_size_string_array(const char **a, uint32_t count, int flags)
 {
 	uint32_t i;
 	size_t size = 0;
+	int rawbytes = 0;
+
+	if (flags & LIBNDR_FLAG_STR_RAW8) {
+		rawbytes = 1;
+		flags &= ~LIBNDR_FLAG_STR_RAW8;
+	}
 
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_NULLTERM:
 		for (i = 0; i < count; i++) {
-			size += strlen_m_term(a[i]);
+			size += rawbytes?strlen(a[i]) + 1:strlen_m_term(a[i]);
 		}
 		break;
 	case LIBNDR_FLAG_STR_NOTERM:
 		for (i = 0; i < count; i++) {
-			size += strlen_m(a[i]);
+			size += rawbytes?strlen(a[i]):strlen_m(a[i]);
 		}
 		break;
 	default:
@@ -736,7 +645,6 @@ _PUBLIC_ uint32_t ndr_charset_length(const void *var, charset_t chset)
 	case CH_UTF16MUNGED:
 	case CH_UTF8:
 		return strlen_m_ext_term((const char *)var, CH_UNIX, chset);
-	case CH_DISPLAY:
 	case CH_DOS:
 	case CH_UNIX:
 		return strlen((const char *)var)+1;

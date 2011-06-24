@@ -27,7 +27,7 @@
 #include "registry/reg_objects.h"
 #include "../libcli/security/security.h"
 #include "../libcli/registry/util_reg.h"
-#include "ntdomain.h"
+#include "libsmb/libsmb.h"
 
 /* support itanium as well */
 static const struct print_architecture_table_node archi_table[]= {
@@ -70,7 +70,7 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 	printf(_("\tConfigfile: [%s]\n\n"), r->config_file);
 	printf(_("\tHelpfile: [%s]\n\n"), r->help_file);
 
-	for (i=0; r->dependent_files[i] != NULL; i++) {
+	for (i=0; r->dependent_files && r->dependent_files[i] != NULL; i++) {
 		printf(_("\tDependentfiles: [%s]\n"), r->dependent_files[i]);
 	}
 
@@ -158,13 +158,12 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 		  bool copy_acls, bool copy_attrs,
 		  bool copy_timestamps, bool is_file)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status;
 	uint16_t fnum_src = 0;
 	uint16_t fnum_dst = 0;
 	struct security_descriptor *sd = NULL;
 	uint16_t attr;
 	time_t f_atime, f_ctime, f_mtime;
-
 
 	if (!copy_timestamps && !copy_acls && !copy_attrs)
 		return NT_STATUS_OK;
@@ -174,17 +173,17 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	DEBUGADD(3,("opening %s %s on originating server\n",
 		is_file?"file":"dir", src_name));
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli_share_src, src_name, 0, READ_CONTROL_ACCESS, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum_src))) {
+	nt_status = cli_ntcreate(cli_share_src, src_name, 0,
+				 READ_CONTROL_ACCESS, 0,
+				 FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
+				 0x0, 0x0, &fnum_src);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUGADD(0,("cannot open %s %s on originating server %s\n",
-			is_file?"file":"dir", src_name, cli_errstr(cli_share_src)));
-		nt_status = cli_nt_error(cli_share_src);
+			is_file?"file":"dir", src_name, nt_errstr(nt_status)));
 		goto out;
 	}
 
-
 	if (copy_acls) {
-
 		/* get the security descriptor */
 		sd = cli_query_secdesc(cli_share_src, fnum_src, mem_ctx);
 		if (!sd) {
@@ -198,81 +197,74 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 			display_sec_desc(sd);
 	}
 
-
 	if (copy_attrs || copy_timestamps) {
 
 		/* get file attributes */
-		if (!NT_STATUS_IS_OK(cli_getattrE(cli_share_src, fnum_src, &attr, NULL,
-				 &f_ctime, &f_atime, &f_mtime))) {
+		nt_status = cli_getattrE(cli_share_src, fnum_src, &attr, NULL,
+		                      &f_ctime, &f_atime, &f_mtime);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0,("failed to get file-attrs: %s\n",
-				cli_errstr(cli_share_src)));
-			nt_status = cli_nt_error(cli_share_src);
+				nt_errstr(nt_status)));
 			goto out;
 		}
 	}
 
-
 	/* open the file/dir on the destination server */
-
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli_share_dst, dst_name, 0, WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum_dst))) {
+	nt_status = cli_ntcreate(cli_share_dst, dst_name, 0,
+				 WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS, 0,
+				 FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
+				 0x0, 0x0, &fnum_dst);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("failed to open %s on the destination server: %s: %s\n",
-			is_file?"file":"dir", dst_name, cli_errstr(cli_share_dst)));
-		nt_status = cli_nt_error(cli_share_dst);
+			is_file?"file":"dir", dst_name, nt_errstr(nt_status)));
 		goto out;
 	}
 
 	if (copy_timestamps) {
-
 		/* set timestamps */
-		if (!NT_STATUS_IS_OK(cli_setattrE(cli_share_dst, fnum_dst, f_ctime, f_atime, f_mtime))) {
+		nt_status = cli_setattrE(cli_share_dst, fnum_dst, f_ctime, f_atime, f_mtime);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0,("failed to set file-attrs (timestamps): %s\n",
-				cli_errstr(cli_share_dst)));
-			nt_status = cli_nt_error(cli_share_dst);
+				nt_errstr(nt_status)));
 			goto out;
 		}
 	}
 
 	if (copy_acls) {
-		NTSTATUS status;
-
 		/* set acls */
-		status = cli_set_secdesc(cli_share_dst, fnum_dst, sd);
-		if (!NT_STATUS_IS_OK(status)) {
+		nt_status = cli_set_secdesc(cli_share_dst, fnum_dst, sd);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("could not set secdesc on %s: %s\n",
-				  dst_name, nt_errstr(status)));
-			nt_status = status;
+				  dst_name, nt_errstr(nt_status)));
 			goto out;
 		}
 	}
 
 	if (copy_attrs) {
-
 		/* set attrs */
-		if (!NT_STATUS_IS_OK(cli_setatr(cli_share_dst, dst_name, attr, 0))) {
+		nt_status = cli_setatr(cli_share_dst, dst_name, attr, 0);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0,("failed to set file-attrs: %s\n",
-				cli_errstr(cli_share_dst)));
-			nt_status = cli_nt_error(cli_share_dst);
+				nt_errstr(nt_status)));
 			goto out;
 		}
 	}
 
 
 	/* closing files */
-
-	if (!NT_STATUS_IS_OK(cli_close(cli_share_src, fnum_src))) {
+	nt_status = cli_close(cli_share_src, fnum_src);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr,
 			_("could not close %s on originating server: %s\n"),
-			is_file?"file":"dir", cli_errstr(cli_share_src));
-		nt_status = cli_nt_error(cli_share_src);
+			is_file?"file":"dir", nt_errstr(nt_status));
 		goto out;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_close(cli_share_dst, fnum_dst))) {
+	nt_status = cli_close(cli_share_dst, fnum_dst);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr,
 			_("could not close %s on destination server: %s\n"),
-			is_file?"file":"dir", cli_errstr(cli_share_dst));
-		nt_status = cli_nt_error(cli_share_dst);
+			is_file?"file":"dir", nt_errstr(nt_status));
 		goto out;
 	}
 
@@ -343,7 +335,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUGADD(0,("cannot open %s %s on originating server %s\n",
 			is_file ? "file":"dir",
-			src_name, cli_errstr(cli_share_src)));
+			src_name, nt_errstr(nt_status)));
 		goto out;
 	}
 
@@ -357,7 +349,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUGADD(1,("cannot create file %s on destination server: %s\n", 
-				dst_name, cli_errstr(cli_share_dst)));
+				dst_name, nt_errstr(nt_status)));
 			goto out;
 		}
 
@@ -387,20 +379,19 @@ NTSTATUS net_copy_file(struct net_context *c,
 	while (is_file) {
 
 		/* copying file */
-		int n, ret;
+		int n;
 		n = cli_read(cli_share_src, fnum_src, data, nread,
 				read_size);
 
 		if (n <= 0)
 			break;
 
-		ret = cli_write(cli_share_dst, fnum_dst, 0, data,
-			nread, n);
+		nt_status = cli_writeall(cli_share_dst, fnum_dst, 0,
+					 (uint8_t *)data, nread, n, NULL);
 
-		if (n != ret) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr, _("Error writing file: %s\n"),
-				cli_errstr(cli_share_dst));
-			nt_status = cli_nt_error(cli_share_dst);
+				  nt_errstr(nt_status));
 			goto out;
 		}
 
@@ -414,36 +405,41 @@ NTSTATUS net_copy_file(struct net_context *c,
 		DEBUGADD(3,("creating dir %s on the destination server\n",
 			dst_name));
 
-		if (!NT_STATUS_IS_OK(cli_mkdir(cli_share_dst, dst_name))) {
+		nt_status = cli_mkdir(cli_share_dst, dst_name);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0,("cannot create directory %s: %s\n",
-				dst_name, cli_errstr(cli_share_dst)));
+				dst_name, nt_errstr(nt_status)));
 			nt_status = NT_STATUS_NO_SUCH_FILE;
 		}
 
-		if (!NT_STATUS_IS_OK(cli_chkpath(cli_share_dst, dst_name))) {
+
+		nt_status = cli_chkpath(cli_share_dst, dst_name);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr,
 				_("cannot check for directory %s: %s\n"),
-				dst_name, cli_errstr(cli_share_dst));
+				dst_name, nt_errstr(nt_status));
 			goto out;
 		}
 	}
 
 
 	/* closing files */
-	if (!NT_STATUS_IS_OK(cli_close(cli_share_src, fnum_src))) {
+	nt_status = cli_close(cli_share_src, fnum_src);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr,
 			_("could not close file on originating server: %s\n"),
-			cli_errstr(cli_share_src));
-		nt_status = cli_nt_error(cli_share_src);
+			nt_errstr(nt_status));
 		goto out;
 	}
 
-	if (is_file && !NT_STATUS_IS_OK(cli_close(cli_share_dst, fnum_dst))) {
-		d_fprintf(stderr,
+	if (is_file) {
+		nt_status = cli_close(cli_share_dst, fnum_dst);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			d_fprintf(stderr,
 			_("could not close file on destination server: %s\n"),
-			cli_errstr(cli_share_dst));
-		nt_status = cli_nt_error(cli_share_dst);
-		goto out;
+			nt_errstr(nt_status));
+			goto out;
+		}
 	}
 
 	/* possibly we have to copy some file-attributes / acls / sd */
@@ -563,15 +559,16 @@ static NTSTATUS check_arch_dir(struct cli_state *cli_share, const char *short_ar
 	DEBUG(10,("creating print-driver dir for architecture: %s\n",
 		short_archi));
 
-	if (!NT_STATUS_IS_OK(cli_mkdir(cli_share, dir))) {
+	nt_status = cli_mkdir(cli_share, dir);
+	if (!NT_STATUS_IS_OK(nt_status)) {
                 DEBUG(1,("cannot create directory %s: %s\n",
-                         dir, cli_errstr(cli_share)));
-                nt_status = NT_STATUS_NO_SUCH_FILE;
+                         dir, nt_errstr(nt_status)));
         }
 
-	if (!NT_STATUS_IS_OK(cli_chkpath(cli_share, dir))) {
+	nt_status = cli_chkpath(cli_share, dir);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("cannot check %s: %s\n"),
-			dir, cli_errstr(cli_share));
+			dir, nt_errstr(nt_status));
 		goto out;
 	}
 
@@ -2547,7 +2544,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 					if (strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME)) {
 
-						push_reg_sz(mem_ctx, &blob, global_myname());
+						push_reg_sz(mem_ctx, &blob, lp_netbios_name());
 					}
 
 					value = regval_compose(talloc_tos(),

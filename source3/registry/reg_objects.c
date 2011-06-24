@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "reg_objects.h"
+#include "util_tdb.h"
 #include "dbwrap.h"
 #include "../libcli/registry/util_reg.h"
 
@@ -61,7 +62,7 @@ struct regsubkey_ctr {
  context for internal private data.
 
  There is no longer a regval_ctr_intit() and regval_ctr_destroy()
- pair of functions.  Simply TALLOC_ZERO_P() and TALLOC_FREE() the
+ pair of functions.  Simply talloc_zero() and TALLOC_FREE() the
  object.
 
  **********************************************************************/
@@ -210,7 +211,7 @@ WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
 		return WERR_OK;
 	}
 
-	if (!(newkeys = TALLOC_REALLOC_ARRAY(ctr, ctr->subkeys, char *,
+	if (!(newkeys = talloc_realloc(ctr, ctr->subkeys, char *,
 					     ctr->num_subkeys+1))) {
 		return WERR_NOMEM;
 	}
@@ -465,7 +466,7 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   uint32_t type,
 				   const uint8_t *data_p, size_t size)
 {
-	struct regval_blob *regval = TALLOC_P(ctx, struct regval_blob);
+	struct regval_blob *regval = talloc(ctx, struct regval_blob);
 
 	if (regval == NULL) {
 		return NULL;
@@ -474,7 +475,7 @@ struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 	fstrcpy(regval->valuename, name);
 	regval->type = type;
 	if (size) {
-		regval->data_p = (uint8_t *)TALLOC_MEMDUP(regval, data_p, size);
+		regval->data_p = (uint8_t *)talloc_memdup(regval, data_p, size);
 		if (!regval->data_p) {
 			TALLOC_FREE(regval);
 			return NULL;
@@ -504,9 +505,9 @@ int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint32_t type,
 	/* allocate a slot in the array of pointers */
 
 	if (  ctr->num_values == 0 ) {
-		ctr->values = TALLOC_P( ctr, struct regval_blob *);
+		ctr->values = talloc( ctr, struct regval_blob *);
 	} else {
-		ctr->values = TALLOC_REALLOC_ARRAY(ctr, ctr->values,
+		ctr->values = talloc_realloc(ctr, ctr->values,
 						   struct regval_blob *,
 						   ctr->num_values+1);
 	}

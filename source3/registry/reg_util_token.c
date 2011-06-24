@@ -38,7 +38,7 @@ NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	token = TALLOC_ZERO_P(mem_ctx, struct security_token);
+	token = talloc_zero(mem_ctx, struct security_token);
 	if (token == NULL) {
 		DEBUG(1, ("talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;

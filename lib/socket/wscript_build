@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+bld.SAMBA_LIBRARY('interfaces',
+    source='interfaces.c',
+    deps='samba-util',
+    private_library=True
+    )

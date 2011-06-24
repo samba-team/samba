@@ -24,158 +24,9 @@
 #include "memcache.h"
 #include "../lib/async_req/async_sock.h"
 #include "../lib/util/select.h"
-#include "interfaces.h"
-
-/****************************************************************************
- Get a port number in host byte order from a sockaddr_storage.
-****************************************************************************/
-
-uint16_t get_sockaddr_port(const struct sockaddr_storage *pss)
-{
-	uint16_t port = 0;
-
-	if (pss->ss_family != AF_INET) {
-#if defined(HAVE_IPV6)
-		/* IPv6 */
-		const struct sockaddr_in6 *sa6 =
-			(const struct sockaddr_in6 *)pss;
-		port = ntohs(sa6->sin6_port);
-#endif
-	} else {
-		const struct sockaddr_in *sa =
-			(const struct sockaddr_in *)pss;
-		port = ntohs(sa->sin_port);
-	}
-	return port;
-}
-
-/****************************************************************************
- Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
-****************************************************************************/
-
-static char *print_sockaddr_len(char *dest,
-			size_t destlen,
-			const struct sockaddr *psa,
-			socklen_t psalen)
-{
-	if (destlen > 0) {
-		dest[0] = '\0';
-	}
-	(void)sys_getnameinfo(psa,
-			psalen,
-			dest, destlen,
-			NULL, 0,
-			NI_NUMERICHOST);
-	return dest;
-}
-
-/****************************************************************************
- Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
-****************************************************************************/
-
-char *print_sockaddr(char *dest,
-			size_t destlen,
-			const struct sockaddr_storage *psa)
-{
-	return print_sockaddr_len(dest, destlen, (struct sockaddr *)psa,
-			sizeof(struct sockaddr_storage));
-}
-
-/****************************************************************************
- Print out a canonical IPv4 or IPv6 address from a struct sockaddr_storage.
-****************************************************************************/
-
-char *print_canonical_sockaddr(TALLOC_CTX *ctx,
-			const struct sockaddr_storage *pss)
-{
-	char addr[INET6_ADDRSTRLEN];
-	char *dest = NULL;
-	int ret;
-
-	/* Linux getnameinfo() man pages says port is unitialized if
-	   service name is NULL. */
-
-	ret = sys_getnameinfo((const struct sockaddr *)pss,
-			sizeof(struct sockaddr_storage),
-			addr, sizeof(addr),
-			NULL, 0,
-			NI_NUMERICHOST);
-	if (ret != 0) {
-		return NULL;
-	}
-
-	if (pss->ss_family != AF_INET) {
-#if defined(HAVE_IPV6)
-		dest = talloc_asprintf(ctx, "[%s]", addr);
-#else
-		return NULL;
-#endif
-	} else {
-		dest = talloc_asprintf(ctx, "%s", addr);
-	}
-
-	return dest;
-}
-
-/****************************************************************************
- Return the string of an IP address (IPv4 or IPv6).
-****************************************************************************/
-
-static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
-{
-	struct sockaddr_storage sa;
-	socklen_t length = sizeof(sa);
-
-	/* Ok, returning a hard coded IPv4 address
- 	 * is bogus, but it's just as bogus as a
- 	 * zero IPv6 address. No good choice here.
- 	 */
-
-	strlcpy(addr_buf, "0.0.0.0", addr_len);
-
-	if (fd == -1) {
-		return addr_buf;
-	}
-
-	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
-		DEBUG(0,("getsockname failed. Error was %s\n",
-			strerror(errno) ));
-		return addr_buf;
-	}
-
-	return print_sockaddr_len(addr_buf, addr_len, (struct sockaddr *)&sa, length);
-}
-
-/****************************************************************************
- Return the port number we've bound to on a socket.
-****************************************************************************/
-
-int get_socket_port(int fd)
-{
-	struct sockaddr_storage sa;
-	socklen_t length = sizeof(sa);
-
-	if (fd == -1) {
-		return -1;
-	}
-
-	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
-		int level = (errno == ENOTCONN) ? 2 : 0;
-		DEBUG(level, ("getsockname failed. Error was %s\n",
-			       strerror(errno)));
-		return -1;
-	}
-
-#if defined(HAVE_IPV6)
-	if (sa.ss_family == AF_INET6) {
-		return ntohs(((struct sockaddr_in6 *)&sa)->sin6_port);
-	}
-#endif
-	if (sa.ss_family == AF_INET) {
-		return ntohs(((struct sockaddr_in *)&sa)->sin_port);
-	}
-	return -1;
-}
+#include "lib/socket/interfaces.h"
+#include "../lib/util/tevent_unix.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 const char *client_name(int fd)
 {
@@ -185,11 +36,6 @@ const char *client_name(int fd)
 const char *client_addr(int fd, char *addr, size_t addrlen)
 {
 	return get_peer_addr(fd,addr,addrlen);
-}
-
-const char *client_socket_addr(int fd, char *addr, size_t addr_len)
-{
-	return get_socket_addr(fd, addr, addr_len);
 }
 
 #if 0
@@ -230,166 +76,6 @@ bool is_a_socket(int fd)
 	socklen_t l;
 	l = sizeof(int);
 	return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
-}
-
-enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
-
-typedef struct smb_socket_option {
-	const char *name;
-	int level;
-	int option;
-	int value;
-	int opttype;
-} smb_socket_option;
-
-static const smb_socket_option socket_options[] = {
-  {"SO_KEEPALIVE", SOL_SOCKET, SO_KEEPALIVE, 0, OPT_BOOL},
-  {"SO_REUSEADDR", SOL_SOCKET, SO_REUSEADDR, 0, OPT_BOOL},
-  {"SO_BROADCAST", SOL_SOCKET, SO_BROADCAST, 0, OPT_BOOL},
-#ifdef TCP_NODELAY
-  {"TCP_NODELAY", IPPROTO_TCP, TCP_NODELAY, 0, OPT_BOOL},
-#endif
-#ifdef TCP_KEEPCNT
-  {"TCP_KEEPCNT", IPPROTO_TCP, TCP_KEEPCNT, 0, OPT_INT},
-#endif
-#ifdef TCP_KEEPIDLE
-  {"TCP_KEEPIDLE", IPPROTO_TCP, TCP_KEEPIDLE, 0, OPT_INT},
-#endif
-#ifdef TCP_KEEPINTVL
-  {"TCP_KEEPINTVL", IPPROTO_TCP, TCP_KEEPINTVL, 0, OPT_INT},
-#endif
-#ifdef IPTOS_LOWDELAY
-  {"IPTOS_LOWDELAY", IPPROTO_IP, IP_TOS, IPTOS_LOWDELAY, OPT_ON},
-#endif
-#ifdef IPTOS_THROUGHPUT
-  {"IPTOS_THROUGHPUT", IPPROTO_IP, IP_TOS, IPTOS_THROUGHPUT, OPT_ON},
-#endif
-#ifdef SO_REUSEPORT
-  {"SO_REUSEPORT", SOL_SOCKET, SO_REUSEPORT, 0, OPT_BOOL},
-#endif
-#ifdef SO_SNDBUF
-  {"SO_SNDBUF", SOL_SOCKET, SO_SNDBUF, 0, OPT_INT},
-#endif
-#ifdef SO_RCVBUF
-  {"SO_RCVBUF", SOL_SOCKET, SO_RCVBUF, 0, OPT_INT},
-#endif
-#ifdef SO_SNDLOWAT
-  {"SO_SNDLOWAT", SOL_SOCKET, SO_SNDLOWAT, 0, OPT_INT},
-#endif
-#ifdef SO_RCVLOWAT
-  {"SO_RCVLOWAT", SOL_SOCKET, SO_RCVLOWAT, 0, OPT_INT},
-#endif
-#ifdef SO_SNDTIMEO
-  {"SO_SNDTIMEO", SOL_SOCKET, SO_SNDTIMEO, 0, OPT_INT},
-#endif
-#ifdef SO_RCVTIMEO
-  {"SO_RCVTIMEO", SOL_SOCKET, SO_RCVTIMEO, 0, OPT_INT},
-#endif
-#ifdef TCP_FASTACK
-  {"TCP_FASTACK", IPPROTO_TCP, TCP_FASTACK, 0, OPT_INT},
-#endif
-#ifdef TCP_QUICKACK
-  {"TCP_QUICKACK", IPPROTO_TCP, TCP_QUICKACK, 0, OPT_BOOL},
-#endif
-#ifdef TCP_KEEPALIVE_THRESHOLD
-  {"TCP_KEEPALIVE_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_THRESHOLD, 0, OPT_INT},
-#endif
-#ifdef TCP_KEEPALIVE_ABORT_THRESHOLD
-  {"TCP_KEEPALIVE_ABORT_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_ABORT_THRESHOLD, 0, OPT_INT},
-#endif
-  {NULL,0,0,0,0}};
-
-/****************************************************************************
- Print socket options.
-****************************************************************************/
-
-static void print_socket_options(int s)
-{
-	int value;
-	socklen_t vlen = 4;
-	const smb_socket_option *p = &socket_options[0];
-
-	/* wrapped in if statement to prevent streams
-	 * leak in SCO Openserver 5.0 */
-	/* reported on samba-technical  --jerry */
-	if ( DEBUGLEVEL >= 5 ) {
-		DEBUG(5,("Socket options:\n"));
-		for (; p->name != NULL; p++) {
-			if (getsockopt(s, p->level, p->option,
-						(void *)&value, &vlen) == -1) {
-				DEBUGADD(5,("\tCould not test socket option %s.\n",
-							p->name));
-			} else {
-				DEBUGADD(5,("\t%s = %d\n",
-							p->name,value));
-			}
-		}
-	}
- }
-
-/****************************************************************************
- Set user socket options.
-****************************************************************************/
-
-void set_socket_options(int fd, const char *options)
-{
-	TALLOC_CTX *ctx = talloc_stackframe();
-	char *tok;
-
-	while (next_token_talloc(ctx, &options, &tok," \t,")) {
-		int ret=0,i;
-		int value = 1;
-		char *p;
-		bool got_value = false;
-
-		if ((p = strchr_m(tok,'='))) {
-			*p = 0;
-			value = atoi(p+1);
-			got_value = true;
-		}
-
-		for (i=0;socket_options[i].name;i++)
-			if (strequal(socket_options[i].name,tok))
-				break;
-
-		if (!socket_options[i].name) {
-			DEBUG(0,("Unknown socket option %s\n",tok));
-			continue;
-		}
-
-		switch (socket_options[i].opttype) {
-		case OPT_BOOL:
-		case OPT_INT:
-			ret = setsockopt(fd,socket_options[i].level,
-					socket_options[i].option,
-					(char *)&value,sizeof(int));
-			break;
-
-		case OPT_ON:
-			if (got_value)
-				DEBUG(0,("syntax error - %s "
-					"does not take a value\n",tok));
-
-			{
-				int on = socket_options[i].value;
-				ret = setsockopt(fd,socket_options[i].level,
-					socket_options[i].option,
-					(char *)&on,sizeof(int));
-			}
-			break;
-		}
-
-		if (ret != 0) {
-			/* be aware that some systems like Solaris return
-			 * EINVAL to a setsockopt() call when the client
-			 * sent a RST previously - no need to worry */
-			DEBUG(2,("Failed to set socket option %s (Error %s)\n",
-				tok, strerror(errno) ));
-		}
-	}
-
-	TALLOC_FREE(ctx);
-	print_socket_options(fd);
 }
 
 /****************************************************************************
@@ -571,7 +257,7 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 	 * discarding elements.
 	 */
 
-	iov_copy = (struct iovec *)TALLOC_MEMDUP(
+	iov_copy = (struct iovec *)talloc_memdup(
 		talloc_tos(), orig_iov, sizeof(struct iovec) * iovcnt);
 
 	if (iov_copy == NULL) {
@@ -620,7 +306,7 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 {
 	struct iovec iov;
 
-	iov.iov_base = CONST_DISCARD(void *, buffer);
+	iov.iov_base = discard_const_p(void, buffer);
 	iov.iov_len = N;
 	return write_data_iov(fd, &iov, 1);
 }
@@ -787,6 +473,32 @@ int open_socket_in(int type,
 #endif /* SO_REUSEPORT */
 	}
 
+#ifdef HAVE_IPV6
+	/*
+	 * As IPV6_V6ONLY is the default on some systems,
+	 * we better try to be consistent and always use it.
+	 *
+	 * This also avoids using IPv4 via AF_INET6 sockets
+	 * and makes sure %I never resolves to a '::ffff:192.168.0.1'
+	 * string.
+	 */
+	if (sock.ss_family == AF_INET6) {
+		int val = 1;
+		int ret;
+
+		ret = setsockopt(res, IPPROTO_IPV6, IPV6_V6ONLY,
+				 (const void *)&val, sizeof(val));
+		if (ret == -1) {
+			if(DEBUGLVL(0)) {
+				dbgtext("open_socket_in(): IPV6_ONLY failed: ");
+				dbgtext("%s\n", strerror(errno));
+			}
+			close(res);
+			return -1;
+		}
+	}
+#endif
+
 	/* now we've got a socket - we need to bind it */
 	if (bind(res, (struct sockaddr *)&sock, slen) == -1 ) {
 		if( DEBUGLVL(dlevel) && (port == SMB_PORT1 ||
@@ -812,7 +524,7 @@ struct open_socket_out_state {
 	struct sockaddr_storage ss;
 	socklen_t salen;
 	uint16_t port;
-	int wait_nsec;
+	int wait_usec;
 };
 
 static void open_socket_out_connected(struct tevent_req *subreq);
@@ -848,7 +560,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->ss = *pss;
 	state->port = port;
-	state->wait_nsec = 10000;
+	state->wait_usec = 10000;
 	state->salen = -1;
 
 	state->fd = socket(state->ss.ss_family, SOCK_STREAM, 0);
@@ -859,7 +571,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(state, open_socket_out_state_destructor);
 
 	if (!tevent_req_set_endtime(
-		    result, ev, timeval_current_ofs(0, timeout*1000))) {
+		    result, ev, timeval_current_ofs_msec(timeout))) {
 		goto fail;
 	}
 
@@ -896,7 +608,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	if ((subreq == NULL)
 	    || !tevent_req_set_endtime(
 		    subreq, state->ev,
-		    timeval_current_ofs(0, state->wait_nsec))) {
+		    timeval_current_ofs(0, state->wait_usec))) {
 		goto fail;
 	}
 	tevent_req_set_callback(subreq, open_socket_out_connected, result);
@@ -938,8 +650,8 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 		 * retry
 		 */
 
-		if (state->wait_nsec < 250000) {
-			state->wait_nsec *= 1.5;
+		if (state->wait_usec < 250000) {
+			state->wait_usec *= 1.5;
 		}
 
 		subreq = async_connect_send(state, state->ev, state->fd,
@@ -950,7 +662,7 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 		}
 		if (!tevent_req_set_endtime(
 			    subreq, state->ev,
-			    timeval_current_ofs(0, state->wait_nsec))) {
+			    timeval_current_ofs_usec(state->wait_usec))) {
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
@@ -1248,7 +960,7 @@ static bool matchname(const char *remotehost,
 			continue;
 		}
 		if (sockaddr_equal((const struct sockaddr *)res->ai_addr,
-					(struct sockaddr *)pss)) {
+					(const struct sockaddr *)pss)) {
 			freeaddrinfo(ailist);
 			return true;
 		}
@@ -1454,14 +1166,21 @@ int create_pipe_sock(const char *socket_dir,
 	} else {
 		/* Check ownership and permission on existing directory */
 		if (!S_ISDIR(st.st_mode)) {
-			DEBUG(0, ("socket directory %s isn't a directory\n",
+			DEBUG(0, ("socket directory '%s' isn't a directory\n",
 				socket_dir));
 			goto out_umask;
 		}
-		if ((st.st_uid != sec_initial_uid()) ||
-				((st.st_mode & 0777) != dir_perms)) {
-			DEBUG(0, ("invalid permissions on socket directory "
-				"%s\n", socket_dir));
+		if (st.st_uid != sec_initial_uid()) {
+			DEBUG(0, ("invalid ownership on directory "
+				  "'%s'\n", socket_dir));
+			umask(old_umask);
+			goto out_umask;
+		}
+		if ((st.st_mode & 0777) != dir_perms) {
+			DEBUG(0, ("invalid permissions on directory "
+				  "'%s': has 0%o should be 0%o\n", socket_dir,
+				  (st.st_mode & 0777), dir_perms));
+			umask(old_umask);
 			goto out_umask;
 		}
 	}
@@ -1602,13 +1321,13 @@ static bool is_my_ipaddr(const char *ipaddr_str)
 		return false;
 	}
 
-	if (ismyaddr((struct sockaddr *)&ss)) {
-		return true;
+	if (is_zero_addr(&ss)) {
+		return false;
 	}
 
-	if (is_zero_addr(&ss) ||
-		is_loopback_addr((struct sockaddr *)&ss)) {
-		return false;
+	if (ismyaddr((struct sockaddr *)&ss) ||
+			is_loopback_addr((struct sockaddr *)&ss)) {
+		return true;
 	}
 
 	n = get_interfaces(talloc_tos(), &nics);
@@ -1651,7 +1370,7 @@ bool is_myname_or_ipaddr(const char *s)
 	}
 
 	/* Optimize for the common case */
-	if (strequal(servername, global_myname())) {
+	if (strequal(servername, lp_netbios_name())) {
 		return true;
 	}
 
@@ -1802,7 +1521,7 @@ int poll_one_fd(int fd, int events, int timeout, int *revents)
 	int ret;
 	int saved_errno;
 
-	fds = TALLOC_ZERO_ARRAY(talloc_tos(), struct pollfd, 2);
+	fds = talloc_zero_array(talloc_tos(), struct pollfd, 2);
 	if (fds == NULL) {
 		errno = ENOMEM;
 		return -1;

@@ -28,11 +28,11 @@
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
 
 /* for readability... */
-#define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)
-#define IS_DOS_DIR(test_mode)      (((test_mode) & aDIR) != 0)
-#define IS_DOS_ARCHIVE(test_mode)  (((test_mode) & aARCH) != 0)
-#define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
-#define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
+#define IS_DOS_READONLY(test_mode) (((test_mode) & FILE_ATTRIBUTE_READONLY) != 0)
+#define IS_DOS_DIR(test_mode)      (((test_mode) & FILE_ATTRIBUTE_DIRECTORY) != 0)
+#define IS_DOS_ARCHIVE(test_mode)  (((test_mode) & FILE_ATTRIBUTE_ARCHIVE) != 0)
+#define IS_DOS_SYSTEM(test_mode)   (((test_mode) & FILE_ATTRIBUTE_SYSTEM) != 0)
+#define IS_DOS_HIDDEN(test_mode)   (((test_mode) & FILE_ATTRIBUTE_HIDDEN) != 0)
 
 #define SMB_WARN(condition, message) \
     ((condition) ? (void)0 : \
@@ -123,6 +123,7 @@
 
 /* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
 #define smb_buf(buf) (((char *)(buf)) + smb_size + CVAL(buf,smb_wct)*2)
+#define smb_buf_const(buf) (((const char *)(buf)) + smb_size + CVAL(buf,smb_wct)*2)
 #define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
 
 /* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
@@ -217,39 +218,12 @@ copy an IP address from one buffer to another
 #define SMB_XMALLOC_P(type) (type *)smb_xmalloc_array(sizeof(type),1)
 #define SMB_XMALLOC_ARRAY(type,count) (type *)smb_xmalloc_array(sizeof(type),(count))
 
-/* The new talloc is paranoid malloc checker safe. */
-
-#if 0
-
-Disable these now we have checked all code paths and ensured
-NULL returns on zero request. JRA.
-
-#define TALLOC(ctx, size) talloc_zeronull(ctx, size, __location__)
-#define TALLOC_P(ctx, type) (type *)talloc_zeronull(ctx, sizeof(type), #type)
-#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array_zeronull(ctx, sizeof(type), count, #type)
-#define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup_zeronull(ctx, ptr, size, __location__)
-#define TALLOC_ZERO(ctx, size) _talloc_zero_zeronull(ctx, size, __location__)
-#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero_zeronull(ctx, sizeof(type), #type)
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array_zeronull(ctx, sizeof(type), count, #type)
-#define TALLOC_SIZE(ctx, size) talloc_zeronull(ctx, size, __location__)
-#define TALLOC_ZERO_SIZE(ctx, size) _talloc_zero_zeronull(ctx, size, __location__)
-
-#else
-
 #define TALLOC(ctx, size) talloc_named_const(ctx, size, __location__)
-#define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-#define TALLOC_ARRAY(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
-#define TALLOC_MEMDUP(ctx, ptr, size) _talloc_memdup(ctx, ptr, size, __location__)
 #define TALLOC_ZERO(ctx, size) _talloc_zero(ctx, size, __location__)
-#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
-#define TALLOC_ZERO_ARRAY(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
 #define TALLOC_SIZE(ctx, size) talloc_named_const(ctx, size, __location__)
 #define TALLOC_ZERO_SIZE(ctx, size) _talloc_zero(ctx, size, __location__)
 
-#endif
-
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
-#define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define talloc_destroy(ctx) talloc_free(ctx)
 #ifndef TALLOC_FREE
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
@@ -312,7 +286,7 @@ NULL returns on zero request. JRA.
 #define ADD_TO_ARRAY(mem_ctx, type, elem, array, num) \
 do { \
 	*(array) = ((mem_ctx) != NULL) ? \
-		TALLOC_REALLOC_ARRAY(mem_ctx, (*(array)), type, (*(num))+1) : \
+		talloc_realloc(mem_ctx, (*(array)), type, (*(num))+1) : \
 		SMB_REALLOC_ARRAY((*(array)), type, (*(num))+1); \
 	SMB_ASSERT((*(array)) != NULL); \
 	(*(array))[*(num)] = (elem); \

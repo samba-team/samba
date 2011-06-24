@@ -92,7 +92,7 @@ bool make_dir_struct(TALLOC_CTX *ctx,
 		return False;
 	}
 
-	if ((mode & aDIR) != 0) {
+	if ((mode & FILE_ATTRIBUTE_DIRECTORY) != 0) {
 		size = 0;
 	}
 
@@ -872,15 +872,15 @@ bool dir_check_ftype(connection_struct *conn, uint32 mode, uint32 dirtype)
 	uint32 mask;
 
 	/* Check the "may have" search bits. */
-	if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
+	if (((mode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY)) != 0)
 		return False;
 
 	/* Check the "must have" bits, which are the may have bits shifted eight */
 	/* If must have bit is set, the file/dir can not be returned in search unless the matching
 		file attribute is set */
-	mask = ((dirtype >> 8) & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM)); /* & 0x37 */
+	mask = ((dirtype >> 8) & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM)); /* & 0x37 */
 	if(mask) {
-		if((mask & (mode & (aDIR|aARCH|aRONLY|aHIDDEN|aSYSTEM))) == mask)   /* check if matching attribute present */
+		if((mask & (mode & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM))) == mask)   /* check if matching attribute present */
 			return True;
 		else
 			return False;
@@ -1342,7 +1342,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32 attr)
 {
-	struct smb_Dir *dirp = TALLOC_ZERO_P(mem_ctx, struct smb_Dir);
+	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {
@@ -1386,7 +1386,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32 attr)
 {
-	struct smb_Dir *dirp = TALLOC_ZERO_P(mem_ctx, struct smb_Dir);
+	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {
@@ -1559,7 +1559,7 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 	}
 
 	if (dirp->name_cache == NULL) {
-		dirp->name_cache = TALLOC_ZERO_ARRAY(
+		dirp->name_cache = talloc_zero_array(
 			dirp, struct name_cache_entry, dirp->name_cache_size);
 
 		if (dirp->name_cache == NULL) {
@@ -1625,8 +1625,8 @@ bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
  Is this directory empty ?
 *****************************************************************/
 
-NTSTATUS can_delete_directory(struct connection_struct *conn,
-				const char *dirname)
+NTSTATUS smbd_can_delete_directory(struct connection_struct *conn,
+				   const char *dirname)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	long dirpos = 0;

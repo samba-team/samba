@@ -400,7 +400,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	result->private_data = TALLOC_ZERO_P(result, struct db_rbt_ctx);
+	result->private_data = talloc_zero(result, struct db_rbt_ctx);
 
 	if (result->private_data == NULL) {
 		TALLOC_FREE(result);

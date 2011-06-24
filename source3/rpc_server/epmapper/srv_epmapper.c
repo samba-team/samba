@@ -20,12 +20,11 @@
 */
 
 #include "includes.h"
+#include "ntdomain.h"
 #include "../libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/srv_epmapper.h"
 #include "srv_epmapper.h"
 #include "auth.h"
-#include "ntdomain.h"
 
 typedef uint32_t error_status_t;
 

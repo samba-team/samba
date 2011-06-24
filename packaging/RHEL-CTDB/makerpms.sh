@@ -42,6 +42,14 @@ case $RPMVER in
        ;;
 esac
 
+mkdir -p `rpm --eval %_specdir`
+mkdir -p `rpm --eval %_sourcedir`
+mkdir -p `rpm --eval %_builddir`
+mkdir -p `rpm --eval %_srcrpmdir`
+mkdir -p `rpm --eval %_rpmdir`/noarch
+mkdir -p `rpm --eval %_rpmdir`/i386
+mkdir -p `rpm --eval %_rpmdir`/x86_64
+
 ##
 ## Delete the old debuginfo remnants:
 ##
@@ -131,8 +139,17 @@ fi
 ##
 echo "$(basename $0): Getting Ready to build release package"
 
+case ${EXTRA_OPTIONS} in
+	*-b*)
+		BUILD_TARGET=""
+		;;
+	*)
+		BUILD_TARGET="-ba"
+		;;
+esac
+
 pushd ${RPMSPECDIR}
-${RPM} -ba $EXTRA_OPTIONS $SPECFILE
+${RPM} ${BUILD_TARGET} ${EXTRA_OPTIONS} ${SPECFILE}
 popd
 
 echo "$(basename $0): Done."

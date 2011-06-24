@@ -28,7 +28,7 @@
 #include <talloc.h>
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DISPLAY, CH_DOS, CH_UTF8, CH_UTF16BE, CH_UTF16MUNGED} charset_t;
+typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DOS, CH_UTF8, CH_UTF16BE, CH_UTF16MUNGED} charset_t;
 
 #define NUM_CHARSETS 7
 
@@ -105,11 +105,6 @@ typedef struct smb_iconv_s {
 struct loadparm_context;
 struct smb_iconv_handle;
 
-/* replace some string functions with multi-byte
-   versions */
-#define strlower(s) strlower_m(s)
-#define strupper(s) strupper_m(s)
-
 char *strchr_m(const char *s, char c);
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
@@ -137,8 +132,6 @@ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			const char *s1, const char *s2);
 int strcasecmp_m(const char *s1, const char *s2);
 size_t count_chars_m(const char *s, char c);
-void strupper_m(char *s);
-void strlower_m(char *s);
 char *strupper_talloc(TALLOC_CTX *ctx, const char *src);
 char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src);
 char *strupper_talloc_n_handle(struct smb_iconv_handle *iconv_handle,
@@ -155,6 +148,7 @@ bool strhasupper_handle(struct smb_iconv_handle *ic,
 			const char *string);
 char *strrchr_m(const char *s, char c);
 char *strchr_m(const char *s, char c);
+char *strstr_m(const char *src, const char *findstr);
 
 bool push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
 bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src, size_t *converted_size);
@@ -188,8 +182,7 @@ extern struct smb_iconv_handle *global_iconv_handle;
 struct smb_iconv_handle *get_iconv_handle(void);
 struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx, 
 						  const char *dos_charset, 
-						  const char *unix_charset, 
-						  const char *display_charset);
+						  const char *unix_charset);
 smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			    charset_t from, charset_t to);
 const char *charset_name(struct smb_iconv_handle *ic, charset_t ch);
@@ -218,7 +211,6 @@ int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 							   const char *dos_charset,
 							   const char *unix_charset,
-							   const char *display_charset,
 							   bool native_iconv,
 							   struct smb_iconv_handle *old_ic);
 
@@ -285,7 +277,7 @@ static size_t CHARSETNAME ## _push(void *cd, const char **inbuf, size_t *inbytes
 		int i; 										\
 		int done = 0; 									\
 												\
-		uint16 ch = SVAL(*inbuf,0); 							\
+		uint16_t ch = SVAL(*inbuf,0); 							\
 												\
 		for (i=0; from_idx[i].start != 0xffff; i++) {					\
 			if ((from_idx[i].start <= ch) && (from_idx[i].end >= ch)) {		\
