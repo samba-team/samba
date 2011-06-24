@@ -58,23 +58,37 @@ test x"${DB_BIN}" = x"" && {
 	exit 1
 }
 
-#
+need_binary="no"
+case "${DB}" in
+# These debuggers need the process binary specified:
+	ladebug)
+	need_binary="yes"
+	;;
+	gdb66)
+	need_binary="yes"
+	;;
+	dbx)
+	need_binary="yes"
+	;;
+esac
+
+test x"${need_binary}" = x"yes" && {
+
 # we first try to use /proc/${PID}/exe or /proc/{$PID}/path for solaris
 # then fallback to the binary from the commandline
 # then we search for the commandline argument with
 # 'which'
 #
-test -f "/proc/${PID}/exe" && BINARY="/proc/${PID}/exe"
-test -f "/proc/${PID}/path/a.out" && BINARY=`ls -l /proc/${PID}/path/a.out |sed 's/.*-> //'`
-test x"${BINARY}" = x"" && BINARY="/proc/${PID}/exe"
-test -f "${BINARY}" || BINARY=`which ${BINARY}`
-
-test -f "${BINARY}" || {
-	echo "${BASENAME}: ERROR: Cannot find binary '${BINARY}'."
-	exit 1
+	test -f "/proc/${PID}/exe" && BINARY="/proc/${PID}/exe"
+	test -f "/proc/${PID}/path/a.out" && BINARY=`ls -l /proc/${PID}/path/a.out |sed 's/.*-> //'`
+	test x"${BINARY}" = x"" && BINARY="/proc/${PID}/exe"
+	test -f "${BINARY}" || BINARY=`which ${BINARY}`
+	
+	test -f "${BINARY}" || {
+	    echo "${BASENAME}: ERROR: Cannot find binary '${BINARY}'."
+	    exit 1
+	}
 }
-
-echo "${BASENAME}: Trying to use ${DB_BIN} on ${BINARY} on PID ${PID}"
 
 BATCHFILE_PRE=/tmp/gdb_backtrace_pre.$$
 BATCHFILE_MAIN=/tmp/gdb_backtrace_main.$$
