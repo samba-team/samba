@@ -109,6 +109,18 @@
 	idmap config * : backend = tdb2
 	idmap config * : range = 1000000-2000000
 	</programlisting>
+
+	<para>
+	This example shows how tdb2 is used as a the default idmap backend
+	using an external program via the script parameter:
+	</para>
+
+	<programlisting>
+	[global]
+	idmap config * : backend = tdb2
+	idmap config * : range = 1000000-2000000
+	idmap config * : script = /usr/local/samba/bin/idmap_script.sh
+	</programlisting>
 </refsect1>
 
 <refsect1>
