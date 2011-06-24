@@ -525,15 +525,15 @@ check_constrained_delegation(krb5_context context,
 	return ret;
     }
 
-    /* if client delegates to itself, that ok */
-    if (krb5_principal_compare(context, client->entry.principal, server->entry.principal) == TRUE)
-	return 0;
-
     if (clientdb->hdb_check_constrained_delegation) {
 	ret = clientdb->hdb_check_constrained_delegation(context, clientdb, client, target);
 	if (ret == 0)
 	    return 0;
     } else {
+	/* if client delegates to itself, that ok */
+	if (krb5_principal_compare(context, client->entry.principal, server->entry.principal) == TRUE)
+	    return 0;
+
 	ret = hdb_entry_get_ConstrainedDelegACL(&client->entry, &acl);
 	if (ret) {
 	    krb5_clear_error_message(context);
