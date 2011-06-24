@@ -456,10 +456,11 @@ EOF
 
 sub provision_raw_prepare($$$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, 
+	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
 	    $swiface, $password, $kdc_ipv4) = @_;
 	my $ctx;
+	my $netbiosname = uc($hostname);
 
 	unless(-d $prefix or mkdir($prefix, 0777)) {
 		warn("Unable to create $prefix");
@@ -480,6 +481,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 
 	$ctx->{server_role} = $server_role;
+	$ctx->{hostname} = $hostname;
 	$ctx->{netbiosname} = $netbiosname;
 	$ctx->{swiface} = $swiface;
 	$ctx->{password} = $password;
@@ -548,7 +550,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	}
 	push (@provision_options, "$self->{srcdir}/source4/setup/provision");
 	push (@provision_options, "--configfile=$ctx->{smb_conf}");
-	push (@provision_options, "--host-name=$ctx->{netbiosname}");
+	push (@provision_options, "--host-name=$ctx->{hostname}");
 	push (@provision_options, "--host-ip=$ctx->{ipv4}");
 	push (@provision_options, "--quiet");
 	push (@provision_options, "--domain=$ctx->{domain}");
@@ -672,7 +674,7 @@ nogroup:x:65534:nobody
 	my $ret = {
 		KRB5_CONFIG => $ctx->{krb5_conf},
 		PIDDIR => $ctx->{piddir},
-		SERVER => $ctx->{netbiosname},
+		SERVER => $ctx->{hostname},
 		SERVER_IP => $ctx->{ipv4},
 		NETBIOSNAME => $ctx->{netbiosname},
 		DOMAIN => $ctx->{domain},
@@ -715,12 +717,12 @@ sub provision_raw_step2($$$)
 
 sub provision($$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, 
+	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
 	    $swiface, $password, $kdc_ipv4, $extra_smbconf_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
-					       $netbiosname, 
+					       $hostname,
 					       $domain, $realm, $functional_level,
 					       $swiface, $password, $kdc_ipv4);
 
