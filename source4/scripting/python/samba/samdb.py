@@ -77,27 +77,52 @@ class SamDB(samba.Ldb):
         :param search_filter: LDAP filter to find the user (eg
             samccountname=name)
         """
+
+        flags = samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_PASSWD_NOTREQD
+        self.toggle_userAccountFlags(search_filter, flags, on=False)
+
+    def toggle_userAccountFlags(self, search_filter, flags, on=True, strict=False):
+        """toggle_userAccountFlags
+
+        :param search_filter: LDAP filter to find the user (eg
+            samccountname=name)
+        :flags: samba.dsdb.UF_* flags
+        :on: on=True (default) => set, on=False => unset
+        :strict: strict=False (default) ignore if no action is needed
+                 strict=True raises an Exception if...
+        """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter, attrs=["userAccountControl"])
         if len(res) == 0:
                 raise Exception('Unable to find user "%s"' % search_filter)
         assert(len(res) == 1)
-        user_dn = res[0].dn
+        account_dn = res[0].dn
 
-        userAccountControl = int(res[0]["userAccountControl"][0])
-        if userAccountControl & 0x2:
-            # remove disabled bit
-            userAccountControl = userAccountControl & ~0x2
-        if userAccountControl & 0x20:
-             # remove 'no password required' bit
-            userAccountControl = userAccountControl & ~0x20
+        old_uac = int(res[0]["userAccountControl"][0])
+        if on:
+            if strict and (old_uac & flags):
+                error = 'userAccountFlags[%d:0x%08X] already contain 0x%X' % (old_uac, old_uac, flags)
+                raise Exception(error)
+
+            new_uac = old_uac | flags
+        else:
+            if strict and not (old_uac & flags):
+                error = 'userAccountFlags[%d:0x%08X] not contain 0x%X' % (old_uac, old_uac, flags)
+                raise Exception(error)
+
+            new_uac = old_uac & ~flags
+
+        if old_uac == new_uac:
+            return
 
         mod = """
 dn: %s
 changetype: modify
-replace: userAccountControl
+delete: userAccountControl
 userAccountControl: %u
-""" % (user_dn, userAccountControl)
+add: userAccountControl
+userAccountControl: %u
+""" % (account_dn, old_uac, new_uac)
         self.modify_ldif(mod)
 
     def force_password_change_at_next_login(self, search_filter):
