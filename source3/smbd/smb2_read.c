@@ -575,6 +575,11 @@ static void smbd_smb2_read_pipe_done(struct tevent_req *subreq)
 	state->out_data.length = nread;
 	state->out_remaining = 0;
 
+	/*
+	 * TODO: add STATUS_BUFFER_OVERFLOW handling, once we also
+	 * handle it in SMB1 pipe_read_andx_done().
+	 */
+
 	tevent_req_done(req);
 }
 

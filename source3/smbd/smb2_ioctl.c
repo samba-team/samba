@@ -590,6 +590,11 @@ static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq)
 
 	state->out_output.length = nread;
 
+	if (is_data_outstanding) {
+		tevent_req_nterror(req, STATUS_BUFFER_OVERFLOW);
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
