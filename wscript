@@ -13,16 +13,6 @@ import wafsamba, Options, samba_dist, Scripting, Utils, samba_version
 
 samba_dist.DIST_DIRS('.')
 
-#This is a list of files that we don't want in the package, for
-#whatever reason.  Directories should be listed with a trailing / to
-#avoid over-exclusion.
-
-#This list includes files that would confuse the recipient of a
-#samba-4.0.0 branded tarball (until the merge is complete) and the
-#core elements of the autotools build system (which is known to
-#produce buggy binaries).
-samba_dist.DIST_BLACKLIST('README Manifest Read-Manifest-Now Roadmap ' +
-                          'packaging/ docs-xml/ examples/ swat/ WHATSNEW.txt MAINTAINERS ')
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
 
