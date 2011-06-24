@@ -629,7 +629,7 @@ sub write_clientconf($$$)
 	lock dir = $clientdir/lockdir
 	ncalrpc dir = $clientdir/ncalrpcdir
 	name resolve order = file bcast
-	panic action = $RealBin/gdb_backtrace \%PID\% \%PROG\%
+	panic action = $RealBin/gdb_backtrace \%PID\%
 	max xmit = 32K
 	notify:inotify = false
 	ldb:nosync = true

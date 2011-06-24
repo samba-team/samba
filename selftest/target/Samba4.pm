@@ -598,7 +598,7 @@ sub provision_raw_step1($$)
 	name resolve order = file bcast
 	interfaces = $ctx->{interfaces}
 	tls dh params file = $ctx->{tlsdir}/dhparms.pem
-	panic action = $RealBin/gdb_backtrace \%PID% \%PROG%
+	panic action = $RealBin/gdb_backtrace \%PID%
 	wins support = yes
 	server role = $ctx->{server_role}
 	server services = +echo
