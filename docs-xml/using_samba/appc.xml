@@ -66,34 +66,6 @@ options.</para>
 </refsynopsisdiv>
 </refentry>
 
-<refentry id="appc-refentry-4">
-<refmeta>
-<refmiscinfo class="allowable values">NT, Win95, WfW</refmiscinfo>
-<refmiscinfo class="default">NT</refmiscinfo>
-</refmeta>
-<refnamediv>
-<refname>[global] announce as = system type</refname>
-</refnamediv>
-<refsynopsisdiv>
-<para>Have Samba announce itself as something other than an NT server. Discouraged because it interferes with serving browse lists.</para>
-
-</refsynopsisdiv>
-</refentry>
-
-<refentry id="appc-refentry-5">
-<refmeta>
-<refmiscinfo class="allowable values">any</refmiscinfo>
-<refmiscinfo class="default">4.2</refmiscinfo>
-</refmeta>
-<refnamediv>
-<refname>[global] announce version = number.number</refname>
-</refnamediv>
-<refsynopsisdiv>
-<para>Instructs Samba to announce itself as an older version SMB server. Discouraged.</para>
-
-</refsynopsisdiv>
-</refentry>
-
 <refentry id="appc-refentry-6">
 <refmeta>
 <refmiscinfo class="allowable values">any shares</refmiscinfo>

@@ -2352,10 +2352,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter_var(lp_ctx, "server string",
 				   "Samba %s", SAMBA_VERSION_STRING);
 
-	lpcfg_do_global_parameter_var(lp_ctx, "announce version", "%d.%d",
-			 DEFAULT_MAJOR_VERSION,
-			 DEFAULT_MINOR_VERSION);
-
 	lpcfg_do_global_parameter(lp_ctx, "password server", "*");
 
 	lpcfg_do_global_parameter(lp_ctx, "max mux", "50");
@@ -2373,7 +2369,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "WriteRaw", "True");
 	lpcfg_do_global_parameter(lp_ctx, "NullPasswords", "False");
 	lpcfg_do_global_parameter(lp_ctx, "ObeyPamRestrictions", "False");
-	lpcfg_do_global_parameter(lp_ctx, "announce as", "NT SERVER");
 
 	lpcfg_do_global_parameter(lp_ctx, "TimeServer", "False");
 	lpcfg_do_global_parameter(lp_ctx, "BindInterfacesOnly", "False");

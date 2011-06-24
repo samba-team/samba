@@ -279,8 +279,6 @@ smbconf_keep = [
     "write raw",
     "disable netbios",
     "nt status support",
-    "announce version",
-    "announce as",
     "max mux",
     "max xmit",
     "name resolve order",

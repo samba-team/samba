@@ -523,35 +523,6 @@ remote browse sync = 192.168.221.130 192.168.222.120</programlisting>
 <tbody>
 <row>
 
-<entry colname="col1"><para><literal>announce as</literal></para></entry>
-
-<entry colname="col2"><para><literal>NT</literal>
-<indexterm id="ch05-idx-969670-0"><primary>browsing</primary><secondary>options for, list of</secondary></indexterm> or <literal>Win95</literal> or <literal>Wf W</literal></para></entry>
-
-<entry colname="col3"><para>Sets the operating system that Samba will announce itself as.</para></entry>
-
-<entry colname="col4"><para><literal>N T</literal></para></entry>
-
-<entry colname="col5"><para>Global</para></entry>
-
-</row>
-
-<row>
-
-<entry colname="col1"><para><literal>announce version</literal></para></entry>
-
-<entry colname="col2"><para>numerical</para></entry>
-
-<entry colname="col3"><para>Sets the version of the operating system that Samba will announce itself as.</para></entry>
-
-<entry colname="col4"><para><literal>4.2</literal></para></entry>
-
-<entry colname="col5"><para>Global</para></entry>
-
-</row>
-
-<row>
-
 <entry colname="col1"><para><literal>browseable (browsable)</literal></para></entry>
 
 <entry colname="col2"><para>boolean</para></entry>
