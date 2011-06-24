@@ -1807,7 +1807,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 		}
 	}
 	if (add_outgoing && trustAuthOutgoing.data) {
-		ret = ldb_msg_add_empty(msg, "trustAuthIncoming",
+		ret = ldb_msg_add_empty(msg, "trustAuthOutgoing",
 					LDB_FLAG_MOD_REPLACE, NULL);
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY;
