@@ -399,7 +399,7 @@ for OLDDIR in $(find ${PREFIX} -type d -name "${LOGDIR_PREFIX}_*") ;  do
 	rm -rf ${OLDDIR}
 done
 
-LOGDIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXX)
+LOGDIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
 
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
