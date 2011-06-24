@@ -23,24 +23,6 @@
 #ifndef _STRING_WRAPPERS_H
 #define _STRING_WRAPPERS_H
 
-/* We need a number of different prototypes for our
-   non-existant fuctions */
-char * __unsafe_string_function_usage_here__(void);
-
-size_t __unsafe_string_function_usage_here_size_t__(void);
-
-#ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
-
-/* if the compiler will optimize out function calls, then use this to tell if we are
-   have the correct types (this works only where sizeof() returns the size of the buffer, not
-   the size of the pointer). */
-
-#define CHECK_STRING_SIZE(d, len) (sizeof(d) != (len) && sizeof(d) != sizeof(char *))
-
-#else /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
-
-#endif /* HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS */
-
 #define strlcpy_base(dest, src, base, size) \
 do { \
 	const char *_strlcpy_base_src = (const char *)src; \
@@ -73,6 +55,14 @@ do { \
 } while (0)
 
 #ifdef HAVE_COMPILER_WILL_OPTIMIZE_OUT_FNS
+
+/* We need a number of different prototypes for our
+   non-existant fuctions */
+char * __unsafe_string_function_usage_here__(void);
+
+size_t __unsafe_string_function_usage_here_size_t__(void);
+
+#define CHECK_STRING_SIZE(d, len) (sizeof(d) != (len) && sizeof(d) != sizeof(char *))
 
 /* if the compiler will optimize out function calls, then use this to tell if we are
    have the correct types (this works only where sizeof() returns the size of the buffer, not
