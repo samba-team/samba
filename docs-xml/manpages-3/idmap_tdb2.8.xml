@@ -66,6 +66,15 @@
 	</para>
 
 	<para>
+	The mappings obtained by the script are then stored in the idmap tdb2
+	database instead of mappings created by the incrementing id counters.
+	It is therefore important that the script covers the complete range of
+	SIDs that can be passed in for SID to Unix ID mapping, since otherwise
+	SIDs unmapped by the script might get mapped to IDs that had
+	previously been mapped by the script.
+	</para>
+
+	<para>
 	The script should accept the following command line options.
 	</para>
 
@@ -86,13 +95,6 @@
 	SID:yyyy
 	ERR:yyyy
 	</programlisting>
-
-	<para>
-	Note that the script should cover the complete range of SIDs
-	that can be passed in for SID to Unix ID mapping, since otherwise
-	SIDs unmapped by the script might get mapped to IDs that had
-	previously been mapped by the script.
-	</para>
 </refsect1>
 
 <refsect1>
