@@ -67,7 +67,7 @@ LOGDIR_PREFIX="conf_roundtrip"
 
 conf_roundtrip()
 {
-    local DIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXX)
+    local DIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
     local LOG=$DIR/log
 
     echo conf_roundtrip $1 > $LOG
