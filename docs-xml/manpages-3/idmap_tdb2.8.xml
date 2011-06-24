@@ -102,8 +102,6 @@
 
 	<para>
 	This example shows how tdb2 is used as a the default idmap backend.
-	It configures the idmap range through the global options for all
-	domains encountered.
 	</para>
 
 	<programlisting>
