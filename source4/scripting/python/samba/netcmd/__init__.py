@@ -214,3 +214,5 @@ from samba.netcmd.testparm import cmd_testparm
 commands["testparm"] =  cmd_testparm()
 from samba.netcmd.dbcheck import cmd_dbcheck
 commands["dbcheck"] =  cmd_dbcheck()
+from samba.netcmd.delegation import cmd_delegation
+commands["delegation"] = cmd_delegation()
