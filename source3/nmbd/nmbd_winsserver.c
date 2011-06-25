@@ -1878,9 +1878,9 @@ void fetch_all_active_wins_1b_names(void)
  Deal with the special name query for *<1b>.
 ***********************************************************************/
 
-static void process_wins_dmb_query_request(struct subnet_record *subrec,  
+static void process_wins_dmb_query_request(struct subnet_record *subrec,
                                            struct packet_struct *p)
-{  
+{
 	struct name_record *namerec = NULL;
 	char *prdata;
 	int num_ips;
@@ -2156,7 +2156,7 @@ received for name %s from IP %s on subnet %s. Error - should not be sent to WINS
 			nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
 		return;
 	}
-  
+
 	DEBUG(3,("wins_process_name_release_request: %s name release for name %s \
 IP %s\n", releasing_group_name ? "Group" : "Unique", nmb_namestr(question), inet_ntoa(from_ip) ));
 
