@@ -15,6 +15,10 @@ dn: CN=MicrosoftDNS,CN=System,${DOMAINDN}
 objectClass: container
 displayName: DNS Servers
 
+
+dn: DC=${DNSNAME},CN=MicrosoftDNS,CN=System,${DOMAINDN}
+objectClass: dnsZone
+
 dn: DC=RootDNSServers,CN=MicrosoftDNS,CN=System,${DOMAINDN}
 objectClass: dnsZone
 
@@ -85,23 +89,4 @@ dnsRecord:: BAABAAUIAAAAAAAAAAAAAAAAAAAAAAAAgAgKWg==
 dn: DC=j.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,${DOMAINDN}
 objectClass: dnsNode
 dnsRecord:: BAABAAUIAAAAAAAAAAAAAAAAAAAAAAAAwDqAHg==
-
-
-# NOTE: This account is SAMBA4 specific!
-# we have it to avoid the need for the bind daemon to
-# have access to the whole secrets.keytab for the domain,
-# otherwise bind could impersonate any user
-dn: CN=dns-${HOSTNAME},CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: person
-objectClass: organizationalPerson
-objectClass: user
-description: DNS Service Account for ${HOSTNAME}
-userAccountControl: 512
-accountExpires: 9223372036854775807
-sAMAccountName: dns-${HOSTNAME}
-servicePrincipalName: DNS/${DNSNAME}
-servicePrincipalName: DNS/${DNSDOMAIN}
-clearTextPassword:: ${DNSPASS_B64}
-isCriticalSystemObject: TRUE
 

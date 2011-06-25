@@ -1101,9 +1101,10 @@ def setup_self_join(samdb, names, machinepass, dnspass,
               "RIDALLOCATIONEND": str(next_rid + 100 + 499),
               })
 
-    # This is partially Samba4 specific and should be replaced by the correct
+    setup_ad_dns(samdb, names)
+    # This is Samba4 specific and should be replaced by the correct
     # DNS AD-style setup
-    setup_add_ldif(samdb, setup_path("provision_dns_add.ldif"), {
+    setup_add_ldif(samdb, setup_path("provision_dns_add_samba.ldif"), {
               "DNSDOMAIN": names.dnsdomain,
               "DOMAINDN": names.domaindn,
               "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
@@ -1112,6 +1113,13 @@ def setup_self_join(samdb, names, machinepass, dnspass,
                   names.netbiosname.lower(), names.dnsdomain.lower())
               })
 
+
+def setup_ad_dns(samdb, names):
+    setup_add_ldif(samdb, setup_path("provision_dns_add.ldif"), {
+              "DOMAINDN": names.domaindn,
+              "DNSNAME" : '%s.%s' % (
+                  names.netbiosname.lower(), names.dnsdomain.lower())
+              })
 
 def getpolicypath(sysvolpath, dnsdomain, guid):
     """Return the physical path of policy given its guid.
