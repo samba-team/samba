@@ -127,14 +127,15 @@ NTSTATUS winbindd_wins_byname_recv(struct tevent_req *req,
 		print_sockaddr(addr, sizeof(addr), &state->addrs[i]);
 
 		response = talloc_asprintf_append_buffer(
-			response, "%s\t", addr);
+			response, "%s%s", addr,
+			i < (state->num_addrs-1) ? " " : "");
 		if (response == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	response = talloc_asprintf_append_buffer(
-		response, "%s\n", state->request->data.winsreq);
+		response, "\t%s\n", state->request->data.winsreq);
 	if (response == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
