@@ -392,7 +392,7 @@ NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor)
 	if (gss_maj == GSS_S_FAILURE) {
 		return map_nt_error_from_unix((int)minor);
 	}
-	
+
 	/* Look through list */
 	while(gss_to_ntstatus_errormap[i].gss_err != 0) {
 		if (gss_to_ntstatus_errormap[i].gss_err == gss_maj) {
