@@ -21,10 +21,10 @@
 
 import samba.getopt as options
 import sys
+from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
-
-
+from samba import gensec
 from samba.net import Net
 
 from samba.netcmd import (
@@ -33,6 +33,7 @@ from samba.netcmd import (
     SuperCommand,
     Option,
     )
+
 
 class cmd_user_add(Command):
     """Create a new user."""
@@ -75,6 +76,7 @@ class cmd_user_delete(Command):
             net.delete_user(name)
         except RuntimeError, msg:
             raise CommandError("Failed to delete user %s: %s" % (name, msg))
+
 
 class cmd_user_enable(Command):
     """Enables a user"""
@@ -157,6 +159,59 @@ class cmd_user_setexpiry(Command):
             raise CommandError("Failed to set expiry for user %s: %s" % (username or filter, msg))
         print("Set expiry for user %s to %u days" % (username or filter, days))
 
+
+class cmd_user_setpassword(Command):
+    """(Re)sets the password of a user account"""
+
+    synopsis = "%prog user setpassword [username] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--filter", help="LDAP Filter to set password on", type=str),
+        Option("--newpassword", help="Set password", type=str),
+        Option("--must-change-at-next-login",
+            help="Force password to be changed on next login",
+            action="store_true"),
+        ]
+
+    takes_args = ["username?"]
+
+    def run(self, username=None, filter=None, credopts=None, sambaopts=None,
+            versionopts=None, H=None, newpassword=None,
+            must_change_at_next_login=None):
+        if filter is None and username is None:
+            raise CommandError("Either the username or '--filter' must be specified!")
+
+        password = newpassword
+        if password is None:
+            password = getpass("New Password: ")
+
+        if filter is None:
+            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (username)
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
+        creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
+
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        try:
+            samdb.setpassword(filter, password,
+                              force_change_at_next_login=must_change_at_next_login,
+                              username=username)
+        except Exception, e:
+            raise CommandError('Failed to set password for user "%s"' % username, e)
+        print "Changed password OK"
+
+
 class cmd_user(SuperCommand):
     """User management [server connection needed]"""
 
@@ -165,3 +220,4 @@ class cmd_user(SuperCommand):
     subcommands["delete"] = cmd_user_delete()
     subcommands["enable"] = cmd_user_enable()
     subcommands["setexpiry"] = cmd_user_setexpiry()
+    subcommands["setpassword"] = cmd_user_setpassword()
