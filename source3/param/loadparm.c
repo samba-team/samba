@@ -5566,48 +5566,7 @@ FN_GLOBAL_LIST(lp_wins_server_list, szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, szInterfaces)
 FN_GLOBAL_STRING(lp_nis_home_map_name, szNISHomeMapName)
 FN_GLOBAL_LIST(lp_netbios_aliases, szNetbiosAliases)
-/* FN_GLOBAL_STRING(lp_passdb_backend, szPassdbBackend)
- * lp_passdb_backend() should be replace by the this macro again after
- * some releases.
- * */
-const char *lp_passdb_backend(void)
-{
-	char *delim, *quote;
-
-	delim = strchr( Globals.szPassdbBackend, ' ');
-	/* no space at all */
-	if (delim == NULL) {
-		goto out;
-	}
-
-	quote = strchr(Globals.szPassdbBackend, '"');
-	/* no quote char or non in the first part */
-	if (quote == NULL || quote > delim) {
-		*delim = '\0';
-		goto warn;
-	}
-
-	quote = strchr(quote+1, '"');
-	if (quote == NULL) {
-		DEBUG(0, ("WARNING: Your 'passdb backend' configuration is invalid due to a missing second \" char.\n"));
-		goto out;
-	} else if (*(quote+1) == '\0') {
-		/* space, fitting quote char, and one backend only */
-		goto out;
-	} else {
-		/* terminate string after the fitting quote char */
-		*(quote+1) = '\0';
-	}
-
-warn:
-	DEBUG(0, ("WARNING: Your 'passdb backend' configuration includes multiple backends.  This\n"
-		"is deprecated since Samba 3.0.23.  Please check WHATSNEW.txt or the section 'Passdb\n"
-		"Changes' from the ChangeNotes as part of the Samba HOWTO collection.  Only the first\n"
-		"backend (%s) is used.  The rest is ignored.\n", Globals.szPassdbBackend));
-
-out:
-	return Globals.szPassdbBackend;
-}
+FN_GLOBAL_CONST_STRING(lp_passdb_backend, szPassdbBackend)
 FN_GLOBAL_LIST(lp_preload_modules, szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, szAddUserScript)
