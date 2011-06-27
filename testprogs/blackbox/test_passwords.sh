@@ -135,7 +135,7 @@ test_smbclient "Test login with user kerberos (unforced)" 'ls' -k yes -Unettestu
 
 
 NEWUSERPASS=testPaSS@04%
-testit "set password on user locally" $VALGRIND $samba_tool setpassword $CONFIG nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
+testit "set password on user locally" $VALGRIND $samba_tool user setpassword $CONFIG nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@05%
@@ -143,7 +143,7 @@ testit "change user password with 'samba-tool password change' (after must chang
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@06%
-testit "set password on user locally" $VALGRIND $samba_tool setpassword $CONFIG nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
+testit "set password on user locally" $VALGRIND $samba_tool user setpassword $CONFIG nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@07%

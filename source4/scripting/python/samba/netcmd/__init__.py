@@ -178,8 +178,6 @@ from samba.netcmd.pwsettings import cmd_pwsettings
 commands["pwsettings"] = cmd_pwsettings()
 from samba.netcmd.domainlevel import cmd_domainlevel
 commands["domainlevel"] = cmd_domainlevel()
-from samba.netcmd.setpassword import cmd_setpassword
-commands["setpassword"] = cmd_setpassword()
 from samba.netcmd.newuser import cmd_newuser
 commands["newuser"] = cmd_newuser()
 from samba.netcmd.netacl import cmd_acl

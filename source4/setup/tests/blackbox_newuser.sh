@@ -30,8 +30,8 @@ testit "enableaccount" $samba_tool user enable $CONFIG NewUser
 testit "enableaccount" $samba_tool user enable $CONFIG NewUser1
 
 # check the enable account script
-testit "setpassword" $samba_tool setpassword $CONFIG NewUser --newpassword=testp@ssw0Rd2
-testit "setpassword" $samba_tool setpassword $CONFIG NewUser1 --newpassword=testp@ssw0Rd2
+testit "setpassword" $samba_tool user setpassword $CONFIG NewUser --newpassword=testp@ssw0Rd2
+testit "setpassword" $samba_tool user setpassword $CONFIG NewUser1 --newpassword=testp@ssw0Rd2
 
 # check the setexpiry script
 testit "noexpiry" $samba_tool user setexpiry $CONFIG NewUser --noexpiry
