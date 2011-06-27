@@ -174,8 +174,6 @@ class CommandError(Exception):
 
 
 commands = {}
-from samba.netcmd.pwsettings import cmd_pwsettings
-commands["pwsettings"] = cmd_pwsettings()
 from samba.netcmd.domainlevel import cmd_domainlevel
 commands["domainlevel"] = cmd_domainlevel()
 from samba.netcmd.newuser import cmd_newuser
@@ -214,3 +212,5 @@ from samba.netcmd.dbcheck import cmd_dbcheck
 commands["dbcheck"] =  cmd_dbcheck()
 from samba.netcmd.delegation import cmd_delegation
 commands["delegation"] = cmd_delegation()
+from samba.netcmd.domain import cmd_domain
+commands["domain"] = cmd_domain()
