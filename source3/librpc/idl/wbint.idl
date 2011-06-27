@@ -140,6 +140,7 @@ interface wbint
 	);
 
     NTSTATUS wbint_LookupRids(
+	[in] dom_sid *domain_sid,
 	[in] wbint_RidArray *rids,
 	[out,string,charset(UTF8)] char **domain_name,
 	[out] wbint_Principals *names

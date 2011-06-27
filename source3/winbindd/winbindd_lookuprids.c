@@ -23,6 +23,7 @@
 
 struct winbindd_lookuprids_state {
 	struct tevent_context *ev;
+	struct dom_sid domain_sid;
 	const char *domain_name;
 	struct wbint_RidArray rids;
 	struct wbint_Principals names;
@@ -41,7 +42,6 @@ struct tevent_req *winbindd_lookuprids_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct winbindd_lookuprids_state *state;
 	struct winbindd_domain *domain;
-	struct dom_sid sid;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_lookuprids_state);
@@ -55,16 +55,16 @@ struct tevent_req *winbindd_lookuprids_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(3, ("lookuprids (%s)\n", request->data.sid));
 
-	if (!string_to_sid(&sid, request->data.sid)) {
+	if (!string_to_sid(&state->domain_sid, request->data.sid)) {
 		DEBUG(5, ("%s not a SID\n", request->data.sid));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
-	domain = find_lookup_domain_from_sid(&sid);
+	domain = find_lookup_domain_from_sid(&state->domain_sid);
 	if (domain == NULL) {
 		DEBUG(5, ("Domain for sid %s not found\n",
-			  sid_string_dbg(&sid)));
+			  sid_string_dbg(&state->domain_sid)));
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 		return tevent_req_post(req, ev);
 	}
@@ -83,8 +83,8 @@ struct tevent_req *winbindd_lookuprids_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = rpccli_wbint_LookupRids_send(
-		state, ev, domain->child.rpccli, &state->rids,
-		&state->domain_name, &state->names);
+		state, ev, domain->child.rpccli, &state->domain_sid,
+		&state->rids, &state->domain_name, &state->names);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
