@@ -373,7 +373,7 @@ NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r)
 	}
 
 	status = domain->methods->rids_to_names(
-		domain, talloc_tos(), &domain->sid, r->in.rids->rids,
+		domain, talloc_tos(), r->in.domain_sid, r->in.rids->rids,
 		r->in.rids->num_rids, &domain_name, &names, &types);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -388,7 +388,8 @@ NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r)
 	}
 
 	for (i=0; i<r->in.rids->num_rids; i++) {
-		sid_compose(&result[i].sid, &domain->sid, r->in.rids->rids[i]);
+		sid_compose(&result[i].sid, r->in.domain_sid,
+			    r->in.rids->rids[i]);
 		result[i].type = types[i];
 		result[i].name = talloc_move(result, &names[i]);
 	}
