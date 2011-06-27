@@ -6085,18 +6085,6 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 
 #undef MISSING_PARAMETER
 
-/* DO NOT USE lp_parm_string ANYMORE!!!!
- * use lp_parm_const_string or lp_parm_talloc_string
- *
- * lp_parm_string is only used to let old modules find this symbol
- */
-#undef lp_parm_string
- char *lp_parm_string(const char *servicename, const char *type, const char *option);
- char *lp_parm_string(const char *servicename, const char *type, const char *option)
-{
-	return lp_parm_talloc_string(lp_servicenumber(servicename), type, option, NULL);
-}
-
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 /* the returned value is talloced on the talloc_tos() */
