@@ -48,7 +48,7 @@ test_smbclient() {
 CONFIG="--configfile=$PREFIX/dc/etc/smb.conf"
 export CONFIG
 
-testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $samba_tool pwsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
+testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
 
 USERPASS=testPaSS@01%
 
@@ -166,7 +166,7 @@ test_smbclient "Test login with user kerberos" 'ls' -k yes -Unettestuser@$REALM%
 NEWUSERPASS=abcdefg
 testit_expect_failure "try to set a non-complex password (command should not succeed)" $VALGRIND $samba_tool password change -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ && failed=`expr $failed + 1`
 
-testit "allow non-complex passwords" $VALGRIND $samba_tool pwsettings set $CONFIG --complexity=off || failed=`expr $failed + 1`
+testit "allow non-complex passwords" $VALGRIND $samba_tool domain passwordsettings set $CONFIG --complexity=off || failed=`expr $failed + 1`
 
 testit "try to set a non-complex password (command should succeed)" $VALGRIND $samba_tool password change -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
@@ -176,19 +176,19 @@ test_smbclient "test login with non-complex password" 'ls' -k no -Unettestuser@$
 NEWUSERPASS=abc
 testit_expect_failure "try to set a short password (command should not succeed)" $VALGRIND $samba_tool password change -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ && failed=`expr $failed + 1`
 
-testit "allow short passwords (length 1)" $VALGRIND $samba_tool pwsettings $CONFIG set --min-pwd-length=1 || failed=`expr $failed + 1`
+testit "allow short passwords (length 1)" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --min-pwd-length=1 || failed=`expr $failed + 1`
 
 testit "try to set a short password (command should succeed)" $VALGRIND $samba_tool password change -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ || failed=`expr $failed + 1`
 USERPASS="$NEWUSERPASS"
 
-testit "require minimum password age of 1 day" $VALGRIND $samba_tool pwsettings $CONFIG set --min-pwd-age=1 || failed=`expr $failed + 1`
+testit "require minimum password age of 1 day" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --min-pwd-age=1 || failed=`expr $failed + 1`
 
-testit "show password settings" $VALGRIND $samba_tool pwsettings $CONFIG show || failed=`expr $failed + 1`
+testit "show password settings" $VALGRIND $samba_tool domain passwordsettings $CONFIG show || failed=`expr $failed + 1`
 
 NEWUSERPASS="testPaSS@08%"
 testit_expect_failure "try to change password too quickly (command should not succeed)" $VALGRIND $samba_tool password change -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ && failed=`expr $failed + 1`
 
-testit "reset password policies" $VALGRIND $samba_tool pwsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
+testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
 
 testit "del user" $VALGRIND $samba_tool user delete nettestuser -U"$USERNAME%$PASSWORD" -k no $@ || failed=`expr $failed + 1`
 
