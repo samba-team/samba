@@ -198,7 +198,7 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 			}
 			subreq = dcerpc_wbint_LookupRids_send(
 				state, state->ev, dom_child_handle(d->domain),
-				&state->rids, &state->domain_name,
+				&d->sid, &state->rids, &state->domain_name,
 				&state->rid_names);
 			if (tevent_req_nomem(subreq, req)) {
 				return false;
