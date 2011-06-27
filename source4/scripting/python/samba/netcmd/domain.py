@@ -25,7 +25,8 @@
 
 import samba.getopt as options
 import ldb
-
+import os
+from samba import Ldb
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
@@ -35,6 +36,40 @@ from samba.netcmd import (
     SuperCommand,
     Option
     )
+
+
+
+class cmd_domain_machinepassword(Command):
+    """Gets a machine password out of our SAM"""
+
+    synopsis = "%prog domain machinepassword <accountname>"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ["secret"]
+
+    def run(self, secret, sambaopts=None, credopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        name = lp.get("secrets database")
+        path = lp.get("private dir")
+        url = os.path.join(path, name)
+        if not os.path.exists(url):
+            raise CommandError("secret database not found at %s " % url)
+        secretsdb = Ldb(url=url, session_info=system_session(),
+            credentials=creds, lp=lp)
+        result = secretsdb.search(attrs=["secret"],
+            expression="(&(objectclass=primaryDomain)(samaccountname=%s))" % secret)
+
+        if len(result) != 1:
+            raise CommandError("search returned %d records, expected 1" % len(result))
+
+        self.outf.write("%s\n" % result[0]["secret"])
+
 
 
 class cmd_domain_passwordsettings(Command):
@@ -209,4 +244,5 @@ class cmd_domain(SuperCommand):
     """Domain management"""
 
     subcommands = {}
+    subcommands["machinepassword"] = cmd_domain_machinepassword()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
