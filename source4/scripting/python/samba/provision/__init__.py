@@ -74,6 +74,8 @@ from samba.provision.backend import (
     LDBBackend,
     OpenLDAPBackend,
     )
+from samba.provision.sambadns import setup_ad_dns
+
 import samba.param
 import samba.registry
 from samba.schema import Schema
@@ -1101,7 +1103,6 @@ def setup_self_join(samdb, names, machinepass, dnspass,
               "RIDALLOCATIONEND": str(next_rid + 100 + 499),
               })
 
-    setup_ad_dns(samdb, names)
     # This is Samba4 specific and should be replaced by the correct
     # DNS AD-style setup
     setup_add_ldif(samdb, setup_path("provision_dns_add_samba.ldif"), {
@@ -1113,13 +1114,6 @@ def setup_self_join(samdb, names, machinepass, dnspass,
                   names.netbiosname.lower(), names.dnsdomain.lower())
               })
 
-
-def setup_ad_dns(samdb, names):
-    setup_add_ldif(samdb, setup_path("provision_dns_add.ldif"), {
-              "DOMAINDN": names.domaindn,
-              "DNSNAME" : '%s.%s' % (
-                  names.netbiosname.lower(), names.dnsdomain.lower())
-              })
 
 def getpolicypath(sysvolpath, dnsdomain, guid):
     """Return the physical path of policy given its guid.
@@ -1768,6 +1762,8 @@ def provision(logger, session_info, credentials, smbconf=None,
                     paths.private_dir, realm=names.realm,
                     dnsdomain=names.dnsdomain,
                     dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+
+                setup_ad_dns(samdb, names=names, hostip=hostip, hostip6=hostip6)
 
                 domainguid = samdb.searchone(basedn=domaindn,
                     attribute="objectGUID")

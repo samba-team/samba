@@ -16,7 +16,7 @@ objectClass: container
 displayName: DNS Servers
 
 
-dn: DC=${DNSNAME},CN=MicrosoftDNS,CN=System,${DOMAINDN}
+dn: DC=${DNSDOMAIN},CN=MicrosoftDNS,CN=System,${DOMAINDN}
 objectClass: dnsZone
 
 dn: DC=RootDNSServers,CN=MicrosoftDNS,CN=System,${DOMAINDN}
