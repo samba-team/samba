@@ -46,14 +46,14 @@ monitor_interfaces()
 	    # When we use VLANs for bond interfaces, there will only
 	    # be an entry in /proc for the underlying real interface
 	    local REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
-	    [ -f /proc/net/bonding/$REALIFACE ] && {
-		grep -q 'Currently Active Slave: None' /proc/net/bonding/$REALIFACE && {
+	    get_proc "net/bonding/$REALIFACE" >/dev/null 2>&1 && {
+		get_proc "net/bonding/$REALIFACE" | grep -q 'Currently Active Slave: None' && {
 			echo "ERROR: No active slaves for bond device $REALIFACE"
 			fail=1
 			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
 			continue;
 		}
-		grep -q '^MII Status: up' /proc/net/bonding/$REALIFACE || {
+		get_proc "net/bonding/$REALIFACE" | grep -q '^MII Status: up' || {
 			echo "ERROR: public network interface $REALIFACE is down"
 			fail=1
 			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
@@ -124,8 +124,8 @@ case "$1" in
      init)
 	# make sure that we only respond to ARP messages from the NIC where
 	# a particular ip address is associated.
-	[ -f /proc/sys/net/ipv4/conf/all/arp_filter ] && {
-	    echo 1 > /proc/sys/net/ipv4/conf/all/arp_filter
+	get_proc sys/net/ipv4/conf/all/arp_filter >/dev/null 2>&1 && {
+	    set_proc sys/net/ipv4/conf/all/arp_filter 1
 	}
 	;;
 
@@ -164,7 +164,7 @@ case "$1" in
 	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	set_proc sys/net/ipv4/route/flush 1
 	;;
 
 
@@ -204,7 +204,7 @@ case "$1" in
 	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	set_proc sys/net/ipv4/route/flush 1
 	;;
 
      ##################################################
@@ -248,7 +248,7 @@ case "$1" in
 	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	set_proc sys/net/ipv4/route/flush 1
 
 	# propagate the new mac address
 	ctdb gratiousarp $ip $niface
