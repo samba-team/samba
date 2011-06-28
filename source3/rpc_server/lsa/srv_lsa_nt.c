@@ -3546,6 +3546,318 @@ NTSTATUS _lsa_Delete(struct pipes_struct *p,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+static NTSTATUS info_ex_2_pdb_trusted_domain(
+				      struct lsa_TrustDomainInfoInfoEx *info_ex,
+				      struct pdb_trusted_domain *td)
+{
+	if (info_ex->domain_name.string == NULL ||
+	    info_ex->netbios_name.string == NULL ||
+            info_ex->sid == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	td->domain_name = talloc_strdup(td, info_ex->domain_name.string);
+	td->netbios_name = talloc_strdup(td, info_ex->netbios_name.string);
+	sid_copy(&td->security_identifier, info_ex->sid);
+	if (td->domain_name == NULL ||
+	    td->netbios_name == NULL ||
+            is_null_sid(&td->security_identifier)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	td->trust_direction = info_ex->trust_direction;
+	td->trust_type = info_ex->trust_type;
+	td->trust_attributes = info_ex->trust_attributes;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS auth_info_2_pdb_trusted_domain(struct lsa_TrustDomainInfoAuthInfo *auth_info,
+					   struct pdb_trusted_domain *td)
+{
+/* If I understand it correctly lsa_TrustDomainInfoAuthInfo is send unencrypted
+ * and related calls should not be used. If there is a use case, it can be
+ * implemented later. */
+	td->trust_auth_incoming.length = 0;
+	td->trust_auth_incoming.data = NULL;
+	td->trust_auth_outgoing.length = 0;
+	td->trust_auth_outgoing.data = NULL;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
+				       TALLOC_CTX *mem_ctx, DATA_BLOB *auth_blob,
+				       struct trustDomainPasswords *auth_struct)
+{
+	enum ndr_err_code ndr_err;
+
+	arcfour_crypt_blob(auth_blob->data, auth_blob->length,
+			   &p->session_info->session_key);
+	ndr_err = ndr_pull_struct_blob(auth_blob, mem_ctx,
+				       auth_struct,
+				       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS get_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
+					 struct trustAuthInOutBlob *iopw,
+					 DATA_BLOB *trustauth_blob)
+{
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_blob(trustauth_blob, mem_ctx,
+				       iopw,
+				       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS setInfoTrustedDomain_base(struct pipes_struct *p,
+					  TALLOC_CTX *mem_ctx,
+					  struct lsa_info *policy,
+					  enum lsa_TrustDomInfoEnum level,
+					  union lsa_TrustedDomainInfo *info)
+{
+	struct lsa_TrustDomainInfoAuthInfoInternal *auth_info_int = NULL;
+	DATA_BLOB auth_blob;
+	struct trustDomainPasswords auth_struct;
+	NTSTATUS nt_status;
+
+	struct pdb_trusted_domain *td;
+	struct pdb_trusted_domain *orig_td;
+
+	td = talloc_zero(mem_ctx, struct pdb_trusted_domain);
+	if (td == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (level) {
+	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
+		if (!(policy->access & LSA_TRUSTED_SET_POSIX)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		td->trust_posix_offset = &info->posix_offset.posix_offset;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
+		if (!(policy->access & LSA_TRUSTED_SET_POSIX)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		nt_status = info_ex_2_pdb_trusted_domain(&info->info_ex, td);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO:
+		if (!(policy->access & LSA_TRUSTED_SET_AUTH)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		nt_status = auth_info_2_pdb_trusted_domain(&info->auth_info, td);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
+		if (!(policy->access & (LSA_TRUSTED_SET_AUTH | LSA_TRUSTED_SET_POSIX))) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		td->trust_posix_offset = &info->full_info.posix_offset.posix_offset;
+		nt_status = info_ex_2_pdb_trusted_domain(&info->full_info.info_ex,
+							 td);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		nt_status = auth_info_2_pdb_trusted_domain(&info->full_info.auth_info, td);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL:
+		if (!(policy->access & LSA_TRUSTED_SET_AUTH)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		auth_info_int = &info->auth_info_internal;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL:
+		if (!(policy->access & (LSA_TRUSTED_SET_AUTH | LSA_TRUSTED_SET_POSIX))) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		td->trust_posix_offset = &info->full_info_internal.posix_offset.posix_offset;
+		nt_status = info_ex_2_pdb_trusted_domain(&info->full_info_internal.info_ex,
+							 td);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		auth_info_int = &info->full_info_internal.auth_info;
+		break;
+	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
+		if (!(policy->access & LSA_TRUSTED_SET_POSIX)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		td->supported_enc_type = &info->enc_types.enc_types;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* decode auth_info_int if set */
+	if (auth_info_int) {
+
+		/* now decrypt blob */
+		auth_blob = data_blob_const(auth_info_int->auth_blob.data,
+					    auth_info_int->auth_blob.size);
+
+		nt_status = get_trustdom_auth_blob(p, mem_ctx,
+						   &auth_blob, &auth_struct);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+	} else {
+	    memset(&auth_struct, 0, sizeof(auth_struct));
+	}
+
+/* TODO: verify only one object matches the dns/netbios/sid triplet and that
+ * this is the one we already have */
+
+/* TODO: check if the trust direction is changed and we need to add or remove
+ * auth data */
+
+/* TODO: check if trust type shall be changed and return an error in this case
+ * */
+	nt_status = pdb_get_trusted_domain_by_sid(p->mem_ctx, &policy->sid,
+					       &orig_td);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+
+	/* TODO: should we fetch previous values from the existing entry
+	 * and append them ? */
+	if (auth_struct.incoming.count) {
+		nt_status = get_trustauth_inout_blob(mem_ctx,
+						     &auth_struct.incoming,
+						     &td->trust_auth_incoming);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+	} else {
+		ZERO_STRUCT(td->trust_auth_incoming);
+	}
+
+	if (auth_struct.outgoing.count) {
+		nt_status = get_trustauth_inout_blob(mem_ctx,
+						     &auth_struct.outgoing,
+						     &td->trust_auth_outgoing);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+	} else {
+		ZERO_STRUCT(td->trust_auth_outgoing);
+	}
+
+	nt_status = pdb_set_trusted_domain(orig_td->domain_name, td);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS _lsa_SetTrustedDomainInfo(struct pipes_struct *p,
+				   struct lsa_SetTrustedDomainInfo *r)
+{
+	NTSTATUS status;
+	struct policy_handle trustdom_handle;
+	struct lsa_OpenTrustedDomain o;
+	struct lsa_SetInformationTrustedDomain s;
+	struct lsa_Close c;
+
+	o.in.handle		= r->in.handle;
+	o.in.sid		= r->in.dom_sid;
+	o.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
+	o.out.trustdom_handle	= &trustdom_handle;
+
+	status = _lsa_OpenTrustedDomain(p, &o);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	s.in.trustdom_handle	= &trustdom_handle;
+	s.in.level		= r->in.level;
+	s.in.info		= r->in.info;
+
+	status = _lsa_SetInformationTrustedDomain(p, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	c.in.handle		= &trustdom_handle;
+	c.out.handle		= &trustdom_handle;
+
+	return _lsa_Close(p, &c);
+}
+
+NTSTATUS _lsa_SetTrustedDomainInfoByName(struct pipes_struct *p,
+					 struct lsa_SetTrustedDomainInfoByName *r)
+{
+	NTSTATUS status;
+	struct policy_handle trustdom_handle;
+	struct lsa_OpenTrustedDomainByName o;
+	struct lsa_SetInformationTrustedDomain s;
+	struct lsa_Close c;
+
+	o.in.handle		= r->in.handle;
+	o.in.name.string	= r->in.trusted_domain->string;
+	o.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
+	o.out.trustdom_handle	= &trustdom_handle;
+
+	status = _lsa_OpenTrustedDomainByName(p, &o);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN)) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		return status;
+	}
+
+	s.in.trustdom_handle	= &trustdom_handle;
+	s.in.level		= r->in.level;
+	s.in.info		= r->in.info;
+
+	status = _lsa_SetInformationTrustedDomain(p, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	c.in.handle		= &trustdom_handle;
+	c.out.handle		= &trustdom_handle;
+
+	return _lsa_Close(p, &c);
+}
+
+NTSTATUS _lsa_SetInformationTrustedDomain(struct pipes_struct *p,
+					  struct lsa_SetInformationTrustedDomain *r)
+{
+	struct lsa_info *policy;
+
+	if (!find_policy_by_hnd(p, r->in.trustdom_handle, (void **)(void *)&policy)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (policy->type != LSA_HANDLE_TRUST_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	return setInfoTrustedDomain_base(p, p->mem_ctx, policy,
+					 r->in.level, r->in.info);
+}
+
+
 /*
  * From here on the server routines are just dummy ones to make smbd link with
  * librpc/gen_ndr/srv_lsa.c. These routines are actually never called, we are
@@ -3591,20 +3903,6 @@ NTSTATUS _lsa_SetQuotasForAccount(struct pipes_struct *p,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _lsa_SetInformationTrustedDomain(struct pipes_struct *p,
-					  struct lsa_SetInformationTrustedDomain *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_SetTrustedDomainInfo(struct pipes_struct *p,
-				   struct lsa_SetTrustedDomainInfo *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS _lsa_StorePrivateData(struct pipes_struct *p,
 			       struct lsa_StorePrivateData *r)
 {
@@ -3621,13 +3919,6 @@ NTSTATUS _lsa_RetrievePrivateData(struct pipes_struct *p,
 
 NTSTATUS _lsa_SetInfoPolicy2(struct pipes_struct *p,
 			     struct lsa_SetInfoPolicy2 *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_SetTrustedDomainInfoByName(struct pipes_struct *p,
-					 struct lsa_SetTrustedDomainInfoByName *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
