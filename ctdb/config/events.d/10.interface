@@ -111,7 +111,9 @@ monitor_interfaces()
 
 	$fail || return 0
 
-	$up_interfaces_found && return 2
+	$up_interfaces_found && \
+	    [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" = "yes" ] && \
+	    return 0
 
 	return 1
 }
@@ -270,21 +272,7 @@ case "$1" in
 	;;
 
      monitor)
-	monitor_interfaces
-	ret=$?
-
-	test x"$ret" = x"2" && {
-		test x"$CTDB_PARTIALLY_ONLINE_INTERFACES" != x"yes" && {
-			exit 1;
-		}
-		# as long as we have one interface available don't become
-		# unhealthy
-		ret=0
-	}
-
-	test x"$ret" != x"0" && {
-		exit 1;
-	}
+	monitor_interfaces || exit 1
 	;;
     *)
 	ctdb_standard_event_handler "$@"
