@@ -1,0 +1,30 @@
+This directory contains run-time support scripts for CTDB.
+
+Selected highlights:
+
+  ctdb.init
+
+    An initscript for starting ctdbd at boot time.
+
+  events.d/
+
+    Eventscripts.  See events.d/README for more details.
+
+  functions
+
+    Support functions, sourced by eventscripts and other scripts.
+
+  interface_modify.sh
+
+    Script to support add/remove IPs and other funky stuff.  Not sure
+    why this is separate... but it certainly allows easy wrapping by
+    flock.
+
+  statd-callout
+
+    rpc.statd high-availability callout to support lock migration on
+    failover.
+
+Note that all of these scripts are written in POSIX Bourne shell.
+Please avoid bash-isms, including the use of "local" variables (which
+are not available in POSIX shell).
