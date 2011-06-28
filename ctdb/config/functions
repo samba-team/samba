@@ -841,6 +841,10 @@ update_tickles ()
 # load a site local config file
 ########################################################
 
+[ -n "$CTDB_RC_LOCAL" -a -x "$CTDB_RC_LOCAL" ] && {
+	. "$CTDB_RC_LOCAL"
+}
+
 [ -x $CTDB_BASE/rc.local ] && {
 	. $CTDB_BASE/rc.local
 }
