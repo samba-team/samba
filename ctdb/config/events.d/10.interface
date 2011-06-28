@@ -16,6 +16,18 @@ loadconfig
 	exit 0
 }
 
+mark_up ()
+{
+    ok=1
+    ctdb setifacelink $1 up >/dev/null 2>&1
+}
+
+mark_down ()
+{
+    fail=1
+    ctdb setifacelink $1 down >/dev/null 2>&1
+}
+
 monitor_interfaces()
 {
 	INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES |
@@ -47,39 +59,33 @@ monitor_interfaces()
 	    bi=$(get_proc "net/bonding/$REALIFACE" 2>/dev/null) && {
 		echo "$bi" | grep -q 'Currently Active Slave: None' && {
 			echo "ERROR: No active slaves for bond device $REALIFACE"
-			fail=1
-			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
+			mark_down $IFACE
 			continue;
 		}
 		echo "$bi" | grep -q '^MII Status: up' || {
 			echo "ERROR: public network interface $REALIFACE is down"
-			fail=1
-			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
+			mark_down $IFACE
 			continue;
 		}
 		echo "$bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
 			echo "$bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
 				echo No active slaves for 802.ad bond device $REALIFACE
-				ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
-				fail=1
+				mark_down $IFACE
 				continue
 			}
 		}
-		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+		mark_up $IFACE
 		continue;
 	    }
 
 	    case $IFACE in
 	    lo*)
 		# loopback is always working
-		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+		mark_up $IFACE
 		;;
 	    ib*)
 		# we dont know how to test ib links
-		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+                mark_up $IFACE
 		;;
 	    *)
 		[ -z "$IFACE" ] || {
@@ -92,13 +98,11 @@ monitor_interfaces()
 			ip link set $IFACE up
 			ethtool $IFACE | grep -q 'Link detected: yes' || {
 			    echo "ERROR: No link on the public network interface $IFACE"
-			    fail=1
-			    ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
+			    mark_down $IFACE
 			    continue
 			}
 		    }
-		    ok=1 # we only set ok for interfaces known to ctdbd
-		    ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+		    mark_up $IFACE
 		}
 		;;
 	    esac
