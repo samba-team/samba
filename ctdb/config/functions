@@ -425,18 +425,6 @@ startstop_nfslock() {
 	esac
 }
 
-# better use delete_ip_from_iface() together with add_ip_to_iface
-# remove_ip should be removed in future
-remove_ip() {
-	local _ip_maskbits=$1
-	local _iface=$2
-	local _ip=`echo "$_ip_maskbits" | cut -d '/' -f1`
-	local _maskbits=`echo "$_ip_maskbits" | cut -d '/' -f2`
-
-	delete_ip_from_iface "$_iface" "$_ip" "$_maskbits"
-	return $?
-}
-
 add_ip_to_iface()
 {
 	local _iface=$1
