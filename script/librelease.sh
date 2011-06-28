@@ -39,7 +39,7 @@ release_lib() {
 	exit 1
     }
 
-    tagname=$(basename $tarname .tar | sed s/[\.]/-/g)
+    tagname=$(basename $tarname .tar)
     echo "tagging as $tagname"
     git tag -u $GPG_KEYID -s "$tagname" -m "$lib: tag release $tagname" || {
 	exit 1
