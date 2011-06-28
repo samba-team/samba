@@ -54,7 +54,7 @@ VFS_TIME_AUDIT_SRC = 'vfs_time_audit.c'
 
 bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
                     source='nfs4_acls.c',
-                    deps='samba-util')
+                    deps='samba-util tdb')
 
 bld.SAMBA3_SUBSYSTEM('VFS_AIXACL_UTIL',
                     source='vfs_aixacl_util.c',
@@ -164,7 +164,7 @@ bld.SAMBA3_MODULE('vfs_shadow_copy',
 bld.SAMBA3_MODULE('vfs_shadow_copy2',
                  subsystem='vfs',
                  source=VFS_SHADOW_COPY2_SRC,
-                 deps='samba-util',
+                 deps='samba-util tdb',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_shadow_copy2'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_shadow_copy2'))
@@ -180,7 +180,7 @@ bld.SAMBA3_MODULE('vfs_afsacl',
 bld.SAMBA3_MODULE('vfs_xattr_tdb',
                  subsystem='vfs',
                  source=VFS_XATTR_TDB_SRC,
-                 deps='NDR_XATTR',
+                 deps='NDR_XATTR tdb',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_xattr_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_xattr_tdb'))
@@ -374,7 +374,7 @@ bld.SAMBA3_MODULE('vfs_acl_xattr',
 bld.SAMBA3_MODULE('vfs_acl_tdb',
                  subsystem='vfs',
                  source=VFS_ACL_TDB_SRC,
-                 deps='NDR_XATTR',
+                 deps='NDR_XATTR tdb',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_acl_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_acl_tdb'))

@@ -901,17 +901,17 @@ bld.SAMBA3_SUBSYSTEM('PROFILE',
 
 bld.SAMBA3_SUBSYSTEM('PRINTBASE',
                     source=PRINTBASE_SRC,
-                    deps='samba-util',
+                    deps='samba-util tdb',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     source=PRINTBACKEND_SRC,
-                    deps='PRINTBASE NDR_NTPRINTING LIBADS_PRINTER',
+                    deps='PRINTBASE NDR_NTPRINTING LIBADS_PRINTER tdb',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PRINTING',
                     source=PRINTING_SRC,
-                    deps='NDR_PRINTCAP',
+                    deps='NDR_PRINTCAP tdb',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
@@ -941,7 +941,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
 
 bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
                     source=LIB_EVENTLOG_SRC,
-                    deps='NDR_EVENTLOG',
+                    deps='NDR_EVENTLOG tdb',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNMB',
@@ -976,7 +976,7 @@ bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
 
 bld.SAMBA3_SUBSYSTEM('SLCACHE',
                     source=SLCACHE_SRC,
-                    deps='samba-util',
+                    deps='samba-util tdb',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',

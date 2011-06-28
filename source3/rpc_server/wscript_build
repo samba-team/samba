@@ -105,7 +105,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
 
 bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
                     source=RPC_SRVSVC_SRC,
-                    deps='samba-util',
+                    deps='samba-util tdb',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
