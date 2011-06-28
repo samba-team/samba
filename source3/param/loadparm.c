@@ -10,6 +10,8 @@
    Copyright (C) Stefan (metze) Metzmacher 2002
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    Copyright (C) Michael Adam 2008
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+   Copyright (C) Andrew Bartlett 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -711,8 +713,6 @@ static bool handle_ldap_debug_level( int snum, const char *pszParmValue, char **
 
 static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
-
-static void *lp_local_ptr(struct loadparm_service *service, void *ptr);
 
 static void add_to_file_list(const char *fname, const char *subfname);
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
@@ -4951,7 +4951,7 @@ static void free_one_parameter(struct loadparm_service *service,
 		return;
 	}
 
-	parm_ptr = lp_local_ptr(service, parm.ptr);
+	parm_ptr = lp_parm_ptr(service, &parm);
 
 	free_one_parameter_common(parm_ptr, parm);
 }
@@ -4982,11 +4982,11 @@ static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 	}
 
 	if (snum < 0) {
-		parm_ptr = parm.ptr;
+		parm_ptr = lp_parm_ptr(NULL, &parm);
 	} else if (parm.p_class != P_LOCAL) {
 		return;
 	} else {
-		parm_ptr = lp_local_ptr_by_snum(snum, parm.ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, &parm);
 	}
 
 	free_one_parameter_common(parm_ptr, parm);
@@ -5113,7 +5113,7 @@ static void init_globals(bool reinit_globals)
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].ptr)
 		{
-			string_set((char **)parm_table[i].ptr, "");
+			string_set(lp_parm_ptr(NULL, &parm_table[i]), "");
 		}
 	}
 
@@ -6980,13 +6980,8 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].ptr && parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || bitmap_query(pcopymapDest,i))) {
-			void *def_ptr = parm_table[i].ptr;
-			void *src_ptr =
-				((char *)pserviceSource) + PTR_DIFF(def_ptr,
-								    &sDefault);
-			void *dest_ptr =
-				((char *)pserviceDest) + PTR_DIFF(def_ptr,
-								  &sDefault);
+			void *src_ptr = lp_parm_ptr(pserviceSource, &parm_table[i]);
+			void *dest_ptr = lp_parm_ptr(pserviceDest, &parm_table[i]);
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
@@ -7754,24 +7749,29 @@ static void init_copymap(struct loadparm_service *pservice)
 			bitmap_set(pservice->copymap, i);
 }
 
-/***************************************************************************
- Return the local pointer to a parameter given a service struct and the
- pointer into the default structure.
-***************************************************************************/
-
-static void *lp_local_ptr(struct loadparm_service *service, void *ptr)
+/**
+  return the parameter pointer for a parameter
+*/
+void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm)
 {
-	return (void *)(((char *)service) + PTR_DIFF(ptr, &sDefault));
+	if (service == NULL) {
+		if (parm->p_class == P_LOCAL)
+			return parm->ptr;
+		else if (parm->p_class == P_GLOBAL)
+			return parm->ptr;
+		else return NULL;
+	} else {
+		return (void *)(((char *)service) + PTR_DIFF(parm->ptr, &sDefault));
+	}
 }
 
 /***************************************************************************
- Return the local pointer to a parameter given the service number and the 
- pointer into the default structure.
+ Return the local pointer to a parameter given the service number and parameter
 ***************************************************************************/
 
-void *lp_local_ptr_by_snum(int snum, void *ptr)
+void *lp_local_ptr_by_snum(int snum, struct parm_struct *parm)
 {
-	return lp_local_ptr(ServicePtrs[snum], ptr);
+	return lp_parm_ptr(ServicePtrs[snum], parm);
 }
 
 /***************************************************************************
@@ -7783,7 +7783,6 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 {
 	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
-	void *def_ptr = NULL;
 	struct param_opt_struct **opt_list;
 
 	parmnum = map_parameter(pszParmName);
@@ -7817,11 +7816,9 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			  pszParmName));
 	}
 
-	def_ptr = parm_table[parmnum].ptr;
-
 	/* we might point at a service, the default service or a global */
 	if (snum < 0) {
-		parm_ptr = def_ptr;
+		parm_ptr = lp_parm_ptr(NULL, &parm_table[parmnum]);
 	} else {
 		if (parm_table[parmnum].p_class == P_GLOBAL) {
 			DEBUG(0,
@@ -7829,7 +7826,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			       pszParmName));
 			return (True);
 		}
-		parm_ptr = lp_local_ptr_by_snum(snum, def_ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, &parm_table[parmnum]);
 	}
 
 	if (snum >= 0) {
@@ -8179,23 +8176,28 @@ static bool is_default(int i)
 	switch (parm_table[i].type) {
 		case P_LIST:
 			return str_list_equal((const char **)parm_table[i].def.lvalue, 
-						*(const char ***)parm_table[i].ptr);
+					      *(const char ***)lp_parm_ptr(NULL, 
+									   &parm_table[i]));
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
-					*(char **)parm_table[i].ptr);
+					*(char **)lp_parm_ptr(NULL, 
+							      &parm_table[i]));
 		case P_BOOL:
 		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
-				*(bool *)parm_table[i].ptr;
+				*(bool *)lp_parm_ptr(NULL, 
+						     &parm_table[i]);
 		case P_CHAR:
 			return parm_table[i].def.cvalue ==
-				*(char *)parm_table[i].ptr;
+				*(char *)lp_parm_ptr(NULL, 
+						     &parm_table[i]);
 		case P_INTEGER:
 		case P_OCTAL:
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
-				*(int *)parm_table[i].ptr;
+				*(int *)lp_parm_ptr(NULL, 
+						    &parm_table[i]);
 		case P_SEP:
 			break;
 	}
@@ -8221,7 +8223,9 @@ static void dump_globals(FILE *f)
 			if (defaults_saved && is_default(i))
 				continue;
 			fprintf(f, "\t%s = ", parm_table[i].label);
-			print_parameter(&parm_table[i], parm_table[i].ptr, f);
+			print_parameter(&parm_table[i], lp_parm_ptr(NULL, 
+								    &parm_table[i]),
+					f);
 			fprintf(f, "\n");
 	}
 	if (Globals.param_opt != NULL) {
@@ -8240,11 +8244,9 @@ static void dump_globals(FILE *f)
 
 bool lp_is_default(int snum, struct parm_struct *parm)
 {
-	int pdiff = PTR_DIFF(parm->ptr, &sDefault);
-
 	return equal_parameter(parm->type,
-			       ((char *)ServicePtrs[snum]) + pdiff,
-			       ((char *)&sDefault) + pdiff);
+			       lp_parm_ptr(ServicePtrs[snum], parm),
+			       lp_parm_ptr(NULL, parm));
 }
 
 /***************************************************************************
@@ -8267,23 +8269,20 @@ static void dump_a_service(struct loadparm_service *pService, FILE * f)
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
 		{
-			int pdiff = PTR_DIFF(parm_table[i].ptr, &sDefault);
-
 			if (pService == &sDefault) {
 				if (defaults_saved && is_default(i))
 					continue;
 			} else {
 				if (equal_parameter(parm_table[i].type,
-						    ((char *)pService) +
-						    pdiff,
-						    ((char *)&sDefault) +
-						    pdiff))
+						    lp_parm_ptr(pService, &parm_table[i]),
+						    lp_parm_ptr(NULL, &parm_table[i])))
 					continue;
 			}
 
 			fprintf(f, "\t%s = ", parm_table[i].label);
 			print_parameter(&parm_table[i],
-					((char *)pService) + pdiff, f);
+					lp_parm_ptr(pService, &parm_table[i]),
+					f);
 			fprintf(f, "\n");
 		}
 	}
@@ -8347,11 +8346,11 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 			void *ptr;
 
 			if (isGlobal) {
-				ptr = parm_table[i].ptr;
+				ptr = lp_parm_ptr(NULL, 
+						  &parm_table[i]);
 			} else {
-				struct loadparm_service *pService = ServicePtrs[snum];
-				ptr = ((char *)pService) +
-					PTR_DIFF(parm_table[i].ptr, &sDefault);
+				ptr = lp_parm_ptr(ServicePtrs[snum], 
+						  &parm_table[i]);
 			}
 
 			print_parameter(&parm_table[i],
@@ -8423,16 +8422,12 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			     (parm_table[*i].ptr !=
 			      parm_table[(*i) - 1].ptr)))
 			{
-				int pdiff =
-					PTR_DIFF(parm_table[*i].ptr,
-						 &sDefault);
-
 				if (allparameters ||
 				    !equal_parameter(parm_table[*i].type,
-						     ((char *)pService) +
-						     pdiff,
-						     ((char *)&sDefault) +
-						     pdiff))
+						     lp_parm_ptr(pService, 
+								 &parm_table[*i]),
+						     lp_parm_ptr(NULL, 
+								 &parm_table[*i])))
 				{
 					return &parm_table[(*i)++];
 				}
@@ -8598,12 +8593,12 @@ static void lp_save_defaults(void)
 		switch (parm_table[i].type) {
 			case P_LIST:
 				parm_table[i].def.lvalue = str_list_copy(
-					NULL, *(const char ***)parm_table[i].ptr);
+					NULL, *(const char ***)lp_parm_ptr(NULL, &parm_table[i]));
 				break;
 			case P_STRING:
 			case P_USTRING:
 				if (parm_table[i].ptr) {
-					parm_table[i].def.svalue = SMB_STRDUP(*(char **)parm_table[i].ptr);
+					parm_table[i].def.svalue = SMB_STRDUP(*(char **)lp_parm_ptr(NULL, &parm_table[i]));
 				} else {
 					parm_table[i].def.svalue = NULL;
 				}
@@ -8611,17 +8606,17 @@ static void lp_save_defaults(void)
 			case P_BOOL:
 			case P_BOOLREV:
 				parm_table[i].def.bvalue =
-					*(bool *)parm_table[i].ptr;
+					*(bool *)lp_parm_ptr(NULL, &parm_table[i]);
 				break;
 			case P_CHAR:
 				parm_table[i].def.cvalue =
-					*(char *)parm_table[i].ptr;
+					*(char *)lp_parm_ptr(NULL, &parm_table[i]);
 				break;
 			case P_INTEGER:
 			case P_OCTAL:
 			case P_ENUM:
 				parm_table[i].def.ivalue =
-					*(int *)parm_table[i].ptr;
+					*(int *)lp_parm_ptr(NULL, &parm_table[i]);
 				break;
 			case P_SEP:
 				break;

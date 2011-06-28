@@ -725,6 +725,8 @@ struct enum_list {
 	const char *name;
 };
 
+struct loadparm_service;
+
 struct parm_struct {
 	const char *label;
 	parm_type type;
