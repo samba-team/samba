@@ -1250,18 +1250,30 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					info3);
 		}
 
-		if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)
-		    && domain->can_do_samlogon_ex) {
-			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-				  "retrying with NetSamLogon\n"));
-			domain->can_do_samlogon_ex = false;
+		if (NT_STATUS_EQUAL(result, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+
 			/*
 			 * It's likely that the server also does not support
 			 * validation level 6
 			 */
 			domain->can_do_validation6 = false;
-			retry = true;
-			continue;
+
+			if (domain->can_do_samlogon_ex) {
+				DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
+					  "retrying with NetSamLogon\n"));
+				domain->can_do_samlogon_ex = false;
+				retry = true;
+				continue;
+			}
+
+
+			/* Got DCERPC_FAULT_OP_RNG_ERROR for SamLogon
+			 * (no Ex). This happens against old Samba
+			 * DCs. Drop the connection.
+			 */
+			invalidate_cm_connection(&domain->conn);
+			result = NT_STATUS_LOGON_FAILURE;
+			break;
 		}
 
 		if (domain->can_do_validation6 &&
