@@ -333,9 +333,6 @@ static bool is_8_3(const char *fname, bool check_case, bool allow_wildcards,
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	size_t size;
-	char magic_char;
-
-	magic_char = lp_magicchar(p);
 
 	if (!fname || !*fname)
 		return False;
@@ -534,9 +531,6 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 	TDB_DATA data_val;
 	char *saved_ext = NULL;
 	char *s = talloc_strdup(ctx, in);
-	char magic_char;
-
-	magic_char = lp_magicchar(p);
 
 	/* If the cache isn't initialized, give up. */
 	if(!s || !tdb_mangled_cache ) {
@@ -684,9 +678,6 @@ static bool must_mangle(const char *name,
 	smb_ucs2_t *name_ucs2 = NULL;
 	NTSTATUS status;
 	size_t converted_size;
-	char magic_char;
-
-	magic_char = lp_magicchar(p);
 
 	if (!push_ucs2_talloc(NULL, &name_ucs2, name, &converted_size)) {
 		DEBUG(0, ("push_ucs2_talloc failed!\n"));
