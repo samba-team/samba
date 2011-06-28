@@ -821,7 +821,7 @@ ipv4_is_valid_addr()
 # iptables doesn't like being re-entered, so flock-wrap it.
 iptables()
 {
-	flock -w 30 /var/ctdb/iptables-ctdb.flock /sbin/iptables "$@"
+	flock -w 30 $CTDB_VARDIR/iptables-ctdb.flock /sbin/iptables "$@"
 }
 
 ########################################################
