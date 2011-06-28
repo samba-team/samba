@@ -35,6 +35,6 @@ testit "Test login with --machine-pass and kerberos" $VALGRIND $smbclient -c 'ls
 
 testit "time" $VALGRIND $samba_tool time $SERVER $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
 
-# FIXME: testit "domainlevel.show" $VALGRIND $samba_tool domainlevel show $CONFIGURATION
+# FIXME: testit "domain level.show" $VALGRIND $samba_tool domain level show $CONFIGURATION
 
 exit $failed
