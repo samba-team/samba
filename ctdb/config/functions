@@ -88,6 +88,24 @@ nice_service()
 }
 
 ######################################################
+# wrapper around /proc/ settings to allow them to be hooked
+# for testing
+# 1st arg is relative path under /proc/, 2nd arg is value to set
+set_proc ()
+{
+    echo "$2" >"/proc/$1"
+}
+
+######################################################
+# wrapper around getting file contents from /proc/ to allow
+# this to be hooked for testing
+# 1st arg is relative path under /proc/
+get_proc ()
+{
+    cat "/proc/$1"
+}
+
+######################################################
 # check that a rpc server is registered with portmap
 # and responding to requests
 # usage: ctdb_check_rpc SERVICE_NAME PROGNUM VERSION
