@@ -15,12 +15,14 @@ import build.charset
 import samba_utils, samba_version
 import samba3
 
+Options.default_prefix = '/usr/local/samba'
+
 def set_options(opt):
     if not os.getenv('TOPLEVEL_BUILD'):
         opt.BUILTIN_DEFAULT('NONE')
         opt.PRIVATE_EXTENSION_DEFAULT('s3')
         opt.RECURSE('../lib/replace')
-        opt.RECURSE('build')
+        opt.RECURSE('../dynconfig')
         opt.RECURSE('selftest')
         opt.RECURSE('../lib/nss_wrapper')
         opt.RECURSE('../lib/socket_wrapper')
@@ -90,8 +92,29 @@ def configure(conf):
         conf.env['build_swat'] = True
 
     if not conf.env.toplevel_build:
+
         conf.RECURSE('../lib/replace')
-        conf.RECURSE('build')
+
+        conf.find_program('python', var='PYTHON', mandatory=True)
+        conf.find_program('perl', var='PERL', mandatory=True)
+        conf.find_program('xsltproc', var='XSLTPROC')
+
+        # enable tool to build python extensions
+        conf.check_tool('python')
+        conf.check_python_version((2,4,2))
+        conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
+
+        if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:
+            # Mac OSX needs to have this and it's also needed that the python is compiled with this
+            # otherwise you face errors about common symbols
+            if not conf.CHECK_SHLIB_W_PYTHON("Checking if -fno-common is needed"):
+                conf.ADD_CFLAGS('-fno-common')
+            if not conf.CHECK_SHLIB_W_PYTHON("Checking if -undefined dynamic_lookup is not need"):
+                conf.env.append_value('shlib_LINKFLAGS', ['-undefined', 'dynamic_lookup'])
+        if int(conf.env['PYTHON_VERSION'][0]) >= 3:
+           raise Utils.WafError('Python version 3.x is not supported by Samba yet')
+
+        conf.RECURSE('../dynconfig')
         conf.RECURSE('../lib/ccan')
         conf.RECURSE('../lib/tdb_compat')
         conf.RECURSE('../lib/talloc')
@@ -308,7 +331,6 @@ utimensat vsyslog _write __write __xstat
 
     # FIXME: these should be tests for features, but the old build system just
     # checks for OSes.
-    import sys
     host_os = sys.platform
     Logs.info("building on %s" % host_os)
 
@@ -1794,6 +1816,12 @@ main() {
             for entry in shared_list[p]:
                 conf.DEFINE('%s_init' % entry, 'init_samba_module')
                 conf.env[shared_env].append('%s' % entry)
+
+    if not os.getenv('TOPLEVEL_BUILD'):
+        # we don't want PYTHONDIR in config.h, as otherwise changing
+        # --prefix causes a complete rebuild
+        del(conf.env.defines['PYTHONDIR'])
+        del(conf.env.defines['PYTHONARCHDIR'])
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
