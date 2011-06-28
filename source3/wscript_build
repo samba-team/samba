@@ -657,7 +657,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     passdb SMBLDAP param samba-util
                     LIBMSRPC_GEN msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL smbconf REG_SMBCONF TOKEN_UTIL
-                    LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON
+                    LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR popt_samba3''',
                     public_headers='../source3/lib/netapi/netapi.h',
@@ -667,7 +667,7 @@ bld.SAMBA3_LIBRARY('netapi',
 bld.SAMBA3_LIBRARY('libsmb/smbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb_compat wbclient cap param  smbd_shim libsmb KRBCLIENT passdb SMBLDAP
-                    LIBMSRPC_GEN msrpc3 LIBCLI_LSA3 RPC_NDR_SRVSVC popt_samba3''',
+                    LIBMSRPC_GEN msrpc3 libcli_lsa3 RPC_NDR_SRVSVC popt_samba3''',
                     public_headers='include/libsmbclient.h',
                     vnum='0',
                     vars=locals())
@@ -881,7 +881,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     smbconf REG_FULL FNAME_UTIL
-                    LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
+                    LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
                     LIBCLI_SMB_COMMON RPC_SERVER smbd_conn param_service
                     smbd_shim
@@ -981,7 +981,7 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
-                     deps='ads LIBRPCCLI_NETLOGON msrpc3 LIBCLI_LSA3 INIT_NETLOGON',
+                     deps='ads LIBRPCCLI_NETLOGON msrpc3 libcli_lsa3 INIT_NETLOGON',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
@@ -1052,7 +1052,7 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPC_NDR_SAMR')
 
-bld.SAMBA3_LIBRARY('LIBCLI_LSA3',
+bld.SAMBA3_LIBRARY('libcli_lsa3',
                    source=LIBCLI_LSA_SRC,
                    deps='RPC_NDR_LSA INIT_LSA', 
                    private_library=True)
@@ -1110,7 +1110,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  SRV_NDR_WBINT RPC_NDR_WBINT NDR_WBINT LIBAFS
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
-                 LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON
+                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON
                  RPC_NDR_DSSETUP npa_tstream INIT_NETLOGON
                  RPC_NCACN_NP RPC_PIPE_REGISTER RPC_SAMR RPC_LSARPC
                  PAM_ERRORS WB_REQTRANS AUTH_COMMON
@@ -1135,7 +1135,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3
                  ads SMBREADLINE DCUTIL RPC_NDR_WINREG RPC_NDR_ECHO
                  RPC_CLIENT_SCHANNEL
-                 LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
+                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
                  RPC_NDR_DRSUAPI RPC_NDR_NTSVCS RPC_NDR_EVENTLOG INIT_NETLOGON
                  INIT_SAMR
@@ -1158,7 +1158,7 @@ bld.SAMBA3_BINARY('net',
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPC_NDR_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
-                 LIBCLI_SAMR LIBCLI_LSA3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
+                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
                  RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_NETLOGON INIT_SAMR
 		 ''',
@@ -1261,14 +1261,14 @@ bld.SAMBA3_BINARY('smbcacls',
                  source=SMBCACLS_SRC,
                  deps='''talloc tdb_compat cap wbclient param libsmb KRBCLIENT
                  smbd_shim passdb popt_samba3 SMBLDAP LIBMSRPC_GEN
-                 msrpc3 LIBCLI_LSA3''',
+                 msrpc3 libcli_lsa3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbcquotas',
                  source=SMBCQUOTAS_SRC,
                  deps='''talloc tdb_compat cap wbclient param  smbd_shim libsmb KRBCLIENT
                  popt_samba3 passdb SMBLDAP LIBMSRPC_GEN msrpc3
-                 LIBCLI_LSA3''',
+                 libcli_lsa3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('eventlogadm',
