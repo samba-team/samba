@@ -1,0 +1,2 @@
+NFS_HOSTNAME="cluster1"
+STATD_HOSTNAME="$NFS_HOSTNAME -H /etc/ctdb/statd-callout "

@@ -1,0 +1,43 @@
+eventscript unit tests
+======================
+
+This directory contains some eventscript unit tests for CTDB.  These
+tests can be run as a non-privileged user.  There are a lot of stub
+implementations of commands (located in bin/) used to make the
+eventscripts think they're running against a real system.
+
+Examples:
+
+* ./run_tests.sh
+
+  Run all tests, displaying minimal output.
+
+* ./run_tests.sh -s
+
+  Run all tests, displaying minimal output and a summary.
+
+* ./run_tests.sh  -s simple/*.sh
+
+  Run all the tests in the simple/ subdirectory.
+
+* ./run_tests.sh -v -s
+
+  Run all tests, displaying extra output and a summary.
+
+* ./run_tests.sh -sq
+
+  Run all tests, displaying only a summary.
+
+* EVENTSCRIPTS_TESTS_TRACE="sh -x" \
+    ./run_tests.sh simple/10.interface.startup.002.sh
+
+  Run a test and have the eventscript itself run with "sh -x".  This
+  will usually make a test fail because the (undesirable) trace output
+  will be included with the output of the eventscript.  However, this
+  is useful for finding out why a test might be failing.  You can just
+  drop the "-x" (minimal command-line editing) to see if changes have
+  made a test pass.
+
+The simple/ subdirectory contains tests that exercise only a single
+eventscript.  Another directory containing tests that exercise
+interactions between eventscripts is coming soon...  :-)
