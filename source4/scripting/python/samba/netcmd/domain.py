@@ -27,7 +27,9 @@ import samba.getopt as options
 import ldb
 import os
 from samba import Ldb
-from samba.net import Net
+from samba.net import Net, LIBNET_JOIN_AUTOMATIC
+from samba.dcerpc.misc import SEC_CHAN_WKSTA
+from samba.join import join_RODC, join_DC
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
@@ -67,6 +69,59 @@ class cmd_domain_dumpkeys(Command):
         lp = sambaopts.get_loadparm()
         net = Net(None, lp, server=credopts.ipaddress)
         net.export_keytab(keytab=keytab)
+
+
+
+class cmd_domain_join(Command):
+    """Joins domain as either member or backup domain controller [server connection needed]"""
+
+    synopsis = "%prog domain join <dnsdomain> [DC | RODC | MEMBER] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("--server", help="DC to join", type=str),
+        Option("--site", help="site to join", type=str),
+        Option("--targetdir", help="where to store provision", type=str),
+        ]
+
+    takes_args = ["domain", "role?"]
+
+    def run(self, domain, role=None, sambaopts=None, credopts=None,
+            versionopts=None, server=None, site=None, targetdir=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp, server=credopts.ipaddress)
+
+        if site is None:
+            site = "Default-First-Site-Name"
+
+        netbios_name = lp.get("netbios name")
+
+        if not role is None:
+            role = role.upper()
+
+        if role is None or role == "MEMBER":
+            (join_password, sid, domain_name) = net.join_member(domain,
+                                                                netbios_name,
+                                                                LIBNET_JOIN_AUTOMATIC)
+
+            self.outf.write("Joined domain %s (%s)\n" % (domain_name, sid))
+            return
+        elif role == "DC":
+            join_DC(server=server, creds=creds, lp=lp, domain=domain,
+                    site=site, netbios_name=netbios_name, targetdir=targetdir)
+            return
+        elif role == "RODC":
+            join_RODC(server=server, creds=creds, lp=lp, domain=domain,
+                      site=site, netbios_name=netbios_name, targetdir=targetdir)
+            return
+        else:
+            raise CommandError("Invalid role %s (possible values: MEMBER, BDC, RODC)" % role)
 
 
 
@@ -467,6 +522,7 @@ class cmd_domain(SuperCommand):
 
     subcommands = {}
     subcommands["dumpkeys"] = cmd_domain_dumpkeys()
+    subcommands["join"] = cmd_domain_join()
     subcommands["level"] = cmd_domain_level()
     subcommands["machinepassword"] = cmd_domain_machinepassword()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
