@@ -4,7 +4,7 @@
 
 #include "idl_types.h"
 
-import "security.idl", "netlogon.idl", "samr.idl";
+import "security.idl", "lsa.idl", "netlogon.idl", "samr.idl";
 
 [
   uuid("12345778-1234-abcd-0000-00000000"),
@@ -32,6 +32,12 @@ interface krb5pac
 	} PAC_LOGON_INFO;
 
 	typedef struct {
+		lsa_String proxy_target;
+		uint32 num_transited_services;
+		[size_is(num_transited_services)] lsa_String *transited_services;
+	} PAC_CONSTRAINED_DELEGATION;
+
+	typedef struct {
 		[value(2*strlen_m(upn_name))] uint16 upn_size;
 		uint16 upn_offset;
 		[value(2*strlen_m(domain_name))] uint16 domain_size;
@@ -47,6 +53,10 @@ interface krb5pac
 	typedef [public] struct {
 		PAC_LOGON_INFO *info;
 	} PAC_LOGON_INFO_CTR;
+
+	typedef [public] struct {
+		PAC_CONSTRAINED_DELEGATION *info;
+	} PAC_CONSTRAINED_DELEGATION_CTR;
 
 	typedef [public,v1_enum] enum {
 		PAC_TYPE_LOGON_INFO = 1,
@@ -66,6 +76,8 @@ interface krb5pac
 		[case(PAC_TYPE_SRV_CHECKSUM)]	PAC_SIGNATURE_DATA srv_cksum;
 		[case(PAC_TYPE_KDC_CHECKSUM)]	PAC_SIGNATURE_DATA kdc_cksum;
 		[case(PAC_TYPE_LOGON_NAME)]	PAC_LOGON_NAME logon_name;
+		[case(PAC_TYPE_CONSTRAINED_DELEGATION)][subcontext(0xFFFFFC01)]
+			PAC_CONSTRAINED_DELEGATION_CTR constrained_delegation;
 		/* when new PAC info types are added they are supposed to be done
 		   in such a way that they are backwards compatible with existing
 		   servers. This makes it safe to just use a [default] for
