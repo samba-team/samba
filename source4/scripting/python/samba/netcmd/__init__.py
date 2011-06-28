@@ -174,8 +174,6 @@ class CommandError(Exception):
 
 
 commands = {}
-from samba.netcmd.domainlevel import cmd_domainlevel
-commands["domainlevel"] = cmd_domainlevel()
 from samba.netcmd.newuser import cmd_newuser
 commands["newuser"] = cmd_newuser()
 from samba.netcmd.netacl import cmd_acl
