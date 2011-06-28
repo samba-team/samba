@@ -774,11 +774,11 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
 
 bld.SAMBA3_LIBRARY('popt_samba3',
                    source=POPT_LIB_SRC,
-                   deps='popt samba-util UTIL_CMDLINE',
+                   deps='popt samba-util util_cmdline',
                    vars=locals(),
                    private_library=True)
 
-bld.SAMBA3_LIBRARY('UTIL_CMDLINE',
+bld.SAMBA3_LIBRARY('util_cmdline',
                    source='lib/util_cmdline.c',
                    deps='SECRETS3 popt',
                    private_library=True)
@@ -809,7 +809,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
 
 bld.SAMBA3_LIBRARY('LIBSMB',
                    source=LIBSMB_SRC,
-                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON UTIL_CMDLINE',
+                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON util_cmdline',
                    vars=locals(),
                    private_library=True)
 
