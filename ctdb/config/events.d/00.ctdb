@@ -14,7 +14,7 @@ loadconfig
 
 update_config_from_tdb() {
 	# Pull optional ctdb configuration data out of config.tdb
-	PUBLICADDRESSESKEY='public-addresses:node#'`ctdb -t 1 xpnn|sed -e "s/.*://"`
+	PUBLICADDRESSESKEY='public_addresses:node#'`ctdb -t 1 xpnn|sed -e "s/.*://"`
 	rm -f $CTDB_VARDIR/state/public_addresses
 	ctdb pfetch config.tdb $PUBLICADDRESSESKEY $CTDB_VARDIR/state/public_addresses 2>/dev/null
 	[ "$?" = "0" ] && [ `stat --format="%s" /etc/ctdb/state/public_addresses` != "0" ] && [ ! -z "$CTDB_PUBLIC_ADDRESSES" ] && {
