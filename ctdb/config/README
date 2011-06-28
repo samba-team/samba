@@ -25,6 +25,13 @@ Selected highlights:
     rpc.statd high-availability callout to support lock migration on
     failover.
 
-Note that all of these scripts are written in POSIX Bourne shell.
-Please avoid bash-isms, including the use of "local" variables (which
-are not available in POSIX shell).
+Notes:
+
+* All of these scripts are written in POSIX Bourne shell.  Please
+  avoid bash-isms, including the use of "local" variables (which are
+  not available in POSIX shell).
+
+* Do not use absolute paths for commands.  Unit tests attempt to
+  replace many commands with stubs and can not do this if commands are
+  specified with absolute paths.  The functions file controls $PATH so
+  absolute paths should not be required.
