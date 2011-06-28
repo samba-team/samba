@@ -18,13 +18,13 @@ loadconfig
 
 mark_up ()
 {
-    ok=1
+    up_interfaces_found=true
     ctdb setifacelink $1 up >/dev/null 2>&1
 }
 
 mark_down ()
 {
-    fail=1
+    fail=true
     ctdb setifacelink $1 down >/dev/null 2>&1
 }
 
@@ -43,8 +43,8 @@ monitor_interfaces()
 
 	INTERFACES=`for IFACE in $INTERFACES $IFACES ; do echo $IFACE ; done | sort | uniq`
 
-	fail=0
-	ok=0
+	fail=false
+	up_interfaces_found=false
 	for IFACE in $INTERFACES ; do
 
 	    ip addr show $IFACE 2>/dev/null >/dev/null || {
@@ -109,15 +109,11 @@ monitor_interfaces()
 
 	done
 
-	test x"$fail" = x"0" && {
-		return 0;
-	}
+	$fail || return 0
 
-	test x"$ok" = x"1" && {
-		return 2;
-	}
+	$up_interfaces_found && return 2
 
-	return 1;
+	return 1
 }
 
 case "$1" in 
