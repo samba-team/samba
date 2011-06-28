@@ -212,7 +212,7 @@ static void samba_wdc_plugin_fini(void *ptr)
 }
 
 struct krb5plugin_windc_ftable windc_plugin_table = {
-	.minor_version = KRB5_WINDC_PLUGING_MINOR,
+	.minor_version = KRB5_WINDC_PLUGIN_MINOR,
 	.init = samba_wdc_plugin_init,
 	.fini = samba_wdc_plugin_fini,
 	.pac_generate = samba_wdc_get_pac,
