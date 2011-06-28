@@ -9,7 +9,7 @@
     share that only supports IPC connections.  The has been the default
     behavior in smbd for many years.  However, certain Microsoft applications
     such as the Print Migrator tool require that the remote server support
-    an [ADMIN$} file share.  Disabling this parameter allows for creating 
+    an [ADMIN$] file share.  Disabling this parameter allows for creating
     an [ADMIN$] file share in smb.conf.</para>
 </description>
 
