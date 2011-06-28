@@ -30,18 +30,19 @@ mark_down ()
 
 monitor_interfaces()
 {
-	all_interfaces=`cat $CTDB_PUBLIC_ADDRESSES |
-		sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//"`
+	# Get all the interfaces listed in the public_addresses file
+	all_interfaces=$(sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//" $CTDB_PUBLIC_ADDRESSES)
 
+	# Add some special interfaces if they're defined
 	[ "$CTDB_PUBLIC_INTERFACE" ] && all_interfaces="$CTDB_PUBLIC_INTERFACE $all_interfaces"
 	[ "$CTDB_NATGW_PUBLIC_IFACE" ] && all_interfaces="$CTDB_NATGW_PUBLIC_IFACE $all_interfaces"
 
 
 	# For all but the 1st line, get the 2nd last field with commas
 	# changes to spaces.
-	ctdb_ifaces=`ctdb -Y ip -v | sed -e '1d' -e 's/:[^:]*:$//' -e 's/^.*://' -e 's/,/ /g'`
+	ctdb_ifaces=$(ctdb -Y ip -v | sed -e '1d' -e 's/:[^:]*:$//' -e 's/^.*://' -e 's/,/ /g')
 
-	all_interfaces=`for iface in $all_interfaces $ctdb_ifaces ; do echo $iface ; done | sort | uniq`
+	all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort | uniq)
 
 	fail=false
 	up_interfaces_found=false
@@ -61,14 +62,17 @@ monitor_interfaces()
 		echo "$bi" | grep -q 'Currently Active Slave: None' && {
 			echo "ERROR: No active slaves for bond device $realiface"
 			mark_down $iface
-			continue;
+			continue
 		}
 		echo "$bi" | grep -q '^MII Status: up' || {
 			echo "ERROR: public network interface $realiface is down"
 			mark_down $iface
-			continue;
+			continue
 		}
 		echo "$bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
+			# This works around a bug in the driver where the
+			# overall bond status can be up but none of the actual
+			# physical interfaces have a link.
 			echo "$bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
 				echo No active slaves for 802.ad bond device $realiface
 				mark_down $iface
@@ -76,7 +80,7 @@ monitor_interfaces()
 			}
 		}
 		mark_up $iface
-		continue;
+		continue
 	    }
 
 	    case $iface in
