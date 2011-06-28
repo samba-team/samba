@@ -46,7 +46,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 		return EINVAL;
 	}
 
-	ret = samba_make_krb5_pac(context, pac_blob, pac);
+	ret = samba_make_krb5_pac(context, pac_blob, NULL, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -56,6 +56,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 					   const krb5_principal client_principal,
+					   const krb5_principal delegated_proxy_principal,
 					   struct hdb_entry_ex *client,
 					   struct hdb_entry_ex *server,
 					   struct hdb_entry_ex *krbtgt,
@@ -64,6 +65,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	struct samba_kdc_entry *p = talloc_get_type(server->ctx, struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_kdc_reget_pac context");
 	DATA_BLOB *pac_blob;
+	DATA_BLOB *deleg_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 
@@ -97,7 +99,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 		}
 
 		nt_status = samba_kdc_update_pac_blob(mem_ctx, context,
-						      pac, pac_blob);
+						      *pac, pac_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Building PAC failed: %s\n",
 				  nt_errstr(nt_status)));
@@ -105,10 +107,31 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			return EINVAL;
 		}
 	}
+
+	if (delegated_proxy_principal) {
+		deleg_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		if (!deleg_blob) {
+			talloc_free(mem_ctx);
+			return ENOMEM;
+		}
+
+		nt_status = samba_kdc_update_delegation_info_blob(mem_ctx,
+					context, *pac,
+					server->entry.principal,
+					delegated_proxy_principal,
+					deleg_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Building PAC failed: %s\n",
+				  nt_errstr(nt_status)));
+			talloc_free(mem_ctx);
+			return EINVAL;
+		}
+	}
+
 	/* We now completely regenerate this pac */
 	krb5_pac_free(context, *pac);
 
-	ret = samba_make_krb5_pac(context, pac_blob, pac);
+	ret = samba_make_krb5_pac(context, pac_blob, deleg_blob, pac);
 
 	talloc_free(mem_ctx);
 	return ret;

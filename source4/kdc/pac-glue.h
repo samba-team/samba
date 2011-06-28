@@ -23,6 +23,7 @@
 
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    DATA_BLOB *pac_blob,
+				    DATA_BLOB *deleg_blob,
 				    krb5_pac *pac);
 
 bool samba_princ_needs_pac(struct hdb_entry_ex *princ);
@@ -35,7 +36,14 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
-				   krb5_pac *pac, DATA_BLOB *pac_blob);
+				   const krb5_pac pac, DATA_BLOB *pac_blob);
+
+NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
+				krb5_context context,
+				const krb5_pac pac,
+				const krb5_principal server_principal,
+				const krb5_principal proxy_principal,
+				DATA_BLOB *pac_blob);
 
 void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data);
 

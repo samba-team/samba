@@ -72,9 +72,11 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    DATA_BLOB *pac_blob,
+				    DATA_BLOB *deleg_blob,
 				    krb5_pac *pac)
 {
 	krb5_data pac_data;
+	krb5_data deleg_data;
 	krb5_error_code ret;
 
         /* The user account may be set not to want the PAC */
@@ -87,16 +89,39 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		return ret;
 	}
 
+	ZERO_STRUCT(deleg_data);
+	if (deleg_blob) {
+		ret = krb5_data_copy(&deleg_data,
+				     deleg_blob->data,
+				     deleg_blob->length);
+		if (ret != 0) {
+			krb5_data_free(&pac_data);
+			return ret;
+		}
+	}
+
 	ret = krb5_pac_init(context, pac);
 	if (ret != 0) {
 		krb5_data_free(&pac_data);
+		krb5_data_free(&deleg_data);
 		return ret;
 	}
 
 	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &pac_data);
 	krb5_data_free(&pac_data);
 	if (ret != 0) {
+		krb5_data_free(&deleg_data);
 		return ret;
+	}
+
+	if (deleg_blob) {
+		ret = krb5_pac_add_buffer(context, *pac,
+					  PAC_TYPE_CONSTRAINED_DELEGATION,
+					  &deleg_data);
+		krb5_data_free(&deleg_data);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	return ret;
@@ -183,13 +208,13 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
-				   krb5_pac *pac, DATA_BLOB *pac_blob)
+				   const krb5_pac pac, DATA_BLOB *pac_blob)
 {
 	struct auth_user_info_dc *user_info_dc;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 
-	ret = kerberos_pac_to_user_info_dc(mem_ctx, *pac,
+	ret = kerberos_pac_to_user_info_dc(mem_ctx, pac,
 					   context, &user_info_dc, NULL, NULL);
 	if (ret) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -199,6 +224,98 @@ NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 						  user_info_dc, pac_blob);
 
 	return nt_status;
+}
+
+NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
+				krb5_context context,
+				const krb5_pac pac,
+				const krb5_principal server_principal,
+				const krb5_principal proxy_principal,
+				DATA_BLOB *new_blob)
+{
+	krb5_data old_data;
+	DATA_BLOB old_blob;
+	krb5_error_code ret;
+	NTSTATUS nt_status;
+	enum ndr_err_code ndr_err;
+	union PAC_INFO info;
+	struct PAC_CONSTRAINED_DELEGATION _d;
+	struct PAC_CONSTRAINED_DELEGATION *d = NULL;
+	char *server = NULL;
+	char *proxy = NULL;
+	uint32_t i;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = krb5_pac_get_buffer(context, pac, PAC_TYPE_CONSTRAINED_DELEGATION, &old_data);
+	if (ret == ENOENT) {
+		ZERO_STRUCT(old_data);
+	} else if (ret) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	old_blob.length = old_data.length;
+	old_blob.data = (uint8_t *)old_data.data;
+
+	ZERO_STRUCT(info);
+	if (old_blob.length > 0) {
+		ndr_err = ndr_pull_union_blob(&old_blob, mem_ctx,
+				&info, PAC_TYPE_CONSTRAINED_DELEGATION,
+				(ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			krb5_data_free(&old_data);
+			nt_status = ndr_map_error2ntstatus(ndr_err);
+			DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
+			talloc_free(tmp_ctx);
+			return nt_status;
+		}
+	} else {
+		ZERO_STRUCT(_d);
+		info.constrained_delegation.info = &_d;
+	}
+	krb5_data_free(&old_data);
+
+	ret = krb5_unparse_name(context, server_principal, &server);
+	if (ret) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ret = krb5_unparse_name_flags(context, proxy_principal,
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &proxy);
+	if (ret) {
+		SAFE_FREE(server);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	d = info.constrained_delegation.info;
+	i = d->num_transited_services;
+	d->proxy_target.string = server;
+	d->transited_services = talloc_realloc(mem_ctx, d->transited_services,
+					       struct lsa_String, i + 1);
+	d->transited_services[i].string = proxy;
+	d->num_transited_services = i + 1;
+
+	ndr_err = ndr_push_union_blob(new_blob, mem_ctx,
+				&info, PAC_TYPE_CONSTRAINED_DELEGATION,
+				(ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+	SAFE_FREE(server);
+	SAFE_FREE(proxy);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		krb5_data_free(&old_data);
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
 }
 
 /* this function allocates 'data' using malloc.

@@ -2068,10 +2068,8 @@ server_lookup:
 
 	krb5_data_free(&rspac);
 	/*
-	 * generate the PAC for the user.
-	 *
-	 * TODO: pass in t->sname and t->realm and build
-	 * a S4U_DELEGATION_INFO blob to the PAC.
+	 * generate the PAC for the user and pass
+	 * dp for the S4U_DELEGATION_INFO blob in the PAC.
 	 */
 	ret = check_PAC(context, config, tp, dp,
 			client, server, krbtgt,

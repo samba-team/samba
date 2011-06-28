@@ -255,7 +255,7 @@ static int mit_samba_update_pac_data(struct mit_samba_context *ctx,
 	}
 
 	nt_status = samba_kdc_update_pac_blob(tmp_ctx, ctx->context,
-					      &pac, logon_blob);
+					      pac, logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Building PAC failed: %s\n",
 			  nt_errstr(nt_status)));
