@@ -3,7 +3,6 @@
 ## option defaults
 OPT_BRANCH=""
 OPT_DOCSDIR=""
-OPT_TAG=""
 OPT_KEYID=""
 
 TOPDIR="`dirname $0`/.."
@@ -32,7 +31,6 @@ function printUsage
     echo "    --help             Print command usage"
     echo "    --branch <name>    Specify the branch to to create the archive file from"
     echo "    --copy-docs <dir>  Copy documentation from <dir> rather than building"
-    echo "    --tag <name>       Tag name for release"
     echo "    --keyid <email>    The GnuPG key ID used to sign the release tag"
     echo ""
 }
@@ -65,15 +63,6 @@ function parseOptions
 		    return 1
 		fi
 		OPT_DOCSDIR="$1"
-		shift
-		;;
-	    --tag)
-		shift
-		if [ -z "$1" ]; then
-		    printUsage
-		    return 1
-		fi
-		OPT_TAG="$1"
 		shift
 		;;
 	    --keyid)
@@ -145,13 +134,10 @@ function buildDocs
 ##
 function createReleaseTag
 {
-    if [ -z "${OPT_TAG}" ]; then
-	echo "Tagging disabled"
-	return 0
-    fi
+    tagname="$1"
 
-    if [ "x`git tag -l ${OPT_TAG}`" != "x" ]; then
-	echo -n "Tag exists.  Do you wish to overwrite? (y/N): "
+    if [ "x`git tag -l ${tagname}`" != "x" ]; then
+	echo -n "Tag '${tagname}' exists.  Do you wish to overwrite? (y/N): "
 	read answer
 
 	if [ "x$answer" != "xy" ]; then
@@ -168,8 +154,8 @@ function createReleaseTag
 	fi
     fi
 
-    git tag -u ${OPT_KEYID} ${OPT_TAG}
-    exitOnError $? "Failed to create tag"
+    git tag -u ${OPT_KEYID} ${tagname}
+    exitOnError $? "Failed to create tag '${tagname}'"
 
     return 0
 }
@@ -241,7 +227,7 @@ function main
 
     popd
 
-    createReleaseTag
+    createReleaseTag "samba-${version}"
     exitOnError $? "Failed to create release tag"
 
     return 0
