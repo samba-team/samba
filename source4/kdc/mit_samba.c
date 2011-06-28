@@ -316,6 +316,14 @@ static int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 				     const char *target_name,
 				     bool is_nt_enterprise_name)
 {
+#if 1
+	/*
+	 * This is disabled because mit_samba_update_pac_data() does not handle
+	 * S4U_DELEGATION_INFO
+	 */
+
+	return KRB5KDC_ERR_BADOPTION;
+#else
 	krb5_principal target_principal;
 	int flags = 0;
 	int ret;
@@ -338,6 +346,7 @@ static int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 	krb5_free_principal(ctx->context, target_principal);
 
 	return ret;
+#endif
 }
 
 struct mit_samba_function_table mit_samba_function_table = {
