@@ -27,6 +27,7 @@ import samba.getopt as options
 import ldb
 import os
 from samba import Ldb
+from samba.net import Net
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
@@ -45,6 +46,27 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008_R2,
     )
 
+
+
+class cmd_domain_dumpkeys(Command):
+    """Dumps kerberos keys of the domain into a keytab"""
+    synopsis = "%prog domain dumpkeys <keytab>"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    takes_options = [
+        ]
+
+    takes_args = ["keytab"]
+
+    def run(self, keytab, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        net = Net(None, lp, server=credopts.ipaddress)
+        net.export_keytab(keytab=keytab)
 
 
 
@@ -444,6 +466,7 @@ class cmd_domain(SuperCommand):
     """Domain management"""
 
     subcommands = {}
+    subcommands["dumpkeys"] = cmd_domain_dumpkeys()
     subcommands["level"] = cmd_domain_level()
     subcommands["machinepassword"] = cmd_domain_machinepassword()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
