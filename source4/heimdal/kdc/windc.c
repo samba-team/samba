@@ -84,6 +84,7 @@ _kdc_pac_generate(krb5_context context,
 krb5_error_code
 _kdc_pac_verify(krb5_context context,
 		const krb5_principal client_principal,
+		const krb5_principal delegated_proxy_principal,
 		hdb_entry_ex *client,
 		hdb_entry_ex *server,
 		hdb_entry_ex *krbtgt,
@@ -96,7 +97,9 @@ _kdc_pac_verify(krb5_context context,
 	return 0;
 
     ret = windcft->pac_verify(windcctx, context,
-			      client_principal, client, server, krbtgt, pac);
+			      client_principal,
+			      delegated_proxy_principal,
+			      client, server, krbtgt, pac);
     if (ret == 0)
 	*verified = 1;
     return ret;

@@ -279,6 +279,7 @@ static krb5_error_code
 check_PAC(krb5_context context,
 	  krb5_kdc_configuration *config,
 	  const krb5_principal client_principal,
+	  const krb5_principal delegated_proxy_principal,
 	  hdb_entry_ex *client,
 	  hdb_entry_ex *server,
 	  hdb_entry_ex *krbtgt,
@@ -336,6 +337,7 @@ check_PAC(krb5_context context,
 		}
 
 		ret = _kdc_pac_verify(context, client_principal,
+				      delegated_proxy_principal,
 				      client, server, krbtgt, &pac, &signed_pac);
 		if (ret) {
 		    krb5_pac_free(context, pac);
@@ -1479,9 +1481,9 @@ tgs_build_reply(krb5_context context,
 		const struct sockaddr *from_addr)
 {
     krb5_error_code ret;
-    krb5_principal cp = NULL, sp = NULL, tp = NULL;
+    krb5_principal cp = NULL, sp = NULL, tp = NULL, dp = NULL;
     krb5_principal krbtgt_principal = NULL;
-    char *spn = NULL, *cpn = NULL, *tpn = NULL;
+    char *spn = NULL, *cpn = NULL, *tpn = NULL, *dpn = NULL;
     hdb_entry_ex *server = NULL, *client = NULL, *s4u2self_impersonated_client = NULL;
     HDB *clientdb, *s4u2self_impersonated_clientdb;
     krb5_realm ref_realm = NULL;
@@ -1802,7 +1804,7 @@ server_lookup:
 	krb5_free_error_message(context, msg);
     }
 
-    ret = check_PAC(context, config, cp,
+    ret = check_PAC(context, config, cp, NULL,
 		    client, server, krbtgt,
 		    &tkey_check->key, &tkey_check->key,
 		    ekey, &tkey_sign->key,
@@ -2029,12 +2031,23 @@ server_lookup:
 	if (ret)
 	    goto out;
 
+	ret = _krb5_principalname2krb5_principal(context,
+						 &dp,
+						 t->sname,
+						 t->realm);
+	if (ret)
+	    goto out;
+
+	ret = krb5_unparse_name(context, dp, &dpn);
+	if (ret)
+	    goto out;
+
 	/* check that ticket is valid */
 	if (adtkt.flags.forwardable == 0) {
 	    kdc_log(context, config, 0,
 		    "Missing forwardable flag on ticket for "
-		    "constrained delegation from %s as %s to %s ",
-		    cpn, tpn, spn);
+		    "constrained delegation from %s (%s) as %s to %s ",
+		    cpn, dpn, tpn, spn);
 	    ret = KRB5KDC_ERR_BADOPTION;
 	    goto out;
 	}
@@ -2043,8 +2056,8 @@ server_lookup:
 					   client, server, sp);
 	if (ret) {
 	    kdc_log(context, config, 0,
-		    "constrained delegation from %s as %s to %s not allowed",
-		    cpn, tpn, spn);
+		    "constrained delegation from %s (%s) as %s to %s not allowed",
+		    cpn, dpn, tpn, spn);
 	    goto out;
 	}
 
@@ -2060,7 +2073,7 @@ server_lookup:
 	 * TODO: pass in t->sname and t->realm and build
 	 * a S4U_DELEGATION_INFO blob to the PAC.
 	 */
-	ret = check_PAC(context, config, tp,
+	ret = check_PAC(context, config, tp, dp,
 			client, server, krbtgt,
 			&clientkey->key, &tkey_check->key,
 			ekey, &tkey_sign->key,
@@ -2071,8 +2084,8 @@ server_lookup:
 	    const char *msg = krb5_get_error_message(context, ret);
 	    kdc_log(context, config, 0,
 		    "Verify delegated PAC failed to %s for client"
-		    "%s as %s from %s with %s",
-		    spn, cpn, tpn, from, msg);
+		    "%s (%s) as %s from %s with %s",
+		    spn, cpn, dpn, tpn, from, msg);
 	    krb5_free_error_message(context, msg);
 	    goto out;
 	}
@@ -2093,15 +2106,15 @@ server_lookup:
 	    const char *msg = krb5_get_error_message(context, ret);
 	    kdc_log(context, config, 0,
 		    "KRB5SignedPath check from service %s failed "
-		    "for delegation to %s for client %s "
+		    "for delegation to %s for client %s (%s)"
 		    "from %s failed with %s",
-		    spn, tpn, cpn, from, msg);
+		    spn, tpn, dpn, cpn, from, msg);
 	    krb5_free_error_message(context, msg);
 	    goto out;
 	}
 
 	kdc_log(context, config, 0, "constrained delegation for %s "
-		"from %s to %s", tpn, cpn, spn);
+		"from %s (%s) to %s", tpn, cpn, dpn, spn);
     }
 
     /*
@@ -2198,7 +2211,9 @@ out:
 	    free(tpn);
     free(spn);
     free(cpn);
-	
+    if (dpn)
+	free(dpn);
+
     krb5_data_free(&rspac);
     krb5_free_keyblock_contents(context, &sessionkey);
     if(krbtgt_out)
@@ -2214,6 +2229,8 @@ out:
 	krb5_free_principal(context, tp);
     if (cp)
 	krb5_free_principal(context, cp);
+    if (dp)
+	krb5_free_principal(context, dp);
     if (sp)
 	krb5_free_principal(context, sp);
     if (ref_realm)

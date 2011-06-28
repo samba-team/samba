@@ -57,10 +57,11 @@ typedef krb5_error_code
 
 typedef krb5_error_code
 (*krb5plugin_windc_pac_verify)(void *, krb5_context,
-			       const krb5_principal,
-			       struct hdb_entry_ex *,
-			       struct hdb_entry_ex *,
-			       struct hdb_entry_ex *,
+			       const krb5_principal, /* new ticket client */
+			       const krb5_principal, /* delegation proxy */
+			       struct hdb_entry_ex *,/* client */
+			       struct hdb_entry_ex *,/* server */
+			       struct hdb_entry_ex *,/* krbtgt */
 			       krb5_pac *);
 
 typedef krb5_error_code
@@ -72,7 +73,7 @@ typedef krb5_error_code
 	KDC_REQ *, krb5_data *);
 
 
-#define KRB5_WINDC_PLUGIN_MINOR			5
+#define KRB5_WINDC_PLUGIN_MINOR			6
 #define KRB5_WINDC_PLUGING_MINOR KRB5_WINDC_PLUGIN_MINOR
 
 typedef struct krb5plugin_windc_ftable {
