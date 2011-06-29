@@ -196,165 +196,1096 @@ static const struct enum_list enum_server_role[] = {
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
 static struct parm_struct parm_table[] = {
-	{"server role", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_role), NULL, enum_server_role},
-	{"dos charset", P_STRING, P_GLOBAL, GLOBAL_VAR(dos_charset), NULL, NULL},
-	{"unix charset", P_STRING, P_GLOBAL, GLOBAL_VAR(unix_charset), NULL, NULL},
-	{"ncalrpc dir", P_STRING, P_GLOBAL, GLOBAL_VAR(ncalrpc_dir), NULL, NULL},
-	{"comment", P_STRING, P_LOCAL, LOCAL_VAR(comment), NULL, NULL},
-	{"path", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
-	{"directory", P_STRING, P_LOCAL, LOCAL_VAR(szPath), NULL, NULL},
-	{"workgroup", P_USTRING, P_GLOBAL, GLOBAL_VAR(szWorkgroup), NULL, NULL},
-	{"realm", P_STRING, P_GLOBAL, GLOBAL_VAR(szRealm), handle_realm, NULL},
-	{"netbios name", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosName), NULL, NULL},
-	{"netbios aliases", P_LIST, P_GLOBAL, GLOBAL_VAR(szNetbiosAliases), NULL, NULL},
-	{"netbios scope", P_USTRING, P_GLOBAL, GLOBAL_VAR(szNetbiosScope), NULL, NULL},
-	{"server string", P_STRING, P_GLOBAL, GLOBAL_VAR(szServerString), NULL, NULL},
-	{"interfaces", P_LIST, P_GLOBAL, GLOBAL_VAR(szInterfaces), NULL, NULL},
-	{"bind interfaces only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bBindInterfacesOnly), NULL, NULL},
-	{"ntvfs handler", P_LIST, P_LOCAL, LOCAL_VAR(ntvfs_handler), NULL, NULL},
-	{"ntptr providor", P_STRING, P_GLOBAL, GLOBAL_VAR(ntptr_providor), NULL, NULL},
-	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, GLOBAL_VAR(dcerpc_ep_servers), NULL, NULL},
-	{"server services", P_LIST, P_GLOBAL, GLOBAL_VAR(server_services), NULL, NULL},
+	{
+		.label		= "server role",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(server_role),
+		.special	= NULL,
+		.enum_list	= enum_server_role
+	},
+	{
+		.label		= "dos charset",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dos_charset),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "unix charset",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(unix_charset),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "ncalrpc dir",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(ncalrpc_dir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "comment",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(comment),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "path",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szPath),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "directory",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szPath),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "workgroup",
+		.type		= P_USTRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWorkgroup),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "realm",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szRealm),
+		.special	= handle_realm,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "netbios name",
+		.type		= P_USTRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNetbiosName),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "netbios aliases",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNetbiosAliases),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "netbios scope",
+		.type		= P_USTRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNetbiosScope),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "server string",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szServerString),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "interfaces",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szInterfaces),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "bind interfaces only",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bBindInterfacesOnly),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "ntvfs handler",
+		.type		= P_LIST,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(ntvfs_handler),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "ntptr providor",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(ntptr_providor),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dcerpc endpoint servers",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dcerpc_ep_servers),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "server services",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(server_services),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"security", P_ENUM, P_GLOBAL, GLOBAL_VAR(security), NULL, enum_security},
-	{"encrypt passwords", P_BOOL, P_GLOBAL, GLOBAL_VAR(bEncryptPasswords), NULL, NULL},
-	{"null passwords", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNullPasswords), NULL, NULL},
-	{"obey pam restrictions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bObeyPamRestrictions), NULL, NULL},
-	{"password server", P_LIST, P_GLOBAL, GLOBAL_VAR(szPasswordServers), NULL, NULL},
-	{"spoolss database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSPOOLSS_URL), NULL, NULL},
-	{"wins config database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_CONFIG_URL), NULL, NULL},
-	{"wins database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_URL), NULL, NULL},
-	{"private dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szPrivateDir), NULL, NULL},
-	{"passwd chat", P_STRING, P_GLOBAL, GLOBAL_VAR(szPasswdChat), NULL, NULL},
-	{"password level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(pwordlevel), NULL, NULL},
-	{"lanman auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLanmanAuth), NULL, NULL},
-	{"ntlm auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTLMAuth), NULL, NULL},
-	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientNTLMv2Auth), NULL, NULL},
-	{"client lanman auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientLanManAuth), NULL, NULL},
-	{"client plaintext auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientPlaintextAuth), NULL, NULL},
-	{"client use spnego principal", P_BOOL, P_GLOBAL, GLOBAL_VAR(client_use_spnego_principal), NULL, NULL},
+	{
+		.label		= "security",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(security),
+		.special	= NULL,
+		.enum_list	= enum_security
+	},
+	{
+		.label		= "encrypt passwords",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bEncryptPasswords),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "null passwords",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bNullPasswords),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "obey pam restrictions",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bObeyPamRestrictions),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "password server",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szPasswordServers),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "spoolss database",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSPOOLSS_URL),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "wins config database",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWINS_CONFIG_URL),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "wins database",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWINS_URL),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "private dir",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szPrivateDir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "passwd chat",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szPasswdChat),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "password level",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(pwordlevel),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "lanman auth",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bLanmanAuth),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "ntlm auth",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bNTLMAuth),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "client NTLMv2 auth",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bClientNTLMv2Auth),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "client lanman auth",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bClientLanManAuth),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "client plaintext auth",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bClientPlaintextAuth),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "client use spnego principal",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(client_use_spnego_principal),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"read only", P_BOOL, P_LOCAL, LOCAL_VAR(bRead_only), NULL, NULL},
+	{
+		.label		= "read only",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bRead_only),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"create mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_mask), NULL, NULL},
-	{"force create mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_force_mode), NULL, NULL}, 
-	{"directory mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_mask), NULL, NULL},
-	{"force directory mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_force_mode), NULL, NULL}, 
+	{
+		.label		= "create mask",
+		.type		= P_OCTAL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iCreate_mask),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "force create mode",
+		.type		= P_OCTAL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iCreate_force_mode),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "directory mask",
+		.type		= P_OCTAL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iDir_mask),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "force directory mode",
+		.type		= P_OCTAL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iDir_force_mode),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"hosts allow", P_LIST, P_LOCAL, LOCAL_VAR(szHostsallow), NULL, NULL},
-	{"hosts deny", P_LIST, P_LOCAL, LOCAL_VAR(szHostsdeny), NULL, NULL},
+	{
+		.label		= "hosts allow",
+		.type		= P_LIST,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szHostsallow),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "hosts deny",
+		.type		= P_LIST,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szHostsdeny),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"log level", P_STRING, P_GLOBAL, GLOBAL_VAR(loglevel), handle_debuglevel, NULL},
-	{"debuglevel", P_STRING, P_GLOBAL, GLOBAL_VAR(loglevel), handle_debuglevel, NULL},
-	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), handle_logfile, NULL},
+	{
+		.label		= "log level",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(loglevel),
+		.special	= handle_debuglevel,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "debuglevel",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(loglevel),
+		.special	= handle_debuglevel,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "log file",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(logfile),
+		.special	= handle_logfile,
+		.enum_list	= NULL
+	},
 
-	{"smb ports", P_LIST, P_GLOBAL, GLOBAL_VAR(smb_ports), NULL, NULL},
-	{"nbt port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(nbt_port), NULL, NULL},
-	{"dgram port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(dgram_port), NULL, NULL},
-	{"cldap port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(cldap_port), NULL, NULL},
-	{"krb5 port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(krb5_port), NULL, NULL},
-	{"kpasswd port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(kpasswd_port), NULL, NULL},
-	{"web port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(web_port), NULL, NULL},
-	{"tls enabled", P_BOOL, P_GLOBAL, GLOBAL_VAR(tls_enabled), NULL, NULL},
-	{"tls keyfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_keyfile), NULL, NULL},
-	{"tls certfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_certfile), NULL, NULL},
-	{"tls cafile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_cafile), NULL, NULL},
-	{"tls crlfile", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_crlfile), NULL, NULL},
-	{"tls dh params file", P_STRING, P_GLOBAL, GLOBAL_VAR(tls_dhpfile), NULL, NULL},
-	{"large readwrite", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLargeReadwrite), NULL, NULL},
-	{"server max protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_maxprotocol), NULL, enum_protocol},
-	{"server min protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(srv_minprotocol), NULL, enum_protocol},
-	{"client max protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(cli_maxprotocol), NULL, enum_protocol},
-	{"client min protocol", P_ENUM, P_GLOBAL, GLOBAL_VAR(cli_minprotocol), NULL, enum_protocol},
-	{"unicode", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUnicode), NULL, NULL},
-	{"read raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bReadRaw), NULL, NULL},
-	{"write raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWriteRaw), NULL, NULL},
-	{"disable netbios", P_BOOL, P_GLOBAL, GLOBAL_VAR(bDisableNetbios), NULL, NULL},
+	{
+		.label		= "smb ports",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(smb_ports),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "nbt port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(nbt_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dgram port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dgram_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "cldap port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(cldap_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "krb5 port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(krb5_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "kpasswd port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(kpasswd_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "web port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(web_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls enabled",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_enabled),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls keyfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_keyfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls certfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_certfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls cafile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_cafile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls crlfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_crlfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls dh params file",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_dhpfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "large readwrite",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bLargeReadwrite),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "server max protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(srv_maxprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol
+	},
+	{
+		.label		= "server min protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(srv_minprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol
+	},
+	{
+		.label		= "client max protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(cli_maxprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol
+	},
+	{
+		.label		= "client min protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(cli_minprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol
+	},
+	{
+		.label		= "unicode",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bUnicode),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "read raw",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bReadRaw),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "write raw",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bWriteRaw),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "disable netbios",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bDisableNetbios),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"nt status support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTStatusSupport), NULL, NULL},
+	{
+		.label		= "nt status support",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bNTStatusSupport),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"announce version", P_STRING, P_GLOBAL, GLOBAL_VAR(szAnnounceVersion), NULL, NULL},
-	{"max mux", P_INTEGER, P_GLOBAL, GLOBAL_VAR(max_mux), NULL, NULL},
-	{"max xmit", P_BYTES, P_GLOBAL, GLOBAL_VAR(max_xmit), NULL, NULL},
+	{
+		.label		= "announce version",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szAnnounceVersion),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "max mux",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(max_mux),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "max xmit",
+		.type		= P_BYTES,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(max_xmit),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"name resolve order", P_LIST, P_GLOBAL, GLOBAL_VAR(szNameResolveOrder), NULL, NULL},
-	{"max wins ttl", P_INTEGER, P_GLOBAL, GLOBAL_VAR(max_wins_ttl), NULL, NULL},
-	{"min wins ttl", P_INTEGER, P_GLOBAL, GLOBAL_VAR(min_wins_ttl), NULL, NULL},
-	{"time server", P_BOOL, P_GLOBAL, GLOBAL_VAR(bTimeServer), NULL, NULL},
-	{"unix extensions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUnixExtensions), NULL, NULL},
-	{"use spnego", P_BOOL, P_GLOBAL, GLOBAL_VAR(bUseSpnego), NULL, NULL},
-	{"server signing", P_ENUM, P_GLOBAL, GLOBAL_VAR(server_signing), NULL, enum_smb_signing_vals}, 
-	{"client signing", P_ENUM, P_GLOBAL, GLOBAL_VAR(client_signing), NULL, enum_smb_signing_vals}, 
-	{"rpc big endian", P_BOOL, P_GLOBAL, GLOBAL_VAR(bRpcBigEndian), NULL, NULL},
+	{
+		.label		= "name resolve order",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNameResolveOrder),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "max wins ttl",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(max_wins_ttl),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "min wins ttl",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(min_wins_ttl),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "time server",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bTimeServer),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "unix extensions",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bUnixExtensions),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "use spnego",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bUseSpnego),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "server signing",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(server_signing),
+		.special	= NULL,
+		.enum_list	= enum_smb_signing_vals
+	},
+	{
+		.label		= "client signing",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(client_signing),
+		.special	= NULL,
+		.enum_list	= enum_smb_signing_vals
+	},
+	{
+		.label		= "rpc big endian",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bRpcBigEndian),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"max connections", P_INTEGER, P_LOCAL, LOCAL_VAR(iMaxConnections), NULL, NULL},
-	{"paranoid server security", P_BOOL, P_GLOBAL, GLOBAL_VAR(paranoid_server_security), NULL, NULL},
-	{"socket options", P_STRING, P_GLOBAL, GLOBAL_VAR(socket_options), NULL, NULL},
+	{
+		.label		= "max connections",
+		.type		= P_INTEGER,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iMaxConnections),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "paranoid server security",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(paranoid_server_security),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "socket options",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(socket_options),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"strict sync", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictSync), NULL, NULL},
-	{"case insensitive filesystem", P_BOOL, P_LOCAL, LOCAL_VAR(bCIFileSystem), NULL, NULL}, 
+	{
+		.label		= "strict sync",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bStrictSync),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "case insensitive filesystem",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bCIFileSystem),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"max print jobs", P_INTEGER, P_LOCAL, LOCAL_VAR(iMaxPrintJobs), NULL, NULL},
-	{"printable", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL},
-	{"print ok", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL},
+	{
+		.label		= "max print jobs",
+		.type		= P_INTEGER,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iMaxPrintJobs),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "printable",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bPrint_ok),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "print ok",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bPrint_ok),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"printer name", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL},
-	{"printer", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL},
+	{
+		.label		= "printer name",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szPrintername),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "printer",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szPrintername),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"map system", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_system), NULL, NULL},
-	{"map hidden", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_hidden), NULL, NULL},
-	{"map archive", P_BOOL, P_LOCAL, LOCAL_VAR(bMap_archive), NULL, NULL},
+	{
+		.label		= "map system",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bMap_system),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "map hidden",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bMap_hidden),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "map archive",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bMap_archive),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"preferred master", P_ENUM, P_GLOBAL, GLOBAL_VAR(bPreferredMaster), NULL, enum_bool_auto},
-	{"prefered master", P_ENUM, P_GLOBAL, GLOBAL_VAR(bPreferredMaster), NULL, enum_bool_auto},
-	{"local master", P_BOOL, P_GLOBAL, GLOBAL_VAR(bLocalMaster), NULL, NULL},
-	{"browseable", P_BOOL, P_LOCAL, LOCAL_VAR(bBrowseable), NULL, NULL},
-	{"browsable", P_BOOL, P_LOCAL, LOCAL_VAR(bBrowseable), NULL, NULL},
+	{
+		.label		= "preferred master",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bPreferredMaster),
+		.special	= NULL,
+		.enum_list	= enum_bool_auto
+	},
+	{
+		.label		= "prefered master",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bPreferredMaster),
+		.special	= NULL,
+		.enum_list	= enum_bool_auto
+	},
+	{
+		.label		= "local master",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bLocalMaster),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "browseable",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bBrowseable),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "browsable",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bBrowseable),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"wins server", P_LIST, P_GLOBAL, GLOBAL_VAR(szWINSservers), NULL, NULL},
-	{"wins support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWINSsupport), NULL, NULL},
-	{"dns proxy", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWINSdnsProxy), NULL, NULL},
-	{"wins hook", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINSHook), NULL, NULL}, 
+	{
+		.label		= "wins server",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWINSservers),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "wins support",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bWINSsupport),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dns proxy",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bWINSdnsProxy),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "wins hook",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWINSHook),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"csc policy", P_ENUM, P_LOCAL, LOCAL_VAR(iCSCPolicy), NULL, enum_csc_policy},
+	{
+		.label		= "csc policy",
+		.type		= P_ENUM,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iCSCPolicy),
+		.special	= NULL,
+		.enum_list	= enum_csc_policy
+	},
 
-	{"strict locking", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictLocking), NULL, NULL},
-	{"oplocks", P_BOOL, P_LOCAL, LOCAL_VAR(bOplocks), NULL, NULL},
+	{
+		.label		= "strict locking",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bStrictLocking),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "oplocks",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bOplocks),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"share backend", P_STRING, P_GLOBAL, GLOBAL_VAR(szShareBackend), NULL, NULL},
-	{"preload", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL},
-	{"auto services", P_STRING, P_GLOBAL, GLOBAL_VAR(szAutoServices), NULL, NULL},
-	{"lock dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL}, 
-	{"lock directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL},
-	{"pid directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szPidDir), NULL, NULL}, 
+	{
+		.label		= "share backend",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szShareBackend),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "preload",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szAutoServices),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "auto services",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szAutoServices),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "lock dir",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szLockDir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "lock directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szLockDir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "pid directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szPidDir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"socket address", P_STRING, P_GLOBAL, GLOBAL_VAR(szSocketAddress), NULL, NULL},
-	{"copy", P_STRING, P_LOCAL, LOCAL_VAR(szCopy), handle_copy, NULL},
-	{"include", P_STRING, P_LOCAL, LOCAL_VAR(szInclude), handle_include, NULL},
+	{
+		.label		= "socket address",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSocketAddress),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "copy",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szCopy),
+		.special	= handle_copy,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "include",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szInclude),
+		.special	= handle_include,
+		.enum_list	= NULL
+	},
 
-	{"available", P_BOOL, P_LOCAL, LOCAL_VAR(bAvailable), NULL, NULL},
-	{"volume", P_STRING, P_LOCAL, LOCAL_VAR(volume), NULL, NULL },
-	{"fstype", P_STRING, P_LOCAL, LOCAL_VAR(fstype), NULL, NULL},
+	{
+		.label		= "available",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bAvailable),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "volume",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(volume),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "fstype",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(fstype),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"panic action", P_STRING, P_GLOBAL, GLOBAL_VAR(panic_action), NULL, NULL},
+	{
+		.label		= "panic action",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(panic_action),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"msdfs root", P_BOOL, P_LOCAL, LOCAL_VAR(bMSDfsRoot), NULL, NULL},
-	{"host msdfs", P_BOOL, P_GLOBAL, GLOBAL_VAR(bHostMSDfs), NULL, NULL},
-	{"winbind separator", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbindSeparator), NULL, NULL },
-	{"winbindd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbinddSocketDirectory), NULL, NULL },
-	{"winbindd privileged socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szWinbinddPrivilegedSocketDirectory), NULL, NULL },
-	{"winbind sealed pipes", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWinbindSealedPipes), NULL, NULL },
-	{"template shell", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateShell), NULL, NULL },
-	{"template homedir", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateHomedir), NULL, NULL },
-	{"idmap trusted only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bIdmapTrustedOnly), NULL, NULL},
+	{
+		.label		= "msdfs root",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bMSDfsRoot),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "host msdfs",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bHostMSDfs),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "winbind separator",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWinbindSeparator),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "winbindd socket directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWinbinddSocketDirectory),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "winbindd privileged socket directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWinbinddPrivilegedSocketDirectory),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "winbind sealed pipes",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bWinbindSealedPipes),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "template shell",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szTemplateShell),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "template homedir",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szTemplateHomedir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "idmap trusted only",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bIdmapTrustedOnly),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{"ntp signd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szNTPSignDSocketDirectory), NULL, NULL },
-	{"rndc command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szRNDCCommand), NULL, NULL },
-	{"dns update command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szDNSUpdateCommand), NULL, NULL },
-	{"spn update command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szSPNUpdateCommand), NULL, NULL },
-	{"nsupdate command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szNSUpdateCommand), NULL, NULL },
+	{
+		.label		= "ntp signd socket directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNTPSignDSocketDirectory),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "rndc command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szRNDCCommand),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dns update command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szDNSUpdateCommand),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "spn update command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSPNUpdateCommand),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "nsupdate command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNSUpdateCommand),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
-	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
+	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };
 
 
