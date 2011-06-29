@@ -691,7 +691,7 @@ static int iServiceIndex = 0;
 static struct db_context *ServiceHash;
 static int *invalid_services = NULL;
 static int num_invalid_services = 0;
-static bool bInGlobalSection = True;
+static bool bInGlobalSection = true;
 static bool bGlobalOnly = False;
 static int default_server_announce;
 
@@ -820,9 +820,9 @@ static const struct enum_list enum_bool_auto[] = {
 	{False, "No"},
 	{False, "False"},
 	{False, "0"},
-	{True, "Yes"},
-	{True, "True"},
-	{True, "1"},
+	{true, "Yes"},
+	{true, "True"},
+	{true, "1"},
 	{Auto, "Auto"},
 	{-1, NULL}
 };
@@ -842,11 +842,11 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{False, "0"},
 	{False, "Off"},
 	{False, "disabled"},
-	{True, "Yes"},
-	{True, "True"},
-	{True, "1"},
-	{True, "On"},
-	{True, "enabled"},
+	{true, "Yes"},
+	{true, "True"},
+	{true, "1"},
+	{true, "On"},
+	{true, "enabled"},
 	{Auto, "auto"},
 	{Required, "required"},
 	{Required, "mandatory"},
@@ -5096,7 +5096,7 @@ static void init_globals(bool reinit_globals)
 			string_free(&Globals.szLogFile);
 			Globals.szLogFile = NULL;
 		}
-		done_init = True;
+		done_init = true;
 	} else {
 		free_global_parameters();
 	}
@@ -5182,7 +5182,7 @@ static void init_globals(bool reinit_globals)
 
 	Globals.AlgorithmicRidBase = BASE_RID;
 
-	Globals.bLoadPrinters = True;
+	Globals.bLoadPrinters = true;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
 	Globals.ConfigBackend = config_backend;
@@ -5198,32 +5198,32 @@ static void init_globals(bool reinit_globals)
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
 	Globals.getwd_cache = true;
-	Globals.bLargeReadwrite = True;
+	Globals.bLargeReadwrite = true;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = max_open_files();
 	Globals.open_files_db_hash_size = SMB_OPEN_DATABASE_TDB_HASH_SIZE;
 	Globals.maxprotocol = PROTOCOL_NT1;
 	Globals.minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
-	Globals.paranoid_server_security = True;
-	Globals.bEncryptPasswords = True;
+	Globals.paranoid_server_security = true;
+	Globals.bEncryptPasswords = true;
 	Globals.bUpdateEncrypt = False;
 	Globals.clientSchannel = Auto;
 	Globals.serverSchannel = Auto;
-	Globals.bReadRaw = True;
-	Globals.bWriteRaw = True;
+	Globals.bReadRaw = true;
+	Globals.bWriteRaw = true;
 	Globals.bNullPasswords = False;
 	Globals.bObeyPamRestrictions = False;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = False;
-	Globals.bTimestampLogs = True;
+	Globals.bTimestampLogs = true;
 	string_set(&Globals.szLogLevel, "0");
 	Globals.bDebugPrefixTimestamp = False;
 	Globals.bDebugHiresTimestamp = true;
 	Globals.bDebugPid = False;
 	Globals.bDebugUid = False;
 	Globals.bDebugClass = False;
-	Globals.bEnableCoreFiles = True;
+	Globals.bEnableCoreFiles = true;
 	Globals.max_ttl = 60 * 60 * 24 * 3;	/* 3 days default. */
 	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
 	Globals.min_wins_ttl = 60 * 60 * 6;	/* 6 hours default. */
@@ -5244,16 +5244,16 @@ static void init_globals(bool reinit_globals)
 	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
 	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
-	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
-	Globals.bNTStatusSupport = True; /* Use NT status by default. */
-	Globals.bStatCache = True;	/* use stat cache by default */
+	Globals.bNTPipeSupport = true;	/* Do NT pipes by default. */
+	Globals.bNTStatusSupport = true; /* Use NT status by default. */
+	Globals.bStatCache = true;	/* use stat cache by default */
 	Globals.iMaxStatCacheSize = 256; /* 256k by default */
 	Globals.restrict_anonymous = 0;
 	Globals.bClientLanManAuth = False;	/* Do NOT use the LanMan hash if it is available */
 	Globals.bClientPlaintextAuth = False;	/* Do NOT use a plaintext password even if is requested by the server */
 	Globals.bLanmanAuth = False;	/* Do NOT use the LanMan hash, even if it is supplied */
-	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
-	Globals.bClientNTLMv2Auth = True; /* Client should always use use NTLMv2, as we can't tell that the server supports it, but most modern servers do */
+	Globals.bNTLMAuth = true;	/* Do use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
+	Globals.bClientNTLMv2Auth = true; /* Client should always use use NTLMv2, as we can't tell that the server supports it, but most modern servers do */
 	/* Note, that we will also use NTLM2 session security (which is different), if it is available */
 
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
@@ -5263,9 +5263,9 @@ static void init_globals(bool reinit_globals)
 #ifdef MMAP_BLACKLIST
 	Globals.bUseMmap = False;
 #else
-	Globals.bUseMmap = True;
+	Globals.bUseMmap = true;
 #endif
-	Globals.bUnixExtensions = True;
+	Globals.bUnixExtensions = true;
 	Globals.bResetOnZeroVC = False;
 	Globals.bLogWriteableFilesOnExit = False;
 	Globals.bCreateKrb5Conf = true;
@@ -5307,32 +5307,32 @@ static void init_globals(bool reinit_globals)
    for the increasing samba install base:
 
    as a member of the workgroup, that will possibly become a
-   _local_ master browser (lm = True).  this is opposed to a forced
-   local master browser startup (pm = True).
+   _local_ master browser (lm = true).  this is opposed to a forced
+   local master browser startup (pm = true).
 
    doesn't provide WINS server service by default (wsupp = False),
    and doesn't provide domain master browser services by default, either.
 
 */
 
-	Globals.bMsAddPrinterWizard = True;
+	Globals.bMsAddPrinterWizard = true;
 	Globals.os_level = 20;
-	Globals.bLocalMaster = True;
+	Globals.bLocalMaster = true;
 	Globals.iDomainMaster = Auto;	/* depending on bDomainLogons */
 	Globals.bDomainLogons = False;
-	Globals.bBrowseList = True;
+	Globals.bBrowseList = true;
 	Globals.bWINSsupport = False;
 	Globals.bWINSproxy = False;
 
 	TALLOC_FREE(Globals.szInitLogonDelayedHosts);
 	Globals.InitLogonDelay = 100; /* 100 ms default delay */
 
-	Globals.bDNSproxy = True;
+	Globals.bDNSproxy = true;
 
 	/* this just means to use them if they exist */
-	Globals.bKernelOplocks = True;
+	Globals.bKernelOplocks = true;
 
-	Globals.bAllowTrustedDomains = True;
+	Globals.bAllowTrustedDomains = true;
 	string_set(&Globals.szIdmapBackend, "tdb");
 	Globals.bIdmapReadOnly = false;
 
@@ -5356,7 +5356,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bWinbindEnumGroups = False;
 	Globals.bWinbindUseDefaultDomain = False;
 	Globals.bWinbindTrustedDomainsOnly = False;
-	Globals.bWinbindNestedGroups = True;
+	Globals.bWinbindNestedGroups = true;
 	Globals.winbind_expand_groups = 1;
 	Globals.szWinbindNssInfo = str_list_make_v3(NULL, "template", NULL);
 	Globals.bWinbindRefreshTickets = False;
@@ -5369,17 +5369,17 @@ static void init_globals(bool reinit_globals)
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
-	Globals.bUseSpnego = True;
-	Globals.bClientUseSpnego = True;
+	Globals.bUseSpnego = true;
+	Globals.bClientUseSpnego = true;
 
 	Globals.client_signing = Auto;
 	Globals.server_signing = False;
 
-	Globals.bDeferSharingViolations = True;
+	Globals.bDeferSharingViolations = true;
 	string_set(&Globals.smb_ports, SMB_PORTS);
 
-	Globals.bEnablePrivileges = True;
-	Globals.bHostMSDfs        = True;
+	Globals.bEnablePrivileges = true;
+	Globals.bHostMSDfs        = true;
 	Globals.bASUSupport       = False;
 
 	/* User defined shares. */
@@ -5391,7 +5391,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szUsershareTemplateShare, "");
 	Globals.iUsershareMaxShares = 0;
 	/* By default disallow sharing of directories not owned by the sharer. */
-	Globals.bUsershareOwnerOnly = True;
+	Globals.bUsershareOwnerOnly = true;
 	/* By default disallow guest access to usershares. */
 	Globals.bUsershareAllowGuests = False;
 
@@ -5792,7 +5792,7 @@ int lp_cups_encrypt(void)
 		case Auto:
 			result = HTTP_ENCRYPT_REQUIRED;
 			break;
-		case True:
+		case true:
 			result = HTTP_ENCRYPT_ALWAYS;
 			break;
 		case False:
@@ -5972,7 +5972,7 @@ static struct param_opt_struct *get_parametrics(int snum, const char *type,
 
 	if (snum < 0) { 
 		data = Globals.param_opt;
-		global_section = True;
+		global_section = true;
 	} else {
 		data = ServicePtrs[snum]->param_opt;
 	}
@@ -6333,7 +6333,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		free_service_byindex(i);
 	}
 
-	ServicePtrs[i]->valid = True;
+	ServicePtrs[i]->valid = true;
 
 	init_service(ServicePtrs[i]);
 	copy_service(ServicePtrs[i], &tservice, NULL);
@@ -6398,7 +6398,7 @@ static bool hash_a_service(const char *name, int idx)
 
 	TALLOC_FREE(canon_name);
 
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -6440,12 +6440,12 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 	ServicePtrs[i]->bAccessBasedShareEnum = sDefault.bAccessBasedShareEnum;
 
-	ServicePtrs[i]->autoloaded = True;
+	ServicePtrs[i]->autoloaded = true;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, ServicePtrs[i]->szPath ));
 
-	return (True);
+	return (true);
 }
 
 /***************************************************************************
@@ -6483,10 +6483,10 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	string_set(&ServicePtrs[i]->comment, comment);
 	string_set(&ServicePtrs[i]->fstype, "IPC");
 	ServicePtrs[i]->iMaxConnections = 0;
-	ServicePtrs[i]->bAvailable = True;
-	ServicePtrs[i]->bRead_only = True;
+	ServicePtrs[i]->bAvailable = true;
+	ServicePtrs[i]->bRead_only = true;
 	ServicePtrs[i]->bGuest_only = False;
-	ServicePtrs[i]->bAdministrative_share = True;
+	ServicePtrs[i]->bAdministrative_share = true;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
 	ServicePtrs[i]->bPrint_ok = False;
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
@@ -6494,7 +6494,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	DEBUG(3, ("adding IPC service\n"));
 
 	SAFE_FREE(comment);
-	return (True);
+	return (true);
 }
 
 /***************************************************************************
@@ -6509,7 +6509,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	if (i < 0)
 		return (False);
 
-	/* note that we do NOT default the availability flag to True - */
+	/* note that we do NOT default the availability flag to true - */
 	/* we take it from the default service passed. This allows all */
 	/* dynamic printers to be disabled by disabling the [printers] */
 	/* entry (if/when the 'available' keyword is implemented!).    */
@@ -6528,11 +6528,11 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	/* No oplocks on printer services. */
 	ServicePtrs[i]->bOpLocks = False;
 	/* Printer services must be printable. */
-	ServicePtrs[i]->bPrint_ok = True;
+	ServicePtrs[i]->bPrint_ok = true;
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
-	return (True);
+	return (true);
 }
 
 
@@ -6549,7 +6549,7 @@ bool lp_parameter_is_valid(const char *pszParmName)
 
 /***************************************************************************
  Check whether the given name is the name of a global parameter.
- Returns True for strings belonging to parameters of class
+ Returns true for strings belonging to parameters of class
  P_GLOBAL, False for all other strings, also for parametric options
  and strings not belonging to any option.
 ***************************************************************************/
@@ -6568,7 +6568,7 @@ bool lp_parameter_is_global(const char *pszParmName)
 /**************************************************************************
  Check whether the given name is the canonical name of a parameter.
  Returns False if it is not a valid parameter Name.
- For parametric options, True is returned.
+ For parametric options, true is returned.
 **************************************************************************/
 
 bool lp_parameter_is_canonical(const char *parm_name)
@@ -6605,7 +6605,7 @@ bool lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
 		*canon_parm = parm_table[num].label;
 	}
 
-	return True;
+	return true;
 
 }
 
@@ -6614,7 +6614,7 @@ bool lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
  Turn the value given into the inverse boolean expression when
  the synonym is an invers boolean synonym.
 
- Return True if parm_name is a valid parameter name and
+ Return true if parm_name is a valid parameter name and
  in case it is an invers boolean synonym, if the val string could
  successfully be converted to the reverse bool.
  Return false in all other cases.
@@ -6651,7 +6651,7 @@ bool lp_canonicalize_parameter_with_value(const char *parm_name,
 		}
 	}
 
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -6713,7 +6713,7 @@ done:
 /***************************************************************************
  return true if parameter number parm1 is a synonym of parameter
  number parm2 (parm2 being the principal name).
- set inverse to True if parm1 is P_BOOLREV and parm2 is P_BOOL,
+ set inverse to true if parm1 is P_BOOLREV and parm2 is P_BOOL,
  False otherwise.
 ***************************************************************************/
 
@@ -6727,12 +6727,12 @@ static bool is_synonym_of(int parm1, int parm2, bool *inverse)
 			if ((parm_table[parm1].type == P_BOOLREV) &&
 			    (parm_table[parm2].type == P_BOOL))
 			{
-				*inverse = True;
+				*inverse = true;
 			} else {
 				*inverse = False;
 			}
 		}
-		return True;
+		return true;
 	}
 	return False;
 }
@@ -6779,7 +6779,7 @@ static void show_parameter(int parmIndex)
 			printf("%s%s",
 				hadFlag ? "|" : "",
 				flag_names[flagIndex]);
-			hadFlag = True;
+			hadFlag = true;
 		}
 	}
 
@@ -6792,7 +6792,7 @@ static void show_parameter(int parmIndex)
 		} else if (is_synonym_of(parmIndex2, parmIndex, &inverse)) {
 			if (!hadSyn) {
 				printf(" (synonyms: ");
-				hadSyn = True;
+				hadSyn = true;
 			} else {
 				printf(", ");
 			}
@@ -6862,12 +6862,12 @@ bool lp_invert_boolean(const char *str, const char **inverse_str)
 	}
 
 	*inverse_str = get_boolean(!val);
-	return True;
+	return true;
 }
 
 /***************************************************************************
  Provide the canonical string representation of a boolean value given
- as a string. Return True on success, False if the string given does
+ as a string. Return true on success, False if the string given does
  not correctly represent a boolean.
 ***************************************************************************/
 
@@ -6880,7 +6880,7 @@ bool lp_canonicalize_boolean(const char *str, const char**canon_str)
 	}
 
 	*canon_str = get_boolean(val);
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -7037,14 +7037,14 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 
 /***************************************************************************
 Check a service for consistency. Return False if the service is in any way
-incomplete or faulty, else True.
+incomplete or faulty, else true.
 ***************************************************************************/
 
 bool service_ok(int iService)
 {
 	bool bRetval;
 
-	bRetval = True;
+	bRetval = true;
 	if (ServicePtrs[iService]->szService[0] == '\0') {
 		DEBUG(0, ("The following message indicates an internal error:\n"));
 		DEBUG(0, ("No service name in service entry.\n"));
@@ -7057,7 +7057,7 @@ bool service_ok(int iService)
 		if (!ServicePtrs[iService]->bPrint_ok) {
 			DEBUG(0, ("WARNING: [%s] service MUST be printable!\n",
 			       ServicePtrs[iService]->szService));
-			ServicePtrs[iService]->bPrint_ok = True;
+			ServicePtrs[iService]->bPrint_ok = true;
 		}
 		/* [printers] service must also be non-browsable. */
 		if (ServicePtrs[iService]->bBrowseable)
@@ -7394,7 +7394,7 @@ static bool handle_charset(struct loadparm_context *unused, int snum, const char
 		string_set(ptr, pszParmValue);
 		init_iconv();
 	}
-	return True;
+	return true;
 }
 
 static bool handle_dos_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
@@ -7535,7 +7535,7 @@ static bool handle_copy(struct loadparm_context *unused, int snum, const char *p
 			copy_service(ServicePtrs[iServiceIndex],
 				     &serviceTemp,
 				     ServicePtrs[iServiceIndex]->copymap);
-			bRetval = True;
+			bRetval = true;
 		}
 	} else {
 		DEBUG(0, ("Unable to copy service - source not found: %s\n", pszParmValue));
@@ -7583,7 +7583,7 @@ bool lp_idmap_uid(uid_t *low, uid_t *high)
         if (high)
                 *high = idmap_uid_high;
 
-        return True;
+        return true;
 }
 
 bool lp_idmap_gid(gid_t *low, gid_t *high)
@@ -7597,7 +7597,7 @@ bool lp_idmap_gid(gid_t *low, gid_t *high)
         if (high)
                 *high = idmap_gid_high;
 
-        return True;
+        return true;
 }
 
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
@@ -7613,14 +7613,14 @@ static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const ch
 {
 	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
 
-	return True;
+	return true;
 }
 
 static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
 
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -7723,7 +7723,7 @@ static bool handle_printing(struct loadparm_context *unused, int snum, const cha
 
 	init_printer_values( s );
 
-	return True;
+	return true;
 }
 
 
@@ -7789,7 +7789,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		if (strchr(pszParmName, ':') == NULL) {
 			DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",
 				  pszParmName));
-			return (True);
+			return (true);
 		}
 
 		/*
@@ -7800,7 +7800,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			? &Globals.param_opt : &ServicePtrs[snum]->param_opt;
 		set_param_opt(opt_list, pszParmName, pszParmValue, 0);
 
-		return (True);
+		return (true);
 	}
 
 	/* if it's already been set by the command line, then we don't
@@ -7822,7 +7822,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			DEBUG(0,
 			      ("Global parameter %s found in service section!\n",
 			       pszParmName));
-			return (True);
+			return (true);
 		}
 		parm_ptr = lp_local_ptr_by_snum(snum, &parm_table[parmnum]);
 	}
@@ -7895,7 +7895,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 	}
 
-	return (True);
+	return (true);
 }
 
 /***************************************************************************
@@ -7956,7 +7956,7 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata)
 {
 	if (!bInGlobalSection && bGlobalOnly)
-		return (True);
+		return (true);
 
 	DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
 
@@ -8111,7 +8111,7 @@ void init_locals(void)
 /***************************************************************************
  Process a new section (service). At this stage all sections are services.
  Later we'll have special sections that permit server parameters to be set.
- Returns True on success, False on failure. 
+ Returns true on success, False on failure.
 ***************************************************************************/
 
 static bool do_section(const char *pszSectionName, void *userdata)
@@ -8131,14 +8131,14 @@ static bool do_section(const char *pszSectionName, void *userdata)
 	/* check for multiple global sections */
 	if (bInGlobalSection) {
 		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
-		return (True);
+		return (true);
 	}
 
 	if (!bInGlobalSection && bGlobalOnly)
-		return (True);
+		return (true);
 
 	/* if we have a current service, tidy it up before moving on */
-	bRetval = True;
+	bRetval = true;
 
 	if (iServiceIndex >= 0)
 		bRetval = service_ok(iServiceIndex);
@@ -8236,7 +8236,7 @@ static void dump_globals(FILE *f)
 }
 
 /***************************************************************************
- Return True if a local parameter is currently set to the global default.
+ Return true if a local parameter is currently set to the global default.
 ***************************************************************************/
 
 bool lp_is_default(int snum, struct parm_struct *parm)
@@ -8318,7 +8318,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 				local_parm_name, parm_opt, NULL);
 			if (parm_opt_value) {
 				printf( "%s\n", parm_opt_value);
-				result = True;
+				result = true;
 			}
 		}
 		return result;
@@ -8351,7 +8351,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 			print_parameter(&parm_table[i],
 					ptr, f);
 			fprintf(f, "\n");
-			result = True;
+			result = true;
 			break;
 		}
 	}
@@ -8514,7 +8514,7 @@ void lp_add_one_printer(const char *name, const char *comment,
 		lp_add_printer(name, printers);
 		if ((i = lp_servicenumber(name)) >= 0) {
 			string_set(&ServicePtrs[i]->comment, comment);
-			ServicePtrs[i]->autoloaded = True;
+			ServicePtrs[i]->autoloaded = true;
 		}
 	}
 }
@@ -8611,7 +8611,7 @@ static void lp_save_defaults(void)
 				break;
 		}
 	}
-	defaults_saved = True;
+	defaults_saved = true;
 }
 
 /***********************************************************
@@ -8674,7 +8674,7 @@ static bool check_usershare_stat(const char *fname,
 		return False;
 	}
 
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -8755,7 +8755,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			return USERSHARE_MALFORMED_ACL_DEF;
 		}
 		if (lines[4][9] == 'y') {
-			*pallow_guest = True;
+			*pallow_guest = true;
 		}
 
 		/* Backwards compatible extension to file version #2. */
@@ -9035,7 +9035,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* If from a template it may be marked invalid. */
-	ServicePtrs[iService]->valid = True;
+	ServicePtrs[iService]->valid = true;
 
 	/* Set the service as a valid usershare. */
 	ServicePtrs[iService]->usershare = USERSHARE_VALID;
@@ -9365,7 +9365,7 @@ bool lp_is_in_client(void)
 }
 
 /***************************************************************************
- Load the services array from the services file. Return True on success, 
+ Load the services array from the services file. Return true on success,
  False on failure.
 ***************************************************************************/
 
@@ -9384,7 +9384,7 @@ static bool lp_load_ex(const char *pszFname,
 
 	DEBUG(3, ("lp_load_ex: refreshing parameters\n"));
 
-	bInGlobalSection = True;
+	bInGlobalSection = true;
 	bGlobalOnly = global_only;
 	bAllowIncludeRegistry = allow_include_registry;
 
@@ -9482,7 +9482,7 @@ static bool lp_load_ex(const char *pszFname,
 			  lp_passwordserver()));
 	}
 
-	bLoaded = True;
+	bLoaded = true;
 
 	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
 	/* if bWINSsupport is true and we are in the client            */
@@ -9850,7 +9850,7 @@ bool lp_disable_spoolss( void )
 	if ( spoolss_state == SVCCTL_STATE_UNKNOWN )
 		spoolss_state = _lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
 
-	return spoolss_state == SVCCTL_STOPPED ? True : False;
+	return spoolss_state == SVCCTL_STOPPED ? true : False;
 }
 
 void lp_set_spoolss_state( uint32 state )
@@ -9931,7 +9931,7 @@ bool lp_posix_pathnames(void)
 
 void lp_set_posix_pathnames(void)
 {
-	posix_pathnames = True;
+	posix_pathnames = true;
 }
 
 /*******************************************************************
@@ -9955,7 +9955,7 @@ enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp)
 
 void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val)
 {
-	posix_default_lock_was_set = True;
+	posix_default_lock_was_set = true;
 	posix_cifsx_locktype = val;
 }
 
