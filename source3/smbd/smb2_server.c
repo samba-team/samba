@@ -923,7 +923,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	if (req->do_signing) {
 		status = smb2_signing_sign_pdu(req->session->session_key,
-					state->vector, 3);
+					&state->vector[1], 2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
