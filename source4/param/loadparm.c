@@ -2499,6 +2499,16 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			}
 			break;
 
+		case P_BOOLREV: {
+			bool b;
+			if (!set_boolean(pszParmValue, &b)) {
+				DEBUG(0,("lp_do_parameter(%s): value is not boolean!\n", pszParmValue));
+				return false;
+			}
+			*(int *)parm_ptr = !b;
+			}
+			break;
+
 		case P_INTEGER:
 			*(int *)parm_ptr = atoi(pszParmValue);
 			break;
@@ -2809,6 +2819,10 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			fprintf(f, "%s", BOOLSTR((bool)*(int *)ptr));
 			break;
 
+		case P_BOOLREV:
+			fprintf(f, "%s", BOOLSTR(!(bool)*(int *)ptr));
+			break;
+
 		case P_INTEGER:
 		case P_BYTES:
 			fprintf(f, "%d", *(int *)ptr);
@@ -2852,6 +2866,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 {
 	switch (type) {
 		case P_BOOL:
+		case P_BOOLREV:
 			return (*((int *)ptr1) == *((int *)ptr2));
 
 		case P_INTEGER:
@@ -2947,6 +2962,7 @@ static bool is_default(struct loadparm_service *sDefault, int i)
 			return strequal(parm_table[i].def.svalue,
 					*(char **)def_ptr);
 		case P_BOOL:
+		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
 				*(int *)def_ptr;
 		case P_INTEGER:
