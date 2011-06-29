@@ -698,18 +698,18 @@ static int default_server_announce;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static bool handle_include( int snum, const char *pszParmValue, char **ptr);
-static bool handle_copy( int snum, const char *pszParmValue, char **ptr);
-static bool handle_idmap_backend(int snum, const char *pszParmValue, char **ptr);
-static bool handle_idmap_uid( int snum, const char *pszParmValue, char **ptr);
-static bool handle_idmap_gid( int snum, const char *pszParmValue, char **ptr);
-static bool handle_debug_list( int snum, const char *pszParmValue, char **ptr );
-static bool handle_realm( int snum, const char *pszParmValue, char **ptr );
-static bool handle_netbios_aliases( int snum, const char *pszParmValue, char **ptr );
-static bool handle_charset( int snum, const char *pszParmValue, char **ptr );
-static bool handle_dos_charset( int snum, const char *pszParmValue, char **ptr );
-static bool handle_printing( int snum, const char *pszParmValue, char **ptr);
-static bool handle_ldap_debug_level( int snum, const char *pszParmValue, char **ptr);
+static bool handle_include(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
+static bool handle_copy(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
+static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
+static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
+static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
+static bool handle_debug_list(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
+static bool handle_realm(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
+static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
+static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
+static bool handle_dos_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr );
+static bool handle_printing(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
+static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 
 static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
@@ -7388,7 +7388,7 @@ static void init_iconv(void)
 						      true, global_iconv_handle);
 }
 
-static bool handle_charset(int snum, const char *pszParmValue, char **ptr)
+static bool handle_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	if (strcmp(*ptr, pszParmValue) != 0) {
 		string_set(ptr, pszParmValue);
@@ -7397,7 +7397,7 @@ static bool handle_charset(int snum, const char *pszParmValue, char **ptr)
 	return True;
 }
 
-static bool handle_dos_charset(int snum, const char *pszParmValue, char **ptr)
+static bool handle_dos_charset(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	bool is_utf8 = false;
 	size_t len = strlen(pszParmValue);
@@ -7434,7 +7434,7 @@ static bool handle_dos_charset(int snum, const char *pszParmValue, char **ptr)
 	return true;
 }
 
-static bool handle_realm(int snum, const char *pszParmValue, char **ptr)
+static bool handle_realm(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	bool ret = true;
 	char *realm = strupper_talloc(talloc_tos(), pszParmValue);
@@ -7449,7 +7449,7 @@ static bool handle_realm(int snum, const char *pszParmValue, char **ptr)
 	return ret;
 }
 
-static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
+static bool handle_netbios_aliases(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	TALLOC_FREE(Globals.szNetbiosAliases);
 	Globals.szNetbiosAliases = str_list_make_v3(NULL, pszParmValue, NULL);
@@ -7461,7 +7461,7 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 ***************************************************************************/
 static bool bAllowIncludeRegistry = true;
 
-static bool handle_include(int snum, const char *pszParmValue, char **ptr)
+static bool handle_include(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
 
@@ -7514,7 +7514,7 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static bool handle_copy(int snum, const char *pszParmValue, char **ptr)
+static bool handle_copy(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
 	int iTemp;
@@ -7546,7 +7546,7 @@ static bool handle_copy(int snum, const char *pszParmValue, char **ptr)
 	return (bRetval);
 }
 
-static bool handle_ldap_debug_level(int snum, const char *pszParmValue, char **ptr)
+static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	Globals.ldap_debug_level = lp_int(pszParmValue);
 	init_ldap_debugging();
@@ -7600,7 +7600,7 @@ bool lp_idmap_gid(gid_t *low, gid_t *high)
         return True;
 }
 
-static bool handle_idmap_backend(int snum, const char *pszParmValue, char **ptr)
+static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	lp_do_parameter(snum, "idmap config * : backend", pszParmValue);
 
@@ -7609,14 +7609,14 @@ static bool handle_idmap_backend(int snum, const char *pszParmValue, char **ptr)
 
 /* Do some simple checks on "idmap [ug]id" parameter values */
 
-static bool handle_idmap_uid(int snum, const char *pszParmValue, char **ptr)
+static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
 
 	return True;
 }
 
-static bool handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
+static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
 
@@ -7627,7 +7627,7 @@ static bool handle_idmap_gid(int snum, const char *pszParmValue, char **ptr)
  Handle the DEBUG level list.
 ***************************************************************************/
 
-static bool handle_debug_list( int snum, const char *pszParmValueIn, char **ptr )
+static bool handle_debug_list(struct loadparm_context *unused, int snum, const char *pszParmValueIn, char **ptr )
 {
 	string_set(ptr, pszParmValueIn);
 	return debug_parse_levels(pszParmValueIn);
@@ -7706,7 +7706,7 @@ static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue
 /***************************************************************************
 ***************************************************************************/
 
-static bool handle_printing(int snum, const char *pszParmValue, char **ptr)
+static bool handle_printing(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	static int parm_num = -1;
 	struct loadparm_service *s;
@@ -7840,7 +7840,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		return parm_table[parmnum].special(snum, pszParmValue,
+		return parm_table[parmnum].special(NULL, snum, pszParmValue,
 						   (char **)parm_ptr);
 	}
 

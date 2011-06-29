@@ -726,13 +726,15 @@ struct enum_list {
 };
 
 struct loadparm_service;
+struct loadparm_context;
 
 struct parm_struct {
 	const char *label;
 	parm_type type;
 	parm_class p_class;
 	offset_t offset;
-	bool (*special)(int snum, const char *, char **);
+	bool (*special)(struct loadparm_context *lpcfg_ctx,
+			int snum, const char *, char **);
 	const struct enum_list *enum_list;
 	unsigned flags;
 	union {

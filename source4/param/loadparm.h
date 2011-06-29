@@ -48,7 +48,8 @@ struct parm_struct {
 	parm_type type;
 	parm_class pclass;
 	int offset;
-	bool (*special)(struct loadparm_context *, const char *, char **);
+	bool (*special)(struct loadparm_context *lpcfg_ctx,
+			int snum, const char *, char **);
 	const struct enum_list *enum_list;
 	union {
 		int bvalue;

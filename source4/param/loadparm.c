@@ -106,15 +106,15 @@ static bool defaults_saved = false;
 
 
 /* prototypes for the special type handlers */
-static bool handle_include(struct loadparm_context *lp_ctx,
+static bool handle_include(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
-static bool handle_realm(struct loadparm_context *lp_ctx,
+static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
 			 const char *pszParmValue, char **ptr);
-static bool handle_copy(struct loadparm_context *lp_ctx,
+static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr);
-static bool handle_debuglevel(struct loadparm_context *lp_ctx,
+static bool handle_debuglevel(struct loadparm_context *lp_ctx, int unused,
 			      const char *pszParmValue, char **ptr);
-static bool handle_logfile(struct loadparm_context *lp_ctx,
+static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
 
 static const struct enum_list enum_protocol[] = {
@@ -1367,7 +1367,7 @@ bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx)
  Handle the "realm" parameter
 ***************************************************************************/
 
-static bool handle_realm(struct loadparm_context *lp_ctx,
+static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
 			 const char *pszParmValue, char **ptr)
 {
 	string_set(lp_ctx, ptr, pszParmValue);
@@ -1385,7 +1385,7 @@ static bool handle_realm(struct loadparm_context *lp_ctx,
  Handle the include operation.
 ***************************************************************************/
 
-static bool handle_include(struct loadparm_context *lp_ctx,
+static bool handle_include(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr)
 {
 	char *fname = standard_sub_basic(lp_ctx, pszParmValue);
@@ -1406,7 +1406,7 @@ static bool handle_include(struct loadparm_context *lp_ctx,
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static bool handle_copy(struct loadparm_context *lp_ctx,
+static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
@@ -1436,7 +1436,7 @@ static bool handle_copy(struct loadparm_context *lp_ctx,
 	return bRetval;
 }
 
-static bool handle_debuglevel(struct loadparm_context *lp_ctx,
+static bool handle_debuglevel(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr)
 {
 
@@ -1447,7 +1447,7 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 	return true;
 }
 
-static bool handle_logfile(struct loadparm_context *lp_ctx,
+static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr)
 {
 	debug_set_logfile(pszParmValue);
@@ -1547,7 +1547,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
 		bool ret;
-		ret = parm_table[parmnum].special(lp_ctx, pszParmValue,
+		ret = parm_table[parmnum].special(lp_ctx, -1, pszParmValue,
 						  (char **)parm_ptr);
 		if (!ret) {
 			return false;
