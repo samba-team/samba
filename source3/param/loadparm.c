@@ -930,9 +930,8 @@ static const struct enum_list enum_kerberos_method[] = {
  *	name first, and all synonyms must follow it with the FLAG_HIDE attribute.
  */
 
-#define GLOBAL_VAR(name) &Globals.name
-#define LOCAL_VAR(name) &sDefault.name
-#define offset ptr
+#define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
+#define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
 static struct parm_struct parm_table[] = {
 	{N_("Base Options"), P_SEP, P_SEPARATOR},
@@ -7755,12 +7754,12 @@ void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm)
 {
 	if (service == NULL) {
 		if (parm->p_class == P_LOCAL)
-			return parm->ptr;
+			return (void *)(((char *)&sDefault)+parm->offset);
 		else if (parm->p_class == P_GLOBAL)
-			return parm->ptr;
+			return (void *)(((char *)&Globals)+parm->offset);
 		else return NULL;
 	} else {
-		return (void *)(((char *)service) + PTR_DIFF(parm->ptr, &sDefault));
+		return (void *)(((char *)service) + parm->offset);
 	}
 }
 

@@ -731,7 +731,7 @@ struct parm_struct {
 	const char *label;
 	parm_type type;
 	parm_class p_class;
-	void *ptr;
+	offset_t offset;
 	bool (*special)(int snum, const char *, char **);
 	const struct enum_list *enum_list;
 	unsigned flags;
