@@ -4981,10 +4981,6 @@ static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 {
 	void *parm_ptr;
 
-	if (parm.offset == 0) {
-		return;
-	}
-
 	if (snum < 0) {
 		parm_ptr = lp_parm_ptr(NULL, &parm);
 	} else if (parm.p_class != P_LOCAL) {
@@ -5114,8 +5110,7 @@ static void init_globals(bool reinit_globals)
 
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
-		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].offset)
+		     parm_table[i].type == P_USTRING))
 		{
 			string_set(lp_parm_ptr(NULL, &parm_table[i]), "");
 		}
@@ -6982,7 +6977,7 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 	struct param_opt_struct *data;
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].offset && parm_table[i].p_class == P_LOCAL &&
+		if (parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || bitmap_query(pcopymapDest,i))) {
 			void *src_ptr = lp_parm_ptr(pserviceSource, &parm_table[i]);
 			void *dest_ptr = lp_parm_ptr(pserviceDest, &parm_table[i]);
@@ -8222,7 +8217,6 @@ static void dump_globals(FILE *f)
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_GLOBAL &&
 		    !(parm_table[i].flags & FLAG_META) &&
-		    parm_table[i].offset &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
 			if (defaults_saved && is_default(i))
 				continue;
@@ -8269,7 +8263,6 @@ static void dump_a_service(struct loadparm_service *pService, FILE * f)
 
 		if (parm_table[i].p_class == P_LOCAL &&
 		    !(parm_table[i].flags & FLAG_META) &&
-		    parm_table[i].offset &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) 
 		{
@@ -8343,7 +8336,6 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
 		    !(parm_table[i].flags & FLAG_META) &&
 		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag) &&
-		    parm_table[i].offset &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) 
 		{
@@ -8398,8 +8390,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 			if (parm_table[*i].p_class == P_SEPARATOR)
 				return &parm_table[(*i)++];
 
-			if (!parm_table[*i].offset
-			    || (*parm_table[*i].label == '-'))
+			if ((*parm_table[*i].label == '-'))
 				continue;
 
 			if ((*i) > 0
@@ -8420,7 +8411,6 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 				return &parm_table[(*i)++];
 
 			if (parm_table[*i].p_class == P_LOCAL &&
-			    parm_table[*i].offset &&
 			    (*parm_table[*i].label != '-') &&
 			    ((*i) == 0 ||
 			     (parm_table[*i].offset !=
@@ -8601,11 +8591,7 @@ static void lp_save_defaults(void)
 				break;
 			case P_STRING:
 			case P_USTRING:
-				if (parm_table[i].offset) {
-					parm_table[i].def.svalue = SMB_STRDUP(*(char **)lp_parm_ptr(NULL, &parm_table[i]));
-				} else {
-					parm_table[i].def.svalue = NULL;
-				}
+				parm_table[i].def.svalue = SMB_STRDUP(*(char **)lp_parm_ptr(NULL, &parm_table[i]));
 				break;
 			case P_BOOL:
 			case P_BOOLREV:
