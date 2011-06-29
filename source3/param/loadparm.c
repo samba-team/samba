@@ -6754,10 +6754,10 @@ static void show_parameter(int parmIndex)
 		"P_ENUM", "P_SEP"};
 	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
 		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
-		FLAG_HIDE, FLAG_DOS_STRING};
+		FLAG_HIDE};
 	const char *flag_names[] = { "FLAG_BASIC", "FLAG_SHARE", "FLAG_PRINT",
 		"FLAG_GLOBAL", "FLAG_WIZARD", "FLAG_ADVANCED", "FLAG_DEVELOPER",
-		"FLAG_DEPRECATED", "FLAG_HIDE", "FLAG_DOS_STRING", NULL};
+		"FLAG_DEPRECATED", "FLAG_HIDE", NULL};
 
 	printf("%s=%s", parm_table[parmIndex].label,
 	       type[parm_table[parmIndex].type]);
