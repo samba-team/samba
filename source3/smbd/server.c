@@ -477,6 +477,15 @@ static void smbd_accept_connection(struct tevent_context *ev,
 					 "because too many files are open\n"));
 				goto exit;
 			}
+			if (lp_clustering() &&
+			    NT_STATUS_EQUAL(status,
+			    NT_STATUS_INTERNAL_DB_ERROR)) {
+				DEBUG(1,("child process cannot initialize "
+					 "because connection to CTDB "
+					 "has failed\n"));
+				goto exit;
+			}
+
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
 		}
