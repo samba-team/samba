@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "smbd/proto.h"
 
 /* PLEASE,PLEASE READ THE VFS MODULES CHAPTER OF THE 
    SAMBA DEVELOPERS GUIDE!!!!!!
@@ -64,7 +65,7 @@ static int skel_set_quota(vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype,
 	return SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, dq);
 }
 
-static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels)
+static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, struct shadow_copy_data *shadow_copy_data, bool labels)
 {
 	return SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data, labels);
 }
