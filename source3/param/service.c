@@ -27,6 +27,7 @@
 #include "printing/pcap.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
+#include "lib/param/loadparm.h"
 
 static int load_registry_service(const char *servicename)
 {

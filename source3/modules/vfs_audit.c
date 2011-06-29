@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "system/syslog.h"
 #include "smbd/smbd.h"
+#include "lib/param/loadparm.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

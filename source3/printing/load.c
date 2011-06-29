@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "printing/pcap.h"
 #include "printing/load.h"
+#include "lib/param/loadparm.h"
 
 /***************************************************************************
 auto-load some homes and printer services

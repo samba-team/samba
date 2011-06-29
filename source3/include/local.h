@@ -5,26 +5,6 @@
 #ifndef _LOCAL_H
 #define _LOCAL_H
 
-/* The default workgroup - usually overridden in smb.conf */
-#ifndef WORKGROUP
-#define WORKGROUP "WORKGROUP"
-#endif
-
-/* This defines the section name in the configuration file that will contain */
-/* global parameters - that is, parameters relating to the whole server, not */
-/* just services. This name is then reserved, and may not be used as a       */
-/* a service name. It will default to "global" if not defined here.          */
-#define GLOBAL_NAME "global"
-#define GLOBAL_NAME2 "globals"
-
-/* This defines the section name in the configuration file that will
-   refer to the special "homes" service */
-#define HOMES_NAME "homes"
-
-/* This defines the section name in the configuration file that will
-   refer to the special "printers" service */
-#define PRINTERS_NAME "printers"
-
 /* Yves Gaige <yvesg@hptnodur.grenoble.hp.com> requested this set this 	     */
 /* to a maximum of 8 if old smb clients break because of long printer names. */
 #define MAXPRINTERLEN 15
@@ -171,12 +151,6 @@
    it are worked out */
 #define USE_READ_PREDICTION 0
 
-/*
- * Default passwd chat script.
- */
-
-#define DEFAULT_PASSWD_CHAT "*new*password* %n\\n *new*password* %n\\n *changed*"
-
 /* Minimum length of allowed password when changing UNIX password. */
 #define MINPASSWDLENGTH 5
 
@@ -211,9 +185,6 @@
 
 /* this enables the "rabbit pellet" fix for SMBwritebraw */
 #define RABBIT_PELLET_FIX 1
-
-/* Max number of jobs per print queue. */
-#define PRINT_MAX_JOBID 10000
 
 /* Max number of open RPC pipes. */
 #define MAX_OPEN_PIPES 2048

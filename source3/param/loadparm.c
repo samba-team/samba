@@ -59,6 +59,7 @@
 #include "printing.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
+#include "lib/param/loadparm.h"
 
 #include "ads.h"
 #include "../librpc/gen_ndr/svcctl.h"
@@ -5147,7 +5148,7 @@ static void init_globals(bool reinit_globals)
 	 */
 	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
 
-	string_set(&Globals.szWorkgroup, WORKGROUP);
+	string_set(&Globals.szWorkgroup, DEFAULT_WORKGROUP);
 
 	string_set(&Globals.szPasswdProgram, "");
 	string_set(&Globals.szLockDir, get_dyn_LOCKDIR());

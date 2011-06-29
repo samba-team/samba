@@ -29,6 +29,7 @@
 #include "printing/load.h"
 #include "auth.h"
 #include "messages.h"
+#include "lib/param/loadparm.h"
 
 /****************************************************************************
  purge stale printers and reload from pre-populated pcap cache

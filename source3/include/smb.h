@@ -709,56 +709,6 @@ struct connections_data {
 	uint32 unused_compatitibility_field;
 };
 
-
-/* the following are used by loadparm for option lists */
-typedef enum {
-	P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
-	P_STRING,P_USTRING,P_ENUM,P_SEP
-} parm_type;
-
-typedef enum {
-	P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
-} parm_class;
-
-struct enum_list {
-	int value;
-	const char *name;
-};
-
-struct loadparm_service;
-struct loadparm_context;
-
-struct parm_struct {
-	const char *label;
-	parm_type type;
-	parm_class p_class;
-	offset_t offset;
-	bool (*special)(struct loadparm_context *lpcfg_ctx,
-			int snum, const char *, char **);
-	const struct enum_list *enum_list;
-	unsigned flags;
-	union {
-		bool bvalue;
-		int ivalue;
-		char *svalue;
-		char cvalue;
-		char **lvalue;
-	} def;
-};
-
-/* The following flags are used in SWAT */
-#define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
-#define FLAG_SHARE 	0x0002 /* file sharing options */
-#define FLAG_PRINT 	0x0004 /* printing options */
-#define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
-#define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
-#define FLAG_ADVANCED 	0x0020 /* Parameters that will be visible in advanced view */
-#define FLAG_DEVELOPER 	0x0040 /* No longer used */
-#define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
-#define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
-#define FLAG_META	0x8000 /* A meta directive - not a real parameter */
-#define FLAG_CMDLINE	0x10000 /* option has been overridden */
-
 struct bitmap {
 	uint32 *b;
 	unsigned int n;

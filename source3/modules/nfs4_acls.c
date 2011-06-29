@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "passdb/lookup_sid.h"
 #include "util_tdb.h"
+#include "lib/param/loadparm.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS

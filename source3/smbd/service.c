@@ -27,6 +27,7 @@
 #include "printing/pcap.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
+#include "lib/param/loadparm.h"
 
 extern userdom_struct current_user_info;
 

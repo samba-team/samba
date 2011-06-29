@@ -34,6 +34,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "popt_common.h"
+#include "lib/param/loadparm.h"
 
 /*******************************************************************
  Check if a directory exists.

@@ -33,6 +33,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "util_tdb.h"
+#include "lib/param/loadparm.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;

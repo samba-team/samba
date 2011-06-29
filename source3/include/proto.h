@@ -1545,6 +1545,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 int lp_parm_int(int snum, const char *type, const char *option, int def);
 unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsigned long def);
 bool lp_parm_bool(int snum, const char *type, const char *option, bool def);
+struct enum_list;
 int lp_parm_enum(int snum, const char *type, const char *option,
 		 const struct enum_list *_enum, int def);
 char *canonicalize_servicename(TALLOC_CTX *ctx, const char *src);
@@ -1577,6 +1578,8 @@ const char *lp_ldap_machine_suffix(void);
 const char *lp_ldap_user_suffix(void);
 const char *lp_ldap_group_suffix(void);
 const char *lp_ldap_idmap_suffix(void);
+struct loadparm_service;
+struct parm_struct;
 void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm);
 void *lp_local_ptr_by_snum(int snum, struct parm_struct *parm);
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue);
