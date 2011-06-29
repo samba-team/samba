@@ -537,151 +537,151 @@ struct loadparm_service {
 
 
 /* This is a default service used to prime a services structure */
-static struct loadparm_service sDefault = {
-	True,			/* valid */
-	False,			/* not autoloaded */
-	0,			/* not a usershare */
-	{0, },                  /* No last mod time */
-	NULL,			/* szService */
-	NULL,			/* szPath */
-	NULL,			/* szUsername */
-	NULL,			/* szInvalidUsers */
-	NULL,			/* szValidUsers */
-	NULL,			/* szAdminUsers */
-	NULL,			/* szCopy */
-	NULL,			/* szInclude */
-	NULL,			/* szPreExec */
-	NULL,			/* szPostExec */
-	NULL,			/* szRootPreExec */
-	NULL,			/* szRootPostExec */
-	NULL,			/* szCupsOptions */
-	NULL,			/* szPrintcommand */
-	NULL,			/* szLpqcommand */
-	NULL,			/* szLprmcommand */
-	NULL,			/* szLppausecommand */
-	NULL,			/* szLpresumecommand */
-	NULL,			/* szQueuepausecommand */
-	NULL,			/* szQueueresumecommand */
-	NULL,			/* szPrintername */
-	NULL,			/* szPrintjobUsername */
-	NULL,			/* szDontdescend */
-	NULL,			/* szHostsallow */
-	NULL,			/* szHostsdeny */
-	NULL,			/* szMagicScript */
-	NULL,			/* szMagicOutput */
-	NULL,			/* szVetoFiles */
-	NULL,			/* szHideFiles */
-	NULL,			/* szVetoOplockFiles */
-	NULL,			/* comment */
-	NULL,			/* force user */
-	NULL,			/* force group */
-	NULL,			/* readlist */
-	NULL,			/* writelist */
-	NULL,			/* printer admin */
-	NULL,			/* volume */
-	NULL,			/* fstype */
-	NULL,			/* vfs objects */
-	NULL,                   /* szMSDfsProxy */
-	NULL,			/* szAioWriteBehind */
-	NULL,			/* szDfree */
-	0,			/* iMinPrintSpace */
-	1000,			/* iMaxPrintJobs */
-	0,			/* iMaxReportedPrintJobs */
-	0,			/* iWriteCacheSize */
-	0744,			/* iCreate_mask */
-	0000,			/* iCreate_force_mode */
-	0777,			/* iSecurity_mask */
-	0,			/* iSecurity_force_mode */
-	0755,			/* iDir_mask */
-	0000,			/* iDir_force_mode */
-	0777,			/* iDir_Security_mask */
-	0,			/* iDir_Security_force_mode */
-	0,			/* iMaxConnections */
-	CASE_LOWER,		/* iDefaultCase */
-	DEFAULT_PRINTING,	/* iPrinting */
-	2,			/* iOplockContentionLimit */
-	0,			/* iCSCPolicy */
-	1024,           	/* iBlock_size */
-	0,			/* iDfreeCacheTime */
-	False,			/* bPreexecClose */
-	False,			/* bRootpreexecClose */
-	Auto,			/* case sensitive */
-	True,			/* case preserve */
-	True,			/* short case preserve */
-	True,			/* bHideDotFiles */
-	False,			/* bHideSpecialFiles */
-	False,			/* bHideUnReadable */
-	False,			/* bHideUnWriteableFiles */
-	True,			/* bBrowseable */
-	False,			/* bAccessBasedShareEnum */
-	True,			/* bAvailable */
-	True,			/* bRead_only */
-	True,			/* bNo_set_dir */
-	False,			/* bGuest_only */
-	False,			/* bAdministrative_share */
-	False,			/* bGuest_ok */
-	False,			/* bPrint_ok */
-	True,			/* bPrintNotifyBackchannel */
-	False,			/* bMap_system */
-	False,			/* bMap_hidden */
-	True,			/* bMap_archive */
-	False,			/* bStoreDosAttributes */
-	False,			/* bDmapiSupport */
-	True,			/* bLocking */
-	Auto,			/* iStrictLocking */
-	True,			/* bPosixLocking */
-	True,			/* bShareModes */
-	True,			/* bOpLocks */
-	True,			/* bLevel2OpLocks */
-	False,			/* bOnlyUser */
-	True,			/* bMangledNames */
-	false,			/* bWidelinks */
-	True,			/* bSymlinks */
-	False,			/* bSyncAlways */
-	False,			/* bStrictAllocate */
-	False,			/* bStrictSync */
-	'~',			/* magic char */
-	NULL,			/* copymap */
-	False,			/* bDeleteReadonly */
-	False,			/* bFakeOplocks */
-	False,			/* bDeleteVetoFiles */
-	False,			/* bDosFilemode */
-	True,			/* bDosFiletimes */
-	False,			/* bDosFiletimeResolution */
-	False,			/* bFakeDirCreateTimes */
-	True,			/* bBlockingLocks */
-	False,			/* bInheritPerms */
-	False,			/* bInheritACLS */
-	False,			/* bInheritOwner */
-	False,			/* bMSDfsRoot */
-	False,			/* bUseClientDriver */
-	True,			/* bDefaultDevmode */
-	False,			/* bForcePrintername */
-	True,			/* bNTAclSupport */
-	False,                  /* bForceUnknownAclUser */
-	False,			/* bUseSendfile */
-	False,			/* bProfileAcls */
-	False,			/* bMap_acl_inherit */
-	False,			/* bAfs_Share */
-	False,			/* bEASupport */
-	True,			/* bAclCheckPermissions */
-	True,			/* bAclMapFullControl */
-	False,			/* bAclGroupControl */
-	True,			/* bChangeNotify */
-	True,			/* bKernelChangeNotify */
-	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
-	0,			/* iAioReadSize */
-	0,			/* iAioWriteSize */
-	MAP_READONLY_YES,	/* iMap_readonly */
+static struct loadparm_service sDefault =
+{
+	.valid = true,
+	.autoloaded = false,
+	.usershare = 0,
+	.usershare_last_mod = {0, 0},
+	.szService = NULL,
+	.szPath = NULL,
+	.szUsername = NULL,
+	.szInvalidUsers = NULL,
+	.szValidUsers = NULL,
+	.szAdminUsers = NULL,
+	.szCopy = NULL,
+	.szInclude = NULL,
+	.szPreExec = NULL,
+	.szPostExec = NULL,
+	.szRootPreExec = NULL,
+	.szRootPostExec = NULL,
+	.szCupsOptions = NULL,
+	.szPrintcommand = NULL,
+	.szLpqcommand = NULL,
+	.szLprmcommand = NULL,
+	.szLppausecommand = NULL,
+	.szLpresumecommand = NULL,
+	.szQueuepausecommand = NULL,
+	.szQueueresumecommand = NULL,
+	.szPrintername = NULL,
+	.szPrintjobUsername = NULL,
+	.szDontdescend = NULL,
+	.szHostsallow = NULL,
+	.szHostsdeny = NULL,
+	.szMagicScript = NULL,
+	.szMagicOutput = NULL,
+	.szVetoFiles = NULL,
+	.szHideFiles = NULL,
+	.szVetoOplockFiles = NULL,
+	.comment = NULL,
+	.force_user = NULL,
+	.force_group = NULL,
+	.readlist = NULL,
+	.writelist = NULL,
+	.printer_admin = NULL,
+	.volume = NULL,
+	.fstype = NULL,
+	.szVfsObjects = NULL,
+	.szMSDfsProxy = NULL,
+	.szAioWriteBehind = NULL,
+	.szDfree = NULL,
+	.iMinPrintSpace = 0,
+	.iMaxPrintJobs = 1000,
+	.iMaxReportedPrintJobs = 0,
+	.iWriteCacheSize = 0,
+	.iCreate_mask = 0744,
+	.iCreate_force_mode = 0,
+	.iSecurity_mask = 0777,
+	.iSecurity_force_mode = 0,
+	.iDir_mask = 0755,
+	.iDir_force_mode = 0,
+	.iDir_Security_mask = 0777,
+	.iDir_Security_force_mode = 0,
+	.iMaxConnections = 0,
+	.iDefaultCase = CASE_LOWER,
+	.iPrinting = DEFAULT_PRINTING,
+	.iOplockContentionLimit = 2,
+	.iCSCPolicy = 0,
+	.iBlock_size = 1024,
+	.iDfreeCacheTime = 0,
+	.bPreexecClose = false,
+	.bRootpreexecClose = false,
+	.iCaseSensitive = Auto,
+	.bCasePreserve = true,
+	.bShortCasePreserve = true,
+	.bHideDotFiles = true,
+	.bHideSpecialFiles = false,
+	.bHideUnReadable = false,
+	.bHideUnWriteableFiles = false,
+	.bBrowseable = true,
+	.bAccessBasedShareEnum = false,
+	.bAvailable = true,
+	.bRead_only = true,
+	.bNo_set_dir = true,
+	.bGuest_only = false,
+	.bAdministrative_share = false,
+	.bGuest_ok = false,
+	.bPrint_ok = false,
+	.bPrintNotifyBackchannel = true,
+	.bMap_system = false,
+	.bMap_hidden = false,
+	.bMap_archive = true,
+	.bStoreDosAttributes = false,
+	.bDmapiSupport = false,
+	.bLocking = true,
+	.iStrictLocking = Auto,
+	.bPosixLocking = true,
+	.bShareModes = true,
+	.bOpLocks = true,
+	.bLevel2OpLocks = true,
+	.bOnlyUser = false,
+	.bMangledNames = true,
+	.bWidelinks = false,
+	.bSymlinks = true,
+	.bSyncAlways = false,
+	.bStrictAllocate = false,
+	.bStrictSync = false,
+	.magic_char = '~',
+	.copymap = NULL,
+	.bDeleteReadonly = false,
+	.bFakeOplocks = false,
+	.bDeleteVetoFiles = false,
+	.bDosFilemode = false,
+	.bDosFiletimes = true,
+	.bDosFiletimeResolution = false,
+	.bFakeDirCreateTimes = false,
+	.bBlockingLocks = true,
+	.bInheritPerms = false,
+	.bInheritACLS = false,
+	.bInheritOwner = false,
+	.bMSDfsRoot = false,
+	.bUseClientDriver = false,
+	.bDefaultDevmode = true,
+	.bForcePrintername = false,
+	.bNTAclSupport = true,
+	.bForceUnknownAclUser = false,
+	.bUseSendfile = false,
+	.bProfileAcls = false,
+	.bMap_acl_inherit = false,
+	.bAfs_Share = false,
+	.bEASupport = false,
+	.bAclCheckPermissions = true,
+	.bAclMapFullControl = true,
+	.bAclGroupControl = false,
+	.bChangeNotify = true,
+	.bKernelChangeNotify = true,
+	.iallocation_roundup_size = SMB_ROUNDUP_ALLOCATION_SIZE,
+	.iAioReadSize = 0,
+	.iAioWriteSize = 0,
+	.iMap_readonly = MAP_READONLY_YES,
 #ifdef BROKEN_DIRECTORY_HANDLING
-	0,			/* iDirectoryNameCacheSize */
+	.iDirectoryNameCacheSize = 0,
 #else
-	100,			/* iDirectoryNameCacheSize */
+	.iDirectoryNameCacheSize = 100,
 #endif
-	Auto,			/* ismb_encrypt */
-	NULL,			/* Parametric options */
-
-	""			/* dummy */
+	.ismb_encrypt = Auto,
+	.param_opt = NULL,
+	.dummy = ""
 };
 
 /* local variables */
