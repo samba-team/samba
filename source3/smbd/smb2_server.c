@@ -665,10 +665,18 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 	}
 
 	newreq->sconn = req->sconn;
+	newreq->session = req->session;
 	newreq->do_signing = req->do_signing;
 	newreq->current_idx = req->current_idx;
 	newreq->async = false;
 	newreq->cancelled = false;
+	/* Note we are leaving:
+		->tcon
+		->smb1req
+		->compat_chain_fsp
+	   uninitialized as NULL here as
+	   they're not used in the interim
+	   response code. JRA. */
 
 	outvec = talloc_zero_array(newreq, struct iovec, count);
 	if (!outvec) {
