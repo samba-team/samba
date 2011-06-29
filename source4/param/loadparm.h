@@ -46,17 +46,18 @@ struct loadparm_context;
 struct parm_struct {
 	const char *label;
 	parm_type type;
-	parm_class pclass;
-	int offset;
+	parm_class p_class;
+	offset_t offset;
 	bool (*special)(struct loadparm_context *lpcfg_ctx,
 			int snum, const char *, char **);
 	const struct enum_list *enum_list;
+	unsigned flags;
 	union {
-		int bvalue;
+		bool bvalue;
 		int ivalue;
 		char *svalue;
 		char cvalue;
-		const char **lvalue;
+		char **lvalue;
 	} def;
 };
 

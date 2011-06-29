@@ -74,7 +74,7 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 		}
 
 		parm = lpcfg_parm_struct(param_name);
-		if (parm == NULL || parm->pclass == P_GLOBAL) {
+		if (parm == NULL || parm->p_class == P_GLOBAL) {
 			return NULL;
 		}
 		parm_ptr = lpcfg_parm_ptr(lp_ctx, service, parm);
