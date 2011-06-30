@@ -80,6 +80,9 @@ struct net_context {
 	int opt_lock;
 	int opt_auto;
 	int opt_repair;
+	int opt_reg_version;
+	const char *opt_output;
+	int opt_wipe;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;

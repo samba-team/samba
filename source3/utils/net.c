@@ -820,6 +820,10 @@ static struct functable net_func[] = {
 		{"lock", 0, POPT_ARG_NONE,   &c->opt_lock},
 		{"auto", 'a', POPT_ARG_NONE,   &c->opt_auto},
 		{"repair", 0, POPT_ARG_NONE,   &c->opt_repair},
+		/* Options for 'net registry check'*/
+		{"reg-version", 0, POPT_ARG_INT, &c->opt_reg_version},
+		{"output", 'o', POPT_ARG_STRING, &c->opt_output},
+		{"wipe", 0, POPT_ARG_NONE, &c->opt_wipe},
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};

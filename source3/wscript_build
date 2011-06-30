@@ -529,6 +529,7 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_rpc_join.c utils/net_time.c utils/net_lookup.c
               utils/net_cache.c utils/net_groupmap.c
               utils/net_idmap.c utils/net_idmap_check.c
+              utils/interact.c
               utils/net_status.c utils/net_rpc_printer.c utils/net_rpc_rights.c
               utils/net_rpc_service.c utils/net_rpc_registry.c utils/net_usershare.c
               utils/netlookup.c utils/net_sam.c utils/net_rpc_shell.c
@@ -536,6 +537,7 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_dns.c utils/net_ads_gpo.c
               utils/net_conf.c utils/net_join.c utils/net_user.c
               utils/net_group.c utils/net_file.c utils/net_registry.c
+              utils/net_registry_check.c
               utils/net_dom.c utils/net_share.c
               utils/net_g_lock.c
               utils/net_serverid.c
