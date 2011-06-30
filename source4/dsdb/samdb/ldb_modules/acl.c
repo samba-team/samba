@@ -457,6 +457,12 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	bool is_dc = (userAccountControl & UF_SERVER_TRUST_ACCOUNT) ||
 		(userAccountControl & UF_PARTIAL_SECRETS_ACCOUNT);
 
+	if (strcasecmp_m(spn_value, samAccountName) == 0) {
+		/* MacOS X sets this value, and setting an SPN of your
+		 * own samAccountName is both pointless and safe */
+		return LDB_SUCCESS;
+	}
+
 	kerr = smb_krb5_init_context_basic(mem_ctx,
 					   lp_ctx,
 					   &krb_ctx);
