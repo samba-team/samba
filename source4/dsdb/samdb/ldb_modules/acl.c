@@ -477,6 +477,10 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
+	if (principal->name.name_string.len < 2) {
+		goto fail;
+	}
+
 	instanceName = principal->name.name_string.val[1];
 	serviceType = principal->name.name_string.val[0];
 	realm = krb5_principal_get_realm(krb_ctx, principal);
@@ -509,7 +513,8 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	}
 	/* instanceName can be samAccountName without $ or dnsHostName
 	 * or "ntds_guid._msdcs.forest_domain for DC objects */
-	if (strncasecmp(instanceName, samAccountName, strlen(samAccountName) - 1) == 0) {
+	if (strlen(instanceName) == (strlen(samAccountName) - 1)
+	    && strncasecmp(instanceName, samAccountName, strlen(samAccountName) - 1) == 0) {
 		goto success;
 	} else if (strcasecmp(instanceName, dnsHostName) == 0) {
 		goto success;
