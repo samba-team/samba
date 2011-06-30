@@ -170,5 +170,8 @@ bool symlink_reparse_buffer_parse(
 	if (pprint_name != NULL) {
 		*pprint_name = print_name;
 	}
+	if (pflags != NULL) {
+		*pflags = flags;
+	}
 	return true;
 }
