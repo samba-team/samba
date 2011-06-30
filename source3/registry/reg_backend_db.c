@@ -712,6 +712,13 @@ static WERROR regdb_delete_subkeylist(struct db_context *db, const char *keyname
 	return regdb_delete_key_with_prefix(db, keyname, NULL);
 }
 
+static WERROR regdb_delete_sorted_subkeys(struct db_context *db,
+					  const char *keyname)
+{
+	return regdb_delete_key_with_prefix(db, keyname, REG_SORTED_SUBKEYS_PREFIX);
+}
+
+
 static WERROR regdb_delete_key_lists(struct db_context *db, const char *keyname)
 {
 	WERROR werr;
