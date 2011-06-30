@@ -765,6 +765,7 @@ RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_SERVER_REGISTER_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
+		 rpc_server/rpc_sock_helper.o \
 		 rpc_server/rpc_service_setup.o \
 		 rpc_client/init_netlogon.o \
 		 rpc_client/init_samr.o
