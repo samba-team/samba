@@ -872,4 +872,15 @@ NTSTATUS cli_symlink_recv(struct tevent_req *req);
 NTSTATUS cli_symlink(struct cli_state *cli, const char *oldname,
 		     const char *newname, uint32_t flags);
 
+struct tevent_req *cli_readlink_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct cli_state *cli,
+				     const char *fname);
+NTSTATUS cli_readlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   char **psubstitute_name, char **pprint_name,
+			   uint32_t *pflags);
+NTSTATUS cli_readlink(struct cli_state *cli, const char *fname,
+		       TALLOC_CTX *mem_ctx, char **psubstitute_name,
+		      char **pprint_name, uint32_t *pflags);
+
 #endif /* _LIBSMB_PROTO_H_ */
