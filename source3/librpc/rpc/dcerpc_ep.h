@@ -68,6 +68,21 @@ NTSTATUS dcerpc_binding_vector_add_port(const struct ndr_interface_table *iface,
 					const char *host,
 					uint16_t port);
 
+/**
+ * @brief Add a unix socket (ncalrpc) to a binding vector.
+ *
+ * @param[in] iface     The rpc interface to add.
+ *
+ * @param[in] bvec      The binding vector to add the intface, host and port.
+ *
+ * @param[in] name      The name of the unix socket.
+ *
+ * @return              An NTSTATUS error code.
+ */
+NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
+					struct dcerpc_binding_vector *bvec,
+					const char *name);
+
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
 				      uint16_t port,
