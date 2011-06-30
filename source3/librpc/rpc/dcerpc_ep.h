@@ -50,6 +50,24 @@ NTSTATUS dcerpc_binding_vector_new(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *iface,
 					      struct dcerpc_binding_vector *bvec);
 
+/**
+ * @brief Add a tcpip port to a binding vector.
+ *
+ * @param[in] iface     The rpc interface to add.
+ *
+ * @param[in] bvec      The binding vector to add the intface, host and port.
+ *
+ * @param[in] host      The ip address of the network inteface bound.
+ *
+ * @param[in] port      The port bound.
+ *
+ * @return              An NTSTATUS error code.
+ */
+NTSTATUS dcerpc_binding_vector_add_port(const struct ndr_interface_table *iface,
+					struct dcerpc_binding_vector *bvec,
+					const char *host,
+					uint16_t port);
+
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
 				      uint16_t port,
