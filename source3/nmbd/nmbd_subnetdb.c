@@ -55,13 +55,21 @@ yet and it may be in use by a response record
 
 void close_subnet(struct subnet_record *subrec)
 {
+	if (subrec->nmb_sock != -1) {
+		close(subrec->nmb_sock);
+		subrec->nmb_sock = -1;
+	}
+	if (subrec->nmb_bcast != -1) {
+		close(subrec->nmb_bcast);
+		subrec->nmb_bcast = -1;
+	}
 	if (subrec->dgram_sock != -1) {
 		close(subrec->dgram_sock);
 		subrec->dgram_sock = -1;
 	}
-	if (subrec->nmb_sock != -1) {
-		close(subrec->nmb_sock);
-		subrec->nmb_sock = -1;
+	if (subrec->dgram_bcast != -1) {
+		close(subrec->dgram_bcast);
+		subrec->dgram_bcast = -1;
 	}
 
 	DLIST_REMOVE(subnetlist, subrec);
