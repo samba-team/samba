@@ -1612,7 +1612,8 @@ idl_full::
 
 
 everything:: all libtalloc libsmbclient libnetapi debug2html smbfilter talloctort replacetort smbconftort modules torture \
-	$(EVERYTHING_PROGS)
+	$(EVERYTHING_PROGS) \
+	vfs_examples
 
 .SUFFIXES:
 .SUFFIXES: .c .o .lo
