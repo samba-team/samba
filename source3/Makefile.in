@@ -3542,3 +3542,14 @@ bin/smbtorture4: $(BINARY_PREREQS)
 
 bin/ndrdump4: $(BINARY_PREREQS)
 	$(MAKE) -f Makefile-smbtorture4 bin/ndrdump4
+
+.PHONY: vfs_examples
+
+vfs_examples:
+	( \
+	cd ../examples/VFS && \
+	./autogen.sh && \
+	./configure && \
+	make clean && \
+	make \
+	)
