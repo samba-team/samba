@@ -38,6 +38,18 @@ struct dcerpc_binding_vector {
 NTSTATUS dcerpc_binding_vector_new(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_vector **pbvec);
 
+/**
+ * @brief Add default named pipes to the binding vector.
+ *
+ * @param[in] iface     The rpc interface to add.
+ *
+ * @param[in] bvec      The binding vector to add the interface.
+ *
+ * @return              An NTSTATUS error code.
+ */
+NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *iface,
+					      struct dcerpc_binding_vector *bvec);
+
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
 				      uint16_t port,

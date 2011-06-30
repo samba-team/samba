@@ -28,6 +28,25 @@
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
+static bool binding_vector_realloc(struct dcerpc_binding_vector *bvec)
+{
+	if (bvec->count >= bvec->allocated) {
+		struct dcerpc_binding *tmp;
+
+		tmp = talloc_realloc(bvec,
+				     bvec->bindings,
+				     struct dcerpc_binding,
+				     bvec->allocated * 2);
+		if (tmp == NULL) {
+			return false;
+		}
+		bvec->bindings = tmp;
+		bvec->allocated = bvec->allocated * 2;
+	}
+
+	return true;
+}
+
 NTSTATUS dcerpc_binding_vector_new(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_vector **pbvec)
 {
@@ -64,6 +83,54 @@ done:
 	talloc_free(tmp_ctx);
 
 	return status;
+}
+
+NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *iface,
+					      struct dcerpc_binding_vector *bvec)
+{
+	uint32_t ep_count = iface->endpoints->count;
+	uint32_t i;
+	NTSTATUS status;
+	bool ok;
+
+	for (i = 0; i < ep_count; i++) {
+		struct dcerpc_binding *b;
+
+		b = talloc_zero(bvec->bindings, struct dcerpc_binding);
+		if (b == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = dcerpc_parse_binding(b, iface->endpoints->names[i], &b);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		/* Only add the named pipes defined in the iface endpoints */
+		if (b->transport != NCACN_NP) {
+			talloc_free(b);
+			continue;
+		}
+
+		b->object = iface->syntax_id;
+
+		b->host = talloc_asprintf(b, "\\\\%s", lp_netbios_name());
+		if (b->host == NULL) {
+			talloc_free(b);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ok = binding_vector_realloc(bvec);
+		if (!ok) {
+			talloc_free(b);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		bvec->bindings[bvec->count] = *b;
+		bvec->count++;
+	}
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
