@@ -1742,7 +1742,7 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 		*maxfd = MAX( *maxfd, subrec->dgram_sock);
 	}
 
-	*listen_number = (count*2) + 2;
+	*listen_number = num;
 
 	SAFE_FREE(*ppset);
 	SAFE_FREE(*psock_array);
