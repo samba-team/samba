@@ -1698,7 +1698,12 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 	for (subrec = FIRST_SUBNET;
 	     subrec != NULL;
 	     subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
-		count += 2;	/* nmb_sock and dgram_sock */
+		if (subrec->nmb_sock != -1) {
+			count += 1;
+		}
+		if (subrec->dgram_sock != -1) {
+			count += 1;
+		}
 		if (subrec->nmb_bcast != -1) {
 			count += 1;
 		}
@@ -1736,10 +1741,12 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 
-		fds[num].fd = subrec->nmb_sock;
-		attrs[num].type = NMB_PACKET;
-		attrs[num].broadcast = false;
-		num += 1;
+		if (subrec->nmb_sock != -1) {
+			fds[num].fd = subrec->nmb_sock;
+			attrs[num].type = NMB_PACKET;
+			attrs[num].broadcast = false;
+			num += 1;
+		}
 
 		if (subrec->nmb_bcast != -1) {
 			fds[num].fd = subrec->nmb_bcast;
@@ -1748,10 +1755,12 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 			num += 1;
 		}
 
-		fds[num].fd = subrec->dgram_sock;
-		attrs[num].type = DGRAM_PACKET;
-		attrs[num].broadcast = false;
-		num += 1;
+		if (subrec->dgram_sock != -1) {
+			fds[num].fd = subrec->dgram_sock;
+			attrs[num].type = DGRAM_PACKET;
+			attrs[num].broadcast = false;
+			num += 1;
+		}
 
 		if (subrec->dgram_bcast != -1) {
 			fds[num].fd = subrec->dgram_bcast;
