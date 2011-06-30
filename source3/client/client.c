@@ -1716,6 +1716,23 @@ static int do_allinfo(const char *name)
 			 (unsigned long long)streams[i].size);
 	}
 
+	if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+		char *subst, *print;
+		uint32_t flags;
+
+		status = cli_readlink(cli, name, talloc_tos(), &subst, &print,
+				      &flags);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "cli_readlink returned %s\n",
+				  nt_errstr(status));
+		} else {
+			d_printf("symlink: subst=[%s], print=[%s], flags=%x\n",
+				 subst, print, flags);
+			TALLOC_FREE(subst);
+			TALLOC_FREE(print);
+		}
+	}
+
 	status = cli_ntcreate(cli, name, 0,
 			      CREATE_ACCESS_READ, 0,
 			      FILE_SHARE_READ|FILE_SHARE_WRITE
