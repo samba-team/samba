@@ -1729,19 +1729,23 @@ only use %d.\n", count, FD_SETSIZE));
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		if (subrec->nmb_sock < 0 || subrec->nmb_sock >= FD_SETSIZE) {
 			/* We have to ignore sockets outside FD_SETSIZE. */
-			continue;
+			sock_array[num++] = -1;
+		} else {
+			FD_SET(subrec->nmb_sock,pset);
+			sock_array[num++] = subrec->nmb_sock;
+			*maxfd = MAX( *maxfd, subrec->nmb_sock);
 		}
-		FD_SET(subrec->nmb_sock,pset);
-		sock_array[num++] = subrec->nmb_sock;
-		*maxfd = MAX( *maxfd, subrec->nmb_sock);
 
 		if (subrec->nmb_bcast < 0 || subrec->nmb_bcast >= FD_SETSIZE) {
 			/* We have to ignore sockets outside FD_SETSIZE. */
-			continue;
+			sock_array[num++] = -1;
+		} else {
+			sock_array[num++] = subrec->nmb_bcast;
+			if (subrec->nmb_bcast != -1) {
+				FD_SET(subrec->nmb_bcast,pset);
+				*maxfd = MAX( *maxfd, subrec->nmb_bcast);
+			}
 		}
-		sock_array[num++] = subrec->nmb_bcast;
-		FD_SET(subrec->nmb_bcast,pset);
-		*maxfd = MAX( *maxfd, subrec->nmb_bcast);
 	}
 
 	/* Add in the lp_socket_address() interface on 138. */
@@ -1761,22 +1765,26 @@ only use %d.\n", count, FD_SETSIZE));
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		if (subrec->dgram_sock < 0 || subrec->dgram_sock >= FD_SETSIZE) {
 			/* We have to ignore sockets outside FD_SETSIZE. */
-			continue;
+			sock_array[num++] = -1;
+		} else {
+			FD_SET(subrec->dgram_sock,pset);
+			sock_array[num++] = subrec->dgram_sock;
+			*maxfd = MAX( *maxfd, subrec->dgram_sock);
 		}
-		FD_SET(subrec->dgram_sock,pset);
-		sock_array[num++] = subrec->dgram_sock;
-		*maxfd = MAX( *maxfd, subrec->dgram_sock);
 
 		if (subrec->dgram_bcast < 0 || subrec->dgram_bcast >= FD_SETSIZE) {
 			/* We have to ignore sockets outside FD_SETSIZE. */
-			continue;
-		}
-		sock_array[num++] = subrec->dgram_bcast;
-		if (subrec->dgram_bcast != -1) {
-			FD_SET(subrec->dgram_bcast,pset);
-			*maxfd = MAX( *maxfd, subrec->dgram_bcast);
+			sock_array[num++] = -1;
+		} else {
+			sock_array[num++] = subrec->dgram_bcast;
+			if (subrec->dgram_bcast != -1) {
+				FD_SET(subrec->dgram_bcast,pset);
+				*maxfd = MAX( *maxfd, subrec->dgram_bcast);
+			}
 		}
 	}
+
+	SMB_ASSERT(count == num);
 
 	*listen_number = count;
 
