@@ -1,7 +1,7 @@
 /*
  *  Endpoint Mapper Functions
  *  DCERPC local endpoint mapper client routines
- *  Copyright (c) 2010      Andreas Schneider.
+ *  Copyright (c) 2010-2011 Andreas Schneider.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,20 @@
 struct dcerpc_binding_vector {
     struct dcerpc_binding *bindings;
     uint32_t count;
+    uint32_t allocated;
 };
+
+/**
+ * @brief Allocate a new binding vector.
+ *
+ * @param[in]  mem_ctx  The memory context to allocate the vector.
+ *
+ * @param[out] pbvec    A pointer to store the binding vector.
+ *
+ * @return              An NTSTATUS error code.
+ */
+NTSTATUS dcerpc_binding_vector_new(TALLOC_CTX *mem_ctx,
+				   struct dcerpc_binding_vector **pbvec);
 
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,

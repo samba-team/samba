@@ -1,7 +1,7 @@
 /*
  *  Endpoint Mapper Functions
  *  DCERPC local endpoint mapper client routines
- *  Copyright (c) 2010      Andreas Schneider.
+ *  Copyright (c) 2010-2011 Andreas Schneider.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,6 +27,44 @@
 #include "../lib/tsocket/tsocket.h"
 
 #define EPM_MAX_ANNOTATION_SIZE 64
+
+NTSTATUS dcerpc_binding_vector_new(TALLOC_CTX *mem_ctx,
+				   struct dcerpc_binding_vector **pbvec)
+{
+	struct dcerpc_binding_vector *bvec;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	bvec = talloc_zero(tmp_ctx, struct dcerpc_binding_vector);
+	if (bvec == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	bvec->bindings = talloc_zero_array(bvec,
+					   struct dcerpc_binding,
+					   4);
+	if (bvec->bindings == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	bvec->allocated = 4;
+	bvec->count = 0;
+
+	*pbvec = talloc_move(mem_ctx, &bvec);
+
+	status = NT_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+
+	return status;
+}
 
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
