@@ -23,10 +23,12 @@
 #include "system/filesys.h"
 #include "utils/net.h"
 #include "rpc_client/rpc_client.h"
+#include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/ndr_ntprinting.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/ndr_winreg.h"
 #include "util_tdb.h"
 #include "printing/nt_printing_migrate.h"
 
@@ -231,10 +233,20 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 	TDB_CONTEXT *tdb;
 	TDB_DATA kbuf, dbuf;
 	NTSTATUS status;
+	struct rpc_pipe_client *winreg_pipe = NULL;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(pipe_hnd),
+					  &ndr_table_winreg.syntax_id,
+					  &winreg_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("failed to open winreg pipe: %s\n"),
+			nt_errstr(status));
+		goto done;
 	}
 
 	tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0600);
@@ -256,6 +268,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 		if (strncmp((const char *) kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			printing_tdb_migrate_form(tmp_ctx,
 				     pipe_hnd,
+				     winreg_pipe,
 				     (const char *) kbuf.dptr + strlen(FORMS_PREFIX),
 				     dbuf.dptr,
 				     dbuf.dsize);
@@ -266,6 +279,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 		if (strncmp((const char *) kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
 			printing_tdb_migrate_driver(tmp_ctx,
 				       pipe_hnd,
+				       winreg_pipe,
 				       (const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
 				       dbuf.dptr,
 				       dbuf.dsize);
@@ -276,6 +290,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 		if (strncmp((const char *) kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
 			printing_tdb_migrate_printer(tmp_ctx,
 					pipe_hnd,
+					winreg_pipe,
 					(const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
 					dbuf.dptr,
 					dbuf.dsize);
@@ -286,6 +301,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 		if (strncmp((const char *) kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
 			printing_tdb_migrate_secdesc(tmp_ctx,
 					pipe_hnd,
+					winreg_pipe,
 					(const char *) kbuf.dptr + strlen(SECDESC_PREFIX),
 					dbuf.dptr,
 					dbuf.dsize);

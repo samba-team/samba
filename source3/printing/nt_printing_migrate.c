@@ -28,6 +28,7 @@
 
 NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
 				   struct rpc_pipe_client *pipe_hnd,
+				   struct rpc_pipe_client *winreg_pipe,
 				   const char *key_name,
 				   unsigned char *data,
 				   size_t length)
@@ -126,6 +127,7 @@ NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
 
 NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
 				     struct rpc_pipe_client *pipe_hnd,
+				     struct rpc_pipe_client *winreg_pipe,
 				     const char *key_name,
 				     unsigned char *data,
 				     size_t length)
@@ -198,6 +200,7 @@ NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
 
 NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 				      struct rpc_pipe_client *pipe_hnd,
+				      struct rpc_pipe_client *winreg_pipe,
 				      const char *key_name,
 				      unsigned char *data,
 				      size_t length)
@@ -402,6 +405,7 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 
 NTSTATUS printing_tdb_migrate_secdesc(TALLOC_CTX *mem_ctx,
 				      struct rpc_pipe_client *pipe_hnd,
+				      struct rpc_pipe_client *winreg_pipe,
 				      const char *key_name,
 				      unsigned char *data,
 				      size_t length)
