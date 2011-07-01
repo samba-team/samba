@@ -95,6 +95,18 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
 							const struct dcerpc_binding_vector *bvec);
 
+/**
+ * @brief Replace the interface of the bindings in the vector.
+ *
+ * @param[in] iface     The new interface identifier to use.
+ *
+ * @param[in] v         The binding vector to change.
+ *
+ * @return              An NTSTATUS error code.
+ */
+NTSTATUS dcerpc_binding_vector_replace_iface(const struct ndr_interface_table *iface,
+					     struct dcerpc_binding_vector *v);
+
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
 				      uint16_t port,

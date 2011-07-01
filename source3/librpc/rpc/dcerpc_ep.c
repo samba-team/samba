@@ -243,6 +243,21 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcerpc_binding_vector_replace_iface(const struct ndr_interface_table *iface,
+					     struct dcerpc_binding_vector *v)
+{
+	uint32_t i;
+
+	for (i = 0; i < v->count; i++) {
+		struct dcerpc_binding *b;
+
+		b = &(v->bindings[i]);
+		b->object = iface->syntax_id;
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
 							const struct dcerpc_binding_vector *bvec)
 {
