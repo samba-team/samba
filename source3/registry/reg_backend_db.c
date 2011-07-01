@@ -847,12 +847,6 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	dbuf.dsize = len;
 	werr = ntstatus_to_werror(dbwrap_store_bystring(db, keyname, dbuf,
 							TDB_REPLACE));
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
-
-	/*
-	 * recreate the sorted subkey cache for regdb_key_exists()
-	 */
-	werr = ntstatus_to_werror(create_sorted_subkeys(keyname));
 
 done:
 	TALLOC_FREE(ctx);
