@@ -25,6 +25,7 @@
 
 #include "rpc_client/rpc_client.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "auth.h"
 #include "util_tdb.h"
@@ -65,7 +66,8 @@ static int rename_file_with_suffix(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 				 const char *tdb_path,
-				 struct rpc_pipe_client *pipe_hnd)
+				 struct rpc_pipe_client *pipe_hnd,
+				 struct rpc_pipe_client *winreg_pipe)
 {
 	const char *backup_suffix = ".bak";
 	TDB_DATA kbuf, newkey, dbuf;
@@ -97,6 +99,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		if (strncmp((const char *) kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			status = printing_tdb_migrate_form(mem_ctx,
 					      pipe_hnd,
+					      winreg_pipe,
 					      (const char *) kbuf.dptr + strlen(FORMS_PREFIX),
 					      dbuf.dptr,
 					      dbuf.dsize);
@@ -111,6 +114,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		if (strncmp((const char *) kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
 			status = printing_tdb_migrate_driver(mem_ctx,
 						pipe_hnd,
+						winreg_pipe,
 						(const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
 						dbuf.dptr,
 						dbuf.dsize);
@@ -127,6 +131,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						    + strlen(PRINTERS_PREFIX));
 			status = printing_tdb_migrate_printer(mem_ctx,
 						 pipe_hnd,
+						 winreg_pipe,
 						 printer_name,
 						 dbuf.dptr,
 						 dbuf.dsize);
@@ -148,6 +153,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						    + strlen(SECDESC_PREFIX));
 			status = printing_tdb_migrate_secdesc(mem_ctx,
 						 pipe_hnd,
+						 winreg_pipe,
 						 secdesc_name,
 						 dbuf.dptr,
 						 dbuf.dsize);
@@ -186,6 +192,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	bool forms_exists = file_exist(forms_path);
 	struct auth_serversupplied_info *session_info;
 	struct rpc_pipe_client *spoolss_pipe = NULL;
+	struct rpc_pipe_client *winreg_pipe = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 
@@ -214,8 +221,21 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 		return false;
 	}
 
+	status = rpc_pipe_open_interface(tmp_ctx,
+					&ndr_table_winreg.syntax_id,
+					session_info,
+					NULL,
+					msg_ctx,
+					&winreg_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Couldn't open internal winreg pipe: %s\n",
+			  nt_errstr(status)));
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
 	if (drivers_exists) {
-		status = migrate_internal(tmp_ctx, drivers_path, spoolss_pipe);
+		status = migrate_internal(tmp_ctx, drivers_path, spoolss_pipe, winreg_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Couldn't migrate drivers tdb file: %s\n",
 			  nt_errstr(status)));
@@ -225,7 +245,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	}
 
 	if (printers_exists) {
-		status = migrate_internal(tmp_ctx, printers_path, spoolss_pipe);
+		status = migrate_internal(tmp_ctx, printers_path, spoolss_pipe, winreg_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Couldn't migrate printers tdb file: %s\n",
 				  nt_errstr(status)));
@@ -235,7 +255,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	}
 
 	if (forms_exists) {
-		status = migrate_internal(tmp_ctx, forms_path, spoolss_pipe);
+		status = migrate_internal(tmp_ctx, forms_path, spoolss_pipe, winreg_pipe);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Couldn't migrate forms tdb file: %s\n",
 				  nt_errstr(status)));
