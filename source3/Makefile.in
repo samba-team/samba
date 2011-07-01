@@ -1186,7 +1186,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   rpc_client/init_samr.o \
 	   registry/reg_parse.o registry/reg_format.o \
 	   registry/reg_parse_internal.o registry/reg_import.o \
-	   lib/cbuf.o lib/srprs.o
+	   lib/cbuf.o lib/srprs.o printing/nt_printing_migrate.o
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
