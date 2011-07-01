@@ -308,7 +308,6 @@ struct loadparm_global {
 	char **szInitLogonDelayedHosts;
 	int InitLogonDelay;
 	bool bEncryptPasswords;
-	bool bUpdateEncrypt;
 	int  clientSchannel;
 	int  serverSchannel;
 	bool bNullPasswords;
@@ -5208,7 +5207,6 @@ static void init_globals(bool reinit_globals)
 	Globals.security = SEC_USER;
 	Globals.paranoid_server_security = true;
 	Globals.bEncryptPasswords = true;
-	Globals.bUpdateEncrypt = false;
 	Globals.clientSchannel = Auto;
 	Globals.serverSchannel = Auto;
 	Globals.bReadRaw = true;
