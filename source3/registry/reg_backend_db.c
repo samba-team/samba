@@ -1132,7 +1132,7 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct regdb_create_subkey_context create_ctx;
 
-	if (!regdb_key_is_base_key(key) && !regdb_key_exists(regdb, key)) {
+	if (!regdb_key_exists(regdb, key)) {
 		werr = WERR_NOT_FOUND;
 		goto done;
 	}
