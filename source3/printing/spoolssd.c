@@ -29,6 +29,7 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
+#include "librpc/rpc/dcerpc_ep.h"
 
 #define SPOOLSS_PIPE_NAME "spoolss"
 #define DAEMON_NAME "spoolssd"
@@ -149,6 +150,8 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 		    struct messaging_context *msg_ctx)
 {
 	struct rpc_srv_callbacks spoolss_cb;
+	struct dcerpc_binding_vector *v;
+	TALLOC_CTX *mem_ctx;
 	pid_t pid;
 	NTSTATUS status;
 	int ret;
@@ -199,6 +202,11 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		exit(1);
+	}
+
 	/*
 	 * Initialize spoolss with an init function to convert printers first.
 	 * static_init_rpc will try to initialize the spoolss server too but you
@@ -222,16 +230,28 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, ev_ctx, msg_ctx)) {
+	status = dcerpc_binding_vector_new(mem_ctx, &v);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to create binding vector (%s)\n",
+			  nt_errstr(status)));
 		exit(1);
 	}
 
-	status = rpc_ep_register(ev_ctx, msg_ctx, &ndr_table_spoolss, NULL, 0);
+	status = dcerpc_binding_vector_add_np_default(&ndr_table_spoolss, v);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to add np to binding vector (%s)\n",
+			  nt_errstr(status)));
+		exit(1);
+	}
+
+	status = rpc_ep_register(ev_ctx, msg_ctx, &ndr_table_spoolss, v);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to register spoolss endpoint! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
+
+	talloc_free(mem_ctx);
 
 	DEBUG(1, ("SPOOLSS Daemon Started (%d)\n", getpid()));
 

@@ -22,7 +22,7 @@
 #ifndef _RPC_EP_REGISTER_H
 #define _RPC_EP_REGISTER_H
 
-struct ndr_interface_table;
+struct dcerpc_binding_vector;
 
 /**
  * @brief Register an endpoint at the endpoint mapper.
@@ -36,17 +36,14 @@ struct ndr_interface_table;
  *
  * @param[in] iface     The interface table to register.
  *
- * @param[in] ncalrpc   The name of the ncalrpc pipe or NULL.
- *
- * @param[in] port      The tcpip port or 0.
+ * @param[in] v         The binding vector to register.
  *
  * @return              NT_STATUS_OK on success or a corresponding error code.
  */
 NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
 			 const struct ndr_interface_table *iface,
-			 const char *ncalrpc,
-			 uint16_t port);
+			 const struct dcerpc_binding_vector *v);
 
 #endif /* _RPC_EP_REGISTER_H */
 
