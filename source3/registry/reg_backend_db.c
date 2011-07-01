@@ -699,14 +699,6 @@ static WERROR regdb_delete_key_lists(struct db_context *db, const char *keyname)
 		goto done;
 	}
 
-	werr = regdb_delete_sorted_subkeys(db, keyname);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, (__location__ " Deleting %s\\%s failed: %s\n",
-			  REG_SORTED_SUBKEYS_PREFIX, keyname,
-			  win_errstr(werr)));
-		goto done;
-	}
-
 	werr = regdb_delete_subkeylist(db, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, (__location__ " Deleting %s failed: %s\n",
