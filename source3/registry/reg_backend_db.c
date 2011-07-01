@@ -1017,7 +1017,7 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 	bool ret = false;
 	struct regdb_store_keys_context store_ctx;
 
-	if (!regdb_key_is_base_key(key) && !regdb_key_exists(db, key)) {
+	if (!regdb_key_exists(db, key)) {
 		goto done;
 	}
 
