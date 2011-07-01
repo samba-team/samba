@@ -39,7 +39,7 @@
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 
-#include "printing/nt_printing_migrate.h"
+#include "printing/nt_printing_migrate_internal.h"
 #include "rpc_server/eventlog/srv_eventlog_reg.h"
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
