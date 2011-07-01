@@ -222,7 +222,6 @@ struct loadparm_global {
 	bool bCreateKrb5Conf;
 	int winbindMaxDomainConnections;
 	char *szIdmapBackend;
-	bool bIdmapReadOnly;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -5333,7 +5332,6 @@ static void init_globals(bool reinit_globals)
 
 	Globals.bAllowTrustedDomains = true;
 	string_set(&Globals.szIdmapBackend, "tdb");
-	Globals.bIdmapReadOnly = false;
 
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
