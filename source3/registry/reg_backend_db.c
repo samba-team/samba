@@ -1130,6 +1130,8 @@ static NTSTATUS regdb_create_subkey_action(struct db_context *db,
 			 win_errstr(werr)));
 	}
 
+	werr = regdb_store_subkey_list(db, create_ctx->key, create_ctx->subkey);
+
 done:
 	talloc_free(mem_ctx);
 	return werror_to_ntstatus(werr);
