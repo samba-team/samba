@@ -1552,7 +1552,7 @@ all:: SHOWFLAGS basics libs $(SBIN_PROGS) $(BIN_PROGS) \
 	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) \
 	$(EXTRA_ALL_TARGETS)
 
-basics:: samba3-idl
+basics:: samba3-idl mkparam
 
 nss_modules:: $(NSS_MODULES)
 
@@ -1628,6 +1628,10 @@ idl_full::
 	 srcdir="$(srcdir)" ../librpc/build_idl.sh --full ../librpc/idl/*.idl
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh --full $(IDL_FILES)
+
+mkparam:
+	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/param/loadparm.c --file param/param_local.h --generate-scope=LOCAL
+	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/param/loadparm.c --file param/param_global.h --generate-scope=GLOBAL
 
 #####################################################################
 
@@ -3377,6 +3381,8 @@ cleanlibs::
 clean:: cleanlibs
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
+	-rm -f param/param_local.h
+	-rm -f param/param_global.h
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o */*/*/*/*.o \

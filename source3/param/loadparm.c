@@ -125,415 +125,44 @@ struct param_opt_struct {
 	unsigned flags;
 };
 
-/*
- * This structure describes global (ie., server-wide) parameters.
- */
-struct loadparm_global {
-	int ConfigBackend;
-	char *smb_ports;
-	char *dos_charset;
-	char *unix_charset;
-	char *szPrintcapname;
-	char *szAddPortCommand;
-	char *szEnumPortsCommand;
-	char *szAddPrinterCommand;
-	char *szDeletePrinterCommand;
-	char *szOs2DriverMap;
-	char *szLockDir;
-	char *szStateDir;
-	char *szCacheDir;
-	char *szPidDir;
-	char *szRootdir;
-	char *szDefaultService;
-	char *szGetQuota;
-	char *szSetQuota;
-	char *szMsgCommand;
-	char *szServerString;
-	char *szAutoServices;
-	char *szPasswdProgram;
-	char *szPasswdChat;
-	char *szLogFile;
-	char *szConfigFile;
-	char *szSMBPasswdFile;
-	char *szPrivateDir;
-	char *szPassdbBackend;
-	char **szPreloadModules;
-	char *szPasswordServer;
-	char *szSocketOptions;
-	char *szRealm;
-	char *szRealmUpper;
-	char *szDnsDomain;
-	char *szAfsUsernameMap;
-	int iAfsTokenLifetime;
-	char *szLogNtTokenCommand;
-	char *szUsernameMap;
-	char *szLogonScript;
-	char *szLogonPath;
-	char *szLogonDrive;
-	char *szLogonHome;
-	char **szWINSservers;
-	char **szInterfaces;
-	char *szRemoteAnnounce;
-	char *szRemoteBrowseSync;
-	char *szSocketAddress;
-	bool bNmbdBindExplicitBroadcast;
-	char *szNISHomeMapName;
-	char *szWorkgroup;
-	char *szNetbiosName;
-	char **szNetbiosAliases;
-	char *szNetbiosScope;
-	char *szNameResolveOrder;
-	char *szPanicAction;
-	char *szAddUserScript;
-	char *szRenameUserScript;
-	char *szDelUserScript;
-	char *szAddGroupScript;
-	char *szDelGroupScript;
-	char *szAddUserToGroupScript;
-	char *szDelUserFromGroupScript;
-	char *szSetPrimaryGroupScript;
-	char *szAddMachineScript;
-	char *szShutdownScript;
-	char *szAbortShutdownScript;
-	char *szUsernameMapScript;
-	int iUsernameMapCacheTime;
-	char *szCheckPasswordScript;
-	char *szWINSHook;
-	char *szUtmpDir;
-	char *szWtmpDir;
-	bool bUtmp;
-	char *szIdmapUID;
-	char *szIdmapGID;
-	bool bPassdbExpandExplicit;
-	int AlgorithmicRidBase;
-	char *szTemplateHomedir;
-	char *szTemplateShell;
-	char *szWinbindSeparator;
-	bool bWinbindEnumUsers;
-	bool bWinbindEnumGroups;
-	bool bWinbindUseDefaultDomain;
-	bool bWinbindTrustedDomainsOnly;
-	bool bWinbindNestedGroups;
-	int  winbind_expand_groups;
-	bool bWinbindRefreshTickets;
-	bool bWinbindOfflineLogon;
-	bool bWinbindNormalizeNames;
-	bool bWinbindRpcOnly;
-	bool bCreateKrb5Conf;
-	int winbindMaxDomainConnections;
-	char *szIdmapBackend;
-	char *szAddShareCommand;
-	char *szChangeShareCommand;
-	char *szDeleteShareCommand;
-	char **szEventLogs;
-	char *szGuestaccount;
-	char *szManglingMethod;
-	char **szServicesList;
-	char *szUsersharePath;
-	char *szUsershareTemplateShare;
-	char **szUsersharePrefixAllowList;
-	char **szUsersharePrefixDenyList;
-	int mangle_prefix;
-	int max_log_size;
-	char *szLogLevel;
-	int max_xmit;
-	int max_mux;
-	int max_open_files;
-	int open_files_db_hash_size;
-	int pwordlevel;
-	int unamelevel;
-	int deadtime;
-	bool getwd_cache;
-	int maxprotocol;
-	int minprotocol;
-	int security;
-	char **AuthMethods;
-	bool paranoid_server_security;
-	int maxdisksize;
-	int lpqcachetime;
-	int iMaxSmbdProcesses;
-	bool bDisableSpoolss;
-	int syslog;
-	int os_level;
-	bool enhanced_browsing;
-	int max_ttl;
-	int max_wins_ttl;
-	int min_wins_ttl;
-	int lm_announce;
-	int lm_interval;
-	int machine_password_timeout;
-	int map_to_guest;
-	int oplock_break_wait_time;
-	int winbind_cache_time;
-	int winbind_reconnect_delay;
-	int winbind_max_clients;
-	char **szWinbindNssInfo;
-	int iLockSpinTime;
-	char *szLdapMachineSuffix;
-	char *szLdapUserSuffix;
-	char *szLdapIdmapSuffix;
-	char *szLdapGroupSuffix;
-	int ldap_ssl;
-	bool ldap_ssl_ads;
-	int ldap_deref;
-	int ldap_follow_referral;
-	char *szLdapSuffix;
-	char *szLdapAdminDn;
-	int ldap_debug_level;
-	int ldap_debug_threshold;
-	int iAclCompat;
-	char *szCupsServer;
-	int CupsEncrypt;
-	char *szIPrintServer;
-	char *ctdbdSocket;
-	char **szClusterAddresses;
-	bool clustering;
-	int ctdb_timeout;
-	int ctdb_locktime_warn_threshold;
-	int ldap_passwd_sync;
-	int ldap_replication_sleep;
-	int ldap_timeout; /* This is initialised in init_globals */
-	int ldap_connection_timeout;
-	int ldap_page_size;
-	bool ldap_delete_dn;
-	bool bMsAddPrinterWizard;
-	bool bDNSproxy;
-	bool bWINSsupport;
-	bool bWINSproxy;
-	bool bLocalMaster;
-	int  iPreferredMaster;
-	int iDomainMaster;
-	bool bDomainLogons;
-	char **szInitLogonDelayedHosts;
-	int InitLogonDelay;
-	bool bEncryptPasswords;
-	int  clientSchannel;
-	int  serverSchannel;
-	bool bNullPasswords;
-	bool bObeyPamRestrictions;
-	bool bLoadPrinters;
-	int PrintcapCacheTime;
-	bool bLargeReadwrite;
-	bool bReadRaw;
-	bool bWriteRaw;
-	bool bSyslogOnly;
-	bool bBrowseList;
-	bool bNISHomeMap;
-	bool bTimeServer;
-	bool bBindInterfacesOnly;
-	bool bPamPasswordChange;
-	bool bUnixPasswdSync;
-	bool bPasswdChatDebug;
-	int iPasswdChatTimeout;
-	bool bTimestampLogs;
-	bool bNTSmbSupport;
-	bool bNTPipeSupport;
-	bool bNTStatusSupport;
-	bool bStatCache;
-	int iMaxStatCacheSize;
-	bool bKernelOplocks;
-	bool bAllowTrustedDomains;
-	bool bLanmanAuth;
-	bool bNTLMAuth;
-	bool bUseSpnego;
-	bool bClientLanManAuth;
-	bool bClientNTLMv2Auth;
-	bool bClientPlaintextAuth;
-	bool bClientUseSpnego;
-	bool client_use_spnego_principal;
-	bool send_spnego_principal;
-	bool bDebugPrefixTimestamp;
-	bool bDebugHiresTimestamp;
-	bool bDebugPid;
-	bool bDebugUid;
-	bool bDebugClass;
-	bool bEnableCoreFiles;
-	bool bHostMSDfs;
-	bool bUseMmap;
-	bool bHostnameLookups;
-	bool bUnixExtensions;
-	bool bDisableNetbios;
-	char * szDedicatedKeytabFile;
-	int  iKerberosMethod;
-	bool bDeferSharingViolations;
-	bool bEnablePrivileges;
-	bool bASUSupport;
-	bool bUsershareOwnerOnly;
-	bool bUsershareAllowGuests;
-	bool bRegistryShares;
-	int restrict_anonymous;
-	int name_cache_timeout;
-	int client_signing;
-	int server_signing;
-	int client_ldap_sasl_wrapping;
-	int iUsershareMaxShares;
-	int iIdmapCacheTime;
-	int iIdmapNegativeCacheTime;
-	bool bResetOnZeroVC;
-	bool bLogWriteableFilesOnExit;
-	int iKeepalive;
-	int iminreceivefile;
-	struct param_opt_struct *param_opt;
-	int cups_connection_timeout;
-	char *szSMBPerfcountModule;
-	bool bMapUntrustedToDomain;
-	bool bAsyncSMBEchoHandler;
-	bool bMulticastDnsRegister;
-	int ismb2_max_read;
-	int ismb2_max_write;
-	int ismb2_max_trans;
+#define LOADPARM_EXTRA_GLOBALS \
+	struct param_opt_struct *param_opt; \
+	char *szRealm;							\
+	char *szLogLevel;						\
+	int iminreceivefile;						\
+	char *szPrintcapname;						\
+	int CupsEncrypt;						\
+	int  iPreferredMaster;						\
+	int iDomainMaster;						\
+	char *szLdapMachineSuffix;					\
+	char *szLdapUserSuffix;						\
+	char *szLdapIdmapSuffix;					\
+	char *szLdapGroupSuffix;					\
+	char *szStateDir;						\
+	char *szCacheDir;						\
+	char *szSocketAddress;						\
+	char *szUsershareTemplateShare;					\
+	char *szIdmapUID;						\
+	char *szIdmapGID;						\
+	int winbindMaxDomainConnections;				\
 	int ismb2_max_credits;
-	char *ncalrpc_dir;
-};
+#define LOADPARM_EXTRA_LOCALS						\
+	bool valid;						        \
+	int usershare;							\
+	struct timespec usershare_last_mod;				\
+	int iMaxPrintJobs;						\
+	char *szCopy;							\
+	char *szInclude;						\
+	bool bAvailable;						\
+	bool bWidelinks;						\
+	struct param_opt_struct *param_opt;				\
+	struct bitmap *copymap;						\
+	char dummy[3];		/* for alignment */
+
+#include "param/param_global.h"
+#include "param/param_local.h"
 
 static struct loadparm_global Globals;
-
-/*
- * This structure describes a single service.
- */
-struct loadparm_service {
-	bool valid;
-	bool autoloaded;
-	int usershare;
-	struct timespec usershare_last_mod;
-	char *szService;
-	char *szPath;
-	char *szUsername;
-	char **szInvalidUsers;
-	char **szValidUsers;
-	char **szAdminUsers;
-	char *szCopy;
-	char *szInclude;
-	char *szPreExec;
-	char *szPostExec;
-	char *szRootPreExec;
-	char *szRootPostExec;
-	char *szCupsOptions;
-	char *szPrintcommand;
-	char *szLpqcommand;
-	char *szLprmcommand;
-	char *szLppausecommand;
-	char *szLpresumecommand;
-	char *szQueuepausecommand;
-	char *szQueueresumecommand;
-	char *szPrintername;
-	char *szPrintjobUsername;
-	char *szDontdescend;
-	char **szHostsallow;
-	char **szHostsdeny;
-	char *szMagicScript;
-	char *szMagicOutput;
-	char *szVetoFiles;
-	char *szHideFiles;
-	char *szVetoOplockFiles;
-	char *comment;
-	char *force_user;
-	char *force_group;
-	char **readlist;
-	char **writelist;
-	char **printer_admin;
-	char *volume;
-	char *fstype;
-	char **szVfsObjects;
-	char *szMSDfsProxy;
-	char *szAioWriteBehind;
-	char *szDfree;
-	int iMinPrintSpace;
-	int iMaxPrintJobs;
-	int iMaxReportedPrintJobs;
-	int iWriteCacheSize;
-	int iCreate_mask;
-	int iCreate_force_mode;
-	int iSecurity_mask;
-	int iSecurity_force_mode;
-	int iDir_mask;
-	int iDir_force_mode;
-	int iDir_Security_mask;
-	int iDir_Security_force_mode;
-	int iMaxConnections;
-	int iDefaultCase;
-	int iPrinting;
-	int iOplockContentionLimit;
-	int iCSCPolicy;
-	int iBlock_size;
-	int iDfreeCacheTime;
-	bool bPreexecClose;
-	bool bRootpreexecClose;
-	int  iCaseSensitive;
-	bool bCasePreserve;
-	bool bShortCasePreserve;
-	bool bHideDotFiles;
-	bool bHideSpecialFiles;
-	bool bHideUnReadable;
-	bool bHideUnWriteableFiles;
-	bool bBrowseable;
-	bool bAccessBasedShareEnum;
-	bool bAvailable;
-	bool bRead_only;
-	bool bNo_set_dir;
-	bool bGuest_only;
-	bool bAdministrative_share;
-	bool bGuest_ok;
-	bool bPrint_ok;
-	bool bPrintNotifyBackchannel;
-	bool bMap_system;
-	bool bMap_hidden;
-	bool bMap_archive;
-	bool bStoreDosAttributes;
-	bool bDmapiSupport;
-	bool bLocking;
-	int iStrictLocking;
-	bool bPosixLocking;
-	bool bShareModes;
-	bool bOpLocks;
-	bool bLevel2OpLocks;
-	bool bOnlyUser;
-	bool bMangledNames;
-	bool bWidelinks;
-	bool bSymlinks;
-	bool bSyncAlways;
-	bool bStrictAllocate;
-	bool bStrictSync;
-	char magic_char;
-	struct bitmap *copymap;
-	bool bDeleteReadonly;
-	bool bFakeOplocks;
-	bool bDeleteVetoFiles;
-	bool bDosFilemode;
-	bool bDosFiletimes;
-	bool bDosFiletimeResolution;
-	bool bFakeDirCreateTimes;
-	bool bBlockingLocks;
-	bool bInheritPerms;
-	bool bInheritACLS;
-	bool bInheritOwner;
-	bool bMSDfsRoot;
-	bool bUseClientDriver;
-	bool bDefaultDevmode;
-	bool bForcePrintername;
-	bool bNTAclSupport;
-	bool bForceUnknownAclUser;
-	bool bUseSendfile;
-	bool bProfileAcls;
-	bool bMap_acl_inherit;
-	bool bAfs_Share;
-	bool bEASupport;
-	bool bAclCheckPermissions;
-	bool bAclMapFullControl;
-	bool bAclGroupControl;
-	bool bChangeNotify;
-	bool bKernelChangeNotify;
-	int iallocation_roundup_size;
-	int iAioReadSize;
-	int iAioWriteSize;
-	int iMap_readonly;
-	int iDirectoryNameCacheSize;
-	int ismb_encrypt;
-	struct param_opt_struct *param_opt;
-
-	char dummy[3];		/* for alignment */
-};
-
 
 /* This is a default service used to prime a services structure */
 static struct loadparm_service sDefault =
@@ -5648,8 +5277,7 @@ FN_GLOBAL_BOOL(lp_usershare_allow_guests, bUsershareAllowGuests)
 FN_GLOBAL_BOOL(lp_usershare_owner_only, bUsershareOwnerOnly)
 FN_GLOBAL_BOOL(lp_disable_netbios, bDisableNetbios)
 FN_GLOBAL_BOOL(lp_reset_on_zero_vc, bResetOnZeroVC)
-FN_GLOBAL_BOOL(lp_log_writeable_files_on_exit,
-	       bLogWriteableFilesOnExit)
+FN_GLOBAL_BOOL(lp_log_writeable_files_on_exit, bLogWriteableFilesOnExit)
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, bMsAddPrinterWizard)
 FN_GLOBAL_BOOL(lp_dns_proxy, bDNSproxy)
 FN_GLOBAL_BOOL(lp_we_are_a_wins_server, bWINSsupport)
@@ -5770,7 +5398,7 @@ FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
 FN_LOCAL_STRING(lp_rootpostexec, szRootPostExec)
 FN_LOCAL_STRING(lp_servicename, szService)
-FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
+ FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 FN_LOCAL_STRING(lp_pathname, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
 FN_LOCAL_STRING(lp_username, szUsername)

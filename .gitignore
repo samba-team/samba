@@ -90,6 +90,8 @@ source3/script/installbin.sh
 source3/script/uninstallbin.sh
 source3/smbadduser
 source3/smbd/build_options.c
+source3/param/param_global.h
+source3/param/param_local.h
 source3/setup
 pidl/blib
 pidl/cover_db
