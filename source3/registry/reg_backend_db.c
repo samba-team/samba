@@ -954,20 +954,6 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 
 	num_subkeys = regsubkey_ctr_numkeys(store_ctx->ctr);
 
-	if (num_subkeys == 0) {
-		werr = regsubkey_ctr_init(mem_ctx, &subkeys);
-		W_ERROR_NOT_OK_GOTO_DONE(werr);
-
-		werr = regdb_store_keys_internal2(db, store_ctx->key, subkeys);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("regdb_store_keys: Failed to store "
-				 "new record for key [%s]: %s\n",
-				 store_ctx->key, win_errstr(werr)));
-			goto done;
-		}
-		TALLOC_FREE(subkeys);
-	}
-
 	for (i=0; i<num_subkeys; i++) {
 		path = talloc_asprintf(mem_ctx, "%s\\%s", store_ctx->key,
 				regsubkey_ctr_specific_key(store_ctx->ctr, i));
