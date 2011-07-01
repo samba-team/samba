@@ -1592,10 +1592,9 @@ static bool scan_parent_subkeys(struct db_context *db, const char *parent,
 /**
  * Check for the existence of a key.
  *
- * Existence of a key is authoritatively defined by its
- * existence in the list of subkeys of its parent key.
- * The exeption of this are keys without a parent key,
- * i.e. the "base" keys (HKLM, HKCU, ...).
+ * Existence of a key is authoritatively defined by
+ * the existence of the record that contains the list
+ * of its subkeys.
  */
 static bool regdb_key_exists(struct db_context *db, const char *key)
 {
