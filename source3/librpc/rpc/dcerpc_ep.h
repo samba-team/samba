@@ -83,6 +83,18 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 					struct dcerpc_binding_vector *bvec,
 					const char *name);
 
+/**
+ * @brief Duplicate a dcerpc_binding_vector.
+ *
+ * @param[in] mem_ctx   The memory context to create the duplicate on.
+ *
+ * @param[in] bvec      The binding vector to duplicate.
+ *
+ * @return              The duplicated binding vector or NULL on error.
+ */
+struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
+							const struct dcerpc_binding_vector *bvec);
+
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
 				      uint16_t port,

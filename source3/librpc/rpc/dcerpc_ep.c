@@ -243,6 +243,39 @@ NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
 	return NT_STATUS_OK;
 }
 
+struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
+							const struct dcerpc_binding_vector *bvec)
+{
+	struct dcerpc_binding_vector *v;
+	uint32_t i;
+
+	v = talloc(mem_ctx, struct dcerpc_binding_vector);
+	if (v == NULL) {
+		return NULL;
+	}
+
+	v->bindings = talloc_array(v, struct dcerpc_binding, bvec->allocated);
+	if (v->bindings == NULL) {
+		talloc_free(v);
+		return NULL;
+	}
+	v->allocated = bvec->allocated;
+
+	for (i = 0; i < bvec->count; i++) {
+		struct dcerpc_binding *b;
+
+		b = dcerpc_binding_dup(v->bindings, &bvec->bindings[i]);
+		if (b == NULL) {
+			talloc_free(v);
+			return NULL;
+		}
+		v->bindings[i] = *b;
+	}
+	v->count = bvec->count;
+
+	return v;
+}
+
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
 				      uint16_t port,
