@@ -21,6 +21,25 @@
 #ifndef _NT_PRINTING_MIGRATE_H_
 #define _NT_PRINTING_MIGRATE_H_
 
-bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx);
+NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
+				   struct rpc_pipe_client *pipe_hnd,
+				   const char *key_name,
+				   unsigned char *data,
+				   size_t length);
+NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
+				     struct rpc_pipe_client *pipe_hnd,
+				     const char *key_name,
+				     unsigned char *data,
+				     size_t length);
+NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
+				      struct rpc_pipe_client *pipe_hnd,
+				      const char *key_name,
+				      unsigned char *data,
+				      size_t length);
+NTSTATUS printing_tdb_migrate_secdesc(TALLOC_CTX *mem_ctx,
+				      struct rpc_pipe_client *pipe_hnd,
+				      const char *key_name,
+				      unsigned char *data,
+				      size_t length);
 
 #endif /* _NT_PRINTING_MIGRATE_H_ */

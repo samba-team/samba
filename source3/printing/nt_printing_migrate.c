@@ -19,27 +19,18 @@
  */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "printing/nt_printing_migrate.h"
 
 #include "rpc_client/rpc_client.h"
 #include "librpc/gen_ndr/ndr_ntprinting.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "rpc_server/rpc_ncacn_np.h"
-#include "auth.h"
-#include "util_tdb.h"
 
-#define FORMS_PREFIX "FORMS/"
-#define DRIVERS_PREFIX "DRIVERS/"
-#define PRINTERS_PREFIX "PRINTERS/"
-#define SECDESC_PREFIX "SECDESC/"
-
-static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
-			 struct rpc_pipe_client *pipe_hnd,
-			 const char *key_name,
-			 unsigned char *data,
-			 size_t length)
+NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
+				   struct rpc_pipe_client *pipe_hnd,
+				   const char *key_name,
+				   unsigned char *data,
+				   size_t length)
 {
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
@@ -133,11 +124,11 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
-			       struct rpc_pipe_client *pipe_hnd,
-			       const char *key_name,
-			       unsigned char *data,
-			       size_t length)
+NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
+				     struct rpc_pipe_client *pipe_hnd,
+				     const char *key_name,
+				     unsigned char *data,
+				     size_t length)
 {
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	const char *srv_name_slash;
@@ -205,11 +196,11 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
-				struct rpc_pipe_client *pipe_hnd,
-				const char *key_name,
-				unsigned char *data,
-				size_t length)
+NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
+				      struct rpc_pipe_client *pipe_hnd,
+				      const char *key_name,
+				      unsigned char *data,
+				      size_t length)
 {
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
@@ -409,11 +400,11 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
-				struct rpc_pipe_client *pipe_hnd,
-				const char *key_name,
-				unsigned char *data,
-				size_t length)
+NTSTATUS printing_tdb_migrate_secdesc(TALLOC_CTX *mem_ctx,
+				      struct rpc_pipe_client *pipe_hnd,
+				      const char *key_name,
+				      unsigned char *data,
+				      size_t length)
 {
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
@@ -493,218 +484,4 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
-}
-
-static int rename_file_with_suffix(TALLOC_CTX *mem_ctx,
-				   const char *path,
-				   const char *suffix)
-{
-	int rc = -1;
-	char *dst_path;
-
-	dst_path = talloc_asprintf(mem_ctx, "%s%s", path, suffix);
-	if (dst_path == NULL) {
-		DEBUG(3, ("error out of memory\n"));
-		return rc;
-	}
-
-	rc = (rename(path, dst_path) != 0);
-
-	if (rc == 0) {
-		DEBUG(5, ("moved '%s' to '%s'\n", path, dst_path));
-	} else if (errno == ENOENT) {
-		DEBUG(3, ("file '%s' does not exist - so not moved\n", path));
-		rc = 0;
-	} else {
-		DEBUG(3, ("error renaming %s to %s: %s\n", path, dst_path,
-			  strerror(errno)));
-	}
-
-	TALLOC_FREE(dst_path);
-	return rc;
-}
-
-static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
-				 const char *tdb_path,
-				 struct rpc_pipe_client *pipe_hnd)
-{
-	const char *backup_suffix = ".bak";
-	TDB_DATA kbuf, newkey, dbuf;
-	TDB_CONTEXT *tdb;
-	NTSTATUS status;
-	int rc;
-
-	tdb = tdb_open_log(tdb_path, 0, TDB_DEFAULT, O_RDONLY, 0600);
-	if (tdb == NULL && errno == ENOENT) {
-		/* if we have no printers database then migration is
-		   considered successful */
-		DEBUG(4, ("No printers database to migrate in %s\n", tdb_path));
-		return NT_STATUS_OK;
-	}
-	if (tdb == NULL) {
-		DEBUG(2, ("Failed to open tdb file: %s\n", tdb_path));
-		return NT_STATUS_NO_SUCH_FILE;
-	}
-
-	for (kbuf = tdb_firstkey(tdb);
-	     kbuf.dptr;
-	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
-	{
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr) {
-			continue;
-		}
-
-		if (strncmp((const char *) kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
-			status = migrate_form(mem_ctx,
-					      pipe_hnd,
-					      (const char *) kbuf.dptr + strlen(FORMS_PREFIX),
-					      dbuf.dptr,
-					      dbuf.dsize);
-			SAFE_FREE(dbuf.dptr);
-			if (!NT_STATUS_IS_OK(status)) {
-				tdb_close(tdb);
-				return status;
-			}
-			continue;
-		}
-
-		if (strncmp((const char *) kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
-			status = migrate_driver(mem_ctx,
-						pipe_hnd,
-						(const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
-						dbuf.dptr,
-						dbuf.dsize);
-			SAFE_FREE(dbuf.dptr);
-			if (!NT_STATUS_IS_OK(status)) {
-				tdb_close(tdb);
-				return status;
-			}
-			continue;
-		}
-
-		if (strncmp((const char *) kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
-			const char *printer_name = (const char *)(kbuf.dptr
-						    + strlen(PRINTERS_PREFIX));
-			status = migrate_printer(mem_ctx,
-						 pipe_hnd,
-						 printer_name,
-						 dbuf.dptr,
-						 dbuf.dsize);
-			SAFE_FREE(dbuf.dptr);
-			/* currently no WERR_INVALID_PRINTER_NAME equivalent */
-			if (NT_STATUS_EQUAL(status,
-			       werror_to_ntstatus(WERR_INVALID_PRINTER_NAME))) {
-				DEBUG(2, ("Skipping migration for non-existent "
-						"printer: %s\n", printer_name));
-			} else if (!NT_STATUS_IS_OK(status)) {
-				tdb_close(tdb);
-				return status;
-			}
-			continue;
-		}
-
-		if (strncmp((const char *) kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
-			const char *secdesc_name = (const char *)(kbuf.dptr
-						    + strlen(SECDESC_PREFIX));
-			status = migrate_secdesc(mem_ctx,
-						 pipe_hnd,
-						 secdesc_name,
-						 dbuf.dptr,
-						 dbuf.dsize);
-			SAFE_FREE(dbuf.dptr);
-			/* currently no WERR_INVALID_PRINTER_NAME equivalent */
-			if (NT_STATUS_EQUAL(status,
-			       werror_to_ntstatus(WERR_INVALID_PRINTER_NAME))) {
-				DEBUG(2, ("Skipping migration for non-existent "
-						"secdesc: %s\n", secdesc_name));
-			} else if (!NT_STATUS_IS_OK(status)) {
-				tdb_close(tdb);
-				return status;
-			}
-			continue;
-		}
-	}
-
-	tdb_close(tdb);
-
-	rc = rename_file_with_suffix(mem_ctx, tdb_path, backup_suffix);
-	if (rc != 0) {
-		DEBUG(0, ("Error moving tdb to '%s%s'\n",
-			  tdb_path, backup_suffix));
-	}
-
-	return NT_STATUS_OK;
-}
-
-bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
-{
-	const char *drivers_path = state_path("ntdrivers.tdb");
-	const char *printers_path = state_path("ntprinters.tdb");
-	const char *forms_path = state_path("ntforms.tdb");
-	bool drivers_exists = file_exist(drivers_path);
-	bool printers_exists = file_exist(printers_path);
-	bool forms_exists = file_exist(forms_path);
-	struct auth_serversupplied_info *session_info;
-	struct rpc_pipe_client *spoolss_pipe = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	NTSTATUS status;
-
-	if (!drivers_exists && !printers_exists && !forms_exists) {
-		return true;
-	}
-
-	status = make_session_info_system(tmp_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Couldn't create session_info: %s\n",
-			  nt_errstr(status)));
-		talloc_free(tmp_ctx);
-		return false;
-	}
-
-	status = rpc_pipe_open_interface(tmp_ctx,
-					&ndr_table_spoolss.syntax_id,
-					session_info,
-					NULL,
-					msg_ctx,
-					&spoolss_pipe);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Couldn't open internal spoolss pipe: %s\n",
-			  nt_errstr(status)));
-		talloc_free(tmp_ctx);
-		return false;
-	}
-
-	if (drivers_exists) {
-		status = migrate_internal(tmp_ctx, drivers_path, spoolss_pipe);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Couldn't migrate drivers tdb file: %s\n",
-			  nt_errstr(status)));
-			talloc_free(tmp_ctx);
-			return false;
-		}
-	}
-
-	if (printers_exists) {
-		status = migrate_internal(tmp_ctx, printers_path, spoolss_pipe);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Couldn't migrate printers tdb file: %s\n",
-				  nt_errstr(status)));
-			talloc_free(tmp_ctx);
-			return false;
-		}
-	}
-
-	if (forms_exists) {
-		status = migrate_internal(tmp_ctx, forms_path, spoolss_pipe);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Couldn't migrate forms tdb file: %s\n",
-				  nt_errstr(status)));
-			talloc_free(tmp_ctx);
-			return false;
-		}
-	}
-
-	talloc_free(tmp_ctx);
-	return true;
 }
