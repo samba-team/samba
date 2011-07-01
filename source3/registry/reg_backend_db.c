@@ -854,6 +854,53 @@ done:
 	return werr;
 }
 
+/**
+ * Utility function to store a new empty list of
+ * subkeys of given key specified as parent and subkey name
+ * (thereby creating the key).
+ * If the subkey list does already exist, it is not modified.
+ *
+ * Must be called from within a transaction.
+ */
+static WERROR regdb_store_subkey_list(struct db_context *db, const char *parent,
+				      const char *key)
+{
+	WERROR werr;
+	char *path = NULL;
+	struct regsubkey_ctr *subkeys = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	path = talloc_asprintf(frame, "%s\\%s", parent, key);
+	if (!path) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	werr = regsubkey_ctr_init(frame, &subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	werr = regdb_fetch_keys_internal(db, path, subkeys);
+	if (W_ERROR_IS_OK(werr)) {
+		/* subkey list exists already - don't modify */
+		goto done;
+	}
+
+	werr = regsubkey_ctr_reinit(subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	/* create a record with 0 subkeys */
+	werr = regdb_store_keys_internal2(db, path, subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, ("regdb_store_keys: Failed to store new record for "
+			  "key [%s]: %s\n", path, win_errstr(werr)));
+		goto done;
+	}
+
+done:
+	talloc_free(frame);
+	return werr;
+}
+
 /***********************************************************************
  Store the new subkey record and create any child key records that
  do not currently exist
@@ -871,7 +918,7 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 	WERROR werr;
 	int num_subkeys, i;
 	char *path = NULL;
-	struct regsubkey_ctr *subkeys = NULL, *old_subkeys = NULL;
+	struct regsubkey_ctr *old_subkeys = NULL;
 	char *oldkeyname = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
@@ -955,29 +1002,12 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 	num_subkeys = regsubkey_ctr_numkeys(store_ctx->ctr);
 
 	for (i=0; i<num_subkeys; i++) {
-		path = talloc_asprintf(mem_ctx, "%s\\%s", store_ctx->key,
-				regsubkey_ctr_specific_key(store_ctx->ctr, i));
-		if (!path) {
-			werr = WERR_NOMEM;
-			goto done;
-		}
-		werr = regsubkey_ctr_init(mem_ctx, &subkeys);
+		const char *subkey;
+
+		subkey = regsubkey_ctr_specific_key(store_ctx->ctr, i);
+
+		werr = regdb_store_subkey_list(db, store_ctx->key, subkey);
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
-
-		werr = regdb_fetch_keys_internal(db, path, subkeys);
-		if (!W_ERROR_IS_OK(werr)) {
-			/* create a record with 0 subkeys */
-			werr = regdb_store_keys_internal2(db, path, subkeys);
-			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0,("regdb_store_keys: Failed to store "
-					 "new record for key [%s]: %s\n", path,
-					 win_errstr(werr)));
-				goto done;
-			}
-		}
-
-		TALLOC_FREE(subkeys);
-		TALLOC_FREE(path);
 	}
 
 	werr = WERR_OK;
