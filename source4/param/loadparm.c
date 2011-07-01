@@ -85,8 +85,8 @@ static bool defaults_saved = false;
 	char *tls_dhpfile;						\
 	char *loglevel;							\
 	char *panic_action;						\
-	int bPreferredMaster;						\
-	char *szAnnounceVersion;        /* This is initialised in init_globals */
+	int bPreferredMaster;
+
 #define LOADPARM_EXTRA_LOCALS				\
 	struct parmlist_entry *param_opt;		\
 	char *szService;				\
@@ -756,14 +756,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 
-	{
-		.label		= "announce version",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szAnnounceVersion),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
 	{
 		.label		= "max mux",
 		.type		= P_INTEGER,
