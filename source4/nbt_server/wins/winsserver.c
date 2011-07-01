@@ -1038,7 +1038,7 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	uint32_t tmp;
 	const char *owner;
 
-	if (!lpcfg_wins_support(nbtsrv->task->lp_ctx)) {
+	if (!lpcfg_we_are_a_wins_server(nbtsrv->task->lp_ctx)) {
 		nbtsrv->winssrv = NULL;
 		return NT_STATUS_OK;
 	}

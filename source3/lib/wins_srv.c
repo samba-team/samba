@@ -153,7 +153,7 @@ unsigned wins_srv_count(void)
 	const char **list;
 	int count = 0;
 
-	if (lp_wins_support()) {
+	if (lp_we_are_a_wins_server()) {
 		/* simple - just talk to ourselves */
 		return 1;
 	}
@@ -210,7 +210,7 @@ char **wins_srv_tags(void)
 	int count=0, i, j;
 	const char **list;
 
-	if (lp_wins_support()) {
+	if (lp_we_are_a_wins_server()) {
 		/* give the caller something to chew on. This makes
 		   the rest of the logic simpler (ie. less special cases) */
 		ret = SMB_MALLOC_ARRAY(char *, 2);
@@ -283,7 +283,7 @@ struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 	struct tagged_ip t_ip;
 
 	/* if we are a wins server then we always just talk to ourselves */
-	if (lp_wins_support()) {
+	if (lp_we_are_a_wins_server()) {
 		struct in_addr loopback_ip;
 		loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 		return loopback_ip;
@@ -381,7 +381,7 @@ unsigned wins_srv_count_tag(const char *tag)
 	int i, count=0;
 
 	/* if we are a wins server then we always just talk to ourselves */
-	if (lp_wins_support()) {
+	if (lp_we_are_a_wins_server()) {
 		return 1;
 	}
 

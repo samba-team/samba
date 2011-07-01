@@ -72,7 +72,7 @@ static int do_global_checks(void)
 		ret = 1;
 	}
 
-	if (lp_wins_support() && lp_wins_server_list()) {
+	if (lp_we_are_a_wins_server() && lp_wins_server_list()) {
 		fprintf(stderr, "ERROR: both 'wins support = true' and 'wins server = <server list>' \
 cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;

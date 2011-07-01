@@ -32,7 +32,7 @@ static WERROR wins_status( const char *service, struct SERVICE_STATUS *service_s
 	service_status->type			= SERVICE_TYPE_WIN32_OWN_PROCESS;
 	service_status->controls_accepted	= SVCCTL_ACCEPT_NONE;
 
-	if ( lp_wins_support() )
+	if ( lp_we_are_a_wins_server() )
 		service_status->state     = SVCCTL_RUNNING;
 	else {
 		service_status->state		= SVCCTL_STOPPED;

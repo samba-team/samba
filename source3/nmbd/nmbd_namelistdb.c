@@ -33,7 +33,7 @@ uint16 samba_nb_type = 0; /* samba's NetBIOS name type */
 
 void set_samba_nb_type(void)
 {
-	if( lp_wins_support() || wins_srv_count() ) {
+	if( lp_we_are_a_wins_server() || wins_srv_count() ) {
 		samba_nb_type = NB_HFLAG;               /* samba is a 'hybrid' node type. */
 	} else {
 		samba_nb_type = NB_BFLAG;           /* samba is broadcast-only node type. */

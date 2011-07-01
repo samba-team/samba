@@ -716,7 +716,7 @@ static WERROR fill_svc_config(TALLOC_CTX *mem_ctx,
 
 	if ( strequal( name, "NETLOGON" ) && ( lp_servicenumber(name) == -1 ) )
 		config->start_type = SVCCTL_DISABLED;
-	else if ( strequal( name, "WINS" ) && ( !lp_wins_support() ))
+	else if ( strequal( name, "WINS" ) && ( !lp_we_are_a_wins_server() ))
 		config->start_type = SVCCTL_DISABLED;
 	else
 		config->start_type = SVCCTL_DEMAND_START;

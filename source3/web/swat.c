@@ -775,7 +775,7 @@ static void wizard_page(void)
 	else
 	{
 		/* Now determine smb.conf WINS settings */
-		if (lp_wins_support())
+		if (lp_we_are_a_wins_server())
 			winstype = 1;
 		if (lp_wins_server_list() && strlen(*lp_wins_server_list()))
  		        winstype = 2;
@@ -783,7 +783,7 @@ static void wizard_page(void)
 		/* Do we have a homes share? */
 		have_home = lp_servicenumber(HOMES_NAME);
 	}
-	if ((winstype == 2) && lp_wins_support())
+	if ((winstype == 2) && lp_we_are_a_wins_server())
 		winstype = 3;
 
 	role = lp_server_role();

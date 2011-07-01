@@ -451,7 +451,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct wreplsrv_service *service;
 
-	if (!lpcfg_wins_support(task->lp_ctx)) {
+	if (!lpcfg_we_are_a_wins_server(task->lp_ctx)) {
 		return;
 	}
 

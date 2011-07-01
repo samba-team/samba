@@ -5652,7 +5652,6 @@ FN_GLOBAL_BOOL(lp_log_writeable_files_on_exit,
 	       bLogWriteableFilesOnExit)
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, bMsAddPrinterWizard)
 FN_GLOBAL_BOOL(lp_dns_proxy, bDNSproxy)
-FN_GLOBAL_BOOL(lp_wins_support, bWINSsupport)
 FN_GLOBAL_BOOL(lp_we_are_a_wins_server, bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy, bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master, bLocalMaster)
