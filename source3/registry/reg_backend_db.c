@@ -1602,7 +1602,7 @@ static bool regdb_key_exists(struct db_context *db, const char *key)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	TDB_DATA value;
 	bool ret = false;
-	char *path, *p;
+	char *path;
 
 	if (key == NULL) {
 		goto done;
@@ -1618,15 +1618,8 @@ static bool regdb_key_exists(struct db_context *db, const char *key)
 		goto done;
 	}
 
-	p = strrchr(path, '\\');
-	if (p == NULL) {
-		/* this is a base key */
-		value = regdb_fetch_key_internal(db, mem_ctx, path);
-		ret = (value.dptr != NULL);
-	} else {
-		*p = '\0';
-		ret = scan_parent_subkeys(db, path, p+1);
-	}
+	value = regdb_fetch_key_internal(db, mem_ctx, path);
+	ret = (value.dptr != NULL);
 
 done:
 	TALLOC_FREE(mem_ctx);
