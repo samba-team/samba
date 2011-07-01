@@ -1213,7 +1213,7 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 	struct regdb_delete_subkey_context delete_ctx;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!regdb_key_is_base_key(key) && !regdb_key_exists(regdb, key)) {
+	if (!regdb_key_exists(regdb, key)) {
 		werr = WERR_NOT_FOUND;
 		goto done;
 	}
