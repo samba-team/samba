@@ -745,13 +745,13 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 /********************************************************************
 ********************************************************************/
 
-bool cli_resolve_path(TALLOC_CTX *ctx,
-			const char *mountpt,
-			const struct user_auth_info *dfs_auth_info,
-			struct cli_state *rootcli,
-			const char *path,
-			struct cli_state **targetcli,
-			char **pp_targetpath)
+NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
+			  const char *mountpt,
+			  const struct user_auth_info *dfs_auth_info,
+			  struct cli_state *rootcli,
+			  const char *path,
+			  struct cli_state **targetcli,
+			  char **pp_targetpath)
 {
 	struct client_dfs_referral *refs = NULL;
 	size_t num_refs = 0;
@@ -772,7 +772,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	NTSTATUS status;
 
 	if ( !rootcli || !path || !targetcli ) {
-		return false;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Don't do anything if this is not a DFS root. */
@@ -781,9 +781,9 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
 		if (!*pp_targetpath) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
-		return true;
+		return NT_STATUS_OK;
 	}
 
 	*targetcli = NULL;
@@ -792,12 +792,12 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	cleanpath = clean_path(ctx, path);
 	if (!cleanpath) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	dfs_path = cli_dfs_make_full_path(ctx, rootcli, cleanpath);
 	if (!dfs_path) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = cli_qpathinfo_basic( rootcli, dfs_path, &sbuf, &attributes);
@@ -806,7 +806,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
 		if (!*pp_targetpath) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 		goto done;
 	}
@@ -818,7 +818,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
 		if (!*pp_targetpath) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 		goto done;
 	}
@@ -827,7 +827,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	if (!cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED,
 				 status)) {
-		return false;
+		return status;
 	}
 
 	/* Check for the referral. */
@@ -844,36 +844,36 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 			     0x20,
 			     &cli_ipc);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		return status;
 	}
 
 	status = cli_dfs_get_referral(ctx, cli_ipc, dfs_path, &refs,
 				      &num_refs, &consumed);
 	if (!NT_STATUS_IS_OK(status) || !num_refs) {
-		return false;
+		return status;
 	}
 
 	/* Just store the first referral for now. */
 
 	if (!refs[0].dfspath) {
-		return false;
+		return NT_STATUS_NOT_FOUND;
 	}
 	if (!split_dfs_path(ctx, refs[0].dfspath, &server, &share,
 			    &extrapath)) {
-		return false;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	/* Make sure to recreate the original string including any wildcards. */
 
 	dfs_path = cli_dfs_make_full_path(ctx, rootcli, path);
 	if (!dfs_path) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 	pathlen = strlen(dfs_path);
 	consumed = MIN(pathlen, consumed);
 	*pp_targetpath = talloc_strdup(ctx, &dfs_path[consumed]);
 	if (!*pp_targetpath) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 	dfs_path[consumed] = '\0';
 
@@ -897,7 +897,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Unable to follow dfs referral [\\%s\\%s]\n",
 			server, share );
-		return false;
+		return status;
 	}
 
 	if (extrapath && strlen(extrapath) > 0) {
@@ -915,7 +915,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 						  *pp_targetpath);
 		}
 		if (!*pp_targetpath) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -928,26 +928,26 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		d_printf("cli_resolve_path: "
 			"dfs_path (%s) not in correct format.\n",
 			dfs_path );
-		return false;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	ppath++; /* Now pointing at start of server name. */
 
 	if ((ppath = strchr_m( dfs_path, '\\' )) == NULL) {
-		return false;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	ppath++; /* Now pointing at start of share name. */
 
 	if ((ppath = strchr_m( ppath+1, '\\' )) == NULL) {
-		return false;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	ppath++; /* Now pointing at path component. */
 
 	newmount = talloc_asprintf(ctx, "%s\\%s", mountpt, ppath );
 	if (!newmount) {
-		return false;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	cli_set_mntpoint(*targetcli, newmount);
@@ -956,13 +956,14 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	   checking for loops here. */
 
 	if (!strequal(*pp_targetpath, "\\") && !strequal(*pp_targetpath, "/")) {
-		if (cli_resolve_path(ctx,
-					newmount,
-					dfs_auth_info,
-					*targetcli,
-					*pp_targetpath,
-					&newcli,
-					&newpath)) {
+		status = cli_resolve_path(ctx,
+					  newmount,
+					  dfs_auth_info,
+					  *targetcli,
+					  *pp_targetpath,
+					  &newcli,
+					  &newpath);
+		if (NT_STATUS_IS_OK(status)) {
 			/*
 			 * When cli_resolve_path returns true here it's always
  			 * returning the complete path in newpath, so we're done
@@ -970,7 +971,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
  			 */
 			*targetcli = newcli;
 			*pp_targetpath = newpath;
-			return true;
+			return status;
 		}
 	}
 
@@ -980,12 +981,15 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if ((*targetcli)->dfsroot) {
 		dfs_path = talloc_strdup(ctx, *pp_targetpath);
 		if (!dfs_path) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 		*pp_targetpath = cli_dfs_make_full_path(ctx, *targetcli, dfs_path);
+		if (*pp_targetpath == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************

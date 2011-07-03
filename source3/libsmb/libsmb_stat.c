@@ -215,6 +215,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	if (!context || !context->internal->initialized) {
 		errno = EINVAL;
@@ -250,9 +251,10 @@ SMBC_fstat_ctx(SMBCCTX *context,
         }
 
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", context->internal->auth_info,
-			      file->srv->cli, path,
-			      &targetcli, &targetpath)) {
+	status = cli_resolve_path(frame, "", context->internal->auth_info,
+				  file->srv->cli, path,
+				  &targetcli, &targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path);
                 errno = ENOENT;
 		TALLOC_FREE(frame);

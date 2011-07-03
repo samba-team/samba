@@ -889,9 +889,10 @@ cacl_get(SMBCCTX *context,
                 /* Point to the portion after "system.nt_sec_desc." */
                 name += 19;     /* if (all) this will be invalid but unused */
 
-		if (!cli_resolve_path(ctx, "", context->internal->auth_info,
-				cli, filename,
-				&targetcli, &targetpath)) {
+		status = cli_resolve_path(
+			ctx, "", context->internal->auth_info,
+			cli, filename, &targetcli, &targetpath);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("cacl_get Could not resolve %s\n",
 				filename));
                         errno = ENOENT;
@@ -1548,9 +1549,9 @@ cacl_set(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!cli_resolve_path(ctx, "", context->internal->auth_info,
-			cli, filename,
-			&targetcli, &targetpath)) {
+	status = cli_resolve_path(ctx, "", context->internal->auth_info,
+				  cli, filename, &targetcli, &targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("cacl_set: Could not resolve %s\n", filename));
 		errno = ENOENT;
 		return -1;

@@ -132,13 +132,13 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct client_dfs_referral **refs,
 			size_t *num_refs,
 			size_t *consumed);
-bool cli_resolve_path(TALLOC_CTX *ctx,
-			const char *mountpt,
-			const struct user_auth_info *dfs_auth_info,
-			struct cli_state *rootcli,
-			const char *path,
-			struct cli_state **targetcli,
-			char **pp_targetpath);
+NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
+			  const char *mountpt,
+			  const struct user_auth_info *dfs_auth_info,
+			  struct cli_state *rootcli,
+			  const char *path,
+			  struct cli_state **targetcli,
+			  char **pp_targetpath);
 
 bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 			struct cli_state *cli,
