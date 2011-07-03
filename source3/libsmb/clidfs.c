@@ -77,7 +77,7 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
  Return a connection to a server.
 ********************************************************************/
 
-static struct cli_state *do_connect(TALLOC_CTX *ctx,
+static NTSTATUS do_connect(TALLOC_CTX *ctx,
 					const char *server,
 					const char *share,
 					const struct user_auth_info *auth_info,
@@ -85,7 +85,8 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					bool force_encrypt,
 					int max_protocol,
 					int port,
-					int name_type)
+					int name_type,
+					struct cli_state **pcli)
 {
 	struct cli_state *c = NULL;
 	char *servicename;
@@ -98,7 +99,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	/* make a copy so we don't modify the global string 'service' */
 	servicename = talloc_strdup(ctx,share);
 	if (!servicename) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	sharename = servicename;
 	if (*sharename == '\\') {
@@ -108,13 +109,13 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		}
 		sharename = strchr_m(sharename,'\\');
 		if (!sharename) {
-			return NULL;
+			return NT_STATUS_NO_MEMORY;
 		}
 		*sharename = 0;
 		sharename++;
 	}
 	if (server == NULL) {
-		return NULL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = cli_connect_nb(
@@ -125,7 +126,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		d_printf("Connection to %s failed (Error %s)\n",
 				server,
 				nt_errstr(status));
-		return NULL;
+		return status;
 	}
 
 	if (max_protocol == 0) {
@@ -145,7 +146,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		d_printf("protocol negotiation failed: %s\n",
 			 nt_errstr(status));
 		cli_shutdown(c);
-		return NULL;
+		return status;
 	}
 
 	username = get_cmdline_auth_info_username(auth_info);
@@ -170,7 +171,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
 				d_printf("did you forget to run kinit?\n");
 			cli_shutdown(c);
-			return NULL;
+			return status;
 		}
 		d_printf("Anonymous login successful\n");
 		status = cli_init_creds(c, "", lp_workgroup(), "");
@@ -181,7 +182,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cli_init_creds() failed: %s\n", nt_errstr(status)));
 		cli_shutdown(c);
-		return NULL;
+		return status;
 	}
 
 	if ( show_sessetup ) {
@@ -211,7 +212,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		return do_connect(ctx, newserver,
 				newshare, auth_info, false,
 				force_encrypt, max_protocol,
-				port, name_type);
+				port, name_type, pcli);
 	}
 
 	/* must be a normal share */
@@ -221,7 +222,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("tree connect failed: %s\n", nt_errstr(status));
 		cli_shutdown(c);
-		return NULL;
+		return status;
 	}
 
 	if (force_encrypt) {
@@ -232,12 +233,13 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					sharename);
 		if (!NT_STATUS_IS_OK(status)) {
 			cli_shutdown(c);
-			return NULL;
+			return status;
 		}
 	}
 
 	DEBUG(4,(" tconx ok\n"));
-	return c;
+	*pcli = c;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -271,13 +273,14 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 					int name_type)
 {
 	struct cli_state *cli;
+	NTSTATUS status;
 
-	cli = do_connect(ctx, server, share,
+	status = do_connect(ctx, server, share,
 				auth_info,
 				show_hdr, force_encrypt, max_protocol,
-				port, name_type);
+				port, name_type, &cli);
 
-	if (!cli ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
@@ -289,7 +292,6 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 	if (referring_cli && referring_cli->requested_posix_capabilities) {
 		uint16 major, minor;
 		uint32 caplow, caphigh;
-		NTSTATUS status;
 		status = cli_unix_extensions_version(cli, &major, &minor,
 						     &caplow, &caphigh);
 		if (NT_STATUS_IS_OK(status)) {
