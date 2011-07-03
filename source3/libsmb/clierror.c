@@ -22,35 +22,6 @@
 #include "includes.h"
 #include "libsmb/libsmb.h"
 
-/*****************************************************
- RAP error codes - a small start but will be extended.
-
- XXX: Perhaps these should move into a common function because they're
- duplicated in clirap2.c
-
-*******************************************************/
-
-static const struct {
-	int err;
-	const char *message;
-} rap_errmap[] = {
-	{5,    "RAP5: User has insufficient privilege" },
-	{50,   "RAP50: Not supported by server" },
-	{65,   "RAP65: Access denied" },
-	{86,   "RAP86: The specified password is invalid" },
-	{2220, "RAP2220: Group does not exist" },
-	{2221, "RAP2221: User does not exist" },
-	{2226, "RAP2226: Operation only permitted on a Primary Domain Controller"  },
-	{2237, "RAP2237: User is not in group" },
-	{2242, "RAP2242: The password of this user has expired." },
-	{2243, "RAP2243: The password of this user cannot change." },
-	{2244, "RAP2244: This password cannot be used now (password history conflict)." },
-	{2245, "RAP2245: The password is shorter than required." },
-	{2246, "RAP2246: The password of this user is too recent to change."},
-
-	{0, NULL}
-};  
-
 /****************************************************************************
  Return a description of an SMB error.
 ****************************************************************************/
@@ -98,7 +69,6 @@ const char *cli_errstr(struct cli_state *cli)
 	fstring cli_error_message;
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;
 	uint8 errclass;
-	int i;
 	char *result;
 
 	if (!cli->initialised) {
@@ -144,15 +114,8 @@ const char *cli_errstr(struct cli_state *cli)
 
 	/* Case #1: RAP error */
 	if (cli->rap_error) {
-		for (i = 0; rap_errmap[i].message != NULL; i++) {
-			if (rap_errmap[i].err == cli->rap_error) {
-				return rap_errmap[i].message;
-			}
-		}
-
-		slprintf(cli_error_message, sizeof(cli_error_message) - 1, "RAP code %d",
-			cli->rap_error);
-
+		strlcpy(cli_error_message, win_errstr(W_ERROR(cli->rap_error)),
+			sizeof(cli_error_message));
 		goto done;
 	}
 
