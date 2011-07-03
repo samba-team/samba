@@ -1666,11 +1666,13 @@ cacl_set(SMBCCTX *context,
 	sd = make_sec_desc(ctx, old->revision, SEC_DESC_SELF_RELATIVE,
 			   owner_sid, group_sid, NULL, dacl, &sd_size);
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetpath, 0,
-                             WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS, 0,
-			     FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
+	status = cli_ntcreate(targetcli, targetpath, 0,
+			      WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS, 0,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
+			      0x0, 0x0, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("cacl_set failed to open %s: %s\n",
-                          targetpath, cli_errstr(targetcli)));
+                          targetpath, nt_errstr(status)));
                 errno = 0;
 		return -1;
 	}
