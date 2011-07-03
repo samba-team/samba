@@ -1533,8 +1533,10 @@ bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_n
 				TALLOC_FREE(frame);
 			}
 		} else {
-			DEBUG(4,("cli_get_pdc_name: machine %s failed the NetServerEnum call. "
-				"Error was : %s.\n", cli->desthost, cli_errstr(cli) ));
+			DEBUG(4, ("cli_get_pdc_name: machine %s failed the "
+				  "NetServerEnum call. Error was : %s.\n",
+				  cli->desthost,
+				  win_errstr(W_ERROR(cli->rap_error))));
 		}
 	}
 
@@ -1830,8 +1832,10 @@ bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
 				}
 			}
 		} else {
-			DEBUG(4,("cli_ns_check_server_type: machine %s failed the NetServerEnum call. "
-				"Error was : %s.\n", cli->desthost, cli_errstr(cli) ));
+			DEBUG(4, ("cli_ns_check_server_type: machine %s "
+				  "failed the NetServerEnum call. Error was : "
+				  "%s.\n", cli->desthost,
+				  win_errstr(W_ERROR(cli->rap_error))));
 		}
 	}
 
