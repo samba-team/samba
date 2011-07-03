@@ -98,8 +98,6 @@ Build.BuildContext.SAMBA3_LIBRARY = SAMBA3_LIBRARY
 
 def SAMBA3_MODULE(bld, name, *args, **kwargs):
 	s3_fix_kwargs(bld, kwargs)
-        if not 'allow_undefined_symbols' in kwargs:
-            kwargs['allow_undefined_symbols'] = True
 	return bld.SAMBA_MODULE(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_MODULE = SAMBA3_MODULE
 
