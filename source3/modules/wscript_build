@@ -62,7 +62,7 @@ bld.SAMBA3_SUBSYSTEM('VFS_AIXACL_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('vfs',
                     source='',
-                    deps='',
+                    deps='smbd_base',
                     vars=locals())
 
 bld.SAMBA3_MODULE('vfs_default',
@@ -345,7 +345,8 @@ bld.SAMBA3_MODULE('vfs_aio_fork',
                  deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_aio_fork'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_aio_fork'))
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_aio_fork'),
+                  allow_undefined_symbols=True)
 
 bld.SAMBA3_MODULE('vfs_preopen',
                  subsystem='vfs',
@@ -450,7 +451,7 @@ PERFCOUNT_TEST_SRC = 'perfcount_test.c'
 
 bld.SAMBA3_SUBSYSTEM('perfcount',
                     source='',
-                    vars=locals())
+                     deps='smbd_base')
 
 bld.SAMBA3_MODULE('perfcount_onefs',
                  subsystem='perfcount',
