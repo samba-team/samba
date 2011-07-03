@@ -2024,7 +2024,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		    (old_p = parsed_dn_find(old_dns,
 					    old_num_values, p->guid, NULL)) != NULL) {
 			/* update in place */
-			ret = replmd_update_la_val(old_el->values, old_p->v, old_p->dsdb_dn,
+			ret = replmd_update_la_val(old_el->values, old_p->v, p->dsdb_dn,
 						   old_p->dsdb_dn, invocation_id,
 						   seq_num, seq_num, now, 0, false);
 			if (ret != LDB_SUCCESS) {
