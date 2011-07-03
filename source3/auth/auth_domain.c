@@ -234,8 +234,9 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 	}
 
 	if(!netlogon_pipe) {
-		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
-machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
+		DEBUG(0, ("connect_to_domain_password_server: unable to open "
+			  "the domain client session to machine %s. Error "
+			  "was : %s.\n", dc_name, nt_errstr(result)));
 		cli_shutdown(*cli);
 		*cli = NULL;
 		TALLOC_FREE(mutex);
