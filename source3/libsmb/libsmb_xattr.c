@@ -884,6 +884,7 @@ cacl_get(SMBCCTX *context,
         if (ipc_cli && (all || some_nt || all_nt_acls)) {
 		char *targetpath = NULL;
 	        struct cli_state *targetcli = NULL;
+		NTSTATUS status;
 
                 /* Point to the portion after "system.nt_sec_desc." */
                 name += 19;     /* if (all) this will be invalid but unused */
@@ -898,10 +899,13 @@ cacl_get(SMBCCTX *context,
 		}
 
                 /* ... then obtain any NT attributes which were requested */
-                if (!NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetpath, 0, CREATE_ACCESS_READ, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
+		status = cli_ntcreate(targetcli, targetpath, 0,
+				      CREATE_ACCESS_READ, 0,
+				      FILE_SHARE_READ|FILE_SHARE_WRITE,
+				      FILE_OPEN, 0x0, 0x0, &fnum);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("cacl_get failed to open %s: %s\n",
-				targetpath, cli_errstr(targetcli)));
+				  targetpath, nt_errstr(status)));
 			errno = 0;
 			return -1;
 		}
