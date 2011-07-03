@@ -2168,6 +2168,17 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 					       el->flags, el->name);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
+		if (dsdb_check_single_valued_link(schema_attr, el) != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb,
+					       "Attribute %s is single valued but more than one value has been supplied",
+					       el->name);
+			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		} else {
+			el->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
+		}
+
+
+
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
