@@ -151,19 +151,21 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	username = get_cmdline_auth_info_username(auth_info);
 	password = get_cmdline_auth_info_password(auth_info);
 
-	if (!NT_STATUS_IS_OK(cli_session_setup(c, username,
-					       password, strlen(password),
-					       password, strlen(password),
-					       lp_workgroup()))) {
+	status = cli_session_setup(c, username,
+				   password, strlen(password),
+				   password, strlen(password),
+				   lp_workgroup());
+	if (!NT_STATUS_IS_OK(status)) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
 		if (password[0] || !username[0] ||
 			get_cmdline_auth_info_use_kerberos(auth_info) ||
-			!NT_STATUS_IS_OK(cli_session_setup(c, "",
+			!NT_STATUS_IS_OK(status = cli_session_setup(c, "",
 				    		"", 0,
 						"", 0,
 					       lp_workgroup()))) {
-			d_printf("session setup failed: %s\n", cli_errstr(c));
+			d_printf("session setup failed: %s\n",
+				 nt_errstr(status));
 			if (NT_STATUS_V(cli_nt_error(c)) ==
 			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
 				d_printf("did you forget to run kinit?\n");
