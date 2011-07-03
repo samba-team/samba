@@ -67,6 +67,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	struct user_auth_info *auth_info = NULL;
 	struct cli_state *cli_ipc = NULL;
 	struct client_ipc_connection *p;
+	NTSTATUS status;
 
 	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAM;
@@ -103,16 +104,18 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		set_cmdline_auth_info_use_ccache(auth_info, true);
 	}
 
-	cli_ipc = cli_cm_open(ctx, NULL,
-				server_name, "IPC$",
-				auth_info,
-				false, false,
-				PROTOCOL_NT1,
-				0, 0x20);
-	if (cli_ipc) {
+	status = cli_cm_open(ctx, NULL,
+			     server_name, "IPC$",
+			     auth_info,
+			     false, false,
+			     PROTOCOL_NT1,
+			     0, 0x20, &cli_ipc);
+	if (NT_STATUS_IS_OK(status)) {
 		cli_set_username(cli_ipc, ctx->username);
 		cli_set_password(cli_ipc, ctx->password);
 		cli_set_domain(cli_ipc, ctx->workgroup);
+	} else {
+		cli_ipc = NULL;
 	}
 	TALLOC_FREE(auth_info);
 

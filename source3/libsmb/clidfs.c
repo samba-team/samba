@@ -343,7 +343,7 @@ static struct cli_state *cli_cm_find(struct cli_state *cli,
  Open a client connection to a \\server\share.
 ****************************************************************************/
 
-struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
+NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,
 				const char *share,
@@ -352,14 +352,16 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				bool force_encrypt,
 				int max_protocol,
 				int port,
-				int name_type)
+				int name_type,
+				struct cli_state **pcli)
 {
 	/* Try to reuse an existing connection in this list. */
 	struct cli_state *c = cli_cm_find(referring_cli, server, share);
 	NTSTATUS status;
 
 	if (c) {
-		return c;
+		*pcli = c;
+		return NT_STATUS_OK;
 	}
 
 	if (auth_info == NULL) {
@@ -368,7 +370,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 		d_printf("cli_cm_open() Unable to open connection [\\%s\\%s] "
 			"without auth info\n",
 			server, share );
-		return NULL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = cli_cm_connect(ctx,
@@ -383,9 +385,10 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				name_type,
 				&c);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
+		return status;
 	}
-	return c;
+	*pcli = c;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -829,16 +832,18 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* Check for the referral. */
 
-	if (!(cli_ipc = cli_cm_open(ctx,
-				rootcli,
-				rootcli->desthost,
-				"IPC$",
-				dfs_auth_info,
-				false,
-				(rootcli->trans_enc_state != NULL),
-				rootcli->protocol,
-				0,
-				0x20))) {
+	status = cli_cm_open(ctx,
+			     rootcli,
+			     rootcli->desthost,
+			     "IPC$",
+			     dfs_auth_info,
+			     false,
+			     (rootcli->trans_enc_state != NULL),
+			     rootcli->protocol,
+			     0,
+			     0x20,
+			     &cli_ipc);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
@@ -879,15 +884,17 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
  	 */
 
 	/* Open the connection to the target server & share */
-	if ((*targetcli = cli_cm_open(ctx, rootcli,
-					server,
-					share,
-					dfs_auth_info,
-					false,
-					(rootcli->trans_enc_state != NULL),
-					rootcli->protocol,
-					0,
-					0x20)) == NULL) {
+	status = cli_cm_open(ctx, rootcli,
+			     server,
+			     share,
+			     dfs_auth_info,
+			     false,
+			     (rootcli->trans_enc_state != NULL),
+			     rootcli->protocol,
+			     0,
+			     0x20,
+			     targetcli);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Unable to follow dfs referral [\\%s\\%s]\n",
 			server, share );
 		return false;

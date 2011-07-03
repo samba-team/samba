@@ -4466,12 +4466,15 @@ static int process_command_string(const char *cmd_in)
 	/* establish the connection if not already */
 
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL,
-				have_ip ? dest_ss_str : desthost,
-				service, auth_info,
-				true, smb_encrypt,
-				max_protocol, port, name_type);
-		if (!cli) {
+		NTSTATUS status;
+
+		status = cli_cm_open(talloc_tos(), NULL,
+				     have_ip ? dest_ss_str : desthost,
+				     service, auth_info,
+				     true, smb_encrypt,
+				     max_protocol, port, name_type,
+				     &cli);
+		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
 		}
 	}
@@ -4938,12 +4941,13 @@ static int process_stdin(void)
 static int process(const char *base_directory)
 {
 	int rc = 0;
+	NTSTATUS status;
 
-	cli = cli_cm_open(talloc_tos(), NULL,
-			have_ip ? dest_ss_str : desthost,
-			service, auth_info, true, smb_encrypt,
-			max_protocol, port, name_type);
-	if (!cli) {
+	status = cli_cm_open(talloc_tos(), NULL,
+			     have_ip ? dest_ss_str : desthost,
+			     service, auth_info, true, smb_encrypt,
+			     max_protocol, port, name_type, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
 	}
 
@@ -4971,11 +4975,15 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
-	cli = cli_cm_open(talloc_tos(), NULL,
-			have_ip ? dest_ss_str : query_host, "IPC$", auth_info, true, smb_encrypt,
-			max_protocol, port, name_type);
-	if (!cli)
+	NTSTATUS status;
+
+	status = cli_cm_open(talloc_tos(), NULL,
+			     have_ip ? dest_ss_str : query_host,
+			     "IPC$", auth_info, true, smb_encrypt,
+			     max_protocol, port, name_type, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
+	}
 
 	browse_host(true);
 
@@ -4997,10 +5005,13 @@ static int do_host_query(const char *query_host)
 		   else but port 139... */
 
 		cli_shutdown(cli);
-		cli = cli_cm_open(talloc_tos(), NULL,
-				have_ip ? dest_ss_str : query_host, "IPC$",
-				auth_info, true, smb_encrypt,
-				max_protocol, 139, name_type);
+		status = cli_cm_open(talloc_tos(), NULL,
+				     have_ip ? dest_ss_str : query_host,
+				     "IPC$", auth_info, true, smb_encrypt,
+				     max_protocol, 139, name_type, &cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			cli = NULL;
+		}
 	}
 
 	if (cli == NULL) {
@@ -5025,12 +5036,15 @@ static int do_tar_op(const char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL,
-			have_ip ? dest_ss_str : desthost,
-			service, auth_info, true, smb_encrypt,
-			max_protocol, port, name_type);
-		if (!cli)
+		NTSTATUS status;
+
+		status = cli_cm_open(talloc_tos(), NULL,
+				     have_ip ? dest_ss_str : desthost,
+				     service, auth_info, true, smb_encrypt,
+				     max_protocol, port, name_type, &cli);
+		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
+		}
 	}
 
 	recurse=true;

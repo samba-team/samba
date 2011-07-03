@@ -113,7 +113,7 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 			const char *password,
 			const char *domain,
 			const char *sharename);
-struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
+NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,
 				const char *share,
@@ -122,7 +122,8 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				bool force_encrypt,
 				int max_protocol,
 				int port,
-				int name_type);
+				int name_type,
+				struct cli_state **pcli);
 void cli_cm_display(const struct cli_state *c);
 struct client_dfs_referral;
 NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
