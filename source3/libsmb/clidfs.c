@@ -261,16 +261,17 @@ static void cli_set_mntpoint(struct cli_state *cli, const char *mnt)
  referring_cli == NULL means a new initial connection.
 ********************************************************************/
 
-static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
-					struct cli_state *referring_cli,
-	 				const char *server,
-					const char *share,
-					const struct user_auth_info *auth_info,
-					bool show_hdr,
-					bool force_encrypt,
-					int max_protocol,
-					int port,
-					int name_type)
+static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
+			       struct cli_state *referring_cli,
+			       const char *server,
+			       const char *share,
+			       const struct user_auth_info *auth_info,
+			       bool show_hdr,
+			       bool force_encrypt,
+			       int max_protocol,
+			       int port,
+			       int name_type,
+			       struct cli_state **pcli)
 {
 	struct cli_state *cli;
 	NTSTATUS status;
@@ -281,7 +282,7 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 				port, name_type, &cli);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
+		return status;
 	}
 
 	/* Enter into the list. */
@@ -301,7 +302,8 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 		}
 	}
 
-	return cli;
+	*pcli = cli;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
@@ -354,6 +356,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 {
 	/* Try to reuse an existing connection in this list. */
 	struct cli_state *c = cli_cm_find(referring_cli, server, share);
+	NTSTATUS status;
 
 	if (c) {
 		return c;
@@ -368,7 +371,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	return cli_cm_connect(ctx,
+	status = cli_cm_connect(ctx,
 				referring_cli,
 				server,
 				share,
@@ -377,7 +380,12 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				force_encrypt,
 				max_protocol,
 				port,
-				name_type);
+				name_type,
+				&c);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	return c;
 }
 
 /****************************************************************************
