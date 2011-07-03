@@ -48,12 +48,6 @@ static const struct {
 	{2245, "RAP2245: The password is shorter than required." },
 	{2246, "RAP2246: The password of this user is too recent to change."},
 
-	/* these really shouldn't be here ... */
-	{0x80, "Not listening on called name"},
-	{0x81, "Not listening for calling name"},
-	{0x82, "Called name not present"},
-	{0x83, "Called name present, but insufficient resources"},
-
 	{0, NULL}
 };  
 
