@@ -1172,11 +1172,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			return_value = smbd_smb2_request_error(req, session_status);
 			break;
 		}
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
 
 		{
 			START_PROFILE(smb2_tcon);
