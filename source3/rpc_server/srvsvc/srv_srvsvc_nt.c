@@ -247,18 +247,19 @@ static WERROR net_enum_files(TALLOC_CTX *ctx,
 /*******************************************************************
  Utility function to get the 'type' of a share from an snum.
  ********************************************************************/
-static uint32 get_share_type(int snum)
+static enum srvsvc_ShareType get_share_type(int snum)
 {
 	/* work out the share type */
-	uint32 type = STYPE_DISKTREE;
+	enum srvsvc_ShareType type = STYPE_DISKTREE;
 
-	if (lp_print_ok(snum))
-		type = STYPE_PRINTQ;
-	if (strequal(lp_fstype(snum), "IPC"))
-		type = STYPE_IPC;
-	if (lp_administrative_share(snum))
-		type |= STYPE_HIDDEN;
-
+	if (lp_print_ok(snum)) {
+		type = lp_administrative_share(snum)
+			? STYPE_PRINTQ_HIDDEN : STYPE_PRINTQ;
+	}
+	if (strequal(lp_fstype(snum), "IPC")) {
+		type = lp_administrative_share(snum)
+			? STYPE_IPC_HIDDEN : STYPE_IPC;
+	}
 	return type;
 }
 
