@@ -346,7 +346,9 @@ LIBNDR_XATTR_OBJ = librpc/gen_ndr/ndr_xattr.o \
 
 LIBCLI_SPOOLSS_OBJ = librpc/gen_ndr/ndr_spoolss_c.o \
 		     rpc_client/cli_spoolss.o \
-		     rpc_client/init_spoolss.o
+		     rpc_client/init_spoolss.o \
+		     rpc_client/cli_winreg_spoolss.o \
+		     printing/nt_printing_os2.o
 
 LIBCLI_EVENTLOG_OBJ = librpc/gen_ndr/ndr_eventlog_c.o
 
@@ -950,7 +952,6 @@ PRINTBACKEND_OBJ = printing/printing.o \
 		   printing/nt_printing_migrate.o \
 		   printing/nt_printing_migrate_internal.o \
 		   printing/nt_printing_ads.o \
-		   printing/nt_printing_os2.o \
 		   librpc/gen_ndr/ndr_ntprinting.o \
 		    ../librpc/ndr/ndr_ntprinting.o \
 		   $(PRINTBASE_OBJ)
