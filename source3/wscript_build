@@ -819,7 +819,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
 
 bld.SAMBA3_LIBRARY('libsmb',
                    source=LIBSMB_SRC,
-                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON util_cmdline',
+                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON util_cmdline tevent',
                    vars=locals(),
                    private_library=True)
 
