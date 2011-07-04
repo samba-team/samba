@@ -507,13 +507,13 @@ WERROR regdb_init(void)
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
+	if (regdb->transaction_start(regdb) != 0) {
+		return WERR_REG_IO_FAILURE;
+	}
+
 	if (vers_id == REGVER_V1) {
 		DEBUG(10, ("regdb_init: got registry db version %d, upgrading "
 			   "to version %d\n", REGVER_V1, REGVER_V2));
-
-		if (regdb->transaction_start(regdb) != 0) {
-			return WERR_REG_IO_FAILURE;
-		}
 
 		werr = regdb_upgrade_v1_to_v2();
 		if (!W_ERROR_IS_OK(werr)) {
@@ -521,14 +521,14 @@ WERROR regdb_init(void)
 			return werr;
 		}
 
-		if (regdb->transaction_commit(regdb) != 0) {
-			return WERR_REG_IO_FAILURE;
-		}
-
 		vers_id = REGVER_V2;
 	}
 
 	/* future upgrade code should go here */
+
+	if (regdb->transaction_commit(regdb) != 0) {
+		return WERR_REG_IO_FAILURE;
+	}
 
 	return WERR_OK;
 }
