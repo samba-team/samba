@@ -276,6 +276,7 @@ struct wbint_DsGetDcName {
 
 struct wbint_LookupRids {
 	struct {
+		struct dom_sid *domain_sid;/* [ref] */
 		struct wbint_RidArray *rids;/* [ref] */
 	} in;
 

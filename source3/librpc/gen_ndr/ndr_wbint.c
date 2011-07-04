@@ -2076,6 +2076,10 @@ _PUBLIC_ void ndr_print_wbint_DsGetDcName(struct ndr_print *ndr, const char *nam
 static enum ndr_err_code ndr_push_wbint_LookupRids(struct ndr_push *ndr, int flags, const struct wbint_LookupRids *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.domain_sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->in.domain_sid));
 		if (r->in.rids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -2104,6 +2108,7 @@ static enum ndr_err_code ndr_push_wbint_LookupRids(struct ndr_push *ndr, int fla
 static enum ndr_err_code ndr_pull_wbint_LookupRids(struct ndr_pull *ndr, int flags, struct wbint_LookupRids *r)
 {
 	uint32_t _ptr_domain_name;
+	TALLOC_CTX *_mem_save_domain_sid_0;
 	TALLOC_CTX *_mem_save_rids_0;
 	TALLOC_CTX *_mem_save_domain_name_0;
 	TALLOC_CTX *_mem_save_domain_name_1;
@@ -2111,6 +2116,13 @@ static enum ndr_err_code ndr_pull_wbint_LookupRids(struct ndr_pull *ndr, int fla
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.domain_sid);
+		}
+		_mem_save_domain_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->in.domain_sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_sid_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.rids);
 		}
@@ -2170,6 +2182,10 @@ _PUBLIC_ void ndr_print_wbint_LookupRids(struct ndr_print *ndr, const char *name
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "wbint_LookupRids");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "domain_sid", r->in.domain_sid);
+		ndr->depth++;
+		ndr_print_dom_sid(ndr, "domain_sid", r->in.domain_sid);
+		ndr->depth--;
 		ndr_print_ptr(ndr, "rids", r->in.rids);
 		ndr->depth++;
 		ndr_print_wbint_RidArray(ndr, "rids", r->in.rids);
