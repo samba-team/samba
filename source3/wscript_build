@@ -400,8 +400,7 @@ PRINTBACKEND_SRC = '''printing/printing.c
                       printing/nt_printing.c
                       printing/nt_printing_tdb.c
                       printing/nt_printing_migrate_internal.c
-                      printing/nt_printing_ads.c
-                      printing/nt_printing_os2.c'''
+                      printing/nt_printing_ads.c'''
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 
@@ -921,8 +920,8 @@ bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('printing_migrate',
-                    source='printing/nt_printing_migrate.c',
-                    deps='NDR_NTPRINTING RPC_NDR_SPOOLSS param',
+                    source='printing/nt_printing_migrate.c rpc_client/cli_winreg_spoolss.c printing/nt_printing_os2.c',
+                    deps='NDR_NTPRINTING LIBCLI_SPOOLSS RPC_NDR_WINREG LIBCLI_WINREG param',
                     vars=locals(),
                     private_library=True)
 
