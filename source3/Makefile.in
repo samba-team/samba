@@ -950,6 +950,7 @@ PRINTBACKEND_OBJ = printing/printing.o \
 		   printing/nt_printing_migrate.o \
 		   printing/nt_printing_migrate_internal.o \
 		   printing/nt_printing_ads.o \
+		   printing/nt_printing_os2.o \
 		   librpc/gen_ndr/ndr_ntprinting.o \
 		    ../librpc/ndr/ndr_ntprinting.o \
 		   $(PRINTBASE_OBJ)
