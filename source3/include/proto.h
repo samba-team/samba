@@ -329,8 +329,10 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 			      size_t *psize);
 bool set_share_security(const char *share_name, struct security_descriptor *psd);
 bool delete_share_security(const char *servicename);
-bool share_access_check(const struct security_token *token, const char *sharename,
-			uint32 desired_access);
+bool share_access_check(const struct security_token *token,
+			const char *sharename,
+			uint32 desired_access,
+			uint32_t *pgranted);
 bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_descriptor **ppsd);
 
 /* The following definitions come from lib/smbrun.c  */

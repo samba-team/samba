@@ -856,14 +856,15 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	{
 		bool can_write = False;
 
-		can_write = share_access_check(conn->session_info->security_token,
-					       lp_servicename(snum),
-					       FILE_WRITE_DATA);
+		can_write = share_access_check(
+			conn->session_info->security_token,
+			lp_servicename(snum), FILE_WRITE_DATA, NULL);
 
 		if (!can_write) {
-			if (!share_access_check(conn->session_info->security_token,
-						lp_servicename(snum),
-						FILE_READ_DATA)) {
+			if (!share_access_check(
+				    conn->session_info->security_token,
+				    lp_servicename(snum), FILE_READ_DATA,
+				    NULL)) {
 				/* No access, read or write. */
 				DEBUG(0,("make_connection: connection to %s "
 					 "denied due to security "
