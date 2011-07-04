@@ -641,28 +641,21 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	 *
 	 */
 
-	{
-		bool can_write = False;
+	share_access_check(conn->session_info->security_token,
+			   lp_servicename(snum), MAXIMUM_ALLOWED_ACCESS,
+			   &conn->share_access);
 
-		can_write = share_access_check(
-			conn->session_info->security_token,
-			lp_servicename(snum), FILE_WRITE_DATA, NULL);
-
-		if (!can_write) {
-			if (!share_access_check(
-				    conn->session_info->security_token,
-				    lp_servicename(snum), FILE_READ_DATA,
-				    NULL)) {
-				/* No access, read or write. */
-				DEBUG(0,("make_connection: connection to %s "
-					 "denied due to security "
-					 "descriptor.\n",
-					  lp_servicename(snum)));
-				*pstatus = NT_STATUS_ACCESS_DENIED;
-				goto err_root_exit;
-			} else {
-				conn->read_only = True;
-			}
+	if ((conn->share_access & FILE_WRITE_DATA) == 0) {
+		if ((conn->share_access & FILE_READ_DATA) == 0) {
+			/* No access, read or write. */
+			DEBUG(0,("make_connection: connection to %s "
+				 "denied due to security "
+				 "descriptor.\n",
+				 lp_servicename(snum)));
+			*pstatus = NT_STATUS_ACCESS_DENIED;
+			goto err_root_exit;
+		} else {
+			conn->read_only = True;
 		}
 	}
 	/* Initialise VFS function pointers */
