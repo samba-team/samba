@@ -223,7 +223,7 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c
                 passdb/login_cache.c
                 passdb/account_pol.c ${PRIVILEGES_SRC}
                 lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}
-                passdb/pdb_util.c'''
+                passdb/pdb_util.c passdb/pdb_interface.c'''
 #FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
 
 GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
@@ -721,7 +721,7 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
 
 bld.SAMBA3_LIBRARY('passdb',
                    source=PASSDB_SRC,
-                   deps='SECRETS3 SMBLDAP GROUPDB pdb wbclient LIBCLI_AUTH flag_mapping',
+                   deps='SECRETS3 SMBLDAP GROUPDB wbclient LIBCLI_AUTH flag_mapping',
                    private_library=True,
                    vars=locals())
 
