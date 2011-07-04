@@ -133,8 +133,6 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 				      struct spoolss_security_descriptor **secdesc);
 
-WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername);
-
 const char *get_short_archi(const char *long_archi);
 
 bool print_access_check(const struct auth_serversupplied_info *server_info,
