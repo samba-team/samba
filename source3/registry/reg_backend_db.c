@@ -438,9 +438,6 @@ static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 	WERROR werr;
 
 	mem_ctx = talloc_stackframe();
-	if (mem_ctx == NULL) {
-		return WERR_NOMEM;
-	}
 
 	rc = regdb->traverse(db, regdb_normalize_keynames_fn, mem_ctx);
 
