@@ -35,7 +35,6 @@ bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
 bld.SAMBA3_LIBRARY('auth',
                     source=AUTH_SRC,
                     deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON''',
-                   allow_undefined_symbols=True,
                    private_library=True)
 
 bld.SAMBA3_MODULE('auth_sam',
@@ -76,8 +75,7 @@ bld.SAMBA3_MODULE('auth_server',
                  deps='samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_server'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_server'),
-                  allow_undefined_symbols=True)
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_server'))
 
 bld.SAMBA3_MODULE('auth_domain',
                  subsystem='auth',
