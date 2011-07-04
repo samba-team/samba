@@ -1076,6 +1076,7 @@ void schedule_deferred_open_message_smb2(
 	if (!state->im) {
 		smbd_server_connection_terminate(smb2req->sconn,
 			nt_errstr(NT_STATUS_NO_MEMORY));
+		return;
 	}
 
 	DEBUG(10,("schedule_deferred_open_message_smb2: "
