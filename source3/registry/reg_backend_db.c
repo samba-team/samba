@@ -408,16 +408,16 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 	return 0;
 }
 
-static WERROR regdb_store_regdb_version(uint32_t version)
+static WERROR regdb_store_regdb_version(struct db_context *db, uint32_t version)
 {
 	NTSTATUS status;
 	const char *version_keyname = "INFO/version";
 
-	if (!regdb) {
+	if (db == NULL) {
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
-	status = dbwrap_trans_store_int32(regdb, version_keyname, version);
+	status = dbwrap_trans_store_int32(db, version_keyname, version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("regdb_store_regdb_version: error storing %s = %d: %s\n",
 			  version_keyname, version, nt_errstr(status)));
@@ -448,7 +448,7 @@ static WERROR regdb_upgrade_v1_to_v2(void)
 		return WERR_REG_IO_FAILURE;
 	}
 
-	werr = regdb_store_regdb_version(REGVER_V2);
+	werr = regdb_store_regdb_version(regdb, REGVER_V2);
 	return werr;
 }
 
@@ -496,7 +496,7 @@ WERROR regdb_init(void)
 			   "(got %d), initializing to version %d\n",
 			   vers_id, expected_version));
 
-		werr = regdb_store_regdb_version(expected_version);
+		werr = regdb_store_regdb_version(regdb, expected_version);
 		return werr;
 	}
 
