@@ -53,6 +53,7 @@
 #include "util_tdb.h"
 #include "libsmb/libsmb.h"
 #include "printing/printer_list.h"
+#include "rpc_client/cli_winreg_spoolss.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
