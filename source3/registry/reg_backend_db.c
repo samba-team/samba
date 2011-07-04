@@ -51,6 +51,9 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 
 static NTSTATUS create_sorted_subkeys(const char *key);
 static WERROR regdb_create_basekey(struct db_context *db, const char *key);
+static WERROR regdb_create_subkey_internal(struct db_context *db,
+					   const char *key,
+					   const char *subkey);
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -115,6 +118,41 @@ static struct builtin_regkey_value builtin_registry_values[] = {
 	{ NULL, NULL, 0, { NULL } }
 };
 
+static WERROR create_key_recursive(struct db_context *db,
+				   char *path,
+				   const char *subkey)
+{
+	WERROR werr;
+	char *p;
+
+	if (subkey == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (path == NULL) {
+		return regdb_create_basekey(db, subkey);
+	}
+
+	p = strrchr_m(path, '\\');
+
+	if (p == NULL) {
+		werr = create_key_recursive(db, NULL, path);
+	} else {
+		*p = '\0';
+		werr = create_key_recursive(db, path, p+1);
+		*p = '\\';
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = regdb_create_subkey_internal(db, path, subkey);
+
+done:
+	return werr;
+}
+
 /**
  * Initialize a key in the registry:
  * create each component key of the specified path.
@@ -122,106 +160,30 @@ static struct builtin_regkey_value builtin_registry_values[] = {
 static WERROR init_registry_key_internal(struct db_context *db,
 					 const char *add_path)
 {
+	char *subkey, *key;
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
-	char *path = NULL;
-	char *base = NULL;
-	char *remaining = NULL;
-	char *keyname;
-	char *subkeyname;
-	struct regsubkey_ctr *subkeys;
-	const char *p, *p2;
 
-	DEBUG(6, ("init_registry_key: Adding [%s]\n", add_path));
-
-	path = talloc_strdup(frame, add_path);
-	base = talloc_strdup(frame, "");
-	if (!path || !base) {
-		werr = WERR_NOMEM;
-		goto fail;
-	}
-	p = path;
-
-	while (next_token_talloc(frame, &p, &keyname, "\\")) {
-
-		/* build up the registry path from the components */
-
-		if (*base) {
-			base = talloc_asprintf(frame, "%s\\", base);
-			if (!base) {
-				werr = WERR_NOMEM;
-				goto fail;
-			}
-		}
-		base = talloc_asprintf_append(base, "%s", keyname);
-		if (!base) {
-			werr = WERR_NOMEM;
-			goto fail;
-		}
-
-		/* get the immediate subkeyname (if we have one ) */
-
-		subkeyname = talloc_strdup(frame, "");
-		if (!subkeyname) {
-			werr = WERR_NOMEM;
-			goto fail;
-		}
-		if (*p) {
-			remaining = talloc_strdup(frame, p);
-			if (!remaining) {
-				werr = WERR_NOMEM;
-				goto fail;
-			}
-			p2 = remaining;
-
-			if (!next_token_talloc(frame, &p2,
-						&subkeyname, "\\"))
-			{
-				subkeyname = talloc_strdup(frame,p2);
-				if (!subkeyname) {
-					werr = WERR_NOMEM;
-					goto fail;
-				}
-			}
-		}
-
-		DEBUG(10,("init_registry_key: Storing key [%s] with "
-			  "subkey [%s]\n", base,
-			  *subkeyname ? subkeyname : "NULL"));
-
-		/* we don't really care if the lookup succeeds or not
-		 * since we are about to update the record.
-		 * We just want any subkeys already present */
-
-		werr = regsubkey_ctr_init(frame, &subkeys);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("talloc() failure!\n"));
-			goto fail;
-		}
-
-		werr = regdb_fetch_keys_internal(db, base, subkeys);
-		if (!W_ERROR_IS_OK(werr) &&
-		    !W_ERROR_EQUAL(werr, WERR_NOT_FOUND))
-		{
-			goto fail;
-		}
-
-		if (*subkeyname) {
-			werr = regsubkey_ctr_addkey(subkeys, subkeyname);
-			if (!W_ERROR_IS_OK(werr)) {
-				goto fail;
-			}
-		}
-		if (!regdb_store_keys_internal(db, base, subkeys)) {
-			werr = WERR_CAN_NOT_COMPLETE;
-			goto fail;
-		}
+	if (add_path == NULL) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
 	}
 
-	werr = WERR_OK;
+	key = talloc_strdup(frame, add_path);
 
-fail:
-	TALLOC_FREE(frame);
+	subkey = strrchr_m(key, '\\');
+	if (subkey == NULL) {
+		subkey = key;
+		key = NULL;
+	} else {
+		*subkey = '\0';
+		subkey++;
+	}
+
+	werr = create_key_recursive(db, key, subkey);
+
+done:
+	talloc_free(frame);
 	return werr;
 }
 
