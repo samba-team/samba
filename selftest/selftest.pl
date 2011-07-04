@@ -463,7 +463,7 @@ if ($opt_socket_wrapper) {
 my $target;
 my $testenv_default = "none";
 
-my %binary_mapping = {};
+my %binary_mapping = ();
 if ($opt_binary_mapping) {
     my @binmapping_list = split(/,/, $opt_binary_mapping);
     foreach my $mapping (@binmapping_list) {
