@@ -200,21 +200,22 @@ static NTSTATUS db_rbt_delete(struct db_record *rec)
 
 	return NT_STATUS_OK;
 }
+struct db_rbt_search_result {
+	TDB_DATA key;
+	TDB_DATA val;
+	struct db_rbt_node* node;
+};
 
-static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
-					     TALLOC_CTX *mem_ctx,
-					     TDB_DATA key)
+static bool db_rbt_search_internal(struct db_context *db, TDB_DATA key,
+				   struct db_rbt_search_result *result)
 {
 	struct db_rbt_ctx *ctx = talloc_get_type_abort(
-		db_ctx->private_data, struct db_rbt_ctx);
+		db->private_data, struct db_rbt_ctx);
 
-	struct db_rbt_rec *rec_priv;
-	struct db_record *result;
 	struct rb_node *n;
-	size_t size;
 	bool found = false;
 	struct db_rbt_node *r = NULL;
-	TDB_DATA search_key = tdb_null, search_val = tdb_null;
+	TDB_DATA search_key, search_val;
 
 	n = ctx->tree.rb_node;
 
@@ -238,6 +239,32 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 			break;
 		}
 	}
+	if (result != NULL) {
+		if (found) {
+			result->key = search_key;
+			result->val = search_val;
+			result->node = r;
+		} else {
+			ZERO_STRUCT(*result);
+		}
+	}
+	return found;
+}
+
+static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
+					     TALLOC_CTX *mem_ctx,
+					     TDB_DATA key)
+{
+	struct db_rbt_ctx *ctx = talloc_get_type_abort(
+		db_ctx->private_data, struct db_rbt_ctx);
+
+	struct db_rbt_rec *rec_priv;
+	struct db_record *result;
+	size_t size;
+	bool found;
+	struct db_rbt_search_result res;
+
+	found = db_rbt_search_internal(db_ctx, key, &res);
 
 	/*
 	 * In this low-level routine, play tricks to reduce the number of
@@ -268,19 +295,17 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 	result->delete_rec = db_rbt_delete;
 	result->private_data = rec_priv;
 
+	rec_priv->node = res.node;
+	result->value  = res.val;
+
 	if (found) {
-		rec_priv->node = r;
-		result->key = search_key;
-		result->value = search_val;
+		result->key = res.key;
 	}
 	else {
-		rec_priv->node = NULL;
 		result->key.dptr = (uint8 *)
 			((char *)rec_priv + sizeof(*rec_priv));
 		result->key.dsize = key.dsize;
 		memcpy(result->key.dptr, key.dptr, key.dsize);
-
-		result->value = tdb_null;
 	}
 
 	return result;
@@ -289,51 +314,23 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 static int db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 			TDB_DATA key, TDB_DATA *data)
 {
-	struct db_rbt_ctx *ctx = talloc_get_type_abort(
-		db->private_data, struct db_rbt_ctx);
-
-	struct rb_node *n;
-	bool found = false;
-	struct db_rbt_node *r = NULL;
-	TDB_DATA search_key, search_val;
 	uint8_t *result;
+	struct db_rbt_search_result res;
 
-	n = ctx->tree.rb_node;
-
-	while (n != NULL) {
-		int res;
-
-		r = db_rbt2node(n);
-
-		db_rbt_parse_node(r, &search_key, &search_val);
-
-		res = db_rbt_compare(key, search_key);
-
-		if (res == -1) {
-			n = n->rb_left;
-		}
-		else if (res == 1) {
-			n = n->rb_right;
-		}
-		else {
-			found = true;
-			break;
-		}
-	}
+	bool found = db_rbt_search_internal(db, key, &res);
 
 	if (!found) {
 		*data = tdb_null;
 		return 0;
 	}
 
-	result = (uint8 *)talloc_memdup(mem_ctx, search_val.dptr,
-					search_val.dsize);
+	result = (uint8_t*)talloc_memdup(mem_ctx, res.val.dptr, res.val.dsize);
 	if (result == NULL) {
 		return -1;
 	}
 
 	data->dptr = result;
-	data->dsize = search_val.dsize;
+	data->dsize = res.val.dsize;
 	return 0;
 }
 
