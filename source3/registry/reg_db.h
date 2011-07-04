@@ -24,6 +24,8 @@
 
 #define REGVER_V1       1       /* first db version with write support */
 #define REGVER_V2       2       /* version 2 with normalized keys */
+#define REGVER_V3	3	/* different definition of key existence, */
+				/* sorted subkeys cache removed. */
 
 #define REG_VALUE_PREFIX    "SAMBA_REGVAL"
 #define REG_SECDESC_PREFIX  "SAMBA_SECDESC"

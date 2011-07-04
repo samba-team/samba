@@ -48,6 +48,8 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 				       struct regval_ctr *values);
 static bool regdb_store_values_internal(struct db_context *db, const char *key,
 					struct regval_ctr *values);
+static WERROR regdb_store_subkey_list(struct db_context *db, const char *parent,
+				      const char *key);
 
 static WERROR regdb_create_basekey(struct db_context *db, const char *key);
 static WERROR regdb_create_subkey_internal(struct db_context *db,
@@ -452,6 +454,91 @@ static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 	return werr;
 }
 
+static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
+{
+	const char *keyname;
+	fstring subkeyname;
+	NTSTATUS status;
+	WERROR werr;
+	uint8_t *buf;
+	uint32_t buflen, len;
+	uint32_t num_items;
+	uint32_t i;
+
+	if (rec->key.dptr == NULL || rec->key.dsize == 0) {
+		return 0;
+	}
+
+	keyname = (const char *)rec->key.dptr;
+
+	if (strncmp(keyname, REG_SORTED_SUBKEYS_PREFIX,
+		    strlen(REG_SORTED_SUBKEYS_PREFIX)) == 0)
+	{
+		/* Delete the deprecated sorted subkeys cache. */
+		status = rec->delete_rec(rec);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("regdb_upgrade_v2_to_v3: tdb_delete for [%s] "
+				  "failed!\n", keyname));
+			return 1;
+		}
+
+		return 0;
+	}
+
+	if (strncmp(keyname, REG_VALUE_PREFIX, strlen(REG_VALUE_PREFIX)) == 0) {
+		return 0;
+	}
+
+	if (strncmp(keyname, REG_SECDESC_PREFIX,
+		    strlen(REG_SECDESC_PREFIX)) == 0)
+	{
+		return 0;
+	}
+
+	/*
+	 * Found a regular subkey list record.
+	 * Walk the list and create the list record for those
+	 * subkeys that don't already have one.
+	 */
+	buf = rec->value.dptr;
+	buflen = rec->value.dsize;
+
+	len = tdb_unpack(buf, buflen, "d", &num_items);
+	if (len == (uint32_t)-1) {
+		/* invalid or empty - skip */
+		return 0;
+	}
+
+	for (i=0; i<num_items; i++) {
+		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
+		werr = regdb_store_subkey_list(regdb, keyname, subkeyname);
+		if (!W_ERROR_IS_OK(werr)) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static WERROR regdb_upgrade_v2_to_v3(struct db_context *db)
+{
+	int rc;
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	rc = regdb->traverse(db, regdb_upgrade_v2_to_v3_fn, frame);
+	if (rc < 0) {
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
+	}
+
+	werr = regdb_store_regdb_version(db, REGVER_V3);
+
+done:
+	talloc_free(frame);
+	return werr;
+}
+
 /***********************************************************************
  Open the registry database
  ***********************************************************************/
@@ -488,7 +575,7 @@ WERROR regdb_init(void)
 	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
 		   regdb_refcount));
 
-	expected_version = REGVER_V2;
+	expected_version = REGVER_V3;
 
 	vers_id = dbwrap_fetch_int32(regdb, vstring);
 	if (vers_id == -1) {
@@ -522,6 +609,19 @@ WERROR regdb_init(void)
 		}
 
 		vers_id = REGVER_V2;
+	}
+
+	if (vers_id == REGVER_V2) {
+		DEBUG(10, ("regdb_init: upgrading registry from version %d "
+			   "to %d\n", REGVER_V2, REGVER_V3));
+
+		werr = regdb_upgrade_v2_to_v3(regdb);
+		if (!W_ERROR_IS_OK(werr)) {
+			regdb->transaction_cancel(regdb);
+			return werr;
+		}
+
+		vers_id = REGVER_V3;
 	}
 
 	/* future upgrade code should go here */
