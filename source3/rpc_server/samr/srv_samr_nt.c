@@ -1849,18 +1849,10 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = get_remote_hostname(p->remote_address,
-				 &rhost,
-				 talloc_tos());
-	if (rc < 0) {
+	rhost = tsocket_address_inet_addr_string(p->remote_address,
+						 talloc_tos());
+	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	if (strequal(rhost,"UNKNOWN")) {
-		rhost = tsocket_address_inet_addr_string(p->remote_address,
-							 talloc_tos());
-		if (rhost == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	/*
@@ -1928,18 +1920,10 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	rc = get_remote_hostname(p->remote_address,
-				 &rhost,
-				 talloc_tos());
-	if (rc < 0) {
+	rhost = tsocket_address_inet_addr_string(p->remote_address,
+						 talloc_tos());
+	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	if (strequal(rhost,"UNKNOWN")) {
-		rhost = tsocket_address_inet_addr_string(p->remote_address,
-							 talloc_tos());
-		if (rhost == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	status = pass_oem_change(user_name,
@@ -1997,18 +1981,10 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = get_remote_hostname(p->remote_address,
-				 &rhost,
-				 talloc_tos());
-	if (rc < 0) {
+	rhost = tsocket_address_inet_addr_string(p->remote_address,
+						 talloc_tos());
+	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	if (strequal(rhost,"UNKNOWN")) {
-		rhost = tsocket_address_inet_addr_string(p->remote_address,
-							 talloc_tos());
-		if (rhost == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	/*
@@ -5137,18 +5113,10 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	rc = get_remote_hostname(p->remote_address,
-				 &rhost,
-				 talloc_tos());
-	if (rc < 0) {
+	rhost = tsocket_address_inet_addr_string(p->remote_address,
+						 talloc_tos());
+	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	if (strequal(rhost,"UNKNOWN")) {
-		rhost = tsocket_address_inet_addr_string(p->remote_address,
-							 talloc_tos());
-		if (rhost == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	/* ================ BEGIN Privilege BLOCK ================ */
