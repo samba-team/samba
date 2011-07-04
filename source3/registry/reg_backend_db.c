@@ -39,7 +39,6 @@ static struct db_context *regdb = NULL;
 static int regdb_refcount;
 
 static bool regdb_key_exists(struct db_context *db, const char *key);
-static bool regdb_key_is_base_key(const char *key);
 static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 					struct regsubkey_ctr *ctr);
 static bool regdb_store_keys_internal(struct db_context *db, const char *key,
@@ -1375,37 +1374,6 @@ static TDB_DATA regdb_fetch_key_internal(struct db_context *db,
 	return data;
 }
 
-
-/**
- * check whether a given key name represents a base key,
- * i.e one without a subkey separator ('\').
- */
-static bool regdb_key_is_base_key(const char *key)
-{
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	bool ret = false;
-	char *path;
-
-	if (key == NULL) {
-		goto done;
-	}
-
-	path = normalize_reg_path(mem_ctx, key);
-	if (path == NULL) {
-		DEBUG(0, ("out of memory! (talloc failed)\n"));
-		goto done;
-	}
-
-	if (*path == '\0') {
-		goto done;
-	}
-
-	ret = (strrchr(path, '\\') == NULL);
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return ret;
-}
 
 /**
  * Check for the existence of a key.
