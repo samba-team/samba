@@ -44,6 +44,24 @@ int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 }
 
 /*
+ * Fall back using fetch if no genuine exists operation is provided
+ */
+
+static int dbwrap_fallback_exists(struct db_context *db, TDB_DATA key)
+{
+	TDB_DATA val;
+	if ( db->fetch(db, talloc_tos(), key, &val) != 0 ) {
+		return 0;
+	}
+	if (val.dptr == NULL ) {
+		return 0;
+	} else {
+		TALLOC_FREE(val.dptr);
+		return 1;
+	}
+}
+
+/*
  * Fall back using fetch if no genuine parse operation is provided
  */
 
@@ -77,6 +95,17 @@ TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	}
 
 	return result;
+}
+
+bool dbwrap_exists(struct db_context *db, TDB_DATA key)
+{
+	int result;
+	if (db->exists != NULL) {
+		result = db->exists(db, key);
+	} else {
+		result = dbwrap_fallback_exists(db,key);
+	}
+	return (result == 1);
 }
 
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,

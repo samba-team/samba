@@ -52,6 +52,7 @@ struct db_context {
 			    int (*parser)(TDB_DATA key, TDB_DATA data,
 					  void *private_data),
 			    void *private_data);
+	int (*exists)(struct db_context *db,TDB_DATA key);
 	void *private_data;
 	bool persistent;
 };
@@ -63,6 +64,7 @@ NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 		      TDB_DATA data, int flags);
 TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		      TDB_DATA key);
+bool dbwrap_exists(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_traverse(struct db_context *db,
 			 int (*f)(struct db_record*, void*),
 			 void *private_data,
