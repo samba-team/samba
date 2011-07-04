@@ -152,9 +152,6 @@ static void exit_server_common(enum server_exit_reason how,
 		rpc_lsarpc_shutdown();
 	}
 
-	locking_end();
-	printing_end();
-
 	/*
 	 * we need to force the order of freeing the following,
 	 * because smbd_msg_ctx is not a talloc child of smbd_server_conn.
@@ -164,6 +161,9 @@ static void exit_server_common(enum server_exit_reason how,
 	server_messaging_context_free();
 	server_event_context_free();
 	TALLOC_FREE(smbd_memcache_ctx);
+
+	locking_end();
+	printing_end();
 
 	if (how != SERVER_EXIT_NORMAL) {
 		DEBUGSEP(0);
