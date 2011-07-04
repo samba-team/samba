@@ -603,11 +603,11 @@ sub write_clientconf($$$)
 	umask 0022;
 	if ( -d "$clientdir/ncalrpcdir/np" ) {
 	        unlink <$clientdir/ncalrpcdir/np/*>;
-		rmdir <$clientdir/ncalrpcdir/np>;
+		rmdir "$clientdir/ncalrpcdir/np";
 	}
 	if ( -d "$clientdir/ncalrpcdir" ) {
 	        unlink <$clientdir/ncalrpcdir/*>;
-		rmdir <$clientdir/ncalrpcdir>;
+		rmdir "$clientdir/ncalrpcdir";
 	}
 	mkdir("$clientdir/ncalrpcdir", 0755);
 	umask $mask;
