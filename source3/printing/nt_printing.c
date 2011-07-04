@@ -1196,7 +1196,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		result = winreg_get_printer(mem_ctx, session_info, msg_ctx,
+		result = winreg_get_printer_internal(mem_ctx, session_info, msg_ctx,
 					    lp_servicename(snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
@@ -1222,18 +1222,18 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		   "Windows NT x86" version 2 or 3 left */
 
 		if (!strequal("Windows NT x86", r->architecture)) {
-			werr = winreg_get_driver(mem_ctx, session_info, msg_ctx,
+			werr = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 DRIVER_ANY_VERSION,
 						 &driver);
 		} else if (r->version == 2) {
-			werr = winreg_get_driver(mem_ctx, session_info, msg_ctx,
+			werr = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 3, &driver);
 		} else if (r->version == 3) {
-			werr = winreg_get_driver(mem_ctx, session_info, msg_ctx,
+			werr = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 2, &driver);
@@ -1424,7 +1424,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 
 	/* get the list of drivers */
 
-	result = winreg_get_driver_list(mem_ctx, session_info, msg_ctx,
+	result = winreg_get_driver_list_internal(mem_ctx, session_info, msg_ctx,
 					info->architecture, version,
 					&num_drivers, &drivers);
 	if (!W_ERROR_IS_OK(result)) {
@@ -1441,7 +1441,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 
 		driver = NULL;
 
-		result = winreg_get_driver(mem_ctx, session_info, msg_ctx,
+		result = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
 					   info->architecture, drivers[i],
 					   version, &driver);
 		if (!W_ERROR_IS_OK(result)) {
@@ -1737,7 +1737,7 @@ bool print_access_check(const struct auth_serversupplied_info *session_info,
 		return False;
 	}
 
-	result = winreg_get_printer_secdesc(mem_ctx,
+	result = winreg_get_printer_secdesc_internal(mem_ctx,
 					    get_session_info_system(),
 					    msg_ctx,
 					    pname,
@@ -1813,7 +1813,7 @@ bool print_time_access_check(const struct auth_serversupplied_info *session_info
 	struct tm *t;
 	uint32 mins;
 
-	result = winreg_get_printer(NULL, session_info, msg_ctx,
+	result = winreg_get_printer_internal(NULL, session_info, msg_ctx,
 				    servicename, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return False;
@@ -1846,7 +1846,7 @@ void nt_printer_remove(TALLOC_CTX *mem_ctx,
 {
 	WERROR result;
 
-	result = winreg_delete_printer_key(mem_ctx, session_info, msg_ctx,
+	result = winreg_delete_printer_key_internal(mem_ctx, session_info, msg_ctx,
 					   printer, "");
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("nt_printer_remove: failed to remove rpinter %s",
