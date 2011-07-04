@@ -29,6 +29,7 @@
 #include "../libcli/registry/util_reg.h"
 #include "auth.h"
 #include "../librpc/ndr/libndr.h"
+#include "rpc_client/cli_winreg_spoolss.h"
 
 #ifdef HAVE_ADS
 /*****************************************************************
