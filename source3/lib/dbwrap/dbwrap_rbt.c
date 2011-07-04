@@ -311,6 +311,11 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 	return result;
 }
 
+static int db_rbt_exists(struct db_context *db, TDB_DATA key)
+{
+	return db_rbt_search_internal(db, key, NULL);
+}
+
 static int db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 			TDB_DATA key, TDB_DATA *data)
 {
@@ -413,6 +418,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->transaction_start = db_rbt_trans_dummy;
 	result->transaction_commit = db_rbt_trans_dummy;
 	result->transaction_cancel = db_rbt_trans_dummy;
+	result->exists = db_rbt_exists;
 
 	return result;
 }
