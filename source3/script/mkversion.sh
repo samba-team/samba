@@ -4,7 +4,7 @@ VERSION_FILE=$1
 OUTPUT_FILE=$2
 
 if test -z "$VERSION_FILE";then
-	VERSION_FILE="VERSION"
+	VERSION_FILE="../VERSION"
 fi
 
 if test -z "$OUTPUT_FILE";then
