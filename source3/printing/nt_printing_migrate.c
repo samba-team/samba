@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_ntprinting.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "rpc_client/cli_winreg_spoolss.h"
 
 NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
 				   struct rpc_pipe_client *pipe_hnd,
@@ -33,18 +34,12 @@ NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
 				   unsigned char *data,
 				   size_t length)
 {
-	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
-	struct spoolss_DevmodeContainer devmode_ctr;
-	struct policy_handle hnd;
+	struct dcerpc_binding_handle *b = winreg_pipe->binding_handle;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_form r;
-	union spoolss_AddFormInfo f;
 	struct spoolss_AddFormInfo1 f1;
-	const char *srv_name_slash;
 	DATA_BLOB blob;
-	NTSTATUS status;
 	WERROR result;
-
 
 	blob = data_blob_const(data, length);
 
@@ -65,33 +60,6 @@ NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
 
 	DEBUG(2, ("Migrating Form: %s\n", key_name));
 
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
-	if (srv_name_slash == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ZERO_STRUCT(devmode_ctr);
-
-	status = dcerpc_spoolss_OpenPrinter(b,
-					    mem_ctx,
-					    srv_name_slash,
-					    NULL,
-					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
-					    &hnd,
-					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("dcerpc_spoolss_OpenPrinter(%s) failed: %s\n",
-			  srv_name_slash, nt_errstr(status)));
-		return status;
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
-			  srv_name_slash, win_errstr(result)));
-		status = werror_to_ntstatus(result);
-		return status;
-	}
-
 	f1.form_name = key_name;
 	f1.flags = r.flag;
 
@@ -103,26 +71,14 @@ NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
 	f1.area.bottom = r.bottom;
 	f1.area.left = r.left;
 
-	f.info1 = &f1;
-
-	status = dcerpc_spoolss_AddForm(b,
-					mem_ctx,
-					&hnd,
-					1,
-					f,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("dcerpc_spoolss_AddForm(%s) refused -- %s.\n",
-			  f.info1->form_name, nt_errstr(status)));
-	} else if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("AddForm(%s) refused -- %s.\n",
-			  f.info1->form_name, win_errstr(result)));
-		status = werror_to_ntstatus(result);
+	result = winreg_printer_addform1(mem_ctx,
+					 b,
+					 &f1);
+	if (!W_ERROR_IS_OK(result)) {
+		return werror_to_ntstatus(result);
 	}
 
-	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
-
-	return status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
@@ -132,16 +88,16 @@ NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
 				     unsigned char *data,
 				     size_t length)
 {
-	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
-	const char *srv_name_slash;
+	struct dcerpc_binding_handle *b = winreg_pipe->binding_handle;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_driver r;
 	struct spoolss_AddDriverInfoCtr d;
 	struct spoolss_AddDriverInfo3 d3;
 	struct spoolss_StringArray a;
 	DATA_BLOB blob;
-	NTSTATUS status;
 	WERROR result;
+	const char *driver_name;
+	uint32_t driver_version;
 
 	blob = data_blob_const(data, length);
 
@@ -156,11 +112,6 @@ NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(2, ("Migrating Printer Driver: %s\n", key_name));
-
-	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
-	if (srv_name_slash == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	ZERO_STRUCT(d3);
 	ZERO_STRUCT(a);
@@ -181,21 +132,16 @@ NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
 	d.level = 3;
 	d.info.info3 = &d3;
 
-	status = dcerpc_spoolss_AddPrinterDriver(b,
-						 mem_ctx,
-						 srv_name_slash,
-						 &d,
-						 &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("dcerpc_spoolss_AddPrinterDriver(%s) refused -- %s.\n",
-			  d3.driver_name, nt_errstr(status)));
-	} else if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("AddPrinterDriver(%s) refused -- %s.\n",
-			  d3.driver_name, win_errstr(result)));
-		status = werror_to_ntstatus(result);
+	result = winreg_add_driver(mem_ctx,
+				   b,
+				   &d,
+				   &driver_name,
+				   &driver_version);
+	if (!W_ERROR_IS_OK(result)) {
+		return werror_to_ntstatus(result);
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
@@ -205,13 +151,11 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 				      unsigned char *data,
 				      size_t length)
 {
-	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
-	struct policy_handle hnd;
+	struct dcerpc_binding_handle *b = winreg_pipe->binding_handle;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_printer r;
 	struct spoolss_SetPrinterInfo2 info2;
 	struct spoolss_DeviceMode dm;
-	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
 	DATA_BLOB blob;
@@ -238,26 +182,6 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 	DEBUG(2, ("Migrating Printer: %s\n", key_name));
 
 	ZERO_STRUCT(devmode_ctr);
-
-	status = dcerpc_spoolss_OpenPrinter(b,
-					    mem_ctx,
-					    key_name,
-					    NULL,
-					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
-					    &hnd,
-					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("dcerpc_spoolss_OpenPrinter(%s) failed: %s\n",
-			  key_name, nt_errstr(status)));
-		return status;
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
-			  key_name, win_errstr(result)));
-		status = werror_to_ntstatus(result);
-		return status;
-	}
 
 	/* Create printer info level 2 */
 	ZERO_STRUCT(info2);
@@ -329,22 +253,12 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 		info2.devmode_ptr = 1;
 	}
 
-	info_ctr.info.info2 = &info2;
-	info_ctr.level = 2;
-
-	status = dcerpc_spoolss_SetPrinter(b,
-					   mem_ctx,
-					   &hnd,
-					   &info_ctr,
-					   &devmode_ctr,
-					   &secdesc_ctr,
-					   0, /* command */
-					   &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("dcerpc_spoolss_SetPrinter(%s) level 2 refused -- %s.\n",
-			  key_name, nt_errstr(status)));
-		goto done;
-	}
+	result = winreg_update_printer(mem_ctx, b,
+				       key_name,
+				       0, /// FIXME !!!!!!!!!!!!!!!!!!!!!!!
+				       &info2,
+				       &dm,
+				       NULL);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("SetPrinter(%s) level 2 refused -- %s.\n",
 			  key_name, win_errstr(result)));
@@ -370,23 +284,13 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 			valuename++;
 		}
 
-		status = dcerpc_spoolss_SetPrinterDataEx(b,
-							 mem_ctx,
-							 &hnd,
-							 keyname,
-							 valuename,
-							 r.printer_data[j].type,
-							 r.printer_data[j].data.data,
-							 r.printer_data[j].data.length,
-							 &result);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2, ("dcerpc_spoolss_SetPrinterDataEx: "
-				  "printer [%s], keyname [%s], "
-				  "valuename [%s] refused -- %s.\n",
-				  key_name, keyname, valuename,
-				  nt_errstr(status)));
-			break;
-		}
+		result = winreg_set_printer_dataex(mem_ctx, b,
+						   key_name,
+						   keyname,
+						   valuename,
+						   r.printer_data[j].type,
+						   r.printer_data[j].data.data,
+						   r.printer_data[j].data.length);
 		if (!W_ERROR_IS_OK(result)) {
 			DEBUG(2, ("SetPrinterDataEx: printer [%s], keyname [%s], "
 				  "valuename [%s] refused -- %s.\n",
@@ -398,7 +302,6 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 	}
 
  done:
-	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
 }
@@ -410,15 +313,10 @@ NTSTATUS printing_tdb_migrate_secdesc(TALLOC_CTX *mem_ctx,
 				      unsigned char *data,
 				      size_t length)
 {
-	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
-	struct policy_handle hnd;
+	struct dcerpc_binding_handle *b = winreg_pipe->binding_handle;
 	enum ndr_err_code ndr_err;
 	struct sec_desc_buf secdesc_ctr;
-	struct spoolss_SetPrinterInfo3 info3;
-	struct spoolss_SetPrinterInfoCtr info_ctr;
-	struct spoolss_DevmodeContainer devmode_ctr;
 	DATA_BLOB blob;
-	NTSTATUS status;
 	WERROR result;
 
 	if (strequal(key_name, "printers")) {
@@ -439,53 +337,12 @@ NTSTATUS printing_tdb_migrate_secdesc(TALLOC_CTX *mem_ctx,
 
 	DEBUG(2, ("Migrating Security Descriptor: %s\n", key_name));
 
-	ZERO_STRUCT(devmode_ctr);
-
-	status = dcerpc_spoolss_OpenPrinter(b,
-					    mem_ctx,
+	result = winreg_set_printer_secdesc(mem_ctx, b,
 					    key_name,
-					    NULL,
-					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
-					    &hnd,
-					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("dcerpc_spoolss_OpenPrinter(%s) failed: %s\n",
-			  key_name, nt_errstr(status)));
-		return status;
-	}
+					    secdesc_ctr.sd);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
-			  key_name, win_errstr(result)));
-		status = werror_to_ntstatus(result);
-		return status;
+		return werror_to_ntstatus(result);
 	}
 
-	ZERO_STRUCT(devmode_ctr);
-
-	info3.sec_desc_ptr = 1;
-
-	info_ctr.info.info3 = &info3;
-	info_ctr.level = 3;
-
-	status = dcerpc_spoolss_SetPrinter(b,
-					   mem_ctx,
-					   &hnd,
-					   &info_ctr,
-					   &devmode_ctr,
-					   &secdesc_ctr,
-					   0, /* command */
-					   &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("dcerpc_spoolss_SetPrinter(%s) level 3 refused -- %s.\n",
-			  key_name, nt_errstr(status)));
-	} else if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("SetPrinter(%s) level 3 refused -- %s.\n",
-			  key_name, win_errstr(result)));
-		status = werror_to_ntstatus(result);
-	}
-
-	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
-
-	return status;
+	return NT_STATUS_OK;
 }
