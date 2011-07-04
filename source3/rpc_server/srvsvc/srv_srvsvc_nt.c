@@ -539,8 +539,8 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
     if (!lp_access_based_share_enum(snum))
         return true;
 
-    return share_access_check(p->session_info->security_token, lp_servicename(snum),
-                              FILE_READ_DATA);
+    return share_access_check(p->session_info->security_token,
+			      lp_servicename(snum), FILE_READ_DATA, NULL);
 }
 
 /*******************************************************************

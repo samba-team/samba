@@ -121,8 +121,9 @@ static bool check_user_ok(connection_struct *conn,
 		conn);
 
 	if (!readonly_share &&
-	    !share_access_check(session_info->security_token, lp_servicename(snum),
-				FILE_WRITE_DATA)) {
+	    !share_access_check(session_info->security_token,
+				lp_servicename(snum), FILE_WRITE_DATA,
+				NULL)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
 		readonly_share = True;
@@ -130,9 +131,11 @@ static bool check_user_ok(connection_struct *conn,
 			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(session_info->security_token, lp_servicename(snum),
+	if (!share_access_check(session_info->security_token,
+				lp_servicename(snum),
 				readonly_share ?
-				FILE_READ_DATA : FILE_WRITE_DATA)) {
+				FILE_READ_DATA : FILE_WRITE_DATA,
+				NULL)) {
 		return False;
 	}
 

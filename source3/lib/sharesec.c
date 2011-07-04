@@ -410,8 +410,10 @@ bool delete_share_security(const char *servicename)
  Can this user access with share with the required permissions ?
 ********************************************************************/
 
-bool share_access_check(const struct security_token *token, const char *sharename,
-			uint32 desired_access)
+bool share_access_check(const struct security_token *token,
+			const char *sharename,
+			uint32 desired_access,
+			uint32_t *pgranted)
 {
 	uint32 granted;
 	NTSTATUS status;
@@ -427,6 +429,10 @@ bool share_access_check(const struct security_token *token, const char *sharenam
 	status = se_access_check(psd, token, desired_access, &granted);
 
 	TALLOC_FREE(psd);
+
+	if (pgranted != NULL) {
+		*pgranted = granted;
+	}
 
 	return NT_STATUS_IS_OK(status);
 }
