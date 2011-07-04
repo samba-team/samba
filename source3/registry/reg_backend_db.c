@@ -50,6 +50,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 					struct regval_ctr *values);
 
 static NTSTATUS create_sorted_subkeys(const char *key);
+static WERROR regdb_create_basekey(struct db_context *db, const char *key);
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -1185,6 +1186,41 @@ done:
 static WERROR regdb_create_subkey(const char *key, const char *subkey)
 {
 	return regdb_create_subkey_internal(regdb, key, subkey);
+}
+
+/**
+ * create a base key
+ */
+
+struct regdb_create_basekey_context {
+	const char *key;
+};
+
+static NTSTATUS regdb_create_basekey_action(struct db_context *db,
+					    void *private_data)
+{
+	WERROR werr;
+	struct regdb_create_basekey_context *create_ctx;
+
+	create_ctx = (struct regdb_create_basekey_context *)private_data;
+
+	werr = regdb_store_subkey_list(db, NULL, create_ctx->key);
+
+	return werror_to_ntstatus(werr);
+}
+
+static WERROR regdb_create_basekey(struct db_context *db, const char *key)
+{
+	WERROR werr;
+	struct regdb_create_subkey_context create_ctx;
+
+	create_ctx.key = key;
+
+	werr = ntstatus_to_werror(dbwrap_trans_do(db,
+						  regdb_create_basekey_action,
+						  &create_ctx));
+
+	return werr;
 }
 
 /**
