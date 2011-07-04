@@ -929,7 +929,7 @@ sub provision_rpc_proxy($$$)
 	}
 
 	# Setting up delegation runs in the context of the DC for now
-	my $cmd = "";
+	$cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool delegation for-any-protocol '$ret->{NETBIOSNAME}\$' on";
@@ -941,7 +941,7 @@ sub provision_rpc_proxy($$$)
 	}
 
 	# Setting up delegation runs in the context of the DC for now
-	my $cmd = "";
+	$cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$dcvars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool delegation add-service '$ret->{NETBIOSNAME}\$' cifs/$dcvars->{SERVER}";
