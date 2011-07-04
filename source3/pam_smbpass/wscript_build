@@ -10,5 +10,4 @@ if bld.CONFIG_SET('WITH_PAM_MODULES'):
                 LIBNTLMSSP LIBTSOCKET''',
         cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
         realname='pam_smbpass.so',
-                       allow_undefined_symbols=False
         )
