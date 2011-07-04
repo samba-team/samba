@@ -648,7 +648,7 @@ static WERROR regdb_delete_key_with_prefix(struct db_context *db,
 
 	werr = ntstatus_to_werror(dbwrap_delete_bystring(db, path));
 
-	/* treat "not" found" as ok */
+	/* treat "not found" as ok */
 	if (W_ERROR_EQUAL(werr, WERR_NOT_FOUND)) {
 		werr = WERR_OK;
 	}
