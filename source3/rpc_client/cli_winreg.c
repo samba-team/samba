@@ -36,7 +36,6 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 	enum winreg_Type type = REG_NONE;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
@@ -50,12 +49,11 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 					  NULL,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -81,12 +79,11 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 					  blob.data,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -106,7 +103,6 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String wvalue;
 	enum winreg_Type type = REG_NONE;
-	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
 	NTSTATUS status;
@@ -123,12 +119,11 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 					  NULL,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -150,12 +145,11 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 					  blob.data,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -176,7 +170,6 @@ NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String wvalue;
 	enum winreg_Type type = REG_NONE;
-	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
 	NTSTATUS status;
@@ -192,12 +185,11 @@ NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
 					  NULL,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -219,12 +211,11 @@ NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
 					  blob.data,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -249,7 +240,6 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String wvalue;
 	enum winreg_Type type = REG_NONE;
-	WERROR result = WERR_OK;
 	uint32_t value_len = 0;
 	uint32_t data_size = 0;
 	NTSTATUS status;
@@ -265,12 +255,11 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 					  NULL,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -292,12 +281,11 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 					  blob.data,
 					  &data_size,
 					  &value_len,
-					  &result);
+					  pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -320,7 +308,6 @@ NTSTATUS dcerpc_winreg_query_sd(TALLOC_CTX *mem_ctx,
 				struct security_descriptor **data,
 				WERROR *pwerr)
 {
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
@@ -329,12 +316,11 @@ NTSTATUS dcerpc_winreg_query_sd(TALLOC_CTX *mem_ctx,
 					    key_handle,
 					    value,
 					    &blob,
-					    &result);
+					    pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		return status;
 	}
 
@@ -372,7 +358,6 @@ NTSTATUS dcerpc_winreg_set_dword(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String wvalue;
 	DATA_BLOB blob;
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 
 	ZERO_STRUCT(wvalue);
@@ -387,13 +372,7 @@ NTSTATUS dcerpc_winreg_set_dword(TALLOC_CTX *mem_ctx,
 					REG_DWORD,
 					blob.data,
 					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
-	}
+					pwerr);
 
 	return status;
 }
@@ -407,7 +386,6 @@ NTSTATUS dcerpc_winreg_set_sz(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 
 	wvalue.name = value;
@@ -429,13 +407,7 @@ NTSTATUS dcerpc_winreg_set_sz(TALLOC_CTX *mem_ctx,
 					REG_SZ,
 					blob.data,
 					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
-	}
+					pwerr);
 
 	return status;
 }
@@ -449,7 +421,6 @@ NTSTATUS dcerpc_winreg_set_expand_sz(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 
 	wvalue.name = value;
@@ -471,13 +442,7 @@ NTSTATUS dcerpc_winreg_set_expand_sz(TALLOC_CTX *mem_ctx,
 					REG_EXPAND_SZ,
 					blob.data,
 					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
-	}
+					pwerr);
 
 	return status;
 }
@@ -491,7 +456,6 @@ NTSTATUS dcerpc_winreg_set_multi_sz(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 
 	wvalue.name = value;
@@ -509,13 +473,7 @@ NTSTATUS dcerpc_winreg_set_multi_sz(TALLOC_CTX *mem_ctx,
 					REG_MULTI_SZ,
 					blob.data,
 					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
-	}
+					pwerr);
 
 	return status;
 }
@@ -528,7 +486,6 @@ NTSTATUS dcerpc_winreg_set_binary(TALLOC_CTX *mem_ctx,
 				  WERROR *pwerr)
 {
 	struct winreg_String wvalue = { 0, };
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 
 	wvalue.name = value;
@@ -540,13 +497,7 @@ NTSTATUS dcerpc_winreg_set_binary(TALLOC_CTX *mem_ctx,
 					REG_BINARY,
 					data->data,
 					data->length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
-	}
+					pwerr);
 
 	return status;
 }
@@ -589,7 +540,6 @@ NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
 	const char **a = NULL;
 	const char **p;
 	uint32_t i;
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 
 	status = dcerpc_winreg_query_multi_sz(mem_ctx,
@@ -597,7 +547,7 @@ NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
 					      key_handle,
 					      value,
 					      &a,
-					      &result);
+					      pwerr);
 
 	/* count the elements */
 	for (p = a, i = 0; p && *p; p++, i++);
@@ -634,7 +584,6 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
 	NTTIME last_changed_time;
 	uint32_t secdescsize;
 	struct winreg_String classname;
-	WERROR result = WERR_OK;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
@@ -657,12 +606,11 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
 					    &max_valbufsize,
 					    &secdescsize,
 					    &last_changed_time,
-					    &result);
+					    pwerr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
 	}
-	if (!W_ERROR_IS_OK(result)) {
-		*pwerr = result;
+	if (!W_ERROR_IS_OK(*pwerr)) {
 		goto error;
 	}
 
@@ -712,21 +660,20 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
 					       &name_buf,
 					       &class_buf,
 					       &modtime,
-					       &result);
+					       pwerr);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("dcerpc_winreg_enum_keys: Could not enumerate keys: %s\n",
 				  nt_errstr(status)));
 			goto error;
 		}
 
-		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
+		if (W_ERROR_EQUAL(*pwerr, WERR_NO_MORE_ITEMS)) {
 			*pwerr = WERR_OK;
 			break;
 		}
-		if (!W_ERROR_IS_OK(result)) {
+		if (!W_ERROR_IS_OK(*pwerr)) {
 			DEBUG(5, ("dcerpc_winreg_enum_keys: Could not enumerate keys: %s\n",
-				  win_errstr(result)));
-			*pwerr = result;
+				  win_errstr(*pwerr)));
 			goto error;
 		}
 
