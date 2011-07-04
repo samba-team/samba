@@ -791,13 +791,6 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 				struct file_id id,
 				char *private_data,
 				size_t priv_len);
-struct idle_event *event_add_idle(struct event_context *event_ctx,
-				  TALLOC_CTX *mem_ctx,
-				  struct timeval interval,
-				  const char *name,
-				  bool (*handler)(const struct timeval *now,
-						  void *private_data),
-				  void *private_data);
 NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid);
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 const char *smb_fn_name(int type);

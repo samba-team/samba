@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    event handling
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Volker Lendecke 2005
+   Copyright (C) Volker Lendecke 2005-2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,3 +36,11 @@ bool event_add_to_poll_args(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 			    int *ptimeout);
 bool run_events_poll(struct tevent_context *ev, int pollrtn,
 		     struct pollfd *pfds, int num_pfds);
+
+struct idle_event *event_add_idle(struct event_context *event_ctx,
+				  TALLOC_CTX *mem_ctx,
+				  struct timeval interval,
+				  const char *name,
+				  bool (*handler)(const struct timeval *now,
+						  void *private_data),
+				  void *private_data);
