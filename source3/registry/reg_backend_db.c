@@ -475,6 +475,9 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 		    strlen(REG_SORTED_SUBKEYS_PREFIX)) == 0)
 	{
 		/* Delete the deprecated sorted subkeys cache. */
+
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: deleting [%s]\n", keyname));
+
 		status = rec->delete_rec(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("regdb_upgrade_v2_to_v3: tdb_delete for [%s] "
@@ -486,12 +489,14 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 	}
 
 	if (strncmp(keyname, REG_VALUE_PREFIX, strlen(REG_VALUE_PREFIX)) == 0) {
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: skipping [%s]\n", keyname));
 		return 0;
 	}
 
 	if (strncmp(keyname, REG_SECDESC_PREFIX,
 		    strlen(REG_SECDESC_PREFIX)) == 0)
 	{
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: skipping [%s]\n", keyname));
 		return 0;
 	}
 
@@ -500,6 +505,9 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 	 * Walk the list and create the list record for those
 	 * subkeys that don't already have one.
 	 */
+	DEBUG(10, ("regdb_upgrade_v2_to_v3: scanning subkey list of [%s]\n",
+		   keyname));
+
 	buf = rec->value.dptr;
 	buflen = rec->value.dsize;
 
@@ -511,6 +519,9 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 
 	for (i=0; i<num_items; i++) {
 		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: "
+			   "writing subkey list for [%s\\%s]\n",
+			   keyname, subkeyname));
 		werr = regdb_store_subkey_list(regdb, keyname, subkeyname);
 		if (!W_ERROR_IS_OK(werr)) {
 			return 1;
