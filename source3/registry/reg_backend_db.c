@@ -441,7 +441,7 @@ static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 
 	rc = regdb->traverse(db, regdb_normalize_keynames_fn, mem_ctx);
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	if (rc < 0) {
 		return WERR_REG_IO_FAILURE;
