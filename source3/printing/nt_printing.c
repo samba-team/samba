@@ -32,6 +32,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
+#include "rpc_client/cli_winreg_spoolss.h"
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -1182,6 +1183,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 	bool in_use = False;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	WERROR result;
+	struct dcerpc_binding_handle *b = NULL;
 
 	if (!r) {
 		return false;
@@ -1196,7 +1198,17 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		result = winreg_get_printer_internal(mem_ctx, session_info, msg_ctx,
+		if (b == NULL) {
+			result = winreg_printer_binding_handle(mem_ctx,
+							       session_info,
+							       msg_ctx,
+							       &b);
+			if (!W_ERROR_IS_OK(result)) {
+				return false;
+			}
+		}
+
+		result = winreg_get_printer(mem_ctx, b,
 					    lp_servicename(snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
@@ -1222,18 +1234,18 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		   "Windows NT x86" version 2 or 3 left */
 
 		if (!strequal("Windows NT x86", r->architecture)) {
-			werr = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
+			werr = winreg_get_driver(mem_ctx, b,
 						 "Windows NT x86",
 						 r->driver_name,
 						 DRIVER_ANY_VERSION,
 						 &driver);
 		} else if (r->version == 2) {
-			werr = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
+			werr = winreg_get_driver(mem_ctx, b,
 						 "Windows NT x86",
 						 r->driver_name,
 						 3, &driver);
 		} else if (r->version == 3) {
-			werr = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
+			werr = winreg_get_driver(mem_ctx, b,
 						 "Windows NT x86",
 						 r->driver_name,
 						 2, &driver);
@@ -1412,6 +1424,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 	uint32_t num_drivers;
 	const char **drivers;
 	WERROR result;
+	struct dcerpc_binding_handle *b;
 
 	if ( !info )
 		return False;
@@ -1424,7 +1437,15 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 
 	/* get the list of drivers */
 
-	result = winreg_get_driver_list_internal(mem_ctx, session_info, msg_ctx,
+	result = winreg_printer_binding_handle(mem_ctx,
+					       session_info,
+					       msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		return false;
+	}
+
+	result = winreg_get_driver_list(mem_ctx, b,
 					info->architecture, version,
 					&num_drivers, &drivers);
 	if (!W_ERROR_IS_OK(result)) {
@@ -1441,7 +1462,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 
 		driver = NULL;
 
-		result = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
+		result = winreg_get_driver(mem_ctx, b,
 					   info->architecture, drivers[i],
 					   version, &driver);
 		if (!W_ERROR_IS_OK(result)) {
