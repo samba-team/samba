@@ -408,6 +408,7 @@ typedef struct connection_struct {
 	bool printer;
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */
+	uint32_t share_access;
 	/* Does this filesystem honor
 	   sub second timestamps on files
 	   and directories when setting time ? */
