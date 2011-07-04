@@ -4203,6 +4203,9 @@ done:
 			DEBUG(DEBUG_ERR,("close failed: %s\n", strerror(errno)));
 		}
 	}
+
+	DEBUG(DEBUG_ERR,("Database acked up to %s\n", argv[1]));
+
 	talloc_free(tmp_ctx);
 	return status;
 }
@@ -4645,6 +4648,8 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+
+	DEBUG(DEBUG_ERR, ("Database wiped.\n"));
 
 	talloc_free(tmp_ctx);
 	return 0;
