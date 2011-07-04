@@ -429,7 +429,7 @@ static WERROR regdb_store_regdb_version(struct db_context *db, uint32_t version)
 	}
 }
 
-static WERROR regdb_upgrade_v1_to_v2(void)
+static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 {
 	TALLOC_CTX *mem_ctx;
 	int rc;
@@ -440,7 +440,7 @@ static WERROR regdb_upgrade_v1_to_v2(void)
 		return WERR_NOMEM;
 	}
 
-	rc = regdb->traverse(regdb, regdb_normalize_keynames_fn, mem_ctx);
+	rc = regdb->traverse(db, regdb_normalize_keynames_fn, mem_ctx);
 
 	talloc_destroy(mem_ctx);
 
@@ -448,7 +448,7 @@ static WERROR regdb_upgrade_v1_to_v2(void)
 		return WERR_REG_IO_FAILURE;
 	}
 
-	werr = regdb_store_regdb_version(regdb, REGVER_V2);
+	werr = regdb_store_regdb_version(db, REGVER_V2);
 	return werr;
 }
 
@@ -515,7 +515,7 @@ WERROR regdb_init(void)
 		DEBUG(10, ("regdb_init: got registry db version %d, upgrading "
 			   "to version %d\n", REGVER_V1, REGVER_V2));
 
-		werr = regdb_upgrade_v1_to_v2();
+		werr = regdb_upgrade_v1_to_v2(regdb);
 		if (!W_ERROR_IS_OK(werr)) {
 			regdb->transaction_cancel(regdb);
 			return werr;
