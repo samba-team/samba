@@ -1143,14 +1143,16 @@ done:
 	return werror_to_ntstatus(werr);
 }
 
-static WERROR regdb_create_subkey(const char *key, const char *subkey)
+static WERROR regdb_create_subkey_internal(struct db_context *db,
+					   const char *key,
+					   const char *subkey)
 {
 	WERROR werr;
 	struct regsubkey_ctr *subkeys;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct regdb_create_subkey_context create_ctx;
 
-	if (!regdb_key_exists(regdb, key)) {
+	if (!regdb_key_exists(db, key)) {
 		werr = WERR_NOT_FOUND;
 		goto done;
 	}
@@ -1158,7 +1160,7 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	werr = regdb_fetch_keys_internal(regdb, key, subkeys);
+	werr = regdb_fetch_keys_internal(db, key, subkeys);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	if (regsubkey_ctr_key_exists(subkeys, subkey)) {
@@ -1171,13 +1173,18 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 	create_ctx.key = key;
 	create_ctx.subkey = subkey;
 
-	werr = ntstatus_to_werror(dbwrap_trans_do(regdb,
+	werr = ntstatus_to_werror(dbwrap_trans_do(db,
 						  regdb_create_subkey_action,
 						  &create_ctx));
 
 done:
 	talloc_free(mem_ctx);
 	return werr;
+}
+
+static WERROR regdb_create_subkey(const char *key, const char *subkey)
+{
+	return regdb_create_subkey_internal(regdb, key, subkey);
 }
 
 /**
