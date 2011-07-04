@@ -399,8 +399,17 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	uint32_t data_size;
 	WERROR result;
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b;
 
-	result = winreg_get_printer_internal(mem_ctx, session_info, msg_ctx,
+	result = winreg_printer_binding_handle(mem_ctx,
+					       session_info,
+					       msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		return false;
+	}
+
+	result = winreg_get_printer(mem_ctx, b,
 				    printer, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return false;
@@ -417,7 +426,7 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 
 	/* fetching printer guids really ought to be a separate function. */
 
-	result = winreg_get_printer_dataex_internal(mem_ctx, session_info, msg_ctx,
+	result = winreg_get_printer_dataex(mem_ctx, b,
 					   printer,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   &type, &data, &data_size);

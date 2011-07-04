@@ -1541,6 +1541,7 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 	const char *drivername;
 	int snum;
 	int n_services = lp_numservices();
+	struct dcerpc_binding_handle *b = NULL;
 
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) return;
@@ -1573,7 +1574,17 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 			continue;
 		}
 
-		result = winreg_get_printer_internal(tmp_ctx, session_info, msg,
+		if (b == NULL) {
+			result = winreg_printer_binding_handle(tmp_ctx,
+							       session_info,
+							       msg,
+							       &b);
+			if (!W_ERROR_IS_OK(result)) {
+				break;
+			}
+		}
+
+		result = winreg_get_printer(tmp_ctx, b,
 					    lp_const_servicename(snum),
 					    &pinfo2);
 
@@ -1592,9 +1603,7 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 		DEBUG(6,("Updating printer [%s]\n", pinfo2->printername));
 
 		/* all we care about currently is the change_id */
-		result = winreg_printer_update_changeid_internal(tmp_ctx,
-							session_info,
-							msg,
+		result = winreg_printer_update_changeid(tmp_ctx, b,
 							pinfo2->printername);
 
 		if (!W_ERROR_IS_OK(result)) {
@@ -2057,6 +2066,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	struct spoolss_DriverInfo8 *info_win2k = NULL;
 	int				version;
 	WERROR				status;
+	struct dcerpc_binding_handle *b;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
@@ -2078,9 +2088,15 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	if ((version = get_version_id(r->in.architecture)) == -1)
 		return WERR_INVALID_ENVIRONMENT;
 
-	status = winreg_get_driver_internal(p->mem_ctx,
-				   get_session_info_system(),
-				   p->msg_ctx,
+	status = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	status = winreg_get_driver(p->mem_ctx, b,
 				   r->in.architecture, r->in.driver,
 				   version, &info);
 	if (!W_ERROR_IS_OK(status)) {
@@ -2089,9 +2105,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 		if ( version == 2 ) {
 			version = 3;
 
-			status = winreg_get_driver_internal(p->mem_ctx,
-						   get_session_info_system(),
-						   p->msg_ctx,
+			status = winreg_get_driver(p->mem_ctx, b,
 						   r->in.architecture,
 						   r->in.driver,
 						   version, &info);
@@ -2117,18 +2131,14 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	}
 
 	if (version == 2) {
-		status = winreg_get_driver_internal(p->mem_ctx,
-					   get_session_info_system(),
-					   p->msg_ctx,
+		status = winreg_get_driver(p->mem_ctx, b,
 					   r->in.architecture,
 					   r->in.driver, 3, &info_win2k);
 		if (W_ERROR_IS_OK(status)) {
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status = winreg_del_driver_internal(p->mem_ctx,
-						   get_session_info_system(),
-						   p->msg_ctx,
+			status = winreg_del_driver(p->mem_ctx, b,
 						   info_win2k, 3);
 			talloc_free(info_win2k);
 
@@ -2139,9 +2149,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 		}
 	}
 
-	status = winreg_del_driver_internal(p->mem_ctx,
-				   get_session_info_system(),
-				   p->msg_ctx,
+	status = winreg_del_driver(p->mem_ctx, b,
 				   info, version);
 
 done:
@@ -2162,6 +2170,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	int				version;
 	bool				delete_files;
 	WERROR				status;
+	struct dcerpc_binding_handle *b;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
@@ -2186,9 +2195,15 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	if (r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION)
 		version = r->in.version;
 
-	status = winreg_get_driver_internal(p->mem_ctx,
-				   get_session_info_system(),
-				   p->msg_ctx,
+	status = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	status = winreg_get_driver(p->mem_ctx, b,
 				   r->in.architecture,
 				   r->in.driver,
 				   version,
@@ -2208,9 +2223,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		/* try for Win2k driver if "Windows NT x86" */
 
 		version = 3;
-		status = winreg_get_driver_internal(info,
-					   get_session_info_system(),
-					   p->msg_ctx,
+		status = winreg_get_driver(info, b,
 					   r->in.architecture,
 					   r->in.driver,
 					   version, &info);
@@ -2259,9 +2272,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	/* also check for W32X86/3 if necessary; maybe we already have? */
 
 	if ( (version == 2) && ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
-		status = winreg_get_driver_internal(info,
-					   get_session_info_system(),
-					   p->msg_ctx,
+		status = winreg_get_driver(info, b,
 					   r->in.architecture,
 					   r->in.driver, 3, &info_win2k);
 		if (W_ERROR_IS_OK(status)) {
@@ -2281,9 +2292,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status = winreg_del_driver_internal(info,
-						   get_session_info_system(),
-						   p->msg_ctx,
+			status = winreg_del_driver(info, b,
 						   info_win2k,
 						   3);
 
@@ -2305,9 +2314,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		}
 	}
 
-	status = winreg_del_driver_internal(info,
-				   get_session_info_system(),
-				   p->msg_ctx,
+	status = winreg_del_driver(info, b,
 				   info,
 				   version);
 	if (!W_ERROR_IS_OK(status)) {
@@ -4282,6 +4289,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 	union spoolss_PrinterInfo *info = NULL;
 	uint32_t count = 0;
 	WERROR result = WERR_OK;
+	struct dcerpc_binding_handle *b = NULL;
 
 	*count_p = 0;
 	*info_p = NULL;
@@ -4300,9 +4308,17 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n",
 			printer, snum));
 
-		result = winreg_create_printer_internal(mem_ctx,
-					       session_info,
-					       msg_ctx,
+		if (b == NULL) {
+			result = winreg_printer_binding_handle(mem_ctx,
+							       session_info,
+							       msg_ctx,
+							       &b);
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
+			}
+		}
+
+		result = winreg_create_printer(mem_ctx, b,
 					       printer);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
@@ -4316,7 +4332,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 
-		result = winreg_get_printer_internal(mem_ctx, session_info, msg_ctx,
+		result = winreg_get_printer(mem_ctx, b,
 					    printer, &info2);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
@@ -5506,14 +5522,21 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	struct spoolss_DriverInfo8 *driver;
 	WERROR result;
+	struct dcerpc_binding_handle *b;
 
 	if (level == 101) {
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	result = winreg_get_printer_internal(mem_ctx,
-				    session_info,
-				    msg_ctx,
+	result = winreg_printer_binding_handle(mem_ctx,
+					       session_info,
+					       msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	result = winreg_get_printer(mem_ctx, b,
 				    lp_const_servicename(snum),
 				    &pinfo2);
 
@@ -5524,7 +5547,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	result = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
+	result = winreg_get_driver(mem_ctx, b,
 				   architecture,
 				   pinfo2->drivername, version, &driver);
 
@@ -5543,7 +5566,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
-		result = winreg_get_driver_internal(mem_ctx, session_info, msg_ctx,
+		result = winreg_get_driver(mem_ctx, b,
 					   architecture,
 					   pinfo2->drivername,
 					   version, &driver);
@@ -5927,8 +5950,8 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 	const char *printer;
 	WERROR result;
 	int snum;
-
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
+	struct dcerpc_binding_handle *b;
 
 	if (!Printer || !get_printer_snum(p, handle, &snum, NULL)) {
 		DEBUG(2,("update_printer_sec: Invalid handle (%s:%u:%u)\n",
@@ -5956,11 +5979,17 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		goto done;
 	}
 
+	result = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
 	/* NT seems to like setting the security descriptor even though
 	   nothing may have actually changed. */
-	result = winreg_get_printer_secdesc_internal(p->mem_ctx,
-					    get_session_info_system(),
-					    p->msg_ctx,
+	result = winreg_get_printer_secdesc(p->mem_ctx, b,
 					    printer,
 					    &old_secdesc);
 	if (!W_ERROR_IS_OK(result)) {
@@ -6010,9 +6039,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		goto done;
 	}
 
-	result = winreg_set_printer_secdesc_internal(p->mem_ctx,
-					    get_session_info_system(),
-					    p->msg_ctx,
+	result = winreg_set_printer_secdesc(p->mem_ctx, b,
 					    printer,
 					    new_secdesc);
 
@@ -6218,12 +6245,19 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	const char *spooling;
 	DATA_BLOB buffer;
 	WERROR result = WERR_OK;
+	struct dcerpc_binding_handle *b;
+
+	result = winreg_printer_binding_handle(mem_ctx,
+					       session_info,
+					       msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
 
 	if (force_update || !strequal(printer->drivername, old_printer->drivername)) {
 		push_reg_sz(mem_ctx, &buffer, printer->drivername);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_DRIVERNAME,
@@ -6243,9 +6277,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 	if (force_update || !strequal(printer->comment, old_printer->comment)) {
 		push_reg_sz(mem_ctx, &buffer, printer->comment);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_DESCRIPTION,
@@ -6262,9 +6294,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 	if (force_update || !strequal(printer->sharename, old_printer->sharename)) {
 		push_reg_sz(mem_ctx, &buffer, printer->sharename);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTSHARENAME,
@@ -6291,9 +6321,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 
 		push_reg_sz(mem_ctx, &buffer, p);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTERNAME,
@@ -6309,9 +6337,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 	if (force_update || !strequal(printer->portname, old_printer->portname)) {
 		push_reg_sz(mem_ctx, &buffer, printer->portname);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PORTNAME,
@@ -6328,9 +6354,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 	if (force_update || !strequal(printer->location, old_printer->location)) {
 		push_reg_sz(mem_ctx, &buffer, printer->location);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_LOCATION,
@@ -6348,9 +6372,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 	if (force_update || !strequal(printer->sepfile, old_printer->sepfile)) {
 		push_reg_sz(mem_ctx, &buffer, printer->sepfile);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTSEPARATORFILE,
@@ -6369,9 +6391,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	if (force_update || printer->starttime != old_printer->starttime) {
 		buffer = data_blob_talloc(mem_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, printer->starttime);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTSTARTTIME,
@@ -6383,9 +6403,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	if (force_update || printer->untiltime != old_printer->untiltime) {
 		buffer = data_blob_talloc(mem_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, printer->untiltime);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTENDTIME,
@@ -6397,9 +6415,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	if (force_update || printer->priority != old_printer->priority) {
 		buffer = data_blob_talloc(mem_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, printer->priority);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRIORITY,
@@ -6412,9 +6428,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		buffer = data_blob_talloc(mem_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, (printer->attributes &
 				       PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS));
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTKEEPPRINTEDJOBS,
@@ -6436,9 +6450,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 				spooling = "unknown";
 		}
 		push_reg_sz(mem_ctx, &buffer, spooling);
-		winreg_set_printer_dataex_internal(mem_ctx,
-					  session_info,
-					  msg_ctx,
+		winreg_set_printer_dataex(mem_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTSPOOLING,
@@ -6448,9 +6460,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	}
 
 	push_reg_sz(mem_ctx, &buffer, global_myname());
-	winreg_set_printer_dataex_internal(mem_ctx,
-				  session_info,
-				  msg_ctx,
+	winreg_set_printer_dataex(mem_ctx, b,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  SPOOL_REG_SHORTSERVERNAME,
@@ -6470,9 +6480,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	}
 
 	push_reg_sz(mem_ctx, &buffer, longname);
-	winreg_set_printer_dataex_internal(mem_ctx,
-				  session_info,
-				  msg_ctx,
+	winreg_set_printer_dataex(mem_ctx, b,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  SPOOL_REG_SERVERNAME,
@@ -6483,9 +6491,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	uncname = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
 				  global_myname(), printer->sharename);
 	push_reg_sz(mem_ctx, &buffer, uncname);
-	winreg_set_printer_dataex_internal(mem_ctx,
-				  session_info,
-				  msg_ctx,
+	winreg_set_printer_dataex(mem_ctx, b,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  SPOOL_REG_UNCNAME,
@@ -6514,6 +6520,7 @@ static WERROR update_printer(struct pipes_struct *p,
 	int snum;
 	WERROR result = WERR_OK;
 	TALLOC_CTX *tmp_ctx;
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(8,("update_printer\n"));
 
@@ -6532,9 +6539,15 @@ static WERROR update_printer(struct pipes_struct *p,
 		goto done;
 	}
 
-	result = winreg_get_printer_internal(tmp_ctx,
-				    get_session_info_system(),
-				    p->msg_ctx,
+	result = winreg_printer_binding_handle(tmp_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_get_printer(tmp_ctx, b,
 				    lp_const_servicename(snum),
 				    &old_printer);
 	if (!W_ERROR_IS_OK(result)) {
@@ -6588,9 +6601,7 @@ static WERROR update_printer(struct pipes_struct *p,
 	if (devmode == NULL) {
 		printer_mask &= ~SPOOLSS_PRINTER_INFO_DEVMODE;
 	}
-	result = winreg_update_printer_internal(tmp_ctx,
-				       get_session_info_system(),
-				       p->msg_ctx,
+	result = winreg_update_printer(tmp_ctx, b,
 				       printer->sharename,
 				       printer_mask,
 				       printer,
@@ -7277,12 +7288,21 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 	WERROR result = WERR_OK;
 	uint32_t num_drivers;
 	const char **drivers;
+	struct dcerpc_binding_handle *b;
 
 	*count_p = 0;
 	*info_p = NULL;
 
+	result = winreg_printer_binding_handle(mem_ctx,
+					       session_info,
+					       msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
+
 	for (version=0; version<DRIVER_MAX_VERSION; version++) {
-		result = winreg_get_driver_list_internal(mem_ctx, session_info, msg_ctx,
+		result = winreg_get_driver_list(mem_ctx, b,
 						architecture, version,
 						&num_drivers, &drivers);
 		if (!W_ERROR_IS_OK(result)) {
@@ -7307,8 +7327,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < num_drivers; i++) {
 			DEBUG(5, ("\tdriver: [%s]\n", drivers[i]));
 
-			result = winreg_get_driver_internal(mem_ctx, session_info,
-						   msg_ctx,
+			result = winreg_get_driver(mem_ctx, b,
 						   architecture, drivers[i],
 						   version, &driver);
 			if (!W_ERROR_IS_OK(result)) {
@@ -8462,8 +8481,8 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	int snum = -1;
 	WERROR status = WERR_OK;
-
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(5,("_spoolss_AddForm\n"));
 
@@ -8496,9 +8515,15 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	status = winreg_printer_addform1_internal(p->mem_ctx,
-					 get_session_info_system(),
-					 p->msg_ctx,
+	status = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	status = winreg_printer_addform1(p->mem_ctx, b,
 					 form);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
@@ -8512,9 +8537,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 			return WERR_BADFID;
 		}
 
-		status = winreg_printer_update_changeid_internal(p->mem_ctx,
-							get_session_info_system(),
-							p->msg_ctx,
+		status = winreg_printer_update_changeid(p->mem_ctx, b,
 							lp_const_servicename(snum));
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
@@ -8535,6 +8558,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int snum = -1;
 	WERROR status = WERR_OK;
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(5,("_spoolss_DeleteForm\n"));
 
@@ -8555,9 +8579,15 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = winreg_printer_deleteform1_internal(p->mem_ctx,
-					    get_session_info_system(),
-					    p->msg_ctx,
+	status = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	status = winreg_printer_deleteform1(p->mem_ctx, b,
 					    form_name);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
@@ -8571,9 +8601,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 			return WERR_BADFID;
 		}
 
-		status = winreg_printer_update_changeid_internal(p->mem_ctx,
-							get_session_info_system(),
-							p->msg_ctx,
+		status = winreg_printer_update_changeid(p->mem_ctx, b,
 							lp_const_servicename(snum));
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
@@ -8594,6 +8622,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	const char *form_name = r->in.form_name;
 	int snum = -1;
 	WERROR status = WERR_OK;
+	struct dcerpc_binding_handle *b;
 
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
@@ -8619,9 +8648,15 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = winreg_printer_setform1_internal(p->mem_ctx,
-					 get_session_info_system(),
-					 p->msg_ctx,
+	status = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	status = winreg_printer_setform1(p->mem_ctx, b,
 					 form_name,
 					 form);
 	if (!W_ERROR_IS_OK(status)) {
@@ -8636,9 +8671,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 			return WERR_BADFID;
 		}
 
-		status = winreg_printer_update_changeid_internal(p->mem_ctx,
-							get_session_info_system(),
-							p->msg_ctx,
+		status = winreg_printer_update_changeid(p->mem_ctx, b,
 							lp_const_servicename(snum));
 		if (!W_ERROR_IS_OK(status)) {
 			return status;
@@ -9191,7 +9224,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 	enum winreg_Type val_type = REG_NONE;
 	uint8_t *val_data = NULL;
 	uint32_t val_size = 0;
-
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(4,("_spoolss_GetPrinterDataEx\n"));
 
@@ -9249,6 +9282,14 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	result = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
 	/* XP sends this and wants the ChangeID value from PRINTER_INFO_0 */
 	if (strequal(r->in.key_name, SPOOL_PRINTERDATA_KEY) &&
 	    strequal(r->in.value_name, "ChangeId")) {
@@ -9257,9 +9298,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 		if (r->in.offered >= *r->out.needed) {
 			uint32_t changeid = 0;
 
-			result = winreg_printer_get_changeid_internal(p->mem_ctx,
-							     get_session_info_system(),
-							     p->msg_ctx,
+			result = winreg_printer_get_changeid(p->mem_ctx, b,
 							     printer,
 							     &changeid);
 			if (!W_ERROR_IS_OK(result)) {
@@ -9272,9 +9311,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 		goto done;
 	}
 
-	result = winreg_get_printer_dataex_internal(p->mem_ctx,
-					   get_session_info_system(),
-					   p->msg_ctx,
+	result = winreg_get_printer_dataex(p->mem_ctx, b,
 					   printer,
 					   r->in.key_name,
 					   r->in.value_name,
@@ -9311,6 +9348,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 	WERROR 			result = WERR_OK;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	char			*oid_string;
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(4,("_spoolss_SetPrinterDataEx\n"));
 
@@ -9347,9 +9385,15 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	result = winreg_get_printer_internal(Printer,
-				    get_session_info_system(),
-				    p->msg_ctx,
+	result = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	result = winreg_get_printer(Printer, b,
 				    lp_servicename(snum),
 				    &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
@@ -9366,9 +9410,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 
 	/* save the registry data */
 
-	result = winreg_set_printer_dataex_internal(p->mem_ctx,
-					   get_session_info_system(),
-					   p->msg_ctx,
+	result = winreg_set_printer_dataex(p->mem_ctx, b,
 					   pinfo2->sharename,
 					   r->in.key_name,
 					   r->in.value_name,
@@ -9392,9 +9434,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 			 * previous set_printer_dataex() call.  I have no idea if
 			 * this is right.    --jerry
 			 */
-			winreg_set_printer_dataex_internal(p->mem_ctx,
-						  get_session_info_system(),
-						  p->msg_ctx,
+			winreg_set_printer_dataex(p->mem_ctx, b,
 						  pinfo2->sharename,
 						  str,
 						  r->in.value_name,
@@ -9403,9 +9443,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 						  strlen(oid_string) + 1);
 		}
 
-		result = winreg_printer_update_changeid_internal(p->mem_ctx,
-							get_session_info_system(),
-							p->msg_ctx,
+		result = winreg_printer_update_changeid(p->mem_ctx, b,
 							lp_const_servicename(snum));
 
 	}
@@ -9541,6 +9579,7 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 	int 			snum=0;
 	WERROR			status;
 	const char *printer;
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(5,("_spoolss_DeletePrinterKey\n"));
 
@@ -9566,16 +9605,20 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 
 	printer = lp_const_servicename(snum);
 
+	status = winreg_printer_binding_handle(p->mem_ctx,
+					       get_session_info_system(),
+					       p->msg_ctx,
+					       &b);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
 	/* delete the key and all subkeys */
-	status = winreg_delete_printer_key_internal(p->mem_ctx,
-					   get_session_info_system(),
-					   p->msg_ctx,
+	status = winreg_delete_printer_key(p->mem_ctx, b,
 					   printer,
 					   r->in.key_name);
 	if (W_ERROR_IS_OK(status)) {
-		status = winreg_printer_update_changeid_internal(p->mem_ctx,
-							get_session_info_system(),
-							p->msg_ctx,
+		status = winreg_printer_update_changeid(p->mem_ctx, b,
 							printer);
 	}
 
