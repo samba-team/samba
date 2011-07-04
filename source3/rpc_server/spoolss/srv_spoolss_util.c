@@ -30,6 +30,7 @@
 #include "../libcli/security/security.h"
 #include "rpc_client/cli_winreg.h"
 #include "../libcli/registry/util_reg.h"
+#include "printing/nt_printing_os2.h"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"

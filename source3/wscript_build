@@ -405,7 +405,8 @@ PRINTBACKEND_SRC = '''printing/printing.c
                       printing/nt_printing.c
                       printing/nt_printing_tdb.c
                       printing/nt_printing_migrate_internal.c
-                      printing/nt_printing_ads.c'''
+                      printing/nt_printing_ads.c
+                      printing/nt_printing_os2.c'''
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 
