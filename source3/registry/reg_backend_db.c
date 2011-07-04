@@ -858,6 +858,8 @@ done:
  * Utility function to store a new empty list of
  * subkeys of given key specified as parent and subkey name
  * (thereby creating the key).
+ * If the parent keyname is NULL, then the "subkey" is
+ * interpreted as a base key.
  * If the subkey list does already exist, it is not modified.
  *
  * Must be called from within a transaction.
@@ -870,7 +872,11 @@ static WERROR regdb_store_subkey_list(struct db_context *db, const char *parent,
 	struct regsubkey_ctr *subkeys = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	path = talloc_asprintf(frame, "%s\\%s", parent, key);
+	if (parent == NULL) {
+		path = talloc_strdup(frame, key);
+	} else {
+		path = talloc_asprintf(frame, "%s\\%s", parent, key);
+	}
 	if (!path) {
 		werr = WERR_NOMEM;
 		goto done;
