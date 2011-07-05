@@ -126,13 +126,6 @@ struct print_architecture_table_node {
 
 bool nt_printing_init(struct messaging_context *msg_ctx);
 
-WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
-				      const char *devicename,
-				      struct spoolss_DeviceMode **devmode);
-
-WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
-				      struct spoolss_security_descriptor **secdesc);
-
 const char *get_short_archi(const char *long_archi);
 
 bool print_access_check(const struct auth_serversupplied_info *server_info,
