@@ -417,7 +417,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 			break;
 		case 'f': /* null-terminated string */
 			s = va_arg(ap,char *);
-			len = strlen((const char *)buf) + 1;
+			len = strnlen((const char *)buf, bufsize) + 1;
 			if (bufsize < len || len > sizeof(fstring))
 				goto no_space;
 			memcpy(s, buf, len);
