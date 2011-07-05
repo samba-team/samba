@@ -84,8 +84,7 @@ __docformat__ = "restructuredText"
 # This also apply to imported object from reference provision
 replAttrNotCopied = [   "dn", "whenCreated", "whenChanged", "objectGUID",
                         "parentGUID", "objectCategory", "distinguishedName",
-                        "nTMixedDomain", "showInAdvancedViewOnly",
-                        "instanceType", "msDS-Behavior-Version", "cn",
+                        "instanceType", "cn",
                         "lmPwdHistory", "pwdLastSet", "ntPwdHistory",
                         "unicodePwd", "dBCSPwd", "supplementalCredentials",
                         "gPCUserExtensionNames", "gPCMachineExtensionNames",
