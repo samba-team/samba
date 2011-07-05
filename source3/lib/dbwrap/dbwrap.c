@@ -173,3 +173,15 @@ NTSTATUS dbwrap_traverse_read(struct db_context *db,
 
 	return NT_STATUS_OK;
 }
+
+int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
+			int (*parser)(TDB_DATA key, TDB_DATA data,
+				      void *private_data),
+			void *private_data)
+{
+	if (db->parse_record) {
+		return db->parse_record(db, key, parser, private_data);
+	} else {
+		return dbwrap_fallback_parse_record(db, key, parser, private_data);
+	}
+}

@@ -73,6 +73,10 @@ NTSTATUS dbwrap_traverse_read(struct db_context *db,
 			      int (*f)(struct db_record*, void*),
 			      void *private_data,
 			      int *count);
+int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
+			int (*parser)(TDB_DATA key, TDB_DATA data,
+				      void *private_data),
+			void *private_data);
 
 
 /* The following definitions come from lib/dbwrap_util.c  */
