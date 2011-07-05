@@ -132,12 +132,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						 dbuf.dptr,
 						 dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
-			/* currently no WERR_INVALID_PRINTER_NAME equivalent */
-			if (NT_STATUS_EQUAL(status,
-			       werror_to_ntstatus(WERR_INVALID_PRINTER_NAME))) {
-				DEBUG(2, ("Skipping migration for non-existent "
-						"printer: %s\n", printer_name));
-			} else if (!NT_STATUS_IS_OK(status)) {
+			if (!NT_STATUS_IS_OK(status)) {
 				tdb_close(tdb);
 				return status;
 			}
@@ -164,9 +159,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						 dbuf.dptr,
 						 dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
-			/* currently no WERR_INVALID_PRINTER_NAME equivalent */
-			if (NT_STATUS_EQUAL(status, werror_to_ntstatus(WERR_INVALID_PRINTER_NAME)) ||
-			    NT_STATUS_EQUAL(status, werror_to_ntstatus(WERR_BADFILE))) {
+			if (NT_STATUS_EQUAL(status, werror_to_ntstatus(WERR_BADFILE))) {
 				DEBUG(2, ("Skipping secdesc migration for non-existent "
 						"printer: %s\n", secdesc_name));
 			} else if (!NT_STATUS_IS_OK(status)) {
