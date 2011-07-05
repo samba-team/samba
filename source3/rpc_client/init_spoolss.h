@@ -34,5 +34,7 @@ WERROR push_spoolss_PrinterData(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 				union spoolss_PrinterData *data);
 void spoolss_printerinfo2_to_setprinterinfo2(const struct spoolss_PrinterInfo2 *i,
 					     struct spoolss_SetPrinterInfo2 *s);
+bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
+			      struct spoolss_DriverInfo8 *_info8);
 
 #endif /* _RPC_CLIENT_INIT_SPOOLSS_H_ */

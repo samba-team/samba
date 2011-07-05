@@ -119,3 +119,92 @@ void spoolss_printerinfo2_to_setprinterinfo2(const struct spoolss_PrinterInfo2 *
 	s->cjobs		= i->cjobs;
 	s->averageppm		= i->averageppm;
 }
+
+/****************************************************************************
+****************************************************************************/
+
+bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
+			      struct spoolss_DriverInfo8 *_info8)
+{
+	struct spoolss_DriverInfo8 info8;
+
+	ZERO_STRUCT(info8);
+
+	switch (r->level) {
+	case 3:
+		info8.version		= r->info.info3->version;
+		info8.driver_name	= r->info.info3->driver_name;
+		info8.architecture	= r->info.info3->architecture;
+		info8.driver_path	= r->info.info3->driver_path;
+		info8.data_file		= r->info.info3->data_file;
+		info8.config_file	= r->info.info3->config_file;
+		info8.help_file		= r->info.info3->help_file;
+		info8.monitor_name	= r->info.info3->monitor_name;
+		info8.default_datatype	= r->info.info3->default_datatype;
+		if (r->info.info3->dependent_files && r->info.info3->dependent_files->string) {
+			info8.dependent_files	= r->info.info3->dependent_files->string;
+		}
+		break;
+	case 6:
+		info8.version		= r->info.info6->version;
+		info8.driver_name	= r->info.info6->driver_name;
+		info8.architecture	= r->info.info6->architecture;
+		info8.driver_path	= r->info.info6->driver_path;
+		info8.data_file		= r->info.info6->data_file;
+		info8.config_file	= r->info.info6->config_file;
+		info8.help_file		= r->info.info6->help_file;
+		info8.monitor_name	= r->info.info6->monitor_name;
+		info8.default_datatype	= r->info.info6->default_datatype;
+		if (r->info.info6->dependent_files && r->info.info6->dependent_files->string) {
+			info8.dependent_files	= r->info.info6->dependent_files->string;
+		}
+		info8.driver_date	= r->info.info6->driver_date;
+		info8.driver_version	= r->info.info6->driver_version;
+		info8.manufacturer_name = r->info.info6->manufacturer_name;
+		info8.manufacturer_url	= r->info.info6->manufacturer_url;
+		info8.hardware_id	= r->info.info6->hardware_id;
+		info8.provider		= r->info.info6->provider;
+		break;
+	case 8:
+		info8.version		= r->info.info8->version;
+		info8.driver_name	= r->info.info8->driver_name;
+		info8.architecture	= r->info.info8->architecture;
+		info8.driver_path	= r->info.info8->driver_path;
+		info8.data_file		= r->info.info8->data_file;
+		info8.config_file	= r->info.info8->config_file;
+		info8.help_file		= r->info.info8->help_file;
+		info8.monitor_name	= r->info.info8->monitor_name;
+		info8.default_datatype	= r->info.info8->default_datatype;
+		if (r->info.info8->dependent_files && r->info.info8->dependent_files->string) {
+			info8.dependent_files	= r->info.info8->dependent_files->string;
+		}
+		if (r->info.info8->previous_names && r->info.info8->previous_names->string) {
+			info8.previous_names	= r->info.info8->previous_names->string;
+		}
+		info8.driver_date	= r->info.info8->driver_date;
+		info8.driver_version	= r->info.info8->driver_version;
+		info8.manufacturer_name = r->info.info8->manufacturer_name;
+		info8.manufacturer_url	= r->info.info8->manufacturer_url;
+		info8.hardware_id	= r->info.info8->hardware_id;
+		info8.provider		= r->info.info8->provider;
+		info8.print_processor	= r->info.info8->print_processor;
+		info8.vendor_setup	= r->info.info8->vendor_setup;
+		if (r->info.info8->color_profiles && r->info.info8->color_profiles->string) {
+			info8.color_profiles = r->info.info8->color_profiles->string;
+		}
+		info8.inf_path		= r->info.info8->inf_path;
+		info8.printer_driver_attributes = r->info.info8->printer_driver_attributes;
+		if (r->info.info8->core_driver_dependencies && r->info.info8->core_driver_dependencies->string) {
+			info8.core_driver_dependencies = r->info.info8->core_driver_dependencies->string;
+		}
+		info8.min_inbox_driver_ver_date = r->info.info8->min_inbox_driver_ver_date;
+		info8.min_inbox_driver_ver_version = r->info.info8->min_inbox_driver_ver_version;
+		break;
+	default:
+		return false;
+	}
+
+	*_info8 = info8;
+
+	return true;
+}
