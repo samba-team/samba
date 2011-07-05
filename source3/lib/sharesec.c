@@ -423,6 +423,9 @@ bool share_access_check(const struct security_token *token,
 	psd = get_share_security(talloc_tos(), sharename, &sd_size);
 
 	if (!psd) {
+		if (pgranted != NULL) {
+			*pgranted = desired_access;
+		}
 		return True;
 	}
 
