@@ -997,9 +997,10 @@ bld.SAMBA3_SUBSYSTEM('LIBRPCCLI_NETLOGON',
                     source=LIBRPCCLI_NETLOGON_SRC,
                     deps='RPC_NDR_NETLOGON')
 
-bld.SAMBA3_SUBSYSTEM('LIBCLI_SPOOLSS',
-                    source=LIBCLI_SPOOLSS_SRC,
-                    deps='RPC_NDR_SPOOLSS')
+bld.SAMBA3_LIBRARY('LIBCLI_SPOOLSS',
+                   source=LIBCLI_SPOOLSS_SRC,
+                   deps='RPC_NDR_SPOOLSS param SECRETS3',
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',
                     source=LIBCLI_WINREG_SRC,
