@@ -60,6 +60,7 @@ examples/VFS/skel_transparent.so
 semantic.cache
 nsswitch/libnss_winbind.so
 nsswitch/libnss_wins.so
+nsswitch/WINBIND
 source3/config.cache
 source3/config.log
 source3/config.status
