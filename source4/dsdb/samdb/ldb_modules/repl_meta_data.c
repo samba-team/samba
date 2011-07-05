@@ -1042,7 +1042,8 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 				      const struct dsdb_schema *schema,
 				      uint64_t *seq_num,
 				      const struct GUID *our_invocation_id,
-				      NTTIME now)
+				      NTTIME now,
+				      struct ldb_request *req)
 {
 	uint32_t i;
 	const struct dsdb_attribute *a;
@@ -1050,6 +1051,12 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 
 	a = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 	if (a == NULL) {
+		if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)) {
+			/* allow this to make it possible for dbcheck
+			   to remove bad attributes */
+			return LDB_SUCCESS;
+		}
+
 		DEBUG(0,(__location__ ": Unable to find attribute %s in schema\n",
 			 el->name));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1299,7 +1306,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			struct ldb_message_element *old_el;
 			old_el = ldb_msg_find_element(res->msgs[0], msg->elements[i].name);
 			ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], old_el, &omd, schema, seq_num,
-							 our_invocation_id, now);
+							 our_invocation_id, now, req);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}

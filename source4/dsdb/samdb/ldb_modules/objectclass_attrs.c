@@ -121,6 +121,12 @@ static int attr_handler(struct oc_context *ac)
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 msg->elements[i].name);
 		if (attr == NULL) {
+			if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
+			    ac->req->operation != LDB_ADD) {
+				/* we allow this for dbcheck to fix
+				   broken attributes */
+				goto no_attribute;
+			}
 			ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' was not found in the schema!",
 					       msg->elements[i].name,
 					       ldb_dn_get_linearized(msg->dn));
@@ -172,6 +178,7 @@ static int attr_handler(struct oc_context *ac)
 		msg->elements[i].name = attr->lDAPDisplayName;
 	}
 
+no_attribute:
 	if (ac->req->operation == LDB_ADD) {
 		ret = ldb_build_add_req(&child_req, ldb, ac,
 					msg, ac->req->controls,
@@ -297,6 +304,11 @@ static int attr_handler2(struct oc_context *ac)
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 msg->elements[i].name);
 		if (attr == NULL) {
+			if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+				/* allow this to make it possible for dbcheck
+				   to remove bad attributes */
+				continue;
+			}
 			return ldb_operr(ldb);
 		}
 
