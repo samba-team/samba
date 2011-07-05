@@ -253,7 +253,74 @@ o   Andreas Schneider <asn@samba.org>
     * Add an Endpoint Mapper daemon.
 
 
-Changes since 3.6.0rc1
+Changes since 3.6.0rc2
+----------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 8213: Fixes in idmap_autorid.
+    * BUG 8217: Do not stat-check the share path in 'net conf addshare'.
+    * BUG 8281: Fix build of examples/VFS/*.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8083: Fix "inherit owner = yes" with vfs_acl_xattr or vfs_acl_tdb
+      module.
+    * BUG 8211: Fix "inherit owner = yes" when "inherit permissions = yes"
+      is set.
+    * BUG 8219: Fix SMB Panic from Windows 7 client.
+    * BUG 8254: Fix "acl check permissions = no".
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8231: Fix crash bug in 'net cache get'.
+    * BUG 8244: Fix copying files larger than 2 GB to a Samba share.
+    * BUG 8278: Fix smbd panic when CTDB is unhealthy.
+    * BUG 8286: Fix smbd crash on premature end of smb2 conn.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8230: Move .nmbd socket directory to non-hidden name PREFIX/var/nmbd.
+    * Mark 'time offset' parameter as deprecated.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * BUG 8193: Add new command 'enumerate_recursive'.
+    * BUG 8253: Fix Winbind panic if verify_idpool() fails.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7888: Deal with buggy 3.0 based PDCs.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8262: Fix build of vfs_commit.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7841: Explicitly pass domain_sid to wbint_LookupRids().
+    * BUG 8247: Fix Coverity ID 2582: FORWARD_NULL.
+
+
+o   Herb Lewis <hlewis@panasas.com>
+    * BUG 8216: Make Winbind returning correct results with 'sids2xids'.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8195: Make rpc client code working against NT4 servers.
+    * BUG 8224: Fix the build on FreeBSD.
+    * BUG 8226: Use c99 initializers which are supported by old gcc 2.95
+      compilers.
+    * BUG 8260: Fix DCERPC responses with fragments larger than 1024 bytes.
+    * BUG 8264: Fix Valgrind bugs in svcctl.
+    * BUG 8276: Close all sockets attached to a subnet in close_subnet().
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8215: Fix Winbind unix username lookup.
+    * BUG 8240: Fix Valgrind warnings in winreg/spoolss code.
+
+
+Changee since 3.6.0rc1
 ----------------------
 
 o   Michael Adam <obnox@samba.org>
