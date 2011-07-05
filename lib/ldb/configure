@@ -2,8 +2,8 @@
 
 PREVPATH=`dirname $0`
 
-if [ -f $PREVPATH/../../../buildtools/bin/waf ]; then
-	WAF=../../../buildtools/bin/waf
+if [ -f $PREVPATH/../../buildtools/bin/waf ]; then
+	WAF=../../buildtools/bin/waf
 elif [ -f $PREVPATH/buildtools/bin/waf ]; then
 	WAF=./buildtools/bin/waf
 else

@@ -15,7 +15,7 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist, Options
 
-samba_dist.DIST_DIRS('''source4/lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
+samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tdb2:lib/tdb2 lib/tdb_compat:lib/tdb_compat lib/ccan:lib/ccan lib/tevent:lib/tevent lib/popt:lib/popt
                         buildtools:buildtools''')
 

@@ -62,7 +62,7 @@ policy:
          pass. Larger commits require discussion on samba-technical
          list and review by the maintainer
 
-files: lib/tevent/py*, lib/talloc/py*, source4/lib/ldb/py*, lib/tdb/py*
+files: lib/tevent/py*, lib/talloc/py*, lib/ldb/py*, lib/tdb/py*
 maintainers:
          Jelmer Vernooij <jelmer@samba.org>
 policy:

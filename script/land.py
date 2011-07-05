@@ -41,7 +41,7 @@ tasks = {
                   ("install", "make install", "text/plain"),
                   ("test", "TDB_NO_FSYNC=1 make subunit-test", "text/x-subunit") ],
 
-    "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                           ("make", "make -j", "text/plain"),
                           ("install", "make install", "text/plain"),
                           ("test", "make test", "text/plain") ],

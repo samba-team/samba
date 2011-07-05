@@ -18,7 +18,7 @@ builddirs = {
     "samba3"  : "source3",
     "samba3-waf": "source3",
     "samba4"  : ".",
-    "ldb"     : "source4/lib/ldb",
+    "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
     "talloc"  : "lib/talloc",
     "replace" : "lib/replace",
@@ -59,7 +59,7 @@ tasks = {
               ("make", "make -j", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
-              ("check-clean-tree", "../../../script/clean-source-tree.sh", "text/plain"),
+              ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain") ],
 

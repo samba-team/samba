@@ -93,7 +93,7 @@ for options in ['-U"$USERNAME%$PASSWORD"']:
 for t in smb4torture_testsuites("ldap."):
     plansmbtorturetestsuite(t, "dc", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
 
-ldbdir = os.path.join(samba4srcdir, "lib/ldb")
+ldbdir = os.path.join(srcdir(), "lib/ldb")
 # Don't run LDB tests when using system ldb, as we won't have ldbtest installed
 if os.path.exists(os.path.join(samba4bindir, "ldbtest")):
     plantestsuite("ldb.base", "none", "%s/tests/test-tdb.sh" % ldbdir,
@@ -377,7 +377,7 @@ def plansambapythontestsuite(name, env, path, module, environ={}, extra_args=[])
     plantestsuite(name, env, args)
 
 
-plansambapythontestsuite("ldb.python", "none", "%s/lib/ldb/tests/python/" % samba4srcdir, 'api')
+plansambapythontestsuite("ldb.python", "none", "%s/lib/ldb/tests/python/" % srcdir(), 'api')
 planpythontestsuite("none", "samba.tests.credentials")
 plantestsuite_idlist("samba.tests.gensec", "dc:local", [subunitrun, "$LISTOPT", '-U"$USERNAME%$PASSWORD"', "samba.tests.gensec"])
 planpythontestsuite("none", "samba.tests.registry")

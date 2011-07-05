@@ -23,7 +23,7 @@ def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
-    opt.RECURSE('source4/lib/ldb')
+    opt.RECURSE('lib/ldb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
     opt.RECURSE('lib/nss_wrapper')
@@ -80,7 +80,7 @@ def configure(conf):
         raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 
     conf.RECURSE('dynconfig')
-    conf.RECURSE('source4/lib/ldb')
+    conf.RECURSE('lib/ldb')
     conf.RECURSE('source4/heimdal_build')
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/ntvfs/sysdep')
