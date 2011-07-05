@@ -148,7 +148,7 @@ case "$1" in
 	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
 
 	for IFACE in $INTERFACES ; do
-		ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
+		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
 	done
 	
 	monitor_interfaces
