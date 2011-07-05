@@ -589,5 +589,5 @@ bld.SAMBA_LIBRARY('ndr',
 
 bld.SAMBA_LIBRARY('rpccommon',
                   source='rpc/dcerpc_error.c rpc/binding.c rpc/dcerpc_util.c rpc/binding_handle.c',
-                  deps='ndr tevent NDR_DCERPC LIBTSOCKET',
+                  deps='ndr tevent NDR_DCERPC LIBTSOCKET UTIL_TEVENT',
                   private_library=True)
