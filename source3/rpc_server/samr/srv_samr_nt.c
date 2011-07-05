@@ -1828,7 +1828,6 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 	char *user_name = NULL;
 	char *rhost;
 	fstring wks;
-	int rc;
 
 	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
@@ -1888,7 +1887,6 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 	char *user_name = NULL;
 	const char *wks = NULL;
 	char *rhost;
-	int rc;
 
 	DEBUG(5,("_samr_OemChangePasswordUser2: %d\n", __LINE__));
 
@@ -1958,7 +1956,6 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 	struct userPwdChangeFailureInformation *reject = NULL;
 	uint32_t tmp;
 	char *rhost;
-	int rc;
 
 	DEBUG(5,("_samr_ChangePasswordUser3: %d\n", __LINE__));
 
@@ -5030,7 +5027,6 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	uint32_t fields = 0;
 	bool ret;
 	char *rhost;
-	int rc;
 
 	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
 
