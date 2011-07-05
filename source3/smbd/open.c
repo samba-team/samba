@@ -76,6 +76,14 @@ NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 	/* Check if we have rights to open. */
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
+	uint32_t rejected_share_access;
+
+	rejected_share_access = access_mask & ~(conn->share_access);
+
+	if (rejected_share_access) {
+		*access_granted = rejected_share_access;
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if ((access_mask & DELETE_ACCESS) && !lp_acl_check_permissions(SNUM(conn))) {
 		*access_granted = access_mask;
