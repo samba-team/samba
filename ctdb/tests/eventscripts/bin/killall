@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Always succeed.  This means that killall -0 will always find a
+# process and anything else will successfully kill.  This should
+# exercise a good avriety of code paths.
+
+exit 0
