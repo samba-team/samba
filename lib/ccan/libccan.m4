@@ -135,7 +135,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_clz],
 	       samba_cv_builtin_clz,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_clz(1) == (sizeof(int)*8 - 1) ? 0 : 1;
 			}],
@@ -150,7 +150,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_clzl],
 	       samba_cv_builtin_clzl,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_clzl(1) == (sizeof(int)*8 - 1) ? 0 : 1;
 			}],
@@ -164,7 +164,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_clzll],
 	       samba_cv_builtin_clzll,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_clzll(1) == (sizeof(int)*8 - 1) ? 0 : 1;
 			}],
@@ -179,7 +179,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_constant_p],
 	       samba_cv_builtin_constant_p,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_constant_p(1) ? 0 : 1;
 			}],
@@ -194,7 +194,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_expect],
 	       samba_cv_builtin_expect,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_expect(main != 0) ? 0 : 1;
 			}],
@@ -209,7 +209,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_popcountl],
 	       samba_cv_builtin_popcountl,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_popcountl(255L) == 8 ? 0 : 1;
 			}],
@@ -224,7 +224,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_types_compatible_p],
 	       samba_cv_builtin_types_compatible_p,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_types_compatible_p(char *, int) ? 1 : 0;
 			}],
@@ -255,7 +255,7 @@ fi
 AC_CACHE_CHECK([whether we have __builtin_have_isblank],
 	       samba_cv_builtin_have_isblank,
 	       [
-	         AC_COMPILE_IFELSE(
+	         AC_LINK_IFELSE(
 			[#include <ctype.h>
 			 int main(void) { return isblank(' ') ? 0 : 1; }
 			],
