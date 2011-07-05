@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-def confirm(msg, forced = False):
+def confirm(msg, forced = False, allow_all=False):
     """confirm an action with the user
         :param msg: A string to print to the user
         :param forced: Are the answer forced
@@ -27,7 +27,13 @@ def confirm(msg, forced = False):
         print("%s [YES]" % msg)
         return True
 
-    v = raw_input(msg + ' [y/N] ')
-    return v.upper() in ['Y', 'YES']
+    if allow_all:
+        v = raw_input(msg + ' [y/N/all] ')
+        if v.upper() == 'ALL':
+            return "ALL"
+        return v.upper() in ['Y', 'YES']
+    else:
+        v = raw_input(msg + ' [y/N] ')
+        return v.upper() in ['Y', 'YES']
 
 
