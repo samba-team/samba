@@ -49,16 +49,8 @@ int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 
 static int dbwrap_fallback_exists(struct db_context *db, TDB_DATA key)
 {
-	TDB_DATA val;
-	if ( db->fetch(db, talloc_tos(), key, &val) != 0 ) {
-		return 0;
-	}
-	if (val.dptr == NULL ) {
-		return 0;
-	} else {
-		TALLOC_FREE(val.dptr);
-		return 1;
-	}
+	int res = dbwrap_parse_record(db, key, NULL, NULL);
+	return  ( res == -1) ? 0 : 1;
 }
 
 /*
