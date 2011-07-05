@@ -80,7 +80,7 @@ class cmd_dbcheck(Command):
         search_scope = scope_map[scope]
 
         controls = []
-        if H is not None:
+        if H.startswith('ldap'):
             controls.append('paged_results:1:1000')
         if cross_ncs:
             controls.append("search_options:1:2")
