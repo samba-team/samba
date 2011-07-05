@@ -893,6 +893,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		/* or if we still can not find any */
 		if (i == nodemap->num) {
 			printf("-1 0.0.0.0\n");
+			ret = 2; /* matches ENOENT */
 		}
 	}
 
@@ -910,7 +911,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED));
 	}
 
-	return 0;
+	return ret;
 }
 
 /*
