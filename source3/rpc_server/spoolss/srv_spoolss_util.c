@@ -32,6 +32,7 @@
 #include "../libcli/registry/util_reg.h"
 #include "../lib/tsocket/tsocket.h"
 #include "printing/nt_printing_os2.h"
+#include "rpc_client/init_spoolss.h"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
