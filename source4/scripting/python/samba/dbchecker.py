@@ -57,6 +57,7 @@ class dbcheck(object):
         self.fix = fix
         self.yes = yes
         self.quiet = quiet
+        self.remove_all_unknown_attributes = False
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -81,13 +82,30 @@ class dbcheck(object):
 
     ################################################################
     # a local confirm function that obeys the --fix and --yes options
-    def confirm(self, msg):
+    def confirm(self, msg, allow_all=False, forced=False):
         '''confirm a change'''
         if not self.fix:
             return False
         if self.quiet:
             return self.yes
-        return common.confirm(msg, forced=self.yes)
+        if self.yes:
+            forced = True
+        return common.confirm(msg, forced=forced, allow_all=allow_all)
+
+    ################################################################
+    # a local confirm function with support for 'all'
+    def confirm_all(self, msg, all_attr):
+        '''confirm a change with support for "all" '''
+        if not self.fix:
+            return False
+        if self.quiet:
+            return self.yes
+        forced = self.yes or getattr(self, all_attr)
+        c = common.confirm(msg, forced=forced, allow_all=True)
+        if c == 'ALL':
+            setattr(self, all_attr, True)
+            return True
+        return c
 
 
     ################################################################
@@ -227,6 +245,26 @@ class dbcheck(object):
             return
         self.report("Fixed incorrect DN string on attribute %s" % (attrname))
 
+    ################################################################
+    # handle an unknown attribute error
+    def err_unknown_attribute(self, obj, attrname):
+        '''handle an unknown attribute error'''
+        self.report("ERROR: unknown attribute '%s' in %s" % (attrname, obj.dn))
+        if not self.confirm_all('Remove unknown attribute %s' % attrname, 'remove_all_unknown_attributes'):
+            self.report("Not removing %s" % attrname)
+            return
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['old_value'] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, attrname)
+        if self.verbose:
+            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+        try:
+            self.samdb.modify(m, controls=["relax:0"])
+        except Exception, msg:
+            self.report("Failed to remove unknown attribute %s : %s" % (attrname, msg))
+            return
+        self.report("Removed unknown attribute %s" % (attrname))
+
 
     ################################################################
     # specialised checking for a dn attribute
@@ -300,7 +338,12 @@ class dbcheck(object):
 
             # get the syntax oid for the attribute, so we can can have
             # special handling for some specific attribute types
-            syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(attrname)
+            try:
+                syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(attrname)
+            except Exception, msg:
+                self.err_unknown_attribute(obj, attrname)
+                error_count += 1
+                continue
 
             if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
                                dsdb.DSDB_SYNTAX_STRING_DN, ldb.LDB_SYNTAX_DN ]:
