@@ -7,6 +7,7 @@
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) 2004 Stefan Metzmacher (metze@samba.org)
    Copyright (C) 2009 Jelmer Vernooij (jelmer@samba.org)
+   Copyright (C) 2011 Giampaolo Lauria (lauria2@yahoo.com)
 
    Largely rewritten by metze in August 2004
 
@@ -195,7 +196,6 @@ int net_run_usage(struct net_context *ctx,
 
 /* main function table */
 static const struct net_functable net_functable[] = {
-	{"password", "Changes/Sets the password on a user account [server connection needed]\n", net_password, net_password_usage},
 	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
 	{"samsync", "synchronise into the local ldb the sam of an NT4 domain\n", net_samsync_ldb, net_samsync_ldb_usage},
 	{"gpo", "Administer group policies\n", net_gpo, net_gpo_usage},
