@@ -20,6 +20,9 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_client/init_spoolss.h"
+#include "../libcli/security/security.h"
+#include "secrets.h"
+#include "passdb/machine_sid.h"
 
 /*******************************************************************
 ********************************************************************/
@@ -207,4 +210,176 @@ bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 	*_info8 = info8;
 
 	return true;
+}
+
+/****************************************************************************
+ Create and allocate a default devicemode.
+****************************************************************************/
+
+WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
+				      const char *devicename,
+				      struct spoolss_DeviceMode **devmode)
+{
+	struct spoolss_DeviceMode *dm;
+	char *dname;
+
+	dm = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
+	if (dm == NULL) {
+		return WERR_NOMEM;
+	}
+
+	dname = talloc_asprintf(dm, "%s", devicename);
+	if (dname == NULL) {
+		return WERR_NOMEM;
+	}
+	if (strlen(dname) > MAXDEVICENAME) {
+		dname[MAXDEVICENAME] = '\0';
+	}
+	dm->devicename = dname;
+
+	dm->formname = talloc_strdup(dm, "Letter");
+	if (dm->formname == NULL) {
+		return WERR_NOMEM;
+	}
+
+	dm->specversion          = DMSPEC_NT4_AND_ABOVE;
+	dm->driverversion        = 0x0400;
+	dm->size                 = 0x00DC;
+	dm->__driverextra_length = 0;
+	dm->fields               = DEVMODE_FORMNAME |
+				   DEVMODE_TTOPTION |
+				   DEVMODE_PRINTQUALITY |
+				   DEVMODE_DEFAULTSOURCE |
+				   DEVMODE_COPIES |
+				   DEVMODE_SCALE |
+				   DEVMODE_PAPERSIZE |
+				   DEVMODE_ORIENTATION;
+	dm->orientation          = DMORIENT_PORTRAIT;
+	dm->papersize            = DMPAPER_LETTER;
+	dm->paperlength          = 0;
+	dm->paperwidth           = 0;
+	dm->scale                = 0x64;
+	dm->copies               = 1;
+	dm->defaultsource        = DMBIN_FORMSOURCE;
+	dm->printquality         = DMRES_HIGH;           /* 0x0258 */
+	dm->color                = DMRES_MONOCHROME;
+	dm->duplex               = DMDUP_SIMPLEX;
+	dm->yresolution          = 0;
+	dm->ttoption             = DMTT_SUBDEV;
+	dm->collate              = DMCOLLATE_FALSE;
+	dm->icmmethod            = 0;
+	dm->icmintent            = 0;
+	dm->mediatype            = 0;
+	dm->dithertype           = 0;
+
+	dm->logpixels            = 0;
+	dm->bitsperpel           = 0;
+	dm->pelswidth            = 0;
+	dm->pelsheight           = 0;
+	dm->displayflags         = 0;
+	dm->displayfrequency     = 0;
+	dm->reserved1            = 0;
+	dm->reserved2            = 0;
+	dm->panningwidth         = 0;
+	dm->panningheight        = 0;
+
+	dm->driverextra_data.data = NULL;
+	dm->driverextra_data.length = 0;
+
+        *devmode = dm;
+	return WERR_OK;
+}
+
+WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
+				      struct spoolss_security_descriptor **secdesc)
+{
+	struct security_ace ace[7];	/* max number of ace entries */
+	int i = 0;
+	uint32_t sa;
+	struct security_acl *psa = NULL;
+	struct security_descriptor *psd = NULL;
+	struct dom_sid adm_sid;
+	size_t sd_size;
+
+	/* Create an ACE where Everyone is allowed to print */
+
+	sa = PRINTER_ACE_PRINT;
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Add the domain admins group if we are a DC */
+
+	if ( IS_DC ) {
+		struct dom_sid domadmins_sid;
+
+		sid_compose(&domadmins_sid, get_global_sam_sid(),
+			    DOMAIN_RID_ADMINS);
+
+		sa = PRINTER_ACE_FULL_CONTROL;
+		init_sec_ace(&ace[i++], &domadmins_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &domadmins_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+	else if (secrets_fetch_domain_sid(lp_workgroup(), &adm_sid)) {
+		sid_append_rid(&adm_sid, DOMAIN_RID_ADMINISTRATOR);
+
+		sa = PRINTER_ACE_FULL_CONTROL;
+		init_sec_ace(&ace[i++], &adm_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+			SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+		init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+	}
+
+	/* add BUILTIN\Administrators as FULL CONTROL */
+
+	sa = PRINTER_ACE_FULL_CONTROL;
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* add BUILTIN\Print Operators as FULL CONTROL */
+
+	sa = PRINTER_ACE_FULL_CONTROL;
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Print_Operators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED, sa,
+		SEC_ACE_FLAG_OBJECT_INHERIT | SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Print_Operators,
+		SEC_ACE_TYPE_ACCESS_ALLOWED,
+		sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
+
+	/* Make the security descriptor owned by the BUILTIN\Administrators */
+
+	/* The ACL revision number in rpc_secdesc.h differs from the one
+	   created by NT when setting ACE entries in printer
+	   descriptors.  NT4 complains about the property being edited by a
+	   NT5 machine. */
+
+	if ((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, i, ace)) != NULL) {
+		psd = make_sec_desc(mem_ctx,
+				    SD_REVISION,
+				    SEC_DESC_SELF_RELATIVE,
+				    &global_sid_Builtin_Administrators,
+				    &global_sid_Builtin_Administrators,
+				    NULL,
+				    psa,
+				    &sd_size);
+	}
+
+	if (psd == NULL) {
+		DEBUG(0,("construct_default_printer_sd: Failed to make SEC_DESC.\n"));
+		return WERR_NOMEM;
+	}
+
+	DEBUG(4,("construct_default_printer_sdb: size = %u.\n",
+		 (unsigned int)sd_size));
+
+	*secdesc = psd;
+
+	return WERR_OK;
 }
