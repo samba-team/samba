@@ -143,6 +143,17 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 			}
 			continue;
 		}
+		SAFE_FREE(dbuf.dptr);
+	}
+
+	for (kbuf = tdb_firstkey(tdb);
+	     kbuf.dptr;
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
+	{
+		dbuf = tdb_fetch(tdb, kbuf);
+		if (!dbuf.dptr) {
+			continue;
+		}
 
 		if (strncmp((const char *) kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
 			const char *secdesc_name = (const char *)(kbuf.dptr
@@ -154,16 +165,17 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						 dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
 			/* currently no WERR_INVALID_PRINTER_NAME equivalent */
-			if (NT_STATUS_EQUAL(status,
-			       werror_to_ntstatus(WERR_INVALID_PRINTER_NAME))) {
-				DEBUG(2, ("Skipping migration for non-existent "
-						"secdesc: %s\n", secdesc_name));
+			if (NT_STATUS_EQUAL(status, werror_to_ntstatus(WERR_INVALID_PRINTER_NAME)) ||
+			    NT_STATUS_EQUAL(status, werror_to_ntstatus(WERR_BADFILE))) {
+				DEBUG(2, ("Skipping secdesc migration for non-existent "
+						"printer: %s\n", secdesc_name));
 			} else if (!NT_STATUS_IS_OK(status)) {
 				tdb_close(tdb);
 				return status;
 			}
 			continue;
 		}
+		SAFE_FREE(dbuf.dptr);
 	}
 
 	tdb_close(tdb);
