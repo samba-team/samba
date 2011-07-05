@@ -27,13 +27,26 @@ def confirm(msg, forced = False, allow_all=False):
         print("%s [YES]" % msg)
         return True
 
+    mapping = {
+        'Y': True,
+        'YES': True,
+        '': False,
+        'N': False,
+        'NO': False,
+        }
+
+    prompt = '[y/N]'
+
     if allow_all:
-        v = raw_input(msg + ' [y/N/all] ')
-        if v.upper() == 'ALL':
-            return "ALL"
-        return v.upper() in ['Y', 'YES']
-    else:
-        v = raw_input(msg + ' [y/N] ')
-        return v.upper() in ['Y', 'YES']
+        mapping['ALL'] = 'ALL'
+        mapping['NONE'] = 'NONE'
+        prompt = '[y/N/all/none]'
+
+    while True:
+        v = raw_input(msg + ' %s ' % prompt)
+        v = v.upper()
+        if v in mapping:
+            return mapping[v]
+        print("Unknown response '%s'" % v)
 
 
