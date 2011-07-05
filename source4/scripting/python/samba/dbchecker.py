@@ -100,10 +100,18 @@ class dbcheck(object):
             return False
         if self.quiet:
             return self.yes
-        forced = self.yes or getattr(self, all_attr)
+        if getattr(self, all_attr) == 'NONE':
+            return False
+        if getattr(self, all_attr) == 'ALL':
+            forced = True
+        else:
+            forced = self.yes
         c = common.confirm(msg, forced=forced, allow_all=True)
         if c == 'ALL':
-            setattr(self, all_attr, True)
+            setattr(self, all_attr, 'ALL')
+            return True
+        if c == 'NONE':
+            setattr(self, all_attr, 'NONE')
             return True
         return c
 
