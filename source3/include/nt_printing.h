@@ -153,9 +153,6 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 
 WERROR check_published_printers(struct messaging_context *msg_ctx);
 
-bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
-			      struct spoolss_DriverInfo8 *_info8);
-
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			   const struct auth_serversupplied_info *server_info,
 			   struct messaging_context *msg_ctx,
