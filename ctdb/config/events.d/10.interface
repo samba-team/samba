@@ -145,10 +145,9 @@ case "$1" in
      # and we start the services to become healthy
      startup)
 	# Assume all links are good initially
-	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
-
-	for IFACE in $INTERFACES ; do
-		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+	get_all_interfaces
+	for iface in $all_interfaces ; do
+		ctdb setifacelink $iface up >/dev/null 2>/dev/null
 	done
 	
 	monitor_interfaces
