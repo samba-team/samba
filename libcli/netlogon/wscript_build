@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_NDR_NETLOGON',
 	source='ndr_netlogon.c',
-	public_deps='ndr NDR_SECURITY'
+	public_deps='ndr NDR_SECURITY NDR_NBT'
 	)
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_NETLOGON',
