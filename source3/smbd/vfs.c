@@ -729,7 +729,7 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 	if (!p)
 		return(NULL);
 
-	ptr = SMB_VFS_READDIR(conn, (DIR *)p, sbuf);
+	ptr = SMB_VFS_READDIR(conn, (SMB_STRUCT_DIR *)p, sbuf);
 	if (!ptr)
 		return(NULL);
 
