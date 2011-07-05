@@ -410,7 +410,9 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 		case 'P': /* null-terminated string */
 			/* Return malloc'ed string. */
 			ps = va_arg(ap,char **);
-			len = strlen((const char *)buf) + 1;
+			len = strnlen((const char *)buf, bufsize) + 1;
+			if (bufsize < len)
+				goto no_space;
 			*ps = SMB_STRDUP((const char *)buf);
 			break;
 		case 'f': /* null-terminated string */
