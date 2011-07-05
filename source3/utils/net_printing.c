@@ -284,6 +284,17 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
+		SAFE_FREE(dbuf.dptr);
+	}
+
+	for (kbuf = tdb_firstkey(tdb);
+	     kbuf.dptr;
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
+	{
+		dbuf = tdb_fetch(tdb, kbuf);
+		if (!dbuf.dptr) {
+			continue;
+		}
 
 		if (strncmp((const char *) kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
 			printing_tdb_migrate_secdesc(tmp_ctx,
@@ -294,6 +305,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
+		SAFE_FREE(dbuf.dptr);
 
 	}
 
