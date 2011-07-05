@@ -142,6 +142,14 @@ static bool endpoints_match(const struct dcerpc_binding *ep1,
 		return false;
 	}
 
+	if (!ep1->host || !ep2->host) {
+		return ep1->endpoint == ep2->endpoint;
+	}
+
+	if (!strequal(ep1->host, ep2->host)) {
+		return false;
+	}
+
 	return true;
 }
 
