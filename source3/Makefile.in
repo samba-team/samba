@@ -177,6 +177,7 @@ FLAGS = -I. \
 	$(ISA) \
 	-I$(srcdir)/lib \
 	-I.. \
+	-I./../lib/ldb/include \
 	-D_SAMBA_BUILD_=3
 
 PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
@@ -567,7 +568,7 @@ LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 	       $(LIBSMB_ERR_OBJ)
 
 LIBCLI_LDAP_MESSAGE_OBJ = ../libcli/ldap/ldap_message.o
-LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o lib/ldb_compat.o
+LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o ../lib/ldb/common/ldb_parse.o
 
 LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
 		../lib/tsocket/tsocket_helpers.o \
