@@ -174,11 +174,20 @@ NTSTATUS dbwrap_traverse_read(struct db_context *db,
 	return NT_STATUS_OK;
 }
 
+static int dbwrap_null_parser(TDB_DATA key, TDB_DATA val, void* data)
+{
+	return 0;
+}
+
 int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 			int (*parser)(TDB_DATA key, TDB_DATA data,
 				      void *private_data),
 			void *private_data)
 {
+	if (parser == NULL) {
+		parser = dbwrap_null_parser;
+	}
+
 	if (db->parse_record) {
 		return db->parse_record(db, key, parser, private_data);
 	} else {
