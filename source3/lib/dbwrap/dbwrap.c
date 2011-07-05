@@ -76,7 +76,7 @@ int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 
 	res = db->fetch(db, talloc_tos(), key, &data);
 	if (res != 0) {
-		return res;
+		return -1;
 	}
 
 	res = parser(key, data, private_data);
