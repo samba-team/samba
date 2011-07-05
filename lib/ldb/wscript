@@ -66,12 +66,12 @@ def configure(conf):
         if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):
             conf.env.ENABLE_LDAP_BACKEND = True
 
-    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+        # we don't want any libraries or modules to rely on runtime
+        # resolution of symbols
+        if sys.platform != "openbsd4":
+            conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
-    # we don't want any libraries or modules to rely on runtime
-    # resolution of symbols
-    if sys.platform != "openbsd4":
-        conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
+    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
 
     conf.SAMBA_CONFIG_H()
 
