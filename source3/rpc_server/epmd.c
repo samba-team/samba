@@ -23,81 +23,18 @@
 
 #include "serverid.h"
 #include "ntdomain.h"
+#include "messages.h"
+
+#include "librpc/rpc/dcerpc_ep.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
-#include "messages.h"
 
 #define DAEMON_NAME "epmd"
 
 void start_epmd(struct tevent_context *ev_ctx,
 		struct messaging_context *msg_ctx);
-
-static bool epmd_open_sockets(struct tevent_context *ev_ctx,
-			      struct messaging_context *msg_ctx)
-{
-	uint32_t num_ifs = iface_count();
-	uint16_t port;
-	uint32_t i;
-
-	if (lp_interfaces() && lp_bind_interfaces_only()) {
-		/*
-		 * We have been given an interfaces line, and been told to only
-		 * bind to those interfaces. Create a socket per interface and
-		 * bind to only these.
-		 */
-
-		/* Now open a listen socket for each of the interfaces. */
-		for(i = 0; i < num_ifs; i++) {
-			const struct sockaddr_storage *ifss =
-					iface_n_sockaddr_storage(i);
-
-			port = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
-							       msg_ctx,
-							       ifss,
-							       135);
-			if (port == 0) {
-				return false;
-			}
-		}
-	} else {
-		const char *sock_addr = lp_socket_address();
-		const char *sock_ptr;
-		char *sock_tok;
-
-		if (strequal(sock_addr, "0.0.0.0") ||
-		    strequal(sock_addr, "::")) {
-#if HAVE_IPV6
-			sock_addr = "::,0.0.0.0";
-#else
-			sock_addr = "0.0.0.0";
-#endif
-		}
-
-		for (sock_ptr = sock_addr;
-		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,");
-		    ) {
-			struct sockaddr_storage ss;
-
-			/* open an incoming socket */
-			if (!interpret_string_addr(&ss,
-						   sock_tok,
-						   AI_NUMERICHOST|AI_PASSIVE)) {
-				continue;
-			}
-
-			port = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
-							       msg_ctx,
-							       &ss,
-							       135);
-			if (port == 0) {
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
 
 static void epmd_reopen_logs(void)
 {
@@ -259,18 +196,22 @@ void start_epmd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
+	status = rpc_setup_tcpip_sockets(ev_ctx,
+					 msg_ctx,
+					 &ndr_table_epmapper,
+					 NULL,
+					 135);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to open epmd tcpip sockets!\n"));
+		exit(1);
+	}
+
 	ok = setup_dcerpc_ncalrpc_socket(ev_ctx,
 					 msg_ctx,
 					 "EPMAPPER",
 					 srv_epmapper_delete_endpoints);
 	if (!ok) {
 		DEBUG(0, ("Failed to open epmd ncalrpc pipe!\n"));
-		exit(1);
-	}
-
-	ok = epmd_open_sockets(ev_ctx, msg_ctx);
-	if (!ok) {
-		DEBUG(0, ("Failed to open epmd tcpip sockets!\n"));
 		exit(1);
 	}
 
