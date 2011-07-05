@@ -154,11 +154,12 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 	struct spoolss_SetPrinterInfo2 info2;
 	struct spoolss_DeviceMode dm;
 	struct spoolss_DevmodeContainer devmode_ctr;
-	struct sec_desc_buf secdesc_ctr;
 	DATA_BLOB blob;
 	NTSTATUS status;
 	WERROR result;
 	int j;
+	uint32_t info2_mask = (SPOOLSS_PRINTER_INFO_ALL)
+				& ~SPOOLSS_PRINTER_INFO_SECDESC;
 
 	if (strequal(key_name, "printers")) {
 		return NT_STATUS_OK;
@@ -182,7 +183,6 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 
 	/* Create printer info level 2 */
 	ZERO_STRUCT(info2);
-	ZERO_STRUCT(secdesc_ctr);
 
 	info2.attributes = r.info.attributes;
 	info2.averageppm = r.info.averageppm;
@@ -204,7 +204,9 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 	info2.untiltime = r.info.untiltime;
 
 	/* Create Device Mode */
-	if (r.devmode != NULL) {
+	if (r.devmode == NULL) {
+		info2_mask &= ~SPOOLSS_PRINTER_INFO_DEVMODE;
+	} else {
 		ZERO_STRUCT(dm);
 
 		dm.bitsperpel              = r.devmode->bitsperpel;
@@ -252,7 +254,7 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 
 	result = winreg_update_printer(mem_ctx, b,
 				       key_name,
-				       0, /// FIXME !!!!!!!!!!!!!!!!!!!!!!!
+				       info2_mask,
 				       &info2,
 				       &dm,
 				       NULL);
@@ -298,6 +300,7 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	status = NT_STATUS_OK;
  done:
 
 	return status;
