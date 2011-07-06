@@ -78,11 +78,6 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
     ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_push_fn(cli, dest, src, dest_len, flags))
 
-#define clistr_pull(inbuf, dest, src, dest_len, srclen, flags) \
-    (CHECK_STRING_SIZE(dest, dest_len) \
-    ? __unsafe_string_function_usage_here_size_t__() \
-    : clistr_pull_fn(inbuf, dest, src, dest_len, srclen, flags))
-
 #define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
@@ -103,7 +98,6 @@ size_t __unsafe_string_function_usage_here_size_t__(void);
 
 #define push_string_check push_string_check_fn
 #define clistr_push clistr_push_fn
-#define clistr_pull clistr_pull_fn
 #define srvstr_push srvstr_push_fn
 #define checked_strlcpy strlcpy
 

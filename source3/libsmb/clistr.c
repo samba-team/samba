@@ -47,18 +47,6 @@ size_t clistr_push_fn(struct cli_state *cli,
 				dest, src, dest_len, flags);
 }
 
-size_t clistr_pull_fn(const char *inbuf,
-			char *dest,
-			const void *src,
-			int dest_len,
-			int src_len,
-			int flags)
-{
-	return pull_string_fn(inbuf,
-			      SVAL(inbuf, smb_flg2), dest, src, dest_len,
-			      src_len, flags);
-}
-
 size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 			  const char *base,
 			  uint16_t flags2,
