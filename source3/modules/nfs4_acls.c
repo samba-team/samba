@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security.h"
-#include "include/dbwrap.h"
+#include "dbwrap.h"
 #include "system/filesys.h"
 #include "passdb/lookup_sid.h"
 #include "util_tdb.h"
