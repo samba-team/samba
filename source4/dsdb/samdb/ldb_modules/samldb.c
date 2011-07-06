@@ -2035,9 +2035,11 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	/* make sure that "objectSid" is not specified */
 	el = ldb_msg_find_element(req->op.mod.message, "objectSid");
 	if (el != NULL) {
-		ldb_set_errstring(ldb,
-				  "samldb: objectSid must not be specified!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+		if (ldb_request_get_control(req, LDB_CONTROL_PROVISION_OID) == NULL) {
+			ldb_set_errstring(ldb,
+					  "samldb: objectSid must not be specified!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 	}
 	/* make sure that "sAMAccountType" is not specified */
 	el = ldb_msg_find_element(req->op.mod.message, "sAMAccountType");
