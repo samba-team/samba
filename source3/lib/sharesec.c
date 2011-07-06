@@ -426,7 +426,7 @@ bool share_access_check(const struct security_token *token,
 		if (pgranted != NULL) {
 			*pgranted = desired_access;
 		}
-		return True;
+		return false;
 	}
 
 	status = se_access_check(psd, token, desired_access, &granted);
