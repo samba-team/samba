@@ -614,7 +614,6 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 	uint8_t *rdata = NULL;
 	char *p;
 	char *endp;
-	size_t pathlen = 2*(strlen(path)+1);
 	smb_ucs2_t *path_ucs;
 	char *consumed_path = NULL;
 	uint16_t consumed_ucs;
@@ -628,17 +627,22 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 
 	SSVAL(setup, 0, TRANSACT2_GET_DFS_REFERRAL);
 
-	param = talloc_array(talloc_tos(), uint8_t, 2+pathlen+2);
+	param = talloc_array(talloc_tos(), uint8_t, 2);
 	if (!param) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 	SSVAL(param, 0, 0x03);	/* max referral level */
-	p = (char *)(&param[2]);
 
-	path_ucs = (smb_ucs2_t *)p;
-	p += clistr_push(cli, p, path, pathlen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
+	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+				      path, strlen(path)+1,
+				      NULL);
+	if (!param) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+	param_len = talloc_get_size(param);
+	path_ucs = (smb_ucs2_t *)&param[2];
 
 	status = cli_trans(talloc_tos(), cli, SMBtrans2,
 			   NULL, 0xffff, 0, 0,
