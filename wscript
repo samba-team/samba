@@ -115,12 +115,8 @@ def configure(conf):
     # allows us to find problems on our development hosts faster.
     # It also results in faster load time.
 
-    # However, until the source3 waf build settles down, this needs to
-    # be disabled, as the bugs mentioned above are hitting too many of
-    # our users
-
-    #if sys.platform != "openbsd4":
-    #    conf.env.asneeded_ldflags = conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
+    if sys.platform != "openbsd4":
+        conf.env.asneeded_ldflags = conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
 
     if not conf.CHECK_NEED_LC("-lc not needed"):
         conf.ADD_LDFLAGS('-lc', testflags=False)
