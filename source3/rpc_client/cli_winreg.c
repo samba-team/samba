@@ -60,19 +60,16 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 	}
 
 	if (type != REG_DWORD) {
-		*pwerr = WERR_INVALID_DATATYPE;
-		return status;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	if (data_size != 4) {
-		*pwerr = WERR_INVALID_DATA;
-		return status;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
-		*pwerr = WERR_NOMEM;
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 	value_len = 0;
 
@@ -136,14 +133,12 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 	}
 
 	if (type != REG_BINARY) {
-		*pwerr = WERR_INVALID_DATATYPE;
-		return status;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
-		*pwerr = WERR_NOMEM;
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 	value_len = 0;
 
@@ -207,14 +202,12 @@ NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
 	}
 
 	if (type != REG_MULTI_SZ) {
-		*pwerr = WERR_INVALID_DATATYPE;
-		return status;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
-		*pwerr = WERR_NOMEM;
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 	value_len = 0;
 
@@ -240,7 +233,7 @@ NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
 
 		ok = pull_reg_multi_sz(mem_ctx, &blob, data);
 		if (!ok) {
-			*pwerr = WERR_NOMEM;
+			status = NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -282,14 +275,12 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 	}
 
 	if (type != REG_SZ) {
-		*pwerr = WERR_INVALID_DATATYPE;
-		return status;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	blob = data_blob_talloc_zero(mem_ctx, data_size);
 	if (blob.data == NULL) {
-		*pwerr = WERR_NOMEM;
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 	value_len = 0;
 
@@ -315,7 +306,7 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 
 		ok = pull_reg_sz(mem_ctx, &blob, data);
 		if (!ok) {
-			*pwerr = WERR_NOMEM;
+			status = NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -353,8 +344,7 @@ NTSTATUS dcerpc_winreg_query_sd(TALLOC_CTX *mem_ctx,
 
 		sd = talloc_zero(mem_ctx, struct security_descriptor);
 		if (sd == NULL) {
-			*pwerr = WERR_NOMEM;
-			return NT_STATUS_OK;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		ndr_err = ndr_pull_struct_blob(&blob,
@@ -364,8 +354,7 @@ NTSTATUS dcerpc_winreg_query_sd(TALLOC_CTX *mem_ctx,
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(2, ("dcerpc_winreg_query_sd: Failed to marshall "
 				  "security descriptor\n"));
-			*pwerr = WERR_NOMEM;
-			return NT_STATUS_OK;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		*data = sd;
@@ -429,8 +418,7 @@ NTSTATUS dcerpc_winreg_set_sz(TALLOC_CTX *mem_ctx,
 			DEBUG(2, ("dcerpc_winreg_set_sz: Could not marshall "
 				  "string %s for %s\n",
 				  data, wvalue.name));
-			*pwerr = WERR_NOMEM;
-			return NT_STATUS_OK;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -472,8 +460,7 @@ NTSTATUS dcerpc_winreg_set_expand_sz(TALLOC_CTX *mem_ctx,
 			DEBUG(2, ("dcerpc_winreg_set_expand_sz: Could not marshall "
 				  "string %s for %s\n",
 				  data, wvalue.name));
-			*pwerr = WERR_NOMEM;
-			return NT_STATUS_OK;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -512,8 +499,7 @@ NTSTATUS dcerpc_winreg_set_multi_sz(TALLOC_CTX *mem_ctx,
 		DEBUG(2, ("dcerpc_winreg_set_multi_sz: Could not marshall "
 			  "string multi sz for %s\n",
 			  wvalue.name));
-		*pwerr = WERR_NOMEM;
-		return NT_STATUS_OK;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = dcerpc_winreg_SetValue(h,
@@ -582,8 +568,7 @@ NTSTATUS dcerpc_winreg_set_sd(TALLOC_CTX *mem_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(2, ("dcerpc_winreg_set_sd: Failed to marshall security "
 			  "descriptor\n"));
-		*pwerr = WERR_NOMEM;
-		return NT_STATUS_OK;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	return dcerpc_winreg_set_binary(mem_ctx,
@@ -619,8 +604,7 @@ NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
 
 	p = talloc_realloc(mem_ctx, a, const char *, i + 2);
 	if (p == NULL) {
-		*pwerr = WERR_NOMEM;
-		return NT_STATUS_OK;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	p[i] = data;
@@ -684,14 +668,14 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
 
 	subkeys = talloc_zero_array(tmp_ctx, const char *, num_subkeys + 2);
 	if (subkeys == NULL) {
-		*pwerr = WERR_NOMEM;
+		status = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
 
 	if (num_subkeys == 0) {
 		subkeys[0] = talloc_strdup(subkeys, "");
 		if (subkeys[0] == NULL) {
-			*pwerr = WERR_NOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto error;
 		}
 		*pnum_subkeys = 0;
@@ -753,7 +737,7 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
 
 		name = talloc_strdup(subkeys, name_buf.name);
 		if (name == NULL) {
-			*pwerr = WERR_NOMEM;
+			status = NT_STATUS_NO_MEMORY;
 			goto error;
 		}
 
