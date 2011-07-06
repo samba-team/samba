@@ -608,7 +608,8 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
-	uint16 setup[1];
+	uint16_t setup[1];
+	uint16_t recv_flags2;
 	uint8_t *param = NULL;
 	uint8_t *rdata = NULL;
 	char *p;
@@ -643,7 +644,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			   setup, 1, 0,
 			   param, param_len, 2,
 			   NULL, 0, cli->max_xmit,
-			   NULL,
+			   &recv_flags2,
 			   NULL, 0, NULL, /* rsetup */
 			   NULL, 0, NULL,
 			   &rdata, 4, &data_len);
@@ -720,11 +721,12 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 				goto out;
 			}
-			clistr_pull_talloc(ctx, cli->inbuf,
-					   SVAL(cli->inbuf, smb_flg2),
+			clistr_pull_talloc(referrals,
+					   (const char *)rdata,
+					   recv_flags2,
 					   &referrals[i].dfspath,
 					   p+node_offset,
-					   cli->bufsize - ((p+node_offset)-cli->inbuf),
+					   PTR_DIFF(endp, p+node_offset),
 					   STR_TERMINATE|STR_UNICODE);
 
 			if (!referrals[i].dfspath) {
