@@ -226,7 +226,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 				/* we don't have the new one - add it
 				 * if it is a master
 				 */
-				if (!check_MasterNC(p, &reps[i], res)) {
+				if (res && !check_MasterNC(p, &reps[i], res)) {
 					/* its not a master, we don't
 					   want to pull from it */
 					continue;
@@ -246,7 +246,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 		/* remove any stale ones */
 		for (i=0; i<our_count; i++) {
 			if (!reps_in_list(&our_reps[i], reps, count) ||
-			    !check_MasterNC(p, &our_reps[i], res)) {
+			    (res && !check_MasterNC(p, &our_reps[i], res))) {
 				DEBUG(4,(__location__ ": Removed repsFrom for %s\n",
 					 our_reps[i].ctr.ctr1.other_info->dns_name));
 				memmove(&our_reps[i], &our_reps[i+1], (our_count-(i+1))*sizeof(our_reps[0]));
