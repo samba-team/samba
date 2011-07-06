@@ -22,6 +22,7 @@
 #include "serverid.h"
 #include "util_tdb.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "lib/util/tdb_wrap.h"
 
 struct serverid_key {

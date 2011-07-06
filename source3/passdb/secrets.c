@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_secrets.h"
 #include "secrets.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "util_tdb.h"
 

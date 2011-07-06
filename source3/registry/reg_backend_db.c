@@ -31,6 +31,7 @@
 #include "nt_printing.h"
 #include "util_tdb.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/secdesc.h"
 
 #undef DBGC_CLASS

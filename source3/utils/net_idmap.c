@@ -23,6 +23,7 @@
 #include "secrets.h"
 #include "idmap.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "net_idmap_check.h"
 #include "util_tdb.h"

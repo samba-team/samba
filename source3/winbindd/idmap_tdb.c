@@ -29,6 +29,7 @@
 #include "idmap.h"
 #include "idmap_rw.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "util_tdb.h"
 

@@ -14,7 +14,9 @@ bld.env.public_headers_skip = ['lib/ldb_compat.h']
 bld.env.public_headers_allow_broken = True
 
 TDB_LIB_SRC = '''
-          lib/dbwrap.c lib/dbwrap_tdb.c
+          lib/dbwrap.c
+	  lib/dbwrap/dbwrap_open.c
+	  lib/dbwrap_tdb.c
           lib/dbwrap_ctdb.c
           lib/g_lock.c'''
 

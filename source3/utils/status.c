@@ -34,6 +34,7 @@
 #include "system/filesys.h"
 #include "popt_common.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "session.h"
 #include "locking/proto.h"

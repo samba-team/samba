@@ -24,6 +24,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "system/filesys.h"
 #include "passdb/lookup_sid.h"
 #include "util_tdb.h"

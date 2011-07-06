@@ -40,6 +40,7 @@
 #include "locking/proto.h"
 #include "smbd/globals.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "serverid.h"
 #include "messages.h"

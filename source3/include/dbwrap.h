@@ -58,11 +58,6 @@ struct db_context {
 
 bool db_is_local(const char *name);
 
-struct db_context *db_open(TALLOC_CTX *mem_ctx,
-			   const char *name,
-			   int hash_size, int tdb_flags,
-			   int open_flags, mode_t mode);
-
 struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx);
 
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,

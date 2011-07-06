@@ -1,10 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
    Database interface wrapper
-   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2006
 
-   Major code contributions from Aleksey Fedoseev (fedoseev@ru.ibm.com)
-   
+   Copyright (C) Volker Lendecke 2005-2007
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -22,56 +21,21 @@
 #include "includes.h"
 #include "dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
+#include "dbwrap/dbwrap_open.h"
 #include "util_tdb.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_private.h"
 #endif
 
-
-/*
- * Fall back using fetch_locked if no genuine fetch operation is provided
+/**
+ * open a database
  */
-
-int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			  TDB_DATA key, TDB_DATA *data)
+struct db_context *db_open(TALLOC_CTX *mem_ctx,
+			   const char *name,
+			   int hash_size, int tdb_flags,
+			   int open_flags, mode_t mode)
 {
-	struct db_record *rec;
-
-	if (!(rec = db->fetch_locked(db, mem_ctx, key))) {
-		return -1;
-	}
-
-	data->dsize = rec->value.dsize;
-	data->dptr = talloc_move(mem_ctx, &rec->value.dptr);
-	TALLOC_FREE(rec);
-	return 0;
-}
-
-/*
- * Fall back using fetch if no genuine parse operation is provided
- */
-
-int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
-				 int (*parser)(TDB_DATA key,
-					       TDB_DATA data,
-					       void *private_data),
-				 void *private_data)
-{
-	TDB_DATA data;
-	int res;
-
-	res = db->fetch(db, talloc_tos(), key, &data);
-	if (res != 0) {
-		return res;
-	}
-
-	res = parser(key, data, private_data);
-	TALLOC_FREE(data.dptr);
-	return res;
-}
-
-bool db_is_local(const char *name)
-{
+	struct db_context *result = NULL;
 #ifdef CLUSTER_SUPPORT
 	const char *sockname = lp_ctdbd_socket();
 
@@ -79,8 +43,15 @@ bool db_is_local(const char *name)
 		sockname = CTDB_PATH;
 	}
 
-	if (lp_clustering() && socket_exist(sockname)) {
+	if (lp_clustering()) {
 		const char *partname;
+
+		if (!socket_exist(sockname)) {
+			DEBUG(1, ("ctdb socket does not exist - is ctdb not "
+				  "running?\n"));
+			return NULL;
+		}
+
 		/* ctdb only wants the file part of the name */
 		partname = strrchr(name, '/');
 		if (partname) {
@@ -90,9 +61,32 @@ bool db_is_local(const char *name)
 		}
 		/* allow ctdb for individual databases to be disabled */
 		if (lp_parm_bool(-1, "ctdb", partname, True)) {
-			return false;
+			result = db_open_ctdb(mem_ctx, partname, hash_size,
+					      tdb_flags, open_flags, mode);
+			if (result == NULL) {
+				DEBUG(0,("failed to attach to ctdb %s\n",
+					 partname));
+				if (errno == 0) {
+					errno = EIO;
+				}
+				return NULL;
+			}
 		}
 	}
+
 #endif
-	return true;
+
+	if (result == NULL) {
+		result = db_open_tdb(mem_ctx, name, hash_size,
+				     tdb_flags, open_flags, mode);
+	}
+
+	if ((result != NULL) && (result->fetch == NULL)) {
+		result->fetch = dbwrap_fallback_fetch;
+	}
+	if ((result != NULL) && (result->parse_record == NULL)) {
+		result->parse_record = dbwrap_fallback_parse_record;
+	}
+
+	return result;
 }

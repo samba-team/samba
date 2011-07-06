@@ -29,6 +29,7 @@
 #include "locking/proto.h"
 #include "smbd/globals.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "serverid.h"
 #include "messages.h"
 

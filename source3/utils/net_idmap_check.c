@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "net.h"
 #include "../libcli/security/dom_sid.h"
 #include "cbuf.h"

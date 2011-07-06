@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "session.h"
 #include "util_tdb.h"
 

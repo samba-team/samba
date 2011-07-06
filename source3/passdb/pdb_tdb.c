@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "passdb.h"
 #include "dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "util_tdb.h"
 
