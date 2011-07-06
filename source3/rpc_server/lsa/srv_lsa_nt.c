@@ -1567,7 +1567,7 @@ static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
 			       &access_mask);
 
 	/* map the generic bits to the lsa account ones */
-	se_map_generic(&access_mask, &lsa_account_mapping);
+	se_map_generic(&access_mask, &lsa_trusted_domain_mapping);
 
 	/* get the generic lsa account SD until we store it */
 	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
