@@ -375,7 +375,7 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
 			   NULL,
 			   NULL, 0, NULL,
 			   NULL, 0, NULL,
-			   &rdata, 10, &rdata_count);
+			   &rdata, 18, &rdata_count);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
