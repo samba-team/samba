@@ -381,14 +381,6 @@
 #define FILE_WAS_CREATED 2
 #define FILE_WAS_OVERWRITTEN 3
 
-/* File type flags */
-#define FILE_TYPE_DISK  0
-#define FILE_TYPE_BYTE_MODE_PIPE 1
-#define FILE_TYPE_MESSAGE_MODE_PIPE 2
-#define FILE_TYPE_PRINTER 3
-#define FILE_TYPE_COMM_DEVICE 4
-#define FILE_TYPE_UNKNOWN 0xFFFF
-
 /* Flag for NT transact rename call. */
 #define RENAME_REPLACE_IF_EXISTS 1
 
