@@ -2909,6 +2909,54 @@ failed:
 
 
 /*
+ * return NTDSSiteSettings options. See MS-ADTS 7.1.1.2.2.1.1
+ * flags are DS_NTDSSETTINGS_OPT_*
+ */
+int samdb_ntds_site_settings_options(struct ldb_context *ldb_ctx,
+					uint32_t *options)
+{
+	int rc;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+	struct ldb_dn *site_dn;
+	const char *attrs[] = { "options", NULL };
+
+	tmp_ctx = talloc_new(ldb_ctx);
+	if (tmp_ctx == NULL)
+		goto failed;
+
+        /* Retrieve the site dn for the ldb that we
+	 * have open.  This is our local site.
+         */
+        site_dn = samdb_server_site_dn(ldb_ctx, tmp_ctx);
+	if (site_dn == NULL)
+		goto failed;
+
+	/* Perform a one level (child) search from the local
+         * site distinguided name.   We're looking for the
+         * "options" attribute within the nTDSSiteSettings
+         * object
+	 */
+	rc = ldb_search(ldb_ctx, tmp_ctx, &res, site_dn,
+			LDB_SCOPE_ONELEVEL, attrs,
+                        "objectClass=nTDSSiteSettings");
+
+        if (rc != LDB_SUCCESS || res->count != 1)
+		goto failed;
+
+	*options = ldb_msg_find_attr_as_uint(res->msgs[0], "options", 0);
+
+	talloc_free(tmp_ctx);
+
+	return LDB_SUCCESS;
+
+failed:
+	DEBUG(1,("Failed to find our NTDS Site Settings options in ldb!\n"));
+	talloc_free(tmp_ctx);
+	return LDB_ERR_NO_SUCH_OBJECT;
+}
+
+/*
   return NTDS options flags. See MS-ADTS 7.1.1.2.2.1.2.1.1 
 
   flags are DS_NTDS_OPTION_*
