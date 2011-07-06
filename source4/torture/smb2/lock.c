@@ -2632,8 +2632,8 @@ static NTSTATUS test_smb2_lock(struct smb2_tree *tree, struct smb2_handle h,
 	return status;
 }
 
-static NTSTATUS smb2cli_unlock(struct smb2_tree *tree, struct smb2_handle h,
-			       uint64_t offset, uint64_t length)
+static NTSTATUS test_smb2_unlock(struct smb2_tree *tree, struct smb2_handle h,
+				 uint64_t offset, uint64_t length)
 {
 	struct smb2_lock lck;
 	struct smb2_lock_element el[1];
@@ -2731,7 +2731,7 @@ static bool test_overlap(struct torture_context *torture,
 
 	ret = NT_STATUS_IS_OK(test_smb2_lock(tree, h, 110, 4, false)) &&
 	      NT_STATUS_IS_OK(test_smb2_lock(tree, h, 112, 4, false)) &&
-	      NT_STATUS_IS_OK(smb2cli_unlock(tree, h, 110, 6));
+	      NT_STATUS_IS_OK(test_smb2_unlock(tree, h, 110, 6));
 	EXPECTED(ret, false);
 	torture_comment(torture, "the same handle %s coalesce read locks\n",
 				 ret?"can":"cannot");
