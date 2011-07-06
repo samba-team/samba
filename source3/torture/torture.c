@@ -3246,7 +3246,7 @@ static NTSTATUS new_trans(struct cli_state *pcli, int fnum, int level)
 	NTSTATUS status;
 
 	status = cli_qfileinfo(talloc_tos(), pcli, fnum, level, 0,
-			       pcli->max_xmit, &buf, &len);
+			       pcli->max_xmit, NULL, &buf, &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: qfileinfo (%d) failed (%s)\n", level,
 		       nt_errstr(status));

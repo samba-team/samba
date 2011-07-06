@@ -130,10 +130,11 @@ struct tevent_req *cli_qfileinfo_send(TALLOC_CTX *mem_ctx,
 				      uint16_t level, uint32_t min_rdata,
 				      uint32_t max_rdata);
 NTSTATUS cli_qfileinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    uint16_t *recv_flags2,
 			    uint8_t **rdata, uint32_t *num_rdata);
 NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		       uint16_t fnum, uint16_t level, uint32_t min_rdata,
-		       uint32_t max_rdata,
+		       uint32_t max_rdata, uint16_t *recv_flags2,
 		       uint8_t **rdata, uint32_t *num_rdata);
 
 struct tevent_req *cli_flush_send(TALLOC_CTX *mem_ctx,

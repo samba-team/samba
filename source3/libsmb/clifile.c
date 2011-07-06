@@ -5059,6 +5059,7 @@ struct cli_qfileinfo_state {
 	uint16_t setup[1];
 	uint8_t param[4];
 	uint8_t *data;
+	uint16_t recv_flags2;
 	uint32_t min_rdata;
 	uint8_t *rdata;
 	uint32_t num_rdata;
@@ -5118,7 +5119,9 @@ static void cli_qfileinfo_done(struct tevent_req *subreq)
 		req, struct cli_qfileinfo_state);
 	NTSTATUS status;
 
-	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+	status = cli_trans_recv(subreq, state,
+				&state->recv_flags2,
+				NULL, 0, NULL,
 				NULL, 0, NULL,
 				&state->rdata, state->min_rdata,
 				&state->num_rdata);
@@ -5129,6 +5132,7 @@ static void cli_qfileinfo_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_qfileinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    uint16_t *recv_flags2,
 			    uint8_t **rdata, uint32_t *num_rdata)
 {
 	struct cli_qfileinfo_state *state = tevent_req_data(
@@ -5137,6 +5141,10 @@ NTSTATUS cli_qfileinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
+	}
+
+	if (recv_flags2 != NULL) {
+		*recv_flags2 = state->recv_flags2;
 	}
 	if (rdata != NULL) {
 		*rdata = talloc_move(mem_ctx, &state->rdata);
@@ -5151,7 +5159,7 @@ NTSTATUS cli_qfileinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		       uint16_t fnum, uint16_t level, uint32_t min_rdata,
-		       uint32_t max_rdata,
+		       uint32_t max_rdata, uint16_t *recv_flags2,
 		       uint8_t **rdata, uint32_t *num_rdata)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -5178,7 +5186,7 @@ NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_qfileinfo_recv(req, mem_ctx, rdata, num_rdata);
+	status = cli_qfileinfo_recv(req, mem_ctx, recv_flags2, rdata, num_rdata);
  fail:
 	TALLOC_FREE(frame);
 	return status;

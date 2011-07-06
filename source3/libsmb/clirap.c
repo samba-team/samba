@@ -1073,7 +1073,7 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name,
 
 	status = cli_qfileinfo(talloc_tos(), cli, fnum,
 			       SMB_QUERY_FILE_NAME_INFO,
-			       4, cli->max_xmit,
+			       4, cli->max_xmit, NULL,
 			       &rdata, &num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1110,6 +1110,7 @@ NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
 	status = cli_qfileinfo(talloc_tos(), cli, fnum,
 			       SMB_QUERY_FILE_ALL_INFO,
 			       68, MIN(cli->max_xmit, 0xffff),
+			       NULL,
 			       &rdata, &num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
