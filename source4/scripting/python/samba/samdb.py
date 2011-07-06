@@ -509,6 +509,14 @@ accountExpires: %u
         '''return the syntax OID for a LDAP attribute as a string'''
         return dsdb._dsdb_get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name)
 
+    def get_systemFlags_from_lDAPDisplayName(self, ldap_display_name):
+        '''return the systemFlags for a LDAP attribute as a integer'''
+        return dsdb._dsdb_get_systemFlags_from_lDAPDisplayName(self, ldap_display_name)
+
+    def get_linkId_from_lDAPDisplayName(self, ldap_display_name):
+        '''return the linkID for a LDAP attribute as a integer'''
+        return dsdb._dsdb_get_linkId_from_lDAPDisplayName(self, ldap_display_name)
+
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
         rootDSE attribute.

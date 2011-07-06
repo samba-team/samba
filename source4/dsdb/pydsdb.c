@@ -331,6 +331,70 @@ static PyObject *py_dsdb_get_attid_from_lDAPDisplayName(PyObject *self, PyObject
 }
 
 /*
+  return the systemFlags as int from the attribute name
+ */
+static PyObject *py_dsdb_get_systemFlags_from_lDAPDisplayName(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	const char *ldap_display_name;
+	const struct dsdb_attribute *attribute;
+
+	if (!PyArg_ParseTuple(args, "Os", &py_ldb, &ldap_display_name))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
+	if (attribute == NULL) {
+		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		return NULL;
+	}
+
+	return PyInt_FromLong(attribute->systemFlags);
+}
+
+/*
+  return the linkID from the attribute name
+ */
+static PyObject *py_dsdb_get_linkId_from_lDAPDisplayName(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	const char *ldap_display_name;
+	const struct dsdb_attribute *attribute;
+
+	if (!PyArg_ParseTuple(args, "Os", &py_ldb, &ldap_display_name))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
+	if (attribute == NULL) {
+		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		return NULL;
+	}
+
+	return PyInt_FromLong(attribute->linkID);
+}
+
+/*
   return the attribute syntax oid as a string from the attribute name
  */
 static PyObject *py_dsdb_get_syntax_oid_from_lDAPDisplayName(PyObject *self, PyObject *args)
@@ -835,6 +899,10 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_get_attid_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_attid_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_syntax_oid_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_syntax_oid_from_lDAPDisplayName,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_systemFlags_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_systemFlags_from_lDAPDisplayName,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_linkId_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_linkId_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
