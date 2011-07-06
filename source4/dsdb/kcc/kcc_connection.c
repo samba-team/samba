@@ -80,7 +80,9 @@ static int kccsrv_add_connection(struct kccsrv_service *s,
 	ldb_msg_add_string(msg, "enabledConnection", "TRUE");
 	ldb_msg_add_linearized_dn(msg, "fromServer", server_dn);
 	/* ldb_msg_add_value(msg, "schedule", &schedule_val, NULL); */
-	samdb_msg_add_uint(s->samdb, msg, msg, "options", 1);
+
+	samdb_msg_add_uint(s->samdb, msg, msg,
+				"options", NTDSCONN_OPT_IS_GENERATED);
 
 	ret = ldb_add(s->samdb, msg);
 	if (ret == LDB_SUCCESS) {
@@ -132,6 +134,12 @@ void kccsrv_apply_connections(struct kccsrv_service *s,
 	unsigned int i, j, deleted = 0, added = 0;
 	int ret;
 
+	/* XXX
+	 *
+	 * This routine is not respecting connections that the
+	 * administrator can specifically create (NTDSCONN_OPT_IS_GENERATED
+	 * bit will not be set)
+	 */
 	for (i = 0; ntds_list && i < ntds_list->count; i++) {
 		struct kcc_connection *ntds = &ntds_list->servers[i];
 		for (j = 0; j < dsa_list->count; j++) {
