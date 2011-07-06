@@ -1997,6 +1997,47 @@ NTSTATUS _lsa_CloseTrustedDomainEx(struct pipes_struct *p,
  _lsa_QueryTrustedDomainInfo
  ***************************************************************************/
 
+static NTSTATUS pdb_trusted_domain_2_info_ex(TALLOC_CTX *mem_ctx,
+				      struct pdb_trusted_domain *td,
+				      struct lsa_TrustDomainInfoInfoEx *info_ex)
+{
+	if (td->domain_name == NULL ||
+	    td->netbios_name == NULL ||
+            is_null_sid(&td->security_identifier)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	info_ex->domain_name.string = talloc_strdup(mem_ctx, td->domain_name);
+	info_ex->netbios_name.string = talloc_strdup(mem_ctx, td->netbios_name);
+	info_ex->sid = dom_sid_dup(mem_ctx, &td->security_identifier);
+	if (info_ex->domain_name.string == NULL ||
+	    info_ex->netbios_name.string == NULL ||
+            info_ex->sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	info_ex->trust_direction = td->trust_direction;
+	info_ex->trust_type = td->trust_type;
+	info_ex->trust_attributes = td->trust_attributes;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS pdb_trusted_domain_2_auth_info(struct pdb_trusted_domain *td,
+				  struct lsa_TrustDomainInfoAuthInfo *auth_info)
+{
+/* If I understand it correctly lsa_TrustDomainInfoAuthInfo is send unencrypted
+ * and related calls should not be used. If there is a use case, it can be
+ * implemented later. */
+	auth_info->incoming_count = 0;
+	auth_info->incoming_current_auth_info = NULL;
+	auth_info->incoming_previous_auth_info = NULL;
+	auth_info->outgoing_count = 0;
+	auth_info->outgoing_current_auth_info = NULL;
+	auth_info->outgoing_previous_auth_info = NULL;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 				     struct lsa_QueryTrustedDomainInfo *r)
 {
@@ -2086,25 +2127,32 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
 		return NT_STATUS_INVALID_PARAMETER;
 	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
+		info->posix_offset.posix_offset = *td->trust_posix_offset;
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
 		return NT_STATUS_INVALID_INFO_CLASS;
 	case LSA_TRUSTED_DOMAIN_INFO_BASIC:
 		return NT_STATUS_INVALID_PARAMETER;
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
-		init_lsa_StringLarge(&info->info_ex.domain_name, td->domain_name);
-		init_lsa_StringLarge(&info->info_ex.netbios_name, td->netbios_name);
-		info->info_ex.sid = dom_sid_dup(info, &td->security_identifier);
-		if (!info->info_ex.sid) {
-			return NT_STATUS_NO_MEMORY;
+		status = pdb_trusted_domain_2_info_ex(info, td, &info->info_ex);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-		info->info_ex.trust_direction = td->trust_direction;
-		info->info_ex.trust_type = td->trust_type;
-		info->info_ex.trust_attributes = td->trust_attributes;
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO:
 		return NT_STATUS_INVALID_INFO_CLASS;
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
+		status = pdb_trusted_domain_2_info_ex(info, td,
+						      &info->full_info.info_ex);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		info->full_info.posix_offset.posix_offset = *td->trust_posix_offset;
+		status = pdb_trusted_domain_2_auth_info(td,
+						    &info->full_info.auth_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL:
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -2113,8 +2161,15 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL:
 		return NT_STATUS_INVALID_PARAMETER;
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
+		info->full_info2_internal.posix_offset.posix_offset = *td->trust_posix_offset;
+		status = pdb_trusted_domain_2_auth_info(td,
+					  &info->full_info2_internal.auth_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		break;
 	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
+		info->enc_types.enc_types = *td->supported_enc_type;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
