@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.5.10
-			   , 2011
+			   July 12, 2011
                    ==============================
 
 
@@ -8,12 +8,41 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.10 include:
 
-o 
+o  Fix access to Samba shares when Windows security patch KB2536276 is installed
+   (bug #7460).
+o  Fix DoS in Winbind and smbd with many file descriptors open (bug #7949).
+o  Fix Winbind panics if verify_idpool() fails (bug #8253).
+
 
 Changes since 3.5.9:
 --------------------
 
-o   
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8254: Make "acl check permissions = no" working in all cases.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * BUG 8253: Fix Winbind panics if verify_idpool() fails.
+
+
+o   David Disseldorp <ddiss@suse.de>
+    * BUG 8269: Stop spamming log with "Could not find child X -- ignoring"
+      messages in smbd.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7460: Include sys/file.h only when available.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7841: Explicitly pass domain_sid to wbint_LookupRids().
+    * BUG 8238: Fix access to Samba shares when Windows security patch
+      KB2536276 is installed.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7949: Fix DoS in Winbind and smbd with many file descriptors open.
+    * BUG 8276: Close all sockets attached to a subnet in close_subnet().
 
 
 ######################################################################
