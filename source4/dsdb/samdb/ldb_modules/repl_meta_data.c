@@ -1068,7 +1068,13 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 
 	/* if the attribute's value haven't changed then return LDB_SUCCESS	*/
 	if (old_el != NULL && ldb_msg_element_compare(el, old_el) == 0) {
-		return LDB_SUCCESS;
+		if (!ldb_request_get_control(req, LDB_CONTROL_PROVISION_OID)) {
+			/*
+			 * allow this to make it possible for dbcheck
+			 * to rebuild broken metadata
+			 */
+			return LDB_SUCCESS;
+		}
 	}
 
 	for (i=0; i<omd->ctr.ctr1.count; i++) {
