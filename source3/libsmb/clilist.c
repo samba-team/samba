@@ -552,8 +552,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_list_trans_state *state;
-	size_t nlen, param_len;
-	char *p;
+	size_t param_len;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_list_trans_state);
@@ -575,8 +574,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 
 	state->setup[0] = TRANSACT2_FINDFIRST;
 
-	nlen = 2*(strlen(mask)+1);
-	state->param = talloc_array(state, uint8_t, 12+nlen+2);
+	state->param = talloc_array(state, uint8_t, 12);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -589,10 +587,13 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->param, 6, state->info_level);
 	SIVAL(state->param, 8, 0);
 
-	p = ((char *)state->param)+12;
-	p += clistr_push(state->cli, p, state->mask, nlen,
-			 STR_TERMINATE);
-	param_len = PTR_DIFF(p, state->param);
+	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli),
+					     state->mask, strlen(state->mask)+1,
+					     NULL);
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+	param_len = talloc_get_size(state->param);
 
 	subreq = cli_trans_send(state, state->ev, state->cli,
 				SMBtrans2, NULL, -1, 0, 0,
@@ -629,7 +630,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	int i;
 	DATA_BLOB last_name_raw;
 	struct file_info *finfo = NULL;
-	size_t nlen, param_len;
+	size_t param_len;
 
 	min_param = (state->first ? 6 : 4);
 
@@ -737,10 +738,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 
 	state->setup[0] = TRANSACT2_FINDNEXT;
 
-	nlen = 2*(strlen(state->mask) + 1);
-
-	param = talloc_realloc(state, state->param, uint8_t,
-				     12 + nlen + last_name_raw.length + 2);
+	param = talloc_realloc(state, state->param, uint8_t, 12);
 	if (tevent_req_nomem(param, req)) {
 		return;
 	}
@@ -761,17 +759,25 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	 */
 	SSVAL(param, 10, (FLAG_TRANS2_FIND_REQUIRE_RESUME
 			  |FLAG_TRANS2_FIND_CLOSE_IF_END));
-	p = ((char *)param)+12;
 	if (last_name_raw.length) {
-		memcpy(p, last_name_raw.data, last_name_raw.length);
-		p += last_name_raw.length;
+		state->param = trans2_bytes_push_bytes(state->param,
+						       last_name_raw.data,
+						       last_name_raw.length);
+		if (tevent_req_nomem(state->param, req)) {
+			return;
+		}
 		data_blob_free(&last_name_raw);
 	} else {
-		p += clistr_push(state->cli, p, state->mask, nlen,
-				 STR_TERMINATE);
+		state->param = trans2_bytes_push_str(state->param,
+						     cli_ucs2(state->cli),
+						     state->mask,
+						     strlen(state->mask)+1,
+						     NULL);
+		if (tevent_req_nomem(state->param, req)) {
+			return;
+		}
 	}
-
-	param_len = PTR_DIFF(p, param);
+	param_len = talloc_get_size(state->param);
 
 	subreq = cli_trans_send(state, state->ev, state->cli,
 				SMBtrans2, NULL, -1, 0, 0,
