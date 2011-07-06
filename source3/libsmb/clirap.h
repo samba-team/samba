@@ -94,8 +94,8 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 			       TALLOC_CTX *mem_ctx,
 			       unsigned int *pnum_streams,
 			       struct stream_struct **pstreams);
-NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name,
-		       size_t namelen);
+NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
+		       TALLOC_CTX *mem_ctx, char **name);
 NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
 			     uint16 *mode, SMB_OFF_T *size,
 			     struct timespec *create_time,

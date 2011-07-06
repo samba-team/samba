@@ -3096,7 +3096,7 @@ static bool run_trans2test(int dummy)
 	const char *fname = "\\trans2.tst";
 	const char *dname = "\\trans2";
 	const char *fname2 = "\\trans2\\trans2.tst";
-	char pname[1024];
+	char *pname;
 	bool correct = True;
 	NTSTATUS status;
 	uint32_t fs_attr;
@@ -3123,7 +3123,7 @@ static bool run_trans2test(int dummy)
 		correct = False;
 	}
 
-	status = cli_qfilename(cli, fnum, pname, sizeof(pname));
+	status = cli_qfilename(cli, fnum, talloc_tos(), &pname);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: qfilename failed (%s)\n", nt_errstr(status));
 		correct = False;
