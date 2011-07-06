@@ -354,15 +354,20 @@ fail:
 	return status;
 }
 
-NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
-				uint32 *pserial_number, time_t *pdate)
+NTSTATUS cli_get_fs_volume_info(struct cli_state *cli,
+				TALLOC_CTX *mem_ctx,
+				char **_volume_name,
+				uint32_t *pserial_number,
+				time_t *pdate)
 {
 	NTSTATUS status;
-	uint16 setup[1];
+	uint16_t recv_flags2;
+	uint16_t setup[1];
 	uint8_t param[2];
 	uint8_t *rdata;
 	uint32_t rdata_count;
 	unsigned int nlen;
+	char *volume_name = NULL;
 
 	SSVAL(setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(param,0,SMB_QUERY_FS_VOLUME_INFO);
@@ -372,7 +377,7 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
 			   setup, 1, 0,
 			   param, 2, 0,
 			   NULL, 0, 560,
-			   NULL,
+			   &recv_flags2,
 			   NULL, 0, NULL,
 			   NULL, 0, NULL,
 			   &rdata, 18, &rdata_count);
@@ -389,13 +394,28 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
 		*pserial_number = IVAL(rdata,8);
 	}
 	nlen = IVAL(rdata,12);
-	clistr_pull(cli->inbuf, volume_name, rdata + 18, sizeof(fstring),
-		    nlen, STR_UNICODE);
+	if (nlen > (rdata_count - 18)) {
+		TALLOC_FREE(rdata);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	clistr_pull_talloc(mem_ctx,
+			   (const char *)rdata,
+			   recv_flags2,
+			   &volume_name,
+			   rdata + 18,
+			   nlen, STR_UNICODE);
+	if (volume_name == NULL) {
+		status = map_nt_error_from_unix(errno);
+		TALLOC_FREE(rdata);
+		return status;
+	}
 
 	/* todo: but not yet needed
 	 *       return the other stuff
 	 */
 
+	*_volume_name = volume_name;
 	TALLOC_FREE(rdata);
 	return NT_STATUS_OK;
 }

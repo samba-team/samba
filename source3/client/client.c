@@ -3767,12 +3767,13 @@ static int cmd_rename(void)
 
 static int cmd_volume(void)
 {
-	fstring volname;
-	uint32 serial_num;
+	char *volname;
+	uint32_t serial_num;
 	time_t create_date;
 	NTSTATUS status;
 
-	status = cli_get_fs_volume_info(cli, volname, &serial_num,
+	status = cli_get_fs_volume_info(cli, talloc_tos(),
+					&volname, &serial_num,
 					&create_date);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Error %s getting volume info\n", nt_errstr(status));
