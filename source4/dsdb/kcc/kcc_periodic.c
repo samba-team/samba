@@ -164,7 +164,7 @@ static void kccsrv_notify_drepl_server_done(struct tevent_req *subreq)
 	TALLOC_FREE(state);
 }
 
-static uint32_t kccsrv_replica_flags(struct kccsrv_service *s)
+uint32_t kccsrv_replica_flags(struct kccsrv_service *s)
 {
 	if (s->am_rodc) {
 		return DRSUAPI_DRS_INIT_SYNC |
@@ -183,9 +183,9 @@ static uint32_t kccsrv_replica_flags(struct kccsrv_service *s)
 /*
  * add any missing repsFrom structures to our partitions
  */
-static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
-				    struct repsFromToBlob *reps, uint32_t count,
-				    struct ldb_result *res)
+NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
+			    struct repsFromToBlob *reps, uint32_t count,
+			    struct ldb_result *res)
 {
 	struct kccsrv_partition *p;
 	bool notify_dreplsrv = false;
