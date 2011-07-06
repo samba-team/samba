@@ -27,6 +27,7 @@
 struct kcc_connection {
 	struct GUID obj_guid;
 	struct GUID dsa_guid;
+	struct GUID invocation_id;
 	uint8_t schedule[84];
 };
 
