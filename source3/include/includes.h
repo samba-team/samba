@@ -22,11 +22,6 @@
 
 #include "../replace/replace.h"
 
-#if _SAMBA_BUILD_ == 4
-# undef _SAMBA_BUILD_
-# define _SAMBA_BUILD_ 3
-#endif
-
 /* make sure we have included the correct config.h */
 #ifndef NO_CONFIG_H /* for some tests */
 #ifndef CONFIG_H_IS_FROM_SAMBA
