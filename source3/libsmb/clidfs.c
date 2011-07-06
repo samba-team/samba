@@ -650,9 +650,6 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
-	if (data_len < 4) {
-		goto out;
-	}
 
 	endp = (char *)rdata + data_len;
 
@@ -666,6 +663,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 	 * to get the number of bytes consumed from
 	 * the incoming path. */
 
+	errno = 0;
 	if (pull_string_talloc(talloc_tos(),
 			NULL,
 			0,
@@ -673,9 +671,15 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			path_ucs,
 			consumed_ucs,
 			STR_UNICODE) == 0) {
+		if (errno != 0) {
+			status = map_nt_error_from_unix(errno);
+		} else {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 		goto out;
 	}
 	if (consumed_path == NULL) {
+		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 	*consumed = strlen(consumed_path);
@@ -690,6 +694,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 					 num_referrals);
 
 		if (!referrals) {
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 		/* start at the referrals array */
@@ -712,6 +717,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			referrals[i].ttl       = SVAL(p, 10);
 
 			if (p + node_offset > endp) {
+				status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 				goto out;
 			}
 			clistr_pull_talloc(ctx, cli->inbuf,
@@ -722,11 +728,13 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 					   STR_TERMINATE|STR_UNICODE);
 
 			if (!referrals[i].dfspath) {
+				status = map_nt_error_from_unix(errno);
 				goto out;
 			}
 			p += ref_size;
 		}
 		if (i < num_referrals) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 			goto out;
 		}
 	}
