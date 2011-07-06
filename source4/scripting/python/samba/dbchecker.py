@@ -3,6 +3,7 @@
 # Samba4 AD database checker
 #
 # Copyright (C) Andrew Tridgell 2011
+# Copyright (C) Matthieu Patou <mat@matws.net> 2011
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +23,8 @@ import ldb
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
+from samba.ndr import ndr_unpack
+from samba.dcerpc import drsblobs
 
 
 class dsdb_DN(object):
@@ -52,6 +55,7 @@ class dbcheck(object):
 
     def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False, yes=False, quiet=False):
         self.samdb = samdb
+        self.dict_oid_name = None
         self.samdb_schema = (samdb_schema or samdb)
         self.verbose = verbose
         self.fix = fix
@@ -324,6 +328,45 @@ class dbcheck(object):
         return error_count
 
 
+    def process_metadata(self, val):
+        '''Read metadata properties and list attributes in it'''
+
+        list_att = []
+        d = {}
+        if self.dict_oid_name == None:
+            res = self.samdb.search(expression = '(lDAPDisplayName=*)',
+                                    controls=["search_options:1:2"],
+                                    attrs=["attributeID","lDAPDisplayName"])
+            for m in res:
+                d[str(m.get("attributeID"))] = str(m.get("lDAPDisplayName"))
+            self.dict_oid_name = d
+
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,str(val))
+        obj = repl.ctr
+
+        for o in repl.ctr.array:
+            att = self.dict_oid_name[self.samdb.get_oid_from_attid(o.attid)]
+            list_att.append(att.lower())
+
+        return list_att
+
+
+    def fix_metadata(self, dn, list):
+        res = self.samdb.search(base = dn, scope=ldb.SCOPE_BASE, attrs = list,
+                controls = ["search_options:1:2"])
+        msg = res[0]
+        nmsg = ldb.Message()
+
+        delta = self.samdb.msg_diff(nmsg, msg)
+        nmsg.dn = dn
+
+        for att in delta:
+            if att == "dn":
+                continue
+            val = delta.get(att)
+            nmsg[att] = ldb.MessageElement(val, ldb.FLAG_MOD_REPLACE, att)
+
+        self.samdb.modify(nmsg, controls = ["relax:0", "provision:0"])
 
     ################################################################
     # check one object - calls to individual error handlers above
@@ -331,6 +374,9 @@ class dbcheck(object):
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
+        if '*' in attrs:
+            attrs.append("replPropertyMetaData")
+
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                 controls=["extended_dn:1:1", "show_deleted:1"],
                                 attrs=attrs)
@@ -339,9 +385,17 @@ class dbcheck(object):
             return 1
         obj = res[0]
         error_count = 0
+        list_attrs_from_md = []
+        list_attrs_seen = []
+
         for attrname in obj:
             if attrname == 'dn':
                 continue
+
+            if str(attrname).lower() == 'replpropertymetadata':
+                list_attrs_from_md = self.process_metadata(obj[attrname])
+                continue
+
 
             # check for empty attributes
             for val in obj[attrname]:
@@ -359,6 +413,12 @@ class dbcheck(object):
                 error_count += 1
                 continue
 
+            flag = self.samdb_schema.get_systemFlags_from_lDAPDisplayName(attrname)
+            if (not flag & dsdb.DS_FLAG_ATTR_NOT_REPLICATED
+                and not flag & dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED
+                and not self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)):
+                list_attrs_seen.append(str(attrname).lower())
+
             if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
                                dsdb.DSDB_SYNTAX_STRING_DN, ldb.LDB_SYNTAX_DN ]:
                 # it's some form of DN, do specialised checking on those
@@ -371,4 +431,21 @@ class dbcheck(object):
                     self.err_normalise_mismatch(dn, attrname, obj[attrname])
                     error_count += 1
                     break
+
+        show_dn = True
+        if len(list_attrs_seen):
+            attrs_to_fix = []
+            for att in list_attrs_seen:
+                if not att in list_attrs_from_md:
+                    if show_dn:
+                        print "On object %s" % dn
+                        show_dn = False
+                    print " Attribute %s not present in replication metadata" % (att)
+                    error_count += 1
+                    attrs_to_fix.append(att)
+
+            if len(attrs_to_fix) and self.fix:
+                self.fix_metadata(dn, attrs_to_fix)
+
+
         return error_count
