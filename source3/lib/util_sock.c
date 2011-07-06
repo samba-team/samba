@@ -1135,7 +1135,7 @@ int get_remote_hostname(const struct tsocket_address *remote_address,
 	char tmp_name[MAX_DNS_NAME_LENGTH];
 	struct name_addr_pair nc;
 	struct sockaddr_storage ss;
-	socklen_t len;
+	ssize_t len;
 	int rc;
 
 	if (!lp_hostname_lookups()) {
