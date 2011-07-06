@@ -7081,13 +7081,13 @@ static NTSTATUS shortname_list_fn(const char *mnt, struct file_info *finfo,
 #endif
 
 	if (strchr(force_shortname_chars, i)) {
-		if (!finfo->short_name[0]) {
+		if (!finfo->short_name) {
 			/* Shortname not created when it should be. */
 			d_printf("(%s) ERROR: Shortname was not created for file %s containing %d\n",
 				__location__, finfo->name, i);
 			s->val = true;
 		}
-	} else if (finfo->short_name[0]){
+	} else if (finfo->short_name){
 		/* Shortname created when it should not be. */
 		d_printf("(%s) ERROR: Shortname %s was created for file %s\n",
 			__location__, finfo->short_name, finfo->name);

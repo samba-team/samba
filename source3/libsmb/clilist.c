@@ -189,9 +189,16 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			p += 2;
-			clistr_pull(base_ptr, finfo->short_name, p,
-				    sizeof(finfo->short_name),
-				    slen, STR_UNICODE);
+			ret = clistr_pull_talloc(ctx,
+						base_ptr,
+						recv_flags2,
+						&finfo->short_name,
+						p,
+						slen,
+						STR_UNICODE);
+			if (ret == (size_t)-1) {
+				return pdata_end - base;
+			}
 			p += 24; /* short name? */
 			if (p + namelen < p || p + namelen > pdata_end) {
 				return pdata_end - base;
@@ -258,9 +265,10 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	}
 
 	if (finfo->name) {
-		strlcpy(finfo->short_name,
-			finfo->name,
-			sizeof(finfo->short_name));
+		finfo->short_name = talloc_strdup(ctx, finfo->name);
+		if (finfo->short_name == NULL) {
+			return false;
+		}
 	}
 	return true;
 }

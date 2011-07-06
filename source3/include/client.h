@@ -152,7 +152,7 @@ struct file_info {
 	struct timespec atime_ts;
 	struct timespec ctime_ts;
 	char *name;
-	char short_name[13*3]; /* the *3 is to cope with multi-byte */
+	char *short_name;
 };
 
 #define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
