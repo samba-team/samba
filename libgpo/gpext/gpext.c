@@ -23,11 +23,9 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/dlinklist.h"
 #include "../libcli/registry/util_reg.h"
-#if _SAMBA_BUILD_ == 3
 #include "libgpo/gpo_proto.h"
 #include "registry.h"
 #include "registry/reg_api.h"
-#endif
 
 static struct gp_extension *extensions = NULL;
 

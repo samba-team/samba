@@ -22,12 +22,6 @@
 #include "../libgpo/gpo.h"
 #include "auth.h"
 #include "../librpc/ndr/libndr.h"
-#if _SAMBA_BUILD_ == 4
-#include "libgpo/ads_convenience.h"
-#include "librpc/gen_ndr/security.h"
-#include "librpc/gen_ndr/ndr_misc.h"
-#include "../libcli/security/secace.h"
-#endif
 
 /****************************************************************
 ****************************************************************/

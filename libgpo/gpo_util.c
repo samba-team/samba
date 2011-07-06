@@ -23,11 +23,6 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../libgpo/gpo.h"
 #include "../libcli/security/security.h"
-#if _SAMBA_BUILD_ == 4
-#include "auth/auth.h"
-#include <talloc.h>
-#include "source4/libgpo/ads_convenience.h"
-#endif
 #undef strdup
 
 #if 0
@@ -845,11 +840,7 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 {
 	struct security_token *ad_token = NULL;
 	ADS_STATUS status;
-#if _SAMBA_BUILD_ == 4
-	struct auth_session_info *info;
-#else
 	NTSTATUS ntstatus;
-#endif
 
 #ifndef HAVE_ADS
 	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -858,15 +849,10 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
-#if _SAMBA_BUILD_ == 4
-	info = system_session(mem_ctx, lp_ctx);
-	*token = info->security_token;
-#else
 	ntstatus = merge_nt_token(mem_ctx, ad_token, get_system_token(),
 				  token);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ADS_ERROR_NT(ntstatus);
 	}
-#endif
 	return ADS_SUCCESS;
 }

@@ -22,20 +22,8 @@
 #include "../libgpo/gpo.h"
 #include "../libgpo/gpo_ini.h"
 
-#if _SAMBA_BUILD_ == 4
-#include "param/param.h"
-#include "libcli/resolve/resolve.h"
-#include <tevent.h>
-#include "libcli/libcli.h"
-#include "libcli/raw/libcliraw.h"
-#include "libcli/libcli_proto.h"
-#include "libgpo/ads_convenience.h"
-#include "libgpo/gpo_s4.h"
-#include "lib/util/util.h"
-#else
 #include "libgpo/gpo_proto.h"
 #include "libsmb/libsmb.h"
-#endif
 
 /****************************************************************
  explode the GPO CIFS URI into their components
@@ -82,11 +70,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 					file_sys_path)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-#if _SAMBA_BUILD_ == 4
-	path = string_sub_talloc(mem_ctx, path, "\\", "/");
-#else
 	path = talloc_string_sub(mem_ctx, path, "\\", "/");
-#endif
 	if (!path) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -138,9 +122,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
                                    const char *server, const char *service, void *ret_cli)
 {
 	NTSTATUS result;
-#if _SAMBA_BUILD_ == 3
 	struct cli_state *cli;
-
 
 	result = cli_full_connection(&cli,
 			lp_netbios_name(),
@@ -159,32 +141,6 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
 		return result;
 	}
 	*(struct cli_state **) ret_cli = cli;
-#else
-	struct smbcli_state *cli = NULL;
-	struct smbcli_options options;
-	struct smbcli_session_options session_options;
-
-	lp_smbcli_options(lp_ctx, &options);
-	lp_smbcli_session_options(lp_ctx, &session_options);
-
-	result = smbcli_full_connection(NULL, &cli,
-			server,
-			NULL, service,
-			NULL /*devtype*/, NULL /* socket options */,
-			ads->credentials,
-			lp_resolve_context(lp_ctx),
-			tevent_context_init(ads),
-			&options,
-			&session_options,
-			lp_iconv_handle(lp_ctx),
-			lp_gensec_settings(ads, lp_ctx));
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10,("failed to connect: %s\n",
-				nt_errstr(result)));
-		return result;
-	}
-	*(struct smbcli_state **) ret_cli = cli;
-#endif
 	return NT_STATUS_OK;
 }
 
@@ -201,11 +157,7 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	char *server, *service, *nt_path, *unix_path;
 	char *nt_ini_path, *unix_ini_path;
-#if _SAMBA_BUILD_ == 3
 	struct cli_state *cli;
-#else
-	struct smbcli_state *cli;
-#endif
 
 
 	result = gpo_explode_filesyspath(mem_ctx, cache_dir, gpo->file_sys_path,
