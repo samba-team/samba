@@ -1205,7 +1205,7 @@ int get_remote_hostname(const struct tsocket_address *remote_address,
 			 gai_strerror(rc)));
 		strlcpy(name_buf, p, sizeof(name_buf));
 
-		talloc_free(p);
+		TALLOC_FREE(p);
 	} else {
 		if (!matchname(name_buf, (struct sockaddr *)&ss, len)) {
 			DEBUG(0,("matchname failed on %s\n", name_buf));
