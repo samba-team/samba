@@ -22,11 +22,6 @@
 #include "includes.h"
 #include "dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
-#include "util_tdb.h"
-#ifdef CLUSTER_SUPPORT
-#include "ctdb_private.h"
-#endif
-
 
 /*
  * Fall back using fetch_locked if no genuine fetch operation is provided
@@ -68,31 +63,4 @@ int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 	res = parser(key, data, private_data);
 	TALLOC_FREE(data.dptr);
 	return res;
-}
-
-bool db_is_local(const char *name)
-{
-#ifdef CLUSTER_SUPPORT
-	const char *sockname = lp_ctdbd_socket();
-
-	if(!sockname || !*sockname) {
-		sockname = CTDB_PATH;
-	}
-
-	if (lp_clustering() && socket_exist(sockname)) {
-		const char *partname;
-		/* ctdb only wants the file part of the name */
-		partname = strrchr(name, '/');
-		if (partname) {
-			partname++;
-		} else {
-			partname = name;
-		}
-		/* allow ctdb for individual databases to be disabled */
-		if (lp_parm_bool(-1, "ctdb", partname, True)) {
-			return false;
-		}
-	}
-#endif
-	return true;
 }

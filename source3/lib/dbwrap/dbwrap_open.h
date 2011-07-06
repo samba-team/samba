@@ -24,6 +24,12 @@
 struct db_context;
 
 /**
+ * Convenience function to check whether a tdb database
+ * is local or clustered (ctdb) in a clustered environment.
+ */
+bool db_is_local(const char *name);
+
+/**
  * Convenience function that will determine whether to
  * open a tdb database via the tdb backend or via the ctdb
  * backend, based on lp_clustering() and a db-specific
