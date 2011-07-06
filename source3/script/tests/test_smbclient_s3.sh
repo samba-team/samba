@@ -410,6 +410,14 @@ EOF
 test_ccache_access()
 {
     $WBINFO --ccache-save="${USERNAME}%${PASSWORD}"
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "wbinfo failed to store creds in cache (user='${USERNAME}', pass='${PASSWORD}')"
+	false
+	return
+    fi
+
     $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}%" \
 	-c quit 2>&1
     ret=$?
@@ -421,6 +429,14 @@ test_ccache_access()
     fi
 
     $WBINFO --ccache-save="${USERNAME}%GarBage"
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "wbinfo failed to store creds in cache (user='${USERNAME}', pass='GarBage')"
+	false
+	return
+    fi
+
     $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}%" \
 	-c quit 2>&1
     ret=$?
