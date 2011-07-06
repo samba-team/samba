@@ -128,9 +128,9 @@ uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
  other modules use async trans calls.
 ***********************************************************/
 
-static uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
-			    const char *str, size_t str_len,
-			    size_t *pconverted_size)
+uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
+			       const char *str, size_t str_len,
+			       size_t *pconverted_size)
 {
 	return internal_bytes_push_str(buf, ucs2, str, str_len,
 			false, pconverted_size);

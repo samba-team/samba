@@ -354,6 +354,9 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
 			    size_t str_len, size_t *pconverted_size);
 uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
 			      const uint8_t *bytes, size_t num_bytes);
+uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
+			       const char *str, size_t str_len,
+			       size_t *pconverted_size);
 struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 				   struct event_context *ev,
 				   struct cli_state *cli, const char *fname,
