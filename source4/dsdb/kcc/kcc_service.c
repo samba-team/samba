@@ -235,6 +235,12 @@ static void kccsrv_task_init(struct task_server *task)
 		return;
 	}
 
+	/* (kccsrv:intrasite=true) will run newer intrasite replication
+	 * topology code.
+	 */
+	service->intrasite_code = lpcfg_parm_bool(task->lp_ctx, NULL, "kccsrv",
+						"intrasite", false);
+
 	irpc_add_name(task->msg_ctx, "kccsrv");
 
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSEXECUTEKCC, kccsrv_execute_kcc, service);

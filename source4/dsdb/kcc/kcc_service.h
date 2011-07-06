@@ -82,6 +82,9 @@ struct kccsrv_service {
 	time_t last_deleted_check;
 
 	bool am_rodc;
+
+	/* run new intra-site topology code */
+	bool intrasite_code;
 };
 
 struct kcc_connection_list;
