@@ -27,10 +27,8 @@
 
 #include <talloc.h>
 #include <sys/time.h>
-#if _SAMBA_BUILD_ == 4
 #include "../lib/util/util.h" /* for discard_const */
 #include "../lib/util/charset/charset.h"
-#endif
 
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
