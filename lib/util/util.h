@@ -762,21 +762,6 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
  * @brief MS-style Filename matching
  */
 
-#if _SAMBA_BUILD_ == 4
-/* protocol types. It assumes that higher protocols include lower protocols
-   as subsets. FIXME: Move to one of the smb-specific headers */
-enum protocol_types {
-	PROTOCOL_NONE,
-	PROTOCOL_CORE,
-	PROTOCOL_COREPLUS,
-	PROTOCOL_LANMAN1,
-	PROTOCOL_LANMAN2,
-	PROTOCOL_NT1,
-	PROTOCOL_SMB2
-};
-
-#endif
-
 int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol);
 
 /** a generic fnmatch function - uses for non-CIFS pattern matching */

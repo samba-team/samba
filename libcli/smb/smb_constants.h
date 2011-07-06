@@ -22,6 +22,18 @@
 #ifndef _SMB_CONSTANTS_H
 #define _SMB_CONSTANTS_H
 
+/* protocol types. It assumes that higher protocols include lower protocols
+   as subsets. */
+enum protocol_types {
+	PROTOCOL_NONE,
+	PROTOCOL_CORE,
+	PROTOCOL_COREPLUS,
+	PROTOCOL_LANMAN1,
+	PROTOCOL_LANMAN2,
+	PROTOCOL_NT1,
+	PROTOCOL_SMB2
+};
+
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
 #define FLAGS2_LONG_PATH_COMPONENTS    0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES     0x0002

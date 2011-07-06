@@ -22,6 +22,7 @@
 #ifndef __LIBCLI_RAW_H__
 #define __LIBCLI_RAW_H__
 
+#include "libcli/smb/smb_common.h"
 #include "libcli/raw/request.h"
 #include "librpc/gen_ndr/nbt.h"
 

@@ -29,6 +29,7 @@
  */
 
 #include "includes.h"
+#include "libcli/smb/smb_constants.h"
 
 static int null_match(const char *p)
 {

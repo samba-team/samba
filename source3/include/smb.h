@@ -1229,18 +1229,6 @@ http://msdn.microsoft.com/en-us/library/cc246334(PROT.13).aspx
 #define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
 #define CAP_EXTENDED_SECURITY 0x80000000
 
-/* protocol types. It assumes that higher protocols include lower protocols
-   as subsets */
-enum protocol_types {
-	PROTOCOL_NONE,
-	PROTOCOL_CORE,
-	PROTOCOL_COREPLUS,
-	PROTOCOL_LANMAN1,
-	PROTOCOL_LANMAN2,
-	PROTOCOL_NT1,
-	PROTOCOL_SMB2
-};
-
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ,
