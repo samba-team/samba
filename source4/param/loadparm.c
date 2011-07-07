@@ -3090,7 +3090,9 @@ struct parm_struct *lpcfg_next_parameter(struct loadparm_context *lp_ctx, int sn
 
 			if ((*i) > 0
 			    && (parm_table[*i].offset ==
-				parm_table[(*i) - 1].offset))
+				parm_table[(*i) - 1].offset)
+			    && (parm_table[*i].p_class ==
+				parm_table[(*i) - 1].p_class))
 				continue;
 
 			return &parm_table[(*i)++];
