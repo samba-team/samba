@@ -917,8 +917,8 @@ NTSTATUS do_list(const char *mask,
 			}
 			TALLOC_FREE(targetpath);
 		} else {
-			d_printf("do_list: [%s] %s\n", mask, cli_errstr(cli));
-			ret_status = cli_nt_error(cli);
+			d_printf("do_list: [%s] %s\n", mask, nt_errstr(status));
+			ret_status = status;
 		}
 	}
 
