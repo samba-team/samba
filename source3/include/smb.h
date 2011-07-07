@@ -705,11 +705,6 @@ struct connections_data {
 	uint32 unused_compatitibility_field;
 };
 
-struct bitmap {
-	uint32 *b;
-	unsigned int n;
-};
-
 /* offsets into message for common items */
 #define smb_com 8
 #define smb_rcls 9

@@ -84,5 +84,11 @@ bld.SAMBA_LIBRARY('tdb-wrap',
                   deps='tdb_compat talloc samba-util',
                   private_library=True,
                   local_include=False
-                  )
+                 )
+
+bld.SAMBA_LIBRARY('bitmap',
+		  source='bitmap.c',
+		  deps='talloc samba-util',
+                  local_include=False,
+		  private_library=True)
 

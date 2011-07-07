@@ -61,15 +61,6 @@ const char *audit_description_str(uint32 category);
 bool get_audit_category_from_param(const char *param, uint32 *audit_category);
 const char *audit_policy_str(TALLOC_CTX *mem_ctx, uint32 policy);
 
-/* The following definitions come from lib/bitmap.c  */
-
-struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n);
-int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src);
-bool bitmap_set(struct bitmap *bm, unsigned i);
-bool bitmap_clear(struct bitmap *bm, unsigned i);
-bool bitmap_query(struct bitmap *bm, unsigned i);
-int bitmap_find(struct bitmap *bm, unsigned ofs);
-
 /* The following definitions come from lib/charcnv.c  */
 
 void gfree_charcnv(void);

@@ -1039,11 +1039,6 @@ bld.SAMBA3_LIBRARY('util_sec',
                    deps='samba-util',
                    private_library=True)
 
-bld.SAMBA3_LIBRARY('bitmap',
-                   source='lib/bitmap.c',
-                   deps='samba-util',
-                   private_library=True)
-
 bld.SAMBA3_LIBRARY('namearray',
                    source='lib/namearray.c',
                    deps='samba-util',

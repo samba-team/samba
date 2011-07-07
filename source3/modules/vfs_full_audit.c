@@ -65,6 +65,7 @@
 #include "auth.h"
 #include "ntioctl.h"
 #include "lib/param/loadparm.h"
+#include "lib/util/bitmap.h"
 
 static int vfs_full_audit_debug_level = DBGC_VFS;
 

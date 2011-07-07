@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/bitmap.h"
 
 /* these functions provide a simple way to allocate integers from a
    pool without repetition */
@@ -34,7 +35,7 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 	if (!bm) return NULL;
 
 	bm->n = n;
-	bm->b = talloc_zero_array(bm, uint32, (n+31)/32);
+	bm->b = talloc_zero_array(bm, uint32_t, (n+31)/32);
 	if (!bm->b) {
 		TALLOC_FREE(bm);
 		return NULL;
@@ -51,7 +52,7 @@ int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src)
         int count = MIN(dst->n, src->n);
 
         SMB_ASSERT(dst->b != src->b);
-	memcpy(dst->b, src->b, sizeof(uint32)*((count+31)/32));
+	memcpy(dst->b, src->b, sizeof(uint32_t)*((count+31)/32));
 
         return count;
 }
