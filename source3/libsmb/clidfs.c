@@ -621,13 +621,14 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 	uint16 num_referrals;
 	struct client_dfs_referral *referrals = NULL;
 	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	*num_refs = 0;
 	*refs = NULL;
 
 	SSVAL(setup, 0, TRANSACT2_GET_DFS_REFERRAL);
 
-	param = SMB_MALLOC_ARRAY(uint8_t, 2+pathlen+2);
+	param = talloc_array(talloc_tos(), uint8_t, 2+pathlen+2);
 	if (!param) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -746,9 +747,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 
   out:
 
-	TALLOC_FREE(consumed_path);
-	SAFE_FREE(param);
-	TALLOC_FREE(rdata);
+	TALLOC_FREE(frame);
 	return status;
 }
 
