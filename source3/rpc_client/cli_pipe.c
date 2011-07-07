@@ -3264,7 +3264,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	if (make_dup) {
-		*session_key = data_blob_dup_talloc(mem_ctx, &sk);
+		*session_key = data_blob_dup_talloc(mem_ctx, sk);
 	} else {
 		*session_key = sk;
 	}

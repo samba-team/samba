@@ -836,7 +836,7 @@ static WERROR dsdb_syntax_DATA_BLOB_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 		}
 
 		out->values[i] = data_blob_dup_talloc(out->values,
-						      in->value_ctr.values[i].blob);
+						      *in->value_ctr.values[i].blob);
 		W_ERROR_HAVE_NO_MEMORY(out->values[i].data);
 	}
 
@@ -870,7 +870,7 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
 	for (i=0; i < in->num_values; i++) {
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		blobs[i] = data_blob_dup_talloc(blobs, &in->values[i]);
+		blobs[i] = data_blob_dup_talloc(blobs, in->values[i]);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 	}
 

@@ -2707,7 +2707,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			GUID_from_data_blob(&blob1, &server_guid);
 
 			blob1 = data_blob_const(bytes+16, num_bytes-16);
-			blob2 = data_blob_dup_talloc(state, &blob1);
+			blob2 = data_blob_dup_talloc(state, blob1);
 			if (blob1.length > 0 &&
 			    tevent_req_nomem(blob2.data, req)) {
 				return;

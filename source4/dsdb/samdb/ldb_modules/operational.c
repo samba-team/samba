@@ -322,7 +322,7 @@ static int construct_parent_guid(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-	v = data_blob_dup_talloc(parent_res, parent_guid);
+	v = data_blob_dup_talloc(parent_res, *parent_guid);
 	if (!v.data) {
 		talloc_free(parent_res);
 		return ldb_oom(ldb_module_get_ctx(module));

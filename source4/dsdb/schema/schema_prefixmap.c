@@ -155,7 +155,7 @@ static WERROR _dsdb_schema_pfm_add_entry(struct dsdb_schema_prefixmap *pfm, DATA
 	struct dsdb_schema_prefixmap_oid * prefixes_new;
 
 	/* dup memory for bin-oid prefix to be added */
-	bin_oid = data_blob_dup_talloc(pfm, &bin_oid);
+	bin_oid = data_blob_dup_talloc(pfm, bin_oid);
 	W_ERROR_HAVE_NO_MEMORY(bin_oid.data);
 
 	/* make room for new entry */
@@ -615,7 +615,7 @@ WERROR dsdb_drsuapi_pfm_from_schema_pfm(const struct dsdb_schema_prefixmap *pfm,
 
 	/* copy entries from schema_prefixMap */
 	for (i = 0; i < pfm->length; i++) {
-		blob = data_blob_dup_talloc(ctr, &pfm->prefixes[i].bin_oid);
+		blob = data_blob_dup_talloc(ctr, pfm->prefixes[i].bin_oid);
 		if (!blob.data) {
 			talloc_free(ctr);
 			return WERR_NOMEM;
