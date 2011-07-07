@@ -69,6 +69,7 @@
 #include "lib/socket/socket.h"
 #include "auth/gensec/gensec.h"
 #include "s3_param.h"
+#include "../lib/util/bitmap.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -96,7 +97,7 @@ static bool defaults_saved = false;
 	int bAvailable;					\
 	int iMaxPrintJobs;				\
 	char *volume;					\
-	int *copymap;					\
+	struct bitmap *copymap;				\
 	char dummy[3];		/* for alignment */
 
 #include "param_global.h"
@@ -1569,7 +1570,7 @@ static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx
 					const char *pszServiceName);
 static void copy_service(struct loadparm_service *pserviceDest,
 			 struct loadparm_service *pserviceSource,
-			 int *pcopymapDest);
+			 struct bitmap *pcopymapDest);
 static bool service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
 static void init_copymap(struct loadparm_service *pservice);
@@ -2097,7 +2098,7 @@ static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx
 
 static void copy_service(struct loadparm_service *pserviceDest,
 			 struct loadparm_service *pserviceSource,
-			 int *pcopymapDest)
+			 struct bitmap *pcopymapDest)
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
@@ -2106,7 +2107,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].offset != -1 && parm_table[i].p_class == P_LOCAL &&
-		    (bcopyall || pcopymapDest[i])) {
+		    (bcopyall || bitmap_query(pcopymapDest, i))) {
 			void *src_ptr =
 				((char *)pserviceSource) + parm_table[i].offset;
 			void *dest_ptr =
@@ -2146,9 +2147,8 @@ static void copy_service(struct loadparm_service *pserviceDest,
 	if (bcopyall) {
 		init_copymap(pserviceDest);
 		if (pserviceSource->copymap)
-			memcpy((void *)pserviceDest->copymap,
-			       (void *)pserviceSource->copymap,
-			       sizeof(int) * NUMPARAMETERS);
+			bitmap_copy(pserviceDest->copymap,
+				    pserviceSource->copymap);
 	}
 
 	data = pserviceSource->param_opt;
@@ -2388,16 +2388,17 @@ static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 static void init_copymap(struct loadparm_service *pservice)
 {
 	int i;
-	talloc_free(pservice->copymap);
-	pservice->copymap = talloc_array(pservice, int, NUMPARAMETERS);
-	if (pservice->copymap == NULL) {
+
+	TALLOC_FREE(pservice->copymap);
+
+	pservice->copymap = bitmap_talloc(NULL, NUMPARAMETERS);
+	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
 		       (int)NUMPARAMETERS));
-		return;
-	}
-	for (i = 0; i < NUMPARAMETERS; i++)
-		pservice->copymap[i] = true;
+	else
+		for (i = 0; i < NUMPARAMETERS; i++)
+			bitmap_set(pservice->copymap, i);
 }
 
 /**
@@ -2671,7 +2672,7 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].offset == parm_table[parmnum].offset &&
 		    parm_table[i].p_class == parm_table[parmnum].p_class)
-			service->copymap[i] = false;
+			bitmap_clear(service->copymap, i);
 
 	return set_variable(service, parmnum, parm_ptr, pszParmName,
 			    pszParmValue, lp_ctx, false);

@@ -20,7 +20,7 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
 	deps='DYNCONFIG',
-	public_deps='samba-util',
+	public_deps='samba-util bitmap',
 	public_headers='param.h',
 	autoproto='param_proto.h',
 	)
