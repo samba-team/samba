@@ -1117,7 +1117,7 @@ int main (int argc, char **argv)
 		/* HACK: set the global passdb backend by overwriting globals.
 		 * This way we can use regular pdb functions for default
 		 * operations that do not involve passdb migrations */
-		lp_set_passdb_backend(backend);
+		lp_set_cmdline("passdb backend", backend);
 	} else {
 		backend = lp_passdb_backend();
 	}

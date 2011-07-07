@@ -9594,11 +9594,6 @@ const char *lp_socket_address(void)
 	return  Globals.szSocketAddress;
 }
 
-void lp_set_passdb_backend(const char *backend)
-{
-	string_set(&Globals.szPassdbBackend, backend);
-}
-
 /*******************************************************************
  Safe wide links checks.
  This helper function always verify the validity of wide links,

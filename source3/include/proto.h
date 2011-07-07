@@ -1667,7 +1667,6 @@ enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp);
 void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val);
 int lp_min_receive_file_size(void);
 char* lp_perfcount_module(void);
-void lp_set_passdb_backend(const char *backend);
 void widelinks_warning(int snum);
 const char *lp_ncalrpc_dir(void);
 
