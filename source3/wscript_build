@@ -412,8 +412,6 @@ PRINTBACKEND_SRC = '''printing/printing.c
                       printing/nt_printing_migrate_internal.c
                       printing/nt_printing_ads.c'''
 
-SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
-
 NMBD_SRC1 = '''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
             nmbd/nmbd_become_lmb.c nmbd/nmbd_browserdb.c
             nmbd/nmbd_browsesync.c nmbd/nmbd_elections.c
