@@ -21,32 +21,6 @@
 #include "includes.h"
 #include "libsmb/libsmb.h"
 
-size_t clistr_push_fn(struct cli_state *cli,
-			void *dest,
-			const char *src,
-			int dest_len,
-			int flags)
-{
-	size_t buf_used = PTR_DIFF(dest, cli->outbuf);
-	if (dest_len == -1) {
-		if (((ptrdiff_t)dest < (ptrdiff_t)cli->outbuf) || (buf_used > cli->bufsize)) {
-			DEBUG(0, ("Pushing string of 'unlimited' length into non-SMB buffer!\n"));
-			return push_string_base(cli->outbuf,
-						(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
-						dest, src, -1, flags);
-		}
-		return push_string_base(cli->outbuf,
-					(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
-					dest, src, cli->bufsize - buf_used,
-					flags);
-	}
-
-	/* 'normal' push into size-specified buffer */
-	return push_string_base(cli->outbuf,
-				(uint16_t)(cli_ucs2(cli) ? FLAGS2_UNICODE_STRINGS : 0),
-				dest, src, dest_len, flags);
-}
-
 size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 			  const char *base,
 			  uint16_t flags2,

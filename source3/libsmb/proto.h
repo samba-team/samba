@@ -780,11 +780,6 @@ NTSTATUS cli_set_secdesc(struct cli_state *cli, uint16_t fnum,
 
 /* The following definitions come from libsmb/clistr.c  */
 
-size_t clistr_push_fn(struct cli_state *cli,
-			void *dest,
-			const char *src,
-			int dest_len,
-			int flags);
 size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 			  const char *base,
 			  uint16_t flags2,
