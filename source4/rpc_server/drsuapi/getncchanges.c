@@ -357,6 +357,30 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 
 	active = (dsdb_dn_rmd_flags(dsdb_dn->dn) & DSDB_RMD_FLAG_DELETED) == 0;
 
+	if (!active) {
+		/* We have to check that the inactive link still point to an existing object */
+		struct GUID guid;
+		struct ldb_dn *tdn;
+		int ret;
+
+		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &guid, "GUID");
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,(__location__ " Unable to extract GUID in linked attribute '%s' in '%s'\n",
+				sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
+			return ntstatus_to_werror(status);
+		}
+		ret = dsdb_find_dn_by_guid(sam_ctx, mem_ctx, &guid, &tdn);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			DEBUG(2, (" Search of guid %s returned 0 objects, skipping it !\n",
+						GUID_string(mem_ctx, &guid)));
+			return WERR_OK;
+		} else if (ret != LDB_SUCCESS) {
+			DEBUG(0, (__location__ " Search of guid %s failed with error code %d\n",
+						GUID_string(mem_ctx, &guid),
+						ret));
+			return WERR_OK;
+		}
+	}
 	la->attid = sa->attributeID_id;
 	la->flags = active?DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:0;
 
