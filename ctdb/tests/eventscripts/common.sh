@@ -1,14 +1,14 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# Augment PATH with relevant bin/ directories.  We do this by actually
+# Augment PATH with relevant stubs/ directories.  We do this by actually
 # setting PATH, and also by setting $EVENTSCRIPTS_PATH and then
 # prepending that to $PATH in rc.local to avoid the PATH reset in
 # functions.
 
 EVENTSCRIPTS_PATH=""
 
-if [ -d "${EVENTSCRIPTS_TESTS_DIR}/bin" ] ; then
-    EVENTSCRIPTS_PATH="${EVENTSCRIPTS_TESTS_DIR}/bin"
+if [ -d "${EVENTSCRIPTS_TESTS_DIR}/stubs" ] ; then
+    EVENTSCRIPTS_PATH="${EVENTSCRIPTS_TESTS_DIR}/stubs"
 fi
 
 export EVENTSCRIPTS_TESTCASE_DIR=$(dirname "$0")
@@ -16,8 +16,8 @@ if [ $(basename "$EVENTSCRIPTS_TESTCASE_DIR") = "eventscripts" ] ; then
     # Just a test script, no testcase subdirectory.
     EVENTSCRIPTS_TESTCASE_DIR="$EVENTSCRIPTS_TESTS_DIR"
 else
-    if [ -d "${EVENTSCRIPTS_TESTCASE_DIR}/bin" ] ; then
-	EVENTSCRIPTS_PATH="${EVENTSCRIPTS_TESTCASE_DIR}/bin:${EVENTSCRIPTS_PATH}"
+    if [ -d "${EVENTSCRIPTS_TESTCASE_DIR}/stubs" ] ; then
+	EVENTSCRIPTS_PATH="${EVENTSCRIPTS_TESTCASE_DIR}/stubs:${EVENTSCRIPTS_PATH}"
     fi
 fi
 
