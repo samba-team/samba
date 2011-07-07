@@ -70,6 +70,7 @@
 #include "auth/gensec/gensec.h"
 #include "s3_param.h"
 #include "../lib/util/bitmap.h"
+#include "../lib/param/param_structs.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -88,20 +89,7 @@ static bool defaults_saved = false;
 	char *panic_action;						\
 	int bPreferredMaster;
 
-#define LOADPARM_EXTRA_LOCALS				\
-	struct parmlist_entry *param_opt;		\
-	char *szService;				\
-	char *szCopy;					\
-	char *szInclude;				\
-	char *szPrintername;				\
-	int bAvailable;					\
-	int iMaxPrintJobs;				\
-	char *volume;					\
-	struct bitmap *copymap;				\
-	char dummy[3];		/* for alignment */
-
 #include "param_global.h"
-#include "param_local.h"
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
@@ -1450,6 +1438,8 @@ static struct loadparm_context *global_loadparm_context;
 	 return((service != NULL)? service->val : sDefault->val); \
  }
 
+#include "lib/param/param_functions.c"
+
 FN_GLOBAL_INTEGER(server_role, server_role)
 FN_GLOBAL_LIST(smb_ports, smb_ports)
 FN_GLOBAL_INTEGER(nbt_port, nbt_port)
@@ -1536,29 +1526,6 @@ FN_GLOBAL_INTEGER(cli_minprotocol, cli_minprotocol)
 FN_GLOBAL_INTEGER(security, security)
 FN_GLOBAL_BOOL(paranoid_server_security, paranoid_server_security)
 
-FN_LOCAL_STRING(pathname, szPath)
-FN_LOCAL_LIST(hostsallow, szHostsallow)
-FN_LOCAL_LIST(hostsdeny, szHostsdeny)
-FN_LOCAL_STRING(comment, comment)
-FN_LOCAL_STRING(fstype, fstype)
-FN_LOCAL_LIST(ntvfs_handler, ntvfs_handler)
-FN_LOCAL_BOOL(msdfs_root, bMSDfsRoot)
-FN_LOCAL_BOOL(browseable, bBrowseable)
-FN_LOCAL_BOOL(readonly, bRead_only)
-FN_LOCAL_BOOL(print_ok, bPrint_ok)
-FN_LOCAL_BOOL(map_hidden, bMap_hidden)
-FN_LOCAL_BOOL(map_archive, bMap_archive)
-FN_LOCAL_BOOL(strict_locking, bStrictLocking)
-FN_LOCAL_BOOL(oplocks, bOplocks)
-FN_LOCAL_BOOL(strict_sync, bStrictSync)
-FN_LOCAL_BOOL(ci_filesystem, bCIFileSystem)
-FN_LOCAL_BOOL(map_system, bMap_system)
-FN_LOCAL_INTEGER(max_connections, iMaxConnections)
-FN_LOCAL_INTEGER(csc_policy, iCSCPolicy)
-FN_LOCAL_INTEGER(create_mask, iCreate_mask)
-FN_LOCAL_INTEGER(force_create_mode, iCreate_force_mode)
-FN_LOCAL_INTEGER(dir_mask, iDir_mask)
-FN_LOCAL_INTEGER(force_dir_mode, iDir_force_mode)
 FN_GLOBAL_INTEGER(server_signing, server_signing)
 FN_GLOBAL_INTEGER(client_signing, client_signing)
 

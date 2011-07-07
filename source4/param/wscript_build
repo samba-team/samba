@@ -6,7 +6,7 @@ bld.SAMBA_GENERATOR('s3_param_h',
                     rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT}')
 
 bld.SAMBA_GENERATOR('param_local_h',
-                    source= 'loadparm.c ../../script/mkparamdefs.pl',
+                    source= '../../lib/param/param_functions.c ../../script/mkparamdefs.pl',
                     target='param_local.h',
                     rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT} --generate-scope=LOCAL')
 
@@ -23,6 +23,7 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 	public_deps='samba-util bitmap',
 	public_headers='param.h',
 	autoproto='param_proto.h',
+        autoproto_extra_source='../../lib/param/param_functions.c'
 	)
 
 
