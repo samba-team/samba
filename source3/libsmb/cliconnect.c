@@ -2231,7 +2231,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL
 				     |NEGOTIATE_SECURITY_CHALLENGE_RESPONSE))
 		   == 0) {
-			char *tmp_pass;
+			uint8_t *tmp_pass;
 
 			if (!lp_client_plaintext_auth() && (*pass)) {
 				DEBUG(1, ("Server requested plaintext "
@@ -2244,21 +2244,20 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 			 * Non-encrypted passwords - convert to DOS codepage
 			 * before using.
 			 */
-			tmp_pass = talloc_array(talloc_tos(), char, 128);
-			if (tmp_pass == NULL) {
-				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			tmp_pass = talloc_array(talloc_tos(), uint8, 0);
+			if (tevent_req_nomem(tmp_pass, req)) {
 				return tevent_req_post(req, ev);
 			}
-			passlen = clistr_push(cli,
-					tmp_pass,
-					pass,
-					talloc_get_size(tmp_pass),
-					STR_TERMINATE);
-			if (passlen == -1) {
-				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			tmp_pass = trans2_bytes_push_str(tmp_pass,
+							 false, /* always DOS */
+							 pass,
+							 passlen,
+							 NULL);
+			if (tevent_req_nomem(tmp_pass, req)) {
 				return tevent_req_post(req, ev);
 			}
-			pass = tmp_pass;
+			pass = (const char *)tmp_pass;
+			passlen = talloc_get_size(tmp_pass);
 		}
 	}
 
