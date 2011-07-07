@@ -136,6 +136,25 @@ uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
 			false, pconverted_size);
 }
 
+uint8_t *trans2_bytes_push_bytes(uint8_t *buf,
+				 const uint8_t *bytes, size_t num_bytes)
+{
+	size_t buflen;
+
+	if (buf == NULL) {
+		return NULL;
+	}
+	buflen = talloc_get_size(buf);
+
+	buf = talloc_realloc(NULL, buf, uint8_t,
+			     buflen + num_bytes);
+	if (buf == NULL) {
+		return NULL;
+	}
+	memcpy(&buf[buflen], bytes, num_bytes);
+	return buf;
+}
+
 struct cli_setpathinfo_state {
 	uint16_t setup;
 	uint8_t *param;
