@@ -1689,7 +1689,7 @@ static void process_smb(struct smbd_server_connection *sconn,
 	sconn->trans_num++;
 
 done:
-	sconn->smb1.num_requests++;
+	sconn->num_requests++;
 
 	/* The timeout_processing function isn't run nearly
 	   often enough to implement 'max log size' without
@@ -1698,7 +1698,7 @@ done:
 	   level 10.  Checking every 50 SMBs is a nice
 	   tradeoff of performance vs log file size overrun. */
 
-	if ((sconn->smb1.num_requests % 50) == 0 &&
+	if ((sconn->num_requests % 50) == 0 &&
 	    need_to_check_log_size()) {
 		change_to_root_user();
 		check_log_size();

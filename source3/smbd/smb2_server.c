@@ -2214,6 +2214,8 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 		return;
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_incoming, sconn);
+
+	sconn->num_requests++;
 }
 
 static void smbd_smb2_request_incoming(struct tevent_req *subreq)
@@ -2270,4 +2272,19 @@ next:
 		return;
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_incoming, sconn);
+
+	sconn->num_requests++;
+
+	/* The timeout_processing function isn't run nearly
+	   often enough to implement 'max log size' without
+	   overrunning the size of the file by many megabytes.
+	   This is especially true if we are running at debug
+	   level 10.  Checking every 50 SMB2s is a nice
+	   tradeoff of performance vs log file size overrun. */
+
+	if ((sconn->num_requests % 50) == 0 &&
+	    need_to_check_log_size()) {
+		change_to_root_user();
+		check_log_size();
+	}
 }
