@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "../lib/crypto/crypto.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "auth.h"
 #include "util_tdb.h"

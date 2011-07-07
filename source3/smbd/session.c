@@ -29,7 +29,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "session.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"

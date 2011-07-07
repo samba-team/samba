@@ -26,7 +26,7 @@
 #include "passdb.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "secrets.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "../librpc/ndr/libndr.h"
 #include "util_tdb.h"
 

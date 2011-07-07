@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "winbindd.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "idmap.h"
 #include "../libcli/security/dom_sid.h"

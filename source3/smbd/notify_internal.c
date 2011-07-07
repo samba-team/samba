@@ -26,7 +26,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_notify.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "smbd/smbd.h"
 #include "messages.h"

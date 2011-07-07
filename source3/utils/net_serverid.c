@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "serverid.h"
 #include "session.h"
 

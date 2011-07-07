@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
 
 /*

@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "lib/util/tdb_wrap.h"
 
 struct db_tdb_ctx {

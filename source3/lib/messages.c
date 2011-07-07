@@ -46,7 +46,7 @@
 */
 
 #include "includes.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "serverid.h"
 #include "messages.h"
 

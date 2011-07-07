@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "talloc_dict.h"
 #include "util_tdb.h"
 

@@ -15,8 +15,8 @@ bld.env.public_headers_allow_broken = True
 
 TDB_LIB_SRC = '''
 	  lib/dbwrap/dbwrap_open.c
-	  lib/dbwrap_tdb.c
-          lib/dbwrap_ctdb.c
+	  lib/dbwrap/dbwrap_tdb.c
+          lib/dbwrap/dbwrap_ctdb.c
           lib/g_lock.c'''
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
@@ -1008,7 +1008,7 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('dbwrap',
-                   source='lib/dbwrap.c lib/dbwrap_util.c lib/dbwrap_rbt.c',
+                   source='lib/dbwrap/dbwrap.c lib/dbwrap/dbwrap_util.c lib/dbwrap/dbwrap_rbt.c',
                    deps='samba-util UTIL_TDB errors',
                    private_library=True)
 

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "passdb.h"
 #include "secrets.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "../libcli/security/security.h"
 
 /* NOTE! the global_sam_sid is the SID of our local SAM. This is only

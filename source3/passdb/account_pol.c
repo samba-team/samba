@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "passdb.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/security.h"
 #include "lib/privileges.h"

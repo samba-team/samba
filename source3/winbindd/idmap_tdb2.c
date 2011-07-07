@@ -36,7 +36,7 @@
 #include "winbindd.h"
 #include "idmap.h"
 #include "idmap_rw.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "../libcli/security/dom_sid.h"
 #include "util_tdb.h"

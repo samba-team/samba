@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/globals.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 
 static struct db_context *connections_db_ctx(bool rw)

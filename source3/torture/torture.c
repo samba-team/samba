@@ -28,7 +28,7 @@
 #include "../librpc/gen_ndr/svcctl.h"
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "talloc_dict.h"
 #include "async_smb.h"

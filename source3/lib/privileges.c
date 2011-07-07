@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "lib/privileges.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "libcli/security/privileges_private.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
