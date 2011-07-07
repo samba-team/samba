@@ -309,7 +309,6 @@ static int *invalid_services = NULL;
 static int num_invalid_services = 0;
 static bool bInGlobalSection = true;
 static bool bGlobalOnly = false;
-static int default_server_announce;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
@@ -327,7 +326,6 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 static bool handle_printing(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr);
 
-static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
 
 static void add_to_file_list(const char *fname, const char *subfname);
@@ -9080,7 +9078,6 @@ static bool lp_load_ex(const char *pszFname,
 	}
 
 	set_server_role();
-	set_default_server_announce_type();
 	set_allowed_client_auth();
 
 	if (lp_security() == SEC_SHARE) {
@@ -9283,12 +9280,12 @@ const char *volume_label(int snum)
 }
 
 /*******************************************************************
- Set the server type we will announce as via nmbd.
+ Get the default server type we will announce as via nmbd.
 ********************************************************************/
 
-static void set_default_server_announce_type(void)
+int lp_default_server_announce(void)
 {
-	default_server_announce = 0;
+	int default_server_announce = 0;
 	default_server_announce |= SV_TYPE_WORKSTATION;
 	default_server_announce |= SV_TYPE_SERVER;
 	default_server_announce |= SV_TYPE_SERVER_UNIX;
@@ -9321,6 +9318,8 @@ static void set_default_server_announce_type(void)
 
 	if (lp_host_msdfs())
 		default_server_announce |= SV_TYPE_DFS_SERVER;
+
+	return default_server_announce;
 }
 
 /***********************************************************
@@ -9383,15 +9382,6 @@ void lp_copy_service(int snum, const char *new_name)
 	}
 }
 
-
-/*******************************************************************
- Get the default server type we will announce as via nmbd.
-********************************************************************/
-
-int lp_default_server_announce(void)
-{
-	return default_server_announce;
-}
 
 /***********************************************************
  Set the global name resolution order (used in smbclient).
