@@ -3833,8 +3833,8 @@ static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("cli_resolve_path %s failed with error: "
 				    "%s\n"),
-			mask, cli_errstr(cp_clistate->cli_share_src));
-		return cli_nt_error(cp_clistate->cli_share_src);
+			mask, nt_errstr(status));
+		return status;
 	}
 
 	status = cli_list(targetcli, targetpath, cp_clistate->attribute,
