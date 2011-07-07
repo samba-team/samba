@@ -1139,6 +1139,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
+		/* This call needs to be run as root */
+		change_to_root_user();
+
 		{
 			START_PROFILE(smb2_negprot);
 			return_value = smbd_smb2_request_process_negprot(req);
@@ -1147,6 +1150,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_SESSSETUP:
+		/* This call needs to be run as root */
+		change_to_root_user();
+
 		{
 			START_PROFILE(smb2_sesssetup);
 			return_value = smbd_smb2_request_process_sesssetup(req);
@@ -1160,6 +1166,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			break;
 		}
 
+		/* This call needs to be run as root */
+		change_to_root_user();
+
 		{
 			START_PROFILE(smb2_logoff);
 			return_value = smbd_smb2_request_process_logoff(req);
@@ -1172,6 +1181,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			return_value = smbd_smb2_request_error(req, session_status);
 			break;
 		}
+
+		/* This call needs to be run as root */
+		change_to_root_user();
 
 		{
 			START_PROFILE(smb2_tcon);
@@ -1190,6 +1202,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			return_value = smbd_smb2_request_error(req, status);
 			break;
 		}
+		/* This call needs to be run as root */
+		change_to_root_user();
+
 
 		{
 			START_PROFILE(smb2_tdis);
@@ -1333,6 +1348,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_CANCEL:
+		/* This call needs to be run as root */
+		change_to_root_user();
+
 		{
 			START_PROFILE(smb2_cancel);
 			return_value = smbd_smb2_request_process_cancel(req);
@@ -1341,9 +1359,14 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_KEEPALIVE:
-		{START_PROFILE(smb2_keepalive);
-		return_value = smbd_smb2_request_process_keepalive(req);
-		END_PROFILE(smb2_keepalive);}
+		/* This call needs to be run as root */
+		change_to_root_user();
+
+		{
+			START_PROFILE(smb2_keepalive);
+			return_value = smbd_smb2_request_process_keepalive(req);
+			END_PROFILE(smb2_keepalive);
+		}
 		break;
 
 	case SMB2_OP_FIND:
