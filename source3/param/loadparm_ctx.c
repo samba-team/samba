@@ -20,18 +20,16 @@
 #include "includes.h"
 #include "../source4/param/s3_param.h"
 
-static const char *get_parametric(const char *type, const char *option)
-{
-	return lp_parm_const_string(-1, type, option, NULL);
-}
-
 /* These are in the order that they appear in the s4 loadparm file.
  * All of the s4 loadparm functions should be here eventually, once
  * they are implemented in the s3 loadparm, have the same format (enum
  * values in particular) and defaults. */
 static const struct loadparm_s3_context s3_fns = 
 {
-	.get_parametric = get_parametric,
+	.get_parametric = lp_parm_const_string_service,
+	.get_parm_struct = lp_get_parameter,
+	.get_parm_ptr = lp_parm_ptr,
+	.get_service = lp_service,
 
 	.server_role = lp_server_role,
 

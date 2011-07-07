@@ -68,7 +68,6 @@ int lpcfg_server_role(struct loadparm_context *);
 void reload_charcnv(struct loadparm_context *lp_ctx);
 
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx);
-struct parm_struct *lpcfg_parm_table(void);
 
 
 char *lpcfg_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *);
@@ -117,7 +116,7 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
 		    const char *pszPrintername,
 		    struct loadparm_service *default_service);
-struct parm_struct *lpcfg_parm_struct(const char *name);
+struct parm_struct *lpcfg_parm_struct(struct loadparm_context *lp_ctx, const char *name);
 void *lpcfg_parm_ptr(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, struct parm_struct *parm);
 bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx);

@@ -5571,20 +5571,18 @@ static bool is_synonym_of(int parm1, int parm2, bool *inverse);
  * pointer to parametrical option value if it exists or NULL otherwise. Actual
  * parametrical functions are quite simple
  */
-static struct param_opt_struct *get_parametrics(int snum, const char *type,
-						const char *option)
+static struct param_opt_struct *get_parametrics_by_service(struct loadparm_service *service, const char *type,
+							   const char *option)
 {
 	bool global_section = false;
 	char* param_key;
         struct param_opt_struct *data;
 
-	if (snum >= iNumServices) return NULL;
-
-	if (snum < 0) { 
+	if (service == NULL) {
 		data = Globals.param_opt;
 		global_section = true;
 	} else {
-		data = ServicePtrs[snum]->param_opt;
+		data = service->param_opt;
 	}
 
 	if (asprintf(&param_key, "%s:%s", type, option) == -1) {
@@ -5616,6 +5614,25 @@ static struct param_opt_struct *get_parametrics(int snum, const char *type,
 	string_free(&param_key);
 
 	return NULL;
+}
+
+/*
+ * This is a helper function for parametrical options support.  It returns a
+ * pointer to parametrical option value if it exists or NULL otherwise. Actual
+ * parametrical functions are quite simple
+ */
+static struct param_opt_struct *get_parametrics(int snum, const char *type,
+						const char *option)
+{
+        struct param_opt_struct *data;
+
+	if (snum >= iNumServices) return NULL;
+
+	if (snum < 0) {
+		return get_parametrics_by_service(NULL, type, option);
+	} else {
+		return get_parametrics_by_service(ServicePtrs[snum], type, option);
+	}
 }
 
 
@@ -5722,6 +5739,17 @@ const char *lp_parm_const_string(int snum, const char *type, const char *option,
 
 	return data->value;
 }
+
+const char *lp_parm_const_string_service(struct loadparm_service *service, const char *type, const char *option)
+{
+	struct param_opt_struct *data = get_parametrics_by_service(service, type, option);
+
+	if (data == NULL||data->value==NULL)
+		return NULL;
+
+	return data->value;
+}
+
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
@@ -6524,6 +6552,17 @@ static int getservicebyname(const char *pszServiceName, struct loadparm_service 
 
 	return (iService);
 }
+
+/* Return a pointer to a service by name.  Unlike getservicebyname, it does not copy the service */
+struct loadparm_service *lp_service(const char *pszServiceName)
+{
+	int iService = getservicebyname(pszServiceName, NULL);
+	if (iService == -1 || !LP_SNUM_OK(iService)) {
+		return NULL;
+	}
+	return ServicePtrs[iService];
+}
+
 
 /***************************************************************************
  Copy a service structure to another.

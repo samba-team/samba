@@ -73,7 +73,7 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 			return PyString_FromString(value);
 		}
 
-		parm = lpcfg_parm_struct(param_name);
+		parm = lpcfg_parm_struct(lp_ctx, param_name);
 		if (parm == NULL || parm->p_class == P_GLOBAL) {
 			return NULL;
 		}
@@ -93,7 +93,7 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 		return PyString_FromString(value);
 	} else {
 		/* its a global parameter */
-		parm = lpcfg_parm_struct(param_name);
+		parm = lpcfg_parm_struct(lp_ctx, param_name);
 		if (parm == NULL) {
 			return NULL;
 		}

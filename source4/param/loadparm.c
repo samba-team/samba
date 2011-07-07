@@ -1311,14 +1311,6 @@ struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 	return lp_ctx->sDefault;
 }
 
-/*
-  return the parameter table
-*/
-struct parm_struct *lpcfg_parm_table(void)
-{
-	return parm_table;
-}
-
 /**
  * Convenience routine to grab string parameters into temporary memory
  * and run standard_sub_basic on them.
@@ -1597,8 +1589,7 @@ const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
 		return NULL;
 
 	if (lp_ctx->s3_fns) {
-		SMB_ASSERT(service == NULL);
-		return lp_ctx->s3_fns->get_parametric(type, option);
+		return lp_ctx->s3_fns->get_parametric(service, type, option);
 	}
 
 	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
@@ -2047,9 +2038,15 @@ static int map_parameter(const char *pszParmName)
 /**
   return the parameter structure for a parameter
 */
-struct parm_struct *lpcfg_parm_struct(const char *name)
+struct parm_struct *lpcfg_parm_struct(struct loadparm_context *lp_ctx, const char *name)
 {
-	int parmnum = map_parameter(name);
+	int parmnum;
+
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->get_parm_struct(name);
+	}
+
+	parmnum = map_parameter(name);
 	if (parmnum == -1) return NULL;
 	return &parm_table[parmnum];
 }
@@ -2060,6 +2057,10 @@ struct parm_struct *lpcfg_parm_struct(const char *name)
 void *lpcfg_parm_ptr(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, struct parm_struct *parm)
 {
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->get_parm_ptr(service, parm);
+	}
+
 	if (service == NULL) {
 		if (parm->p_class == P_LOCAL)
 			return ((char *)lp_ctx->sDefault)+parm->offset;
@@ -3058,7 +3059,7 @@ bool lpcfg_dump_a_parameter(struct loadparm_context *lp_ctx,
 	struct parm_struct *parm;
 	void *ptr;
 
-	parm = lpcfg_parm_struct(parm_name);
+	parm = lpcfg_parm_struct(lp_ctx, parm_name);
 	if (!parm) {
 		return false;
 	}
@@ -3579,6 +3580,10 @@ struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
 {
 	int iService;
         char *serviceName;
+
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->get_service(service_name);
+	}
 
 	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--) {
 		if (lp_ctx->services[iService] &&
