@@ -455,6 +455,40 @@ bool torture_close_connection(struct cli_state *c)
 }
 
 
+/* check if the server produced the expected dos or nt error code */
+static bool check_both_error(int line, NTSTATUS status,
+			     uint8 eclass, uint32 ecode, NTSTATUS nterr)
+{
+	if (NT_STATUS_IS_DOS(status)) {
+		uint8 cclass;
+		uint32 num;
+
+		/* Check DOS error */
+		cclass = NT_STATUS_DOS_CLASS(status);
+		num = NT_STATUS_DOS_CODE(status);
+
+		if (eclass != cclass || ecode != num) {
+			printf("unexpected error code class=%d code=%d\n",
+			       (int)cclass, (int)num);
+			printf(" expected %d/%d %s (line=%d)\n",
+			       (int)eclass, (int)ecode, nt_errstr(nterr), line);
+			return false;
+		}
+	} else {
+		/* Check NT error */
+		if (!NT_STATUS_EQUAL(nterr, status)) {
+			printf("unexpected error code %s\n",
+				nt_errstr(status));
+			printf(" expected %s (line=%d)\n",
+				nt_errstr(nterr), line);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 /* check if the server produced the expected error code */
 static bool check_error(int line, struct cli_state *c, 
 			uint8 eclass, uint32 ecode, NTSTATUS nterr)
