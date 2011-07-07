@@ -6359,6 +6359,7 @@ done:
 static bool is_synonym_of(int parm1, int parm2, bool *inverse)
 {
 	if ((parm_table[parm1].offset == parm_table[parm2].offset) &&
+	    (parm_table[parm1].p_class == parm_table[parm2].p_class) &&
 	    (parm_table[parm1].flags & FLAG_HIDE) &&
 	    !(parm_table[parm2].flags & FLAG_HIDE))
 	{
@@ -7483,9 +7484,12 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		/* this handles the aliases - set the copymap for other entries with
 		   the same data pointer */
-		for (i = 0; parm_table[i].label; i++)
-			if (parm_table[i].offset == parm_table[parmnum].offset)
+		for (i = 0; parm_table[i].label; i++) {
+			if ((parm_table[i].offset == parm_table[parmnum].offset)
+			    && (parm_table[i].p_class == parm_table[parmnum].p_class)) {
 				bitmap_clear(ServicePtrs[snum]->copymap, i);
+			}
+		}
 	}
 
 	/* if it is a special case then go ahead */
@@ -7567,10 +7571,14 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 		/* we have to also set FLAG_CMDLINE on aliases.  Aliases must
 		 * be grouped in the table, so we don't have to search the
 		 * whole table */
-		for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
+		for (i=parmnum-1;
+		     i>=0 && parm_table[i].offset == parm_table[parmnum].offset
+			     && parm_table[i].p_class == parm_table[parmnum].p_class;
+		     i--) {
 			parm_table[i].flags |= FLAG_CMDLINE;
 		}
-		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset;i++) {
+		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].offset == parm_table[parmnum].offset
+			     && parm_table[i].p_class == parm_table[parmnum].p_class;i++) {
 			parm_table[i].flags |= FLAG_CMDLINE;
 		}
 
@@ -8044,7 +8052,9 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 
 			if ((*i) > 0
 			    && (parm_table[*i].offset ==
-				parm_table[(*i) - 1].offset))
+				parm_table[(*i) - 1].offset)
+			    && (parm_table[*i].p_class ==
+				parm_table[(*i) - 1].p_class))
 				continue;
 
 			if (is_default(*i) && !allparameters)
@@ -8231,7 +8241,8 @@ static void lp_save_defaults(void)
 {
 	int i;
 	for (i = 0; parm_table[i].label; i++) {
-		if (i > 0 && parm_table[i].offset == parm_table[i - 1].offset)
+		if (i > 0 && parm_table[i].offset == parm_table[i - 1].offset
+		    && parm_table[i].p_class == parm_table[i - 1].p_class)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
