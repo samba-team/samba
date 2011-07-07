@@ -329,10 +329,15 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                         if (is_ipc) {
                                 DEBUG(4,
                                       ("IPC$ so ignore case sensitivity\n"));
-                        } else if (!NT_STATUS_IS_OK(cli_get_fs_attr_info(c, &fs_attrs))) {
+                                status = NT_STATUS_OK;
+                        } else {
+                                status = cli_get_fs_attr_info(c, &fs_attrs);
+                        }
+
+                        if (!NT_STATUS_IS_OK(status)) {
                                 DEBUG(4, ("Could not retrieve "
                                           "case sensitivity flag: %s.\n",
-                                          cli_errstr(c)));
+                                          nt_errstr(status)));
 
                                 /*
                                  * We can't determine the case sensitivity of
@@ -344,7 +349,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                                 } else {
                                         cli_set_case_sensitive(c, False);
                                 }
-                        } else {
+                        } else if (!is_ipc) {
                                 DEBUG(4,
                                       ("Case sensitive: %s\n",
                                        (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
