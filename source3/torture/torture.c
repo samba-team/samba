@@ -642,8 +642,12 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 
 	if (procnum == 0)
 	{
-		if (!NT_STATUS_IS_OK(cli_unlink(c, lockfname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
-			printf("unlink failed (%s) (normal, this file should not exist)\n", cli_errstr(c));
+		status = cli_unlink(
+			c, lockfname,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("unlink failed (%s) (normal, this file should "
+			       "not exist)\n", nt_errstr(status));
 		}
 
 		status = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL,
