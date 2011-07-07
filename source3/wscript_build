@@ -1129,7 +1129,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON
                  RPC_NDR_DSSETUP npa_tstream INIT_NETLOGON
                  RPC_NCACN_NP RPC_PIPE_REGISTER RPC_SAMR RPC_LSARPC
-                 PAM_ERRORS WB_REQTRANS AUTH_COMMON
+                 PAM_ERRORS WB_REQTRANS auth
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
