@@ -24,6 +24,7 @@ struct parmlist_entry {
 	struct parmlist_entry *prev, *next;
 	char *key;
 	char *value;
+	char **list; /* For the source3 parametric options, to save the parsed list */
 	int priority;
 };
 

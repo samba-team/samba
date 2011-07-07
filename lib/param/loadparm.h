@@ -27,7 +27,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* the following are used by loadparm for option lists */
+#include "../lib/util/parmlist.h"
+
 /* the following are used by loadparm for option lists */
 typedef enum {
 	P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,

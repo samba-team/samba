@@ -106,16 +106,8 @@ static int config_backend = CONFIG_BACKEND_FILE;
 
 static bool defaults_saved = false;
 
-struct param_opt_struct {
-	struct param_opt_struct *prev, *next;
-	char *key;
-	char *value;
-	char **list;
-	unsigned flags;
-};
-
 #define LOADPARM_EXTRA_GLOBALS \
-	struct param_opt_struct *param_opt; \
+	struct parmlist_entry *param_opt;				\
 	char *szRealm;							\
 	char *szLogLevel;						\
 	int iminreceivefile;						\
@@ -144,7 +136,7 @@ struct param_opt_struct {
 	char *szInclude;						\
 	bool bAvailable;						\
 	bool bWidelinks;						\
-	struct param_opt_struct *param_opt;				\
+	struct parmlist_entry *param_opt;				\
 	struct bitmap *copymap;						\
 	char dummy[3];		/* for alignment */
 
@@ -5563,7 +5555,7 @@ static bool do_section(const char *pszSectionName, void *userdata);
 static void init_copymap(struct loadparm_service *pservice);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
-static void free_param_opts(struct param_opt_struct **popts);
+static void free_param_opts(struct parmlist_entry **popts);
 static void show_parameter(int parmIndex);
 static bool is_synonym_of(int parm1, int parm2, bool *inverse);
 
@@ -5572,12 +5564,12 @@ static bool is_synonym_of(int parm1, int parm2, bool *inverse);
  * pointer to parametrical option value if it exists or NULL otherwise. Actual
  * parametrical functions are quite simple
  */
-static struct param_opt_struct *get_parametrics_by_service(struct loadparm_service *service, const char *type,
+static struct parmlist_entry *get_parametrics_by_service(struct loadparm_service *service, const char *type,
 							   const char *option)
 {
 	bool global_section = false;
 	char* param_key;
-        struct param_opt_struct *data;
+        struct parmlist_entry *data;
 
 	if (service == NULL) {
 		data = Globals.param_opt;
@@ -5622,11 +5614,9 @@ static struct param_opt_struct *get_parametrics_by_service(struct loadparm_servi
  * pointer to parametrical option value if it exists or NULL otherwise. Actual
  * parametrical functions are quite simple
  */
-static struct param_opt_struct *get_parametrics(int snum, const char *type,
+static struct parmlist_entry *get_parametrics(int snum, const char *type,
 						const char *option)
 {
-        struct param_opt_struct *data;
-
 	if (snum >= iNumServices) return NULL;
 
 	if (snum < 0) {
@@ -5716,7 +5706,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 /* the returned value is talloced on the talloc_tos() */
 char *lp_parm_talloc_string(int snum, const char *type, const char *option, const char *def)
 {
-	struct param_opt_struct *data = get_parametrics(snum, type, option);
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data == NULL||data->value==NULL) {
 		if (def) {
@@ -5733,7 +5723,7 @@ char *lp_parm_talloc_string(int snum, const char *type, const char *option, cons
 /* Parametric option has following syntax: 'Type: option = value' */
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def)
 {
-	struct param_opt_struct *data = get_parametrics(snum, type, option);
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data == NULL||data->value==NULL)
 		return def;
@@ -5743,7 +5733,7 @@ const char *lp_parm_const_string(int snum, const char *type, const char *option,
 
 const char *lp_parm_const_string_service(struct loadparm_service *service, const char *type, const char *option)
 {
-	struct param_opt_struct *data = get_parametrics_by_service(service, type, option);
+	struct parmlist_entry *data = get_parametrics_by_service(service, type, option);
 
 	if (data == NULL||data->value==NULL)
 		return NULL;
@@ -5757,7 +5747,7 @@ const char *lp_parm_const_string_service(struct loadparm_service *service, const
 
 const char **lp_parm_string_list(int snum, const char *type, const char *option, const char **def)
 {
-	struct param_opt_struct *data = get_parametrics(snum, type, option);
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data == NULL||data->value==NULL)
 		return (const char **)def;
@@ -5774,7 +5764,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 
 int lp_parm_int(int snum, const char *type, const char *option, int def)
 {
-	struct param_opt_struct *data = get_parametrics(snum, type, option);
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data && data->value && *data->value)
 		return lp_int(data->value);
@@ -5787,7 +5777,7 @@ int lp_parm_int(int snum, const char *type, const char *option, int def)
 
 unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsigned long def)
 {
-	struct param_opt_struct *data = get_parametrics(snum, type, option);
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data && data->value && *data->value)
 		return lp_ulong(data->value);
@@ -5800,7 +5790,7 @@ unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsi
 
 bool lp_parm_bool(int snum, const char *type, const char *option, bool def)
 {
-	struct param_opt_struct *data = get_parametrics(snum, type, option);
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data && data->value && *data->value)
 		return lp_bool(data->value);
@@ -5814,7 +5804,7 @@ bool lp_parm_bool(int snum, const char *type, const char *option, bool def)
 int lp_parm_enum(int snum, const char *type, const char *option,
 		 const struct enum_list *_enum, int def)
 {
-	struct param_opt_struct *data = get_parametrics(snum, type, option);
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data && data->value && *data->value && _enum)
 		return lp_enum(data->value, _enum);
@@ -5840,9 +5830,9 @@ static void init_service(struct loadparm_service *pservice)
  * then this whole functions reduces to a TALLOC_FREE().
  */
 
-static void free_param_opts(struct param_opt_struct **popts)
+static void free_param_opts(struct parmlist_entry **popts)
 {
-	struct param_opt_struct *opt, *next_opt;
+	struct parmlist_entry *opt, *next_opt;
 
 	if (popts == NULL) {
 		return;
@@ -6572,15 +6562,15 @@ struct loadparm_service *lp_service(const char *pszServiceName)
 ***************************************************************************/
 
 /**
- * Add a parametric option to a param_opt_struct,
+ * Add a parametric option to a parmlist_entry,
  * replacing old value, if already present.
  */
-static void set_param_opt(struct param_opt_struct **opt_list,
+static void set_param_opt(struct parmlist_entry **opt_list,
 			  const char *opt_name,
 			  const char *opt_value,
-			  unsigned flags)
+			  unsigned priority)
 {
-	struct param_opt_struct *new_opt, *opt;
+	struct parmlist_entry *new_opt, *opt;
 	bool not_added;
 
 	if (opt_list == NULL) {
@@ -6594,8 +6584,8 @@ static void set_param_opt(struct param_opt_struct **opt_list,
 	while (opt) {
 		/* If we already have same option, override it */
 		if (strwicmp(opt->key, opt_name) == 0) {
-			if ((opt->flags & FLAG_CMDLINE) &&
-			    !(flags & FLAG_CMDLINE)) {
+			if ((opt->priority & FLAG_CMDLINE) &&
+			    !(priority & FLAG_CMDLINE)) {
 				/* it's been marked as not to be
 				   overridden */
 				return;
@@ -6603,18 +6593,18 @@ static void set_param_opt(struct param_opt_struct **opt_list,
 			string_free(&opt->value);
 			TALLOC_FREE(opt->list);
 			opt->value = SMB_STRDUP(opt_value);
-			opt->flags = flags;
+			opt->priority = priority;
 			not_added = false;
 			break;
 		}
 		opt = opt->next;
 	}
 	if (not_added) {
-	    new_opt = SMB_XMALLOC_P(struct param_opt_struct);
+	    new_opt = SMB_XMALLOC_P(struct parmlist_entry);
 	    new_opt->key = SMB_STRDUP(opt_name);
 	    new_opt->value = SMB_STRDUP(opt_value);
 	    new_opt->list = NULL;
-	    new_opt->flags = flags;
+	    new_opt->priority = priority;
 	    DLIST_ADD(*opt_list, new_opt);
 	}
 }
@@ -6624,7 +6614,7 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 {
 	int i;
 	bool bcopyall = (pcopymapDest == NULL);
-	struct param_opt_struct *data;
+	struct parmlist_entry *data;
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_LOCAL &&
@@ -6681,7 +6671,7 @@ static void copy_service(struct loadparm_service *pserviceDest, struct loadparm_
 
 	data = pserviceSource->param_opt;
 	while (data) {
-		set_param_opt(&pserviceDest->param_opt, data->key, data->value, data->flags);
+		set_param_opt(&pserviceDest->param_opt, data->key, data->value, data->priority);
 		data = data->next;
 	}
 }
@@ -7432,7 +7422,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 {
 	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
-	struct param_opt_struct **opt_list;
+	struct parmlist_entry **opt_list;
 
 	parmnum = map_parameter(pszParmName);
 
@@ -7867,7 +7857,7 @@ Display the contents of the global structure.
 static void dump_globals(FILE *f)
 {
 	int i;
-	struct param_opt_struct *data;
+	struct parmlist_entry *data;
 
 	fprintf(f, "[global]\n");
 
@@ -7911,7 +7901,7 @@ bool lp_is_default(int snum, struct parm_struct *parm)
 static void dump_a_service(struct loadparm_service *pService, FILE * f)
 {
 	int i;
-	struct param_opt_struct *data;
+	struct parmlist_entry *data;
 
 	if (pService != &sDefault)
 		fprintf(f, "[%s]\n", pService->szService);
