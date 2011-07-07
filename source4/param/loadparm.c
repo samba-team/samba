@@ -2106,7 +2106,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 	bool not_added;
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].offset != -1 && parm_table[i].p_class == P_LOCAL &&
+		if (parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || bitmap_query(pcopymapDest, i))) {
 			void *src_ptr =
 				((char *)pserviceSource) + parm_table[i].offset;
@@ -2983,7 +2983,6 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_GLOBAL &&
-		    parm_table[i].offset != -1 &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
 			if (!show_defaults && (lp_ctx->flags[i] & FLAG_DEFAULT))
 				continue;
@@ -3018,7 +3017,6 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (parm_table[i].p_class == P_LOCAL &&
-		    parm_table[i].offset != -1 &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset)))
 		{
@@ -3085,8 +3083,7 @@ struct parm_struct *lpcfg_next_parameter(struct loadparm_context *lp_ctx, int sn
 	if (snum == -1) {
 		/* do the globals */
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].offset == -1
-			    || (*parm_table[*i].label == '-'))
+			if ((*parm_table[*i].label == '-'))
 				continue;
 
 			if ((*i) > 0
@@ -3103,7 +3100,6 @@ struct parm_struct *lpcfg_next_parameter(struct loadparm_context *lp_ctx, int sn
 
 		for (; parm_table[*i].label; (*i)++) {
 			if (parm_table[*i].p_class == P_LOCAL &&
-			    parm_table[*i].offset != -1 &&
 			    (*parm_table[*i].label != '-') &&
 			    ((*i) == 0 ||
 			     (parm_table[*i].offset !=
@@ -3220,7 +3216,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].offset != -1 &&
 		    !(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			char **r;
 			if (parm_table[i].p_class == P_LOCAL) {
