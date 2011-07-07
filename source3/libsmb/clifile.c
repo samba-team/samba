@@ -4101,24 +4101,25 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 {
 	unsigned int param_len = 0;
 	uint8_t *param;
-	size_t srclen = 2*(strlen(path)+1);
-	char *p;
 	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	param = SMB_MALLOC_ARRAY(uint8_t, 6+srclen+2);
+	param = talloc_array(talloc_tos(), uint8_t, 6);
 	if (!param) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	memset(param, '\0', 6);
 	SSVAL(param,0,SMB_INFO_SET_EA);
-	p = (char *)(&param[6]);
+	SSVAL(param,2,0);
+	SSVAL(param,4,0);
 
-	p += clistr_push(cli, p, path, srclen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
+	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+				      path, strlen(path)+1,
+				      NULL);
+	param_len = talloc_get_size(param);
 
 	status = cli_set_ea(cli, TRANSACT2_SETPATHINFO, param, param_len,
 			    ea_name, ea_val, ea_len);
-	SAFE_FREE(param);
+	SAFE_FREE(frame);
 	return status;
 }
 
