@@ -428,10 +428,17 @@ skip:
 				uint32_t tmp_usn2 = 0;
 				struct GUID invocation_id = GUID_zero();
 				struct dsdb_dn *dn = dsdb_dn_parse(msg, ldb, &el->values[k], attr->syntax->ldap_oid);
+				struct ldb_dn *copydn;
 				if (dn == NULL) {
 					ldb_set_errstring(ldb, "Cannot parse DN");
 					return ldb_module_done(dsc->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 				}
+
+				copydn = ldb_dn_copy(msg, dn->dn);
+				if (copydn == NULL) {
+					ldb_oom(ldb);
+				}
+
 				status = dsdb_get_extended_dn_uint32(dn->dn, &tmp_usn, "RMD_LOCAL_USN");
 				if (!NT_STATUS_IS_OK(status)) {
 					talloc_free(dn);
@@ -504,6 +511,28 @@ skip:
 					if (dsc->linkIncrVal == true) {
 						struct ldb_message_element *tmpel;
 						if (flags & DSDB_RMD_FLAG_DELETED) {
+							/* We have to check that the inactive link still point to an existing object */
+							struct GUID guid;
+							struct ldb_dn *tdn;
+							int ret;
+
+							status = dsdb_get_extended_dn_guid(copydn, &guid, "GUID");
+							if (!NT_STATUS_IS_OK(status)) {
+								DEBUG(0,(__location__ " Unable to extract GUID in linked attribute '%s' in '%s'\n",
+									el->name, ldb_dn_get_linearized(copydn)));
+								return ldb_operr(ldb);
+							}
+							ret = dsdb_find_dn_by_guid(ldb, newmsg, &guid, &tdn);
+							if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+								DEBUG(2, (" Search of guid %s returned 0 objects, skipping it !\n",
+											GUID_string(newmsg, &guid)));
+								continue;
+							} else if (ret != LDB_SUCCESS) {
+								DEBUG(0, (__location__ " Search of guid %s failed with error code %d\n",
+											GUID_string(newmsg, &guid),
+											ret));
+								continue;
+							}
 							tmpel = el_incr_del;
 						} else {
 							tmpel = el_incr_add;
