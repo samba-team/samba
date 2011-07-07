@@ -483,6 +483,8 @@ struct smbd_server_connection {
 		int dirhandles_open;
 	} searches;
 
+	uint64_t num_requests;
+
 	struct {
 		struct fd_event *fde;
 
@@ -510,7 +512,6 @@ struct smbd_server_connection {
 			int ref_count;
 		} echo_handler;
 
-		uint64_t num_requests;
 		struct {
 			bool encrypted_passwords;
 			bool spnego;
