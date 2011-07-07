@@ -5288,20 +5288,23 @@ static bool run_simple_posix_open_test(int dummy)
 	}
 
 	/* Create again to test open with O_TRUNC. */
-	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600, &fnum1))) {
-		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+	status = cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX create of %s failed (%s)\n", fname, nt_errstr(status));
 		goto out;
 	}
 
 	/* Test ftruncate - set file size. */
-	if (!NT_STATUS_IS_OK(cli_ftruncate(cli1, fnum1, 1000))) {
-		printf("ftruncate failed (%s)\n", cli_errstr(cli1));
+	status = cli_ftruncate(cli1, fnum1, 1000);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ftruncate failed (%s)\n", nt_errstr(status));
 		goto out;
 	}
 
 	/* Ensure st_size == 1000 */
-	if (!NT_STATUS_IS_OK(cli_posix_stat(cli1, fname, &sbuf))) {
-		printf("stat failed (%s)\n", cli_errstr(cli1));
+	status = cli_posix_stat(cli1, fname, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("stat failed (%s)\n", nt_errstr(status));
 		goto out;
 	}
 
@@ -5310,20 +5313,23 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("close(2) failed (%s)\n", cli_errstr(cli1));
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close(2) failed (%s)\n", nt_errstr(status));
 		goto out;
 	}
 
 	/* Re-open with O_TRUNC. */
-	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_WRONLY|O_TRUNC, 0600, &fnum1))) {
-		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+	status = cli_posix_open(cli1, fname, O_WRONLY|O_TRUNC, 0600, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX create of %s failed (%s)\n", fname, nt_errstr(status));
 		goto out;
 	}
 
 	/* Ensure st_size == 0 */
-	if (!NT_STATUS_IS_OK(cli_posix_stat(cli1, fname, &sbuf))) {
-		printf("stat failed (%s)\n", cli_errstr(cli1));
+	status = cli_posix_stat(cli1, fname, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("stat failed (%s)\n", nt_errstr(status));
 		goto out;
 	}
 
@@ -5332,30 +5338,34 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
-		printf("close failed (%s)\n", cli_errstr(cli1));
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed (%s)\n", nt_errstr(status));
 		goto out;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_unlink(cli1, fname))) {
-		printf("POSIX unlink of %s failed (%s)\n", fname, cli_errstr(cli1));
+	status = cli_posix_unlink(cli1, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX unlink of %s failed (%s)\n", fname, nt_errstr(status));
 		goto out;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, dname, O_RDONLY, 0, &fnum1))) {
+	status = cli_posix_open(cli1, dname, O_RDONLY, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("POSIX open directory O_RDONLY of %s failed (%s)\n",
-			dname, cli_errstr(cli1));
+			dname, nt_errstr(status));
 		goto out;
 	}
 
 	cli_close(cli1, fnum1);
 
 	/* What happens when we try and POSIX open a directory for write ? */
-	if (NT_STATUS_IS_OK(cli_posix_open(cli1, dname, O_RDWR, 0, &fnum1))) {
+	status = cli_posix_open(cli1, dname, O_RDWR, 0, &fnum1);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("POSIX open of directory %s succeeded, should have failed.\n", fname);
 		goto out;
 	} else {
-		if (!check_error(__LINE__, cli1, ERRDOS, EISDIR,
+		if (!check_both_error(__LINE__, status, ERRDOS, EISDIR,
 				NT_STATUS_FILE_IS_A_DIRECTORY)) {
 			goto out;
 		}
@@ -5433,7 +5443,7 @@ static bool run_simple_posix_open_test(int dummy)
 		printf("POSIX open of %s succeeded (should have failed)\n", sname);
 		goto out;
 	} else {
-		if (!check_error(__LINE__, cli1, ERRDOS, ERRbadpath,
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRbadpath,
 				NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 			printf("POSIX open of %s should have failed "
 				"with NT_STATUS_OBJECT_PATH_NOT_FOUND, "
