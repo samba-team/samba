@@ -2787,7 +2787,9 @@ static bool run_unlinktest(int dummy)
 		return False;
 	}
 
-	if (NT_STATUS_IS_OK(cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	status = cli_unlink(cli, fname,
+			    FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("error: server allowed unlink on an open file\n");
 		correct = False;
 	} else {
