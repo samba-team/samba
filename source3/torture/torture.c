@@ -7198,11 +7198,11 @@ static bool run_shortname_test(int dummy)
 		cli_close(cli, fnum);
 
 		s.matched = 0;
-		cli_list(cli, "\\shortname\\test*.*", 0, shortname_list_fn,
-			 &s);
+		status = cli_list(cli, "\\shortname\\test*.*", 0,
+				  shortname_list_fn, &s);
 		if (s.matched != 1) {
 			d_printf("(%s) failed to list %s: %s\n",
-				__location__, fname, cli_errstr(cli));
+				__location__, fname, nt_errstr(status));
 			correct = false;
 			goto out;
 		}
