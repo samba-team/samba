@@ -1643,7 +1643,7 @@ idl_full::
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh --full $(IDL_FILES)
 
 mkparam:
-	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/param/loadparm.c --file param/param_local.h --generate-scope=LOCAL
+	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/../lib/param/param_functions.c --file ../lib/param/param_local.h --generate-scope=LOCAL
 	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/param/loadparm.c --file param/param_global.h --generate-scope=GLOBAL
 
 #####################################################################

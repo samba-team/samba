@@ -61,7 +61,6 @@
 #include "smb_server/smb_server.h"
 #include "libcli/raw/signing.h"
 #include "../lib/util/dlinklist.h"
-#include "../lib/util/parmlist.h"
 #include "param/param.h"
 #include "param/loadparm.h"
 #include "libcli/raw/libcliraw.h"
@@ -70,7 +69,6 @@
 #include "auth/gensec/gensec.h"
 #include "s3_param.h"
 #include "../lib/util/bitmap.h"
-#include "../lib/param/param_structs.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -1031,7 +1029,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "strict locking",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(bStrictLocking),
+		.offset		= LOCAL_VAR(iStrictLocking),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -1039,7 +1037,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "oplocks",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(bOplocks),
+		.offset		= LOCAL_VAR(bOpLocks),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -1420,11 +1418,15 @@ static struct loadparm_context *global_loadparm_context;
 	 return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val))); \
  }
 
+#define FN_LOCAL_CONST_STRING(fn_name,val) FN_LOCAL_STRING(fn_name, val)
+
 #define FN_LOCAL_LIST(fn_name,val) \
  _PUBLIC_ const char **lpcfg_ ## fn_name(struct loadparm_service *service, \
 					 struct loadparm_service *sDefault) {\
 	 return(const char **)(service != NULL && service->val != NULL? service->val : sDefault->val); \
  }
+
+#define FN_LOCAL_PARM_BOOL(fn_name, val) FN_LOCAL_BOOL(fn_name, val)
 
 #define FN_LOCAL_BOOL(fn_name,val) \
  _PUBLIC_ bool lpcfg_ ## fn_name(struct loadparm_service *service, \
@@ -1434,6 +1436,16 @@ static struct loadparm_context *global_loadparm_context;
 
 #define FN_LOCAL_INTEGER(fn_name,val) \
  _PUBLIC_ int lpcfg_ ## fn_name(struct loadparm_service *service, \
+				struct loadparm_service *sDefault) {	\
+	 return((service != NULL)? service->val : sDefault->val); \
+ }
+
+#define FN_LOCAL_PARM_INTEGER(fn_name, val) FN_LOCAL_INTEGER(fn_name, val)
+
+#define FN_LOCAL_PARM_CHAR(fn_name, val) FN_LOCAL_CHAR(fn_name, val)
+
+#define FN_LOCAL_CHAR(fn_name,val) \
+ _PUBLIC_ char lpcfg_ ## fn_name(struct loadparm_service *service, \
 				struct loadparm_service *sDefault) {	\
 	 return((service != NULL)? service->val : sDefault->val); \
  }
@@ -3171,8 +3183,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->bBrowseable = true;
 	lp_ctx->sDefault->bRead_only = true;
 	lp_ctx->sDefault->bMap_archive = true;
-	lp_ctx->sDefault->bStrictLocking = true;
-	lp_ctx->sDefault->bOplocks = true;
+	lp_ctx->sDefault->iStrictLocking = true;
+	lp_ctx->sDefault->bOpLocks = true;
 	lp_ctx->sDefault->iCreate_mask = 0744;
 	lp_ctx->sDefault->iCreate_force_mode = 0000;
 	lp_ctx->sDefault->iDir_mask = 0755;

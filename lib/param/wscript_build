@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+bld.SAMBA_GENERATOR('param_local_h',
+                    source= 'param_functions.c ../../script/mkparamdefs.pl',
+                    target='param_local.h',
+                    rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT} --generate-scope=LOCAL')

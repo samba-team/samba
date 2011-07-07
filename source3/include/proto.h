@@ -1497,7 +1497,7 @@ bool lp_force_printername(int );
 bool lp_nt_acl_support(int );
 bool lp_force_unknown_acl_user(int );
 bool lp_ea_support(int );
-bool _lp_use_sendfile(int );
+bool lp__use_sendfile(int );
 bool lp_profile_acls(int );
 bool lp_map_acl_inherit(int );
 bool lp_afs_share(int );

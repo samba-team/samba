@@ -127,28 +127,40 @@ sub print_footer($$)
 sub handle_loadparm($$) 
 {
 	my ($file,$line) = @_;
+	my $scope;
+	my $type;
+	my $name;
+	my $var;
 
-	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),.*\)/o) {
-		my $scope = $1;
-		my $type = $2;
-		my $name = $3;
-
-		my %tmap = (
-			    "BOOL" => "bool ",
-			    "CONST_STRING" => "const char *",
-			    "STRING" => "const char *",
-			    "INTEGER" => "int ",
-			    "CHAR" => "char ",
-			    "LIST" => "const char **",
-			    );
-
-		my %smap = (
-			    "GLOBAL" => "struct loadparm_context *",
-			    "LOCAL" => "struct loadparm_service *, struct loadparm_service *"
-			    );
-
-		$file->("$tmap{$type}lpcfg_$name($smap{$scope});\n");
+	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),(.*)\)/o) {
+		$scope = $1;
+		$type = $2;
+		$name = $3;
+		$var = $4;
+	} elsif ($line =~ /^FN_(GLOBAL|LOCAL)_PARM_(CONST_STRING|STRING|BOOL|bool|CHAR|INTEGER|LIST)\((\w+),(.*)\)/o) {
+		$scope = $1;
+		$type = $2;
+		$name = $3;
+		$var = $4;
+	} else {
+	        return;
 	}
+
+	my %tmap = (
+	        "BOOL" => "bool ",
+	        "CONST_STRING" => "const char *",
+	        "STRING" => "const char *",
+	        "INTEGER" => "int ",
+	        "CHAR" => "char ",
+	        "LIST" => "const char **",
+	);
+
+	my %smap = (
+	        "GLOBAL" => "struct loadparm_context *",
+	        "LOCAL" => "struct loadparm_service *, struct loadparm_service *"
+	        );
+
+	$file->("$tmap{$type}lpcfg_$name($smap{$scope});\n");
 }
 
 sub process_file($$$) 

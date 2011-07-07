@@ -127,21 +127,8 @@ static bool defaults_saved = false;
 	char *szIdmapGID;						\
 	int winbindMaxDomainConnections;				\
 	int ismb2_max_credits;
-#define LOADPARM_EXTRA_LOCALS						\
-	bool valid;						        \
-	int usershare;							\
-	struct timespec usershare_last_mod;				\
-	int iMaxPrintJobs;						\
-	char *szCopy;							\
-	char *szInclude;						\
-	bool bAvailable;						\
-	bool bWidelinks;						\
-	struct parmlist_entry *param_opt;				\
-	struct bitmap *copymap;						\
-	char dummy[3];		/* for alignment */
 
 #include "param/param_global.h"
-#include "param/param_local.h"
 
 static struct loadparm_global Globals;
 
@@ -5079,22 +5066,22 @@ static char *lp_string(const char *s)
  int fn_name(void) {return(*(int *)(&Globals.ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
+ char *lp_ ## fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
- const char *fn_name(int i) {return (const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
+ const char *lp_ ## fn_name(int i) {return (const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_LIST(fn_name,val) \
- const char **fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+ const char **lp_ ## fn_name(int i) {return(const char **)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
- bool fn_name(int i) {return(bool)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+ bool lp_ ## fn_name(int i) {return(bool)(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
+ int lp_ ## fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
 #define FN_LOCAL_PARM_BOOL(fn_name,val) \
- bool fn_name(const struct share_params *p) {return(bool)(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+ bool lp_ ## fn_name(const struct share_params *p) {return(bool)(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 #define FN_LOCAL_PARM_INTEGER(fn_name,val) \
- int fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+ int lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 #define FN_LOCAL_CHAR(fn_name,val) \
- char fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
+ char lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
 FN_GLOBAL_CONST_STRING(lp_smb_ports, smb_ports)
 FN_GLOBAL_CONST_STRING(lp_dos_charset, dos_charset)
@@ -5312,8 +5299,6 @@ FN_GLOBAL_BOOL(lp_client_use_spnego, bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego_principal, client_use_spnego_principal)
 FN_GLOBAL_BOOL(lp_send_spnego_principal, send_spnego_principal)
 FN_GLOBAL_BOOL(lp_hostname_lookups, bHostnameLookups)
-FN_LOCAL_PARM_BOOL(lp_change_notify, bChangeNotify)
-FN_LOCAL_PARM_BOOL(lp_kernel_change_notify, bKernelChangeNotify)
 FN_GLOBAL_CONST_STRING(lp_dedicated_keytab_file, szDedicatedKeytabFile)
 FN_GLOBAL_INTEGER(lp_kerberos_method, iKerberosMethod)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, bDeferSharingViolations)
@@ -5372,20 +5357,7 @@ int lp_smb2_max_credits(void)
 	}
 	return Globals.ismb2_max_credits;
 }
-FN_LOCAL_STRING(lp_preexec, szPreExec)
-FN_LOCAL_STRING(lp_postexec, szPostExec)
-FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
-FN_LOCAL_STRING(lp_rootpostexec, szRootPostExec)
-FN_LOCAL_STRING(lp_servicename, szService)
- FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
-FN_LOCAL_STRING(lp_pathname, szPath)
-FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
-FN_LOCAL_STRING(lp_username, szUsername)
-FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
-FN_LOCAL_LIST(lp_valid_users, szValidUsers)
-FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
 FN_GLOBAL_LIST(lp_svcctl_list, szServicesList)
-FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, szCupsServer)
 int lp_cups_encrypt(void)
 {
@@ -5412,122 +5384,8 @@ FN_GLOBAL_LIST(lp_cluster_addresses, szClusterAddresses)
 FN_GLOBAL_BOOL(lp_clustering, clustering)
 FN_GLOBAL_INTEGER(lp_ctdb_timeout, ctdb_timeout)
 FN_GLOBAL_INTEGER(lp_ctdb_locktime_warn_threshold, ctdb_locktime_warn_threshold)
-FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
-FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
-FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
-FN_LOCAL_STRING(lp_lppausecommand, szLppausecommand)
-FN_LOCAL_STRING(lp_lpresumecommand, szLpresumecommand)
-FN_LOCAL_STRING(lp_queuepausecommand, szQueuepausecommand)
-FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
-static FN_LOCAL_STRING(_lp_printername, szPrintername)
-FN_LOCAL_CONST_STRING(lp_printjob_username, szPrintjobUsername)
-FN_LOCAL_LIST(lp_hostsallow, szHostsallow)
-FN_LOCAL_LIST(lp_hostsdeny, szHostsdeny)
-FN_LOCAL_STRING(lp_magicscript, szMagicScript)
-FN_LOCAL_STRING(lp_magicoutput, szMagicOutput)
-FN_LOCAL_STRING(lp_comment, comment)
-FN_LOCAL_STRING(lp_force_user, force_user)
-FN_LOCAL_STRING(lp_force_group, force_group)
-FN_LOCAL_LIST(lp_readlist, readlist)
-FN_LOCAL_LIST(lp_writelist, writelist)
-FN_LOCAL_LIST(lp_printer_admin, printer_admin)
-FN_LOCAL_STRING(lp_fstype, fstype)
-FN_LOCAL_LIST(lp_vfs_objects, szVfsObjects)
-FN_LOCAL_STRING(lp_msdfs_proxy, szMSDfsProxy)
-static FN_LOCAL_STRING(lp_volume, volume)
-FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
-FN_LOCAL_STRING(lp_hide_files, szHideFiles)
-FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
-FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
-FN_LOCAL_STRING(lp_aio_write_behind, szAioWriteBehind)
-FN_LOCAL_STRING(lp_dfree_command, szDfree)
-FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
-FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
-FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
-FN_LOCAL_INTEGER(lp_casesensitive, iCaseSensitive)
-FN_LOCAL_BOOL(lp_preservecase, bCasePreserve)
-FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
-FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
-FN_LOCAL_BOOL(lp_hide_special_files, bHideSpecialFiles)
-FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)
-FN_LOCAL_BOOL(lp_hideunwriteable_files, bHideUnWriteableFiles)
-FN_LOCAL_BOOL(lp_browseable, bBrowseable)
-FN_LOCAL_BOOL(lp_access_based_share_enum, bAccessBasedShareEnum)
-FN_LOCAL_BOOL(lp_readonly, bRead_only)
-FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
-FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
-FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
-FN_LOCAL_BOOL(lp_administrative_share, bAdministrative_share)
-FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
-FN_LOCAL_BOOL(lp_print_notify_backchannel, bPrintNotifyBackchannel)
-FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
-FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
-FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
-FN_LOCAL_BOOL(lp_dmapi_support, bDmapiSupport)
-FN_LOCAL_PARM_BOOL(lp_locking, bLocking)
-FN_LOCAL_PARM_INTEGER(lp_strict_locking, iStrictLocking)
-FN_LOCAL_PARM_BOOL(lp_posix_locking, bPosixLocking)
-FN_LOCAL_BOOL(lp_share_modes, bShareModes)
-FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
-FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
-FN_LOCAL_BOOL(lp_onlyuser, bOnlyUser)
-FN_LOCAL_PARM_BOOL(lp_manglednames, bMangledNames)
-FN_LOCAL_BOOL(lp_symlinks, bSymlinks)
-FN_LOCAL_BOOL(lp_syncalways, bSyncAlways)
-FN_LOCAL_BOOL(lp_strict_allocate, bStrictAllocate)
-FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
-FN_LOCAL_BOOL(lp_map_system, bMap_system)
-FN_LOCAL_BOOL(lp_delete_readonly, bDeleteReadonly)
-FN_LOCAL_BOOL(lp_fake_oplocks, bFakeOplocks)
-FN_LOCAL_BOOL(lp_recursive_veto_delete, bDeleteVetoFiles)
-FN_LOCAL_BOOL(lp_dos_filemode, bDosFilemode)
-FN_LOCAL_BOOL(lp_dos_filetimes, bDosFiletimes)
-FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
-FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_GLOBAL_BOOL(lp_async_smb_echo_handler, bAsyncSMBEchoHandler)
 FN_GLOBAL_BOOL(lp_multicast_dns_register, bMulticastDnsRegister)
-FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
-FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
-FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
-FN_LOCAL_BOOL(lp_inherit_owner, bInheritOwner)
-FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
-FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
-FN_LOCAL_BOOL(lp_force_printername, bForcePrintername)
-FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
-FN_LOCAL_BOOL(lp_force_unknown_acl_user, bForceUnknownAclUser)
-FN_LOCAL_BOOL(lp_ea_support, bEASupport)
-FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
-FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
-FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
-FN_LOCAL_BOOL(lp_afs_share, bAfs_Share)
-FN_LOCAL_BOOL(lp_acl_check_permissions, bAclCheckPermissions)
-FN_LOCAL_BOOL(lp_acl_group_control, bAclGroupControl)
-FN_LOCAL_BOOL(lp_acl_map_full_control, bAclMapFullControl)
-FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
-FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
-FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
-FN_LOCAL_INTEGER(lp_force_security_mode, iSecurity_force_mode)
-FN_LOCAL_INTEGER(lp_dir_mask, iDir_mask)
-FN_LOCAL_INTEGER(lp_force_dir_mode, iDir_force_mode)
-FN_LOCAL_INTEGER(lp_dir_security_mask, iDir_Security_mask)
-FN_LOCAL_INTEGER(lp_force_dir_security_mode, iDir_Security_force_mode)
-FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
-FN_LOCAL_INTEGER(lp_defaultcase, iDefaultCase)
-FN_LOCAL_INTEGER(lp_minprintspace, iMinPrintSpace)
-FN_LOCAL_INTEGER(lp_printing, iPrinting)
-FN_LOCAL_INTEGER(lp_max_reported_jobs, iMaxReportedPrintJobs)
-FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
-FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
-FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
-FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
-FN_LOCAL_INTEGER(lp_dfree_cache_time, iDfreeCacheTime)
-FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
-FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
-FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
-FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
-FN_LOCAL_INTEGER(lp_directory_name_cache_size, iDirectoryNameCacheSize)
-FN_LOCAL_INTEGER(lp_smb_encrypt, ismb_encrypt)
-FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_reconnect_delay, winbind_reconnect_delay)
 FN_GLOBAL_INTEGER(lp_winbind_max_clients, winbind_max_clients)
@@ -5539,6 +5397,11 @@ FN_GLOBAL_INTEGER(lp_server_signing, server_signing)
 FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, client_ldap_sasl_wrapping)
 
 FN_GLOBAL_CONST_STRING(lp_ncalrpc_dir, ncalrpc_dir)
+
+#include "lib/param/param_functions.c"
+
+FN_LOCAL_STRING(servicename, szService)
+FN_LOCAL_CONST_STRING(const_servicename, szService)
 
 /* local prototypes */
 
@@ -9435,7 +9298,7 @@ void lp_set_name_resolve_order(const char *new_order)
 
 const char *lp_printername(int snum)
 {
-	const char *ret = _lp_printername(snum);
+	const char *ret = lp__printername(snum);
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
 		ret = lp_const_servicename(snum);
 
@@ -9523,7 +9386,7 @@ bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state)
 	if (signing_state) {
 		sign_active = smb_signing_is_active(signing_state);
 	}
-	return (_lp_use_sendfile(snum) &&
+	return (lp__use_sendfile(snum) &&
 			(get_remote_arch() != RA_WIN95) &&
 			!sign_active);
 }

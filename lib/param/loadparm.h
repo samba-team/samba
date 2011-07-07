@@ -116,3 +116,19 @@ struct parm_struct {
 #ifndef PRINT_MAX_JOBID
 #define PRINT_MAX_JOBID 10000
 #endif
+
+#define LOADPARM_EXTRA_LOCALS						\
+	bool valid;						        \
+	int usershare;							\
+	struct timespec usershare_last_mod;				\
+	int iMaxPrintJobs;						\
+	char *szCopy;							\
+	char *szService;						\
+	char *szInclude;						\
+	bool bWidelinks;						\
+	int bAvailable;							\
+	struct parmlist_entry *param_opt;				\
+	struct bitmap *copymap;						\
+	char dummy[3];		/* for alignment */
+
+#include "lib/param/param_local.h"

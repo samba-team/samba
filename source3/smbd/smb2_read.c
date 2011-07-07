@@ -288,7 +288,7 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	 * reads on most normal files. JRA.
 	*/
 
-	if (!_lp_use_sendfile(SNUM(fsp->conn)) ||
+	if (!lp__use_sendfile(SNUM(fsp->conn)) ||
 			smb2req->do_signing ||
 			smb2req->in.vector_count != 4 ||
 			(fsp->base_fsp != NULL) ||

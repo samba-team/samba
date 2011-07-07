@@ -744,11 +744,6 @@ if bld.env.toplevel_build:
                          deps='''s3_param_h param''',
                          vars=locals())
 
-bld.SAMBA_GENERATOR('param/param_local_h',
-                    source= 'param/loadparm.c ../script/mkparamdefs.pl',
-                    target='param/param_local.h',
-                    rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT} --generate-scope=LOCAL')
-
 bld.SAMBA_GENERATOR('param/param_global_h',
                     source= 'param/loadparm.c ../script/mkparamdefs.pl',
                     target='param/param_global.h',
@@ -756,7 +751,7 @@ bld.SAMBA_GENERATOR('param/param_global_h',
 
 bld.SAMBA3_SUBSYSTEM('param',
                    source=PARAM_WITHOUT_REG_SRC,
-                   deps='samba-util PARAM_UTIL smbd_conn ldap lber LOADPARM_CTX samba3core smbconf param/param_local_h param/param_global_h''')
+                   deps='samba-util PARAM_UTIL smbd_conn ldap lber LOADPARM_CTX samba3core smbconf param_local_h param/param_global_h''')
 
 bld.SAMBA3_SUBSYSTEM('param_service',
                      source='param/service.c',
@@ -1429,6 +1424,7 @@ bld.RECURSE('../lib/addns')
 bld.RECURSE('../lib/async_req')
 bld.RECURSE('../lib/ccan')
 bld.RECURSE('../lib/socket')
+bld.RECURSE('../lib/param')
 bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('../libcli/ldap')
