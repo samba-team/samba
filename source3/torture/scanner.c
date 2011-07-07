@@ -121,71 +121,109 @@ static bool scan_trans2(struct cli_state *cli, int op, int level,
 	uint32_t data_len = 0;
 	uint32_t param_len = 0;
 	uint32_t rparam_len, rdata_len;
-	uint8_t param[PARAM_SIZE], data[DATA_SIZE];
+	uint8_t *param = NULL;
+	uint8_t data[DATA_SIZE];
+	const char *newfname;
+	const char *dname;
 	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));
 	data_len = 4;
 
 	/* try with a info level only */
-	param_len = 2;
+	TALLOC_FREE(param);
+	param = talloc_array(talloc_tos(), uint8_t, 2);
+	if (param == NULL) return True;
+
 	SSVAL(param, 0, level);
+
+	param_len = talloc_get_size(param);
 	status = try_trans2_len(cli, "void", op, level, param, data, param_len, &data_len, 
 			    &rparam_len, &rdata_len);
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a file descriptor */
-	param_len = 6;
+	TALLOC_FREE(param);
+	param = talloc_array(talloc_tos(), uint8_t, 6);
+	if (param == NULL) return True;
+
 	SSVAL(param, 0, fnum);
 	SSVAL(param, 2, level);
 	SSVAL(param, 4, 0);
+
+	param_len = talloc_get_size(param);
 	status = try_trans2_len(cli, "fnum", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
 	if (NT_STATUS_IS_OK(status)) return True;
 
 
 	/* try with a notify style */
-	param_len = 6;
+	TALLOC_FREE(param);
+	param = talloc_array(talloc_tos(), uint8_t, 6);
+	if (param == NULL) return True;
+
 	SSVAL(param, 0, dnum);
 	SSVAL(param, 2, dnum);
 	SSVAL(param, 4, level);
+
+	param_len = talloc_get_size(param);
 	status = try_trans2_len(cli, "notify", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a file name */
-	param_len = 6;
+	TALLOC_FREE(param);
+	param = talloc_array(talloc_tos(), uint8_t, 6);
+	if (param == NULL) return True;
+
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += clistr_push(cli, &param[6], fname, -1, STR_TERMINATE);
+	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+				      fname, strlen(fname)+1, NULL);
+	if (param == NULL) return True;
 
+	param_len = talloc_get_size(param);
 	status = try_trans2_len(cli, "fname", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a new file name */
-	param_len = 6;
+	newfname = "\\newfile.dat";
+	TALLOC_FREE(param);
+	param = talloc_array(talloc_tos(), uint8_t, 6);
+	if (param == NULL) return True;
+
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += clistr_push(cli, &param[6], "\\newfile.dat", -1, STR_TERMINATE);
+	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+				      newfname, strlen(newfname)+1, NULL);
+	if (param == NULL) return True;
 
+	param_len = talloc_get_size(param);
 	status = try_trans2_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_unlink(cli, "\\newfile.dat", FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_rmdir(cli, "\\newfile.dat");
+	cli_unlink(cli, newfname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_rmdir(cli, newfname);
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try dfs style  */
-	cli_mkdir(cli, "\\testdir");
-	param_len = 2;
-	SSVAL(param, 0, level);
-	param_len += clistr_push(cli, &param[2], "\\testdir", -1, STR_TERMINATE);
+	dname = "\\testdir";
+	cli_mkdir(cli, dname);
+	TALLOC_FREE(param);
+	param = talloc_array(talloc_tos(), uint8_t, 2);
+	if (param == NULL) return True;
 
+	SSVAL(param, 0, level);
+	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+				      dname, strlen(dname)+1, NULL);
+	if (param == NULL) return True;
+
+	param_len = talloc_get_size(param);
 	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_rmdir(cli, "\\testdir");
+	cli_rmdir(cli, dname);
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	return False;
