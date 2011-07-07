@@ -64,10 +64,10 @@ bool bitmap_set(struct bitmap *bm, unsigned i)
 	if (i >= bm->n) {
 		DEBUG(0,("Setting invalid bitmap entry %d (of %d)\n",
 		      i, bm->n));
-		return False;
+		return false;
 	}
 	bm->b[i/32] |= (1<<(i%32));
-	return True;
+	return true;
 }
 
 /****************************************************************************
@@ -78,10 +78,10 @@ bool bitmap_clear(struct bitmap *bm, unsigned i)
 	if (i >= bm->n) {
 		DEBUG(0,("clearing invalid bitmap entry %d (of %d)\n",
 		      i, bm->n));
-		return False;
+		return false;
 	}
 	bm->b[i/32] &= ~(1<<(i%32));
-	return True;
+	return true;
 }
 
 /****************************************************************************
@@ -89,11 +89,11 @@ query a bit in a bitmap
 ****************************************************************************/
 bool bitmap_query(struct bitmap *bm, unsigned i)
 {
-	if (i >= bm->n) return False;
+	if (i >= bm->n) return false;
 	if (bm->b[i/32] & (1<<(i%32))) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /****************************************************************************
