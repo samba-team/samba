@@ -201,7 +201,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
-	cli->outbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->inbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = false;
@@ -238,10 +237,9 @@ struct cli_state *cli_initialise_ex(int signing_state)
 		mandatory_signing = true;
 	}
 
-	if (!cli->outbuf || !cli->inbuf)
+	if (!cli->inbuf)
                 goto error;
 
-	memset(cli->outbuf, 0, cli->bufsize);
 	memset(cli->inbuf, 0, cli->bufsize);
 
 	/* initialise signing */
@@ -267,7 +265,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
  error:
 
         SAFE_FREE(cli->inbuf);
-        SAFE_FREE(cli->outbuf);
 	TALLOC_FREE(cli);
         return NULL;
 }
@@ -315,7 +312,6 @@ static void _cli_shutdown(struct cli_state *cli)
 		cli_tdis(cli);
 	}
         
-	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
 	data_blob_free(&cli->secblob);

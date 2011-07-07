@@ -95,7 +95,6 @@ struct cli_state {
 	int timeout; /* in milliseconds. */
 	size_t max_xmit;
 	size_t max_mux;
-	char *outbuf;
 	char *inbuf;
 	unsigned int bufsize;
 	int initialised;

@@ -2700,13 +2700,9 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		}
 
 		if (cli->capabilities & (CAP_LARGE_READX|CAP_LARGE_WRITEX)) {
-			SAFE_FREE(cli->outbuf);
 			SAFE_FREE(cli->inbuf);
-			cli->outbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+LARGE_WRITEX_HDR_SIZE+SAFETY_MARGIN);
 			cli->inbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+LARGE_WRITEX_HDR_SIZE+SAFETY_MARGIN);
-			if (!cli->outbuf || !cli->inbuf) {
-				tevent_req_nterror(req,
-						NT_STATUS_NO_MEMORY);
+			if (tevent_req_nomem(cli->inbuf, req)) {
 				return;
 			}
 			cli->bufsize = CLI_SAMBA_MAX_LARGE_READX_SIZE + LARGE_WRITEX_HDR_SIZE;
