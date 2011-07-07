@@ -189,14 +189,9 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			p += 2;
-			{
-				/* stupid NT bugs. grr */
-				int flags = 0;
-				if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
-				clistr_pull(base_ptr, finfo->short_name, p,
-					    sizeof(finfo->short_name),
-					    slen, flags);
-			}
+			clistr_pull(base_ptr, finfo->short_name, p,
+				    sizeof(finfo->short_name),
+				    slen, STR_UNICODE);
 			p += 24; /* short name? */
 			if (p + namelen < p || p + namelen > pdata_end) {
 				return pdata_end - base;
