@@ -17,7 +17,7 @@ Examples:
 
 * ONNODE=onnode-buggy-001 ./run_tests.sh -s
 
-  Run against bin/onnode-buggy-001 instead of default onnode version.
+  Run against stubs/onnode-buggy-001 instead of default onnode version.
 
   Add more buggy versions of onnode to this directory as bugs are
   fixed to enable test validation using this feature.
@@ -26,7 +26,7 @@ Examples:
 
   Run only the specified tests.
 
-* ONNODE="bash -x bin/onnode-buggy-001" ./run_tests.sh ./0090.sh
+* ONNODE="bash -x stubs/onnode-buggy-001" ./run_tests.sh ./0090.sh
   ONNODE="bash -x ../../tools/onnode" ./run_tests.sh ./0090.sh
 
   Debug the specified test or test failure.  The test will fail

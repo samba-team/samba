@@ -6,10 +6,10 @@ unset CTDB_NODES_SOCKETS
 # Default to just "onnode".
 : ${ONNODE:=onnode}
 
-# Augment PATH with relevant bin/ directories.
+# Augment PATH with relevant stubs/ directories.
 
-if [ -d "${ONNODE_TESTS_DIR}/bin" ] ; then
-    PATH="${ONNODE_TESTS_DIR}/bin:$PATH"
+if [ -d "${ONNODE_TESTS_DIR}/stubs" ] ; then
+    PATH="${ONNODE_TESTS_DIR}/stubs:$PATH"
 fi
 
 export ONNODE_TESTCASE_DIR=$(dirname "$0")
@@ -17,8 +17,8 @@ if [ $(basename "$ONNODE_TESTCASE_DIR") = "onnode" ] ; then
     # Just a test script, no testcase subdirectory.
     ONNODE_TESTCASE_DIR="$ONNODE_TESTS_DIR"
 else
-    if [ -d "${ONNODE_TESTCASE_DIR}/bin" ] ; then
-	PATH="${ONNODE_TESTCASE_DIR}/bin:$PATH"
+    if [ -d "${ONNODE_TESTCASE_DIR}/stubs" ] ; then
+	PATH="${ONNODE_TESTCASE_DIR}/stubs:$PATH"
     fi
 fi
 
