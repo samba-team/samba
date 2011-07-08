@@ -751,6 +751,11 @@ static void wizard_page(void)
 	int have_home = -1;
 	int HomeExpo = 0;
 	int SerType = 0;
+	const char form_name[] = "wizard";
+
+	if (!verify_xsrf_token(form_name)) {
+		goto output_page;
+	}
 
 	if (cgi_variable("Rewrite")) {
 		(void) rewritecfg_file();
@@ -841,10 +846,12 @@ static void wizard_page(void)
 		winstype = 3;
 
 	role = lp_server_role();
-	
+
+output_page:
 	/* Here we go ... */
 	printf("<H2>%s</H2>\n", _("Samba Configuration Wizard"));
 	printf("<form method=post action=wizard>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), form_name);
 
 	if (have_write_access) {
 		printf("%s\n", _("The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments."));
