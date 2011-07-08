@@ -138,21 +138,21 @@ static bool smb2cli_req_set_pending(struct tevent_req *req)
 }
 
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
-				       struct cli_state *cli,
-				       uint16_t cmd,
-				       uint32_t flags,
-				       const uint8_t *fixed,
-				       uint16_t fixed_len,
-				       const uint8_t *dyn,
-				       uint16_t dyn_len)
+				      struct tevent_context *ev,
+				      struct cli_state *cli,
+				      uint16_t cmd,
+				      uint32_t flags,
+				      const uint8_t *fixed,
+				      uint16_t fixed_len,
+				      const uint8_t *dyn,
+				      uint16_t dyn_len)
 {
-	struct tevent_req *result;
+	struct tevent_req *req;
 	struct smb2cli_req_state *state;
 
-	result = tevent_req_create(mem_ctx, &state,
-				   struct smb2cli_req_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb2cli_req_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
@@ -174,7 +174,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	SIVAL(state->hdr, SMB2_HDR_TID,		cli->smb2.tid);
 	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,	cli->smb2.uid);
 
-	return result;
+	return req;
 }
 
 static void smb2cli_writev_done(struct tevent_req *subreq);
