@@ -6142,7 +6142,7 @@ static bool run_error_map_extract(int dummy) {
 
 	uint32 error;
 
-	uint32 flgs2, errnum;
+	uint32 errnum;
         uint8 errclass;
 
 	NTSTATUS nt_status;
@@ -6207,29 +6207,27 @@ static bool run_error_map_extract(int dummy) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
 
-		flgs2 = SVAL(c_nt->inbuf,smb_flg2);
-
 		/* Case #1: 32-bit NT errors */
-		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-			nt_status = NT_STATUS(IVAL(c_nt->inbuf,smb_rcls));
+		if (cli_is_nt_error(c_nt)) {
+			nt_status = cli_nt_error(c_nt);
 		} else {
 			printf("/** Dos error on NT connection! (%s) */\n", 
 			       cli_errstr(c_nt));
 			nt_status = NT_STATUS(0xc0000000);
 		}
 
-		if (NT_STATUS_IS_OK(cli_session_setup(c_dos, user, 
-						      password, strlen(password),
-						      password, strlen(password),
-						      workgroup))) {
+		status = cli_session_setup(c_dos, user,
+					   password, strlen(password),
+					   password, strlen(password),
+					   workgroup);
+		if (NT_STATUS_IS_OK(status)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
-		flgs2 = SVAL(c_dos->inbuf,smb_flg2), errnum;
 
 		/* Case #1: 32-bit NT errors */
-		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+		if (!cli_is_dos_error(c_dos)) {
 			printf("/** NT error on DOS connection! (%s) */\n", 
-			       cli_errstr(c_nt));
+			       cli_errstr(c_dos));
 			errnum = errclass = 0;
 		} else {
 			cli_dos_error(c_dos, &errclass, &errnum);
