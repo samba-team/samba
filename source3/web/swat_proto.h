@@ -31,6 +31,7 @@ const char *cgi_variable(const char *name);
 const char *cgi_variable_nonull(const char *name);
 bool am_root(void);
 char *cgi_user_name(void);
+char *cgi_user_pass(void);
 void cgi_setup(const char *rootdir, int auth_required);
 const char *cgi_baseurl(void);
 const char *cgi_pathinfo(void);
