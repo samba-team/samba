@@ -77,7 +77,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
 
 bld.SAMBA3_SUBSYSTEM('RPC_SVCCTL',
                     source=RPC_SVCCTL_SRC,
-                    deps='SERVICES LIBCLI_WINREG',
+                    deps='SERVICES LIBCLI_WINREG_INTERNAL',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_NTSVCS',
@@ -98,12 +98,12 @@ bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
 
 bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source=RPC_SPOOLSS_SRC,
-                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG',
+                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',
                     source=RPC_EVENTLOG_SRC,
-                    deps='LIBEVENTLOG LIBCLI_WINREG',
+                    deps='LIBEVENTLOG LIBCLI_WINREG_INTERNAL',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_RPCECHO',
