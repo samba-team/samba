@@ -588,10 +588,10 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 			struct security_descriptor *sd = NULL;
 			sd = cli_query_secdesc(cli_state, fnum, ctx);
 			if (!sd) {
+				status = cli_nt_error(cli_state);
 				DEBUG( 0, ("display_finfo() failed to "
 					"get security descriptor: %s",
-					cli_errstr(cli_state)));
-				status = cli_nt_error(cli_state);
+					nt_errstr(status)));
 			} else {
 				display_sec_desc(sd);
 			}
@@ -2472,15 +2472,20 @@ static int cmd_open(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetname, 0,
+	status = cli_ntcreate(targetcli, targetname, 0,
 			FILE_READ_DATA|FILE_WRITE_DATA, 0,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
-		if (NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetname, 0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
+			0x0, 0x0, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = cli_ntcreate(targetcli, targetname, 0,
 				FILE_READ_DATA, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN,
+				0x0, 0x0, &fnum);
+		if (NT_STATUS_IS_OK(status)) {
 			d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
 		} else {
-			d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
+			d_printf("Failed to open file %s. %s\n",
+				 targetname, nt_errstr(status));
 		}
 	} else {
 		d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
@@ -2625,8 +2630,10 @@ static int cmd_posix_mkdir(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_mkdir(targetcli, targetname, mode))) {
-		d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
+	status = cli_posix_mkdir(targetcli, targetname, mode);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to open file %s. %s\n",
+			 targetname, nt_errstr(status));
 	} else {
 		d_printf("posix_mkdir created directory %s\n", targetname);
 	}
@@ -2661,8 +2668,10 @@ static int cmd_posix_unlink(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_unlink(targetcli, targetname))) {
-		d_printf("Failed to unlink file %s. %s\n", targetname, cli_errstr(cli));
+	status = cli_posix_unlink(targetcli, targetname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to unlink file %s. %s\n",
+			 targetname, nt_errstr(status));
 	} else {
 		d_printf("posix_unlink deleted file %s\n", targetname);
 	}
@@ -2698,8 +2707,10 @@ static int cmd_posix_rmdir(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_rmdir(targetcli, targetname))) {
-		d_printf("Failed to unlink directory %s. %s\n", targetname, cli_errstr(cli));
+	status = cli_posix_rmdir(targetcli, targetname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to unlink directory %s. %s\n",
+			 targetname, nt_errstr(status));
 	} else {
 		d_printf("posix_rmdir deleted directory %s\n", targetname);
 	}
@@ -2712,6 +2723,7 @@ static int cmd_close(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf = NULL;
 	int fnum;
+	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("close <fnum>\n");
@@ -2720,8 +2732,9 @@ static int cmd_close(void)
 
 	fnum = atoi(buf);
 	/* We really should use the targetcli here.... */
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
-		d_printf("close %d: %s\n", fnum, cli_errstr(cli));
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("close %d: %s\n", fnum, nt_errstr(status));
 		return 1;
 	}
 	return 0;
@@ -2839,6 +2852,7 @@ static int cmd_lock(void)
 	uint64_t start, len;
 	enum brl_type lock_type;
 	int fnum;
+	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
@@ -2874,8 +2888,9 @@ static int cmd_lock(void)
 
 	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
-	if (!NT_STATUS_IS_OK(cli_posix_lock(cli, fnum, start, len, true, lock_type))) {
-		d_printf("lock failed %d: %s\n", fnum, cli_errstr(cli));
+	status = cli_posix_lock(cli, fnum, start, len, true, lock_type);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("lock failed %d: %s\n", fnum, nt_errstr(status));
 	}
 
 	return 0;
@@ -2887,6 +2902,7 @@ static int cmd_unlock(void)
 	char *buf = NULL;
 	uint64_t start, len;
 	int fnum;
+	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
@@ -2908,8 +2924,9 @@ static int cmd_unlock(void)
 
 	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
-	if (!NT_STATUS_IS_OK(cli_posix_unlock(cli, fnum, start, len))) {
-		d_printf("unlock failed %d: %s\n", fnum, cli_errstr(cli));
+	status = cli_posix_unlock(cli, fnum, start, len);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("unlock failed %d: %s\n", fnum, nt_errstr(status));
 	}
 
 	return 0;
@@ -2948,9 +2965,10 @@ static int cmd_rmdir(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_rmdir(targetcli, targetname))) {
+	status = cli_rmdir(targetcli, targetname);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s removing remote directory file %s\n",
-			 cli_errstr(targetcli),mask);
+			 nt_errstr(status), mask);
 	}
 
 	return 0;
@@ -3003,8 +3021,10 @@ static int cmd_link(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_hardlink(targetcli, targetname, newname))) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(targetcli), newname, oldname);
+	status = cli_posix_hardlink(targetcli, targetname, newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s linking files (%s -> %s)\n",
+			 nt_errstr(status), newname, oldname);
 		return 1;
 	}
 	return 0;
@@ -3048,10 +3068,10 @@ static int cmd_readlink(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_readlink(targetcli, name,
-			linkname, PATH_MAX+1))) {
+	status = cli_posix_readlink(targetcli, name, linkname, PATH_MAX+1);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s readlink on file %s\n",
-			cli_errstr(targetcli), name);
+			 nt_errstr(status), name);
 		return 1;
 	}
 
@@ -3154,9 +3174,10 @@ static int cmd_chmod(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_chmod(targetcli, targetname, mode))) {
+	status = cli_posix_chmod(targetcli, targetname, mode);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(targetcli), src, (unsigned int)mode);
+			 nt_errstr(status), src, (unsigned int)mode);
 		return 1;
 	}
 
@@ -3324,15 +3345,17 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
+	status = cli_posix_stat(targetcli, targetname, &sbuf);
 	if (!NT_STATUS_IS_OK(cli_posix_stat(targetcli, targetname, &sbuf))) {
 		d_printf("%s getfacl doing a stat on file %s\n",
-			cli_errstr(targetcli), src);
+			 nt_errstr(status), src);
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_getfacl(targetcli, targetname, ctx, &rb_size, &retbuf))) {
+	status = cli_posix_getfacl(targetcli, targetname, ctx, &rb_size, &retbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s getfacl file %s\n",
-			cli_errstr(targetcli), src);
+			 nt_errstr(status), src);
 		return 1;
 	}
 
@@ -3584,9 +3607,10 @@ static int cmd_stat(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_stat(targetcli, targetname, &sbuf))) {
+	status = cli_posix_stat(targetcli, targetname, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s stat file %s\n",
-			cli_errstr(targetcli), src);
+			 nt_errstr(status), src);
 		return 1;
 	}
 
@@ -3691,9 +3715,10 @@ static int cmd_chown(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_posix_chown(targetcli, targetname, uid, gid))) {
+	status = cli_posix_chown(targetcli, targetname, uid, gid);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
-			cli_errstr(targetcli), src, (int)uid, (int)gid);
+			 nt_errstr(status), src, (int)uid, (int)gid);
 		return 1;
 	}
 
@@ -3750,9 +3775,10 @@ static int cmd_rename(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_rename(targetcli, targetsrc, targetdest))) {
+	status = cli_rename(targetcli, targetsrc, targetdest);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s renaming files %s -> %s \n",
-			cli_errstr(targetcli),
+			nt_errstr(status),
 			targetsrc,
 			targetdest);
 		return 1;
@@ -3827,8 +3853,10 @@ static int cmd_hardlink(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_nt_hardlink(targetcli, targetname, dest))) {
-		d_printf("%s doing an NT hard link of files\n",cli_errstr(targetcli));
+	status = cli_nt_hardlink(targetcli, targetname, dest);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s doing an NT hard link of files\n",
+			 nt_errstr(status));
 		return 1;
 	}
 
