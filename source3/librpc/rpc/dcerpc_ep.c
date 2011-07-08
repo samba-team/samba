@@ -134,6 +134,7 @@ done:
 }
 
 static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
+			    struct messaging_context *msg_ctx,
 			    const struct ndr_interface_table *iface,
 			    const struct dcerpc_binding_vector *bind_vec,
 			    const struct GUID *object_guid,
@@ -187,7 +188,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 					       &ndr_table_epmapper,
 					       local,
 					       get_session_info_system(),
-					       server_messaging_context(),
+					       msg_ctx,
 					       &h);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("dcerpc_ep_register: Could not connect to "
@@ -309,6 +310,7 @@ done:
 }
 
 NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
+			    struct messaging_context *msg_ctx,
 			    const struct ndr_interface_table *iface,
 			    const struct dcerpc_binding_vector *bind_vec,
 			    const struct GUID *object_guid,
@@ -316,6 +318,7 @@ NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
 			    struct dcerpc_binding_handle **ph)
 {
 	return ep_register(mem_ctx,
+			   msg_ctx,
 			   iface,
 			   bind_vec,
 			   object_guid,
@@ -326,6 +329,7 @@ NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
+				      struct messaging_context *msg_ctx,
 				      const struct ndr_interface_table *iface,
 				      const struct dcerpc_binding_vector *bind_vec,
 				      const struct GUID *object_guid,
@@ -333,6 +337,7 @@ NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
 				      struct dcerpc_binding_handle **ph)
 {
 	return ep_register(mem_ctx,
+			   msg_ctx,
 			   iface,
 			   bind_vec,
 			   object_guid,
@@ -342,11 +347,13 @@ NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
 			   ph);
 }
 
-NTSTATUS dcerpc_ep_unregister(const struct ndr_interface_table *iface,
+NTSTATUS dcerpc_ep_unregister(struct messaging_context *msg_ctx,
+			      const struct ndr_interface_table *iface,
 			      const struct dcerpc_binding_vector *bind_vec,
 			      const struct GUID *object_guid)
 {
 	return ep_register(NULL,
+			   msg_ctx,
 			   iface,
 			   bind_vec,
 			   object_guid,

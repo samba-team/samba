@@ -64,6 +64,7 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
  * @return                 An NTSTATUS error code.
  */
 NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
+			    struct messaging_context *msg_ctx,
 			    const struct ndr_interface_table *iface,
 			    const struct dcerpc_binding_vector *bind_vec,
 			    const struct GUID *object_guid,
@@ -71,13 +72,15 @@ NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
 			    struct dcerpc_binding_handle **ph);
 
 NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
+				      struct messaging_context *msg_ctx,
 				      const struct ndr_interface_table *iface,
 				      const struct dcerpc_binding_vector *bind_vec,
 				      const struct GUID *object_guid,
 				      const char *annotation,
 				      struct dcerpc_binding_handle **ph);
 
-NTSTATUS dcerpc_ep_unregister(const struct ndr_interface_table *iface,
+NTSTATUS dcerpc_ep_unregister(struct messaging_context *msg_ctx,
+			      const struct ndr_interface_table *iface,
 			      const struct dcerpc_binding_vector *bind_vec,
 			      const struct GUID *object_guid);
 

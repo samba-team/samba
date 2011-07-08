@@ -271,6 +271,7 @@ static NTSTATUS rpc_ep_setup_try_register(TALLOC_CTX *mem_ctx,
 	}
 
 	status = dcerpc_ep_register(mem_ctx,
+				    msg_ctx,
 				    iface,
 				    v,
 				    &iface->syntax_id.uuid,
