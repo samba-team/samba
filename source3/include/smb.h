@@ -71,19 +71,6 @@
 /* how long to wait for secondary SMB packets (milli-seconds) */
 #define SMB_SECONDARY_WAIT (60*1000)
 
-/* this defines the error codes that receive_smb can put in smb_read_error */
-enum smb_read_errors {
-	SMB_READ_OK = 0,
-	SMB_READ_TIMEOUT,
-	SMB_READ_EOF,
-	SMB_READ_ERROR,
-	SMB_WRITE_ERROR, /* This error code can go into the client smb_rw_error. */
-	SMB_READ_BAD_SIG,
-	SMB_NO_MEMORY,
-	SMB_DO_NOT_DO_TDIS, /* cli_close_connection() check for this when smbfs wants to keep tree connected */
-	SMB_READ_BAD_DECRYPT
-};
-
 #define DIR_STRUCT_SIZE 43
 
 /* deny modes */

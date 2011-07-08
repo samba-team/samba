@@ -204,7 +204,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->inbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = false;
-	cli->smb_rw_error = SMB_READ_OK;
 
 	cli->use_spnego = lp_client_use_spnego();
 
@@ -303,12 +302,8 @@ static void _cli_shutdown(struct cli_state *cli)
 	 * can remain active on the peer end, until some (long) timeout period
 	 * later.  This tree disconnect forces the peer to clean up, since the
 	 * connection will be going away.
-	 *
-	 * Also, do not do tree disconnect when cli->smb_rw_error is SMB_DO_NOT_DO_TDIS
-	 * the only user for this so far is smbmount which passes opened connection
-	 * down to kernel's smbfs module.
 	 */
-	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != SMB_DO_NOT_DO_TDIS ) ) {
+	if (cli->cnum != (uint16)-1) {
 		cli_tdis(cli);
 	}
         
@@ -321,7 +316,6 @@ static void _cli_shutdown(struct cli_state *cli)
 		close(cli->fd);
 	}
 	cli->fd = -1;
-	cli->smb_rw_error = SMB_READ_OK;
 
 	/*
 	 * Need to free pending first, they remove themselves

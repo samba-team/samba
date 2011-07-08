@@ -53,8 +53,6 @@ struct cli_state {
         struct cli_state *prev, *next;
 	int port;
 	int fd;
-	/* Last read or write error. */
-	enum smb_read_errors smb_rw_error;
 	uint16 cnum;
 	uint16 pid;
 	uint16 mid;

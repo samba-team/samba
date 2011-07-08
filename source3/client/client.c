@@ -4937,8 +4937,6 @@ static void readline_callback(void)
 		NTSTATUS status;
 		size_t len;
 
-		set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
-
 		status = receive_smb_raw(cli->fd, cli->inbuf, cli->bufsize, 0, 0, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4948,23 +4946,10 @@ static void readline_callback(void)
 			}
 
 			DEBUG(0, ("Read from server failed, maybe it closed "
-				  "the connection\n"));
+				  "the connection: %s\n", nt_errstr(status)));
 
 			finished = true;
 			smb_readline_done();
-			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-				set_smb_read_error(&cli->smb_rw_error,
-						   SMB_READ_EOF);
-				return;
-			}
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				set_smb_read_error(&cli->smb_rw_error,
-						   SMB_READ_TIMEOUT);
-				return;
-			}
-
-			set_smb_read_error(&cli->smb_rw_error, SMB_READ_ERROR);
 			return;
 		}
 		if(CVAL(cli->inbuf,0) != SMBkeepalive) {

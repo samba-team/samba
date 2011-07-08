@@ -731,10 +731,6 @@ int get_socket_port(int fd);
 const char *client_addr(int fd, char *addr, size_t addrlen);
 const char *client_socket_addr(int fd, char *addr, size_t addr_len);
 int client_socket_port(int fd);
-void set_smb_read_error(enum smb_read_errors *pre,
-			enum smb_read_errors newerr);
-void cond_set_smb_read_error(enum smb_read_errors *pre,
-			enum smb_read_errors newerr);
 bool is_a_socket(int fd);
 void set_socket_options(int fd, const char *options);
 ssize_t read_udp_v4_socket(int fd,

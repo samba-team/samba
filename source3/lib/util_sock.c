@@ -48,26 +48,6 @@ int client_socket_port(int fd)
 #endif
 
 /****************************************************************************
- Accessor functions to make thread-safe code easier later...
-****************************************************************************/
-
-void set_smb_read_error(enum smb_read_errors *pre,
-			enum smb_read_errors newerr)
-{
-	if (pre) {
-		*pre = newerr;
-	}
-}
-
-void cond_set_smb_read_error(enum smb_read_errors *pre,
-			enum smb_read_errors newerr)
-{
-	if (pre && *pre == SMB_READ_OK) {
-		*pre = newerr;
-	}
-}
-
-/****************************************************************************
  Determine if a file descriptor is in fact a socket.
 ****************************************************************************/
 

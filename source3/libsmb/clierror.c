@@ -31,33 +31,6 @@ static const char *cli_smb_errstr(struct cli_state *cli)
 	return smb_dos_errstr(cli->inbuf);
 }
 
-/****************************************************************************
- Convert a socket error into an NTSTATUS.
-****************************************************************************/
-
-static NTSTATUS cli_smb_rw_error_to_ntstatus(struct cli_state *cli)
-{
-	switch(cli->smb_rw_error) {
-		case SMB_READ_TIMEOUT:
-			return NT_STATUS_IO_TIMEOUT;
-		case SMB_READ_EOF:
-			return NT_STATUS_END_OF_FILE;
-		/* What we shoud really do for read/write errors is convert from errno. */
-		/* FIXME. JRA. */
-		case SMB_READ_ERROR:
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		case SMB_WRITE_ERROR:
-			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	        case SMB_READ_BAD_SIG:
-			return NT_STATUS_INVALID_PARAMETER;
-		case SMB_NO_MEMORY:
-			return NT_STATUS_NO_MEMORY;
-	        default:
-			break;
-	}
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
 /***************************************************************************
  Return an error message - either an NT error, SMB error or a RAP error.
  Note some of the NT errors are actually warnings or "informational" errors
@@ -73,42 +46,6 @@ const char *cli_errstr(struct cli_state *cli)
 
 	if (!cli->initialised) {
 		fstrcpy(cli_error_message, "[Programmer's error] cli_errstr called on unitialized cli_stat struct!\n");
-		goto done;
-	}
-
-	/* Was it server socket error ? */
-	if (cli->fd == -1 && cli->smb_rw_error) {
-		switch(cli->smb_rw_error) {
-			case SMB_READ_TIMEOUT:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Call timed out: server did not respond after %d milliseconds",
-					cli->timeout);
-				break;
-			case SMB_READ_EOF:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Call returned zero bytes (EOF)" );
-				break;
-			case SMB_READ_ERROR:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Read error: %s", strerror(errno) );
-				break;
-			case SMB_WRITE_ERROR:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Write error: %s", strerror(errno) );
-				break;
-		        case SMB_READ_BAD_SIG:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Server packet had invalid SMB signature!");
-				break;
-		        case SMB_NO_MEMORY:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Out of memory");
-				break;
-		        default:
-				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Unknown error code %d\n", cli->smb_rw_error );
-				break;
-		}
 		goto done;
 	}
 
@@ -148,8 +85,8 @@ NTSTATUS cli_nt_error(struct cli_state *cli)
         int flgs2 = SVAL(cli->inbuf,smb_flg2);
 
 	/* Deal with socket errors first. */
-	if (cli->fd == -1 && cli->smb_rw_error) {
-		return cli_smb_rw_error_to_ntstatus(cli);
+	if (cli->fd == -1) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
 	if (!(flgs2 & FLAGS2_32_BIT_ERROR_CODES)) {
@@ -175,10 +112,9 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 		return;
 	}
 
-	/* Deal with socket errors first. */
-	if (cli->fd == -1 && cli->smb_rw_error) {
-		NTSTATUS status = cli_smb_rw_error_to_ntstatus(cli);
-		ntstatus_to_dos( status, eclass, ecode);
+	if (cli->fd == -1) {
+		*eclass = ERRDOS;
+		*ecode = ERRnotconnected;
 		return;
 	}
 
@@ -236,7 +172,7 @@ bool cli_is_error(struct cli_state *cli)
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), rcls = 0;
 
 	/* A socket error is always an error. */
-	if (cli->fd == -1 && cli->smb_rw_error != 0) {
+	if (cli->fd == -1) {
 		return True;
 	}
 
@@ -259,7 +195,7 @@ bool cli_is_nt_error(struct cli_state *cli)
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
 
 	/* A socket error is always an NT error. */
-	if (cli->fd == -1 && cli->smb_rw_error != 0) {
+	if (cli->fd == -1) {
 		return True;
 	}
 
@@ -273,7 +209,7 @@ bool cli_is_dos_error(struct cli_state *cli)
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
 
 	/* A socket error is always a DOS error. */
-	if (cli->fd == -1 && cli->smb_rw_error != 0) {
+	if (cli->fd == -1) {
 		return True;
 	}
 
