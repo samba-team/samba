@@ -678,13 +678,20 @@ static void welcome_page(void)
 static void viewconfig_page(void)
 {
 	int full_view=0;
+	const char form_name[] = "viewconfig";
+
+	if (!verify_xsrf_token(form_name)) {
+		goto output_page;
+	}
 
 	if (cgi_variable("full_view")) {
 		full_view = 1;
 	}
 
+output_page:
 	printf("<H2>%s</H2>\n", _("Current Config"));
 	printf("<form method=post>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), form_name);
 
 	if (full_view) {
 		printf("<input type=submit name=\"normal_view\" value=\"%s\">\n", _("Normal View"));
