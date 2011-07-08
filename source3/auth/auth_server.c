@@ -350,7 +350,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 			 */
 			tested_password_server = True;
 
-			if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
+			if (!cli->is_guestlogin) {
 				DEBUG(0,("server_validate: password server %s allows users as non-guest \
 with a bad password.\n", cli->desthost));
 				DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
