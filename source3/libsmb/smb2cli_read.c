@@ -27,7 +27,7 @@
 
 struct smb2cli_read_state {
 	uint8_t fixed[48];
-	uint8_t *inbuf;
+	struct iovec *recv_iov;
 	uint8_t *data;
 	uint32_t data_length;
 };
@@ -85,7 +85,7 @@ static void smb2cli_read_done(struct tevent_req *subreq)
 	struct iovec *iov;
 	uint8_t data_offset;
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov, 17);
+	status = smb2cli_req_recv(subreq, state, &iov, 17);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -98,7 +98,8 @@ static void smb2cli_read_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
-	state->inbuf = smb2cli_req_inbuf(subreq);
+
+	state->recv_iov = iov;
 	state->data = (uint8_t *)iov[2].iov_base;
 	tevent_req_done(req);
 }
@@ -114,7 +115,7 @@ NTSTATUS smb2cli_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	talloc_steal(mem_ctx, state->inbuf);
+	talloc_steal(mem_ctx, state->recv_iov);
 	*data_length = state->data_length;
 	*data = state->data;
 	return NT_STATUS_OK;

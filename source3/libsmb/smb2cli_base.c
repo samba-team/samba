@@ -37,7 +37,7 @@ struct smb2cli_req_state {
 	uint8_t hdr[64];
 	uint8_t pad[7];	/* padding space for compounding */
 
-	uint8_t *inbuf;
+	/* always an array of 3 talloc elements */
 	struct iovec *recv_iov;
 };
 
@@ -159,6 +159,12 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->cli = cli;
+
+	state->recv_iov = talloc_zero_array(state, struct iovec, 3);
+	if (state->recv_iov == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
 
 	state->fixed = fixed;
 	state->fixed_len = fixed_len;
@@ -439,6 +445,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 	struct cli_state *cli =
 		tevent_req_callback_data(subreq,
 		struct cli_state);
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_req *req;
 	struct iovec *iov;
 	int i, num_iov;
@@ -447,7 +454,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 	ssize_t received;
 	int err;
 
-	received = read_smb_recv(subreq, talloc_tos(), &inbuf, &err);
+	received = read_smb_recv(subreq, frame, &inbuf, &err);
 	TALLOC_FREE(subreq);
 	if (received == -1) {
 		if (cli->fd != -1) {
@@ -458,13 +465,14 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		goto fail;
 	}
 
-	status = smb2cli_inbuf_parse_compound(inbuf, talloc_tos(),
+	status = smb2cli_inbuf_parse_compound(inbuf, frame,
 					      &iov, &num_iov);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
 	for (i=1; i<num_iov; i+=3) {
+		uint8_t *inbuf_ref = NULL;
 		struct iovec *cur = &iov[i];
 		uint8_t *inhdr = (uint8_t *)cur[0].iov_base;
 		struct smb2cli_req_state *state;
@@ -479,13 +487,25 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		}
 		smb2cli_req_unset_pending(req);
 		state = tevent_req_data(req, struct smb2cli_req_state);
-		if (i+3 >= num_iov) {
-			/* last in chain */
-			state->inbuf = inbuf;
+
+		/*
+		 * Note: here we use talloc_reference() in a way
+		 *       that does not expose it to the caller.
+		 */
+		inbuf_ref = talloc_reference(state->recv_iov, inbuf);
+		if (tevent_req_nomem(inbuf_ref, req)) {
+			continue;
 		}
-		state->recv_iov = cur;
+
+		/* copy the related buffers */
+		state->recv_iov[0] = cur[0];
+		state->recv_iov[1] = cur[1];
+		state->recv_iov[2] = cur[2];
+
 		tevent_req_done(req);
 	}
+
+	TALLOC_FREE(frame);
 	return;
  fail:
 	/*
@@ -498,6 +518,8 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		smb2cli_req_unset_pending(req);
 		tevent_req_nterror(req, status);
 	}
+
+	TALLOC_FREE(frame);
 }
 
 NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
@@ -511,23 +533,17 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+
+	status = NT_STATUS(IVAL(state->recv_iov[0].iov_base, SMB2_HDR_STATUS));
+
 	if (body_size != 0) {
 		if (body_size != SVAL(state->recv_iov[1].iov_base, 0)) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 	}
-	talloc_steal(req, state->inbuf);
 	if (piov != NULL) {
-		*piov = state->recv_iov;
+		*piov = talloc_move(mem_ctx, &state->recv_iov);
 	}
 
-	return NT_STATUS(IVAL(state->recv_iov[0].iov_base, SMB2_HDR_STATUS));
-}
-
-uint8_t *smb2cli_req_inbuf(struct tevent_req *req)
-{
-	struct smb2cli_req_state *state = tevent_req_data(
-		req, struct smb2cli_req_state);
-
-	return state->inbuf;
+	return status;
 }
