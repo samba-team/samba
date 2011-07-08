@@ -1333,17 +1333,14 @@ static void printers_page(void)
 	int i;
 	int mode = 0;
 	unsigned int parm_filter = FLAG_BASIC;
+	const char form_name[] = "printers";
+
+	if (!verify_xsrf_token(form_name)) {
+		goto output_page;
+	}
 
 	if (share)
 		snum = lp_servicenumber(share);
-
-        printf("<H2>%s</H2>\n", _("Printer Parameters"));
- 
-        printf("<H3>%s</H3>\n", _("Important Note:"));
-        printf("%s",_("Printer names marked with [*] in the Choose Printer drop-down box "));
-        printf("%s",_("are autoloaded printers from "));
-        printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">%s</A>\n", _("Printcap Name"));
-        printf("%s\n", _("Attempting to delete these printers from SWAT will have no effect."));
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -1373,14 +1370,25 @@ static void printers_page(void)
 		}
 	}
 
-	printf("<FORM name=\"swatform\" method=post>\n");
-
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable_nonull("ViewMode"));
         if ( cgi_variable("BasicMode"))
                 mode = 0;
         if ( cgi_variable("AdvMode"))
                 mode = 1;
+
+output_page:
+        printf("<H2>%s</H2>\n", _("Printer Parameters"));
+
+        printf("<H3>%s</H3>\n", _("Important Note:"));
+        printf("%s",_("Printer names marked with [*] in the Choose Printer drop-down box "));
+        printf("%s",_("are autoloaded printers from "));
+        printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">%s</A>\n", _("Printcap Name"));
+        printf("%s\n", _("Attempting to delete these printers from SWAT will have no effect."));
+
+
+	printf("<FORM name=\"swatform\" method=post>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), form_name);
 
 	ViewModeBoxes( mode );
 	switch ( mode ) {
