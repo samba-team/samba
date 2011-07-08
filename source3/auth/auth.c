@@ -285,7 +285,6 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		unix_username = (*server_info)->unix_name;
 		if (!(*server_info)->guest) {
 			char *rhost;
-			int rc;
 
 			rhost = tsocket_address_inet_addr_string(user_info->remote_host,
 								 talloc_tos());
