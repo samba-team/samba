@@ -1048,6 +1048,48 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev);
 
 /**
+ * @brief Finish multiple requests within one function
+ *
+ * Normally tevent_req_notify_callback() and all wrappers
+ * (e.g. tevent_req_done() and tevent_req_error())
+ * need to be the last thing an event handler should call.
+ * This is because the callback is likely to destroy the
+ * context of the current function.
+ *
+ * If a function wants to notify more than one caller,
+ * it is dangerous if it just triggers multiple callbacks
+ * in a row. With tevent_req_defer_callback() it is possible
+ * to set an event context that will be used to defer the callback
+ * via an immediate event (similar to tevent_req_post()).
+ *
+ * @code
+ * struct complete_state {
+ *       struct tevent_context *ev;
+ *
+ *       struct tevent_req **reqs;
+ * };
+ *
+ * void complete(struct complete_state *state)
+ * {
+ *       size_t i, c = talloc_array_length(state->reqs);
+ *
+ *       for (i=0; i < c; i++) {
+ *            tevent_req_defer_callback(state->reqs[i], state->ev);
+ *            tevent_req_done(state->reqs[i]);
+ *       }
+ * }
+ * @endcode
+ *
+ * @param[in]  req      The finished request.
+ *
+ * @param[in]  ev       The tevent_context for the immediate event.
+ *
+ * @return              The given request will be returned.
+ */
+void tevent_req_defer_callback(struct tevent_req *req,
+			       struct tevent_context *ev);
+
+/**
  * @brief Check if the given request is still in progress.
  *
  * It is typically used by sync wrapper functions.

@@ -74,6 +74,7 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 		talloc_free(req);
 		return NULL;
 	}
+	req->internal.defer_callback_ev	= NULL;
 
 	data = talloc_zero_size(req, data_size);
 	if (data == NULL) {
@@ -91,6 +92,11 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 void _tevent_req_notify_callback(struct tevent_req *req, const char *location)
 {
 	req->internal.finish_location = location;
+	if (req->internal.defer_callback_ev) {
+		(void)tevent_req_post(req, req->internal.defer_callback_ev);
+		req->internal.defer_callback_ev = NULL;
+		return;
+	}
 	if (req->async.fn != NULL) {
 		req->async.fn(req);
 	}
@@ -167,6 +173,12 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 	tevent_schedule_immediate(req->internal.trigger,
 				  ev, tevent_req_trigger, req);
 	return req;
+}
+
+void tevent_req_defer_callback(struct tevent_req *req,
+			       struct tevent_context *ev)
+{
+	req->internal.defer_callback_ev = ev;
 }
 
 bool tevent_req_is_in_progress(struct tevent_req *req)

@@ -142,6 +142,12 @@ struct tevent_req {
 		struct tevent_immediate *trigger;
 
 		/**
+		 * @brief An event context which will be used to
+		 *        defer the _tevent_req_notify_callback().
+		 */
+		struct tevent_context *defer_callback_ev;
+
+		/**
 		 * @brief the timer event if tevent_req_set_endtime was used
 		 *
 		 */
