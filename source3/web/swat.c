@@ -707,18 +707,25 @@ output_page:
 static void wizard_params_page(void)
 {
 	unsigned int parm_filter = FLAG_WIZARD;
+	const char form_name[] = "wizard_params";
 
 	/* Here we first set and commit all the parameters that were selected
  	   in the previous screen. */
 
 	printf("<H2>%s</H2>\n", _("Wizard Parameter Edit Page"));
 
+	if (!verify_xsrf_token(form_name)) {
+		goto output_page;
+	}
+
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
 		save_reload(-1);
 	}
 
+output_page:
 	printf("<form name=\"swatform\" method=post action=wizard_params>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), form_name);
 
 	if (have_write_access) {
 		printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
