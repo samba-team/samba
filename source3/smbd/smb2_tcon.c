@@ -278,66 +278,6 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
-{
-	const uint8_t *inhdr;
-	const uint8_t *outhdr;
-	int i = req->current_idx;
-	uint32_t in_tid;
-	void *p;
-	struct smbd_smb2_tcon *tcon;
-	bool chained_fixup = false;
-
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
-
-	in_tid = IVAL(inhdr, SMB2_HDR_TID);
-
-	if (in_tid == (0xFFFFFFFF)) {
-		if (req->async) {
-			/*
-			 * async request - fill in tid from
-			 * already setup out.vector[].iov_base.
-			 */
-			outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-			in_tid = IVAL(outhdr, SMB2_HDR_TID);
-		} else if (i > 2) {
-			/*
-			 * Chained request - fill in tid from
-			 * the previous request out.vector[].iov_base.
-			 */
-			outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
-			in_tid = IVAL(outhdr, SMB2_HDR_TID);
-			chained_fixup = true;
-		}
-	}
-
-	/* lookup an existing session */
-	p = idr_find(req->session->tcons.idtree, in_tid);
-	if (p == NULL) {
-		return NT_STATUS_NETWORK_NAME_DELETED;
-	}
-	tcon = talloc_get_type_abort(p, struct smbd_smb2_tcon);
-
-	if (!change_to_user(tcon->compat_conn,req->session->vuid)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* should we pass FLAG_CASELESS_PATHNAMES here? */
-	if (!set_current_service(tcon->compat_conn, 0, true)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	req->tcon = tcon;
-
-	if (chained_fixup) {
-		/* Fix up our own outhdr. */
-		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-		SIVAL(discard_const_p(uint8_t, outhdr), SMB2_HDR_TID, in_tid);
-	}
-
-	return NT_STATUS_OK;
-}
-
 NTSTATUS smbd_smb2_request_process_tdis(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;

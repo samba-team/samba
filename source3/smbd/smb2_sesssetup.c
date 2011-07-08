@@ -795,64 +795,6 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 	return NT_STATUS_LOGON_FAILURE;
 }
 
-NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
-{
-	const uint8_t *inhdr;
-	const uint8_t *outhdr;
-	int i = req->current_idx;
-	uint64_t in_session_id;
-	void *p;
-	struct smbd_smb2_session *session;
-	bool chained_fixup = false;
-
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
-
-	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
-
-	if (in_session_id == (0xFFFFFFFFFFFFFFFFLL)) {
-		if (req->async) {
-			/*
-			 * async request - fill in session_id from
-			 * already setup request out.vector[].iov_base.
-			 */
-			outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-			in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
-		} else if (i > 2) {
-			/*
-			 * Chained request - fill in session_id from
-			 * the previous request out.vector[].iov_base.
-			 */
-			outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
-			in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
-			chained_fixup = true;
-		}
-	}
-
-	/* lookup an existing session */
-	p = idr_find(req->sconn->smb2.sessions.idtree, in_session_id);
-	if (p == NULL) {
-		return NT_STATUS_USER_SESSION_DELETED;
-	}
-	session = talloc_get_type_abort(p, struct smbd_smb2_session);
-
-	if (!NT_STATUS_IS_OK(session->status)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	set_current_user_info(session->session_info->sanitized_username,
-			      session->session_info->unix_name,
-			      session->session_info->info3->base.domain.string);
-
-	req->session = session;
-
-	if (chained_fixup) {
-		/* Fix up our own outhdr. */
-		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-		SBVAL(discard_const_p(uint8_t, outhdr), SMB2_HDR_SESSION_ID, in_session_id);
-	}
-	return NT_STATUS_OK;
-}
-
 NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;

@@ -267,9 +267,6 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 					 struct tevent_req *subreq);
 
-NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req);
-NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req);
-
 struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req);
 void remove_smb2_chained_fsp(files_struct *fsp);
 

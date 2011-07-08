@@ -27,6 +27,8 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "smbprofile.h"
 #include "../lib/util/bitmap.h"
+#include "../librpc/gen_ndr/krb5pac.h"
+#include "auth.h"
 
 #define OUTVEC_ALLOC_SIZE (SMB2_HDR_BODY + 9)
 
@@ -1069,6 +1071,134 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 		tevent_req_cancel(cur->subreq);
 	}
 
+	return NT_STATUS_OK;
+}
+
+/*************************************************************
+ Ensure an incoming tid is a valid one for us to access.
+ Change to the associated uid credentials and chdir to the
+ valid tid directory.
+*************************************************************/
+
+static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
+{
+	const uint8_t *inhdr;
+	const uint8_t *outhdr;
+	int i = req->current_idx;
+	uint32_t in_tid;
+	void *p;
+	struct smbd_smb2_tcon *tcon;
+	bool chained_fixup = false;
+
+	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+
+	in_tid = IVAL(inhdr, SMB2_HDR_TID);
+
+	if (in_tid == (0xFFFFFFFF)) {
+		if (req->async) {
+			/*
+			 * async request - fill in tid from
+			 * already setup out.vector[].iov_base.
+			 */
+			outhdr = (const uint8_t *)req->out.vector[i].iov_base;
+			in_tid = IVAL(outhdr, SMB2_HDR_TID);
+		} else if (i > 2) {
+			/*
+			 * Chained request - fill in tid from
+			 * the previous request out.vector[].iov_base.
+			 */
+			outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
+			in_tid = IVAL(outhdr, SMB2_HDR_TID);
+			chained_fixup = true;
+		}
+	}
+
+	/* lookup an existing session */
+	p = idr_find(req->session->tcons.idtree, in_tid);
+	if (p == NULL) {
+		return NT_STATUS_NETWORK_NAME_DELETED;
+	}
+	tcon = talloc_get_type_abort(p, struct smbd_smb2_tcon);
+
+	if (!change_to_user(tcon->compat_conn,req->session->vuid)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* should we pass FLAG_CASELESS_PATHNAMES here? */
+	if (!set_current_service(tcon->compat_conn, 0, true)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	req->tcon = tcon;
+
+	if (chained_fixup) {
+		/* Fix up our own outhdr. */
+		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
+		SIVAL(discard_const_p(uint8_t, outhdr), SMB2_HDR_TID, in_tid);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************
+ Ensure an incoming session_id is a valid one for us to access.
+*************************************************************/
+
+static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
+{
+	const uint8_t *inhdr;
+	const uint8_t *outhdr;
+	int i = req->current_idx;
+	uint64_t in_session_id;
+	void *p;
+	struct smbd_smb2_session *session;
+	bool chained_fixup = false;
+
+	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+
+	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
+
+	if (in_session_id == (0xFFFFFFFFFFFFFFFFLL)) {
+		if (req->async) {
+			/*
+			 * async request - fill in session_id from
+			 * already setup request out.vector[].iov_base.
+			 */
+			outhdr = (const uint8_t *)req->out.vector[i].iov_base;
+			in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
+		} else if (i > 2) {
+			/*
+			 * Chained request - fill in session_id from
+			 * the previous request out.vector[].iov_base.
+			 */
+			outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
+			in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
+			chained_fixup = true;
+		}
+	}
+
+	/* lookup an existing session */
+	p = idr_find(req->sconn->smb2.sessions.idtree, in_session_id);
+	if (p == NULL) {
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+	session = talloc_get_type_abort(p, struct smbd_smb2_session);
+
+	if (!NT_STATUS_IS_OK(session->status)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	set_current_user_info(session->session_info->sanitized_username,
+			      session->session_info->unix_name,
+			      session->session_info->info3->base.domain.string);
+
+	req->session = session;
+
+	if (chained_fixup) {
+		/* Fix up our own outhdr. */
+		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
+		SBVAL(discard_const_p(uint8_t, outhdr), SMB2_HDR_SESSION_ID, in_session_id);
+	}
 	return NT_STATUS_OK;
 }
 
