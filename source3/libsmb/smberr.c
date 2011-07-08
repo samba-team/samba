@@ -214,48 +214,6 @@ const char *smb_dos_err_class(uint8 e_class)
 	return result;
 }
 
-/****************************************************************************
-return a SMB string from an SMB buffer
-****************************************************************************/
-char *smb_dos_errstr(char *inbuf)
-{
-	char *result;
-	int e_class = CVAL(inbuf,smb_rcls);
-	int num = SVAL(inbuf,smb_err);
-	int i,j;
-
-	for (i=0;err_classes[i].e_class;i++)
-		if (err_classes[i].code == e_class) {
-			if (err_classes[i].err_msgs) {
-				err_code_struct *err = err_classes[i].err_msgs;
-				for (j=0;err[j].name;j++)
-					if (num == err[j].code) {
-						if (DEBUGLEVEL > 0)
-							result = talloc_asprintf(
-								talloc_tos(), "%s - %s (%s)",
-								err_classes[i].e_class,
-								err[j].name,err[j].message);
-						else
-							result = talloc_asprintf(
-								talloc_tos(), "%s - %s",
-								err_classes[i].e_class,
-								err[j].name);
-						goto done;
-					}
-			}
-
-			result = talloc_asprintf(talloc_tos(), "%s - %d",
-						 err_classes[i].e_class, num);
-			goto done;
-		}
-
-	result = talloc_asprintf(talloc_tos(), "Error: Unknown error (%d,%d)",
-				 e_class, num);
- done:
-	SMB_ASSERT(result != NULL);
-	return result;
-}
-
 /*****************************************************************************
 map a unix errno to a win32 error
  *****************************************************************************/

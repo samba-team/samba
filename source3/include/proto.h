@@ -1135,7 +1135,6 @@ bool netsamlogon_cache_have(const struct dom_sid *user_sid);
 const char *smb_dos_err_name(uint8 e_class, uint16 num);
 const char *get_dos_error_msg(WERROR result);
 const char *smb_dos_err_class(uint8 e_class);
-char *smb_dos_errstr(char *inbuf);
 WERROR map_werror_from_unix(int error);
 
 /* The following definitions come from libsmb/trustdom_cache.c  */
