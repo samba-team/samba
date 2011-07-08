@@ -282,7 +282,10 @@ out:
 	return false;
 }
 
-static void named_pipe_accept_function(const char *pipe_name, int fd);
+static void named_pipe_accept_function(struct tevent_context *ev_ctx,
+				       struct messaging_context *msg_ctx,
+				       const char *pipe_name,
+				       int fd);
 
 static void named_pipe_listener(struct tevent_context *ev,
 				struct tevent_fd *fde,
@@ -313,7 +316,10 @@ static void named_pipe_listener(struct tevent_context *ev,
 
 	DEBUG(6, ("Accepted socket %d\n", sd));
 
-	named_pipe_accept_function(state->ep.name, sd);
+	named_pipe_accept_function(state->ev_ctx,
+				   state->msg_ctx,
+				   state->ep.name,
+				   sd);
 }
 
 
@@ -350,7 +356,10 @@ struct named_pipe_client {
 
 static void named_pipe_accept_done(struct tevent_req *subreq);
 
-static void named_pipe_accept_function(const char *pipe_name, int fd)
+static void named_pipe_accept_function(struct tevent_context *ev_ctx,
+				       struct messaging_context *msg_ctx,
+				       const char *pipe_name,
+				       int fd)
 {
 	struct named_pipe_client *npc;
 	struct tstream_context *plain;
@@ -364,8 +373,8 @@ static void named_pipe_accept_function(const char *pipe_name, int fd)
 		return;
 	}
 	npc->pipe_name = pipe_name;
-	npc->ev = server_event_context();
-	npc->msg_ctx = server_messaging_context();
+	npc->ev = ev_ctx;
+	npc->msg_ctx = msg_ctx;
 
 	/* make sure socket is in NON blocking state */
 	ret = set_blocking(fd, false);
