@@ -1226,12 +1226,15 @@ static void chg_passwd(void)
 static void passwd_page(void)
 {
 	const char *new_name = cgi_user_name();
+	const char passwd_form[] = "passwd";
+	const char rpasswd_form[] = "rpasswd";
 
 	if (!new_name) new_name = "";
 
 	printf("<H2>%s</H2>\n", _("Server Password Management"));
 
 	printf("<FORM name=\"swatform\" method=post>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), passwd_form);
 
 	printf("<table>\n");
 
@@ -1271,14 +1274,16 @@ static void passwd_page(void)
 	 * Do some work if change, add, disable or enable was
 	 * requested. It could be this is the first time through this
 	 * code, so there isn't anything to do.  */
-	if ((cgi_variable(CHG_S_PASSWD_FLAG)) || (cgi_variable(ADD_USER_FLAG)) || (cgi_variable(DELETE_USER_FLAG)) ||
-	    (cgi_variable(DISABLE_USER_FLAG)) || (cgi_variable(ENABLE_USER_FLAG))) {
+	if (verify_xsrf_token(passwd_form) &&
+	   ((cgi_variable(CHG_S_PASSWD_FLAG)) || (cgi_variable(ADD_USER_FLAG)) || (cgi_variable(DELETE_USER_FLAG)) ||
+	    (cgi_variable(DISABLE_USER_FLAG)) || (cgi_variable(ENABLE_USER_FLAG)))) {
 		chg_passwd();		
 	}
 
 	printf("<H2>%s</H2>\n", _("Client/Server Password Management"));
 
 	printf("<FORM name=\"swatform\" method=post>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), rpasswd_form);
 
 	printf("<table>\n");
 
@@ -1311,7 +1316,7 @@ static void passwd_page(void)
 	 * password somewhere other than the server. It could be this
 	 * is the first time through this code, so there isn't
 	 * anything to do.  */
-	if (cgi_variable(CHG_R_PASSWD_FLAG)) {
+	if (verify_xsrf_token(passwd_form) && cgi_variable(CHG_R_PASSWD_FLAG)) {
 		chg_passwd();		
 	}
 
