@@ -1245,6 +1245,9 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
         Nodes are automatically banned if they are the cause of too many
         cluster recoveries.
       </para>
+      <para>
+	This is primarily a testing command. Note that the recovery daemon controls the overall ban state and it may automatically unban nodes at will. Meaning that a node that has been banned by the administrator can and ofter are unbanned before the admin specifid timeout triggers. If wanting to "drop" a node out from the cluster for mainentance or other reasons, use the "stop" / "continue" commands instad of "ban" / "unban". 
+      </para>
     </refsect2>
 
     <refsect2><title>unban</title>
