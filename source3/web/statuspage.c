@@ -247,8 +247,13 @@ void status_page(void)
 	int nr_running=0;
 	bool waitup = False;
 	TALLOC_CTX *ctx = talloc_stackframe();
+	const char form_name[] = "status";
 
 	smbd_pid = pid_to_procid(pidfile_pid("smbd"));
+
+	if (!verify_xsrf_token(form_name)) {
+		goto output_page;
+	}
 
 	if (cgi_variable("smbd_restart") || cgi_variable("all_restart")) {
 		stop_smbd();
@@ -326,9 +331,11 @@ void status_page(void)
 
 	initPid2Machine ();
 
+output_page:
 	printf("<H2>%s</H2>\n", _("Server Status"));
 
 	printf("<FORM method=post>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), form_name);
 
 	if (!autorefresh) {
 		printf("<input type=submit value=\"%s\" name=\"autorefresh\">\n", _("Auto Refresh"));
