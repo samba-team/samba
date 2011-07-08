@@ -22,18 +22,6 @@
 
 struct cli_state;
 
-/*
- * Fetch an error out of a NBT packet
- */
-
-NTSTATUS cli_pull_error(char *buf);
-
-/*
- * Compatibility helper for the sync APIs: Fake NTSTATUS in cli->inbuf
- */
-
-void cli_set_error(struct cli_state *cli, NTSTATUS status);
-
 struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct cli_state *cli,

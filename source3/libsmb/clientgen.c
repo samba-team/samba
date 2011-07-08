@@ -193,6 +193,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	}
 	cli->port = 0;
 	cli->fd = -1;
+	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->cnum = -1;
 	cli->pid = (uint16)sys_getpid();
 	cli->mid = 1;

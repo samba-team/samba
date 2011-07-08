@@ -22,15 +22,6 @@
 #include "includes.h"
 #include "libsmb/libsmb.h"
 
-/****************************************************************************
- Return a description of an SMB error.
-****************************************************************************/
-
-static const char *cli_smb_errstr(struct cli_state *cli)
-{
-	return smb_dos_errstr(cli->inbuf);
-}
-
 /***************************************************************************
  Return an error message - either an NT error, SMB error or a RAP error.
  Note some of the NT errors are actually warnings or "informational" errors
@@ -40,8 +31,6 @@ static const char *cli_smb_errstr(struct cli_state *cli)
 const char *cli_errstr(struct cli_state *cli)
 {   
 	fstring cli_error_message;
-	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;
-	uint8 errclass;
 	char *result;
 
 	if (!cli->initialised) {
@@ -56,19 +45,11 @@ const char *cli_errstr(struct cli_state *cli)
 		goto done;
 	}
 
-	/* Case #2: 32-bit NT errors */
-	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-		NTSTATUS status = NT_STATUS(IVAL(cli->inbuf,smb_rcls));
+	if (cli->fd == -1 && NT_STATUS_IS_OK(cli->raw_status)) {
+		return nt_errstr(NT_STATUS_CONNECTION_DISCONNECTED);
+	}
 
-		return nt_errstr(status);
-        }
-
-	cli_dos_error(cli, &errclass, &errnum);
-
-	/* Case #3: SMB error */
-
-	return cli_smb_errstr(cli);
-
+	return nt_errstr(cli->raw_status);
  done:
 	result = talloc_strdup(talloc_tos(), cli_error_message);
 	SMB_ASSERT(result);
@@ -82,20 +63,18 @@ const char *cli_errstr(struct cli_state *cli)
 
 NTSTATUS cli_nt_error(struct cli_state *cli)
 {
-        int flgs2 = SVAL(cli->inbuf,smb_flg2);
-
 	/* Deal with socket errors first. */
 	if (cli->fd == -1) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
-	if (!(flgs2 & FLAGS2_32_BIT_ERROR_CODES)) {
-		int e_class  = CVAL(cli->inbuf,smb_rcls);
-		int code  = SVAL(cli->inbuf,smb_err);
+	if (NT_STATUS_IS_DOS(cli->raw_status)) {
+		int e_class = NT_STATUS_DOS_CLASS(cli->raw_status);
+		int code = NT_STATUS_DOS_CODE(cli->raw_status);
 		return dos_to_ntstatus(e_class, code);
-        }
+	}
 
-        return NT_STATUS(IVAL(cli->inbuf,smb_rcls));
+	return cli->raw_status;
 }
 
 
@@ -106,8 +85,6 @@ NTSTATUS cli_nt_error(struct cli_state *cli)
 
 void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 {
-	int  flgs2;
-
 	if(!cli->initialised) {
 		return;
 	}
@@ -118,16 +95,13 @@ void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 		return;
 	}
 
-	flgs2 = SVAL(cli->inbuf,smb_flg2);
+	if (!NT_STATUS_IS_DOS(cli->raw_status)) {
+		ntstatus_to_dos(cli->raw_status, eclass, ecode);
+		return;
+	}
 
-	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-		NTSTATUS ntstatus = NT_STATUS(IVAL(cli->inbuf, smb_rcls));
-		ntstatus_to_dos(ntstatus, eclass, ecode);
-                return;
-        }
-
-	*eclass  = CVAL(cli->inbuf,smb_rcls);
-	*ecode  = SVAL(cli->inbuf,smb_err);
+	*eclass = NT_STATUS_DOS_CLASS(cli->raw_status);
+	*ecode = NT_STATUS_DOS_CODE(cli->raw_status);
 }
 
 
@@ -169,51 +143,42 @@ int cli_errno(struct cli_state *cli)
 
 bool cli_is_error(struct cli_state *cli)
 {
-	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), rcls = 0;
-
 	/* A socket error is always an error. */
 	if (cli->fd == -1) {
 		return True;
 	}
 
-        if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-                /* Return error is error bits are set */
-                rcls = IVAL(cli->inbuf, smb_rcls);
-                return (rcls & 0xF0000000) == 0xC0000000;
-        }
+	if (NT_STATUS_IS_DOS(cli->raw_status)) {
+		/* Return error if error class in non-zero */
+		uint8_t rcls = NT_STATUS_DOS_CLASS(cli->raw_status);
+		return rcls != 0;
+	}
 
-        /* Return error if error class in non-zero */
-
-        rcls = CVAL(cli->inbuf, smb_rcls);
-        return rcls != 0;
+	return NT_STATUS_IS_ERR(cli->raw_status);
 }
 
 /* Return true if the last error was an NT error */
 
 bool cli_is_nt_error(struct cli_state *cli)
 {
-	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
-
 	/* A socket error is always an NT error. */
 	if (cli->fd == -1) {
 		return True;
 	}
 
-        return cli_is_error(cli) && (flgs2 & FLAGS2_32_BIT_ERROR_CODES);
+	return cli_is_error(cli) && !NT_STATUS_IS_DOS(cli->raw_status);
 }
 
 /* Return true if the last error was a DOS error */
 
 bool cli_is_dos_error(struct cli_state *cli)
 {
-	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
-
 	/* A socket error is always a DOS error. */
 	if (cli->fd == -1) {
 		return True;
 	}
 
-        return cli_is_error(cli) && !(flgs2 & FLAGS2_32_BIT_ERROR_CODES);
+	return cli_is_error(cli) && NT_STATUS_IS_DOS(cli->raw_status);
 }
 
 bool cli_state_is_connected(struct cli_state *cli)

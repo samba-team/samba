@@ -27,13 +27,7 @@
 #include "libsmb/nmblib.h"
 #include "read_smb.h"
 
-/**
- * Fetch an error out of a NBT packet
- * @param[in] buf	The SMB packet
- * @retval		The error, converted to NTSTATUS
- */
-
-NTSTATUS cli_pull_error(char *buf)
+static NTSTATUS cli_pull_raw_error(const uint8_t *buf)
 {
 	uint32_t flags2 = SVAL(buf, smb_flg2);
 
@@ -41,30 +35,7 @@ NTSTATUS cli_pull_error(char *buf)
 		return NT_STATUS(IVAL(buf, smb_rcls));
 	}
 
-	return dos_to_ntstatus(CVAL(buf, smb_rcls), SVAL(buf,smb_err));
-}
-
-/**
- * Compatibility helper for the sync APIs: Fake NTSTATUS in cli->inbuf
- * @param[in] cli	The client connection that just received an error
- * @param[in] status	The error to set on "cli"
- */
-
-void cli_set_error(struct cli_state *cli, NTSTATUS status)
-{
-	uint32_t flags2 = SVAL(cli->inbuf, smb_flg2);
-
-	if (NT_STATUS_IS_DOS(status)) {
-		SSVAL(cli->inbuf, smb_flg2,
-		      flags2 & ~FLAGS2_32_BIT_ERROR_CODES);
-		SCVAL(cli->inbuf, smb_rcls, NT_STATUS_DOS_CLASS(status));
-		SSVAL(cli->inbuf, smb_err, NT_STATUS_DOS_CODE(status));
-		return;
-	}
-
-	SSVAL(cli->inbuf, smb_flg2, flags2 | FLAGS2_32_BIT_ERROR_CODES);
-	SIVAL(cli->inbuf, smb_rcls, NT_STATUS_V(status));
-	return;
+	return NT_STATUS_DOS(CVAL(buf, smb_rcls), SVAL(buf,smb_err));
 }
 
 /**
@@ -781,9 +752,20 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 		cmd = CVAL(state->inbuf, wct_ofs + 1);
 	}
 
-	status = cli_pull_error((char *)state->inbuf);
-
-	cli_set_error(state->cli, status);
+	state->cli->raw_status = cli_pull_raw_error(state->inbuf);
+	if (NT_STATUS_IS_DOS(state->cli->raw_status)) {
+		uint8_t eclass = NT_STATUS_DOS_CLASS(state->cli->raw_status);
+		uint16_t ecode = NT_STATUS_DOS_CODE(state->cli->raw_status);
+		/*
+		 * TODO: is it really a good idea to do a mapping here?
+		 *
+		 * The old cli_pull_error() also does it, so I do not change
+		 * the behavior yet.
+		 */
+		status = dos_to_ntstatus(eclass, ecode);
+	} else {
+		status = state->cli->raw_status;
+	}
 
 	if (!have_andx_command((char *)state->inbuf, wct_ofs)) {
 
