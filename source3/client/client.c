@@ -2237,7 +2237,9 @@ static int do_cancel(int job)
 		d_printf("Job %d cancelled\n",job);
 		return 0;
 	} else {
-		d_printf("Error cancelling job %d : %s\n",job,cli_errstr(cli));
+		NTSTATUS status = cli_nt_error(cli);
+		d_printf("Error cancelling job %d : %s\n",
+			 job, nt_errstr(status));
 		return 1;
 	}
 }
@@ -4195,8 +4197,11 @@ static bool browse_host(bool sort)
 		return true;
 	}
 
-	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
-		d_printf("Error returning browse list: %s\n", cli_errstr(cli));
+	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1) {
+		NTSTATUS status = cli_nt_error(cli);
+		d_printf("Error returning browse list: %s\n",
+			 nt_errstr(status));
+	}
 
 	return (ret != -1);
 }
