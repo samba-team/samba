@@ -992,11 +992,17 @@ static void shares_page(void)
 	int mode = 0;
 	unsigned int parm_filter = FLAG_BASIC;
 	size_t converted_size;
+	const char form_name[] = "shares";
+
+	printf("<H2>%s</H2>\n", _("Share Parameters"));
+
+	if (!verify_xsrf_token(form_name)) {
+		goto output_page;
+	}
 
 	if (share)
 		snum = lp_servicenumber(share);
 
-	printf("<H2>%s</H2>\n", _("Share Parameters"));
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -1022,16 +1028,18 @@ static void shares_page(void)
 		}
 	}
 
-	printf("<FORM name=\"swatform\" method=post>\n");
-
-	printf("<table>\n");
-
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable_nonull("ViewMode"));
 	if ( cgi_variable("BasicMode"))
 		mode = 0;
 	if ( cgi_variable("AdvMode"))
 		mode = 1;
+
+output_page:
+	printf("<FORM name=\"swatform\" method=post>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), form_name);
+
+	printf("<table>\n");
 
 	ViewModeBoxes( mode );
 	switch ( mode ) {
