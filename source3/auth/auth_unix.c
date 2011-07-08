@@ -40,7 +40,6 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
 	char *rhost;
-	int rc;
 
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
