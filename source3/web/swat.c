@@ -29,6 +29,7 @@
 
 #include "includes.h"
 #include "web/swat_proto.h"
+#include "../lib/crypto/md5.h"
 
 static int demo_mode = False;
 static int passwd_only = False;
@@ -50,6 +51,7 @@ static int iNumNonAutoPrintServices = 0;
 #define DISABLE_USER_FLAG "disable_user_flag"
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
+#define XSRF_TOKEN "xsrf"
 
 #define _(x) lang_msg_rotate(talloc_tos(),x)
 
@@ -137,6 +139,58 @@ static char *make_parm_name(const char *label)
 	*p = '\0';
 	return parmname;
 }
+
+void get_xsrf_token(const char *username, const char *pass,
+		    const char *formname, char token_str[33])
+{
+	struct MD5Context md5_ctx;
+	uint8_t token[16];
+	int i;
+
+	token_str[0] = '\0';
+	ZERO_STRUCT(md5_ctx);
+	MD5Init(&md5_ctx);
+
+	MD5Update(&md5_ctx, (uint8_t *)formname, strlen(formname));
+	if (username != NULL) {
+		MD5Update(&md5_ctx, (uint8_t *)username, strlen(username));
+	}
+	if (pass != NULL) {
+		MD5Update(&md5_ctx, (uint8_t *)pass, strlen(pass));
+	}
+
+	MD5Final(token, &md5_ctx);
+
+	for(i = 0; i < sizeof(token); i++) {
+		char tmp[3];
+
+		snprintf(tmp, sizeof(tmp), "%02x", token[i]);
+		strncat(token_str, tmp, sizeof(tmp));
+	}
+}
+
+void print_xsrf_token(const char *username, const char *pass,
+		      const char *formname)
+{
+	char token[33];
+
+	get_xsrf_token(username, pass, formname, token);
+	printf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n",
+	       XSRF_TOKEN, token);
+
+}
+
+bool verify_xsrf_token(const char *formname)
+{
+	char expected[33];
+	const char *username = cgi_user_name();
+	const char *pass = cgi_user_pass();
+	const char *token = cgi_variable_nonull(XSRF_TOKEN);
+
+	get_xsrf_token(username, pass, formname, expected);
+	return (strncmp(expected, token, sizeof(expected)) == 0);
+}
+
 
 /****************************************************************************
   include a lump of html in a page 

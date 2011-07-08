@@ -67,5 +67,10 @@ void status_page(void);
 /* The following definitions come from web/swat.c  */
 
 const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid);
+void get_xsrf_token(const char *username, const char *pass,
+		    const char *formname, char token_str[33]);
+void print_xsrf_token(const char *username, const char *pass,
+		      const char *formname);
+bool verify_xsrf_token(const char *formname);
 
 #endif /*  _SWAT_PROTO_H_  */
