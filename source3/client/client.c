@@ -4934,10 +4934,11 @@ static void readline_callback(void)
 	ret = poll_intr_one_fd(cli->fd, POLLIN|POLLHUP, 0, &revents);
 
 	if ((ret > 0) && (revents & (POLLIN|POLLHUP|POLLERR))) {
+		char inbuf[CLI_SAMBA_MAX_LARGE_READX_SIZE + LARGE_WRITEX_HDR_SIZE];
 		NTSTATUS status;
 		size_t len;
 
-		status = receive_smb_raw(cli->fd, cli->inbuf, cli->bufsize, 0, 0, &len);
+		status = receive_smb_raw(cli->fd, inbuf, sizeof(inbuf), 0, 0, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			if (cli->fd != -1) {
@@ -4952,7 +4953,7 @@ static void readline_callback(void)
 			smb_readline_done();
 			return;
 		}
-		if(CVAL(cli->inbuf,0) != SMBkeepalive) {
+		if(CVAL(inbuf,0) != SMBkeepalive) {
 			DEBUG(0, ("Read from server "
 				"returned unexpected packet!\n"));
 			return;
