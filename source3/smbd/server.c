@@ -585,6 +585,8 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 
 static bool smbd_parent_housekeeping(const struct timeval *now, void *private_data)
 {
+	struct messaging_context *msg_ctx =
+		talloc_get_type_abort(private_data, struct messaging_context);
 	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 	time_t t = time_mono(NULL);
 
@@ -594,8 +596,8 @@ static bool smbd_parent_housekeeping(const struct timeval *now, void *private_da
 	if ((printcap_cache_time != 0)
 	 && (t >= (last_printer_reload_time + printcap_cache_time))) {
 		DEBUG( 3,( "Printcap cache time expired.\n"));
-		pcap_cache_reload(server_event_context(),
-				  smbd_messaging_context(),
+		pcap_cache_reload(messaging_event_context(msg_ctx),
+				  msg_ctx,
 				  &reload_pcap_change_notify);
 		last_printer_reload_time = t;
 	}
@@ -756,7 +758,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	if (!(event_add_idle(ev_ctx, NULL,
 			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "parent_housekeeping", smbd_parent_housekeeping,
-			     NULL))) {
+			     msg_ctx))) {
 		DEBUG(0, ("Could not add parent_housekeeping event\n"));
 		return false;
 	}
