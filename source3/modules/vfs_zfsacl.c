@@ -54,7 +54,7 @@ static NTSTATUS zfs_get_nt_acl_common(const char *name,
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): Operation is not "
 				  "supported on the filesystem where the file "
-				  "reside", name));
+				  "reside\n", name));
 		} else {
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", name,
 					strerror(errno)));
