@@ -46,6 +46,7 @@ static char *query_string;
 static const char *baseurl;
 static char *pathinfo;
 static char *C_user;
+static char *C_pass;
 static bool inetd_server;
 static bool got_request;
 
@@ -401,6 +402,7 @@ static bool cgi_handle_authorization(char *line)
 
 			/* Save the users name */
 			C_user = SMB_STRDUP(user);
+			C_pass = SMB_STRDUP(user_pass);
 			TALLOC_FREE(pass);
 			return True;
 		}
@@ -435,6 +437,13 @@ char *cgi_user_name(void)
         return(C_user);
 }
 
+/***************************************************************************
+return a ptr to the users password
+  ***************************************************************************/
+char *cgi_user_pass(void)
+{
+        return(C_pass);
+}
 
 /***************************************************************************
 handle a file download
