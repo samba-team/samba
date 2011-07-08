@@ -47,9 +47,6 @@ LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
 LIBRPCCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
 
-LIBCLI_WINREG_SRC = '''rpc_client/cli_winreg.c
-                       rpc_client/cli_winreg_int.c'''
-
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
@@ -1082,8 +1079,12 @@ bld.SAMBA3_LIBRARY('LIBCLI_SPOOLSS',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',
-                    source=LIBCLI_WINREG_SRC,
-                    deps='RPC_NDR_WINREG RPC_NCACN_NP')
+                    source='rpc_client/cli_winreg.c',
+                    deps='RPC_NDR_WINREG')
+
+bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG_INTERNAL',
+                    source='rpc_client/cli_winreg_int.c',
+                    deps='LIBCLI_WINREG RPC_NCACN_NP')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
                     source=RPC_CLIENT_SCHANNEL_SRC,
