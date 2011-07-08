@@ -934,8 +934,13 @@ static void globals_page(void)
 {
 	unsigned int parm_filter = FLAG_BASIC;
 	int mode = 0;
+	const char form_name[] = "globals";
 
 	printf("<H2>%s</H2>\n", _("Global Parameters"));
+
+	if (!verify_xsrf_token(form_name)) {
+		goto output_page;
+	}
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBAL_SECTION_SNUM);
@@ -949,7 +954,9 @@ static void globals_page(void)
 	if ( cgi_variable("AdvMode"))
 		mode = 1;
 
+output_page:
 	printf("<form name=\"swatform\" method=post action=globals>\n");
+	print_xsrf_token(cgi_user_name(), cgi_user_pass(), form_name);
 
 	ViewModeBoxes( mode );
 	switch ( mode ) {
