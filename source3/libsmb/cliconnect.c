@@ -2699,15 +2699,6 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			cli_set_signing_negotiated(cli);
 		}
 
-		if (cli->capabilities & (CAP_LARGE_READX|CAP_LARGE_WRITEX)) {
-			SAFE_FREE(cli->inbuf);
-			cli->inbuf = (char *)SMB_MALLOC(CLI_SAMBA_MAX_LARGE_READX_SIZE+LARGE_WRITEX_HDR_SIZE+SAFETY_MARGIN);
-			if (tevent_req_nomem(cli->inbuf, req)) {
-				return;
-			}
-			cli->bufsize = CLI_SAMBA_MAX_LARGE_READX_SIZE + LARGE_WRITEX_HDR_SIZE;
-		}
-
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;
 		cli->sec_mode = SVAL(vwv + 1, 0);

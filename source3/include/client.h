@@ -94,8 +94,6 @@ struct cli_state {
 	int timeout; /* in milliseconds. */
 	size_t max_xmit;
 	size_t max_mux;
-	char *inbuf;
-	unsigned int bufsize;
 	int initialised;
 	int win95;
 	bool is_samba;
