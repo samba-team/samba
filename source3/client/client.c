@@ -4942,6 +4942,11 @@ static void readline_callback(void)
 		status = receive_smb_raw(cli->fd, cli->inbuf, cli->bufsize, 0, 0, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			if (cli->fd != -1) {
+				close(cli->fd);
+				cli->fd = -1;
+			}
+
 			DEBUG(0, ("Read from server failed, maybe it closed "
 				  "the connection\n"));
 
