@@ -696,8 +696,9 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 			datalen = cli_read(cli, fnum, data, nread, read_size);
 
 			if (datalen == -1) {
-				DEBUG(0,("Error reading file %s : %s\n", rname, cli_errstr(cli)));
 				status = cli_nt_error(cli);
+				DEBUG(0,("Error reading file %s : %s\n",
+					 rname, nt_errstr(status)));
 				break;
 			}
 
