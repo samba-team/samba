@@ -254,8 +254,8 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
 	finfo->size = IVAL(p,26);
 	ret = clistr_pull_talloc(ctx,
-			cli->inbuf,
-			SVAL(cli->inbuf, smb_flg2),
+			NULL,
+			0,
 			&finfo->name,
 			p+30,
 			12,
