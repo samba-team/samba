@@ -77,8 +77,8 @@ static void smb2cli_req_unset_pending(struct tevent_req *req)
 	/*
 	 * Remove ourselves from the cli->pending array
 	 */
-	if (num_pending > 1) {
-		cli->pending[i] = cli->pending[num_pending-1];
+	for (; i < (num_pending - 1); i++) {
+		cli->pending[i] = cli->pending[i+1];
 	}
 
 	/*
