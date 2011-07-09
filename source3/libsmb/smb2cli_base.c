@@ -477,6 +477,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 			 */
 			goto fail;
 		}
+		smb2cli_req_unset_pending(req);
 		state = tevent_req_data(req, struct smb2cli_req_state);
 		if (i+3 >= num_iov) {
 			/* last in chain */
