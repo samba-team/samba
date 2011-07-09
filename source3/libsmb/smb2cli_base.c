@@ -474,12 +474,14 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		struct cli_state);
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_req *req;
+	struct smb2cli_req_state *state;
 	struct iovec *iov;
 	int i, num_iov;
 	NTSTATUS status;
 	uint8_t *inbuf;
 	ssize_t received;
 	int err;
+	size_t num_pending;
 
 	received = read_smb_recv(subreq, frame, &inbuf, &err);
 	TALLOC_FREE(subreq);
@@ -512,7 +514,6 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		uint8_t *inbuf_ref = NULL;
 		struct iovec *cur = &iov[i];
 		uint8_t *inhdr = (uint8_t *)cur[0].iov_base;
-		struct smb2cli_req_state *state;
 
 		req = cli_smb2_find_pending(
 			cli, BVAL(inhdr, SMB2_HDR_MESSAGE_ID));
@@ -556,6 +557,25 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 	}
 
 	TALLOC_FREE(frame);
+
+	num_pending = talloc_array_length(cli->pending);
+	if (num_pending == 0) {
+		/* no more pending requests, so we are done for now */
+		return;
+	}
+	req = cli->pending[0];
+	state = tevent_req_data(req, struct smb2cli_req_state);
+
+	/*
+	 * add the read_smb request that waits for the
+	 * next answer from the server
+	 */
+	subreq = read_smb_send(cli->pending, state->ev, cli->fd);
+	if (subreq == NULL) {
+		smb2cli_notify_pending(cli, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	tevent_req_set_callback(subreq, smb2cli_inbuf_received, cli);
 }
 
 NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
