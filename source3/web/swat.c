@@ -52,6 +52,8 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 #define XSRF_TOKEN "xsrf"
+#define XSRF_TIME "xsrf_time"
+#define XSRF_TIMEOUT 300
 
 #define _(x) lang_msg_rotate(talloc_tos(),x)
 
@@ -141,7 +143,7 @@ static char *make_parm_name(const char *label)
 }
 
 void get_xsrf_token(const char *username, const char *pass,
-		    const char *formname, char token_str[33])
+		    const char *formname, time_t xsrf_time, char token_str[33])
 {
 	struct MD5Context md5_ctx;
 	uint8_t token[16];
@@ -152,6 +154,7 @@ void get_xsrf_token(const char *username, const char *pass,
 	MD5Init(&md5_ctx);
 
 	MD5Update(&md5_ctx, (uint8_t *)formname, strlen(formname));
+	MD5Update(&md5_ctx, (uint8_t *)&xsrf_time, sizeof(time_t));
 	if (username != NULL) {
 		MD5Update(&md5_ctx, (uint8_t *)username, strlen(username));
 	}
@@ -173,11 +176,13 @@ void print_xsrf_token(const char *username, const char *pass,
 		      const char *formname)
 {
 	char token[33];
+	time_t xsrf_time = time(NULL);
 
-	get_xsrf_token(username, pass, formname, token);
+	get_xsrf_token(username, pass, formname, xsrf_time, token);
 	printf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n",
 	       XSRF_TOKEN, token);
-
+	printf("<input type=\"hidden\" name=\"%s\" value=\"%lld\">\n",
+	       XSRF_TIME, (long long int)xsrf_time);
 }
 
 bool verify_xsrf_token(const char *formname)
@@ -186,8 +191,23 @@ bool verify_xsrf_token(const char *formname)
 	const char *username = cgi_user_name();
 	const char *pass = cgi_user_pass();
 	const char *token = cgi_variable_nonull(XSRF_TOKEN);
+	const char *time_str = cgi_variable_nonull(XSRF_TIME);
+	time_t xsrf_time = 0;
+	time_t now = time(NULL);
 
-	get_xsrf_token(username, pass, formname, expected);
+	if (sizeof(time_t) == sizeof(int)) {
+		xsrf_time = atoi(time_str);
+	} else if (sizeof(time_t) == sizeof(long)) {
+		xsrf_time = atol(time_str);
+	} else if (sizeof(time_t) == sizeof(long long)) {
+		xsrf_time = atoll(time_str);
+	}
+
+	if (abs(now - xsrf_time) > XSRF_TIMEOUT) {
+		return false;
+	}
+
+	get_xsrf_token(username, pass, formname, xsrf_time, expected);
 	return (strncmp(expected, token, sizeof(expected)) == 0);
 }
 
