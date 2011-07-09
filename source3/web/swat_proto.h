@@ -68,7 +68,7 @@ void status_page(void);
 
 const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid);
 void get_xsrf_token(const char *username, const char *pass,
-		    const char *formname, char token_str[33]);
+		    const char *formname, time_t xsrf_time, char token_str[33]);
 void print_xsrf_token(const char *username, const char *pass,
 		      const char *formname);
 bool verify_xsrf_token(const char *formname);
