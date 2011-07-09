@@ -1016,7 +1016,7 @@ void _tevent_req_oom(struct tevent_req *req,
  * the request without waiting for an external event, or it can not even start
  * the engine. To present the illusion of a callback to the user of the API,
  * the implementation can call this helper function which triggers an
- * immediate timed event. This way the caller can use the same calling
+ * immediate event. This way the caller can use the same calling
  * conventions, independent of whether the request was actually deferred.
  *
  * @code
@@ -1040,7 +1040,7 @@ void _tevent_req_oom(struct tevent_req *req,
  *
  * @param[in]  req      The finished request.
  *
- * @param[in]  ev       The tevent_context for the timed event.
+ * @param[in]  ev       The tevent_context for the immediate event.
  *
  * @return              The given request will be returned.
  */
