@@ -50,6 +50,8 @@ static void smb2cli_req_unset_pending(struct tevent_req *req)
 	int num_pending = talloc_array_length(cli->pending);
 	int i;
 
+	talloc_set_destructor(req, NULL);
+
 	if (num_pending == 1) {
 		/*
 		 * The pending read_smb tevent_req is a child of
@@ -492,8 +494,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 	 */
 	while (talloc_array_length(cli->pending) > 0) {
 		req = cli->pending[0];
-		talloc_set_destructor(req, NULL);
-		smb2cli_req_destructor(req);
+		smb2cli_req_unset_pending(req);
 		tevent_req_nterror(req, status);
 	}
 }
