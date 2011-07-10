@@ -520,7 +520,19 @@ const char **iface_list_wildcard(TALLOC_CTX *mem_ctx, struct loadparm_context *l
 
 #ifdef HAVE_IPV6
 	if (lpcfg_parm_bool(lp_ctx, NULL, "ipv6", "enable", true)) {
-		return str_list_add(ret, "::");
+		struct interface *local_interfaces = NULL;
+
+		load_interface_list(ret, lp_ctx, &local_interfaces);
+
+		if (iface_list_first_v6(local_interfaces)) {
+			TALLOC_FREE(local_interfaces);
+			/*
+			 * only add "::" if we have at least
+			 * one ipv6 interface
+			 */
+			return str_list_add(ret, "::");
+		}
+		TALLOC_FREE(local_interfaces);
 	}
 #endif
 
