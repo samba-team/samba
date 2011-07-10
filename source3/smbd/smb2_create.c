@@ -736,8 +736,13 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				uint32_t max_access_granted;
 				DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
-				status = smbd_check_open_rights(smb1req->conn,
+				status = smbd_calculate_access_mask(smb1req->conn,
 							result->fsp_name,
+							/*
+							 * at this stage
+							 * it exists
+							 */
+							true,
 							SEC_FLAG_MAXIMUM_ALLOWED,
 							&max_access_granted);
 
