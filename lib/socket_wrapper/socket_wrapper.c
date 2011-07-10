@@ -554,6 +554,11 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 
 	if (bcast) *bcast = is_bcast;
 
+	if (iface == 0 || iface > MAX_WRAPPED_INTERFACES) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	if (prt == 0) {
 		/* handle auto-allocation of ephemeral ports */
 		for (prt = 5001; prt < 10000; prt++) {
