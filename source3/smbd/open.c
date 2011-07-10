@@ -1530,6 +1530,8 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				    uint32_t *access_mask_out)
 {
 	NTSTATUS status;
+	uint32_t orig_access_mask = access_mask;
+	uint32_t rejected_share_access;
 
 	/*
 	 * Convert GENERIC bits to specific bits.
@@ -1577,6 +1579,21 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 		} else {
 			access_mask = FILE_GENERIC_ALL;
 		}
+
+		access_mask &= conn->share_access;
+	}
+
+	rejected_share_access = access_mask & ~(conn->share_access);
+
+	if (rejected_share_access) {
+		DEBUG(10, ("smbd_calculate_access_mask: Access denied on "
+			"file %s: rejected by share access mask[0x%08X] "
+			"orig[0x%08X] mapped[0x%08X] reject[0x%08X]\n",
+			smb_fname_str_dbg(smb_fname),
+			conn->share_access,
+			orig_access_mask, access_mask,
+			rejected_share_access));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	*access_mask_out = access_mask;
