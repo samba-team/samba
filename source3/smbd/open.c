@@ -1522,11 +1522,11 @@ static void schedule_defer_open(struct share_mode_lock *lck,
  Work out what access_mask to use from what the client sent us.
 ****************************************************************************/
 
-static NTSTATUS calculate_access_mask(connection_struct *conn,
-					const struct smb_filename *smb_fname,
-					bool file_existed,
-					uint32_t access_mask,
-					uint32_t *access_mask_out)
+NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
+				    const struct smb_filename *smb_fname,
+				    bool file_existed,
+				    uint32_t access_mask,
+				    uint32_t *access_mask_out)
 {
 	NTSTATUS status;
 
@@ -1549,8 +1549,8 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 					SECINFO_DACL),&sd);
 
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("calculate_access_mask: Could not get acl "
-					"on file %s: %s\n",
+				DEBUG(10,("smbd_calculate_access_mask: "
+					"Could not get acl on file %s: %s\n",
 					smb_fname_str_dbg(smb_fname),
 					nt_errstr(status)));
 				return NT_STATUS_ACCESS_DENIED;
@@ -1565,8 +1565,9 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 			TALLOC_FREE(sd);
 
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("calculate_access_mask: Access denied on "
-					"file %s: when calculating maximum access\n",
+				DEBUG(10, ("smbd_calculate_access_mask: "
+					"Access denied on file %s: "
+					"when calculating maximum access\n",
 					smb_fname_str_dbg(smb_fname)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -1898,11 +1899,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = calculate_access_mask(conn, smb_fname, file_existed,
+	status = smbd_calculate_access_mask(conn, smb_fname, file_existed,
 					access_mask,
 					&access_mask); 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("open_file_ntcreate: calculate_access_mask "
+		DEBUG(10, ("open_file_ntcreate: smbd_calculate_access_mask "
 			"on file %s returned %s\n",
 			smb_fname_str_dbg(smb_fname), nt_errstr(status)));
 		return status;
@@ -2745,10 +2746,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	status = calculate_access_mask(conn, smb_dname, dir_existed,
-				       access_mask, &access_mask);
+	status = smbd_calculate_access_mask(conn, smb_dname, dir_existed,
+					    access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("open_directory: calculate_access_mask "
+		DEBUG(10, ("open_directory: smbd_calculate_access_mask "
 			"on file %s returned %s\n",
 			smb_fname_str_dbg(smb_dname),
 			nt_errstr(status)));
