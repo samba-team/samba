@@ -60,7 +60,7 @@ struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (!convert_string_talloc(state, CH_UNIX, CH_UTF16,
 				   mask, strlen(mask)+1,
 				   &dyn, &dyn_len)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
