@@ -61,7 +61,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	if (!convert_string_talloc(state, CH_UNIX, CH_UTF16,
 				   tcon_share, talloc_get_size(tcon_share),
 				   &dyn, &dyn_len)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 
