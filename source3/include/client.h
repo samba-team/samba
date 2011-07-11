@@ -82,6 +82,7 @@ struct cli_state {
 	char *share;
 	char *dev;
 	struct nmb_name called;
+	struct sockaddr_storage src_ss;
 	struct nmb_name calling;
 	struct sockaddr_storage dest_ss;
 
