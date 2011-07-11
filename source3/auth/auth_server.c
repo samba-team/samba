@@ -159,8 +159,8 @@ static bool send_server_keepalive(const struct timeval *now,
 	struct server_security_state *state = talloc_get_type_abort(
 		private_data, struct server_security_state);
 
-	if (!state->cli || !state->cli->initialised) {
-		return False;
+	if (!cli_state_is_connected(state->cli)) {
+		return false;
 	}
 
 	if (send_keepalive(state->cli->fd)) {
@@ -285,7 +285,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		locally_made_cli = True;
 	}
 
-	if (!cli || !cli->initialised) {
+	if (!cli_state_is_connected(cli)) {
 		DEBUG(1,("password server is not connected (cli not initialised)\n"));
 		return NT_STATUS_LOGON_FAILURE;
 	}  
