@@ -2742,13 +2742,19 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		char sockaddr[INET6_ADDRSTRLEN];
+		const struct sockaddr *sa;
+		socklen_t sa_len;
 
 		if (!cli_state_is_connected(domain->conn.cli)) {
 			continue;
 		}
 
-		client_socket_addr(domain->conn.cli->fd, sockaddr,
-				   sizeof(sockaddr));
+		sa = (const struct sockaddr *)(void *)&domain->conn.cli->src_ss;
+		sa_len = sizeof(domain->conn.cli->src_ss);
+
+		print_sockaddr_len(sockaddr, sizeof(sockaddr),
+				   sa, sa_len);
+
 		if (strequal(sockaddr, addr)) {
 			cli_state_disconnect(domain->conn.cli);
 		}
