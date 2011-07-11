@@ -60,7 +60,6 @@ struct cli_state {
 	int sec_mode;
 	int rap_error;
 	NTSTATUS raw_status; /* maybe via NT_STATUS_DOS() */
-	int privileges;
 
 	char *desthost;
 

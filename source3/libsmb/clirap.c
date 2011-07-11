@@ -140,7 +140,10 @@ bool cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 
 		if (cli->rap_error == 0) {
 			DEBUG(4,("NetWkstaUserLogon success\n"));
-			cli->privileges = SVAL(p, 24);
+			/*
+			 * The cli->privileges = SVAL(p, 24); field was set here
+			 * but it was not use anywhere else.
+			 */
 			/* The cli->eff_name field used to be set here
 	                   but it wasn't used anywhere else. */
 		} else {
