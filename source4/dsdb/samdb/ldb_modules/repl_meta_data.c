@@ -1774,7 +1774,13 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				ldb_asprintf_errstring(ldb, "Attribute %s already exists for target GUID %s",
 						       el->name, GUID_string(tmp_ctx, p->guid));
 				talloc_free(tmp_ctx);
-				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				/* error codes for 'member' need to be
+				   special cased */
+				if (ldb_attr_cmp(el->name, "member") == 0) {
+					return LDB_ERR_ENTRY_ALREADY_EXISTS;
+				} else {
+					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				}
 			}
 			ret = replmd_update_la_val(old_el->values, p->v, dns[i].dsdb_dn, p->dsdb_dn,
 						   invocation_id, seq_num, seq_num, now, 0, false);
@@ -1886,13 +1892,21 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		if (!p2) {
 			ldb_asprintf_errstring(ldb, "Attribute %s doesn't exist for target GUID %s",
 					       el->name, GUID_string(tmp_ctx, p->guid));
-			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+			if (ldb_attr_cmp(el->name, "member") == 0) {
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			} else {
+				return LDB_ERR_NO_SUCH_ATTRIBUTE;
+			}
 		}
 		rmd_flags = dsdb_dn_rmd_flags(p2->dsdb_dn->dn);
 		if (rmd_flags & DSDB_RMD_FLAG_DELETED) {
 			ldb_asprintf_errstring(ldb, "Attribute %s already deleted for target GUID %s",
 					       el->name, GUID_string(tmp_ctx, p->guid));
-			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+			if (ldb_attr_cmp(el->name, "member") == 0) {
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			} else {
+				return LDB_ERR_NO_SUCH_ATTRIBUTE;
+			}
 		}
 	}
 

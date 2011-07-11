@@ -1568,7 +1568,6 @@ static int samldb_member_check(struct samldb_ctx *ac)
 	struct ldb_result *res;
 	struct dom_sid *group_sid;
 	unsigned int i, j;
-	int cnt;
 	int ret;
 
 	/* Fetch information from the existing object */
@@ -1596,7 +1595,6 @@ static int samldb_member_check(struct samldb_ctx *ac)
 
 		el = &ac->msg->elements[i];
 		for (j = 0; j < el->num_values; j++) {
-			struct ldb_message_element *mo;
 			struct ldb_result *group_res;
 			const char *group_attrs[] = { "primaryGroupID" , NULL };
 			uint32_t prim_group_rid;
@@ -1605,36 +1603,6 @@ static int samldb_member_check(struct samldb_ctx *ac)
 							&el->values[j]);
 			if (!ldb_dn_validate(member_dn)) {
 				return ldb_operr(ldb);
-			}
-
-			/* The "member" attribute can be modified with the
-			 * following restrictions (beside a valid DN):
-			 *
-			 * - "add" operations can only be performed when the
-			 *   member still doesn't exist - if not then return
-			 *   ERR_ENTRY_ALREADY_EXISTS (not
-			 *   ERR_ATTRIBUTE_OR_VALUE_EXISTS!)
-			 * - "delete" operations can only be performed when the
-			 *   member does exist - if not then return
-			 *   ERR_UNWILLING_TO_PERFORM (not
-			 *   ERR_NO_SUCH_ATTRIBUTE!)
-			 * - primary group check
-			 */
-			mo = samdb_find_attribute(ldb, res->msgs[0], "member",
-						  ldb_dn_get_linearized(member_dn));
-			if (mo == NULL) {
-				cnt = 0;
-			} else {
-				cnt = 1;
-			}
-
-			if ((cnt > 0) && (LDB_FLAG_MOD_TYPE(el->flags)
-			    == LDB_FLAG_MOD_ADD)) {
-				return LDB_ERR_ENTRY_ALREADY_EXISTS;
-			}
-			if ((cnt == 0) && LDB_FLAG_MOD_TYPE(el->flags)
-			    == LDB_FLAG_MOD_DELETE) {
-				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
 
 			/* Denies to add "member"s to groups which are primary
@@ -1665,6 +1633,9 @@ static int samldb_member_check(struct samldb_ctx *ac)
 			}
 
 			if (dom_sid_equal(group_sid, sid)) {
+				ldb_asprintf_errstring(ldb,
+						       "samldb: member %s already set via primaryGroupID %u",
+						       ldb_dn_get_linearized(member_dn), prim_group_rid);
 				return LDB_ERR_ENTRY_ALREADY_EXISTS;
 			}
 		}
