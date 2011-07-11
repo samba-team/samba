@@ -58,6 +58,11 @@ class dbcheck(object):
         self.yes = yes
         self.quiet = quiet
         self.remove_all_unknown_attributes = False
+        self.remove_all_empty_attributes = False
+        self.fix_all_normalisation = False
+        self.fix_all_DN_GUIDs = False
+        self.remove_all_deleted_DN_links = False
+        self.fix_all_target_mismatch = False
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -121,7 +126,7 @@ class dbcheck(object):
     def err_empty_attribute(self, dn, attrname):
         '''fix empty attributes'''
         self.report("ERROR: Empty attribute %s in %s" % (attrname, dn))
-        if not self.confirm('Remove empty attribute %s from %s?' % (attrname, dn)):
+        if not self.confirm_all('Remove empty attribute %s from %s?' % (attrname, dn), 'remove_all_empty_attributes'):
             self.report("Not fixing empty attribute %s" % attrname)
             return
 
@@ -152,7 +157,7 @@ class dbcheck(object):
             elif (normalised[0] != val):
                 self.report("value '%s' should be '%s'" % (val, normalised[0]))
                 mod_list.append((val, normalised[0]))
-        if not self.confirm('Fix normalisation for %s from %s?' % (attrname, dn)):
+        if not self.confirm_all('Fix normalisation for %s from %s?' % (attrname, dn), 'fix_all_normalisation'):
             self.report("Not fixing attribute %s" % attrname)
             return
 
@@ -193,7 +198,7 @@ class dbcheck(object):
             return
         dsdb_dn.dn = res[0].dn
 
-        if not self.confirm('Change DN to %s?' % str(dsdb_dn)):
+        if not self.confirm_all('Change DN to %s?' % str(dsdb_dn), 'fix_all_DN_GUIDs'):
             self.report("Not fixing %s" % errstr)
             return
         m = ldb.Message()
@@ -215,7 +220,7 @@ class dbcheck(object):
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
         self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
         self.report("Target GUID points at deleted DN %s" % correct_dn)
-        if not self.confirm('Remove DN?'):
+        if not self.confirm_all('Remove DN?', 'remove_all_deleted_DN_links'):
             self.report("Not removing")
             return
         m = ldb.Message()
@@ -237,7 +242,7 @@ class dbcheck(object):
         self.report("ERROR: incorrect DN string component for %s in object %s - %s" % (attrname, dn, val))
         dsdb_dn.dn = correct_dn
 
-        if not self.confirm('Change DN to %s?' % str(dsdb_dn)):
+        if not self.confirm_all('Change DN to %s?' % str(dsdb_dn), 'fix_all_target_mismatch'):
             self.report("Not fixing %s" % errstr)
             return
         m = ldb.Message()
