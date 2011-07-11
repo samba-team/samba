@@ -333,20 +333,12 @@ class dbcheck(object):
         '''Read metadata properties and list attributes in it'''
 
         list_att = []
-        d = {}
-        if self.dict_oid_name == None:
-            res = self.samdb.search(expression = '(lDAPDisplayName=*)',
-                                    controls=["search_options:1:2"],
-                                    attrs=["attributeID","lDAPDisplayName"])
-            for m in res:
-                d[str(m.get("attributeID"))] = str(m.get("lDAPDisplayName"))
-            self.dict_oid_name = d
 
-        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,str(val))
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
         obj = repl.ctr
 
         for o in repl.ctr.array:
-            att = self.dict_oid_name[self.samdb.get_oid_from_attid(o.attid)]
+            att = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
             list_att.append(att.lower())
 
         return list_att
