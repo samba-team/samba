@@ -542,10 +542,20 @@ static bool check_error(int line, struct cli_state *c,
 
 static bool wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
-	while (!cli_lock(c, fnum, offset, len, -1, WRITE_LOCK)) {
-		if (!check_error(__LINE__, c, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
+	NTSTATUS status;
+
+	status = cli_lock32(c, fnum, offset, len, -1, WRITE_LOCK);
+
+	while (!NT_STATUS_IS_OK(status)) {
+		if (!check_both_error(__LINE__, status, ERRDOS,
+				      ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) {
+			return false;
+		}
+
+		status = cli_lock32(c, fnum, offset, len, -1, WRITE_LOCK);
 	}
-	return True;
+
+	return true;
 }
 
 
