@@ -4911,7 +4911,8 @@ static void readline_callback(void)
 	static time_t last_t;
 	struct timespec now;
 	time_t t;
-	int ret, revents;
+	NTSTATUS status;
+	unsigned char garbage[16];
 
 	clock_gettime_mono(&now);
 	t = now.tv_sec;
@@ -4921,60 +4922,14 @@ static void readline_callback(void)
 
 	last_t = t;
 
- again:
-
-	if (cli->fd == -1)
-		return;
-
-	/* We deliberately use receive_smb_raw instead of
-	   client_receive_smb as we want to receive
-	   session keepalives and then drop them here.
-	*/
-
-	ret = poll_intr_one_fd(cli->fd, POLLIN|POLLHUP, 0, &revents);
-
-	if ((ret > 0) && (revents & (POLLIN|POLLHUP|POLLERR))) {
-		char inbuf[CLI_SAMBA_MAX_LARGE_READX_SIZE + LARGE_WRITEX_HDR_SIZE];
-		NTSTATUS status;
-		size_t len;
-
-		status = receive_smb_raw(cli->fd, inbuf, sizeof(inbuf), 0, 0, &len);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			if (cli->fd != -1) {
-				close(cli->fd);
-				cli->fd = -1;
-			}
-
-			DEBUG(0, ("Read from server failed, maybe it closed "
-				  "the connection: %s\n", nt_errstr(status)));
-
-			finished = true;
-			smb_readline_done();
-			return;
-		}
-		if(CVAL(inbuf,0) != SMBkeepalive) {
-			DEBUG(0, ("Read from server "
-				"returned unexpected packet!\n"));
-			return;
-		}
-
-		goto again;
-	}
-
 	/* Ping the server to keep the connection alive using SMBecho. */
-	{
-		NTSTATUS status;
-		unsigned char garbage[16];
-		memset(garbage, 0xf0, sizeof(garbage));
-		status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("SMBecho failed. Maybe server has closed "
-				"the connection\n"));
-			finished = true;
-			smb_readline_done();
-		}
+	memset(garbage, 0xf0, sizeof(garbage));
+	status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("SMBecho failed. Maybe server has closed "
+			"the connection\n"));
+		finished = true;
+		smb_readline_done();
 	}
 }
 
