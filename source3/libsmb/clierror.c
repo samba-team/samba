@@ -194,3 +194,10 @@ bool cli_state_is_connected(struct cli_state *cli)
 	return true;
 }
 
+void cli_state_disconnect(struct cli_state *cli)
+{
+	if (cli->fd != -1) {
+		close(cli->fd);
+	}
+	cli->fd = -1;
+}
