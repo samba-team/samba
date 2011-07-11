@@ -44,6 +44,7 @@ struct extended_search_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
 	struct ldb_dn *basedn;
+	struct ldb_dn *dn;
 	char *wellknown_object;
 	int extended_type;
 };
@@ -109,7 +110,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 			   normal provision. We need to return
 			   NO_SUCH_OBJECT */
 			const char *str = talloc_asprintf(req, "Duplicate base-DN matches found for '%s'",
-							  ldb_dn_get_extended_linearized(req, ac->req->op.search.base, 1));
+							  ldb_dn_get_extended_linearized(req, ac->dn, 1));
 			ldb_set_errstring(ldb_module_get_ctx(ac->module), str);
 			return ldb_module_done(ac->req, NULL, NULL,
 					       LDB_ERR_NO_SUCH_OBJECT);
@@ -168,7 +169,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 
 		if (!ac->basedn) {
 			const char *str = talloc_asprintf(req, "Base-DN '%s' not found",
-							  ldb_dn_get_extended_linearized(req, ac->req->op.search.base, 1));
+							  ldb_dn_get_extended_linearized(req, ac->dn, 1));
 			ldb_set_errstring(ldb_module_get_ctx(ac->module), str);
 			return ldb_module_done(ac->req, NULL, NULL,
 					       LDB_ERR_NO_SUCH_OBJECT);
@@ -388,6 +389,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		
 		ac->module = module;
 		ac->req = req;
+		ac->dn = dn;
 		ac->basedn = NULL;  /* Filled in if the search finds the DN by SID/GUID etc */
 		ac->wellknown_object = wellknown_object;
 		
