@@ -1643,37 +1643,48 @@ static bool run_locktest2(int dummy)
 
 	cli_setpid(cli, 1);
 
-	if (!cli_lock(cli, fnum1, 0, 4, 0, WRITE_LOCK)) {
-		printf("lock1 failed (%s)\n", cli_errstr(cli));
-		return False;
+	status = cli_lock32(cli, fnum1, 0, 4, 0, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lock1 failed (%s)\n", nt_errstr(status));
+		return false;
 	}
 
-	if (cli_lock(cli, fnum1, 0, 4, 0, WRITE_LOCK)) {
+	status = cli_lock32(cli, fnum1, 0, 4, 0, WRITE_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("WRITE lock1 succeeded! This is a locking bug\n");
-		correct = False;
+		correct = false;
 	} else {
-		if (!check_error(__LINE__, cli, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_LOCK_NOT_GRANTED)) {
+			return false;
+		}
 	}
 
-	if (cli_lock(cli, fnum2, 0, 4, 0, WRITE_LOCK)) {
+	status = cli_lock32(cli, fnum2, 0, 4, 0, WRITE_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("WRITE lock2 succeeded! This is a locking bug\n");
-		correct = False;
+		correct = false;
 	} else {
-		if (!check_error(__LINE__, cli, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_LOCK_NOT_GRANTED)) {
+			return false;
+		}
 	}
 
-	if (cli_lock(cli, fnum2, 0, 4, 0, READ_LOCK)) {
+	status = cli_lock32(cli, fnum2, 0, 4, 0, READ_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("READ lock2 succeeded! This is a locking bug\n");
-		correct = False;
+		correct = false;
 	} else {
-		if (!check_error(__LINE__, cli, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				 NT_STATUS_FILE_LOCK_CONFLICT)) {
+			return false;
+		}
 	}
 
-	if (!cli_lock(cli, fnum1, 100, 4, 0, WRITE_LOCK)) {
-		printf("lock at 100 failed (%s)\n", cli_errstr(cli));
+	status = cli_lock32(cli, fnum1, 100, 4, 0, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lock at 100 failed (%s)\n", nt_errstr(status));
 	}
 	cli_setpid(cli, 2);
 	if (NT_STATUS_IS_OK(cli_unlock(cli, fnum1, 100, 4))) {
@@ -1699,11 +1710,15 @@ static bool run_locktest2(int dummy)
 				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
-	if (cli_lock(cli, fnum3, 0, 4, 0, WRITE_LOCK)) {
+	status = cli_lock32(cli, fnum3, 0, 4, 0, WRITE_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("lock3 succeeded! This is a locking bug\n");
-		correct = False;
+		correct = false;
 	} else {
-		if (!check_error(__LINE__, cli, ERRDOS, ERRlock, NT_STATUS_LOCK_NOT_GRANTED)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_LOCK_NOT_GRANTED)) {
+			return false;
+		}
 	}
 
 	cli_setpid(cli, 1);
