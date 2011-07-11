@@ -835,9 +835,7 @@ void reply_tcon_and_X(struct smb_request *req)
 				perm1 = FILE_ALL_ACCESS;
 				perm2 = FILE_ALL_ACCESS;
 			} else {
-				perm1 = CAN_WRITE(conn) ?
-						SHARE_ALL_ACCESS :
-						SHARE_READ_ONLY;
+				perm1 = conn->share_access;
 			}
 
 			SIVAL(req->outbuf, smb_vwv3, perm1);
