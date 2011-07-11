@@ -1445,12 +1445,10 @@ static void store_current_dc_in_gencache(const char *domain_name,
 	char *key = NULL;
 	char *value = NULL;
 
-	if (cli == NULL) {
+	if (!cli_state_is_connected(cli)) {
 		return;
 	}
-	if (cli->fd == -1) {
-		return;
-	}
+
 	get_peer_addr(cli->fd, addr, sizeof(addr));
 
 	key = current_dc_key(talloc_tos(), domain_name);
@@ -1718,7 +1716,7 @@ void close_conns_after_fork(void)
 		 * so that we don't generate any SMBclose
 		 * requests in invalidate_cm_connection()
 		 */
-		if (cli && cli->fd != -1) {
+		if (cli_state_is_connected(domain->conn.cli)) {
 			close(domain->conn.cli->fd);
 			domain->conn.cli->fd = -1;
 		}
@@ -2739,12 +2737,11 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		char sockaddr[INET6_ADDRSTRLEN];
-		if (domain->conn.cli == NULL) {
+
+		if (!cli_state_is_connected(domain->conn.cli)) {
 			continue;
 		}
-		if (domain->conn.cli->fd == -1) {
-			continue;
-		}
+
 		client_socket_addr(domain->conn.cli->fd, sockaddr,
 				   sizeof(sockaddr));
 		if (strequal(sockaddr, addr)) {
