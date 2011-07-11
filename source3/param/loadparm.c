@@ -312,7 +312,8 @@ static void add_to_file_list(const char *fname, const char *subfname);
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
 
 static const struct enum_list enum_protocol[] = {
-	{PROTOCOL_SMB2, "SMB2"},
+	{PROTOCOL_SMB2_02, "SMB2"},
+	{PROTOCOL_SMB2_02, "SMB2_02"},
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
 	{PROTOCOL_LANMAN1, "LANMAN1"},
@@ -5321,7 +5322,7 @@ static FN_GLOBAL_INTEGER(_lp_maxprotocol, maxprotocol)
 int lp_maxprotocol(void)
 {
 	int ret = _lp_maxprotocol();
-	if ((ret == PROTOCOL_SMB2) && (lp_security() == SEC_SHARE)) {
+	if ((ret >= PROTOCOL_SMB2_02) && (lp_security() == SEC_SHARE)) {
 		DEBUG(2,("WARNING!!: \"security = share\" is incompatible "
 			"with the SMB2 protocol. Resetting to SMB1.\n" ));
 			lp_do_parameter(-1, "max protocol", "NT1");
