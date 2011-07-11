@@ -68,6 +68,8 @@ class dbcheck(object):
         self.remove_all_deleted_DN_links = False
         self.fix_all_target_mismatch = False
         self.fix_all_metadata = False
+        self.fix_all_missing_backlinks = False
+        self.fix_all_orphaned_backlinks = False
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -126,6 +128,18 @@ class dbcheck(object):
         return c
 
 
+    def do_modify(self, m, controls, msg, validate=True):
+        '''perform a modify with optional verbose output'''
+        if self.verbose:
+            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
+        try:
+            self.samdb.modify(m, controls=controls, validate=validate)
+        except Exception, err:
+            self.report("%s : %s" % (msg, err))
+            return False
+        return True
+
+
     ################################################################
     # handle empty attributes
     def err_empty_attribute(self, dn, attrname):
@@ -138,14 +152,9 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = dn
         m[attrname] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, attrname)
-        if self.verbose:
-            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
-        try:
-            self.samdb.modify(m, controls=["relax:0", "show_deleted:1"], validate=False)
-        except Exception, msg:
-            self.report("Failed to remove empty attribute %s : %s" % (attrname, msg))
-            return
-        self.report("Removed empty attribute %s" % attrname)
+        if self.do_modify(m, ["relax:0", "show_deleted:1"],
+                          "Failed to remove empty attribute %s" % attrname, validate=False):
+            self.report("Removed empty attribute %s" % attrname)
 
 
     ################################################################
@@ -174,14 +183,10 @@ class dbcheck(object):
             if nval != '':
                 m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
 
-        if self.verbose:
-            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
-        try:
-            self.samdb.modify(m, controls=["relax:0", "show_deleted:1"], validate=False)
-        except Exception, msg:
-            self.report("Failed to normalise attribute %s : %s" % (attrname, msg))
-            return
-        self.report("Normalised attribute %s" % attrname)
+        if self.do_modify(m, ["relax:0", "show_deleted:1"],
+                          "Failed to normalise attribute %s" % attrname,
+                          validate=False):
+            self.report("Normalised attribute %s" % attrname)
 
     def is_deleted_objects_dn(self, dsdb_dn):
         '''see if a dsdb_DN is the special Deleted Objects DN'''
@@ -208,14 +213,10 @@ class dbcheck(object):
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
-        if self.verbose:
-            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
-        try:
-            self.samdb.modify(m, controls=["show_deleted:1"])
-        except Exception, msg:
-            self.report("Failed to fix %s on attribute %s : %s" % (errstr, attrname, msg))
-            return
-        self.report("Fixed %s on attribute %s" % (errstr, attrname))
+
+        if self.do_modify(m, ["show_deleted:1"],
+                          "Failed to fix %s on attribute %s" % (errstr, attrname)):
+            self.report("Fixed %s on attribute %s" % (errstr, attrname))
 
 
     ################################################################
@@ -229,14 +230,9 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
-        if self.verbose:
-            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
-        try:
-            self.samdb.modify(m, controls=["show_deleted:1"])
-        except Exception, msg:
-            self.report("Failed to remove deleted DN attribute %s : %s" % (attrname, msg))
-            return
-        self.report("Removed deleted DN on attribute %s" % attrname)
+        if self.do_modify(m, ["show_deleted:1"],
+                          "Failed to remove deleted DN attribute %s" % attrname):
+            self.report("Removed deleted DN on attribute %s" % attrname)
 
 
     ################################################################
@@ -252,14 +248,9 @@ class dbcheck(object):
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
-        if self.verbose:
-            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
-        try:
-            self.samdb.modify(m, controls=["show_deleted:1"])
-        except Exception, msg:
-            self.report("Failed to fix incorrect DN string on attribute %s : %s" % (attrname, msg))
-            return
-        self.report("Fixed incorrect DN string on attribute %s" % (attrname))
+        if self.do_modify(m, ["show_deleted:1"],
+                          "Failed to fix incorrect DN string on attribute %s" % attrname):
+            self.report("Fixed incorrect DN string on attribute %s" % (attrname))
 
     ################################################################
     # handle an unknown attribute error
@@ -272,14 +263,43 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = obj.dn
         m['old_value'] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, attrname)
-        if self.verbose:
-            self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
-        try:
-            self.samdb.modify(m, controls=["relax:0", "show_deleted:1"])
-        except Exception, msg:
-            self.report("Failed to remove unknown attribute %s : %s" % (attrname, msg))
+        if self.do_modify(m, ["relax:0", "show_deleted:1"],
+                          "Failed to remove unknown attribute %s" % attrname):
+            self.report("Removed unknown attribute %s" % (attrname))
+
+
+    ################################################################
+    # handle a missing backlink
+    def err_missing_backlink(self, obj, attrname, val, backlink_name, target_dn):
+        '''handle a missing backlink value'''
+        self.report("ERROR: missing backlink attribute '%s' in %s for link %s in %s" % (backlink_name, target_dn, attrname, obj.dn))
+        if not self.confirm_all('Fix missing backlink %s' % backlink_name, 'fix_all_missing_backlinks'):
+            self.report("Not fixing missing backlink %s" % backlink_name)
             return
-        self.report("Removed unknown attribute %s" % (attrname))
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        m['new_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_ADD, attrname)
+        if self.do_modify(m, ["show_deleted:1"],
+                          "Failed to fix missing backlink %s" % backlink_name):
+            self.report("Fixed missing backlink %s" % (backlink_name))
+
+
+    ################################################################
+    # handle a orphaned backlink
+    def err_orphaned_backlink(self, obj, attrname, val, backlink_name, target_dn):
+        '''handle a orphaned backlink value'''
+        self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_name, target_dn, attrname, obj.dn))
+        if not self.confirm_all('Fix orphaned backlink %s' % backlink_name, 'fix_all_orphaned_backlinks'):
+            self.report("Not fixing orphaned backlink %s" % backlink_name)
+            return
+        m = ldb.Message()
+        m.dn = target_dn
+        m['old_value'] = ldb.MessageElement(obj.dn, ldb.FLAG_MOD_DELETE, backlink_name)
+        m['new_value'] = ldb.MessageElement(obj.dn, ldb.FLAG_MOD_ADD, backlink_name)
+        if self.do_modify(m, ["show_deleted:1"],
+                          "Failed to fix orphaned backlink %s" % backlink_name):
+            self.report("Fixed orphaned backlink %s" % (backlink_name))
 
 
     ################################################################
@@ -299,10 +319,16 @@ class dbcheck(object):
 
             guidstr = str(misc.GUID(guid))
 
+            attrs=['isDeleted']
+            linkkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
+            backlink_name = self.samdb.get_backlink_from_lDAPDisplayName(attrname)
+            if backlink_name is not None:
+                attrs.append(backlink_name)
+
             # check its the right GUID
             try:
                 res = self.samdb.search(base="<GUID=%s>" % guidstr, scope=ldb.SCOPE_BASE,
-                                        attrs=['isDeleted'], controls=["extended_dn:1:1", "show_deleted:1"])
+                                        attrs=attrs, controls=["extended_dn:1:1", "show_deleted:1"])
             except ldb.LdbError, (enum, estr):
                 error_count += 1
                 self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn, "incorrect GUID")
@@ -325,6 +351,21 @@ class dbcheck(object):
                 self.err_dn_target_mismatch(obj.dn, attrname, val, dsdb_dn,
                                             res[0].dn, "incorrect string version of DN")
                 continue
+
+            # check the backlink is correct if there should be one
+            if backlink_name is not None:
+                match_count = 0
+                if backlink_name in res[0]:
+                    for v in res[0][backlink_name]:
+                        if v == obj.dn.extended_str():
+                            match_count += 1
+                if match_count != 1:
+                    error_count += 1
+                    if linkkID & 1:
+                        self.err_orphaned_backlink(obj, attrname, val, backlink_name, dsdb_dn.dn)
+                    else:
+                        self.err_missing_backlink(obj, attrname, val, backlink_name, dsdb_dn.dn)
+                    continue
 
         return error_count
 
@@ -353,12 +394,9 @@ class dbcheck(object):
         nmsg = ldb.Message()
         nmsg.dn = dn
         nmsg[attr] = ldb.MessageElement(msg[attr], ldb.FLAG_MOD_REPLACE, attr)
-        try:
-            self.samdb.modify(nmsg, controls = ["relax:0", "provision:0", "show_deleted:1"])
-        except Exception, err:
-            self.report("Failed to fix metadata for attribute %s : %s" % (attr, err))
-            return
-        self.report("Fixed metadata for attribute %s" % attr)
+        if self.do_modify(nmsg, ["relax:0", "provision:0", "show_deleted:1"],
+                          "Failed to fix metadata for attribute %s" % attr):
+            self.report("Fixed metadata for attribute %s" % attr)
 
 
     ################################################################
