@@ -1717,8 +1717,7 @@ void close_conns_after_fork(void)
 		 * requests in invalidate_cm_connection()
 		 */
 		if (cli_state_is_connected(domain->conn.cli)) {
-			close(domain->conn.cli->fd);
-			domain->conn.cli->fd = -1;
+			cli_state_disconnect(domain->conn.cli);
 		}
 
 		invalidate_cm_connection(&domain->conn);
@@ -2745,8 +2744,7 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 		client_socket_addr(domain->conn.cli->fd, sockaddr,
 				   sizeof(sockaddr));
 		if (strequal(sockaddr, addr)) {
-			close(domain->conn.cli->fd);
-			domain->conn.cli->fd = -1;
+			cli_state_disconnect(domain->conn.cli);
 		}
 	}
 	TALLOC_FREE(freeit);
