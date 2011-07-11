@@ -67,6 +67,7 @@ class dbcheck(object):
         self.fix_all_DN_GUIDs = False
         self.remove_all_deleted_DN_links = False
         self.fix_all_target_mismatch = False
+        self.fix_all_metadata = False
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -351,22 +352,22 @@ class dbcheck(object):
         return list_att
 
 
-    def fix_metadata(self, dn, list):
-        res = self.samdb.search(base = dn, scope=ldb.SCOPE_BASE, attrs = list,
-                controls = ["search_options:1:2"])
+    def fix_metadata(self, dn, attr):
+        '''re-write replPropertyMetaData elements for a single attribute for a
+        object. This is used to fix missing replPropertyMetaData elements'''
+        res = self.samdb.search(base = dn, scope=ldb.SCOPE_BASE, attrs = [attr],
+                                controls = ["search_options:1:2", "show_deleted:1"])
         msg = res[0]
         nmsg = ldb.Message()
-
-        delta = self.samdb.msg_diff(nmsg, msg)
         nmsg.dn = dn
+        nmsg[attr] = ldb.MessageElement(msg[attr], ldb.FLAG_MOD_REPLACE, attr)
+        try:
+            self.samdb.modify(nmsg, controls = ["relax:0", "provision:0", "show_deleted:1"])
+        except Exception, err:
+            self.report("Failed to fix metadata for attribute %s : %s" % (attr, err))
+            return
+        self.report("Fixed metadata for attribute %s" % attr)
 
-        for att in delta:
-            if att == "dn":
-                continue
-            val = delta.get(att)
-            nmsg[att] = ldb.MessageElement(val, ldb.FLAG_MOD_REPLACE, att)
-
-        self.samdb.modify(nmsg, controls = ["relax:0", "provision:0"])
 
     ################################################################
     # check one object - calls to individual error handlers above
@@ -433,19 +434,16 @@ class dbcheck(object):
                     break
 
         show_dn = True
-        if len(list_attrs_seen):
-            attrs_to_fix = []
-            for att in list_attrs_seen:
-                if not att in list_attrs_from_md:
-                    if show_dn:
-                        print "On object %s" % dn
-                        show_dn = False
-                    print " Attribute %s not present in replication metadata" % (att)
-                    error_count += 1
-                    attrs_to_fix.append(att)
-
-            if len(attrs_to_fix) and self.fix:
-                self.fix_metadata(dn, attrs_to_fix)
-
+        for att in list_attrs_seen:
+            if not att in list_attrs_from_md:
+                if show_dn:
+                    self.report("On object %s" % dn)
+                    show_dn = False
+                error_count += 1
+                self.report("ERROR: Attribute %s not present in replication metadata" % att)
+                if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
+                    self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
+                    continue
+                self.fix_metadata(dn, att)
 
         return error_count
