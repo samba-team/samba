@@ -261,8 +261,8 @@ smbc_free_context(SMBCCTX *context,
                                   "Nice way shutdown failed.\n"));
                         s = context->internal->servers;
                         while (s) {
-                                DEBUG(1, ("Forced shutdown: %p (fd=%d)\n",
-                                          s, s->cli->fd));
+                                DEBUG(1, ("Forced shutdown: %p (cli=%p)\n",
+                                          s, s->cli));
                                 cli_shutdown(s->cli);
                                 smbc_getFunctionRemoveCachedServer(context)(context,
                                                                          s);
