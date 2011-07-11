@@ -63,11 +63,18 @@ class cmd_dbcheck(Command):
             scope="SUB", credopts=None, sambaopts=None, versionopts=None, attrs=None):
 
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        over_ldap = H is not None and H.startswith('ldap')
+
+        if over_ldap:
+            creds = credopts.get_credentials(lp, fallback_machine=True)
+        else:
+            creds = None
 
         samdb = SamDB(session_info=system_session(), url=H,
                       credentials=creds, lp=lp)
-        if H is None:
+
+        if H is None or not over_ldap:
             samdb_schema = samdb
         else:
             samdb_schema = SamDB(session_info=system_session(), url=None,
