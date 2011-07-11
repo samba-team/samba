@@ -51,7 +51,6 @@ struct cli_state {
 	 * A list of subsidiary connections for DFS.
 	 */
         struct cli_state *prev, *next;
-	int port;
 	int fd;
 	uint16 cnum;
 	uint16 pid;

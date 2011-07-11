@@ -2884,7 +2884,6 @@ NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
 		goto fail;
 	}
 	cli->fd = fd;
-	cli->port = port;
 
 	length = sizeof(cli->src_ss);
 	ret = getsockname(fd, (struct sockaddr *)(void *)&cli->src_ss,

@@ -51,15 +51,6 @@ unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
 }
 
 /****************************************************************************
- Change the port number used to call on.
-****************************************************************************/
-
-void cli_set_port(struct cli_state *cli, int port)
-{
-	cli->port = port;
-}
-
-/****************************************************************************
  convenience routine to find if we negotiated ucs2
 ****************************************************************************/
 
@@ -191,7 +182,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	if (!cli->dfs_mountpoint) {
 		goto error;
 	}
-	cli->port = 0;
 	cli->fd = -1;
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->cnum = -1;
