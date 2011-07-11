@@ -2836,7 +2836,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 	char *rhost;
 	int ret;
 
-	if (lp_maxprotocol() == PROTOCOL_SMB2) {
+	if (lp_maxprotocol() >= PROTOCOL_SMB2_02) {
 		/*
 		 * We're not making the decision here,
 		 * we're just allowing the client

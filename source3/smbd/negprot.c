@@ -510,7 +510,7 @@ static const struct {
 	void (*proto_reply_fn)(struct smb_request *req, uint16 choice);
 	int protocol_level;
 } supported_protocols[] = {
-	{"SMB 2.002",               "SMB2",     reply_smb2002,  PROTOCOL_SMB2},
+	{"SMB 2.002",               "SMB2_02",  reply_smb2002,  PROTOCOL_SMB2_02},
 	{"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
 	{"NT LM 0.12",              "NT1",      reply_nt1,      PROTOCOL_NT1},
 	{"POSIX 2",                 "NT1",      reply_nt1,      PROTOCOL_NT1},
