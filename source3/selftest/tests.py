@@ -183,7 +183,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.samr", "rpc.samr.users", "rpc.samr.users.privileges", "rpc.samr.passwords",
        "rpc.samr.passwords.pwdlastset", "rpc.samr.large-dc", "rpc.samr.machine.auth",
        "rpc.netlogon.admin",
-       "rpc.schannel", "rpc.schannel2", "rpc.bench-schannel1", "rpc.join", "rpc.bind", "rpc.epmapper"]
+       "rpc.schannel", "rpc.schannel2", "rpc.bench-schannel1", "rpc.join", "rpc.bind"]
 
 local = ["local.nss-wrapper", "local.ndr"]
 
@@ -250,3 +250,10 @@ if sub.returncode == 0:
                 binding_string = "ncacn_ip_tcp:$SERVER_IP[%s%s%s]" % (a, s, e)
                 options = binding_string + " -U$USERNAME%$PASSWORD"
                 plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_ip_tcp with [%s%s%s] ' % (a, s, e))
+
+    test = 'rpc.epmapper'
+    env = 's3dc:local'
+    binding_string = 'ncalrpc:'
+    options = binding_string + " -U$USERNAME%$PASSWORD"
+
+    plansmbtorturetestsuite(test, env, options, 'over ncalrpc')

@@ -900,7 +900,7 @@ sub provision($$$$$$$)
 	lpq cache time = 0
 
 	ncalrpc dir = $prefix_abs/ncalrpc
-	rpc_server:epmapper = embedded
+	rpc_server:epmapper = daemon
 
         resolv:host file = $dns_host_file
 
