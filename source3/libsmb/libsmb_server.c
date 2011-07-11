@@ -44,11 +44,11 @@ int
 SMBC_check_server(SMBCCTX * context,
                   SMBCSRV * server) 
 {
-        socklen_t size;
-        struct sockaddr addr;
+	if (!cli_state_is_connected(server->cli)) {
+		return 1;
+	}
 
-        size = sizeof(addr);
-        return (getpeername(server->cli->fd, &addr, &size) == -1);
+	return 0;
 }
 
 /* 
