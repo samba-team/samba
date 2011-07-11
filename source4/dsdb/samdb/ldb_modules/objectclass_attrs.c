@@ -332,7 +332,8 @@ static int attr_handler2(struct oc_context *ac)
 		}
 	}
 
-	if (found_must_contain[0] != NULL) {
+	if (found_must_contain[0] != NULL &&
+	    ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE") == 0) {
 		ldb_asprintf_errstring(ldb, "objectclass_attrs: at least one mandatory attribute ('%s') on entry '%s' wasn't specified!",
 				       found_must_contain[0],
 				       ldb_dn_get_linearized(msg->dn));
