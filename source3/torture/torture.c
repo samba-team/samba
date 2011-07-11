@@ -1236,30 +1236,35 @@ static bool run_locktest1(int dummy)
 		return False;
 	}
 
-	if (!cli_lock(cli1, fnum1, 0, 4, 0, WRITE_LOCK)) {
-		printf("lock1 failed (%s)\n", cli_errstr(cli1));
-		return False;
+	status = cli_lock32(cli1, fnum1, 0, 4, 0, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lock1 failed (%s)\n", nt_errstr(status));
+		return false;
 	}
 
-
-	if (cli_lock(cli2, fnum3, 0, 4, 0, WRITE_LOCK)) {
+	status = cli_lock32(cli2, fnum3, 0, 4, 0, WRITE_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("lock2 succeeded! This is a locking bug\n");
-		return False;
+		return false;
 	} else {
-		if (!check_error(__LINE__, cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_LOCK_NOT_GRANTED)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_LOCK_NOT_GRANTED)) {
+			return false;
+		}
 	}
-
 
 	lock_timeout = (1 + (random() % 20));
 	printf("Testing lock timeout with timeout=%u\n", lock_timeout);
 	t1 = time(NULL);
-	if (cli_lock(cli2, fnum3, 0, 4, lock_timeout * 1000, WRITE_LOCK)) {
+	status = cli_lock32(cli2, fnum3, 0, 4, lock_timeout * 1000, WRITE_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("lock3 succeeded! This is a locking bug\n");
-		return False;
+		return false;
 	} else {
-		if (!check_error(__LINE__, cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_FILE_LOCK_CONFLICT)) {
+			return false;
+		}
 	}
 	t2 = time(NULL);
 
@@ -1276,12 +1281,15 @@ static bool run_locktest1(int dummy)
 		return False;
 	}
 
-	if (cli_lock(cli2, fnum3, 0, 4, 0, WRITE_LOCK)) {
+	status = cli_lock32(cli2, fnum3, 0, 4, 0, WRITE_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("lock4 succeeded! This is a locking bug\n");
-		return False;
+		return false;
 	} else {
-		if (!check_error(__LINE__, cli2, ERRDOS, ERRlock, 
-				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_FILE_LOCK_CONFLICT)) {
+			return false;
+		}
 	}
 
 	status = cli_close(cli1, fnum1);
