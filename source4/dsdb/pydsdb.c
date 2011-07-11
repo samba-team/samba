@@ -394,6 +394,49 @@ static PyObject *py_dsdb_get_linkId_from_lDAPDisplayName(PyObject *self, PyObjec
 	return PyInt_FromLong(attribute->linkID);
 }
 
+/*
+  return the backlink attribute name (if any) for an attribute
+ */
+static PyObject *py_dsdb_get_backlink_from_lDAPDisplayName(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	const char *ldap_display_name;
+	const struct dsdb_attribute *attribute, *target_attr;
+
+	if (!PyArg_ParseTuple(args, "Os", &py_ldb, &ldap_display_name))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
+	if (attribute == NULL) {
+		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		return NULL;
+	}
+
+	if (attribute->linkID == 0) {
+		Py_RETURN_NONE;
+	}
+
+	target_attr = dsdb_attribute_by_linkID(schema, attribute->linkID ^ 1);
+	if (target_attr == NULL) {
+		/* when we add pseudo-backlinks we'll need to handle
+		   them here */
+		Py_RETURN_NONE;
+	}
+
+	return PyString_FromString(target_attr->lDAPDisplayName);
+}
+
 
 static PyObject *py_dsdb_get_lDAPDisplayName_by_attid(PyObject *self, PyObject *args)
 {
@@ -936,6 +979,8 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_get_linkId_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_linkId_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_lDAPDisplayName_by_attid", (PyCFunction)py_dsdb_get_lDAPDisplayName_by_attid,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_backlink_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_backlink_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,

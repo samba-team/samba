@@ -521,6 +521,11 @@ accountExpires: %u
         '''return the lDAPDisplayName from an integer DRS attribute ID'''
         return dsdb._dsdb_get_lDAPDisplayName_by_attid(self, attid)
 
+    def get_backlink_from_lDAPDisplayName(self, ldap_display_name):
+        '''return the attribute name of the corresponding backlink from the name
+        of a forward link attribute. If there is no backlink return None'''
+        return dsdb._dsdb_get_backlink_from_lDAPDisplayName(self, ldap_display_name)
+
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
         rootDSE attribute.
