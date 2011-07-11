@@ -114,7 +114,8 @@ static bool try_lock(struct cli_state *c, int fstype,
 
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_lock(c, fd, start, len, LOCK_TIMEOUT, op);
+		return NT_STATUS_IS_OK(cli_lock32(c, fd, start, len,
+				       LOCK_TIMEOUT, op));
 
 	case FSTYPE_NFS:
 		lock.l_type = (op==READ_LOCK) ? F_RDLCK:F_WRLCK;
