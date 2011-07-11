@@ -847,7 +847,7 @@ bld.SAMBA3_SUBSYSTEM('SMBLDAP',
 
 bld.SAMBA3_LIBRARY('ads',
                    source=LIBADS_SRC,
-                   deps='cli-ldap-common KRB5_WRAP ldap lber KRBCLIENT param LIBNTLMSSP LIBNMB libsmb DCUTIL',
+                   deps='cli-ldap-common KRB5_WRAP ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL',
                    private_library=True,
                    vars=locals())
 
