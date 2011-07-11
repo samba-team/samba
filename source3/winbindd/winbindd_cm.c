@@ -1442,6 +1442,8 @@ static void store_current_dc_in_gencache(const char *domain_name,
 					 struct cli_state *cli)
 {
 	char addr[INET6_ADDRSTRLEN];
+	const struct sockaddr *sa;
+	socklen_t sa_len;
 	char *key = NULL;
 	char *value = NULL;
 
@@ -1449,7 +1451,11 @@ static void store_current_dc_in_gencache(const char *domain_name,
 		return;
 	}
 
-	get_peer_addr(cli->fd, addr, sizeof(addr));
+	sa = (const struct sockaddr *)(void *)&cli->dest_ss;
+	sa_len = sizeof(cli->dest_ss);
+
+	print_sockaddr_len(addr, sizeof(addr),
+			   sa, sa_len);
 
 	key = current_dc_key(talloc_tos(), domain_name);
 	if (key == NULL) {
