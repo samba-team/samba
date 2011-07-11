@@ -1692,22 +1692,26 @@ static bool run_locktest2(int dummy)
 		correct = False;
 	}
 
-	if (NT_STATUS_IS_OK(cli_unlock(cli, fnum1, 0, 4))) {
+	status = cli_unlock(cli, fnum1, 0, 4);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("unlock1 succeeded! This is a locking bug\n");
-		correct = False;
+		correct = false;
 	} else {
-		if (!check_error(__LINE__, cli, 
-				 ERRDOS, ERRlock, 
-				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_RANGE_NOT_LOCKED)) {
+			return false;
+		}
 	}
 
-	if (NT_STATUS_IS_OK(cli_unlock(cli, fnum1, 0, 8))) {
+	status = cli_unlock(cli, fnum1, 0, 8);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("unlock2 succeeded! This is a locking bug\n");
-		correct = False;
+		correct = false;
 	} else {
-		if (!check_error(__LINE__, cli, 
-				 ERRDOS, ERRlock, 
-				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
+		if (!check_both_error(__LINE__, status, ERRDOS, ERRlock,
+				      NT_STATUS_RANGE_NOT_LOCKED)) {
+			return false;
+		}
 	}
 
 	status = cli_lock32(cli, fnum3, 0, 4, 0, WRITE_LOCK);
