@@ -45,7 +45,7 @@ const char *cli_errstr(struct cli_state *cli)
 		goto done;
 	}
 
-	if (cli->fd == -1 && NT_STATUS_IS_OK(cli->raw_status)) {
+	if (!cli_state_is_connected(cli) && NT_STATUS_IS_OK(cli->raw_status)) {
 		return nt_errstr(NT_STATUS_CONNECTION_DISCONNECTED);
 	}
 
@@ -64,7 +64,7 @@ const char *cli_errstr(struct cli_state *cli)
 NTSTATUS cli_nt_error(struct cli_state *cli)
 {
 	/* Deal with socket errors first. */
-	if (cli->fd == -1) {
+	if (!cli_state_is_connected(cli)) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
@@ -85,11 +85,7 @@ NTSTATUS cli_nt_error(struct cli_state *cli)
 
 void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 {
-	if(!cli->initialised) {
-		return;
-	}
-
-	if (cli->fd == -1) {
+	if (!cli_state_is_connected(cli)) {
 		*eclass = ERRDOS;
 		*ecode = ERRnotconnected;
 		return;
@@ -144,8 +140,8 @@ int cli_errno(struct cli_state *cli)
 bool cli_is_error(struct cli_state *cli)
 {
 	/* A socket error is always an error. */
-	if (cli->fd == -1) {
-		return True;
+	if (!cli_state_is_connected(cli)) {
+		return true;
 	}
 
 	if (NT_STATUS_IS_DOS(cli->raw_status)) {
@@ -162,8 +158,8 @@ bool cli_is_error(struct cli_state *cli)
 bool cli_is_nt_error(struct cli_state *cli)
 {
 	/* A socket error is always an NT error. */
-	if (cli->fd == -1) {
-		return True;
+	if (!cli_state_is_connected(cli)) {
+		return true;
 	}
 
 	return cli_is_error(cli) && !NT_STATUS_IS_DOS(cli->raw_status);
@@ -174,8 +170,8 @@ bool cli_is_nt_error(struct cli_state *cli)
 bool cli_is_dos_error(struct cli_state *cli)
 {
 	/* A socket error is always a DOS error. */
-	if (cli->fd == -1) {
-		return True;
+	if (!cli_state_is_connected(cli)) {
+		return true;
 	}
 
 	return cli_is_error(cli) && NT_STATUS_IS_DOS(cli->raw_status);
