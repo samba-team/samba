@@ -86,7 +86,7 @@ class cmd_dbcheck(Command):
             raise CommandError("Unknown scope %s" % scope)
         search_scope = scope_map[scope]
 
-        controls = []
+        controls = ['show_deleted:1']
         if H.startswith('ldap'):
             controls.append('paged_results:1:1000')
         if cross_ncs:

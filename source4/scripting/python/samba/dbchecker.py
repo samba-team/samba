@@ -136,7 +136,7 @@ class dbcheck(object):
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
-            self.samdb.modify(m, controls=["relax:0"], validate=False)
+            self.samdb.modify(m, controls=["relax:0", "show_deleted:1"], validate=False)
         except Exception, msg:
             self.report("Failed to remove empty attribute %s : %s" % (attrname, msg))
             return
@@ -172,7 +172,7 @@ class dbcheck(object):
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
-            self.samdb.modify(m, controls=["relax:0"], validate=False)
+            self.samdb.modify(m, controls=["relax:0", "show_deleted:1"], validate=False)
         except Exception, msg:
             self.report("Failed to normalise attribute %s : %s" % (attrname, msg))
             return
@@ -187,9 +187,7 @@ class dbcheck(object):
     # handle a missing GUID extended DN component
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
-        controls=["extended_dn:1:1"]
-        if self.is_deleted_objects_dn(dsdb_dn):
-            controls.append("show_deleted:1")
+        controls=["extended_dn:1:1", "show_deleted:1"]
         try:
             res = self.samdb.search(base=str(dsdb_dn.dn), scope=ldb.SCOPE_BASE,
                                     attrs=[], controls=controls)
@@ -208,7 +206,7 @@ class dbcheck(object):
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
-            self.samdb.modify(m)
+            self.samdb.modify(m, controls=["show_deleted:1"])
         except Exception, msg:
             self.report("Failed to fix %s on attribute %s : %s" % (errstr, attrname, msg))
             return
@@ -229,7 +227,7 @@ class dbcheck(object):
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
-            self.samdb.modify(m)
+            self.samdb.modify(m, controls=["show_deleted:1"])
         except Exception, msg:
             self.report("Failed to remove deleted DN attribute %s : %s" % (attrname, msg))
             return
@@ -252,7 +250,7 @@ class dbcheck(object):
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
-            self.samdb.modify(m)
+            self.samdb.modify(m, controls=["show_deleted:1"])
         except Exception, msg:
             self.report("Failed to fix incorrect DN string on attribute %s : %s" % (attrname, msg))
             return
@@ -272,7 +270,7 @@ class dbcheck(object):
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
-            self.samdb.modify(m, controls=["relax:0"])
+            self.samdb.modify(m, controls=["relax:0", "show_deleted:1"])
         except Exception, msg:
             self.report("Failed to remove unknown attribute %s : %s" % (attrname, msg))
             return
@@ -305,12 +303,13 @@ class dbcheck(object):
                 self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn, "incorrect GUID")
                 continue
 
-            # the target DN might be deleted
-            if ((not self.is_deleted_objects_dn(dsdb_dn)) and
-                'isDeleted' in res[0] and
-                res[0]['isDeleted'][0].upper() == "TRUE"):
-                # note that we don't check this for the special wellKnownObjects prefix
-                # for Deleted Objects, as we expect that to be deleted
+            # now we have two cases - the source object might or might not be deleted
+            is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
+            target_is_deleted = 'isDeleted' in res[0] and res[0]['isDeleted'][0].upper() == 'TRUE'
+
+            # the target DN is not allowed to be deleted, unless the target DN is the
+            # special Deleted Objects container
+            if target_is_deleted and not is_deleted and not self.is_deleted_objects_dn(dsdb_dn):
                 error_count += 1
                 self.err_deleted_dn(obj.dn, attrname, val, dsdb_dn, res[0].dn)
                 continue
@@ -332,7 +331,9 @@ class dbcheck(object):
         '''check one object'''
         if self.verbose:
             self.report("Checking object %s" % dn)
-        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"], attrs=attrs)
+        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
+                                controls=["extended_dn:1:1", "show_deleted:1"],
+                                attrs=attrs)
         if len(res) != 1:
             self.report("Object %s disappeared during check" % dn)
             return 1
