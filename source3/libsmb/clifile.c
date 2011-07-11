@@ -2721,9 +2721,9 @@ NTSTATUS cli_unlock(struct cli_state *cli,
  Lock a file with 64 bit offsets.
 ****************************************************************************/
 
-bool cli_lock64(struct cli_state *cli, uint16_t fnum,
-		uint64_t offset, uint64_t len, int timeout,
-		enum brl_type lock_type)
+NTSTATUS cli_lock64(struct cli_state *cli, uint16_t fnum,
+		    uint64_t offset, uint64_t len, int timeout,
+		    enum brl_type lock_type)
 {
 	uint16_t vwv[8];
 	uint8_t bytes[20];
@@ -2732,7 +2732,7 @@ bool cli_lock64(struct cli_state *cli, uint16_t fnum,
 	NTSTATUS status;
 
 	if (! (cli->capabilities & CAP_LARGE_FILES)) {
-		return cli_lock(cli, fnum, offset, len, timeout, lock_type);
+		return cli_lock32(cli, fnum, offset, len, timeout, lock_type);
 	}
 
 	ltype = (lock_type == READ_LOCK? 1 : 0);
@@ -2764,7 +2764,7 @@ bool cli_lock64(struct cli_state *cli, uint16_t fnum,
 
 	cli->timeout = saved_timeout;
 
-	return NT_STATUS_IS_OK(status);
+	return status;
 }
 
 /****************************************************************************

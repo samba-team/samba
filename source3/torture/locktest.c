@@ -289,17 +289,16 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	uint64_t len = rec->len;
 	enum brl_type op = rec->lock_type;
 	int server;
-	bool ret[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
 	switch (rec->lock_op) {
 	case OP_LOCK:
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_lock64(cli[server][conn], 
-						 fnum[server][conn][f],
-						 start, len, LOCK_TIMEOUT, op);
-			status[server] = cli_nt_error(cli[server][conn]);
+			status[server] = cli_lock64(cli[server][conn],
+						    fnum[server][conn][f],
+						    start, len, LOCK_TIMEOUT,
+						    op);
 			if (!exact_error_codes && 
 			    NT_STATUS_EQUAL(status[server], 
 					    NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -320,10 +319,9 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = NT_STATUS_IS_OK(cli_unlock64(cli[server][conn], 
-						   fnum[server][conn][f],
-						   start, len));
-			status[server] = cli_nt_error(cli[server][conn]);
+			status[server] = cli_unlock64(cli[server][conn],
+						      fnum[server][conn][f],
+						      start, len);
 		}
 		if (showall || 
 		    (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1]))) {
