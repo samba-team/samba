@@ -158,20 +158,25 @@ static bool send_server_keepalive(const struct timeval *now,
 {
 	struct server_security_state *state = talloc_get_type_abort(
 		private_data, struct server_security_state);
+	NTSTATUS status;
+	unsigned char garbage[16];
 
 	if (!cli_state_is_connected(state->cli)) {
 		return false;
 	}
 
-	if (send_keepalive(state->cli->fd)) {
-		return True;
+	/* Ping the server to keep the connection alive using SMBecho. */
+	memset(garbage, 0xf0, sizeof(garbage));
+	status = cli_echo(state->cli, 1, data_blob_const(garbage, sizeof(garbage)));
+	if (NT_STATUS_IS_OK(status)) {
+		return true;
 	}
 
-	DEBUG( 2, ( "send_server_keepalive: password server keepalive "
-		    "failed.\n"));
+	DEBUG(2,("send_server_keepalive: password server SMBecho failed: %s\n",
+		 nt_errstr(status)));
 	cli_shutdown(state->cli);
 	state->cli = NULL;
-	return False;
+	return false;
 }
 
 static int destroy_server_security(struct server_security_state *state)
