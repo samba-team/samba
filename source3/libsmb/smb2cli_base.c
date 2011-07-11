@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    smb2 lib
    Copyright (C) Volker Lendecke 2011
+   Copyright (C) Stefan Metzmacher 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
