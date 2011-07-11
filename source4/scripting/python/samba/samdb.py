@@ -517,6 +517,10 @@ accountExpires: %u
         '''return the linkID for a LDAP attribute as a integer'''
         return dsdb._dsdb_get_linkId_from_lDAPDisplayName(self, ldap_display_name)
 
+    def get_lDAPDisplayName_by_attid(self, attid):
+        '''return the lDAPDisplayName from an integer DRS attribute ID'''
+        return dsdb._dsdb_get_lDAPDisplayName_by_attid(self, attid)
+
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
         rootDSE attribute.

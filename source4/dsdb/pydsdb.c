@@ -394,6 +394,37 @@ static PyObject *py_dsdb_get_linkId_from_lDAPDisplayName(PyObject *self, PyObjec
 	return PyInt_FromLong(attribute->linkID);
 }
 
+
+static PyObject *py_dsdb_get_lDAPDisplayName_by_attid(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	const struct dsdb_attribute *a;
+	uint32_t attid;
+
+	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	a = dsdb_attribute_by_attributeID_id(schema, attid);
+	if (a == NULL) {
+		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '0x%08x'", attid);
+		return NULL;
+	}
+
+	return PyString_FromString(a->lDAPDisplayName);
+}
+
+
 /*
   return the attribute syntax oid as a string from the attribute name
  */
@@ -903,6 +934,8 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_get_systemFlags_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_systemFlags_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_linkId_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_linkId_from_lDAPDisplayName,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_lDAPDisplayName_by_attid", (PyCFunction)py_dsdb_get_lDAPDisplayName_by_attid,
 		METH_VARARGS, NULL },
 	{ "_dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
