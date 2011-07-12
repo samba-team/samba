@@ -39,14 +39,18 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 {
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
-	char *rhost;
+	const char *rhost;
 
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
-	rhost = tsocket_address_inet_addr_string(user_info->remote_host,
-						 talloc_tos());
-	if (rhost == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (tsocket_address_is_inet(user_info->remote_host, "ip")) {
+		rhost = tsocket_address_inet_addr_string(user_info->remote_host,
+							 talloc_tos());
+		if (rhost == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		rhost = "127.0.0.1";
 	}
 
 	become_root();

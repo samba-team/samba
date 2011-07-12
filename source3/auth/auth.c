@@ -284,12 +284,16 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		unix_username = (*server_info)->unix_name;
 		if (!(*server_info)->guest) {
-			char *rhost;
+			const char *rhost;
 
-			rhost = tsocket_address_inet_addr_string(user_info->remote_host,
-								 talloc_tos());
-			if (rhost == NULL) {
-				return NT_STATUS_NO_MEMORY;
+			if (tsocket_address_is_inet(user_info->remote_host, "ip")) {
+				rhost = tsocket_address_inet_addr_string(user_info->remote_host,
+									 talloc_tos());
+				if (rhost == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+			} else {
+				rhost = "127.0.0.1";
 			}
 
 			/* We might not be root if we are an RPC call */
