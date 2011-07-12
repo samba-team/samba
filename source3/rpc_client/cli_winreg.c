@@ -881,4 +881,105 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 
 	return status;
 }
+
+NTSTATUS dcerpc_winreg_delete_subkeys_recursive(TALLOC_CTX *mem_ctx,
+						struct dcerpc_binding_handle *h,
+						struct policy_handle *hive_handle,
+						uint32_t access_mask,
+						const char *key,
+						WERROR *pwerr)
+{
+	const char **subkeys = NULL;
+	uint32_t num_subkeys = 0;
+	struct policy_handle key_hnd;
+	struct winreg_String wkey = { 0, };
+	WERROR result = WERR_OK;
+	NTSTATUS status = NT_STATUS_OK;
+	uint32_t i;
+
+	ZERO_STRUCT(key_hnd);
+	wkey.name = key;
+
+	DEBUG(2, ("dcerpc_winreg_delete_subkeys_recursive: delete key %s\n", key));
+	/* open the key */
+	status = dcerpc_winreg_OpenKey(h,
+				       mem_ctx,
+				       hive_handle,
+				       wkey,
+				       0,
+				       access_mask,
+				       &key_hnd,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dcerpc_winreg_delete_subkeys_recursive: Could not open key %s: %s\n",
+			  wkey.name, nt_errstr(status)));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("dcerpc_winreg_delete_subkeys_recursive: Could not open key %s: %s\n",
+			  wkey.name, win_errstr(result)));
+		*pwerr = result;
+		goto done;
+	}
+
+	status = dcerpc_winreg_enum_keys(mem_ctx,
+					 h,
+					 &key_hnd,
+					 &num_subkeys,
+					 &subkeys,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		/* create key + subkey */
+		char *subkey = talloc_asprintf(mem_ctx, "%s\\%s", key, subkeys[i]);
+		if (subkey == NULL) {
+			goto done;
+		}
+
+		DEBUG(2, ("dcerpc_winreg_delete_subkeys_recursive: delete subkey %s\n", subkey));
+		status = dcerpc_winreg_delete_subkeys_recursive(mem_ctx,
+								h,
+								hive_handle,
+								access_mask,
+								subkey,
+								&result);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	if (is_valid_policy_hnd(&key_hnd)) {
+		WERROR ignore;
+		dcerpc_winreg_CloseKey(h, mem_ctx, &key_hnd, &ignore);
+	}
+
+	wkey.name = key;
+
+	status = dcerpc_winreg_DeleteKey(h,
+					 mem_ctx,
+					 hive_handle,
+					 wkey,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		*pwerr = result;
+		goto done;
+	}
+
+done:
+	if (is_valid_policy_hnd(&key_hnd)) {
+		WERROR ignore;
+
+		dcerpc_winreg_CloseKey(h, mem_ctx, &key_hnd, &ignore);
+	}
+
+	*pwerr = result;
+	return status;
+}
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */

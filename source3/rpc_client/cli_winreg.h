@@ -414,6 +414,36 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 					DATA_BLOB **pdata,
 					WERROR *pwerr);
 
+/**
+ * @internal
+ *
+ * @brief A function to delete a key and its subkeys recurively.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  winreg_handle The binding handle for the rpc connection.
+ *
+ * @param[in]  hive_handle A opened hive handle to the key.
+ *
+ * @param[in]  access_mask The access mask to access the key.
+ *
+ * @param[in]  key      The key to delete
+ *
+ * @param[out]          WERR_OK on success, the corresponding DOS error
+ *                      code if something gone wrong.
+ *
+ * @return              NT_STATUS_OK on success or a corresponding error if
+ *                      there was a problem on the connection.
+ */
+
+NTSTATUS dcerpc_winreg_delete_subkeys_recursive(TALLOC_CTX *mem_ctx,
+						struct dcerpc_binding_handle *h,
+						struct policy_handle *hive_handle,
+						uint32_t access_mask,
+						const char *key,
+						WERROR *pwerr);
+
+
 #endif /* CLI_WINREG_H */
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
