@@ -258,7 +258,7 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 		/* we allow LDB_ERR_NO_SUCH_ATTRIBUTE as success to
 		   cope with possible corruption where the backlink has
 		   already been removed */
-		DEBUG(0,("WARNING: backlink from %s already removed from %s - %s\n",
+		DEBUG(3,("WARNING: backlink from %s already removed from %s - %s\n",
 			 ldb_dn_get_linearized(target_dn),
 			 ldb_dn_get_linearized(source_dn),
 			 ldb_errstring(ldb)));
