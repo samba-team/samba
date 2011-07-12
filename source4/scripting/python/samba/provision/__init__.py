@@ -726,7 +726,7 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
         statedir_line = ""
         cachedir_line = ""
 
-    sysvol = os.path.join(lp.get("lock dir"), "sysvol")
+    sysvol = os.path.join(lp.get("state dir"), "sysvol")
     netlogon = os.path.join(sysvol, realm.lower(), "scripts")
 
     setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix),
