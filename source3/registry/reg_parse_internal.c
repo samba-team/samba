@@ -114,13 +114,13 @@ convert:
 #define HKEY_PERFORMANCE_NLSTEXT	0x80000060
 #endif
 
-#define HIVE_INFO_ENTRY(SHORT,LONG)			\
-static const struct hive_info HIVE_INFO_##SHORT = {	\
-	.handle = LONG,					\
-	.short_name = #SHORT,				\
-	.short_name_len = sizeof(#SHORT)-1,		\
-	.long_name = #LONG,				\
-	.long_name_len = sizeof(#LONG)-1,		\
+#define HIVE_INFO_ENTRY(SHORT,LONG)		\
+const struct hive_info HIVE_INFO_##SHORT = {	\
+	.handle = LONG,				\
+	.short_name = #SHORT,			\
+	.short_name_len = sizeof(#SHORT)-1,	\
+	.long_name = #LONG,			\
+	.long_name_len = sizeof(#LONG)-1,	\
 }
 
 HIVE_INFO_ENTRY(HKLM, HKEY_LOCAL_MACHINE);
@@ -134,49 +134,85 @@ HIVE_INFO_ENTRY(HKPT, HKEY_PERFORMANCE_TEXT);
 HIVE_INFO_ENTRY(HKPN, HKEY_PERFORMANCE_NLSTEXT);
 #undef HIVE_INFO_ENTRY
 
-static const struct hive_info* HIVE_INFO[] = {
+const struct hive_info* HIVE_INFO[] = {
 	&HIVE_INFO_HKLM, &HIVE_INFO_HKCU, &HIVE_INFO_HKCR, &HIVE_INFO_HKU,
 	&HIVE_INFO_HKCC, &HIVE_INFO_HKDD, &HIVE_INFO_HKPD, &HIVE_INFO_HKPT,
 	&HIVE_INFO_HKPN, NULL
 };
 
-const struct hive_info* hive_info(const char* name, int nlen)
+#define TOINT(A,B) ((int)(A) << 8) + (int)(B)
+
+bool srprs_hive(const char** ptr, const struct hive_info** result)
 {
-	const struct hive_info** info;
-	char buf[32];
-	int s;
+	const char* str = *ptr;
+	const struct hive_info* info = NULL;
+	bool long_hive = false;
 
-	if (nlen >= sizeof(buf)) {
-		return NULL;
-	}
-	for (s=0; s<nlen; s++) {
-		buf[s] = toupper(name[s]);
-	}
-	buf[s] = '\0';
-
-	if ((s < 3) || (strncmp(buf, "HK", 2) != 0)) {
-		return NULL;
+	if ((toupper(str[0]) != 'H') || (toupper(str[1]) != 'K')
+	    || (str[2] == '\0') )
+	{
+		return false;
 	}
 
-	if (s <= 4) {
-		for(info = HIVE_INFO; *info; info++) {
-			if (strcmp(buf+2, (*info)->short_name+2) == 0) {
-				return *info;
+	switch ( TOINT(toupper(str[2]), toupper(str[3])) ) {
+	case TOINT('E', 'Y'):
+		if (str[4] == '_') {
+			int i;
+			for (i=0; (info = HIVE_INFO[i]); i++) {
+				if (strncmp(&str[5], &info->long_name[5],
+					    info->long_name_len-5) == 0)
+				{
+					long_hive = true;
+					break;
+				}
 			}
 		}
-		return NULL;
-	}
-
-	if ((s < 10) || (strncmp(buf, "HKEY_", 5)) != 0) {
-		return NULL;
-	}
-
-	for(info = HIVE_INFO; *info; info++) {
-		if (strcmp(buf+5, (*info)->long_name+5) == 0) {
-			return *info;
+		break;
+	case TOINT('L', 'M'):
+		info = &HIVE_INFO_HKLM;
+		break;
+	case TOINT('C', 'U'):
+		info = &HIVE_INFO_HKCU;
+		break;
+	case TOINT('C', 'R'):
+		info = &HIVE_INFO_HKCR;
+		break;
+	case TOINT('C', 'C'):
+		info = &HIVE_INFO_HKCC;
+		break;
+	case TOINT('D', 'D'):
+		info = &HIVE_INFO_HKDD;
+		break;
+	case TOINT('P', 'D'):
+		info = &HIVE_INFO_HKPD;
+		break;
+	case TOINT('P', 'T'):
+		info = &HIVE_INFO_HKPT;
+		break;
+	case TOINT('P', 'N'):
+		info = &HIVE_INFO_HKPN;
+		break;
+	default:
+		if (toupper(str[2]) == 'U') {
+			info = &HIVE_INFO_HKU;
 		}
+		break;
 	}
-	return NULL;
+	if (info != NULL) {
+		if (result != NULL) {
+			*result = info;
+		}
+		*ptr += long_hive ? info->long_name_len : info->short_name_len;
+		return true;
+	}
+	return false;
+}
+
+const struct hive_info* hive_info(const char* name)
+{
+	const struct hive_info* info = NULL;
+	srprs_hive(&name, &info);
+	return info;
 }
 
 const char* get_charset(const char* c)

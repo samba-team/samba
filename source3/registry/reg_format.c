@@ -93,7 +93,7 @@ static int
 cbuf_print_hive(cbuf* ost, const char* hive, int len, const struct fmt_key* fmt)
 {
 	if (fmt->hive_fmt != FMT_HIVE_PRESERVE) {
-		const struct hive_info* hinfo = hive_info(hive, len);
+		const struct hive_info* hinfo = hive_info(hive);
 		if (hinfo == NULL) {
 			DEBUG(0, ("Unknown hive %*s", len, hive));
 		} else {

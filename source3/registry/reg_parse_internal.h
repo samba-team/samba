@@ -56,7 +56,22 @@ struct hive_info {
 	size_t long_name_len;
 };
 
-const struct hive_info* hive_info(const char* name, int nlen);
+extern const struct hive_info HIVE_INFO_HKLM;
+extern const struct hive_info HIVE_INFO_HKCU;
+extern const struct hive_info HIVE_INFO_HKCR;
+extern const struct hive_info HIVE_INFO_HKU;
+extern const struct hive_info HIVE_INFO_HKCC;
+extern const struct hive_info HIVE_INFO_HKDD;
+extern const struct hive_info HIVE_INFO_HKPD;
+extern const struct hive_info HIVE_INFO_HKPT;
+extern const struct hive_info HIVE_INFO_HKPN;
+
+extern const struct hive_info* HIVE_INFO[];
+
+const struct hive_info* hive_info(const char* name);
+bool srprs_hive(const char** ptr, const struct hive_info** result);
+
+
 
 const char* get_charset(const char* c);
 
