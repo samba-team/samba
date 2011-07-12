@@ -88,7 +88,7 @@ class cmd_dbcheck(Command):
         search_scope = scope_map[scope]
 
         controls = ['show_deleted:1']
-        if H.startswith('ldap'):
+        if over_ldap:
             controls.append('paged_results:1:1000')
         if cross_ncs:
             controls.append("search_options:1:2")
