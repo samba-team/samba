@@ -47,6 +47,7 @@ static const struct loadparm_s3_context s3_fns =
 
 	.netbios_name = lp_netbios_name,
 	.netbios_scope = lp_netbios_scope,
+	.netbios_aliases = lp_netbios_aliases,
 
 	.lanman_auth = lp_lanman_auth,
 	.ntlm_auth = lp_ntlm_auth,
