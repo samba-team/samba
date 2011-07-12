@@ -2632,6 +2632,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	char *keyname;
 	char *path;
 	WERROR result;
+	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_stackframe();
@@ -2682,11 +2683,20 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = winreg_printer_delete_subkeys(tmp_ctx,
-					       winreg_handle,
-					       &hive_hnd,
-					       access_mask,
-					       keyname);
+	status = dcerpc_winreg_delete_subkeys_recursive(tmp_ctx,
+							winreg_handle,
+							&hive_hnd,
+							access_mask,
+							keyname,
+							&result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("winreg_delete_printer_key: Could not delete key %s: %s\n",
+			  key, nt_errstr(status)));
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_delete_printer_key: Could not delete key %s: %s\n",
 			  key, win_errstr(result)));
@@ -4057,6 +4067,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx;
 	char *key_name;
 	WERROR result;
+	NTSTATUS status;
 
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
@@ -4104,11 +4115,21 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_delete_subkeys(tmp_ctx,
-					       winreg_handle,
-					       &hive_hnd,
-					       access_mask,
-					       key_name);
+	status = dcerpc_winreg_delete_subkeys_recursive(tmp_ctx,
+							winreg_handle,
+							&hive_hnd,
+							access_mask,
+							key_name,
+							&result);
+
+	if (!NT_STATUS_IS_OK(status)){
+		DEBUG(0, ("winreg_del_driver: "
+			  "Could not open driver (%s,%s,%u): %s\n",
+			  info8->driver_name, info8->architecture,
+			  version, nt_errstr(status)));
+		goto done;
+	}
+
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_del_driver: "
 			  "Could not open driver (%s,%s,%u): %s\n",
