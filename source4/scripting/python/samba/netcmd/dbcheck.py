@@ -56,11 +56,12 @@ class cmd_dbcheck(Command):
         Option("--quiet", dest="quiet", action="store_true", default=False,
             help="don't print details of checking"),
         Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
+        Option("--reindex", dest="reindex", default=False, action="store_true", help="force database re-index"),
         Option("-H", help="LDB URL for database or target server (defaults to local SAM database)", type=str),
         ]
 
     def run(self, DN=None, H=None, verbose=False, fix=False, yes=False, cross_ncs=False, quiet=False,
-            scope="SUB", credopts=None, sambaopts=None, versionopts=None, attrs=None):
+            scope="SUB", credopts=None, sambaopts=None, versionopts=None, attrs=None, reindex=False):
 
         lp = sambaopts.get_loadparm()
 
@@ -101,11 +102,17 @@ class cmd_dbcheck(Command):
             samdb.transaction_start()
 
         chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose, fix=fix, yes=yes, quiet=quiet)
-        error_count = chk.check_database(DN=DN, scope=search_scope, controls=controls, attrs=attrs)
+
+        if reindex:
+            print("Re-indexing...")
+            error_count = 0
+            if chk.reindex_database():
+                print("completed re-index OK")
+        else:
+            error_count = chk.check_database(DN=DN, scope=search_scope, controls=controls, attrs=attrs)
 
         if yes and fix:
             samdb.transaction_commit()
 
         if error_count != 0:
             sys.exit(1)
-

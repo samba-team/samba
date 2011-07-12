@@ -477,3 +477,13 @@ class dbcheck(object):
                 self.fix_metadata(dn, att)
 
         return error_count
+
+    ###############################################
+    # re-index the database
+    def reindex_database(self):
+        '''re-index the whole database'''
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, "@ATTRIBUTES")
+        m['add']    = ldb.MessageElement('NONE', ldb.FLAG_MOD_ADD, 'force_reindex')
+        m['delete'] = ldb.MessageElement('NONE', ldb.FLAG_MOD_DELETE, 'force_reindex')
+        return self.do_modify(m, [], 're-indexed database', validate=False)
