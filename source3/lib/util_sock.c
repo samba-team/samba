@@ -300,7 +300,7 @@ bool send_keepalive(int client)
 {
 	unsigned char buf[4];
 
-	buf[0] = SMBkeepalive;
+	buf[0] = NBSSkeepalive;
 	buf[1] = buf[2] = buf[3] = 0;
 
 	return(write_data(client,(char *)buf,4) == 4);
@@ -330,7 +330,7 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 	*len = smb_len(inbuf);
 	msg_type = CVAL(inbuf,0);
 
-	if (msg_type == SMBkeepalive) {
+	if (msg_type == NBSSkeepalive) {
 		DEBUG(5,("Got keepalive packet\n"));
 	}
 
