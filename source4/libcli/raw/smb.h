@@ -321,7 +321,6 @@
 #define SMBffirst        0x82   /* find first */
 #define SMBfunique       0x83   /* find unique */
 #define SMBfclose        0x84   /* find close */
-#define SMBkeepalive     0x85   /* keepalive */
 #define SMBinvalid       0xFE   /* invalid command */
 
 /* Extended 2.0 protocol */
