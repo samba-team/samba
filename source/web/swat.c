@@ -29,7 +29,6 @@
 
 #include "includes.h"
 #include "web/swat_proto.h"
-#include "../lib/crypto/md5.h"
 
 static int demo_mode = False;
 static int passwd_only = False;
