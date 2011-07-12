@@ -101,6 +101,62 @@ char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 }
 
 /**
+ A useful function for returning a path in the Samba state directory.
+**/
+char *lpcfg_state_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+		       const char *name)
+{
+	char *fname, *dname;
+	if (name == NULL) {
+		return NULL;
+	}
+	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
+		return talloc_strdup(mem_ctx, name);
+	}
+
+	dname = talloc_strdup(mem_ctx, lpcfg_statedir(lp_ctx));
+	trim_string(dname,"","/");
+
+	if (!directory_exist(dname)) {
+		mkdir(dname,0755);
+	}
+
+	fname = talloc_asprintf(mem_ctx, "%s/%s", dname, name);
+
+	talloc_free(dname);
+
+	return fname;
+}
+
+/**
+ A useful function for returning a path in the Samba cache directory.
+**/
+char *lpcfg_cache_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+		       const char *name)
+{
+	char *fname, *dname;
+	if (name == NULL) {
+		return NULL;
+	}
+	if (name[0] == 0 || name[0] == '/' || strstr(name, ":/")) {
+		return talloc_strdup(mem_ctx, name);
+	}
+
+	dname = talloc_strdup(mem_ctx, lpcfg_cachedir(lp_ctx));
+	trim_string(dname,"","/");
+
+	if (!directory_exist(dname)) {
+		mkdir(dname,0755);
+	}
+
+	fname = talloc_asprintf(mem_ctx, "%s/%s", dname, name);
+
+	talloc_free(dname);
+
+	return fname;
+}
+
+/**
  * @brief Returns an absolute path to a file in the directory containing the current config file
  *
  * @param name File to find, relative to the config file directory.

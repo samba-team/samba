@@ -1083,6 +1083,22 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
+		.label		= "state dir",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szStateDir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "cache dir",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szCacheDir),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
 		.label		= "pid directory",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -1476,6 +1492,8 @@ FN_GLOBAL_BOOL(idmap_trusted_only, bIdmapTrustedOnly)
 FN_GLOBAL_STRING(private_dir, szPrivateDir)
 FN_GLOBAL_STRING(serverstring, szServerString)
 FN_GLOBAL_STRING(lockdir, szLockDir)
+FN_GLOBAL_STRING(statedir, szStateDir)
+FN_GLOBAL_STRING(cachedir, szCacheDir)
 FN_GLOBAL_STRING(ncalrpc_dir, ncalrpc_dir)
 FN_GLOBAL_STRING(dos_charset, dos_charset)
 FN_GLOBAL_STRING(unix_charset, unix_charset)
@@ -3263,6 +3281,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "pid directory", dyn_PIDDIR);
 	lpcfg_do_global_parameter(lp_ctx, "lock dir", dyn_LOCKDIR);
+	lpcfg_do_global_parameter(lp_ctx, "state dir", dyn_STATEDIR);
+	lpcfg_do_global_parameter(lp_ctx, "cache dir", dyn_CACHEDIR);
 	lpcfg_do_global_parameter(lp_ctx, "ncalrpc dir", dyn_NCALRPCDIR);
 
 	lpcfg_do_global_parameter(lp_ctx, "socket address", "");

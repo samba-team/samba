@@ -5,3 +5,5 @@
 	server role     = ${SERVERROLE}
 	${PRIVATEDIR_LINE}
 	${LOCKDIR_LINE}
+	${STATEDIR_LINE}
+	${CACHEDIR_LINE}

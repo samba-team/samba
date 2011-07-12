@@ -714,11 +714,17 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
     if targetdir is not None:
         privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
         lockdir_line = "lock dir = " + os.path.abspath(targetdir)
+        statedir_line = "state dir = " + os.path.abspath(targetdir)
+        cachedir_line = "cache dir = " + os.path.abspath(targetdir)
 
         lp.set("lock dir", os.path.abspath(targetdir))
+        lp.set("state dir", os.path.abspath(targetdir))
+        lp.set("cache dir", os.path.abspath(targetdir))
     else:
         privatedir_line = ""
         lockdir_line = ""
+        statedir_line = ""
+        cachedir_line = ""
 
     sysvol = os.path.join(lp.get("lock dir"), "sysvol")
     netlogon = os.path.join(sysvol, realm.lower(), "scripts")
@@ -732,7 +738,9 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
             "NETLOGONPATH": netlogon,
             "SYSVOLPATH": sysvol,
             "PRIVATEDIR_LINE": privatedir_line,
-            "LOCKDIR_LINE": lockdir_line
+            "LOCKDIR_LINE": lockdir_line,
+            "STATEDIR_LINE": statedir_line,
+            "CACHEDIR_LINE": cachedir_line
             })
 
     # reload the smb.conf
