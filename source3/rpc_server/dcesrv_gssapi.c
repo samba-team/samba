@@ -105,7 +105,6 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 				     struct auth_serversupplied_info **server_info)
 {
 	TALLOC_CTX *tmp_ctx;
-	DATA_BLOB auth_data;
 	DATA_BLOB pac;
 	struct PAC_DATA *pac_data;
 	struct PAC_LOGON_INFO *logon_info = NULL;
@@ -131,6 +130,11 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = gse_get_client_name(gse_ctx, tmp_ctx, &princ_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
