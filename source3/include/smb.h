@@ -720,38 +720,38 @@ struct connections_data {
 #define HDR_VWV 33
 
 /* offsets into message for common items */
-#define smb_com 8
-#define smb_rcls 9
-#define smb_reh 10
-#define smb_err 11
-#define smb_flg 13
-#define smb_flg2 14
-#define smb_pidhigh 16
-#define smb_ss_field 18
-#define smb_tid 28
-#define smb_pid 30
-#define smb_uid 32
-#define smb_mid 34
-#define smb_wct 36
-#define smb_vwv 37
-#define smb_vwv0 37
-#define smb_vwv1 39
-#define smb_vwv2 41
-#define smb_vwv3 43
-#define smb_vwv4 45
-#define smb_vwv5 47
-#define smb_vwv6 49
-#define smb_vwv7 51
-#define smb_vwv8 53
-#define smb_vwv9 55
-#define smb_vwv10 57
-#define smb_vwv11 59
-#define smb_vwv12 61
-#define smb_vwv13 63
-#define smb_vwv14 65
-#define smb_vwv15 67
-#define smb_vwv16 69
-#define smb_vwv17 71
+#define smb_com		(NBT_HDR_SIZE+HDR_COM)
+#define smb_rcls	(NBT_HDR_SIZE+HDR_RCLS)
+#define smb_reh		(NBT_HDR_SIZE+HDR_REH)
+#define smb_err		(NBT_HDR_SIZE+HDR_ERR)
+#define smb_flg		(NBT_HDR_SIZE+HDR_FLG)
+#define smb_flg2	(NBT_HDR_SIZE+HDR_FLG2)
+#define smb_pidhigh	(NBT_HDR_SIZE+HDR_PIDHIGH)
+#define smb_ss_field	(NBT_HDR_SIZE+HDR_SS_FIELD)
+#define smb_tid		(NBT_HDR_SIZE+HDR_TID)
+#define smb_pid		(NBT_HDR_SIZE+HDR_PID)
+#define smb_uid		(NBT_HDR_SIZE+HDR_UID)
+#define smb_mid		(NBT_HDR_SIZE+HDR_MID)
+#define smb_wct		(NBT_HDR_SIZE+HDR_WCT)
+#define smb_vwv		(NBT_HDR_SIZE+HDR_VWV)
+#define smb_vwv0	(smb_vwv+( 0*2))
+#define smb_vwv1	(smb_vwv+( 1*2))
+#define smb_vwv2	(smb_vwv+( 2*2))
+#define smb_vwv3	(smb_vwv+( 3*2))
+#define smb_vwv4	(smb_vwv+( 4*2))
+#define smb_vwv5	(smb_vwv+( 5*2))
+#define smb_vwv6	(smb_vwv+( 6*2))
+#define smb_vwv7	(smb_vwv+( 7*2))
+#define smb_vwv8	(smb_vwv+( 8*2))
+#define smb_vwv9	(smb_vwv+( 9*2))
+#define smb_vwv10	(smb_vwv+(10*2))
+#define smb_vwv11	(smb_vwv+(11*2))
+#define smb_vwv12	(smb_vwv+(12*2))
+#define smb_vwv13	(smb_vwv+(13*2))
+#define smb_vwv14	(smb_vwv+(14*2))
+#define smb_vwv15	(smb_vwv+(15*2))
+#define smb_vwv16	(smb_vwv+(16*2))
+#define smb_vwv17	(smb_vwv+(17*2))
 
 /* types of buffers in core SMB protocol */
 #define SMB_DATA_BLOCK 0x1
