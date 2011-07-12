@@ -22,6 +22,16 @@
 #ifndef _SMB_CONSTANTS_H
 #define _SMB_CONSTANTS_H
 
+/*
+ * Netbios over TCP (rfc 1002)
+ */
+#define NBSSmessage     0x00   /* session message */
+#define NBSSrequest     0x81   /* session request */
+#define NBSSpositive    0x82   /* positiv session response */
+#define NBSSnegative    0x83   /* negativ session response */
+#define NBSSretarget    0x84   /* retarget session response */
+#define NBSSkeepalive   0x85   /* keepalive */
+
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets. */
 enum protocol_types {
