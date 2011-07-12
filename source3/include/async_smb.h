@@ -33,7 +33,6 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_smb_req_send(struct tevent_req *req);
 size_t cli_smb_wct_ofs(struct tevent_req **reqs, int num_reqs);
 NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs);
-uint8_t *cli_smb_inbuf(struct tevent_req *req);
 bool cli_has_async_calls(struct cli_state *cli);
 void cli_smb_req_unset_pending(struct tevent_req *req);
 bool cli_smb_req_set_pending(struct tevent_req *req);

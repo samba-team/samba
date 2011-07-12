@@ -950,13 +950,6 @@ NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 	return NT_STATUS_OK;
 }
 
-uint8_t *cli_smb_inbuf(struct tevent_req *req)
-{
-	struct cli_smb_state *state = tevent_req_data(
-		req, struct cli_smb_state);
-	return state->inbuf;
-}
-
 bool cli_has_async_calls(struct cli_state *cli)
 {
 	return ((tevent_queue_length(cli->outgoing) != 0)
