@@ -190,30 +190,6 @@ bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth
 	return auth_info->use_machine_account;
 }
 
-struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
-						  const struct user_auth_info *src)
-{
-	struct user_auth_info *result;
-
-	result = user_auth_info_init(mem_ctx);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	*result = *src;
-
-	result->username = talloc_strdup(
-		result, get_cmdline_auth_info_username(src));
-	result->password = talloc_strdup(
-		result, get_cmdline_auth_info_password(src));
-	if ((result->username == NULL) || (result->password == NULL)) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	return result;
-}
-
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info)
 {
 	char *pass = NULL;

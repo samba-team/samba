@@ -637,8 +637,6 @@ void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info)
 bool get_cmdline_auth_info_got_pass(const struct user_auth_info *auth_info);
 bool get_cmdline_auth_info_smb_encrypt(const struct user_auth_info *auth_info);
 bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth_info);
-struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
-						 const struct user_auth_info *info);
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
 
