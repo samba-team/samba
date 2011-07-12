@@ -590,7 +590,7 @@ sub provision_raw_step1($$)
 [global]
 	acl:search = $acl
 	netbios name = $ctx->{netbiosname}
-	posix:eadb = $ctx->{lockdir}/eadb.tdb
+	posix:eadb = $ctx->{statedir}/eadb.tdb
 	workgroup = $ctx->{domain}
 	realm = $ctx->{realm}
 	private dir = $ctx->{privatedir}
@@ -786,11 +786,11 @@ sub provision($$$$$$$$$)
 	ntvfs handler = simple
 
 [sysvol]
-	path = $ctx->{lockdir}/sysvol
+	path = $ctx->{statedir}/sysvol
 	read only = yes
 
 [netlogon]
-	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
+	path = $ctx->{statedir}/sysvol/$ctx->{dnsname}/scripts
 	read only = no
 
 [cifsposix]
@@ -994,11 +994,11 @@ sub provision_vampire_dc($$$)
 	server max protocol = SMB2
 
 [sysvol]
-	path = $ctx->{lockdir}/sysvol
+	path = $ctx->{statedir}/sysvol
 	read only = yes
 
 [netlogon]
-	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
+	path = $ctx->{statedir}/sysvol/$ctx->{dnsname}/scripts
 	read only = no
 
 ";
@@ -1159,11 +1159,11 @@ sub provision_rodc($$$)
 	server max protocol = SMB2
 
 [sysvol]
-	path = $ctx->{lockdir}/sysvol
+	path = $ctx->{statedir}/sysvol
 	read only = yes
 
 [netlogon]
-	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
+	path = $ctx->{statedir}/sysvol/$ctx->{dnsname}/scripts
 	read only = yes
 
 [tmp]
