@@ -287,19 +287,18 @@ class dbcheck(object):
 
     ################################################################
     # handle a orphaned backlink
-    def err_orphaned_backlink(self, obj, attrname, val, backlink_name, target_dn):
+    def err_orphaned_backlink(self, obj, attrname, val, link_name, target_dn):
         '''handle a orphaned backlink value'''
-        self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_name, target_dn, attrname, obj.dn))
-        if not self.confirm_all('Fix orphaned backlink %s' % backlink_name, 'fix_all_orphaned_backlinks'):
-            self.report("Not fixing orphaned backlink %s" % backlink_name)
+        self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (attrname, obj.dn, link_name, target_dn))
+        if not self.confirm_all('Remove orphaned backlink %s' % link_name, 'fix_all_orphaned_backlinks'):
+            self.report("Not removing orphaned backlink %s" % link_name)
             return
         m = ldb.Message()
-        m.dn = target_dn
-        m['old_value'] = ldb.MessageElement(obj.dn, ldb.FLAG_MOD_DELETE, backlink_name)
-        m['new_value'] = ldb.MessageElement(obj.dn, ldb.FLAG_MOD_ADD, backlink_name)
-        if self.do_modify(m, ["show_deleted:1"],
-                          "Failed to fix orphaned backlink %s" % backlink_name):
-            self.report("Fixed orphaned backlink %s" % (backlink_name))
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        if self.do_modify(m, ["show_deleted:1", "relax:0"],
+                          "Failed to fix orphaned backlink %s" % link_name):
+            self.report("Fixed orphaned backlink %s" % (link_name))
 
 
     ################################################################
@@ -321,9 +320,9 @@ class dbcheck(object):
 
             attrs=['isDeleted']
             linkkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
-            backlink_name = self.samdb.get_backlink_from_lDAPDisplayName(attrname)
-            if backlink_name is not None:
-                attrs.append(backlink_name)
+            reverse_link_name = self.samdb.get_backlink_from_lDAPDisplayName(attrname)
+            if reverse_link_name is not None:
+                attrs.append(reverse_link_name)
 
             # check its the right GUID
             try:
@@ -352,19 +351,19 @@ class dbcheck(object):
                                             res[0].dn, "incorrect string version of DN")
                 continue
 
-            # check the backlink is correct if there should be one
-            if backlink_name is not None:
+            # check the reverse_link is correct if there should be one
+            if reverse_link_name is not None:
                 match_count = 0
-                if backlink_name in res[0]:
-                    for v in res[0][backlink_name]:
+                if reverse_link_name in res[0]:
+                    for v in res[0][reverse_link_name]:
                         if v == obj.dn.extended_str():
                             match_count += 1
                 if match_count != 1:
                     error_count += 1
                     if linkkID & 1:
-                        self.err_orphaned_backlink(obj, attrname, val, backlink_name, dsdb_dn.dn)
+                        self.err_orphaned_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
                     else:
-                        self.err_missing_backlink(obj, attrname, val, backlink_name, dsdb_dn.dn)
+                        self.err_missing_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
                     continue
 
         return error_count
