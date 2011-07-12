@@ -378,6 +378,41 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
 				 uint32_t *pnum_subkeys,
 				 const char ***psubkeys,
 				 WERROR *pwerr);
+/**
+ * @internal
+ *
+ * @brief Enumerate values of an opened key handle and retrieve the data.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  winreg_handle The binding handle for the rpc connection.
+ *
+ * @param[in]  key_hnd  The opened key handle.
+ *
+ * @param[out] pnum_values A pointer to store the number of values we found.
+ *
+ * @param[out] pnames A pointer to store all the names of the values we found.
+ *
+ * @param[out] _type A pointer to store all the types coresponding with the
+ * 		     values found.
+ * @param[out] pdata A pointer to store the data coresponding to the values.
+ *
+ * @param[out] pwerr A pointer to the WERROR. WERR_OK on success
+ *		     WERR_OK on success, the corresponding DOS error
+ *		     code if something's gone wrong.
+ *
+ * @return              NT_STATUS_OK on success or a corresponding error if
+ *                      there was a problem on the connection.
+ */
+
+NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
+					struct dcerpc_binding_handle *h,
+					struct policy_handle *key_hnd,
+					uint32_t *pnum_values,
+					const char ***pnames,
+					enum winreg_Type **_type,
+					DATA_BLOB **pdata,
+					WERROR *pwerr);
 
 #endif /* CLI_WINREG_H */
 

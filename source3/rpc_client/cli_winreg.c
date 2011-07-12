@@ -702,4 +702,183 @@ NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
+					struct dcerpc_binding_handle *h,
+					struct policy_handle *key_hnd,
+					uint32_t *pnum_values,
+					const char ***pnames,
+					enum winreg_Type **_type,
+					DATA_BLOB **pdata,
+					WERROR *pwerr)
+{
+	TALLOC_CTX *tmp_ctx;
+	uint32_t num_subkeys = 0, max_subkeylen = 0, max_classlen = 0;
+	uint32_t num_values = 0, max_valnamelen = 0, max_valbufsize = 0;
+	uint32_t secdescsize = 0;
+	uint32_t i;
+	NTTIME last_changed_time = 0;
+	struct winreg_String classname;
+
+	const char **enum_names = NULL;
+	enum winreg_Type *enum_types = NULL;
+	DATA_BLOB *enum_data_blobs = NULL;
+
+
+	WERROR result = WERR_OK;
+	NTSTATUS status = NT_STATUS_OK;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+
+		status = NT_STATUS_NO_MEMORY;
+		*pwerr = ntstatus_to_werror(status);
+		return status;
+	}
+
+	ZERO_STRUCT(classname);
+
+	status = dcerpc_winreg_QueryInfoKey(h,
+					    tmp_ctx,
+					    key_hnd,
+					    &classname,
+					    &num_subkeys,
+					    &max_subkeylen,
+					    &max_classlen,
+					    &num_values,
+					    &max_valnamelen,
+					    &max_valbufsize,
+					    &secdescsize,
+					    &last_changed_time,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dcerpc_winreg_enumvals: Could not query info: %s\n",
+			  nt_errstr(status)));
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("dcerpc_winreg_enumvals: Could not query info: %s\n",
+			  win_errstr(result)));
+		*pwerr = result;
+		goto error;
+	}
+
+	if (num_values == 0) {
+		*pnum_values = 0;
+		TALLOC_FREE(tmp_ctx);
+		*pwerr = WERR_OK;
+		return status;
+	}
+
+	enum_names = talloc_zero_array(tmp_ctx, const char *, num_values);
+
+	if (enum_names == NULL) {
+		*pwerr = WERR_NOMEM;
+		goto error;
+	}
+
+	enum_types = talloc_zero_array(tmp_ctx, enum winreg_Type, num_values);
+
+	if (enum_types == NULL) {
+		*pwerr = WERR_NOMEM;
+		goto error;
+	}
+
+	enum_data_blobs = talloc_zero_array(tmp_ctx, DATA_BLOB, num_values);
+
+	if (enum_data_blobs == NULL) {
+		*pwerr = WERR_NOMEM;
+		goto error;
+	}
+
+	for (i = 0; i < num_values; i++) {
+		const char *name;
+		struct winreg_ValNameBuf name_buf;
+		enum winreg_Type type = REG_NONE;
+		uint8_t *data;
+		uint32_t data_size;
+		uint32_t length;
+		char n = '\0';
+
+
+		name_buf.name = &n;
+		name_buf.size = max_valnamelen + 2;
+		name_buf.length = 0;
+
+		data_size = max_valbufsize;
+		data = NULL;
+		if (data_size) {
+			data = (uint8_t *) TALLOC(tmp_ctx, data_size);
+		}
+		length = 0;
+
+		status = dcerpc_winreg_EnumValue(h,
+						 tmp_ctx,
+						 key_hnd,
+						 i,
+						 &name_buf,
+						 &type,
+						 data,
+						 data_size ? &data_size : NULL,
+						 &length,
+						 &result);
+		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
+			result = WERR_OK;
+			status = NT_STATUS_OK;
+			break;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("dcerpc_winreg_enumvals: Could not enumerate values: %s\n",
+				  nt_errstr(status)));
+			goto error;
+		}
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("dcerpc_winreg_enumvals: Could not enumerate values: %s\n",
+				  win_errstr(result)));
+			*pwerr = result;
+			goto error;
+		}
+
+		if (name_buf.name == NULL) {
+			result = WERR_INVALID_PARAMETER;
+			*pwerr = result;
+			goto error;
+		}
+
+		name = talloc_strdup(enum_names, name_buf.name);
+		if (name == NULL) {
+			result = WERR_NOMEM;
+			*pwerr = result;
+			goto error;
+		}
+	/* place name, type and datablob in the enum return params */
+
+		enum_data_blobs[i] = data_blob_talloc(enum_data_blobs, data, length);
+		enum_names[i] = name;
+		enum_types[i] = type;
+
+	}
+	/* move to the main mem context */
+	*pnum_values = num_values;
+	if (pnames) {
+		*pnames = talloc_move(mem_ctx, &enum_names);
+	}
+	/* can this fail in any way? */
+	if (_type) {
+		*_type = talloc_move(mem_ctx, &enum_types);
+	}
+
+	if (pdata){
+		*pdata = talloc_move(mem_ctx, &enum_data_blobs);
+	}
+
+
+	result = WERR_OK;
+
+ error:
+	TALLOC_FREE(tmp_ctx);
+	*pwerr = result;
+
+	return status;
+}
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
