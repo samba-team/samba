@@ -692,6 +692,33 @@ struct connections_data {
 	uint32 unused_compatitibility_field;
 };
 
+#define SMB_MAGIC 0x424D53FF /* 0xFF 'S' 'M' 'B' */
+
+/* the basic packet size, assuming no words or bytes. Does not include the NBT header */
+#define MIN_SMB_SIZE 35
+
+/* when using NBT encapsulation every packet has a 4 byte header */
+#define NBT_HDR_SIZE 4
+
+/* offsets into message header for common items - NOTE: These have
+   changed from being offsets from the base of the NBT packet to the base of the SMB packet.
+   this has reduced all these values by 4
+*/
+#define HDR_COM 4
+#define HDR_RCLS 5
+#define HDR_REH 6
+#define HDR_ERR 7
+#define HDR_FLG 9
+#define HDR_FLG2 10
+#define HDR_PIDHIGH 12
+#define HDR_SS_FIELD 14
+#define HDR_TID 24
+#define HDR_PID 26
+#define HDR_UID 28
+#define HDR_MID 30
+#define HDR_WCT 32
+#define HDR_VWV 33
+
 /* offsets into message for common items */
 #define smb_com 8
 #define smb_rcls 9
@@ -725,6 +752,11 @@ struct connections_data {
 #define smb_vwv15 67
 #define smb_vwv16 69
 #define smb_vwv17 71
+
+/* types of buffers in core SMB protocol */
+#define SMB_DATA_BLOCK 0x1
+#define SMB_ASCII4     0x4
+
 
 /* flag defines. CIFS spec 3.1.1 */
 #define FLAG_SUPPORT_LOCKREAD       0x01
@@ -823,6 +855,9 @@ struct connections_data {
 #define SMBntcreateX     0xA2   /* NT create and X */
 #define SMBntcancel      0xA4   /* NT cancel */
 #define SMBntrename      0xA5   /* NT rename */
+
+/* used to indicate end of chain */
+#define SMB_CHAIN_NONE   0xFF
 
 /* These are the trans subcommands */
 #define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01 
