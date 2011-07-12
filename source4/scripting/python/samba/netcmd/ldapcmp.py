@@ -874,15 +874,22 @@ class cmd_ldapcmp(Command):
             context1=None, context2=None, context3=None,
             two=False, quiet=False, verbose=False, descriptor=False, sort_aces=False, view="section",
             base="", base2="", scope="SUB", credopts=None, sambaopts=None, versionopts=None):
+
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        using_ldap = URL1.startswith("ldap") or URL2.startswith("ldap")
+
+        if using_ldap:
+            creds = credopts.get_credentials(lp, fallback_machine=True)
+        else:
+            creds = None
         creds2 = credopts.get_credentials2(lp, guess=False)
         if creds2.is_anonymous():
             creds2 = creds
         else:
             creds2.set_domain("")
             creds2.set_workstation("")
-        if not creds.authentication_requested():
+        if using_ldap and not creds.authentication_requested():
             raise CommandError("You must supply at least one username/password pair")
 
         # make a list of contexts to compare in
