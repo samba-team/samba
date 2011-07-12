@@ -975,7 +975,7 @@ static bool winsdb_check_or_add_module_list(struct tevent_context *ev_ctx,
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lpcfg_lock_path(h, lp_ctx, lpcfg_wins_url(lp_ctx)),
+	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lpcfg_state_path(h, lp_ctx, lpcfg_wins_url(lp_ctx)),
 				  NULL, NULL, flags);
 	if (!h->ldb) goto failed;
 
