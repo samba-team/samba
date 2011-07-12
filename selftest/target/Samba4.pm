@@ -510,6 +510,8 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{privatedir} = "$prefix_abs/private";
 	$ctx->{ncalrpcdir} = "$prefix_abs/ncalrpc";
 	$ctx->{lockdir} = "$prefix_abs/lockdir";
+	$ctx->{statedir} = "$prefix_abs/statedir";
+	$ctx->{cachedir} = "$prefix_abs/cachedir";
 	$ctx->{winbindd_socket_dir} = "$prefix_abs/winbindd_socket";
 	$ctx->{winbindd_privileged_socket_dir} = "$prefix_abs/winbindd_privileged_socket";
 	$ctx->{ntp_signd_socket_dir} = "$prefix_abs/ntp_signd_socket";
@@ -525,6 +527,8 @@ sub provision_raw_prepare($$$$$$$$$$)
 	push(@{$ctx->{directories}}, $ctx->{etcdir});
 	push(@{$ctx->{directories}}, $ctx->{piddir});
 	push(@{$ctx->{directories}}, $ctx->{lockdir});
+	push(@{$ctx->{directories}}, $ctx->{statedir});
+	push(@{$ctx->{directories}}, $ctx->{cachedir});
 
 	$ctx->{smb_conf_extra_options} = "";
 
@@ -593,6 +597,8 @@ sub provision_raw_step1($$)
 	pid directory = $ctx->{piddir}
 	ncalrpc dir = $ctx->{ncalrpcdir}
 	lock dir = $ctx->{lockdir}
+	state dir = $ctx->{statedir}
+	cache dir = $ctx->{cachedir}
 	winbindd socket directory = $ctx->{winbindd_socket_dir}
 	winbindd privileged socket directory = $ctx->{winbindd_privileged_socket_dir}
 	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
@@ -686,6 +692,8 @@ nogroup:x:65534:nobody
 		WINBINDD_SOCKET_DIR => $ctx->{winbindd_socket_dir},
 		NCALRPCDIR => $ctx->{ncalrpcdir},
 		LOCKDIR => $ctx->{lockdir},
+		STATEDIR => $ctx->{statedir},
+		CACHEDIR => $ctx->{cachedir},
 		SERVERCONFFILE => $ctx->{smb_conf},
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $ctx->{swiface},

@@ -597,6 +597,18 @@ sub write_clientconf($$$)
 	        mkdir("$clientdir/lockdir", 0777);
 	}
 
+	if ( -d "$clientdir/statedir" ) {
+	        unlink <$clientdir/statedir/*>;
+	} else {
+	        mkdir("$clientdir/statedir", 0777);
+	}
+
+	if ( -d "$clientdir/cachedir" ) {
+	        unlink <$clientdir/cachedir/*>;
+	} else {
+	        mkdir("$clientdir/cachedir", 0777);
+	}
+
 	# this is ugly, but the ncalrpcdir needs exactly 0755
 	# otherwise tests fail.
 	my $mask = umask;
@@ -627,6 +639,8 @@ sub write_clientconf($$$)
 	print CF "
 	private dir = $clientdir/private
 	lock dir = $clientdir/lockdir
+	state dir = $clientdir/statedir
+	cache dir = $clientdir/cachedir
 	ncalrpc dir = $clientdir/ncalrpcdir
 	name resolve order = file bcast
 	panic action = $RealBin/gdb_backtrace \%PID\%
