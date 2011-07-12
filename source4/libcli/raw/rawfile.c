@@ -933,7 +933,7 @@ struct smbcli_request *smb_raw_chkpath_send(struct smbcli_tree *tree, union smb_
 {
 	struct smbcli_request *req; 
 
-	SETUP_REQUEST(SMBchkpth, 0, 0);
+	SETUP_REQUEST(SMBcheckpath, 0, 0);
 
 	smbcli_req_append_ascii4(req, parms->chkpath.in.path, STR_TERMINATE);
 
