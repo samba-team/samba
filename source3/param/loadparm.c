@@ -6419,6 +6419,19 @@ struct loadparm_service *lp_service(const char *pszServiceName)
 	return ServicePtrs[iService];
 }
 
+struct loadparm_service *lp_servicebynum(int snum)
+{
+	if (snum = -1 || !LP_SNUM_OK(snum)) {
+		return NULL;
+	}
+	return ServicePtrs[snum];
+}
+
+struct loadparm_service *lp_default_loadparm_service()
+{
+	return &sDefault;
+}
+
 
 /***************************************************************************
  Copy a service structure to another.

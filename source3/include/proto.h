@@ -1577,6 +1577,8 @@ const char *lp_ldap_idmap_suffix(void);
 struct parm_struct;
 /* Return a pointer to a service by name.  */
 struct loadparm_service *lp_service(const char *pszServiceName);
+struct loadparm_service *lp_servicebynum(int snum);
+struct loadparm_service *lp_default_loadparm_service(void);
 void *lp_parm_ptr(struct loadparm_service *service, struct parm_struct *parm);
 void *lp_local_ptr_by_snum(int snum, struct parm_struct *parm);
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue);

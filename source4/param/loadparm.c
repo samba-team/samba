@@ -1311,6 +1311,9 @@ struct loadparm_context {
 
 struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 {
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->get_default_loadparm_service();
+	}
 	return lp_ctx->sDefault;
 }
 
@@ -1428,6 +1431,9 @@ static struct loadparm_context *global_loadparm_context;
 	 return lp_ctx->globals->var_name;				\
  }
 
+/* Local parameters don't need the ->s3_fns because the struct
+ * loadparm_service is shared and lpcfg_service() checks the ->s3_fns
+ * hook */
 #define FN_LOCAL_STRING(fn_name,val) \
  _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, \
 					struct loadparm_service *sDefault) { \
@@ -2079,6 +2085,10 @@ static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx
 {
 	int iService;
 
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->get_service(pszServiceName);
+	}
+
 	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--)
 		if (lp_ctx->services[iService] != NULL &&
 		    strwicmp(lp_ctx->services[iService]->szService, pszServiceName) == 0) {
@@ -2724,8 +2734,14 @@ bool lpcfg_do_global_parameter_var(struct loadparm_context *lp_ctx,
 bool lpcfg_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 		       const char *pszParmValue)
 {
-	int parmnum = map_parameter(pszParmName);
+	int parmnum;
 	int i;
+
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->set_cmdline(pszParmName, pszParmValue);
+	}
+
+	parmnum = map_parameter(pszParmName);
 
 	while (isspace((unsigned char)*pszParmValue)) pszParmValue++;
 
@@ -3544,6 +3560,10 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 
 int lpcfg_numservices(struct loadparm_context *lp_ctx)
 {
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->get_numservices();
+	}
+
 	return lp_ctx->iNumServices;
 }
 
@@ -3579,8 +3599,12 @@ void lpcfg_dump_one(FILE *f, bool show_defaults, struct loadparm_service *servic
 }
 
 struct loadparm_service *lpcfg_servicebynum(struct loadparm_context *lp_ctx,
-					 int snum)
+					    int snum)
 {
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->get_servicebynum(snum);
+	}
+
 	return lp_ctx->services[snum];
 }
 

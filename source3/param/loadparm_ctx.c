@@ -30,6 +30,10 @@ static const struct loadparm_s3_context s3_fns =
 	.get_parm_struct = lp_get_parameter,
 	.get_parm_ptr = lp_parm_ptr,
 	.get_service = lp_service,
+	.get_servicebynum = lp_servicebynum,
+	.get_default_loadparm_service = lp_default_loadparm_service,
+	.get_numservices = lp_numservices,
+	.set_cmdline = lp_set_cmdline,
 
 	.server_role = lp_server_role,
 

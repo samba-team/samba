@@ -89,6 +89,10 @@ sub print_header($$)
 	$file->("\tstruct parm_struct * (*get_parm_struct)(const char *param_name);\n");
 	$file->("\tvoid * (*get_parm_ptr)(struct loadparm_service *service, struct parm_struct *parm);\n");
 	$file->("\tstruct loadparm_service * (*get_service)(const char *service_name);\n");
+	$file->("\tstruct loadparm_service * (*get_default_loadparm_service)(void);\n");
+	$file->("\tstruct loadparm_service * (*get_servicebynum)(int snum);\n");
+	$file->("\tint (*get_numservices)(void);\n");
+	$file->("\tbool (*set_cmdline)(const char *pszParmName, const char *pszParmValue);\n");
 }
 
 sub print_footer($$) 
