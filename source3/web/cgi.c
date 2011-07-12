@@ -19,6 +19,8 @@
 
 #include "includes.h"
 #include "web/swat_proto.h"
+#include "secrets.h"
+#include "../lib/util/util.h"
 
 #define MAX_VARIABLES 10000
 
@@ -321,7 +323,23 @@ static void cgi_web_auth(void)
 		exit(0);
 	}
 
-	setuid(0);
+	C_user = SMB_STRDUP(user);
+
+	if (!setuid(0)) {
+		C_pass = secrets_fetch_generic("root", "SWAT");
+		if (C_pass == NULL) {
+			char *tmp_pass = NULL;
+			tmp_pass = generate_random_str(talloc_tos(), 16);
+			if (tmp_pass == NULL) {
+				printf("%sFailed to create random nonce for "
+				       "SWAT session\n<br>%s\n", head, tail);
+				exit(0);
+			}
+			secrets_store_generic("root", "SWAT", tmp_pass);
+			C_pass = SMB_STRDUP(tmp_pass);
+			TALLOC_FREE(tmp_pass);
+		}
+	}
 	setuid(pwd->pw_uid);
 	if (geteuid() != pwd->pw_uid || getuid() != pwd->pw_uid) {
 		printf("%sFailed to become user %s - uid=%d/%d<br>%s\n", 
