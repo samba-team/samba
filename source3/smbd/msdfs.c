@@ -27,6 +27,7 @@
 #include "smbd/globals.h"
 #include "msdfs.h"
 #include "auth.h"
+#include "libcli/security/security.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath
@@ -277,6 +278,35 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	set_conn_connectpath(conn, connpath);
+
+	/*
+	 * New code to check if there's a share security descripter
+	 * added from NT server manager. This is done after the
+	 * smb.conf checks are done as we need a uid and token. JRA.
+	 *
+	 */
+	if (conn->session_info) {
+		share_access_check(conn->session_info->security_token,
+				   lp_servicename(snum), MAXIMUM_ALLOWED_ACCESS,
+				   &conn->share_access);
+
+		if ((conn->share_access & FILE_WRITE_DATA) == 0) {
+			if ((conn->share_access & FILE_READ_DATA) == 0) {
+				/* No access, read or write. */
+				DEBUG(0,("create_conn_struct: connection to %s "
+					 "denied due to security "
+					 "descriptor.\n",
+					 lp_servicename(snum)));
+				conn_free(conn);
+				return NT_STATUS_ACCESS_DENIED;
+			} else {
+				conn->read_only = true;
+			}
+		}
+	} else {
+		conn->share_access = 0;
+		conn->read_only = true;
+	}
 
 	if (!smbd_vfs_init(conn)) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
