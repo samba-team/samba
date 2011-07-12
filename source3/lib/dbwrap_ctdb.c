@@ -911,7 +911,7 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 
 
 
-#ifdef CTDB_CONTROL_SCHEDULE_FOR_DELETION
+#ifdef HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL
 static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 {
 	NTSTATUS status;
@@ -974,7 +974,7 @@ static NTSTATUS db_ctdb_delete(struct db_record *rec)
 		return status;
 	}
 
-#ifdef CTDB_CONTROL_SCHEDULE_FOR_DELETION
+#ifdef HAVE_CTDB_CONTROL_SCHEDULE_FOR_DELETION_DECL
 	status = db_ctdb_send_schedule_for_deletion(rec);
 #endif
 
