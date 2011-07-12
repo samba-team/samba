@@ -124,9 +124,6 @@ struct cli_state {
 	bool use_oplocks; /* should we use oplocks? */
 	bool use_level_II_oplocks; /* should we use level II oplocks? */
 
-	/* a oplock break request handler */
-	NTSTATUS (*oplock_handler)(struct cli_state *cli, uint16_t fnum, unsigned char level);
-
 	bool force_dos_errors;
 	bool case_sensitive; /* False by default. */
 

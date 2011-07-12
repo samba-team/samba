@@ -687,9 +687,6 @@ struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
 				       struct cli_state *cli,
 				       uint16_t fnum, uint8_t level);
 NTSTATUS cli_oplock_ack_recv(struct tevent_req *req);
-NTSTATUS cli_oplock_ack(struct cli_state *cli, uint16_t fnum, unsigned char level);
-void cli_oplock_handler(struct cli_state *cli,
-			NTSTATUS (*handler)(struct cli_state *, uint16_t, unsigned char));
 
 /* The following definitions come from libsmb/cliprint.c  */
 

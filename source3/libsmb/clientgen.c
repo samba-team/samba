@@ -191,7 +191,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->max_xmit = CLI_BUFFER_SIZE+4;
-	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = false;
 
 	cli->use_spnego = lp_client_use_spnego();
