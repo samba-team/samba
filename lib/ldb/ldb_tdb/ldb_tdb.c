@@ -311,7 +311,8 @@ static bool ldb_tdb_single_valued(const struct ldb_schema_attribute *a,
 }
 
 static int ltdb_add_internal(struct ldb_module *module,
-			     const struct ldb_message *msg)
+			     const struct ldb_message *msg,
+			     bool check_single_value)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret = LDB_SUCCESS;
@@ -326,7 +327,9 @@ static int ltdb_add_internal(struct ldb_module *module,
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		if (el->num_values > 1 && ldb_tdb_single_valued(a, el)) {
+		if (check_single_value &&
+				el->num_values > 1 &&
+				ldb_tdb_single_valued(a, el)) {
 			ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
@@ -373,7 +376,7 @@ static int ltdb_add(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_add_internal(module, req->op.add.message);
+	ret = ltdb_add_internal(module, req->op.add.message, true);
 
 	return ret;
 }
@@ -998,7 +1001,11 @@ static int ltdb_rename(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_add_internal(module, msg);
+	/* We don't check single value as we can have more than 1 with
+	 * deleted attributes. We could go through all elements but that's
+	 * maybe not the most efficient way
+	 */
+	ret = ltdb_add_internal(module, msg, false);
 
 	return ret;
 }
