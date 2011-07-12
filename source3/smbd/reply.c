@@ -519,7 +519,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 	smb_setlen(outbuf,0);
 
 	switch (msg_type) {
-	case 0x81: /* session request */
+	case NBSSrequest: /* session request */
 	{
 		/* inbuf_size is guarenteed to be at least 4. */
 		fstring name1,name2;
@@ -532,7 +532,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 			exit_server_cleanly("multiple session request not permitted");
 		}
 
-		SCVAL(outbuf,0,0x82);
+		SCVAL(outbuf,0,NBSSpositive);
 		SCVAL(outbuf,3,0);
 
 		/* inbuf_size is guaranteed to be at least 4. */
@@ -614,17 +614,17 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 
 	case 0x89: /* session keepalive request 
 		      (some old clients produce this?) */
-		SCVAL(outbuf,0,SMBkeepalive);
+		SCVAL(outbuf,0,NBSSkeepalive);
 		SCVAL(outbuf,3,0);
 		break;
 
-	case 0x82: /* positive session response */
-	case 0x83: /* negative session response */
-	case 0x84: /* retarget session response */
+	case NBSSpositive: /* positive session response */
+	case NBSSnegative: /* negative session response */
+	case NBSSretarget: /* retarget session response */
 		DEBUG(0,("Unexpected session response\n"));
 		break;
 
-	case SMBkeepalive: /* session keepalive */
+	case NBSSkeepalive: /* session keepalive */
 	default:
 		return;
 	}
@@ -3880,9 +3880,9 @@ void error_to_writebrawerr(struct smb_request *req)
 static NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 				size_t *len)
 {
-	uint8_t msgtype = SMBkeepalive;
+	uint8_t msgtype = NBSSkeepalive;
 
-	while (msgtype == SMBkeepalive) {
+	while (msgtype == NBSSkeepalive) {
 		NTSTATUS status;
 
 		status = read_smb_length_return_keepalive(fd, inbuf, timeout,
@@ -4136,7 +4136,7 @@ void reply_writebraw(struct smb_request *req)
 #if RABBIT_PELLET_FIX
 		/*
 		 * Fix for "rabbit pellet" mode, trigger an early TCP ack by
-		 * sending a SMBkeepalive. Thanks to DaveCB at Sun for this.
+		 * sending a NBSSkeepalive. Thanks to DaveCB at Sun for this.
 		 * JRA.
 		 */
 		if (!send_keepalive(req->sconn->sock)) {

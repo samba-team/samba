@@ -1592,7 +1592,7 @@ static void process_smb(struct smbd_server_connection *sconn,
 	DEBUG(3, ("Transaction %d of length %d (%u toread)\n",
 		  sconn->trans_num, (int)nread, (unsigned int)unread_bytes));
 
-	if (msg_type != 0) {
+	if (msg_type != NBSSmessage) {
 		/*
 		 * NetBIOS session request, keepalive, etc.
 		 */
@@ -2501,7 +2501,7 @@ static bool smbd_echo_reply(uint8_t *inbuf, size_t inbuf_len,
 	char *outbuf;
 	bool ok;
 
-	if ((inbuf_len == 4) && (CVAL(inbuf, 0) == SMBkeepalive)) {
+	if ((inbuf_len == 4) && (CVAL(inbuf, 0) == NBSSkeepalive)) {
 		DEBUG(10, ("Got netbios keepalive\n"));
 		/*
 		 * Just swallow it
