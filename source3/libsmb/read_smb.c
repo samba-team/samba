@@ -84,7 +84,7 @@ static void read_smb_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (CVAL(state->buf, 0) == SMBkeepalive) {
+	if (CVAL(state->buf, 0) == NBSSkeepalive) {
 		subreq = read_packet_send(state, state->ev, state->fd, 4,
 					  read_smb_more, NULL);
 		if (tevent_req_nomem(subreq, req)) {
