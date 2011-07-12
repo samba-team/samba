@@ -2504,6 +2504,10 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			*(int *)parm_ptr = atoi(pszParmValue);
 			break;
 
+		case P_CHAR:
+			*(char *)parm_ptr = *pszParmValue;
+			break;
+
 		case P_OCTAL:
 			*(int *)parm_ptr = strtol(pszParmValue, NULL, 8);
 			break;
@@ -2819,6 +2823,10 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			fprintf(f, "%d", *(int *)ptr);
 			break;
 
+		case P_CHAR:
+			fprintf(f, "%c", *(char *)ptr);
+			break;
+
 		case P_OCTAL:
 			fprintf(f, "0%o", *(int *)ptr);
 			break;
@@ -2865,6 +2873,9 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_BYTES:
 		case P_ENUM:
 			return (*((int *)ptr1) == *((int *)ptr2));
+
+		case P_CHAR:
+			return (*((char *)ptr1) == *((char *)ptr2));
 
 		case P_CMDLIST:
 		case P_LIST:
@@ -2957,6 +2968,7 @@ static bool is_default(struct loadparm_service *sDefault, int i)
 			return parm_table[i].def.bvalue ==
 				*(int *)def_ptr;
 		case P_INTEGER:
+		case P_CHAR:
 		case P_OCTAL:
 		case P_BYTES:
 		case P_ENUM:
