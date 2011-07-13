@@ -459,6 +459,11 @@ error:
 
 }
 
+static int rpc_conf_listshares(struct net_context *c, int argc,
+				const char **argv)
+{
+	return 0;
+}
 
 static int rpc_conf_list(struct net_context *c, int argc,
 			     const char **argv)
@@ -481,6 +486,15 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("net rpc conf list\n"
 			   "    Dump the complete remote configuration in smb.conf "
 			   "like format.")
+
+		},
+		{
+			"listshares",
+			rpc_conf_listshares,
+			NET_TRANSPORT_RPC,
+			N_("List the remote share names."),
+			N_("net rpc conf list\n"
+			   "    List the remote share names.")
 
 		},
 		{NULL, NULL, 0, NULL, NULL}
