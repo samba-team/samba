@@ -121,7 +121,7 @@ static void smb_panic_default(const char *why)
 		char cmdstring[200];
 		strlcpy(cmdstring, panic_action, sizeof(cmdstring));
 		snprintf(pidstr, sizeof(pidstr), "%d", (int) getpid());
-		all_string_sub(cmdstring, "%PID%", pidstr, sizeof(cmdstring));
+		all_string_sub(cmdstring, "%d", pidstr, sizeof(cmdstring));
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmdstring));
 		result = system(cmdstring);
 
