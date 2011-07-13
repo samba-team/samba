@@ -379,6 +379,30 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 		return ret;
 	}
 
+	if (ret == LDB_SUCCESS) {
+		/* ensure the defaultObjectCategory has a full GUID */
+		struct ldb_message *m;
+		m = ldb_msg_new(ac->msg);
+		if (m == NULL) {
+			return ldb_oom(ldb);
+		}
+		m->dn = ac->msg->dn;
+		if (ldb_msg_add_string(m, "defaultObjectCategory",
+				       ldb_dn_get_extended_linearized(m, res->msgs[0]->dn, 1)) !=
+		    LDB_SUCCESS) {
+			return ldb_oom(ldb);
+		}
+		m->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+		ret = dsdb_module_modify(ac->module, m,
+					 DSDB_FLAG_NEXT_MODULE,
+					 ac->req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+
 	ac->res_dn = ac->dn;
 
 	return samldb_next_step(ac);
