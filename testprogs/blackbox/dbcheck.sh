@@ -13,7 +13,7 @@ shift 1
 . `dirname $0`/subunit.sh
 
 dbcheck() {
-	$BINDIR/samba-tool dbcheck --fix --cross-ncs --yes $@
+	$BINDIR/samba-tool dbcheck --cross-ncs $@
 }
 
 reindex() {
