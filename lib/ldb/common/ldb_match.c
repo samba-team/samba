@@ -463,6 +463,11 @@ static int ldb_match_message(struct ldb_context *ldb,
 
 	*matched = false;
 
+	if (scope != LDB_SCOPE_BASE && ldb_dn_is_special(msg->dn)) {
+		/* don't match special records except on base searches */
+		return LDB_SUCCESS;
+	}
+
 	switch (tree->operation) {
 	case LDB_OP_AND:
 		for (i=0;i<tree->u.list.num_elements;i++) {
