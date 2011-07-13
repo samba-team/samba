@@ -142,8 +142,8 @@ dynconfig = {
          'FHS-PATH':  '${DATADIR}/samba/codepages',
     },
     'PAMMODULESDIR' : {
-         'STD-PATH':  '${LIBDIR}',
-         'FHS-PATH':  '${LIBDIR}',
+         'STD-PATH':  '${LIBDIR}/security',
+         'FHS-PATH':  '${LIBDIR}/security',
          'OPTION':    '--with-pammodulesdir',
          'HELPTEXT':  'Which directory to use for PAM modules',
     },
@@ -173,7 +173,7 @@ dynconfig = {
     },
     'STATEDIR' : {
          'STD-PATH':  '${LOCALSTATEDIR}/locks',
-         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba/',
+         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba',
          'OPTION':    '--with-statedir',
          'HELPTEXT':  'Where to put persistent state files',
     },
