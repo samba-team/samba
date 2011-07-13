@@ -107,12 +107,6 @@ struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_binding_vector_replace_iface(const struct ndr_interface_table *iface,
 					     struct dcerpc_binding_vector *v);
 
-NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
-				      const struct ndr_interface_table *iface,
-				      uint16_t port,
-				      const char *ncalrpc,
-				      struct dcerpc_binding_vector **pbvec);
-
 /**
  * @brief Adds server address information in the local endpoint map.
  *
