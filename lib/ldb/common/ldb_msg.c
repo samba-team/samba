@@ -1185,3 +1185,15 @@ int ldb_msg_check_string_attribute(const struct ldb_message *msg,
 	return 0;
 }
 
+
+/*
+  compare a ldb_val to a string
+*/
+int ldb_val_string_cmp(const struct ldb_val *v, const char *str)
+{
+	size_t len = strlen(str);
+	if (len != v->length) {
+		return len - v->length;
+	}
+	return strncmp((const char *)v->data, str, len);
+}

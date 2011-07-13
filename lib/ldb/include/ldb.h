@@ -2251,4 +2251,9 @@ const char *ldb_req_location(struct ldb_request *req);
  */
 bool ldb_dn_minimise(struct ldb_dn *dn);
 
+/*
+  compare a ldb_val to a string
+*/
+int ldb_val_string_cmp(const struct ldb_val *v, const char *str);
+
 #endif
