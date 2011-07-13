@@ -34,3 +34,4 @@ rpc.handles
 rpc.echo
 smb.signing
 drs.unit
+samba4.blackbox.dbcheck
