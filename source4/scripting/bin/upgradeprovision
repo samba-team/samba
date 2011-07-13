@@ -1349,7 +1349,7 @@ def rebuild_sd(samdb, names):
 def removeProvisionUSN(samdb):
         attrs = [samba.provision.LAST_PROVISION_USN_ATTRIBUTE, "dn"]
         entry = samdb.search(expression="dn=@PROVISION", base = "",
-                                scope=SCOPE_SUBTREE,
+                                scope=SCOPE_BASE,
                                 attrs=attrs)
         empty = Message()
         empty.dn = entry[0].dn

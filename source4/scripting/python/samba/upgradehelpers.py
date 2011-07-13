@@ -441,10 +441,8 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
     """
 
     messagefunc(SIMPLE, "Update of secrets.ldb")
-    reference = newsecrets_ldb.search(expression="dn=@MODULES", base="",
-                                        scope=SCOPE_SUBTREE)
-    current = secrets_ldb.search(expression="dn=@MODULES", base="",
-                                        scope=SCOPE_SUBTREE)
+    reference = newsecrets_ldb.search(base="@MODULES", scope=SCOPE_BASE)
+    current = secrets_ldb.search(base="@MODULES", scope=SCOPE_BASE)
     assert reference, "Reference modules list can not be empty"
     if len(current) == 0:
         # No modules present

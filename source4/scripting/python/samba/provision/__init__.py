@@ -331,10 +331,9 @@ def update_provision_usn(samdb, low, high, id, replace=False):
 
     tab = []
     if not replace:
-        entry = samdb.search(expression="(&(dn=@PROVISION)(%s=*))" %
-                                LAST_PROVISION_USN_ATTRIBUTE, base="",
-                                scope=ldb.SCOPE_SUBTREE,
-                                attrs=[LAST_PROVISION_USN_ATTRIBUTE, "dn"])
+        entry = samdb.search(base="@PROVISION",
+                             scope=ldb.SCOPE_BASE,
+                             attrs=[LAST_PROVISION_USN_ATTRIBUTE, "dn"])
         for e in entry[0][LAST_PROVISION_USN_ATTRIBUTE]:
             if not re.search(';', e):
                 e = "%s;%s" % (e, id)
@@ -345,9 +344,9 @@ def update_provision_usn(samdb, low, high, id, replace=False):
     delta.dn = ldb.Dn(samdb, "@PROVISION")
     delta[LAST_PROVISION_USN_ATTRIBUTE] = ldb.MessageElement(tab,
         ldb.FLAG_MOD_REPLACE, LAST_PROVISION_USN_ATTRIBUTE)
-    entry = samdb.search(expression="(&(dn=@PROVISION)(provisionnerID=*))",
-                            base="", scope=ldb.SCOPE_SUBTREE,
-                            attrs=["provisionnerID"])
+    entry = samdb.search(expression='provisionnerID=*',
+                         base="@PROVISION", scope=ldb.SCOPE_BASE,
+                         attrs=["provisionnerID"])
     if len(entry) == 0 or len(entry[0]) == 0:
         delta["provisionnerID"] = ldb.MessageElement(id, ldb.FLAG_MOD_ADD, "provisionnerID")
     samdb.modify(delta)
@@ -398,10 +397,14 @@ def get_last_provision_usn(sam):
     :return: a dictionnary which keys are invocation id and values are an array
              of integer representing the different ranges
     """
-    entry = sam.search(expression="(&(dn=@PROVISION)(%s=*))" %
-                        LAST_PROVISION_USN_ATTRIBUTE,
-                        base="", scope=ldb.SCOPE_SUBTREE,
-                        attrs=[LAST_PROVISION_USN_ATTRIBUTE, "provisionnerID"])
+    try:
+        entry = sam.search(expression="%s=*" % LAST_PROVISION_USN_ATTRIBUTE,
+                           base="@PROVISION", scope=ldb.SCOPE_BASE,
+                           attrs=[LAST_PROVISION_USN_ATTRIBUTE, "provisionnerID"])
+    except ldb.LdbError, (ecode, emsg):
+        if ecode == ldb.ERR_NO_SUCH_OBJECT:
+            return None
+        raise
     if len(entry):
         myids = []
         range = {}

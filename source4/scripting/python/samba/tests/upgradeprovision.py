@@ -27,7 +27,7 @@ from samba.upgradehelpers import  (usn_in_range, dn_sort,
 from samba.tests.provision import create_dummy_secretsdb
 from samba.tests import TestCaseInTempDir
 from samba import Ldb
-from ldb import SCOPE_SUBTREE
+from ldb import SCOPE_BASE
 import samba.tests
 
 def dummymessage(a=None, b=None):
@@ -123,10 +123,8 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
     def test_update_modules(self):
         empty_db = self._getEmptyDb()
         update_secrets(self.referencedb, empty_db, dummymessage)
-        newmodules = empty_db.search(
-            expression="dn=@MODULES", base="", scope=SCOPE_SUBTREE)
-        refmodules = self.referencedb.search(
-            expression="dn=@MODULES", base="", scope=SCOPE_SUBTREE)
+        newmodules = empty_db.search(base="@MODULES", scope=SCOPE_BASE)
+        refmodules = self.referencedb.search(base="@MODULES", scope=SCOPE_BASE)
         self.assertEquals(newmodules.msgs, refmodules.msgs)
 
     def tearDown(self):
