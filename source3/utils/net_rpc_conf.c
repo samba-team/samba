@@ -51,6 +51,13 @@ static int rpc_conf_list_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static int rpc_conf_listshares_usage(struct net_context *c, int argc,
+			             const char **argv)
+{
+	d_printf("%s net rpc conf listshares\n", _("Usage:"));
+	return -1;
+}
+
 static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -341,6 +348,91 @@ error:
 	return status;
 }
 
+static NTSTATUS rpc_conf_listshares_internal(struct net_context *c,
+					     const struct dom_sid *domain_sid,
+					     const char *domain_name,
+					     struct cli_state *cli,
+					     struct rpc_pipe_client *pipe_hnd,
+					     TALLOC_CTX *mem_ctx,
+					     int argc,
+					     const char **argv )
+{
+
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd;
+	uint32_t num_subkeys;
+	uint32_t i;
+	const char **subkeys = NULL;
+
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+
+	if (argc != 0 || c->display_usage) {
+		rpc_conf_listshares_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+	status = dcerpc_winreg_enum_keys(frame,
+					 b,
+					 &key_hnd,
+					 &num_subkeys,
+					 &subkeys,
+					 &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
+				win_errstr(werr));
+		goto error;
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		d_printf("%s\n", subkeys[i]);
+	}
+
+error:
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;;
+}
+
 static NTSTATUS rpc_conf_list_internal(struct net_context *c,
 				       const struct dom_sid *domain_sid,
 				       const char *domain_name,
@@ -462,7 +554,8 @@ error:
 static int rpc_conf_listshares(struct net_context *c, int argc,
 				const char **argv)
 {
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_listshares_internal, argc, argv );
 }
 
 static int rpc_conf_list(struct net_context *c, int argc,
