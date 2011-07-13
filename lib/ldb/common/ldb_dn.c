@@ -1034,7 +1034,7 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 	if ( ! dn || dn->invalid) return -1;
 
 	if (( ! base->valid_case) || ( ! dn->valid_case)) {
-		if (base->linearized && dn->linearized) {
+		if (base->linearized && dn->linearized && dn->special == base->special) {
 			/* try with a normal compare first, if we are lucky
 			 * we will avoid exploding and casfolding */
 			int dif;
