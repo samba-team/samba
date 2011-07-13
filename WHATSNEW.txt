@@ -1,10 +1,10 @@
                    ================================
-                   Release Notes for Samba 3.6.0rc2
-                            June 7, 2011
+                   Release Notes for Samba 3.6.0rc3
+                            July , 2011
                    ================================
 
 
-This is the second release candidate of Samba 3.6.0.  This is *not*
+This is the third release candidate of Samba 3.6.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -269,6 +269,8 @@ o   Jeremy Allison <jra@samba.org>
       is set.
     * BUG 8219: Fix SMB Panic from Windows 7 client.
     * BUG 8254: Fix "acl check permissions = no".
+    * BUG 8293: Fix log file rotating in SMB2.
+    * BUG 8304: Fix uninitialized variable in error path.
 
 
 o   Christian Ambach <ambi@samba.org>
@@ -290,10 +292,16 @@ o   Gregor Beck <gbeck@sernet.de>
 
 o   Günther Deschner <gd@samba.org>
     * BUG 7888: Deal with buggy 3.0 based PDCs.
+    * BUG 8214: Fix smbd crash on printer driver upgrade.
+    * BUG 8235: Fix smbd crash on startup caused by migrate_printer().
 
 
 o   Björn Jacke <bj@sernet.de>
     * BUG 8262: Fix build of vfs_commit.
+
+
+o   Günter Kukkukk <linux@kukkukk.com>
+    * BUG 8305: Fix segfault in nmbd when using 'smbtree ...'..
 
 
 o   Volker Lendecke <vl@samba.org>
