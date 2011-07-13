@@ -172,8 +172,27 @@ static void epoll_panic(struct epoll_event_context *epoll_ev,
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & TEVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
-	if (flags & TEVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
+
+	/*
+	 * we do not need to specify EPOLLERR | EPOLLHUP
+	 * they are always reported.
+	 */
+
+	if (flags & TEVENT_FD_READ) {
+		/*
+		 * Note that EPOLLRDHUP always
+		 * returns EPOLLIN in addition,
+		 * so EPOLLRDHUP is not strictly needed,
+		 * but we want to make it explicit.
+		 */
+		ret |= EPOLLIN | EPOLLRDHUP;
+	}
+	if (flags & TEVENT_FD_WRITE) {
+		ret |= EPOLLOUT;
+	}
+	if (flags & TEVENT_FD_ERROR) {
+		ret |= EPOLLRDHUP;
+	}
 	return ret;
 }
 
@@ -538,10 +557,11 @@ static void epoll_update_event(struct epoll_event_context *epoll_ev, struct teve
 	uint16_t effective_flags = tevent_common_fd_mpx_flags(primary);
 	bool want_read = (effective_flags & TEVENT_FD_READ);
 	bool want_write= (effective_flags & TEVENT_FD_WRITE);
+	bool want_error= (effective_flags & TEVENT_FD_ERROR);
 
 	/* there's already an event */
 	if (primary->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT) {
-		if (want_read || (want_write && !got_error)) {
+		if (want_read || want_error || (want_write && !got_error)) {
 			epoll_mod_event(epoll_ev, primary);
 			return;
 		}
@@ -556,7 +576,7 @@ static void epoll_update_event(struct epoll_event_context *epoll_ev, struct teve
 	}
 
 	/* there's no epoll_event attached to the fde */
-	if (want_read || (want_write && !got_error)) {
+	if (want_read || want_error || (want_write && !got_error)) {
 		epoll_add_event(epoll_ev, primary);
 		return;
 	}
@@ -618,7 +638,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 			return -1;
 		}
 		effective_flags = tevent_common_fd_mpx_flags(fde);
-		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
+		if (events[i].events & (EPOLLHUP|EPOLLERR|EPOLLRDHUP)) {
 			uint64_t add_flags = 0;
 
 			add_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
@@ -626,6 +646,9 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 							      0,
 							      add_flags);
 
+			if (effective_flags & TEVENT_FD_ERROR) {
+				flags |= TEVENT_FD_ERROR;
+			}
 			if (effective_flags & TEVENT_FD_READ) {
 				flags |= TEVENT_FD_READ;
 			}

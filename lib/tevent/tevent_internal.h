@@ -745,7 +745,9 @@ struct tevent_fd *tevent_common_fd_mpx_select(struct tevent_fd *primary,
 		 * If we got an error, we won't report it if
 		 * the caller only asked for TEVENT_FD_WRITE.
 		 */
-		if (got_error && !(primary->flags & TEVENT_FD_READ)) {
+		if (got_error &&
+		    !(primary->flags & (TEVENT_FD_READ|TEVENT_FD_ERROR)))
+		{
 			return NULL;
 		}
 
@@ -763,7 +765,9 @@ struct tevent_fd *tevent_common_fd_mpx_select(struct tevent_fd *primary,
 		 * If we got an error, we won't report it if
 		 * the caller only asked for TEVENT_FD_WRITE.
 		 */
-		if (got_error && !(mpx_fde->flags & TEVENT_FD_READ)) {
+		if (got_error &&
+		    !(mpx_fde->flags & (TEVENT_FD_READ|TEVENT_FD_ERROR)))
+		{
 			continue;
 		}
 

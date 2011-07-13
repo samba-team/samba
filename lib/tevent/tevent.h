@@ -184,7 +184,7 @@ void tevent_set_default_backend(const char *backend);
  *
  * @param[in]  fd       The file descriptor to base the event on.
  *
- * @param[in]  flags    #TEVENT_FD_READ or #TEVENT_FD_WRITE
+ * @param[in]  flags    #TEVENT_FD_READ, #TEVENT_FD_WRITE or #TEVENT_FD_ERROR.
  *
  * @param[in]  handler  The callback handler for the event.
  *
@@ -535,8 +535,8 @@ void tevent_fd_set_auto_close(struct tevent_fd *fde);
  *
  * @param[in] fde  File descriptor event to query
  *
- * @return The flags set on the event. See #TEVENT_FD_READ and
- * #TEVENT_FD_WRITE
+ * @return The flags set on the event. See #TEVENT_FD_READ,
+ * #TEVENT_FD_WRITE and #TEVENT_FD_ERROR
  */
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde);
 
@@ -544,8 +544,8 @@ uint16_t tevent_fd_get_flags(struct tevent_fd *fde);
  * Set flags on a file descriptor event
  *
  * @param[in] fde    File descriptor event to set
- * @param[in] flags  Flags to set on the event. See #TEVENT_FD_READ and
- * #TEVENT_FD_WRITE
+ * @param[in] flags  Flags to set on the event. See #TEVENT_FD_READ,
+ * #TEVENT_FD_WRITE and #TEVENT_FD_ERROR
  */
 void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
@@ -563,13 +563,25 @@ void tevent_set_abort_fn(void (*abort_fn)(const char *reason));
 /* bits for file descriptor event flags */
 
 /**
- * Monitor a file descriptor for data to be read
+ * Monitor a file descriptor for data to be read and errors
+ *
+ * Note: we map this from/to POLLIN, POLLHUP, POLLERR and
+ * where available POLLRDHUP
  */
 #define TEVENT_FD_READ 1
 /**
  * Monitor a file descriptor for writeability
+ *
+ * Note: we map this from/to POLLOUT
  */
 #define TEVENT_FD_WRITE 2
+/**
+ * Monitor a file descriptor for errors
+ *
+ * Note: we map this from/to POLLHUP, POLLERR and
+ * where available POLLRDHUP
+ */
+#define TEVENT_FD_ERROR 4
 
 /**
  * Convenience function for declaring a tevent_fd writable
@@ -584,6 +596,12 @@ void tevent_set_abort_fn(void (*abort_fn)(const char *reason));
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) | TEVENT_FD_READ)
 
 /**
+ * Convenience function for declaring a tevent_fd waiting for errors
+ */
+#define TEVENT_FD_WANTERROR(fde) \
+	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) | TEVENT_FD_ERROR)
+
+/**
  * Convenience function for declaring a tevent_fd non-writable
  */
 #define TEVENT_FD_NOT_WRITEABLE(fde) \
@@ -594,6 +612,12 @@ void tevent_set_abort_fn(void (*abort_fn)(const char *reason));
  */
 #define TEVENT_FD_NOT_READABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) & ~TEVENT_FD_READ)
+
+/**
+ * Convenience function for declaring a tevent_fd not waiting for errors
+ */
+#define TEVENT_FD_NOT_WANTERROR(fde) \
+	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) & ~TEVENT_FD_ERROR)
 
 /**
  * Debug level of tevent

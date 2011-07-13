@@ -36,9 +36,10 @@ const char *tevent_common_fd_str(struct tevent_common_fd_buf *buf,
 {
 	snprintf(buf->buf, sizeof(buf->buf),
 		 "%s[fde=%p,"
-		 "fd=%d,flags=0x%x(%s%s),%s]",
+		 "fd=%d,flags=0x%x(%s%s%s),%s]",
 		 description, fde, fde->fd,
 		 fde->flags,
+		 (fde->flags & TEVENT_FD_ERROR) ? "E" : "",
 		 (fde->flags & TEVENT_FD_READ) ? "R" : "",
 		 (fde->flags & TEVENT_FD_WRITE) ? "W" : "",
 		 fde->handler_name);
