@@ -67,6 +67,13 @@ static int rpc_conf_showshare_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static int rpc_conf_drop_usage(struct net_context *c, int argc,
+			       const char **argv)
+{
+	d_printf("%s\nnet rpc conf drop\n", _("Usage:"));
+	return -1;
+}
+
 static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -560,6 +567,113 @@ error:
 
 }
 
+static NTSTATUS rpc_conf_drop_internal(struct net_context *c,
+				       const struct dom_sid *domain_sid,
+				       const char *domain_name,
+				       struct cli_state *cli,
+				       struct rpc_pipe_client *pipe_hnd,
+				       TALLOC_CTX *mem_ctx,
+				       int argc,
+				       const char **argv )
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd;
+	const char *keyname = confpath;
+	struct winreg_String wkey, wkeyclass;
+	enum winreg_CreateAction action = REG_ACTION_NONE;
+
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+
+	if (argc != 0 || c->display_usage) {
+		rpc_conf_drop_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_ALL,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+	status = dcerpc_winreg_delete_subkeys_recursive(frame,
+							b,
+							&hive_hnd,
+							REG_KEY_ALL,
+							keyname,
+							&werr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("winreg_delete_subkeys: Could not delete key %s: %s\n",
+			  keyname, nt_errstr(status));
+		goto error;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("winreg_delete_subkeys: Could not delete key %s: %s\n",
+			  keyname, win_errstr(werr));
+		goto error;
+	}
+
+	wkey.name = keyname;
+	ZERO_STRUCT(wkeyclass);
+	wkeyclass.name = "";
+	action = REG_ACTION_NONE;
+
+	status = dcerpc_winreg_CreateKey(b,
+					 frame,
+					 &hive_hnd,
+					 wkey,
+					 wkeyclass,
+					 0,
+					 REG_KEY_ALL,
+					 NULL,
+					 &key_hnd,
+					 &action,
+					 &werr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("winreg_CreateKey: Could not create smbconf key\n");
+		goto error;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("winreg_CreateKey: Could not create smbconf key\n");
+		goto error;
+	}
+
+
+error:
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static NTSTATUS rpc_conf_showshare_internal(struct net_context *c,
 					    const struct dom_sid *domain_sid,
 					    const char *domain_name,
@@ -654,8 +768,9 @@ error:
 static int rpc_conf_drop(struct net_context *c, int argc,
 				const char **argv)
 {
-	d_printf("Function not implemented yet\n");
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_drop_internal, argc, argv );
+
 }
 
 static int rpc_conf_showshare(struct net_context *c, int argc,
