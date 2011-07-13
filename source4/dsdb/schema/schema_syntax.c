@@ -554,6 +554,11 @@ static WERROR dsdb_syntax_NTTIME_UTC_drsuapi_to_ldb(const struct dsdb_syntax_ctx
 		}
 
 		v = BVAL(in->value_ctr.values[i].blob->data, 0);
+		if (v == 0) {
+			/* special case for 1601 zero timestamp */
+			out->values[i] = data_blob_string_const("16010101000000.0Z");
+			continue;
+		}
 		v *= 10000000;
 		t = nt_time_to_unix(v);
 
@@ -606,6 +611,11 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(const struct dsdb_syntax_ctx
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
+
+		if (ldb_val_string_cmp("16010101000000.0Z", &in->values[i]) == 0) {
+			SBVALS(blobs[i].data, 0, 0);
+			continue;
+		}
 
 		t = ldb_string_utc_to_time((const char *)in->values[i].data);
 		unix_to_nt_time(&v, t);
@@ -693,6 +703,11 @@ static WERROR dsdb_syntax_NTTIME_drsuapi_to_ldb(const struct dsdb_syntax_ctx *ct
 		}
 
 		v = BVAL(in->value_ctr.values[i].blob->data, 0);
+		if (v == 0) {
+			/* special case for 1601 zero timestamp */
+			out->values[i] = data_blob_string_const("16010101000000.0Z");
+			continue;
+		}
 		v *= 10000000;
 		t = nt_time_to_unix(v);
 
@@ -738,6 +753,11 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ct
 
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
+
+		if (ldb_val_string_cmp("16010101000000.0Z", &in->values[i]) == 0) {
+			SBVALS(blobs[i].data, 0, 0);
+			continue;
+		}
 
 		ret = ldb_val_to_time(&in->values[i], &t);
 		if (ret != LDB_SUCCESS) {
