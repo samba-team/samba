@@ -8001,6 +8001,14 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 			N_("net rpc trust\n"
 			   "    Manage trusts")
 		},
+		{
+			"conf",
+			net_rpc_conf,
+			NET_TRANSPORT_RPC,
+			N_("Configure a remote samba server"),
+			N_("net rpc conf\n"
+			   "    Configure a remote samba server")
+		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
 

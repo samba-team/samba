@@ -469,4 +469,7 @@ int net_g_lock(struct net_context *c, int argc, const char **argv);
 /* The following definitions come from utils/net_rpc_trust.c  */
 int net_rpc_trust(struct net_context *c, int argc, const char **argv);
 
+/* The following definitions come from utils/net_rpc_conf.c */
+int net_rpc_conf(struct net_context *c, int argc, const char **argv);
+
 #endif /*  _NET_PROTO_H_  */
