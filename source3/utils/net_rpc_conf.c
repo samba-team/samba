@@ -260,6 +260,87 @@ static int rpc_conf_print_shares(uint32_t num_shares,
 	return 0;
 
 }
+static NTSTATUS rpc_conf_open_conf(TALLOC_CTX *mem_ctx,
+				   struct dcerpc_binding_handle *b,
+				   uint32_t access_mask,
+				   struct policy_handle *hive_hnd,
+				   struct policy_handle *key_hnd,
+				   WERROR *werr)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR result = WERR_OK;
+	WERROR _werr;
+	struct policy_handle tmp_hive_hnd, tmp_key_hnd;
+	struct winreg_String key;
+
+	ZERO_STRUCT(key);
+
+	status = dcerpc_winreg_OpenHKLM(b, frame, NULL,
+			access_mask, &tmp_hive_hnd, &result);
+
+	/*
+	 * print no error messages if it is a read only open
+	 * and key does not exist
+	 * error still gets returned
+	 */
+
+	if (access_mask == REG_KEY_READ &&
+	    W_ERROR_EQUAL(result, WERR_BADFILE))
+	{
+		goto error;
+	}
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to open hive: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		d_fprintf(stderr, _("Failed to open hive: %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+
+	key.name = confpath;
+	status = dcerpc_winreg_OpenKey(b, frame, &tmp_hive_hnd, key, 0,
+				       access_mask, &tmp_key_hnd, &result);
+
+	/*
+	 * print no error messages if it is a read only open
+	 * and key does not exist
+	 * error still gets returned
+	 */
+
+	if (access_mask == REG_KEY_READ &&
+	    W_ERROR_EQUAL(result, WERR_BADFILE))
+	{
+		goto error;
+	}
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to open smbconf key: %s\n"),
+				nt_errstr(status));
+		dcerpc_winreg_CloseKey(b, frame, &tmp_hive_hnd, &_werr);
+		goto error;
+	}
+	if (!(W_ERROR_IS_OK(result))) {
+		d_fprintf(stderr, _("Failed to open smbconf key: %s\n"),
+			win_errstr(result));
+		dcerpc_winreg_CloseKey(b, frame, &tmp_hive_hnd, &_werr);
+		goto error;
+	}
+
+	*hive_hnd = tmp_hive_hnd;
+	*key_hnd = tmp_key_hnd;
+
+error:
+	TALLOC_FREE(frame);
+	*werr = result;
+
+	return status;
+}
+
 static NTSTATUS rpc_conf_list_internal(struct net_context *c,
 				       const struct dom_sid *domain_sid,
 				       const char *domain_name,
@@ -293,6 +374,7 @@ static NTSTATUS rpc_conf_list_internal(struct net_context *c,
 
 	if (argc != 0 || c->display_usage) {
 		rpc_conf_list_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto error;
 	}
 
