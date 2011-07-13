@@ -221,7 +221,7 @@ static void nb_packet_got_query(struct tevent_req *req)
 
 	nread = read_packet_recv(req, talloc_tos(), &buf, &err);
 	TALLOC_FREE(req);
-	if (nread < sizeof(struct nb_packet_query)) {
+	if (nread < (ssize_t)sizeof(struct nb_packet_query)) {
 		DEBUG(10, ("read_packet_recv returned %d (%s)\n",
 			   (int)nread,
 			   (nread == -1) ? strerror(err) : "wrong length"));
