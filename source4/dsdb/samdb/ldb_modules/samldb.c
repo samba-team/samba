@@ -1599,6 +1599,15 @@ static int samldb_member_check(struct samldb_ctx *ac)
 			const char *group_attrs[] = { "primaryGroupID" , NULL };
 			uint32_t prim_group_rid;
 
+			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
+				/* Deletes will be handled in
+				 * repl_meta_data, and deletes not
+				 * matching a member will return
+				 * LDB_ERR_UNWILLING_TO_PERFORM
+				 * there */
+				continue;
+			}
+
 			member_dn = ldb_dn_from_ldb_val(ac, ldb,
 							&el->values[j]);
 			if (!ldb_dn_validate(member_dn)) {
