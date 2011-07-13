@@ -417,6 +417,7 @@ class dbcheck(object):
         error_count = 0
         list_attrs_from_md = []
         list_attrs_seen = []
+        got_repl_property_meta_data = False
 
         for attrname in obj:
             if attrname == 'dn':
@@ -424,6 +425,7 @@ class dbcheck(object):
 
             if str(attrname).lower() == 'replpropertymetadata':
                 list_attrs_from_md = self.process_metadata(obj[attrname])
+                got_repl_property_meta_data = True
                 continue
 
 
@@ -463,17 +465,18 @@ class dbcheck(object):
                     break
 
         show_dn = True
-        for att in list_attrs_seen:
-            if not att in list_attrs_from_md:
-                if show_dn:
-                    self.report("On object %s" % dn)
-                    show_dn = False
-                error_count += 1
-                self.report("ERROR: Attribute %s not present in replication metadata" % att)
-                if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
-                    self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
-                    continue
-                self.fix_metadata(dn, att)
+        if got_repl_property_meta_data:
+            for att in list_attrs_seen:
+                if not att in list_attrs_from_md:
+                    if show_dn:
+                        self.report("On object %s" % dn)
+                        show_dn = False
+                    error_count += 1
+                    self.report("ERROR: Attribute %s not present in replication metadata" % att)
+                    if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
+                        self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
+                        continue
+                    self.fix_metadata(dn, att)
 
         return error_count
 
