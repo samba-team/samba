@@ -306,6 +306,7 @@ o   Günter Kukkukk <linux@kukkukk.com>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 7841: Explicitly pass domain_sid to wbint_LookupRids().
+    * BUG 8102: Do not allow to change file ACLs from normal domusers.
     * BUG 8247: Fix Coverity ID 2582: FORWARD_NULL.
 
 
@@ -314,6 +315,7 @@ o   Herb Lewis <hlewis@panasas.com>
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8102: Do not allow to change file ACLs from normal domusers.
     * BUG 8195: Make rpc client code working against NT4 servers.
     * BUG 8224: Fix the build on FreeBSD.
     * BUG 8226: Use c99 initializers which are supported by old gcc 2.95
@@ -321,6 +323,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 8260: Fix DCERPC responses with fragments larger than 1024 bytes.
     * BUG 8264: Fix Valgrind bugs in svcctl.
     * BUG 8276: Close all sockets attached to a subnet in close_subnet().
+    * BUG 8292: Fix a major architectural flaw in the SMB2 server code.
 
 
 o   Andreas Schneider <asn@samba.org>
