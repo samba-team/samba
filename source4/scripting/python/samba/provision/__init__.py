@@ -80,6 +80,8 @@ import samba.param
 import samba.registry
 from samba.schema import Schema
 from samba.samdb import SamDB
+from samba.dbchecker import dbcheck
+
 
 VALID_NETBIOS_CHARS = " !#$%&'()-.@^_{}~"
 DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
@@ -1834,6 +1836,20 @@ def provision(logger, session_info, credentials, smbconf=None,
             if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.info("Failed to chown %s to bind gid %u",
                             dns_keytab_path, paths.bind_gid)
+
+    # fix any dangling GUIDs from the provision
+    logger.info("Fixing provision GUIDs")
+    chk = dbcheck(samdb, samdb_schema=samdb,  verbose=False, fix=True, yes=True, quiet=True)
+    samdb.transaction_start()
+    chk.check_database(DN=None, controls=["search_options:1:2", "show_deleted:1"],
+                       attrs=['defaultObjectCategory',
+                              'objectCategory',
+                              'ipsecOwnersReference',
+                              'ipsecFilterReference',
+                              'ipsecISAKMPReference',
+                              'ipsecNegotiationPolicyReference',
+                              'ipsecNFAReference'])
+    samdb.transaction_commit()
 
 
     logger.info("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php",
