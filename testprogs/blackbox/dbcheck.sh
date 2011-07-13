@@ -16,6 +16,11 @@ dbcheck() {
 	$BINDIR/samba-tool dbcheck --fix --cross-ncs --yes $@
 }
 
+reindex() {
+	$BINDIR/samba-tool dbcheck --reindex
+}
+
 testit "dbcheck" dbcheck
+testit "reindex" reindex
 
 exit $failed
