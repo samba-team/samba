@@ -902,7 +902,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, req->op.mod.message->dn,
 				    acl_attrs,
-				    DSDB_FLAG_NEXT_MODULE, req);
+				    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
+				    req);
 
 	if (ret != LDB_SUCCESS) {
 		goto fail;
@@ -1337,7 +1338,8 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		    || ac->sDRightsEffective) {
 			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn, 
 						    acl_attrs,
-						    DSDB_FLAG_NEXT_MODULE, req);
+						    DSDB_FLAG_NEXT_MODULE |
+						    DSDB_SEARCH_SHOW_DELETED, req);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
