@@ -355,7 +355,6 @@ static NTSTATUS rpc_conf_list_internal(struct net_context *c,
 	NTSTATUS status = NT_STATUS_OK;
 	WERROR werr = WERR_OK;
 	WERROR _werr;
-	struct winreg_String key;
 
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
@@ -367,7 +366,6 @@ static NTSTATUS rpc_conf_list_internal(struct net_context *c,
 	const char **subkeys = NULL;
 
 
-	ZERO_STRUCT(key);
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 
@@ -378,34 +376,18 @@ static NTSTATUS rpc_conf_list_internal(struct net_context *c,
 		goto error;
 	}
 
-	status = dcerpc_winreg_OpenHKLM(b, frame, NULL,
-			REG_KEY_READ, &hive_hnd, &werr);
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
 
 	if (!(NT_STATUS_IS_OK(status))) {
-		d_fprintf(stderr, _("Failed to open hive: %s\n"),
-				nt_errstr(status));
-		goto error;
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("Failed to open hive: %s\n"),
-				win_errstr(werr));
 		goto error;
 	}
 
-	key.name = confpath;
-	status = dcerpc_winreg_OpenKey(b, frame, &hive_hnd, key, 0,
-				       REG_KEY_READ, &key_hnd, &werr);
-
-	if (!(NT_STATUS_IS_OK(status))) {
-		d_fprintf(stderr, _("Failed to open smbconf key: %s\n"),
-				nt_errstr(status));
-		dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
-		goto error;
-	}
 	if (!(W_ERROR_IS_OK(werr))) {
-		d_fprintf(stderr, _("Failed to open smbconf key: %s\n"),
-			win_errstr(werr));
-		dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
 		goto error;
 	}
 
