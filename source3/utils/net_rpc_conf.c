@@ -551,6 +551,13 @@ error:
 
 }
 
+static int rpc_conf_showshare(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("Function not implemented yet\n");
+	return 0;
+}
+
 static int rpc_conf_listshares(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -588,6 +595,15 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("List the remote share names."),
 			N_("net rpc conf list\n"
 			   "    List the remote share names.")
+
+		},
+		{
+			"showshare",
+			rpc_conf_showshare,
+			NET_TRANSPORT_RPC,
+			N_("Show the definition of a remote share."),
+			N_("net rpc conf showshare\n"
+			   "    Show the definition of a remote share.")
 
 		},
 		{NULL, NULL, 0, NULL, NULL}
