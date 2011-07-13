@@ -1624,6 +1624,9 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 		goto done;
 	}
 
+	werr = regsubkey_ctr_reinit(ctr);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
 	werr = regsubkey_ctr_set_seqnum(ctr, db->get_seqnum(db));
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
@@ -1642,9 +1645,6 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 		werr = WERR_NOT_FOUND;
 		goto done;
 	}
-
-	werr = regsubkey_ctr_reinit(ctr);
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	for (i=0; i<num_items; i++) {
 		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
