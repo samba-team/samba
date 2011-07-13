@@ -265,6 +265,7 @@ static void winbind_task_init(struct task_server *task)
 		}
 		break;
 	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_DOMAIN_PDC:
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->lp_ctx,
 						     lpcfg_workgroup(service->task->lp_ctx),
