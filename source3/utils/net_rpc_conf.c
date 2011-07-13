@@ -651,6 +651,13 @@ error:
 	return status;
 }
 
+static int rpc_conf_drop(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("Function not implemented yet\n");
+	return 0;
+}
+
 static int rpc_conf_showshare(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -695,6 +702,15 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("List the remote share names."),
 			N_("net rpc conf list\n"
 			   "    List the remote share names.")
+
+		},
+		{
+			"drop",
+			rpc_conf_drop,
+			NET_TRANSPORT_RPC,
+			N_("Delete the complete remote configuration."),
+			N_("net rpc conf drop\n"
+			   "    Delete the complete remote configuration.")
 
 		},
 		{
