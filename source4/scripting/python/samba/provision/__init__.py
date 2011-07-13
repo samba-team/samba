@@ -1837,19 +1837,20 @@ def provision(logger, session_info, credentials, smbconf=None,
                 logger.info("Failed to chown %s to bind gid %u",
                             dns_keytab_path, paths.bind_gid)
 
-    # fix any dangling GUIDs from the provision
-    logger.info("Fixing provision GUIDs")
-    chk = dbcheck(samdb, samdb_schema=samdb,  verbose=False, fix=True, yes=True, quiet=True)
-    samdb.transaction_start()
-    chk.check_database(DN=None, controls=["search_options:1:2", "show_deleted:1"],
-                       attrs=['defaultObjectCategory',
-                              'objectCategory',
-                              'ipsecOwnersReference',
-                              'ipsecFilterReference',
-                              'ipsecISAKMPReference',
-                              'ipsecNegotiationPolicyReference',
-                              'ipsecNFAReference'])
-    samdb.transaction_commit()
+    if samdb_fill != FILL_DRS:
+        # fix any dangling GUIDs from the provision
+        logger.info("Fixing provision GUIDs")
+        chk = dbcheck(samdb, samdb_schema=samdb,  verbose=False, fix=True, yes=True, quiet=True)
+        samdb.transaction_start()
+        chk.check_database(DN=None, controls=["search_options:1:2", "show_deleted:1"],
+                           attrs=['defaultObjectCategory',
+                                  'objectCategory',
+                                  'ipsecOwnersReference',
+                                  'ipsecFilterReference',
+                                  'ipsecISAKMPReference',
+                                  'ipsecNegotiationPolicyReference',
+                                  'ipsecNFAReference'])
+        samdb.transaction_commit()
 
 
     logger.info("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php",
