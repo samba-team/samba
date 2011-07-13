@@ -320,7 +320,7 @@ class dbcheck(object):
 
             attrs=['isDeleted']
             linkkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
-            reverse_link_name = self.samdb.get_backlink_from_lDAPDisplayName(attrname)
+            reverse_link_name = self.samdb_schema.get_backlink_from_lDAPDisplayName(attrname)
             if reverse_link_name is not None:
                 attrs.append(reverse_link_name)
 
