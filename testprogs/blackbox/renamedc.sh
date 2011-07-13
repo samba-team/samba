@@ -2,7 +2,7 @@
 
 if [ $# -lt 1 ]; then
 cat <<EOF
-Usage: blackbox_upgradeprovision.sh PREFIX
+Usage: renamedc.sh PREFIX
 EOF
 exit 1;
 fi
