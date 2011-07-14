@@ -964,6 +964,19 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 
+	/*
+	 * TODO: find out why this is needed in order
+	 *       to let make test work.
+	 *
+	 *       Without this, we are getting PAC varification
+	 *       failures. I guess because the PAC is not signed
+	 *       with a arcfour-hmac-md5 key.
+	 */
+	kdc->config->as_use_strongest_session_key = true;
+	kdc->config->preauth_use_strongest_session_key = true;
+	kdc->config->tgs_use_strongest_session_key = true;
+	kdc->config->use_strongest_server_key = true;
+
 	/* Register hdb-samba4 hooks for use as a keytab */
 
 	kdc->base_ctx = talloc_zero(kdc, struct samba_kdc_base_context);
