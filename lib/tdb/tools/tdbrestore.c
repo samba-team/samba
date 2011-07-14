@@ -206,7 +206,6 @@ static int restore_tdb(const char *fname)
 		fprintf(stderr, "Error closing tdb\n");
 		return 1;
 	}
-	fprintf(stderr, "EOF\n");
 	return 0;
 }
 
