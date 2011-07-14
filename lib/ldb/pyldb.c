@@ -522,7 +522,7 @@ static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 	return ldb_dn_add_base(dn, other)?Py_True:Py_False;
 }
 
-static PyObject *py_ldb_dn_compare_base(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
 {
 	PyObject *py_base;
 	struct ldb_dn *dn, *base;
@@ -534,7 +534,7 @@ static PyObject *py_ldb_dn_compare_base(PyLdbDnObject *self, PyObject *args)
 	if (!PyObject_AsDn(NULL, py_base, dn_ldb_ctx(dn), &base))
 		return NULL;
 
-	return PyInt_FromLong(ldb_dn_compare_base(base, dn));
+	return PyBool_FromLong(ldb_dn_compare_base(base, dn) == 0);
 }
 
 static PyMethodDef py_ldb_dn_methods[] = {
@@ -555,8 +555,8 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "canonical_str", (PyCFunction)py_ldb_dn_canonical_str, METH_NOARGS,
 		"S.canonical_str() -> string\n"
 		"Canonical version of this DN (like a posix path)." },
-	{ "compare_base", (PyCFunction)py_ldb_dn_compare_base, METH_VARARGS,
-		"S.compare_base(basedn) -> int\n\n"},
+	{ "is_child_of", (PyCFunction)py_ldb_dn_is_child_of, METH_VARARGS,
+		"S.is_child_of(basedn) -> int\nReturns True if this DN is a child of basedn\n"},
 	{ "canonical_ex_str", (PyCFunction)py_ldb_dn_canonical_ex_str, METH_NOARGS,
 		"S.canonical_ex_str() -> string\n"
 		"Canonical version of this DN (like a posix path, with terminating newline)." },
