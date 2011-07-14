@@ -523,7 +523,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
     '''
 
     HEIMDAL_AUTOPROTO_PRIVATE('lib/gssapi/spnego/spnego-private.h',
-                                  HEIMDAL_GSSAPI_SPNEGO_SOURCE)
+                              HEIMDAL_GSSAPI_SPNEGO_SOURCE)
 
     HEIMDAL_GSSAPI_KRB5_SOURCE = '''
         lib/gssapi/krb5/copy_ccache.c
@@ -574,6 +574,8 @@ if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
         lib/gssapi/krb5/process_context_token.c
         lib/gssapi/krb5/prf.c
         lib/gssapi/krb5/aeap.c
+        lib/gssapi/krb5/pname_to_uid.c
+        lib/gssapi/krb5/authorize_localname.c
     '''
 
     HEIMDAL_AUTOPROTO_PRIVATE('lib/gssapi/krb5/gsskrb5-private.h',
@@ -661,6 +663,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
                                    store.c store-int.c store_emem.c store_fd.c
                                    store_mem.c ticket.c time.c transited.c
                                    version.c warn.c krb5_err.c
+                                   aname_to_localname.c kuserok.c
                                    heim_err.c k524_err.c krb_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
 
     HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
