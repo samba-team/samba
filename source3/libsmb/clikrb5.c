@@ -187,7 +187,11 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
  krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
 					    krb5_enctype **enctypes)
 {
+#ifdef HAVE_KRB5_PDU_NONE_DECL
+	return krb5_get_default_in_tkt_etypes(context, KRB5_PDU_NONE, enctypes);
+#else
 	return krb5_get_default_in_tkt_etypes(context, enctypes);
+#endif
 }
 #else
 #error UNKNOWN_GET_ENCTYPES_FUNCTIONS

@@ -4380,6 +4380,8 @@ if test x"$with_ads_support" != x"no"; then
                [Whether the macro krb5_princ_realm is defined])
   fi
 
+  AC_HAVE_DECL(KRB5_PDU_NONE,[#include <krb5.h>])
+
   #
   #
   # Now the decisions whether we can support krb5
