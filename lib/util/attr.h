@@ -20,13 +20,18 @@
 #ifndef __UTIL_ATTR_H__
 #define __UTIL_ATTR_H__
 
+#ifndef _UNUSED_
 #ifdef __GNUC__
 /** gcc attribute used on function parameters so that it does not emit
  * warnings about them being unused. **/
-#  define UNUSED(param) param __attribute__ ((unused))
+#  define _UNUSED_ __attribute__ ((unused))
 #else
-#  define UNUSED(param) param
+#  define _UNUSED_
 /** Feel free to add definitions for other compilers here. */
+#endif
+#endif
+#ifndef UNUSED
+#define UNUSED(param) param _UNUSED_
 #endif
 
 #ifndef _DEPRECATED_
