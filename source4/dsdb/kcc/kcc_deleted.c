@@ -89,7 +89,7 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 				whenChanged = ldb_string_to_time(tstring);
 			}
 			if (t - whenChanged > tombstoneLifetime*60*60*24) {
-				ret = ldb_delete(s->samdb, res->msgs[i]->dn);
+				ret = dsdb_delete(s->samdb, res->msgs[i]->dn, DSDB_SEARCH_SHOW_DELETED);
 				if (ret != LDB_SUCCESS) {
 					DEBUG(1,(__location__ ": Failed to remove deleted object %s\n",
 						 ldb_dn_get_linearized(res->msgs[i]->dn)));
