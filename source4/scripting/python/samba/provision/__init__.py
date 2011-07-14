@@ -1845,10 +1845,14 @@ def provision(logger, session_info, credentials, smbconf=None,
         logger.info("Fixing provision GUIDs")
         chk = dbcheck(samdb, samdb_schema=samdb,  verbose=False, fix=True, yes=True, quiet=True)
         samdb.transaction_start()
-        chk.check_database(DN=None, controls=["search_options:1:2", "show_deleted:1"],
-                           attrs=['defaultObjectCategory',
-                                  'objectCategory',
-                                  'ipsecOwnersReference',
+        # a small number of GUIDs are missing because of ordering issues in the
+        # provision code
+        for schema_obj in ['CN=Domain', 'CN=Organizational-Person', 'CN=Contact', 'CN=inetOrgPerson']:
+            chk.check_database(DN="%s,%s" % (schema_obj, names.schemadn),
+                               scope=ldb.SCOPE_BASE, attrs=['defaultObjectCategory'])
+        chk.check_database(DN="CN=IP Security,CN=System,%s" % names.domaindn,
+                           scope=ldb.SCOPE_ONELEVEL,
+                           attrs=['ipsecOwnersReference',
                                   'ipsecFilterReference',
                                   'ipsecISAKMPReference',
                                   'ipsecNegotiationPolicyReference',
