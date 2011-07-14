@@ -150,6 +150,7 @@ conf.define('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5', 1)
 conf.define('HAVE_AP_OPTS_USE_SUBKEY', 1)
 conf.define('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5', 1)
 conf.define('HAVE_ENCTYPE_ARCFOUR_HMAC', 1)
+conf.define('HAVE_KRB5_PDU_NONE_DECL', 1)
 
 if conf.CHECK_BUNDLED_SYSTEM('com_err', checkfunctions='com_right_r com_err', headers='com_err.h'):
     conf.define('USING_SYSTEM_COM_ERR', 1)
