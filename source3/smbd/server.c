@@ -1241,12 +1241,9 @@ extern void build_options(bool screen);
 	}
 
 	if (is_daemon && !interactive) {
-		const char *rpcsrv_type;
+		enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 
-		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-						   "rpc_server", "epmapper",
-						   "none");
-		if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+		if (epm_mode == RPC_SERVICE_MODE_DAEMON) {
 			start_epmd(ev_ctx, msg_ctx);
 		}
 	}

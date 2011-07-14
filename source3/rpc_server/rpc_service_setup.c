@@ -76,28 +76,11 @@ enum rpc_service_mode_e rpc_epmapper_mode(void)
 static bool rpc_setup_epmapper(struct tevent_context *ev_ctx,
 			       struct messaging_context *msg_ctx)
 {
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 
-	/* start endpoint mapper only if enabled */
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "none") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		status = rpc_epmapper_init(NULL);
-		if (!NT_STATUS_IS_OK(rpc_epmapper_init(NULL))) {
-			return false;
-		}
-	}
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
-		status = rpc_setup_tcpip_sockets(ev_ctx,
-						 msg_ctx,
-						 &ndr_table_epmapper,
-						 NULL,
-						 135);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -113,7 +96,7 @@ static bool rpc_setup_winreg(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_winreg;
 	const char *pipe_name = "winreg";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -122,13 +105,7 @@ static bool rpc_setup_winreg(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -176,7 +153,7 @@ static bool rpc_setup_srvsvc(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_srvsvc;
 	const char *pipe_name = "srvsvc";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -185,13 +162,7 @@ static bool rpc_setup_srvsvc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -239,7 +210,7 @@ static bool rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_lsarpc;
 	const char *pipe_name = "lsarpc";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -248,13 +219,7 @@ static bool rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -302,7 +267,7 @@ static bool rpc_setup_samr(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_samr;
 	const char *pipe_name = "samr";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -311,13 +276,7 @@ static bool rpc_setup_samr(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -365,7 +324,7 @@ static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_netlogon;
 	const char *pipe_name = "netlogon";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -374,13 +333,7 @@ static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -428,7 +381,7 @@ static bool rpc_setup_netdfs(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_netdfs;
 	const char *pipe_name = "netdfs";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -437,13 +390,7 @@ static bool rpc_setup_netdfs(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -492,7 +439,7 @@ static bool rpc_setup_rpcecho(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_rpcecho;
 	const char *pipe_name = "rpcecho";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -501,13 +448,7 @@ static bool rpc_setup_rpcecho(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -556,7 +497,7 @@ static bool rpc_setup_dssetup(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_dssetup;
 	const char *pipe_name = "dssetup";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -565,13 +506,7 @@ static bool rpc_setup_dssetup(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -619,7 +554,7 @@ static bool rpc_setup_wkssvc(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_wkssvc;
 	const char *pipe_name = "wkssvc";
 	struct dcerpc_binding_vector *v2;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -628,13 +563,7 @@ static bool rpc_setup_wkssvc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -728,13 +657,9 @@ static bool rpc_setup_spoolss(struct tevent_context *ev_ctx,
 	}
 
 	if (strcasecmp_m(rpcsrv_type, "embedded")) {
-		rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-						   "rpc_server",
-						   "epmapper",
-						   "none");
+		enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 
-		if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-		    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+		if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 			status = dcerpc_binding_vector_new(talloc_tos(), &v);
 			if (!NT_STATUS_IS_OK(status)) {
 				return false;
@@ -788,8 +713,8 @@ static bool rpc_setup_svcctl(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_svcctl;
 	const char *pipe_name = "svcctl";
 	struct dcerpc_binding_vector *v;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	struct rpc_srv_callbacks svcctl_cb;
-	const char *rpcsrv_type;
 	NTSTATUS status;
 	bool ok;
 
@@ -802,13 +727,7 @@ static bool rpc_setup_svcctl(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		status = dcerpc_binding_vector_new(talloc_tos(), &v);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
@@ -849,7 +768,7 @@ static bool rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_ntsvcs;
 	struct dcerpc_binding_vector *v;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 
 	status = rpc_ntsvcs_init(NULL);
@@ -857,13 +776,7 @@ static bool rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		status = dcerpc_binding_vector_new(talloc_tos(), &v);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
@@ -906,7 +819,7 @@ static bool rpc_setup_eventlog(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_eventlog;
 	struct rpc_srv_callbacks eventlog_cb;
 	struct dcerpc_binding_vector *v;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 
 	eventlog_cb.init         = eventlog_init_cb;
@@ -918,13 +831,7 @@ static bool rpc_setup_eventlog(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		status = dcerpc_binding_vector_new(talloc_tos(), &v);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
@@ -952,7 +859,7 @@ static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_initshutdown;
 	struct dcerpc_binding_vector *v;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 
 	status = rpc_initshutdown_init(NULL);
@@ -960,13 +867,7 @@ static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "none");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		status = dcerpc_binding_vector_new(talloc_tos(), &v);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
