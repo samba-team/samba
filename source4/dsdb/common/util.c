@@ -3723,6 +3723,36 @@ int dsdb_modify(struct ldb_context *ldb, const struct ldb_message *message,
 }
 
 /*
+  a delete with a set of flags
+*/
+int dsdb_delete(struct ldb_context *ldb, const struct ldb_dn *dn,
+		uint32_t dsdb_flags)
+{
+	struct ldb_request *req;
+	int ret;
+
+	ret = ldb_build_del_req(&req, ldb, ldb,
+				dn,
+				NULL,
+				NULL,
+				ldb_op_default_callback,
+				NULL);
+
+	if (ret != LDB_SUCCESS) return ret;
+
+	ret = dsdb_request_add_controls(req, dsdb_flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(req);
+		return ret;
+	}
+
+	ret = dsdb_autotransaction_request(ldb, req);
+
+	talloc_free(req);
+	return ret;
+}
+
+/*
   like dsdb_modify() but set all the element flags to
   LDB_FLAG_MOD_REPLACE
  */
