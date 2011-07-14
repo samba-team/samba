@@ -538,6 +538,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	 * of AES keys.
 	 */
 	min_stat = krb5_get_default_in_tkt_etypes(ccache->smb_krb5_context->krb5_context,
+						  KRB5_PDU_NONE,
 						  &etypes);
 	if (min_stat == 0) {
 		OM_uint32 num_ktypes;
