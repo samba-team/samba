@@ -120,7 +120,7 @@
 		of usernames to SIDs.
 		</para></listitem></varlistentry>
 		
-		<varlistentry><term>enumtrusts</term><listitem><para>Enumerate trusted domains</para></listitem></varlistentry>
+		<varlistentry><term>enumtrust</term><listitem><para>Enumerate trusted domains</para></listitem></varlistentry>
 
 		<varlistentry><term>enumprivs</term><listitem><para>Enumerate privileges</para></listitem></varlistentry>
 
