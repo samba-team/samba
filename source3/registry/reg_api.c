@@ -110,6 +110,7 @@ static WERROR fill_subkey_cache(struct registry_key *key)
 		}
 	}
 
+	TALLOC_FREE(key->subkeys);
 	werr = regsubkey_ctr_init(key, &(key->subkeys));
 	W_ERROR_NOT_OK_RETURN(werr);
 
