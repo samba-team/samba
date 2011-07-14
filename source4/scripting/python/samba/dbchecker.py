@@ -246,7 +246,7 @@ class dbcheck(object):
             return
         m = ldb.Message()
         m.dn = dn
-        m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        m['old_value'] = ldb.MessageElement(str(ldb.Dn(self.samdb, val)), ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
         if self.do_modify(m, ["show_deleted:1"],
                           "Failed to fix incorrect DN string on attribute %s" % attrname):
