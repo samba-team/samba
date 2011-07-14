@@ -972,6 +972,7 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx)
 {
 	struct dcerpc_binding_vector *v;
+	const char *rpcsrv_type;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	bool ok;
@@ -993,14 +994,22 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
-	status = rpc_setup_tcpip_sockets(ev_ctx,
-					 msg_ctx,
-					 &ndr_table_winreg,
-					 v,
-					 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		ok = false;
-		goto done;
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "tcpip",
+					   "no");
+
+	if (strcasecmp_m(rpcsrv_type, "yes") == 0 ||
+	    strcasecmp_m(rpcsrv_type, "true") == 0) {
+		status = rpc_setup_tcpip_sockets(ev_ctx,
+						 msg_ctx,
+						 &ndr_table_winreg,
+						 v,
+						 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			ok = false;
+			goto done;
+		}
 	}
 
 	ok = rpc_setup_winreg(ev_ctx, msg_ctx, v);
