@@ -3386,7 +3386,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			    + 4 /* num_sids */
 			    + 4 /* SID bytes */
 			    + 4 /* pad/reserved */
-			    + (conn->session_info->utok.ngroups * 8)
+			    + (conn->session_info->unix_token->ngroups * 8)
 				/* groups list */
 			    + (conn->session_info->security_token->num_sids *
 				    SID_MAX_SIZE)
@@ -3395,9 +3395,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SIVAL(pdata, 0, flags);
 			SIVAL(pdata, 4, SMB_WHOAMI_MASK);
 			SBIG_UINT(pdata, 8,
-				  (uint64_t)conn->session_info->utok.uid);
+				  (uint64_t)conn->session_info->unix_token->uid);
 			SBIG_UINT(pdata, 16,
-				  (uint64_t)conn->session_info->utok.gid);
+				  (uint64_t)conn->session_info->unix_token->gid);
 
 
 			if (data_len >= max_data_bytes) {
@@ -3412,7 +3412,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				break;
 			}
 
-			SIVAL(pdata, 24, conn->session_info->utok.ngroups);
+			SIVAL(pdata, 24, conn->session_info->unix_token->ngroups);
 			SIVAL(pdata, 28, conn->session_info->security_token->num_sids);
 
 			/* We walk the SID list twice, but this call is fairly
@@ -3434,9 +3434,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 40;
 
 			/* GID list */
-			for (i = 0; i < conn->session_info->utok.ngroups; ++i) {
+			for (i = 0; i < conn->session_info->unix_token->ngroups; ++i) {
 				SBIG_UINT(pdata, data_len,
-					  (uint64_t)conn->session_info->utok.groups[i]);
+					  (uint64_t)conn->session_info->unix_token->groups[i]);
 				data_len += 8;
 			}
 
@@ -5817,7 +5817,7 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 
 	/* The set is across all open files on this dev/inode pair. */
 	if (!set_delete_on_close(fsp, delete_on_close,
-				 &conn->session_info->utok)) {
+				 conn->session_info->unix_token)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;

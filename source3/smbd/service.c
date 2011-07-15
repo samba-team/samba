@@ -498,7 +498,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		status = find_forced_group(
 			conn->force_user, snum, conn->session_info->unix_name,
 			&conn->session_info->security_token->sids[1],
-			&conn->session_info->utok.gid);
+			&conn->session_info->unix_token->gid);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -510,7 +510,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		 * struct. We only use conn->session_info directly if
 		 * "force_user" was set.
 		 */
-		conn->force_group_gid = conn->session_info->utok.gid;
+		conn->force_group_gid = conn->session_info->unix_token->gid;
 	}
 
 	return NT_STATUS_OK;
@@ -615,7 +615,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					lp_servicename(SNUM(conn)),
 					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->session_info->utok.gid,
+					conn->session_info->unix_token->gid,
 					conn->session_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_pathname(snum));
@@ -737,7 +737,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					lp_servicename(SNUM(conn)),
 					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->session_info->utok.gid,
+					conn->session_info->unix_token->gid,
 					conn->session_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_rootpreexec(snum));
@@ -775,7 +775,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					lp_servicename(SNUM(conn)),
 					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->session_info->utok.gid,
+					conn->session_info->unix_token->gid,
 					conn->session_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_preexec(snum));
@@ -1095,7 +1095,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					lp_servicename(SNUM(conn)),
 					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->session_info->utok.gid,
+					conn->session_info->unix_token->gid,
 					conn->session_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_postexec(SNUM(conn)));
@@ -1111,7 +1111,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					lp_servicename(SNUM(conn)),
 					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->session_info->utok.gid,
+					conn->session_info->unix_token->gid,
 					conn->session_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_rootpostexec(SNUM(conn)));

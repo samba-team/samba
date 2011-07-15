@@ -2282,7 +2282,7 @@ WERROR print_job_delete(const struct auth3_session_info *server_info,
 		sys_adminlog( LOG_ERR,
 			      "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(server_info->utok.uid),
+			      uidtoname(server_info->unix_token->uid),
 			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 
@@ -2359,7 +2359,7 @@ bool print_job_pause(const struct auth3_session_info *server_info,
 		sys_adminlog( LOG_ERR,
 			"Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(server_info->utok.uid),
+			      uidtoname(server_info->unix_token->uid),
 			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 
@@ -2425,7 +2425,7 @@ bool print_job_resume(const struct auth3_session_info *server_info,
 		sys_adminlog( LOG_ERR,
 			 "Permission denied-- user not allowed to delete, \
 pause, or resume print job. User name: %s. Printer name: %s.",
-			      uidtoname(server_info->utok.uid),
+			      uidtoname(server_info->unix_token->uid),
 			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 		return False;
@@ -2841,7 +2841,7 @@ WERROR print_job_start(const struct auth3_session_info *server_info,
 
 	fstrcpy(pjob.user, lp_printjob_username(snum));
 	standard_sub_advanced(sharename, server_info->sanitized_username,
-			      path, server_info->utok.gid,
+			      path, server_info->unix_token->gid,
 			      server_info->sanitized_username,
 			      server_info->info3->base.domain.string,
 			      pjob.user, sizeof(pjob.user)-1);

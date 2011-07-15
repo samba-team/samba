@@ -73,7 +73,7 @@ static bool parse_id(const char* str, struct id* id)
 static bool uid_in_use(const struct user_struct* user, uid_t uid)
 {
 	while (user) {
-		if (user->session_info && (user->session_info->utok.uid == uid)) {
+		if (user->session_info && (user->session_info->unix_token->uid == uid)) {
 			return true;
 		}
 		user = user->next;
@@ -86,12 +86,12 @@ static bool gid_in_use(const struct user_struct* user, gid_t gid)
 	while (user) {
 		if (user->session_info != NULL) {
 			int i;
-			struct security_unix_token utok = user->session_info->utok;
-			if (utok.gid == gid) {
+			struct security_unix_token *utok = user->session_info->unix_token;
+			if (utok->gid == gid) {
 				return true;
 			}
-			for(i=0; i<utok.ngroups; i++) {
-				if (utok.groups[i] == gid) {
+			for(i=0; i<utok->ngroups; i++) {
+				if (utok->groups[i] == gid) {
 					return true;
 				}
 			}

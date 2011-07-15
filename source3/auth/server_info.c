@@ -87,12 +87,11 @@ struct auth3_session_info *make_auth3_session_info(TALLOC_CTX *mem_ctx)
 
 	talloc_set_destructor(result, auth3_session_info_dtor);
 
-	/* Initialise the uid and gid values to something non-zero
-	   which may save us from giving away root access if there
-	   is a bug in allocating these fields. */
+	/* Initialise the unix_token to NULL which may save us from
+	   giving away root access if there is a bug in allocating
+	   these fields. */
 
-	result->utok.uid = -1;
-	result->utok.gid = -1;
+	result->unix_token = NULL;
 
 	return result;
 }

@@ -288,7 +288,7 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->session_info->utok.uid, get_current_username(),
+			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 
@@ -316,7 +316,7 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->session_info->utok.uid, get_current_username(),
+			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(p->mem_ctx,
@@ -381,7 +381,7 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->session_info->utok.uid, get_current_username(),
+			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 
@@ -410,7 +410,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->session_info->utok.uid, get_current_username(),
+			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(ctx, "C:%s", lp_pathname(snum));
@@ -451,7 +451,7 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->session_info->utok.uid, get_current_username(),
+			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
 	}
 
@@ -1333,7 +1333,7 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((p->session_info->utok.uid != sec_initial_uid()) &&
+	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
 		( ! nt_token_check_domain_rid(p->session_info->security_token,
 					      DOMAIN_RID_ADMINS))) {
 
@@ -1347,7 +1347,7 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 			NTSTATUS ntstat;
 
-			if (p->session_info->utok.uid != sec_initial_uid()) {
+			if (p->session_info->unix_token->uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
 			}
@@ -1572,11 +1572,11 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 
 	/* fail out now if you are not root and not a disk op */
 
-	if ( p->session_info->utok.uid != sec_initial_uid() && !is_disk_op ) {
+	if ( p->session_info->unix_token->uid != sec_initial_uid() && !is_disk_op ) {
 		DEBUG(2,("_srvsvc_NetShareSetInfo: uid %u doesn't have the "
 			"SeDiskOperatorPrivilege privilege needed to modify "
 			"share %s\n",
-			(unsigned int)p->session_info->utok.uid,
+			(unsigned int)p->session_info->unix_token->uid,
 			share_name ));
 		return WERR_ACCESS_DENIED;
 	}
@@ -1773,7 +1773,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 
 	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->session_info->utok.uid != sec_initial_uid()  && !is_disk_op )
+	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
@@ -1979,7 +1979,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 
 	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->session_info->utok.uid != sec_initial_uid()  && !is_disk_op )
+	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
@@ -2549,7 +2549,7 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 
 	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->session_info->utok.uid != sec_initial_uid() && !is_disk_op) {
+	if (p->session_info->unix_token->uid != sec_initial_uid() && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
 	}
 

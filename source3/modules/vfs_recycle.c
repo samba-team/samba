@@ -445,7 +445,7 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	repository = talloc_sub_advanced(NULL, lp_servicename(SNUM(conn)),
 					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->session_info->utok.gid,
+					conn->session_info->unix_token->gid,
 					conn->session_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					recycle_repository(handle));

@@ -509,8 +509,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		status = create_token_from_username(session_info,
 						    session_info->unix_name,
 						    session_info->guest,
-						    &session_info->utok.uid,
-						    &session_info->utok.gid,
+						    &session_info->unix_token->uid,
+						    &session_info->unix_token->gid,
 						    &session_info->unix_name,
 						    &session_info->security_token);
 
@@ -528,8 +528,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	/* Convert the SIDs to gids. */
 
-	session_info->utok.ngroups = 0;
-	session_info->utok.groups = NULL;
+	session_info->unix_token->ngroups = 0;
+	session_info->unix_token->groups = NULL;
 
 	t = session_info->security_token;
 
@@ -555,8 +555,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 		if (!add_gid_to_array_unique(session_info, ids[i].id.gid,
-					     &session_info->utok.groups,
-					     &session_info->utok.ngroups)) {
+					     &session_info->unix_token->groups,
+					     &session_info->unix_token->ngroups)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -574,14 +574,14 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	 * the nt token.
 	 */
 
-	uid_to_unix_users_sid(session_info->utok.uid, &tmp_sid);
+	uid_to_unix_users_sid(session_info->unix_token->uid, &tmp_sid);
 
 	add_sid_to_array_unique(session_info->security_token, &tmp_sid,
 				&session_info->security_token->sids,
 				&session_info->security_token->num_sids);
 
-	for ( i=0; i<session_info->utok.ngroups; i++ ) {
-		gid_to_unix_groups_sid(session_info->utok.groups[i], &tmp_sid);
+	for ( i=0; i<session_info->unix_token->ngroups; i++ ) {
+		gid_to_unix_groups_sid(session_info->unix_token->groups[i], &tmp_sid);
 		add_sid_to_array_unique(session_info->security_token, &tmp_sid,
 					&session_info->security_token->sids,
 					&session_info->security_token->num_sids);
@@ -589,10 +589,10 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	security_token_debug(DBGC_AUTH, 10, session_info->security_token);
 	debug_unix_user_token(DBGC_AUTH, 10,
-			      session_info->utok.uid,
-			      session_info->utok.gid,
-			      session_info->utok.ngroups,
-			      session_info->utok.groups);
+			      session_info->unix_token->uid,
+			      session_info->unix_token->gid,
+			      session_info->unix_token->ngroups,
+			      session_info->unix_token->groups);
 
 	status = log_nt_token(session_info->security_token);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -980,12 +980,15 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 
 	dst->guest = src->guest;
 	dst->system = src->system;
-	dst->utok.uid = src->utok.uid;
-	dst->utok.gid = src->utok.gid;
-	dst->utok.ngroups = src->utok.ngroups;
-	if (src->utok.ngroups != 0) {
+
+	/* This element must be provided to convert back to an auth_serversupplied_info */
+	SMB_ASSERT(src->unix_token);
+	dst->utok.uid = src->unix_token->uid;
+	dst->utok.gid = src->unix_token->gid;
+	dst->utok.ngroups = src->unix_token->ngroups;
+	if (src->unix_token->ngroups != 0) {
 		dst->utok.groups = (gid_t *)talloc_memdup(
-			dst, src->utok.groups,
+			dst, src->unix_token->groups,
 			sizeof(gid_t)*dst->utok.ngroups);
 	} else {
 		dst->utok.groups = NULL;
@@ -1039,15 +1042,21 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 
 	dst->guest = src->guest;
 	dst->system = src->system;
-	dst->utok.uid = src->utok.uid;
-	dst->utok.gid = src->utok.gid;
-	dst->utok.ngroups = src->utok.ngroups;
+
+	dst->unix_token = talloc(dst, struct security_unix_token);
+	if (!dst->unix_token) {
+		return NULL;
+	}
+
+	dst->unix_token->uid = src->utok.uid;
+	dst->unix_token->gid = src->utok.gid;
+	dst->unix_token->ngroups = src->utok.ngroups;
 	if (src->utok.ngroups != 0) {
-		dst->utok.groups = (gid_t *)talloc_memdup(
-			dst, src->utok.groups,
-			sizeof(gid_t)*dst->utok.ngroups);
+		dst->unix_token->groups = (gid_t *)talloc_memdup(
+			dst->unix_token, src->utok.groups,
+			sizeof(gid_t)*dst->unix_token->ngroups);
 	} else {
-		dst->utok.groups = NULL;
+		dst->unix_token->groups = NULL;
 	}
 
 	if (src->security_token) {
@@ -1098,15 +1107,25 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 
 	dst->guest = src->guest;
 	dst->system = src->system;
-	dst->utok.uid = src->utok.uid;
-	dst->utok.gid = src->utok.gid;
-	dst->utok.ngroups = src->utok.ngroups;
-	if (src->utok.ngroups != 0) {
-		dst->utok.groups = (gid_t *)talloc_memdup(
-			dst, src->utok.groups,
-			sizeof(gid_t)*dst->utok.ngroups);
+
+	if (src->unix_token) {
+		dst->unix_token = talloc(dst, struct security_unix_token);
+		if (!dst->unix_token) {
+			return NULL;
+		}
+
+		dst->unix_token->uid = src->unix_token->uid;
+		dst->unix_token->gid = src->unix_token->gid;
+		dst->unix_token->ngroups = src->unix_token->ngroups;
+		if (src->unix_token->ngroups != 0) {
+			dst->unix_token->groups = (gid_t *)talloc_memdup(
+				dst->unix_token, src->unix_token->groups,
+				sizeof(gid_t)*dst->unix_token->ngroups);
+		} else {
+			dst->unix_token->groups = NULL;
+		}
 	} else {
-		dst->utok.groups = NULL;
+		dst->unix_token = NULL;
 	}
 
 	if (src->security_token) {

@@ -149,13 +149,16 @@ bool claim_connection(connection_struct *conn, const char *name)
 		return False;
 	}
 
+	/* Make clear that we require the optional unix_token in the source3 code */
+	SMB_ASSERT(conn->session_info->unix_token);
+
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
 	crec.pid = sconn_server_id(conn->sconn);
 	crec.cnum = conn->cnum;
-	crec.uid = conn->session_info->utok.uid;
-	crec.gid = conn->session_info->utok.gid;
+	crec.uid = conn->session_info->unix_token->uid;
+	crec.gid = conn->session_info->unix_token->gid;
 	strlcpy(crec.servicename, lp_servicename(SNUM(conn)),
 		sizeof(crec.servicename));
 	crec.start = time(NULL);

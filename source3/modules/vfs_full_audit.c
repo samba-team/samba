@@ -408,7 +408,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 			lp_servicename(SNUM(conn)),
 			conn->session_info->unix_name,
 			conn->connectpath,
-			conn->session_info->utok.gid,
+			conn->session_info->unix_token->gid,
 			conn->session_info->sanitized_username,
 			conn->session_info->info3->base.domain.string,
 			prefix);

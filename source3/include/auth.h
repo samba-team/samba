@@ -79,7 +79,7 @@ struct auth3_session_info {
 	bool guest;
 	bool system;
 
-	struct security_unix_token utok;
+	struct security_unix_token *unix_token;
 
 	/* NT group information taken from the info3 structure */
 

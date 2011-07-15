@@ -434,7 +434,7 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 
 	/* Work out max allowed. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	/* map the generic bits to the lsa policy ones */
@@ -1504,7 +1504,7 @@ static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
 
 	/* Work out max allowed. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &access_mask);
 
 	/* map the generic bits to the lsa account ones */
@@ -1701,14 +1701,14 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (p->session_info->utok.uid != sec_initial_uid() &&
+	if (p->session_info->unix_token->uid != sec_initial_uid() &&
 	    !nt_token_check_domain_rid(p->session_info->security_token, DOMAIN_RID_ADMINS)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Work out max allowed. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -2466,7 +2466,7 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 
 	/* Work out max allowed. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -2530,7 +2530,7 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 
 	/* Work out max allowed. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	/* map the generic bits to the lsa account ones */

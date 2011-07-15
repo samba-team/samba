@@ -284,9 +284,12 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 	vuser->session_info->sanitized_username = talloc_strdup(
 		vuser->session_info, tmp);
 
+	/* Make clear that we require the optional unix_token in the source3 code */
+	SMB_ASSERT(vuser->session_info->unix_token);
+
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
-		  (unsigned int)vuser->session_info->utok.uid,
-		  (unsigned int)vuser->session_info->utok.gid,
+		  (unsigned int)vuser->session_info->unix_token->uid,
+		  (unsigned int)vuser->session_info->unix_token->gid,
 		  vuser->session_info->unix_name,
 		  vuser->session_info->sanitized_username,
 		  vuser->session_info->info3->base.domain.string,
@@ -302,8 +305,11 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 		goto fail;
 	}
 
+	/* Make clear that we require the optional unix_token in the source3 code */
+	SMB_ASSERT(vuser->session_info->unix_token);
+
 	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
-		"and will be vuid %u\n", (int)vuser->session_info->utok.uid,
+		"and will be vuid %u\n", (int)vuser->session_info->unix_token->uid,
 		 vuser->session_info->unix_name, vuser->vuid));
 
 	if (!session_claim(sconn, vuser)) {

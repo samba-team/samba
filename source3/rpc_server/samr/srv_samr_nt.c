@@ -454,7 +454,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 
 	/*check if access can be granted as requested by client. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	make_samr_object_sd( p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0 );
@@ -2210,7 +2210,7 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 
 	/* check if access can be granted as requested by client. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &sid, SAMR_USR_RIGHTS_WRITE_PW);
@@ -3790,7 +3790,7 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	}
 
 	DEBUG(5, ("_samr_CreateUser2: %s can add this account : %s\n",
-		  uidtoname(p->session_info->utok.uid),
+		  uidtoname(p->session_info->unix_token->uid),
 		  can_add_account ? "True":"False" ));
 
 	if (!can_add_account) {
@@ -3816,7 +3816,7 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	sid_compose(&sid, get_global_sam_sid(), *r->out.rid);
 
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
@@ -3899,7 +3899,7 @@ NTSTATUS _samr_Connect(struct pipes_struct *p,
 	   user level access control on shares)   --jerry */
 
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	se_map_generic( &des_access, &sam_generic_mapping );
@@ -3961,7 +3961,7 @@ NTSTATUS _samr_Connect2(struct pipes_struct *p,
 	}
 
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
@@ -4176,7 +4176,7 @@ NTSTATUS _samr_OpenAlias(struct pipes_struct *p,
 	/*check if access can be granted as requested by client. */
 
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
@@ -6257,7 +6257,7 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 
 	/*check if access can be granted as requested by client. */
 	map_max_allowed_access(p->session_info->security_token,
-			       &p->session_info->utok,
+			       p->session_info->unix_token,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &grp_generic_mapping, NULL, 0);

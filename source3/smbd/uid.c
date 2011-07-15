@@ -178,7 +178,7 @@ static bool check_user_ok(connection_struct *conn,
 			"Setting uid as %d\n",
 			conn->session_info->unix_name,
 			sec_initial_uid() ));
-		conn->session_info->utok.uid = sec_initial_uid();
+		conn->session_info->unix_token->uid = sec_initial_uid();
 	}
 
 	return(True);
@@ -213,10 +213,10 @@ static bool change_to_user_internal(connection_struct *conn,
 		return false;
 	}
 
-	uid = conn->session_info->utok.uid;
-	gid = conn->session_info->utok.gid;
-	num_groups = conn->session_info->utok.ngroups;
-	group_list  = conn->session_info->utok.groups;
+	uid = conn->session_info->unix_token->uid;
+	gid = conn->session_info->unix_token->gid;
+	num_groups = conn->session_info->unix_token->ngroups;
+	group_list  = conn->session_info->unix_token->groups;
 
 	/*
 	 * See if we should force group for this service. If so this overrides
@@ -237,7 +237,7 @@ static bool change_to_user_internal(connection_struct *conn,
 			 */
 			for (i = 0; i < num_groups; i++) {
 				if (group_list[i] == conn->force_group_gid) {
-					conn->session_info->utok.gid =
+					conn->session_info->unix_token->gid =
 						conn->force_group_gid;
 					gid = conn->force_group_gid;
 					gid_to_sid(&conn->session_info->security_token
@@ -246,7 +246,7 @@ static bool change_to_user_internal(connection_struct *conn,
 				}
 			}
 		} else {
-			conn->session_info->utok.gid = conn->force_group_gid;
+			conn->session_info->unix_token->gid = conn->force_group_gid;
 			gid = conn->force_group_gid;
 			gid_to_sid(&conn->session_info->security_token->sids[1],
 				   gid);
@@ -296,13 +296,13 @@ bool change_to_user(connection_struct *conn, uint16_t vuid)
 	 */
 
 	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
-	   (current_user.ut.uid == conn->session_info->utok.uid)) {
+	   (current_user.ut.uid == conn->session_info->unix_token->uid)) {
 		DEBUG(4,("Skipping user change - already "
 			 "user\n"));
 		return(True);
 	} else if ((current_user.conn == conn) &&
 		   (vuser != NULL) && (current_user.vuid == vuid) &&
-		   (current_user.ut.uid == vuser->session_info->utok.uid)) {
+		   (current_user.ut.uid == vuser->session_info->unix_token->uid)) {
 		DEBUG(4,("Skipping user change - already "
 			 "user\n"));
 		return(True);
@@ -334,7 +334,7 @@ bool change_to_user_by_session(connection_struct *conn,
 	SMB_ASSERT(session_info != NULL);
 
 	if ((current_user.conn == conn) &&
-	    (current_user.ut.uid == session_info->utok.uid)) {
+	    (current_user.ut.uid == session_info->unix_token->uid)) {
 		DEBUG(7, ("Skipping user change - already user\n"));
 
 		return true;
@@ -372,8 +372,8 @@ bool become_authenticated_pipe_user(struct auth3_session_info *session_info)
 	if (!push_sec_ctx())
 		return False;
 
-	set_sec_ctx(session_info->utok.uid, session_info->utok.gid,
-		    session_info->utok.ngroups, session_info->utok.groups,
+	set_sec_ctx(session_info->unix_token->uid, session_info->unix_token->gid,
+		    session_info->unix_token->ngroups, session_info->unix_token->groups,
 		    session_info->security_token);
 
 	return True;
@@ -512,7 +512,7 @@ bool unbecome_user(void)
 
 /****************************************************************************
  Return the current user we are running effectively as on this connection.
- I'd like to make this return conn->session_info->utok.uid, but become_root()
+ I'd like to make this return conn->session_info->unix_token->uid, but become_root()
  doesn't alter this value.
 ****************************************************************************/
 
@@ -523,7 +523,7 @@ uid_t get_current_uid(connection_struct *conn)
 
 /****************************************************************************
  Return the current group we are running effectively as on this connection.
- I'd like to make this return conn->session_info->utok.gid, but become_root()
+ I'd like to make this return conn->session_info->unix_token->gid, but become_root()
  doesn't alter this value.
 ****************************************************************************/
 
@@ -534,7 +534,7 @@ gid_t get_current_gid(connection_struct *conn)
 
 /****************************************************************************
  Return the UNIX token we are running effectively as on this connection.
- I'd like to make this return &conn->session_info->utok, but become_root()
+ I'd like to make this return &conn->session_info->unix_token-> but become_root()
  doesn't alter this value.
 ****************************************************************************/
 

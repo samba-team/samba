@@ -815,11 +815,13 @@ void standard_sub_advanced(const char *servicename, const char *user,
 
 char *standard_sub_conn(TALLOC_CTX *ctx, connection_struct *conn, const char *str)
 {
+	/* Make clear that we require the optional unix_token in the source3 code */
+	SMB_ASSERT(conn->session_info->unix_token);
 	return talloc_sub_advanced(ctx,
 				lp_servicename(SNUM(conn)),
 				conn->session_info->unix_name,
 				conn->connectpath,
-				conn->session_info->utok.gid,
+				conn->session_info->unix_token->gid,
 				get_smb_user_name(),
 				"",
 				str);

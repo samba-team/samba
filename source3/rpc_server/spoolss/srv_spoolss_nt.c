@@ -1827,11 +1827,11 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 
-			if ((p->session_info->utok.uid != sec_initial_uid()) &&
+			if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
 			    !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
 			    !nt_token_check_sid(&global_sid_Builtin_Print_Operators, p->session_info->security_token) &&
 			    !token_contains_name_in_list(
-				    uidtoname(p->session_info->utok.uid),
+				    uidtoname(p->session_info->unix_token->uid),
 				    p->session_info->info3->base.domain.string,
 				    NULL,
 				    p->session_info->security_token,
@@ -1914,7 +1914,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok_token(uidtoname(p->session_info->utok.uid), NULL,
+		if (!user_ok_token(uidtoname(p->session_info->unix_token->uid), NULL,
 				   p->session_info->security_token, snum) ||
 		    !print_access_check(p->session_info,
 					p->msg_ctx,
@@ -2091,10 +2091,10 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->session_info->utok.uid != sec_initial_uid())
+	if ( (p->session_info->unix_token->uid != sec_initial_uid())
 	     && !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
-			uidtoname(p->session_info->utok.uid),
+			uidtoname(p->session_info->unix_token->uid),
 			p->session_info->info3->base.domain.string,
 			NULL,
 			p->session_info->security_token,
@@ -2195,10 +2195,10 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->session_info->utok.uid != sec_initial_uid())
+	if ( (p->session_info->unix_token->uid != sec_initial_uid())
 		&& !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
-			uidtoname(p->session_info->utok.uid),
+			uidtoname(p->session_info->unix_token->uid),
 			p->session_info->info3->base.domain.string,
 			NULL,
 			p->session_info->security_token, lp_printer_admin(-1)) )
@@ -8550,9 +8550,9 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ((p->session_info->utok.uid != sec_initial_uid()) &&
+	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
 	    !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
-	    !token_contains_name_in_list(uidtoname(p->session_info->utok.uid),
+	    !token_contains_name_in_list(uidtoname(p->session_info->unix_token->uid),
 					  p->session_info->info3->base.domain.string,
 					  NULL,
 					  p->session_info->security_token,
@@ -8623,9 +8623,9 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	if ((p->session_info->utok.uid != sec_initial_uid()) &&
+	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
 	    !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
-	    !token_contains_name_in_list(uidtoname(p->session_info->utok.uid),
+	    !token_contains_name_in_list(uidtoname(p->session_info->unix_token->uid),
 					  p->session_info->info3->base.domain.string,
 					  NULL,
 					  p->session_info->security_token,
@@ -8692,9 +8692,9 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ((p->session_info->utok.uid != sec_initial_uid()) &&
+	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
 	     !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
-	     !token_contains_name_in_list(uidtoname(p->session_info->utok.uid),
+	     !token_contains_name_in_list(uidtoname(p->session_info->unix_token->uid),
 					  p->session_info->info3->base.domain.string,
 					  NULL,
 					  p->session_info->security_token,

@@ -119,7 +119,7 @@ static int CopyExpanded(connection_struct *conn,
 				lp_servicename(SNUM(conn)),
 				conn->session_info->unix_name,
 				conn->connectpath,
-				conn->session_info->utok.gid,
+				conn->session_info->unix_token->gid,
 				conn->session_info->sanitized_username,
 				conn->session_info->info3->base.domain.string,
 				buf);
@@ -170,7 +170,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 				lp_servicename(SNUM(conn)),
 				conn->session_info->unix_name,
 				conn->connectpath,
-				conn->session_info->utok.gid,
+				conn->session_info->unix_token->gid,
 				conn->session_info->sanitized_username,
 				conn->session_info->info3->base.domain.string,
 				buf);
@@ -4635,7 +4635,7 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 
 	if(vuser != NULL) {
 		DEBUG(3,("  Username of UID %d is %s\n",
-			 (int)vuser->session_info->utok.uid,
+			 (int)vuser->session_info->unix_token->uid,
 			 vuser->session_info->unix_name));
 	}
 

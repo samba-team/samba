@@ -1737,7 +1737,7 @@ bool print_access_check(const struct auth3_session_info *session_info,
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if (session_info->utok.uid == sec_initial_uid()
+	if (session_info->unix_token->uid == sec_initial_uid()
 	    || security_token_has_privilege(session_info->security_token, SEC_PRIV_PRINT_OPERATOR)) {
 		return True;
 	}
@@ -1802,7 +1802,7 @@ bool print_access_check(const struct auth3_session_info *session_info,
         /* see if we need to try the printer admin list */
 
         if (!NT_STATUS_IS_OK(status) &&
-	    (token_contains_name_in_list(uidtoname(session_info->utok.uid),
+	    (token_contains_name_in_list(uidtoname(session_info->unix_token->uid),
 					 session_info->info3->base.domain.string,
 					 NULL, session_info->security_token,
 					 lp_printer_admin(snum)))) {
