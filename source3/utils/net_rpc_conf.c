@@ -794,6 +794,13 @@ static int rpc_conf_list(struct net_context *c, int argc,
 		rpc_conf_list_internal, argc, argv );
 }
 
+static int rpc_conf_delshare(struct net_context *c, int argc,
+			     const char **argv)
+{
+	d_printf("Function not yet implemented\n");
+	return 0;
+};
+
 /* function calls */
 int net_rpc_conf(struct net_context *c, int argc,
 		 const char **argv)
@@ -836,6 +843,14 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("net rpc conf showshare\n"
 			   "    Show the definition of a remote share.")
 
+		},
+		{
+			"delshare",
+			rpc_conf_delshare,
+			NET_TRANSPORT_RPC,
+			N_("Delete a remote share."),
+			N_("net rpc conf delshare\n"
+			   "    Delete a remote share.")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
