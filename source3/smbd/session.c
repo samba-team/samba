@@ -53,7 +53,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 
 	/* don't register sessions for the guest user - its just too
 	   expensive to go through pam session code for browsing etc */
-	if (vuser->session_info->guest) {
+	if (vuser->session_info->unix_info->guest) {
 		return True;
 	}
 

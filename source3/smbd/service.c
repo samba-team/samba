@@ -394,7 +394,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                  * This is the normal security != share case where we have a
                  * valid vuid from the session setup.                 */
 
-                if (vuid_serverinfo->guest) {
+                if (vuid_serverinfo->unix_info->guest) {
                         if (!lp_guest_ok(snum)) {
                                 DEBUG(2, ("guest user (from session setup) "
                                           "not permitted to access this share "
@@ -475,7 +475,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		}
 
 		status = make_session_info_from_username(
-			conn, fuser, conn->session_info->guest,
+			conn, fuser, conn->session_info->unix_info->guest,
 			&forced_serverinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

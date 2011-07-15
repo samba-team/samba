@@ -508,7 +508,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	    (server_info->nss_token)) {
 		status = create_token_from_username(session_info,
 						    session_info->unix_info->unix_name,
-						    session_info->guest,
+						    session_info->unix_info->guest,
 						    &session_info->unix_token->uid,
 						    &session_info->unix_token->gid,
 						    &session_info->unix_info->unix_name,
@@ -516,7 +516,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	} else {
 		status = create_local_nt_token_from_info3(session_info,
-							  session_info->guest,
+							  session_info->unix_info->guest,
 							  session_info->info3,
 							  &session_info->extra,
 							  &session_info->security_token);
@@ -978,7 +978,10 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 		return NULL;
 	}
 
-	dst->guest = src->guest;
+	/* This element must be provided to convert back to an auth_serversupplied_info */
+	SMB_ASSERT(src->unix_info);
+
+	dst->guest = src->unix_info->guest;
 	dst->system = src->system;
 
 	/* This element must be provided to convert back to an auth_serversupplied_info */
@@ -1015,8 +1018,6 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 	}
 	dst->extra = src->extra;
 
-	/* This element must be provided to convert back to an auth_serversupplied_info */
-	SMB_ASSERT(src->unix_info);
 	dst->unix_name = talloc_strdup(dst, src->unix_info->unix_name);
 	if (!dst->unix_name) {
 		TALLOC_FREE(dst);
@@ -1042,7 +1043,6 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 		return NULL;
 	}
 
-	dst->guest = src->guest;
 	dst->system = src->system;
 
 	dst->unix_token = talloc(dst, struct security_unix_token);
@@ -1100,6 +1100,8 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 		return NULL;
 	}
 
+	dst->unix_info->guest = src->guest;
+
 	return dst;
 }
 
@@ -1113,7 +1115,6 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	dst->guest = src->guest;
 	dst->system = src->system;
 
 	if (src->unix_token) {
@@ -1175,6 +1176,8 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(dst);
 			return NULL;
 		}
+
+		dst->unix_info->guest = src->unix_info->guest;
 	}
 
 	return dst;

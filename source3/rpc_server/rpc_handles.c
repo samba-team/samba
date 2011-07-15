@@ -346,7 +346,7 @@ bool pipe_access_check(struct pipes_struct *p)
 			return True;
 		}
 
-		if (p->session_info->guest) {
+		if (p->session_info->unix_info->guest) {
 			return False;
 		}
 	}

@@ -5857,7 +5857,7 @@ void api_reply(connection_struct *conn, uint16 vuid,
 	if (api_commands[i].auth_user && lp_restrict_anonymous()) {
 		user_struct *user = get_valid_user_struct(req->sconn, vuid);
 
-		if (!user || user->session_info->guest) {
+		if (!user || user->session_info->unix_info->guest) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}

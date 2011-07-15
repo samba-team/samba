@@ -294,7 +294,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 		  vuser->session_info->unix_info->unix_name,
 		  vuser->session_info->unix_info->sanitized_username,
 		  vuser->session_info->info3->base.domain.string,
-		  vuser->session_info->guest ));
+		  vuser->session_info->unix_info->guest ));
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
 		  "Real name: %s\n", vuser->session_info->unix_info->unix_name,
@@ -328,13 +328,13 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	vuser->homes_snum = -1;
 
-	if (!vuser->session_info->guest) {
+	if (!vuser->session_info->unix_info->guest) {
 		vuser->homes_snum = register_homes_share(
 			vuser->session_info->unix_info->unix_name);
 	}
 
 	if (srv_is_signing_negotiated(sconn) &&
-	    !vuser->session_info->guest) {
+	    !vuser->session_info->unix_info->guest) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
 		srv_set_signing(sconn,

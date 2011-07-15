@@ -441,7 +441,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
-		if (session_info->guest) {
+		if (session_info->unix_info->guest) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
 
@@ -535,7 +535,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
-		if (session_info->guest) {
+		if (session_info->unix_info->guest) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
 	}
@@ -1702,7 +1702,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		/* perhaps grab OS version here?? */
 	}
 
-	if (session_info->guest) {
+	if (session_info->unix_info->guest) {
 		SSVAL(req->outbuf,smb_vwv2,1);
 	}
 

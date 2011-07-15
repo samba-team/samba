@@ -2400,7 +2400,7 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (p->session_info->guest) {
+	if (p->session_info->unix_info->guest) {
 		/*
 		 * I'm 99% sure this is not the right place to do this,
 		 * global_sid_Anonymous should probably be put into the token

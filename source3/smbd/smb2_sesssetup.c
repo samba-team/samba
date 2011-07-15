@@ -253,7 +253,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		session->do_signing = true;
 	}
 
-	if (session->session_info->guest) {
+	if (session->session_info->unix_info->guest) {
 		/* we map anonymous to guest internally */
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
@@ -280,7 +280,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	session->session_info->unix_info->sanitized_username =
 				talloc_strdup(session->session_info, tmp);
 
-	if (!session->session_info->guest) {
+	if (!session->session_info->unix_info->guest) {
 		session->compat_vuser->homes_snum =
 			register_homes_share(session->session_info->unix_info->unix_name);
 	}
@@ -460,7 +460,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		session->do_signing = true;
 	}
 
-	if (session->session_info->guest) {
+	if (session->session_info->unix_info->guest) {
 		/* we map anonymous to guest internally */
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
@@ -491,7 +491,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 	session->session_info->unix_info->sanitized_username = talloc_strdup(
 		session->session_info, tmp);
 
-	if (!session->compat_vuser->session_info->guest) {
+	if (!session->compat_vuser->session_info->unix_info->guest) {
 		session->compat_vuser->homes_snum =
 			register_homes_share(session->session_info->unix_info->unix_name);
 	}
