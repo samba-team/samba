@@ -106,11 +106,15 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 
     /* construct and return the right type of python object */
     switch (parm->type) {
+    case P_CHAR:
+	return PyString_FromFormat("%c", *(char *)parm_ptr);
     case P_STRING:
     case P_USTRING:
 	return PyString_FromString(*(char **)parm_ptr);
     case P_BOOL:
 	return PyBool_FromLong(*(bool *)parm_ptr);
+    case P_BOOLREV:
+	return PyBool_FromLong(!(*(bool *)parm_ptr));
     case P_INTEGER:
     case P_OCTAL:
     case P_BYTES:
