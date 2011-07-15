@@ -303,10 +303,9 @@ static bool unparse_afs_acl(struct afs_acl *acl, char *acl_str)
 	int positives = 0;
 	int negatives = 0;
 	fstring line;
+	struct afs_ace *ace = acl->acelist;
 
 	*acl_str = 0;
-
-	struct afs_ace *ace = acl->acelist;
 
 	while (ace != NULL) {
 		if (ace->positive)
