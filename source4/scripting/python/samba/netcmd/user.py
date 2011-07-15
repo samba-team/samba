@@ -73,7 +73,7 @@ class cmd_user_delete(Command):
 class cmd_user_enable(Command):
     """Enables a user"""
 
-    synopsis = "%prog user enable <username> [options]"
+    synopsis = "%prog user enable (<username>|--filter <filter>) [options]"
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
