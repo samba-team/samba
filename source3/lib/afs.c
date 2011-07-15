@@ -126,7 +126,7 @@ static bool afs_createtoken(const char *username, const char *cell,
 	p += 4;
 
 	/* We need to create a session key */
-	generate_random_buffer(p, 8);
+	generate_random_buffer((uint8_t *)p, 8);
 
 	/* Our client code needs the the key in the clear, it does not
            know the server-key ... */
@@ -176,7 +176,8 @@ static bool afs_createtoken(const char *username, const char *cell,
 	len = PTR_DIFF(p, clear_ticket);
 
 	des_key_sched((const_des_cblock *)key.key, key_schedule);
-	des_pcbc_encrypt(clear_ticket, clear_ticket,
+	des_pcbc_encrypt((const unsigned char*) clear_ticket,
+			 (unsigned char*) clear_ticket,
 			 len, key_schedule, (C_Block *)key.key, 1);
 
 	ZERO_STRUCT(key);
