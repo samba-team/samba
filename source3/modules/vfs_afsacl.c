@@ -828,7 +828,7 @@ static bool nt_to_afs_acl(const char *filename,
 	return true;
 }
 
-static bool afs_get_afs_acl(char *filename, struct afs_acl *acl)
+static bool afs_get_afs_acl(const char *filename, struct afs_acl *acl)
 {
 	struct afs_iob iob;
 
