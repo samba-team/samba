@@ -36,9 +36,10 @@ from samba.netcmd import (
     )
 
 
+
 class cmd_user_add(Command):
     """Create a new user."""
-    synopsis = "%prog user add <name> [<password>]"
+    synopsis = "%prog user add <username> [<password>] [options]"
 
     takes_args = ["name", "password?"]
 
@@ -51,9 +52,10 @@ class cmd_user_add(Command):
             net.set_password(name, creds.get_domain(), password, creds)
 
 
+
 class cmd_user_delete(Command):
     """Delete a user."""
-    synopsis = "%prog user delete <name>"
+    synopsis = "%prog user delete <username> [options]"
 
     takes_args = ["name"]
 
@@ -65,6 +67,7 @@ class cmd_user_delete(Command):
             net.delete_user(name)
         except RuntimeError, msg:
             raise CommandError("Failed to delete user %s: %s" % (name, msg))
+
 
 
 class cmd_user_enable(Command):
@@ -99,10 +102,11 @@ class cmd_user_enable(Command):
         print("Enabled user %s" % (username or filter))
 
 
+
 class cmd_user_setexpiry(Command):
     """Sets the expiration of a user account"""
 
-    synopsis = "%prog user setexpiry <username> [options]"
+    synopsis = "%prog user setexpiry (<username>|--filter <filter>) [options]"
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -139,7 +143,7 @@ class cmd_user_setexpiry(Command):
 class cmd_user_setpassword(Command):
     """(Re)sets the password of a user account"""
 
-    synopsis = "%prog user setpassword [username] [options]"
+    synopsis = "%prog user setpassword (<username>|--filter <filter>) [options]"
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
