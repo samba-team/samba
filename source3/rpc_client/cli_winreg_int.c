@@ -85,7 +85,7 @@ static WERROR _split_hive_key(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
-				    const struct auth_serversupplied_info *session_info,
+				    const struct auth3_session_info *session_info,
 				    struct messaging_context *msg_ctx,
 				    struct dcerpc_binding_handle **h,
 				    uint32_t reg_type,
@@ -239,7 +239,7 @@ static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS dcerpc_winreg_int_openkey(TALLOC_CTX *mem_ctx,
-				   const struct auth_serversupplied_info *server_info,
+				   const struct auth3_session_info *server_info,
 				   struct messaging_context *msg_ctx,
 				   struct dcerpc_binding_handle **h,
 				   const char *key,
@@ -296,7 +296,7 @@ NTSTATUS dcerpc_winreg_int_openkey(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS dcerpc_winreg_int_hklm_openkey(TALLOC_CTX *mem_ctx,
-					const struct auth_serversupplied_info *server_info,
+					const struct auth3_session_info *server_info,
 					struct messaging_context *msg_ctx,
 					struct dcerpc_binding_handle **h,
 					const char *key,

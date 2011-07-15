@@ -43,13 +43,13 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 					struct rpc_pipe_client **samr_pipe)
 {
 	struct rpc_pipe_client *cli = NULL;
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	NTSTATUS status;
 
 	if (session_info == NULL) {
 		status = make_session_info_system(mem_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("open_samr_pipe: Could not create auth_serversupplied_info: %s\n",
+			DEBUG(0, ("open_samr_pipe: Could not create auth3_session_info: %s\n",
 				  nt_errstr(status)));
 			return status;
 		}
@@ -120,13 +120,13 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 				       struct rpc_pipe_client **lsa_pipe)
 {
 	struct rpc_pipe_client *cli = NULL;
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	NTSTATUS status;
 
 	if (session_info == NULL) {
 		status = make_session_info_system(mem_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("open_lsa_pipe: Could not create auth_serversupplied_info: %s\n",
+			DEBUG(0, ("open_lsa_pipe: Could not create auth3_session_info: %s\n",
 				  nt_errstr(status)));
 			return status;
 		}

@@ -190,7 +190,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	bool drivers_exists = file_exist(drivers_path);
 	bool printers_exists = file_exist(printers_path);
 	bool forms_exists = file_exist(forms_path);
-	struct auth_serversupplied_info *session_info;
+	struct auth3_session_info *session_info;
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;

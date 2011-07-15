@@ -198,13 +198,13 @@ bool print_job_set_name(struct tevent_context *ev,
 			struct messaging_context *msg_ctx,
 			const char *sharename, uint32 jobid, const char *name);
 bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t jobid, char **name);
-WERROR print_job_delete(const struct auth_serversupplied_info *server_info,
+WERROR print_job_delete(const struct auth3_session_info *server_info,
 			struct messaging_context *msg_ctx,
 			int snum, uint32_t jobid);
-bool print_job_pause(const struct auth_serversupplied_info *server_info,
+bool print_job_pause(const struct auth3_session_info *server_info,
 		     struct messaging_context *msg_ctx,
 		     int snum, uint32 jobid, WERROR *errcode);
-bool print_job_resume(const struct auth_serversupplied_info *server_info,
+bool print_job_resume(const struct auth3_session_info *server_info,
 		      struct messaging_context *msg_ctx,
 		      int snum, uint32 jobid, WERROR *errcode);
 ssize_t print_job_write(struct tevent_context *ev,
@@ -212,7 +212,7 @@ ssize_t print_job_write(struct tevent_context *ev,
 			int snum, uint32 jobid, const char *buf, size_t size);
 int print_queue_length(struct messaging_context *msg_ctx, int snum,
 		       print_status_struct *pstatus);
-WERROR print_job_start(const struct auth_serversupplied_info *server_info,
+WERROR print_job_start(const struct auth3_session_info *server_info,
 		       struct messaging_context *msg_ctx,
 		       const char *clientmachine,
 		       int snum, const char *docname, const char *filename,
@@ -224,11 +224,11 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 int print_queue_status(struct messaging_context *msg_ctx, int snum,
 		       print_queue_struct **ppqueue,
 		       print_status_struct *status);
-WERROR print_queue_pause(const struct auth_serversupplied_info *server_info,
+WERROR print_queue_pause(const struct auth3_session_info *server_info,
 			 struct messaging_context *msg_ctx, int snum);
-WERROR print_queue_resume(const struct auth_serversupplied_info *server_info,
+WERROR print_queue_resume(const struct auth3_session_info *server_info,
 			  struct messaging_context *msg_ctx, int snum);
-WERROR print_queue_purge(const struct auth_serversupplied_info *server_info,
+WERROR print_queue_purge(const struct auth3_session_info *server_info,
 			 struct messaging_context *msg_ctx, int snum);
 uint16 pjobid_to_rap(const char* sharename, uint32 jobid);
 bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid);

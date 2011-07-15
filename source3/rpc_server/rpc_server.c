@@ -39,7 +39,7 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 					    struct auth_session_info **session_info)
 {
 	struct auth_session_info *i;
-	struct auth_serversupplied_info *s;
+	struct auth3_session_info *s;
 	struct auth_user_info_dc *u;
 	union netr_Validation val;
 	NTSTATUS status;
@@ -49,7 +49,7 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = make_server_info_guest(i, &s);
+	status = make_session_info_guest(i, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

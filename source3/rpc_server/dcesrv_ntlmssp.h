@@ -38,6 +38,6 @@ NTSTATUS ntlmssp_server_check_flags(struct auth_ntlmssp_state *ctx,
 				    bool do_sign, bool do_seal);
 NTSTATUS ntlmssp_server_get_user_info(struct auth_ntlmssp_state *ctx,
 				      TALLOC_CTX *mem_ctx,
-				      struct auth_serversupplied_info **session_info);
+				      struct auth3_session_info **session_info);
 
 #endif /* _DCESRV_NTLMSSP_H_ */

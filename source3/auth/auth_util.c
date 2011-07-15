@@ -458,13 +458,13 @@ static NTSTATUS log_nt_token(struct security_token *token)
 NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			    const struct auth_serversupplied_info *server_info,
 			    DATA_BLOB *session_key,
-			    struct auth_serversupplied_info **session_info_out)
+			    struct auth3_session_info **session_info_out)
 {
 	struct security_token *t;
 	NTSTATUS status;
 	size_t i;
 	struct dom_sid tmp_sid;
-	struct auth_serversupplied_info *session_info;
+	struct auth3_session_info *session_info;
 	struct wbcUnixId *ids;
 
 	/* Ensure we can't possible take a code path leading to a
@@ -473,7 +473,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	session_info = copy_serverinfo(mem_ctx, server_info);
+	session_info = copy_serverinfo_session_info(mem_ctx, server_info);
 
 	if (!session_info) {
 		return NT_STATUS_NO_MEMORY;
@@ -767,7 +767,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
  left as-is for now.
 ***************************************************************************/
 
-static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **session_info)
+static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_info)
 {
 	struct auth_serversupplied_info *server_info;
 	static const char zeros[16] = {0};
@@ -838,7 +838,7 @@ done:
 ***************************************************************************/
 
 static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
-					    struct auth_serversupplied_info **session_info)
+					    struct auth3_session_info **session_info)
 {
 	struct passwd *pwd;
 	NTSTATUS status;
@@ -872,7 +872,7 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
-  Fake a auth_serversupplied_info just from a username (as a
+  Fake a auth3_session_info just from a username (as a
   session_info structure, with create_local_token() already called on
   it.
 ****************************************************************************/
@@ -880,7 +880,7 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 					 const char *username,
 					 bool is_guest,
-					 struct auth_serversupplied_info **session_info)
+					 struct auth3_session_info **session_info)
 {
 	struct auth_serversupplied_info *result;
 	struct passwd *pwd;
@@ -1150,7 +1150,7 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
  * SMB level session key with SystemLibraryDTC
  */
 
-bool session_info_set_session_key(struct auth_serversupplied_info *info,
+bool session_info_set_session_key(struct auth3_session_info *info,
 				 DATA_BLOB session_key)
 {
 	TALLOC_FREE(info->session_key.data);
@@ -1161,24 +1161,31 @@ bool session_info_set_session_key(struct auth_serversupplied_info *info,
 	return (info->session_key.data != NULL);
 }
 
-static struct auth_serversupplied_info *guest_info = NULL;
+static struct auth3_session_info *guest_info = NULL;
 
 bool init_guest_info(void)
 {
 	if (guest_info != NULL)
 		return True;
 
-	return NT_STATUS_IS_OK(make_new_server_info_guest(&guest_info));
+	return NT_STATUS_IS_OK(make_new_session_info_guest(&guest_info));
 }
 
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info)
 {
-	*server_info = copy_serverinfo(mem_ctx, guest_info);
+	*server_info = copy_session_info_serverinfo(mem_ctx, guest_info);
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
-static struct auth_serversupplied_info *system_info = NULL;
+NTSTATUS make_session_info_guest(TALLOC_CTX *mem_ctx,
+				struct auth3_session_info **session_info)
+{
+	*session_info = copy_session_info(mem_ctx, guest_info);
+	return (*session_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+}
+
+static struct auth3_session_info *system_info = NULL;
 
 NTSTATUS init_system_info(void)
 {
@@ -1189,14 +1196,14 @@ NTSTATUS init_system_info(void)
 }
 
 NTSTATUS make_session_info_system(TALLOC_CTX *mem_ctx,
-				struct auth_serversupplied_info **session_info)
+				struct auth3_session_info **session_info)
 {
 	if (system_info == NULL) return NT_STATUS_UNSUCCESSFUL;
-	*session_info = copy_serverinfo(mem_ctx, system_info);
+	*session_info = copy_session_info(mem_ctx, system_info);
 	return (*session_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
-const struct auth_serversupplied_info *get_session_info_system(void)
+const struct auth3_session_info *get_session_info_system(void)
 {
     return system_info;
 }

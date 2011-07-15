@@ -105,7 +105,7 @@ NTSTATUS gssapi_server_check_flags(struct gse_context *gse_ctx)
 NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 				     TALLOC_CTX *mem_ctx,
 				     const struct tsocket_address *remote_address,
-				     struct auth_serversupplied_info **server_info)
+				     struct auth3_session_info **session_info)
 {
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB pac_blob;
@@ -209,7 +209,7 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
 					logon_info, is_guest, is_mapped, NULL /* No session key for now */,
-					server_info);
+					session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
 			  nt_errstr(status)));

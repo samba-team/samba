@@ -128,18 +128,18 @@ bool nt_printing_init(struct messaging_context *msg_ctx);
 
 const char *get_short_archi(const char *long_archi);
 
-bool print_access_check(const struct auth_serversupplied_info *server_info,
+bool print_access_check(const struct auth3_session_info *server_info,
 			struct messaging_context *msg_ctx, int snum,
 			int access_type);
 
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth3_session_info *server_info,
 			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action);
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth3_session_info *server_info,
 			  struct messaging_context *msg_ctx,
 			  const char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2);
@@ -147,33 +147,33 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 WERROR check_published_printers(struct messaging_context *msg_ctx);
 
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
-			   const struct auth_serversupplied_info *server_info,
+			   const struct auth3_session_info *server_info,
 			   struct messaging_context *msg_ctx,
 			   const struct spoolss_DriverInfo8 *r);
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth3_session_info *server_info,
 				 struct messaging_context *msg_ctx,
 				 struct spoolss_DriverInfo8 *r);
-bool delete_driver_files(const struct auth_serversupplied_info *server_info,
+bool delete_driver_files(const struct auth3_session_info *server_info,
 			 const struct spoolss_DriverInfo8 *r);
 
-WERROR move_driver_to_download_area(struct auth_serversupplied_info *session_info,
+WERROR move_driver_to_download_area(struct auth3_session_info *session_info,
 				    struct spoolss_AddDriverInfoCtr *r);
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
-			      struct auth_serversupplied_info *session_info,
+			      struct auth3_session_info *session_info,
 			      struct spoolss_AddDriverInfoCtr *r);
 
 void map_printer_permissions(struct security_descriptor *sd);
 
 void map_job_permissions(struct security_descriptor *sd);
 
-bool print_time_access_check(const struct auth_serversupplied_info *server_info,
+bool print_time_access_check(const struct auth3_session_info *server_info,
 			     struct messaging_context *msg_ctx,
 			     const char *servicename);
 
 void nt_printer_remove(TALLOC_CTX *mem_ctx,
-			const struct auth_serversupplied_info *server_info,
+			const struct auth3_session_info *server_info,
 			struct messaging_context *msg_ctx,
 			const char *printer);
 

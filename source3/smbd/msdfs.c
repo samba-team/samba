@@ -225,7 +225,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-				const struct auth_serversupplied_info *session_info,
+				const struct auth3_session_info *session_info,
 				char **poldcwd)
 {
 	connection_struct *conn;
@@ -266,7 +266,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	conn->sconn->num_tcons_open++;
 
 	if (session_info != NULL) {
-		conn->session_info = copy_serverinfo(conn, session_info);
+		conn->session_info = copy_session_info(conn, session_info);
 		if (conn->session_info == NULL) {
 			DEBUG(0, ("copy_serverinfo failed\n"));
 			TALLOC_FREE(conn);

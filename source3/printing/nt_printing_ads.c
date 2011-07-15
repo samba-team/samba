@@ -39,7 +39,7 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 			       const char *printer, struct GUID guid)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	const char *guid_str;
 	DATA_BLOB blob;
 	NTSTATUS status;
@@ -244,7 +244,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
  ***************************************************************************/
 
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *session_info,
+			  const struct auth3_session_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action)
@@ -326,7 +326,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	int snum;
 	int n_services = lp_numservices();
 	TALLOC_CTX *tmp_ctx = NULL;
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2;
 	NTSTATUS status;
 	WERROR result;
@@ -388,7 +388,7 @@ done:
 }
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *session_info,
+			  const struct auth3_session_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  const char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)
@@ -469,7 +469,7 @@ done:
 }
 #else
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *session_info,
+			  const struct auth3_session_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action)
@@ -483,7 +483,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 }
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *session_info,
+			  const struct auth3_session_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  const char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)

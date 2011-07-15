@@ -49,9 +49,9 @@ struct pending_auth_data {
   on a logon error possibly map the error to success if "map to guest"
   is set approriately
 */
-NTSTATUS do_map_to_guest(NTSTATUS status,
-			struct auth_serversupplied_info **server_info,
-			const char *user, const char *domain)
+static NTSTATUS do_map_to_guest_server_info(NTSTATUS status,
+					    struct auth_serversupplied_info **server_info,
+					    const char *user, const char *domain)
 {
 	user = user ? user : "";
 	domain = domain ? domain : "";
@@ -70,6 +70,37 @@ NTSTATUS do_map_to_guest(NTSTATUS status,
 			DEBUG(3,("Registered username %s for guest access\n",
 				user));
 			status = make_server_info_guest(NULL, server_info);
+		}
+	}
+
+	return status;
+}
+
+/*
+  on a logon error possibly map the error to success if "map to guest"
+  is set approriately
+*/
+NTSTATUS do_map_to_guest(NTSTATUS status,
+			struct auth3_session_info **session_info,
+			const char *user, const char *domain)
+{
+	user = user ? user : "";
+	domain = domain ? domain : "";
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) ||
+		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
+			DEBUG(3,("No such user %s [%s] - using guest account\n",
+				 user, domain));
+			status = make_session_info_guest(NULL, session_info);
+		}
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
+			DEBUG(3,("Registered username %s for guest access\n",
+				user));
+			status = make_session_info_guest(NULL, session_info);
 		}
 	}
 
@@ -251,7 +282,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	DATA_BLOB session_key = data_blob_null;
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob_null;
@@ -456,7 +487,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 {
 	bool do_invalidate = true;
 	DATA_BLOB response;
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -1297,7 +1328,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *primary_domain;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	uint16 smb_flag2 = req->flags2;
 
 	NTSTATUS nt_status;
@@ -1635,8 +1666,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	free_user_info(&user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		nt_status = do_map_to_guest(nt_status, &server_info,
-				user, domain);
+		nt_status = do_map_to_guest_server_info(nt_status, &server_info,
+							user, domain);
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

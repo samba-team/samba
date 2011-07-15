@@ -37,7 +37,7 @@
 void reload_printers(struct tevent_context *ev,
 		     struct messaging_context *msg_ctx)
 {
-	struct auth_serversupplied_info *session_info = NULL;
+	struct auth3_session_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int snum;
 	int n_services = lp_numservices();

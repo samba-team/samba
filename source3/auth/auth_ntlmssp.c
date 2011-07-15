@@ -29,7 +29,7 @@
 
 NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
 					struct auth_ntlmssp_state *auth_ntlmssp_state,
-					struct auth_serversupplied_info **session_info)
+					struct auth3_session_info **session_info)
 {
 	NTSTATUS nt_status = create_local_token(mem_ctx,
 						auth_ntlmssp_state->server_info,

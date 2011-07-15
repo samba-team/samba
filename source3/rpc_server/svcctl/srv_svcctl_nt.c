@@ -409,7 +409,7 @@ WERROR _svcctl_QueryServiceStatus(struct pipes_struct *p,
 
 static int enumerate_status(TALLOC_CTX *ctx,
 			    struct messaging_context *msg_ctx,
-			    struct auth_serversupplied_info *session_info,
+			    struct auth3_session_info *session_info,
 			    struct ENUM_SERVICE_STATUSW **status)
 {
 	int num_services = 0;
@@ -670,7 +670,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 
 static WERROR fill_svc_config(TALLOC_CTX *mem_ctx,
 			      struct messaging_context *msg_ctx,
-			      struct auth_serversupplied_info *session_info,
+			      struct auth3_session_info *session_info,
 			      const char *name,
 			      struct QUERY_SERVICE_CONFIG *config)
 {

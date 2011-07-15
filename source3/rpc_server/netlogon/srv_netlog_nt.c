@@ -650,7 +650,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	struct dom_sid *domain_sid;
 	uint32_t acct_ctrl;
 	union samr_UserInfo *info;
-	struct auth_serversupplied_info *session_info;
+	struct auth3_session_info *session_info;
 	int rc;
 
 #if 0
@@ -1100,7 +1100,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
  *************************************************************************/
 
 static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
-						  struct auth_serversupplied_info *session_info,
+						  struct auth3_session_info *session_info,
 						  struct messaging_context *msg_ctx,
 						  const char *account_name,
 						  struct samr_Password *nt_hash)
