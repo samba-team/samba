@@ -820,6 +820,9 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 				 spoolss_max_children,
 				 &spoolss_children_main, NULL,
 				 &spoolss_pool);
+	if (!ok) {
+		exit(1);
+	}
 
 	if (!serverid_register(procid_self(),
 				FLAG_MSG_GENERAL |
