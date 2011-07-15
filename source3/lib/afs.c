@@ -23,6 +23,11 @@
 
 #define NO_ASN1_TYPEDEFS 1
 
+#include "secrets.h"
+#include "passdb.h"
+#include "auth.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
+
 #include <afs/param.h>
 #include <afs/stds.h>
 #include <afs/afs.h>
@@ -231,16 +236,17 @@ bool afs_login(connection_struct *conn)
 	}
 
 	afs_username = talloc_sub_advanced(ctx,
-				SNUM(conn), conn->session_info->unix_name,
+				lp_servicename(SNUM(conn)),
+				conn->session_info->unix_name,
 				conn->connectpath, conn->session_info->utok.gid,
 				conn->session_info->sanitized_username,
-				pdb_get_domain(conn->session_info->sam_account),
+				conn->session_info->info3->base.domain.string,
 				afs_username);
 	if (!afs_username) {
 		return false;
 	}
 
-	user_sid = &conn->session_info->security_token->user_sids[0];
+	user_sid = &conn->session_info->security_token->sids[0];
 	afs_username = talloc_string_sub(talloc_tos(),
 					afs_username,
 					"%s",

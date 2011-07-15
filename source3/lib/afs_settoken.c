@@ -23,6 +23,8 @@
 
 #define NO_ASN1_TYPEDEFS 1
 
+#include "system/filesys.h"
+
 #include <afs/param.h>
 #include <afs/stds.h>
 #include <afs/afs.h>
