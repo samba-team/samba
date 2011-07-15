@@ -103,11 +103,6 @@ struct auth3_session_info {
 	 * to the special invalid value of 0xFFFFFFFF */
 	struct extra_auth_info extra;
 
-	/*
-	 * This is a token from /etc/passwd and /etc/group
-	 */
-	bool nss_token;
-
 	struct auth_user_info_unix *unix_info;
 };
 
