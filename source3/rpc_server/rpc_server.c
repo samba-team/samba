@@ -641,7 +641,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				struct messaging_context *msg_ctx,
 				enum dcerpc_transport_t transport,
 				const char *name,
-				uint16_t port,
 				struct tsocket_address *cli_addr,
 				struct tsocket_address *srv_addr,
 				int s,
@@ -798,7 +797,6 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 			    state->msg_ctx,
 			    NCACN_IP_TCP,
 			    NULL,
-			    state->ep.port,
 			    cli_addr,
 			    srv_addr,
 			    s,
@@ -924,18 +922,13 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
 			    NCALRPC,
-			    state->ep.name, 0,
+			    state->ep.name,
 			    cli_addr, NULL, sd,
 			    state->disconnect_fn);
 }
 
 struct dcerpc_ncacn_conn {
 	enum dcerpc_transport_t transport;
-
-	union {
-		const char *name;
-		uint16_t port;
-	} ep;
 
 	int sock;
 
@@ -965,7 +958,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				struct messaging_context *msg_ctx,
 				enum dcerpc_transport_t transport,
 				const char *name,
-				uint16_t port,
 				struct tsocket_address *cli_addr,
 				struct tsocket_address *srv_addr,
 				int s,
@@ -1029,8 +1021,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 	switch (transport) {
 		case NCACN_IP_TCP:
-			ncacn_conn->ep.port = port;
-
 			pipe_name = tsocket_address_string(ncacn_conn->client,
 							   ncacn_conn);
 			if (pipe_name == NULL) {
@@ -1050,13 +1040,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				}
 			}
 		case NCACN_NP:
-			ncacn_conn->ep.name = talloc_strdup(ncacn_conn, name);
-			if (ncacn_conn->ep.name == NULL) {
-				close(s);
-				talloc_free(ncacn_conn);
-				return;
-			}
-
 			pipe_name = talloc_strdup(ncacn_conn,
 						  name);
 			if (pipe_name == NULL) {
