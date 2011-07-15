@@ -93,11 +93,11 @@ static bool afs_createtoken(const char *username, const char *cell,
 	des_key_schedule key_schedule;
 
 	if (!secrets_init()) 
-		return False;
+		return false;
 
 	if (!secrets_fetch_afs_key(cell, &key)) {
 		DEBUG(1, ("Could not fetch AFS service key\n"));
-		return False;
+		return false;
 	}
 
 	ct->AuthHandle = key.kvno;
@@ -184,7 +184,7 @@ static bool afs_createtoken(const char *username, const char *cell,
 
 	*ticket = data_blob(clear_ticket, len);
 
-	return True;
+	return true;
 }
 
 char *afs_createtoken_str(const char *username, const char *cell)
@@ -276,7 +276,7 @@ bool afs_login(connection_struct *conn)
 		   afs_username, cell));
 
 	if (!afs_createtoken(afs_username, cell, &ticket, &ct))
-		return False;
+		return false;
 
 	/* For which Unix-UID do we want to set the token? */
 	ct.ViceId = getuid();
@@ -296,7 +296,7 @@ bool afs_login(connection_struct *conn)
 
 bool afs_login(connection_struct *conn)
 {
-	return True;
+	return true;
 }
 
 char *afs_createtoken_str(const char *username, const char *cell)
