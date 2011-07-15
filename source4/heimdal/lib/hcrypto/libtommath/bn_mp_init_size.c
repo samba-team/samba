@@ -21,8 +21,8 @@ int mp_init_size (mp_int * a, int size)
   int x;
 
   /* pad size so there are always extra digits */
-  size += (MP_PREC * 2) - (size % MP_PREC);	
-  
+  size += (MP_PREC * 2) - (size % MP_PREC);
+
   /* alloc mem */
   a->dp = OPT_CAST(mp_digit) XMALLOC (sizeof (mp_digit) * size);
   if (a->dp == NULL) {

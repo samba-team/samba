@@ -71,7 +71,7 @@ typedef struct krb5_get_init_creds_ctx {
     KRB_ERROR error;
     AS_REP as_rep;
     EncKDCRepPart enc_part;
-    
+
     krb5_prompter_fct prompter;
     void *prompter_data;
 
@@ -313,14 +313,14 @@ process_last_request(krb5_context context,
 	if (lr->val[i].lr_value <= t) {
 	    switch (abs(lr->val[i].lr_type)) {
 	    case LR_PW_EXPTIME :
-		report_expiration(context, ctx->prompter, 
+		report_expiration(context, ctx->prompter,
 				  ctx->prompter_data,
 				  "Your password will expire at ",
 				  lr->val[i].lr_value);
 		reported = TRUE;
 		break;
 	    case LR_ACCT_EXPTIME :
-		report_expiration(context, ctx->prompter, 
+		report_expiration(context, ctx->prompter,
 				  ctx->prompter_data,
 				  "Your account will expire at ",
 				  lr->val[i].lr_value);
@@ -333,7 +333,7 @@ process_last_request(krb5_context context,
     if (!reported
 	&& ctx->enc_part.key_expiration
 	&& *ctx->enc_part.key_expiration <= t) {
-        report_expiration(context, ctx->prompter, 
+        report_expiration(context, ctx->prompter,
 			  ctx->prompter_data,
 			  "Your password/account will expire at ",
 			  *ctx->enc_part.key_expiration);
@@ -367,7 +367,7 @@ get_init_creds_common(krb5_context context,
 
     if (options->opt_private) {
 	if (options->opt_private->password) {
-	    ret = krb5_init_creds_set_password(context, ctx, 
+	    ret = krb5_init_creds_set_password(context, ctx,
 					       options->opt_private->password);
 	    if (ret)
 		goto out;
@@ -384,7 +384,7 @@ get_init_creds_common(krb5_context context,
 	ctx->keyproc = default_s2k_func;
 
     /* Enterprise name implicitly turns on canonicalize */
-    if ((ctx->ic_flags & KRB5_INIT_CREDS_CANONICALIZE) || 
+    if ((ctx->ic_flags & KRB5_INIT_CREDS_CANONICALIZE) ||
 	krb5_principal_get_type(context, client) == KRB5_NT_ENTERPRISE_PRINCIPAL)
 	ctx->flags.canonicalize = 1;
 
@@ -671,7 +671,8 @@ init_as_req (krb5_context context,
 	*a->req_body.rtime = creds->times.renew_till;
     }
     a->req_body.nonce = 0;
-    ret = krb5_init_etype (context,
+    ret = _krb5_init_etype(context,
+			   KRB5_PDU_AS_REQUEST,
 			   &a->req_body.etype.len,
 			   &a->req_body.etype.val,
 			   etypes);
@@ -759,7 +760,7 @@ pa_etype_info2(krb5_context context,
     krb5_error_code ret;
     ETYPE_INFO2 e;
     size_t sz;
-    int i, j;
+    size_t i, j;
 
     memset(&e, 0, sizeof(e));
     ret = decode_ETYPE_INFO2(data->data, data->length, &e, &sz);
@@ -808,7 +809,7 @@ pa_etype_info(krb5_context context,
     krb5_error_code ret;
     ETYPE_INFO e;
     size_t sz;
-    int i, j;
+    size_t i, j;
 
     memset(&e, 0, sizeof(e));
     ret = decode_ETYPE_INFO(data->data, data->length, &e, &sz);
@@ -889,9 +890,9 @@ static struct pa_info pa_prefs[] = {
 };
 
 static PA_DATA *
-find_pa_data(const METHOD_DATA *md, int type)
+find_pa_data(const METHOD_DATA *md, unsigned type)
 {
-    int i;
+    size_t i;
     if (md == NULL)
 	return NULL;
     for (i = 0; i < md->len; i++)
@@ -908,7 +909,7 @@ process_pa_info(krb5_context context,
 		METHOD_DATA *md)
 {
     struct pa_info_data *p = NULL;
-    int i;
+    size_t i;
 
     for (i = 0; p == NULL && i < sizeof(pa_prefs)/sizeof(pa_prefs[0]); i++) {
 	PA_DATA *pa = find_pa_data(md, pa_prefs[i].type);
@@ -928,7 +929,7 @@ make_pa_enc_timestamp(krb5_context context, METHOD_DATA *md,
     PA_ENC_TS_ENC p;
     unsigned char *buf;
     size_t buf_size;
-    size_t len;
+    size_t len = 0;
     EncryptedData encdata;
     krb5_error_code ret;
     int32_t usec;
@@ -989,7 +990,7 @@ add_enc_ts_padata(krb5_context context,
     krb5_error_code ret;
     krb5_salt salt2;
     krb5_enctype *ep;
-    int i;
+    size_t i;
 
     if(salt == NULL) {
 	/* default to standard salt */
@@ -1109,7 +1110,7 @@ pa_data_add_pac_request(krb5_context context,
 			krb5_get_init_creds_ctx *ctx,
 			METHOD_DATA *md)
 {
-    size_t len, length;
+    size_t len = 0, length;
     krb5_error_code ret;
     PA_PAC_REQUEST req;
     void *buf;
@@ -1179,14 +1180,14 @@ process_pa_data_to_md(krb5_context context,
  	_krb5_debug(context, 5, "krb5_get_init_creds: "
 		    "prepareing PKINIT padata (%s)",
  		    (ctx->used_pa_types & USED_PKINIT_W2K) ? "win2k" : "ietf");
-	
+
  	if (ctx->used_pa_types & USED_PKINIT_W2K) {
  	    krb5_set_error_message(context, KRB5_GET_IN_TKT_LOOP,
  				   "Already tried pkinit, looping");
  	    return KRB5_GET_IN_TKT_LOOP;
  	}
 
-	ret = pa_data_to_md_pkinit(context, a, creds->client, 
+	ret = pa_data_to_md_pkinit(context, a, creds->client,
 				   (ctx->used_pa_types & USED_PKINIT),
 				   ctx, *out_md);
 	if (ret)
@@ -1526,14 +1527,14 @@ krb5_init_creds_set_keytab(krb5_context context,
     krb5_error_code ret;
     size_t netypes = 0;
     int kvno = 0;
-    
+
     a = malloc(sizeof(*a));
     if (a == NULL) {
 	krb5_set_error_message(context, ENOMEM,
 			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
-	
+
     a->principal = ctx->cred.client;
     a->keytab    = keytab;
 
@@ -1568,7 +1569,7 @@ krb5_init_creds_set_keytab(krb5_context context,
 	    kvno = entry.vno;
 	} else if (entry.vno != kvno)
 	    goto next;
-		
+
 	/* check if enctype is supported */
 	if (krb5_enctype_valid(context, entry.keyblock.keytype) != 0)
 	    goto next;
@@ -1619,7 +1620,7 @@ krb5_init_creds_set_keyblock(krb5_context context,
 
 /**
  * The core loop if krb5_get_init_creds() function family. Create the
- * packets and have the caller send them off to the KDC. 
+ * packets and have the caller send them off to the KDC.
  *
  * If the caller want all work been done for them, use
  * krb5_init_creds_get() instead.
@@ -1647,7 +1648,7 @@ krb5_init_creds_step(krb5_context context,
 		     unsigned int *flags)
 {
     krb5_error_code ret;
-    size_t len;
+    size_t len = 0;
     size_t size;
 
     krb5_data_zero(out);
@@ -1768,13 +1769,13 @@ krb5_init_creds_step(krb5_context context,
 					      "options send by KDC", ""));
 		}
 	    } else if (ret == KRB5KRB_AP_ERR_SKEW && context->kdc_sec_offset == 0) {
-		/* 
+		/*
 		 * Try adapt to timeskrew when we are using pre-auth, and
 		 * if there was a time skew, try again.
 		 */
 		krb5_set_real_time(context, ctx->error.stime, -1);
 		if (context->kdc_sec_offset)
-		    ret = 0; 
+		    ret = 0;
 
 		_krb5_debug(context, 10, "init_creds: err skew updateing kdc offset to %d",
 			    context->kdc_sec_offset);
@@ -1793,7 +1794,7 @@ krb5_init_creds_step(krb5_context context,
 			    "krb5_get_init_creds: got referal to realm %s",
 			    *ctx->error.crealm);
 
-		ret = krb5_principal_set_realm(context, 
+		ret = krb5_principal_set_realm(context,
 					       ctx->cred.client,
 					       *ctx->error.crealm);
 
@@ -1934,7 +1935,7 @@ krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
 	if ((flags & 1) == 0)
 	    break;
 
-	ret = krb5_sendto_context (context, stctx, &out, 
+	ret = krb5_sendto_context (context, stctx, &out,
 				   ctx->cred.client->realm, &in);
     	if (ret)
 	    goto out;
@@ -2013,7 +2014,7 @@ krb5_get_init_creds_password(krb5_context context,
     }
 
     ret = krb5_init_creds_get(context, ctx);
-    
+
     if (ret == 0)
 	process_last_request(context, options, ctx);
 

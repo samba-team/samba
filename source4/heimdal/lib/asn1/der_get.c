@@ -141,9 +141,9 @@ der_get_general_string (const unsigned char *p, size_t len,
 	 * an strings in the NEED_PREAUTH case that includes a
 	 * trailing NUL.
 	 */
-	while (p1 - p < len && *p1 == '\0')
+	while ((size_t)(p1 - p) < len && *p1 == '\0')
 	    p1++;
-       if (p1 - p != len)
+       if ((size_t)(p1 - p) != len)
 	    return ASN1_BAD_CHARACTER;
     }
     if (len > len + 1)

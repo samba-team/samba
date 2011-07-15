@@ -48,7 +48,7 @@ krb5_mk_error(krb5_context context,
     KRB_ERROR msg;
     krb5_timestamp sec;
     int32_t usec;
-    size_t len;
+    size_t len = 0;
     krb5_error_code ret = 0;
 
     krb5_us_timeofday (context, &sec, &usec);
@@ -75,7 +75,8 @@ krb5_mk_error(krb5_context context,
 	msg.realm = server->realm;
 	msg.sname = server->name;
     }else{
-	msg.realm = "<unspecified realm>";
+	static char unspec[] = "<unspecified realm>";
+	msg.realm = unspec;
     }
     if(client){
 	msg.crealm = &client->realm;

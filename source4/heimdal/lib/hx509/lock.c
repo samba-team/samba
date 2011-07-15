@@ -121,7 +121,7 @@ _hx509_lock_unlock_certs(hx509_lock lock)
 void
 hx509_lock_reset_passwords(hx509_lock lock)
 {
-    int i;
+    size_t i;
     for (i = 0; i < lock->password.len; i++)
 	free(lock->password.val[i]);
     free(lock->password.val);

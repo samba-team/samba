@@ -15,7 +15,7 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-static const int lnz[16] = { 
+static const int lnz[16] = {
    4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
 };
 

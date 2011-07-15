@@ -93,11 +93,11 @@ hx509_pem_write(hx509_context context, const char *type,
 
     while (size > 0) {
 	ssize_t l;
-	
+
 	length = size;
 	if (length > ENCODE_LINE_LENGTH)
 	    length = ENCODE_LINE_LENGTH;
-	
+
 	l = base64_encode(p, length, &line);
 	if (l < 0) {
 	    hx509_set_error_string(context, 0, ENOMEM,
@@ -211,7 +211,7 @@ hx509_pem_read(hx509_context context,
 	    if (i > 0)
 		i--;
 	}
-	
+
 	switch (where) {
 	case BEFORE:
 	    if (strncmp("-----BEGIN ", buf, 11) == 0) {
@@ -260,7 +260,7 @@ hx509_pem_read(hx509_context context,
 		free(p);
 		goto out;
 	    }
-	
+
 	    data = erealloc(data, len + i);
 	    memcpy(((char *)data) + len, p, i);
 	    free(p);

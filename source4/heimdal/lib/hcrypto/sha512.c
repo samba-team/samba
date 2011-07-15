@@ -140,7 +140,7 @@ calc (SHA512_CTX *m, uint64_t *in)
 
 	T1 = HH + Sigma1(EE) + Ch(EE, FF, GG) + constant_512[i] + data[i];
 	T2 = Sigma0(AA) + Maj(AA,BB,CC);
-			
+
 	HH = GG;
 	GG = FF;
 	FF = EE;

@@ -15,7 +15,7 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-/* determines if an integers is divisible by one 
+/* determines if an integers is divisible by one
  * of the first PRIME_SIZE primes or not
  *
  * sets result to 0 if not, 1 if yes

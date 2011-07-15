@@ -112,11 +112,11 @@ ltm_dh_generate_key(DH *dh)
 	    BN_free(dh->pub_key);
 
 	mp_init_multi(&pub, &priv_key, &g, &p, NULL);
-	
+
 	BN2mpz(&priv_key, dh->priv_key);
 	BN2mpz(&g, dh->g);
 	BN2mpz(&p, dh->p);
-	
+
 	res = mp_exptmod(&g, &priv_key, &p, &pub);
 
 	mp_clear_multi(&priv_key, &g, &p, NULL);
@@ -127,7 +127,7 @@ ltm_dh_generate_key(DH *dh)
 	mp_clear(&pub);
 	if (dh->pub_key == NULL)
 	    return 0;
-	
+
 	if (DH_check_pubkey(dh, dh->pub_key, &codes) && codes == 0)
 	    break;
 	if (have_private_key)

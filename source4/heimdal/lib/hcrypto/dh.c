@@ -539,8 +539,10 @@ i2d_DHparams(DH *dh, unsigned char **pp)
 	free_DHParameter(&data);
 	if (ret)
 	    return -1;
-	if (len != size)
+	if (len != size) {
 	    abort();
+            return -1;
+        }
 
 	memcpy(*pp, p, size);
 	free(p);

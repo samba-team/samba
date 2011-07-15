@@ -35,14 +35,14 @@ gss_indicate_mechs(OM_uint32 *minor_status,
 	struct _gss_mech_switch *m;
 	OM_uint32 major_status;
 	gss_OID_set set;
-	int i;
+	size_t i;
 
 	_gss_load_mech();
 
 	major_status = gss_create_empty_oid_set(minor_status, mech_set);
 	if (major_status)
 		return (major_status);
-	
+
 	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_indicate_mechs) {
 			major_status = m->gm_mech.gm_indicate_mechs(

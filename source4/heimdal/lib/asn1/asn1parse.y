@@ -365,7 +365,7 @@ range		: '(' Value RANGE Value ')'
 		    $$->max = $4->u.integervalue;
 		}
 		| '(' Value RANGE kw_MAX ')'
-		{	
+		{
 		    if($2->type != integervalue)
 			lex_error_message("Non-integer in first part of range");
 		    $$ = ecalloc(1, sizeof(*$$));
@@ -373,7 +373,7 @@ range		: '(' Value RANGE Value ')'
 		    $$->max = $2->u.integervalue - 1;
 		}
 		| '(' kw_MIN RANGE Value ')'
-		{	
+		{
 		    if($4->type != integervalue)
 			lex_error_message("Non-integer in second part of range");
 		    $$ = ecalloc(1, sizeof(*$$));

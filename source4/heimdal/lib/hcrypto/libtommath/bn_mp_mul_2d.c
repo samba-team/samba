@@ -69,7 +69,7 @@ int mp_mul_2d (mp_int * a, int b, mp_int * c)
       /* set the carry to the carry bits of the current word */
       r = rr;
     }
-    
+
     /* set final carry */
     if (r != 0) {
        c->dp[(c->used)++] = r;

@@ -233,7 +233,7 @@ socket_set_portrange (rk_socket_t sock, int restr, int af)
 	}
 #endif
 }
-	
+
 /*
  * Enable debug on `sock'.
  */

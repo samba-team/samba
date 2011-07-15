@@ -220,7 +220,7 @@ mcc_destroy(krb5_context context,
 	l = m->creds;
 	while (l != NULL) {
 	    struct link *old;
-	
+
 	    krb5_free_cred_contents (context, &l->cred);
 	    old = l;
 	    l = l->next;
@@ -347,7 +347,7 @@ mcc_set_flags(krb5_context context,
 {
     return 0; /* XXX */
 }
-		
+
 struct mcache_iter {
     krb5_mcache *cache;
 };

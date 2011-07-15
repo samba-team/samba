@@ -117,7 +117,7 @@ statement	: INDEX NUMBER
 		| EC STRING ',' STRING
 		{
 		    struct error_code *ec = malloc(sizeof(*ec));
-		
+
 		    if (ec == NULL)
 			errx(1, "malloc");
 

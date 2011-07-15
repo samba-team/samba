@@ -15,7 +15,7 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-/* b = |a| 
+/* b = |a|
  *
  * Simple function copies the input and fixes the sign to positive
  */

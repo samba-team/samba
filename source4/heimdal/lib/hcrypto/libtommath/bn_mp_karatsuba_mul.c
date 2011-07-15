@@ -15,33 +15,33 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-/* c = |a| * |b| using Karatsuba Multiplication using 
+/* c = |a| * |b| using Karatsuba Multiplication using
  * three half size multiplications
  *
- * Let B represent the radix [e.g. 2**DIGIT_BIT] and 
- * let n represent half of the number of digits in 
+ * Let B represent the radix [e.g. 2**DIGIT_BIT] and
+ * let n represent half of the number of digits in
  * the min(a,b)
  *
  * a = a1 * B**n + a0
  * b = b1 * B**n + b0
  *
- * Then, a * b => 
+ * Then, a * b =>
    a1b1 * B**2n + ((a1 + a0)(b1 + b0) - (a0b0 + a1b1)) * B + a0b0
  *
- * Note that a1b1 and a0b0 are used twice and only need to be 
- * computed once.  So in total three half size (half # of 
- * digit) multiplications are performed, a0b0, a1b1 and 
+ * Note that a1b1 and a0b0 are used twice and only need to be
+ * computed once.  So in total three half size (half # of
+ * digit) multiplications are performed, a0b0, a1b1 and
  * (a1+b1)(a0+b0)
  *
  * Note that a multiplication of half the digits requires
- * 1/4th the number of single precision multiplications so in 
- * total after one call 25% of the single precision multiplications 
- * are saved.  Note also that the call to mp_mul can end up back 
- * in this function if the a0, a1, b0, or b1 are above the threshold.  
- * This is known as divide-and-conquer and leads to the famous 
- * O(N**lg(3)) or O(N**1.584) work which is asymptopically lower than 
- * the standard O(N**2) that the baseline/comba methods use.  
- * Generally though the overhead of this method doesn't pay off 
+ * 1/4th the number of single precision multiplications so in
+ * total after one call 25% of the single precision multiplications
+ * are saved.  Note also that the call to mp_mul can end up back
+ * in this function if the a0, a1, b0, or b1 are above the threshold.
+ * This is known as divide-and-conquer and leads to the famous
+ * O(N**lg(3)) or O(N**1.584) work which is asymptopically lower than
+ * the standard O(N**2) that the baseline/comba methods use.
+ * Generally though the overhead of this method doesn't pay off
  * until a certain size (N ~ 80) is reached.
  */
 int mp_karatsuba_mul (mp_int * a, mp_int * b, mp_int * c)
@@ -109,7 +109,7 @@ int mp_karatsuba_mul (mp_int * a, mp_int * b, mp_int * c)
     }
   }
 
-  /* only need to clamp the lower words since by definition the 
+  /* only need to clamp the lower words since by definition the
    * upper words x1/y1 must have a known number of digits
    */
   mp_clamp (&x0);
@@ -117,7 +117,7 @@ int mp_karatsuba_mul (mp_int * a, mp_int * b, mp_int * c)
 
   /* now calc the products x0y0 and x1y1 */
   /* after this x0 is no longer required, free temp [x0==t2]! */
-  if (mp_mul (&x0, &y0, &x0y0) != MP_OKAY)  
+  if (mp_mul (&x0, &y0, &x0y0) != MP_OKAY)
     goto X1Y1;          /* x0y0 = x0*y0 */
   if (mp_mul (&x1, &y1, &x1y1) != MP_OKAY)
     goto X1Y1;          /* x1y1 = x1*y1 */

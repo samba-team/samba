@@ -92,7 +92,7 @@ hash_input_chan_bindings (const gss_channel_bindings_t b,
   _gsskrb5_encode_om_uint32 (b->acceptor_address.length, num);
   EVP_DigestUpdate(ctx, num, sizeof(num));
   if (b->acceptor_address.length)
-      EVP_DigestUpdate(ctx, 
+      EVP_DigestUpdate(ctx,
 		       b->acceptor_address.value,
 		       b->acceptor_address.length);
   _gsskrb5_encode_om_uint32 (b->application_data.length, num);

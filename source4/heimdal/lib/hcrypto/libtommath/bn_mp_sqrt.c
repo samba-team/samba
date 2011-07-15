@@ -16,7 +16,7 @@
  */
 
 /* this function is less generic than mp_n_root, simpler and faster */
-int mp_sqrt(mp_int *arg, mp_int *ret) 
+int mp_sqrt(mp_int *arg, mp_int *ret)
 {
   int res;
   mp_int t1,t2;
@@ -43,7 +43,7 @@ int mp_sqrt(mp_int *arg, mp_int *ret)
   /* First approx. (not very bad for large arg) */
   mp_rshd (&t1,t1.used/2);
 
-  /* t1 > 0  */ 
+  /* t1 > 0  */
   if ((res = mp_div(arg,&t1,&t2,NULL)) != MP_OKAY) {
     goto E1;
   }
@@ -54,7 +54,7 @@ int mp_sqrt(mp_int *arg, mp_int *ret)
     goto E1;
   }
   /* And now t1 > sqrt(arg) */
-  do { 
+  do {
     if ((res = mp_div(arg,&t1,&t2,NULL)) != MP_OKAY) {
       goto E1;
     }

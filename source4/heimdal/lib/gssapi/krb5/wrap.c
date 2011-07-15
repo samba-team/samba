@@ -214,7 +214,7 @@ wrap_des
   EVP_CIPHER_CTX des_ctx;
   DES_cblock deskey;
   DES_cblock zero;
-  int i;
+  size_t i;
   int32_t seq_number;
   size_t len, total_len, padlength, datalen;
 

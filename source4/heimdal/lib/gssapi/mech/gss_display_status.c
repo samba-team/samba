@@ -190,7 +190,7 @@ gss_display_status(OM_uint32 *minor_status,
 		    oid.value = rk_UNCONST("unknown");
 		    oid.length = 7;
 		}
-		
+
 		e = asprintf (&buf, "unknown mech-code %lu for mech %.*s",
 			  (unsigned long)status_value,
 			  (int)oid.length, (char *)oid.value);

@@ -259,7 +259,7 @@ build_certificate(krb5_context context,
     hx509_cert_free(cert);
     if (ret)
 	goto out;
-		
+
     return 0;
 out:
     if (env)
@@ -355,7 +355,7 @@ _kdc_do_kx509(krb5_context context,
 		krb5_xfree(expected);
 		goto out;
 	    }
-	    
+
 	    ret = KRB5KDC_ERR_SERVER_NOMATCH;
 	    krb5_set_error_message(context, ret,
 				   "User %s used wrong Kx509 service "

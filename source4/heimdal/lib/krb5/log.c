@@ -501,7 +501,7 @@ _krb5_debug(krb5_context context,
 
     if (context == NULL || context->debug_dest == NULL)
 	return;
-	
+
     va_start(ap, fmt);
     krb5_vlog(context, context->debug_dest, level, fmt, ap);
     va_end(ap);

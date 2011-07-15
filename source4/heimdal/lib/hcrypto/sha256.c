@@ -116,7 +116,7 @@ calc (SHA256_CTX *m, uint32_t *in)
 
 	T1 = HH + Sigma1(EE) + Ch(EE, FF, GG) + constant_256[i] + data[i];
 	T2 = Sigma0(AA) + Maj(AA,BB,CC);
-			
+
 	HH = GG;
 	GG = FF;
 	FF = EE;

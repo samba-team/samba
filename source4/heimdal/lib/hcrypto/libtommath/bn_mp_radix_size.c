@@ -54,7 +54,7 @@ int mp_radix_size (mp_int * a, int radix, int *size)
   }
 
   /* force temp to positive */
-  t.sign = MP_ZPOS; 
+  t.sign = MP_ZPOS;
 
   /* fetch out all of the digits */
   while (mp_iszero (&t) == MP_NO) {

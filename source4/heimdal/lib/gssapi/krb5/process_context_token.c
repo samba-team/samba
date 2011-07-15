@@ -52,7 +52,8 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_process_context_token (
 				       (gsskrb5_ctx)context_handle,
 				       context,
 				       token_buffer, &empty_buffer,
-				       GSS_C_QOP_DEFAULT, "\x01\x02");
+				       GSS_C_QOP_DEFAULT,
+				       "\x01\x02");
 
     if (ret == GSS_S_COMPLETE)
 	ret = _gsskrb5_delete_sec_context(minor_status,

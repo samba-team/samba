@@ -17,15 +17,15 @@
 
 /* Fast (comba) multiplier
  *
- * This is the fast column-array [comba] multiplier.  It is 
- * designed to compute the columns of the product first 
- * then handle the carries afterwards.  This has the effect 
+ * This is the fast column-array [comba] multiplier.  It is
+ * designed to compute the columns of the product first
+ * then handle the carries afterwards.  This has the effect
  * of making the nested loops that compute the columns very
  * simple and schedulable on super-scalar processors.
  *
- * This has been modified to produce a variable number of 
- * digits of output so if say only a half-product is required 
- * you don't have to compute the upper half (a feature 
+ * This has been modified to produce a variable number of
+ * digits of output so if say only a half-product is required
+ * you don't have to compute the upper half (a feature
  * required for fast Barrett reduction).
  *
  * Based on Algorithm 14.12 on pp.595 of HAC.
@@ -49,7 +49,7 @@ int fast_s_mp_mul_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
 
   /* clear the carry */
   _W = 0;
-  for (ix = 0; ix < pa; ix++) { 
+  for (ix = 0; ix < pa; ix++) {
       int      tx, ty;
       int      iy;
       mp_digit *tmpx, *tmpy;
@@ -62,7 +62,7 @@ int fast_s_mp_mul_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
       tmpx = a->dp + tx;
       tmpy = b->dp + ty;
 
-      /* this is the number of times the loop will iterrate, essentially 
+      /* this is the number of times the loop will iterrate, essentially
          while (tx++ < a->used && ty-- >= 0) { ... }
        */
       iy = MIN(a->used-tx, ty+1);

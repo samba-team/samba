@@ -288,9 +288,9 @@ krb5_free_error_message(krb5_context context, const char *msg)
  * @ingroup krb5
  */
 
-KRB5_DEPRECATED
 KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
 krb5_get_err_text(krb5_context context, krb5_error_code code)
+    KRB5_DEPRECATED_FUNCTION("Use X instead")
 {
     const char *p = NULL;
     if(context != NULL)

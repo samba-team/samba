@@ -761,7 +761,7 @@ define_type (int level, const char *name, const char *basename, Type *t, int typ
 	    fprintf (headerfile, "struct %s {\n", newbasename);
 	    ASN1_TAILQ_FOREACH(m, t->members, members) {
 		char *n = NULL;
-	
+
 		/* pad unused */
 		while (pos < m->val) {
 		    if (asprintf (&n, "_unused%d:1", pos) < 0 || n == NULL)
@@ -1021,7 +1021,7 @@ generate_type (const Symbol *s)
 	h = privheaderfile;
 	exp = "";
     }
-   
+
     fprintf (h,
 	     "%sint    ASN1CALL "
 	     "decode_%s(const unsigned char *, size_t, %s *, size_t *);\n",
@@ -1044,7 +1044,7 @@ generate_type (const Symbol *s)
 	     "%svoid   ASN1CALL free_%s  (%s *);\n",
 	     exp,
 	     s->gen_name, s->gen_name);
-   
+
     fprintf(h, "\n\n");
 
     if (!one_code_file) {

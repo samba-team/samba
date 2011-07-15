@@ -27,7 +27,7 @@ mp_cmp (mp_int * a, mp_int * b)
         return MP_GT;
      }
   }
-  
+
   /* compare digits */
   if (a->sign == MP_NEG) {
      /* if negative compare opposite direction */

@@ -48,7 +48,7 @@
  *
  *  @returns a gss_error code, see gss_display_status() about printing
  *         the error code.
- *	  
+ *
  *  @ingroup gssapi
  */
 

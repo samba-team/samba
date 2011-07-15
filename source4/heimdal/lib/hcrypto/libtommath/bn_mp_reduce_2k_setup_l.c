@@ -20,19 +20,19 @@ int mp_reduce_2k_setup_l(mp_int *a, mp_int *d)
 {
    int    res;
    mp_int tmp;
-   
+
    if ((res = mp_init(&tmp)) != MP_OKAY) {
       return res;
    }
-   
+
    if ((res = mp_2expt(&tmp, mp_count_bits(a))) != MP_OKAY) {
       goto ERR;
    }
-   
+
    if ((res = s_mp_sub(&tmp, a, d)) != MP_OKAY) {
       goto ERR;
    }
-   
+
 ERR:
    mp_clear(&tmp);
    return res;

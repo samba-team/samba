@@ -41,7 +41,7 @@ int fast_s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
   /* number of output digits to produce */
   pa = a->used + b->used;
   _W = 0;
-  for (ix = digs; ix < pa; ix++) { 
+  for (ix = digs; ix < pa; ix++) {
       int      tx, ty, iy;
       mp_digit *tmpx, *tmpy;
 
@@ -53,7 +53,7 @@ int fast_s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
       tmpx = a->dp + tx;
       tmpy = b->dp + ty;
 
-      /* this is the number of times the loop will iterrate, essentially its 
+      /* this is the number of times the loop will iterrate, essentially its
          while (tx++ < a->used && ty-- >= 0) { ... }
        */
       iy = MIN(a->used-tx, ty+1);
@@ -69,7 +69,7 @@ int fast_s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
       /* make next carry */
       _W = _W >> ((mp_word)DIGIT_BIT);
   }
-  
+
   /* setup dest */
   olduse  = c->used;
   c->used = pa;

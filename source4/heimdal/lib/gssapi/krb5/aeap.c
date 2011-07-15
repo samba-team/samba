@@ -69,11 +69,11 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
     krb5_context context;
 
     GSSAPI_KRB5_INIT (&context);
-    
+
     if (ctx->more_flags & IS_CFX)
 	return _gssapi_unwrap_cfx_iov(minor_status, ctx, context,
 				      conf_state, qop_state, iov, iov_count);
-    
+
     return GSS_S_FAILURE;
 }
 
@@ -88,13 +88,13 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 {
     const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
     krb5_context context;
-    
+
     GSSAPI_KRB5_INIT (&context);
-    
+
     if (ctx->more_flags & IS_CFX)
 	return _gssapi_wrap_iov_length_cfx(minor_status, ctx, context,
 					   conf_req_flag, qop_req, conf_state,
 					   iov, iov_count);
-    
+
     return GSS_S_FAILURE;
 }

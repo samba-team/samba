@@ -101,7 +101,7 @@ initialize_error_table_r(struct et_list **list,
     et->next = NULL;
     *end = et;
 }
-			
+
 
 KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 free_error_table(struct et_list *et)

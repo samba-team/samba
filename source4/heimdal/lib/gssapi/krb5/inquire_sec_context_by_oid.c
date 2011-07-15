@@ -159,10 +159,10 @@ static OM_uint32 inquire_sec_context_get_subkey
 
     {
 	gss_buffer_desc value;
-	
+
 	value.length = data.length;
 	value.value = data.data;
-	
+
 	maj_stat = gss_add_buffer_set_member(minor_status,
 					     &value,
 					     data_set);
@@ -175,6 +175,46 @@ out:
     if (ret) {
 	*minor_status = ret;
 	maj_stat = GSS_S_FAILURE;
+    }
+    return maj_stat;
+}
+
+static OM_uint32 inquire_sec_context_get_sspi_session_key
+            (OM_uint32 *minor_status,
+             const gsskrb5_ctx context_handle,
+             krb5_context context,
+             gss_buffer_set_t *data_set)
+{
+    krb5_keyblock *key;
+    OM_uint32 maj_stat = GSS_S_COMPLETE;
+    krb5_error_code ret;
+    gss_buffer_desc value;
+
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    ret = _gsskrb5i_get_token_key(context_handle, context, &key);
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+
+    if (ret)
+        goto out;
+    if (key == NULL) {
+        ret = EINVAL;
+        goto out;
+    }
+
+    value.length = key->keyvalue.length;
+    value.value = key->keyvalue.data;
+
+    maj_stat = gss_add_buffer_set_member(minor_status,
+                                         &value,
+                                         data_set);
+    krb5_free_keyblock(context, key);
+
+    /* MIT also returns the enctype encoded as an OID in data_set[1] */
+
+out:
+    if (ret) {
+        *minor_status = ret;
+        maj_stat = GSS_S_FAILURE;
     }
     return maj_stat;
 }
@@ -464,10 +504,10 @@ get_service_keyblock
 
     {
 	gss_buffer_desc value;
-	
+
 	value.length = data.length;
 	value.value = data.data;
-	
+
 	maj_stat = gss_add_buffer_set_member(minor_status,
 					     &value,
 					     data_set);
@@ -530,6 +570,11 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_inquire_sec_context_by_oid
 					      context,
 					      ACCEPTOR_KEY,
 					      data_set);
+    } else if (gss_oid_equal(desired_object, GSS_C_INQ_SSPI_SESSION_KEY)) {
+        return inquire_sec_context_get_sspi_session_key(minor_status,
+                                                        ctx,
+                                                        context,
+                                                        data_set);
     } else if (gss_oid_equal(desired_object, GSS_KRB5_GET_AUTHTIME_X)) {
 	return get_authtime(minor_status, ctx, data_set);
     } else if (oid_prefix_equal(desired_object,

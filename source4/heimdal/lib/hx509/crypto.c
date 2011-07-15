@@ -286,7 +286,7 @@ heim_oid2ecnid(heim_oid *oid)
 }
 
 static int
-parse_ECParameters(hx509_context context, 
+parse_ECParameters(hx509_context context,
 		   heim_octet_string *parameters, int *nid)
 {
     ECParameters ecparam;
@@ -404,7 +404,7 @@ ecdsa_verify_signature(hx509_context context,
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
 	return ret;
     }
-    
+
     return 0;
 }
 
@@ -552,7 +552,7 @@ rsa_verify_signature(hx509_context context,
 
     p = spi->subjectPublicKey.data;
     size = spi->subjectPublicKey.length / 8;
-    
+
     rsa = d2i_RSAPublicKey(NULL, &p, size);
     if (rsa == NULL) {
 	ret = ENOMEM;
@@ -587,14 +587,14 @@ rsa_verify_signature(hx509_context context,
 	if (ret) {
 	    goto out;
 	}
-	
+
 	/* Check for extra data inside the sigature */
-	if (size != retsize) {
+	if (size != (size_t)retsize) {
 	    ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
 	    hx509_set_error_string(context, 0, ret, "size from decryption mismatch");
 	    goto out;
 	}
-	
+
 	if (sig_alg->digest_alg &&
 	    der_heim_oid_cmp(&di.digestAlgorithm.algorithm,
 			     &sig_alg->digest_alg->algorithm) != 0)
@@ -603,7 +603,7 @@ rsa_verify_signature(hx509_context context,
 	    hx509_set_error_string(context, 0, ret, "object identifier in RSA sig mismatch");
 	    goto out;
 	}
-	
+
 	/* verify that the parameters are NULL or the NULL-type */
 	if (di.digestAlgorithm.parameters != NULL &&
 	    (di.digestAlgorithm.parameters->length != 2 ||
@@ -620,7 +620,7 @@ rsa_verify_signature(hx509_context context,
 				      data,
 				      &di.digest);
     } else {
-	if (retsize != data->length ||
+	if ((size_t)retsize != data->length ||
 	    ct_memcmp(to, data->data, retsize) != 0)
 	{
 	    ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
@@ -739,7 +739,7 @@ rsa_create_signature(hx509_context context,
 			       "RSA private encrypt failed: %d", ret);
 	return ret;
     }
-    if (ret > sig->length)
+    if ((size_t)ret > sig->length)
 	_hx509_abort("RSA signature prelen longer the output len");
 
     sig->length = ret;
@@ -960,11 +960,11 @@ ecdsa_private_key_import(hx509_context context,
 	ret = parse_ECParameters(context, keyai->parameters, &groupnid);
 	if (ret)
 	    return ret;
-	
+
 	key = EC_KEY_new();
 	if (key == NULL)
 	    return ENOMEM;
-	
+
 	group = EC_GROUP_new_by_curve_name(groupnid);
 	if (group == NULL) {
 	    EC_KEY_free(key);
@@ -1008,8 +1008,8 @@ ecdsa_generate_private_key(hx509_context context,
 }
 
 static BIGNUM *
-ecdsa_get_internal(hx509_context context, 
-		   hx509_private_key key, 
+ecdsa_get_internal(hx509_context context,
+		   hx509_private_key key,
 		   const char *type)
 {
     return NULL;
@@ -1162,7 +1162,7 @@ evp_md_create_signature(hx509_context context,
 	if (ret)
 	    return ret;
     }
-	
+
 
     sig->data = malloc(sigsize);
     if (sig->data == NULL) {
@@ -1256,7 +1256,8 @@ static const struct signature_alg heim_rsa_pkcs1_x509 = {
     0,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg pkcs1_rsa_sha1_alg = {
@@ -1269,7 +1270,8 @@ static const struct signature_alg pkcs1_rsa_sha1_alg = {
     0,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg rsa_with_sha512_alg = {
@@ -1282,7 +1284,8 @@ static const struct signature_alg rsa_with_sha512_alg = {
     0,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg rsa_with_sha384_alg = {
@@ -1295,7 +1298,8 @@ static const struct signature_alg rsa_with_sha384_alg = {
     0,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg rsa_with_sha256_alg = {
@@ -1308,7 +1312,8 @@ static const struct signature_alg rsa_with_sha256_alg = {
     0,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg rsa_with_sha1_alg = {
@@ -1321,7 +1326,8 @@ static const struct signature_alg rsa_with_sha1_alg = {
     0,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg rsa_with_sha1_alg_secsig = {
@@ -1334,7 +1340,8 @@ static const struct signature_alg rsa_with_sha1_alg_secsig = {
     0,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg rsa_with_md5_alg = {
@@ -1347,7 +1354,8 @@ static const struct signature_alg rsa_with_md5_alg = {
     1230739889,
     NULL,
     rsa_verify_signature,
-    rsa_create_signature
+    rsa_create_signature,
+    0
 };
 
 static const struct signature_alg dsa_sha1_alg = {
@@ -1361,6 +1369,7 @@ static const struct signature_alg dsa_sha1_alg = {
     NULL,
     dsa_verify_signature,
     /* create_signature */ NULL,
+    0
 };
 
 static const struct signature_alg sha512_alg = {
@@ -1373,7 +1382,8 @@ static const struct signature_alg sha512_alg = {
     0,
     EVP_sha512,
     evp_md_verify_signature,
-    evp_md_create_signature
+    evp_md_create_signature,
+    0
 };
 
 static const struct signature_alg sha384_alg = {
@@ -1386,7 +1396,8 @@ static const struct signature_alg sha384_alg = {
     0,
     EVP_sha384,
     evp_md_verify_signature,
-    evp_md_create_signature
+    evp_md_create_signature,
+    0
 };
 
 static const struct signature_alg sha256_alg = {
@@ -1399,7 +1410,8 @@ static const struct signature_alg sha256_alg = {
     0,
     EVP_sha256,
     evp_md_verify_signature,
-    evp_md_create_signature
+    evp_md_create_signature,
+    0
 };
 
 static const struct signature_alg sha1_alg = {
@@ -1412,7 +1424,8 @@ static const struct signature_alg sha1_alg = {
     0,
     EVP_sha1,
     evp_md_verify_signature,
-    evp_md_create_signature
+    evp_md_create_signature,
+    0
 };
 
 static const struct signature_alg md5_alg = {
@@ -1425,7 +1438,8 @@ static const struct signature_alg md5_alg = {
     0,
     EVP_md5,
     evp_md_verify_signature,
-    NULL
+    NULL,
+    0
 };
 
 /*
@@ -1481,7 +1495,7 @@ alg_for_privatekey(const hx509_private_key pk, int type)
 	    continue;
 	if (der_heim_oid_cmp(sig_algs[i]->key_oid, keytype) != 0)
 	    continue;
-	if (pk->ops->available && 
+	if (pk->ops->available &&
 	    pk->ops->available(pk, sig_algs[i]->sig_alg) == 0)
 	    continue;
 	if (type == HX509_SELECT_PUBLIC_SIG)
@@ -1673,7 +1687,7 @@ _hx509_public_encrypt(hx509_context context,
 
     p = spi->subjectPublicKey.data;
     size = spi->subjectPublicKey.length / 8;
-    
+
     rsa = d2i_RSAPublicKey(NULL, &p, size);
     if (rsa == NULL) {
 	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
@@ -1748,7 +1762,7 @@ hx509_private_key_private_decrypt(hx509_context context,
 			       "Failed to decrypt using private key: %d", ret);
 	return HX509_CRYPTO_RSA_PRIVATE_DECRYPT;
     }
-    if (cleartext->length < ret)
+    if (cleartext->length < (size_t)ret)
 	_hx509_abort("internal rsa decryption failure: ret > tosize");
 
     cleartext->length = ret;
@@ -2339,7 +2353,7 @@ static const struct hx509cipher ciphers[] = {
 static const struct hx509cipher *
 find_cipher_by_oid(const heim_oid *oid)
 {
-    int i;
+    size_t i;
 
     for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++)
 	if (der_heim_oid_cmp(oid, ciphers[i].oid) == 0)
@@ -2351,7 +2365,7 @@ find_cipher_by_oid(const heim_oid *oid)
 static const struct hx509cipher *
 find_cipher_by_name(const char *name)
 {
-    int i;
+    size_t i;
 
     for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++)
 	if (strcasecmp(name, ciphers[i].name) == 0)
@@ -2461,7 +2475,7 @@ hx509_crypto_set_padding(hx509_crypto crypto, int padding_type)
 int
 hx509_crypto_set_key_data(hx509_crypto crypto, const void *data, size_t length)
 {
-    if (EVP_CIPHER_key_length(crypto->c) > length)
+    if (EVP_CIPHER_key_length(crypto->c) > (int)length)
 	return HX509_CRYPTO_INTERNAL_ERROR;
 
     if (crypto->key.data) {
@@ -2558,7 +2572,7 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 	(crypto->flags & ALLOW_WEAK) == 0)
 	return HX509_CRYPTO_ALGORITHM_BEST_BEFORE;
 
-    assert(EVP_CIPHER_iv_length(crypto->c) == ivec->length);
+    assert(EVP_CIPHER_iv_length(crypto->c) == (int)ivec->length);
 
     EVP_CIPHER_CTX_init(&evp);
 
@@ -2595,10 +2609,10 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 	ret = ENOMEM;
 	goto out;
     }
-	
+
     memcpy((*ciphertext)->data, data, length);
     if (padsize) {
-	int i;
+	size_t i;
 	unsigned char *p = (*ciphertext)->data;
 	p += length;
 	for (i = 0; i < padsize; i++)
@@ -2647,7 +2661,7 @@ hx509_crypto_decrypt(hx509_crypto crypto,
 	(crypto->flags & ALLOW_WEAK) == 0)
 	return HX509_CRYPTO_ALGORITHM_BEST_BEFORE;
 
-    if (ivec && EVP_CIPHER_iv_length(crypto->c) < ivec->length)
+    if (ivec && EVP_CIPHER_iv_length(crypto->c) < (int)ivec->length)
 	return HX509_CRYPTO_INTERNAL_ERROR;
 
     if (crypto->key.data == NULL)
@@ -2683,7 +2697,7 @@ hx509_crypto_decrypt(hx509_crypto crypto,
 	unsigned char *p;
 	int j, bsize = EVP_CIPHER_block_size(crypto->c);
 
-	if (clear->length < bsize) {
+	if ((int)clear->length < bsize) {
 	    ret = HX509_CMS_PADDING_ERROR;
 	    goto out;
 	}
@@ -2854,7 +2868,8 @@ _hx509_pbe_decrypt(hx509_context context,
     const EVP_CIPHER *c;
     const EVP_MD *md;
     PBE_string2key_func s2k;
-    int i, ret = 0;
+    int ret = 0;
+    size_t i;
 
     memset(&key, 0, sizeof(key));
     memset(&iv, 0, sizeof(iv));
@@ -2912,7 +2927,7 @@ _hx509_pbe_decrypt(hx509_context context,
 	hx509_crypto_destroy(crypto);
 	if (ret == 0)
 	    goto out;
-				
+
     }
 out:
     if (key.data)
@@ -3161,7 +3176,7 @@ hx509_crypto_available(hx509_context context,
 	    if (ptr == NULL)
 		goto out;
 	    *val = ptr;
-	
+
 	    ret = copy_AlgorithmIdentifier((ciphers[i].ai_func)(), &(*val)[len]);
 	    if (ret)
 		goto out;

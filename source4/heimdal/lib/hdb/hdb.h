@@ -153,7 +153,7 @@ typedef struct HDB{
     /**
      * As part of iteration, fetch next entry
      */
-    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*, 
+    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*,
 				   unsigned, hdb_entry_ex*);
     /**
      * Lock database
@@ -221,7 +221,7 @@ typedef struct HDB{
      * ->hdb_store() into the database. The backend will still perform
      * all other operations, increasing the kvno, and update
      * modification timestamp.
-     * 
+     *
      * The backend needs to call _kadm5_set_keys() and perform password
      * quality checks.
      */

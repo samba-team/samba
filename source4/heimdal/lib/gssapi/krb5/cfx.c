@@ -285,7 +285,8 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
     gss_iov_buffer_desc *header, *trailer, *padding;
     size_t gsshsize, k5hsize;
     size_t gsstsize, k5tsize;
-    size_t i, rrc = 0, ec = 0;
+    size_t rrc = 0, ec = 0;
+    int i;
     gss_cfx_wrap_token token;
     krb5_error_code ret;
     int32_t seq_number;
@@ -423,6 +424,9 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
     token->TOK_ID[1] = 0x04;
     token->Flags     = 0;
     token->Filler    = 0xFF;
+
+    if ((ctx->more_flags & LOCAL) == 0)
+	token->Flags |= CFXSentByAcceptor;
 
     if (ctx->more_flags & ACCEPTOR_SUBKEY)
 	token->Flags |= CFXAcceptorSubkey;
@@ -565,7 +569,7 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
 	  plain packet:
 
 	  {data | "header" | gss-trailer (krb5 checksum)
-	  
+
 	  don't do RRC != 0
 
 	 */
@@ -647,7 +651,7 @@ unrotate_iov(OM_uint32 *minor_status, size_t rrc, gss_iov_buffer_desc *iov, int 
 	    GSS_IOV_BUFFER_TYPE(iov[i].type) == GSS_IOV_BUFFER_TYPE_PADDING ||
 	    GSS_IOV_BUFFER_TYPE(iov[i].type) == GSS_IOV_BUFFER_TYPE_TRAILER)
 	    len += iov[i].buffer.length;
-    
+
     p = malloc(len);
     if (p == NULL) {
 	*minor_status = ENOMEM;
@@ -666,7 +670,7 @@ unrotate_iov(OM_uint32 *minor_status, size_t rrc, gss_iov_buffer_desc *iov, int 
 	    q += iov[i].buffer.length;
 	}
     }
-    assert((q - p) == len);
+    assert((size_t)(q - p) == len);
 
     /* unrotate first part */
     q = p + rrc;

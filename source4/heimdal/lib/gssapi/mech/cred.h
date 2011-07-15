@@ -39,3 +39,19 @@ struct _gss_cred {
 	struct _gss_mechanism_cred_list gc_mc;
 };
 
+struct _gss_mechanism_cred *
+_gss_copy_cred(struct _gss_mechanism_cred *mc);
+
+struct _gss_mechanism_name;
+
+OM_uint32
+_gss_acquire_mech_cred(OM_uint32 *minor_status,
+		       gssapi_mech_interface m,
+		       const struct _gss_mechanism_name *mn,
+		       gss_const_OID credential_type,
+		       const void *credential_data,
+		       OM_uint32 time_req,
+		       gss_const_OID desired_mech,
+		       gss_cred_usage_t cred_usage,
+		       struct _gss_mechanism_cred **output_cred_handle);
+

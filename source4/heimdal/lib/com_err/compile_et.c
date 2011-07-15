@@ -93,7 +93,7 @@ generate_c(void)
 	    fprintf(c_file, "\t/* %03d */ \"Reserved %s error (%d)\",\n",
 		    n, name, n);
 	    n++;
-	
+
 	}
 	fprintf(c_file, "\t/* %03d */ N_(\"%s\"),\n",
 		ec->number, ec->string);
@@ -220,7 +220,7 @@ main(int argc, char **argv)
     yyin = fopen(filename, "r");
     if(yyin == NULL)
 	err(1, "%s", filename);
-	
+
 
     p = strrchr(filename, rk_PATH_DELIM);
     if(p)

@@ -141,7 +141,7 @@ PKCS12_key_gen(const void *key, size_t keylen,
 		BN_bn2bin(bnI, I + i + vlen - j);
 	    }
 	    BN_free(bnI);
-	}	
+	}
 	BN_free(bnB);
 	BN_free(bnOne);
 	size_I = vlen * 2;

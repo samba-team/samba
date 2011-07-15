@@ -188,7 +188,7 @@ out:
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gsskrb5_register_acceptor_identity(const char *identity)
 {
-        struct _gss_mech_switch	*m;
+	gssapi_mech_interface m;
 	gss_buffer_desc buffer;
 	OM_uint32 junk;
 
@@ -197,14 +197,12 @@ gsskrb5_register_acceptor_identity(const char *identity)
 	buffer.value = rk_UNCONST(identity);
 	buffer.length = strlen(identity);
 
-	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
-		if (m->gm_mech.gm_set_sec_context_option == NULL)
-			continue;
-		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
-		    GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X, &buffer);
-	}
+	m = __gss_get_mechanism(GSS_KRB5_MECHANISM);
+	if (m == NULL || m->gm_set_sec_context_option == NULL)
+	    return GSS_S_FAILURE;
 
-	return (GSS_S_COMPLETE);
+	return m->gm_set_sec_context_option(&junk, NULL,
+	        GSS_KRB5_REGISTER_ACCEPTOR_IDENTITY_X, &buffer);
 }
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
@@ -441,7 +439,7 @@ gss_krb5_set_allowable_enctypes(OM_uint32 *minor_status,
     gss_buffer_desc buffer;
     krb5_storage *sp;
     krb5_data data;
-    int i;
+    size_t i;
 
     sp = krb5_storage_emem();
     if (sp == NULL) {

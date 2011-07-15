@@ -131,7 +131,7 @@ krb5_copy_keyblock (krb5_context context,
 {
     krb5_error_code ret;
     krb5_keyblock *k;
-    
+
     *to = NULL;
 
     k = calloc (1, sizeof(*k));

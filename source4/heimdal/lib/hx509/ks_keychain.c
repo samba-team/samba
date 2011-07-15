@@ -50,7 +50,7 @@ OSStatus SecKeyGetCredentials(SecKeyRef, CSSM_ACL_AUTHORIZATION_TAG,
 static int
 getAttribute(SecKeychainItemRef itemRef, SecItemAttr item,
 	     SecKeychainAttributeList **attrs)
-{	
+{
     SecKeychainAttributeInfo attrInfo;
     UInt32 attrFormat = 0;
     OSStatus ret;
@@ -138,10 +138,10 @@ kc_rsa_private_encrypt(int flen,
 
     in.Data = (uint8 *)from;
     in.Length = flen;
-	
+
     sig.Data = (uint8 *)to;
     sig.Length = kc->keysize;
-	
+
     cret = CSSM_SignData(sigHandle, &in, 1, CSSM_ALGID_NONE, &sig);
     if(cret) {
 	/* cssmErrorString(cret); */
@@ -197,10 +197,10 @@ kc_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 
     in.Data = (uint8 *)from;
     in.Length = flen;
-	
+
     out.Data = (uint8 *)to;
     out.Length = kc->keysize;
-	
+
     rem.Data = (uint8 *)remdata;
     rem.Length = sizeof(remdata);
 
@@ -485,7 +485,7 @@ keychain_iter(hx509_context context,
 	return 0;
     else if (ret != 0)
 	return EINVAL;
-	
+
     /*
      * Pick out certificate and matching "keyid"
      */
@@ -517,7 +517,7 @@ keychain_iter(hx509_context context,
 	attrKeyid.tag = kSecKeyLabel;
 	attrKeyid.length = attrs->attr[0].length;
 	attrKeyid.data = attrs->attr[0].data;
-	
+
 	attrList.count = 1;
 	attrList.attr = &attrKeyid;
 

@@ -38,7 +38,7 @@ static const char rem_105[105] = {
 };
 
 /* Store non-zero to ret if arg is square, and zero if not */
-int mp_is_square(mp_int *arg,int *ret) 
+int mp_is_square(mp_int *arg,int *ret)
 {
   int           res;
   mp_digit      c;
@@ -46,7 +46,7 @@ int mp_is_square(mp_int *arg,int *ret)
   unsigned long r;
 
   /* Default to Non-square :) */
-  *ret = MP_NO; 
+  *ret = MP_NO;
 
   if (arg->sign == MP_NEG) {
     return MP_VAL;
@@ -80,8 +80,8 @@ int mp_is_square(mp_int *arg,int *ret)
   r = mp_get_int(&t);
   /* Check for other prime modules, note it's not an ERROR but we must
    * free "t" so the easiest way is to goto ERR.  We know that res
-   * is already equal to MP_OKAY from the mp_mod call 
-   */ 
+   * is already equal to MP_OKAY from the mp_mod call
+   */
   if ( (1L<<(r%11)) & 0x5C4L )             goto ERR;
   if ( (1L<<(r%13)) & 0x9E4L )             goto ERR;
   if ( (1L<<(r%17)) & 0x5CE8L )            goto ERR;

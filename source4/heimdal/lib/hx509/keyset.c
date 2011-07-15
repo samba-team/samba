@@ -390,6 +390,21 @@ certs_iter(hx509_context context, void *ctx, hx509_cert cert)
     return func(cert);
 }
 
+/**
+ * Iterate over all certificates in a keystore and call an block
+ * for each fo them.
+ *
+ * @param context a hx509 context.
+ * @param certs certificate store to iterate over.
+ * @param func block to call for each certificate. The function
+ * should return non-zero to abort the iteration, that value is passed
+ * back to the caller of hx509_certs_iter().
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
+
 int
 hx509_certs_iter(hx509_context context,
 		 hx509_certs certs,

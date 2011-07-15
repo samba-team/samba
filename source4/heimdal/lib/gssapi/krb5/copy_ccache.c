@@ -100,7 +100,7 @@ _gsskrb5_krb5_import_cred(OM_uint32 *minor_status,
 	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
-	
+
 	if (keytab_principal) {
 	    krb5_boolean match;
 

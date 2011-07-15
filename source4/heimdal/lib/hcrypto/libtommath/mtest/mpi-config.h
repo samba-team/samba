@@ -5,7 +5,7 @@
 #define MPI_CONFIG_H_
 
 /*
-  For boolean options, 
+  For boolean options,
   0 = no
   1 = yes
 

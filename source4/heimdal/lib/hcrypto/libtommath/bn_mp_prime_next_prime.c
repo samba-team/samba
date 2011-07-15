@@ -22,7 +22,7 @@
  */
 int mp_prime_next_prime(mp_int *a, int t, int bbs_style)
 {
-   int      err, res, x, y;
+   int      err, res = MP_NO, x, y;
    mp_digit res_tab[PRIME_SIZE], step, kstep;
    mp_int   b;
 

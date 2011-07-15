@@ -31,8 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#define KRB5_DEPRECATED
-
 #include "krb5_locl.h"
 
 #ifndef HEIMDAL_SMALLER
@@ -44,7 +42,7 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     PA_ENC_TS_ENC p;
     unsigned char *buf;
     size_t buf_size;
-    size_t len;
+    size_t len = 0;
     EncryptedData encdata;
     krb5_error_code ret;
     int32_t usec;
@@ -76,7 +74,7 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     krb5_crypto_destroy(context, crypto);
     if (ret)
 	return ret;
-		
+
     ASN1_MALLOC_ENCODE(EncryptedData, buf, buf_size, &encdata, &len, ret);
     free_EncryptedData(&encdata);
     if (ret)
@@ -103,7 +101,7 @@ add_padata(krb5_context context,
     PA_DATA *pa2;
     krb5_salt salt2;
     krb5_enctype *ep;
-    int i;
+    size_t i;
 
     if(salt == NULL) {
 	/* default to standard salt */
@@ -209,7 +207,8 @@ init_as_req (krb5_context context,
 	*a->req_body.rtime = creds->times.renew_till;
     }
     a->req_body.nonce = nonce;
-    ret = krb5_init_etype (context,
+    ret = _krb5_init_etype(context,
+			   KRB5_PDU_AS_REQUEST,
 			   &a->req_body.etype.len,
 			   &a->req_body.etype.val,
 			   etypes);
@@ -247,7 +246,7 @@ init_as_req (krb5_context context,
     a->req_body.additional_tickets = NULL;
 
     if(preauth != NULL) {
-	int i;
+	size_t i;
 	ALLOC(a->padata, 1);
 	if(a->padata == NULL) {
 	    ret = ENOMEM;
@@ -258,7 +257,7 @@ init_as_req (krb5_context context,
 	a->padata->len = 0;
 	for(i = 0; i < preauth->len; i++) {
 	    if(preauth->val[i].type == KRB5_PADATA_ENC_TIMESTAMP){
-		int j;
+		size_t j;
 
 		for(j = 0; j < preauth->val[i].info.len; j++) {
 		    krb5_salt *sp = &salt;
@@ -300,7 +299,7 @@ init_as_req (krb5_context context,
 	add_padata(context, a->padata, creds->client,
 		   key_proc, keyseed, a->req_body.etype.val,
 		   a->req_body.etype.len, NULL);
-	
+
 	/* make a v4 salted pa-data */
 	salt.salttype = KRB5_PW_SALT;
 	krb5_data_zero(&salt.saltvalue);
@@ -331,7 +330,7 @@ set_ptypes(krb5_context context,
 
     if(error->e_data) {
 	METHOD_DATA md;
-	int i;
+	size_t i;
 	decode_METHOD_DATA(error->e_data->data,
 			   error->e_data->length,
 			   &md,
@@ -361,7 +360,6 @@ set_ptypes(krb5_context context,
     return(1);
 }
 
-KRB5_DEPRECATED
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_in_cred(krb5_context context,
 		 krb5_flags options,
@@ -375,12 +373,13 @@ krb5_get_in_cred(krb5_context context,
 		 krb5_const_pointer decryptarg,
 		 krb5_creds *creds,
 		 krb5_kdc_rep *ret_as_reply)
+    KRB5_DEPRECATED_FUNCTION("Use X instead")
 {
     krb5_error_code ret;
     AS_REQ a;
     krb5_kdc_rep rep;
     krb5_data req, resp;
-    size_t len;
+    size_t len = 0;
     krb5_salt salt;
     krb5_keyblock *key;
     size_t size;
@@ -483,12 +482,12 @@ krb5_get_in_cred(krb5_context context,
     if(pa) {
 	salt.salttype = pa->padata_type;
 	salt.saltvalue = pa->padata_value;
-	
+
 	ret = (*key_proc)(context, etype, salt, keyseed, &key);
     } else {
 	/* make a v5 salted pa-data */
 	ret = krb5_get_pw_salt (context, creds->client, &salt);
-	
+
 	if (ret)
 	    goto out;
 	ret = (*key_proc)(context, etype, salt, keyseed, &key);
@@ -496,7 +495,7 @@ krb5_get_in_cred(krb5_context context,
     }
     if (ret)
 	goto out;
-	
+
     {
 	unsigned flags = EXTRACT_TICKET_TIMESYNC;
 	if (opts.request_anonymous)
@@ -526,7 +525,6 @@ out:
     return ret;
 }
 
-KRB5_DEPRECATED
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_get_in_tkt(krb5_context context,
 		krb5_flags options,
@@ -540,6 +538,7 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_creds *creds,
 		krb5_ccache ccache,
 		krb5_kdc_rep *ret_as_reply)
+    KRB5_DEPRECATED_FUNCTION("Use X instead")
 {
     krb5_error_code ret;
 

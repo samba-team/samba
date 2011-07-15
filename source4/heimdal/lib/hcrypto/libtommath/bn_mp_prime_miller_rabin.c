@@ -15,11 +15,11 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-/* Miller-Rabin test of "a" to the base of "b" as described in 
+/* Miller-Rabin test of "a" to the base of "b" as described in
  * HAC pp. 139 Algorithm 4.24
  *
  * Sets result to 0 if definitely composite or 1 if probably prime.
- * Randomly the chance of error is no more than 1/4 and often 
+ * Randomly the chance of error is no more than 1/4 and often
  * very much lower.
  */
 int mp_prime_miller_rabin (mp_int * a, mp_int * b, int *result)
@@ -33,7 +33,7 @@ int mp_prime_miller_rabin (mp_int * a, mp_int * b, int *result)
   /* ensure b > 1 */
   if (mp_cmp_d(b, 1) != MP_GT) {
      return MP_VAL;
-  }     
+  }
 
   /* get n1 = a - 1 */
   if ((err = mp_init_copy (&n1, a)) != MP_OKAY) {

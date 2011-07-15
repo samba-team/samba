@@ -23,14 +23,14 @@ mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
   mp_word  w, t;
   mp_digit b;
   int      res, ix;
-  
+
   /* b = 2**DIGIT_BIT / 3 */
   b = (((mp_word)1) << ((mp_word)DIGIT_BIT)) / ((mp_word)3);
 
   if ((res = mp_init_size(&q, a->used)) != MP_OKAY) {
      return res;
   }
-  
+
   q.used = a->used;
   q.sign = a->sign;
   w = 0;
@@ -68,7 +68,7 @@ mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
      mp_exch(&q, c);
   }
   mp_clear(&q);
-  
+
   return res;
 }
 

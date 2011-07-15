@@ -99,7 +99,7 @@ _gss_mech_cred_find(gss_cred_id_t cred_handle, gss_OID mech_type)
  *
  * @returns a gss_error code, see gss_display_status() about printing
  *          the error code.
- *	  
+ *
  * @ingroup gssapi
  */
 

@@ -44,7 +44,7 @@ verify_mic_des
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
 	    krb5_keyblock *key,
-	    char *type
+	    const char *type
 	    )
 {
   u_char *p;
@@ -142,7 +142,7 @@ verify_mic_des3
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
 	    krb5_keyblock *key,
-	    char *type
+	    const char *type
 	    )
 {
   u_char *p;
@@ -276,7 +276,7 @@ _gsskrb5_verify_mic_internal
             const gss_buffer_t message_buffer,
             const gss_buffer_t token_buffer,
             gss_qop_t * qop_state,
-	    char * type
+	    const char * type
 	    )
 {
     krb5_keyblock *key;
@@ -348,7 +348,7 @@ _gsskrb5_verify_mic
 				       (gsskrb5_ctx)context_handle,
 				       context,
 				       message_buffer, token_buffer,
-				       qop_state, "\x01\x01");
+				       qop_state, (void *)(intptr_t)"\x01\x01");
 
     return ret;
 }

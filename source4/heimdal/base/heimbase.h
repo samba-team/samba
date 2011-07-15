@@ -48,6 +48,22 @@ typedef heim_object_t heim_null_t;
 #define HEIM_BASE_ONCE_INIT 0
 typedef long heim_base_once_t; /* XXX arch dependant */
 
+#if !defined(__has_extension)
+#define __has_extension(x) 0
+#endif
+
+#define HEIM_REQUIRE_GNUC(m,n,p) \
+    (((__GNUC__ * 10000) + (__GNUC_MINOR__ * 100) + __GNUC_PATCHLEVEL__) >= \
+     (((m) * 10000) + ((n) * 100) + (p)))
+
+
+#if __has_extension(__builtin_expect) || HEIM_REQUIRE_GNUC(3,0,0)
+#define heim_builtin_expect(_op,_res) __builtin_expect(_op,_res)
+#else
+#define heim_builtin_expect(_op,_res) (_op)
+#endif
+
+
 void *	heim_retain(heim_object_t);
 void	heim_release(heim_object_t);
 
@@ -79,7 +95,7 @@ heim_abortv(const char *fmt, va_list ap)
     HEIMDAL_PRINTF_ATTRIBUTE((printf, 1, 0));
 
 #define heim_assert(e,t) \
-    (__builtin_expect(!(e), 0) ? heim_abort(t ":" #e) : (void)0)
+    (heim_builtin_expect(!(e), 0) ? heim_abort(t ":" #e) : (void)0)
 
 /*
  *

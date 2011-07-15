@@ -87,7 +87,7 @@ typedef struct DES_key_schedule
 #ifndef HC_DEPRECATED
 #if defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1 )))
 #define HC_DEPRECATED __attribute__((deprecated))
-#elif defined(_MSC_VER) && (_MSC_VER>1200) 
+#elif defined(_MSC_VER) && (_MSC_VER>1200)
 #define HC_DEPRECATED __declspec(deprecated)
 #else
 #define HC_DEPRECATED

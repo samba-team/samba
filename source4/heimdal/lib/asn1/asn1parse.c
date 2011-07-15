@@ -1905,7 +1905,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 368 "asn1parse.c"
-    {	
+    {
 		    if((yyvsp[(2) - (5)].value)->type != integervalue)
 			lex_error_message("Non-integer in first part of range");
 		    (yyval.range) = ecalloc(1, sizeof(*(yyval.range)));
@@ -1918,7 +1918,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 376 "asn1parse.c"
-    {	
+    {
 		    if((yyvsp[(4) - (5)].value)->type != integervalue)
 			lex_error_message("Non-integer in second part of range");
 		    (yyval.range) = ecalloc(1, sizeof(*(yyval.range)));

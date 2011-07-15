@@ -54,7 +54,7 @@ unwrap_des
   DES_key_schedule schedule;
   DES_cblock deskey;
   DES_cblock zero;
-  int i;
+  size_t i;
   uint32_t seq_number;
   size_t padlength;
   OM_uint32 ret;
@@ -98,6 +98,7 @@ unwrap_des
   if(cstate) {
       /* decrypt data */
       memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
+      memset (&zero, 0, sizeof(zero));
 
       for (i = 0; i < sizeof(deskey); ++i)
 	  deskey[i] ^= 0xf0;

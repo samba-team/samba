@@ -47,7 +47,7 @@ _gsskrb5_export_cred(OM_uint32 *minor_status,
     char *str;
 
     GSSAPI_KRB5_INIT (&context);
-    
+
     if (handle->usage != GSS_C_INITIATE && handle->usage != GSS_C_BOTH) {
 	*minor_status = GSS_KRB5_S_G_BAD_USAGE;
 	return GSS_S_FAILURE;
@@ -93,14 +93,14 @@ _gsskrb5_export_cred(OM_uint32 *minor_status,
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
 	}
-	
+
 	ret = krb5_cc_get_full_name(context, handle->ccache, &str);
 	if (ret) {
 	    krb5_storage_free(sp);
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
 	}
-	
+
 	ret = krb5_store_string(sp, str);
 	free(str);
 	if (ret) {
@@ -222,7 +222,7 @@ _gsskrb5_import_cred(OM_uint32 * minor_status,
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
 	}
-	
+
 	ret = krb5_cc_resolve(context, str, &id);
 	krb5_xfree(str);
 	if (ret) {

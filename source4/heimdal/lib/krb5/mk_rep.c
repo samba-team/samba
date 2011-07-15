@@ -43,7 +43,7 @@ krb5_mk_rep(krb5_context context,
     EncAPRepPart body;
     u_char *buf = NULL;
     size_t buf_size;
-    size_t len;
+    size_t len = 0;
     krb5_crypto crypto;
 
     ap.pvno = 5;

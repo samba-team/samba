@@ -52,7 +52,7 @@ gss_duplicate_name(OM_uint32 *minor_status,
 		if (major_status != GSS_S_COMPLETE)
 			return (major_status);
 		new_name = (struct _gss_name *) *dest_name;
-		
+
 		HEIM_SLIST_FOREACH(mn, &name->gn_mn, gmn_link) {
 		    struct _gss_mechanism_name *mn2;
 		    _gss_find_mn(minor_status, new_name,
@@ -67,10 +67,10 @@ gss_duplicate_name(OM_uint32 *minor_status,
 		memset(new_name, 0, sizeof(struct _gss_name));
 		HEIM_SLIST_INIT(&new_name->gn_mn);
 		*dest_name = (gss_name_t) new_name;
-		
+
 		HEIM_SLIST_FOREACH(mn, &name->gn_mn, gmn_link) {
 			struct _gss_mechanism_name *new_mn;
-			
+
 			new_mn = malloc(sizeof(*new_mn));
 			if (!new_mn) {
 				*minor_status = ENOMEM;
@@ -78,7 +78,7 @@ gss_duplicate_name(OM_uint32 *minor_status,
 			}
 			new_mn->gmn_mech = mn->gmn_mech;
 			new_mn->gmn_mech_oid = mn->gmn_mech_oid;
-			
+
 			major_status =
 			    mn->gmn_mech->gm_duplicate_name(minor_status,
 				mn->gmn_name, &new_mn->gmn_name);

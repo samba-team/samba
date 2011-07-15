@@ -1050,7 +1050,7 @@ static void camellia_encrypt128(const u32 *subkey, u32 *io)
     io[1] = io[3];
     io[2] = t0;
     io[3] = t1;
-	
+
     return;
 }
 
@@ -1268,7 +1268,7 @@ static void camellia_decrypt256(const u32 *subkey, u32 *io)
     /* pre whitening but absorb kw2*/
     io[0] ^= CamelliaSubkeyL(32);
     io[1] ^= CamelliaSubkeyR(32);
-	
+
     /* main iteration */
     CAMELLIA_ROUNDSM(io[0],io[1],
 		     CamelliaSubkeyL(31),CamelliaSubkeyR(31),

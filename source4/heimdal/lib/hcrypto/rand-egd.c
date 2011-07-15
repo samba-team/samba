@@ -144,7 +144,7 @@ egd_seed(const void *indata, int size)
 	    break;
 	indata = ((unsigned char *)indata) + len;
 	size -= len;
-    }	
+    }
     close(fd);
 }
 
@@ -170,7 +170,7 @@ get_bytes(const char *path, unsigned char *outdata, int size)
 	    break;
 	outdata += len;
 	size -= len;
-    }	
+    }
     close(fd);
 
     return ret;

@@ -221,10 +221,10 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
 	    free_Key(&key);
 	    return ENOMEM;
 	}
-	
+
 	key.salt->type = salt->salttype;
 	krb5_data_zero (&key.salt->salt);
-	
+
 	ret = krb5_data_copy(&key.salt->salt,
 			     salt->saltvalue.data,
 			     salt->saltvalue.length);
@@ -256,8 +256,8 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     char **ktypes, **kp;
     krb5_error_code ret;
     Key *k, *key_set;
-    int i, j;
-    char *default_keytypes[] = {
+    size_t i, j;
+    static const char *default_keytypes[] = {
 	"aes256-cts-hmac-sha1-96:pw-salt",
 	"des3-cbc-sha1:pw-salt",
 	"arcfour-hmac-md5:pw-salt",
@@ -267,7 +267,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     ktypes = krb5_config_get_strings(context, NULL, "kadmin",
 				     "default_keys", NULL);
     if (ktypes == NULL)
-	ktypes = default_keytypes;
+	ktypes = (char **)(intptr_t)default_keytypes;
 
     *ret_key_set = key_set = NULL;
     *nkeyset = 0;
@@ -290,7 +290,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 	    p = "des:afs3-salt";
 	else if (strcmp(p, "arcfour-hmac-md5") == 0)
 	    p = "arcfour-hmac-md5:pw-salt";
-	
+
 	memset(&salt, 0, sizeof(salt));
 
 	ret = parse_key_set(context, p,
@@ -337,7 +337,7 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     *ret_key_set = key_set;
 
  out:
-    if (ktypes != default_keytypes)
+    if (ktypes != (char **)(intptr_t)default_keytypes)
 	krb5_config_free_strings(ktypes);
 
     if (ret) {
@@ -364,7 +364,7 @@ hdb_generate_key_set_password(krb5_context context,
 			      Key **keys, size_t *num_keys)
 {
     krb5_error_code ret;
-    int i;
+    size_t i;
 
     ret = hdb_generate_key_set(context, principal,
 				keys, num_keys, 0);

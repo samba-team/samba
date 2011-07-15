@@ -43,7 +43,7 @@ ARCFOUR_string_to_key(krb5_context context,
 {
     krb5_error_code ret;
     uint16_t *s = NULL;
-    size_t len, i;
+    size_t len = 0, i;
     EVP_MD_CTX *m;
 
     m = EVP_MD_CTX_create();

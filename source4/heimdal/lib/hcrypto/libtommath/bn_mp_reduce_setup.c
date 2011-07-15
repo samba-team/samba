@@ -21,7 +21,7 @@
 int mp_reduce_setup (mp_int * a, mp_int * b)
 {
   int     res;
-  
+
   if ((res = mp_2expt (a, b->used * 2 * DIGIT_BIT)) != MP_OKAY) {
     return res;
   }

@@ -106,7 +106,7 @@ HMAC_MD5_any_checksum(krb5_context context,
     ret = _krb5_HMAC_MD5_checksum(context, &local_key, data, len, usage, result);
     if (ret)
 	krb5_data_free(&result->checksum);
-    
+
     krb5_free_keyblock(context, local_key.key);
     return ret;
 }
@@ -464,7 +464,7 @@ verify_checksum(krb5_context context,
 	goto out;
     }
     ret = krb5_storage_read(sp, cksum.checksum.data, cksum.checksum.length);
-    if (ret != cksum.checksum.length) {
+    if (ret != (int)cksum.checksum.length) {
 	ret = EINVAL;
 	krb5_set_error_message(context, ret, "PAC checksum missing checksum");
 	goto out;
@@ -546,7 +546,7 @@ create_checksum(krb5_context context,
      * http://blogs.msdn.com/b/openspecification/archive/2010/01/01/verifying-the-server-signature-in-kerberos-privilege-account-certificate.aspx
      * for Microsoft's explaination */
 
-    if (cksumtype == CKSUMTYPE_HMAC_MD5) {
+    if (cksumtype == (uint32_t)CKSUMTYPE_HMAC_MD5) {
 	ret = HMAC_MD5_any_checksum(context, key, data, datalen,
 				    KRB5_KU_OTHER_CKSUM, &cksum);
     } else {
@@ -748,7 +748,7 @@ build_logon_name(krb5_context context,
 
     ret = krb5_storage_write(sp, s2, len * 2);
     free(s2);
-    if (ret != len * 2) {
+    if (ret != (int)(len * 2)) {
 	ret = krb5_enomem(context);
 	goto out;
     }
@@ -932,7 +932,8 @@ _krb5_pac_sign(krb5_context context,
     size_t server_size, priv_size;
     uint32_t server_offset = 0, priv_offset = 0;
     uint32_t server_cksumtype = 0, priv_cksumtype = 0;
-    int i, num = 0;
+    int num = 0;
+    size_t i;
     krb5_data logon, d;
 
     krb5_data_zero(&logon);
@@ -1049,7 +1050,7 @@ _krb5_pac_sign(krb5_context context,
 
 	    end += len;
 	    e = ((end + PAC_ALIGNMENT - 1) / PAC_ALIGNMENT) * PAC_ALIGNMENT;
-	    if (end != e) {
+	    if ((int32_t)end != e) {
 		CHECK(ret, fill_zeros(context, spdata, e - end), out);
 	    }
 	    end = e;
@@ -1066,7 +1067,7 @@ _krb5_pac_sign(krb5_context context,
 	goto out;
     }
     ret = krb5_storage_write(sp, d.data, d.length);
-    if (ret != d.length) {
+    if (ret != (int)d.length) {
 	krb5_data_free(&d);
 	ret = krb5_enomem(context);
 	goto out;

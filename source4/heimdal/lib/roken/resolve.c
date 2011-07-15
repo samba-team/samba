@@ -194,7 +194,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	    dns_free_rr(rr);
 	    return -1;
 	}
-	if (status + 2 > size) {
+	if ((size_t)status + 2 > size) {
 	    dns_free_rr(rr);
 	    return -1;
 	}
@@ -217,7 +217,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	    dns_free_rr(rr);
 	    return -1;
 	}
-	if (status + 6 > size) {
+	if ((size_t)status + 6 > size) {
 	    dns_free_rr(rr);
 	    return -1;
 	}
@@ -237,7 +237,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	break;
     }
     case rk_ns_t_txt:{
-	if(size == 0 || size < *p + 1) {
+	if(size == 0 || size < (unsigned)(*p + 1)) {
 	    dns_free_rr(rr);
 	    return -1;
 	}
@@ -284,7 +284,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	    dns_free_rr(rr);
 	    return -1;
 	}
-	if (status + 18 > size) {
+	if ((size_t)status + 18 > size) {
 	    dns_free_rr(rr);
 	    return -1;
 	}
@@ -409,7 +409,7 @@ parse_reply(const unsigned char *data, size_t len)
 {
     const unsigned char *p;
     int status;
-    int i;
+    size_t i;
     char host[MAXDNAME];
     const unsigned char *end_data = data + len;
     struct rk_dns_reply *r;
@@ -528,7 +528,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
     struct sockaddr_storage from;
     uint32_t fromsize = sizeof(from);
     dns_handle_t handle;
-    
+
     handle = dns_open(NULL);
     if (handle == NULL)
 	return NULL;

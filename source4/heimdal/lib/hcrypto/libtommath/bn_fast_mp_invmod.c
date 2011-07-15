@@ -15,10 +15,10 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-/* computes the modular inverse via binary extended euclidean algorithm, 
- * that is c = 1/a mod b 
+/* computes the modular inverse via binary extended euclidean algorithm,
+ * that is c = 1/a mod b
  *
- * Based on slow invmod except this is optimized for the case where b is 
+ * Based on slow invmod except this is optimized for the case where b is
  * odd as per HAC Note 14.64 on pp. 610
  */
 int fast_mp_invmod (mp_int * a, mp_int * b, mp_int * c)

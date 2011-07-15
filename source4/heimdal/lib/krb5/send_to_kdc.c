@@ -88,7 +88,7 @@ recv_loop (krb5_socket_t fd,
 		 return 0;
 
 	     if (limit)
-		 nbytes = min(nbytes, limit - rep->length);
+		 nbytes = min((size_t)nbytes, limit - rep->length);
 
 	     tmp = realloc (rep->data, rep->length + nbytes);
 	     if (tmp == NULL) {
@@ -268,7 +268,7 @@ send_via_proxy (krb5_context context,
     int ret;
     krb5_socket_t s = rk_INVALID_SOCKET;
     char portstr[NI_MAXSERV];
-		
+
     if (proxy == NULL)
 	return ENOMEM;
     if (strncmp (proxy, "http://", 7) == 0)
@@ -339,7 +339,7 @@ send_via_plugin(krb5_context context,
 	service = _krb5_plugin_get_symbol(e);
 	if (service->minor_version != 0)
 	    continue;
-	
+
 	(*service->init)(context, &ctx);
 	ret = (*service->send_to_kdc)(context, ctx, hi,
 				      timeout, send_data, receive);
@@ -366,12 +366,12 @@ send_via_plugin(krb5_context context,
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_sendto (krb5_context context,
 	     const krb5_data *send_data,
-	     krb5_krbhst_handle handle,	
+	     krb5_krbhst_handle handle,
 	     krb5_data *receive)
 {
      krb5_error_code ret;
      krb5_socket_t fd;
-     int i;
+     size_t i;
 
      krb5_data_zero(receive);
 
@@ -511,7 +511,7 @@ _krb5_copy_send_to_kdc_func(krb5_context context, krb5_context to)
 {
     if (context->send_to_kdc)
 	return krb5_set_send_to_kdc_func(to,
-					 context->send_to_kdc->func, 
+					 context->send_to_kdc->func,
 					 context->send_to_kdc->data);
     else
 	return krb5_set_send_to_kdc_func(to, NULL, NULL);
@@ -602,7 +602,7 @@ krb5_sendto_context(krb5_context context,
 	    type = KRB5_KRBHST_KDC;
     }
 
-    if (send_data->length > context->large_msg_size)
+    if ((int)send_data->length > context->large_msg_size)
 	ctx->flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
 
     /* loop until we get back a appropriate response */

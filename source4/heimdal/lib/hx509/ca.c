@@ -266,7 +266,7 @@ hx509_ca_tbs_set_template(hx509_context context,
     }
     if (flags & HX509_CA_TEMPLATE_EKU) {
 	ExtKeyUsage eku;
-	int i;
+	size_t i;
 	ret = _hx509_cert_get_eku(context, cert, &eku);
 	if (ret)
 	    return ret;
@@ -610,7 +610,7 @@ hx509_ca_tbs_add_san_pkinit(hx509_context context,
 	const char *str;
 	char *q;
 	int n;
-	
+
 	/* count number of component */
 	n = 1;
 	for(str = principal; *str != '\0' && *str != '@'; str++){
@@ -633,7 +633,7 @@ hx509_ca_tbs_add_san_pkinit(hx509_context context,
 	    goto out;
 	}
 	p.principalName.name_string.len = n;
-	
+
 	p.principalName.name_type = KRB5_NT_PRINCIPAL;
 	q = s = strdup(principal);
 	if (q == NULL) {
@@ -689,7 +689,7 @@ add_utf8_san(hx509_context context,
 	     const heim_oid *oid,
 	     const char *string)
 {
-    const PKIXXmppAddr ustring = (const PKIXXmppAddr)string;
+    const PKIXXmppAddr ustring = (const PKIXXmppAddr)(intptr_t)string;
     heim_octet_string os;
     size_t size;
     int ret;
@@ -866,7 +866,7 @@ hx509_ca_tbs_set_unique(hx509_context context,
 
     der_free_bit_string(&tbs->subjectUniqueID);
     der_free_bit_string(&tbs->issuerUniqueID);
-    
+
     if (subjectUniqueID) {
 	ret = der_copy_bit_string(subjectUniqueID, &tbs->subjectUniqueID);
 	if (ret)

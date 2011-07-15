@@ -74,8 +74,8 @@ s_mp_add (mp_int * a, mp_int * b, mp_int * c)
       *tmpc++ &= MP_MASK;
     }
 
-    /* now copy higher words if any, that is in A+B 
-     * if A or B has more digits add those in 
+    /* now copy higher words if any, that is in A+B
+     * if A or B has more digits add those in
      */
     if (min != max) {
       for (; i < max; i++) {

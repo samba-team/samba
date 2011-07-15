@@ -183,7 +183,7 @@ wind_ucs4utf8(const uint32_t *in, size_t in_len, char *out, size_t *out_len)
 
     for (o = 0, i = 0; i < in_len; i++) {
 	ch = in[i];
-	
+
 	if (ch < 0x80) {
 	    len = 1;
 	} else if (ch < 0x800) {
@@ -194,7 +194,7 @@ wind_ucs4utf8(const uint32_t *in, size_t in_len, char *out, size_t *out_len)
 	    len = 4;
 	} else
 	    return WIND_ERR_INVALID_UTF32;
-	
+
 	o += len;
 
 	if (out) {
@@ -341,7 +341,7 @@ wind_ucs2write(const uint16_t *in, size_t in_len, unsigned int *flags,
      * first to the output data */
     if ((*flags) & WIND_RW_BOM) {
 	uint16_t bom = 0xfffe;
-	
+
 	if (len < 2)
 	    return WIND_ERR_OVERRUN;
 
@@ -462,14 +462,14 @@ wind_ucs2utf8(const uint16_t *in, size_t in_len, char *out, size_t *out_len)
 
     for (o = 0, i = 0; i < in_len; i++) {
 	ch = in[i];
-	
+
 	if (ch < 0x80) {
 	    len = 1;
 	} else if (ch < 0x800) {
 	    len = 2;
 	} else
 	    len = 3;
-	
+
 	o += len;
 
 	if (out) {

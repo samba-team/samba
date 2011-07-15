@@ -35,6 +35,13 @@
 
 #include "config.h"
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

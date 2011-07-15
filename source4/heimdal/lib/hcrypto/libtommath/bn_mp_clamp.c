@@ -15,7 +15,7 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-/* trim unused digits 
+/* trim unused digits
  *
  * This is used to ensure that leading zero digits are
  * trimed and the leading "used" digit will be non-zero

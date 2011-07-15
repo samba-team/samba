@@ -206,7 +206,7 @@ hdb_keytab_create(krb5_context context, HDB ** db, const char *arg)
 	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
-	
+
 
     (*db)->hdb_db = k;
 

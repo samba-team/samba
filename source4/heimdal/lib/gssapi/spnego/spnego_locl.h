@@ -71,6 +71,8 @@
 #include "utils.h"
 #include <der.h>
 
+#include <heimbase.h>
+
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 
 typedef struct {

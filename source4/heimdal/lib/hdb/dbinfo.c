@@ -112,7 +112,7 @@ hdb_get_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
 	if (ret == 0 && di) {
 	    databases = di;
 	    dt = &di->next;
-	}		
+	}
 
 	for ( ; db_binding != NULL; db_binding = db_binding->next) {
 

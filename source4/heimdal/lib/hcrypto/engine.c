@@ -339,7 +339,7 @@ ENGINE_by_dso(const char *path, const char *id)
 	    dlclose(handle);
 	    free(engine);
 	    return NULL;
-	}	
+	}
     }
 
     {
@@ -357,7 +357,7 @@ ENGINE_by_dso(const char *path, const char *id)
 	    dlclose(handle);
 	    free(engine);
 	    return NULL;
-	}	
+	}
     }
 
     ENGINE_up_ref(engine);

@@ -47,7 +47,7 @@ krb5_kdc_update_time(struct timeval *tv)
 	_kdc_now = *tv;
 }
 
-static krb5_error_code 
+static krb5_error_code
 kdc_as_req(krb5_context context,
 	   krb5_kdc_configuration *config,
 	   krb5_data *req_buffer,
@@ -74,7 +74,7 @@ kdc_as_req(krb5_context context,
 }
 
 
-static krb5_error_code 
+static krb5_error_code
 kdc_tgs_req(krb5_context context,
 	    krb5_kdc_configuration *config,
 	    krb5_data *req_buffer,
@@ -91,10 +91,10 @@ kdc_tgs_req(krb5_context context,
     ret = decode_TGS_REQ(req_buffer->data, req_buffer->length, &req, &len);
     if (ret)
 	return ret;
-    
+
     *claim = 1;
 
-    ret = _kdc_tgs_rep(context, config, &req, reply, 
+    ret = _kdc_tgs_rep(context, config, &req, reply,
 		       from, addr, datagram_reply);
     free_TGS_REQ(&req);
     return ret;
@@ -102,7 +102,7 @@ kdc_tgs_req(krb5_context context,
 
 #ifdef DIGEST
 
-static krb5_error_code 
+static krb5_error_code
 kdc_digest(krb5_context context,
 	   krb5_kdc_configuration *config,
 	   krb5_data *req_buffer,
@@ -132,7 +132,7 @@ kdc_digest(krb5_context context,
 
 #ifdef KX509
 
-static krb5_error_code 
+static krb5_error_code
 kdc_kx509(krb5_context context,
 	  krb5_kdc_configuration *config,
 	  krb5_data *req_buffer,
@@ -193,7 +193,7 @@ krb5_kdc_process_request(krb5_context context,
     unsigned int i;
     krb5_data req_buffer;
     int claim = 0;
-    
+
     req_buffer.data = buf;
     req_buffer.length = len;
 
@@ -232,7 +232,7 @@ krb5_kdc_process_krb5_request(krb5_context context,
     unsigned int i;
     krb5_data req_buffer;
     int claim = 0;
-    
+
     req_buffer.data = buf;
     req_buffer.length = len;
 
@@ -245,7 +245,7 @@ krb5_kdc_process_krb5_request(krb5_context context,
 	if (claim)
 	    return ret;
     }
-			
+
     return -1;
 }
 

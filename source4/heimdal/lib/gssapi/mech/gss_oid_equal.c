@@ -43,7 +43,7 @@
  *
  * @return non-zero when both oid are the same OID, zero when they are
  *         not the same.
- *         
+ *
  * @ingroup gssapi
  */
 

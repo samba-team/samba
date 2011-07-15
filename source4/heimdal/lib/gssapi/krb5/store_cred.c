@@ -103,7 +103,7 @@ _gsskrb5_store_cred(OM_uint32         *minor_status,
 	*minor_status = ret;
 	return(GSS_S_FAILURE);
     }
-	
+
     if (default_cred)
 	krb5_cc_switch(context, id);
 

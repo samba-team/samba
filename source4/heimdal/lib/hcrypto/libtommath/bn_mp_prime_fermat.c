@@ -16,7 +16,7 @@
  */
 
 /* performs one Fermat test.
- * 
+ *
  * If "a" were prime then b**a == b (mod a) since the order of
  * the multiplicative sub-group would be phi(a) = a-1.  That means
  * it would be the same as b**(a mod (a-1)) == b**1 == b (mod a).

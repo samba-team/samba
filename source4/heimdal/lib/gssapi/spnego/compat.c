@@ -41,10 +41,10 @@
  * Kerberos mechanism.
  */
 gss_OID_desc _gss_spnego_mskrb_mechanism_oid_desc =
-	{9, (void *)"\x2a\x86\x48\x82\xf7\x12\x01\x02\x02"};
+    {9, rk_UNCONST("\x2a\x86\x48\x82\xf7\x12\x01\x02\x02")};
 
 gss_OID_desc _gss_spnego_krb5_mechanism_oid_desc =
-	{9, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02"};
+    {9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02")};
 
 /*
  * Allocate a SPNEGO context handle
@@ -241,7 +241,7 @@ _gss_spnego_indicate_mechtypelist (OM_uint32 *minor_status,
     gss_OID_set supported_mechs = GSS_C_NO_OID_SET;
     gss_OID first_mech = GSS_C_NO_OID;
     OM_uint32 ret;
-    int i;
+    size_t i;
 
     mechtypelist->len = 0;
     mechtypelist->val = NULL;

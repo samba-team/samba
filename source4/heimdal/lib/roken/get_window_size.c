@@ -58,32 +58,46 @@
 #include "roken.h"
 
 ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
-get_window_size(int fd, struct winsize *wp)
+get_window_size(int fd, int *lines, int *columns)
 {
-    int ret = -1;
-
-    memset(wp, 0, sizeof(*wp));
+    char *s;
 
 #if defined(TIOCGWINSZ)
-    ret = ioctl(fd, TIOCGWINSZ, wp);
+    {
+	struct winsize ws;
+        int ret;
+	ret = ioctl(fd, TIOCGWINSZ, &ws);
+	if (ret != -1) {
+	    if (lines)
+		*lines = ws.ws_row;
+	    if (columns)
+		*columns = ws.ws_col;
+	    return 0;
+	}
+    }
 #elif defined(TIOCGSIZE)
     {
 	struct ttysize ts;
-	
+        int ret;
 	ret = ioctl(fd, TIOCGSIZE, &ts);
-	if(ret == 0) {
-	    wp->ws_row = ts.ts_lines;
-	    wp->ws_col = ts.ts_cols;
-	}
+	if (ret != -1) {
+	    if (lines)
+		*lines = ts.ws_lines;
+	    if (columns)
+		*columns = ts.ts_cols;
+	    return 0;
+ 	}
     }
 #elif defined(HAVE__SCRSIZE)
     {
 	int dst[2];
-	
-	_scrsize(dst);
-	wp->ws_row = dst[1];
-	wp->ws_col = dst[0];
-	ret = 0;
+
+ 	_scrsize(dst);
+	if (lines)
+	    *lines = dst[1];
+	if (columns)
+	    *columns = dst[0];
+	return 0;
     }
 #elif defined(_WIN32)
     {
@@ -93,21 +107,26 @@ get_window_size(int fd, struct winsize *wp)
         fh = _get_osfhandle(fd);
         if (fh != (intptr_t) INVALID_HANDLE_VALUE &&
             GetConsoleScreenBufferInfo((HANDLE) fh, &sb_info)) {
-            wp->ws_row = 1 + sb_info.srWindow.Bottom - sb_info.srWindow.Top;
-            wp->ws_col = 1 + sb_info.srWindow.Right - sb_info.srWindow.Left;
+            if (lines)
+                *lines = 1 + sb_info.srWindow.Bottom - sb_info.srWindow.Top;
+            if (columns)
+                *columns = 1 + sb_info.srWindow.Right - sb_info.srWindow.Left;
 
-            ret = 0;
+            return 0;
         }
     }
 #endif
-    if (ret != 0) {
-        char *s;
-        if((s = getenv("COLUMNS")))
-	    wp->ws_col = atoi(s);
-	if((s = getenv("LINES")))
-	    wp->ws_row = atoi(s);
-	if(wp->ws_col > 0 && wp->ws_row > 0)
-	    ret = 0;
+    if (columns) {
+    	if ((s = getenv("COLUMNS")))
+	    *columns = atoi(s);
+	else
+	    return -1;
     }
-    return ret;
+    if (lines) {
+	if ((s = getenv("LINES")))
+	    *lines = atoi(s);
+	else
+	    return -1;
+    }
+    return 0;
 }

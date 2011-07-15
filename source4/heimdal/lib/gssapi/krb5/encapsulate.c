@@ -114,7 +114,7 @@ _gssapi_encapsulate(
     if (output_token->value == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
-    }	
+    }
 
     p = _gssapi_make_mech_header (output_token->value, len, mech);
     memcpy (p, in_data->data, in_data->length);
@@ -145,7 +145,7 @@ _gsskrb5_encapsulate(
     if (output_token->value == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
-    }	
+    }
 
     p = _gsskrb5_make_header (output_token->value, len, type, mech);
     memcpy (p, in_data->data, in_data->length);

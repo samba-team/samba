@@ -78,5 +78,5 @@ extern struct hx_expr_input _hx509_expr_input;
 
 int  _hx509_sel_yyparse(void);
 int  _hx509_sel_yylex(void);
-void _hx509_sel_yyerror(char *);
+void _hx509_sel_yyerror(const char *);
 

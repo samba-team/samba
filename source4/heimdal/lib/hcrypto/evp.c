@@ -415,7 +415,7 @@ EVP_sha1(void)
 
 const EVP_MD *
 EVP_sha(void) HC_DEPRECATED
-    
+
 {
     hcrypto_validate();
     return EVP_sha1();
@@ -875,7 +875,7 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
 	    ctx->buf_len += inlen;
 	    return 1;
 	}
-	
+
 	/* fill in local buffer and encrypt */
 	memcpy(ctx->buf + ctx->buf_len, in, left);
 	ret = (*ctx->cipher->do_cipher)(ctx, out, ctx->buf, blocksize);
@@ -893,7 +893,7 @@ EVP_CipherUpdate(EVP_CIPHER_CTX *ctx, void *out, int *outlen,
     if (inlen) {
 	ctx->buf_len = (inlen & ctx->block_mask);
 	inlen &= ~ctx->block_mask;
-	
+
 	ret = (*ctx->cipher->do_cipher)(ctx, out, in, inlen);
 	if (ret != 1)
 	    return ret;

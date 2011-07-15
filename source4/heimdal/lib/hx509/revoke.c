@@ -176,9 +176,9 @@ verify_ocsp(hx509_context context,
     hx509_cert signer = NULL;
     hx509_query q;
     int ret;
-	
+
     _hx509_query_clear(&q);
-	
+
     /*
      * Need to match on issuer too in case there are two CA that have
      * issued the same name to a certificate. One example of this is
@@ -198,7 +198,7 @@ verify_ocsp(hx509_context context,
 	q.keyhash_sha1 = &ocsp->ocsp.tbsResponseData.responderID.u.byKey;
 	break;
     }
-	
+
     ret = hx509_certs_find(context, certs, &q, &signer);
     if (ret && ocsp->certs)
 	ret = hx509_certs_find(context, ocsp->certs, &q, &signer);
@@ -349,7 +349,7 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
     }
 
     if (basic.certs) {
-	int i;
+	size_t i;
 
 	ret = hx509_certs_init(context, "MEMORY:ocsp-certs", 0,
 			       NULL, &certs);
@@ -360,11 +360,11 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 
 	for (i = 0; i < basic.certs->len; i++) {
 	    hx509_cert c;
-	
+
 	    ret = hx509_cert_init(context, &basic.certs->val[i], &c);
 	    if (ret)
 		continue;
-	
+
 	    ret = hx509_certs_add(context, certs, c);
 	    hx509_cert_free(c);
 	    if (ret)
@@ -463,7 +463,7 @@ verify_crl(hx509_context context,
     hx509_query q;
     time_t t;
     int ret;
-	
+
     t = _hx509_Time2time_t(&crl->tbsCertList.thisUpdate);
     if (t > time_now) {
 	hx509_set_error_string(context, 0, HX509_CRL_USED_BEFORE_TIME,
@@ -485,7 +485,7 @@ verify_crl(hx509_context context,
     }
 
     _hx509_query_clear(&q);
-	
+
     /*
      * If it's the signer have CRLSIGN bit set, use that as the signer
      * cert for the certificate, otherwise, search for a certificate.
@@ -496,7 +496,7 @@ verify_crl(hx509_context context,
 	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
 	q.match |= HX509_QUERY_KU_CRLSIGN;
 	q.subject_name = &crl->tbsCertList.issuer;
-	
+
 	ret = hx509_certs_find(context, certs, &q, &signer);
 	if (ret) {
 	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
@@ -526,11 +526,11 @@ verify_crl(hx509_context context,
 	hx509_cert crl_parent;
 
 	_hx509_query_clear(&q);
-	
+
 	q.match = HX509_QUERY_MATCH_SUBJECT_NAME;
 	q.match |= HX509_QUERY_KU_CRLSIGN;
 	q.subject_name = &_hx509_get_cert(signer)->tbsCertificate.issuer;
-	
+
 	ret = hx509_certs_find(context, certs, &q, &crl_parent);
 	if (ret) {
 	    hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
@@ -718,7 +718,7 @@ hx509_revoke_verify(hx509_context context,
 				   &c->tbsCertificate.serialNumber);
 	    if (ret != 0)
 		continue;
-	
+
 	    /* verify issuer hashes hash */
 	    ret = _hx509_verify_signature(context,
 					  NULL,
@@ -760,8 +760,7 @@ hx509_revoke_verify(hx509_context context,
 	    if (ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate) {
 		if (*ocsp->ocsp.tbsResponseData.responses.val[j].nextUpdate < now)
 		    continue;
-	    } else
-		/* Should force a refetch, but can we ? */;
+	    } /* else should force a refetch, but can we ? */
 
 	    return 0;
 	}
@@ -829,12 +828,12 @@ hx509_revoke_verify(hx509_context context,
 	    t = _hx509_Time2time_t(&crl->crl.tbsCertList.revokedCertificates->val[j].revocationDate);
 	    if (t > now)
 		continue;
-	
+
 	    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions)
 		for (k = 0; k < crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->len; k++)
 		    if (crl->crl.tbsCertList.revokedCertificates->val[j].crlEntryExtensions->val[k].critical)
 			return HX509_CRL_UNKNOWN_EXTENSION;
-	
+
 	    hx509_set_error_string(context, 0,
 				   HX509_CERT_REVOKED,
 				   "Certificate revoked by issuer in CRL");
@@ -1003,7 +1002,7 @@ hx509_ocsp_request(hx509_context context,
 	}
 
 	es = req.tbsRequest.requestExtensions;
-	
+
 	es->val = calloc(es->len, sizeof(es->val[0]));
 	if (es->val == NULL) {
 	    ret = ENOMEM;
@@ -1022,7 +1021,7 @@ hx509_ocsp_request(hx509_context context,
 	    goto out;
 	}
 	es->val[0].extnValue.length = 10;
-	
+
 	ret = RAND_bytes(es->val[0].extnValue.data,
 			 es->val[0].extnValue.length);
 	if (ret != 1) {
@@ -1055,8 +1054,13 @@ static char *
 printable_time(time_t t)
 {
     static char s[128];
-    strlcpy(s, ctime(&t)+ 4, sizeof(s));
-    s[20] = 0;
+    char *p;
+    if ((p = ctime(&t)) == NULL)
+       strlcpy(s, "?", sizeof(s));
+    else {
+       strlcpy(s, p + 4, sizeof(s));
+       s[20] = 0;
+    }
     return s;
 }
 
@@ -1076,7 +1080,8 @@ int
 hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 {
     struct revoke_ocsp ocsp;
-    int ret, i;
+    int ret;
+    size_t i;
 
     if (out == NULL)
 	out = stdout;
@@ -1141,7 +1146,7 @@ hx509_revoke_ocsp_print(hx509_context context, const char *path, FILE *out)
 	    status = "element unknown";
 	}
 
-	fprintf(out, "\t%d. status: %s\n", i, status);
+	fprintf(out, "\t%zu. status: %s\n", i, status);
 
 	fprintf(out, "\tthisUpdate: %s\n",
 		printable_time(ocsp.ocsp.tbsResponseData.responses.val[i].thisUpdate));
@@ -1188,7 +1193,8 @@ hx509_ocsp_verify(hx509_context context,
 {
     const Certificate *c = _hx509_get_cert(cert);
     OCSPBasicOCSPResponse basic;
-    int ret, i;
+    int ret;
+    size_t i;
 
     if (now == 0)
 	now = time(NULL);
@@ -1208,7 +1214,7 @@ hx509_ocsp_verify(hx509_context context,
 			       &c->tbsCertificate.serialNumber);
 	if (ret != 0)
 	    continue;
-	
+
 	/* verify issuer hashes hash */
 	ret = _hx509_verify_signature(context,
 				      NULL,
@@ -1248,7 +1254,7 @@ hx509_ocsp_verify(hx509_context context,
     {
 	hx509_name name;
 	char *subject;
-	
+
 	ret = hx509_cert_get_subject(cert, &name);
 	if (ret) {
 	    hx509_clear_error_string(context);

@@ -59,7 +59,7 @@ check_compat(OM_uint32 *minor_status,
 	    *compat = match_val;
 	    break;
 	}
-	
+
 	krb5_free_principal(context, match);
 	match = NULL;
     }

@@ -36,8 +36,8 @@
 KRB5_LIB_FUNCTION PA_DATA * KRB5_LIB_CALL
 krb5_find_padata(PA_DATA *val, unsigned len, int type, int *idx)
 {
-    for(; *idx < len; (*idx)++)
-	if(val[*idx].padata_type == type)
+    for(; *idx < (int)len; (*idx)++)
+	if(val[*idx].padata_type == (unsigned)type)
 	    return val + *idx;
     return NULL;
 }

@@ -15,9 +15,9 @@
  * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
  */
 
-/* stores a bignum as a ASCII string in a given radix (2..64) 
+/* stores a bignum as a ASCII string in a given radix (2..64)
  *
- * Stores upto maxlen-1 chars and always a NULL byte 
+ * Stores upto maxlen-1 chars and always a NULL byte
  */
 int mp_toradix_n(mp_int * a, char *str, int radix, int maxlen)
 {
@@ -50,7 +50,7 @@ int mp_toradix_n(mp_int * a, char *str, int radix, int maxlen)
     /* store the flag and mark the number as positive */
     *str++ = '-';
     t.sign = MP_ZPOS;
- 
+
     /* subtract a char */
     --maxlen;
   }

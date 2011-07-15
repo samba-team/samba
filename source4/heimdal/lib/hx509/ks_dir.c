@@ -158,10 +158,10 @@ dir_iter(hx509_context context,
 	}
 	if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
 	    continue;
-	
+
 	if (asprintf(&fn, "FILE:%s/%s", (char *)data, dir->d_name) == -1)
 	    return ENOMEM;
-	
+
 	ret = hx509_certs_init(context, fn, 0, NULL, &d->certs);
 	if (ret == 0) {
 

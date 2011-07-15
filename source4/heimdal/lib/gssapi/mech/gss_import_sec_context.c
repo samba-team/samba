@@ -58,7 +58,7 @@ gss_import_sec_context(OM_uint32 *minor_status,
 	mech_oid.elements = p + 2;
 	buf.length = len - 2 - mech_oid.length;
 	buf.value = p + 2 + mech_oid.length;
-	
+
 	m = __gss_get_mechanism(&mech_oid);
 	if (!m)
 		return (GSS_S_DEFECTIVE_TOKEN);

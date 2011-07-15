@@ -74,9 +74,9 @@ _kdc_find_padata(const KDC_REQ *req, int *start, int type)
     if (req->padata == NULL)
 	return NULL;
 
-    while(*start < req->padata->len){
+    while((size_t)*start < req->padata->len){
 	(*start)++;
-	if(req->padata->val[*start - 1].padata_type == type)
+	if(req->padata->val[*start - 1].padata_type == (unsigned)type)
 	    return &req->padata->val[*start - 1];
     }
     return NULL;
@@ -123,36 +123,103 @@ is_default_salt_p(const krb5_salt *default_salt, const Key *key)
  */
 
 krb5_error_code
-_kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
+_kdc_find_etype(krb5_context context, krb5_boolean use_strongest_session_key,
+		krb5_boolean is_preauth, hdb_entry_ex *princ,
 		krb5_enctype *etypes, unsigned len,
-		Key **ret_key)
+		krb5_enctype *ret_enctype, Key **ret_key)
 {
-    int i;
-    krb5_error_code ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+    krb5_error_code ret;
     krb5_salt def_salt;
+    krb5_enctype enctype = ETYPE_NULL;
+    Key *key;
+    int i;
 
-    krb5_get_pw_salt (context, princ->entry.principal, &def_salt);
+    /* We'll want to avoid keys with v4 salted keys in the pre-auth case... */
+    ret = krb5_get_pw_salt(context, princ->entry.principal, &def_salt);
+    if (ret)
+	return ret;
 
-    for(i = 0; ret != 0 && i < len ; i++) {
-	Key *key = NULL;
+    ret = KRB5KDC_ERR_ETYPE_NOSUPP;
 
-	if (krb5_enctype_valid(context, etypes[i]) != 0 &&
-	    !_kdc_is_weak_exception(princ->entry.principal, etypes[i]))
-	    continue;
+    if (use_strongest_session_key) {
+	const krb5_enctype *p;
+	krb5_enctype clientbest = ETYPE_NULL;
+	int j;
 
-	while (hdb_next_enctype2key(context, &princ->entry, etypes[i], &key) == 0) {
-	    if (key->key.keyvalue.length == 0) {
-		ret = KRB5KDC_ERR_NULL_KEY;
+	/*
+	 * Pick the strongest key that the KDC, target service, and
+	 * client all support, using the local cryptosystem enctype
+	 * list in strongest-to-weakest order to drive the search.
+	 *
+	 * This is not what RFC4120 says to do, but it encourages
+	 * adoption of stronger enctypes.  This doesn't play well with
+	 * clients that have multiple Kerberos client implementations
+	 * available with different supported enctype lists.
+	 */
+
+	/* drive the search with local supported enctypes list */
+	p = krb5_kerberos_enctypes(context);
+	for (i = 0; p[i] != ETYPE_NULL && enctype == ETYPE_NULL; i++) {
+	    if (krb5_enctype_valid(context, p[i]) != 0)
 		continue;
+
+	    /* check that the client supports it too */
+	    for (j = 0; j < len && enctype == ETYPE_NULL; j++) {
+		if (p[i] != etypes[j])
+		    continue;
+		/* save best of union of { client, crypto system } */
+		if (clientbest == ETYPE_NULL)
+		    clientbest = p[i];
+		/* check target princ support */
+		ret = hdb_enctype2key(context, &princ->entry, p[i], &key);
+		if (ret)
+		    continue;
+		if (is_preauth && !is_default_salt_p(&def_salt, key))
+		    continue;
+		enctype = p[i];
 	    }
-	    *ret_key   = key;
-	    ret = 0;
-	    if (is_default_salt_p(&def_salt, key)) {
-		krb5_free_salt (context, def_salt);
-		return ret;
+	}
+	if (clientbest != ETYPE_NULL && enctype == ETYPE_NULL)
+	    enctype = clientbest;
+	else if (enctype == ETYPE_NULL)
+	    ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+	if (ret == 0 && ret_enctype != NULL)
+	    *ret_enctype = enctype;
+	if (ret == 0 && ret_key != NULL)
+	    *ret_key = key;
+    } else {
+	/*
+	 * Pick the first key from the client's enctype list that is
+	 * supported by the cryptosystem and by the given principal.
+	 *
+	 * RFC4120 says we SHOULD pick the first _strong_ key from the
+	 * client's list... not the first key...  If the admin disallows
+	 * weak enctypes in krb5.conf and selects this key selection
+	 * algorithm, then we get exactly what RFC4120 says.
+	 */
+	for(key = NULL, i = 0; ret != 0 && i < len; i++, key = NULL) {
+
+	    if (krb5_enctype_valid(context, etypes[i]) != 0 &&
+		!_kdc_is_weak_exception(princ->entry.principal, etypes[i]))
+		continue;
+
+	    while (hdb_next_enctype2key(context, &princ->entry, etypes[i], &key) == 0) {
+		if (key->key.keyvalue.length == 0) {
+		    ret = KRB5KDC_ERR_NULL_KEY;
+		    continue;
+		}
+		if (ret_key != NULL)
+		    *ret_key = key;
+		if (ret_enctype != NULL)
+		    *ret_enctype = etypes[i];
+		ret = 0;
+		if (is_preauth && is_default_salt_p(&def_salt, key))
+		    goto out;
 	    }
 	}
     }
+
+out:
     krb5_free_salt (context, def_salt);
     return ret;
 }
@@ -211,8 +278,8 @@ log_patypes(krb5_context context,
 {
     struct rk_strpool *p = NULL;
     char *str;
-    int i;
-	
+    size_t i;
+
     for (i = 0; i < padata->len; i++) {
 	switch(padata->val[i].padata_type) {
 	case KRB5_PADATA_PK_AS_REQ:
@@ -240,7 +307,7 @@ log_patypes(krb5_context context,
     }
     if (p == NULL)
 	p = rk_strpoolprintf(p, "none");
-	
+
     str = rk_strpoolcollect(p);
     kdc_log(context, config, 0, "Client sent patypes: %s", str);
     free(str);
@@ -264,7 +331,7 @@ _kdc_encode_reply(krb5_context context,
 {
     unsigned char *buf;
     size_t buf_size;
-    size_t len;
+    size_t len = 0;
     krb5_error_code ret;
     krb5_crypto crypto;
 
@@ -614,7 +681,7 @@ log_as_req(krb5_context context,
     krb5_error_code ret;
     struct rk_strpool *p;
     char *str;
-    int i;
+    size_t i;
 
     p = rk_strpoolprintf(NULL, "%s", "Client supported enctypes: ");
 
@@ -694,13 +761,13 @@ kdc_check_flags(krb5_context context,
 		    "Client (%s) has invalid bit set", client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
-	
+
 	if(!client->flags.client){
 	    kdc_log(context, config, 0,
 		    "Principal may not act as client -- %s", client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
-	
+
 	if (client->valid_start && *client->valid_start > kdc_time) {
 	    char starttime_str[100];
 	    krb5_format_time(context, *client->valid_start,
@@ -710,7 +777,7 @@ kdc_check_flags(krb5_context context,
 		    starttime_str, client_name);
 	    return KRB5KDC_ERR_CLIENT_NOTYET;
 	}
-	
+
 	if (client->valid_end && *client->valid_end < kdc_time) {
 	    char endtime_str[100];
 	    krb5_format_time(context, *client->valid_end,
@@ -720,7 +787,7 @@ kdc_check_flags(krb5_context context,
 		    endtime_str, client_name);
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
-	
+
 	if (client->pw_end && *client->pw_end < kdc_time
 	    && (server_ex == NULL || !server_ex->entry.flags.change_pw)) {
 	    char pwend_str[100];
@@ -809,7 +876,7 @@ _kdc_check_addresses(krb5_context context,
     krb5_address addr;
     krb5_boolean result;
     krb5_boolean only_netbios = TRUE;
-    int i;
+    size_t i;
 
     if(config->check_ticket_addresses == 0)
 	return TRUE;
@@ -976,7 +1043,7 @@ _kdc_as_rep(krb5_context context,
 	    goto out;
 	}
     } else if (b->kdc_options.request_anonymous) {
-	kdc_log(context, config, 0, 
+	kdc_log(context, config, 0,
 		"Request for a anonymous ticket with non "
 		"anonymous client name: %s", client_name);
 	ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
@@ -1018,59 +1085,31 @@ _kdc_as_rep(krb5_context context,
     memset(&ek, 0, sizeof(ek));
 
     /*
-     * Select a session enctype from the list of the crypto systems
-     * supported enctype, is supported by the client and is one of the
-     * enctype of the enctype of the krbtgt.
+     * Select a session enctype from the list of the crypto system
+     * supported enctypes that is supported by the client and is one of
+     * the enctype of the enctype of the service (likely krbtgt).
      *
-     * The later is used as a hint what enctype all KDC are supporting
-     * to make sure a newer version of KDC wont generate a session
-     * enctype that and older version of a KDC in the same realm can't
+     * The latter is used as a hint of what enctypes all KDC support,
+     * to make sure a newer version of KDC won't generate a session
+     * enctype that an older version of a KDC in the same realm can't
      * decrypt.
-     *
-     * But if the KDC admin is paranoid and doesn't want to have "no
+     */
+    ret = _kdc_find_etype(context, config->as_use_strongest_session_key, FALSE,
+			  client, b->etype.val, b->etype.len, &sessionetype,
+			  NULL);
+    if (ret) {
+	kdc_log(context, config, 0,
+		"Client (%s) from %s has no common enctypes with KDC "
+		"to use for the session key",
+		client_name, from);
+	goto out;
+    }
+    /*
+     * But if the KDC admin is paranoid and doesn't want to have "not
      * the best" enctypes on the krbtgt, lets save the best pick from
      * the client list and hope that that will work for any other
      * KDCs.
      */
-    {
-	const krb5_enctype *p;
-	krb5_enctype clientbest = ETYPE_NULL;
-	int i, j;
-
-	p = krb5_kerberos_enctypes(context);
-
-	sessionetype = ETYPE_NULL;
-
-	for (i = 0; p[i] != ETYPE_NULL && sessionetype == ETYPE_NULL; i++) {
-	    if (krb5_enctype_valid(context, p[i]) != 0)
-		continue;
-
-	    for (j = 0; j < b->etype.len && sessionetype == ETYPE_NULL; j++) {
-		Key *dummy;
-		/* check with client */
-		if (p[i] != b->etype.val[j])
-		    continue;
-		/* save best of union of { client, crypto system } */
-		if (clientbest == ETYPE_NULL)
-		    clientbest = p[i];
-		/* check with krbtgt */
-		ret = hdb_enctype2key(context, &server->entry, p[i], &dummy);
-		if (ret)
-		    continue;
-		sessionetype = p[i];
-	    }
-	}
-	/* if krbtgt had no shared keys with client, pick clients best */
-	if (clientbest != ETYPE_NULL && sessionetype == ETYPE_NULL) {
-	    sessionetype = clientbest;
-	} else if (sessionetype == ETYPE_NULL) {
-	    kdc_log(context, config, 0,
-		    "Client (%s) from %s has no common enctypes with KDC"
-		    "to use for the session key",
-		    client_name, from);
-	    goto out;
-	}
-    }
 
     /*
      * Pre-auth processing
@@ -1111,7 +1150,7 @@ _kdc_as_rep(krb5_context context,
 
 	    ret = _kdc_pk_check_client(context,
 				       config,
-				       clientdb, 
+				       clientdb,
 				       client,
 				       pkp,
 				       &client_cert);
@@ -1119,7 +1158,7 @@ _kdc_as_rep(krb5_context context,
 		e_text = "PKINIT certificate not allowed to "
 		    "impersonate principal";
 		_kdc_pk_free_client_param(context, pkp);
-		
+
 		kdc_log(context, config, 0, "%s", e_text);
 		pkp = NULL;
 		goto out;
@@ -1148,9 +1187,9 @@ _kdc_as_rep(krb5_context context,
 	    EncryptedData enc_data;
 	    Key *pa_key;
 	    char *str;
-	
+
 	    found_pa = 1;
-	
+
 	    if (b->kdc_options.request_anonymous) {
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		kdc_log(context, config, 0, "ENC-TS doesn't support anon");
@@ -1167,7 +1206,7 @@ _kdc_as_rep(krb5_context context,
 			client_name);
 		goto out;
 	    }
-	
+
 	    ret = hdb_enctype2key(context, &client->entry,
 				  enc_data.etype, &pa_key);
 	    if(ret){
@@ -1256,7 +1295,7 @@ _kdc_as_rep(krb5_context context,
 	    free_PA_ENC_TS_ENC(&p);
 	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
 		char client_time[100];
-		
+
 		krb5_format_time(context, p.patimestamp,
 				 client_time, sizeof(client_time), TRUE);
 
@@ -1353,8 +1392,9 @@ _kdc_as_rep(krb5_context context,
 	/*
 	 * If there is a client key, send ETYPE_INFO{,2}
 	 */
-	ret = _kdc_find_etype(context, client, b->etype.val, b->etype.len,
-			      &ckey);
+	ret = _kdc_find_etype(context,
+			      config->preauth_use_strongest_session_key, TRUE,
+			      client, b->etype.val, b->etype.len, NULL, &ckey);
 	if (ret == 0) {
 
 	    /*
@@ -1384,7 +1424,7 @@ _kdc_as_rep(krb5_context context,
 		goto out;
 	    }
 	}
-	
+
 	ASN1_MALLOC_ENCODE(METHOD_DATA, buf, len, &method_data, &len, ret);
 	free_METHOD_DATA(&method_data);
 
@@ -1401,7 +1441,7 @@ _kdc_as_rep(krb5_context context,
     }
 
     if (clientdb->hdb_auth_status)
-	(clientdb->hdb_auth_status)(context, clientdb, client, 
+	(clientdb->hdb_auth_status)(context, clientdb, client,
 				    HDB_AUTH_SUCCESS);
 
     /*
@@ -1503,7 +1543,7 @@ _kdc_as_rep(krb5_context context,
     {
 	time_t start;
 	time_t t;
-	
+
 	start = et.authtime = kdc_time;
 
 	if(f.postdated && req->req_body.from){
@@ -1663,8 +1703,8 @@ _kdc_as_rep(krb5_context context,
 	PA_ClientCanonicalized canon;
 	krb5_data data;
 	PA_DATA pa;
-	krb5_crypto crypto;
-	size_t len;
+	krb5_crypto cryptox;
+	size_t len = 0;
 
 	memset(&canon, 0, sizeof(canon));
 
@@ -1679,21 +1719,21 @@ _kdc_as_rep(krb5_context context,
 	    krb5_abortx(context, "internal asn.1 error");
 
 	/* sign using "returned session key" */
-	ret = krb5_crypto_init(context, &et.key, 0, &crypto);
+	ret = krb5_crypto_init(context, &et.key, 0, &cryptox);
 	if (ret) {
 	    free(data.data);
 	    goto out;
 	}
 
-	ret = krb5_create_checksum(context, crypto,
+	ret = krb5_create_checksum(context, cryptox,
 				   KRB5_KU_CANONICALIZED_NAMES, 0,
 				   data.data, data.length,
 				   &canon.canon_checksum);
 	free(data.data);
-	krb5_crypto_destroy(context, crypto);
+	krb5_crypto_destroy(context, cryptox);
 	if (ret)
 	    goto out;
-	
+
 	ASN1_MALLOC_ENCODE(PA_ClientCanonicalized, data.data, data.length,
 			   &canon, &len, ret);
 	free_Checksum(&canon.canon_checksum);
@@ -1826,7 +1866,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 			    const krb5_data *data)
 {
     krb5_error_code ret;
-    size_t size;
+    size_t size = 0;
 
     if (tkt->authorization_data == NULL) {
 	tkt->authorization_data = calloc(1, sizeof(*tkt->authorization_data));
@@ -1835,7 +1875,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 	    return ENOMEM;
 	}
     }
-	
+
     /* add the entry to the last element */
     {
 	AuthorizationData ad = { 0, NULL };
@@ -1863,7 +1903,7 @@ _kdc_tkt_add_if_relevant_ad(krb5_context context,
 	}
 	if (ade.ad_data.length != size)
 	    krb5_abortx(context, "internal asn.1 encoder error");
-	
+
 	ret = add_AuthorizationData(tkt->authorization_data, &ade);
 	der_free_octet_string(&ade.ad_data);
 	if (ret) {

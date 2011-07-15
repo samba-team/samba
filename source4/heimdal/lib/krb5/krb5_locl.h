@@ -188,6 +188,12 @@ struct _krb5_krb_auth_data;
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
 
+#ifndef __func__
+#define __func__ "unknown-function"
+#endif
+
+#define krb5_einval(context, argnum) _krb5_einval((context), __func__, (argnum))
+
 #ifndef PATH_SEP
 #define PATH_SEP ":"
 #endif
@@ -240,9 +246,14 @@ struct _krb5_get_init_creds_opt_private {
     } lr;
 };
 
+typedef uint32_t krb5_enctype_set;
+
 typedef struct krb5_context_data {
     krb5_enctype *etypes;
-    krb5_enctype *etypes_des;
+    krb5_enctype *etypes_des;/* deprecated */
+    krb5_enctype *as_etypes;
+    krb5_enctype *tgs_etypes;
+    krb5_enctype *permitted_enctypes;
     char **default_realms;
     time_t max_skew;
     time_t kdc_timeout;

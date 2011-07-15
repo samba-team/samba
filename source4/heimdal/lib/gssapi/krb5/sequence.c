@@ -64,7 +64,7 @@ msg_order_alloc(OM_uint32 *minor_status,
     if (*o == NULL) {
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
-    }	
+    }
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
@@ -141,7 +141,7 @@ OM_uint32
 _gssapi_msg_order_check(struct gss_msg_order *o, OM_uint32 seq_num)
 {
     OM_uint32 r;
-    int i;
+    size_t i;
 
     if (o == NULL)
 	return GSS_S_COMPLETE;

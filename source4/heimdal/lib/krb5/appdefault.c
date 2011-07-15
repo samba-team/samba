@@ -47,7 +47,7 @@ krb5_appdefault_boolean(krb5_context context, const char *appname,
     if(realm != NULL)
 	def_val = krb5_config_get_bool_default(context, NULL, def_val,
 					       "realms", realm, option, NULL);
-	
+
     def_val = krb5_config_get_bool_default(context, NULL, def_val,
 					   "appdefaults",
 					   option,

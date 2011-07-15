@@ -16,7 +16,7 @@
  */
 #include <stdarg.h>
 
-void mp_clear_multi(mp_int *mp, ...) 
+void mp_clear_multi(mp_int *mp, ...)
 {
     mp_int* next_mp = mp;
     va_list args;

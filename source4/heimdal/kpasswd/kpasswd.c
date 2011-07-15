@@ -40,10 +40,11 @@ static char *admin_principal_str;
 static char *cred_cache_str;
 
 static struct getargs args[] = {
-    { "admin-principal",	0,   arg_string, &admin_principal_str },
-    { "cache",			'c', arg_string, &cred_cache_str },
-    { "version", 		0,   arg_flag, &version_flag },
-    { "help",			0,   arg_flag, &help_flag }
+    { "admin-principal",	0,   arg_string, &admin_principal_str, NULL,
+   	 NULL },
+    { "cache",			'c', arg_string, &cred_cache_str, NULL, NULL },
+    { "version", 		0,   arg_flag, &version_flag, NULL, NULL },
+    { "help",			0,   arg_flag, &help_flag, NULL, NULL }
 };
 
 static void
@@ -197,9 +198,9 @@ main (int argc, char **argv)
 	default:
 	    krb5_err(context, 1, ret, "krb5_get_init_creds");
 	}
-	
+
 	krb5_get_init_creds_opt_free(context, opt);
-	
+
 	ret = krb5_cc_initialize(context, id, admin_principal);
 	krb5_free_principal(context, admin_principal);
 	if (ret)
@@ -208,7 +209,7 @@ main (int argc, char **argv)
 	ret = krb5_cc_store_cred(context, id, &cred);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_cc_store_cred");
-	
+
 	krb5_free_cred_contents (context, &cred);
     }
 

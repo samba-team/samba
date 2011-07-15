@@ -31,8 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#define KRB5_DEPRECATED
-
 #include "krb5_locl.h"
 
 #undef __attribute__
@@ -173,7 +171,7 @@ setpw_send_request (krb5_context context,
     krb5_data krb_priv_data;
     krb5_data pwd_data;
     ChangePasswdDataMS chpw;
-    size_t len;
+    size_t len = 0;
     u_char header[4 + 6];
     u_char *p;
     struct iovec iov[3];
@@ -199,7 +197,7 @@ setpw_send_request (krb5_context context,
 	chpw.targname = NULL;
 	chpw.targrealm = NULL;
     }
-	
+
     ASN1_MALLOC_ENCODE(ChangePasswdDataMS, pwd_data.data, pwd_data.length,
 		       &chpw, &len, ret);
     if (ret) {
@@ -276,7 +274,7 @@ process_reply (krb5_context context,
 {
     krb5_error_code ret;
     u_char reply[1024 * 3];
-    ssize_t len;
+    size_t len;
     uint16_t pkt_len, pkt_ver;
     krb5_data ap_rep_data;
     int save_errno;
@@ -304,7 +302,7 @@ process_reply (krb5_context context,
 	    _krb5_get_int(reply, &size, 4);
 	    if (size + 4 < len)
 		continue;
-	    memmove(reply, reply + 4, size);		
+	    memmove(reply, reply + 4, size);
 	    len = size;
 	    break;
 	}
@@ -328,7 +326,7 @@ process_reply (krb5_context context,
 
     if (len < 6) {
 	str2data (result_string, "server %s sent to too short message "
-		  "(%ld bytes)", host, (long)len);
+		  "(%zu bytes)", host, len);
 	*result_code = KRB5_KPASSWD_MALFORMED;
 	return 0;
     }
@@ -496,7 +494,7 @@ static struct kpwd_proc {
 	chgpw_send_request,
 	process_reply
     },
-    { NULL }
+    { NULL, 0, NULL, NULL }
 };
 
 /*
@@ -588,7 +586,7 @@ change_password_loop (krb5_context	context,
 
 		if (!replied) {
 		    replied = 0;
-		
+
 		    ret = (*proc->send_req) (context,
 					     &auth_context,
 					     creds,
@@ -686,7 +684,6 @@ find_chpw_proto(const char *name)
  * @ingroup @krb5_deprecated
  */
 
-KRB5_DEPRECATED
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_change_password (krb5_context	context,
 		      krb5_creds	*creds,
@@ -694,6 +691,7 @@ krb5_change_password (krb5_context	context,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
 		      krb5_data		*result_string)
+    KRB5_DEPRECATED_FUNCTION("Use X instead")
 {
     struct kpwd_proc *p = find_chpw_proto("change password");
 

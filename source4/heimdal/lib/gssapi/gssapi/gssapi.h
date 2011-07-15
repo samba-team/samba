@@ -31,8 +31,6 @@
  * SUCH DAMAGE.
  */
 
-/* $Id$ */
-
 #ifndef GSSAPI_GSSAPI_H_
 #define GSSAPI_GSSAPI_H_
 
@@ -55,13 +53,11 @@
 #endif
 #endif
 
-#ifndef GSSAPI_DEPRECATED
+#ifndef GSSAPI_DEPRECATED_FUNCTION
 #if defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1 )))
-#define GSSAPI_DEPRECATED __attribute__((deprecated))
-#elif defined(_MSC_VER)
-#define GSSAPI_DEPRECATED __declspec(deprecated)
+#define GSSAPI_DEPRECATED_FUNCTION(X) __attribute__((deprecated))
 #else
-#define GSSAPI_DEPRECATED
+#define GSSAPI_DEPRECATED_FUNCTION(X)
 #endif
 #endif
 
@@ -375,7 +371,7 @@ extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_anonymous_oid_desc;
  * to that gss_OID_desc.
  */
 extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_export_name_oid_desc;
-#define GSS_C_NT_EXPORT_NAME (&__gss_c_nt_export_name_oid_desc) 
+#define GSS_C_NT_EXPORT_NAME (&__gss_c_nt_export_name_oid_desc)
 
 /* Major status codes */
 
@@ -447,6 +443,11 @@ extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_export_name_oid_desc;
 #define GSS_S_BAD_MECH_ATTR (19ul << GSS_C_ROUTINE_ERROR_OFFSET)
 
 /*
+ * Apparently awating spec fix.
+ */
+#define GSS_S_CRED_UNAVAIL GSS_S_FAILURE
+
+/*
  * Supplementary info bits:
  */
 #define GSS_S_CONTINUE_NEEDED (1ul << (GSS_C_SUPPLEMENTARY_OFFSET + 0))
@@ -458,6 +459,9 @@ extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_export_name_oid_desc;
 /*
  * Finally, function prototypes for the GSS-API routines.
  */
+
+#define GSS_C_OPTION_MASK 0xffff
+#define GSS_C_CRED_NO_UI  0x10000
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_acquire_cred
            (OM_uint32 * /*minor_status*/,
@@ -827,7 +831,7 @@ typedef struct {
     size_t blocksize; /**< Specificed optimal size of messages, also
 			 is the maximum padding size
 			 (GSS_IOV_BUFFER_TYPE_PADDING) */
-} gss_context_stream_sizes; 
+} gss_context_stream_sizes;
 
 extern gss_OID_desc GSSAPI_LIB_VARIABLE __gss_c_attr_stream_sizes_oid_desc;
 #define GSS_C_ATTR_STREAM_SIZES (&__gss_c_attr_stream_sizes_oid_desc)
@@ -850,23 +854,23 @@ gss_context_query_attributes(OM_uint32 * /* minor_status */,
  * obsolete versions of these routines and their current forms.
  */
 
-GSSAPI_DEPRECATED GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_sign
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_sign
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             int /*qop_req*/,
             gss_buffer_t /*message_buffer*/,
             gss_buffer_t /*message_token*/
-           );
+	    ) GSSAPI_DEPRECATED_FUNCTION("Use gss_get_mic");
 
-GSSAPI_DEPRECATED GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_verify
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_verify
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             gss_buffer_t /*message_buffer*/,
             gss_buffer_t /*token_buffer*/,
             int * /*qop_state*/
-           );
+	    ) GSSAPI_DEPRECATED_FUNCTION("Use gss_verify_mic");
 
-GSSAPI_DEPRECATED GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_seal
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_seal
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             int /*conf_req_flag*/,
@@ -874,29 +878,29 @@ GSSAPI_DEPRECATED GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_seal
             gss_buffer_t /*input_message_buffer*/,
             int * /*conf_state*/,
             gss_buffer_t /*output_message_buffer*/
-           );
+           ) GSSAPI_DEPRECATED_FUNCTION("Use gss_wrap");
 
-GSSAPI_DEPRECATED GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_unseal
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_unseal
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             gss_buffer_t /*input_message_buffer*/,
             gss_buffer_t /*output_message_buffer*/,
             int * /*conf_state*/,
             int * /*qop_state*/
-           );
+           )  GSSAPI_DEPRECATED_FUNCTION("Use gss_unwrap");
 
 /**
  *
  */
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
-gss_encapsulate_token(const gss_buffer_t /* input_token */,
-		      const gss_OID /* oid */,
+gss_encapsulate_token(gss_const_buffer_t /* input_token */,
+		      gss_const_OID /* oid */,
 		      gss_buffer_t /* output_token */);
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
-gss_decapsulate_token(const gss_buffer_t /* input_token */,
-		      const gss_OID /* oid */,
+gss_decapsulate_token(gss_const_buffer_t /* input_token */,
+		      gss_const_OID /* oid */,
 		      gss_buffer_t /* output_token */);
 
 
@@ -990,6 +994,56 @@ gss_display_mech_attr(OM_uint32 * minor_status,
 		      gss_buffer_t long_desc);
 
 /*
+ * Solaris compat
+ */
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_acquire_cred_with_password
+           (OM_uint32 * /*minor_status*/,
+            const gss_name_t /*desired_name*/,
+            const gss_buffer_t /*password*/,
+            OM_uint32 /*time_req*/,
+            const gss_OID_set /*desired_mechs*/,
+            gss_cred_usage_t /*cred_usage*/,
+            gss_cred_id_t * /*output_cred_handle*/,
+            gss_OID_set * /*actual_mechs*/,
+            OM_uint32 * /*time_rec*/
+           );
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL gss_add_cred_with_password (
+            OM_uint32 * /*minor_status*/,
+            const gss_cred_id_t /*input_cred_handle*/,
+            const gss_name_t /*desired_name*/,
+            const gss_OID /*desired_mech*/,
+            const gss_buffer_t /*password*/,
+            gss_cred_usage_t /*cred_usage*/,
+            OM_uint32 /*initiator_time_req*/,
+            OM_uint32 /*acceptor_time_req*/,
+            gss_cred_id_t * /*output_cred_handle*/,
+            gss_OID_set * /*actual_mechs*/,
+            OM_uint32 * /*initiator_time_rec*/,
+            OM_uint32 * /*acceptor_time_rec*/
+           );
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_pname_to_uid(
+        OM_uint32 *minor,
+        const gss_name_t name,
+        const gss_OID mech_type,
+        uid_t *uidOut);
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_authorize_localname(
+        OM_uint32 *minor,
+        const gss_name_t name,
+        const gss_name_t user);
+
+GSSAPI_LIB_FUNCTION int GSSAPI_LIB_CALL
+gss_userok(const gss_name_t name,
+           const char *user);
+
+extern GSSAPI_LIB_VARIABLE gss_buffer_t GSS_C_ATTR_LOCAL_LOGIN_USER;
+
+/*
  * Naming extensions
  */
 
@@ -1050,5 +1104,7 @@ GSSAPI_LIB_FUNCTION gss_OID GSSAPI_LIB_CALL
 gss_name_to_oid(const char *name);
 
 GSSAPI_CPP_END
+
+#undef GSSAPI_DEPRECATED_FUNCTION
 
 #endif /* GSSAPI_GSSAPI_H_ */

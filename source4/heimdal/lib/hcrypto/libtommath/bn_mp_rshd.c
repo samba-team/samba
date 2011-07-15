@@ -42,8 +42,8 @@ void mp_rshd (mp_int * a, int b)
     /* top [offset into digits] */
     top = a->dp + b;
 
-    /* this is implemented as a sliding window where 
-     * the window is b-digits long and digits from 
+    /* this is implemented as a sliding window where
+     * the window is b-digits long and digits from
      * the top of the window are copied to the bottom
      *
      * e.g.
@@ -61,7 +61,7 @@ void mp_rshd (mp_int * a, int b)
       *bottom++ = 0;
     }
   }
-  
+
   /* remove excess digits */
   a->used -= b;
 }

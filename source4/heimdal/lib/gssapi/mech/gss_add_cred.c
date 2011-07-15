@@ -28,7 +28,7 @@
 
 #include "mech_locl.h"
 
-static struct _gss_mechanism_cred *
+struct _gss_mechanism_cred *
 _gss_copy_cred(struct _gss_mechanism_cred *mc)
 {
 	struct _gss_mechanism_cred *new_mc;

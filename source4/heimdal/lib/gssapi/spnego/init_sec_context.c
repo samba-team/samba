@@ -392,7 +392,7 @@ spnego_reply
     NegotiationToken resp;
     gss_OID_desc mech;
     int require_mic;
-    size_t buf_len;
+    size_t buf_len = 0;
     gss_buffer_desc mic_buf, mech_buf;
     gss_buffer_desc mech_output_token;
     gssspnego_ctx ctx;
@@ -557,8 +557,10 @@ spnego_reply
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
 	}
-	if (mech_buf.length != buf_len)
+	if (mech_buf.length != buf_len) {
 	    abort();
+            UNREACHABLE(return GSS_S_FAILURE);
+        }
 
 	if (resp.u.negTokenResp.mechListMIC == NULL) {
 	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);

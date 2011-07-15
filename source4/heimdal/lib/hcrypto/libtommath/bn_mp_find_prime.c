@@ -1,7 +1,7 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Love Hornquist Astrand <lha@h5l.org>
  */
 #include <tommath.h>

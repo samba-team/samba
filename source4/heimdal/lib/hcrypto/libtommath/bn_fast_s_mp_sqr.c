@@ -16,10 +16,10 @@
  */
 
 /* the jist of squaring...
- * you do like mult except the offset of the tmpx [one that 
- * starts closer to zero] can't equal the offset of tmpy.  
+ * you do like mult except the offset of the tmpx [one that
+ * starts closer to zero] can't equal the offset of tmpy.
  * So basically you set up iy like before then you min it with
- * (ty-tx) so that it never happens.  You double all those 
+ * (ty-tx) so that it never happens.  You double all those
  * you add in the inner loop
 
 After that loop you do the squares and add them in.
@@ -41,7 +41,7 @@ int fast_s_mp_sqr (mp_int * a, mp_int * b)
 
   /* number of output digits to produce */
   W1 = 0;
-  for (ix = 0; ix < pa; ix++) { 
+  for (ix = 0; ix < pa; ix++) {
       int      tx, ty, iy;
       mp_word  _W;
       mp_digit *tmpy;
@@ -62,7 +62,7 @@ int fast_s_mp_sqr (mp_int * a, mp_int * b)
        */
       iy = MIN(a->used-tx, ty+1);
 
-      /* now for squaring tx can never equal ty 
+      /* now for squaring tx can never equal ty
        * we halve the distance since they approach at a rate of 2x
        * and we have to round because odd cases need to be executed
        */

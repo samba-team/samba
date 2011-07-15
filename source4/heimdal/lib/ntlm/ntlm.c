@@ -109,8 +109,12 @@ static const unsigned char ntlmsigature[8] = "NTLMSSP\x00";
 
 #define CHECK(f, e)							\
     do {								\
-	ret = f ; if (ret != (e)) { ret = HNTLM_ERR_DECODE; goto out; } } \
-    while(0)
+	ret = f;							\
+	if (ret != (ssize_t)(e)) {					\
+	    ret = HNTLM_ERR_DECODE;					\
+	    goto out;							\
+	}								\
+    } while(/*CONSTCOND*/0)
 
 static struct units ntlm_flag_units[] = {
 #define ntlm_flag(x) { #x, NTLM_##x }
@@ -289,7 +293,7 @@ ret_sec_string(krb5_storage *sp, int ucs2, struct sec_buffer *desc, char **s)
     CHECK(krb5_storage_seek(sp, desc->offset, SEEK_SET), desc->offset);
     CHECK(ret_string(sp, ucs2, desc->length, s), 0);
  out:
-    return ret; 
+    return ret;
 }
 
 static krb5_error_code
@@ -1025,7 +1029,7 @@ splitandenc(unsigned char *hash,
     key[7] = (hash[6] << 1);
 
     EVP_CIPHER_CTX_init(&ctx);
-    
+
     EVP_CipherInit_ex(&ctx, EVP_des_cbc(), NULL, key, NULL, 1);
     EVP_Cipher(&ctx, answer, challenge, 8);
     EVP_CIPHER_CTX_cleanup(&ctx);
@@ -1129,7 +1133,7 @@ heim_ntlm_v1_base_session(void *key, size_t len,
 	session->length = 0;
 	return ENOMEM;
     }
-    
+
     m = EVP_MD_CTX_create();
     if (m == NULL) {
 	heim_ntlm_free_buf(session);
@@ -1399,7 +1403,7 @@ static time_t
 nt2unixtime(uint64_t t)
 {
     t = ((t - (uint64_t)NTTIME_EPOCH) / (uint64_t)10000000);
-    if (t > (((time_t)(~(uint64_t)0)) >> 1))
+    if (t > (((uint64_t)(time_t)(~(uint64_t)0)) >> 1))
 	return 0;
     return (time_t)t;
 }

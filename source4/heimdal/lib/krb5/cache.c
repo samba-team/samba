@@ -38,7 +38,7 @@
 /**
  * @page krb5_ccache_intro The credential cache functions
  * @section section_krb5_ccache Kerberos credential caches
- * 
+ *
  * krb5_ccache structure holds a Kerberos credential cache.
  *
  * Heimdal support the follow types of credential caches:
@@ -837,7 +837,7 @@ krb5_cc_set_flags(krb5_context context,
 {
     return (*id->ops->set_flags)(context, id, flags);
 }
-		
+
 /**
  * Get the flags of `id', store them in `flags'.
  *
@@ -1144,7 +1144,7 @@ krb5_cc_cache_match (krb5_context context,
 	ret = krb5_cc_get_principal(context, cache, &principal);
 	if (ret == 0) {
 	    krb5_boolean match;
-	
+
 	    match = krb5_principal_compare(context, principal, client);
 	    krb5_free_principal(context, principal);
 	    if (match)
@@ -1245,7 +1245,7 @@ build_conf_principals(krb5_context context, krb5_ccache id,
     krb5_free_principal(context, client);
     return ret;
 }
-		
+
 /**
  * Return TRUE (non zero) if the principal is a configuration
  * principal (generated part of krb5_cc_set_config()). Returns FALSE
@@ -1267,7 +1267,7 @@ krb5_is_config_principal(krb5_context context,
     if (principal->name.name_string.len == 0 ||
 	strcmp(principal->name.name_string.val[0], KRB5_CONF_NAME) != 0)
 	return FALSE;
-	
+
     return TRUE;
 }
 
@@ -1306,11 +1306,11 @@ krb5_cc_set_config(krb5_context context, krb5_ccache id,
 	/* not that anyone care when this expire */
 	cred.times.authtime = time(NULL);
 	cred.times.endtime = cred.times.authtime + 3600 * 24 * 30;
-	
+
 	ret = krb5_data_copy(&cred.ticket, data->data, data->length);
 	if (ret)
 	    goto out;
-	
+
 	ret = krb5_cc_store_cred(context, id, &cred);
     }
 
@@ -1396,7 +1396,7 @@ krb5_cccol_cursor_new(krb5_context context, krb5_cccol_cursor *cursor)
 }
 
 /**
- * Get next credential cache from the iteration. 
+ * Get next credential cache from the iteration.
  *
  * @param context A Kerberos 5 context
  * @param cursor the iteration cursor
@@ -1418,13 +1418,13 @@ krb5_cccol_cursor_next(krb5_context context, krb5_cccol_cursor cursor,
 		       krb5_ccache *cache)
 {
     krb5_error_code ret;
-    
+
     *cache = NULL;
 
     while (cursor->idx < context->num_cc_ops) {
 
 	if (cursor->cursor == NULL) {
-	    ret = krb5_cc_cache_get_first (context, 
+	    ret = krb5_cc_cache_get_first (context,
 					   context->cc_ops[cursor->idx]->prefix,
 					   &cursor->cursor);
 	    if (ret) {
@@ -1493,7 +1493,7 @@ krb5_cccol_cursor_free(krb5_context context, krb5_cccol_cursor *cursor)
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_cc_last_change_time(krb5_context context,
-			 krb5_ccache id, 
+			 krb5_ccache id,
 			 krb5_timestamp *mtime)
 {
     *mtime = 0;
@@ -1630,7 +1630,7 @@ krb5_cc_get_lifetime(krb5_context context, krb5_ccache id, time_t *t)
 
     *t = 0;
     now = time(NULL);
-    
+
     ret = krb5_cc_start_seq_get(context, id, &cursor);
     if (ret)
 	return ret;
@@ -1644,7 +1644,7 @@ krb5_cc_get_lifetime(krb5_context context, krb5_ccache id, time_t *t)
 	}
 	krb5_free_cred_contents(context, &cred);
     }
-    
+
     krb5_cc_end_seq_get(context, id, &cursor);
 
     return ret;

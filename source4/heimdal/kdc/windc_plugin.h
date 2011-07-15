@@ -66,10 +66,10 @@ typedef krb5_error_code
 
 typedef krb5_error_code
 (*krb5plugin_windc_client_access)(
-	void *, krb5_context, 
+	void *, krb5_context,
 	krb5_kdc_configuration *config,
-	hdb_entry_ex *, const char *, 
-	hdb_entry_ex *, const char *, 
+	hdb_entry_ex *, const char *,
+	hdb_entry_ex *, const char *,
 	KDC_REQ *, krb5_data *);
 
 

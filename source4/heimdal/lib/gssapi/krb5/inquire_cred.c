@@ -95,12 +95,12 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_inquire_cred
     if (output_name != NULL) {
 	if (icred && icred->principal != NULL) {
 	    gss_name_t name;
-	
+
 	    if (acred && acred->principal)
 		name = (gss_name_t)acred->principal;
 	    else
 		name = (gss_name_t)icred->principal;
-		
+
             ret = _gsskrb5_duplicate_name(minor_status, name, output_name);
             if (ret)
 		goto out;

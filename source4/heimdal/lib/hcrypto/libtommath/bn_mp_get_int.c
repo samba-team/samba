@@ -16,7 +16,7 @@
  */
 
 /* get the lower 32-bits of an mp_int */
-unsigned long mp_get_int(mp_int * a) 
+unsigned long mp_get_int(mp_int * a)
 {
   int i;
   unsigned long res;
@@ -30,7 +30,7 @@ unsigned long mp_get_int(mp_int * a)
 
   /* get most significant digit of result */
   res = DIGIT(a,i);
-   
+
   while (--i >= 0) {
     res = (res << DIGIT_BIT) | DIGIT(a,i);
   }

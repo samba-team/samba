@@ -88,6 +88,6 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_context_time
 
     if (*time_rec == 0)
 	return GSS_S_CONTEXT_EXPIRED;
-	
+
     return GSS_S_COMPLETE;
 }

@@ -70,7 +70,7 @@ OM_uint32 GSSAPI_CALLCONV _gss_spnego_acquire_cred
     OM_uint32 ret, tmp;
     gss_OID_set_desc actual_desired_mechs;
     gss_OID_set mechs;
-    int i, j;
+    size_t i, j;
 
     *output_cred_handle = GSS_C_NO_CREDENTIAL;
 

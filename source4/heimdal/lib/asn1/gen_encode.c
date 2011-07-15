@@ -274,7 +274,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	    else if(m->defval)
 		gen_compare_defval(s + 1, m->defval);
 	    fprintf (codefile, "{\n");
-	    fprintf (codefile, "size_t %s_oldret = ret;\n", tmpstr);
+	    fprintf (codefile, "size_t %s_oldret HEIMDAL_UNUSED_ATTRIBUTE = ret;\n", tmpstr);
 	    fprintf (codefile, "ret = 0;\n");
 	    encode_type (s, m->type, m->gen_name);
 	    fprintf (codefile, "ret += %s_oldret;\n", tmpstr);
@@ -302,7 +302,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		name, name);
 
 	fprintf(codefile,
-		"for(i = 0; i < (%s)->len; i++) {\n",
+		"for(i = 0; i < (int)(%s)->len; i++) {\n",
 		name);
 
 	fprintf(codefile,
@@ -326,7 +326,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 
 	fprintf(codefile,
 		"if (totallen > len) {\n"
-		"for (i = 0; i < (%s)->len; i++) {\n"
+		"for (i = 0; i < (int)(%s)->len; i++) {\n"
 		"free(val[i].data);\n"
 		"}\n"
 		"free(val);\n"
@@ -339,7 +339,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		name);
 
 	fprintf (codefile,
-		 "for(i = (%s)->len - 1; i >= 0; --i) {\n"
+		 "for(i = (int)(%s)->len - 1; i >= 0; --i) {\n"
 		 "p -= val[i].length;\n"
 		 "ret += val[i].length;\n"
 		 "memcpy(p + 1, val[i].data, val[i].length);\n"
@@ -355,7 +355,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	char *n = NULL;
 
 	fprintf (codefile,
-		 "for(i = (%s)->len - 1; i >= 0; --i) {\n"
+		 "for(i = (int)(%s)->len - 1; i >= 0; --i) {\n"
 		 "size_t %s_for_oldret = ret;\n"
 		 "ret = 0;\n",
 		 name, tmpstr);
@@ -503,7 +503,7 @@ void
 generate_type_encode (const Symbol *s)
 {
     fprintf (codefile, "int ASN1CALL\n"
-	     "encode_%s(unsigned char *p, size_t len,"
+	     "encode_%s(unsigned char *p HEIMDAL_UNUSED_ATTRIBUTE, size_t len HEIMDAL_UNUSED_ATTRIBUTE,"
 	     " const %s *data, size_t *size)\n"
 	     "{\n",
 	     s->gen_name, s->gen_name);
@@ -534,10 +534,9 @@ generate_type_encode (const Symbol *s)
     case TType:
     case TChoice:
 	fprintf (codefile,
-		 "size_t ret = 0;\n"
-		 "size_t l;\n"
-		 "int i, e;\n\n");
-	fprintf(codefile, "i = 0;\n"); /* hack to avoid `unused variable' */
+		 "size_t ret HEIMDAL_UNUSED_ATTRIBUTE = 0;\n"
+		 "size_t l HEIMDAL_UNUSED_ATTRIBUTE;\n"
+		 "int i HEIMDAL_UNUSED_ATTRIBUTE, e HEIMDAL_UNUSED_ATTRIBUTE;\n\n");
 
 	encode_type("data", s->type, "Top");
 

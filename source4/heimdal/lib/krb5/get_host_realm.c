@@ -109,7 +109,7 @@ dns_find_realm(krb5_context context,
 	domain++;
     for (i = 0; labels[i] != NULL; i++) {
 	ret = snprintf(dom, sizeof(dom), "%s.%s.", labels[i], domain);
-	if(ret < 0 || ret >= sizeof(dom)) {
+	if(ret < 0 || (size_t)ret >= sizeof(dom)) {
 	    if (config_labels)
 		krb5_config_free_strings(config_labels);
 	    return -1;

@@ -34,8 +34,8 @@
 #include "mech_locl.h"
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
-gss_decapsulate_token(const gss_buffer_t input_token,
-		      const gss_OID oid,
+gss_decapsulate_token(gss_const_buffer_t input_token,
+		      gss_const_OID oid,
 		      gss_buffer_t output_token)
 {
     GSSAPIContextToken ct;
@@ -55,7 +55,7 @@ gss_decapsulate_token(const gss_buffer_t input_token,
     if (ret) {
 	der_free_oid(&o);
 	return GSS_S_FAILURE;
-    }	
+    }
 
     if (der_heim_oid_cmp(&ct.thisMech, &o) == 0) {
 	status = GSS_S_COMPLETE;

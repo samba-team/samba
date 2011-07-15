@@ -25,7 +25,7 @@ int mp_cmp_mag (mp_int * a, mp_int * b)
   if (a->used > b->used) {
     return MP_GT;
   }
-  
+
   if (a->used < b->used) {
     return MP_LT;
   }

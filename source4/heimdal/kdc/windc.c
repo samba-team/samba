@@ -55,7 +55,7 @@ krb5_kdc_windc_init(krb5_context context)
 	windcft = _krb5_plugin_get_symbol(e);
 	if (windcft->minor_version < KRB5_WINDC_PLUGIN_MINOR)
 	    continue;
-	
+
 	(*windcft->init)(context, &windcctx);
 	break;
     }
@@ -119,9 +119,9 @@ _kdc_check_access(krb5_context context,
 				   server_ex, server_name,
 				   req->msg_type == krb_as_req);
 
-    return (windcft->client_access)(windcctx, 
-				    context, config, 
-				    client_ex, client_name, 
-				    server_ex, server_name, 
+    return (windcft->client_access)(windcctx,
+				    context, config,
+				    client_ex, client_name,
+				    server_ex, server_name,
 				    req, e_data);
 }

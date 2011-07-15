@@ -44,6 +44,7 @@ struct addr_operations {
     void (*h_addr2sockaddr)(const char *, struct sockaddr *, krb5_socklen_t *, int);
     krb5_error_code (*h_addr2addr)(const char *, krb5_address *);
     krb5_boolean (*uninteresting)(const struct sockaddr *);
+    krb5_boolean (*is_loopback)(const struct sockaddr *);
     void (*anyaddr)(struct sockaddr *, krb5_socklen_t *, int);
     int (*print_addr)(const krb5_address *, char *, size_t);
     int (*parse_addr)(krb5_context, const char*, krb5_address *);
@@ -131,6 +132,17 @@ ipv4_uninteresting (const struct sockaddr *sa)
     const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
 
     if (sin4->sin_addr.s_addr == INADDR_ANY)
+	return TRUE;
+
+    return FALSE;
+}
+
+static krb5_boolean
+ipv4_is_loopback (const struct sockaddr *sa)
+{
+    const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
+
+    if ((ntohl(sin4->sin_addr.s_addr) >> 24) == IN_LOOPBACKNET)
 	return TRUE;
 
     return FALSE;
@@ -310,9 +322,17 @@ ipv6_uninteresting (const struct sockaddr *sa)
     const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
     const struct in6_addr *in6 = (const struct in6_addr *)&sin6->sin6_addr;
 
-    return
-	IN6_IS_ADDR_LINKLOCAL(in6)
+    return IN6_IS_ADDR_LINKLOCAL(in6)
 	|| IN6_IS_ADDR_V4COMPAT(in6);
+}
+
+static krb5_boolean
+ipv6_is_loopback (const struct sockaddr *sa)
+{
+    const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
+    const struct in6_addr *in6 = (const struct in6_addr *)&sin6->sin6_addr;
+
+    return (IN6_IS_ADDR_LOOPBACK(in6));
 }
 
 static void
@@ -334,7 +354,7 @@ ipv6_print_addr (const krb5_address *addr, char *str, size_t len)
     if(inet_ntop(AF_INET6, addr->address.data, buf, sizeof(buf)) == NULL)
 	{
 	    /* XXX this is pretty ugly, but better than abort() */
-	    int i;
+	    size_t i;
 	    unsigned char *p = addr->address.data;
 	    buf[0] = '\0';
 	    for(i = 0; i < addr->address.length; i++) {
@@ -401,7 +421,7 @@ ipv6_mask_boundary(krb5_context context, const krb5_address *inaddr,
 	sub_len = min(8, len);
 
 	m = 0xff << (8 - sub_len);
-	
+
 	laddr.s6_addr[i] = addr.s6_addr[i] & m;
 	haddr.s6_addr[i] = (addr.s6_addr[i] & m) | ~m;
 
@@ -471,7 +491,7 @@ arange_parse_addr (krb5_context context,
 	    krb5_free_addresses(context, &addrmask);
 	    return -1;
 	}
-	
+
 	address += p - address + 1;
 
 	num = strtol(address, &q, 10);
@@ -488,7 +508,7 @@ arange_parse_addr (krb5_context context,
 
     } else {
 	krb5_addresses low, high;
-	
+
 	strsep_copy(&address, "-", buf, sizeof(buf));
 	ret = krb5_parse_address(context, buf, &low);
 	if(ret)
@@ -497,14 +517,14 @@ arange_parse_addr (krb5_context context,
 	    krb5_free_addresses(context, &low);
 	    return -1;
 	}
-	
+
 	strsep_copy(&address, "-", buf, sizeof(buf));
 	ret = krb5_parse_address(context, buf, &high);
 	if(ret) {
 	    krb5_free_addresses(context, &low);
 	    return ret;
 	}
-	
+
 	if(high.len != 1 && high.val[0].addr_type != low.val[0].addr_type) {
 	    krb5_free_addresses(context, &low);
 	    krb5_free_addresses(context, &high);
@@ -590,7 +610,7 @@ arange_print_addr (const krb5_address *addr, char *str, size_t len)
     if (l > len)
 	l = len;
     size = l;
-	
+
     ret = krb5_print_address (&a->low, str + size, len - size, &l);
     if (ret)
 	return ret;
@@ -632,9 +652,11 @@ arange_order_addr(krb5_context context,
 	a = addr2->address.data;
 	a2 = addr1;
 	sign = -1;
-    } else
+    } else {
 	abort();
-	
+        UNREACHABLE(return 0);
+    }
+
     if(a2->addr_type == KRB5_ADDRESS_ARANGE) {
 	struct arange *b = a2->address.data;
 	tmp1 = krb5_address_order(context, &a->low, &b->low);
@@ -707,34 +729,78 @@ addrport_print_addr (const krb5_address *addr, char *str, size_t len)
 }
 
 static struct addr_operations at[] = {
-    {AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
-     ipv4_sockaddr2addr,
-     ipv4_sockaddr2port,
-     ipv4_addr2sockaddr,
-     ipv4_h_addr2sockaddr,
-     ipv4_h_addr2addr,
-     ipv4_uninteresting, ipv4_anyaddr, ipv4_print_addr, ipv4_parse_addr,
-     NULL, NULL, NULL, ipv4_mask_boundary },
+    {
+	AF_INET,	KRB5_ADDRESS_INET, sizeof(struct sockaddr_in),
+	ipv4_sockaddr2addr,
+	ipv4_sockaddr2port,
+	ipv4_addr2sockaddr,
+	ipv4_h_addr2sockaddr,
+	ipv4_h_addr2addr,
+	ipv4_uninteresting,
+	ipv4_is_loopback,
+	ipv4_anyaddr,
+	ipv4_print_addr,
+	ipv4_parse_addr,
+	NULL,
+	NULL,
+	NULL,
+     ipv4_mask_boundary
+    },
 #ifdef HAVE_IPV6
-    {AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
-     ipv6_sockaddr2addr,
-     ipv6_sockaddr2port,
-     ipv6_addr2sockaddr,
-     ipv6_h_addr2sockaddr,
-     ipv6_h_addr2addr,
-     ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr,
-     NULL, NULL, NULL, ipv6_mask_boundary } ,
+    {
+	AF_INET6,	KRB5_ADDRESS_INET6, sizeof(struct sockaddr_in6),
+	ipv6_sockaddr2addr,
+	ipv6_sockaddr2port,
+	ipv6_addr2sockaddr,
+	ipv6_h_addr2sockaddr,
+	ipv6_h_addr2addr,
+	ipv6_uninteresting,
+	ipv6_is_loopback,
+	ipv6_anyaddr,
+	ipv6_print_addr,
+	ipv6_parse_addr,
+	NULL,
+	NULL,
+	NULL,
+	ipv6_mask_boundary
+    } ,
 #endif
 #ifndef HEIMDAL_SMALLER
     /* fake address type */
-    {KRB5_ADDRESS_ARANGE, KRB5_ADDRESS_ARANGE, sizeof(struct arange),
-     NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-     arange_print_addr, arange_parse_addr,
-     arange_order_addr, arange_free, arange_copy },
+    {
+	KRB5_ADDRESS_ARANGE, KRB5_ADDRESS_ARANGE, sizeof(struct arange),
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	arange_print_addr,
+	arange_parse_addr,
+	arange_order_addr,
+	arange_free,
+	arange_copy,
+	NULL
+    },
 #endif
-    {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
-     NULL, NULL, NULL, NULL, NULL,
-     NULL, NULL, addrport_print_addr, NULL, NULL, NULL, NULL }
+    {
+	KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	addrport_print_addr,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+    }
 };
 
 static int num_addrs = sizeof(at) / sizeof(at[0]);
@@ -757,7 +823,7 @@ find_af(int af)
 }
 
 static struct addr_operations *
-find_atype(int atype)
+find_atype(krb5_address_type atype)
 {
     struct addr_operations *a;
 
@@ -912,6 +978,15 @@ krb5_sockaddr_uninteresting(const struct sockaddr *sa)
     return (*a->uninteresting)(sa);
 }
 
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
+krb5_sockaddr_is_loopback(const struct sockaddr *sa)
+{
+    struct addr_operations *a = find_af(sa->sa_family);
+    if (a == NULL || a->is_loopback == NULL)
+	return TRUE;
+    return (*a->is_loopback)(sa);
+}
+
 /**
  * krb5_h_addr2sockaddr initializes a "struct sockaddr sa" from af and
  * the "struct hostent" (see gethostbyname(3) ) h_addr_list
@@ -1038,17 +1113,17 @@ krb5_print_address (const krb5_address *addr,
     if (a == NULL || a->print_addr == NULL) {
 	char *s;
 	int l;
-	int i;
+	size_t i;
 
 	s = str;
 	l = snprintf(s, len, "TYPE_%d:", addr->addr_type);
-	if (l < 0 || l >= len)
+	if (l < 0 || (size_t)l >= len)
 	    return EINVAL;
 	s += l;
 	len -= l;
 	for(i = 0; i < addr->address.length; i++) {
 	    l = snprintf(s, len, "%02x", ((char*)addr->address.data)[i]);
-	    if (l < 0 || l >= len)
+	    if (l < 0 || (size_t)l >= len)
 		return EINVAL;
 	    len -= l;
 	    s += l;
@@ -1234,7 +1309,7 @@ krb5_address_search(krb5_context context,
 		    const krb5_address *addr,
 		    const krb5_addresses *addrlist)
 {
-    int i;
+    size_t i;
 
     for (i = 0; i < addrlist->len; ++i)
 	if (krb5_address_compare (context, addr, &addrlist->val[i]))
@@ -1282,7 +1357,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_free_addresses(krb5_context context,
 		    krb5_addresses *addresses)
 {
-    int i;
+    size_t i;
     for(i = 0; i < addresses->len; i++)
 	krb5_free_address(context, &addresses->val[i]);
     free(addresses->val);
@@ -1333,7 +1408,7 @@ krb5_copy_addresses(krb5_context context,
 		    const krb5_addresses *inaddr,
 		    krb5_addresses *outaddr)
 {
-    int i;
+    size_t i;
     ALLOC_SEQ(outaddr, inaddr->len);
     if(inaddr->len > 0 && outaddr->val == NULL)
 	return ENOMEM;
@@ -1362,7 +1437,7 @@ krb5_append_addresses(krb5_context context,
 {
     krb5_address *tmp;
     krb5_error_code ret;
-    int i;
+    size_t i;
     if(source->len > 0) {
 	tmp = realloc(dest->val, (dest->len + source->len) * sizeof(*tmp));
 	if(tmp == NULL) {

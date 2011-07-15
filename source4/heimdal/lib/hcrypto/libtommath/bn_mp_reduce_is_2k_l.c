@@ -19,7 +19,7 @@
 int mp_reduce_is_2k_l(mp_int *a)
 {
    int ix, iy;
-   
+
    if (a->used == 0) {
       return MP_NO;
    } else if (a->used == 1) {
@@ -32,7 +32,7 @@ int mp_reduce_is_2k_l(mp_int *a)
           }
       }
       return (iy >= (a->used/2)) ? MP_YES : MP_NO;
-      
+
    }
    return MP_NO;
 }

@@ -73,7 +73,7 @@ fd_free(krb5_storage * sp)
 }
 
 /**
- * 
+ *
  *
  * @return A krb5_storage on success, or NULL on out of memory error.
  *
@@ -128,5 +128,6 @@ krb5_storage_from_fd(krb5_socket_t fd_in)
     sp->seek = fd_seek;
     sp->trunc = fd_trunc;
     sp->free = fd_free;
+    sp->max_alloc = UINT_MAX/8;
     return sp;
 }

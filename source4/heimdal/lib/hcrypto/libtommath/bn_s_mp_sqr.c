@@ -48,7 +48,7 @@ int s_mp_sqr (mp_int * a, mp_int * b)
 
     /* alias for where to store the results */
     tmpt        = t.dp + (2*ix + 1);
-    
+
     for (iy = ix + 1; iy < pa; iy++) {
       /* first calculate the product */
       r       = ((mp_word)tmpx) * ((mp_word)a->dp[iy]);
