@@ -19,6 +19,8 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "secrets.h"
+#include "system/filesys.h"
 
 int net_afs_usage(struct net_context *c, int argc, const char **argv)
 {
