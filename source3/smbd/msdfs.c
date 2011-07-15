@@ -272,7 +272,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 			TALLOC_FREE(conn);
 			return NT_STATUS_NO_MEMORY;
 		}
-		vfs_user = conn->session_info->unix_name;
+		vfs_user = conn->session_info->unix_info->unix_name;
 	} else {
 		/* use current authenticated user in absence of session_info */
 		vfs_user = get_current_username();
@@ -773,7 +773,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	if (!( strequal(pdp->servicename, lp_servicename(SNUM(conn)))
 			|| (strequal(pdp->servicename, HOMES_NAME)
 			&& strequal(lp_servicename(SNUM(conn)),
-				conn->session_info->sanitized_username) )) ) {
+				conn->session_info->unix_info->sanitized_username) )) ) {
 
 		/* The given sharename doesn't match this connection. */
 		TALLOC_FREE(pdp);

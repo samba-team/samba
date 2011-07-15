@@ -112,16 +112,7 @@ struct auth3_session_info {
 	 */
 	bool nss_token;
 
-	char *unix_name;
-
-	/*
-	 * For performance reasons we keep an alpha_strcpy-sanitized version
-	 * of the username around as long as the global variable current_user
-	 * still exists. If we did not do keep this, we'd have to call
-	 * alpha_strcpy whenever we do a become_user(), potentially on every
-	 * smb request. See set_current_user_info.
-	 */
-	char *sanitized_username;
+	struct auth_user_info_unix *unix_info;
 };
 
 struct auth_context {

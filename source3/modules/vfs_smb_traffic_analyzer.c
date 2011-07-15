@@ -459,7 +459,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	 * function.
 	 */
 	username = smb_traffic_analyzer_anonymize( talloc_tos(),
-			handle->conn->session_info->sanitized_username,
+			handle->conn->session_info->unix_info->sanitized_username,
 			handle);
 
 	if (!username) {

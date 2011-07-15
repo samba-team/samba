@@ -507,11 +507,11 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
 	    (server_info->nss_token)) {
 		status = create_token_from_username(session_info,
-						    session_info->unix_name,
+						    session_info->unix_info->unix_name,
 						    session_info->guest,
 						    &session_info->unix_token->uid,
 						    &session_info->unix_token->gid,
-						    &session_info->unix_name,
+						    &session_info->unix_info->unix_name,
 						    &session_info->security_token);
 
 	} else {
@@ -824,7 +824,7 @@ static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_
 
 	alpha_strcpy(tmp, (*session_info)->info3->base.account_name.string,
 		     ". _-$", sizeof(tmp));
-	(*session_info)->sanitized_username = talloc_strdup(*session_info, tmp);
+	(*session_info)->unix_info->sanitized_username = talloc_strdup(*session_info, tmp);
 
 	status = NT_STATUS_OK;
 done:
@@ -1015,13 +1015,15 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 	}
 	dst->extra = src->extra;
 
-	dst->unix_name = talloc_strdup(dst, src->unix_name);
+	/* This element must be provided to convert back to an auth_serversupplied_info */
+	SMB_ASSERT(src->unix_info);
+	dst->unix_name = talloc_strdup(dst, src->unix_info->unix_name);
 	if (!dst->unix_name) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}
 
-	dst->sanitized_username = talloc_strdup(dst, src->sanitized_username);
+	dst->sanitized_username = talloc_strdup(dst, src->unix_info->sanitized_username);
 	if (!dst->sanitized_username) {
 		TALLOC_FREE(dst);
 		return NULL;
@@ -1080,14 +1082,20 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 	}
 	dst->extra = src->extra;
 
-	dst->unix_name = talloc_strdup(dst, src->unix_name);
-	if (!dst->unix_name) {
+	dst->unix_info = talloc_zero(dst, struct auth_user_info_unix);
+	if (!dst->unix_info) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}
 
-	dst->sanitized_username = talloc_strdup(dst, src->sanitized_username);
-	if (!dst->sanitized_username) {
+	dst->unix_info->unix_name = talloc_strdup(dst, src->unix_name);
+	if (!dst->unix_info->unix_name) {
+		TALLOC_FREE(dst);
+		return NULL;
+	}
+
+	dst->unix_info->sanitized_username = talloc_strdup(dst, src->sanitized_username);
+	if (!dst->unix_info->sanitized_username) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}
@@ -1149,16 +1157,24 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 	}
 	dst->extra = src->extra;
 
-	dst->unix_name = talloc_strdup(dst, src->unix_name);
-	if (!dst->unix_name) {
-		TALLOC_FREE(dst);
-		return NULL;
-	}
+	if (src->unix_info) {
+		dst->unix_info = talloc_zero(dst, struct auth_user_info_unix);
+		if (!dst->unix_info) {
+			TALLOC_FREE(dst);
+			return NULL;
+		}
 
-	dst->sanitized_username = talloc_strdup(dst, src->sanitized_username);
-	if (!dst->sanitized_username) {
-		TALLOC_FREE(dst);
-		return NULL;
+		dst->unix_info->unix_name = talloc_strdup(dst, src->unix_info->unix_name);
+		if (!dst->unix_info->unix_name) {
+			TALLOC_FREE(dst);
+			return NULL;
+		}
+
+		dst->unix_info->sanitized_username = talloc_strdup(dst, src->unix_info->sanitized_username);
+		if (!dst->unix_info->sanitized_username) {
+			TALLOC_FREE(dst);
+			return NULL;
+		}
 	}
 
 	return dst;

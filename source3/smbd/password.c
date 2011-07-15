@@ -281,22 +281,23 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 	/* This is a potentially untrusted username */
 	alpha_strcpy(tmp, smb_name, ". _-$", sizeof(tmp));
 
-	vuser->session_info->sanitized_username = talloc_strdup(
+	vuser->session_info->unix_info->sanitized_username = talloc_strdup(
 		vuser->session_info, tmp);
 
-	/* Make clear that we require the optional unix_token in the source3 code */
+	/* Make clear that we require the optional unix_token and unix_info in the source3 code */
 	SMB_ASSERT(vuser->session_info->unix_token);
+	SMB_ASSERT(vuser->session_info->unix_info);
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
 		  (unsigned int)vuser->session_info->unix_token->uid,
 		  (unsigned int)vuser->session_info->unix_token->gid,
-		  vuser->session_info->unix_name,
-		  vuser->session_info->sanitized_username,
+		  vuser->session_info->unix_info->unix_name,
+		  vuser->session_info->unix_info->sanitized_username,
 		  vuser->session_info->info3->base.domain.string,
 		  vuser->session_info->guest ));
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
-		  "Real name: %s\n", vuser->session_info->unix_name,
+		  "Real name: %s\n", vuser->session_info->unix_info->unix_name,
 		  vuser->session_info->info3->base.full_name.string));
 
 	if (!vuser->session_info->security_token) {
@@ -310,7 +311,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
 		"and will be vuid %u\n", (int)vuser->session_info->unix_token->uid,
-		 vuser->session_info->unix_name, vuser->vuid));
+		 vuser->session_info->unix_info->unix_name, vuser->vuid));
 
 	if (!session_claim(sconn, vuser)) {
 		DEBUG(1, ("register_existing_vuid: Failed to claim session "
@@ -329,7 +330,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	if (!vuser->session_info->guest) {
 		vuser->homes_snum = register_homes_share(
-			vuser->session_info->unix_name);
+			vuser->session_info->unix_info->unix_name);
 	}
 
 	if (srv_is_signing_negotiated(sconn) &&
@@ -343,8 +344,8 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	/* fill in the current_user_info struct */
 	set_current_user_info(
-		vuser->session_info->sanitized_username,
-		vuser->session_info->unix_name,
+		vuser->session_info->unix_info->sanitized_username,
+		vuser->session_info->unix_info->unix_name,
 		vuser->session_info->info3->base.domain.string);
 
 	return vuser->vuid;

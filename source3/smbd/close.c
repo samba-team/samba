@@ -686,7 +686,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	status = ntstatus_keeperror(status, tmp);
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
-		conn->session_info->unix_name, fsp_str_dbg(fsp),
+		conn->session_info->unix_info->unix_name, fsp_str_dbg(fsp),
 		conn->num_files_open - 1,
 		nt_errstr(status) ));
 

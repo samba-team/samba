@@ -443,10 +443,10 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	int rc = -1;
 
 	repository = talloc_sub_advanced(NULL, lp_servicename(SNUM(conn)),
-					conn->session_info->unix_name,
+					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
-					conn->session_info->sanitized_username,
+					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					recycle_repository(handle));
 	ALLOC_CHECK(repository, done);

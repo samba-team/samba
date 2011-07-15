@@ -3209,7 +3209,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				DEBUG(0,("set_user_quota: access_denied "
 					 "service [%s] user [%s]\n",
 					 lp_servicename(SNUM(conn)),
-					 conn->session_info->unix_name));
+					 conn->session_info->unix_info->unix_name));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
@@ -3703,7 +3703,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				if ((get_current_uid(conn) != 0) || !CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 						 lp_servicename(SNUM(conn)),
-						 conn->session_info->unix_name));
+						 conn->session_info->unix_info->unix_name));
 					reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 					return;
 				}

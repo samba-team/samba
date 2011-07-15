@@ -2252,7 +2252,7 @@ static bool is_owner(const struct auth3_session_info *server_info,
 	if (!pjob || !server_info)
 		return False;
 
-	return strequal(pjob->user, server_info->sanitized_username);
+	return strequal(pjob->user, server_info->unix_info->sanitized_username);
 }
 
 /****************************************************************************
@@ -2840,9 +2840,9 @@ WERROR print_job_start(const struct auth3_session_info *server_info,
 	fstrcpy(pjob.clientmachine, clientmachine);
 
 	fstrcpy(pjob.user, lp_printjob_username(snum));
-	standard_sub_advanced(sharename, server_info->sanitized_username,
+	standard_sub_advanced(sharename, server_info->unix_info->sanitized_username,
 			      path, server_info->unix_token->gid,
-			      server_info->sanitized_username,
+			      server_info->unix_info->sanitized_username,
 			      server_info->info3->base.domain.string,
 			      pjob.user, sizeof(pjob.user)-1);
 	/* ensure NULL termination */

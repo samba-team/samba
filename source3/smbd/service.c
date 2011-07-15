@@ -402,13 +402,13 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                                 return NT_STATUS_ACCESS_DENIED;
                         }
                 } else {
-                        if (!user_ok_token(vuid_serverinfo->unix_name,
+                        if (!user_ok_token(vuid_serverinfo->unix_info->unix_name,
 					   vuid_serverinfo->info3->base.domain.string,
                                            vuid_serverinfo->security_token, snum)) {
                                 DEBUG(2, ("user '%s' (from session setup) not "
                                           "permitted to access this share "
                                           "(%s)\n",
-                                          vuid_serverinfo->unix_name,
+                                          vuid_serverinfo->unix_info->unix_name,
                                           lp_servicename(snum)));
                                 return NT_STATUS_ACCESS_DENIED;
                         }
@@ -496,7 +496,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 	if (*lp_force_group(snum)) {
 
 		status = find_forced_group(
-			conn->force_user, snum, conn->session_info->unix_name,
+			conn->force_user, snum, conn->session_info->unix_info->unix_name,
 			&conn->session_info->security_token->sids[1],
 			&conn->session_info->unix_token->gid);
 
@@ -571,7 +571,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		conn->force_user = true;
 	}
 
-	add_session_user(sconn, conn->session_info->unix_name);
+	add_session_user(sconn, conn->session_info->unix_info->unix_name);
 
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
@@ -613,10 +613,10 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	{
 		char *s = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->session_info->unix_name,
+					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
-					conn->session_info->sanitized_username,
+					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_pathname(snum));
 		if (!s) {
@@ -700,7 +700,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	   filesystem operation that we do. */
 
 	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
-			    conn->session_info->unix_name) < 0) {
+			    conn->session_info->unix_info->unix_name) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
 		*pstatus = NT_STATUS_UNSUCCESSFUL;
 		goto err_root_exit;
@@ -735,10 +735,10 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (*lp_rootpreexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->session_info->unix_name,
+					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
-					conn->session_info->sanitized_username,
+					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_rootpreexec(snum));
 		DEBUG(5,("cmd=%s\n",cmd));
@@ -773,10 +773,10 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (*lp_preexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->session_info->unix_name,
+					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
-					conn->session_info->sanitized_username,
+					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_preexec(snum));
 		ret = smbrun(cmd,NULL);
@@ -881,7 +881,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		dbgtext( "%s", srv_is_signing_active(sconn) ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(snum) );
 		dbgtext( "initially as user %s ",
-			 conn->session_info->unix_name );
+			 conn->session_info->unix_info->unix_name );
 		dbgtext( "(uid=%d, gid=%d) ", (int)effuid, (int)effgid );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
@@ -1093,10 +1093,10 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    change_to_user(conn, vuid))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->session_info->unix_name,
+					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
-					conn->session_info->sanitized_username,
+					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_postexec(SNUM(conn)));
 		smbrun(cmd,NULL);
@@ -1109,10 +1109,10 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->session_info->unix_name,
+					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
-					conn->session_info->sanitized_username,
+					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info3->base.domain.string,
 					lp_rootpostexec(SNUM(conn)));
 		smbrun(cmd,NULL);

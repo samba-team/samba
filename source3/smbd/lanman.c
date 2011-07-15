@@ -117,10 +117,10 @@ static int CopyExpanded(connection_struct *conn,
 	}
 	buf = talloc_sub_advanced(ctx,
 				lp_servicename(SNUM(conn)),
-				conn->session_info->unix_name,
+				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
-				conn->session_info->sanitized_username,
+				conn->session_info->unix_info->sanitized_username,
 				conn->session_info->info3->base.domain.string,
 				buf);
 	if (!buf) {
@@ -168,10 +168,10 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	}
 	buf = talloc_sub_advanced(ctx,
 				lp_servicename(SNUM(conn)),
-				conn->session_info->unix_name,
+				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
-				conn->session_info->sanitized_username,
+				conn->session_info->unix_info->sanitized_username,
 				conn->session_info->info3->base.domain.string,
 				buf);
 	if (!buf) {
@@ -4011,7 +4011,7 @@ static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
 	p += 4;
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata));
-	strlcpy(p2,conn->session_info->sanitized_username,PTR_DIFF(endp,p2));
+	strlcpy(p2,conn->session_info->unix_info->sanitized_username,PTR_DIFF(endp,p2));
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
@@ -4636,7 +4636,7 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 	if(vuser != NULL) {
 		DEBUG(3,("  Username of UID %d is %s\n",
 			 (int)vuser->session_info->unix_token->uid,
-			 vuser->session_info->unix_name));
+			 vuser->session_info->unix_info->unix_name));
 	}
 
 	uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);

@@ -186,7 +186,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				"user %s because it was not found "
 				"or created at session setup "
 				"time\n",
-				compat_vuser->session_info->unix_name));
+				compat_vuser->session_info->unix_info->unix_name));
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
 		snum = compat_vuser->homes_snum;

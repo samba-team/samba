@@ -2411,7 +2411,7 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		username = p->session_info->sanitized_username;
+		username = p->session_info->unix_info->sanitized_username;
 		domname = p->session_info->info3->base.domain.string;
 	}
 

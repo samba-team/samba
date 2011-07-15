@@ -277,12 +277,12 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 
 	/* This is a potentially untrusted username */
 	alpha_strcpy(tmp, user, ". _-$", sizeof(tmp));
-	session->session_info->sanitized_username =
+	session->session_info->unix_info->sanitized_username =
 				talloc_strdup(session->session_info, tmp);
 
 	if (!session->session_info->guest) {
 		session->compat_vuser->homes_snum =
-			register_homes_share(session->session_info->unix_name);
+			register_homes_share(session->session_info->unix_info->unix_name);
 	}
 
 	if (!session_claim(session->sconn, session->compat_vuser)) {
@@ -488,12 +488,12 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		     auth_ntlmssp_get_username(session->auth_ntlmssp_state),
 		     ". _-$",
 		     sizeof(tmp));
-	session->session_info->sanitized_username = talloc_strdup(
+	session->session_info->unix_info->sanitized_username = talloc_strdup(
 		session->session_info, tmp);
 
 	if (!session->compat_vuser->session_info->guest) {
 		session->compat_vuser->homes_snum =
-			register_homes_share(session->session_info->unix_name);
+			register_homes_share(session->session_info->unix_info->unix_name);
 	}
 
 	if (!session_claim(session->sconn, session->compat_vuser)) {

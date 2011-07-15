@@ -231,9 +231,9 @@ bool afs_login(connection_struct *conn)
 	}
 
 	afs_username = talloc_sub_advanced(ctx,
-				SNUM(conn), conn->session_info->unix_name,
+				SNUM(conn), conn->session_info->unix_info->unix_name,
 				conn->connectpath, conn->session_info->unix_token->gid,
-				conn->session_info->sanitized_username,
+				conn->session_info->unix_info->sanitized_username,
 				pdb_get_domain(conn->session_info->sam_account),
 				afs_username);
 	if (!afs_username) {

@@ -1188,8 +1188,8 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	set_current_user_info(session->session_info->sanitized_username,
-			      session->session_info->unix_name,
+	set_current_user_info(session->session_info->unix_info->sanitized_username,
+			      session->session_info->unix_info->unix_name,
 			      session->session_info->info3->base.domain.string);
 
 	req->session = session;

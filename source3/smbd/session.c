@@ -139,7 +139,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 	/* Make clear that we require the optional unix_token in the source3 code */
 	SMB_ASSERT(vuser->session_info->unix_token);
 
-	fstrcpy(sessionid.username, vuser->session_info->unix_name);
+	fstrcpy(sessionid.username, vuser->session_info->unix_info->unix_name);
 	fstrcpy(sessionid.hostname, sconn->remote_hostname);
 	sessionid.id_num = i;  /* Only valid for utmp sessions */
 	sessionid.pid = pid;
