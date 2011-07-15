@@ -30,11 +30,16 @@
  *
  *  Author: Simo Sorce
  */
+#ifndef __LDB_HANDLERS_H__
+#define __LDB_HANDLERS_H__
 
-int ldb_handler_copy(		struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *in, struct ldb_val *out);
-int ldb_comparison_binary(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *v1, const struct ldb_val *v2);
-int ldb_comparison_fold(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *v1, const struct ldb_val *v2);
+int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
+			const struct ldb_val *in, struct ldb_val *out);
+int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
+			const struct ldb_val *in, struct ldb_val *out);
+int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
+			const struct ldb_val *v1, const struct ldb_val *v2);
+int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
+			const struct ldb_val *v1, const struct ldb_val *v2);
 
+#endif /* __LDB_HANDLERS_H__ */
