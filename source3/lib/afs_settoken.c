@@ -44,13 +44,14 @@ int afs_syscall( int subcall,
 	return( syscall( SYS_afs_syscall, subcall, path, cmd, cmarg, follow));
 */
 	int errcode;
+	int proc_afs_file;
 	struct afsprocdata afs_syscall_data;
 	afs_syscall_data.syscall = subcall;
 	afs_syscall_data.param1 = (long)path;
 	afs_syscall_data.param2 = cmd;
 	afs_syscall_data.param3 = (long)cmarg;
 	afs_syscall_data.param4 = follow;
-	int proc_afs_file = open(PROC_SYSCALL_FNAME, O_RDWR);
+	proc_afs_file = open(PROC_SYSCALL_FNAME, O_RDWR);
 	if (proc_afs_file < 0)
 		proc_afs_file = open(PROC_SYSCALL_ARLA_FNAME, O_RDWR);
 	if (proc_afs_file < 0)
@@ -105,8 +106,8 @@ static bool afs_decode_token(const char *string, char **cell,
 
 	if ( (blob.data == NULL) ||
 	     (blob.length != sizeof(result_ct.HandShakeKey) )) {
-		DEBUG(10, ("invalid key: %x/%d\n", (uint32)blob.data,
-			   blob.length));
+		DEBUG(10, ("invalid key: %x/%lu\n", (uint8_t)*blob.data,
+			   (unsigned long) blob.length));
 		return False;
 	}
 
