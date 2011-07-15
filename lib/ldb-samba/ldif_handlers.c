@@ -426,6 +426,28 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 	return 0;
 }
 
+/*
+  convert a string formatted SDDL to a ldif formatted ntSecurityDescriptor (SDDL format)
+*/
+static int ldif_write_sddlSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx,
+					   const struct ldb_val *in, struct ldb_val *out)
+{
+	if (ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY) {
+		struct security_descriptor *sd;
+		const struct dom_sid *sid = samdb_domain_sid(ldb);
+
+		sd = sddl_decode(mem_ctx, (const char *)in->data, sid);
+		out->data = (uint8_t *)ndr_print_struct_string(mem_ctx,
+					(ndr_print_fn_t)ndr_print_security_descriptor,
+					"SDDL", sd);
+		out->length = strlen((const char *)out->data);
+		talloc_free(sd);
+		return 0;
+	}
+
+	return ldb_handler_copy(ldb, mem_ctx, in, out);
+}
+
 /* 
    canonicalise an objectCategory.  We use the short form as the canonical form:
    cn=Person,cn=Schema,cn=Configuration,<basedn> becomes 'person'
@@ -1123,6 +1145,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.comparison_fn	  = ldb_comparison_binary,
 		.operator_fn      = samba_syntax_operator_fn
 	},{
+		.name		  = LDB_SYNTAX_SAMBA_SDDL_SECURITY_DESCRIPTOR,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_sddlSecurityDescriptor,
+		.canonicalise_fn  = ldb_handler_fold,
+		.comparison_fn	  = ldb_comparison_fold,
+		.operator_fn      = samba_syntax_operator_fn
+	},{
 		.name		  = LDB_SYNTAX_SAMBA_GUID,
 		.ldif_read_fn	  = ldif_read_objectGUID,
 		.ldif_write_fn	  = ldif_write_objectGUID,
@@ -1297,6 +1326,7 @@ static const struct {
 	{ "rIDAllocationPool",		LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDPreviousAllocationPool",	LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDAvailablePool",		LDB_SYNTAX_SAMBA_RANGE64 },
+	{ "defaultSecurityDescriptor",	LDB_SYNTAX_SAMBA_SDDL_SECURITY_DESCRIPTOR },
 
 	/*
 	 * these are extracted by searching
