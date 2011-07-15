@@ -93,7 +93,6 @@ struct auth3_session_info {
 	 */
 
 	DATA_BLOB session_key;
-	DATA_BLOB lm_session_key;
 
 	struct netr_SamInfo3 *info3;
 

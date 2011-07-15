@@ -820,7 +820,6 @@ static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
 	(*session_info)->session_key = data_blob(zeros, sizeof(zeros));
-	(*session_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 
 	alpha_strcpy(tmp, (*session_info)->info3->base.account_name.string,
 		     ". _-$", sizeof(tmp));
@@ -908,7 +907,7 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-
+/* This function MUST only used to create the cached server_info for guest */
 static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX *mem_ctx,
 							      const struct auth3_session_info *src)
 {
@@ -949,8 +948,10 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 	dst->session_key = data_blob_talloc( dst, src->session_key.data,
 						src->session_key.length);
 
-	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
-						src->lm_session_key.length);
+	/* This is OK because this functions is only used for the
+	 * GUEST account, which has all-zero keys for both values */
+	dst->lm_session_key = data_blob_talloc(dst, src->session_key.data,
+						src->session_key.length);
 
 	dst->info3 = copy_netr_SamInfo3(dst, src->info3);
 	if (!dst->info3) {
@@ -1010,9 +1011,6 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 
 	dst->session_key = data_blob_talloc( dst, src->session_key.data,
 						src->session_key.length);
-
-	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
-						src->lm_session_key.length);
 
 	dst->info3 = copy_netr_SamInfo3(dst, src->info3);
 	if (!dst->info3) {
@@ -1085,9 +1083,6 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 
 	dst->session_key = data_blob_talloc( dst, src->session_key.data,
 						src->session_key.length);
-
-	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
-						src->lm_session_key.length);
 
 	dst->info3 = copy_netr_SamInfo3(dst, src->info3);
 	if (!dst->info3) {
