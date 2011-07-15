@@ -45,6 +45,10 @@ enum rpc_service_mode_e rpc_epmapper_mode(void);
  */
 enum rpc_service_mode_e rpc_spoolss_mode(void);
 
+enum rpc_service_mode_e rpc_lsarpc_mode(void);
+enum rpc_service_mode_e rpc_samr_mode(void);
+enum rpc_service_mode_e rpc_netlogon_mode(void);
+
 /**
  * @brief Register an endpoint at the endpoint mapper.
  *

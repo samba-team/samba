@@ -96,6 +96,75 @@ enum rpc_service_mode_e rpc_spoolss_mode(void)
 	return state;
 }
 
+enum rpc_service_mode_e rpc_lsarpc_mode(void)
+{
+	const char *rpcsrv_type;
+	enum rpc_service_mode_e mode;
+
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "lsarpc",
+					   "embedded");
+
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
+		mode = RPC_SERVICE_MODE_EMBEDDED;
+	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
+		mode = RPC_SERVICE_MODE_EXTERNAL;
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+		mode = RPC_SERVICE_MODE_DAEMON;
+	} else {
+		mode = RPC_SERVICE_MODE_DISABLED;
+	}
+
+	return mode;
+}
+
+enum rpc_service_mode_e rpc_samr_mode(void)
+{
+	const char *rpcsrv_type;
+	enum rpc_service_mode_e mode;
+
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "samr",
+					   "embedded");
+
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
+		mode = RPC_SERVICE_MODE_EMBEDDED;
+	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
+		mode = RPC_SERVICE_MODE_EXTERNAL;
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+		mode = RPC_SERVICE_MODE_DAEMON;
+	} else {
+		mode = RPC_SERVICE_MODE_DISABLED;
+	}
+
+	return mode;
+}
+
+enum rpc_service_mode_e rpc_netlogon_mode(void)
+{
+	const char *rpcsrv_type;
+	enum rpc_service_mode_e mode;
+
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "netlogon",
+					   "embedded");
+
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
+		mode = RPC_SERVICE_MODE_EMBEDDED;
+	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
+		mode = RPC_SERVICE_MODE_EXTERNAL;
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+		mode = RPC_SERVICE_MODE_DAEMON;
+	} else {
+		mode = RPC_SERVICE_MODE_DISABLED;
+	}
+
+	return mode;
+}
+
 static bool rpc_setup_epmapper(struct tevent_context *ev_ctx,
 			       struct messaging_context *msg_ctx)
 {
@@ -234,6 +303,7 @@ static bool rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 	const char *pipe_name = "lsarpc";
 	struct dcerpc_binding_vector *v2;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
+	enum rpc_service_mode_e lsarpc_mode = rpc_lsarpc_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -242,7 +312,8 @@ static bool rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
+	if (lsarpc_mode == RPC_SERVICE_MODE_EMBEDDED &&
+	    epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -291,6 +362,7 @@ static bool rpc_setup_samr(struct tevent_context *ev_ctx,
 	const char *pipe_name = "samr";
 	struct dcerpc_binding_vector *v2;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
+	enum rpc_service_mode_e samr_mode = rpc_samr_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -299,7 +371,8 @@ static bool rpc_setup_samr(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
+	if (samr_mode == RPC_SERVICE_MODE_EMBEDDED &&
+	    epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
@@ -348,6 +421,7 @@ static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
 	const char *pipe_name = "netlogon";
 	struct dcerpc_binding_vector *v2;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
+	enum rpc_service_mode_e netlogon_mode = rpc_netlogon_mode();
 	NTSTATUS status;
 	bool ok;
 
@@ -356,7 +430,8 @@ static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
+	if (netlogon_mode == RPC_SERVICE_MODE_EMBEDDED &&
+	    epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
 		if (v2 == NULL) {
 			return false;
