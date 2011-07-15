@@ -502,7 +502,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
-	    (session_info->nss_token)) {
+	    (server_info->nss_token)) {
 		status = create_token_from_username(session_info,
 						    session_info->unix_name,
 						    session_info->guest,
