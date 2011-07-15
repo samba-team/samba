@@ -1052,7 +1052,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_CreateTrustedDomainEx(
 		[in]  policy_handle               *policy_handle,
 		[in]  lsa_TrustDomainInfoInfoEx   *info,
-		[in]  lsa_TrustDomainInfoAuthInfoInternal *auth_info,
+		[in]  lsa_TrustDomainInfoAuthInfo *auth_info,
 		[in]  lsa_TrustedAccessMask access_mask,
 		[out] policy_handle               *trustdom_handle
 		);

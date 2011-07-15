@@ -1139,7 +1139,12 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_c
 
 	r2.in.policy_handle = r->in.policy_handle;
 	r2.in.info = r->in.info;
-	r2.in.auth_info_internal = r->in.auth_info;
+
+	r2.in.auth_info_internal = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoAuthInfoInternal);
+	if (!r2.in.auth_info_internal) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	r2.out.trustdom_handle = r->out.trustdom_handle;
 	return dcesrv_lsa_CreateTrustedDomain_base(dce_call, mem_ctx, &r2, NDR_LSA_CREATETRUSTEDDOMAINEX);
 }

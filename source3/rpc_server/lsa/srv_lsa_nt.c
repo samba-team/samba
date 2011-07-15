@@ -1818,10 +1818,13 @@ NTSTATUS _lsa_CreateTrustedDomainEx(struct pipes_struct *p,
 				    struct lsa_CreateTrustedDomainEx *r)
 {
 	struct lsa_CreateTrustedDomainEx2 q;
+	struct lsa_TrustDomainInfoAuthInfoInternal auth_info;
+
+	ZERO_STRUCT(auth_info);
 
 	q.in.policy_handle	= r->in.policy_handle;
 	q.in.info		= r->in.info;
-	q.in.auth_info_internal = r->in.auth_info;
+	q.in.auth_info_internal	= &auth_info;
 	q.in.access_mask	= r->in.access_mask;
 	q.out.trustdom_handle	= r->out.trustdom_handle;
 
