@@ -2702,7 +2702,7 @@ static NTSTATUS get_user_info_18(struct pipes_struct *p,
 
 	ZERO_STRUCTP(r);
 
-	if (p->session_info->system) {
+	if (p->session_info->unix_info->system) {
 		goto query;
 	}
 

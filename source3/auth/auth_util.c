@@ -857,7 +857,7 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	(*session_info)->system = true;
+	(*session_info)->unix_info->system = true;
 
 	status = add_sid_to_array_unique((*session_info)->security_token->sids,
 					 &global_sid_System,
@@ -982,7 +982,7 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 	SMB_ASSERT(src->unix_info);
 
 	dst->guest = src->unix_info->guest;
-	dst->system = src->system;
+	dst->system = src->unix_info->system;
 
 	/* This element must be provided to convert back to an auth_serversupplied_info */
 	SMB_ASSERT(src->unix_token);
@@ -1043,8 +1043,6 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 		return NULL;
 	}
 
-	dst->system = src->system;
-
 	dst->unix_token = talloc(dst, struct security_unix_token);
 	if (!dst->unix_token) {
 		return NULL;
@@ -1101,6 +1099,7 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 	}
 
 	dst->unix_info->guest = src->guest;
+	dst->unix_info->system = src->system;
 
 	return dst;
 }
@@ -1114,8 +1113,6 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 	if (dst == NULL) {
 		return NULL;
 	}
-
-	dst->system = src->system;
 
 	if (src->unix_token) {
 		dst->unix_token = talloc(dst, struct security_unix_token);
@@ -1178,6 +1175,7 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 		}
 
 		dst->unix_info->guest = src->unix_info->guest;
+		dst->unix_info->system = src->unix_info->system;
 	}
 
 	return dst;

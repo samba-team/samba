@@ -76,8 +76,6 @@ struct auth_serversupplied_info {
 };
 
 struct auth3_session_info {
-	bool system;
-
 	struct security_unix_token *unix_token;
 
 	/* NT group information taken from the info3 structure */
