@@ -75,6 +75,55 @@ struct auth_serversupplied_info {
 	char *sanitized_username;
 };
 
+struct auth3_session_info {
+	bool guest;
+	bool system;
+
+	struct security_unix_token utok;
+
+	/* NT group information taken from the info3 structure */
+
+	struct security_token *security_token;
+
+	/* This is the final session key, as used by SMB signing, and
+	 * (truncated to 16 bytes) encryption on the SAMR and LSA pipes
+	 * when over ncacn_np.
+	 * It is calculated by NTLMSSP from the session key in the info3,
+	 * and is  set from the Kerberos session key using
+	 * krb5_auth_con_getremotesubkey().
+	 *
+	 * Bottom line, it is not the same as the session keys in info3.
+	 */
+
+	DATA_BLOB session_key;
+	DATA_BLOB lm_session_key;
+
+	struct netr_SamInfo3 *info3;
+
+	/* this structure is filled *only* in pathological cases where the user
+	 * sid or the primary group sid are not sids of the domain. Normally
+	 * this happens only for unix accounts that have unix domain sids.
+	 * This is checked only when info3.rid and/or info3.primary_gid are set
+	 * to the special invalid value of 0xFFFFFFFF */
+	struct extra_auth_info extra;
+
+	/*
+	 * This is a token from /etc/passwd and /etc/group
+	 */
+	bool nss_token;
+
+	char *unix_name;
+
+	/*
+	 * For performance reasons we keep an alpha_strcpy-sanitized version
+	 * of the username around as long as the global variable current_user
+	 * still exists. If we did not do keep this, we'd have to call
+	 * alpha_strcpy whenever we do a become_user(), potentially on every
+	 * smb request. See set_current_user_info.
+	 */
+	char *sanitized_username;
+};
+
 struct auth_context {
 	DATA_BLOB challenge; 
 

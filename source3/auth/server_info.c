@@ -63,6 +63,40 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
+/* FIXME: do we really still need this ? */
+static int auth3_session_info_dtor(struct auth3_session_info *session_info)
+{
+	TALLOC_FREE(session_info->info3);
+	ZERO_STRUCTP(session_info);
+	return 0;
+}
+
+/***************************************************************************
+ Make a server_info struct. Free with TALLOC_FREE().
+***************************************************************************/
+
+struct auth3_session_info *make_auth3_session_info(TALLOC_CTX *mem_ctx)
+{
+	struct auth3_session_info *result;
+
+	result = talloc_zero(mem_ctx, struct auth3_session_info);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	talloc_set_destructor(result, auth3_session_info_dtor);
+
+	/* Initialise the uid and gid values to something non-zero
+	   which may save us from giving away root access if there
+	   is a bug in allocating these fields. */
+
+	result->utok.uid = -1;
+	result->utok.gid = -1;
+
+	return result;
+}
+
 /****************************************************************************
  inits a netr_SamInfo2 structure from an auth_serversupplied_info. sam2 must
  already be initialized and is used as the talloc parent for its members.
