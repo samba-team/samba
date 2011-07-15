@@ -93,7 +93,7 @@ def get_dsServiceName(samdb):
 class cmd_drs_showrepl(Command):
     """show replication status"""
 
-    synopsis = "%prog drs showrepl <DC>"
+    synopsis = "%prog drs showrepl <DC> [options]"
 
     takes_args = ["DC?"]
 
@@ -198,7 +198,7 @@ class cmd_drs_showrepl(Command):
 class cmd_drs_kcc(Command):
     """trigger knowledge consistency center run"""
 
-    synopsis = "%prog drs kcc <DC>"
+    synopsis = "%prog drs kcc <DC> [options]"
 
     takes_args = ["DC?"]
 
@@ -259,7 +259,7 @@ def drs_local_replicate(self, SOURCE_DC, NC):
 class cmd_drs_replicate(Command):
     """replicate a naming context between two DCs"""
 
-    synopsis = "%prog drs replicate <DEST_DC> <SOURCE_DC> <NC>"
+    synopsis = "%prog drs replicate <destinationDC> <sourceDC> <NC> [options]"
 
     takes_args = ["DEST_DC", "SOURCE_DC", "NC"]
 
@@ -327,7 +327,7 @@ class cmd_drs_replicate(Command):
 class cmd_drs_bind(Command):
     """show DRS capabilities of a server"""
 
-    synopsis = "%prog drs bind <DC>"
+    synopsis = "%prog drs bind <DC> [options]"
 
     takes_args = ["DC?"]
 
@@ -422,7 +422,7 @@ class cmd_drs_options(Command):
 
     synopsis = ("%prog drs options <DC>"
                 " [--dsa-option={+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL"
-                " |{+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE]")
+                " |{+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE] [options]")
 
     takes_args = ["DC?"]
 
