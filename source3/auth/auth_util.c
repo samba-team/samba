@@ -907,7 +907,13 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-/* This function MUST only used to create the cached server_info for guest */
+/* This function MUST only used to create the cached server_info for
+ * guest.
+ *
+ * This is a lossy conversion.  Variables known to be lost so far
+ * include: nss_token (not needed because the only read doesn't happen
+ * for the GUEST user, as this routine populates ->security_token
+ */
 static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX *mem_ctx,
 							      const struct auth3_session_info *src)
 {
@@ -937,12 +943,15 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 		dst->utok.groups = NULL;
 	}
 
-	if (src->security_token) {
-		dst->security_token = dup_nt_token(dst, src->security_token);
-		if (!dst->security_token) {
-			TALLOC_FREE(dst);
-			return NULL;
-		}
+	/* We must have a security_token as otherwise the lossy
+	 * conversion without nss_token would cause create_local_token
+	 * to take the wrong path */
+	SMB_ASSERT(src->security_token);
+
+	dst->security_token = dup_nt_token(dst, src->security_token);
+	if (!dst->security_token) {
+		TALLOC_FREE(dst);
+		return NULL;
 	}
 
 	dst->session_key = data_blob_talloc( dst, src->session_key.data,
