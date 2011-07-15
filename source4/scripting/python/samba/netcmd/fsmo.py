@@ -4,6 +4,7 @@
 #
 # Copyright Nadezhda Ivanova 2009
 # Copyright Jelmer Vernooij 2009
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,12 +36,6 @@ class cmd_fsmo(Command):
     """Manage flexible single master (FSMO) roles [server connection needed]"""
 
     synopsis = "(show | transfer <options> | seize <options>)"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     takes_options = [
         Option("--url", help="LDB URL for database or target server", type=str),

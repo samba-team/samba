@@ -3,6 +3,7 @@
 # implement samba_tool gpo commands
 #
 # Copyright Andrew Tridgell 2010
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # based on C implementation by Guenther Deschner and Wilco Baan Hofman
 #
@@ -88,12 +89,6 @@ class cmd_listall(Command):
 
     synopsis = "%prog gpo listall"
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
-
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
         ]
@@ -135,12 +130,6 @@ class cmd_list(Command):
     """list GPOs for a user"""
 
     synopsis = "%prog gpo list <username>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_args = [ 'username' ]
 

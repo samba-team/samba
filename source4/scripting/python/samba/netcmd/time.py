@@ -3,6 +3,7 @@
 # time
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,12 +30,6 @@ from samba.netcmd import (
 class cmd_time(Command):
     """Retrieve the time on a remote server [server connection needed]"""
     synopsis = "%prog time <server-name>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     takes_args = ["server_name?"]
 

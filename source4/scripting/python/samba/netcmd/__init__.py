@@ -3,6 +3,7 @@
 # Unix SMB/CIFS implementation.
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009
 # Copyright (C) Theresa Halloran <theresahalloran@gmail.com> 2011
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -94,7 +95,11 @@ class Command(object):
 
     takes_args = []
     takes_options = []
-    takes_optiongroups = {}
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     def _create_parser(self):
         parser = optparse.OptionParser(self.synopsis)

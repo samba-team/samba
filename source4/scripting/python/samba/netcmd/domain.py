@@ -54,12 +54,6 @@ class cmd_domain_dumpkeys(Command):
     """Dumps kerberos keys of the domain into a keytab"""
     synopsis = "%prog domain dumpkeys <keytab>"
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
-
     takes_options = [
         ]
 
@@ -76,12 +70,6 @@ class cmd_domain_join(Command):
     """Joins domain as either member or backup domain controller [server connection needed]"""
 
     synopsis = "%prog domain join <dnsdomain> [DC | RODC | MEMBER] [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("--server", help="DC to join", type=str),
@@ -129,12 +117,6 @@ class cmd_domain_level(Command):
     """Raises domain and forest function levels"""
 
     synopsis = "%prog domain level (show | raise <options>)"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -321,12 +303,6 @@ class cmd_domain_machinepassword(Command):
 
     synopsis = "%prog domain machinepassword <accountname>"
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
-
     takes_args = ["secret"]
 
     def run(self, secret, sambaopts=None, credopts=None, versionopts=None):
@@ -357,12 +333,6 @@ class cmd_domain_passwordsettings(Command):
     """
 
     synopsis = "%prog domain passwordsettings (show | set <options>)"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-        }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),

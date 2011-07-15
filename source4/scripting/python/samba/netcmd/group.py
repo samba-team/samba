@@ -5,6 +5,7 @@
 #
 # Based on the original in EJS:
 # Copyright Andrew Tridgell 2005
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,12 +44,6 @@ class cmd_group_add(Command):
     """Creates a new group"""
 
     synopsis = "%prog group add [options] <groupname>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -93,12 +88,6 @@ class cmd_group_delete(Command):
 
     synopsis = "%prog group delete <groupname>"
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
-
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
     ]
@@ -123,12 +112,6 @@ class cmd_group_add_members(Command):
     """Add (comma-separated list of) group members"""
 
     synopsis = "%prog group addmembers <groupname> <listofmembers>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -155,12 +138,6 @@ class cmd_group_remove_members(Command):
     """Remove (comma-separated list of) group members"""
 
     synopsis = "%prog group removemembers <groupname> <listofmembers>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),

@@ -3,6 +3,7 @@
 # Manipulate ACLs on directory objects
 #
 # Copyright (C) Nadezhda Ivanova <nivanova@samba.org> 2010
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,12 +50,6 @@ class cmd_ds_acl_set(Command):
 
     synopsis = "set --objectdn=objectdn --car=control right --action=[deny|allow] --trusteedn=trustee-dn"
     car_help = """ The access control right to allow or deny """
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     takes_options = [
         Option("--host", help="LDB URL for database or target server",

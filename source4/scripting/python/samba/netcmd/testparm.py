@@ -4,6 +4,7 @@
 #   Unix SMB/CIFS implementation.
 #   Test validity of smb.conf
 #   Copyright (C) Karl Auer 1993, 1994-1998
+#   Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 #   Extensively modified by Andrew Tridgell, 1995
 #   Converted to popt by Jelmer Vernooij (jelmer@nl.linux.org), 2002
@@ -44,11 +45,6 @@ class cmd_testparm(Command):
     """Syntax check the configuration file"""
 
     synopsis = ""
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions
-    }
 
     takes_options = [
         Option("--section-name", type=str,

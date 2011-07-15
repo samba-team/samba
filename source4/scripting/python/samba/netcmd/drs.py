@@ -3,6 +3,7 @@
 # implement samba_tool drs commands
 #
 # Copyright Andrew Tridgell 2010
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # based on C implementation by Kamen Mazdrashki <kamen.mazdrashki@postpath.com>
 #
@@ -93,12 +94,6 @@ class cmd_drs_showrepl(Command):
     """show replication status"""
 
     synopsis = "%prog drs showrepl <DC>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_args = ["DC?"]
 
@@ -205,12 +200,6 @@ class cmd_drs_kcc(Command):
 
     synopsis = "%prog drs kcc <DC>"
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
-
     takes_args = ["DC?"]
 
     def run(self, DC=None, sambaopts=None,
@@ -271,12 +260,6 @@ class cmd_drs_replicate(Command):
     """replicate a naming context between two DCs"""
 
     synopsis = "%prog drs replicate <DEST_DC> <SOURCE_DC> <NC>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_args = ["DEST_DC", "SOURCE_DC", "NC"]
 
@@ -345,12 +328,6 @@ class cmd_drs_bind(Command):
     """show DRS capabilities of a server"""
 
     synopsis = "%prog drs bind <DC>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_args = ["DC?"]
 
@@ -446,12 +423,6 @@ class cmd_drs_options(Command):
     synopsis = ("%prog drs options <DC>"
                 " [--dsa-option={+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL"
                 " |{+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE]")
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_args = ["DC?"]
 

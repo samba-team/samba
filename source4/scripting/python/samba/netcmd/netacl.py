@@ -4,6 +4,7 @@
 #
 # Copyright (C) Matthieu Patou <mat@matws.net> 2010
 # Copyright (C) Nadezhda Ivanova <nivanova@samba.org> 2010
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

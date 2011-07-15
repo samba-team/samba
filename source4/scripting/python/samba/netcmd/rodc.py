@@ -3,6 +3,7 @@
 # rodc related commands
 #
 # Copyright Andrew Tridgell 2010
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,12 +32,6 @@ class cmd_rodc_preload(Command):
     """Preload one account for an RODC"""
 
     synopsis = "%prog rodc preload <SID|DN|accountname>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("--server", help="DC to use", type=str),

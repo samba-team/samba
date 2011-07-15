@@ -8,6 +8,7 @@
 # above partitions.
 
 # Copyright (C) Zahari Zahariev <zahari.zahariev@postpath.com> 2009, 2010
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -840,12 +841,6 @@ class LDAPBundel(object):
 class cmd_ldapcmp(Command):
     """compare two ldap databases"""
     synopsis = "ldapcmp URL1 URL2 <domain|configuration|schema> [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptionsDouble,
-    }
 
     takes_args = ["URL1", "URL2", "context1?", "context2?", "context3?"]
 

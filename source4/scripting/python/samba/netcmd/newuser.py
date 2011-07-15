@@ -5,6 +5,7 @@
 #
 # Based on the original in EJS:
 # Copyright Andrew Tridgell 2005
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,12 +32,6 @@ class cmd_newuser(Command):
     """Creates a new user"""
 
     synopsis = "newuser [options] <username> [<password>]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),

@@ -4,6 +4,7 @@
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>
 # Copyright Theresa Halloran 2011 <theresahalloran@gmail.com>
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,12 +40,6 @@ class cmd_user_add(Command):
     """Create a new user."""
     synopsis = "%prog user add <name> [<password>]"
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
-
     takes_args = ["name", "password?"]
 
     def run(self, name, password=None, credopts=None, sambaopts=None, versionopts=None):
@@ -59,12 +54,6 @@ class cmd_user_add(Command):
 class cmd_user_delete(Command):
     """Delete a user."""
     synopsis = "%prog user delete <name>"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     takes_args = ["name"]
 
@@ -82,13 +71,6 @@ class cmd_user_enable(Command):
     """Enables a user"""
 
     synopsis = "%prog user enable <username> [options]"
-
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -121,12 +103,6 @@ class cmd_user_setexpiry(Command):
     """Sets the expiration of a user account"""
 
     synopsis = "%prog user setexpiry <username> [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -164,12 +140,6 @@ class cmd_user_setpassword(Command):
     """(Re)sets the password of a user account"""
 
     synopsis = "%prog user setpassword [username] [options]"
-
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "versionopts": options.VersionOptions,
-        "credopts": options.CredentialsOptions,
-    }
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
