@@ -166,8 +166,6 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 					 const char *username,
 					 bool is_guest,
 					 struct auth3_session_info **session_info);
-struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
-						 const struct auth_serversupplied_info *src);
 struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 					     const struct auth3_session_info *src);
 bool init_guest_info(void);

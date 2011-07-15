@@ -909,65 +909,6 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 }
 
 
-struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
-						 const struct auth_serversupplied_info *src)
-{
-	struct auth_serversupplied_info *dst;
-
-	dst = make_server_info(mem_ctx);
-	if (dst == NULL) {
-		return NULL;
-	}
-
-	dst->guest = src->guest;
-	dst->system = src->system;
-	dst->utok.uid = src->utok.uid;
-	dst->utok.gid = src->utok.gid;
-	dst->utok.ngroups = src->utok.ngroups;
-	if (src->utok.ngroups != 0) {
-		dst->utok.groups = (gid_t *)talloc_memdup(
-			dst, src->utok.groups,
-			sizeof(gid_t)*dst->utok.ngroups);
-	} else {
-		dst->utok.groups = NULL;
-	}
-
-	if (src->security_token) {
-		dst->security_token = dup_nt_token(dst, src->security_token);
-		if (!dst->security_token) {
-			TALLOC_FREE(dst);
-			return NULL;
-		}
-	}
-
-	dst->session_key = data_blob_talloc( dst, src->session_key.data,
-						src->session_key.length);
-
-	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
-						src->lm_session_key.length);
-
-	dst->info3 = copy_netr_SamInfo3(dst, src->info3);
-	if (!dst->info3) {
-		TALLOC_FREE(dst);
-		return NULL;
-	}
-	dst->extra = src->extra;
-
-	dst->unix_name = talloc_strdup(dst, src->unix_name);
-	if (!dst->unix_name) {
-		TALLOC_FREE(dst);
-		return NULL;
-	}
-
-	dst->sanitized_username = talloc_strdup(dst, src->sanitized_username);
-	if (!dst->sanitized_username) {
-		TALLOC_FREE(dst);
-		return NULL;
-	}
-
-	return dst;
-}
-
 static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX *mem_ctx,
 							      const struct auth3_session_info *src)
 {
