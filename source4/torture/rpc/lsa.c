@@ -2394,16 +2394,19 @@ static bool test_CreateTrustedDomain(struct dcerpc_binding_handle *b,
 	return ret;
 }
 
-static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
-					struct torture_context *tctx,
-					struct policy_handle *handle,
-					uint32_t num_trusts)
+static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
+					      struct torture_context *tctx,
+					      struct policy_handle *handle,
+					      uint32_t num_trusts,
+					      bool ex2_call)
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct lsa_CreateTrustedDomainEx2 r;
+	struct lsa_CreateTrustedDomainEx r;
+	struct lsa_CreateTrustedDomainEx2 r2;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
-	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
+	struct lsa_TrustDomainInfoAuthInfoInternal authinfo_internal;
+	struct lsa_TrustDomainInfoAuthInfo authinfo;
 	struct trustDomainPasswords auth_struct;
 	DATA_BLOB auth_blob;
 	struct dom_sid **domsid;
@@ -2415,7 +2418,11 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	torture_comment(tctx, "\nTesting CreateTrustedDomainEx2 for %d domains\n", num_trusts);
+	if (ex2_call) {
+		torture_comment(tctx, "\nTesting CreateTrustedDomainEx2 for %d domains\n", num_trusts);
+	} else {
+		torture_comment(tctx, "\nTesting CreateTrustedDomainEx for %d domains\n", num_trusts);
+	}
 
 	domsid = talloc_array(tctx, struct dom_sid *, num_trusts);
 	trustdom_handle = talloc_array(tctx, struct policy_handle, num_trusts);
@@ -2475,24 +2482,55 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 		arcfour_crypt_blob(auth_blob.data, auth_blob.length, &session_key);
 
-		authinfo.auth_blob.size = auth_blob.length;
-		authinfo.auth_blob.data = auth_blob.data;
+		ZERO_STRUCT(authinfo);
 
-		r.in.policy_handle = handle;
-		r.in.info = &trustinfo;
-		r.in.auth_info_internal = &authinfo;
-		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		r.out.trustdom_handle = &trustdom_handle[i];
+		authinfo_internal.auth_blob.size = auth_blob.length;
+		authinfo_internal.auth_blob.data = auth_blob.data;
 
-		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_CreateTrustedDomainEx2_r(b, tctx, &r),
-			"CreateTrustedDomainEx2 failed");
-		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			test_DeleteTrustedDomain(b, tctx, handle, trustinfo.netbios_name);
-			torture_assert_ntstatus_ok(tctx, dcerpc_lsa_CreateTrustedDomainEx2_r(b, tctx, &r),
+		if (ex2_call) {
+
+			r2.in.policy_handle = handle;
+			r2.in.info = &trustinfo;
+			r2.in.auth_info_internal = &authinfo_internal;
+			r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+			r2.out.trustdom_handle = &trustdom_handle[i];
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_lsa_CreateTrustedDomainEx2_r(b, tctx, &r2),
 				"CreateTrustedDomainEx2 failed");
+
+			status = r2.out.result;
+		} else {
+
+			r.in.policy_handle = handle;
+			r.in.info = &trustinfo;
+			r.in.auth_info = &authinfo;
+			r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+			r.out.trustdom_handle = &trustdom_handle[i];
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_lsa_CreateTrustedDomainEx_r(b, tctx, &r),
+				"CreateTrustedDomainEx failed");
+
+			status = r.out.result;
 		}
-		if (!NT_STATUS_IS_OK(r.out.result)) {
-			torture_comment(tctx, "CreateTrustedDomainEx failed2 - %s\n", nt_errstr(r.out.result));
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			test_DeleteTrustedDomain(b, tctx, handle, trustinfo.netbios_name);
+			if (ex2_call) {
+				torture_assert_ntstatus_ok(tctx,
+					dcerpc_lsa_CreateTrustedDomainEx2_r(b, tctx, &r2),
+					"CreateTrustedDomainEx2 failed");
+				status = r2.out.result;
+			} else {
+				torture_assert_ntstatus_ok(tctx,
+					dcerpc_lsa_CreateTrustedDomainEx_r(b, tctx, &r),
+					"CreateTrustedDomainEx2 failed");
+				status = r.out.result;
+			}
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			torture_comment(tctx, "CreateTrustedDomainEx failed2 - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
 
@@ -2551,6 +2589,22 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	}
 
 	return ret;
+}
+
+static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
+					struct torture_context *tctx,
+					struct policy_handle *handle,
+					uint32_t num_trusts)
+{
+	return test_CreateTrustedDomainEx_common(p, tctx, handle, num_trusts, true);
+}
+
+static bool test_CreateTrustedDomainEx(struct dcerpc_pipe *p,
+				       struct torture_context *tctx,
+				       struct policy_handle *handle,
+				       uint32_t num_trusts)
+{
+	return test_CreateTrustedDomainEx_common(p, tctx, handle, num_trusts, false);
 }
 
 static bool test_QueryDomainInfoPolicy(struct dcerpc_binding_handle *b,
@@ -3005,6 +3059,10 @@ static bool testcase_TrustedDomains(struct torture_context *tctx,
 	}
 
 	if (!test_CreateTrustedDomain(b, tctx, handle, state->num_trusts)) {
+		ret = false;
+	}
+
+	if (!test_CreateTrustedDomainEx(p, tctx, handle, state->num_trusts)) {
 		ret = false;
 	}
 
