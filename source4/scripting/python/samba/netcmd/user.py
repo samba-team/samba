@@ -47,9 +47,16 @@ class cmd_user_add(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp )
         net = Net(creds, lp, server=credopts.ipaddress)
-        net.create_user(name)
+        try:
+            net.create_user(name)
+        except RuntimeError, msg:
+            raise CommandError("Failed to add user '%s': %s" % (name, msg))
+
         if password is not None:
-            net.set_password(name, creds.get_domain(), password, creds)
+            try:
+                net.set_password(name, creds.get_domain(), password, creds)
+            except RuntimeError, msg:
+                raise CommandError("Failed to set password '%s': %s" % (name, msg))
 
 
 
@@ -66,7 +73,7 @@ class cmd_user_delete(Command):
         try:
             net.delete_user(name)
         except RuntimeError, msg:
-            raise CommandError("Failed to delete user %s: %s" % (name, msg))
+            raise CommandError("Failed to delete user '%s': %s" % (name, msg))
 
 
 
@@ -98,8 +105,8 @@ class cmd_user_enable(Command):
         try:
             samdb.enable_account(filter)
         except Exception, msg:
-            raise CommandError("Failed to enable user %s: %s" % (username or filter, msg))
-        print("Enabled user %s" % (username or filter))
+            raise CommandError("Failed to enable user '%s': %s" % (username or filter, msg))
+        print("Enabled user '%s'" % (username or filter))
 
 
 
@@ -136,8 +143,9 @@ class cmd_user_setexpiry(Command):
         try:
             samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
         except Exception, msg:
-            raise CommandError("Failed to set expiry for user %s: %s" % (username or filter, msg))
-        print("Set expiry for user %s to %u days" % (username or filter, days))
+            raise CommandError("Failed to set expiry for user '%s': %s" % (username or filter, msg))
+        print("Set expiry for user '%s' to %u days" % (username or filter, days))
+
 
 
 class cmd_user_setpassword(Command):
@@ -163,7 +171,9 @@ class cmd_user_setpassword(Command):
             raise CommandError("Either the username or '--filter' must be specified!")
 
         password = newpassword
-        if password is None:
+        while 1:
+            if password is not None and password is not '':
+                break
             password = getpass("New Password: ")
 
         if filter is None:
@@ -181,9 +191,10 @@ class cmd_user_setpassword(Command):
             samdb.setpassword(filter, password,
                               force_change_at_next_login=must_change_at_next_login,
                               username=username)
-        except Exception, e:
-            raise CommandError('Failed to set password for user "%s"' % username, e)
+        except Exception, msg:
+            raise CommandError("Failed to set password for user '%s': %s" % (username or filter, msg))
         print "Changed password OK"
+
 
 
 class cmd_user(SuperCommand):
