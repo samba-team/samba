@@ -1746,9 +1746,9 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 	td.trust_type = r->in.info->trust_type;
 	td.trust_attributes = r->in.info->trust_attributes;
 
-	if (r->in.auth_info->auth_blob.size != 0) {
-		auth_blob.length = r->in.auth_info->auth_blob.size;
-		auth_blob.data = r->in.auth_info->auth_blob.data;
+	if (r->in.auth_info_internal->auth_blob.size != 0) {
+		auth_blob.length = r->in.auth_info_internal->auth_blob.size;
+		auth_blob.data = r->in.auth_info_internal->auth_blob.data;
 
 		arcfour_crypt_blob(auth_blob.data, auth_blob.length,
 				   &p->session_info->session_key);
@@ -1821,7 +1821,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx(struct pipes_struct *p,
 
 	q.in.policy_handle	= r->in.policy_handle;
 	q.in.info		= r->in.info;
-	q.in.auth_info		= r->in.auth_info;
+	q.in.auth_info_internal = r->in.auth_info;
 	q.in.access_mask	= r->in.access_mask;
 	q.out.trustdom_handle	= r->out.trustdom_handle;
 
@@ -1850,7 +1850,7 @@ NTSTATUS _lsa_CreateTrustedDomain(struct pipes_struct *p,
 
 	c.in.policy_handle	= r->in.policy_handle;
 	c.in.info		= &info;
-	c.in.auth_info		= &auth_info;
+	c.in.auth_info_internal	= &auth_info;
 	c.in.access_mask	= r->in.access_mask;
 	c.out.trustdom_handle	= r->out.trustdom_handle;
 

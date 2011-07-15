@@ -122,7 +122,7 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 
 	r.in.policy_handle = handle;
 	r.in.info = &trustinfo;
-	r.in.auth_info = authinfo;
+	r.in.auth_info_internal = authinfo;
 	/* LSA_TRUSTED_QUERY_DOMAIN_NAME is needed for for following
 	 * QueryTrustedDomainInfo call, although it seems that Windows does not
 	 * expect this */

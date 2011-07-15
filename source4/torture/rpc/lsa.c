@@ -2480,7 +2480,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 		r.in.policy_handle = handle;
 		r.in.info = &trustinfo;
-		r.in.auth_info = &authinfo;
+		r.in.auth_info_internal = &authinfo;
 		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		r.out.trustdom_handle = &trustdom_handle[i];
 

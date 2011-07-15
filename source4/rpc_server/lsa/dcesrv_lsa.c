@@ -932,8 +932,8 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		auth_struct.outgoing.count = 0;
 		auth_struct.incoming.count = 0;
 	} else {
-		auth_blob = data_blob_const(r->in.auth_info->auth_blob.data,
-					    r->in.auth_info->auth_blob.size);
+		auth_blob = data_blob_const(r->in.auth_info_internal->auth_blob.data,
+					    r->in.auth_info_internal->auth_blob.size);
 		nt_status = get_trustdom_auth_blob(dce_call, mem_ctx,
 						   &auth_blob, &auth_struct);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1139,7 +1139,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_c
 
 	r2.in.policy_handle = r->in.policy_handle;
 	r2.in.info = r->in.info;
-	r2.in.auth_info = r->in.auth_info;
+	r2.in.auth_info_internal = r->in.auth_info;
 	r2.out.trustdom_handle = r->out.trustdom_handle;
 	return dcesrv_lsa_CreateTrustedDomain_base(dce_call, mem_ctx, &r2, NDR_LSA_CREATETRUSTEDDOMAINEX);
 }

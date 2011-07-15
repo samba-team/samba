@@ -128,7 +128,7 @@ static NTSTATUS create_trust(TALLOC_CTX *mem_ctx,
 
 	r.in.policy_handle = pol_hnd;
 	r.in.info = &trustinfo;
-	r.in.auth_info = authinfo;
+	r.in.auth_info_internal = authinfo;
 	r.in.access_mask = LSA_TRUSTED_SET_POSIX | LSA_TRUSTED_SET_AUTH |
 			   LSA_TRUSTED_QUERY_DOMAIN_NAME;
 	r.out.trustdom_handle = &trustdom_handle;
