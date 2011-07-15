@@ -35,7 +35,7 @@
 #include <sys/syscall.h>
 
 int afs_syscall( int subcall,
-	  char * path,
+	  const char * path,
 	  int cmd,
 	  char * cmarg,
 	  int follow)
