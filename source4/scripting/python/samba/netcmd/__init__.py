@@ -98,7 +98,6 @@ class Command(object):
 
     def _create_parser(self):
         parser = optparse.OptionParser(self.synopsis)
-        parser.prog = "samba-tool"
         parser.add_options(self.takes_options)
         optiongroups = {}
         for name, optiongroup in self.takes_optiongroups.iteritems():
