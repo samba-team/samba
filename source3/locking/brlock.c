@@ -1485,136 +1485,37 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 	files_struct *fsp = br_lck->fsp;
 	uint16 tid = fsp->conn->cnum;
 	int fnum = fsp->fnum;
-	unsigned int i, j, dcount=0;
-	int num_deleted_windows_locks = 0;
+	unsigned int i;
 	struct lock_struct *locks = br_lck->lock_data;
 	struct server_id pid = sconn_server_id(fsp->conn->sconn);
-	bool unlock_individually = False;
-	bool posix_level2_contention_ended = false;
+	struct lock_struct *locks_copy;
+	unsigned int num_locks_copy;
 
-	if(lp_posix_locking(fsp->conn->params)) {
-
-		/* Check if there are any Windows locks associated with this dev/ino
-		   pair that are not this fnum. If so we need to call unlock on each
-		   one in order to release the system POSIX locks correctly. */
-
-		for (i=0; i < br_lck->num_locks; i++) {
-			struct lock_struct *lock = &locks[i];
-
-			if (!procid_equal(&lock->context.pid, &pid)) {
-				continue;
+	/* Copy the current lock array. */
+	if (br_lck->num_locks) {
+		locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
+		if (!locks_copy) {
+			smb_panic("brl_close_fnum: talloc failed");
 			}
-
-			if (lock->lock_type != READ_LOCK && lock->lock_type != WRITE_LOCK) {
-				continue; /* Ignore pending. */
-			}
-
-			if (lock->context.tid != tid || lock->fnum != fnum) {
-				unlock_individually = True;
-				break;
-			}
-		}
-
-		if (unlock_individually) {
-			struct lock_struct *locks_copy;
-			unsigned int num_locks_copy;
-
-			/* Copy the current lock array. */
-			if (br_lck->num_locks) {
-				locks_copy = (struct lock_struct *)TALLOC_MEMDUP(br_lck, locks, br_lck->num_locks * sizeof(struct lock_struct));
-				if (!locks_copy) {
-					smb_panic("brl_close_fnum: talloc failed");
-	 			}
-			} else {	
-				locks_copy = NULL;
-			}
-
-			num_locks_copy = br_lck->num_locks;
-
-			for (i=0; i < num_locks_copy; i++) {
-				struct lock_struct *lock = &locks_copy[i];
-
-				if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
-						(lock->fnum == fnum)) {
-					brl_unlock(msg_ctx,
-						br_lck,
-						lock->context.smblctx,
-						pid,
-						lock->start,
-						lock->size,
-						lock->lock_flav);
-				}
-			}
-			return;
-		}
+	} else {
+		locks_copy = NULL;
 	}
 
-	/* We can bulk delete - any POSIX locks will be removed when the fd closes. */
+	num_locks_copy = br_lck->num_locks;
 
-	/* Remove any existing locks for this fnum (or any fnum if they're POSIX). */
+	for (i=0; i < num_locks_copy; i++) {
+		struct lock_struct *lock = &locks_copy[i];
 
-	for (i=0; i < br_lck->num_locks; i++) {
-		struct lock_struct *lock = &locks[i];
-		bool del_this_lock = False;
-
-		if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid)) {
-			if ((lock->lock_flav == WINDOWS_LOCK) && (lock->fnum == fnum)) {
-				del_this_lock = True;
-				num_deleted_windows_locks++;
-				contend_level2_oplocks_end(br_lck->fsp,
-				    LEVEL2_CONTEND_WINDOWS_BRL);
-			} else if (lock->lock_flav == POSIX_LOCK) {
-				del_this_lock = True;
-
-				/* Only end level2 contention once for posix */
-				if (!posix_level2_contention_ended) {
-					posix_level2_contention_ended = true;
-					contend_level2_oplocks_end(br_lck->fsp,
-					    LEVEL2_CONTEND_POSIX_BRL);
-				}
-			}
+		if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
+				(lock->fnum == fnum)) {
+			brl_unlock(msg_ctx,
+				br_lck,
+				lock->context.smblctx,
+				pid,
+				lock->start,
+				lock->size,
+				lock->lock_flav);
 		}
-
-		if (del_this_lock) {
-			/* Send unlock messages to any pending waiters that overlap. */
-			for (j=0; j < br_lck->num_locks; j++) {
-				struct lock_struct *pend_lock = &locks[j];
-
-				/* Ignore our own or non-pending locks. */
-				if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
-					continue;
-				}
-
-				/* Optimisation - don't send to this fnum as we're
-				   closing it. */
-				if (pend_lock->context.tid == tid &&
-				    procid_equal(&pend_lock->context.pid, &pid) &&
-				    pend_lock->fnum == fnum) {
-					continue;
-				}
-
-				/* We could send specific lock info here... */
-				if (brl_pending_overlap(lock, pend_lock)) {
-					messaging_send(msg_ctx, pend_lock->context.pid,
-						       MSG_SMB_UNLOCK, &data_blob_null);
-				}
-			}
-
-			/* found it - delete it */
-			if (br_lck->num_locks > 1 && i < br_lck->num_locks - 1) {
-				memmove(&locks[i], &locks[i+1], 
-					sizeof(*locks)*((br_lck->num_locks-1) - i));
-			}
-			br_lck->num_locks--;
-			br_lck->modified = True;
-			i--;
-			dcount++;
-		}
-	}
-
-	if(lp_posix_locking(fsp->conn->params) && num_deleted_windows_locks) {
-		/* Reduce the Windows lock POSIX reference count on this dev/ino pair. */
-		reduce_windows_lock_ref_count(fsp, num_deleted_windows_locks);
 	}
 }
 
