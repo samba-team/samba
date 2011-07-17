@@ -16,10 +16,14 @@ style should never outweigh coding itself and so the guidelines
 described here are hopefully easy enough to follow as they are very
 common and supported by tools and editors.
 
-The basic style, also mentioned in prog_guide4.txt, is the Linux kernel
+The basic style for C code, also mentioned in prog_guide4.txt, is the Linux kernel
 coding style (See Documentation/CodingStyle in the kernel source tree). This
 closely matches what most Samba developers use already anyways, with a few
 exceptions as mentioned below.
+
+The coding style for Python code is documented in PEP8, http://www.python.org/pep/pep8.
+If you have ever worked on another free software python project, you are probably
+already familiar with it.
 
 But to save you the trouble of reading the Linux kernel style guide, here
 are the highlights.
