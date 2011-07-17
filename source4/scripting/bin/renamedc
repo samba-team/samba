@@ -86,8 +86,8 @@ if __name__ == '__main__':
 
     names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
                                             paths, smbconf, lp)
- 
-    #First rename the entry
+
+    # First rename the entry
     # provision put the name in upper case so let's do it too !
     newdn = str(res[0].dn).replace("CN=%s" % opts.oldname, "CN=%s" % opts.newname.upper())
     dnobj = ldb.Dn(ldbs.sam, newdn)

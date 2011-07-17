@@ -42,8 +42,8 @@ netbios=conf.get("netbios name")
 
 secrets = ldb.Ldb(path)
 
-search = "(&(objectclass=primaryDomain)(samaccountname=" + \
-	  netbios + "$))"
+search = ("(&(objectclass=primaryDomain)(samaccountname=" +
+      netbios + "$))")
 
 msg = secrets.search(expression=search, attrs=['secret'])
 
