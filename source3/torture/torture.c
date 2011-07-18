@@ -1797,17 +1797,20 @@ static bool run_locktest3(int dummy)
 
 	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
-		if (!cli_lock(cli1, fnum1, offset-1, 1, 0, WRITE_LOCK)) {
+
+		status = cli_lock32(cli1, fnum1, offset-1, 1, 0, WRITE_LOCK);
+		if (!NT_STATUS_IS_OK(status)) {
 			printf("lock1 %d failed (%s)\n", 
 			       i,
-			       cli_errstr(cli1));
+			       nt_errstr(status));
 			return False;
 		}
 
-		if (!cli_lock(cli2, fnum2, offset-2, 1, 0, WRITE_LOCK)) {
+		status = cli_lock32(cli2, fnum2, offset-2, 1, 0, WRITE_LOCK);
+		if (!NT_STATUS_IS_OK(status)) {
 			printf("lock2 %d failed (%s)\n", 
 			       i,
-			       cli_errstr(cli1));
+			       nt_errstr(status));
 			return False;
 		}
 	}
@@ -1815,22 +1818,26 @@ static bool run_locktest3(int dummy)
 	for (offset=i=0;i<torture_numops;i++) {
 		NEXT_OFFSET;
 
-		if (cli_lock(cli1, fnum1, offset-2, 1, 0, WRITE_LOCK)) {
+		status = cli_lock32(cli1, fnum1, offset-2, 1, 0, WRITE_LOCK);
+		if (NT_STATUS_IS_OK(status)) {
 			printf("error: lock1 %d succeeded!\n", i);
 			return False;
 		}
 
-		if (cli_lock(cli2, fnum2, offset-1, 1, 0, WRITE_LOCK)) {
+		status = cli_lock32(cli2, fnum2, offset-1, 1, 0, WRITE_LOCK);
+		if (NT_STATUS_IS_OK(status)) {
 			printf("error: lock2 %d succeeded!\n", i);
 			return False;
 		}
 
-		if (cli_lock(cli1, fnum1, offset-1, 1, 0, WRITE_LOCK)) {
+		status = cli_lock32(cli1, fnum1, offset-1, 1, 0, WRITE_LOCK);
+		if (NT_STATUS_IS_OK(status)) {
 			printf("error: lock3 %d succeeded!\n", i);
 			return False;
 		}
 
-		if (cli_lock(cli2, fnum2, offset-2, 1, 0, WRITE_LOCK)) {
+		status = cli_lock32(cli2, fnum2, offset-2, 1, 0, WRITE_LOCK);
+		if (NT_STATUS_IS_OK(status)) {
 			printf("error: lock4 %d succeeded!\n", i);
 			return False;
 		}
