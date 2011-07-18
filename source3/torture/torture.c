@@ -2282,8 +2282,9 @@ static bool run_locktest7(int dummy)
 
 	cli_setpid(cli1, 1);
 
-	if (!cli_lock(cli1, fnum1, 130, 4, 0, READ_LOCK)) {
-		printf("Unable to apply read lock on range 130:4, error was %s\n", cli_errstr(cli1));
+	status = cli_lock32(cli1, fnum1, 130, 4, 0, READ_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Unable to apply read lock on range 130:4, error was %s\n", nt_errstr(status));
 		goto fail;
 	} else {
 		printf("pid1 successfully locked range 130:4 for READ\n");
@@ -2333,8 +2334,9 @@ static bool run_locktest7(int dummy)
 	cli_setpid(cli1, 1);
 	cli_unlock(cli1, fnum1, 130, 4);
 
-	if (!cli_lock(cli1, fnum1, 130, 4, 0, WRITE_LOCK)) {
-		printf("Unable to apply write lock on range 130:4, error was %s\n", cli_errstr(cli1));
+	status = cli_lock32(cli1, fnum1, 130, 4, 0, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Unable to apply write lock on range 130:4, error was %s\n", nt_errstr(status));
 		goto fail;
 	} else {
 		printf("pid1 successfully locked range 130:4 for WRITE\n");
