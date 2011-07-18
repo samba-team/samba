@@ -470,7 +470,7 @@ smbc_option_get(SMBCCTX *context,
 
                 for (s = context->internal->servers; s; s = s->next) {
                         num_servers++;
-                        if (s->cli->trans_enc_state == NULL) {
+                        if (!cli_state_encryption_on(s->cli)) {
                                 return (void *)false;
                         }
                 }

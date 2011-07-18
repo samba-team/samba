@@ -257,6 +257,12 @@ struct cli_state *cli_initialise(void)
 	return cli_initialise_ex(Undefined);
 }
 
+bool cli_state_encryption_on(struct cli_state *cli)
+{
+	return common_encryption_on(cli->trans_enc_state);
+}
+
+
 /****************************************************************************
  Close all pipes open on this session.
 ****************************************************************************/
