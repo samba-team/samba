@@ -507,8 +507,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
 	    (server_info->nss_token)) {
 		status = create_token_from_username(session_info,
-						    session_info->unix_info->unix_name,
-						    session_info->unix_info->guest,
+						    server_info->unix_name,
+						    server_info->guest,
 						    &session_info->unix_token->uid,
 						    &session_info->unix_token->gid,
 						    &session_info->unix_info->unix_name,
@@ -516,9 +516,9 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	} else {
 		status = create_local_nt_token_from_info3(session_info,
-							  session_info->unix_info->guest,
-							  session_info->info3,
-							  &session_info->extra,
+							  server_info->guest,
+							  server_info->info3,
+							  &server_info->extra,
 							  &session_info->security_token);
 	}
 
