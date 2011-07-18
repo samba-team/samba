@@ -428,7 +428,9 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 		/* close our standard file
 		   descriptors */
-		close_low_fds(False);
+		if (!debug_get_output_is_stdout()) {
+			close_low_fds(False); /* Don't close stderr */
+		}
 
 		/*
 		 * Can't use TALLOC_FREE here. Nulling out the argument to it
@@ -910,6 +912,8 @@ extern void build_options(bool screen);
 	talloc_enable_null_tracking();
 	frame = talloc_stackframe();
 
+	setup_logging(argv[0], DEBUG_DEFAULT_STDOUT);
+
 	load_case_tables();
 
 	smbd_init_globals();
@@ -1287,7 +1291,9 @@ extern void build_options(bool screen);
 		smbd_server_conn->sock = dup(0);
 
 		/* close our standard file descriptors */
-		close_low_fds(False); /* Don't close stderr */
+		if (!debug_get_output_is_stdout()) {
+			close_low_fds(False); /* Don't close stderr */
+		}
 
 #ifdef HAVE_ATEXIT
 		atexit(killkids);

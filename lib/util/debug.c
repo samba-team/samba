@@ -514,6 +514,11 @@ bool debug_get_output_is_stderr(void)
 	return (state.logtype == DEBUG_DEFAULT_STDERR) || (state.logtype == DEBUG_STDERR);
 }
 
+bool debug_get_output_is_stdout(void)
+{
+	return (state.logtype == DEBUG_DEFAULT_STDOUT) || (state.logtype == DEBUG_STDOUT);
+}
+
 /**************************************************************************
  reopen the log files
  note that we now do this unconditionally
@@ -542,6 +547,7 @@ bool reopen_logs_internal(void)
 
 	switch (state.logtype) {
 	case DEBUG_STDOUT:
+	case DEBUG_DEFAULT_STDOUT:
 		debug_close_fd(state.fd);
 		state.fd = 1;
 		return true;

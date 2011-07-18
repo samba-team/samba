@@ -1232,6 +1232,8 @@ int main(int argc, char **argv, char **envp)
 	talloc_enable_null_tracking();
 	frame = talloc_stackframe();
 
+	setup_logging("winbindd", DEBUG_DEFAULT_STDOUT);
+
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR[12] is received before a handler is installed */
 
@@ -1316,6 +1318,7 @@ int main(int argc, char **argv, char **envp)
 			SAFE_FREE(lfile);
 		}
 	}
+
 	if (log_stdout) {
 		setup_logging("winbindd", DEBUG_STDOUT);
 	} else {

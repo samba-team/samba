@@ -766,6 +766,8 @@ static bool open_sockets(bool isdaemon, int port)
 	talloc_enable_null_tracking();
 	frame = talloc_stackframe();
 
+	setup_logging(argv[0], DEBUG_DEFAULT_STDOUT);
+
 	load_case_tables();
 
 	global_nmb_port = NMB_PORT;
@@ -840,8 +842,9 @@ static bool open_sockets(bool isdaemon, int port)
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
+
 	if (log_stdout) {
-		setup_logging( argv[0], DEBUG_STDOUT);
+		setup_logging(argv[0], DEBUG_STDOUT);
 	} else {
 		setup_logging( argv[0], DEBUG_FILE);
 	}

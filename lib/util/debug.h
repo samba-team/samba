@@ -229,6 +229,7 @@ void dbgflush( void );
 bool dbghdrclass(int level, int cls, const char *location, const char *func);
 bool dbghdr(int level, const char *location, const char *func);
 bool debug_get_output_is_stderr(void);
+bool debug_get_output_is_stdout(void);
 void debug_schedule_reopen_logs(void);
 char *debug_list_class_names_and_levels(void);
 
