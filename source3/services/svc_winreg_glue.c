@@ -77,7 +77,7 @@ struct security_descriptor* svcctl_gen_service_sd(TALLOC_CTX *mem_ctx)
 
 struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 					       struct messaging_context *msg_ctx,
-					       const struct auth3_session_info *session_info,
+					       const struct auth_session_info *session_info,
 					       const char *name)
 {
 	struct dcerpc_binding_handle *h = NULL;
@@ -147,7 +147,7 @@ done:
 }
 
 bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
-			const struct auth3_session_info *session_info,
+			const struct auth_session_info *session_info,
 			const char *name,
 			struct security_descriptor *sd)
 {
@@ -259,7 +259,7 @@ done:
 
 const char *svcctl_get_string_value(TALLOC_CTX *mem_ctx,
 				    struct messaging_context *msg_ctx,
-				    const struct auth3_session_info *session_info,
+				    const struct auth_session_info *session_info,
 				    const char *key_name,
 				    const char *value_name)
 {
@@ -321,7 +321,7 @@ done:
 
 const char *svcctl_lookup_dispname(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg_ctx,
-				   const struct auth3_session_info *session_info,
+				   const struct auth_session_info *session_info,
 				   const char *name)
 {
 	const char *display_name = NULL;
@@ -344,7 +344,7 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *mem_ctx,
 
 const char *svcctl_lookup_description(TALLOC_CTX *mem_ctx,
 				      struct messaging_context *msg_ctx,
-				      const struct auth3_session_info *session_info,
+				      const struct auth_session_info *session_info,
 				      const char *name)
 {
 	const char *description = NULL;

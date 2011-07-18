@@ -116,7 +116,7 @@ NTSTATUS ntlmssp_server_check_flags(struct auth_ntlmssp_state *ctx,
 
 NTSTATUS ntlmssp_server_get_user_info(struct auth_ntlmssp_state *ctx,
 				      TALLOC_CTX *mem_ctx,
-				      struct auth3_session_info **session_info)
+				      struct auth_session_info **session_info)
 {
 	NTSTATUS status;
 

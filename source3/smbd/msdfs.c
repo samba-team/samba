@@ -225,7 +225,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-				const struct auth3_session_info *session_info,
+				const struct auth_session_info *session_info,
 				char **poldcwd)
 {
 	connection_struct *conn;

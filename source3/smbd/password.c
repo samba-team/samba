@@ -263,7 +263,7 @@ int register_homes_share(const char *username)
 
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
-			struct auth3_session_info *session_info,
+			struct auth_session_info *session_info,
 			DATA_BLOB response_blob,
 			const char *smb_name)
 {

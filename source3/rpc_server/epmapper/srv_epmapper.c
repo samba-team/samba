@@ -232,7 +232,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 	return total;
 }
 
-static bool is_priviledged_pipe(struct auth3_session_info *info) {
+static bool is_priviledged_pipe(struct auth_session_info *info) {
 	/* If the user is not root, or has the system token, fail */
 	if ((info->unix_token->uid != sec_initial_uid()) &&
 	    !security_token_is_system(info->security_token)) {

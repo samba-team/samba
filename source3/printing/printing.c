@@ -2243,7 +2243,7 @@ static bool print_job_delete1(struct tevent_context *ev,
  Return true if the current user owns the print job.
 ****************************************************************************/
 
-static bool is_owner(const struct auth3_session_info *server_info,
+static bool is_owner(const struct auth_session_info *server_info,
 		     const char *servicename,
 		     uint32 jobid)
 {
@@ -2259,7 +2259,7 @@ static bool is_owner(const struct auth3_session_info *server_info,
  Delete a print job.
 ****************************************************************************/
 
-WERROR print_job_delete(const struct auth3_session_info *server_info,
+WERROR print_job_delete(const struct auth_session_info *server_info,
 			struct messaging_context *msg_ctx,
 			int snum, uint32_t jobid)
 {
@@ -2327,7 +2327,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Pause a job.
 ****************************************************************************/
 
-bool print_job_pause(const struct auth3_session_info *server_info,
+bool print_job_pause(const struct auth_session_info *server_info,
 		     struct messaging_context *msg_ctx,
 		     int snum, uint32 jobid, WERROR *errcode)
 {
@@ -2392,7 +2392,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Resume a job.
 ****************************************************************************/
 
-bool print_job_resume(const struct auth3_session_info *server_info,
+bool print_job_resume(const struct auth_session_info *server_info,
 		      struct messaging_context *msg_ctx,
 		      int snum, uint32 jobid, WERROR *errcode)
 {
@@ -2660,7 +2660,7 @@ static bool add_to_jobs_added(struct tdb_print_db *pdb, uint32 jobid)
  Do all checks needed to determine if we can start a job.
 ***************************************************************************/
 
-static WERROR print_job_checks(const struct auth3_session_info *server_info,
+static WERROR print_job_checks(const struct auth_session_info *server_info,
 			       struct messaging_context *msg_ctx,
 			       int snum, int *njobs)
 {
@@ -2786,7 +2786,7 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
  Start spooling a job - return the jobid.
 ***************************************************************************/
 
-WERROR print_job_start(const struct auth3_session_info *server_info,
+WERROR print_job_start(const struct auth_session_info *server_info,
 		       struct messaging_context *msg_ctx,
 		       const char *clientmachine,
 		       int snum, const char *docname, const char *filename,
@@ -3245,7 +3245,7 @@ int print_queue_status(struct messaging_context *msg_ctx, int snum,
  Pause a queue.
 ****************************************************************************/
 
-WERROR print_queue_pause(const struct auth3_session_info *server_info,
+WERROR print_queue_pause(const struct auth_session_info *server_info,
 			 struct messaging_context *msg_ctx, int snum)
 {
 	int ret;
@@ -3282,7 +3282,7 @@ WERROR print_queue_pause(const struct auth3_session_info *server_info,
  Resume a queue.
 ****************************************************************************/
 
-WERROR print_queue_resume(const struct auth3_session_info *server_info,
+WERROR print_queue_resume(const struct auth_session_info *server_info,
 			  struct messaging_context *msg_ctx, int snum)
 {
 	int ret;
@@ -3319,7 +3319,7 @@ WERROR print_queue_resume(const struct auth3_session_info *server_info,
  Purge a queue - implemented by deleting all jobs that we can delete.
 ****************************************************************************/
 
-WERROR print_queue_purge(const struct auth3_session_info *server_info,
+WERROR print_queue_purge(const struct auth_session_info *server_info,
 			 struct messaging_context *msg_ctx, int snum)
 {
 	print_queue_struct *queue;

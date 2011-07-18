@@ -81,7 +81,7 @@ static NTSTATUS do_map_to_guest_server_info(NTSTATUS status,
   is set approriately
 */
 NTSTATUS do_map_to_guest(NTSTATUS status,
-			struct auth3_session_info **session_info,
+			struct auth_session_info **session_info,
 			const char *user, const char *domain)
 {
 	user = user ? user : "";
@@ -282,7 +282,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
-	struct auth3_session_info *session_info = NULL;
+	struct auth_session_info *session_info = NULL;
 	DATA_BLOB session_key = data_blob_null;
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob_null;
@@ -487,7 +487,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 {
 	bool do_invalidate = true;
 	DATA_BLOB response;
-	struct auth3_session_info *session_info = NULL;
+	struct auth_session_info *session_info = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -1328,7 +1328,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *primary_domain;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
-	struct auth3_session_info *session_info = NULL;
+	struct auth_session_info *session_info = NULL;
 	uint16 smb_flag2 = req->flags2;
 
 	NTSTATUS nt_status;

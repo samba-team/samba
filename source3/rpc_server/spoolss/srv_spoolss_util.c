@@ -28,7 +28,7 @@
 #include "rpc_client/cli_winreg_spoolss.h"
 
 WERROR winreg_printer_binding_handle(TALLOC_CTX *mem_ctx,
-				     const struct auth3_session_info *session_info,
+				     const struct auth_session_info *session_info,
 				     struct messaging_context *msg_ctx,
 				     struct dcerpc_binding_handle **winreg_binding_handle)
 {
@@ -61,7 +61,7 @@ WERROR winreg_printer_binding_handle(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_delete_printer_key_internal(TALLOC_CTX *mem_ctx,
-					  const struct auth3_session_info *session_info,
+					  const struct auth_session_info *session_info,
 					  struct messaging_context *msg_ctx,
 					  const char *printer,
 					  const char *key)
@@ -78,7 +78,7 @@ WERROR winreg_delete_printer_key_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_printer_update_changeid_internal(TALLOC_CTX *mem_ctx,
-					       const struct auth3_session_info *session_info,
+					       const struct auth_session_info *session_info,
 					       struct messaging_context *msg_ctx,
 					       const char *printer)
 {
@@ -93,7 +93,7 @@ WERROR winreg_printer_update_changeid_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_printer_get_changeid_internal(TALLOC_CTX *mem_ctx,
-					    const struct auth3_session_info *session_info,
+					    const struct auth_session_info *session_info,
 					    struct messaging_context *msg_ctx,
 					    const char *printer,
 					    uint32_t *pchangeid)
@@ -110,7 +110,7 @@ WERROR winreg_printer_get_changeid_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_get_printer_internal(TALLOC_CTX *mem_ctx,
-				   const struct auth3_session_info *session_info,
+				   const struct auth_session_info *session_info,
 				   struct messaging_context *msg_ctx,
 				   const char *printer,
 				   struct spoolss_PrinterInfo2 **pinfo2)
@@ -128,7 +128,7 @@ WERROR winreg_get_printer_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_create_printer_internal(TALLOC_CTX *mem_ctx,
-				      const struct auth3_session_info *session_info,
+				      const struct auth_session_info *session_info,
 				      struct messaging_context *msg_ctx,
 				      const char *sharename)
 {
@@ -143,7 +143,7 @@ WERROR winreg_create_printer_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_update_printer_internal(TALLOC_CTX *mem_ctx,
-				      const struct auth3_session_info *session_info,
+				      const struct auth_session_info *session_info,
 				      struct messaging_context *msg_ctx,
 				      const char *sharename,
 				      uint32_t info2_mask,
@@ -166,7 +166,7 @@ WERROR winreg_update_printer_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_set_printer_dataex_internal(TALLOC_CTX *mem_ctx,
-					  const struct auth3_session_info *session_info,
+					  const struct auth_session_info *session_info,
 					  struct messaging_context *msg_ctx,
 					  const char *printer,
 					  const char *key,
@@ -191,7 +191,7 @@ WERROR winreg_set_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_enum_printer_dataex_internal(TALLOC_CTX *mem_ctx,
-					   const struct auth3_session_info *session_info,
+					   const struct auth_session_info *session_info,
 					   struct messaging_context *msg_ctx,
 					   const char *printer,
 					   const char *key,
@@ -212,7 +212,7 @@ WERROR winreg_enum_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_get_printer_dataex_internal(TALLOC_CTX *mem_ctx,
-					  const struct auth3_session_info *session_info,
+					  const struct auth_session_info *session_info,
 					  struct messaging_context *msg_ctx,
 					  const char *printer,
 					  const char *key,
@@ -237,7 +237,7 @@ WERROR winreg_get_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_delete_printer_dataex_internal(TALLOC_CTX *mem_ctx,
-					     const struct auth3_session_info *session_info,
+					     const struct auth_session_info *session_info,
 					     struct messaging_context *msg_ctx,
 					     const char *printer,
 					     const char *key,
@@ -256,7 +256,7 @@ WERROR winreg_delete_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_get_driver_internal(TALLOC_CTX *mem_ctx,
-				  const struct auth3_session_info *session_info,
+				  const struct auth_session_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *architecture,
 				  const char *driver_name,
@@ -277,7 +277,7 @@ WERROR winreg_get_driver_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_get_driver_list_internal(TALLOC_CTX *mem_ctx,
-				       const struct auth3_session_info *session_info,
+				       const struct auth_session_info *session_info,
 				       struct messaging_context *msg_ctx,
 				       const char *architecture,
 				       uint32_t version,
@@ -298,7 +298,7 @@ WERROR winreg_get_driver_list_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_del_driver_internal(TALLOC_CTX *mem_ctx,
-				  const struct auth3_session_info *session_info,
+				  const struct auth_session_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  struct spoolss_DriverInfo8 *info8,
 				  uint32_t version)
@@ -315,7 +315,7 @@ WERROR winreg_del_driver_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_add_driver_internal(TALLOC_CTX *mem_ctx,
-				  const struct auth3_session_info *session_info,
+				  const struct auth_session_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  struct spoolss_AddDriverInfoCtr *r,
 				  const char **driver_name,
@@ -334,7 +334,7 @@ WERROR winreg_add_driver_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_get_printer_secdesc_internal(TALLOC_CTX *mem_ctx,
-					   const struct auth3_session_info *session_info,
+					   const struct auth_session_info *session_info,
 					   struct messaging_context *msg_ctx,
 					   const char *sharename,
 					   struct spoolss_security_descriptor **psecdesc)
@@ -351,7 +351,7 @@ WERROR winreg_get_printer_secdesc_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_set_printer_secdesc_internal(TALLOC_CTX *mem_ctx,
-					   const struct auth3_session_info *session_info,
+					   const struct auth_session_info *session_info,
 					   struct messaging_context *msg_ctx,
 					   const char *sharename,
 					   const struct spoolss_security_descriptor *secdesc)
@@ -368,7 +368,7 @@ WERROR winreg_set_printer_secdesc_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_printer_enumforms1_internal(TALLOC_CTX *mem_ctx,
-					  const struct auth3_session_info *session_info,
+					  const struct auth_session_info *session_info,
 					  struct messaging_context *msg_ctx,
 					  uint32_t *pnum_info,
 					  union spoolss_FormInfo **pinfo)
@@ -385,7 +385,7 @@ WERROR winreg_printer_enumforms1_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_printer_getform1_internal(TALLOC_CTX *mem_ctx,
-					const struct auth3_session_info *session_info,
+					const struct auth_session_info *session_info,
 					struct messaging_context *msg_ctx,
 					const char *form_name,
 					struct spoolss_FormInfo1 *r)
@@ -402,7 +402,7 @@ WERROR winreg_printer_getform1_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_printer_addform1_internal(TALLOC_CTX *mem_ctx,
-					const struct auth3_session_info *session_info,
+					const struct auth_session_info *session_info,
 					struct messaging_context *msg_ctx,
 					struct spoolss_AddFormInfo1 *form)
 {
@@ -417,7 +417,7 @@ WERROR winreg_printer_addform1_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_printer_setform1_internal(TALLOC_CTX *mem_ctx,
-					const struct auth3_session_info *session_info,
+					const struct auth_session_info *session_info,
 					struct messaging_context *msg_ctx,
 					const char *form_name,
 					struct spoolss_AddFormInfo1 *form)
@@ -434,7 +434,7 @@ WERROR winreg_printer_setform1_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_printer_deleteform1_internal(TALLOC_CTX *mem_ctx,
-					   const struct auth3_session_info *session_info,
+					   const struct auth_session_info *session_info,
 					   struct messaging_context *msg_ctx,
 					   const char *form_name)
 {
@@ -449,7 +449,7 @@ WERROR winreg_printer_deleteform1_internal(TALLOC_CTX *mem_ctx,
 }
 
 WERROR winreg_enum_printer_key_internal(TALLOC_CTX *mem_ctx,
-					const struct auth3_session_info *session_info,
+					const struct auth_session_info *session_info,
 					struct messaging_context *msg_ctx,
 					const char *printer,
 					const char *key,

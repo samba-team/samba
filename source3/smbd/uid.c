@@ -87,7 +87,7 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 
 static bool check_user_ok(connection_struct *conn,
 			uint16_t vuid,
-			const struct auth3_session_info *session_info,
+			const struct auth_session_info *session_info,
 			int snum)
 {
 	bool valid_vuid = (vuid != UID_FIELD_INVALID);
@@ -190,7 +190,7 @@ static bool check_user_ok(connection_struct *conn,
 ****************************************************************************/
 
 static bool change_to_user_internal(connection_struct *conn,
-				    const struct auth3_session_info *session_info,
+				    const struct auth_session_info *session_info,
 				    uint16_t vuid)
 {
 	int snum;
@@ -277,7 +277,7 @@ static bool change_to_user_internal(connection_struct *conn,
 
 bool change_to_user(connection_struct *conn, uint16_t vuid)
 {
-	const struct auth3_session_info *session_info = NULL;
+	const struct auth_session_info *session_info = NULL;
 	user_struct *vuser;
 	int snum = SNUM(conn);
 
@@ -328,7 +328,7 @@ bool change_to_user(connection_struct *conn, uint16_t vuid)
 }
 
 bool change_to_user_by_session(connection_struct *conn,
-			       const struct auth3_session_info *session_info)
+			       const struct auth_session_info *session_info)
 {
 	SMB_ASSERT(conn != NULL);
 	SMB_ASSERT(session_info != NULL);
@@ -367,7 +367,7 @@ bool smbd_change_to_root_user(void)
  user. Doesn't modify current_user.
 ****************************************************************************/
 
-bool become_authenticated_pipe_user(struct auth3_session_info *session_info)
+bool become_authenticated_pipe_user(struct auth_session_info *session_info)
 {
 	if (!push_sec_ctx())
 		return False;
@@ -487,7 +487,7 @@ bool become_user(connection_struct *conn, uint16 vuid)
 }
 
 bool become_user_by_session(connection_struct *conn,
-			    const struct auth3_session_info *session_info)
+			    const struct auth_session_info *session_info)
 {
 	if (!push_sec_ctx())
 		return false;

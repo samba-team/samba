@@ -39,7 +39,7 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 					    struct auth_session_info **session_info)
 {
 	struct auth_session_info *i;
-	struct auth3_session_info *s;
+	struct auth_session_info *s;
 	NTSTATUS status;
 
 	i = talloc_zero(mem_ctx, struct auth_session_info);
@@ -99,7 +99,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 	if (session_info->unix_token && session_info->unix_info && session_info->security_token) {
 		/* Don't call create_local_token(), we already have the full details here */
-		p->session_info = talloc_zero(p, struct auth3_session_info);
+		p->session_info = talloc_zero(p, struct auth_session_info);
 		if (p->session_info == NULL) {
 			TALLOC_FREE(p);
 			*perrno = ENOMEM;

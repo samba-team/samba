@@ -478,7 +478,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-				const struct auth3_session_info *session_info,
+				const struct auth_session_info *session_info,
 				char **poldcwd);
 
 /* The following definitions come from smbd/negprot.c  */
@@ -711,7 +711,7 @@ int register_initial_vuid(struct smbd_server_connection *sconn);
 int register_homes_share(const char *username);
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
-			struct auth3_session_info *session_info,
+			struct auth_session_info *session_info,
 			DATA_BLOB response_blob,
 			const char *smb_name);
 void add_session_user(struct smbd_server_connection *sconn, const char *user);
@@ -1009,7 +1009,7 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 /* The following definitions come from smbd/sesssetup.c  */
 
 NTSTATUS do_map_to_guest(NTSTATUS status,
-		struct auth3_session_info **session_info,
+		struct auth_session_info **session_info,
 		const char *user, const char *domain);
 
 NTSTATUS parse_spnego_mechanisms(TALLOC_CTX *ctx,
@@ -1108,10 +1108,10 @@ void reply_transs2(struct smb_request *req);
 bool change_to_guest(void);
 bool change_to_user(connection_struct *conn, uint16 vuid);
 bool change_to_user_by_session(connection_struct *conn,
-			       const struct auth3_session_info *session_info);
+			       const struct auth_session_info *session_info);
 bool change_to_root_user(void);
 bool smbd_change_to_root_user(void);
-bool become_authenticated_pipe_user(struct auth3_session_info *session_info);
+bool become_authenticated_pipe_user(struct auth_session_info *session_info);
 bool unbecome_authenticated_pipe_user(void);
 void become_root(void);
 void unbecome_root(void);
@@ -1119,7 +1119,7 @@ void smbd_become_root(void);
 void smbd_unbecome_root(void);
 bool become_user(connection_struct *conn, uint16 vuid);
 bool become_user_by_session(connection_struct *conn,
-			    const struct auth3_session_info *session_info);
+			    const struct auth_session_info *session_info);
 bool unbecome_user(void);
 uid_t get_current_uid(connection_struct *conn);
 gid_t get_current_gid(connection_struct *conn);

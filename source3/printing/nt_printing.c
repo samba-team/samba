@@ -574,7 +574,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32 get_correct_cversion(struct auth3_session_info *session_info,
+static uint32 get_correct_cversion(struct auth_session_info *session_info,
 				   const char *architecture,
 				   const char *driverpath_in,
 				   WERROR *perr)
@@ -762,7 +762,7 @@ static uint32 get_correct_cversion(struct auth3_session_info *session_info,
 } while (0);
 
 static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
-					   struct auth3_session_info *session_info,
+					   struct auth_session_info *session_info,
 					   const char *architecture,
 					   const char **driver_path,
 					   const char **data_file,
@@ -835,7 +835,7 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
-			      struct auth3_session_info *session_info,
+			      struct auth_session_info *session_info,
 			      struct spoolss_AddDriverInfoCtr *r)
 {
 	switch (r->level) {
@@ -954,7 +954,7 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-WERROR move_driver_to_download_area(struct auth3_session_info *session_info,
+WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 				    struct spoolss_AddDriverInfoCtr *r)
 {
 	struct spoolss_AddDriverInfo3 *driver;
@@ -1174,7 +1174,7 @@ WERROR move_driver_to_download_area(struct auth3_session_info *session_info,
 ****************************************************************************/
 
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
-			   const struct auth3_session_info *session_info,
+			   const struct auth_session_info *session_info,
 			   struct messaging_context *msg_ctx,
                            const struct spoolss_DriverInfo8 *r)
 {
@@ -1413,7 +1413,7 @@ static bool trim_overlap_drv_files(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 const struct auth3_session_info *session_info,
+				 const struct auth_session_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 struct spoolss_DriverInfo8 *info)
 {
@@ -1516,7 +1516,7 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
   this.
 ****************************************************************************/
 
-bool delete_driver_files(const struct auth3_session_info *session_info,
+bool delete_driver_files(const struct auth_session_info *session_info,
 			 const struct spoolss_DriverInfo8 *r)
 {
 	int i = 0;
@@ -1721,7 +1721,7 @@ void map_job_permissions(struct security_descriptor *sd)
     3)  "printer admins" (may result in numerous calls to winbind)
 
  ****************************************************************************/
-bool print_access_check(const struct auth3_session_info *session_info,
+bool print_access_check(const struct auth_session_info *session_info,
 			struct messaging_context *msg_ctx, int snum,
 			int access_type)
 {
@@ -1823,7 +1823,7 @@ bool print_access_check(const struct auth3_session_info *session_info,
  Check the time parameters allow a print operation.
 *****************************************************************************/
 
-bool print_time_access_check(const struct auth3_session_info *session_info,
+bool print_time_access_check(const struct auth_session_info *session_info,
 			     struct messaging_context *msg_ctx,
 			     const char *servicename)
 {
@@ -1861,7 +1861,7 @@ bool print_time_access_check(const struct auth3_session_info *session_info,
 }
 
 void nt_printer_remove(TALLOC_CTX *mem_ctx,
-			const struct auth3_session_info *session_info,
+			const struct auth_session_info *session_info,
 			struct messaging_context *msg_ctx,
 			const char *printer)
 {

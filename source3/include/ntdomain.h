@@ -115,7 +115,7 @@ struct pipes_struct {
 
 	enum dcerpc_transport_t transport;
 
-	struct auth3_session_info *session_info;
+	struct auth_session_info *session_info;
 	struct messaging_context *msg_ctx;
 
 	struct dcesrv_ep_entry_list *ep_entries;

@@ -105,7 +105,7 @@ NTSTATUS gssapi_server_check_flags(struct gse_context *gse_ctx)
 NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 				     TALLOC_CTX *mem_ctx,
 				     const struct tsocket_address *remote_address,
-				     struct auth3_session_info **session_info)
+				     struct auth_session_info **session_info)
 {
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB pac_blob;

@@ -373,14 +373,14 @@ static NTSTATUS find_forced_group(bool force_user,
 }
 
 /****************************************************************************
-  Create an auth3_session_info structure for a connection_struct
+  Create an auth_session_info structure for a connection_struct
 ****************************************************************************/
 
 static NTSTATUS create_connection_session_info(struct smbd_server_connection *sconn,
 					      TALLOC_CTX *mem_ctx, int snum,
-                                              struct auth3_session_info *vuid_serverinfo,
+                                              struct auth_session_info *vuid_serverinfo,
 					      DATA_BLOB password,
-                                              struct auth3_session_info **presult)
+                                              struct auth_session_info **presult)
 {
         if (lp_guest_only(snum)) {
                 return make_session_info_guest(mem_ctx, presult);
@@ -388,7 +388,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 
         if (vuid_serverinfo != NULL) {
 
-		struct auth3_session_info *result;
+		struct auth_session_info *result;
 
                 /*
                  * This is the normal security != share case where we have a
@@ -466,7 +466,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		 */
 
 		char *fuser;
-		struct auth3_session_info *forced_serverinfo;
+		struct auth_session_info *forced_serverinfo;
 
 		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
 					  lp_const_servicename(snum));

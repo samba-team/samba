@@ -67,11 +67,11 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
  Make a server_info struct. Free with TALLOC_FREE().
 ***************************************************************************/
 
-struct auth3_session_info *make_auth3_session_info(TALLOC_CTX *mem_ctx)
+struct auth_session_info *make_auth_session_info(TALLOC_CTX *mem_ctx)
 {
-	struct auth3_session_info *result;
+	struct auth_session_info *result;
 
-	result = talloc_zero(mem_ctx, struct auth3_session_info);
+	result = talloc_zero(mem_ctx, struct auth_session_info);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;

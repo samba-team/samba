@@ -626,7 +626,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *ntlmssp_ctx,
 				enum dcerpc_AuthLevel auth_level,
-				struct auth3_session_info **session_info)
+				struct auth_session_info **session_info)
 {
 	NTSTATUS status;
 	bool ret;
@@ -723,7 +723,7 @@ err:
 static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 					 struct gse_context *gse_ctx,
 					 const struct tsocket_address *remote_address,
-					 struct auth3_session_info **session_info)
+					 struct auth_session_info **session_info)
 {
 	NTSTATUS status;
 	bool bret;
