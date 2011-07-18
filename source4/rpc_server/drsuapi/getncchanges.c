@@ -362,7 +362,21 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 		struct GUID guid;
 		struct ldb_dn *tdn;
 		int ret;
+		const char *v;
 
+		v = ldb_msg_find_attr_as_string(msg, "isDeleted", "false");
+		if (strncasecmp(v, "true", 4) == 0) {
+			v = ldb_msg_find_attr_as_string(msg, "isRecycled", "false");
+			/*
+			 * Do not skip link when the object is just deleted (isRecycled not present)
+			 * Do it for tomstones or recycled ones
+			 */
+			if (strncasecmp(v, "true", 4) == 0) {
+				DEBUG(2, (" object %s is deleted, not returning linked attribute !\n",
+							ldb_dn_get_linearized(msg->dn)));
+				return WERR_OK;
+			}
+		}
 		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &guid, "GUID");
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,(__location__ " Unable to extract GUID in linked attribute '%s' in '%s'\n",
