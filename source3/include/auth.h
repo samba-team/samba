@@ -75,30 +75,6 @@ struct auth_serversupplied_info {
 	char *sanitized_username;
 };
 
-struct auth3_session_info {
-	struct security_unix_token *unix_token;
-
-	/* NT group information taken from the info3 structure */
-
-	struct security_token *security_token;
-
-	/* This is the final session key, as used by SMB signing, and
-	 * (truncated to 16 bytes) encryption on the SAMR and LSA pipes
-	 * when over ncacn_np.
-	 * It is calculated by NTLMSSP from the session key in the info3,
-	 * and is  set from the Kerberos session key using
-	 * krb5_auth_con_getremotesubkey().
-	 *
-	 * Bottom line, it is not the same as the session keys in info3.
-	 */
-
-	DATA_BLOB session_key;
-
-	struct netr_SamInfo3 *info3;
-
-	struct auth_user_info_unix *unix_info;
-};
-
 struct auth_context {
 	DATA_BLOB challenge; 
 

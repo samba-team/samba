@@ -9,7 +9,7 @@
 
 */
 
-import "misc.idl", "security.idl", "lsa.idl", "krb5pac.idl";
+import "misc.idl", "security.idl", "lsa.idl", "krb5pac.idl", "netlogon.idl";
 [
 	pyhelper("librpc/ndr/py_auth.c"),
 	helper("../librpc/ndr/ndr_auth.h"),
@@ -99,6 +99,28 @@ interface auth
 		DATA_BLOB session_key;
 		[value(NULL), ignore] cli_credentials *credentials;
 	} auth_session_info;
+
+	typedef [public] struct {
+		security_token *security_token;
+		security_unix_token *unix_token;
+		netr_SamInfo3 *info3;
+		auth_user_info_unix *unix_info;
+		[value(NULL), ignore] auth_user_info_torture *torture;
+
+		/* This is the final session key, as used by SMB signing, and
+		 * (truncated to 16 bytes) encryption on the SAMR and LSA pipes
+		 * when over ncacn_np.
+		 * It is calculated by NTLMSSP from the session key in the info3,
+		 * and is  set from the Kerberos session key using
+		 * krb5_auth_con_getremotesubkey().
+		 *
+		 * Bottom line, it is not the same as the session keys in info3.
+		 */
+
+		DATA_BLOB session_key;
+
+		[value(NULL), ignore] cli_credentials *credentials;
+	} auth3_session_info;
 
 	typedef [public] struct {
 		auth_session_info *session_info;
