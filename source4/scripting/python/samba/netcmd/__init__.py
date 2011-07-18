@@ -124,17 +124,24 @@ class Command(object):
                 if option.dest is not None:
                     del kwargs[option.dest]
         kwargs.update(optiongroups)
+
+        # Check for a min a max number of allowed arguments, whenever possible
+        # The suffix "?" means zero or one occurence
+        # The suffix "+" means at least one occurence
         min_args = 0
         max_args = 0
+        undetermined_max_args = False
         for i, arg in enumerate(self.takes_args):
-            if arg[-1] not in ("?", "*"):
-                min_args += 1
-            max_args += 1
-            if arg[-1] == "*":
-                max_args = -1
-        if len(args) < min_args or (max_args != -1 and len(args) > max_args):
-            self.usage(*args)
+            if arg[-1] != "?":
+               min_args += 1
+            if arg[-1] == "+":
+               undetermined_max_args = True
+            else:
+               max_args += 1
+        if (len(args) < min_args) or (undetermined_max_args == False and len(args) > max_args):
+            parser.print_usage()
             return -1
+
         try:
             return self.run(*args, **kwargs)
         except Exception, e:
