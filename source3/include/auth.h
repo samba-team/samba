@@ -96,13 +96,6 @@ struct auth3_session_info {
 
 	struct netr_SamInfo3 *info3;
 
-	/* this structure is filled *only* in pathological cases where the user
-	 * sid or the primary group sid are not sids of the domain. Normally
-	 * this happens only for unix accounts that have unix domain sids.
-	 * This is checked only when info3.rid and/or info3.primary_gid are set
-	 * to the special invalid value of 0xFFFFFFFF */
-	struct extra_auth_info extra;
-
 	struct auth_user_info_unix *unix_info;
 };
 

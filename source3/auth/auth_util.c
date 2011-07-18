@@ -911,8 +911,12 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
  * guest.
  *
  * This is a lossy conversion.  Variables known to be lost so far
- * include: nss_token (not needed because the only read doesn't happen
+ * include:
+ *
+ * - nss_token (not needed because the only read doesn't happen
  * for the GUEST user, as this routine populates ->security_token
+ *
+ * - extra (not needed because the guest account mut have a valid RID per the output of get_guest_info3())
  */
 static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX *mem_ctx,
 							      const struct auth3_session_info *src)
@@ -967,7 +971,6 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 		TALLOC_FREE(dst);
 		return NULL;
 	}
-	dst->extra = src->extra;
 
 	dst->unix_name = talloc_strdup(dst, src->unix_info->unix_name);
 	if (!dst->unix_name) {
@@ -1026,7 +1029,6 @@ static struct auth3_session_info *copy_serverinfo_session_info(TALLOC_CTX *mem_c
 		TALLOC_FREE(dst);
 		return NULL;
 	}
-	dst->extra = src->extra;
 
 	dst->unix_info = talloc_zero(dst, struct auth_user_info_unix);
 	if (!dst->unix_info) {
@@ -1098,7 +1100,6 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(dst);
 		return NULL;
 	}
-	dst->extra = src->extra;
 
 	if (src->unix_info) {
 		dst->unix_info = talloc_zero(dst, struct auth_user_info_unix);
