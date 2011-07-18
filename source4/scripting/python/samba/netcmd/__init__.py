@@ -29,6 +29,7 @@ class Option(optparse.Option):
     pass
 
 
+
 class Command(object):
     """A net command."""
 
@@ -88,7 +89,6 @@ class Command(object):
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
 
-
     synopsis = property(_get_synopsis)
 
     outf = sys.stdout
@@ -146,6 +146,7 @@ class Command(object):
         raise NotImplementedError(self.run)
 
 
+
 class SuperCommand(Command):
     """A command with subcommands."""
 
@@ -159,7 +160,13 @@ class SuperCommand(Command):
             print "\t%-20s - %s" % (cmd, self.subcommands[cmd].description)
         if subcommand in [None, 'help', '-h', '--help' ]:
             return 0
-        raise CommandError("No such subcommand '%s'" % subcommand)
+        self.show_command_error("No such subcommand '%s'" % (subcommand))
+
+    def show_command_error(self, msg):
+        '''display a command error'''
+
+        print >>sys.stderr, "ERROR: %s" % (msg)
+        return -1
 
     def usage(self, myname, subcommand=None, *args):
         if subcommand is None or not subcommand in self.subcommands:
@@ -169,12 +176,14 @@ class SuperCommand(Command):
             return self.subcommands[subcommand].usage(*args)
 
 
+
 class CommandError(Exception):
     '''an exception class for netcmd errors'''
     def __init__(self, message, inner_exception=None):
         self.message = message
         self.inner_exception = inner_exception
         self.exception_info = sys.exc_info()
+
 
 
 commands = {}
