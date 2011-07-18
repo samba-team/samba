@@ -282,6 +282,8 @@ sub setup_plugin_s4_dc($$$$)
         passdb backend = samba4
         auth methods = guest samba4
         domain logons = yes
+        rpc_server:epmapper = external
+        rpc_server:lsass = external
         rpc_server:lsarpc = external
         rpc_server:netlogon = external
         rpc_server:samr = external
