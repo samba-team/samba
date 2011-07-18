@@ -31,7 +31,7 @@ class Option(optparse.Option):
 
 
 class Command(object):
-    """A %prog command."""
+    """A samba-tool command."""
 
     def _get_description(self):
         return self.__doc__.splitlines()[0].rstrip("\n")
@@ -149,7 +149,7 @@ class Command(object):
 
 
 class SuperCommand(Command):
-    """A %prog command with subcommands."""
+    """A samba-tool command with subcommands."""
 
     subcommands = {}
 
@@ -183,7 +183,7 @@ class SuperCommand(Command):
 
 
 class CommandError(Exception):
-    '''an exception class for %prog cmd errors'''
+    '''an exception class for samba-tool cmd errors'''
     def __init__(self, message, inner_exception=None):
         self.message = message
         self.inner_exception = inner_exception
