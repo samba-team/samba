@@ -132,6 +132,13 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
             plantestsuite_loadlist("samba4.%s on %s with %s" % (t, transport, bindoptions), env, [valgrindify(smb4torture), "$LISTOPT", "%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', t])
         plantestsuite_loadlist("samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions), env, [valgrindify(smb4torture), "$LISTOPT", "%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', '--option=torture:share=tmp', 'rpc.samba3-sharesec'])
 
+#Plugin S4 DC tests (confirms named pipe auth forwarding).  This can be expanded once kerberos is supported in the plugin DC
+#
+for t in [ "rpc.lsalookup", "rpc.lsa.secrets", "rpc.lsa-getuser", "rpc.handles", "rpc.asyncbind", "rpc.authcontext", "rpc.lsa"]:
+    env = "plugin_s4_dc"
+    transport = "ncacn_np"
+    plantestsuite_loadlist("samba4.%s" % (t), env, [valgrindify(smb4torture), "$LISTOPT", "%s:$SERVER" % (transport), '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', '-k', 'no', t])
+
 for bindoptions in [""] + validate_list + ["bigendian"]:
     for t in auto_rpc_tests:
         plantestsuite_loadlist("samba4.%s with %s" % (t, bindoptions), "dc", [valgrindify(smb4torture), "$LISTOPT", "$SERVER[%s]" % bindoptions, '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', t])
