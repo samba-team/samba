@@ -54,7 +54,9 @@ static int prefork_pool_destructor(struct prefork_pool *pfp)
 	return 0;
 }
 
-bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
+bool prefork_create_pool(TALLOC_CTX *mem_ctx,
+			 struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
 			 int listen_fd_size, int *listen_fds,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
@@ -118,7 +120,8 @@ bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
 		case 0: /* THE CHILD */
 
 			pfp->pool[i].status = PF_WORKER_IDLE;
-			ret = pfp->main_fn(ev_ctx, &pfp->pool[i],
+			ret = pfp->main_fn(ev_ctx, msg_ctx,
+					   &pfp->pool[i],
 					   pfp->listen_fd_size,
 					   pfp->listen_fds,
 					   pfp->lock_fd,
@@ -175,6 +178,7 @@ int prefork_expand_pool(struct prefork_pool *pfp, int new_max)
 }
 
 int prefork_add_children(struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
 			 struct prefork_pool *pfp,
 			 int num_children)
 {
@@ -201,7 +205,8 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 		case 0: /* THE CHILD */
 
 			pfp->pool[i].status = PF_WORKER_IDLE;
-			ret = pfp->main_fn(ev_ctx, &pfp->pool[i],
+			ret = pfp->main_fn(ev_ctx, msg_ctx,
+					   &pfp->pool[i],
 					   pfp->listen_fd_size,
 					   pfp->listen_fds,
 					   pfp->lock_fd,

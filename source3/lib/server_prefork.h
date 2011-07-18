@@ -62,6 +62,7 @@ struct pf_worker_data {
 *        cause the termination of the child.
 *
 * @param ev		The event context
+* @param msg_ctx	The messaging context
 * @param pf		The mmaped area used to communicate with parent
 * @param listen_fd_size The number of file descriptors to monitor
 * @param listen_fds	The array of file descriptors
@@ -72,6 +73,7 @@ struct pf_worker_data {
 * @return Returns the exit status to be reported to the parent via exit()
 */
 typedef int (prefork_main_fn_t)(struct tevent_context *ev,
+				struct messaging_context *msg_ctx,
 				struct pf_worker_data *pf,
 				int listen_fd_size,
 				int *listen_fds,
@@ -94,8 +96,9 @@ typedef void (prefork_sigchld_fn_t)(struct tevent_context *ev_ctx,
 /**
 * @brief Creates the first pool of preforked processes
 *
-* @param ev_ctx		The event context
 * @param mem_ctx	The memory context used to hold the pool structure
+* @param ev_ctx		The event context
+* @param msg_ctx	The messaging context
 * @param listen_fd_size	The number of file descriptors to monitor
 * @param listen_fds	The array of file descriptors to monitor
 * @param min_children	Minimum number of children that must be available at
@@ -108,7 +111,9 @@ typedef void (prefork_sigchld_fn_t)(struct tevent_context *ev_ctx,
 *
 * @return True if it was successful, False otherwise.
 */
-bool prefork_create_pool(struct tevent_context *ev_ctx, TALLOC_CTX *mem_ctx,
+bool prefork_create_pool(TALLOC_CTX *mem_ctx,
+			 struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
 			 int listen_fd_size, int *listen_fds,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
@@ -132,6 +137,7 @@ int prefork_expand_pool(struct prefork_pool *pfp, int new_max);
 * @brief Used to prefork a number of new children
 *
 * @param ev_ctx		The event context
+* @param msg_ctx	The messaging context
 * @param pfp		The pool structure
 * @param num_children	The number of children to be started
 *
@@ -141,6 +147,7 @@ int prefork_expand_pool(struct prefork_pool *pfp, int new_max);
 *	has already been forked it will do nothing.
 */
 int prefork_add_children(struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
 			 struct prefork_pool *pfp,
 			 int num_children);
 /**
