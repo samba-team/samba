@@ -31,7 +31,7 @@ class Option(optparse.Option):
 
 
 class Command(object):
-    """A net command."""
+    """A %prog command."""
 
     def _get_description(self):
         return self.__doc__.splitlines()[0].rstrip("\n")
@@ -148,7 +148,7 @@ class Command(object):
 
 
 class SuperCommand(Command):
-    """A command with subcommands."""
+    """A %prog command with subcommands."""
 
     subcommands = {}
 
@@ -178,7 +178,7 @@ class SuperCommand(Command):
 
 
 class CommandError(Exception):
-    '''an exception class for netcmd errors'''
+    '''an exception class for %prog cmd errors'''
     def __init__(self, message, inner_exception=None):
         self.message = message
         self.inner_exception = inner_exception
