@@ -5,7 +5,7 @@
    Copyright (C) Andrew Bartlett 2001-2011
    Copyright (C) Jeremy Allison 2000-2001
    Copyright (C) Rafal Szczesniak 2002
-   Copyright (C) Volker Lendecke 2006
+   Copyright (C) Volker Lendecke 2006-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "../lib/util/util_pw.h"
 #include "lib/winbind_util.h"
 #include "passdb.h"
+#include "../librpc/gen_ndr/ndr_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -1047,70 +1048,35 @@ struct auth3_session_info *copy_session_info(TALLOC_CTX *mem_ctx,
 					     const struct auth3_session_info *src)
 {
 	struct auth3_session_info *dst;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
 
-	dst = make_auth3_session_info(mem_ctx);
-	if (dst == NULL) {
+	ndr_err = ndr_push_struct_blob(
+		&blob, talloc_tos(), src,
+		(ndr_push_flags_fn_t)ndr_push_auth3_session_info);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("copy_session_info(): ndr_push_auth3_session_info failed: "
+			   "%s\n", ndr_errstr(ndr_err)));
 		return NULL;
 	}
 
-	if (src->unix_token) {
-		dst->unix_token = talloc(dst, struct security_unix_token);
-		if (!dst->unix_token) {
-			return NULL;
-		}
-
-		dst->unix_token->uid = src->unix_token->uid;
-		dst->unix_token->gid = src->unix_token->gid;
-		dst->unix_token->ngroups = src->unix_token->ngroups;
-		if (src->unix_token->ngroups != 0) {
-			dst->unix_token->groups = (gid_t *)talloc_memdup(
-				dst->unix_token, src->unix_token->groups,
-				sizeof(gid_t)*dst->unix_token->ngroups);
-		} else {
-			dst->unix_token->groups = NULL;
-		}
-	} else {
-		dst->unix_token = NULL;
+	dst = talloc(mem_ctx, struct auth3_session_info);
+	if (dst == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(blob.data);
+		return NULL;
 	}
 
-	if (src->security_token) {
-		dst->security_token = dup_nt_token(dst, src->security_token);
-		if (!dst->security_token) {
-			TALLOC_FREE(dst);
-			return NULL;
-		}
-	}
+	ndr_err = ndr_pull_struct_blob(
+		&blob, dst, dst,
+		(ndr_pull_flags_fn_t)ndr_pull_auth3_session_info);
+	TALLOC_FREE(blob.data);
 
-	dst->session_key = data_blob_talloc( dst, src->session_key.data,
-						src->session_key.length);
-
-	dst->info3 = copy_netr_SamInfo3(dst, src->info3);
-	if (!dst->info3) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("copy_session_info(): ndr_pull_auth3_session_info failed: "
+			   "%s\n", ndr_errstr(ndr_err)));
 		TALLOC_FREE(dst);
 		return NULL;
-	}
-
-	if (src->unix_info) {
-		dst->unix_info = talloc_zero(dst, struct auth_user_info_unix);
-		if (!dst->unix_info) {
-			TALLOC_FREE(dst);
-			return NULL;
-		}
-
-		dst->unix_info->unix_name = talloc_strdup(dst, src->unix_info->unix_name);
-		if (!dst->unix_info->unix_name) {
-			TALLOC_FREE(dst);
-			return NULL;
-		}
-
-		dst->unix_info->sanitized_username = talloc_strdup(dst, src->unix_info->sanitized_username);
-		if (!dst->unix_info->sanitized_username) {
-			TALLOC_FREE(dst);
-			return NULL;
-		}
-
-		dst->unix_info->guest = src->unix_info->guest;
-		dst->unix_info->system = src->unix_info->system;
 	}
 
 	return dst;
