@@ -966,7 +966,7 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
  * - nss_token (not needed because the only read doesn't happen
  * for the GUEST user, as this routine populates ->security_token
  *
- * - extra (not needed because the guest account mut have a valid RID per the output of get_guest_info3())
+ * - extra (not needed because the guest account must have valid RIDs per the output of get_guest_info3())
  *
  * - The 'server_info' parameter allows the missing 'info3' to be copied across.
  */
@@ -987,7 +987,10 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	dst->guest = src->unix_info->guest;
 	dst->system = src->unix_info->system;
 
-	/* This element must be provided to convert back to an auth_serversupplied_info */
+	/* This element must be provided to convert back to an
+	 * auth_serversupplied_info.  This needs to be from hte
+	 * auth3_session_info because the group values in particular
+	 * may change during create_local_token() processing */
 	SMB_ASSERT(src->unix_token);
 	dst->utok.uid = src->unix_token->uid;
 	dst->utok.gid = src->unix_token->gid;
