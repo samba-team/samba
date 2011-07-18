@@ -40,8 +40,6 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 {
 	struct auth_session_info *i;
 	struct auth3_session_info *s;
-	struct auth_user_info_dc *u;
-	union netr_Validation val;
 	NTSTATUS status;
 
 	i = talloc_zero(mem_ctx, struct auth_session_info);
@@ -56,20 +54,7 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 
 	i->security_token = s->security_token;
 	i->session_key    = s->session_key;
-
-	val.sam3 = s->info3;
-
-	status = make_user_info_dc_netlogon_validation(mem_ctx,
-						       "",
-						       3,
-						       &val,
-						       &u);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("conversion of info3 into user_info_dc failed!\n"));
-		return status;
-	}
-	i->info = talloc_move(i, &u->info);
-	talloc_free(u);
+	i->info           = s->info;
 
 	*session_info = i;
 
@@ -88,8 +73,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    struct pipes_struct **_p,
 				    int *perrno)
 {
-	struct netr_SamInfo3 *info3;
-	struct auth_user_info_dc *auth_user_info_dc;
 	struct pipes_struct *p;
 	NTSTATUS status;
 
@@ -114,30 +97,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
-	/* Fake up an auth_user_info_dc for now, to make an info3, to make the session_info structure */
-	auth_user_info_dc = talloc_zero(p, struct auth_user_info_dc);
-	if (!auth_user_info_dc) {
-		TALLOC_FREE(p);
-		*perrno = ENOMEM;
-		return -1;
-	}
-
-	auth_user_info_dc->num_sids = session_info->security_token->num_sids;
-	auth_user_info_dc->sids = session_info->security_token->sids;
-	auth_user_info_dc->info = session_info->info;
-	auth_user_info_dc->user_session_key = session_info->session_key;
-
-	/* This creates the input structure that make_server_info_info3 is looking for */
-	status = auth_convert_user_info_dc_saminfo3(p, auth_user_info_dc,
-						    &info3);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to convert auth_user_info_dc into netr_SamInfo3\n"));
-		TALLOC_FREE(p);
-		*perrno = EINVAL;
-		return -1;
-	}
-
 	if (session_info->unix_token && session_info->unix_info && session_info->security_token) {
 		/* Don't call create_local_token(), we already have the full details here */
 		p->session_info = talloc_zero(p, struct auth3_session_info);
@@ -149,12 +108,38 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		p->session_info->security_token = talloc_move(p->session_info, &session_info->security_token);
 		p->session_info->unix_token = talloc_move(p->session_info, &session_info->unix_token);
 		p->session_info->unix_info = talloc_move(p->session_info, &session_info->unix_info);
-		p->session_info->info3 = talloc_move(p->session_info, &info3);
+		p->session_info->info = talloc_move(p->session_info, &session_info->info);
 		p->session_info->session_key = session_info->session_key;
 		p->session_info->session_key.data = talloc_move(p->session_info, &session_info->session_key.data);
 
 	} else {
+		struct auth_user_info_dc *auth_user_info_dc;
 		struct auth_serversupplied_info *server_info;
+		struct netr_SamInfo3 *info3;
+
+		/* Fake up an auth_user_info_dc for now, to make an info3, to make the session_info structure */
+		auth_user_info_dc = talloc_zero(p, struct auth_user_info_dc);
+		if (!auth_user_info_dc) {
+			TALLOC_FREE(p);
+			*perrno = ENOMEM;
+			return -1;
+		}
+
+		auth_user_info_dc->num_sids = session_info->security_token->num_sids;
+		auth_user_info_dc->sids = session_info->security_token->sids;
+		auth_user_info_dc->info = session_info->info;
+		auth_user_info_dc->user_session_key = session_info->session_key;
+
+		/* This creates the input structure that make_server_info_info3 is looking for */
+		status = auth_convert_user_info_dc_saminfo3(p, auth_user_info_dc,
+							    &info3);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to convert auth_user_info_dc into netr_SamInfo3\n"));
+			TALLOC_FREE(p);
+			*perrno = EINVAL;
+			return -1;
+		}
 
 		status = make_server_info_info3(p,
 						info3->base.account_name.string,

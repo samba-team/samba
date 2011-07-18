@@ -9,7 +9,7 @@
 
 */
 
-import "misc.idl", "security.idl", "lsa.idl", "krb5pac.idl", "netlogon.idl";
+import "misc.idl", "security.idl", "lsa.idl", "krb5pac.idl";
 [
 	pyhelper("librpc/ndr/py_auth.c"),
 	helper("../librpc/ndr/ndr_auth.h"),
@@ -103,7 +103,7 @@ interface auth
 	typedef [public] struct {
 		security_token *security_token;
 		security_unix_token *unix_token;
-		netr_SamInfo3 *info3;
+		auth_user_info *info;
 		auth_user_info_unix *unix_info;
 		[value(NULL), ignore] auth_user_info_torture *torture;
 

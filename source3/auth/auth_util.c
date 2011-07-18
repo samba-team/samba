@@ -31,6 +31,7 @@
 #include "lib/winbind_util.h"
 #include "passdb.h"
 #include "../librpc/gen_ndr/ndr_auth.h"
+#include "../auth/auth_sam_reply.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -464,6 +465,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	struct dom_sid tmp_sid;
 	struct auth3_session_info *session_info;
 	struct wbcUnixId *ids;
+	struct auth_user_info_dc *user_info_dc;
+	union netr_Validation val;
 
 	/* Ensure we can't possible take a code path leading to a
 	 * null defref. */
@@ -484,12 +487,6 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	session_info->unix_token->uid = server_info->utok.uid;
 	session_info->unix_token->gid = server_info->utok.gid;
-
-	session_info->info3 = copy_netr_SamInfo3(session_info, server_info->info3);
-	if (!session_info->info3) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	session_info->unix_info = talloc_zero(session_info, struct auth_user_info_unix);
 	if (!session_info->unix_info) {
@@ -549,6 +546,22 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		*session_info_out = session_info;
 		return NT_STATUS_OK;
 	}
+
+	val.sam3 = server_info->info3;
+
+	/* Convert into something we can build a struct
+	 * auth_session_info from.  Most of the work here
+	 * will be to convert the SIDS, which we will then ignore, but
+	 * this is the easier way to handle it */
+	status = make_user_info_dc_netlogon_validation(talloc_tos(), "", 3, &val, &user_info_dc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("conversion of info3 into user_info_dc failed!\n"));
+		TALLOC_FREE(session_info);
+		return status;
+	}
+
+	session_info->info = talloc_move(session_info, &user_info_dc->info);
+	talloc_free(user_info_dc);
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -872,7 +885,7 @@ static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_
 	   all zeros! */
 	(*session_info)->session_key = data_blob(zeros, sizeof(zeros));
 
-	alpha_strcpy(tmp, (*session_info)->info3->base.account_name.string,
+	alpha_strcpy(tmp, (*server_info)->info3->base.account_name.string,
 		     ". _-$", sizeof(tmp));
 	(*session_info)->unix_info->sanitized_username = talloc_strdup(*session_info, tmp);
 

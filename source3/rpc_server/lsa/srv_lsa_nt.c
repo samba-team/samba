@@ -2412,7 +2412,7 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 		}
 	} else {
 		username = p->session_info->unix_info->sanitized_username;
-		domname = p->session_info->info3->base.domain.string;
+		domname = p->session_info->info->domain_name;
 	}
 
 	account_name = talloc(p->mem_ctx, struct lsa_String);

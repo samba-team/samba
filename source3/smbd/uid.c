@@ -110,13 +110,13 @@ static bool check_user_ok(connection_struct *conn,
 	}
 
 	if (!user_ok_token(session_info->unix_info->unix_name,
-			   session_info->info3->base.domain.string,
+			   session_info->info->domain_name,
 			   session_info->security_token, snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_token(
 		session_info->unix_info->unix_name,
-		session_info->info3->base.domain.string,
+		session_info->info->domain_name,
 		session_info->security_token,
 		conn);
 
@@ -141,7 +141,7 @@ static bool check_user_ok(connection_struct *conn,
 
 	admin_user = token_contains_name_in_list(
 		session_info->unix_info->unix_name,
-		session_info->info3->base.domain.string,
+		session_info->info->domain_name,
 		NULL, session_info->security_token, lp_admin_users(snum));
 
 	if (valid_vuid) {

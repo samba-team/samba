@@ -209,7 +209,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	acct_ctrl = p->session_info->info3->base.acct_flags;
+	acct_ctrl = p->session_info->info->acct_flags;
 
 	switch (r->in.function_code) {
 	case NETLOGON_CONTROL_TC_VERIFY:

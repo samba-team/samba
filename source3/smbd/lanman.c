@@ -121,7 +121,7 @@ static int CopyExpanded(connection_struct *conn,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
 				conn->session_info->unix_info->sanitized_username,
-				conn->session_info->info3->base.domain.string,
+				conn->session_info->info->domain_name,
 				buf);
 	if (!buf) {
 		*p_space_remaining = 0;
@@ -172,7 +172,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
 				conn->session_info->unix_info->sanitized_username,
-				conn->session_info->info3->base.domain.string,
+				conn->session_info->info->domain_name,
 				buf);
 	if (!buf) {
 		return 0;
@@ -4696,7 +4696,7 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 
 		PACKS(&desc,"z",lp_workgroup());/* domain */
 		PACKS(&desc,"z", vuser ?
-			vuser->session_info->info3->base.logon_script.string
+		      vuser->session_info->info->logon_script
 			: ""); /* script path */
 		PACKI(&desc,"D",0x00000000);		/* reserved */
 	}

@@ -161,7 +161,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
 				conn->session_info->unix_info->sanitized_username,
-				conn->session_info->info3->base.domain.string,
+				conn->session_info->info->domain_name,
 				targethost);
 
 	DEBUG(10, ("Expanded targethost to %s\n", targethost));

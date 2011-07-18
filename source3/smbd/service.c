@@ -403,7 +403,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                         }
                 } else {
                         if (!user_ok_token(vuid_serverinfo->unix_info->unix_name,
-					   vuid_serverinfo->info3->base.domain.string,
+					   vuid_serverinfo->info->domain_name,
                                            vuid_serverinfo->security_token, snum)) {
                                 DEBUG(2, ("user '%s' (from session setup) not "
                                           "permitted to access this share "
@@ -617,7 +617,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
-					conn->session_info->info3->base.domain.string,
+					conn->session_info->info->domain_name,
 					lp_pathname(snum));
 		if (!s) {
 			*pstatus = NT_STATUS_NO_MEMORY;
@@ -739,7 +739,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
-					conn->session_info->info3->base.domain.string,
+					conn->session_info->info->domain_name,
 					lp_rootpreexec(snum));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
@@ -777,7 +777,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
-					conn->session_info->info3->base.domain.string,
+					conn->session_info->info->domain_name,
 					lp_preexec(snum));
 		ret = smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
@@ -1097,7 +1097,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
-					conn->session_info->info3->base.domain.string,
+					conn->session_info->info->domain_name,
 					lp_postexec(SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
@@ -1113,7 +1113,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
-					conn->session_info->info3->base.domain.string,
+					conn->session_info->info->domain_name,
 					lp_rootpostexec(SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);

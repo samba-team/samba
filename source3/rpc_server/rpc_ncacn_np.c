@@ -629,8 +629,6 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	struct auth_session_info_transport *session_info_t;
 	struct auth_session_info *session_info_npa;
-	struct auth_user_info_dc *user_info_dc;
-	union netr_Validation val;
 	NTSTATUS status;
 	bool ok;
 	int ret;
@@ -685,20 +683,7 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	session_info_npa->unix_token = session_info->unix_token;
 	session_info_npa->unix_info = session_info->unix_info;
 
-	val.sam3 = session_info->info3;
-
-	/* Convert into something we can build a struct
-	 * auth_session_info from.  Most of the work here
-	 * will be to convert the SIDS, which we will then ignore, but
-	 * this is the easier way to handle it */
-	status = make_user_info_dc_netlogon_validation(talloc_tos(), "", 3, &val, &user_info_dc);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("conversion of info3 into user_info_dc failed!\n"));
-		goto fail;
-	}
-
-	session_info_npa->info = talloc_move(session_info_npa, &user_info_dc->info);
-	talloc_free(user_info_dc);
+	session_info_npa->info = session_info->info;
 
 	session_info_t = talloc_zero(talloc_tos(), struct auth_session_info_transport);
 	if (session_info_npa == NULL) {

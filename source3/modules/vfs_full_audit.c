@@ -410,7 +410,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 			conn->connectpath,
 			conn->session_info->unix_token->gid,
 			conn->session_info->unix_info->sanitized_username,
-			conn->session_info->info3->base.domain.string,
+			conn->session_info->info->domain_name,
 			prefix);
 	TALLOC_FREE(prefix);
 	return result;

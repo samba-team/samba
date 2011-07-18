@@ -1414,7 +1414,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 				set_current_user_info(
 					vuser->session_info->unix_info->sanitized_username,
 					vuser->session_info->unix_info->unix_name,
-					vuser->session_info->info3->base.domain.string);
+					vuser->session_info->info->domain_name);
 			}
 		}
 	}
