@@ -27,15 +27,15 @@ interface auth
 	/* This is the parts of the session_info that don't change
 	 * during local privilage and group manipulations */
 	typedef [public] struct {
-		utf8string account_name;
-		utf8string domain_name;
+		[unique,charset(UTF8),string] char *account_name;
+		[unique,charset(UTF8),string] char *domain_name;
 
-		utf8string full_name;
-		utf8string logon_script;
-		utf8string profile_path;
-		utf8string home_directory;
-		utf8string home_drive;
-		utf8string logon_server;
+		[unique,charset(UTF8),string] char *full_name;
+		[unique,charset(UTF8),string] char *logon_script;
+		[unique,charset(UTF8),string] char *profile_path;
+		[unique,charset(UTF8),string] char *home_directory;
+		[unique,charset(UTF8),string] char *home_drive;
+		[unique,charset(UTF8),string] char *logon_server;
 
 		NTTIME last_logon;
 		NTTIME last_logoff;
@@ -68,7 +68,7 @@ interface auth
 		boolean8 guest;
 		boolean8 system;
 
-		utf8string unix_name;
+		[unique,charset(UTF8),string] char *unix_name;
 
 		/*
 		 * For performance reasons we keep an alpha_strcpy-sanitized version
@@ -77,7 +77,7 @@ interface auth
 		 * alpha_strcpy whenever we do a become_user(), potentially on every
 		 * smb request. See set_current_user_info in source3.
 		 */
-		utf8string sanitized_username;
+		[unique,charset(UTF8),string] char *sanitized_username;
 	} auth_user_info_unix;
 
 	/* This is the interim product of the auth subsystem, before
