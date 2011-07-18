@@ -83,7 +83,7 @@ class cmd_user_enable(Command):
     synopsis = "%prog user enable (<username>|--filter <filter>) [options]"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", help="LDB URL for database or target server", type=str, metavar="URL"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
         ]
 
@@ -116,10 +116,10 @@ class cmd_user_setexpiry(Command):
     synopsis = "%prog user setexpiry (<username>|--filter <filter>) [options]"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", help="LDB URL for database or target server", type=str, metavar="URL"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
-        Option("--days", help="Days to expiry", type=int),
-        Option("--noexpiry", help="Password does never expire", action="store_true"),
+        Option("--days", help="Days to expiry", type=int, default=0),
+        Option("--noexpiry", help="Password does never expire", action="store_true", default=False),
     ]
 
     takes_args = ["username?"]
@@ -133,9 +133,6 @@ class cmd_user_setexpiry(Command):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-
-        if days is None:
-            days = 0
 
         samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)
@@ -154,12 +151,12 @@ class cmd_user_setpassword(Command):
     synopsis = "%prog user setpassword (<username>|--filter <filter>) [options]"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", help="LDB URL for database or target server", type=str, metavar="URL"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
         Option("--newpassword", help="Set password", type=str),
         Option("--must-change-at-next-login",
-            help="Force password to be changed on next login",
-            action="store_true"),
+               help="Force password to be changed on next login",
+               action="store_true"),
         ]
 
     takes_args = ["username?"]
