@@ -192,19 +192,41 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	if (base->account_name.string) {
-		info->account_name = talloc_reference(info, base->account_name.string);
+		info->account_name = talloc_strdup(info, base->account_name.string);
 	} else {
 		info->account_name = talloc_strdup(info, account_name);
-		NT_STATUS_HAVE_NO_MEMORY(info->account_name);
+	}
+	NT_STATUS_HAVE_NO_MEMORY(info->account_name);
+
+	if (base->domain.string) {
+		info->domain_name = talloc_strdup(info, base->domain.string);
+		NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
 	}
 
-	info->domain_name = talloc_reference(info, base->domain.string);
-	info->full_name = talloc_reference(info, base->full_name.string);
-	info->logon_script = talloc_reference(info, base->logon_script.string);
-	info->profile_path = talloc_reference(info, base->profile_path.string);
-	info->home_directory = talloc_reference(info, base->home_directory.string);
-	info->home_drive = talloc_reference(info, base->home_drive.string);
-	info->logon_server = talloc_reference(info, base->logon_server.string);
+	if (base->full_name.string) {
+		info->full_name = talloc_strdup(info, base->full_name.string);
+		NT_STATUS_HAVE_NO_MEMORY(info->full_name);
+	}
+	if (base->logon_script.string) {
+		info->logon_script = talloc_strdup(info, base->logon_script.string);
+		NT_STATUS_HAVE_NO_MEMORY(info->logon_script);
+	}
+	if (base->profile_path.string) {
+		info->profile_path = talloc_strdup(info, base->profile_path.string);
+		NT_STATUS_HAVE_NO_MEMORY(info->profile_path);
+	}
+	if (base->home_directory.string) {
+		info->home_directory = talloc_strdup(info, base->home_directory.string);
+		NT_STATUS_HAVE_NO_MEMORY(info->home_directory);
+	}
+	if (base->home_drive.string) {
+		info->home_drive = talloc_strdup(info, base->home_drive.string);
+		NT_STATUS_HAVE_NO_MEMORY(info->home_drive);
+	}
+	if (base->logon_server.string) {
+		info->logon_server = talloc_strdup(info, base->logon_server.string);
+		NT_STATUS_HAVE_NO_MEMORY(info->logon_server);
+	}
 	info->last_logon = base->last_logon;
 	info->last_logoff = base->last_logoff;
 	info->acct_expiry = base->acct_expiry;
