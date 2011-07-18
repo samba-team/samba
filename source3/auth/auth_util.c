@@ -767,9 +767,8 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
  left as-is for now.
 ***************************************************************************/
 
-static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_info)
+static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_info, struct auth_serversupplied_info **server_info)
 {
-	struct auth_serversupplied_info *server_info;
 	static const char zeros[16] = {0};
 	const char *guest_account = lp_guestaccount();
 	const char *domain = lp_netbios_name();
@@ -795,7 +794,7 @@ static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_
 	status = make_server_info_info3(tmp_ctx,
 					guest_account,
 					domain,
-					&server_info,
+					server_info,
 					&info3);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("make_server_info_info3 failed with %s\n",
@@ -803,19 +802,19 @@ static NTSTATUS make_new_session_info_guest(struct auth3_session_info **session_
 		goto done;
 	}
 
-	server_info->guest = True;
+	(*server_info)->guest = True;
 
 	/* This should not be done here (we should produce a server
 	 * info, and later construct a session info from it), but for
 	 * now this does not change the previous behaviours */
-	status = create_local_token(tmp_ctx, server_info, NULL, session_info);
-	TALLOC_FREE(server_info);
+	status = create_local_token(tmp_ctx, *server_info, NULL, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("create_local_token failed: %s\n",
 			  nt_errstr(status)));
 		goto done;
 	}
 	talloc_steal(NULL, *session_info);
+	talloc_steal(NULL, *server_info);
 
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
@@ -917,9 +916,12 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
  * for the GUEST user, as this routine populates ->security_token
  *
  * - extra (not needed because the guest account mut have a valid RID per the output of get_guest_info3())
+ *
+ * - The 'server_info' parameter allows the missing 'info3' to be copied across.
  */
-static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX *mem_ctx,
-							      const struct auth3_session_info *src)
+static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLOC_CTX *mem_ctx,
+									   const struct auth3_session_info *src,
+									   struct auth_serversupplied_info *server_info)
 {
 	struct auth_serversupplied_info *dst;
 
@@ -966,7 +968,7 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo(TALLOC_CTX 
 	dst->lm_session_key = data_blob_talloc(dst, src->session_key.data,
 						src->session_key.length);
 
-	dst->info3 = copy_netr_SamInfo3(dst, src->info3);
+	dst->info3 = copy_netr_SamInfo3(dst, server_info->info3);
 	if (!dst->info3) {
 		TALLOC_FREE(dst);
 		return NULL;
@@ -1145,18 +1147,24 @@ bool session_info_set_session_key(struct auth3_session_info *info,
 
 static struct auth3_session_info *guest_info = NULL;
 
+static struct auth_serversupplied_info *guest_server_info = NULL;
+
 bool init_guest_info(void)
 {
 	if (guest_info != NULL)
 		return True;
 
-	return NT_STATUS_IS_OK(make_new_session_info_guest(&guest_info));
+	return NT_STATUS_IS_OK(make_new_session_info_guest(&guest_info, &guest_server_info));
 }
 
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info)
 {
-	*server_info = copy_session_info_serverinfo(mem_ctx, guest_info);
+	/* This is trickier than it would appear to need to be because
+	 * we are trying to avoid certain costly operations when the
+	 * structure is converted to a 'auth3_session_info' again in
+	 * create_local_token() */
+	*server_info = copy_session_info_serverinfo_guest(mem_ctx, guest_info, guest_server_info);
 	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
