@@ -1,0 +1,13 @@
+Debian
+======
+
+Packages of Samba 4 are regularly uploaded to the Debian and Ubuntu archives.
+
+http://packages.debian.org/samba4
+
+Please see http://wiki.samba.org/index.php/Samba4/Debian for instructions
+on building the Samba 4 Debian packages.
+
+Fedora
+======
+A package of Samba 4 is maintained in Fedora.
