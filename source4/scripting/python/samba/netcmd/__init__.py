@@ -50,12 +50,6 @@ class Command(object):
 
     description = property(_get_description)
 
-    def _get_synopsis(self):
-        ret = self.name
-        if self.takes_args:
-            ret += " " + " ".join([x.upper() for x in self.takes_args])
-        return ret
-
     def show_command_error(self, e):
         '''display a command error'''
         if isinstance(e, CommandError):
@@ -89,10 +83,10 @@ class Command(object):
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
 
-    synopsis = property(_get_synopsis)
-
     outf = sys.stdout
 
+    # synopsis must be defined in all subclasses in order to provide the command usage
+    synopsis = ""
     takes_args = []
     takes_options = []
     takes_optiongroups = {
