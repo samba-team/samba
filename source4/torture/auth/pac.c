@@ -223,7 +223,8 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 							 "",
 							 3, &validation,
-							 &user_info_dc_out);
+							  true, /* This user was authenticated */
+						 &user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		torture_fail(tctx, 
 			     talloc_asprintf(tctx, 
@@ -487,6 +488,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 							 "",
 							 3, &validation,
+							  true, /* This user was authenticated */
 							 &user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 

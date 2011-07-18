@@ -465,8 +465,6 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	struct dom_sid tmp_sid;
 	struct auth_session_info *session_info;
 	struct wbcUnixId *ids;
-	struct auth_user_info_dc *user_info_dc;
-	union netr_Validation val;
 
 	/* Ensure we can't possible take a code path leading to a
 	 * null defref. */
@@ -547,21 +545,15 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	val.sam3 = server_info->info3;
-
-	/* Convert into something we can build a struct
-	 * auth_session_info from.  Most of the work here
-	 * will be to convert the SIDS, which we will then ignore, but
-	 * this is the easier way to handle it */
-	status = make_user_info_dc_netlogon_validation(talloc_tos(), "", 3, &val, &user_info_dc);
+	/* We need to populate session_info->info with the information found in server_info->info3 */
+	status = make_user_info_SamBaseInfo(session_info, "", &server_info->info3->base,
+					    server_info->guest == false,
+					    &session_info->info);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("conversion of info3 into user_info_dc failed!\n"));
+		DEBUG(0, ("conversion of info3 into auth_user_info failed!\n"));
 		TALLOC_FREE(session_info);
 		return status;
 	}
-
-	session_info->info = talloc_move(session_info, &user_info_dc->info);
-	talloc_free(user_info_dc);
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the

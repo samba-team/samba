@@ -598,6 +598,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 						      ninfo.identity_info.account_name.string,
 						      r.in.validation_level,
 						      r.out.validation,
+							  true, /* This user was authenticated */
 						      &netlogon_user_info_dc);
 
 	torture_assert_ntstatus_ok(tctx, status, "make_user_info_dc_netlogon_validation failed");

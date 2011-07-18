@@ -220,6 +220,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 						      user_info->client.account_name,
 						      s->req.in.validation_level,
 						      &s->req.out.validation,
+						       true, /* This user was authenticated */
 						      user_info_dc);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -304,8 +305,10 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 
 	validation.sam3 = &info3;
 	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
-					user_info->client.account_name,
-					3, &validation, user_info_dc);
+							  user_info->client.account_name,
+							  3, &validation,
+							  true, /* This user was authenticated */
+							  user_info_dc);
 	return nt_status;
 
 }

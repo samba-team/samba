@@ -175,16 +175,64 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 }
 
 /**
+ * Make a user_info struct from the info3 or similar returned by a domain logon.
+ *
+ * The netr_SamInfo3 is also a key structure in the source3 auth subsystem
+ */
+
+NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
+				    const char *account_name,
+				    struct netr_SamBaseInfo *base,
+				    bool authenticated,
+				    struct auth_user_info **_user_info)
+{
+	struct auth_user_info *info;
+
+	info = talloc_zero(mem_ctx, struct auth_user_info);
+	NT_STATUS_HAVE_NO_MEMORY(info);
+
+	if (base->account_name.string) {
+		info->account_name = talloc_reference(info, base->account_name.string);
+	} else {
+		info->account_name = talloc_strdup(info, account_name);
+		NT_STATUS_HAVE_NO_MEMORY(info->account_name);
+	}
+
+	info->domain_name = talloc_reference(info, base->domain.string);
+	info->full_name = talloc_reference(info, base->full_name.string);
+	info->logon_script = talloc_reference(info, base->logon_script.string);
+	info->profile_path = talloc_reference(info, base->profile_path.string);
+	info->home_directory = talloc_reference(info, base->home_directory.string);
+	info->home_drive = talloc_reference(info, base->home_drive.string);
+	info->logon_server = talloc_reference(info, base->logon_server.string);
+	info->last_logon = base->last_logon;
+	info->last_logoff = base->last_logoff;
+	info->acct_expiry = base->acct_expiry;
+	info->last_password_change = base->last_password_change;
+	info->allow_password_change = base->allow_password_change;
+	info->force_password_change = base->force_password_change;
+	info->logon_count = base->logon_count;
+	info->bad_password_count = base->bad_password_count;
+	info->acct_flags = base->acct_flags;
+
+	info->authenticated = authenticated;
+
+	*_user_info = info;
+	return NT_STATUS_OK;
+}
+
+/**
  * Make a user_info_dc struct from the info3 returned by a domain logon
  */
 NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 					      const char *account_name,
 					      uint16_t validation_level,
 					      union netr_Validation *validation,
+					       bool authenticated,
 					      struct auth_user_info_dc **_user_info_dc)
 {
+	NTSTATUS status;
 	struct auth_user_info_dc *user_info_dc;
-	struct auth_user_info *info;
 	struct netr_SamBaseInfo *base = NULL;
 	uint32_t i;
 
@@ -287,34 +335,10 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		/* Where are the 'global' sids?... */
 	}
 
-	user_info_dc->info = info = talloc_zero(user_info_dc, struct auth_user_info);
-	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->info);
-
-	if (base->account_name.string) {
-		info->account_name = talloc_reference(info, base->account_name.string);
-	} else {
-		info->account_name = talloc_strdup(info, account_name);
-		NT_STATUS_HAVE_NO_MEMORY(info->account_name);
+	status = make_user_info_SamBaseInfo(user_info_dc, account_name, base, authenticated, &user_info_dc->info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	info->domain_name = talloc_reference(info, base->domain.string);
-	info->full_name = talloc_reference(info, base->full_name.string);
-	info->logon_script = talloc_reference(info, base->logon_script.string);
-	info->profile_path = talloc_reference(info, base->profile_path.string);
-	info->home_directory = talloc_reference(info, base->home_directory.string);
-	info->home_drive = talloc_reference(info, base->home_drive.string);
-	info->logon_server = talloc_reference(info, base->logon_server.string);
-	info->last_logon = base->last_logon;
-	info->last_logoff = base->last_logoff;
-	info->acct_expiry = base->acct_expiry;
-	info->last_password_change = base->last_password_change;
-	info->allow_password_change = base->allow_password_change;
-	info->force_password_change = base->force_password_change;
-	info->logon_count = base->logon_count;
-	info->bad_password_count = base->bad_password_count;
-	info->acct_flags = base->acct_flags;
-
-	info->authenticated = true;
 
 	/* ensure we are never given NULL session keys */
 
@@ -350,7 +374,9 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 
 	validation.sam3 = &pac_logon_info->info3;
 
-	nt_status = make_user_info_dc_netlogon_validation(mem_ctx, "", 3, &validation, &user_info_dc);
+	nt_status = make_user_info_dc_netlogon_validation(mem_ctx, "", 3, &validation,
+							  true, /* This user was authenticated */
+							  &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

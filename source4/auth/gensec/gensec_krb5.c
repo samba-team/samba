@@ -714,6 +714,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 								 NULL,
 								 3, &validation,
+								  true, /* This user was authenticated */
 								 &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			free(principal_string);
