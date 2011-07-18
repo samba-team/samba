@@ -96,16 +96,6 @@ interface auth
 		auth_user_info *info;
 		auth_user_info_unix *unix_info;
 		[value(NULL), ignore] auth_user_info_torture *torture;
-		DATA_BLOB session_key;
-		[value(NULL), ignore] cli_credentials *credentials;
-	} auth_session_info;
-
-	typedef [public] struct {
-		security_token *security_token;
-		security_unix_token *unix_token;
-		auth_user_info *info;
-		auth_user_info_unix *unix_info;
-		[value(NULL), ignore] auth_user_info_torture *torture;
 
 		/* This is the final session key, as used by SMB signing, and
 		 * (truncated to 16 bytes) encryption on the SAMR and LSA pipes
@@ -120,7 +110,7 @@ interface auth
 		DATA_BLOB session_key;
 
 		[value(NULL), ignore] cli_credentials *credentials;
-	} auth3_session_info;
+	} auth_session_info;
 
 	typedef [public] struct {
 		auth_session_info *session_info;
