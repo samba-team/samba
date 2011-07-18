@@ -222,7 +222,7 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, ev_ctx)) {
+	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, ev_ctx, msg_ctx)) {
 		exit(1);
 	}
 

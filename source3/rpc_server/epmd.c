@@ -274,7 +274,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	ok = setup_named_pipe_socket("epmapper", ev_ctx);
+	ok = setup_named_pipe_socket("epmapper", ev_ctx, msg_ctx);
 	if (!ok) {
 		DEBUG(0, ("Failed to open epmd named pipe!\n"));
 		exit(1);

@@ -212,7 +212,8 @@ static void named_pipe_listener(struct tevent_context *ev,
 				void *private_data);
 
 bool setup_named_pipe_socket(const char *pipe_name,
-			     struct tevent_context *ev_ctx)
+			     struct tevent_context *ev_ctx,
+			     struct messaging_context *msg_ctx)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
@@ -229,6 +230,9 @@ bool setup_named_pipe_socket(const char *pipe_name,
 		goto out;
 	}
 	state->fd = -1;
+
+	state->ev_ctx = ev_ctx;
+	state->msg_ctx = msg_ctx;
 
 	/*
 	 * As lp_ncalrpc_dir() should have 0755, but
