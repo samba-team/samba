@@ -38,25 +38,12 @@
 static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 					    struct auth_session_info **session_info)
 {
-	struct auth_session_info *i;
-	struct auth_session_info *s;
 	NTSTATUS status;
 
-	i = talloc_zero(mem_ctx, struct auth_session_info);
-	if (i == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = make_session_info_guest(i, &s);
+	status = make_session_info_guest(mem_ctx, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	i->security_token = s->security_token;
-	i->session_key    = s->session_key;
-	i->info           = s->info;
-
-	*session_info = i;
 
 	return NT_STATUS_OK;
 }
@@ -99,18 +86,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 	if (session_info->unix_token && session_info->unix_info && session_info->security_token) {
 		/* Don't call create_local_token(), we already have the full details here */
-		p->session_info = talloc_zero(p, struct auth_session_info);
-		if (p->session_info == NULL) {
-			TALLOC_FREE(p);
-			*perrno = ENOMEM;
-			return -1;
-		}
-		p->session_info->security_token = talloc_move(p->session_info, &session_info->security_token);
-		p->session_info->unix_token = talloc_move(p->session_info, &session_info->unix_token);
-		p->session_info->unix_info = talloc_move(p->session_info, &session_info->unix_info);
-		p->session_info->info = talloc_move(p->session_info, &session_info->info);
-		p->session_info->session_key = session_info->session_key;
-		p->session_info->session_key.data = talloc_move(p->session_info, &session_info->session_key.data);
+		p->session_info = talloc_steal(p, session_info);
 
 	} else {
 		struct auth_user_info_dc *auth_user_info_dc;

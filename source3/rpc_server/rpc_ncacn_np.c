@@ -628,8 +628,6 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev;
 	struct tevent_req *subreq;
 	struct auth_session_info_transport *session_info_t;
-	struct auth_session_info *session_info_npa;
-	NTSTATUS status;
 	bool ok;
 	int ret;
 	int sys_errno;
@@ -671,27 +669,13 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	session_info_npa = talloc_zero(talloc_tos(), struct auth_session_info);
-	if (session_info_npa == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		goto fail;
-	}
-
-	/* Send the named_pipe_auth server the user's full token */
-	session_info_npa->security_token = session_info->security_token;
-	session_info_npa->session_key = session_info->session_key;
-	session_info_npa->unix_token = session_info->unix_token;
-	session_info_npa->unix_info = session_info->unix_info;
-
-	session_info_npa->info = session_info->info;
-
 	session_info_t = talloc_zero(talloc_tos(), struct auth_session_info_transport);
-	if (session_info_npa == NULL) {
+	if (session_info_t == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
 
-	session_info_t->session_info = talloc_steal(session_info_t, session_info_npa);
+	session_info_t->session_info = session_info;
 
 	become_root();
 	subreq = tstream_npa_connect_send(talloc_tos(), ev,
