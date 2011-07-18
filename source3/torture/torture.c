@@ -2126,23 +2126,25 @@ static bool run_locktest5(int dummy)
 	}
 
 	/* Check for NT bug... */
-	ret = cli_lock(cli1, fnum1, 0, 8, 0, READ_LOCK) &&
-		  cli_lock(cli1, fnum3, 0, 1, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 8, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum3, 0, 1, 0, READ_LOCK));
 	cli_close(cli1, fnum1);
 	cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
-	ret = cli_lock(cli1, fnum1, 7, 1, 0, WRITE_LOCK);
+	status = cli_lock32(cli1, fnum1, 7, 1, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, True);
 	printf("this server %s the NT locking bug\n", ret ? "doesn't have" : "has");
 	cli_close(cli1, fnum1);
 	cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	cli_unlock(cli1, fnum3, 0, 1);
 
-	ret = cli_lock(cli1, fnum1, 0, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1, fnum1, 1, 1, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 1, 1, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s overlay a write with a read lock\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli2, fnum2, 0, 4, 0, READ_LOCK);
+	status = cli_lock32(cli2, fnum2, 0, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, False);
 
 	printf("a different processs %s get a read lock on the first process lock stack\n", ret?"can":"cannot");
@@ -2150,7 +2152,8 @@ static bool run_locktest5(int dummy)
 	/* Unlock the process 2 lock. */
 	cli_unlock(cli2, fnum2, 0, 4);
 
-	ret = cli_lock(cli1, fnum3, 0, 4, 0, READ_LOCK);
+	status = cli_lock32(cli1, fnum3, 0, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, False);
 
 	printf("the same processs on a different fnum %s get a read lock\n", ret?"can":"cannot");
@@ -2159,8 +2162,8 @@ static bool run_locktest5(int dummy)
 	cli_unlock(cli1, fnum3, 0, 4);
 
 	/* Stack 2 more locks here. */
-	ret = cli_lock(cli1, fnum1, 0, 4, 0, READ_LOCK) &&
-		  cli_lock(cli1, fnum1, 0, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 4, 0, READ_LOCK));
 
 	EXPECTED(ret, True);
 	printf("the same process %s stack read locks\n", ret?"can":"cannot");
@@ -2169,7 +2172,7 @@ static bool run_locktest5(int dummy)
 		removed. */
 
 	ret = NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 0, 4)) &&
-			cli_lock(cli2, fnum2, 0, 4, 0, READ_LOCK);
+	      NT_STATUS_IS_OK(cli_lock32(cli2, fnum2, 0, 4, 0, READ_LOCK));
 
 	EXPECTED(ret, True);
 	printf("the first unlock removes the %s lock\n", ret?"WRITE":"READ");
@@ -2192,7 +2195,8 @@ static bool run_locktest5(int dummy)
 	printf("the same process %s count the lock stack\n", !ret?"can":"cannot"); 
 
 	/* Ensure connection 2 can get a write lock. */
-	ret = cli_lock(cli2, fnum2, 0, 4, 0, WRITE_LOCK);
+	status = cli_lock32(cli2, fnum2, 0, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, True);
 
 	printf("a different processs %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
