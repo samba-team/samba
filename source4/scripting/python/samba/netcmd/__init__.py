@@ -3,7 +3,7 @@
 # Unix SMB/CIFS implementation.
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009
 # Copyright (C) Theresa Halloran <theresahalloran@gmail.com> 2011
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
+# Copyright (C) Giampaolo Lauria <lauria2@yahoo.com> 2011
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -158,7 +158,11 @@ class SuperCommand(Command):
         print "Available subcommands:"
         for cmd in self.subcommands:
             print "\t%-20s - %s" % (cmd, self.subcommands[cmd].description)
-        if subcommand in [None, 'help', '-h', '--help' ]:
+        if subcommand in [None]:
+            self.show_command_error("You must specify a subcommand")
+            return -1
+        if subcommand in ['-h', '--help']:
+            print "For more help on a specific subcommand, please type: samba-tool %s <subcommand> (-h|--help)" % myname
             return 0
         self.show_command_error("No such subcommand '%s'" % (subcommand))
 
