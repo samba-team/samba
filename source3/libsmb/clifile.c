@@ -2592,22 +2592,6 @@ NTSTATUS cli_lock32(struct cli_state *cli, uint16_t fnum,
 }
 
 /****************************************************************************
- Lock a file.
- note that timeout is in units of 2 milliseconds
-****************************************************************************/
-
-bool cli_lock(struct cli_state *cli, uint16_t fnum,
-		  uint32_t offset, uint32_t len, int timeout,
-		  enum brl_type lock_type)
-{
-	NTSTATUS status;
-
-	status = cli_locktype(cli, fnum, offset, len, timeout,
-			      (lock_type == READ_LOCK? 1 : 0));
-	return NT_STATUS_IS_OK(status);
-}
-
-/****************************************************************************
  Unlock a file.
 ****************************************************************************/
 

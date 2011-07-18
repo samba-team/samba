@@ -388,8 +388,6 @@ NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype);
-bool cli_lock(struct cli_state *cli, uint16_t fnum,
-	      uint32_t offset, uint32_t len, int timeout, enum brl_type lock_type);
 NTSTATUS cli_lock32(struct cli_state *cli, uint16_t fnum, uint32_t offset,
 		    uint32_t len, int timeout, enum brl_type lock_type);
 struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
