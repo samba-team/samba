@@ -3,7 +3,7 @@
 
    Convert a server info struct into the form for PAC and NETLOGON replies
 
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2011
    Copyright (C) Stefan Metzmacher <metze@samba.org>  2005
 
    This program is free software; you can redistribute it and/or modify

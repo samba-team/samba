@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Authentication utility functions
    Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Andrew Bartlett 2001
+   Copyright (C) Andrew Bartlett 2001-2011
    Copyright (C) Jeremy Allison 2000-2001
    Copyright (C) Rafal Szczesniak 2002
    Copyright (C) Volker Lendecke 2006

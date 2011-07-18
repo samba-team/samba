@@ -5,6 +5,7 @@
  *  Largely re-written : 2005
  *  Copyright (C) Jeremy Allison		1998 - 2005
  *  Copyright (C) Simo Sorce			2010
+ *  Copyright (C) Andrew Bartlett		2011
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
