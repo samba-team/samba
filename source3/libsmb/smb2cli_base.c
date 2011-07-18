@@ -321,7 +321,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	if (!tevent_req_is_in_progress(req)) {
-		return req;
+		return tevent_req_post(req, ev);
 	}
 	status = smb2cli_req_compound_submit(&req, 1);
 	if (tevent_req_nterror(req, status)) {
