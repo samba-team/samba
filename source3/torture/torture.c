@@ -3535,9 +3535,9 @@ static bool run_oplock2(int dummy)
 
 	/* Should now be at level II. */
 	/* Test if sending a write locks causes a break to none. */
-
-	if (!cli_lock(cli1, fnum1, 0, 4, 0, READ_LOCK)) {
-		printf("lock failed (%s)\n", cli_errstr(cli1));
+	status = cli_lock32(cli1, fnum1, 0, 4, 0, READ_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lock failed (%s)\n", nt_errstr(status));
 		correct = False;
 	}
 
@@ -3545,8 +3545,9 @@ static bool run_oplock2(int dummy)
 
 	sleep(2);
 
-	if (!cli_lock(cli1, fnum1, 0, 4, 0, WRITE_LOCK)) {
-		printf("lock failed (%s)\n", cli_errstr(cli1));
+	status = cli_lock32(cli1, fnum1, 0, 4, 0, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lock failed (%s)\n", nt_errstr(status));
 		correct = False;
 	}
 
