@@ -91,7 +91,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	struct netr_SamInfo3 *info3;
 	struct auth_user_info_dc *auth_user_info_dc;
 	struct pipes_struct *p;
-	struct auth_serversupplied_info *server_info;
 	NTSTATUS status;
 
 	p = talloc_zero(mem_ctx, struct pipes_struct);
@@ -139,34 +138,48 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	status = make_server_info_info3(p,
-					info3->base.account_name.string,
-					info3->base.domain.string,
-					&server_info, info3);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to init server info\n"));
-		TALLOC_FREE(p);
-		*perrno = EINVAL;
-		return -1;
-	}
+	if (session_info->unix_token && session_info->unix_info && session_info->security_token) {
+		/* Don't call create_local_token(), we already have the full details here */
+		p->session_info = talloc_zero(p, struct auth3_session_info);
+		if (p->session_info == NULL) {
+			TALLOC_FREE(p);
+			*perrno = ENOMEM;
+			return -1;
+		}
+		p->session_info->security_token = talloc_move(p->session_info, &session_info->security_token);
+		p->session_info->unix_token = talloc_move(p->session_info, &session_info->unix_token);
+		p->session_info->unix_info = talloc_move(p->session_info, &session_info->unix_info);
+		p->session_info->info3 = talloc_move(p->session_info, &info3);
+		p->session_info->session_key = session_info->session_key;
+		p->session_info->session_key.data = talloc_move(p->session_info, &session_info->session_key.data);
 
-	/*
-	 * Some internal functions need a local token to determine access to
-	 * resoutrces.
-	 */
-	status = create_local_token(p, server_info, &session_info->session_key, &p->session_info);
-	talloc_free(server_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to init local auth token\n"));
-		TALLOC_FREE(p);
-		*perrno = EINVAL;
-		return -1;
-	}
+	} else {
+		struct auth_serversupplied_info *server_info;
 
-	/* Now override the session_info->security_token with the exact
-	 * security_token we were given from the other side,
-	 * regardless of what we just calculated */
-	p->session_info->security_token = talloc_move(p->session_info, &session_info->security_token);
+		status = make_server_info_info3(p,
+						info3->base.account_name.string,
+						info3->base.domain.string,
+						&server_info, info3);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to init server info\n"));
+			TALLOC_FREE(p);
+			*perrno = EINVAL;
+			return -1;
+		}
+
+		/*
+		 * Some internal functions need a local token to determine access to
+		 * resources.
+		 */
+		status = create_local_token(p, server_info, &session_info->session_key, &p->session_info);
+		talloc_free(server_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to init local auth token\n"));
+			TALLOC_FREE(p);
+			*perrno = EINVAL;
+			return -1;
+		}
+	}
 
 	p->remote_address = tsocket_address_copy(remote_address, p);
 	if (p->remote_address == NULL) {

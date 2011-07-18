@@ -682,6 +682,8 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	/* Send the named_pipe_auth server the user's full token */
 	session_info_npa->security_token = session_info->security_token;
 	session_info_npa->session_key = session_info->session_key;
+	session_info_npa->unix_token = session_info->unix_token;
+	session_info_npa->unix_info = session_info->unix_info;
 
 	val.sam3 = session_info->info3;
 
