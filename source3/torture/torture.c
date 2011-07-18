@@ -2622,7 +2622,8 @@ static bool run_locktest9(int dummy)
 	}
 
 	/* Ensure the child has the lock. */
-	if (cli_lock(cli1, fnum, 0, 4, 0, WRITE_LOCK)) {
+	status = cli_lock32(cli1, fnum, 0, 4, 0, WRITE_LOCK);
+	if (NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Got the lock on range 0:4 - this should not happen !\n");
 		goto fail;
 	} else {
@@ -2644,9 +2645,10 @@ static bool run_locktest9(int dummy)
 
 	start = timeval_current();
 
-	if (!cli_lock(cli1, fnum, 0, 4, -1, WRITE_LOCK)) {
+	status = cli_lock32(cli1, fnum, 0, 4, -1, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Unable to apply write lock on range 0:4, error was "
-		       "%s\n", cli_errstr(cli1));
+		       "%s\n", nt_errstr(status));
 		goto fail_nofd;
 	}
 	alarm(0);
