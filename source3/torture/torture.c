@@ -2439,9 +2439,10 @@ static bool run_locktest8(int dummy)
 		goto fail;
 	}
 
-	if (!cli_lock(cli1, fnum2, 1, 1, 0, READ_LOCK)) {
+	status = cli_lock32(cli1, fnum2, 1, 1, 0, READ_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("Unable to apply read lock on range 1:1, error was "
-		       "%s\n", cli_errstr(cli1));
+		       "%s\n", nt_errstr(status));
 		goto fail;
 	}
 
