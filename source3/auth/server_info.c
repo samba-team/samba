@@ -63,14 +63,6 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
-/* FIXME: do we really still need this ? */
-static int auth3_session_info_dtor(struct auth3_session_info *session_info)
-{
-	TALLOC_FREE(session_info->info3);
-	ZERO_STRUCTP(session_info);
-	return 0;
-}
-
 /***************************************************************************
  Make a server_info struct. Free with TALLOC_FREE().
 ***************************************************************************/
@@ -84,8 +76,6 @@ struct auth3_session_info *make_auth3_session_info(TALLOC_CTX *mem_ctx)
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
-
-	talloc_set_destructor(result, auth3_session_info_dtor);
 
 	/* Initialise the unix_token to NULL which may save us from
 	   giving away root access if there is a bug in allocating
