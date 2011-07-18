@@ -1935,74 +1935,81 @@ static bool run_locktest4(int dummy)
 		goto fail;
 	}
 
-	ret = cli_lock(cli1, fnum1, 0, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1, fnum1, 2, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 2, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("the same process %s set overlapping write locks\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 10, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1, fnum1, 12, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 10, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 12, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s set overlapping read locks\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 20, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli2, fnum2, 22, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 20, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli2, fnum2, 22, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("a different connection %s set overlapping write locks\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 30, 4, 0, READ_LOCK) &&
-	      cli_lock(cli2, fnum2, 32, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 30, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli2, fnum2, 32, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("a different connection %s set overlapping read locks\n", ret?"can":"cannot");
 
-	ret = (cli_setpid(cli1, 1), cli_lock(cli1, fnum1, 40, 4, 0, WRITE_LOCK)) &&
-	      (cli_setpid(cli1, 2), cli_lock(cli1, fnum1, 42, 4, 0, WRITE_LOCK));
+	ret = (cli_setpid(cli1, 1),
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 40, 4, 0, WRITE_LOCK))) &&
+	      (cli_setpid(cli1, 2),
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 42, 4, 0, WRITE_LOCK)));
 	EXPECTED(ret, False);
 	printf("a different pid %s set overlapping write locks\n", ret?"can":"cannot");
 
-	ret = (cli_setpid(cli1, 1), cli_lock(cli1, fnum1, 50, 4, 0, READ_LOCK)) &&
-	      (cli_setpid(cli1, 2), cli_lock(cli1, fnum1, 52, 4, 0, READ_LOCK));
+	ret = (cli_setpid(cli1, 1),
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 50, 4, 0, READ_LOCK))) &&
+	      (cli_setpid(cli1, 2),
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 52, 4, 0, READ_LOCK)));
 	EXPECTED(ret, True);
 	printf("a different pid %s set overlapping read locks\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 60, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1, fnum1, 60, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 60, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 60, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s set the same read lock twice\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 70, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1, fnum1, 70, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 70, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 70, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("the same process %s set the same write lock twice\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 80, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1, fnum1, 80, 4, 0, WRITE_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 80, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 80, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("the same process %s overlay a read lock with a write lock\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 90, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1, fnum1, 90, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 90, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 90, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
 	printf("the same process %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
-	ret = (cli_setpid(cli1, 1), cli_lock(cli1, fnum1, 100, 4, 0, WRITE_LOCK)) &&
-	      (cli_setpid(cli1, 2), cli_lock(cli1, fnum1, 100, 4, 0, READ_LOCK));
+	ret = (cli_setpid(cli1, 1),
+	     NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 100, 4, 0, WRITE_LOCK))) &&
+	     (cli_setpid(cli1, 2),
+	     NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 100, 4, 0, READ_LOCK)));
 	EXPECTED(ret, False);
 	printf("a different pid %s overlay a write lock with a read lock\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 110, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1, fnum1, 112, 4, 0, READ_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 110, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 112, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 110, 6));
 	EXPECTED(ret, False);
 	printf("the same process %s coalesce read locks\n", ret?"can":"cannot");
 
 
-	ret = cli_lock(cli1, fnum1, 120, 4, 0, WRITE_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 120, 4, 0, WRITE_LOCK)) &&
 	      (cli_read(cli2, fnum2, buf, 120, 4) == 4);
 	EXPECTED(ret, False);
 	printf("this server %s strict write locking\n", ret?"doesn't do":"does");
 
-	ret = cli_lock(cli1, fnum1, 130, 4, 0, READ_LOCK);
+	status = cli_lock32(cli1, fnum1, 130, 4, 0, READ_LOCK);
+	ret = NT_STATUS_IS_OK(status);
 	if (ret) {
 		status = cli_writeall(cli2, fnum2, 0, (uint8_t *)buf, 130, 4,
 				      NULL);
@@ -2012,16 +2019,16 @@ static bool run_locktest4(int dummy)
 	printf("this server %s strict read locking\n", ret?"doesn't do":"does");
 
 
-	ret = cli_lock(cli1, fnum1, 140, 4, 0, READ_LOCK) &&
-	      cli_lock(cli1, fnum1, 140, 4, 0, READ_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 140, 4, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 140, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 140, 4)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 140, 4));
 	EXPECTED(ret, True);
 	printf("this server %s do recursive read locking\n", ret?"does":"doesn't");
 
 
-	ret = cli_lock(cli1, fnum1, 150, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1, fnum1, 150, 4, 0, READ_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 150, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 150, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 150, 4)) &&
 	      (cli_read(cli2, fnum2, buf, 150, 4) == 4) &&
 	      !(NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
@@ -2030,7 +2037,7 @@ static bool run_locktest4(int dummy)
 	EXPECTED(ret, True);
 	printf("this server %s do recursive lock overlays\n", ret?"does":"doesn't");
 
-	ret = cli_lock(cli1, fnum1, 160, 4, 0, READ_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 160, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 160, 4)) &&
 	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					   160, 4, NULL)) &&
@@ -2038,7 +2045,7 @@ static bool run_locktest4(int dummy)
 	EXPECTED(ret, True);
 	printf("the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 170, 4, 0, WRITE_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 170, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 170, 4)) &&
 	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					   170, 4, NULL)) &&
@@ -2046,8 +2053,8 @@ static bool run_locktest4(int dummy)
 	EXPECTED(ret, True);
 	printf("the same process %s remove a write lock using read locking\n", ret?"can":"cannot");
 
-	ret = cli_lock(cli1, fnum1, 190, 4, 0, WRITE_LOCK) &&
-	      cli_lock(cli1, fnum1, 190, 4, 0, READ_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 190, 4, 0, WRITE_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 190, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 190, 4)) &&
 	      !NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					    190, 4, NULL)) &&
@@ -2059,11 +2066,11 @@ static bool run_locktest4(int dummy)
 	cli_close(cli2, fnum2);
 	cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	cli_open(cli1, fname, O_RDWR, DENY_NONE, &f);
-	ret = cli_lock(cli1, fnum1, 0, 8, 0, READ_LOCK) &&
-	      cli_lock(cli1, f, 0, 1, 0, READ_LOCK) &&
+	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 8, 0, READ_LOCK)) &&
+	      NT_STATUS_IS_OK(cli_lock32(cli1, f, 0, 1, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_close(cli1, fnum1)) &&
 	      NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1)) &&
-	      cli_lock(cli1, fnum1, 7, 1, 0, WRITE_LOCK);
+	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 7, 1, 0, WRITE_LOCK));
         cli_close(cli1, f);
 	cli_close(cli1, fnum1);
 	EXPECTED(ret, True);
