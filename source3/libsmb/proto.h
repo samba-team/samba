@@ -167,6 +167,9 @@ void cli_sockopt(struct cli_state *cli, const char *options);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 uint16_t cli_getpid(struct cli_state *cli);
+bool cli_state_has_tcon(struct cli_state *cli);
+uint16_t cli_state_get_tid(struct cli_state *cli);
+uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
 struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				 struct cli_state *cli, uint16_t num_echos,

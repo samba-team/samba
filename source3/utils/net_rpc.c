@@ -4855,7 +4855,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 			  netname));
 	}
 
-	cnum = cli->cnum;
+	cnum = cli_state_get_tid(cli);
 
 	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, netname, "A:", "", 0))) {
 		return;
@@ -4899,7 +4899,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	if (fnum != (uint16_t)-1)
 		cli_close(cli, fnum);
 	cli_tdis(cli);
-	cli->cnum = cnum;
+	cli_state_set_tid(cli, cnum);
 	
 	return;
 }

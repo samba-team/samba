@@ -317,7 +317,7 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 
 	cli_setup_packet_buf(cli, (char *)state->header);
 	SCVAL(state->header, smb_com, smb_command);
-	SSVAL(state->header, smb_tid, cli->cnum);
+	SSVAL(state->header, smb_tid, cli->smb1.tid);
 	SCVAL(state->header, smb_wct, wct);
 
 	state->vwv = vwv;

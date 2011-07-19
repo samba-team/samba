@@ -184,7 +184,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	}
 	cli->fd = -1;
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
-	cli->cnum = -1;
 	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
@@ -241,6 +240,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->smb1.mid = 1;
 	cli->smb1.pid = (uint16_t)sys_getpid();
 	cli->smb1.vc_num = cli->smb1.pid;
+	cli->smb1.tid = UINT16_MAX;
 
 	return cli;
 
@@ -287,7 +287,7 @@ static void _cli_shutdown(struct cli_state *cli)
 	 * later.  This tree disconnect forces the peer to clean up, since the
 	 * connection will be going away.
 	 */
-	if (cli->cnum != (uint16)-1) {
+	if (cli_state_has_tcon(cli)) {
 		cli_tdis(cli);
 	}
         
@@ -362,6 +362,27 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 uint16_t cli_getpid(struct cli_state *cli)
 {
 	return cli->smb1.pid;
+}
+
+bool cli_state_has_tcon(struct cli_state *cli)
+{
+	if (cli->smb1.tid == UINT16_MAX) {
+		return false;
+	}
+
+	return true;
+}
+
+uint16_t cli_state_get_tid(struct cli_state *cli)
+{
+	return cli->smb1.tid;
+}
+
+uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid)
+{
+	uint16_t ret = cli->smb1.tid;
+	cli->smb1.tid = tid;
+	return ret;
 }
 
 /****************************************************************************

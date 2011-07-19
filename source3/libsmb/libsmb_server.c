@@ -289,7 +289,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		 * i.e., a normal share or a referred share from
 		 * 'msdfs proxy' share.
 		 */
-                if (srv->cli->cnum == (uint16) -1) {
+                if (!cli_state_has_tcon(srv->cli)) {
                         /* Ensure we have accurate auth info */
 			SMBC_call_auth_fn(ctx, context,
 					  srv->cli->desthost,

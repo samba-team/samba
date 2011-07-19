@@ -1031,7 +1031,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	cnum = cli->cnum;
+	cnum = cli_state_get_tid(cli);
 
 	/* special case.  never check for a referral on the IPC$ share */
 
@@ -1072,7 +1072,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	cli->cnum = cnum;
+	cli_state_set_tid(cli, cnum);
 
 	if (!res || !num_refs) {
 		return false;

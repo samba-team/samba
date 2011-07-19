@@ -2405,7 +2405,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
 	}
 
-	cli->cnum = SVAL(inbuf,smb_tid);
+	cli->smb1.tid = SVAL(inbuf,smb_tid);
 	tevent_req_done(req);
 }
 
@@ -2498,7 +2498,7 @@ static void cli_tdis_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	state->cli->cnum = -1;
+	state->cli->smb1.tid = UINT16_MAX;
 	tevent_req_done(req);
 }
 
@@ -2551,7 +2551,6 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 	struct cli_negprot_state *state;
 	uint8_t *bytes = NULL;
 	int numprots;
-	uint16_t cnum;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_negprot_state);
 	if (req == NULL) {
@@ -2582,12 +2581,8 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	cnum = cli->cnum;
-
-	cli->cnum = 0;
 	subreq = cli_smb_send(state, ev, cli, SMBnegprot, 0, 0, NULL,
 			      talloc_get_size(bytes), bytes);
-	cli->cnum = cnum;
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
