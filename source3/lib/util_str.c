@@ -460,7 +460,7 @@ bool strhasupper(const char *s)
 	}
 
 	for(p = tmp; *p != 0; p++) {
-		if(isupper_m(*p)) {
+		if(isupper_w(*p)) {
 			break;
 		}
 	}
@@ -485,7 +485,7 @@ bool strhaslower(const char *s)
 	}
 
 	for(p = tmp; *p != 0; p++) {
-		if(islower_m(*p)) {
+		if(islower_w(*p)) {
 			break;
 		}
 	}

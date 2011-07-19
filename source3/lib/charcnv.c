@@ -1132,7 +1132,7 @@ size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_
 		   terminated if STR_TERMINATE isn't set. */
 
 		for (i = 0; i < (ret / 2) && i < (dest_len / 2) && dest_ucs2[i]; i++) {
-			smb_ucs2_t v = toupper_m(dest_ucs2[i]);
+			smb_ucs2_t v = toupper_w(dest_ucs2[i]);
 			if (v != dest_ucs2[i]) {
 				dest_ucs2[i] = v;
 			}

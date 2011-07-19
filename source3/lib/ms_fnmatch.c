@@ -129,7 +129,7 @@ static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n,
 				if (is_case_sensitive) {
 					return -1;
 				}
-				if (toupper_m(c) != toupper_m(*n)) {
+				if (toupper_w(c) != toupper_w(*n)) {
 					return -1;
 				}
 			}
