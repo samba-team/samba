@@ -809,6 +809,9 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	/* Primary gid */
 	info3->base.primary_gid = BUILTIN_RID_GUESTS;
 
+	/* Set as guest */
+	info3->base.user_flags = NETLOGON_GUEST;
+
 	TALLOC_FREE(pwd);
 	return NT_STATUS_OK;
 }

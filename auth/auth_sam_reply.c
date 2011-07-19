@@ -237,7 +237,8 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 	info->bad_password_count = base->bad_password_count;
 	info->acct_flags = base->acct_flags;
 
-	info->authenticated = authenticated;
+	/* Only set authenticated if both NETLOGON_GUEST is not set, and authenticated is set */
+	info->authenticated = (authenticated && (!(base->user_flags & NETLOGON_GUEST)));
 
 	*_user_info = info;
 	return NT_STATUS_OK;
