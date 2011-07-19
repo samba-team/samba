@@ -705,6 +705,26 @@ ssize_t cli_read_old(struct cli_state *cli, uint16_t fnum, char *buf,
 	return ret;
 }
 
+NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
+		 char *buf, off_t offset, size_t size,
+		 size_t *nread)
+{
+	NTSTATUS status;
+	SMB_OFF_T ret;
+
+	status = cli_pull(cli, fnum, offset, size, size,
+			  cli_read_sink, &buf, &ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (nread) {
+		*nread = ret;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
   write to a file using a SMBwrite and not bypassing 0 byte writes
 ****************************************************************************/
