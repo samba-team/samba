@@ -102,6 +102,9 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	}
 
 	sam->user_flags = 0; /* w2k3 uses NETLOGON_EXTRA_SIDS | NETLOGON_NTLMV2_ENABLED */
+	if (!user_info_dc->info->authenticated) {
+		sam->user_flags |= NETLOGON_GUEST;
+	}
 	sam->acct_flags = user_info_dc->info->acct_flags;
 	sam->logon_server.string = user_info_dc->info->logon_server;
 	sam->domain.string = user_info_dc->info->domain_name;

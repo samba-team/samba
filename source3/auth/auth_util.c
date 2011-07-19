@@ -1340,6 +1340,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	result->nss_token |= username_was_mapped;
 
+	result->guest = (info3->base.user_flags & NETLOGON_GUEST);
+
 	*server_info = result;
 
 	return NT_STATUS_OK;
