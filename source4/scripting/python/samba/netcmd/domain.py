@@ -50,9 +50,9 @@ from samba.dsdb import (
 
 
 
-class cmd_domain_dumpkeys(Command):
+class cmd_domain_export_keytab(Command):
     """Dumps kerberos keys of the domain into a keytab"""
-    synopsis = "%prog domain dumpkeys <keytab>"
+    synopsis = "%prog domain exportkeytab <keytab>"
 
     takes_options = [
         ]
@@ -491,7 +491,7 @@ class cmd_domain(SuperCommand):
     """Domain management"""
 
     subcommands = {}
-    subcommands["dumpkeys"] = cmd_domain_dumpkeys()
+    subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["join"] = cmd_domain_join()
     subcommands["level"] = cmd_domain_level()
     subcommands["machinepassword"] = cmd_domain_machinepassword()

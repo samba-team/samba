@@ -46,8 +46,8 @@ USERPASS=testPaSS@01%
 
 testit "create user locally" $VALGRIND $newuser nettestuser $USERPASS $@ || failed=`expr $failed + 1`
 
-testit "dump keys from domain" $VALGRIND $samba_tool domain dumpkeys keytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
-testit "dump keys from domain (2nd time)" $VALGRIND $samba_tool domain dumpkeys keytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
+testit "dump keytab from domain" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
+testit "dump keytab from domain (2nd time)" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
