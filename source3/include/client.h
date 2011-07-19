@@ -134,6 +134,7 @@ struct cli_state {
 
 	struct {
 		uint16_t mid;
+		uint16_t vc_num;
 	} smb1;
 
 	struct {

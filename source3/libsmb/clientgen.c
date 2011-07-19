@@ -240,6 +240,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->initialised = 1;
 
 	cli->smb1.mid = 1;
+	cli->smb1.vc_num = cli->pid;
 
 	return cli;
 
@@ -340,6 +341,11 @@ void cli_shutdown(struct cli_state *cli)
 void cli_sockopt(struct cli_state *cli, const char *options)
 {
 	set_socket_options(cli->fd, options);
+}
+
+uint16_t cli_state_get_vc_num(struct cli_state *cli)
+{
+	return cli->smb1.vc_num;
 }
 
 /****************************************************************************

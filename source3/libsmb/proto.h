@@ -164,6 +164,7 @@ struct cli_state *cli_initialise_ex(int signing_state);
 void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 void cli_sockopt(struct cli_state *cli, const char *options);
+uint16_t cli_state_get_vc_num(struct cli_state *cli);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
 struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
