@@ -479,6 +479,8 @@ class cmd_domain_passwordsettings(Command):
             if max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
                 raise CommandError("Maximum password age (%d) must be greater than minimum password age (%d)!" % (max_pwd_age, min_pwd_age))
 
+            if len(m) == 0:
+                raise CommandError("You must specify at least one option to set. Try --help")
             samdb.modify(m)
             msgs.append("All changes applied successfully!")
             self.message("\n".join(msgs))
