@@ -472,7 +472,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	session_info = make_auth_session_info(mem_ctx);
+	session_info = talloc_zero(mem_ctx, struct auth_session_info);
 	if (!session_info) {
 		return NT_STATUS_NO_MEMORY;
 	}

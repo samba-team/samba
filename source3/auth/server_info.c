@@ -63,29 +63,6 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
-/***************************************************************************
- Make a server_info struct. Free with TALLOC_FREE().
-***************************************************************************/
-
-struct auth_session_info *make_auth_session_info(TALLOC_CTX *mem_ctx)
-{
-	struct auth_session_info *result;
-
-	result = talloc_zero(mem_ctx, struct auth_session_info);
-	if (result == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	/* Initialise the unix_token to NULL which may save us from
-	   giving away root access if there is a bug in allocating
-	   these fields. */
-
-	result->unix_token = NULL;
-
-	return result;
-}
-
 /****************************************************************************
  inits a netr_SamInfo2 structure from an auth_serversupplied_info. sam2 must
  already be initialized and is used as the talloc parent for its members.

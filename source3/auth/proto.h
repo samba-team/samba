@@ -225,7 +225,6 @@ struct netr_SamInfo3;
 struct netr_SamInfo6;
 
 struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx);
-struct auth_session_info *make_auth_session_info(TALLOC_CTX *mem_ctx);
 NTSTATUS serverinfo_to_SamInfo2(struct auth_serversupplied_info *server_info,
 				uint8_t *pipe_session_key,
 				size_t pipe_session_key_len,
