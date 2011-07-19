@@ -145,7 +145,7 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 			      plaintext, password_state);
 	if (NT_STATUS_IS_OK(result)) {
 		/* We have tried mapping */
-		(*user_info)->mapped_state = True;
+		(*user_info)->mapped_state = true;
 		/* did we actually map the user to a different name? */
 		(*user_info)->was_mapped = was_mapped;
 	}
@@ -185,7 +185,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 	if (NT_STATUS_IS_OK(status)) {
 		(*user_info)->logon_parameters = logon_parameters;
 	}
-	ret = NT_STATUS_IS_OK(status) ? True : False;
+	ret = NT_STATUS_IS_OK(status) ? true : False;
 
 	data_blob_free(&lm_blob);
 	data_blob_free(&nt_blob);
@@ -288,7 +288,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 			(*user_info)->logon_parameters = logon_parameters;
 		}
 
-		ret = NT_STATUS_IS_OK(nt_status) ? True : False;
+		ret = NT_STATUS_IS_OK(nt_status) ? true : False;
 		data_blob_free(&local_lm_blob);
 		data_blob_free(&local_nt_blob);
 		return ret;
@@ -363,7 +363,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 	}
 
 	data_blob_free(&local_lm_blob);
-	return NT_STATUS_IS_OK(ret) ? True : False;
+	return NT_STATUS_IS_OK(ret) ? true : False;
 }
 
 /****************************************************************************
@@ -405,7 +405,7 @@ bool make_user_info_guest(const struct tsocket_address *remote_address,
 				   NULL,
 				   AUTH_PASSWORD_RESPONSE);
 
-	return NT_STATUS_IS_OK(nt_status) ? True : False;
+	return NT_STATUS_IS_OK(nt_status) ? true : False;
 }
 
 static NTSTATUS log_nt_token(struct security_token *token)
@@ -861,7 +861,7 @@ static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_i
 		goto done;
 	}
 
-	(*server_info)->guest = True;
+	(*server_info)->guest = true;
 
 	/* This should not be done here (we should produce a server
 	 * info, and later construct a session info from it), but for
@@ -1112,7 +1112,7 @@ static struct auth_serversupplied_info *guest_server_info = NULL;
 bool init_guest_info(void)
 {
 	if (guest_info != NULL)
-		return True;
+		return true;
 
 	return NT_STATUS_IS_OK(make_new_session_info_guest(&guest_info, &guest_server_info));
 }
@@ -1182,7 +1182,7 @@ bool copy_current_user(struct current_user *dst, struct current_user *src)
 	dst->ut.ngroups = src->ut.ngroups;
 	dst->ut.groups = groups;
 	dst->nt_user_token = nt_token;
-	return True;
+	return true;
 }
 
 /***************************************************************************
@@ -1222,7 +1222,7 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	passwd = smb_getpwnam(mem_ctx, dom_user, &real_username, True );
+	passwd = smb_getpwnam(mem_ctx, dom_user, &real_username, true );
 	if (!passwd) {
 		DEBUG(3, ("Failed to find authenticated user %s via "
 			  "getpwnam(), denying access.\n", dom_user));
@@ -1541,7 +1541,7 @@ bool is_trusted_domain(const char* dom_name)
 		ret = pdb_get_trusteddom_pw(dom_name, NULL, NULL, NULL);
 		unbecome_root();
 		if (ret)
-			return True;
+			return true;
 	}
 	else {
 		wbcErr result;
@@ -1551,7 +1551,7 @@ bool is_trusted_domain(const char* dom_name)
 		result = wb_is_trusted_domain(dom_name);
 
 		if (result == WBC_ERR_SUCCESS) {
-			return True;
+			return true;
 		}
 
 		if (result == WBC_ERR_DOMAIN_NOT_FOUND) {
@@ -1571,7 +1571,7 @@ bool is_trusted_domain(const char* dom_name)
 	 * domains (like a domain member would use  */
 
 	if ( trustdom_cache_fetch(dom_name, &trustdom_sid) ) {
-		return True;
+		return true;
 	}
 
 	return False;
