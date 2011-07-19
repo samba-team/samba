@@ -569,6 +569,7 @@ static bool rw_torture(struct cli_state *c)
 	int i, j;
 	char buf[1024];
 	bool correct = True;
+	size_t nread = 0;
 	NTSTATUS status;
 
 	memset(buf, '\0', sizeof(buf));
@@ -624,9 +625,16 @@ static bool rw_torture(struct cli_state *c)
 
 		pid2 = 0;
 
-		if (cli_read_old(c, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
-			printf("read failed (%s)\n", cli_errstr(c));
-			correct = False;
+		status = cli_read(c, fnum, (char *)&pid2, 0, sizeof(pid),
+				  &nread);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("read failed (%s)\n", nt_errstr(status));
+			correct = false;
+		} else if (nread != sizeof(pid)) {
+			printf("read/write compare failed: "
+			       "recv %ld req %ld\n", (unsigned long)nread,
+			       (unsigned long)sizeof(pid));
+			correct = false;
 		}
 
 		if (pid2 != pid) {
