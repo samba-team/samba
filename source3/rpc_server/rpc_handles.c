@@ -25,6 +25,7 @@
 #include "auth.h"
 #include "ntdomain.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -346,7 +347,7 @@ bool pipe_access_check(struct pipes_struct *p)
 			return True;
 		}
 
-		if (p->session_info->unix_info->guest) {
+		if (security_session_user_level(p->session_info, NULL) < SECURITY_USER) {
 			return False;
 		}
 	}

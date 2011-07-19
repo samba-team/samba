@@ -35,6 +35,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "smbprofile.h"
+#include "../libcli/security/security.h"
 
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {
@@ -441,7 +442,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
-		if (session_info->unix_info->guest) {
+		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
 
@@ -535,7 +536,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
-		if (session_info->unix_info->guest) {
+		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
 	}
@@ -1702,7 +1703,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		/* perhaps grab OS version here?? */
 	}
 
-	if (session_info->unix_info->guest) {
+	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
 		SSVAL(req->outbuf,smb_vwv2,1);
 	}
 

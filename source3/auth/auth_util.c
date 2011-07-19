@@ -504,7 +504,6 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	session_info->unix_info->guest = server_info->guest;
 	session_info->unix_info->system = server_info->system;
 
 	if (session_key) {
@@ -993,8 +992,8 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	/* This element must be provided to convert back to an auth_serversupplied_info */
 	SMB_ASSERT(src->unix_info);
 
-	dst->guest = src->unix_info->guest;
-	dst->system = src->unix_info->system;
+	dst->guest = true;
+	dst->system = false;
 
 	/* This element must be provided to convert back to an
 	 * auth_serversupplied_info.  This needs to be from hte

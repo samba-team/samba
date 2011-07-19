@@ -394,8 +394,8 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                  * This is the normal security != share case where we have a
                  * valid vuid from the session setup.                 */
 
-                if (vuid_serverinfo->unix_info->guest) {
-                        if (!lp_guest_ok(snum)) {
+		if (security_session_user_level(vuid_serverinfo, NULL) < SECURITY_USER) {
+                      if (!lp_guest_ok(snum)) {
                                 DEBUG(2, ("guest user (from session setup) "
                                           "not permitted to access this share "
                                           "(%s)\n", lp_servicename(snum)));
@@ -467,6 +467,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 
 		char *fuser;
 		struct auth_session_info *forced_serverinfo;
+		bool guest;
 
 		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
 					  lp_const_servicename(snum));
@@ -474,8 +475,11 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		guest = security_session_user_level(conn->session_info, NULL) < SECURITY_USER;
+
 		status = make_session_info_from_username(
-			conn, fuser, conn->session_info->unix_info->guest,
+			conn, fuser,
+			guest,
 			&forced_serverinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

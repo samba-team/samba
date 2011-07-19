@@ -24,6 +24,7 @@
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "auth.h"
+#include "../libcli/security/security.h"
 
 /* Fix up prototypes for OSX 10.4, where they're missing */
 #ifndef HAVE_SETNETGRENT_PROTOTYPE
@@ -269,6 +270,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 {
 	fstring tmp;
 	user_struct *vuser;
+	bool guest = security_session_user_level(session_info, NULL) < SECURITY_USER;
 
 	vuser = get_partial_auth_user_struct(sconn, vuid);
 	if (!vuser) {
@@ -294,7 +296,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 		  vuser->session_info->unix_info->unix_name,
 		  vuser->session_info->unix_info->sanitized_username,
 		  vuser->session_info->info->domain_name,
-		  vuser->session_info->unix_info->guest ));
+		  guest));
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
 		  "Real name: %s\n", vuser->session_info->unix_info->unix_name,
@@ -328,13 +330,14 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	vuser->homes_snum = -1;
 
-	if (!vuser->session_info->unix_info->guest) {
+
+	if (!guest) {
 		vuser->homes_snum = register_homes_share(
 			vuser->session_info->unix_info->unix_name);
 	}
 
 	if (srv_is_signing_negotiated(sconn) &&
-	    !vuser->session_info->unix_info->guest) {
+	    !guest) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
 		srv_set_signing(sconn,

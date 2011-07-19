@@ -33,6 +33,7 @@
 #include "session.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "../libcli/security/security.h"
 
 /********************************************************************
  called when a session is created
@@ -53,7 +54,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 
 	/* don't register sessions for the guest user - its just too
 	   expensive to go through pam session code for browsing etc */
-	if (vuser->session_info->unix_info->guest) {
+	if (security_session_user_level(vuser->session_info, NULL) < SECURITY_USER) {
 		return True;
 	}
 

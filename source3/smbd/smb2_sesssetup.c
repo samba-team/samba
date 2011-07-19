@@ -31,6 +31,7 @@
 #include "../lib/util/asn1.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "../libcli/security/security.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_session_id,
@@ -253,7 +254,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		session->do_signing = true;
 	}
 
-	if (session->session_info->unix_info->guest) {
+	if (security_session_user_level(session->session_info, NULL) < SECURITY_USER) {
 		/* we map anonymous to guest internally */
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
@@ -280,7 +281,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	session->session_info->unix_info->sanitized_username =
 				talloc_strdup(session->session_info, tmp);
 
-	if (!session->session_info->unix_info->guest) {
+	if (security_session_user_level(session->session_info, NULL) >= SECURITY_USER) {
 		session->compat_vuser->homes_snum =
 			register_homes_share(session->session_info->unix_info->unix_name);
 	}
@@ -460,7 +461,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		session->do_signing = true;
 	}
 
-	if (session->session_info->unix_info->guest) {
+	if (security_session_user_level(session->session_info, NULL) < SECURITY_USER) {
 		/* we map anonymous to guest internally */
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
@@ -491,7 +492,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 	session->session_info->unix_info->sanitized_username = talloc_strdup(
 		session->session_info, tmp);
 
-	if (!session->compat_vuser->session_info->unix_info->guest) {
+	if (security_session_user_level(session->session_info, NULL) >= SECURITY_USER) {
 		session->compat_vuser->homes_snum =
 			register_homes_share(session->session_info->unix_info->unix_name);
 	}

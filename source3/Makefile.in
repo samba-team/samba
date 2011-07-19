@@ -466,7 +466,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
 	  ../libcli/security/secdesc.o ../libcli/security/access_check.o \
 	  ../libcli/security/secace.o ../libcli/security/object_tree.o \
-	  ../libcli/security/sddl.o \
+	  ../libcli/security/sddl.o ../libcli/security/session.o \
 	  ../libcli/security/secacl.o @PTHREADPOOL_OBJ@ \
 	  lib/fncall.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
