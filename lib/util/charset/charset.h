@@ -257,6 +257,7 @@ int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
 int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
 int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
 int strcmp_wa(const smb_ucs2_t *a, const char *b);
+smb_ucs2_t toupper_w(smb_ucs2_t v);
 
 /*
  *   Define stub for charset module which implements 8-bit encoding with gaps.

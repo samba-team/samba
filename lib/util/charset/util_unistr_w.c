@@ -252,3 +252,14 @@ int strcmp_wa(const smb_ucs2_t *a, const char *b)
 	}
 	return (*(COPY_UCS2_CHAR(&cp,a)) - UCS2_CHAR(*b));
 }
+
+smb_ucs2_t toupper_w(smb_ucs2_t v)
+{
+	smb_ucs2_t ret;
+	/* LE to native. */
+	codepoint_t cp = SVAL(&v,0);
+	cp = toupper_m(cp);
+	/* native to LE. */
+	SSVAL(&ret,0,cp);
+	return ret;
+}
