@@ -54,7 +54,6 @@ struct cli_state {
 	int fd;
 	uint16 cnum;
 	uint16 pid;
-	uint16 mid;
 	uint16 vuid;
 	int protocol;
 	int sec_mode;
@@ -132,6 +131,10 @@ struct cli_state {
 
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
+
+	struct {
+		uint16_t mid;
+	} smb1;
 
 	struct {
 		uint64_t mid;

@@ -99,7 +99,7 @@ static uint16_t cli_alloc_mid(struct cli_state *cli)
 	while (true) {
 		int i;
 
-		result = cli->mid++;
+		result = cli->smb1.mid++;
 		if ((result == 0) || (result == 0xffff)) {
 			continue;
 		}

@@ -71,7 +71,7 @@ void cli_setup_packet_buf(struct cli_state *cli, char *buf)
 	SSVAL(buf,smb_pid,cli->pid);
 	memset(buf+smb_pidhigh, 0, 12);
 	SSVAL(buf,smb_uid,cli->vuid);
-	SSVAL(buf,smb_mid,cli->mid);
+	SSVAL(buf,smb_mid,cli->smb1.mid);
 
 	if (cli->protocol <= PROTOCOL_CORE) {
 		return;
@@ -186,7 +186,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->cnum = -1;
 	cli->pid = (uint16)sys_getpid();
-	cli->mid = 1;
 	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
@@ -239,6 +238,8 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->pending = NULL;
 
 	cli->initialised = 1;
+
+	cli->smb1.mid = 1;
 
 	return cli;
 
