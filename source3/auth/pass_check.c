@@ -518,9 +518,9 @@ static NTSTATUS string_combinations2(char *s, int offset,
 
 	for (i = offset; i < (len - (N - 1)); i++) {
 		char c = s[i];
-		if (!islower_ascii(c))
+		if (!islower_m(c))
 			continue;
-		s[i] = toupper_ascii(c);
+		s[i] = toupper_m(c);
 		nt_status = string_combinations2(s, i + 1, fn, N - 1,
 						 private_data);
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {

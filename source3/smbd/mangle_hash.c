@@ -374,8 +374,8 @@ static bool is_mangled(const char *s, const struct share_params *p)
 	magic = strchr_m( s, magic_char );
 	while( magic && magic[1] && magic[2] ) {         /* 3 chars, 1st is magic. */
 		if( ('.' == magic[3] || '/' == magic[3] || !(magic[3]))          /* Ends with '.' or nul or '/' ?  */
-				&& isbasechar( toupper_ascii(magic[1]) )           /* is 2nd char basechar?  */
-				&& isbasechar( toupper_ascii(magic[2]) ) )         /* is 3rd char basechar?  */
+				&& isbasechar( toupper_m(magic[1]) )           /* is 2nd char basechar?  */
+				&& isbasechar( toupper_m(magic[2]) ) )         /* is 3rd char basechar?  */
 			return( True );                           /* If all above, then true, */
 		magic = strchr_m( magic+1, magic_char );      /*    else seek next magic. */
 	}
@@ -429,7 +429,7 @@ static void cache_mangled_name( const char mangled_name[13],
 	s1 = strrchr( mangled_name_key, '.' );
 	if( s1 && (s2 = strrchr( raw_name, '.' )) ) {
 		size_t i = 1;
-		while( s1[i] && (tolower_ascii( s1[i] ) == s2[i]) )
+		while( s1[i] && (tolower_m( s1[i] ) == s2[i]) )
 			i++;
 		if( !s1[i] && !s2[i] ) {
 			/* Truncate at the '.' */

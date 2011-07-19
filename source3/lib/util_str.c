@@ -243,7 +243,7 @@ int strwicmp(const char *psz1, const char *psz2)
 			psz1++;
 		while (isspace((int)*psz2))
 			psz2++;
-		if (toupper_ascii(*psz1) != toupper_ascii(*psz2) ||
+		if (toupper_m(*psz1) != toupper_m(*psz2) ||
 				*psz1 == '\0' || *psz2 == '\0')
 			break;
 		psz1++;
@@ -1406,7 +1406,7 @@ void strlower_m(char *s)
 	   (ie. they match for the first 128 chars) */
 
 	while (*s && !(((unsigned char)s[0]) & 0x80)) {
-		*s = tolower_ascii((unsigned char)*s);
+		*s = tolower_m((unsigned char)*s);
 		s++;
 	}
 

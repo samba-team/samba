@@ -490,7 +490,7 @@ static int strslashcmp(char *s1, char *s2)
 {
 	char *s1_0=s1;
 
-	while(*s1 && *s2 && (*s1 == *s2 || tolower_ascii(*s1) == tolower_ascii(*s2) ||
+	while(*s1 && *s2 && (*s1 == *s2 || tolower_m(*s1) == tolower_m(*s2) ||
 				(*s1 == '\\' && *s2=='/') || (*s1 == '/' && *s2=='\\'))) {
 		s1++; s2++;
 	}
