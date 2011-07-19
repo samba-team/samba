@@ -254,7 +254,7 @@ bool strlower_w(smb_ucs2_t *s)
 	bool ret = False;
 
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
-		smb_ucs2_t v = tolower_m(cp);
+		smb_ucs2_t v = tolower_w(cp);
 		if (v != cp) {
 			COPY_UCS2_CHAR(s,&v);
 			ret = True;
@@ -276,7 +276,7 @@ bool strupper_w(smb_ucs2_t *s)
 	smb_ucs2_t cp;
 	bool ret = False;
 	while (*(COPY_UCS2_CHAR(&cp,s))) {
-		smb_ucs2_t v = toupper_m(cp);
+		smb_ucs2_t v = toupper_w(cp);
 		if (v != cp) {
 			COPY_UCS2_CHAR(s,&v);
 			ret = True;
@@ -334,11 +334,11 @@ int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 {
 	smb_ucs2_t cpa, cpb;
 
-	while ((*COPY_UCS2_CHAR(&cpb,b)) && toupper_m(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_m(cpb)) {
+	while ((*COPY_UCS2_CHAR(&cpb,b)) && toupper_w(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_w(cpb)) {
 		a++;
 		b++;
 	}
-	return (tolower_m(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_m(*(COPY_UCS2_CHAR(&cpb,b))));
+	return (tolower_w(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_w(*(COPY_UCS2_CHAR(&cpb,b))));
 }
 
 /*******************************************************************
@@ -350,12 +350,12 @@ int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 	smb_ucs2_t cpa, cpb;
 	size_t n = 0;
 
-	while ((n < len) && *COPY_UCS2_CHAR(&cpb,b) && (toupper_m(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_m(cpb))) {
+	while ((n < len) && *COPY_UCS2_CHAR(&cpb,b) && (toupper_w(*(COPY_UCS2_CHAR(&cpa,a))) == toupper_w(cpb))) {
 		a++;
 		b++;
 		n++;
 	}
-	return (len - n)?(tolower_m(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_m(*(COPY_UCS2_CHAR(&cpb,b)))):0;
+	return (len - n)?(tolower_w(*(COPY_UCS2_CHAR(&cpa,a))) - tolower_w(*(COPY_UCS2_CHAR(&cpb,b)))):0;
 }
 
 /*******************************************************************
@@ -605,4 +605,38 @@ smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 	}
 
 	return NULL;
+}
+
+smb_ucs2_t toupper_w(smb_ucs2_t v)
+{
+	smb_ucs2_t ret;
+	/* LE to native. */
+	codepoint_t cp = SVAL(&v,0);
+	cp = toupper_m(cp);
+	/* native to LE. */
+	SSVAL(&ret,0,cp);
+	return ret;
+}
+
+bool isupper_w(smb_ucs2_t v)
+{
+	codepoint_t cp = SVAL(&v,0);
+	return isupper_m(cp);
+}
+
+smb_ucs2_t tolower_w(smb_ucs2_t v)
+{
+	smb_ucs2_t ret;
+	/* LE to native. */
+	codepoint_t cp = SVAL(&v,0);
+	cp = tolower_m(cp);
+	/* native to LE. */
+	SSVAL(&ret,0,cp);
+	return ret;
+}
+
+bool islower_w(smb_ucs2_t v)
+{
+	codepoint_t cp = SVAL(&v,0);
+	return islower_m(cp);
 }
