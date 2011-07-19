@@ -46,6 +46,11 @@ class cmd_testparm(Command):
 
     synopsis = ""
 
+    takes_optiongroups = {
+        "sambaopts" : options.SambaOptions,
+        "versionops" : options.VersionOptions
+    }
+
     takes_options = [
         Option("--section-name", type=str,
                help="Limit testparm to a named section"),
