@@ -29,14 +29,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/* FIXME: do we really still need this ? */
-static int server_info_dtor(struct auth_serversupplied_info *server_info)
-{
-	TALLOC_FREE(server_info->info3);
-	ZERO_STRUCTP(server_info);
-	return 0;
-}
-
 /***************************************************************************
  Make a server_info struct. Free with TALLOC_FREE().
 ***************************************************************************/
@@ -50,8 +42,6 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
-
-	talloc_set_destructor(result, server_info_dtor);
 
 	/* Initialise the uid and gid values to something non-zero
 	   which may save us from giving away root access if there
