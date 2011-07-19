@@ -580,7 +580,7 @@ interface security
 	/* This is not yet sent over the network, but is simply defined in IDL */
 	typedef [public] struct {
 		uid_t uid;
-		uid_t gid;
+		gid_t gid;
 		uint32 ngroups;
 		[size_is(ngroups)] gid_t groups[*];
 	} security_unix_token;
