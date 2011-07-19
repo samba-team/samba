@@ -2556,7 +2556,7 @@ NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 	SSVAL(vwv + 6, 0, 0);
 	SSVAL(vwv + 7, 0, 1);
 
-	SSVAL(bytes, 0, cli->pid);
+	SSVAL(bytes, 0, cli_getpid(cli));
 	SIVAL(bytes, 2, offset);
 	SIVAL(bytes, 6, len);
 
@@ -2626,7 +2626,7 @@ struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->vwv+6, 0, 1);
 	SSVAL(state->vwv+7, 0, 0);
 
-	SSVAL(state->data, 0, cli->pid);
+	SSVAL(state->data, 0, cli_getpid(cli));
 	SIVAL(state->data, 2, offset);
 	SIVAL(state->data, 6, len);
 
@@ -2732,7 +2732,7 @@ NTSTATUS cli_lock64(struct cli_state *cli, uint16_t fnum,
 	SSVAL(vwv + 6, 0, 0);
 	SSVAL(vwv + 7, 0, 1);
 
-	SIVAL(bytes, 0, cli->pid);
+	SIVAL(bytes, 0, cli_getpid(cli));
 	SOFF_T_R(bytes, 4, offset);
 	SOFF_T_R(bytes, 12, len);
 
@@ -2786,7 +2786,7 @@ struct tevent_req *cli_unlock64_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->vwv+6, 0, 1);
 	SSVAL(state->vwv+7, 0, 0);
 
-	SIVAL(state->data, 0, cli->pid);
+	SIVAL(state->data, 0, cli_getpid(cli));
 	SOFF_T_R(state->data, 4, offset);
 	SOFF_T_R(state->data, 12, len);
 
@@ -2932,7 +2932,7 @@ static struct tevent_req *cli_posix_lock_internal_send(TALLOC_CTX *mem_ctx,
 				POSIX_LOCK_FLAG_NOWAIT);
 	}
 
-	SIVAL(&state->data, POSIX_LOCK_PID_OFFSET, cli->pid);
+	SIVAL(&state->data, POSIX_LOCK_PID_OFFSET, cli_getpid(cli));
 	SOFF_T(&state->data, POSIX_LOCK_START_OFFSET, offset);
 	SOFF_T(&state->data, POSIX_LOCK_LEN_OFFSET, len);
 

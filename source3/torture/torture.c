@@ -2725,7 +2725,7 @@ static bool run_fdpasstest(int dummy)
 
 	cli2->vuid = cli1->vuid;
 	cli2->cnum = cli1->cnum;
-	cli2->pid = cli1->pid;
+	cli_setpid(cli2, cli_getpid(cli1));
 
 	if (cli_read(cli2, fnum1, buf, 0, 13) == 13) {
 		printf("read succeeded! nasty security hole [%s]\n",

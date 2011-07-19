@@ -68,7 +68,7 @@ void cli_setup_packet_buf(struct cli_state *cli, char *buf)
 	uint16 flags2;
 	cli->rap_error = 0;
 	SIVAL(buf,smb_rcls,0);
-	SSVAL(buf,smb_pid,cli->pid);
+	SSVAL(buf,smb_pid,cli->smb1.pid);
 	memset(buf+smb_pidhigh, 0, 12);
 	SSVAL(buf,smb_uid,cli->vuid);
 	SSVAL(buf,smb_mid,cli->smb1.mid);
@@ -185,7 +185,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->fd = -1;
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->cnum = -1;
-	cli->pid = (uint16)sys_getpid();
 	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
@@ -240,7 +239,8 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->initialised = 1;
 
 	cli->smb1.mid = 1;
-	cli->smb1.vc_num = cli->pid;
+	cli->smb1.pid = (uint16_t)sys_getpid();
+	cli->smb1.vc_num = cli->smb1.pid;
 
 	return cli;
 
@@ -354,9 +354,14 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
 
 uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 {
-	uint16 ret = cli->pid;
-	cli->pid = pid;
+	uint16_t ret = cli->smb1.pid;
+	cli->smb1.pid = pid;
 	return ret;
+}
+
+uint16_t cli_getpid(struct cli_state *cli)
+{
+	return cli->smb1.pid;
 }
 
 /****************************************************************************
