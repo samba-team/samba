@@ -387,7 +387,7 @@ NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
 }
 
 /****************************************************************************
- Create a guest user_info blob, for anonymous authenticaion.
+ Create a guest user_info blob, for anonymous authentication.
 ****************************************************************************/
 
 bool make_user_info_guest(const struct tsocket_address *remote_address,
@@ -780,7 +780,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	/* Set acount name */
+	/* Set account name */
 	tmp = talloc_strdup(mem_ctx, pwd->pw_name);
 	if (tmp == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -822,7 +822,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 
  The resulting structure is a 'session_info' because
  create_local_token() has already been called on it.  This is quite
- nasty, as the auth subsystem isn't expect this, but the behaviour is
+ nasty, as the auth subsystem isn't expect this, but the behavior is
  left as-is for now.
 ***************************************************************************/
 
@@ -865,7 +865,7 @@ static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_i
 
 	/* This should not be done here (we should produce a server
 	 * info, and later construct a session info from it), but for
-	 * now this does not change the previous behaviours */
+	 * now this does not change the previous behavior */
 	status = create_local_token(tmp_ctx, *server_info, NULL, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("create_local_token failed: %s\n",
@@ -996,7 +996,7 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	dst->system = false;
 
 	/* This element must be provided to convert back to an
-	 * auth_serversupplied_info.  This needs to be from hte
+	 * auth_serversupplied_info.  This needs to be from the
 	 * auth_session_info because the group values in particular
 	 * may change during create_local_token() processing */
 	SMB_ASSERT(src->unix_token);
@@ -1235,7 +1235,7 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 
 	*pwd = passwd;
 
-	/* This is pointless -- there is no suport for differing 
+	/* This is pointless -- there is no support for differing
 	   unix and windows names.  Make sure to always store the 
 	   one we actually looked up and succeeded. Have I mentioned
 	   why I hate the 'winbind use default domain' parameter?   
@@ -1431,7 +1431,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	result->utok.gid = pwd->pw_gid;
 
 	/* We can't just trust that the primary group sid sent us is something
-	 * we can really use. Obtain the useable sid, and store the original
+	 * we can really use. Obtain the usable sid, and store the original
 	 * one as an additional group if it had to be replaced */
 	nt_status = get_primary_group_sid(mem_ctx, found_username,
 					  &pwd, &group_sid);
