@@ -385,7 +385,7 @@ def test_dcpromo_rodc(t, vm):
 
 def prep_join_as_dc(t, vm):
     '''start VM and shutdown Samba in preperation to join a windows domain as a DC'''
-    t.info("Starting VMs for joining ${WIN_VM} as a second DC using samba-tool join DC")
+    t.info("Starting VMs for joining ${WIN_VM} as a second DC using samba-tool domain join DC")
     t.chdir('${PREFIX}')
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
     t.rndc_cmd('flush')
@@ -396,12 +396,12 @@ def prep_join_as_dc(t, vm):
 def join_as_dc(t, vm):
     '''join a windows domain as a DC'''
     t.setwinvars(vm)
-    t.info("Joining ${WIN_VM} as a second DC using samba-tool join DC")
+    t.info("Joining ${WIN_VM} as a second DC using samba-tool domain join DC")
     t.port_wait("${WIN_IP}", 389)
     t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
 
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
-    t.run_cmd('bin/samba-tool join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
+    t.run_cmd('bin/samba-tool domain join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
@@ -470,11 +470,11 @@ def test_join_as_dc(t, vm):
 def join_as_rodc(t, vm):
     '''join a windows domain as a RODC'''
     t.setwinvars(vm)
-    t.info("Joining ${WIN_VM} as a RODC using samba-tool join DC")
+    t.info("Joining ${WIN_VM} as a RODC using samba-tool domain join DC")
     t.port_wait("${WIN_IP}", 389)
     t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
-    t.run_cmd('bin/samba-tool join ${WIN_REALM} RODC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
+    t.run_cmd('bin/samba-tool domain join ${WIN_REALM} RODC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
