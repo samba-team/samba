@@ -695,7 +695,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 	char buf_rd[131072];
 	unsigned count;
 	unsigned countprev = 0;
-	ssize_t sent = 0;
+	size_t sent = 0;
 	bool correct = True;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -760,7 +760,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 			}
 
 			status = cli_writeall(c, fnum, 0, (uint8_t *)buf+count,
-					      count, (size_t)sent, NULL);
+					      count, sent, NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("write failed (%s)\n",
 				       nt_errstr(status));
@@ -769,18 +769,15 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 		}
 		else
 		{
-			sent = cli_read_old(c, fnum, buf_rd+count, count,
-						  sizeof(buf)-count);
-			if (sent < 0)
-			{
+			status = cli_read(c, fnum, buf_rd+count, count,
+					  sizeof(buf)-count, &sent);
+			if(!NT_STATUS_IS_OK(status)) {
 				printf("read failed offset:%d size:%ld (%s)\n",
 				       count, (unsigned long)sizeof(buf)-count,
-				       cli_errstr(c));
+				       nt_errstr(status));
 				correct = False;
 				sent = 0;
-			}
-			if (sent > 0)
-			{
+			} else if (sent > 0) {
 				if (memcmp(buf_rd+count, buf+count, sent) != 0)
 				{
 					printf("read/write compare failed\n");
