@@ -296,7 +296,7 @@ SMBC_read_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
-	ret = cli_read(targetcli, file->cli_fd, (char *)buf, offset, count);
+	ret = cli_read_old(targetcli, file->cli_fd, (char *)buf, offset, count);
 
 	if (ret < 0) {
 		errno = SMBC_errno(context, targetcli);

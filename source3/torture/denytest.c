@@ -1451,7 +1451,7 @@ bool torture_denytest1(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read(cli1, fnum2, (char *)&x, 0, 1) == 1) {
+			if (cli_read_old(cli1, fnum2, (char *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
 			if (NT_STATUS_IS_OK(cli_writeall(cli1, fnum2, 0,
@@ -1543,7 +1543,7 @@ bool torture_denytest2(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read(cli2, fnum2, (char *)&x, 0, 1) == 1) {
+			if (cli_read_old(cli2, fnum2, (char *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
 			if (NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0,

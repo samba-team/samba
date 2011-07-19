@@ -624,7 +624,7 @@ static bool rw_torture(struct cli_state *c)
 
 		pid2 = 0;
 
-		if (cli_read(c, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
+		if (cli_read_old(c, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
 			printf("read failed (%s)\n", cli_errstr(c));
 			correct = False;
 		}
@@ -761,7 +761,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 		}
 		else
 		{
-			sent = cli_read(c, fnum, buf_rd+count, count,
+			sent = cli_read_old(c, fnum, buf_rd+count, count,
 						  sizeof(buf)-count);
 			if (sent < 0)
 			{
@@ -844,7 +844,7 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 			break;
 		}
 
-		if ((bytes_read = cli_read(c2, fnum2, buf_rd, 0, buf_size)) != buf_size) {
+		if ((bytes_read = cli_read_old(c2, fnum2, buf_rd, 0, buf_size)) != buf_size) {
 			printf("read failed (%s)\n", cli_errstr(c2));
 			printf("read %d, expected %ld\n", (int)bytes_read, 
 			       (unsigned long)buf_size); 
@@ -2004,7 +2004,7 @@ static bool run_locktest4(int dummy)
 
 
 	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 120, 4, 0, WRITE_LOCK)) &&
-	      (cli_read(cli2, fnum2, buf, 120, 4) == 4);
+	      (cli_read_old(cli2, fnum2, buf, 120, 4) == 4);
 	EXPECTED(ret, False);
 	printf("this server %s strict write locking\n", ret?"doesn't do":"does");
 
@@ -2030,7 +2030,7 @@ static bool run_locktest4(int dummy)
 	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 150, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 150, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 150, 4)) &&
-	      (cli_read(cli2, fnum2, buf, 150, 4) == 4) &&
+	      (cli_read_old(cli2, fnum2, buf, 150, 4) == 4) &&
 	      !(NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					     150, 4, NULL))) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 150, 4));
@@ -2041,7 +2041,7 @@ static bool run_locktest4(int dummy)
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 160, 4)) &&
 	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					   160, 4, NULL)) &&
-	      (cli_read(cli2, fnum2, buf, 160, 4) == 4);		
+	      (cli_read_old(cli2, fnum2, buf, 160, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
 
@@ -2049,7 +2049,7 @@ static bool run_locktest4(int dummy)
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 170, 4)) &&
 	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					   170, 4, NULL)) &&
-	      (cli_read(cli2, fnum2, buf, 170, 4) == 4);		
+	      (cli_read_old(cli2, fnum2, buf, 170, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove a write lock using read locking\n", ret?"can":"cannot");
 
@@ -2058,7 +2058,7 @@ static bool run_locktest4(int dummy)
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 190, 4)) &&
 	      !NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					    190, 4, NULL)) &&
-	      (cli_read(cli2, fnum2, buf, 190, 4) == 4);		
+	      (cli_read_old(cli2, fnum2, buf, 190, 4) == 4);		
 	EXPECTED(ret, True);
 	printf("the same process %s remove the first lock first\n", ret?"does":"doesn't");
 
@@ -2301,7 +2301,7 @@ static bool run_locktest7(int dummy)
 		printf("pid1 successfully locked range 130:4 for READ\n");
 	}
 
-	if (cli_read(cli1, fnum1, buf, 130, 4) != 4) {
+	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
 		printf("pid1 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
 		goto fail;
 	} else {
@@ -2323,7 +2323,7 @@ static bool run_locktest7(int dummy)
 
 	cli_setpid(cli1, 2);
 
-	if (cli_read(cli1, fnum1, buf, 130, 4) != 4) {
+	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
 		printf("pid2 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
 	} else {
 		printf("pid2 successfully read the range 130:4\n");
@@ -2353,7 +2353,7 @@ static bool run_locktest7(int dummy)
 		printf("pid1 successfully locked range 130:4 for WRITE\n");
 	}
 
-	if (cli_read(cli1, fnum1, buf, 130, 4) != 4) {
+	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
 		printf("pid1 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
 		goto fail;
 	} else {
@@ -2371,7 +2371,7 @@ static bool run_locktest7(int dummy)
 
 	cli_setpid(cli1, 2);
 
-	if (cli_read(cli1, fnum1, buf, 130, 4) != 4) {
+	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
 		printf("pid2 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
 		if (NT_STATUS_V(cli_nt_error(cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
@@ -2727,7 +2727,7 @@ static bool run_fdpasstest(int dummy)
 	cli_state_set_tid(cli2, cli_state_get_tid(cli1));
 	cli_setpid(cli2, cli_getpid(cli1));
 
-	if (cli_read(cli2, fnum1, buf, 0, 13) == 13) {
+	if (cli_read_old(cli2, fnum1, buf, 0, 13) == 13) {
 		printf("read succeeded! nasty security hole [%s]\n",
 		       buf);
 		return False;
@@ -2792,7 +2792,7 @@ static bool run_fdsesstest(int dummy)
 	saved_vuid = cli->vuid;
 	cli->vuid = new_vuid;
 
-	if (cli_read(cli, fnum1, buf, 0, 13) == 13) {
+	if (cli_read_old(cli, fnum1, buf, 0, 13) == 13) {
 		printf("read succeeded with different vuid! nasty security hole [%s]\n",
 		       buf);
 		ret = False;
@@ -2813,7 +2813,7 @@ static bool run_fdsesstest(int dummy)
 	/* Try with same vuid, different cnum. */
 	cli_state_set_tid(cli, new_cnum);
 
-	if (cli_read(cli, fnum1, buf, 0, 13) == 13) {
+	if (cli_read_old(cli, fnum1, buf, 0, 13) == 13) {
 		printf("read succeeded with different cnum![%s]\n",
 		       buf);
 		ret = False;
@@ -3539,7 +3539,7 @@ static bool run_oplock2(int dummy)
 	/* Ensure cli1 processes the break. Empty file should always return 0
 	 * bytes.  */
 
-	if (cli_read(cli1, fnum1, buf, 0, 4) != 0) {
+	if (cli_read_old(cli1, fnum1, buf, 0, 4) != 0) {
 		printf("read on fnum1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
@@ -3566,7 +3566,7 @@ static bool run_oplock2(int dummy)
 
 	sleep(2);
 
-	cli_read(cli1, fnum1, buf, 0, 4);
+	cli_read_old(cli1, fnum1, buf, 0, 4);
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5484,7 +5484,7 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	if (cli_read(cli1, fnum1, buf, 0, 10) != 10) {
+	if (cli_read_old(cli1, fnum1, buf, 0, 10) != 10) {
 		printf("POSIX read of %s failed (%s)\n", hname, cli_errstr(cli1));
 		goto out;
 	}

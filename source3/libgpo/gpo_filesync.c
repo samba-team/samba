@@ -67,7 +67,7 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 
 	while (1) {
 
-		int n = cli_read(cli, fnum, data, nread, read_size);
+		int n = cli_read_old(cli, fnum, data, nread, read_size);
 
 		if (n <= 0)
 			break;

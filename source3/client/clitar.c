@@ -693,7 +693,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 
 			DEBUG(3,("nread=%.0f\n",(double)nread));
 
-			datalen = cli_read(cli, fnum, data, nread, read_size);
+			datalen = cli_read_old(cli, fnum, data, nread, read_size);
 
 			if (datalen == -1) {
 				status = cli_nt_error(cli);

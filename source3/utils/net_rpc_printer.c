@@ -380,7 +380,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 
 		/* copying file */
 		int n;
-		n = cli_read(cli_share_src, fnum_src, data, nread,
+		n = cli_read_old(cli_share_src, fnum_src, data, nread,
 				read_size);
 
 		if (n <= 0)

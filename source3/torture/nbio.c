@@ -215,7 +215,7 @@ void nb_readx(int handle, int offset, int size, int ret_size)
 	int i, ret;
 
 	i = find_handle(handle);
-	if ((ret=cli_read(c, ftable[i].fd, buf, offset, size)) != ret_size) {
+	if ((ret=cli_read_old(c, ftable[i].fd, buf, offset, size)) != ret_size) {
 		printf("(%d) ERROR: read failed on handle %d ofs=%d size=%d res=%d fd %d errno %d (%s)\n",
 			line_count, handle, offset, size, ret, ftable[i].fd, errno, strerror(errno));
 		exit(1);
