@@ -407,8 +407,8 @@ bool pdb_gethexpwd(const char *p, unsigned char *pwd)
 		return false;
 
 	for (i = 0; i < 32; i += 2) {
-		hinybble = toupper_ascii(p[i]);
-		lonybble = toupper_ascii(p[i + 1]);
+		hinybble = toupper_m(p[i]);
+		lonybble = toupper_m(p[i + 1]);
 
 		p1 = strchr(hexchars, hinybble);
 		p2 = strchr(hexchars, lonybble);
@@ -457,8 +457,8 @@ bool pdb_gethexhours(const char *p, unsigned char *hours)
 	}
 
 	for (i = 0; i < 42; i += 2) {
-		hinybble = toupper_ascii(p[i]);
-		lonybble = toupper_ascii(p[i + 1]);
+		hinybble = toupper_m(p[i]);
+		lonybble = toupper_m(p[i + 1]);
 
 		p1 = strchr(hexchars, hinybble);
 		p2 = strchr(hexchars, lonybble);

@@ -1051,10 +1051,6 @@ int strcmp_wa(const smb_ucs2_t *a, const char *b);
 int strncmp_wa(const smb_ucs2_t *a, const char *b, size_t len);
 smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p);
 smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins);
-int toupper_ascii(int c);
-int tolower_ascii(int c);
-int isupper_ascii(int c);
-int islower_ascii(int c);
 
 /* The following definitions come from lib/version.c  */
 
