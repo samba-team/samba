@@ -5276,6 +5276,7 @@ static bool run_simple_posix_open_test(int dummy)
 	SMB_STRUCT_STAT sbuf;
 	bool correct = false;
 	NTSTATUS status;
+	size_t nread;
 
 	printf("Starting simple POSIX open test\n");
 
@@ -5495,8 +5496,14 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	if (cli_read_old(cli1, fnum1, buf, 0, 10) != 10) {
-		printf("POSIX read of %s failed (%s)\n", hname, cli_errstr(cli1));
+	status = cli_read(cli1, fnum1, buf, 0, 10, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX read of %s failed (%s)\n", hname,
+		       nt_errstr(status));
+		goto out;
+	} else if (nread != 10) {
+		printf("POSIX read of %s failed. Received %ld, expected %d\n",
+		       hname, (unsigned long)nread, 10);
 		goto out;
 	}
 
