@@ -808,7 +808,7 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 	char buf[131072];
 	char buf_rd[131072];
 	bool correct = True;
-	ssize_t bytes_read;
+	size_t bytes_read;
 	NTSTATUS status;
 
 	status = cli_unlink(c1, lockfname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
@@ -849,9 +849,15 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 			break;
 		}
 
-		if ((bytes_read = cli_read_old(c2, fnum2, buf_rd, 0, buf_size)) != buf_size) {
-			printf("read failed (%s)\n", cli_errstr(c2));
-			printf("read %d, expected %ld\n", (int)bytes_read, 
+		status = cli_read(c2, fnum2, buf_rd, 0, buf_size, &bytes_read);
+		if(!NT_STATUS_IS_OK(status)) {
+			printf("read failed (%s)\n", nt_errstr(status));
+			correct = false;
+			break;
+		} else if (bytes_read != buf_size) {
+			printf("read failed\n");
+			printf("read %ld, expected %ld\n",
+			       (unsigned long)bytes_read,
 			       (unsigned long)buf_size); 
 			correct = False;
 			break;
