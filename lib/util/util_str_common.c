@@ -43,7 +43,7 @@ _PUBLIC_ int strwicmp(const char *psz1, const char *psz2)
 			psz1++;
 		while (isspace((int)*psz2))
 			psz2++;
-		if (toupper_ascii((unsigned char)*psz1) != toupper_ascii((unsigned char)*psz2)
+		if (toupper_m((unsigned char)*psz1) != toupper_m((unsigned char)*psz2)
 		    || *psz1 == '\0'
 		    || *psz2 == '\0')
 			break;

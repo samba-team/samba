@@ -6923,9 +6923,9 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 	if (len == 4 || len == 5) {
 		/* Don't use StrCaseCmp here as we don't want to
 		   initialize iconv. */
-		if ((toupper_ascii(pszParmValue[0]) == 'U') &&
-		    (toupper_ascii(pszParmValue[1]) == 'T') &&
-		    (toupper_ascii(pszParmValue[2]) == 'F')) {
+		if ((toupper_m(pszParmValue[0]) == 'U') &&
+		    (toupper_m(pszParmValue[1]) == 'T') &&
+		    (toupper_m(pszParmValue[2]) == 'F')) {
 			if (len == 4) {
 				if (pszParmValue[3] == '8') {
 					is_utf8 = true;
