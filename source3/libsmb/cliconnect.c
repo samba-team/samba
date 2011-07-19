@@ -59,14 +59,14 @@ static const struct {
  strings.
 *******************************************************/
 
-static NTSTATUS smb_bytes_talloc_string(struct cli_state *cli,
+static NTSTATUS smb_bytes_talloc_string(TALLOC_CTX *mem_ctx,
 					char *inbuf,
 					char **dest,
 					uint8_t *src,
 					size_t srclen,
 					ssize_t *destlen)
 {
-	*destlen = clistr_pull_talloc(cli,
+	*destlen = clistr_pull_talloc(mem_ctx,
 				inbuf,
 				SVAL(inbuf, smb_flg2),
 				dest,
@@ -78,7 +78,7 @@ static NTSTATUS smb_bytes_talloc_string(struct cli_state *cli,
 	}
 
 	if (*dest == NULL) {
-		*dest = talloc_strdup(cli, "");
+		*dest = talloc_strdup(mem_ctx, "");
 		if (*dest == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
