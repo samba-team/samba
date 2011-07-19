@@ -20,6 +20,7 @@
 
 #include "system/network.h"
 #include <tevent.h>
+#include "lib/tsocket/tsocket.h"
 
 struct prefork_pool;
 
@@ -238,9 +239,6 @@ void prefork_set_sigchld_callback(struct prefork_pool *pfp,
 * @param listen_fd_size	The number of listening file descriptors
 * @param listen_fds	The array of listening file descriptors
 * @param lock_fd	The locking file descriptor
-* @param addr		The structure that will hold the client address on
-*			return
-* @param addrlen	The structure length on return.
 *
 * @return The tevent request pointer or NULL on allocation errors.
 */
@@ -249,16 +247,21 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct pf_worker_data *pf,
 					int listen_fd_size,
 					int *listen_fds,
-					int lock_fd,
-					struct sockaddr *addr,
-					socklen_t *addrlen);
+					int lock_fd);
 /**
 * @brief Returns the file descriptor after the new client connection has
 *	 been accepted.
 *
-* @param req	The request
-* @param fd	The new file descriptor.
+* @param req		The request
+* @param mem_ctx	The memory context for cli_addr and srv_addr
+* @param fd		The new file descriptor.
+* @param srv_addr	The server address in tsocket_address format
+* @param cli_addr	The client address in tsocket_address format
 *
 * @return	The error in case the operation failed.
 */
-int prefork_listen_recv(struct tevent_req *req, int *fd);
+int prefork_listen_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx, int *fd,
+			struct tsocket_address **srv_addr,
+			struct tsocket_address **cli_addr);
+

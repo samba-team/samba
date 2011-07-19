@@ -716,10 +716,10 @@ struct pf_listen_state {
 
 	int lock_fd;
 
-	struct sockaddr *addr;
-	socklen_t *addrlen;
-
 	int accept_fd;
+
+	struct tsocket_address *srv_addr;
+	struct tsocket_address *cli_addr;
 
 	int error;
 };
@@ -735,9 +735,7 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct pf_worker_data *pf,
 					int listen_fd_size,
 					int *listen_fds,
-					int lock_fd,
-					struct sockaddr *addr,
-					socklen_t *addrlen)
+					int lock_fd)
 {
 	struct tevent_req *req, *subreq;
 	struct pf_listen_state *state;
@@ -752,8 +750,6 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 	state->lock_fd = lock_fd;
 	state->listen_fd_size = listen_fd_size;
 	state->listen_fds = listen_fds;
-	state->addr = addr;
-	state->addrlen = addrlen;
 	state->accept_fd = -1;
 	state->error = 0;
 
@@ -823,13 +819,18 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	struct pf_listen_state *state;
 	struct tevent_req *req, *subreq;
 	struct pf_listen_ctx *ctx;
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
 	int err = 0;
 	int sd = -1;
+	int ret;
 
 	ctx = talloc_get_type_abort(pvt, struct pf_listen_ctx);
 	state = tevent_req_data(ctx->req, struct pf_listen_state);
 
-	sd = accept(ctx->listen_fd, state->addr, state->addrlen);
+	ZERO_STRUCT(addr);
+	addrlen = sizeof(addr);
+	sd = accept(ctx->listen_fd, (struct sockaddr *)&addr, &addrlen);
 	if (sd == -1) {
 		if (errno == EINTR) {
 			/* keep trying */
@@ -837,7 +838,6 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 		}
 		err = errno;
 		DEBUG(6, ("Accept failed! (%d, %s)\n", err, strerror(err)));
-
 	}
 
 	/* do not track the listen fds anymore */
@@ -845,12 +845,37 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	talloc_free(ctx->fde_ctx);
 	ctx = NULL;
 	if (err) {
-		tevent_req_error(req, err);
-		return;
+		state->error = err;
+		goto done;
 	}
 
 	state->accept_fd = sd;
 
+	ret = tsocket_address_bsd_from_sockaddr(state,
+					(struct sockaddr *)(void *)&addr,
+					addrlen, &state->cli_addr);
+	if (ret < 0) {
+		state->error = errno;
+		goto done;
+	}
+
+	ZERO_STRUCT(addr);
+	addrlen = sizeof(addr);
+	ret = getsockname(sd, (struct sockaddr *)(void *)&addr, &addrlen);
+	if (ret < 0) {
+		state->error = errno;
+		goto done;
+	}
+
+	ret = tsocket_address_bsd_from_sockaddr(state,
+					(struct sockaddr *)(void *)&addr,
+					addrlen, &state->srv_addr);
+	if (ret < 0) {
+		state->error = errno;
+		goto done;
+	}
+
+done:
 	/* release lock now */
 	subreq = prefork_lock_send(state, state->ev, state->pf,
 				   state->lock_fd, PF_ASYNC_LOCK_RELEASE);
@@ -876,20 +901,30 @@ static void prefork_listen_release_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-int prefork_listen_recv(struct tevent_req *req, int *fd)
+int prefork_listen_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx, int *fd,
+			struct tsocket_address **srv_addr,
+			struct tsocket_address **cli_addr)
 {
 	struct pf_listen_state *state;
-	int ret;
+	int ret = 0;
 
 	state = tevent_req_data(req, struct pf_listen_state);
 
-	if (tevent_req_is_unix_error(req, &ret)) {
+	if (state->error) {
+		ret = state->error;
+	} else {
+		tevent_req_is_unix_error(req, &ret);
+	}
+
+	if (ret) {
 		if (state->accept_fd != -1) {
 			close(state->accept_fd);
 		}
 	} else {
 		*fd = state->accept_fd;
-		ret = 0;
+		*srv_addr = talloc_move(mem_ctx, &state->srv_addr);
+		*cli_addr = talloc_move(mem_ctx, &state->cli_addr);
 		state->pf->status = PF_WORKER_BUSY;
 		state->pf->num_clients++;
 	}

@@ -420,8 +420,8 @@ static void spoolss_client_terminated(void *pvt)
 
 struct spoolss_new_client {
 	struct spoolss_children_data *data;
-	struct sockaddr_un sunaddr;
-	socklen_t addrlen;
+	struct tsocket_address *srv_addr;
+	struct tsocket_address *cli_addr;
 };
 
 static void spoolss_handle_client(struct tevent_req *req);
@@ -457,14 +457,11 @@ static void spoolss_next_client(void *pvt)
 		return;
 	}
 	next->data = data;
-	next->addrlen = sizeof(next->sunaddr);
 
 	req = prefork_listen_send(next, data->ev_ctx, data->pf,
 				  data->listen_fd_size,
 				  data->listen_fds,
-				  data->lock_fd,
-				  (struct sockaddr *)&next->sunaddr,
-				  &next->addrlen);
+				  data->lock_fd);
 	if (!req) {
 		DEBUG(1, ("Failed to make listening request!?\n"));
 		talloc_free(next);
@@ -485,7 +482,8 @@ static void spoolss_handle_client(struct tevent_req *req)
 	client = tevent_req_callback_data(req, struct spoolss_new_client);
 	data = client->data;
 
-	ret = prefork_listen_recv(req, &sd);
+	ret = prefork_listen_recv(req, client, &sd,
+				  &client->srv_addr, &client->cli_addr);
 
 	/* this will free the request too */
 	talloc_free(client);
