@@ -185,7 +185,7 @@ bool make_user_info_netlogon_network(struct auth_usersupplied_info **user_info,
 	if (NT_STATUS_IS_OK(status)) {
 		(*user_info)->logon_parameters = logon_parameters;
 	}
-	ret = NT_STATUS_IS_OK(status) ? true : False;
+	ret = NT_STATUS_IS_OK(status) ? true : false;
 
 	data_blob_free(&lm_blob);
 	data_blob_free(&nt_blob);
@@ -288,7 +288,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 			(*user_info)->logon_parameters = logon_parameters;
 		}
 
-		ret = NT_STATUS_IS_OK(nt_status) ? true : False;
+		ret = NT_STATUS_IS_OK(nt_status) ? true : false;
 		data_blob_free(&local_lm_blob);
 		data_blob_free(&local_nt_blob);
 		return ret;
@@ -344,7 +344,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 						   (const char *)plaintext_password.data,
 						   plaintext_password.length);
 	if (!plaintext_password_string) {
-		return False;
+		return false;
 	}
 
 	ret = make_user_info_map(
@@ -363,7 +363,7 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 	}
 
 	data_blob_free(&local_lm_blob);
-	return NT_STATUS_IS_OK(ret) ? true : False;
+	return NT_STATUS_IS_OK(ret) ? true : false;
 }
 
 /****************************************************************************
@@ -405,7 +405,7 @@ bool make_user_info_guest(const struct tsocket_address *remote_address,
 				   NULL,
 				   AUTH_PASSWORD_RESPONSE);
 
-	return NT_STATUS_IS_OK(nt_status) ? true : False;
+	return NT_STATUS_IS_OK(nt_status) ? true : false;
 }
 
 static NTSTATUS log_nt_token(struct security_token *token)
@@ -1166,13 +1166,13 @@ bool copy_current_user(struct current_user *dst, struct current_user *src)
 	groups = (gid_t *)memdup(src->ut.groups,
 				 sizeof(gid_t) * src->ut.ngroups);
 	if ((src->ut.ngroups != 0) && (groups == NULL)) {
-		return False;
+		return false;
 	}
 
 	nt_token = dup_nt_token(NULL, src->nt_user_token);
 	if (nt_token == NULL) {
 		SAFE_FREE(groups);
-		return False;
+		return false;
 	}
 
 	dst->conn = src->conn;
@@ -1522,7 +1522,7 @@ bool is_trusted_domain(const char* dom_name)
 	/* no trusted domains for a standalone server */
 
 	if ( lp_server_role() == ROLE_STANDALONE )
-		return False;
+		return false;
 
 	if (dom_name == NULL || dom_name[0] == '\0') {
 		return false;
@@ -1556,7 +1556,7 @@ bool is_trusted_domain(const char* dom_name)
 
 		if (result == WBC_ERR_DOMAIN_NOT_FOUND) {
 			/* winbind could not find the domain */
-			return False;
+			return false;
 		}
 
 		/* The only other possible result is that winbind is not up
@@ -1574,6 +1574,6 @@ bool is_trusted_domain(const char* dom_name)
 		return true;
 	}
 
-	return False;
+	return false;
 }
 
