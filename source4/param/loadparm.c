@@ -1083,7 +1083,7 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
-		.label		= "state dir",
+		.label		= "state directory",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szStateDir),
@@ -1091,7 +1091,7 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
-		.label		= "cache dir",
+		.label		= "cache directory",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szCacheDir),
@@ -3309,8 +3309,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "pid directory", dyn_PIDDIR);
 	lpcfg_do_global_parameter(lp_ctx, "lock dir", dyn_LOCKDIR);
-	lpcfg_do_global_parameter(lp_ctx, "state dir", dyn_STATEDIR);
-	lpcfg_do_global_parameter(lp_ctx, "cache dir", dyn_CACHEDIR);
+	lpcfg_do_global_parameter(lp_ctx, "state directory", dyn_STATEDIR);
+	lpcfg_do_global_parameter(lp_ctx, "cache directory", dyn_CACHEDIR);
 	lpcfg_do_global_parameter(lp_ctx, "ncalrpc dir", dyn_NCALRPCDIR);
 
 	lpcfg_do_global_parameter(lp_ctx, "socket address", "");
