@@ -469,6 +469,11 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			goto failed;
 		}
 		hdr = (struct ctdb_ltdb_header *)data.dptr;
+		/* strip off any read only record flags. All readonly records
+		   are revoked implicitely by a recovery
+		*/
+		hdr->flags &= ~(CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE);
+
 		data.dptr += sizeof(*hdr);
 		data.dsize -= sizeof(*hdr);
 
