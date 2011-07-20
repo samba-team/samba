@@ -41,8 +41,9 @@ struct ctdb_call {
 	TDB_DATA call_data;
 	TDB_DATA reply_data;
 	uint32_t status;
-#define CTDB_IMMEDIATE_MIGRATION	0x00000001
+#define CTDB_IMMEDIATE_MIGRATION		0x00000001
 #define CTDB_CALL_FLAG_VACUUM_MIGRATION		0x00000002
+#define CTDB_WANT_READONLY			0x00000004
 	uint32_t flags;
 };
 
