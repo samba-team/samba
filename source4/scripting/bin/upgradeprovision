@@ -1346,6 +1346,16 @@ def rebuild_sd(samdb, names):
             message(ERROR, "On %s bad stuff %s" % (str(delta.dn),badsd.as_sddl(names.domainsid)))
             return
 
+def hasATProvision(samdb):
+        entry = samdb.search(expression="dn=@PROVISION", base = "",
+                                scope=SCOPE_SUBTREE,
+                                attrs=["dn"])
+
+        if entry != None and len(entry) == 1:
+            return True
+        else:
+            return False
+
 def removeProvisionUSN(samdb):
         attrs = [samba.provision.LAST_PROVISION_USN_ATTRIBUTE, "dn"]
         entry = samdb.search(expression="dn=@PROVISION", base = "",
@@ -1793,7 +1803,8 @@ if __name__ == '__main__':
             new_ldbs.groupedCommit()
             deltaattr = None
         # 11)
-            if re.match(".*alpha((9)|(\d\d+)).*", str(oem)):
+            message(GUESS, oem)
+            if hasATProvision(ldbs.sam) or re.match(".*alpha((9)|(\d\d+)).*", str(oem)):
                 # 11) A
                 # Starting from alpha9 we can consider that the structure is quite ok
                 # and that we should do only dela
