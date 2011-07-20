@@ -944,7 +944,7 @@ static int deferred_call_destructor(struct revokechild_deferred_call *deferred_c
 	talloc_steal(requeue_handle, requeue_handle->hdr);
 
 	/* when revoking, any READONLY requests have 1 second grace to let read/write finish first */
-	event_add_timed(ctdb->ev, requeue_handle, timeval_current_ofs(0, 0), deferred_call_requeue, requeue_handle);
+	event_add_timed(ctdb->ev, requeue_handle, timeval_current_ofs(c->flags & CTDB_WANT_READONLY ? 1 : 0, 0), deferred_call_requeue, requeue_handle);
 
 	return 0;
 }
