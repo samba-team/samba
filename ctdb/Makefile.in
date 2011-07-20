@@ -71,7 +71,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_store tests/bin/ctdb_trackingdb_test \
 	tests/bin/ctdb_randrec tests/bin/ctdb_persistent \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
-	tests/bin/ctdb_takeover_tests
+	tests/bin/ctdb_takeover_tests tests/bin/ctdb_update_record \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool
@@ -175,6 +175,10 @@ tests/bin/ctdb_fetch_lock_once: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_lock_onc
 tests/bin/ctdb_trackingdb_test: $(CTDB_CLIENT_OBJ) tests/src/ctdb_trackingdb_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_trackingdb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+tests/bin/ctdb_update_record: $(CTDB_CLIENT_OBJ) tests/src/ctdb_update_record.o 
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_update_record.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/src/ctdb_store.o 
 	@echo Linking $@
