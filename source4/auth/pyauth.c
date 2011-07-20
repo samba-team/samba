@@ -301,7 +301,6 @@ static PyTypeObject PyAuthContext = {
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_new = py_auth_context_new,
-	.tp_basicsize = sizeof(py_talloc_Object),
 };
 
 static PyMethodDef py_auth_methods[] = {
