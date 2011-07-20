@@ -89,6 +89,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 	c->new_data = NULL;
 	c->reply_data = NULL;
 	c->status = 0;
+	c->header = header;
 
 	for (fn=ctdb_db->calls;fn;fn=fn->next) {
 		if (fn->id == call->call_id) break;
@@ -1694,6 +1695,27 @@ static int ctdb_fetch_func(struct ctdb_call_info *call)
 }
 
 /*
+  this is a plain fetch procedure that all databases support
+  this returns the full record including the ltdb header
+*/
+static int ctdb_fetch_with_header_func(struct ctdb_call_info *call)
+{
+	call->reply_data = talloc(call, TDB_DATA);
+	if (call->reply_data == NULL) {
+		return -1;
+	}
+	call->reply_data->dsize = sizeof(struct ctdb_ltdb_header) + call->record_data.dsize;
+	call->reply_data->dptr  = talloc_size(call->reply_data, call->reply_data->dsize);
+	if (call->reply_data->dptr == NULL) {
+		return -1;
+	}
+	memcpy(call->reply_data->dptr, call->header, sizeof(struct ctdb_ltdb_header));
+	memcpy(&call->reply_data->dptr[sizeof(struct ctdb_ltdb_header)], call->record_data.dptr, call->record_data.dsize);
+
+	return 0;
+}
+
+/*
   attach to a specific database - client call
 */
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent, uint32_t tdb_flags)
@@ -1758,6 +1780,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 	/* add well known functions */
 	ctdb_set_call(ctdb_db, ctdb_null_func, CTDB_NULL_FUNC);
 	ctdb_set_call(ctdb_db, ctdb_fetch_func, CTDB_FETCH_FUNC);
+	ctdb_set_call(ctdb_db, ctdb_fetch_with_header_func, CTDB_FETCH_WITH_HEADER_FUNC);
 
 	return ctdb_db;
 }

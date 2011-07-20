@@ -49,6 +49,27 @@ static int ctdb_fetch_func(struct ctdb_call_info *call)
 	return 0;
 }
 
+/*
+  this is a plain fetch procedure that all databases support
+  this returns the full record including the ltdb header
+*/
+static int ctdb_fetch_with_header_func(struct ctdb_call_info *call)
+{
+	call->reply_data = talloc(call, TDB_DATA);
+	if (call->reply_data == NULL) {
+		return -1;
+	}
+	call->reply_data->dsize = sizeof(struct ctdb_ltdb_header) + call->record_data.dsize;
+	call->reply_data->dptr  = talloc_size(call->reply_data, call->reply_data->dsize);
+	if (call->reply_data->dptr == NULL) {
+		return -1;
+	}
+	memcpy(call->reply_data->dptr, call->header, sizeof(struct ctdb_ltdb_header));
+	memcpy(&call->reply_data->dptr[sizeof(struct ctdb_ltdb_header)], call->record_data.dptr, call->record_data.dsize);
+
+	return 0;
+}
+
 
 /**
  * write a record to a normal database
@@ -926,6 +947,17 @@ again:
 	   for efficient Samba3 ctdb fetch
 	*/
 	ret = ctdb_daemon_set_call(ctdb, ctdb_db->db_id, ctdb_fetch_func, CTDB_FETCH_FUNC);
+	if (ret != 0) {
+		DEBUG(DEBUG_CRIT,("Failed to setup fetch function for '%s'\n", ctdb_db->db_name));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
+	/* 
+	   all databases support the "fetch_with_header" function. we need this
+	   for efficient readonly record fetches
+	*/
+	ret = ctdb_daemon_set_call(ctdb, ctdb_db->db_id, ctdb_fetch_with_header_func, CTDB_FETCH_WITH_HEADER_FUNC);
 	if (ret != 0) {
 		DEBUG(DEBUG_CRIT,("Failed to setup fetch function for '%s'\n", ctdb_db->db_name));
 		talloc_free(ctdb_db);
