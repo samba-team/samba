@@ -502,9 +502,11 @@ struct ctdb_db_context {
 	uint32_t db_id;
 	uint32_t priority;
 	bool persistent;
+	bool readonly; /* Do we support read-only delegations ? */
 	const char *db_name;
 	const char *db_path;
 	struct tdb_wrap *ltdb;
+	struct tdb_context *rottdb; /* ReadOnly tracking TDB */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
 	struct timed_event *seqnum_update;

@@ -926,6 +926,33 @@ again:
 		}
 	}
 
+	/* Assume all non-persistent databases support read only delegations */
+	if (!ctdb_db->persistent) {
+		ctdb_db->readonly = true;
+	}
+
+	if (ctdb_db->readonly) {
+		char *ropath;
+
+		ropath = talloc_asprintf(ctdb_db, "%s.RO", ctdb_db->db_path);
+		if (ropath == NULL) {
+			DEBUG(DEBUG_CRIT,("Failed to asprintf the tracking database\n"));
+			talloc_free(ctdb_db);
+			return -1;
+		}
+		ctdb_db->rottdb = tdb_open(ropath, 
+				      ctdb->tunable.database_hash_size, 
+				      TDB_NOLOCK|TDB_CLEAR_IF_FIRST|TDB_NOSYNC,
+				      O_CREAT|O_RDWR, 0);
+		if (ctdb_db->rottdb == NULL) {
+			DEBUG(DEBUG_CRIT,("Failed to open/create the tracking database '%s'\n", ropath));
+			talloc_free(ctdb_db);
+			return -1;
+		}
+		DEBUG(DEBUG_NOTICE,("OPENED tracking database : '%s'\n", ropath));
+	}
+
+
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
 	/* setting this can help some high churn databases */
