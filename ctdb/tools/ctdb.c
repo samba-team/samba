@@ -3012,6 +3012,61 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+struct cattdb_data {
+	struct ctdb_context *ctdb;
+	uint32_t count;
+};
+
+static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct cattdb_data *d = private_data;
+
+	d->count++;
+	
+	return ctdb_dumpdb_record(d->ctdb, key, data, stdout);
+}
+
+/*
+  cat the local tdb database using same format as catdb
+ */
+static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	struct cattdb_data d;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_name = argv[0];
+
+
+	if (db_exists(ctdb, db_name)) {
+		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		return -1;
+	}
+
+	/* traverse the local tdb */
+	d.count = 0;
+	d.ctdb  = ctdb;
+	if (tdb_traverse_read(ctdb_db->ltdb->tdb, cattdb_traverse, &d) == -1) {
+		printf("Failed to cattdb data\n");
+		exit(10);
+	}
+	talloc_free(ctdb_db);
+
+	printf("Dumped %d records\n", d.count);
+	return 0;
+}
+
 /*
   display the content of a database key
  */
@@ -4942,6 +4997,7 @@ static const struct {
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
 	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },
 	{ "catdb",           control_catdb,             true,	false,  "dump a database" ,                     "<dbname>"},
+	{ "cattdb",          control_cattdb,            true,	false,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
 	{ "pnn",             control_pnn,               true,	false,  "show the pnn of the currnet node" },
