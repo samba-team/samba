@@ -174,6 +174,8 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 					   TDB_DATA key, TDB_DATA *data);
 
+struct ctdb_record_handle *ctdb_fetch_readonly_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data, int read_only);
+
 int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 
 int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,

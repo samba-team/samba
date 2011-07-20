@@ -669,9 +669,9 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key);
-int ctdb_ltdb_fetch_readonly(struct ctdb_db_context *ctdb_db,
-		   TDB_DATA key, struct ctdb_ltdb_header *header,
-		   TALLOC_CTX *mem_ctx, TDB_DATA *data);
+int ctdb_ltdb_fetch_readonly(struct ctdb_db_context *ctdb_db, 
+		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data);
 int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
 			struct ctdb_req_control *c,
 			TDB_DATA recdata);
