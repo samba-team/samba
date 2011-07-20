@@ -119,6 +119,40 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 	return 0;
 }
 
+/*
+  fetch a record from the ltdb, separating out the header information
+  and returning the body of the record.
+  if the record does not exist, *header will be NULL
+  and data = {0, NULL}
+*/
+int ctdb_ltdb_fetch_readonly(struct ctdb_db_context *ctdb_db, 
+		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data)
+{
+	TDB_DATA rec;
+
+	rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
+	if (rec.dsize < sizeof(*header)) {
+		free(rec.dptr);
+
+		data->dsize = 0;
+		data->dptr = NULL;
+		return -1;
+	}
+
+	*header = *(struct ctdb_ltdb_header *)rec.dptr;
+	if (data) {
+		data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
+		data->dptr = talloc_memdup(mem_ctx, 
+					   sizeof(struct ctdb_ltdb_header)+rec.dptr,
+					   data->dsize);
+	}
+
+	free(rec.dptr);
+
+	return 0;
+}
+
 
 /*
   write a record to a normal database
