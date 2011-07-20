@@ -965,16 +965,24 @@ static void kdc_task_init(struct task_server *task)
 	kdc->config->num_db = 1;
 
 	/*
-	 * TODO: find out why this is needed in order
-	 *       to let make test work.
+	 * This restores the behavior before
+	 * commit 255e3e18e00f717d99f3bc57c8a8895ff624f3c3
+	 * s4:heimdal: import lorikeet-heimdal-201107150856
+	 * (commit 48936803fae4a2fb362c79365d31f420c917b85b)
 	 *
-	 *       Without this, we are getting PAC varification
-	 *       failures. I guess because the PAC is not signed
-	 *       with a arcfour-hmac-md5 key.
+	 * as_use_strongest_session_key,preauth_use_strongest_session_key
+	 * and tgs_use_strongest_session_key are input to the
+	 * _kdc_find_etype() function. The old bahavior is in
+	 * the use_strongest_session_key=FALSE code path.
+	 * (The only remaining difference in _kdc_find_etype()
+	 *  is the is_preauth parameter.)
+	 *
+	 * The old behavior in the _kdc_get_preferred_key()
+	 * function is use_strongest_server_key=TRUE.
 	 */
-	kdc->config->as_use_strongest_session_key = true;
-	kdc->config->preauth_use_strongest_session_key = true;
-	kdc->config->tgs_use_strongest_session_key = true;
+	kdc->config->as_use_strongest_session_key = false;
+	kdc->config->preauth_use_strongest_session_key = false;
+	kdc->config->tgs_use_strongest_session_key = false;
 	kdc->config->use_strongest_server_key = true;
 
 	/* Register hdb-samba4 hooks for use as a keytab */
