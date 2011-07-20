@@ -517,6 +517,7 @@ struct ctdb_db_context {
 	int pending_requests;
 	struct lockwait_handle *lockwait_active;
 	struct lockwait_handle *lockwait_overflow;
+	struct revokechild_handle *revokechild_active;
 	struct ctdb_persistent_state *persistent_state;
 	struct trbt_tree *delete_queue;
 	int (*ctdb_ltdb_store_fn)(struct ctdb_db_context *ctdb_db,
@@ -1450,5 +1451,9 @@ int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t 
 typedef void (*ctdb_trackingdb_cb)(struct ctdb_context *ctdb, uint32_t pnn, void *private_data);
 
 void ctdb_trackingdb_traverse(struct ctdb_context *ctdb, TDB_DATA data, ctdb_trackingdb_cb cb, void *private_data);
+
+typedef void (*deferred_requeue_fn)(void *call_context, struct ctdb_req_header *hdr);
+
+int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context);
 
 #endif

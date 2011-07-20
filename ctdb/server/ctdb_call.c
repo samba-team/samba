@@ -894,3 +894,96 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 
 	talloc_free(r);
 }
+
+
+
+struct revokechild_deferred_call {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_header *hdr;
+	deferred_requeue_fn fn;
+	void *ctx;
+};
+
+struct revokechild_handle {
+	struct revokechild_handle *next, *prev;
+	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
+	struct fd_event *fde;
+	int status;
+	int fd[2];
+	pid_t child;
+	TDB_DATA key;
+};
+
+struct revokechild_requeue_handle {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_header *hdr;
+	deferred_requeue_fn fn;
+	void *ctx;
+};
+
+static void deferred_call_requeue(struct event_context *ev, struct timed_event *te,
+		      struct timeval t, void *private_data)
+{
+	struct revokechild_requeue_handle *requeue_handle = talloc_get_type(private_data, struct revokechild_requeue_handle);
+
+	requeue_handle->fn(requeue_handle->ctx, requeue_handle->hdr);
+	talloc_free(requeue_handle);
+}
+
+static int deferred_call_destructor(struct revokechild_deferred_call *deferred_call)
+{
+	struct ctdb_context *ctdb = deferred_call->ctdb;
+	struct revokechild_requeue_handle *requeue_handle = talloc(ctdb, struct revokechild_requeue_handle);
+	struct ctdb_req_call *c = (struct ctdb_req_call *)deferred_call->hdr;
+
+	requeue_handle->ctdb = ctdb;
+	requeue_handle->hdr  = deferred_call->hdr;
+	requeue_handle->fn   = deferred_call->fn;
+	requeue_handle->ctx  = deferred_call->ctx;
+	talloc_steal(requeue_handle, requeue_handle->hdr);
+
+	/* when revoking, any READONLY requests have 1 second grace to let read/write finish first */
+	event_add_timed(ctdb->ev, requeue_handle, timeval_current_ofs(0, 0), deferred_call_requeue, requeue_handle);
+
+	return 0;
+}
+
+int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context)
+{
+	struct revokechild_handle *rc;
+	struct revokechild_deferred_call *deferred_call;
+
+	for (rc = ctdb_db->revokechild_active; rc; rc = rc->next) {
+		if (rc->key.dsize == 0) {
+			continue;
+		}
+		if (rc->key.dsize != key.dsize) {
+			continue;
+		}
+		if (!memcmp(rc->key.dptr, key.dptr, key.dsize)) {
+			break;
+		}
+	}
+
+	if (rc == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to add deferred call to revoke list. revoke structure not found\n"));
+		return -1;
+	}
+
+	deferred_call = talloc(rc, struct revokechild_deferred_call);
+	if (deferred_call == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate deferred call structure for revoking record\n"));
+		return -1;
+	}
+
+	deferred_call->ctdb = ctdb;
+	deferred_call->hdr  = hdr;
+	deferred_call->fn   = fn;
+	deferred_call->ctx  = call_context;
+
+	talloc_set_destructor(deferred_call, deferred_call_destructor);
+	talloc_steal(deferred_call, hdr);
+
+	return 0;
+}
