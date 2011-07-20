@@ -1443,5 +1443,10 @@ void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 			    struct ctdb_node_map *nodemap,
 			    struct ctdb_public_ip_list **all_ips_p);
 
+int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t pnn);
+
+typedef void (*ctdb_trackingdb_cb)(struct ctdb_context *ctdb, uint32_t pnn, void *private_data);
+
+void ctdb_trackingdb_traverse(struct ctdb_context *ctdb, TDB_DATA data, ctdb_trackingdb_cb cb, void *private_data);
 
 #endif
