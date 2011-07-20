@@ -18,10 +18,9 @@
 #
 
 import sys
-from os.path import dirname
 
-samba_pymodule_dir = dirname(dirname(sys.argv[0]))
-sys.path.append(samba_pymodule_dir)
+# Find right direction when running from source tree
+sys.path.insert(0, "bin/python")
 
 from samba import netcmd
 from samba.netcmd import Command, CommandError, Option

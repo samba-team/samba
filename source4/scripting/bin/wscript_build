@@ -3,3 +3,4 @@
 bld.SAMBA_SCRIPT('samba_dnsupdate', pattern='samba_dnsupdate', installdir='.')
 bld.SAMBA_SCRIPT('samba_spnupdate', pattern='samba_spnupdate', installdir='.')
 bld.SAMBA_SCRIPT('upgradeprovision', pattern='upgradeprovision', installdir='.')
+bld.SAMBA_SCRIPT('samba-tool', pattern='samba-tool', installdir='.')
