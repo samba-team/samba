@@ -237,8 +237,8 @@ struct prefork_oldest {
 /* sort in inverse order */
 static int prefork_sort_oldest(const void *ap, const void *bp)
 {
-	struct prefork_oldest *a = (struct prefork_oldest *)ap;
-	struct prefork_oldest *b = (struct prefork_oldest *)bp;
+	const struct prefork_oldest *a = (const struct prefork_oldest *)ap;
+	const struct prefork_oldest *b = (const struct prefork_oldest *)bp;
 
 	if (a->started == b->started) {
 		return 0;
