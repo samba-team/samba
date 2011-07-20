@@ -498,7 +498,7 @@ static PyMethodDef py_gensec_security_methods[] = {
 };
 
 static PyTypeObject Py_Security = {
-	.tp_name = "Security",
+	.tp_name = "gensec.Security",
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_gensec_security_methods,
 	.tp_basicsize = sizeof(py_talloc_Object),
