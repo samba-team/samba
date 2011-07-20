@@ -339,7 +339,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
-	ctdb_call_local(ctdb_db, state->call, &header, state, &data);
+	ctdb_call_local(ctdb_db, state->call, &header, state, &data, true);
 
 	ret = ctdb_ltdb_unlock(ctdb_db, state->call->key);
 	if (ret != 0) {
@@ -543,7 +543,11 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		}
 	}
 
-	ctdb_call_local(ctdb_db, call, &header, hdr, &data);
+	ret = ctdb_call_local(ctdb_db, call, &header, hdr, &data, true);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_call_local failed\n"));
+		call->status = -1;
+	}
 
 	ret = ctdb_ltdb_unlock(ctdb_db, call->key);
 	if (ret != 0) {
@@ -766,7 +770,7 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	*(state->call) = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, state->call, header, state, data);
+	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, true);
 
 	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
 

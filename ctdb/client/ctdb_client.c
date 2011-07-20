@@ -72,7 +72,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 */
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
-		    TDB_DATA *data)
+		    TDB_DATA *data, bool updatetdb)
 {
 	struct ctdb_call_info *c;
 	struct ctdb_registered_call *fn;
@@ -111,7 +111,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		c->new_data = &c->record_data;
 	}
 
-	if (c->new_data) {
+	if (c->new_data && updatetdb) {
 		/* XXX check that we always have the lock here? */
 		if (ctdb_ltdb_store(ctdb_db, call->key, header, *c->new_data) != 0) {
 			ctdb_set_error(ctdb, "ctdb_call tdb_store failed\n");
@@ -346,7 +346,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 	call->status = state->call->status;
 	talloc_free(state);
 
-	return 0;
+	return call->status;
 }
 
 
@@ -387,7 +387,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 	*(state->call) = *call;
 	state->ctdb_db = ctdb_db;
 
-	ret = ctdb_call_local(ctdb_db, state->call, header, state, data);
+	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, true);
 
 	return state;
 }
