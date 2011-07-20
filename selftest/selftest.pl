@@ -639,8 +639,8 @@ sub write_clientconf($$$)
 	print CF "
 	private dir = $clientdir/private
 	lock dir = $clientdir/lockdir
-	state dir = $clientdir/statedir
-	cache dir = $clientdir/cachedir
+	state directory = $clientdir/statedir
+	cache directory = $clientdir/cachedir
 	ncalrpc dir = $clientdir/ncalrpcdir
 	name resolve order = file bcast
 	panic action = $RealBin/gdb_backtrace \%d

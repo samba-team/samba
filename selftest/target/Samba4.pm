@@ -597,8 +597,8 @@ sub provision_raw_step1($$)
 	pid directory = $ctx->{piddir}
 	ncalrpc dir = $ctx->{ncalrpcdir}
 	lock dir = $ctx->{lockdir}
-	state dir = $ctx->{statedir}
-	cache dir = $ctx->{cachedir}
+	state directory = $ctx->{statedir}
+	cache directory = $ctx->{cachedir}
 	winbindd socket directory = $ctx->{winbindd_socket_dir}
 	winbindd privileged socket directory = $ctx->{winbindd_privileged_socket_dir}
 	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
