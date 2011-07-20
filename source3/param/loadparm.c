@@ -7674,8 +7674,8 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((iServiceIndex = add_a_service(&sDefault, pszSectionName))
-		    < 0) {
+		iServiceIndex = add_a_service(&sDefault, pszSectionName);
+		if (iServiceIndex < 0) {
 			DEBUG(0, ("Failed to add a new service\n"));
 			return (false);
 		}
