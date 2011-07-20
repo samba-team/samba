@@ -4291,3 +4291,70 @@ struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handl
 
 	return &h->header;
 }
+
+
+struct ctdb_client_control_state *
+ctdb_ctrl_updaterecord_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data)
+{
+	struct ctdb_client_control_state *handle;
+	struct ctdb_marshall_buffer *m;
+	struct ctdb_rec_data *rec;
+	TDB_DATA outdata;
+
+	m = talloc_zero(mem_ctx, struct ctdb_marshall_buffer);
+	if (m == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to allocate marshall buffer for update record\n"));
+		return NULL;
+	}
+
+	m->db_id = ctdb_db->db_id;
+
+	rec = ctdb_marshall_record(m, 0, key, header, data);
+	if (rec == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to marshall record for update record\n"));
+		talloc_free(m);
+		return NULL;
+	}
+	m = talloc_realloc_size(mem_ctx, m, rec->length + offsetof(struct ctdb_marshall_buffer, data));
+	if (m == NULL) {
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to expand recdata\n"));
+		talloc_free(m);
+		return NULL;
+	}
+	m->count++;
+	memcpy((uint8_t *)m + offsetof(struct ctdb_marshall_buffer, data), rec, rec->length);
+
+
+	outdata.dptr = (uint8_t *)m;
+	outdata.dsize = talloc_get_size(m);
+
+	handle = ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_UPDATE_RECORD, 0, outdata,
+			   mem_ctx, &timeout, NULL);
+	talloc_free(m);
+	return handle;
+}
+
+int ctdb_ctrl_updaterecord_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control_recv(ctdb, state, state, NULL, &res, NULL);
+	if ( (ret != 0) || (res != 0) ){
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_update_record_recv failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+ctdb_ctrl_updaterecord(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data)
+{
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_ctrl_updaterecord_send(ctdb, mem_ctx, timeout, destnode, ctdb_db, key, header, data);
+	return ctdb_ctrl_updaterecord_recv(ctdb, state);
+}
+
