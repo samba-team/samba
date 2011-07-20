@@ -498,6 +498,10 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			tdb_close(ctdb_db->rottdb);
 			ctdb_db->rottdb = NULL;
 		}
+		while (ctdb_db->revokechild_active != NULL) {
+			talloc_free(ctdb_db->revokechild_active);
+			ctdb_db->revokechild_active = NULL;
+		}
 	}
 
 	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
