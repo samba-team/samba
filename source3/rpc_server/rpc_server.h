@@ -47,4 +47,13 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 				 const char *name,
 				 dcerpc_ncacn_disconnect_fn fn);
 
+void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
+			 enum dcerpc_transport_t transport,
+			 const char *name,
+			 struct tsocket_address *cli_addr,
+			 struct tsocket_address *srv_addr,
+			 int s,
+			 dcerpc_ncacn_disconnect_fn fn);
+
 #endif /* _PRC_SERVER_H_ */

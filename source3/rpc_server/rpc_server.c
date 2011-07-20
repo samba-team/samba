@@ -639,15 +639,6 @@ fail:
 	return;
 }
 
-static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
-				struct messaging_context *msg_ctx,
-				enum dcerpc_transport_t transport,
-				const char *name,
-				struct tsocket_address *cli_addr,
-				struct tsocket_address *srv_addr,
-				int s,
-				dcerpc_ncacn_disconnect_fn fn);
-
 /********************************************************************
  * Start listening on the tcp/ip socket
  ********************************************************************/
@@ -969,14 +960,14 @@ struct dcerpc_ncacn_conn {
 static void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
 static void dcerpc_ncacn_packet_done(struct tevent_req *subreq);
 
-static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
-				struct messaging_context *msg_ctx,
-				enum dcerpc_transport_t transport,
-				const char *name,
-				struct tsocket_address *cli_addr,
-				struct tsocket_address *srv_addr,
-				int s,
-				dcerpc_ncacn_disconnect_fn fn) {
+void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
+			 enum dcerpc_transport_t transport,
+			 const char *name,
+			 struct tsocket_address *cli_addr,
+			 struct tsocket_address *srv_addr,
+			 int s,
+			 dcerpc_ncacn_disconnect_fn fn) {
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	struct tevent_req *subreq;
 	bool system_user = false;
