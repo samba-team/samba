@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="ping_pong.1">
+
+<refmeta>
+	<refentrytitle>ping_pong</refentrytitle>
+	<manvolnum>1</manvolnum>
+	<refmiscinfo class="source"> </refmiscinfo>
+	<refmiscinfo class="manual"> </refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>ping_pong</refname>
+        <refpurpose>measures the ping-pong byte range lock latency</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>ping_pong [options] &lt;file&gt; &lt;num_locks&gt;</command>
+	</cmdsynopsis>
+
+	<cmdsynopsis>
+		<command>ping_pong</command>
+		<arg choice="opt">-r</arg>
+		<arg choice="opt">-w</arg>
+		<arg choice="opt">-m</arg>
+	</cmdsynopsis>
+	
+</refsynopsisdiv>
+
+  <refsect1><title>DESCRIPTION</title>
+    <para>
+      This measures the ping-pong byte range lock latency. It is
+      especially useful on a cluster of nodes sharing a common lock
+      manager as it will give some indication of the lock managers
+      performance under stress.
+    </para>
+
+  </refsect1>
+
+  <refsect1><title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry><term>-r</term>
+        <listitem>
+          <para>
+	    do reads
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-w</term>
+        <listitem>
+          <para>
+	    do writes
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-m</term>
+        <listitem>
+          <para>
+	    use mmap
+	  </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1><title>EXAMPLES</title>
+    <para>
+      Testing lock coherence
+    </para>
+    <screen format="linespecific">
+      ping_pong test.dat N
+    </screen>
+
+    <para>
+      Testing IO coherence
+    </para>
+    <screen format="linespecific">
+      ping_pong -rw test.dat N
+    </screen>
+  </refsect1>
+
+  <refsect1><title>SEE ALSO</title>
+    <para>
+      <ulink url="https://wiki.samba.org/index.php/Ping_pong"/>, ctdb(1), ctdbd(1)
+    </para>
+  </refsect1>
+  <refsect1><title>COPYRIGHT/LICENSE</title>
+<literallayout>
+Copyright (C) Andrew Tridgell 2002
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see http://www.gnu.org/licenses/.
+</literallayout>
+  </refsect1>
+</refentry>

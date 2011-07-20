@@ -123,6 +123,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/onnode.1.gz
 %{_mandir}/man1/ltdbtool.1.gz
+%{_mandir}/man1/ping_pong.1.gz
 %{_libdir}/pkgconfig/ctdb.pc
 
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
