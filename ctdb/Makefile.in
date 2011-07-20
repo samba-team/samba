@@ -67,7 +67,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
 TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
-	tests/bin/ctdb_fetch_lock_once \
+	tests/bin/ctdb_fetch_lock_once tests/bin/ctdb_fetch_readonly_once \
 	tests/bin/ctdb_store tests/bin/ctdb_trackingdb_test \
 	tests/bin/ctdb_randrec tests/bin/ctdb_persistent \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
@@ -171,6 +171,10 @@ tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o
 tests/bin/ctdb_fetch_lock_once: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_lock_once.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+tests/bin/ctdb_fetch_readonly_once: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_readonly_once.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_trackingdb_test: $(CTDB_CLIENT_OBJ) tests/src/ctdb_trackingdb_test.o
 	@echo Linking $@
