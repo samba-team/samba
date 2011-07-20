@@ -296,7 +296,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				struct PAC_LOGON_INFO *logon_info,
 				bool mapped_to_guest, bool username_was_mapped,
 				DATA_BLOB *session_key,
-				struct auth_serversupplied_info **session_info)
+				struct auth_session_info **session_info)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
