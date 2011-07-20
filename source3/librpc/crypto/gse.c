@@ -374,16 +374,26 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 	}
 
 #ifdef HAVE_GSS_KRB5_IMPORT_CRED
-	/* This creates a GSSAPI cred_id_t with the principal and keytab set */
+
+	/* This creates a GSSAPI cred_id_t with the keytab set */
 	gss_maj = gss_krb5_import_cred(&gss_min, NULL, NULL, gse_ctx->keytab, 
-					&gse_ctx->creds);
-	if (gss_maj) {
+				       &gse_ctx->creds);
+
+	if (gss_maj != 0
+	    && gss_maj != (GSS_S_CALL_BAD_STRUCTURE|GSS_S_BAD_NAME)) {
 		DEBUG(0, ("gss_krb5_import_cred failed with [%s]\n",
 			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
-	}
-#else
+
+		/* This is the error the MIT krb5 1.9 gives when it
+		 * implements the function, but we do not specify the
+		 * principal.  However, when we specify the principal
+		 * as host$@REALM the GSS acceptor fails with 'wrong
+		 * principal in request'.  Work around the issue by
+		 * falling back to the alternate approach below. */
+	} else if (gss_maj == (GSS_S_CALL_BAD_STRUCTURE|GSS_S_BAD_NAME))
+#endif
 	/* FIXME!!!
 	 * This call sets the default keytab for the whole server, not
 	 * just for this context. Need to find a way that does not alter
@@ -423,7 +433,7 @@ NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 	}
-#endif
+
 	status = NT_STATUS_OK;
 
 done:
