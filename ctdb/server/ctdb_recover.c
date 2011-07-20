@@ -489,6 +489,17 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	DEBUG(DEBUG_DEBUG,("finished push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
 
+	if (ctdb_db->readonly) {
+		DEBUG(DEBUG_CRIT,("Clearing the tracking database for dbid 0x%x\n",
+				  ctdb_db->db_id));
+		if (tdb_wipe_all(ctdb_db->rottdb) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to wipe tracking database for 0x%x. Dropping read-only delegation support\n", ctdb_db->db_id));
+			ctdb_db->readonly = false;
+			tdb_close(ctdb_db->rottdb);
+			ctdb_db->rottdb = NULL;
+		}
+	}
+
 	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
 	return 0;
 
