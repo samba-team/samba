@@ -127,10 +127,9 @@ NTSTATUS ntlmssp_server_get_user_info(struct auth_ntlmssp_state *ctx,
 		return status;
 	}
 
-	DEBUG(5, (__location__ "OK: user: %s domain: %s workstation: %s\n",
-		  auth_ntlmssp_get_username(ctx),
-		  auth_ntlmssp_get_domain(ctx),
-		  auth_ntlmssp_get_client(ctx)));
+	DEBUG(5, (__location__ "OK: user: %s domain: %s\n",
+		  (*session_info)->info->account_name,
+		  (*session_info)->info->domain_name));
 
 	return NT_STATUS_OK;
 }
