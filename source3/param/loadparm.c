@@ -7607,6 +7607,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((char *)ptr1) == *((char *)ptr2));
 
 		case P_LIST:
+		case P_CMDLIST:
 			return str_list_equal(*(const char ***)ptr1, *(const char ***)ptr2);
 
 		case P_STRING:
