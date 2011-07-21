@@ -241,6 +241,7 @@ bool setup_named_pipe_socket(const char *pipe_name,
 			  np_dir, pipe_name));
 		goto out;
 	}
+	talloc_free(np_dir);
 
 	DEBUG(10, ("Openened pipe socket fd %d for %s\n",
 		   state->fd, pipe_name));
