@@ -164,60 +164,10 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 					  struct security_unix_token **sec)
 {
 	struct unixuid_private *priv = ntvfs->private_data;
-	int i;
-	NTSTATUS status;
-	struct id_map *ids;
-	struct composite_context *ctx;
-	*sec = talloc(req, struct security_unix_token);
 
-	/* we can't do unix security without a user and group */
-	if (token->num_sids < 2) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	ids = talloc_array(req, struct id_map, token->num_sids);
-	NT_STATUS_HAVE_NO_MEMORY(ids);
-
-	(*sec)->ngroups = token->num_sids - 2;
-	(*sec)->groups = talloc_array(*sec, gid_t, (*sec)->ngroups);
-	NT_STATUS_HAVE_NO_MEMORY((*sec)->groups);
-
-	for (i=0;i<token->num_sids;i++) {
-		ZERO_STRUCT(ids[i].xid);
-		ids[i].sid = &token->sids[i];
-		ids[i].status = ID_UNKNOWN;
-	}
-
-	ctx = wbc_sids_to_xids_send(priv->wbc_ctx, ids, token->num_sids, ids);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	status = wbc_sids_to_xids_recv(ctx, &ids);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	if (ids[0].xid.type == ID_TYPE_BOTH ||
-	    ids[0].xid.type == ID_TYPE_UID) {
-		(*sec)->uid = ids[0].xid.id;
-	} else {
-		return NT_STATUS_INVALID_SID;
-	}
-
-	if (ids[1].xid.type == ID_TYPE_BOTH ||
-	    ids[1].xid.type == ID_TYPE_GID) {
-		(*sec)->gid = ids[1].xid.id;
-	} else {
-		return NT_STATUS_INVALID_SID;
-	}
-
-	for (i=0;i<(*sec)->ngroups;i++) {
-		if (ids[i+2].xid.type == ID_TYPE_BOTH ||
-		    ids[i+2].xid.type == ID_TYPE_GID) {
-			(*sec)->groups[i] = ids[i+2].xid.id;
-		} else {
-			return NT_STATUS_INVALID_SID;
-		}
-	}
-
-	return NT_STATUS_OK;
+	return security_token_to_unix_token(req,
+					    priv->wbc_ctx,
+					    token, sec);
 }
 
 /*

@@ -32,6 +32,7 @@
 #include "auth/session_proto.h"
 #include "system/kerberos.h"
 #include <gssapi/gssapi.h>
+#include "libcli/wbclient/wbclient.h"
 
 _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
 					    struct loadparm_context *lp_ctx)
@@ -335,4 +336,3 @@ void auth_session_info_debug(int dbg_lev,
 
 	security_token_debug(0, dbg_lev, session_info->security_token);
 }
-

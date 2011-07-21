@@ -15,6 +15,12 @@ bld.SAMBA_SUBSYSTEM('auth_session',
 	deps='samdb auth4_sam'
 	)
 
+bld.SAMBA_SUBSYSTEM('auth_unix_token',
+	source='unix_token.c',
+	autoproto='unix_token_proto.h',
+	public_deps='LIBWBCLIENT_OLD',
+	)
+
 
 bld.SAMBA_SUBSYSTEM('samba_server_gensec',
 	source='samba_server_gensec.c',
