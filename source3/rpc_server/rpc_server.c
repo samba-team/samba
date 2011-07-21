@@ -355,7 +355,14 @@ static void named_pipe_accept_function(struct tevent_context *ev_ctx,
 		close(fd);
 		return;
 	}
-	npc->pipe_name = pipe_name;
+
+	npc->pipe_name = talloc_strdup(npc, pipe_name);
+	if (npc->pipe_name == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		TALLOC_FREE(npc);
+		close(fd);
+		return;
+	}
 	npc->ev = ev_ctx;
 	npc->msg_ctx = msg_ctx;
 
