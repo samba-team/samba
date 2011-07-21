@@ -157,9 +157,12 @@ class SuperCommand(Command):
     def _run(self, myname, subcommand=None, *args):
         if subcommand in self.subcommands:
             return self.subcommands[subcommand]._run(subcommand, *args)
+        print "Usage: samba-tool %s <subcommand> [options]" % myname
         print "Available subcommands:"
-        for cmd in self.subcommands:
-            print "\t%-20s - %s" % (cmd, self.subcommands[cmd].description)
+        subcmds = self.subcommands.keys()
+        subcmds.sort()
+        for cmd in subcmds:
+            print "    %-20s - %s" % (cmd, self.subcommands[cmd].description)
         if subcommand in [None]:
             self.show_command_error("You must specify a subcommand")
             return -1
@@ -176,7 +179,7 @@ class SuperCommand(Command):
 
     def usage(self, myname, subcommand=None, *args):
         if subcommand is None or not subcommand in self.subcommands:
-            print "Usage: %s (%s) [options]" % (myname,
+            print "Usage: samba-tool %s (%s) [options]" % (myname,
                 " | ".join(self.subcommands.keys()))
         else:
             return self.subcommands[subcommand].usage(*args)
