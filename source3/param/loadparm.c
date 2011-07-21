@@ -7600,6 +7600,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_INTEGER:
 		case P_ENUM:
 		case P_OCTAL:
+		case P_BYTES:
 			return (*((int *)ptr1) == *((int *)ptr2));
 
 		case P_CHAR:
