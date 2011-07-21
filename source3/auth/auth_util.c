@@ -562,14 +562,17 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
 	    (server_info->nss_token)) {
+		char *found_username = NULL;
 		status = create_token_from_username(session_info,
 						    server_info->unix_name,
 						    server_info->guest,
 						    &session_info->unix_token->uid,
 						    &session_info->unix_token->gid,
-						    &session_info->unix_info->unix_name,
+						    &found_username,
 						    &session_info->security_token);
-
+		if (NT_STATUS_IS_OK(status)) {
+			session_info->unix_info->unix_name = found_username;
+		}
 	} else {
 		status = create_local_nt_token_from_info3(session_info,
 							  server_info->guest,
