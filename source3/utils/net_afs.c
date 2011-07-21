@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "utils/net_afs.h"
 #include "secrets.h"
 #include "system/filesys.h"
 
