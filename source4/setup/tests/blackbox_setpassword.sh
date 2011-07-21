@@ -17,7 +17,7 @@ samba_tool="./bin/samba-tool"
 rm -rf $PREFIX/simple-dc
 testit "simple-dc" $PYTHON $SRCDIR/source4/setup/provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc
 
-testit "newuser" $samba_tool user newuser --configfile=$PREFIX/simple-dc/etc/smb.conf testuser testp@ssw0Rd
+testit "newuser" $samba_tool newuser --configfile=$PREFIX/simple-dc/etc/smb.conf testuser testp@ssw0Rd
 
 testit "setpassword" $samba_tool user setpassword --configfile=$PREFIX/simple-dc/etc/smb.conf testuser --newpassword=testp@ssw0Rd
 
