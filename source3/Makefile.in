@@ -484,7 +484,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/file_id.o lib/idmap_cache.o \
 	  ../libcli/security/dom_sid.o ../libcli/security/security_descriptor.o \
 	  ../libcli/security/security_token.o ../libcli/security/util_sid.o \
-	  ../libcli/smb/util.o
+	  ../libcli/smb/util.o ../lib/util/idtree.o
 
 LIB_DUMMY_OBJ = lib/smbd_shim.o lib/dummyparam.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
@@ -593,7 +593,6 @@ LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
 
 CLDAP_OBJ = libads/cldap.o \
 	../libcli/cldap/cldap.o \
-	../lib/util/idtree.o \
 	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ)
 
 TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
