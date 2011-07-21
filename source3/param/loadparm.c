@@ -8147,6 +8147,7 @@ static void lp_save_defaults(void)
 			case P_INTEGER:
 			case P_OCTAL:
 			case P_ENUM:
+			case P_BYTES:
 				parm_table[i].def.ivalue =
 					*(int *)lp_parm_ptr(NULL, &parm_table[i]);
 				break;
