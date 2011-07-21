@@ -792,12 +792,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	struct sockaddr peeraddr;
-	socklen_t peeraddr_len;
-
-	struct sockaddr_in *peeraddr_in =
-		(struct sockaddr_in *)(void *)&peeraddr;
-
 	DEBUG(10,("cm_prepare_connection: connecting to DC %s for domain %s\n",
 		controller, domain->name ));
 
@@ -822,37 +816,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	(*cli)->timeout = 10000; 	/* 10 seconds */
 
 	(*cli)->use_kerberos = True;
-
-	peeraddr_len = sizeof(peeraddr);
-
-	if ((getpeername((*cli)->fd, &peeraddr, &peeraddr_len) != 0)) {
-		DEBUG(0,("cm_prepare_connection: getpeername failed with: %s\n",
-			strerror(errno)));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	if ((peeraddr_len != sizeof(struct sockaddr_in))
-#ifdef HAVE_IPV6
-	    && (peeraddr_len != sizeof(struct sockaddr_in6))
-#endif
-	    ) {
-		DEBUG(0,("cm_prepare_connection: got unexpected peeraddr len %d\n",
-			peeraddr_len));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	if ((peeraddr_in->sin_family != PF_INET)
-#ifdef HAVE_IPV6
-	    && (peeraddr_in->sin_family != PF_INET6)
-#endif
-	    ) {
-		DEBUG(0,("cm_prepare_connection: got unexpected family %d\n",
-			peeraddr_in->sin_family));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
 
 	result = cli_negprot(*cli);
 
