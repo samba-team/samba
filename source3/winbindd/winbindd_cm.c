@@ -1715,8 +1715,6 @@ void close_conns_after_fork(void)
 	struct winbindd_cli_state *cli_state;
 
 	for (domain = domain_list(); domain; domain = domain->next) {
-		struct cli_state *cli = domain->conn.cli;
-
 		/*
 		 * first close the low level SMB TCP connection
 		 * so that we don't generate any SMBclose
