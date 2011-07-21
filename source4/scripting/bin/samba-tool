@@ -26,44 +26,48 @@ from samba import netcmd
 from samba.netcmd import Command, CommandError, Option
 
 class MainCommand(Command):
-	"""Main class for samba tool commands"""
+    """Main class for samba tool commands"""
 
-	commands = {}
+    commands = {}
 
-	def _run(self, myname, command=None, *args):
-		if command in self.commands:
-			return self.commands[command]._run(command, *args)
+    def _run(self, myname, command=None, *args):
+        if command in self.commands:
+            return self.commands[command]._run(command, *args)
+        print "Usage: samba-tool <command> [options]"
+        print "Available commands:"
+        cmds = self.commands.keys()
+        cmds.sort()
+        for cmd in cmds:
+            print "    %-16s - %s" % (cmd, self.commands[cmd].description)
+        if command in [None]:
+            raise CommandError("You must specify a command")
+        if command in ['help', '-h', '--help']:
+            print "For more help on a specific command, please type: samba-tool <command> (-h|--help)"
+            return 0
+        raise CommandError("No such command '%s'" % command)
 
-		print "Syntax: %s <command> [options]" % (myname)
-		print "Available commands:"
-		for cmd in self.commands:
-			print "  %-12s - %s" % (cmd, self.commands[cmd].description)
-		if command in [None, 'help', '-h', '--help']:
-			return 0
-		raise CommandError("No such command '%s'" % command)
-
-	def usage(self, myname, command=None, *args):
-		if command is None or not command in self.commands:
-			print "Usage: %s (%s) [options]" % (myname,
-					" | ".join(self.commands.keys()))
-		else:
-			return self.commands[command].usage(*args)
+    def usage(self, myname, command=None, *args):
+        if command is None or not command in self.commands:
+            print "Usage: samba-tool %s (%s) [options]" % (myname,
+                    " | ".join(self.commands.keys()))
+        else:
+            return self.commands[command].usage(*args)
 
 
 class cmd_sambatool(MainCommand):
-	"""Samba Tool Commands"""
-	commands = netcmd.commands
+    """Samba Tool Commands"""
+    commands = netcmd.commands
 
 
 if __name__ == '__main__':
-	cmd = cmd_sambatool()
+    cmd = cmd_sambatool()
 
-	command = None
-	args = ()
+    command = None
+    args = ()
 
-	if len(sys.argv) > 1:
-		command = sys.argv[1]
-		if len(sys.argv) > 2:
-			args = sys.argv[2:]
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        if len(sys.argv) > 2:
+            args = sys.argv[2:]
 
 	cmd._run("samba-tool.py", command, *args)
