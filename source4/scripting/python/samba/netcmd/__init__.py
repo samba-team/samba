@@ -164,18 +164,11 @@ class SuperCommand(Command):
         for cmd in subcmds:
             print "    %-20s - %s" % (cmd, self.subcommands[cmd].description)
         if subcommand in [None]:
-            self.show_command_error("You must specify a subcommand")
-            return -1
-        if subcommand in ['-h', '--help']:
+            raise CommandError("You must specify a subcommand")
+        if subcommand in ['help', '-h', '--help']:
             print "For more help on a specific subcommand, please type: samba-tool %s <subcommand> (-h|--help)" % myname
             return 0
-        self.show_command_error("No such subcommand '%s'" % (subcommand))
-
-    def show_command_error(self, msg):
-        '''display a command error'''
-
-        print >>sys.stderr, "ERROR: %s" % (msg)
-        sys.exit(1)
+        raise CommandError("No such subcommand '%s'" % subcommand)
 
     def usage(self, myname, subcommand=None, *args):
         if subcommand is None or not subcommand in self.subcommands:
