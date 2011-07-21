@@ -105,11 +105,6 @@ const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *ans)
 	return ans->ntlmssp_state->domain;
 }
 
-const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *ans)
-{
-	return ans->ntlmssp_state->client.netbios_name;
-}
-
 const uint8_t *auth_ntlmssp_get_nt_hash(struct auth_ntlmssp_state *ans)
 {
 	return ans->ntlmssp_state->nt_hash;
