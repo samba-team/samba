@@ -4261,11 +4261,12 @@ static int cmd_vuid(void)
 	char *buf;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		d_printf("Current VUID is %d\n", cli->vuid);
+		d_printf("Current VUID is %d\n",
+			 cli_state_get_uid(cli));
 		return 0;
 	}
 
-	cli->vuid = atoi(buf);
+	cli_state_set_uid(cli, atoi(buf));
 	return 0;
 }
 
@@ -4303,7 +4304,7 @@ static int cmd_logon(void)
 		return -1;
 	}
 
-	d_printf("Current VUID is %d\n", cli->vuid);
+	d_printf("Current VUID is %d\n", cli_state_get_uid(cli));
 	return 0;
 }
 

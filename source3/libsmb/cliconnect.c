@@ -274,7 +274,7 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 	inbuf = (char *)in;
 	p = bytes;
 
-	cli->vuid = SVAL(inbuf, smb_uid);
+	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
@@ -502,7 +502,7 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	inbuf = (char *)in;
 	p = bytes;
 
-	cli->vuid = SVAL(inbuf, smb_uid);
+	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
@@ -709,7 +709,7 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 	inbuf = (char *)in;
 	p = bytes;
 
-	cli->vuid = SVAL(inbuf, smb_uid);
+	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
@@ -1066,7 +1066,7 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	inbuf = (char *)in;
 	p = bytes;
 
-	cli->vuid = SVAL(inbuf, smb_uid);
+	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
@@ -1305,7 +1305,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	TALLOC_FREE(state->buf);
 
 	state->inbuf = (char *)inbuf;
-	cli->vuid = SVAL(state->inbuf, smb_uid);
+	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	blob_length = SVAL(vwv+3, 0);
@@ -1385,7 +1385,7 @@ static NTSTATUS cli_sesssetup_blob_recv(struct tevent_req *req,
 	char *inbuf;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		state->cli->vuid = 0;
+		cli_state_set_uid(state->cli, UID_FIELD_INVALID);
 		return status;
 	}
 
@@ -1743,7 +1743,7 @@ static NTSTATUS cli_session_setup_ntlmssp_recv(struct tevent_req *req)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		state->cli->vuid = 0;
+		cli_state_set_uid(state->cli, UID_FIELD_INVALID);
 		return status;
 	}
 	return NT_STATUS_OK;
@@ -2126,7 +2126,7 @@ static void cli_ulogoff_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	state->cli->vuid = -1;
+	cli_state_set_uid(state->cli, UID_FIELD_INVALID);
 	tevent_req_done(req);
 }
 

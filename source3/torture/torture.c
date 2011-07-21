@@ -429,20 +429,20 @@ bool torture_init_connection(struct cli_state **pcli)
 
 bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 {
-	uint16 old_vuid = cli->vuid;
+	uint16_t old_vuid = cli_state_get_uid(cli);
 	fstring old_user_name;
 	size_t passlen = strlen(password);
 	NTSTATUS status;
 	bool ret;
 
 	fstrcpy(old_user_name, cli->user_name);
-	cli->vuid = 0;
+	cli_state_set_uid(cli, 0);
 	ret = NT_STATUS_IS_OK(cli_session_setup(cli, username,
 						password, passlen,
 						password, passlen,
 						workgroup));
-	*new_vuid = cli->vuid;
-	cli->vuid = old_vuid;
+	*new_vuid = cli_state_get_uid(cli);
+	cli_state_set_uid(cli, old_vuid);
 	status = cli_set_username(cli, old_user_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
@@ -1367,7 +1367,7 @@ static bool run_tcon_test(int dummy)
 	}
 
 	cnum1 = cli_state_get_tid(cli);
-	vuid1 = cli->vuid;
+	vuid1 = cli_state_get_uid(cli);
 
 	status = cli_writeall(cli, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1386,7 +1386,7 @@ static bool run_tcon_test(int dummy)
 
 	cnum2 = cli_state_get_tid(cli);
 	cnum3 = MAX(cnum1, cnum2) + 1; /* any invalid number */
-	vuid2 = cli->vuid + 1;
+	vuid2 = cli_state_get_uid(cli) + 1;
 
 	/* try a write with the wrong tid */
 	cli_state_set_tid(cli, cnum2);
@@ -1414,7 +1414,7 @@ static bool run_tcon_test(int dummy)
 	}
 
 	/* try a write with an invalid vuid */
-	cli->vuid = vuid2;
+	cli_state_set_uid(cli, vuid2);
 	cli_state_set_tid(cli, cnum1);
 
 	status = cli_writeall(cli, fnum1, 0, (uint8_t *)buf, 130, 4, NULL);
@@ -1427,7 +1427,7 @@ static bool run_tcon_test(int dummy)
 	}
 
 	cli_state_set_tid(cli, cnum1);
-	cli->vuid = vuid1;
+	cli_state_set_uid(cli, vuid1);
 
 	status = cli_close(cli, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2734,7 +2734,7 @@ static bool run_fdpasstest(int dummy)
 		return False;
 	}
 
-	cli2->vuid = cli1->vuid;
+	cli_state_set_uid(cli2, cli_state_get_uid(cli1));
 	cli_state_set_tid(cli2, cli_state_get_tid(cli1));
 	cli_setpid(cli2, cli_getpid(cli1));
 
@@ -2800,8 +2800,8 @@ static bool run_fdsesstest(int dummy)
 		return False;
 	}
 
-	saved_vuid = cli->vuid;
-	cli->vuid = new_vuid;
+	saved_vuid = cli_state_get_uid(cli);
+	cli_state_set_uid(cli, new_vuid);
 
 	if (cli_read_old(cli, fnum1, buf, 0, 13) == 13) {
 		printf("read succeeded with different vuid! nasty security hole [%s]\n",
@@ -2819,7 +2819,7 @@ static bool run_fdsesstest(int dummy)
 		ret = False;
 	}
 
-	cli->vuid = saved_vuid;
+	cli_state_set_uid(cli, saved_vuid);
 
 	/* Try with same vuid, different cnum. */
 	cli_state_set_tid(cli, new_cnum);
@@ -6358,7 +6358,7 @@ static bool run_sesssetup_bench(int dummy)
 			return false;
 		}
 
-		d_printf("\r%d   ", (int)c->vuid);
+		d_printf("\r%d   ", (int)cli_state_get_uid(c));
 
 		status = cli_ulogoff(c);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6366,7 +6366,6 @@ static bool run_sesssetup_bench(int dummy)
 				 __location__, nt_errstr(status));
 			return false;
 		}
-		c->vuid = 0;
 	}
 
 	return true;
@@ -7099,7 +7098,7 @@ static bool run_uid_regression_test(int dummy)
 	cli_sockopt(cli, sockops);
 
 	/* Ok - now save then logoff our current user. */
-	old_vuid = cli->vuid;
+	old_vuid = cli_state_get_uid(cli);
 
 	status = cli_ulogoff(cli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -7109,7 +7108,7 @@ static bool run_uid_regression_test(int dummy)
 		goto out;
 	}
 
-	cli->vuid = old_vuid;
+	cli_state_set_uid(cli, old_vuid);
 
 	/* Try an operation. */
 	status = cli_mkdir(cli, "\\uid_reg_test");
@@ -7130,7 +7129,7 @@ static bool run_uid_regression_test(int dummy)
 	old_cnum = cli_state_get_tid(cli);
 
 	/* Now try a SMBtdis with the invald vuid set to zero. */
-	cli->vuid = 0;
+	cli_state_set_uid(cli, 0);
 
 	/* This should succeed. */
 	status = cli_tdis(cli);
@@ -7143,7 +7142,7 @@ static bool run_uid_regression_test(int dummy)
 		goto out;
 	}
 
-	cli->vuid = old_vuid;
+	cli_state_set_uid(cli, old_vuid);
 	cli_state_set_tid(cli, old_cnum);
 
 	/* This should fail. */

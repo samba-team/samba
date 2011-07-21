@@ -52,7 +52,6 @@ struct cli_state {
 	 */
         struct cli_state *prev, *next;
 	int fd;
-	uint16 vuid;
 	int protocol;
 	int sec_mode;
 	int rap_error;
@@ -135,6 +134,7 @@ struct cli_state {
 		uint16_t pid;
 		uint16_t vc_num;
 		uint16_t tid;
+		uint16_t uid;
 	} smb1;
 
 	struct {
