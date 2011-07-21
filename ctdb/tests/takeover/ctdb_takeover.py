@@ -311,33 +311,6 @@ class Cluster(object):
 
         return (ip_moves, grat_ip_moves, details)
                     
-    def find_least_loaded_node(self, ip):
-        """Just like find_takeover_node but doesn't care about health."""
-        pnn = -1
-        min = 0
-        for (i, n) in enumerate(self.nodes):
-            if not n.can_node_serve_ip(ip):
-                continue
-
-            num = n.node_ip_coverage()
-
-            if (pnn == -1):
-                pnn = i
-                min = num
-            else:
-                if num < min:
-                    pnn = i
-                    min = num
-
-        if pnn == -1:
-            verbose_print("Could not find node to take over public address %s" % ip)
-            return False
-
-        self.nodes[pnn].current_addresses.add(ip)
-
-        verbose_print("%s -> %d" % (ip, pnn))
-        return True
-
     def find_takeover_node(self, ip):
 
         pnn = -1
