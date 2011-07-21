@@ -861,11 +861,11 @@ static struct tevent_req *cli_session_setup_nt1_send(
 			/*
 			 * note that the 'workgroup' here is a best
 			 * guess - we don't know the server's domain
-			 * at this point.  The 'server name' is also
-			 * dodgy...
+			 * at this point. Windows clients also don't
+			 * use hostname...
 			 */
 			names_blob = NTLMv2_generate_names_blob(
-				NULL, cli->called.name, workgroup);
+				NULL, NULL, workgroup);
 
 			if (tevent_req_nomem(names_blob.data, req)) {
 				return tevent_req_post(req, ev);
