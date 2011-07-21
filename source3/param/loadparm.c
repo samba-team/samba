@@ -7392,6 +7392,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
+		case P_CMDLIST:
 			TALLOC_FREE(*((char ***)parm_ptr));
 			*(char ***)parm_ptr = str_list_make_v3(
 				NULL, pszParmValue, NULL);
