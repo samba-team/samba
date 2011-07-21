@@ -45,7 +45,6 @@ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
 }
 
 NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
-				     TALLOC_CTX *sig_mem_ctx,
 				     const uint8_t *data, size_t length,
 				     const uint8_t *whole_pdu, size_t pdu_length,
 				     const DATA_BLOB *sig)
@@ -87,7 +86,6 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
   wrappers for the ntlmssp_*() functions
 */
 NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
-				      TALLOC_CTX *sig_mem_ctx,
 				      uint8_t *data, size_t length,
 				      const uint8_t *whole_pdu, size_t pdu_length,
 				      const DATA_BLOB *sig)

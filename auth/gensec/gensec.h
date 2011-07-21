@@ -104,11 +104,11 @@ struct gensec_security_ops {
 	size_t   (*sig_size)(struct gensec_security *gensec_security, size_t data_size);
 	size_t   (*max_input_size)(struct gensec_security *gensec_security);
 	size_t   (*max_wrapped_size)(struct gensec_security *gensec_security);
-	NTSTATUS (*check_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+	NTSTATUS (*check_packet)(struct gensec_security *gensec_security,
 				 const uint8_t *data, size_t length,
 				 const uint8_t *whole_pdu, size_t pdu_length,
 				 const DATA_BLOB *sig);
-	NTSTATUS (*unseal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
+	NTSTATUS (*unseal_packet)(struct gensec_security *gensec_security,
 				  uint8_t *data, size_t length,
 				  const uint8_t *whole_pdu, size_t pdu_length,
 				  const DATA_BLOB *sig);
@@ -241,12 +241,10 @@ struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_se
 NTSTATUS gensec_init(void);
 size_t gensec_max_input_size(struct gensec_security *gensec_security);
 NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
-			      TALLOC_CTX *mem_ctx,
 			      uint8_t *data, size_t length,
 			      const uint8_t *whole_pdu, size_t pdu_length,
 			      const DATA_BLOB *sig);
 NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
-			     TALLOC_CTX *mem_ctx,
 			     const uint8_t *data, size_t length,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     const DATA_BLOB *sig);

@@ -31,7 +31,6 @@
   wrappers for the gensec function pointers
 */
 _PUBLIC_ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
-			      TALLOC_CTX *mem_ctx,
 			      uint8_t *data, size_t length,
 			      const uint8_t *whole_pdu, size_t pdu_length,
 			      const DATA_BLOB *sig)
@@ -43,14 +42,13 @@ _PUBLIC_ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return gensec_security->ops->unseal_packet(gensec_security, mem_ctx,
+	return gensec_security->ops->unseal_packet(gensec_security,
 						   data, length,
 						   whole_pdu, pdu_length,
 						   sig);
 }
 
 _PUBLIC_ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
-			     TALLOC_CTX *mem_ctx,
 			     const uint8_t *data, size_t length,
 			     const uint8_t *whole_pdu, size_t pdu_length,
 			     const DATA_BLOB *sig)
@@ -62,7 +60,7 @@ _PUBLIC_ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return gensec_security->ops->check_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
+	return gensec_security->ops->check_packet(gensec_security, data, length, whole_pdu, pdu_length, sig);
 }
 
 _PUBLIC_ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,

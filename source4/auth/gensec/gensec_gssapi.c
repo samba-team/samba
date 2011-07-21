@@ -1038,7 +1038,6 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 }
 
 static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_security, 
-					    TALLOC_CTX *mem_ctx, 
 					    uint8_t *data, size_t length, 
 					    const uint8_t *whole_pdu, size_t pdu_length,
 					    const DATA_BLOB *sig)
@@ -1053,7 +1052,7 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 
 	dump_data_pw("gensec_gssapi_unseal_packet: sig\n", sig->data, sig->length);
 
-	in = data_blob_talloc(mem_ctx, NULL, sig->length + length);
+	in = data_blob_talloc(gensec_security, NULL, sig->length + length);
 
 	memcpy(in.data, sig->data, sig->length);
 	memcpy(in.data + sig->length, data, length);
@@ -1067,9 +1066,12 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 			      &output_token, 
 			      &conf_state,
 			      &qop_state);
+	talloc_free(in.data);
 	if (GSS_ERROR(maj_stat)) {
+		char *error_string = gssapi_error_string(NULL, maj_stat, min_stat, gensec_gssapi_state->gss_oid);
 		DEBUG(1, ("gensec_gssapi_unseal_packet: GSS UnWrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			  error_string));
+		talloc_free(error_string);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1128,7 +1130,6 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 }
 
 static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_security, 
-					   TALLOC_CTX *mem_ctx, 
 					   const uint8_t *data, size_t length, 
 					   const uint8_t *whole_pdu, size_t pdu_length, 
 					   const DATA_BLOB *sig)
@@ -1159,8 +1160,10 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 			      &input_token,
 			      &qop_state);
 	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS VerifyMic failed: %s\n",
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+		char *error_string = gssapi_error_string(NULL, maj_stat, min_stat, gensec_gssapi_state->gss_oid);
+		DEBUG(1, ("GSS VerifyMic failed: %s\n", error_string));
+		talloc_free(error_string);
+
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

@@ -553,7 +553,7 @@ static NTSTATUS get_schannel_auth_footer(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
 		return netsec_incoming_packet(auth_state,
-						mem_ctx, true,
+						true,
 						data->data,
 						data->length,
 						auth_token);
@@ -561,7 +561,7 @@ static NTSTATUS get_schannel_auth_footer(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
 		return netsec_incoming_packet(auth_state,
-						mem_ctx, false,
+						false,
 						data->data,
 						data->length,
 						auth_token);

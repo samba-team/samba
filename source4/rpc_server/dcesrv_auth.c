@@ -328,7 +328,6 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(dce_conn->auth_state.gensec_security,
-					      call,
 					      full_packet->data + hdr_size,
 					      pkt->u.request.stub_and_verifier.length, 
 					      full_packet->data,
@@ -341,7 +340,6 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = gensec_check_packet(dce_conn->auth_state.gensec_security,
-					     call,
 					     pkt->u.request.stub_and_verifier.data, 
 					     pkt->u.request.stub_and_verifier.length,
 					     full_packet->data,

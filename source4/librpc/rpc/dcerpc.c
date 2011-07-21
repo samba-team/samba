@@ -708,7 +708,6 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(c->security_state.generic_state, 
-					      mem_ctx, 
 					      raw_packet->data + DCERPC_REQUEST_LENGTH,
 					      pkt->u.response.stub_and_verifier.length, 
 					      raw_packet->data,
@@ -721,7 +720,6 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 		
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = gensec_check_packet(c->security_state.generic_state, 
-					     mem_ctx, 
 					     pkt->u.response.stub_and_verifier.data, 
 					     pkt->u.response.stub_and_verifier.length, 
 					     raw_packet->data,

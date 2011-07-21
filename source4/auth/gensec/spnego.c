@@ -96,7 +96,6 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
   wrappers for the spnego_*() functions
 */
 static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_security, 
-					    TALLOC_CTX *mem_ctx, 
 					    uint8_t *data, size_t length, 
 					    const uint8_t *whole_pdu, size_t pdu_length, 
 					    const DATA_BLOB *sig)
@@ -109,14 +108,12 @@ static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_secur
 	}
 	
 	return gensec_unseal_packet(spnego_state->sub_sec_security, 
-				    mem_ctx, 
 				    data, length, 
 				    whole_pdu, pdu_length,
 				    sig); 
 }
 
 static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_security, 
-					   TALLOC_CTX *mem_ctx, 
 					   const uint8_t *data, size_t length, 
 					   const uint8_t *whole_pdu, size_t pdu_length, 
 					   const DATA_BLOB *sig)
@@ -129,7 +126,6 @@ static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_securi
 	}
 	
 	return gensec_check_packet(spnego_state->sub_sec_security, 
-				   mem_ctx, 
 				   data, length, 
 				   whole_pdu, pdu_length,
 				   sig);
@@ -922,7 +918,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (NT_STATUS_IS_OK(nt_status) && spnego.negTokenTarg.mechListMIC.length > 0) {
 			new_spnego = true;
 			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
-							out_mem_ctx,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
 							spnego_state->mech_types.data,
@@ -1029,7 +1024,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			}
 			if (NT_STATUS_IS_OK(nt_status) && spnego.negTokenTarg.mechListMIC.length > 0) {
 				nt_status = gensec_check_packet(spnego_state->sub_sec_security,
-								out_mem_ctx,
 								spnego_state->mech_types.data,
 								spnego_state->mech_types.length,
 								spnego_state->mech_types.data,

@@ -78,14 +78,14 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 				   "data mismatch");
 
 	torture_assert_ntstatus_equal(tctx, 
-				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+				      gensec_ntlmssp_check_packet(gensec_security,
 								  data.data, data.length, data.data, data.length, &sig),
 				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet (should fail, wrong end)");
 
 	ntlmssp_state->session_key = data_blob(NULL, 0);
 
 	torture_assert_ntstatus_equal(tctx, 
-				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+				      gensec_ntlmssp_check_packet(gensec_security,
 								  data.data, data.length, data.data, data.length, &sig),
 				      NT_STATUS_NO_USER_SESSION_KEY, "Check of just signed packet without a session key should fail");
 
@@ -135,14 +135,14 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 				   "data mismatch");
 
 	torture_assert_ntstatus_equal(tctx, 
-				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+				      gensec_ntlmssp_check_packet(gensec_security,
 								  data.data, data.length, data.data, data.length, &sig),
 				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet (should fail, wrong end)");
 
 	sig.length /= 2;
 
 	torture_assert_ntstatus_equal(tctx, 
-				      gensec_ntlmssp_check_packet(gensec_security, gensec_security,
+				      gensec_ntlmssp_check_packet(gensec_security,
 								  data.data, data.length, data.data, data.length, &sig),
 				      NT_STATUS_ACCESS_DENIED, "Check of just signed packet with short sig");
 

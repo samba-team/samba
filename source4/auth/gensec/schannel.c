@@ -290,7 +290,6 @@ static bool schannel_have_feature(struct gensec_security *gensec_security,
   unseal a packet
 */
 static NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
-				       TALLOC_CTX *mem_ctx,
 				       uint8_t *data, size_t length,
 				       const uint8_t *whole_pdu, size_t pdu_length,
 				       const DATA_BLOB *sig)
@@ -299,7 +298,7 @@ static NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 		talloc_get_type(gensec_security->private_data,
 				struct schannel_state);
 
-	return netsec_incoming_packet(state, mem_ctx, true,
+	return netsec_incoming_packet(state, true,
 				      discard_const_p(uint8_t, data),
 				      length, sig);
 }
@@ -308,7 +307,6 @@ static NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
   check the signature on a packet
 */
 static NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
-				      TALLOC_CTX *mem_ctx,
 				      const uint8_t *data, size_t length,
 				      const uint8_t *whole_pdu, size_t pdu_length,
 				      const DATA_BLOB *sig)
@@ -317,7 +315,7 @@ static NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 		talloc_get_type(gensec_security->private_data,
 				struct schannel_state);
 
-	return netsec_incoming_packet(state, mem_ctx, false,
+	return netsec_incoming_packet(state, false,
 				      discard_const_p(uint8_t, data),
 				      length, sig);
 }
