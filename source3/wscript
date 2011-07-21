@@ -650,7 +650,7 @@ msg.msg_acctrightslen = sizeof(fd);
 
         conf.CHECK_FUNCS_IN('_et_list', 'com_err')
         conf.CHECK_FUNCS_IN('krb5_encrypt_data', 'k5crypto')
-        conf.CHECK_FUNCS_IN('crypto', 'des_set_key')
+	conf.CHECK_FUNCS_IN('des_set_key','crypto')
         conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
         conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
         if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi') or \
