@@ -312,7 +312,7 @@ sub setup_plugin_s4_dc($$$$)
 	chmod 0777, "$prefix/share";
 
 	$self->check_or_start($ret,
-			      "no", "yes", "yes");
+			      "no", "no", "yes");
 
 	$self->wait_for_start($ret);
 

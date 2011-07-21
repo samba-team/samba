@@ -1217,7 +1217,7 @@ sub provision_plugin_s4_dc($$)
 	my ($self, $prefix) = @_;
 
 	my $extra_smbconf_options = "
-server services = -winbind, -smb
+server services = -smb
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";
