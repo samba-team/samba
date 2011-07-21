@@ -7731,6 +7731,7 @@ static bool is_default(int i)
 		case P_INTEGER:
 		case P_OCTAL:
 		case P_ENUM:
+		case P_BYTES:
 			return parm_table[i].def.ivalue ==
 				*(int *)lp_parm_ptr(NULL, 
 						    &parm_table[i]);
