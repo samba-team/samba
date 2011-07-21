@@ -21,6 +21,8 @@
 
 #include "../auth/common_auth.h"
 
+struct gensec_security;
+
 struct extra_auth_info {
 	struct dom_sid user_sid;
 	struct dom_sid pgid_sid;
@@ -93,6 +95,9 @@ struct auth_context {
 					const struct auth_usersupplied_info *user_info, 
 					struct auth_serversupplied_info **server_info);
 	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);
+
+	NTSTATUS (*start_gensec)(TALLOC_CTX *mem_ctx, const char *oid_string,
+				 struct gensec_security **gensec_context);
 };
 
 typedef struct auth_methods
@@ -113,6 +118,10 @@ typedef struct auth_methods
 	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
 			      void **my_private_data, 
 			      TALLOC_CTX *mem_ctx);
+
+	/* Optional method allowing this module to provide a way to get a gensec context */
+	NTSTATUS (*start_gensec)(TALLOC_CTX *mem_ctx, const char *oid_string,
+				 struct gensec_security **gensec_context);
 
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
