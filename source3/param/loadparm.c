@@ -7548,6 +7548,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_INTEGER:
+		case P_BYTES:
 			fprintf(f, "%d", *(int *)ptr);
 			break;
 
