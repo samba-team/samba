@@ -56,9 +56,6 @@ def process_args(extra_options=[]):
     parser.add_option("-v", "--verbose",
                       action="count", dest="verbose", default=0,
                       help="print information and actions taken to stdout")
-    parser.add_option("--hack",
-                      action="store", type="int", dest="hack", default=0,
-                      help="apply a hack (see the code!!!)")
     parser.add_option("-r", "--retries",
                       action="store", type="int", dest="retries", default=5,
                       help="number of retry loops for rebalancing [default: %default]")
@@ -385,22 +382,11 @@ class Cluster(object):
             # Remap everything.
             addr_list = sorted(list(self.all_public_ips))
             for (i, ip) in enumerate(addr_list):
-                if options.hack == 1:
-                    self.quietly_remove_ip(ip)
-                    self.find_least_loaded_node(ip)
-                elif options.hack == 2:
-                    pnn = i % len(self.nodes)
-                    if ip in self.nodes[pnn].public_addresses:
-                        self.quietly_remove_ip(ip)
-                        # Add addresses to new node.
-                        self.nodes[pnn].current_addresses.add(ip)
-                        verbose_print("%s -> %d" % (ip, pnn))
-                else:
-                    self.quietly_remove_ip(ip)
-                    # Add addresses to new node.
-                    pnn = i % len(self.nodes)
-                    self.nodes[pnn].current_addresses.add(ip)
-                    verbose_print("%s -> %d" % (ip, pnn))
+                self.quietly_remove_ip(ip)
+                # Add addresses to new node.
+                pnn = i % len(self.nodes)
+                self.nodes[pnn].current_addresses.add(ip)
+                verbose_print("%s -> %d" % (ip, pnn))
 
         # Remove public addresses from unhealthy nodes.
         for (pnn, n) in enumerate(self.nodes):
