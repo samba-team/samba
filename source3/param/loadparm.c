@@ -7711,6 +7711,7 @@ static bool is_default(int i)
 		return false;
 	switch (parm_table[i].type) {
 		case P_LIST:
+		case P_CMDLIST:
 			return str_list_equal((const char **)parm_table[i].def.lvalue, 
 					      *(const char ***)lp_parm_ptr(NULL, 
 									   &parm_table[i]));
