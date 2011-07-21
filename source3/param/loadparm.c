@@ -8128,6 +8128,7 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
+			case P_CMDLIST:
 				parm_table[i].def.lvalue = str_list_copy(
 					NULL, *(const char ***)lp_parm_ptr(NULL, &parm_table[i]));
 				break;
