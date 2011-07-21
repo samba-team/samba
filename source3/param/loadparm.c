@@ -7526,6 +7526,8 @@ bool lp_set_option(const char *option)
 
 static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
+	/* For the seperation of lists values that we print below */
+	const char *list_sep = ", ";
 	int i;
 	switch (p->type)
 	{
@@ -7563,15 +7565,23 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 		}
 
+		case P_CMDLIST:
+			list_sep = " ";
+			/* fall through */
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
 				for (; *list; list++) {
 					/* surround strings with whitespace in double quotes */
-					if ( strchr_m( *list, ' ' ) )
-						fprintf(f, "\"%s\"%s", *list, ((*(list+1))?", ":""));
-					else
-						fprintf(f, "%s%s", *list, ((*(list+1))?", ":""));
+					if (*(list+1) == NULL) {
+						/* last item, no extra separator */
+						list_sep = "";
+					}
+					if ( strchr_m( *list, ' ' ) ) {
+						fprintf(f, "\"%s\"%s", *list, list_sep);
+					} else {
+						fprintf(f, "%s%s", *list, list_sep);
+					}
 				}
 			}
 			break;
