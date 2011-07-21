@@ -161,11 +161,16 @@ NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char 
  Set the signing state (used from the command line).
 ****************************************************************************/
 
-struct cli_state *cli_initialise_ex(int signing_state)
+struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
+				   int fd,
+				   const char *desthost,
+				   int signing_state)
 {
 	struct cli_state *cli = NULL;
 	bool allow_smb_signing = false;
 	bool mandatory_signing = false;
+	size_t length;
+	int ret;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -173,7 +178,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 		return NULL;
 	}
 
-	cli = talloc_zero(NULL, struct cli_state);
+	cli = talloc_zero(mem_ctx, struct cli_state);
 	if (!cli) {
 		return NULL;
 	}
@@ -234,7 +239,27 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	}
 	cli->pending = NULL;
 
-	cli->initialised = 1;
+	cli->desthost = talloc_strdup(cli, desthost);
+	if (cli->desthost == NULL) {
+		goto error;
+	}
+
+	cli->fd = fd;
+
+	length = sizeof(cli->src_ss);
+	ret = getsockname(fd,
+			  (struct sockaddr *)(void *)&cli->src_ss,
+			  &length);
+	if (ret == -1) {
+		goto error;
+	}
+	length = sizeof(cli->dest_ss);
+	ret = getpeername(fd,
+			  (struct sockaddr *)(void *)&cli->dest_ss,
+			  &length);
+	if (ret == -1) {
+		goto error;
+	}
 
 	cli->smb1.mid = 1;
 	cli->smb1.pid = (uint16_t)sys_getpid();
@@ -242,6 +267,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->smb1.tid = UINT16_MAX;
 	cli->smb1.uid = UID_FIELD_INVALID;
 
+	cli->initialised = 1;
 	return cli;
 
         /* Clean up after malloc() error */
@@ -250,11 +276,6 @@ struct cli_state *cli_initialise_ex(int signing_state)
 
 	TALLOC_FREE(cli);
         return NULL;
-}
-
-struct cli_state *cli_initialise(void)
-{
-	return cli_initialise_ex(Undefined);
 }
 
 bool cli_state_encryption_on(struct cli_state *cli)

@@ -2849,8 +2849,6 @@ NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
 	int fd = -1;
 	char *desthost;
 	char *p;
-	socklen_t length;
-	int ret;
 
 	desthost = talloc_strdup(talloc_tos(), host);
 	if (desthost == NULL) {
@@ -2866,34 +2864,14 @@ NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
 		}
 	}
 
-	cli = cli_initialise_ex(signing_state);
-	if (cli == NULL) {
-		goto fail;
-	}
-	cli->desthost = talloc_move(cli, &desthost);
-
 	status = cli_connect_sock(host, name_type, pss, myname, port, 20, &fd,
 				  &port);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_shutdown(cli);
 		goto fail;
 	}
-	cli->fd = fd;
 
-	length = sizeof(cli->src_ss);
-	ret = getsockname(fd, (struct sockaddr *)(void *)&cli->src_ss,
-			  &length);
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		cli_shutdown(cli);
-		goto fail;
-	}
-	length = sizeof(cli->dest_ss);
-	ret = getpeername(fd, (struct sockaddr *)(void *)&cli->dest_ss,
-			  &length);
-	if (ret == -1) {
-		status = map_nt_error_from_unix(errno);
-		cli_shutdown(cli);
+	cli = cli_state_create(NULL, fd, desthost, signing_state);
+	if (cli == NULL) {
 		goto fail;
 	}
 

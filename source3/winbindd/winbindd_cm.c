@@ -812,19 +812,14 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if ((*cli = cli_initialise()) == NULL) {
+	*cli = cli_state_create(NULL, sockfd, controller, Undefined);
+	if (*cli == NULL) {
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	(*cli)->timeout = 10000; 	/* 10 seconds */
-	(*cli)->fd = sockfd;
-	(*cli)->desthost = talloc_strdup((*cli), controller);
-	if ((*cli)->desthost == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
 
 	(*cli)->use_kerberos = True;
 
