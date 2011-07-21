@@ -52,6 +52,7 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
 static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
+				    struct messaging_context *msg_ctx,
 				    const char *pipe_name,
 				    enum dcerpc_transport_t transport,
 				    bool ncalrpc_as_system,
@@ -79,6 +80,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		*perrno = ENOMEM;
 		return -1;
 	}
+	p->msg_ctx = msg_ctx;
 
 	data_blob_free(&p->in_data.data);
 	data_blob_free(&p->in_data.pdu);
@@ -420,6 +422,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	}
 
 	ret = make_server_pipes_struct(npc,
+				       npc->msg_ctx,
 				       npc->pipe_name, NCACN_NP,
 					false, npc->server, npc->client, npc->session_info,
 					&npc->p, &error);
@@ -428,7 +431,6 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 			  strerror(error)));
 		goto fail;
 	}
-	npc->p->msg_ctx = npc->msg_ctx;
 
 	npc->write_queue = tevent_queue_create(npc, "np_server_write_queue");
 	if (!npc->write_queue) {
@@ -1110,6 +1112,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	}
 
 	rc = make_server_pipes_struct(ncacn_conn,
+				      ncacn_conn->msg_ctx,
 				      pipe_name,
 				      ncacn_conn->transport,
 				      system_user,
