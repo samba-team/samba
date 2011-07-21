@@ -422,6 +422,10 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	ret = ctdb_ltdb_fetch(ctdb_db, call->key, &header, ctdb_db, &data);
 
+	if ((call->flags & CTDB_IMMEDIATE_MIGRATION) && (header.flags & CTDB_REC_RO_HAVE_DELEGATIONS)) {
+		ret = -1;
+	}
+
 	if (ret == 0 && header.dmaster == ctdb->pnn) {
 		state = ctdb_client_call_local_send(ctdb_db, call, &header, &data);
 		talloc_free(data.dptr);
@@ -764,6 +768,21 @@ again:
 		goto again;
 	}
 
+	/* if this is a request for read/write and we have delegations
+	   we have to revoke all delegations first
+	*/
+	if ((read_only == 0) 
+	&&  (h->header.dmaster == ctdb_db->ctdb->pnn)
+	&&  (h->header.flags & CTDB_REC_RO_HAVE_DELEGATIONS)) {
+		ctdb_ltdb_unlock(ctdb_db, key);
+		ret = ctdb_client_force_migration(ctdb_db, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_DEBUG,("ctdb_fetch_readonly_lock: force_migration failed\n"));
+			talloc_free(h);
+			return NULL;
+		}
+		goto again;
+	}
 
 	/* if we are dmaster, just return the handle */
 	if (h->header.dmaster == ctdb_db->ctdb->pnn) {
