@@ -82,6 +82,7 @@ class Command(object):
 
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
+        sys.exit(1)
 
     outf = sys.stdout
 
@@ -171,7 +172,7 @@ class SuperCommand(Command):
         '''display a command error'''
 
         print >>sys.stderr, "ERROR: %s" % (msg)
-        return -1
+        sys.exit(1)
 
     def usage(self, myname, subcommand=None, *args):
         if subcommand is None or not subcommand in self.subcommands:
