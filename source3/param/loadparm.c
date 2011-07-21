@@ -7391,6 +7391,21 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			}
 			break;
 
+		case P_BYTES:
+		{
+			uint64_t val;
+			if (conv_str_size_error(pszParmValue, &val)) {
+				if (val <= INT_MAX) {
+					*(int *)parm_ptr = (int)val;
+					break;
+				}
+			}
+
+			DEBUG(0,("lp_do_parameter(%s): value is not "
+			    "a valid size specifier!\n", pszParmValue));
+			return false;
+		}
+
 		case P_LIST:
 		case P_CMDLIST:
 			TALLOC_FREE(*((char ***)parm_ptr));
