@@ -6,3 +6,5 @@ bld.SAMBA_LIBRARY('auth_sam_reply',
                   autoproto='auth_sam_reply.h',
                   private_library=True
                   )
+
+bld.RECURSE('gensec')

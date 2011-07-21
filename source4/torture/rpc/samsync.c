@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "torture/rpc/torture_rpc.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/schannel.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/samsync/samsync.h"
 #include "libcli/security/security.h"

@@ -26,6 +26,7 @@
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
+#include "auth/gensec/schannel.h"
 #include "../libcli/auth/schannel.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"

@@ -35,6 +35,7 @@
 #include "auth/kerberos/kerberos_credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
+#include "auth/gensec/gensec_toplevel_proto.h"
 #include "param/param.h"
 #include "auth/auth_sam_reply.h"
 #include "lib/util/util_net.h"

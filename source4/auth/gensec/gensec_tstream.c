@@ -27,7 +27,7 @@
 #include "auth/gensec/gensec_tstream.h"
 #include "lib/tsocket/tsocket.h"
 #include "lib/tsocket/tsocket_internal.h"
-
+#include "auth/gensec/gensec_toplevel_proto.h"
 
 static const struct tstream_context_ops tstream_gensec_ops;
 

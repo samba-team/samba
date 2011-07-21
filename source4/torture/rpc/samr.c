@@ -35,6 +35,7 @@
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 #include "auth/gensec/gensec.h"
+#include "auth/gensec/schannel.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
 
