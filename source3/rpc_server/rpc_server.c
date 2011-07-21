@@ -66,7 +66,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	int ret;
 
-	ret = make_base_pipes_struct(mem_ctx, NULL, pipe_name,
+	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
 				     transport, RPC_LITTLE_ENDIAN,
 				     ncalrpc_as_system,
 				     remote_address, local_address, &p);
