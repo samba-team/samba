@@ -74,7 +74,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		*perrno = ret;
 		return -1;
 	}
-	p->msg_ctx = msg_ctx;
 
 	if (session_info->unix_token && session_info->unix_info && session_info->security_token) {
 		/* Don't call create_local_token(), we already have the full details here */
