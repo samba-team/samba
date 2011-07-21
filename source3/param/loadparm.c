@@ -8965,7 +8965,7 @@ static bool lp_load_ex(const char *pszFname,
 		       bool add_ipc,
 		       bool initialize_globals,
 		       bool allow_include_registry,
-		       bool allow_registry_shares)
+		       bool load_all_shares)
 {
 	char *n2 = NULL;
 	bool bRetval;
@@ -9032,7 +9032,7 @@ static bool lp_load_ex(const char *pszFname,
 			return lp_load_ex(pszFname, global_only, save_defaults,
 					  add_ipc, initialize_globals,
 					  allow_include_registry,
-					  allow_registry_shares);
+					  load_all_shares);
 		}
 	} else if (lp_config_backend_is_registry()) {
 		bRetval = process_registry_globals();
@@ -9043,7 +9043,7 @@ static bool lp_load_ex(const char *pszFname,
 	}
 
 	if (bRetval && lp_registry_shares()) {
-		if (allow_registry_shares) {
+		if (load_all_shares) {
 			bRetval = process_registry_shares();
 		} else {
 			bRetval = reload_registry_shares();
@@ -9104,7 +9104,7 @@ bool lp_load(const char *pszFname,
 			  add_ipc,
 			  initialize_globals,
 			  true,   /* allow_include_registry */
-			  false); /* allow_registry_shares*/
+			  false); /* load_all_shares*/
 }
 
 bool lp_load_initial_only(const char *pszFname)
@@ -9115,7 +9115,7 @@ bool lp_load_initial_only(const char *pszFname)
 			  false,  /* add_ipc */
 			  true,   /* initialize_globals */
 			  false,  /* allow_include_registry */
-			  false); /* allow_registry_shares*/
+			  false); /* load_all_shares*/
 }
 
 bool lp_load_with_registry_shares(const char *pszFname,
@@ -9130,7 +9130,7 @@ bool lp_load_with_registry_shares(const char *pszFname,
 			  add_ipc,
 			  initialize_globals,
 			  true,  /* allow_include_registry */
-			  true); /* allow_registry_shares*/
+			  true); /* load_all_shares*/
 }
 
 /***************************************************************************
