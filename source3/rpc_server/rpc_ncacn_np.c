@@ -675,7 +675,12 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	session_info_t->session_info = session_info;
+	session_info_t->session_info = copy_session_info(session_info_t,
+							 session_info);
+	if (session_info_t->session_info == NULL) {
+		DEBUG(0, ("copy_session_info failed\n"));
+		goto fail;
+	}
 
 	become_root();
 	subreq = tstream_npa_connect_send(talloc_tos(), ev,
