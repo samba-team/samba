@@ -4951,7 +4951,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bWinbindTrustedDomainsOnly = false;
 	Globals.bWinbindNestedGroups = true;
 	Globals.winbind_expand_groups = 1;
-	Globals.szWinbindNssInfo = str_list_make_v3(NULL, "template", NULL);
+	Globals.szWinbindNssInfo = (const char **)str_list_make_v3(NULL, "template", NULL);
 	Globals.bWinbindRefreshTickets = false;
 	Globals.bWinbindOfflineLogon = false;
 
