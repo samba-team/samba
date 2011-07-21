@@ -232,7 +232,7 @@ class Cluster(object):
             verbose_begin("EVENT %d" % i)
             verbose_end()
             self.do_something_random()
-            if self.recover() and options.exit > 0:
+            if self.recover() and options.exit:
                 break
             i += 1
 
