@@ -4706,7 +4706,7 @@ static void init_globals(bool reinit_globals)
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING))
 		{
-			string_set(lp_parm_ptr(NULL, &parm_table[i]), "");
+			string_set((char **)lp_parm_ptr(NULL, &parm_table[i]), "");
 		}
 	}
 
