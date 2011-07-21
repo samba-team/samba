@@ -25,6 +25,7 @@
 #include "auth.h"
 #include "rpc_server/rpc_pipes.h"
 #include "../libcli/security/security.h"
+#include "lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -40,6 +41,55 @@ static struct pipes_struct *InternalPipes;
  * call, should be moved behind a .so module-loading
  * system _anyway_.  so that's the next step...
  */
+
+int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
+			   struct messaging_context *msg_ctx,
+			   const char *pipe_name,
+			   enum dcerpc_transport_t transport,
+			   bool endian, bool ncalrpc_as_system,
+			   const struct tsocket_address *remote_address,
+			   const struct tsocket_address *local_address,
+			   struct pipes_struct **_p)
+{
+	struct pipes_struct *p;
+
+	p = talloc_zero(mem_ctx, struct pipes_struct);
+	if (!p) {
+		return ENOMEM;
+	}
+
+	p->mem_ctx = talloc_named(p, 0, "pipe %s %p", pipe_name, p);
+	if (!p->mem_ctx) {
+		talloc_free(p);
+		return ENOMEM;
+	}
+
+	p->msg_ctx = msg_ctx;
+	p->transport = transport;
+	p->endian = endian;
+	p->ncalrpc_as_system = ncalrpc_as_system;
+
+	p->remote_address = tsocket_address_copy(remote_address, p);
+	if (p->remote_address == NULL) {
+		talloc_free(p);
+		return ENOMEM;
+	}
+
+	if (local_address) {
+		p->local_address = tsocket_address_copy(remote_address, p);
+		if (p->local_address == NULL) {
+			talloc_free(p);
+			return ENOMEM;
+		}
+	}
+
+	DLIST_ADD(InternalPipes, p);
+	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
+
+	*_p = p;
+	return 0;
+}
+
 
 bool check_open_pipes(void)
 {

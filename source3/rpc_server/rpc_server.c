@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "ntdomain.h"
+#include "rpc_server/rpc_pipes.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_dce.h"
 #include "librpc/gen_ndr/netlogon.h"
@@ -64,28 +64,17 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 {
 	struct pipes_struct *p;
 	NTSTATUS status;
+	int ret;
 
-	p = talloc_zero(mem_ctx, struct pipes_struct);
-	if (!p) {
-		*perrno = ENOMEM;
-		return -1;
-	}
-
-	p->transport = transport;
-	p->ncalrpc_as_system = ncalrpc_as_system;
-
-	p->mem_ctx = talloc_named(p, 0, "pipe %s %p", pipe_name, p);
-	if (!p->mem_ctx) {
-		TALLOC_FREE(p);
-		*perrno = ENOMEM;
+	ret = make_base_pipes_struct(mem_ctx, NULL, pipe_name,
+				     transport, RPC_LITTLE_ENDIAN,
+				     ncalrpc_as_system,
+				     remote_address, local_address, &p);
+	if (ret) {
+		*perrno = ret;
 		return -1;
 	}
 	p->msg_ctx = msg_ctx;
-
-	data_blob_free(&p->in_data.data);
-	data_blob_free(&p->in_data.pdu);
-
-	p->endian = RPC_LITTLE_ENDIAN;
 
 	if (session_info->unix_token && session_info->unix_info && session_info->security_token) {
 		/* Don't call create_local_token(), we already have the full details here */
@@ -144,24 +133,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			return -1;
 		}
 	}
-
-	p->remote_address = tsocket_address_copy(remote_address, p);
-	if (p->remote_address == NULL) {
-		TALLOC_FREE(p);
-		*perrno = ENOMEM;
-		return -1;
-	}
-
-	if (local_address != NULL) {
-		p->local_address = tsocket_address_copy(local_address, p);
-		if (p->local_address == NULL) {
-			TALLOC_FREE(p);
-			*perrno = ENOMEM;
-			return -1;
-		}
-	}
-
-	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
 
 	*_p = p;
 	return 0;

@@ -31,7 +31,7 @@
 #include "librpc/gen_ndr/auth.h"
 #include "../auth/auth_sam_reply.h"
 #include "auth.h"
-#include "ntdomain.h"
+#include "rpc_server/rpc_pipes.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_contexts.h"
@@ -51,23 +51,18 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 {
 	struct pipes_struct *p;
 	struct pipe_rpc_fns *context_fns;
+	const char *pipe_name;
+	int ret;
 
-	DEBUG(4,("Create pipe requested %s\n",
-		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
+	pipe_name = get_pipe_name_from_syntax(talloc_tos(), syntax);
 
-	p = talloc_zero(mem_ctx, struct pipes_struct);
+	DEBUG(4,("Create pipe requested %s\n", pipe_name));
 
-	if (!p) {
+	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
+				     NCALRPC, RPC_LITTLE_ENDIAN, false,
+				     remote_address, NULL, &p);
+	if (ret) {
 		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
-		return NULL;
-	}
-
-	p->mem_ctx = talloc_named(p, 0, "pipe %s %p",
-				 get_pipe_name_from_syntax(talloc_tos(),
-							   syntax), p);
-	if (p->mem_ctx == NULL) {
-		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
-		TALLOC_FREE(p);
 		return NULL;
 	}
 
@@ -85,19 +80,6 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	p->msg_ctx = msg_ctx;
-
-	DLIST_ADD(InternalPipes, p);
-
-	p->remote_address = tsocket_address_copy(remote_address, p);
-	if (p->remote_address == NULL) {
-		return false;
-	}
-
-	p->endian = RPC_LITTLE_ENDIAN;
-
-	p->transport = NCALRPC;
-
 	context_fns = SMB_MALLOC_P(struct pipe_rpc_fns);
 	if (context_fns == NULL) {
 		DEBUG(0,("malloc() failed!\n"));
@@ -113,10 +95,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	/* add to the list of open contexts */
 	DLIST_ADD(p->contexts, context_fns);
 
-	DEBUG(4,("Created internal pipe %s\n",
-		 get_pipe_name_from_syntax(talloc_tos(), syntax)));
-
-	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
+	DEBUG(4,("Created internal pipe %s\n", pipe_name));
 
 	return p;
 }
