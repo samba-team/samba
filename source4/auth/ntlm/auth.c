@@ -407,7 +407,9 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 }
 
 /* Wrapper because we don't want to expose all callers to needing to
- * know that session_info is generated from the main ldb, and because we need to break a depenency loop between the DCE/RPC layer and the generation of unix tokens via IRPC */
+ * know that session_info is generated from the main ldb, and because
+ * we need to break a depenency loop between the DCE/RPC layer and the
+ * generation of unix tokens via IRPC */
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 						   struct auth4_context *auth_context,
 						   struct auth_user_info_dc *user_info_dc,
@@ -417,6 +419,7 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
 						     auth_context->sam_ctx, user_info_dc,
 						     session_info_flags, session_info);
+
 	if ((session_info_flags & AUTH_SESSION_INFO_UNIX_TOKEN)
 	    && NT_STATUS_IS_OK(status)) {
 		struct wbc_context *wbc_ctx = wbc_init(auth_context,
@@ -424,12 +427,11 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 						       auth_context->event_ctx);
 		if (!wbc_ctx) {
 			TALLOC_FREE(*session_info);
-			DEBUG(1, ("Cannot contact winbind to provide unix token"));
+			DEBUG(1, ("Cannot contact winbind to provide unix token\n"));
 			return NT_STATUS_INVALID_SERVER_STATE;
 		}
-		status = security_token_to_unix_token(*session_info, wbc_ctx,
-						      (*session_info)->security_token,
-						      &(*session_info)->unix_token);
+		status = auth_session_info_fill_unix(wbc_ctx, auth_context->lp_ctx,
+						     *session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(*session_info);
 		}
