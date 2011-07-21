@@ -70,4 +70,8 @@ if __name__ == '__main__':
         if len(sys.argv) > 2:
             args = sys.argv[2:]
 
-	cmd._run("samba-tool.py", command, *args)
+    try:
+        retval = cmd._run("samba-tool", command, *args)
+        sys.exit(retval)
+    except Exception as e:
+        cmd.show_command_error(e)
