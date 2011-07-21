@@ -54,7 +54,7 @@ def process_args(extra_options=[]):
                       action="store_false", dest="show", default=True,
                       help="don't show IP address layout after each event")
     parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose", default=False,
+                      action="count", dest="verbose", default=0,
                       help="print information and actions taken to stdout")
     parser.add_option("--hack",
                       action="store", type="int", dest="hack", default=0,
@@ -85,23 +85,39 @@ def process_args(extra_options=[]):
     if len(args) != 0:
         parser.error("too many argumentss")
 
-def print_begin(t):
-    print "=" * 40
+def print_begin(t, delim='='):
+    print delim * 40
     print "%s:" % (t)
 
 def print_end():
     print "-" * 40
 
 def verbose_begin(t):
-    if options.verbose:
+    if options.verbose > 0:
         print_begin(t)
 
 def verbose_end():
-    if options.verbose:
+    if options.verbose > 0:
         print_end()
 
 def verbose_print(t):
-    if options.verbose:
+    if options.verbose > 0:
+        if not type(t) == list:
+            t = [t]
+        if t != []:
+            print "\n".join([str(i) for i in t])
+
+# more than this and we switch to the logging module...  :-)
+def debug_begin(t):
+    if options.verbose > 1:
+        print_begin(t, '-')
+
+def debug_end():
+    if options.verbose > 1:
+        print_end()
+
+def debug_print(t):
+    if options.verbose > 1:
         if not type(t) == list:
             t = [t]
         if t != []:
