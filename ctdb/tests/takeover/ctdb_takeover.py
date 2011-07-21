@@ -82,7 +82,13 @@ def process_args(extra_options=[]):
 
     parser.add_option("-x", "--exit",
                       action="store_true", dest="exit", default=False,
-                      help="exit on the 1st gratuitous IP move")
+                      help="exit on the 1st gratuitous IP move or IP imbalance")
+    parser.add_option("-H", "--hard-imbalance-limit",
+                      action="store", type="int", dest="hard_limit", default=1,
+                      help="exceeding this limit causes termination  [default: %default]")
+    parser.add_option("-S", "--soft-imbalance-limit",
+                      action="store", type="int", dest="soft_limit", default=1,
+                      help="exceeding this limit increments a counter [default: %default]")
 
     (options, args) = parser.parse_args()
 
@@ -219,6 +225,7 @@ class Cluster(object):
         self.ip_moves = []
         self.grat_ip_moves = []
         self.imbalance = []
+        self.imbalance_count = 0
         self.events = -1
         self.num_unhealthy = []
 
@@ -234,12 +241,13 @@ class Cluster(object):
 
     def print_statistics(self):
         print_begin("STATISTICS")
-        print "Events:              %6d" % self.events
-        print "Total IP moves:      %6d" % sum(self.ip_moves)
-        print "Gratuitous IP moves: %6d" % sum(self.grat_ip_moves)
-        print "Max imbalance:       %6d" % max(self.imbalance)
-        print "Final imbalance:     %6d" % self.imbalance[-1]
-        print "Maximum unhealthy:   %6d" % max(self.num_unhealthy)
+        print "Events:                      %6d" % self.events
+        print "Total IP moves:              %6d" % sum(self.ip_moves)
+        print "Gratuitous IP moves:         %6d" % sum(self.grat_ip_moves)
+        print "Max imbalance:               %6d" % max(self.imbalance)
+        print "Final imbalance:             %6d" % self.imbalance[-1]
+        print "Soft imbalance count:        %6d" % self.imbalance_count
+        print "Maximum unhealthy:           %6d" % max(self.num_unhealthy)
         print_end()
 
     def find_pnn_with_ip(self, ip):
@@ -349,8 +357,8 @@ class Cluster(object):
                 continue
 
             i = maxnum - minnum
-            if maxnum - minnum < 2:
-                i = 0
+            #if i < 2:
+            #    i = 0
             imbalance = max([imbalance, i])
 
         return imbalance
@@ -688,6 +696,9 @@ class Cluster(object):
 
         imbalance = self.calculate_imbalance()
         self.imbalance.append(imbalance)
+        if imbalance > options.soft_limit:
+            self.imbalance_count += 1
+
         if options.balance:
             print_begin("IMBALANCE")
             print imbalance
@@ -705,4 +716,5 @@ class Cluster(object):
         self.prev = None
         self.prev = copy.deepcopy(self)
 
-        return grat_ip_moves
+        return grat_ip_moves or \
+            imbalance > options.hard_limit
