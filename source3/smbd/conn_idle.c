@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "rpc_server/rpc_ncacn_np.h"
+#include "rpc_server/rpc_pipes.h"
 
 /****************************************************************************
  Update last used timestamps.

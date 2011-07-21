@@ -1522,7 +1522,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 {
 	bool ret = False;
 	bool changed_user = False;
-	PIPE_RPC_FNS *pipe_fns;
+	struct pipe_rpc_fns *pipe_fns;
 
 	if (p->pipe_bound &&
 	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_NTLMSSP) ||

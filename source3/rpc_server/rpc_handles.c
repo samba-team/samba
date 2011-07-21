@@ -23,12 +23,74 @@
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "auth.h"
-#include "ntdomain.h"
-#include "rpc_server/rpc_ncacn_np.h"
+#include "rpc_server/rpc_pipes.h"
 #include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
+
+static struct pipes_struct *InternalPipes;
+
+/* TODO
+ * the following prototypes are declared here to avoid
+ * code being moved about too much for a patch to be
+ * disrupted / less obvious.
+ *
+ * these functions, and associated functions that they
+ * call, should be moved behind a .so module-loading
+ * system _anyway_.  so that's the next step...
+ */
+
+bool check_open_pipes(void)
+{
+	struct pipes_struct *p;
+
+	for (p = InternalPipes; p != NULL; p = p->next) {
+		if (num_pipe_handles(p) != 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/****************************************************************************
+ Close an rpc pipe.
+****************************************************************************/
+
+static void free_pipe_rpc_context_internal(struct pipe_rpc_fns *list)
+{
+	struct pipe_rpc_fns *tmp = list;
+	struct pipe_rpc_fns *tmp2;
+
+	while (tmp) {
+		tmp2 = tmp->next;
+		SAFE_FREE(tmp);
+		tmp = tmp2;
+	}
+
+	return;
+}
+
+int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
+{
+	if (!p) {
+		DEBUG(0,("Invalid pipe in close_internal_rpc_pipe_hnd\n"));
+		return False;
+	}
+
+	TALLOC_FREE(p->auth.auth_ctx);
+
+	/* Free the handles database. */
+	close_policy_by_pipe(p);
+
+	free_pipe_rpc_context_internal( p->contexts );
+
+	DLIST_REMOVE(InternalPipes, p);
+
+	ZERO_STRUCTP(p);
+
+	return 0;
+}
 
 /*
  * Handle database - stored per pipe.
@@ -82,9 +144,7 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
 	struct pipes_struct *plist;
 	struct handle_list *hl;
 
-	for (plist = get_first_internal_pipe();
-	     plist;
-	     plist = get_next_internal_pipe(plist)) {
+	for (plist = InternalPipes; plist; plist = plist->next) {
 		struct pipe_rpc_fns *p_ctx;
 		bool stop = false;
 
