@@ -6421,7 +6421,7 @@ struct loadparm_service *lp_service(const char *pszServiceName)
 
 struct loadparm_service *lp_servicebynum(int snum)
 {
-	if (snum = -1 || !LP_SNUM_OK(snum)) {
+	if ((snum == -1) || !LP_SNUM_OK(snum)) {
 		return NULL;
 	}
 	return ServicePtrs[snum];
