@@ -21,6 +21,8 @@
 #include "../libcli/auth/ntlmssp.h"
 #include "smb_crypt.h"
 #include "libsmb/libsmb.h"
+#include "ntlmssp_wrap.h"
+
 
 /******************************************************************************
  Pull out the encryption context for this packet. 0 means global context.
@@ -62,7 +64,7 @@ bool common_encryption_on(struct smb_trans_enc_state *es)
  output, so cope with the same for compatibility.
 ******************************************************************************/
 
-NTSTATUS common_ntlm_decrypt_buffer(struct ntlmssp_state *ntlmssp_state, char *buf)
+NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state, char *buf)
 {
 	NTSTATUS status;
 	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
@@ -82,7 +84,7 @@ NTSTATUS common_ntlm_decrypt_buffer(struct ntlmssp_state *ntlmssp_state, char *b
 	/* Point at the signature. */
 	sig = data_blob_const(inbuf+8, NTLMSSP_SIG_SIZE);
 
-	status = ntlmssp_unseal_packet(ntlmssp_state,
+	status = auth_ntlmssp_unseal_packet(auth_ntlmssp_state,
 		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'E' <enc> <ctx> */
 		data_len,
 		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE,
@@ -110,7 +112,7 @@ NTSTATUS common_ntlm_decrypt_buffer(struct ntlmssp_state *ntlmssp_state, char *b
  output, so do the same for compatibility.
 ******************************************************************************/
 
-NTSTATUS common_ntlm_encrypt_buffer(struct ntlmssp_state *ntlmssp_state,
+NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state,
 				uint16 enc_ctx_num,
 				char *buf,
 				char **ppbuf_out)
@@ -142,7 +144,7 @@ NTSTATUS common_ntlm_encrypt_buffer(struct ntlmssp_state *ntlmssp_state,
 
 	ZERO_STRUCT(sig);
 
-	status = ntlmssp_seal_packet(ntlmssp_state,
+	status = auth_ntlmssp_seal_packet(auth_ntlmssp_state,
 				     frame,
 		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
 		data_len,
@@ -304,7 +306,7 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 
 	switch (es->smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			return common_ntlm_encrypt_buffer(es->s.ntlmssp_state, es->enc_ctx_num, buffer, buf_out);
+			return common_ntlm_encrypt_buffer(es->s.auth_ntlmssp_state, es->enc_ctx_num, buffer, buf_out);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
 			return common_gss_encrypt_buffer(es->s.gss_state, es->enc_ctx_num, buffer, buf_out);
@@ -329,7 +331,7 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 
 	switch (es->smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			return common_ntlm_decrypt_buffer(es->s.ntlmssp_state, buf);
+			return common_ntlm_decrypt_buffer(es->s.auth_ntlmssp_state, buf);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
 			return common_gss_decrypt_buffer(es->s.gss_state, buf);
@@ -372,8 +374,8 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 	}
 
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (es->s.ntlmssp_state) {
-			TALLOC_FREE(es->s.ntlmssp_state);
+		if (es->s.auth_ntlmssp_state) {
+			TALLOC_FREE(es->s.auth_ntlmssp_state);
 		}
 	}
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)

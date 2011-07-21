@@ -26,6 +26,7 @@
 #include "async_smb.h"
 #include "smb_crypt.h"
 #include "trans2.h"
+#include "ntlmssp_wrap.h"
 
 /****************************************************************************
  Get UNIX extensions version info.
@@ -612,30 +613,30 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = ntlmssp_client_start(NULL,
+	status = auth_ntlmssp_client_start(NULL,
 				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
-				      &es->s.ntlmssp_state);
+				      &es->s.auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	ntlmssp_want_feature(es->s.ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
-	es->s.ntlmssp_state->neg_flags |= (NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL);
+	auth_ntlmssp_want_feature(es->s.auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+	auth_ntlmssp_or_flags(es->s.auth_ntlmssp_state, NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL);
 
-	if (!NT_STATUS_IS_OK(status = ntlmssp_set_username(es->s.ntlmssp_state, user))) {
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_username(es->s.auth_ntlmssp_state, user))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = ntlmssp_set_domain(es->s.ntlmssp_state, domain))) {
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_domain(es->s.auth_ntlmssp_state, domain))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = ntlmssp_set_password(es->s.ntlmssp_state, pass))) {
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_password(es->s.auth_ntlmssp_state, pass))) {
 		goto fail;
 	}
 
 	do {
-		status = ntlmssp_update(es->s.ntlmssp_state, blob_in, &blob_out);
+		status = auth_ntlmssp_update(es->s.auth_ntlmssp_state, blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		data_blob_free(&param_out);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(status)) {

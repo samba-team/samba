@@ -88,12 +88,6 @@ bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *ans)
 	return ans->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL;
 }
 
-struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(
-					struct auth_ntlmssp_state *ans)
-{
-	return ans->ntlmssp_state;
-}
-
 /* Needed for 'smb username' processing */
 const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans)
 {
@@ -131,6 +125,11 @@ void auth_ntlmssp_and_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
 void auth_ntlmssp_or_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
 {
 	ans->ntlmssp_state->neg_flags |= flags;
+}
+
+void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
+{
+	ntlmssp_want_feature(ans->ntlmssp_state, feature);
 }
 
 DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans)

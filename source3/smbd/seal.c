@@ -96,7 +96,7 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 	 * We must remember to update the pointer copy for the common
 	 * functions after any auth_ntlmssp_start/auth_ntlmssp_end.
 	 */
-	ec->es->s.ntlmssp_state = auth_ntlmssp_get_ntlmssp_state(ec->auth_ntlmssp_state);
+	ec->es->s.auth_ntlmssp_state = ec->auth_ntlmssp_state;
 	return status;
 }
 
@@ -114,7 +114,7 @@ static void destroy_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
 	if (ec->auth_ntlmssp_state) {
 		TALLOC_FREE(ec->auth_ntlmssp_state);
 		/* The auth_ntlmssp_end killed this already. */
-		ec->es->s.ntlmssp_state = NULL;
+		ec->es->s.auth_ntlmssp_state = NULL;
 	}
 }
 

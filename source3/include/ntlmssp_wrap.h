@@ -59,8 +59,6 @@ NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *ans,
 				    const DATA_BLOB *sig);
 bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *ans);
 bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *ans);
-struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(
-					struct auth_ntlmssp_state *ans);
 const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans);
 const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *ans);
 const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *ans);
@@ -73,6 +71,7 @@ NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
 				   const char *password);
 void auth_ntlmssp_and_flags(struct auth_ntlmssp_state *ans, uint32_t flags);
 void auth_ntlmssp_or_flags(struct auth_ntlmssp_state *ans, uint32_t flags);
+void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature);
 DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans);
 
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
