@@ -46,7 +46,7 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev,
 
 	printf("Trying to fetch lock the record ...\n");
 
-	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+	h = ctdb_fetch_readonly_lock(ctdb_db, tmp_ctx, key, &data, false);
 	if (h == NULL) {
 		printf("Failed to fetch record '%s' on node %d\n", 
 	       		(const char *)key.dptr, ctdb_get_pnn(ctdb));
@@ -57,8 +57,6 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev,
 	printf("Record fetchlocked.\n");
 	header = talloc_memdup(tmp_ctx, ctdb_header_from_record_handle(h), sizeof(*header));
        	printf("RSN:%d\n", (int)header->rsn);
-	printf("Press enter to release the record ...\n");
-	(void)getchar();
 	talloc_free(h);
 	printf("Record released.\n");
 
