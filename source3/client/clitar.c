@@ -616,7 +616,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 	bool shallitime=True;
 	char *data = NULL;
 	int read_size = 65520;
-	int datalen=0;
+	size_t datalen=0;
 	char *rname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status = NT_STATUS_OK;
@@ -693,10 +693,9 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 
 			DEBUG(3,("nread=%.0f\n",(double)nread));
 
-			datalen = cli_read_old(cli, fnum, data, nread, read_size);
-
-			if (datalen == -1) {
-				status = cli_nt_error(cli);
+			status = cli_read(cli, fnum, data, nread,
+					  read_size, &datalen);
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("Error reading file %s : %s\n",
 					 rname, nt_errstr(status)));
 				break;
