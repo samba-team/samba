@@ -400,22 +400,22 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     const char **ret_name, struct dom_sid *ret_sid,
 			     enum lsa_SidType *ret_type);
 NTSTATUS connect_to_service(struct net_context *c,
-					struct cli_state **cli_ctx,
-					struct sockaddr_storage *server_ss,
-					const char *server_name,
-					const char *service_name,
-					const char *service_type);
+			    struct cli_state **cli_ctx,
+			    const struct sockaddr_storage *server_ss,
+			    const char *server_name,
+			    const char *service_name,
+			    const char *service_type);
 NTSTATUS connect_to_ipc(struct net_context *c,
 			struct cli_state **cli_ctx,
-			struct sockaddr_storage *server_ss,
+			const struct sockaddr_storage *server_ss,
 			const char *server_name);
 NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 				struct cli_state **cli_ctx,
-				struct sockaddr_storage *server_ss,
+				const struct sockaddr_storage *server_ss,
 				const char *server_name);
 NTSTATUS connect_to_ipc_krb5(struct net_context *c,
 			struct cli_state **cli_ctx,
-			struct sockaddr_storage *server_ss,
+			const struct sockaddr_storage *server_ss,
 			const char *server_name);
 NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 			  struct rpc_pipe_client **pp_pipe_hnd,

@@ -98,11 +98,11 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 ****************************************************************************/
 
 NTSTATUS connect_to_service(struct net_context *c,
-					struct cli_state **cli_ctx,
-					struct sockaddr_storage *server_ss,
-					const char *server_name,
-					const char *service_name,
-					const char *service_type)
+			    struct cli_state **cli_ctx,
+			    const struct sockaddr_storage *server_ss,
+			    const char *server_name,
+			    const char *service_name,
+			    const char *service_type)
 {
 	NTSTATUS nt_status;
 	int flags = 0;
@@ -187,7 +187,7 @@ NTSTATUS connect_to_service(struct net_context *c,
 
 NTSTATUS connect_to_ipc(struct net_context *c,
 			struct cli_state **cli_ctx,
-			struct sockaddr_storage *server_ss,
+			const struct sockaddr_storage *server_ss,
 			const char *server_name)
 {
 	return connect_to_service(c, cli_ctx, server_ss, server_name, "IPC$",
@@ -200,7 +200,7 @@ NTSTATUS connect_to_ipc(struct net_context *c,
 
 NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 				struct cli_state **cli_ctx,
-				struct sockaddr_storage *server_ss,
+				const struct sockaddr_storage *server_ss,
 				const char *server_name)
 {
 	NTSTATUS nt_status;
@@ -246,7 +246,7 @@ static char *get_user_and_realm(const char *username)
 
 NTSTATUS connect_to_ipc_krb5(struct net_context *c,
 			struct cli_state **cli_ctx,
-			struct sockaddr_storage *server_ss,
+			const struct sockaddr_storage *server_ss,
 			const char *server_name)
 {
 	NTSTATUS nt_status;
