@@ -24,13 +24,15 @@
 /*
   return the time on a server. This does not require any authentication
 */
-static time_t cli_servertime(const char *host, struct sockaddr_storage *pss, int *zone)
+static time_t cli_servertime(const char *host,
+			     const struct sockaddr_storage *dest_ss,
+			     int *zone)
 {
 	time_t ret = 0;
 	struct cli_state *cli = NULL;
 	NTSTATUS status;
 
-	status = cli_connect_nb(host, pss, 0, 0x20, lp_netbios_name(),
+	status = cli_connect_nb(host, dest_ss, 0, 0x20, lp_netbios_name(),
 				Undefined, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, _("Can't contact server %s. Error %s\n"),
