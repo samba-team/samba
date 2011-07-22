@@ -1611,7 +1611,6 @@ int load_usershare_service(const char *servicename);
 int load_usershare_shares(struct smbd_server_connection *sconn);
 void gfree_loadparm(void);
 void lp_set_in_client(bool b);
-bool lp_is_in_client(void);
 bool lp_load(const char *pszFname,
 	     bool global_only,
 	     bool save_defaults,

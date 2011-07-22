@@ -8949,7 +8949,7 @@ void lp_set_in_client(bool b)
 /***************************************************************************
  Determine if we're running in a client app
 ***************************************************************************/
-bool lp_is_in_client(void)
+static bool lp_is_in_client(void)
 {
     return in_client;
 }
