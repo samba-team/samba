@@ -4431,7 +4431,7 @@ static int cmd_show_connect( void )
 		return 1;
 	}
 
-	d_printf("//%s/%s\n", targetcli->desthost, targetcli->share);
+	d_printf("//%s/%s\n", cli_state_remote_name(targetcli), targetcli->share);
 	return 0;
 }
 
