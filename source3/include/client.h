@@ -74,8 +74,6 @@ struct cli_state {
 
 	char *share;
 	char *dev;
-	struct sockaddr_storage src_ss;
-	struct sockaddr_storage dest_ss;
 
 	DATA_BLOB secblob; /* cryptkey or negTokenInit */
 	uint32 sesskey;
@@ -125,6 +123,8 @@ struct cli_state {
 
 	struct {
 		int fd;
+		struct sockaddr_storage local_ss;
+		struct sockaddr_storage remote_ss;
 		struct tevent_queue *outgoing;
 		struct tevent_req **pending;
 	} conn;

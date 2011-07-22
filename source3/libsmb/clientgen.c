@@ -245,16 +245,16 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	cli->conn.fd = fd;
 
-	ss_length = sizeof(cli->src_ss);
+	ss_length = sizeof(cli->conn.local_ss);
 	ret = getsockname(fd,
-			  (struct sockaddr *)(void *)&cli->src_ss,
+			  (struct sockaddr *)(void *)&cli->conn.local_ss,
 			  &ss_length);
 	if (ret == -1) {
 		goto error;
 	}
-	ss_length = sizeof(cli->dest_ss);
+	ss_length = sizeof(cli->conn.remote_ss);
 	ret = getpeername(fd,
-			  (struct sockaddr *)(void *)&cli->dest_ss,
+			  (struct sockaddr *)(void *)&cli->conn.remote_ss,
 			  &ss_length);
 	if (ret == -1) {
 		goto error;
@@ -368,12 +368,12 @@ void cli_sockopt(struct cli_state *cli, const char *options)
 
 const struct sockaddr_storage *cli_state_local_sockaddr(struct cli_state *cli)
 {
-	return &cli->src_ss;
+	return &cli->conn.local_ss;
 }
 
 const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli)
 {
-	return &cli->dest_ss;
+	return &cli->conn.remote_ss;
 }
 
 uint16_t cli_state_get_vc_num(struct cli_state *cli)
