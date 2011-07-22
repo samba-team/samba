@@ -366,6 +366,16 @@ void cli_sockopt(struct cli_state *cli, const char *options)
 	set_socket_options(cli->conn.fd, options);
 }
 
+const struct sockaddr_storage *cli_state_local_sockaddr(struct cli_state *cli)
+{
+	return &cli->src_ss;
+}
+
+const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli)
+{
+	return &cli->dest_ss;
+}
+
 uint16_t cli_state_get_vc_num(struct cli_state *cli)
 {
 	return cli->smb1.vc_num;
