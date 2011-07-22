@@ -3976,7 +3976,8 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 
 	        /* open share source */
 		nt_status = connect_to_service(c, &cp_clistate.cli_share_src,
-					       &cli->dest_ss, cli->desthost,
+					       cli_state_remote_sockaddr(cli),
+					       cli->desthost,
 					       info502.name, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
