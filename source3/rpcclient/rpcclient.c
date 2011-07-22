@@ -706,7 +706,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 						cli, cmd_entry->interface,
 						default_transport,
 						pipe_default_auth_level,
-						cli->desthost,
+						cli_state_remote_name(cli),
 						NULL, NULL,
 						&cmd_entry->rpc_pipe);
 				break;
@@ -737,7 +737,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				cli, cmd_entry->interface,
 				default_transport,
 				pipe_default_auth_level,
-				cli->desthost,
+				cli_state_remote_name(cli),
 				NULL, NULL,
 				&cmd_entry->rpc_pipe);
 			break;
