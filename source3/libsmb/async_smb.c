@@ -215,7 +215,7 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	 * We're the first ones, add the read_smb request that waits for the
 	 * answer from the server
 	 */
-	subreq = read_smb_send(cli->conn.pending, state->ev, cli->fd);
+	subreq = read_smb_send(cli->conn.pending, state->ev, cli->conn.fd);
 	if (subreq == NULL) {
 		cli_smb_req_unset_pending(req);
 		return false;
@@ -431,7 +431,7 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 		iov_count = 1;
 	}
 	subreq = writev_send(state, state->ev, state->cli->conn.outgoing,
-			     state->cli->fd, false, iov, iov_count);
+			     state->cli->conn.fd, false, iov, iov_count);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -649,7 +649,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 		 */
 		state = tevent_req_data(cli->conn.pending[0],
 					struct cli_smb_state);
-		subreq = read_smb_send(cli->conn.pending, state->ev, cli->fd);
+		subreq = read_smb_send(cli->conn.pending, state->ev, cli->conn.fd);
 		if (subreq == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;

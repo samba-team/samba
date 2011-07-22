@@ -132,7 +132,7 @@ static bool smb2cli_req_set_pending(struct tevent_req *req)
 	 * We're the first ones, add the read_smb request that waits for the
 	 * answer from the server
 	 */
-	subreq = read_smb_send(cli->conn.pending, state->ev, cli->fd);
+	subreq = read_smb_send(cli->conn.pending, state->ev, cli->conn.fd);
 	if (subreq == NULL) {
 		smb2cli_req_unset_pending(req);
 		return false;
@@ -143,10 +143,10 @@ static bool smb2cli_req_set_pending(struct tevent_req *req)
 
 static void smb2cli_notify_pending(struct cli_state *cli, NTSTATUS status)
 {
-	if (cli->fd != -1) {
-		close(cli->fd);
-		cli->fd = -1;
+	if (cli->conn.fd != -1) {
+		close(cli->conn.fd);
 	}
+	cli->conn.fd = -1;
 
 	/*
 	 * Cancel all pending requests. We don't do a for-loop walking
@@ -294,7 +294,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	iov[0].iov_len  = sizeof(state->nbt);
 
 	subreq = writev_send(state, state->ev, state->cli->conn.outgoing,
-			     state->cli->fd, false, iov, num_iov);
+			     state->cli->conn.fd, false, iov, num_iov);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -572,7 +572,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 	 * add the read_smb request that waits for the
 	 * next answer from the server
 	 */
-	subreq = read_smb_send(cli->conn.pending, state->ev, cli->fd);
+	subreq = read_smb_send(cli->conn.pending, state->ev, cli->conn.fd);
 	if (subreq == NULL) {
 		smb2cli_notify_pending(cli, NT_STATUS_NO_MEMORY);
 		return;

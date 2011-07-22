@@ -187,7 +187,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	if (!cli->dfs_mountpoint) {
 		goto error;
 	}
-	cli->fd = -1;
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
@@ -244,7 +243,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	cli->fd = fd;
+	cli->conn.fd = fd;
 
 	ss_length = sizeof(cli->src_ss);
 	ret = getsockname(fd,
@@ -364,7 +363,7 @@ void cli_shutdown(struct cli_state *cli)
 
 void cli_sockopt(struct cli_state *cli, const char *options)
 {
-	set_socket_options(cli->fd, options);
+	set_socket_options(cli->conn.fd, options);
 }
 
 uint16_t cli_state_get_vc_num(struct cli_state *cli)

@@ -51,7 +51,6 @@ struct cli_state {
 	 * A list of subsidiary connections for DFS.
 	 */
         struct cli_state *prev, *next;
-	int fd;
 	int protocol;
 	int sec_mode;
 	int rap_error;
@@ -125,6 +124,7 @@ struct cli_state {
 	char *dfs_mountpoint;
 
 	struct {
+		int fd;
 		struct tevent_queue *outgoing;
 		struct tevent_req **pending;
 	} conn;
