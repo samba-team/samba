@@ -5024,8 +5024,8 @@ static void readline_callback(void)
 	memset(garbage, 0xf0, sizeof(garbage));
 	status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("SMBecho failed. Maybe server has closed "
-			"the connection\n"));
+		DEBUG(0, ("SMBecho failed (%s). Maybe server has closed "
+			"the connection\n", nt_errstr(status)));
 		finished = true;
 		smb_readline_done();
 	}
