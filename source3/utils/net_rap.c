@@ -702,7 +702,7 @@ static int rap_printq_info(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
-	d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
+	d_printf(PRINTQ_ENUM_DISPLAY, cli_state_remote_name(cli)); /* list header */
 	ret = cli_NetPrintQGetInfo(cli, argv[0], enum_queue, enum_jobs);
 	cli_shutdown(cli);
 	return ret;
@@ -763,7 +763,7 @@ int net_rap_printq(struct net_context *c, int argc, const char **argv)
 		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
 			return -1;
 
-		d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
+		d_printf(PRINTQ_ENUM_DISPLAY, cli_state_remote_name(cli)); /* list header */
 		ret = cli_NetPrintQEnum(cli, enum_queue, enum_jobs);
 		cli_shutdown(cli);
 		return ret;
