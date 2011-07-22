@@ -2891,7 +2891,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
 		  "%s and bound anonymously.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), interface),
-		  cli->desthost));
+		  result->desthost));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -2951,7 +2951,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
 		"machine %s and bound NTLMSSP as user %s\\%s.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), interface),
-		  cli->desthost, domain, username ));
+		  result->desthost, domain, username));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3018,7 +3018,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), interface),
-		  cli->desthost, domain ));
+		  result->desthost, domain));
 
 	*presult = result;
 	return NT_STATUS_OK;
