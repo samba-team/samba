@@ -1895,8 +1895,10 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	b_dst = pipe_hnd_dst->binding_handle;
 
 	/* open print$-share on the src server */
-	nt_status = connect_to_service(c, &cli_share_src, &cli->dest_ss,
-			cli->desthost, "print$", "A:");
+	nt_status = connect_to_service(c, &cli_share_src,
+				       cli_state_remote_sockaddr(cli),
+				       cli->desthost,
+				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
 
@@ -1904,8 +1906,10 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 
 
 	/* open print$-share on the dst server */
-	nt_status = connect_to_service(c, &cli_share_dst, &cli_dst->dest_ss,
-			cli_dst->desthost, "print$", "A:");
+	nt_status = connect_to_service(c, &cli_share_dst,
+				       cli_state_remote_sockaddr(cli_dst),
+				       cli_dst->desthost,
+				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
