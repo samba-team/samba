@@ -5301,8 +5301,6 @@ static int do_message_op(struct user_auth_info *a_info)
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "service <password>");
 
-        lp_set_in_client(true); /* Make sure that we tell lp_load we are */
-
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 
 		/* if the tar option has been called previouslt, now we need to eat out the leftovers */
@@ -5433,7 +5431,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	if ( override_logfile )
 		setup_logging( lp_logfile(), DEBUG_FILE );
 
-	if (!lp_load(get_dyn_CONFIGFILE(),true,false,false,true)) {
+	if (!lp_load_client(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
 			argv[0], get_dyn_CONFIGFILE());
 	}
