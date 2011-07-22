@@ -3525,6 +3525,7 @@ static bool run_oplock2(int dummy)
 	char buf[4];
 	bool correct = True;
 	volatile bool *shared_correct;
+	size_t nread;
 	NTSTATUS status;
 
 	shared_correct = (volatile bool *)shm_setup(sizeof(bool));
@@ -3593,10 +3594,14 @@ static bool run_oplock2(int dummy)
 
 	/* Ensure cli1 processes the break. Empty file should always return 0
 	 * bytes.  */
-
-	if (cli_read_old(cli1, fnum1, buf, 0, 4) != 0) {
-		printf("read on fnum1 failed (%s)\n", cli_errstr(cli1));
-		correct = False;
+	status = cli_read(cli1, fnum1, buf, 0, 4, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("read on fnum1 failed (%s)\n", nt_errstr(status));
+		correct = false;
+	} else if (nread != 0) {
+		printf("read on empty fnum1 failed. recv %ld expected %d\n",
+		      (unsigned long)nread, 0);
+		correct = false;
 	}
 
 	/* Should now be at level II. */
@@ -3621,7 +3626,7 @@ static bool run_oplock2(int dummy)
 
 	sleep(2);
 
-	cli_read_old(cli1, fnum1, buf, 0, 4);
+	cli_read(cli1, fnum1, buf, 0, 4, NULL);
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
