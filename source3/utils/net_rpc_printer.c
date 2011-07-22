@@ -185,11 +185,11 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 
 	if (copy_acls) {
 		/* get the security descriptor */
-		sd = cli_query_secdesc_old(cli_share_src, fnum_src, mem_ctx);
-		if (!sd) {
+		nt_status = cli_query_secdesc(cli_share_src, fnum_src,
+					      mem_ctx, &sd);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0,("failed to get security descriptor: %s\n",
-				cli_errstr(cli_share_src)));
-			nt_status = cli_nt_error(cli_share_src);
+				 nt_errstr(nt_status)));
 			goto out;
 		}
 
