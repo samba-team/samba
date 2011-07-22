@@ -202,7 +202,8 @@ int net_rpc_audit(struct net_context *c, int argc, const char **argv);
 /* The following definitions come from utils/net_rpc_join.c  */
 
 NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
-			 const char *server, struct sockaddr_storage *pss);
+			 const char *server,
+			 const struct sockaddr_storage *server_ss);
 int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv);
 int net_rpc_testjoin(struct net_context *c, int argc, const char **argv);
 
