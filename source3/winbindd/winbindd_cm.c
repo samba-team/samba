@@ -1400,8 +1400,6 @@ static void store_current_dc_in_gencache(const char *domain_name,
 					 struct cli_state *cli)
 {
 	char addr[INET6_ADDRSTRLEN];
-	const struct sockaddr *sa;
-	socklen_t sa_len;
 	char *key = NULL;
 	char *value = NULL;
 
@@ -1409,11 +1407,8 @@ static void store_current_dc_in_gencache(const char *domain_name,
 		return;
 	}
 
-	sa = (const struct sockaddr *)(void *)&cli->dest_ss;
-	sa_len = sizeof(cli->dest_ss);
-
-	print_sockaddr_len(addr, sizeof(addr),
-			   sa, sa_len);
+	print_sockaddr(addr, sizeof(addr),
+		       cli_state_remote_sockaddr(cli));
 
 	key = current_dc_key(talloc_tos(), domain_name);
 	if (key == NULL) {
@@ -2698,18 +2693,13 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		char sockaddr[INET6_ADDRSTRLEN];
-		const struct sockaddr *sa;
-		socklen_t sa_len;
 
 		if (!cli_state_is_connected(domain->conn.cli)) {
 			continue;
 		}
 
-		sa = (const struct sockaddr *)(void *)&domain->conn.cli->src_ss;
-		sa_len = sizeof(domain->conn.cli->src_ss);
-
-		print_sockaddr_len(sockaddr, sizeof(sockaddr),
-				   sa, sa_len);
+		print_sockaddr(sockaddr, sizeof(sockaddr),
+			       cli_state_local_sockaddr(domain->conn.cli));
 
 		if (strequal(sockaddr, addr)) {
 			cli_state_disconnect(domain->conn.cli);
