@@ -210,6 +210,13 @@ class Node(object):
         self.healthy = True
         self.imbalance = -1
 
+    def __str__(self):
+        return "%s %s%s" % \
+            ("*" if len(self.public_addresses) == 0 else \
+                 (" " if self.healthy else "#"),
+             sorted(list(self.current_addresses)),
+             " %d" % self.imbalance if options.lcp2 else "")
+
     def can_node_serve_ip(self, ip):
         return ip in self.public_addresses
 
@@ -249,12 +256,8 @@ class Cluster(object):
         self.prev = None
 
     def __str__(self):
-        return "\n".join(["%2d %s %s" %
-                          (i,
-                           "*" if len(n.public_addresses) == 0 else \
-                               (" " if n.healthy else "#"),
-                           sorted(list(n.current_addresses)))
-                          for (i, n) in enumerate(self.nodes)])
+        return "\n".join(["%2d %s" % (i, n) \
+                              for (i, n) in enumerate(self.nodes)])
 
     # This is naive.  It assumes that IP groups are indicated by the
     # 1st node having IP groups.
