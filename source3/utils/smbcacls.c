@@ -722,12 +722,13 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
 		return NULL;
 	}
 
-	sd = cli_query_secdesc_old(cli, fnum, talloc_tos());
+	status = cli_query_secdesc(cli, fnum, talloc_tos(), &sd);
 
 	cli_close(cli, fnum);
 
-	if (!sd) {
-		printf("Failed to get security descriptor\n");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to get security descriptor: %s\n",
+		       nt_errstr(status));
 		return NULL;
 	}
         return sd;
