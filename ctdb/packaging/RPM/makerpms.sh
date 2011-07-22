@@ -105,7 +105,18 @@ cp -p ${DIRNAME}/${SPECFILE} ${SPECDIR}
 ## Build
 ##
 echo "$(basename $0): Getting Ready to build release package"
-${RPMBUILD} -ba --clean --rmsource ${EXTRA_OPTIONS} ${SPECDIR}/${SPECFILE} || exit 1
+
+case ${EXTRA_OPTIONS} in
+	*-b*)
+		BUILD_TARGET=""
+		;;
+	*)
+		BUILD_TARGET="-ba"
+		;;
+esac
+
+
+${RPMBUILD} ${BUILD_TARGET} --clean --rmsource ${EXTRA_OPTIONS} ${SPECDIR}/${SPECFILE} || exit 1
 
 echo "$(basename $0): Done."
 
