@@ -95,6 +95,8 @@ sub setup_env($$$)
 		return $self->setup_s3dc("$path/s3dc");
 	} elsif ($envname eq "secshare") {
 		return $self->setup_secshare("$path/secshare");
+	} elsif ($envname eq "maptoguest") {
+		return $self->setup_maptoguest("$path/maptoguest");
 	} elsif ($envname eq "ktest") {
 		return $self->setup_ktest("$path/ktest");
 	} elsif ($envname eq "secserver") {
@@ -470,6 +472,36 @@ $ret->{USERNAME} = KTEST\\Administrator
 	       return undef;
 	}
 	return $ret;
+}
+
+sub setup_maptoguest($$)
+{
+	my ($self, $path) = @_;
+
+	print "PROVISIONING maptoguest...";
+
+	my $options = "
+map to guest = bad user
+";
+
+	my $vars = $self->provision($path,
+				    "maptoguest",
+				    7,
+				    "maptoguestpass",
+				    $options);
+
+	$vars or return undef;
+
+	$self->check_or_start($vars,
+			       "yes", "no", "yes");
+
+	if (not $self->wait_for_start($vars)) {
+	       return undef;
+	}
+
+	$self->{vars}->{s3maptoguest} = $vars;
+
+	return $vars;
 }
 
 sub stop_sig_term($$) {

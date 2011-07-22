@@ -108,8 +108,11 @@ for env in ["secserver"]:
 for env in ["member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER\\\\$USERNAME', '$PASSWORD', binpath('smbclient3'), configuration])
 
-for env in ["secshare", "secserver"]:
+for env in ["maptoguest", "secshare", "secserver"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) local creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', binpath('smbclient3'), configuration + " --option=clientntlmv2auth=no --option=clientlanmanauth=yes"])
+
+env = "maptoguest"
+plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) bad username" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', 'notmy$USERNAME', '$PASSWORD', binpath('smbclient3'), configuration + " --option=clientntlmv2auth=no --option=clientlanmanauth=yes"])
 
 # plain
 for env in ["s3dc"]:
