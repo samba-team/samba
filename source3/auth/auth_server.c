@@ -297,12 +297,12 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (user_info->password_state != AUTH_PASSWORD_PLAIN) {
-			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli->desthost));
+			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli_state_remote_name(cli)));
 			return NT_STATUS_LOGON_FAILURE;		
 		}
 	} else {
 		if (memcmp(cli->secblob.data, auth_context->challenge.data, 8) != 0) {
-			DEBUG(1,("the challenge that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli->desthost));
+			DEBUG(1,("the challenge that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli_state_remote_name(cli)));
 			return NT_STATUS_LOGON_FAILURE;		
 		}
 	}
@@ -357,7 +357,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 
 			if (!cli->is_guestlogin) {
 				DEBUG(0,("server_validate: password server %s allows users as non-guest \
-with a bad password.\n", cli->desthost));
+with a bad password.\n", cli_state_remote_name(cli)));
 				DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
 use this machine as the password server.\n"));
 				cli_ulogoff(cli);
@@ -379,7 +379,7 @@ use this machine as the password server.\n"));
 
 		if(bad_password_server) {
 			DEBUG(0,("server_validate: [1] password server %s allows users as non-guest \
-with a bad password.\n", cli->desthost));
+with a bad password.\n", cli_state_remote_name(cli)));
 			DEBUG(0,("server_validate: [1] This is broken (and insecure) behaviour. Please do not \
 use this machine as the password server.\n"));
 			return NT_STATUS_LOGON_FAILURE;
@@ -418,12 +418,13 @@ use this machine as the password server.\n"));
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1,("password server %s rejected the password: %s\n",
-			 cli->desthost, nt_errstr(nt_status)));
+			 cli_state_remote_name(cli), nt_errstr(nt_status)));
 	}
 
 	/* if logged in as guest then reject */
 	if (cli->is_guestlogin) {
-		DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
+		DEBUG(1,("password server %s gave us guest only\n",
+			 cli_state_remote_name(cli)));
 		nt_status = NT_STATUS_LOGON_FAILURE;
 	}
 
