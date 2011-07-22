@@ -9118,6 +9118,20 @@ bool lp_load_initial_only(const char *pszFname)
 			  false); /* load_all_shares*/
 }
 
+/**
+ * most common lp_load wrapper, loading only the globals
+ */
+bool lp_load_global(const char *file_name)
+{
+	return lp_load_ex(file_name,
+			  true,   /* global_only */
+			  false,  /* save_defaults */
+			  false,  /* add_ipc */
+			  true,   /* initialize_globals */
+			  true,   /* allow_include_registry */
+			  false); /* load_all_shares*/
+}
+
 bool lp_load_with_registry_shares(const char *pszFname,
 				  bool global_only,
 				  bool save_defaults,

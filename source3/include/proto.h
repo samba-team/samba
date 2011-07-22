@@ -1618,6 +1618,7 @@ bool lp_load(const char *pszFname,
 	     bool add_ipc,
 	     bool initialize_globals);
 bool lp_load_initial_only(const char *pszFname);
+bool lp_load_global(const char *file_name);
 bool lp_load_with_registry_shares(const char *pszFname,
 				  bool global_only,
 				  bool save_defaults,
