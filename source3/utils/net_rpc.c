@@ -6147,7 +6147,7 @@ static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
 	b = netr->binding_handle;
 
 	status = dcerpc_netr_GetDcName(b, mem_ctx,
-				       cli->desthost,
+				       netr->desthost,
 				       domain_name,
 				       &buffer,
 				       &result);
