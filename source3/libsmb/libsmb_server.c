@@ -292,7 +292,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                 if (!cli_state_has_tcon(srv->cli)) {
                         /* Ensure we have accurate auth info */
 			SMBC_call_auth_fn(ctx, context,
-					  srv->cli->desthost,
+					  cli_state_remote_name(srv->cli),
 					  srv->cli->share,
                                           pp_workgroup,
                                           pp_username,
@@ -367,7 +367,10 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                          * server and share
                          */
                         if (srv) {
-                                srv->dev = (dev_t)(str_checksum(srv->cli->desthost) ^
+				const char *remote_name =
+					cli_state_remote_name(srv->cli);
+
+				srv->dev = (dev_t)(str_checksum(remote_name) ^
                                                    str_checksum(srv->cli->share));
                         }
                 }
@@ -691,7 +694,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 	if (!srv) {
 		return NULL;
 	}
-	server = srv->cli->desthost;
+	server = cli_state_remote_name(srv->cli);
 	share = srv->cli->share;
 
         /*
