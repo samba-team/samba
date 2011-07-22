@@ -321,10 +321,7 @@ static void _cli_shutdown(struct cli_state *cli)
 	data_blob_free(&cli->secblob);
 	data_blob_free(&cli->user_session_key);
 
-	if (cli->fd != -1) {
-		close(cli->fd);
-	}
-	cli->fd = -1;
+	cli_state_disconnect(cli);
 
 	/*
 	 * Need to free pending first, they remove themselves
