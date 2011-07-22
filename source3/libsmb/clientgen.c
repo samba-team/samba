@@ -376,6 +376,11 @@ const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli)
 	return &cli->conn.remote_ss;
 }
 
+const char *cli_state_remote_name(struct cli_state *cli)
+{
+	return cli->desthost;
+}
+
 uint16_t cli_state_get_vc_num(struct cli_state *cli)
 {
 	return cli->smb1.vc_num;
