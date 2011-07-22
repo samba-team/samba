@@ -2848,10 +2848,10 @@ static bool run_fdsesstest(int dummy)
 	saved_vuid = cli_state_get_uid(cli);
 	cli_state_set_uid(cli, new_vuid);
 
-	if (cli_read_old(cli, fnum1, buf, 0, 13) == 13) {
-		printf("read succeeded with different vuid! nasty security hole [%s]\n",
-		       buf);
-		ret = False;
+	if (test_cli_read(cli, fnum1, buf, 0, 13, NULL, 13)) {
+		printf("read succeeded with different vuid! "
+		       "nasty security hole [%s]\n", buf);
+		ret = false;
 	}
 	/* Try to open a file with different vuid, samba cnum. */
 	if (NT_STATUS_IS_OK(cli_open(cli, fname1, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum2))) {
@@ -2869,10 +2869,9 @@ static bool run_fdsesstest(int dummy)
 	/* Try with same vuid, different cnum. */
 	cli_state_set_tid(cli, new_cnum);
 
-	if (cli_read_old(cli, fnum1, buf, 0, 13) == 13) {
-		printf("read succeeded with different cnum![%s]\n",
-		       buf);
-		ret = False;
+	if (test_cli_read(cli, fnum1, buf, 0, 13, NULL, 13)) {
+		printf("read succeeded with different cnum![%s]\n", buf);
+		ret = false;
 	}
 
 	cli_state_set_tid(cli, saved_cnum);
