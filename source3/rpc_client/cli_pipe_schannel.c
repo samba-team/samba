@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "passdb.h"
-#include "client.h"
+#include "libsmb/libsmb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -56,7 +56,7 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
 	}
 
 	status = rpccli_netlogon_setup_creds(netlogon_pipe,
-					cli->desthost, /* server name */
+					cli_state_remote_name(cli), /* server name */
 					domain,	       /* domain */
 					lp_netbios_name(), /* client name */
 					machine_account, /* machine account name */
@@ -68,14 +68,14 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
 		DEBUG(3, ("get_schannel_session_key_common: "
 			  "rpccli_netlogon_setup_creds failed with result %s "
 			  "to server %s, domain %s, machine account %s.\n",
-			  nt_errstr(status), cli->desthost, domain,
+			  nt_errstr(status), cli_state_remote_name(cli), domain,
 			  machine_account ));
 		return status;
 	}
 
 	if (((*pneg_flags) & NETLOGON_NEG_SCHANNEL) == 0) {
 		DEBUG(3, ("get_schannel_session_key: Server %s did not offer schannel\n",
-			cli->desthost));
+			cli_state_remote_name(cli)));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
@@ -142,7 +142,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_rpc_pipe_open_ntlmssp_auth_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
-			cli->desthost, domain ));
+			cli_state_remote_name(cli), domain ));
 		return status;
 	}
 
@@ -181,7 +181,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_rpc_pipe_open_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
-			cli->desthost, domain ));
+			cli_state_remote_name(cli), domain ));
 		return status;
 	}
 
