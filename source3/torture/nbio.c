@@ -212,12 +212,23 @@ void nb_writex(int handle, int offset, int size, int ret_size)
 
 void nb_readx(int handle, int offset, int size, int ret_size)
 {
-	int i, ret;
+	int i;
+	NTSTATUS status;
+	size_t nread;
 
 	i = find_handle(handle);
-	if ((ret=cli_read_old(c, ftable[i].fd, buf, offset, size)) != ret_size) {
-		printf("(%d) ERROR: read failed on handle %d ofs=%d size=%d res=%d fd %d errno %d (%s)\n",
-			line_count, handle, offset, size, ret, ftable[i].fd, errno, strerror(errno));
+	status = cli_read(c, ftable[i].fd, buf, offset, size, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%d) ERROR: read failed on handle %d ofs=%d size=%d "
+		       "fd %d nterror %s\n",
+		       line_count, handle, offset, size,
+		       ftable[i].fd, nt_errstr(status));
+		exit(1);
+	} else if (nread != ret_size) {
+		printf("(%d) ERROR: read failed on handle %d ofs=%d size=%d "
+		       "nread=%lu ret_size=%d fd %d\n",
+		       line_count, handle, offset, size, (unsigned long)nread,
+		       ret_size, ftable[i].fd);
 		exit(1);
 	}
 	children[nbio_id].bytes_in += ret_size;
