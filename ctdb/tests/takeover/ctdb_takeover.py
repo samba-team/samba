@@ -192,6 +192,8 @@ def imbalance_metric(ips):
     else:
         return 0
 
+def mean(l):
+    return float(sum(l))/len(l)
 
 class Node(object):
     def __init__(self, public_addresses):
@@ -275,6 +277,9 @@ class Cluster(object):
         print "Max imbalance:               %6d" % max(self.imbalance)
         if self.have_ip_groups():
             print "Max group imbalance counts:    ", map(max, zip(*self.imbalance_groups))
+        print "Mean imbalance:              %f" % mean(self.imbalance)
+        if self.have_ip_groups():
+            print "Mean group imbalances counts:   ", map(mean, zip(*self.imbalance_groups))
         print "Final imbalance:             %6d" % self.imbalance[-1]
         if self.have_ip_groups():
             print "Final group imbalances:         ", self.imbalance_groups[-1]
