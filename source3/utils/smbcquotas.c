@@ -504,11 +504,8 @@ static int do_quota(struct cli_state *cli,
 static struct cli_state *connect_one(const char *share)
 {
 	struct cli_state *c;
-	struct sockaddr_storage ss;
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
-
-	zero_sockaddr(&ss);
 
 	if (get_cmdline_auth_info_use_machine_account(smbcquotas_auth_info) &&
 	    !set_cmdline_auth_info_machine_account_creds(smbcquotas_auth_info)) {
@@ -524,7 +521,7 @@ static struct cli_state *connect_one(const char *share)
 	set_cmdline_auth_info_getpass(smbcquotas_auth_info);
 
 	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
-					    &ss, 0,
+					    NULL, 0,
 					    share, "?????",
 					    get_cmdline_auth_info_username(smbcquotas_auth_info),
 					    lp_workgroup(),
