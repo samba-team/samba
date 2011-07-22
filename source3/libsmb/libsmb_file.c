@@ -225,7 +225,7 @@ SMBC_read_ctx(SMBCCTX *context,
               void *buf,
               size_t count)
 {
-	int ret;
+	size_t ret;
 	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
 	char *path = NULL;
 	char *targetpath = NULL;
@@ -296,9 +296,9 @@ SMBC_read_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
-	ret = cli_read_old(targetcli, file->cli_fd, (char *)buf, offset, count);
-
-	if (ret < 0) {
+	status = cli_read(targetcli, file->cli_fd, (char *)buf, offset,
+			  count, &ret);
+	if (!NT_STATUS_IS_OK(status)) {
 		errno = SMBC_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;
@@ -306,7 +306,7 @@ SMBC_read_ctx(SMBCCTX *context,
 
 	file->offset += ret;
 
-	DEBUG(4, ("  --> %d\n", ret));
+	DEBUG(4, ("  --> %ld\n", (unsigned long)ret));
 
 	TALLOC_FREE(frame);
 	return ret;  /* Success, ret bytes of data ... */
