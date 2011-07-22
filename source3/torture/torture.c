@@ -1905,6 +1905,28 @@ static bool run_locktest3(int dummy)
 	return correct;
 }
 
+static bool test_cli_read(struct cli_state *cli, uint16_t fnum,
+                           char *buf, off_t offset, size_t size,
+                           size_t *nread, size_t expect)
+{
+	NTSTATUS status;
+	size_t l_nread;
+
+	status = cli_read(cli, fnum, buf, offset, size, &l_nread);
+
+	if(!NT_STATUS_IS_OK(status)) {
+		return false;
+	} else if (l_nread != expect) {
+		return false;
+	}
+
+	if (nread) {
+		*nread = l_nread;
+	}
+
+	return true;
+}
+
 #define EXPECTED(ret, v) if ((ret) != (v)) { \
         printf("** "); correct = False; \
         }
