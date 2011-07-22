@@ -169,7 +169,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	struct cli_state *cli = NULL;
 	bool allow_smb_signing = false;
 	bool mandatory_signing = false;
-	size_t length;
+	socklen_t ss_length;
 	int ret;
 
 	/* Check the effective uid - make sure we are not setuid */
@@ -246,17 +246,17 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	cli->fd = fd;
 
-	length = sizeof(cli->src_ss);
+	ss_length = sizeof(cli->src_ss);
 	ret = getsockname(fd,
 			  (struct sockaddr *)(void *)&cli->src_ss,
-			  &length);
+			  &ss_length);
 	if (ret == -1) {
 		goto error;
 	}
-	length = sizeof(cli->dest_ss);
+	ss_length = sizeof(cli->dest_ss);
 	ret = getpeername(fd,
 			  (struct sockaddr *)(void *)&cli->dest_ss,
-			  &length);
+			  &ss_length);
 	if (ret == -1) {
 		goto error;
 	}
