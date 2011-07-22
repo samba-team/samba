@@ -1210,7 +1210,8 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 
 		DEBUG(0,("libnet_join_ok: failed to get schannel session "
 			"key from server %s for domain %s. Error was %s\n",
-		cli->desthost, netbios_domain_name, nt_errstr(status)));
+			cli_state_remote_name(cli),
+			netbios_domain_name, nt_errstr(status)));
 		cli_shutdown(cli);
 		return status;
 	}
@@ -1231,7 +1232,8 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 		DEBUG(0,("libnet_join_ok: failed to open schannel session "
 			"on netlogon pipe to server %s for domain %s. "
 			"Error was %s\n",
-			cli->desthost, netbios_domain_name, nt_errstr(status)));
+			cli_state_remote_name(cli),
+			netbios_domain_name, nt_errstr(status)));
 		return status;
 	}
 
@@ -2007,7 +2009,8 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 	create_local_private_krb5_conf_for_domain(
 		r->out.dns_domain_name, r->out.netbios_domain_name,
-		NULL, cli_state_remote_sockaddr(cli), cli->desthost);
+		NULL, cli_state_remote_sockaddr(cli),
+		cli_state_remote_name(cli));
 
 	if (r->out.domain_is_ad && r->in.account_ou &&
 	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
