@@ -531,7 +531,7 @@ NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 	/* store the server in the affinity cache if it was a PDC */
 
 	if ( (flags & NET_FLAGS_PDC) && NT_STATUS_IS_OK(nt_status) )
-		saf_store( cli->server_domain, cli->desthost );
+		saf_store(cli->server_domain, server_name);
 
 	SAFE_FREE(server_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
