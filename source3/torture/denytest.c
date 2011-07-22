@@ -1412,8 +1412,9 @@ bool torture_denytest1(int dummy)
 	uint16_t fnum1, fnum2;
 	int i;
 	bool correct = True;
-	NTSTATUS ret1, ret2;
+	NTSTATUS ret1, ret2, status;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
+	size_t nread;
 
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
@@ -1451,7 +1452,10 @@ bool torture_denytest1(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read_old(cli1, fnum2, (char *)&x, 0, 1) == 1) {
+
+			status = cli_read(cli1, fnum2, (char *)&x, 0, 1,
+					  &nread);
+			if (NT_STATUS_IS_OK(status) && nread == 1) {
 				res += A_R;
 			}
 			if (NT_STATUS_IS_OK(cli_writeall(cli1, fnum2, 0,
@@ -1506,8 +1510,9 @@ bool torture_denytest2(int dummy)
 	uint16_t fnum1, fnum2;
 	int i;
 	bool correct = True;
-	NTSTATUS ret1, ret2;
+	NTSTATUS ret1, ret2, status;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
+	size_t nread;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -1543,9 +1548,12 @@ bool torture_denytest2(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read_old(cli2, fnum2, (char *)&x, 0, 1) == 1) {
-				res += A_R;
-			}
+
+                        status = cli_read(cli2, fnum2, (char *)&x, 0, 1,
+                                          &nread);
+                        if (NT_STATUS_IS_OK(status) && nread == 1) {
+                                res += A_R;
+                        }
 			if (NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0,
 							 (uint8_t *)&x, 0, 1,
 							 NULL))) {
