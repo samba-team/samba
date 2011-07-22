@@ -499,7 +499,7 @@ NTSTATUS net_make_ipc_connection(struct net_context *c, unsigned flags,
 
 NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 				    const char *server,
-				    struct sockaddr_storage *pss,
+				    const struct sockaddr_storage *pss,
 				    unsigned flags, struct cli_state **pcli)
 {
 	char *server_name = NULL;
