@@ -37,7 +37,11 @@ def bzr_version_summary(path):
         ret = "BZR-%d" % revno
     else:
         store = get_object_store(b.repository)
-        full_rev = store._lookup_revision_sha1(revid)
+        store.lock_read()
+        try:
+            full_rev = store._lookup_revision_sha1(revid)
+        finally:
+            store.unlock()
         fields["GIT_COMMIT_ABBREV"] = full_rev[:7]
         fields["GIT_COMMIT_FULLREV"] = full_rev
         ret = "GIT-" + fields["GIT_COMMIT_ABBREV"]
