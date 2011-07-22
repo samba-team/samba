@@ -2501,7 +2501,7 @@ fail:
  */
 
 static bool got_alarm;
-static int alarm_fd;
+static struct cli_state *alarm_cli;
 
 static void alarm_handler(int dummy)
 {
@@ -2510,7 +2510,7 @@ static void alarm_handler(int dummy)
 
 static void alarm_handler_parent(int dummy)
 {
-	close(alarm_fd);
+	cli_state_disconnect(alarm_cli);
 }
 
 static void do_local_lock(int read_fd, int write_fd)
@@ -2661,7 +2661,7 @@ static bool run_locktest9(int dummy)
 	}
 
 	/* Wait 20 seconds for the lock. */
-	alarm_fd = cli1->fd;
+	alarm_cli = cli1;
 	CatchSignal(SIGALRM, alarm_handler_parent);
 	alarm(20);
 
