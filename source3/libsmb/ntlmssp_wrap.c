@@ -148,11 +148,6 @@ void auth_ntlmssp_and_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
 	ans->ntlmssp_state->neg_flags &= flags;
 }
 
-void auth_ntlmssp_or_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
-{
-	ans->ntlmssp_state->neg_flags |= flags;
-}
-
 void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
 {
 	if (ans->gensec_security) {

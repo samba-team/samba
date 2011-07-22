@@ -73,7 +73,6 @@ NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,
 NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
 				   const char *password);
 void auth_ntlmssp_and_flags(struct auth_ntlmssp_state *ans, uint32_t flags);
-void auth_ntlmssp_or_flags(struct auth_ntlmssp_state *ans, uint32_t flags);
 void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature);
 DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, 
 				       TALLOC_CTX *mem_ctx);

@@ -138,12 +138,11 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 						  NTLMSSP_NEGOTIATE_SEAL));
 
 	if (do_sign) {
-		auth_ntlmssp_or_flags(sp_ctx->mech_ctx.ntlmssp_state,
-						NTLMSSP_NEGOTIATE_SIGN);
+		auth_ntlmssp_want_feature(sp_ctx->mech_ctx.ntlmssp_state,
+					  NTLMSSP_FEATURE_SIGN);
 	} else if (do_seal) {
-		auth_ntlmssp_or_flags(sp_ctx->mech_ctx.ntlmssp_state,
-						NTLMSSP_NEGOTIATE_SEAL |
-						NTLMSSP_NEGOTIATE_SIGN);
+		auth_ntlmssp_want_feature(sp_ctx->mech_ctx.ntlmssp_state,
+					  NTLMSSP_FEATURE_SEAL);
 	}
 
 	*spnego_ctx = sp_ctx;

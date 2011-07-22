@@ -623,7 +623,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	}
 
 	auth_ntlmssp_want_feature(es->s.auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
-	auth_ntlmssp_or_flags(es->s.auth_ntlmssp_state, NTLMSSP_NEGOTIATE_SIGN|NTLMSSP_NEGOTIATE_SEAL);
+	auth_ntlmssp_want_feature(es->s.auth_ntlmssp_state, NTLMSSP_FEATURE_SEAL);
 
 	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_username(es->s.auth_ntlmssp_state, user))) {
 		goto fail;
