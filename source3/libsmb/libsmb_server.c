@@ -674,7 +674,6 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                  char **pp_password)
 {
         int flags;
-        struct sockaddr_storage ss;
 	struct cli_state *ipc_cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
         NTSTATUS nt_status;
@@ -725,10 +724,9 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         flags |= CLI_FULL_CONNECTION_USE_CCACHE;
                 }
 
-                zero_sockaddr(&ss);
                 nt_status = cli_full_connection(&ipc_cli,
 						lp_netbios_name(), server,
-						&ss, 0, "IPC$", "?????",
+						NULL, 0, "IPC$", "?????",
 						*pp_username,
 						*pp_workgroup,
 						*pp_password,
