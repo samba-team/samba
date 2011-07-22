@@ -799,6 +799,7 @@ class Cluster(object):
         self.prev = None
         self.prev = copy.deepcopy(self)
 
-        return grat_ip_moves or \
-            imbalance > options.hard_limit or \
+        # True is bad!
+        return (grat_ip_moves > 0) or \
+            (not self.have_ip_groups() and imbalance > options.hard_limit) or \
             (self.have_ip_groups() and (max(imbalance_groups) > options.hard_limit))
