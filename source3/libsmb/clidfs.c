@@ -394,7 +394,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 /****************************************************************************
 ****************************************************************************/
 
-void cli_cm_display(const struct cli_state *cli)
+void cli_cm_display(struct cli_state *cli)
 {
 	int i;
 

@@ -124,7 +124,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				int port,
 				int name_type,
 				struct cli_state **pcli);
-void cli_cm_display(const struct cli_state *c);
+void cli_cm_display(struct cli_state *c);
 struct client_dfs_referral;
 NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct cli_state *cli,
