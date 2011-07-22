@@ -6743,6 +6743,35 @@ done:
 	return ret;
 }
 
+/**
+ * reload those shares from registry that are already
+ * activated in the services array.
+ */
+static bool reload_registry_shares(void)
+{
+	int i;
+	bool ret = true;
+
+	for (i = 0; i < iNumServices; i++) {
+		if (!VALID(i)) {
+			continue;
+		}
+
+		if (ServicePtrs[i]->usershare == USERSHARE_VALID) {
+			continue;
+		}
+
+		ret = process_registry_service(ServicePtrs[i]->szService);
+		if (!ret) {
+			goto done;
+		}
+	}
+
+done:
+	return ret;
+}
+
+
 #define MAX_INCLUDE_DEPTH 100
 
 static uint8_t include_depth;
