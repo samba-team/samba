@@ -277,16 +277,23 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 					 const struct auth_usersupplied_info *user_info,
 					 struct auth_serversupplied_info **server_info)
 {
-	struct server_security_state *state = talloc_get_type_abort(
-		my_private_data, struct server_security_state);
-	struct cli_state *cli;
+	struct server_security_state *state = NULL;
+	struct cli_state *cli = NULL;
 	static bool tested_password_server = False;
 	static bool bad_password_server = False;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	bool locally_made_cli = False;
 
-	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
+	DEBUG(10, ("check_smbserver_security: Check auth for: [%s]\n",
+		user_info->mapped.account_name));
 
+	if (my_private_data == NULL) {
+		DEBUG(10,("check_smbserver_security: "
+			"password server is not connected\n"));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	state = talloc_get_type_abort(my_private_data, struct server_security_state);
 	cli = state->cli;
 
 	if (cli) {
