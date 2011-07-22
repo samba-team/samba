@@ -322,7 +322,10 @@ static struct cli_state *cli_cm_find(struct cli_state *cli,
 
 	/* Search to the start of the list. */
 	for (p = cli; p; p = DLIST_PREV(p)) {
-		if (strequal(server, p->desthost) &&
+		const char *remote_name =
+			cli_state_remote_name(p);
+
+		if (strequal(server, remote_name) &&
 				strequal(share,p->share)) {
 			return p;
 		}
@@ -330,7 +333,10 @@ static struct cli_state *cli_cm_find(struct cli_state *cli,
 
 	/* Search to the end of the list. */
 	for (p = cli->next; p; p = p->next) {
-		if (strequal(server, p->desthost) &&
+		const char *remote_name =
+			cli_state_remote_name(p);
+
+		if (strequal(server, remote_name) &&
 				strequal(share,p->share)) {
 			return p;
 		}
@@ -400,7 +406,7 @@ void cli_cm_display(struct cli_state *cli)
 
 	for (i=0; cli; cli = cli->next,i++ ) {
 		d_printf("%d:\tserver=%s, share=%s\n",
-			i, cli->desthost, cli->share );
+			i, cli_state_remote_name(cli), cli->share);
 	}
 }
 
@@ -567,7 +573,7 @@ static char *cli_dfs_make_full_path(TALLOC_CTX *ctx,
 	}
 	return talloc_asprintf(ctx, "%c%s%c%s%c%s",
 			path_sep,
-			cli->desthost,
+			cli_state_remote_name(cli),
 			path_sep,
 			cli->share,
 			path_sep,
@@ -847,7 +853,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 
 	status = cli_cm_open(ctx,
 			     rootcli,
-			     rootcli->desthost,
+			     cli_state_remote_name(rootcli),
 			     "IPC$",
 			     dfs_auth_info,
 			     false,
@@ -1026,6 +1032,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	uint16 cnum;
 	char *newextrapath = NULL;
 	NTSTATUS status;
+	const char *remote_name = cli_state_remote_name(cli);
 
 	if (!cli || !sharename) {
 		return false;
@@ -1041,7 +1048,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 
 	/* send a trans2_query_path_info to check for a referral */
 
-	fullpath = talloc_asprintf(ctx, "\\%s\\%s", cli->desthost, sharename );
+	fullpath = talloc_asprintf(ctx, "\\%s\\%s", remote_name, sharename);
 	if (!fullpath) {
 		return false;
 	}
@@ -1089,7 +1096,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 
 	/* check that this is not a self-referral */
 
-	if (strequal(cli->desthost, *pp_newserver) &&
+	if (strequal(remote_name, *pp_newserver) &&
 			strequal(sharename, *pp_newshare)) {
 		return false;
 	}
