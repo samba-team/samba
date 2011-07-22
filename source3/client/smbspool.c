@@ -245,11 +245,9 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	setup_logging("smbspool", DEBUG_STDOUT);
 
-	lp_set_in_client(True);	/* Make sure that we tell lp_load we are */
-
 	load_case_tables();
 
-	if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
+	if (!lp_load_client(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
 		goto done;
 	}

@@ -9139,7 +9139,7 @@ bool lp_load_client(const char *file_name)
 {
 	lp_set_in_client(true);
 
-	return lp_load_global_only(file_name);
+	return lp_load_global(file_name);
 }
 
 bool lp_load_with_registry_shares(const char *pszFname,
