@@ -9132,6 +9132,16 @@ bool lp_load_global(const char *file_name)
 			  false); /* load_all_shares*/
 }
 
+/**
+ * lp_load wrapper, especially for clients
+ */
+bool lp_load_client(const char *file_name)
+{
+	lp_set_in_client(true);
+
+	return lp_load_global_only(file_name);
+}
+
 bool lp_load_with_registry_shares(const char *pszFname,
 				  bool global_only,
 				  bool save_defaults,
