@@ -2947,7 +2947,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
 			     const char *my_name, 
 			     const char *dest_host, 
-			     struct sockaddr_storage *dest_ss, int port,
+			     const struct sockaddr_storage *dest_ss, int port,
 			     const char *service, const char *service_type,
 			     const char *user, const char *domain, 
 			     const char *password, int flags,
@@ -2969,10 +2969,6 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
-	}
-
-	if (dest_ss != NULL) {
-		*dest_ss = *cli_state_remote_sockaddr(cli);;
 	}
 
 	cli->use_oplocks = ((flags & CLI_FULL_CONNECTION_OPLOCKS) != 0);
