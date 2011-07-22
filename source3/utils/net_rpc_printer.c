@@ -401,8 +401,11 @@ NTSTATUS net_copy_file(struct net_context *c,
 					 (uint8_t *)data, nread, n, NULL);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			d_fprintf(stderr, _("Error writing file: %s\n"),
-				  nt_errstr(nt_status));
+			d_fprintf(stderr,
+				  _("Error writing file: [\\\\%s\%s%s]: %s\n"),
+				  cli_state_remote_name(cli_share_dst),
+				  cli_share_dst->share,
+				  dst_name, nt_errstr(nt_status));
 			goto out;
 		}
 
