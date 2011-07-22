@@ -368,8 +368,10 @@ NTSTATUS net_copy_file(struct net_context *c,
 
 		d_printf(_("copying [\\\\%s\\%s%s] => [\\\\%s\\%s%s] "
 			   "%s ACLs and %s DOS Attributes %s\n"),
-			cli_share_src->desthost, cli_share_src->share, src_name,
-			cli_share_dst->desthost, cli_share_dst->share, dst_name,
+			cli_state_remote_name(cli_share_src),
+			cli_share_src->share, src_name,
+			cli_state_remote_name(cli_share_dst),
+			cli_share_dst->share, dst_name,
 			copy_acls ?  _("with") : _("without"),
 			copy_attrs ? _("with") : _("without"),
 			copy_timestamps ? _("(preserving timestamps)") : "" );
@@ -1897,7 +1899,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	/* open print$-share on the src server */
 	nt_status = connect_to_service(c, &cli_share_src,
 				       cli_state_remote_sockaddr(cli),
-				       cli->desthost,
+				       cli_state_remote_name(cli),
 				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
@@ -1908,7 +1910,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	/* open print$-share on the dst server */
 	nt_status = connect_to_service(c, &cli_share_dst,
 				       cli_state_remote_sockaddr(cli_dst),
-				       cli_dst->desthost,
+				       cli_state_remote_name(cli_dst),
 				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
