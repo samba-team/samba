@@ -2037,7 +2037,7 @@ static bool run_locktest4(int dummy)
 
 
 	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 120, 4, 0, WRITE_LOCK)) &&
-	      (cli_read_old(cli2, fnum2, buf, 120, 4) == 4);
+	      test_cli_read(cli2, fnum2, buf, 120, 4, NULL, 4);
 	EXPECTED(ret, False);
 	printf("this server %s strict write locking\n", ret?"doesn't do":"does");
 
@@ -2063,7 +2063,7 @@ static bool run_locktest4(int dummy)
 	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 150, 4, 0, WRITE_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 150, 4, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 150, 4)) &&
-	      (cli_read_old(cli2, fnum2, buf, 150, 4) == 4) &&
+	      test_cli_read(cli2, fnum2, buf, 150, 4, NULL, 4) &&
 	      !(NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					     150, 4, NULL))) &&
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 150, 4));
@@ -2074,7 +2074,7 @@ static bool run_locktest4(int dummy)
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 160, 4)) &&
 	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					   160, 4, NULL)) &&
-	      (cli_read_old(cli2, fnum2, buf, 160, 4) == 4);		
+	      test_cli_read(cli2, fnum2, buf, 160, 4, NULL, 4);
 	EXPECTED(ret, True);
 	printf("the same process %s remove a read lock using write locking\n", ret?"can":"cannot");
 
@@ -2082,7 +2082,7 @@ static bool run_locktest4(int dummy)
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 170, 4)) &&
 	      NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					   170, 4, NULL)) &&
-	      (cli_read_old(cli2, fnum2, buf, 170, 4) == 4);		
+	      test_cli_read(cli2, fnum2, buf, 170, 4, NULL, 4);
 	EXPECTED(ret, True);
 	printf("the same process %s remove a write lock using read locking\n", ret?"can":"cannot");
 
@@ -2091,7 +2091,7 @@ static bool run_locktest4(int dummy)
 	      NT_STATUS_IS_OK(cli_unlock(cli1, fnum1, 190, 4)) &&
 	      !NT_STATUS_IS_OK(cli_writeall(cli2, fnum2, 0, (uint8_t *)buf,
 					    190, 4, NULL)) &&
-	      (cli_read_old(cli2, fnum2, buf, 190, 4) == 4);		
+	      test_cli_read(cli2, fnum2, buf, 190, 4, NULL, 4);
 	EXPECTED(ret, True);
 	printf("the same process %s remove the first lock first\n", ret?"does":"doesn't");
 
