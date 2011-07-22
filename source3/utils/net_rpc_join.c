@@ -442,7 +442,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	}
 
 	status = rpccli_netlogon_setup_creds(pipe_hnd,
-					cli->desthost, /* server name */
+					pipe_hnd->desthost, /* server name */
 					domain,        /* domain */
 					lp_netbios_name(), /* client name */
 					lp_netbios_name(), /* machine account name */
