@@ -74,6 +74,9 @@ def process_args(extra_options=[]):
     parser.add_option("-o", "--odds",
                       action="store", type="int", dest="odds", default=4,
                       help="make the chances of a failover 1 in ODDS [default: %default]")
+    parser.add_option("-A", "--aggressive",
+                      action="store_true", dest="aggressive", default=False,
+                      help="apply ODDS to try to flip each node [default: %default]")
 
     def seed_callback(option, opt, value, parser):
         random.seed(value)
@@ -322,27 +325,42 @@ class Cluster(object):
 
     def do_something_random(self):
 
+        """Make random node(s) healthy or unhealthy.
 
-        """Make a random node healthy or unhealthy.
+        If options.aggressive is False then: If all nodes are healthy
+        or unhealthy, then invert one of them; otherwise, there's a 1
+        in options.odds chance of making another node unhealthy.
 
-        If all nodes are healthy or unhealthy, then invert one of
-        them.  Otherwise, there's a 1 in options.odds chance of making
-        another node unhealthy."""
+        If options.aggressive is True then: For each node there is a 1
+        in options.odds chance of flipping the state of that node
+        between healthy and unhealthy."""
 
-        num_nodes = len(self.nodes)
-        healthy_pnns = [i for (i,n) in enumerate(self.nodes) if n.healthy]
-        num_healthy = len(healthy_pnns)
+        if not options.aggressive:
+            num_nodes = len(self.nodes)
+            healthy_pnns = [i for (i,n) in enumerate(self.nodes) if n.healthy]
+            num_healthy = len(healthy_pnns)
 
-        if num_nodes == num_healthy:
-            self.unhealthy(random.randint(0, num_nodes-1))
-        elif num_healthy == 0:
-            self.healthy(random.randint(0, num_nodes-1))
-        elif random.randint(1, options.odds) == 1:
-            self.unhealthy(random.choice(healthy_pnns))
+            if num_nodes == num_healthy:
+                self.unhealthy(random.randint(0, num_nodes-1))
+            elif num_healthy == 0:
+                self.healthy(random.randint(0, num_nodes-1))
+            elif random.randint(1, options.odds) == 1:
+                self.unhealthy(random.choice(healthy_pnns))
+            else:
+                all_pnns = range(num_nodes)
+                unhealthy_pnns = sorted(list(set(all_pnns) - set(healthy_pnns)))
+                self.healthy(random.choice(unhealthy_pnns))
         else:
-            all_pnns = range(num_nodes)
-            unhealthy_pnns = sorted(list(set(all_pnns) - set(healthy_pnns)))
-            self.healthy(random.choice(unhealthy_pnns))
+            # We need to make at least one change or we retry...x
+            changed = False
+            while not changed:
+                for (pnn, n) in enumerate(self.nodes):
+                    if random.randint(1, options.odds) == 1:
+                        changed = True
+                        if n.healthy:
+                            self.unhealthy(pnn)
+                        else:
+                            self.healthy(pnn)
 
     def random_iterations(self):
         i = 1
