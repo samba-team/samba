@@ -773,7 +773,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			}
 
 			ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
-						cli->desthost,   /* server name */
+						cmd_entry->rpc_pipe->desthost,   /* server name */
 						get_cmdline_auth_info_domain(auth_info),  /* domain */
 						lp_netbios_name(), /* client name */
 						machine_account, /* machine account name */
