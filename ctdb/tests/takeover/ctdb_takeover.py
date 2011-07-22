@@ -29,6 +29,7 @@ import sys
 from optparse import OptionParser
 import copy
 import random
+import itertools
 
 # For parsing IP addresses
 import socket
@@ -191,7 +192,20 @@ def imbalance_metric(ips):
 
 class Node(object):
     def __init__(self, public_addresses):
-        self.public_addresses = set(public_addresses)
+        # List of list allows groups of IPs to be passed in.  They're
+        # not actually used in the algorithm but are just used by
+        # calculate_imbalance() for checking the simulation.  Note
+        # that people can pass in garbage and make this code
+        # fail... but we're all friends here in simulation world...
+        # :-)
+        if type(public_addresses[0]) is str:
+            self.public_addresses = set(public_addresses)
+            self.ip_groups = []
+        else:
+            # flatten
+            self.public_addresses = set([i for s in public_addresses for i in s])
+            self.ip_groups = public_addresses
+
         self.current_addresses = set()
         self.healthy = True
         self.imbalance = -1
@@ -199,8 +213,8 @@ class Node(object):
     def can_node_serve_ip(self, ip):
         return ip in self.public_addresses
 
-    def node_ip_coverage(self):
-        return len(self.current_addresses)
+    def node_ip_coverage(self, ips=None):
+        return len([a for a in self.current_addresses if ips == None or a in ips])
 
     def set_imbalance(self, imbalance=-1):
         """Set the imbalance metric to the given value.  If none given
@@ -225,7 +239,10 @@ class Cluster(object):
         self.ip_moves = []
         self.grat_ip_moves = []
         self.imbalance = []
+        self.imbalance_groups = []
         self.imbalance_count = 0
+        self.imbalance_groups_count = itertools.repeat(0)
+        self.imbalance_metric = []
         self.events = -1
         self.num_unhealthy = []
 
@@ -239,14 +256,29 @@ class Cluster(object):
                            sorted(list(n.current_addresses)))
                           for (i, n) in enumerate(self.nodes)])
 
+    # This is naive.  It assumes that IP groups are indicated by the
+    # 1st node having IP groups.
+    def have_ip_groups(self):
+        return (len(self.nodes[0].ip_groups) > 0)
+
     def print_statistics(self):
         print_begin("STATISTICS")
         print "Events:                      %6d" % self.events
         print "Total IP moves:              %6d" % sum(self.ip_moves)
         print "Gratuitous IP moves:         %6d" % sum(self.grat_ip_moves)
         print "Max imbalance:               %6d" % max(self.imbalance)
+        if self.have_ip_groups():
+            print "Max group imbalance counts:    ", map(max, zip(*self.imbalance_groups))
         print "Final imbalance:             %6d" % self.imbalance[-1]
+        if self.have_ip_groups():
+            print "Final group imbalances:         ", self.imbalance_groups[-1]
+        if options.lcp2:
+            print "Max imbalance metric:        %6d" % max(self.imbalance_metric)
         print "Soft imbalance count:        %6d" % self.imbalance_count
+        if self.have_ip_groups():
+            print "Soft imbalance group counts:    ", self.imbalance_groups_count
+        if options.lcp2:
+            print "Final imbalance metric:      %6d" % self.imbalance_metric[-1]
         print "Maximum unhealthy:           %6d" % max(self.num_unhealthy)
         print_end()
 
@@ -321,29 +353,20 @@ class Cluster(object):
 
         self.print_statistics()
 
-    def calculate_imbalance(self):
+    def imbalance_for_ips(self, ips):
 
         imbalance = 0
 
-        assigned = sorted([ip
-                           for n in self.nodes
-                           for ip in n.current_addresses])
+        maxnode = -1
+        minnode = -1
 
-        for ip in assigned:
-
-            num_capable = 0
-            maxnode = -1
-            minnode = -1
+        for ip in ips:
             for (i, n) in enumerate(self.nodes):
-                if not n.healthy:
+
+                if not n.healthy or not n.can_node_serve_ip(ip):
                     continue
 
-                if not n.can_node_serve_ip(ip):
-                    continue
-
-                num_capable += 1
-
-                num = n.node_ip_coverage()
+                num = n.node_ip_coverage(ips)
 
                 if maxnode == -1 or num > maxnum:
                     maxnode = i
@@ -353,7 +376,7 @@ class Cluster(object):
                     minnode = i
                     minnum = num
 
-            if maxnode == -1:
+            if maxnode == -1 or minnode == -1:
                 continue
 
             i = maxnum - minnum
@@ -362,6 +385,26 @@ class Cluster(object):
             imbalance = max([imbalance, i])
 
         return imbalance
+
+
+    def calculate_imbalance(self):
+
+        # First, do all the assigned IPs.
+        assigned = sorted([ip
+                           for n in self.nodes
+                           for ip in n.current_addresses])
+
+        i = self.imbalance_for_ips(assigned)
+
+        ig = []
+        # FIXME?  If dealing with IP groups, assume the nodes are all
+        # the same.
+        for ips in self.nodes[0].ip_groups:
+            gi = self.imbalance_for_ips(ips)
+            ig.append(gi)
+
+        return (i, ig)
+
 
     def diff(self):
         """Calculate differences in IP assignments between self and prev.
@@ -694,14 +737,30 @@ class Cluster(object):
                 print "\n".join(details)
                 print_end()
 
-        imbalance = self.calculate_imbalance()
+        (imbalance, imbalance_groups) = self.calculate_imbalance()
         self.imbalance.append(imbalance)
+        self.imbalance_groups.append(imbalance_groups)
+
         if imbalance > options.soft_limit:
             self.imbalance_count += 1
 
+        # There must be a cleaner way...
+        t = []
+        for (c, i) in zip(self.imbalance_groups_count, imbalance_groups):
+            if i > options.soft_limit:
+                t.append(c + i)
+            else:
+                t.append(c)
+        self.imbalance_groups_count = t
+
+        imbalance_metric = max([n.get_imbalance() for n in self.nodes])
+        self.imbalance_metric.append(imbalance_metric)
         if options.balance:
             print_begin("IMBALANCE")
-            print imbalance
+            print "ALL IPS:", imbalance
+            if self.have_ip_groups():
+                print "IP GROUPS:", imbalance_groups
+            print "MAX IMBALANCE METRIC:", imbalance_metric
             print_end()
 
         num_unhealthy = len(self.nodes) - \
@@ -717,4 +776,5 @@ class Cluster(object):
         self.prev = copy.deepcopy(self)
 
         return grat_ip_moves or \
-            imbalance > options.hard_limit
+            imbalance > options.hard_limit or \
+            (self.have_ip_groups() and (max(imbalance_groups) > options.hard_limit))
