@@ -691,20 +691,6 @@ static NTSTATUS cli_read_sink(char *buf, size_t n, void *priv)
 	return NT_STATUS_OK;
 }
 
-ssize_t cli_read_old(struct cli_state *cli, uint16_t fnum, char *buf,
-		 off_t offset, size_t size)
-{
-	NTSTATUS status;
-	SMB_OFF_T ret;
-
-	status = cli_pull(cli, fnum, offset, size, size,
-			  cli_read_sink, &buf, &ret);
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	}
-	return ret;
-}
-
 NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
 		 char *buf, off_t offset, size_t size,
 		 size_t *nread)

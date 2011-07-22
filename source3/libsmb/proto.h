@@ -746,8 +746,6 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  off_t start_offset, SMB_OFF_T size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
 		  void *priv, SMB_OFF_T *received);
-ssize_t cli_read_old(struct cli_state *cli, uint16_t fnum, char *buf,
-		 off_t offset, size_t size);
 NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
 		  char *buf, off_t offset, size_t size,
 		  size_t *nread);
