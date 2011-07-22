@@ -874,7 +874,7 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
 bld.SAMBA3_LIBRARY('smbconf',
                    source=LIB_SMBCONF_SRC,
                    deps='''LIBSMBCONF smbregistry REG_SMBCONF talloc param
-                   util_reg samba-util errors3 CHARSET SAMBA_VERSION''',
+                   util_reg samba-util errors3 charset SAMBA_VERSION''',
                    public_headers='../lib/smbconf/smbconf.h',
                    vnum='0')
 
@@ -1023,7 +1023,7 @@ bld.SAMBA3_LIBRARY('string_init',
 
 bld.SAMBA3_LIBRARY('util_str',
                    source='''lib/util_str.c''',
-                   deps='samba-util CHARSET',
+                   deps='samba-util charset',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('util_sec',
@@ -1048,7 +1048,7 @@ bld.SAMBA3_LIBRARY('memcache',
 
 bld.SAMBA3_LIBRARY('CHARSET3',
                     source='''lib/charcnv.c lib/fstring.c''',
-                    public_deps='ICONV_WRAPPER CHARSET',
+                    public_deps='ICONV_WRAPPER charset',
                     deps='samba-util util_str',
                    private_library=True)
 
