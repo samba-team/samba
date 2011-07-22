@@ -2839,7 +2839,7 @@ fail:
 	return status;
 }
 
-NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
+NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
 			uint16_t port, int name_type, const char *myname,
 			int signing_state, struct cli_state **pcli)
 {
@@ -2864,8 +2864,8 @@ NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
 		}
 	}
 
-	status = cli_connect_sock(host, name_type, pss, myname, port, 20, &fd,
-				  &port);
+	status = cli_connect_sock(host, name_type, dest_ss, myname, port,
+				  20, &fd, &port);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -2873,10 +2873,6 @@ NTSTATUS cli_connect_nb(const char *host, struct sockaddr_storage *pss,
 	cli = cli_state_create(NULL, fd, desthost, signing_state);
 	if (cli == NULL) {
 		goto fail;
-	}
-
-	if (pss != NULL) {
-		*pss = cli->dest_ss;
 	}
 
 	*pcli = cli;
@@ -2908,6 +2904,10 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 		DEBUG(10, ("cli_connect_nb failed: %s\n",
 			   nt_errstr(nt_status)));
 		return nt_status;
+	}
+
+	if (dest_ss != NULL) {
+		*dest_ss = *cli_state_remote_sockaddr(cli);;
 	}
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO)
