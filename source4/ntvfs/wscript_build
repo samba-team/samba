@@ -9,7 +9,7 @@ bld.SAMBA_MODULE('ntvfs_cifs',
 	source='cifs/vfs_cifs.c',
 	subsystem='ntvfs',
 	init_function='ntvfs_cifs_init',
-	deps='LIBCLI_SMB LIBCLI_RAW'
+	deps='LIBCLI_SMB cli_raw'
 	)
 
 
@@ -17,7 +17,7 @@ bld.SAMBA_MODULE('ntvfs_smb2',
 	source='smb2/vfs_smb2.c',
 	subsystem='ntvfs',
 	init_function='ntvfs_smb2_init',
-	deps='LIBCLI_SMB LIBCLI_RAW'
+	deps='LIBCLI_SMB cli_raw'
 	)
 
 

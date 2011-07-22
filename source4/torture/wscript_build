@@ -4,14 +4,14 @@
 bld.SAMBA_SUBSYSTEM('TORTURE_UTIL',
 	source='util_smb.c',
 	public_deps='torture POPT_CREDENTIALS',
-	deps='LIBCLI_RAW'
+	deps='cli_raw'
 	)
 
 
 bld.SAMBA_MODULE('TORTURE_BASIC',
 	source='basic/base.c basic/misc.c basic/scanner.c basic/utable.c basic/charset.c basic/mangle_test.c basic/denytest.c basic/aliases.c basic/locking.c basic/secleak.c basic/rename.c basic/dir.c basic/delete.c basic/unlink.c basic/disconnect.c basic/delaywrite.c basic/attr.c basic/properties.c',
 	subsystem='smbtorture',
-	deps='LIBCLI_SMB POPT_CREDENTIALS TORTURE_UTIL LIBCLI_RAW TORTURE_RAW',
+	deps='LIBCLI_SMB POPT_CREDENTIALS TORTURE_UTIL cli_raw TORTURE_RAW',
 	internal_module=True,
 	autoproto='basic/proto.h',
 	init_function='torture_base_init'
@@ -157,7 +157,7 @@ bld.SAMBA_BINARY('smbtorture',
 bld.SAMBA_BINARY('gentest',
 	source='gentest.c',
 	manpages='man/gentest.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB LIBCLI_RAW'
+	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB cli_raw'
 	)
 
 

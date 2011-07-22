@@ -138,7 +138,7 @@ bld.SAMBA_LIBRARY('dcerpc',
 	rpc/dcerpc_util.c rpc/dcerpc_smb.c rpc/dcerpc_smb2.c rpc/dcerpc_sock.c
 	rpc/dcerpc_connect.c rpc/dcerpc_secondary.c''',
 	pc_files='dcerpc.pc',
-	deps='samba_socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 ndr NDR_DCERPC RPC_NDR_EPMAPPER NDR_SCHANNEL RPC_NDR_NETLOGON RPC_NDR_MGMT gensec LIBCLI_AUTH LIBCLI_RAW LP_RESOLVE UTIL_TEVENT rpccommon',
+	deps='samba_socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 ndr NDR_DCERPC RPC_NDR_EPMAPPER NDR_SCHANNEL RPC_NDR_NETLOGON RPC_NDR_MGMT gensec LIBCLI_AUTH cli_raw LP_RESOLVE UTIL_TEVENT rpccommon',
 	autoproto='rpc/dcerpc_proto.h',
 	public_deps='credentials tevent talloc',
 	public_headers='''rpc/dcerpc.h ../../librpc/gen_ndr/mgmt.h

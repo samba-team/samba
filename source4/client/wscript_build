@@ -2,7 +2,7 @@
 
 bld.SAMBA_BINARY('smbclient',
 	source='client.c',
-	deps='samba-hostconfig SMBREADLINE samba-util LIBCLI_SMB RPC_NDR_SRVSVC LIBCLI_LSA popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_RAW'
+	deps='samba-hostconfig SMBREADLINE samba-util LIBCLI_SMB RPC_NDR_SRVSVC LIBCLI_LSA popt POPT_SAMBA POPT_CREDENTIALS cli_raw'
 	)
 
 
