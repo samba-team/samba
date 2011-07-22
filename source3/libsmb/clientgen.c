@@ -163,7 +163,7 @@ NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char 
 
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
-				   const char *desthost,
+				   const char *remote_name,
 				   int signing_state)
 {
 	struct cli_state *cli = NULL;
@@ -238,8 +238,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	}
 	cli->conn.pending = NULL;
 
-	cli->desthost = talloc_strdup(cli, desthost);
-	if (cli->desthost == NULL) {
+	cli->conn.remote_name = talloc_strdup(cli, remote_name);
+	if (cli->conn.remote_name == NULL) {
 		goto error;
 	}
 
@@ -378,7 +378,7 @@ const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli)
 
 const char *cli_state_remote_name(struct cli_state *cli)
 {
-	return cli->desthost;
+	return cli->conn.remote_name;
 }
 
 uint16_t cli_state_get_vc_num(struct cli_state *cli)

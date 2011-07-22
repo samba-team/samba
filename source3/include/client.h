@@ -56,8 +56,6 @@ struct cli_state {
 	int rap_error;
 	NTSTATUS raw_status; /* maybe via NT_STATUS_DOS() */
 
-	char *desthost;
-
 	/* The credentials used to open the cli_state connection. */
 	char *domain;
 	char *user_name;
@@ -125,6 +123,7 @@ struct cli_state {
 		int fd;
 		struct sockaddr_storage local_ss;
 		struct sockaddr_storage remote_ss;
+		const char *remote_name;
 		struct tevent_queue *outgoing;
 		struct tevent_req **pending;
 	} conn;

@@ -161,7 +161,7 @@ NTSTATUS cli_set_password(struct cli_state *cli, const char *password);
 NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password);
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
-				   const char *desthost,
+				   const char *remote_name,
 				   int signing_state);
 bool cli_state_encryption_on(struct cli_state *cli);
 void cli_nt_pipes_close(struct cli_state *cli);
