@@ -381,11 +381,20 @@ NTSTATUS net_copy_file(struct net_context *c,
 	while (is_file) {
 
 		/* copying file */
-		int n;
-		n = cli_read_old(cli_share_src, fnum_src, data, nread,
-				read_size);
+		size_t n;
 
-		if (n <= 0)
+		nt_status = cli_read(cli_share_src, fnum_src, data, nread,
+				     read_size, &n);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			d_fprintf(stderr,
+				  _("Error reading file [\\\\%s\%s%s]: %s\n"),
+				  cli_state_remote_name(cli_share_src),
+				  cli_share_src->share,
+				  src_name, nt_errstr(nt_status));
+			goto out;
+		}
+
+		if (n == 0)
 			break;
 
 		nt_status = cli_writeall(cli_share_dst, fnum_dst, 0,
