@@ -92,6 +92,8 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 		return nt_status_squash(status);
 	}
 
+	auth_ntlmssp_want_feature(ec->auth_ntlmssp_state, NTLMSSP_FEATURE_SEAL);
+
 	/*
 	 * We must remember to update the pointer copy for the common
 	 * functions after any auth_ntlmssp_start/auth_ntlmssp_end.

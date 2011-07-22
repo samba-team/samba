@@ -43,17 +43,12 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	/* Clear flags, then set them according to requested flags */
-	auth_ntlmssp_and_flags(a, ~(NTLMSSP_NEGOTIATE_SIGN |
-					NTLMSSP_NEGOTIATE_SEAL));
-
 	if (do_sign) {
-		auth_ntlmssp_or_flags(a, NTLMSSP_NEGOTIATE_SIGN);
+		auth_ntlmssp_want_feature(a, NTLMSSP_FEATURE_SIGN);
 	}
 	if (do_seal) {
 		/* Always implies both sign and seal for ntlmssp */
-		auth_ntlmssp_or_flags(a, NTLMSSP_NEGOTIATE_SIGN |
-					 NTLMSSP_NEGOTIATE_SEAL);
+		auth_ntlmssp_want_feature(a, NTLMSSP_FEATURE_SEAL);
 	}
 
 	status = auth_ntlmssp_update(a, mem_ctx, *token_in, token_out);

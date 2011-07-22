@@ -392,6 +392,8 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 			goto out;
 		}
 
+		auth_ntlmssp_want_feature(session->auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+
 		status = auth_ntlmssp_update(session->auth_ntlmssp_state,
 					     talloc_tos(),
 					     secblob_in,

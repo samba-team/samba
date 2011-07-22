@@ -737,6 +737,10 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(struct ntlmssp_state **ntlmssp_st
 		return status;
 	}
 
+	(*ntlmssp_state)->neg_flags |=
+		(NTLMSSP_NEGOTIATE_SIGN |
+		 NTLMSSP_NEGOTIATE_SEAL);
+
 	/* Have we been given a local password, or should we ask winbind? */
 	if (opt_password) {
 		(*ntlmssp_state)->check_password = local_pw_check;

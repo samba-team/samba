@@ -633,8 +633,10 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		return;
 	}
 
+	auth_ntlmssp_want_feature(*auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+
 	status = auth_ntlmssp_update(*auth_ntlmssp_state, talloc_tos(),
-				     secblob, &chal);
+					secblob, &chal);
 
 	data_blob_free(&secblob);
 

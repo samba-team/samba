@@ -333,9 +333,7 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
-		NTLMSSP_NEGOTIATE_KEY_EXCH |
-		NTLMSSP_NEGOTIATE_SIGN |
-		NTLMSSP_NEGOTIATE_SEAL;
+		NTLMSSP_NEGOTIATE_KEY_EXCH;
 
 	ntlmssp_state->server.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
 	if (!ntlmssp_state->server.netbios_name) {
