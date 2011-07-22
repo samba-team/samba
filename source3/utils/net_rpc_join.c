@@ -512,7 +512,8 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* double-check, connection from scratch */
-	status = net_rpc_join_ok(c, domain, cli->desthost, &cli->dest_ss);
+	status = net_rpc_join_ok(c, domain, cli->desthost,
+				 cli_state_remote_sockaddr(cli));
 	retval = NT_STATUS_IS_OK(status) ? 0 : -1;
 
 done:
