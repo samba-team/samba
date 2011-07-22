@@ -94,15 +94,10 @@ struct ntlmssp_state *auth_ntlmssp_get_ntlmssp_state(
 	return ans->ntlmssp_state;
 }
 
-/* Needed for 'map to guest' and 'smb username' processing */
+/* Needed for 'smb username' processing */
 const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans)
 {
 	return ans->ntlmssp_state->user;
-}
-
-const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *ans)
-{
-	return ans->ntlmssp_state->domain;
 }
 
 const uint8_t *auth_ntlmssp_get_nt_hash(struct auth_ntlmssp_state *ans)
