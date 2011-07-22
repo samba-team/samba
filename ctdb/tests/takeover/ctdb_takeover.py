@@ -436,9 +436,7 @@ class Cluster(object):
         """Calculate differences in IP assignments between self and prev.
 
         Gratuitous IP moves (from a healthy node to a healthy node)
-        are prefix by !!.  Any gratuitous IP moves cause this function
-        to return False.  If there are no gratuitous moves then it
-        will return True."""
+        are prefixed by !!."""
 
         ip_moves = 0
         grat_ip_moves = 0
