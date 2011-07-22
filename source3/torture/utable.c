@@ -188,7 +188,7 @@ bool torture_casetable(int dummy)
 				return False;
 			}
 
-			cli_read_old(cli, fnum, (char *)c2, 0, size);
+			cli_read(cli, fnum, (char *)c2, 0, size, NULL);
 			printf("%04x: ", c);
 			equiv[c][0] = c;
 			for (i=0; i<size/sizeof(int); i++) {
