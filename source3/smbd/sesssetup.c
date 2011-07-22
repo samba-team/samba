@@ -46,68 +46,6 @@ struct pending_auth_data {
 	DATA_BLOB partial_data;
 };
 
-/*
-  on a logon error possibly map the error to success if "map to guest"
-  is set approriately
-*/
-static NTSTATUS do_map_to_guest_server_info(NTSTATUS status,
-					    struct auth_serversupplied_info **server_info,
-					    const char *user, const char *domain)
-{
-	user = user ? user : "";
-	domain = domain ? domain : "";
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-		if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) ||
-		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
-			DEBUG(3,("No such user %s [%s] - using guest account\n",
-				 user, domain));
-			status = make_server_info_guest(NULL, server_info);
-		}
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
-			DEBUG(3,("Registered username %s for guest access\n",
-				user));
-			status = make_server_info_guest(NULL, server_info);
-		}
-	}
-
-	return status;
-}
-
-/*
-  on a logon error possibly map the error to success if "map to guest"
-  is set approriately
-*/
-NTSTATUS do_map_to_guest(NTSTATUS status,
-			struct auth_session_info **session_info,
-			const char *user, const char *domain)
-{
-	user = user ? user : "";
-	domain = domain ? domain : "";
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-		if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) ||
-		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
-			DEBUG(3,("No such user %s [%s] - using guest account\n",
-				 user, domain));
-			status = make_session_info_guest(NULL, session_info);
-		}
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
-			DEBUG(3,("Registered username %s for guest access\n",
-				user));
-			status = make_session_info_guest(NULL, session_info);
-		}
-	}
-
-	return status;
-}
-
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.
 ****************************************************************************/
@@ -494,15 +432,6 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		nt_status = auth_ntlmssp_steal_session_info(talloc_tos(),
 					(*auth_ntlmssp_state), &session_info);
-	} else {
-		/* Note that this session_info won't have a session
-		 * key.  But for map to guest, that's exactly the right
-		 * thing - we can't reasonably guess the key the
-		 * client wants, as the password was wrong */
-		nt_status = do_map_to_guest(nt_status,
-					    &session_info,
-					    auth_ntlmssp_get_username(*auth_ntlmssp_state),
-					    auth_ntlmssp_get_domain(*auth_ntlmssp_state));
 	}
 
 	reply_outbuf(req, 4, 0);

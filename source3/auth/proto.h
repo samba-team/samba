@@ -214,6 +214,10 @@ NTSTATUS make_user_info(struct auth_usersupplied_info **ret_user_info,
 			enum auth_password_state password_state);
 void free_user_info(struct auth_usersupplied_info **user_info);
 
+NTSTATUS do_map_to_guest_server_info(NTSTATUS status,
+				     struct auth_serversupplied_info **server_info,
+				     const char *user, const char *domain);
+
 /* The following definitions come from auth/auth_winbind.c  */
 
 NTSTATUS auth_winbind_init(void);

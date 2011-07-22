@@ -145,6 +145,10 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	free_user_info(&user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		nt_status = do_map_to_guest_server_info(nt_status,
+							&auth_ntlmssp_state->server_info,
+							auth_ntlmssp_state->ntlmssp_state->user,
+							auth_ntlmssp_state->ntlmssp_state->domain);
 		return nt_status;
 	}
 
