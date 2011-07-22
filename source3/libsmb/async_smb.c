@@ -430,7 +430,7 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 		iov[0].iov_len = talloc_get_size(buf);
 		iov_count = 1;
 	}
-	subreq = writev_send(state, state->ev, state->cli->outgoing,
+	subreq = writev_send(state, state->ev, state->cli->conn.outgoing,
 			     state->cli->fd, false, iov, iov_count);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -954,7 +954,7 @@ NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 
 bool cli_has_async_calls(struct cli_state *cli)
 {
-	return ((tevent_queue_length(cli->outgoing) != 0)
+	return ((tevent_queue_length(cli->conn.outgoing) != 0)
 		|| (talloc_array_length(cli->conn.pending) != 0));
 }
 

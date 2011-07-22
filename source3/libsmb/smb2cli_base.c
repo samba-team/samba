@@ -293,7 +293,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	iov[0].iov_base = state->nbt;
 	iov[0].iov_len  = sizeof(state->nbt);
 
-	subreq = writev_send(state, state->ev, state->cli->outgoing,
+	subreq = writev_send(state, state->ev, state->cli->conn.outgoing,
 			     state->cli->fd, false, iov, num_iov);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;

@@ -233,8 +233,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	cli->outgoing = tevent_queue_create(cli, "cli_outgoing");
-	if (cli->outgoing == NULL) {
+	cli->conn.outgoing = tevent_queue_create(cli, "cli_outgoing");
+	if (cli->conn.outgoing == NULL) {
 		goto error;
 	}
 	cli->conn.pending = NULL;
