@@ -4359,6 +4359,24 @@ static int cmd_tcon(void)
 	return 0;
 }
 
+/**
+ * tree disconnect (disconnect from a share)
+ */
+
+static int cmd_tdis(void)
+{
+	NTSTATUS status;
+
+	status = cli_tdis(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("tdis failed: %s\n", nt_errstr(status));
+		return -1;
+	}
+
+	d_printf("tdis successful\n");
+	return 0;
+}
+
 
 /****************************************************************************
  list active connections
@@ -4549,6 +4567,7 @@ static struct {
   {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
   {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},
   {"tcon",cmd_tcon,"connect to a share" ,{COMPL_NONE,COMPL_NONE}},
+  {"tdis",cmd_tdis,"disconnect from a share",{COMPL_NONE,COMPL_NONE}},
   {"logoff",cmd_logoff,"log off (close the session)",{COMPL_NONE,COMPL_NONE}},
   {"..",cmd_cd_oneup,"change the remote directory (up one level)",{COMPL_REMOTE,COMPL_NONE}},
 
