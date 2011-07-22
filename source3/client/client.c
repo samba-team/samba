@@ -4327,6 +4327,39 @@ static int cmd_logoff(void)
 }
 
 
+/**
+ * tree connect (connect to a share)
+ */
+
+static int cmd_tcon(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *sharename;
+	NTSTATUS status;
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &sharename, NULL)) {
+		d_printf("tcon <sharename>\n");
+		return 0;
+	}
+
+	if (!sharename) {
+		return 1;
+	}
+
+	status = cli_tcon_andx(cli, sharename, "?????", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("tcon failed: %s\n", nt_errstr(status));
+		return -1;
+	}
+
+	talloc_free(sharename);
+
+	d_printf("tcon to %s successful, tid: %u\n", sharename,
+		 cli_state_get_tid(cli));
+	return 0;
+}
+
+
 /****************************************************************************
  list active connections
 ****************************************************************************/
@@ -4515,6 +4548,7 @@ static struct {
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
   {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
   {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},
+  {"tcon",cmd_tcon,"connect to a share" ,{COMPL_NONE,COMPL_NONE}},
   {"logoff",cmd_logoff,"log off (close the session)",{COMPL_NONE,COMPL_NONE}},
   {"..",cmd_cd_oneup,"change the remote directory (up one level)",{COMPL_REMOTE,COMPL_NONE}},
 
