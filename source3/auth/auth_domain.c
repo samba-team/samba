@@ -299,7 +299,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 	/* store a successful connection */
 
-	saf_store( domain, cli->desthost );
+	saf_store(domain, dc_name);
 
         /*
          * If this call succeeds, we now have lots of info about the user
