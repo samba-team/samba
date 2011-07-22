@@ -554,7 +554,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			}
 
 			workgroup = talloc_strdup(frame, wg_ptr);
-			server = talloc_strdup(frame, cli->desthost);
+			server = talloc_strdup(frame, cli_state_remote_name(cli));
 
                         cli_shutdown(cli);
 
@@ -2003,7 +2003,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	}
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath2);*/
 
-	if (strcmp(targetcli1->desthost, targetcli2->desthost) ||
+	if (strcmp(cli_state_remote_name(targetcli1), cli_state_remote_name(targetcli2)) ||
             strcmp(targetcli1->share, targetcli2->share))
 	{
 		/* can't rename across file systems */
