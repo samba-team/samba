@@ -48,7 +48,7 @@ static void smb2cli_req_unset_pending(struct tevent_req *req)
 		tevent_req_data(req,
 		struct smb2cli_req_state);
 	struct cli_state *cli = state->cli;
-	int num_pending = talloc_array_length(cli->pending);
+	int num_pending = talloc_array_length(cli->conn.pending);
 	int i;
 
 	talloc_set_destructor(req, NULL);
@@ -56,15 +56,15 @@ static void smb2cli_req_unset_pending(struct tevent_req *req)
 	if (num_pending == 1) {
 		/*
 		 * The pending read_smb tevent_req is a child of
-		 * cli->pending. So if nothing is pending anymore, we need to
-		 * delete the socket read fde.
+		 * cli->conn.pending. So if nothing is pending anymore,
+		 * we need to delete the socket read fde.
 		 */
-		TALLOC_FREE(cli->pending);
+		TALLOC_FREE(cli->conn.pending);
 		return;
 	}
 
 	for (i=0; i<num_pending; i++) {
-		if (req == cli->pending[i]) {
+		if (req == cli->conn.pending[i]) {
 			break;
 		}
 	}
@@ -72,7 +72,7 @@ static void smb2cli_req_unset_pending(struct tevent_req *req)
 		/*
 		 * Something's seriously broken. Just returning here is the
 		 * right thing nevertheless, the point of this routine is to
-		 * remove ourselves from cli->pending.
+		 * remove ourselves from cli->conn.pending.
 		 */
 		return;
 	}
@@ -81,15 +81,16 @@ static void smb2cli_req_unset_pending(struct tevent_req *req)
 	 * Remove ourselves from the cli->pending array
 	 */
 	for (; i < (num_pending - 1); i++) {
-		cli->pending[i] = cli->pending[i+1];
+		cli->conn.pending[i] = cli->conn.pending[i+1];
 	}
 
 	/*
 	 * No NULL check here, we're shrinking by sizeof(void *), and
 	 * talloc_realloc just adjusts the size for this.
 	 */
-	cli->pending = talloc_realloc(NULL, cli->pending, struct tevent_req *,
-				      num_pending - 1);
+	cli->conn.pending = talloc_realloc(NULL, cli->conn.pending,
+					   struct tevent_req *,
+					   num_pending - 1);
 	return;
 }
 
@@ -112,15 +113,15 @@ static bool smb2cli_req_set_pending(struct tevent_req *req)
 	struct tevent_req *subreq;
 
 	cli = state->cli;
-	num_pending = talloc_array_length(cli->pending);
+	num_pending = talloc_array_length(cli->conn.pending);
 
-	pending = talloc_realloc(cli, cli->pending, struct tevent_req *,
+	pending = talloc_realloc(cli, cli->conn.pending, struct tevent_req *,
 				 num_pending+1);
 	if (pending == NULL) {
 		return false;
 	}
 	pending[num_pending] = req;
-	cli->pending = pending;
+	cli->conn.pending = pending;
 	talloc_set_destructor(req, smb2cli_req_destructor);
 
 	if (num_pending > 0) {
@@ -131,7 +132,7 @@ static bool smb2cli_req_set_pending(struct tevent_req *req)
 	 * We're the first ones, add the read_smb request that waits for the
 	 * answer from the server
 	 */
-	subreq = read_smb_send(cli->pending, state->ev, cli->fd);
+	subreq = read_smb_send(cli->conn.pending, state->ev, cli->fd);
 	if (subreq == NULL) {
 		smb2cli_req_unset_pending(req);
 		return false;
@@ -149,14 +150,14 @@ static void smb2cli_notify_pending(struct cli_state *cli, NTSTATUS status)
 
 	/*
 	 * Cancel all pending requests. We don't do a for-loop walking
-	 * cli->pending because that array changes in
+	 * cli->conn.pending because that array changes in
 	 * cli_smb_req_destructor().
 	 */
-	while (talloc_array_length(cli->pending) > 0) {
+	while (talloc_array_length(cli->conn.pending) > 0) {
 		struct tevent_req *req;
 		struct smb2cli_req_state *state;
 
-		req = cli->pending[0];
+		req = cli->conn.pending[0];
 		state = tevent_req_data(req, struct smb2cli_req_state);
 
 		smb2cli_req_unset_pending(req);
@@ -452,11 +453,11 @@ inval:
 static struct tevent_req *cli_smb2_find_pending(struct cli_state *cli,
 						uint64_t mid)
 {
-	int num_pending = talloc_array_length(cli->pending);
+	int num_pending = talloc_array_length(cli->conn.pending);
 	int i;
 
 	for (i=0; i<num_pending; i++) {
-		struct tevent_req *req = cli->pending[i];
+		struct tevent_req *req = cli->conn.pending[i];
 		struct smb2cli_req_state *state =
 			tevent_req_data(req,
 			struct smb2cli_req_state);
@@ -559,19 +560,19 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 
 	TALLOC_FREE(frame);
 
-	num_pending = talloc_array_length(cli->pending);
+	num_pending = talloc_array_length(cli->conn.pending);
 	if (num_pending == 0) {
 		/* no more pending requests, so we are done for now */
 		return;
 	}
-	req = cli->pending[0];
+	req = cli->conn.pending[0];
 	state = tevent_req_data(req, struct smb2cli_req_state);
 
 	/*
 	 * add the read_smb request that waits for the
 	 * next answer from the server
 	 */
-	subreq = read_smb_send(cli->pending, state->ev, cli->fd);
+	subreq = read_smb_send(cli->conn.pending, state->ev, cli->fd);
 	if (subreq == NULL) {
 		smb2cli_notify_pending(cli, NT_STATUS_NO_MEMORY);
 		return;

@@ -237,7 +237,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	if (cli->outgoing == NULL) {
 		goto error;
 	}
-	cli->pending = NULL;
+	cli->conn.pending = NULL;
 
 	cli->desthost = talloc_strdup(cli, desthost);
 	if (cli->desthost == NULL) {
@@ -329,8 +329,8 @@ static void _cli_shutdown(struct cli_state *cli)
 	/*
 	 * Need to free pending first, they remove themselves
 	 */
-	while (cli->pending) {
-		talloc_free(cli->pending[0]);
+	while (cli->conn.pending) {
+		talloc_free(cli->conn.pending[0]);
 	}
 	TALLOC_FREE(cli);
 }

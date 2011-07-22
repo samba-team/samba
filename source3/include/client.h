@@ -125,7 +125,10 @@ struct cli_state {
 	char *dfs_mountpoint;
 
 	struct tevent_queue *outgoing;
-	struct tevent_req **pending;
+
+	struct {
+		struct tevent_req **pending;
+	} conn;
 
 	struct {
 		uint16_t mid;
