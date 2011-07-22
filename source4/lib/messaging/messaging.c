@@ -541,10 +541,11 @@ NTSTATUS imessaging_send_ptr(struct imessaging_context *msg, struct server_id se
 
 
 /*
-  destroy the messaging context
+  remove our messaging socket and database entry
 */
-static int imessaging_destructor(struct imessaging_context *msg)
+int imessaging_cleanup(struct imessaging_context *msg)
 {
+	DEBUG(5,("imessaging: cleaning up %s\n", msg->path));
 	unlink(msg->path);
 	while (msg->names && msg->names[0]) {
 		irpc_remove_name(msg, msg->names[0]);
@@ -554,11 +555,17 @@ static int imessaging_destructor(struct imessaging_context *msg)
 
 /*
   create the listening socket and setup the dispatcher
+
+  use temporary=true when you want a destructor to remove the
+  associated messaging socket and database entry on talloc free. Don't
+  use this in processes that may fork and a child may talloc free this
+  memory
 */
 struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
-					 const char *dir,
-					 struct server_id server_id, 
-					 struct tevent_context *ev)
+					   const char *dir,
+					   struct server_id server_id,
+					   struct tevent_context *ev,
+					   bool auto_remove)
 {
 	struct imessaging_context *msg;
 	NTSTATUS status;
@@ -622,7 +629,9 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 				       EVENT_FD_READ, imessaging_handler, msg);
 	tevent_fd_set_auto_close(msg->event.fde);
 
-	talloc_set_destructor(msg, imessaging_destructor);
+	if (auto_remove) {
+		talloc_set_destructor(msg, imessaging_cleanup);
+	}
 	
 	imessaging_register(msg, NULL, MSG_PING, ping_message);
 	imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
@@ -641,7 +650,7 @@ struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 	struct server_id id;
 	ZERO_STRUCT(id);
 	id.pid = random() % 0x10000000;
-	return imessaging_init(mem_ctx, dir, id, ev);
+	return imessaging_init(mem_ctx, dir, id, ev, true);
 }
 /*
   a list of registered irpc server functions

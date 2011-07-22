@@ -54,9 +54,11 @@ NTSTATUS imessaging_register(struct imessaging_context *msg, void *private_data,
 NTSTATUS imessaging_register_tmp(struct imessaging_context *msg, void *private_data,
 				msg_callback_t fn, uint32_t *msg_type);
 struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
-					 const char *dir,
-					 struct server_id server_id,
-					 struct tevent_context *ev);
+					   const char *dir,
+					   struct server_id server_id,
+					   struct tevent_context *ev,
+					   bool auto_remove);
+int imessaging_cleanup(struct imessaging_context *msg);
 struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 					 const char *dir,
 					 struct tevent_context *ev);

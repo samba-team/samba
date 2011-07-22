@@ -249,14 +249,14 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 		       imessaging_init(tctx,
 				      lpcfg_imessaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(0, MSG_ID1),
-				      data->ev),
+				      data->ev, true),
 		       "Failed to init first messaging context");
 
 	torture_assert(tctx, data->msg_ctx2 = 
 		       imessaging_init(tctx,
 				      lpcfg_imessaging_path(tctx, tctx->lp_ctx),
 				      cluster_id(0, MSG_ID2), 
-				      data->ev),
+				      data->ev, true),
 		       "Failed to init second messaging context");
 
 	/* register the server side function */

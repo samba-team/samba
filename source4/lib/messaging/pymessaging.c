@@ -96,13 +96,13 @@ static PyObject *py_imessaging_connect(PyTypeObject *self, PyObject *args, PyObj
 			return NULL;
 
 		ret->msg_ctx = imessaging_init(ret->mem_ctx,
-					    imessaging_path,
-					    server_id,
-					    ev);
+					       imessaging_path,
+					       server_id,
+					       ev, true);
 	} else {
 		ret->msg_ctx = imessaging_client_init(ret->mem_ctx,
-					    imessaging_path,
-					    ev);
+						      imessaging_path,
+						      ev);
 	}
 
 	if (ret->msg_ctx == NULL) {

@@ -77,6 +77,7 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 
 	talloc_free(srv_conn->event.fde);
 	srv_conn->event.fde = NULL;
+	imessaging_cleanup(srv_conn->msg_ctx);
 	model_ops->terminate(event_ctx, srv_conn->lp_ctx, reason);
 	talloc_free(srv_conn);
 }
@@ -188,8 +189,8 @@ static void stream_new_connection(struct tevent_context *ev,
 
 	/* setup to receive internal messages on this connection */
 	srv_conn->msg_ctx = imessaging_init(srv_conn,
-					   lpcfg_imessaging_path(srv_conn, lp_ctx),
-					   srv_conn->server_id, ev);
+					    lpcfg_imessaging_path(srv_conn, lp_ctx),
+					    srv_conn->server_id, ev, false);
 	if (!srv_conn->msg_ctx) {
 		stream_terminate_connection(srv_conn, "imessaging_init() failed");
 		return;
