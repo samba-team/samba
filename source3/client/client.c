@@ -4378,6 +4378,30 @@ static int cmd_tdis(void)
 }
 
 
+/**
+ * get or set tid
+ */
+
+static int cmd_tid(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *tid_str;
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &tid_str, NULL)) {
+		if (cli_state_has_tcon(cli)) {
+			d_printf("current tid is %d\n", cli_state_get_tid(cli));
+		} else {
+			d_printf("no tcon currently\n");
+		}
+	} else {
+		uint16_t tid = atoi(tid_str);
+		cli_state_set_tid(cli, tid);
+	}
+
+	return 0;
+}
+
+
 /****************************************************************************
  list active connections
 ****************************************************************************/
@@ -4568,6 +4592,7 @@ static struct {
   {"showconnect",cmd_show_connect,"display the current active connection",{COMPL_NONE,COMPL_NONE}},
   {"tcon",cmd_tcon,"connect to a share" ,{COMPL_NONE,COMPL_NONE}},
   {"tdis",cmd_tdis,"disconnect from a share",{COMPL_NONE,COMPL_NONE}},
+  {"tid",cmd_tid,"show or set the current tid (tree-id)",{COMPL_NONE,COMPL_NONE}},
   {"logoff",cmd_logoff,"log off (close the session)",{COMPL_NONE,COMPL_NONE}},
   {"..",cmd_cd_oneup,"change the remote directory (up one level)",{COMPL_REMOTE,COMPL_NONE}},
 
