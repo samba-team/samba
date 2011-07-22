@@ -801,7 +801,7 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	name_to_fqdn(fqdn, cli->desthost);
+	name_to_fqdn(fqdn, cli_state_remote_name(cli));
 	strlower_m(fqdn);
 
 	servicename = "cifs";
