@@ -1136,12 +1136,12 @@ static NTSTATUS rpc_registry_save_internal(struct net_context *c,
 	status = dcerpc_winreg_SaveKey(b, mem_ctx, &pol_key, &filename, NULL, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Unable to save [%s] to %s:%s\n"), argv[0],
-			  cli->desthost, argv[1]);
+			  pipe_hnd->desthost, argv[1]);
 	}
 	if (!W_ERROR_IS_OK(result)) {
 		status = werror_to_ntstatus(result);
 		d_fprintf(stderr, _("Unable to save [%s] to %s:%s\n"), argv[0],
-			  cli->desthost, argv[1]);
+			  pipe_hnd->desthost, argv[1]);
 	}
 
 	/* cleanup */
