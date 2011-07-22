@@ -351,7 +351,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("rpc_oldjoin_internals: netlogon pipe open to machine %s failed. "
 			"error was %s\n",
-			cli->desthost,
+			cli_state_remote_name(cli),
 			nt_errstr(result) ));
 		return result;
 	}
@@ -3977,7 +3977,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 	        /* open share source */
 		nt_status = connect_to_service(c, &cp_clistate.cli_share_src,
 					       cli_state_remote_sockaddr(cli),
-					       cli->desthost,
+					       cli_state_remote_name(cli),
 					       info502.name, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;
