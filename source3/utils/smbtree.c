@@ -95,24 +95,32 @@ static bool get_workgroups(struct user_auth_info *user_info)
 		return false;
 	}
 
-        if (!use_bcast && !find_master_ip(lp_workgroup(), &server_ss)) {
-                DEBUG(4, ("Unable to find master browser for workgroup %s, falling back to broadcast\n", 
-			  master_workgroup));
-				use_bcast = True;
-		} else if(!use_bcast) {
-			char addr[INET6_ADDRSTRLEN];
-			print_sockaddr(addr, sizeof(addr), &server_ss);
-			if (!(cli = get_ipc_connect(addr, &server_ss, user_info)))
-				return False;
-		}
+	if (!use_bcast && !find_master_ip(lp_workgroup(), &server_ss)) {
+		DEBUG(4,("Unable to find master browser for workgroup %s, "
+			 "falling back to broadcast\n",
+			 master_workgroup));
+		use_bcast = true;
+	}
 
-		if (!(cli = get_ipc_connect_master_ip_bcast(talloc_tos(),
-							user_info,
-							&master_workgroup))) {
+	if (!use_bcast) {
+		char addr[INET6_ADDRSTRLEN];
+
+		print_sockaddr(addr, sizeof(addr), &server_ss);
+
+		cli = get_ipc_connect(addr, &server_ss, user_info);
+		if (cli == NULL) {
+			return false;
+		}
+	} else {
+		cli = get_ipc_connect_master_ip_bcast(talloc_tos(),
+						      user_info,
+						      &master_workgroup);
+		if (cli == NULL) {
 			DEBUG(4, ("Unable to find master browser by "
 				  "broadcast\n"));
-			return False;
-        }
+			return false;
+		}
+	}
 
         if (!cli_NetServerEnum(cli, master_workgroup,
                                SV_TYPE_DOMAIN_ENUM, add_name, &workgroups))
