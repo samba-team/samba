@@ -48,7 +48,9 @@ static struct client_ipc_connection *ipc_cm_find(
 	struct client_ipc_connection *p;
 
 	for (p = priv_ctx->ipc_connections; p; p = p->next) {
-		if (strequal(p->cli->desthost, server_name)) {
+		const char *remote_name = cli_state_remote_name(p->cli);
+
+		if (strequal(remote_name, server_name)) {
 			return p;
 		}
 	}
@@ -164,12 +166,15 @@ static NTSTATUS pipe_cm_find(struct client_ipc_connection *ipc,
 	struct client_pipe_connection *p;
 
 	for (p = ipc->pipe_connections; p; p = p->next) {
+		const char *ipc_remote_name;
 
 		if (!rpc_pipe_np_smb_conn(p->pipe)) {
 			return NT_STATUS_PIPE_EMPTY;
 		}
 
-		if (strequal(ipc->cli->desthost, p->pipe->desthost)
+		ipc_remote_name = cli_state_remote_name(ipc->cli);
+
+		if (strequal(ipc_remote_name, p->pipe->desthost)
 		    && ndr_syntax_id_equal(&p->pipe->abstract_syntax,
 					   interface)) {
 			*presult = p->pipe;
