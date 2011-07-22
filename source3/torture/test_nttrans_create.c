@@ -78,7 +78,7 @@ bool run_nttrans_create(int dummy)
 		goto fail;
 	}
 
-	cli_query_secdesc(cli, fnum, talloc_tos());
+	cli_query_secdesc_old(cli, fnum, talloc_tos());
 
 	status2 = cli_ntcreate(cli, fname, 0, WRITE_DAC_ACCESS,
 			       FILE_ATTRIBUTE_NORMAL,

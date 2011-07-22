@@ -24,7 +24,7 @@
 /****************************************************************************
   query the security descriptor for a open file
  ****************************************************************************/
-struct security_descriptor *cli_query_secdesc(struct cli_state *cli, uint16_t fnum,
+struct security_descriptor *cli_query_secdesc_old(struct cli_state *cli, uint16_t fnum,
 			    TALLOC_CTX *mem_ctx)
 {
 	uint8_t param[8];

@@ -722,7 +722,7 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
 		return NULL;
 	}
 
-	sd = cli_query_secdesc(cli, fnum, talloc_tos());
+	sd = cli_query_secdesc_old(cli, fnum, talloc_tos());
 
 	cli_close(cli, fnum);
 

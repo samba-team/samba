@@ -911,7 +911,7 @@ cacl_get(SMBCCTX *context,
 			return -1;
 		}
 
-		sd = cli_query_secdesc(targetcli, fnum, ctx);
+		sd = cli_query_secdesc_old(targetcli, fnum, ctx);
 
                 if (!sd) {
                         DEBUG(5,
@@ -1570,7 +1570,7 @@ cacl_set(SMBCCTX *context,
 		return -1;
 	}
 
-	old = cli_query_secdesc(targetcli, fnum, ctx);
+	old = cli_query_secdesc_old(targetcli, fnum, ctx);
 
 	if (!old) {
                 DEBUG(5, ("cacl_set Failed to query old descriptor\n"));

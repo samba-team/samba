@@ -586,7 +586,7 @@ static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *fin
 				   afname, nt_errstr(status)));
 		} else {
 			struct security_descriptor *sd = NULL;
-			sd = cli_query_secdesc(cli_state, fnum, ctx);
+			sd = cli_query_secdesc_old(cli_state, fnum, ctx);
 			if (!sd) {
 				status = cli_nt_error(cli_state);
 				DEBUG( 0, ("display_finfo() failed to "
