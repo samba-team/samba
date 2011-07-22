@@ -66,10 +66,14 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 	}
 
 	while (1) {
+		size_t n = 0;
 
-		int n = cli_read_old(cli, fnum, data, nread, read_size);
+		result = cli_read(cli, fnum, data, nread, read_size, &n);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto out;
+		}
 
-		if (n <= 0)
+		if (n == 0)
 			break;
 
 		if (write(fd, data, n) != n) {
