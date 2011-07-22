@@ -1850,6 +1850,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 	if (cli->got_kerberos_mechanism && cli->use_kerberos) {
 		ADS_STATUS rc;
+		const char *remote_name = cli_state_remote_name(cli);
 
 		if (pass && *pass) {
 			int ret;
@@ -1873,15 +1874,15 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		}
 
 		if (principal == NULL &&
-			!is_ipaddress(cli->desthost) &&
+			!is_ipaddress(remote_name) &&
 			!strequal(STAR_SMBSERVER,
-				cli->desthost)) {
+				  remote_name)) {
 			char *realm = NULL;
 			char *host = NULL;
 			DEBUG(3,("cli_session_setup_spnego: using target "
 				 "hostname not SPNEGO principal\n"));
 
-			host = strchr_m(cli->desthost, '.');
+			host = strchr_m(remote_name, '.');
 			if (dest_realm) {
 				realm = SMB_STRDUP(dest_realm);
 				if (!realm) {
@@ -1891,7 +1892,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			} else {
 				if (host) {
 					/* DNS name. */
-					realm = kerberos_get_realm_from_hostname(cli->desthost);
+					realm = kerberos_get_realm_from_hostname(remote_name);
 				} else {
 					/* NetBIOS name - use our realm. */
 					realm = kerberos_get_default_realm_from_ccache();
@@ -1909,13 +1910,13 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 					"desthost %s. Using default "
 					"smb.conf realm %s\n",
 					dest_realm ? dest_realm : "<null>",
-					cli->desthost,
+					remote_name,
 					realm));
 			}
 
 			principal = talloc_asprintf(talloc_tos(),
 						    "cifs/%s@%s",
-						    cli->desthost,
+						    remote_name,
 						    realm);
 			if (!principal) {
 				SAFE_FREE(realm);
@@ -2277,7 +2278,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	 * Add the sharename
 	 */
 	tmp = talloc_asprintf_strupper_m(talloc_tos(), "\\\\%s\\%s",
-					 cli->desthost, share);
+					 cli_state_remote_name(cli), share);
 	if (tmp == NULL) {
 		TALLOC_FREE(req);
 		return NULL;
