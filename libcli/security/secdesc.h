@@ -56,14 +56,14 @@ struct security_descriptor *dup_sec_desc(TALLOC_CTX *ctx, const struct security_
  Convert a secdesc into a byte stream
 ********************************************************************/
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
-			   struct security_descriptor *secdesc,
+			   const struct security_descriptor *secdesc,
 			   uint8_t **data, size_t *len);
 
 /*******************************************************************
  Convert a secdesc_buf into a byte stream
 ********************************************************************/
 NTSTATUS marshall_sec_desc_buf(TALLOC_CTX *mem_ctx,
-			       struct sec_desc_buf *secdesc_buf,
+			       const struct sec_desc_buf *secdesc_buf,
 			       uint8_t **data, size_t *len);
 
 /*******************************************************************
