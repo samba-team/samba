@@ -911,14 +911,14 @@ cacl_get(SMBCCTX *context,
 			return -1;
 		}
 
-		sd = cli_query_secdesc_old(targetcli, fnum, ctx);
-
-                if (!sd) {
-                        DEBUG(5,
-                              ("cacl_get Failed to query old descriptor\n"));
-                        errno = 0;
-                        return -1;
-                }
+		status = cli_query_secdesc(targetcli, fnum, ctx, &sd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5,("cacl_get Failed to query old descriptor "
+				 "of %s: %s\n",
+				  targetpath, nt_errstr(status)));
+			errno = 0;
+			return -1;
+		}
 
                 cli_close(targetcli, fnum);
 
@@ -1570,11 +1570,11 @@ cacl_set(SMBCCTX *context,
 		return -1;
 	}
 
-	old = cli_query_secdesc_old(targetcli, fnum, ctx);
-
-	if (!old) {
-                DEBUG(5, ("cacl_set Failed to query old descriptor\n"));
-                errno = 0;
+	status = cli_query_secdesc(targetcli, fnum, ctx, &old);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("cacl_set Failed to query old descriptor of %s: %s\n",
+			 targetpath, nt_errstr(status)));
+		errno = 0;
 		return -1;
 	}
 
