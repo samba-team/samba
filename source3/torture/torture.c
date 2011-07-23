@@ -2358,6 +2358,7 @@ static bool run_locktest7(int dummy)
 
 	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
 		printf("pid2 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
+		goto fail;
 	} else {
 		printf("pid2 successfully read the range 130:4\n");
 	}
