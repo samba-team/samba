@@ -21,54 +21,6 @@
 #include "libsmb/libsmb.h"
 #include "../libcli/security/secdesc.h"
 
-/****************************************************************************
-  query the security descriptor for a open file
- ****************************************************************************/
-struct security_descriptor *cli_query_secdesc_old(struct cli_state *cli, uint16_t fnum,
-			    TALLOC_CTX *mem_ctx)
-{
-	uint8_t param[8];
-	uint8_t *rdata=NULL;
-	uint32_t rdata_count=0;
-	struct security_descriptor *psd = NULL;
-	NTSTATUS status;
-
-	SIVAL(param, 0, fnum);
-	SIVAL(param, 4, 0x7);
-
-	status = cli_trans(talloc_tos(), cli, SMBnttrans,
-			   NULL, -1, /* name, fid */
-			   NT_TRANSACT_QUERY_SECURITY_DESC, 0, /* function, flags */
-			   NULL, 0, 0, /* setup, length, max */
-			   param, 8, 4, /* param, length, max */
-			   NULL, 0, 0x10000, /* data, length, max */
-			   NULL,	     /* recv_flags2 */
-			   NULL, 0, NULL, /* rsetup, length */
-			   NULL, 0, NULL,
-			   &rdata, 0, &rdata_count);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("NT_TRANSACT_QUERY_SECURITY_DESC failed: %s\n",
-			  nt_errstr(status)));
-		goto cleanup;
-	}
-
-	status = unmarshall_sec_desc(mem_ctx, (uint8 *)rdata, rdata_count,
-				     &psd);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("unmarshall_sec_desc failed: %s\n",
-			   nt_errstr(status)));
-		goto cleanup;
-	}
-
- cleanup:
-
-	TALLOC_FREE(rdata);
-
-	return psd;
-}
-
 NTSTATUS cli_query_secdesc(struct cli_state *cli, uint16_t fnum,
 			   TALLOC_CTX *mem_ctx, struct security_descriptor **sd)
 {
