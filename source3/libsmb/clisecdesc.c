@@ -75,7 +75,7 @@ NTSTATUS cli_query_secdesc(struct cli_state *cli, uint16_t fnum,
   set the security descriptor for a open file
  ****************************************************************************/
 NTSTATUS cli_set_secdesc(struct cli_state *cli, uint16_t fnum,
-			 struct security_descriptor *sd)
+			 const struct security_descriptor *sd)
 {
 	uint8_t param[8];
 	uint32 sec_info = 0;
