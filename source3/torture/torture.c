@@ -2301,6 +2301,7 @@ static bool run_locktest7(int dummy)
 	uint16_t fnum1;
 	char buf[200];
 	bool correct = False;
+	size_t nread;
 	NTSTATUS status;
 
 	if (!torture_open_connection(&cli1, 0)) {
@@ -2328,14 +2329,21 @@ static bool run_locktest7(int dummy)
 
 	status = cli_lock32(cli1, fnum1, 130, 4, 0, READ_LOCK);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Unable to apply read lock on range 130:4, error was %s\n", nt_errstr(status));
+		printf("Unable to apply read lock on range 130:4, "
+		       "error was %s\n", nt_errstr(status));
 		goto fail;
 	} else {
 		printf("pid1 successfully locked range 130:4 for READ\n");
 	}
 
-	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
-		printf("pid1 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
+	status = cli_read(cli1, fnum1, buf, 130, 4, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid1 unable to read the range 130:4, error was %s\n",
+		      nt_errstr(status));
+		goto fail;
+	} else if (nread != 4) {
+		printf("pid1 unable to read the range 130:4, "
+		       "recv %ld req %d\n", (unsigned long)nread, 4);
 		goto fail;
 	} else {
 		printf("pid1 successfully read the range 130:4\n");
@@ -2356,8 +2364,14 @@ static bool run_locktest7(int dummy)
 
 	cli_setpid(cli1, 2);
 
-	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
-		printf("pid2 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
+	status = cli_read(cli1, fnum1, buf, 130, 4, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid2 unable to read the range 130:4, error was %s\n",
+		      nt_errstr(status));
+		goto fail;
+	} else if (nread != 4) {
+		printf("pid2 unable to read the range 130:4, "
+		       "recv %ld req %d\n", (unsigned long)nread, 4);
 		goto fail;
 	} else {
 		printf("pid2 successfully read the range 130:4\n");
@@ -2387,8 +2401,14 @@ static bool run_locktest7(int dummy)
 		printf("pid1 successfully locked range 130:4 for WRITE\n");
 	}
 
-	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
-		printf("pid1 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
+	status = cli_read(cli1, fnum1, buf, 130, 4, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid1 unable to read the range 130:4, error was %s\n",
+		      nt_errstr(status));
+		goto fail;
+	} else if (nread != 4) {
+		printf("pid1 unable to read the range 130:4, "
+		       "recv %ld req %d\n", (unsigned long)nread, 4);
 		goto fail;
 	} else {
 		printf("pid1 successfully read the range 130:4\n");
@@ -2405,14 +2425,17 @@ static bool run_locktest7(int dummy)
 
 	cli_setpid(cli1, 2);
 
-	if (cli_read_old(cli1, fnum1, buf, 130, 4) != 4) {
-		printf("pid2 unable to read the range 130:4, error was %s\n", cli_errstr(cli1));
-		if (NT_STATUS_V(cli_nt_error(cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+	status = cli_read(cli1, fnum1, buf, 130, 4, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pid2 unable to read the range 130:4, error was "
+		       "%s\n", nt_errstr(status));
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
 			goto fail;
 		}
 	} else {
-		printf("pid2 successfully read the range 130:4 (should be denied)\n");
+		printf("pid2 successfully read the range 130:4 (should be denied) recv %ld\n",
+		       (unsigned long)nread);
 		goto fail;
 	}
 
