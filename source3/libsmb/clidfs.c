@@ -1032,12 +1032,13 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	uint16 cnum;
 	char *newextrapath = NULL;
 	NTSTATUS status;
-	const char *remote_name = cli_state_remote_name(cli);
+	const char *remote_name;
 
 	if (!cli || !sharename) {
 		return false;
 	}
 
+	remote_name = cli_state_remote_name(cli);
 	cnum = cli_state_get_tid(cli);
 
 	/* special case.  never check for a referral on the IPC$ share */
