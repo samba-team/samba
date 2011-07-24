@@ -1233,7 +1233,7 @@ static void chg_passwd(void)
 		if (rslt == True) {
 			printf("%s\n", _(" The passwd has been changed."));
 		} else {
-			printf("%s\n", _(" The passwd for has NOT been changed."));
+			printf("%s\n", _(" The passwd has NOT been changed."));
 		}
 	}
 	
