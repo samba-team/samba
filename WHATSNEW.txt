@@ -1,19 +1,36 @@
                    ==============================
                    Release Notes for Samba 3.5.10
-			   , 2011
+			   July 26, 2011
                    ==============================
 
 
-This is the latest stable release of Samba 3.5.
+This is a security release in order to address
+CVE-2011-2522 (Cross-Site Request Forgery in SWAT) and
+CVE-2011-2694 (Cross-Site Scripting vulnerability in SWAT).
 
-Major enhancements in Samba 3.5.10 include:
 
-o 
+o  CVE-2011-2522:
+   The Samba Web Administration Tool (SWAT) in Samba versions
+   3.0.x to 3.5.9 are affected by a cross-site request forgery.
+
+
+o  CVE-2011-2694:
+   The Samba Web Administration Tool (SWAT) in Samba versions
+   3.0.x to 3.5.9 are affected by a cross-site scripting
+   vulnerability.
+
+Please note that SWAT must be enabled in order for these
+vulnerabilities to be exploitable. By default, SWAT
+is *not* enabled on a Samba install.
+
 
 Changes since 3.5.9:
 --------------------
 
-o   
+
+o   Kai Blin <kai@samba.org>
+    * BUG 8289: SWAT contains a cross-site scripting vulnerability.
+    * BUG 8290: CSRF vulnerability in SWAT.
 
 
 ######################################################################
