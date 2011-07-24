@@ -387,7 +387,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 				     read_size, &n);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr,
-				  _("Error reading file [\\\\%s\%s%s]: %s\n"),
+				  _("Error reading file [\\\\%s\\%s%s]: %s\n"),
 				  cli_state_remote_name(cli_share_src),
 				  cli_share_src->share,
 				  src_name, nt_errstr(nt_status));
@@ -402,7 +402,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr,
-				  _("Error writing file: [\\\\%s\%s%s]: %s\n"),
+				  _("Error writing file: [\\\\%s\\%s%s]: %s\n"),
 				  cli_state_remote_name(cli_share_dst),
 				  cli_share_dst->share,
 				  dst_name, nt_errstr(nt_status));
