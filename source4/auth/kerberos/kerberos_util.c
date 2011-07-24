@@ -394,6 +394,16 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		break;
 	}
 
+	/*
+	 * In order to work against windows KDCs even if we use
+	 * the netbios domain name as realm, we need to add the following
+	 * flags:
+	 * KRB5_INIT_CREDS_NO_C_CANON_CHECK;
+	 * KRB5_INIT_CREDS_NO_C_NO_EKU_CHECK;
+	 */
+	krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context,
+					  krb_options, true);
+
 	tries = 2;
 	while (tries--) {
 		struct tevent_context *previous_ev;
