@@ -1,4 +1,62 @@
                    ==============================
+                   Release Notes for Samba 3.3.16
+		           July 26, 2011
+                   ==============================
+
+
+This is a security release in order to address
+CVE-2011-2522 (Cross-Site Request Forgery in SWAT) and
+CVE-2011-2694 (Cross-Site Scripting vulnerability in SWAT).
+
+
+o  CVE-2011-2522:
+   The Samba Web Administration Tool (SWAT) in Samba versions
+   3.0.x to 3.5.9 are affected by a cross-site request forgery.
+
+
+o  CVE-2011-2694:
+   The Samba Web Administration Tool (SWAT) in Samba versions
+   3.0.x to 3.5.9 are affected by a cross-site scripting
+   vulnerability.
+
+Please note that SWAT must be enabled in order for these
+vulnerabilities to be exploitable. By default, SWAT
+is *not* enabled on a Samba install.
+
+
+Changes since 3.3.15
+--------------------
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 8289: SWAT contains a cross-site scripting vulnerability.
+    * BUG 8290: CSRF vulnerability in SWAT.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.3 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.3.15
 		         February 28, 2011
                    ==============================
@@ -44,8 +102,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.3.14
