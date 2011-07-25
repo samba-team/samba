@@ -83,7 +83,8 @@ class cmd_user_enable(Command):
     synopsis = "%prog user enable (<username>|--filter <filter>) [options]"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str, metavar="URL"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
         ]
 
@@ -116,7 +117,8 @@ class cmd_user_setexpiry(Command):
     synopsis = "%prog user setexpiry (<username>|--filter <filter>) [options]"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str, metavar="URL"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
         Option("--days", help="Days to expiry", type=int, default=0),
         Option("--noexpiry", help="Password does never expire", action="store_true", default=False),
@@ -151,7 +153,8 @@ class cmd_user_setpassword(Command):
     synopsis = "%prog user setpassword (<username>|--filter <filter>) [options]"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str, metavar="URL"),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
         Option("--newpassword", help="Set password", type=str),
         Option("--must-change-at-next-login",

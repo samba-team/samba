@@ -90,7 +90,8 @@ class cmd_listall(Command):
     synopsis = "%prog gpo listall"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str)
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
 
     def run(self, H=None, sambaopts=None,
@@ -134,7 +135,8 @@ class cmd_list(Command):
     takes_args = [ 'username' ]
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str)
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H")
         ]
 
     def run(self, username, H=None, sambaopts=None,

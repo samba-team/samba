@@ -119,7 +119,8 @@ class cmd_domain_level(Command):
     synopsis = "%prog domain level (show | raise <options>)"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--forest", type="choice", choices=["2003", "2008", "2008_R2"],
             help="The forest function level (2003 | 2008 | 2008_R2)"),
@@ -335,7 +336,8 @@ class cmd_domain_passwordsettings(Command):
     synopsis = "%prog domain passwordsettings (show | set <options>)"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--complexity", type="choice", choices=["on","off","default"],
           help="The password complexity (on | off | default). Default is 'on'"),

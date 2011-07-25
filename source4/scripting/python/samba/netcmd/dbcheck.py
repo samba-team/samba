@@ -52,7 +52,8 @@ class cmd_dbcheck(Command):
             help="don't print details of checking"),
         Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
         Option("--reindex", dest="reindex", default=False, action="store_true", help="force database re-index"),
-        Option("-H", help="LDB URL for database or target server (defaults to local SAM database)", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server (defaults to local SAM database)",
+               type=str, metavar="URL", dest="H"),
         ]
 
     def run(self, DN=None, H=None, verbose=False, fix=False, yes=False, cross_ncs=False, quiet=False,

@@ -46,7 +46,8 @@ class cmd_group_add(Command):
     synopsis = "%prog group add [options] <groupname>"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
         Option("--groupou",
 	   help="Alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created",
 	   type=str),
@@ -89,7 +90,8 @@ class cmd_group_delete(Command):
     synopsis = "%prog group delete <groupname>"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
     ]
 
     takes_args = ["groupname"]
@@ -114,7 +116,8 @@ class cmd_group_add_members(Command):
     synopsis = "%prog group addmembers <groupname> <listofmembers>"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
     ]
 
     takes_args = ["groupname", "listofmembers"]
@@ -140,7 +143,8 @@ class cmd_group_remove_members(Command):
     synopsis = "%prog group removemembers <groupname> <listofmembers>"
 
     takes_options = [
-        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
     ]
 
     takes_args = ["groupname", "listofmembers"]

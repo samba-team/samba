@@ -52,8 +52,8 @@ class cmd_ds_acl_set(Command):
     car_help = """ The access control right to allow or deny """
 
     takes_options = [
-        Option("--host", help="LDB URL for database or target server",
-            type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
         Option("--car", type="choice", choices=["change-rid",
                                                 "change-pdc",
                                                 "change-infrastructure",
@@ -131,7 +131,7 @@ class cmd_ds_acl_set(Command):
         print desc_sddl
 
     def run(self, car, action, objectdn, trusteedn, sddl,
-            host=None, credopts=None, sambaopts=None, versionopts=None):
+            H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
@@ -139,7 +139,7 @@ class cmd_ds_acl_set(Command):
                              or objectdn is None or trusteedn is None):
             return self.usage()
 
-        samdb = SamDB(url=host, session_info=system_session(),
+        samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)
         cars = {'change-rid' : GUID_DRS_CHANGE_RID_MASTER,
                 'change-pdc' : GUID_DRS_CHANGE_PDC,
