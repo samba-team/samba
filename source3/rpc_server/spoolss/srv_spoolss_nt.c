@@ -4853,6 +4853,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 		result = WERR_UNKNOWN_LEVEL;
 		break;
 	}
+	TALLOC_FREE(info2);
 
  out:
 	if (!W_ERROR_IS_OK(result)) {
