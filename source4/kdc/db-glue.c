@@ -1170,7 +1170,12 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			return HDB_ERR_NOENTRY;
 		}
 
-		if (flags & HDB_F_CANON) {
+		/*
+		 * Windows seems to canonicalize the principal
+		 * in a TGS REP even if the client did not specify
+		 * the canonicalize flag.
+		 */
+		if (flags & HDB_F_CANON|HDB_F_FOR_TGS_REQ) {
 			ret = krb5_copy_principal(context, principal, &alloc_principal);
 			if (ret) {
 				return ret;
@@ -1192,7 +1197,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
 					      flags, realm_dn, msg, entry_ex);
-		if (flags & HDB_F_CANON) {
+		if (alloc_principal) {
 			/* This is again copied in the message2entry call */
 			krb5_free_principal(context, alloc_principal);
 		}
