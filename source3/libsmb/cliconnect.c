@@ -26,7 +26,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 #include "libads/kerberos_proto.h"
 #include "krb5_env.h"
 #include "../lib/util/tevent_ntstatus.h"

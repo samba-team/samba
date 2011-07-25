@@ -22,7 +22,114 @@
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/gensec/gensec.h"
-#include "../libcli/auth/ntlmssp_private.h"
+#include "auth/ntlmssp/ntlmssp_private.h"
+
+NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
+			      const DATA_BLOB *first_packet)
+{
+	if (ntlmssp_blob_matches_magic(first_packet)) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+/**
+ * Return the NTLMSSP master session key
+ *
+ * @param ntlmssp_state NTLMSSP State
+ */
+
+NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *session_key)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+
+	if (ntlmssp_state->expected_state != NTLMSSP_DONE) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (!ntlmssp_state->session_key.data) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+	*session_key = data_blob_talloc(mem_ctx, ntlmssp_state->session_key.data, ntlmssp_state->session_key.length);
+	if (!session_key->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
+				 uint32_t feature)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+
+	if (feature & GENSEC_FEATURE_SIGN) {
+		if (!ntlmssp_state->session_key.length) {
+			return false;
+		}
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+			return true;
+		}
+	}
+	if (feature & GENSEC_FEATURE_SEAL) {
+		if (!ntlmssp_state->session_key.length) {
+			return false;
+		}
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+			return true;
+		}
+	}
+	if (feature & GENSEC_FEATURE_SESSION_KEY) {
+		if (ntlmssp_state->session_key.length) {
+			return true;
+		}
+	}
+	if (feature & GENSEC_FEATURE_DCE_STYLE) {
+		return true;
+	}
+	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+			return true;
+		}
+	}
+	return false;
+}
+
+NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp;
+	struct ntlmssp_state *ntlmssp_state;
+
+	gensec_ntlmssp = talloc_zero(gensec_security,
+				     struct gensec_ntlmssp_context);
+	if (!gensec_ntlmssp) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	gensec_ntlmssp->gensec_security = gensec_security;
+
+	ntlmssp_state = talloc_zero(gensec_ntlmssp,
+				    struct ntlmssp_state);
+	if (!ntlmssp_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ntlmssp_state->callback_private = gensec_ntlmssp;
+
+	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
+
+	gensec_security->private_data = gensec_ntlmssp;
+	return NT_STATUS_OK;
+}
 
 NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
 				    TALLOC_CTX *sig_mem_ctx,
@@ -103,14 +210,14 @@ NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
 	return nt_status;
 }
 
-size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security, size_t data_size) 
+size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
 	return NTLMSSP_SIG_SIZE;
 }
 
-NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security, 
+NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
 			     TALLOC_CTX *out_mem_ctx,
-			     const DATA_BLOB *in, 
+			     const DATA_BLOB *in,
 			     DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
@@ -123,9 +230,9 @@ NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
 }
 
 
-NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security, 
+NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 			       TALLOC_CTX *out_mem_ctx,
-			       const DATA_BLOB *in, 
+			       const DATA_BLOB *in,
 			       DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =

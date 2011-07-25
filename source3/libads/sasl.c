@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 #include "ads.h"
 #include "smb_krb5.h"
 

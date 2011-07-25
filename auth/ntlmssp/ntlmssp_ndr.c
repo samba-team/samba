@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
-#include "../libcli/auth/ntlmssp_ndr.h"
+#include "ntlmssp_ndr.h"
 
 #define NTLMSSP_PULL_MESSAGE(type, blob, mem_ctx, r) \
 do { \

@@ -26,14 +26,15 @@
 #include "lib/tsocket/tsocket.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
-#include "../libcli/auth/ntlmssp_ndr.h"
-#include "../libcli/auth/ntlmssp_private.h"
+#include "auth/ntlmssp/ntlmssp_ndr.h"
+#include "auth/ntlmssp/ntlmssp_private.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "source4/auth/ntlmssp/proto.h"
 
 /**
  * Next state function for the Negotiate packet (GENSEC wrapper)

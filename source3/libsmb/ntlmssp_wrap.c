@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "libcli/auth/ntlmssp.h"
+#include "auth/ntlmssp/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "auth/gensec/gensec.h"
 

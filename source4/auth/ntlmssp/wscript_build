@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_MODULE('gensec_ntlmssp',
-	source='''ntlmssp.c ntlmssp_sign.c
+	source='''ntlmssp.c
                   ntlmssp_client.c ntlmssp_server.c''',
 	autoproto='proto.h',
 	subsystem='gensec',

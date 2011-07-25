@@ -22,8 +22,8 @@
 */
 
 #include "includes.h"
-#include "../libcli/auth/ntlmssp.h"
-#include "../libcli/auth/ntlmssp_private.h"
+#include "../auth/ntlmssp/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp_private.h"
 
 /**
  * Print out the NTLMSSP flags for debugging

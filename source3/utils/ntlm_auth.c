@@ -28,7 +28,7 @@
 #include "utils/ntlm_auth.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 #include "smb_krb5.h"
 #include <iniparser.h>
 #include "../lib/crypto/arcfour.h"

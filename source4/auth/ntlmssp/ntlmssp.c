@@ -21,8 +21,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+struct auth_session_info;
+
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "source4/auth/ntlmssp/proto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/gensec/gensec.h"
@@ -60,16 +63,6 @@ static const struct ntlmssp_callbacks {
 	}
 };
 
-
-static NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security, 
-				     const DATA_BLOB *first_packet) 
-{
-	if (ntlmssp_blob_matches_magic(first_packet)) {
-		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-}
 
 static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 					   const DATA_BLOB input, uint32_t *idx)
@@ -172,103 +165,6 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
-	return NT_STATUS_OK;
-}
-
-/**
- * Return the NTLMSSP master session key
- * 
- * @param ntlmssp_state NTLMSSP State
- */
-
-NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *mem_ctx,
-				    DATA_BLOB *session_key)
-{
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-
-	if (ntlmssp_state->expected_state != NTLMSSP_DONE) {
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	if (!ntlmssp_state->session_key.data) {
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-	*session_key = data_blob_talloc(mem_ctx, ntlmssp_state->session_key.data, ntlmssp_state->session_key.length);
-	if (!session_key->data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
-					uint32_t feature)
-{
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-
-	if (feature & GENSEC_FEATURE_SIGN) {
-		if (!ntlmssp_state->session_key.length) {
-			return false;
-		}
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
-			return true;
-		}
-	}
-	if (feature & GENSEC_FEATURE_SEAL) {
-		if (!ntlmssp_state->session_key.length) {
-			return false;
-		}
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
-			return true;
-		}
-	}
-	if (feature & GENSEC_FEATURE_SESSION_KEY) {
-		if (ntlmssp_state->session_key.length) {
-			return true;
-		}
-	}
-	if (feature & GENSEC_FEATURE_DCE_STYLE) {
-		return true;
-	}
-	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-			return true;
-		}
-	}
-	return false;
-}
-
-NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
-{
-	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	struct ntlmssp_state *ntlmssp_state;
-
-	gensec_ntlmssp = talloc_zero(gensec_security,
-				     struct gensec_ntlmssp_context);
-	if (!gensec_ntlmssp) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	gensec_ntlmssp->gensec_security = gensec_security;
-
-	ntlmssp_state = talloc_zero(gensec_ntlmssp,
-				    struct ntlmssp_state);
-	if (!ntlmssp_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ntlmssp_state->callback_private = gensec_ntlmssp;
-
-	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
-
-	gensec_security->private_data = gensec_ntlmssp;
 	return NT_STATUS_OK;
 }
 

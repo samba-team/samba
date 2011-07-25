@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

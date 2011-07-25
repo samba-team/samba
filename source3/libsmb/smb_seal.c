@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 #include "smb_crypt.h"
 #include "libsmb/libsmb.h"
 #include "ntlmssp_wrap.h"

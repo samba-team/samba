@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../lib/tsocket/tsocket.h"

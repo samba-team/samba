@@ -25,7 +25,7 @@
 #include "libsmb/proto.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "../libcli/auth/spnego.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 
 struct smb2cli_session_setup_state {
 	uint8_t fixed[24];

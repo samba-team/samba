@@ -8,4 +8,5 @@ bld.SAMBA_LIBRARY('auth_sam_reply',
                   )
 
 bld.RECURSE('gensec')
+bld.RECURSE('ntlmssp')
 bld.RECURSE('credentials')

@@ -39,13 +39,13 @@ union ntlmssp_crypt_state {
 	} ntlm2;
 };
 
-/* The following definitions come from libcli/auth/ntlmssp.c  */
+/* The following definitions come from auth/ntlmssp.c  */
 
 void debug_ntlmssp_flags(uint32_t neg_flags);
 void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 			      uint32_t neg_flags, bool allow_lm);
 
-/* The following definitions come from libcli/auth/ntlmssp_server.c  */
+/* The following definitions come from auth/ntlmssp_server.c  */
 
 const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 				uint32_t neg_flags, uint32_t *chal_flags);

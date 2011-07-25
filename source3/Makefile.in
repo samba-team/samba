@@ -562,11 +562,11 @@ LIBSMB_OBJ0 = \
 	       ../auth/gensec/gensec_start.o \
 	       ../auth/credentials/credentials.o \
 	       ../auth/credentials/credentials_samba3.o \
-	       ../libcli/auth/ntlmssp.o \
-	       ../libcli/auth/ntlmssp_sign.o \
+	       ../auth/ntlmssp/ntlmssp.o \
+	       ../auth/ntlmssp/ntlmssp_sign.o \
 	       $(LIBNDR_NTLMSSP_OBJ) \
-	       ../libcli/auth/ntlmssp_ndr.o \
-	       ../libcli/auth/ntlmssp_server.o
+	       ../auth/ntlmssp/ntlmssp_ndr.o \
+	       ../auth/ntlmssp/ntlmssp_server.o
 
 LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 	       $(LIBSMB_ERR_OBJ)

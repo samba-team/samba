@@ -21,14 +21,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+struct auth_session_info;
+
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "source4/auth/ntlmssp/proto.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
-#include "libcli/auth/ntlmssp_private.h"
+#include "auth/ntlmssp/ntlmssp_private.h"
 
 /*********************************************************************
  Client side NTLMSSP

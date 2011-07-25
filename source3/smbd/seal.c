@@ -21,7 +21,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/auth/spnego.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "smb_crypt.h"
 #include "../lib/util/asn1.h"

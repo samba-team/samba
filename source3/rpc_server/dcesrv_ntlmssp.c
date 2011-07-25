@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "rpc_server/dcesrv_ntlmssp.h"
-#include "../libcli/auth/ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "auth.h"
 

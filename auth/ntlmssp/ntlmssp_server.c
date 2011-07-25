@@ -21,10 +21,10 @@
 */
 
 #include "includes.h"
-#include "../libcli/auth/ntlmssp.h"
-#include "../libcli/auth/ntlmssp_private.h"
+#include "auth/ntlmssp/ntlmssp.h"
+#include "auth/ntlmssp/ntlmssp_private.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
-#include "../libcli/auth/ntlmssp_ndr.h"
+#include "auth/ntlmssp/ntlmssp_ndr.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 

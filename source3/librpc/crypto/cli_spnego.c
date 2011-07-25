@@ -21,7 +21,7 @@
 #include "../libcli/auth/spnego.h"
 #include "include/ntlmssp_wrap.h"
 #include "librpc/gen_ndr/ntlmssp.h"
-#include "libcli/auth/ntlmssp.h"
+#include "auth/ntlmssp/ntlmssp.h"
 #include "librpc/crypto/gse.h"
 #include "librpc/crypto/spnego.h"
 
