@@ -784,7 +784,8 @@ class Cluster(object):
             print "ALL IPS:", imbalance
             if self.have_ip_groups():
                 print "IP GROUPS:", imbalance_groups
-            print "MAX IMBALANCE METRIC:", imbalance_metric
+            if options.lcp2:
+                print "LCP2 IMBALANCE:", imbalance_metric
             print_end()
 
         num_unhealthy = len(self.nodes) - \
