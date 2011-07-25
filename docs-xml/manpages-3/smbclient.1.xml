@@ -1059,6 +1059,13 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>tdis</term>
+		<listitem><para>Close the current share connection (tree disconnect).
+		Used for internal Samba testing purposes.
+		</para></listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
