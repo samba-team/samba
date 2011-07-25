@@ -1066,6 +1066,15 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>tid &lt;number&gt;</term>
+		<listitem><para>Changes the current tree id (tid) in the
+		protocol to a new arbitrary number. Without an argument, it
+		prints out the tid currently used.
+		Used for internal Samba testing purposes.
+		</para></listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
