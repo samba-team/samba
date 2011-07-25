@@ -736,7 +736,7 @@
 
 		<varlistentry>
 		<term>logoff</term>
-		<listitem><para>Loggs the user off the server, closing the session.
+		<listitem><para>Logs the user off the server, closing the session.
 		Used for internal Samba testing purposes.
 		</para></listitem>
 		</varlistentry>
