@@ -171,6 +171,11 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	extra_data = talloc_strdup(state->mem_ctx, "");
 
 	for (i=0; i<trusts.count; i++) {
+
+		if (trusts.array[i].sid == NULL) {
+			continue;
+		}
+
 		extra_data = talloc_asprintf_append_buffer(
 			extra_data, "%s\\%s\\%s\n",
 			trusts.array[i].netbios_name,
