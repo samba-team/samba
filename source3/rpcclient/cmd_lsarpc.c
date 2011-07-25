@@ -1162,16 +1162,15 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 }
 
 static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p,
-				     uint8_t session_key[16])
+				     DATA_BLOB session_key)
 {
 	char *pwd, *pwd_old;
 
 	DATA_BLOB data 	   = data_blob_const(p->password->data, p->password->length);
 	DATA_BLOB data_old = data_blob_const(p->old_password->data, p->old_password->length);
-	DATA_BLOB session_key_blob = data_blob_const(session_key, sizeof(session_key));
 
-	pwd 	= sess_decrypt_string(talloc_tos(), &data, &session_key_blob);
-	pwd_old = sess_decrypt_string(talloc_tos(), &data_old, &session_key_blob);
+	pwd 	= sess_decrypt_string(talloc_tos(), &data, &session_key);
+	pwd_old = sess_decrypt_string(talloc_tos(), &data_old, &session_key);
 
 	d_printf("Password:\t%s\n", pwd);
 	d_printf("Old Password:\t%s\n", pwd_old);
@@ -1183,11 +1182,11 @@ static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p,
 static void display_trust_dom_info(TALLOC_CTX *mem_ctx,
 				   union lsa_TrustedDomainInfo *info,
 				   enum lsa_TrustDomInfoEnum info_class,
-				   uint8_t nt_hash[16])
+				   DATA_BLOB session_key)
 {
 	switch (info_class) {
 		case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
-			display_trust_dom_info_4(&info->password, nt_hash);
+			display_trust_dom_info_4(&info->password, session_key);
 			break;
 		default: {
 			const char *str = NULL;
@@ -1212,7 +1211,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
-	uint8_t nt_hash[16];
+	DATA_BLOB session_key;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3 || argc < 2) {
@@ -1244,12 +1243,13 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
-		d_fprintf(stderr, "Could not get pwd hash\n");
+	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(status)));
 		goto done;
 	}
 
-	display_trust_dom_info(mem_ctx, info, info_class, nt_hash);
+	display_trust_dom_info(mem_ctx, info, info_class, session_key);
 
  done:
 	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
@@ -1267,8 +1267,8 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	struct lsa_String trusted_domain;
-	uint8_t nt_hash[16];
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	DATA_BLOB session_key;
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [name] [info_class]\n", argv[0]);
@@ -1298,12 +1298,13 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
-		d_fprintf(stderr, "Could not get pwd hash\n");
+	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(status)));
 		goto done;
 	}
 
-	display_trust_dom_info(mem_ctx, info, info_class, nt_hash);
+	display_trust_dom_info(mem_ctx, info, info_class, session_key);
 
  done:
 	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
@@ -1321,7 +1322,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	union lsa_TrustedDomainInfo *info = NULL;
 	struct dom_sid dom_sid;
 	enum lsa_TrustDomInfoEnum info_class = 1;
-	uint8_t nt_hash[16];
+	DATA_BLOB session_key;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3 || argc < 2) {
@@ -1366,12 +1367,13 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
-		d_fprintf(stderr, "Could not get pwd hash\n");
+	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(status)));
 		goto done;
 	}
 
-	display_trust_dom_info(mem_ctx, info, info_class, nt_hash);
+	display_trust_dom_info(mem_ctx, info, info_class, session_key);
 
  done:
 	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);

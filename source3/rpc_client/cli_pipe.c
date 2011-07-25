@@ -2208,47 +2208,6 @@ struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c)
 	return h;
 }
 
-bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
-{
-	struct auth_ntlmssp_state *a = NULL;
-	struct cli_state *cli;
-
-	if (rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_NTLMSSP) {
-		a = talloc_get_type_abort(rpc_cli->auth->auth_ctx,
-					  struct auth_ntlmssp_state);
-	} else if (rpc_cli->auth->auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
-		struct spnego_context *spnego_ctx;
-		enum spnego_mech auth_type;
-		void *auth_ctx;
-		NTSTATUS status;
-
-		spnego_ctx = talloc_get_type_abort(rpc_cli->auth->auth_ctx,
-						   struct spnego_context);
-		status = spnego_get_negotiated_mech(spnego_ctx,
-						    &auth_type, &auth_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-
-		if (auth_type == SPNEGO_NTLMSSP) {
-			a = talloc_get_type_abort(auth_ctx,
-						  struct auth_ntlmssp_state);
-		}
-	}
-
-	if (a) {
-		memcpy(nt_hash, auth_ntlmssp_get_nt_hash(a), 16);
-		return true;
-	}
-
-	cli = rpc_pipe_np_smb_conn(rpc_cli);
-	if (cli == NULL) {
-		return false;
-	}
-	E_md4hash(cli->password ? cli->password : "", nt_hash);
-	return true;
-}
-
 NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 				  struct pipe_auth_data **presult)
 {

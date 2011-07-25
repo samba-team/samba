@@ -120,11 +120,6 @@ const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans)
 	return ans->ntlmssp_state->user;
 }
 
-const uint8_t *auth_ntlmssp_get_nt_hash(struct auth_ntlmssp_state *ans)
-{
-	return ans->ntlmssp_state->nt_hash;
-}
-
 NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
 				   const char *user)
 {

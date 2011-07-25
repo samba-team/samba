@@ -64,8 +64,6 @@ bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *ans);
 bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *ans);
 const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans);
 const char *auth_ntlmssp_get_domain(struct auth_ntlmssp_state *ans);
-const char *auth_ntlmssp_get_client(struct auth_ntlmssp_state *ans);
-const uint8_t *auth_ntlmssp_get_nt_hash(struct auth_ntlmssp_state *ans);
 NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
 				   const char *user);
 NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,

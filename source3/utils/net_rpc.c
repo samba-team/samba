@@ -6436,8 +6436,7 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS nt_status, result;
 	union lsa_TrustedDomainInfo *info = NULL;
 	char *cleartextpwd = NULL;
-	uint8_t session_key[16];
-	DATA_BLOB session_key_blob;
+	DATA_BLOB session_key;
 	DATA_BLOB data = data_blob_null;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
@@ -6462,13 +6461,14 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	data = data_blob(info->password.password->data,
 			 info->password.password->length);
 
-	if (!rpccli_get_pwd_hash(pipe_hnd, session_key)) {
-		DEBUG(0, ("Could not retrieve password hash\n"));
+	nt_status = cli_get_session_key(mem_ctx, pipe_hnd, &session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(nt_status)));
 		goto done;
 	}
 
-	session_key_blob = data_blob_const(session_key, sizeof(session_key));
-	cleartextpwd = sess_decrypt_string(mem_ctx, &data, &session_key_blob);
+	cleartextpwd = sess_decrypt_string(mem_ctx, &data, &session_key);
+	data_blob_free(&session_key);
 
 	if (cleartextpwd == NULL) {
 		DEBUG(0,("retrieved NULL password\n"));
