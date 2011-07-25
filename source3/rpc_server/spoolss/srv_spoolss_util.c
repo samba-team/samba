@@ -700,12 +700,25 @@ WERROR winreg_printer_deleteform1_internal(TALLOC_CTX *mem_ctx,
 {
 	WERROR result;
 	struct dcerpc_binding_handle *b;
+	TALLOC_CTX *tmp_ctx;
 
-	result = winreg_printer_binding_handle(mem_ctx, session_info, msg_ctx, &b);
-	W_ERROR_NOT_OK_RETURN(result);
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
 
-	return winreg_printer_deleteform1(mem_ctx, b,
-					  form_name);
+	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
+	if (!W_ERROR_IS_OK(result)) {
+		talloc_free(tmp_ctx);
+		return result;
+	}
+
+	result = winreg_printer_deleteform1(mem_ctx,
+					    b,
+					    form_name);
+
+	talloc_free(tmp_ctx);
+	return result;
 }
 
 WERROR winreg_enum_printer_key_internal(TALLOC_CTX *mem_ctx,
