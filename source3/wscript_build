@@ -831,7 +831,7 @@ bld.SAMBA3_SUBSYSTEM('LIBDRSUAPI',
 
 bld.SAMBA3_SUBSYSTEM('CLDAP',
                     source='libads/cldap.c',
-                    deps='cli-ldap-common LIBCLI_CLDAP LIBTSOCKET',
+                    deps='cli-ldap-common cli_cldap LIBTSOCKET',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SECRETS3',
