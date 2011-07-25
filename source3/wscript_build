@@ -892,7 +892,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     smbconf REG_FULL FNAME_UTIL
-                    LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
+                    LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
                     LIBCLI_SMB_COMMON RPC_SERVER smbd_conn param_service
                     smbd_shim
@@ -922,7 +922,7 @@ bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
 
 bld.SAMBA3_LIBRARY('printing_migrate',
                     source='printing/nt_printing_migrate.c rpc_client/cli_winreg_spoolss.c printing/nt_printing_os2.c',
-                    deps='NDR_NTPRINTING LIBCLI_SPOOLSS RPC_NDR_WINREG LIBCLI_WINREG param',
+                    deps='NDR_NTPRINTING cli_spoolss RPC_NDR_WINREG LIBCLI_WINREG param',
                     vars=locals(),
                     private_library=True)
 
@@ -1073,7 +1073,7 @@ bld.SAMBA3_SUBSYSTEM('LIBRPCCLI_NETLOGON',
                     source=LIBRPCCLI_NETLOGON_SRC,
                     deps='RPC_NDR_NETLOGON')
 
-bld.SAMBA3_LIBRARY('LIBCLI_SPOOLSS',
+bld.SAMBA3_LIBRARY('cli_spoolss',
                    source=LIBCLI_SPOOLSS_SRC,
                    deps='RPC_NDR_SPOOLSS param SECRETS3',
                    private_library=True)
@@ -1152,7 +1152,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3
                  ads SMBREADLINE DCUTIL RPC_NDR_WINREG RPC_NDR_ECHO
                  RPC_CLIENT_SCHANNEL
-                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
+                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
                  RPC_NDR_DRSUAPI RPC_NDR_NTSVCS RPC_NDR_EVENTLOG INIT_NETLOGON
                  INIT_SAMR
@@ -1175,7 +1175,7 @@ bld.SAMBA3_BINARY('net',
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPC_NDR_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
-                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
+                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
                  RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_NETLOGON INIT_SAMR
                  printing_migrate
