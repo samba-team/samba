@@ -432,3 +432,67 @@ hdb_entry_get_aliases(const hdb_entry *entry, const HDB_Ext_Aliases **a)
 
     return 0;
 }
+
+unsigned int
+hdb_entry_get_kvno_diff_clnt(const hdb_entry *entry)
+{
+    const HDB_extension *ext;
+
+    ext = hdb_find_extension(entry,
+			     choice_HDB_extension_data_hist_kvno_diff_clnt);
+    if (ext)
+	return ext->data.u.hist_kvno_diff_clnt;
+    return 1;
+}
+
+krb5_error_code
+hdb_entry_set_kvno_diff_clnt(krb5_context context, hdb_entry *entry,
+			     unsigned int diff)
+{
+    HDB_extension ext;
+
+    if (diff > 16384)
+	return EINVAL;
+    ext.data.element = choice_HDB_extension_data_hist_kvno_diff_clnt;
+    ext.data.u.hist_kvno_diff_clnt = diff;
+    return hdb_replace_extension(context, entry, &ext);
+}
+
+krb5_error_code
+hdb_entry_clear_kvno_diff_clnt(krb5_context context, hdb_entry *entry)
+{
+    return hdb_clear_extension(context, entry,
+			       choice_HDB_extension_data_hist_kvno_diff_clnt);
+}
+
+unsigned int
+hdb_entry_get_kvno_diff_svc(const hdb_entry *entry)
+{
+    const HDB_extension *ext;
+
+    ext = hdb_find_extension(entry,
+			     choice_HDB_extension_data_hist_kvno_diff_svc);
+    if (ext)
+	return ext->data.u.hist_kvno_diff_svc;
+    return 1024; /* max_life effectively provides a better default */
+}
+
+krb5_error_code
+hdb_entry_set_kvno_diff_svc(krb5_context context, hdb_entry *entry,
+			    unsigned int diff)
+{
+    HDB_extension ext;
+
+    if (diff > 16384)
+	return EINVAL;
+    ext.data.element = choice_HDB_extension_data_hist_kvno_diff_svc;
+    ext.data.u.hist_kvno_diff_svc = diff;
+    return hdb_replace_extension(context, entry, &ext);
+}
+
+krb5_error_code
+hdb_entry_clear_kvno_diff_svc(krb5_context context, hdb_entry *entry)
+{
+    return hdb_clear_extension(context, entry,
+			       choice_HDB_extension_data_hist_kvno_diff_svc);
+}

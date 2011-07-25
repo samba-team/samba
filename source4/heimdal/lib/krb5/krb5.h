@@ -326,7 +326,9 @@ typedef HostAddress krb5_address;
 
 typedef HostAddresses krb5_addresses;
 
-typedef enum krb5_keytype {
+typedef krb5_enctype krb5_keytype;
+
+enum krb5_keytype_old {
     KEYTYPE_NULL	= ETYPE_NULL,
     KEYTYPE_DES		= ETYPE_DES_CBC_CRC,
     KEYTYPE_DES3	= ETYPE_OLD_DES3_CBC_SHA1,
@@ -334,7 +336,7 @@ typedef enum krb5_keytype {
     KEYTYPE_AES256	= ETYPE_AES256_CTS_HMAC_SHA1_96,
     KEYTYPE_ARCFOUR	= ETYPE_ARCFOUR_HMAC_MD5,
     KEYTYPE_ARCFOUR_56	= ETYPE_ARCFOUR_HMAC_MD5_56
-} krb5_keytype;
+};
 
 typedef EncryptionKey krb5_keyblock;
 
@@ -875,6 +877,11 @@ typedef struct {
 
 typedef krb5_error_code
 (KRB5_CALLCONV * krb5_gic_process_last_req)(krb5_context, krb5_last_req_entry **, void *);
+
+typedef struct {
+    krb5_enctype	ks_enctype;
+    krb5int32		ks_salttype;
+}krb5_key_salt_tuple;
 
 /*
  *

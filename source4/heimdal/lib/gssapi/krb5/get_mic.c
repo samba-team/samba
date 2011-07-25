@@ -285,7 +285,6 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_get_mic
   const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
   krb5_keyblock *key;
   OM_uint32 ret;
-  krb5_keytype keytype;
 
   GSSAPI_KRB5_INIT (&context);
 
@@ -300,10 +299,11 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_get_mic
       *minor_status = ret;
       return GSS_S_FAILURE;
   }
-  krb5_enctype_to_keytype (context, key->keytype, &keytype);
 
-  switch (keytype) {
-  case KEYTYPE_DES :
+  switch (key->keytype) {
+  case KRB5_ENCTYPE_DES_CBC_CRC :
+  case KRB5_ENCTYPE_DES_CBC_MD4 :
+  case KRB5_ENCTYPE_DES_CBC_MD5 :
 #ifdef HEIM_WEAK_CRYPTO
       ret = mic_des (minor_status, ctx, context, qop_req,
 		     message_buffer, message_token, key);
@@ -311,12 +311,13 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_get_mic
       ret = GSS_S_FAILURE;
 #endif
       break;
-  case KEYTYPE_DES3 :
+  case KRB5_ENCTYPE_DES3_CBC_MD5 :
+  case KRB5_ENCTYPE_DES3_CBC_SHA1 :
       ret = mic_des3 (minor_status, ctx, context, qop_req,
 		      message_buffer, message_token, key);
       break;
-  case KEYTYPE_ARCFOUR:
-  case KEYTYPE_ARCFOUR_56:
+  case KRB5_ENCTYPE_ARCFOUR_HMAC_MD5:
+  case KRB5_ENCTYPE_ARCFOUR_HMAC_MD5_56:
       ret = _gssapi_get_mic_arcfour (minor_status, ctx, context, qop_req,
 				     message_buffer, message_token, key);
       break;

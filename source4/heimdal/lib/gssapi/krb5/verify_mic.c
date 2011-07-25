@@ -281,7 +281,6 @@ _gsskrb5_verify_mic_internal
 {
     krb5_keyblock *key;
     OM_uint32 ret;
-    krb5_keytype keytype;
 
     if (ctx->more_flags & IS_CFX)
         return _gssapi_verify_mic_cfx (minor_status, ctx,
@@ -296,9 +295,11 @@ _gsskrb5_verify_mic_internal
 	return GSS_S_FAILURE;
     }
     *minor_status = 0;
-    krb5_enctype_to_keytype (context, key->keytype, &keytype);
-    switch (keytype) {
-    case KEYTYPE_DES :
+
+    switch (key->keytype) {
+    case KRB5_ENCTYPE_DES_CBC_CRC :
+    case KRB5_ENCTYPE_DES_CBC_MD4 :
+    case KRB5_ENCTYPE_DES_CBC_MD5 :
 #ifdef HEIM_WEAK_CRYPTO
 	ret = verify_mic_des (minor_status, ctx, context,
 			      message_buffer, token_buffer, qop_state, key,
@@ -307,13 +308,14 @@ _gsskrb5_verify_mic_internal
       ret = GSS_S_FAILURE;
 #endif
 	break;
-    case KEYTYPE_DES3 :
+    case KRB5_ENCTYPE_DES3_CBC_MD5 :
+    case KRB5_ENCTYPE_DES3_CBC_SHA1 :
 	ret = verify_mic_des3 (minor_status, ctx, context,
 			       message_buffer, token_buffer, qop_state, key,
 			       type);
 	break;
-    case KEYTYPE_ARCFOUR :
-    case KEYTYPE_ARCFOUR_56 :
+    case KRB5_ENCTYPE_ARCFOUR_HMAC_MD5:
+    case KRB5_ENCTYPE_ARCFOUR_HMAC_MD5_56:
 	ret = _gssapi_verify_mic_arcfour (minor_status, ctx,
 					  context,
 					  message_buffer, token_buffer,

@@ -1216,7 +1216,7 @@ tgs_parse_request(krb5_context context,
     }
 
     if(ap_req.ticket.enc_part.kvno &&
-       (unsigned int)*ap_req.ticket.enc_part.kvno != (*krbtgt)->entry.kvno){
+       *ap_req.ticket.enc_part.kvno != (*krbtgt)->entry.kvno){
 	char *p;
 
 	ret = krb5_unparse_name (context, princ, &p);
@@ -1508,6 +1508,7 @@ tgs_build_reply(krb5_context context,
 
     Key *tkey_check;
     Key *tkey_sign;
+    int flags = HDB_F_FOR_TGS_REQ;
 
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
@@ -1516,6 +1517,9 @@ tgs_build_reply(krb5_context context,
 
     s = b->sname;
     r = b->realm;
+
+    if (b->kdc_options.canonicalize)
+	flags |= HDB_F_CANON;
 
     if(b->kdc_options.enc_tkt_in_skey){
 	Ticket *t;
@@ -1591,7 +1595,7 @@ tgs_build_reply(krb5_context context,
      */
 
 server_lookup:
-    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | HDB_F_CANON,
+    ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | flags,
 			NULL, NULL, &server);
 
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
@@ -1777,7 +1781,7 @@ server_lookup:
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
+    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | flags,
 			NULL, &clientdb, &client);
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	/* This is OK, we are just trying to find out if they have
@@ -1912,7 +1916,7 @@ server_lookup:
 	    if(rspac.data) {
 		krb5_pac p = NULL;
 		krb5_data_free(&rspac);
-		ret = _kdc_db_fetch(context, config, tp, HDB_F_GET_CLIENT | HDB_F_CANON,
+		ret = _kdc_db_fetch(context, config, tp, HDB_F_GET_CLIENT | flags,
 				    NULL, &s4u2self_impersonated_clientdb, &s4u2self_impersonated_client);
 		if (ret) {
 		    const char *msg;

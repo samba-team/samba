@@ -859,7 +859,7 @@ pa_pw_or_afs3_salt(krb5_context context,
 		   heim_octet_string *data)
 {
     krb5_error_code ret;
-    if (paid->etype == ENCTYPE_NULL)
+    if (paid->etype == KRB5_ENCTYPE_NULL)
 	return NULL;
     ret = set_paid(paid, context,
 		   paid->etype,
@@ -915,7 +915,7 @@ process_pa_info(krb5_context context,
 	PA_DATA *pa = find_pa_data(md, pa_prefs[i].type);
 	if (pa == NULL)
 	    continue;
-	paid->salt.salttype = pa_prefs[i].type;
+	paid->salt.salttype = (krb5_salttype)pa_prefs[i].type;
 	p = (*pa_prefs[i].salt_info)(context, client, asreq,
 				     paid, &pa->padata_value);
     }
@@ -1204,7 +1204,7 @@ process_pa_data_to_md(krb5_context context,
 
 	paid = calloc(1, sizeof(*paid));
 
-	paid->etype = ENCTYPE_NULL;
+	paid->etype = KRB5_ENCTYPE_NULL;
 	ppaid = process_pa_info(context, creds->client, a, paid, in_md);
 
  	if (ppaid)

@@ -40,7 +40,7 @@ _kdc_db_fetch(krb5_context context,
 	      krb5_kdc_configuration *config,
 	      krb5_const_principal principal,
 	      unsigned flags,
-	      krb5int32 *kvno_ptr,
+	      krb5uint32 *kvno_ptr,
 	      HDB **db,
 	      hdb_entry_ex **h)
 {

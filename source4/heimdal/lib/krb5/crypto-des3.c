@@ -55,7 +55,7 @@ DES3_random_key(krb5_context context,
 
 #ifdef DES3_OLD_ENCTYPE
 static struct _krb5_key_type keytype_des3 = {
-    KEYTYPE_DES3,
+    ETYPE_OLD_DES3_CBC_SHA1,
     "des3",
     168,
     24,
@@ -70,7 +70,7 @@ static struct _krb5_key_type keytype_des3 = {
 #endif
 
 static struct _krb5_key_type keytype_des3_derived = {
-    KEYTYPE_DES3,
+    ETYPE_OLD_DES3_CBC_SHA1,
     "des3",
     168,
     24,

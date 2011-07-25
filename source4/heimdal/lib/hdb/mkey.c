@@ -228,7 +228,7 @@ read_master_encryptionkey(krb5_context context, const char *filename,
        should cover all cases, but will break if someone has hacked
        this code to really use des-cbc-md5 -- but then that's not my
        problem. */
-    if(key.keytype == KEYTYPE_DES || key.keytype == ETYPE_DES_CBC_MD5)
+    if(key.keytype == ETYPE_DES_CBC_CRC || key.keytype == ETYPE_DES_CBC_MD5)
 	key.keytype = ETYPE_DES_CFB64_NONE;
 
     ret = hdb_process_master_key(context, 0, &key, 0, mkey);
@@ -480,6 +480,131 @@ hdb_unseal_keys(krb5_context context, HDB *db, hdb_entry *ent)
 }
 
 krb5_error_code
+hdb_unseal_keys_kvno(krb5_context context, HDB *db, krb5_kvno kvno,
+		     unsigned flags, hdb_entry *ent)
+{
+    krb5_error_code ret = HDB_ERR_NOENTRY;
+    HDB_extension *ext;
+    HDB_Ext_KeySet *hist_keys;
+    Key *tmp_val;
+    time_t tmp_set_time;
+    unsigned int tmp_len;
+    unsigned int kvno_diff = 0;
+    krb5_kvno tmp_kvno;
+    size_t i, k;
+    int exclude_dead = 0;
+    KerberosTime now = 0;
+    time_t *set_time;
+
+    if (kvno == 0)
+	ret = 0;
+
+    if ((flags & HDB_F_LIVE_CLNT_KVNOS) || (flags & HDB_F_LIVE_SVC_KVNOS)) {
+	exclude_dead = 1;
+	now = time(NULL);
+	if (HDB_F_LIVE_CLNT_KVNOS)
+	    kvno_diff = hdb_entry_get_kvno_diff_clnt(ent);
+	else
+	    kvno_diff = hdb_entry_get_kvno_diff_svc(ent);
+    }
+
+    ext = hdb_find_extension(ent, choice_HDB_extension_data_hist_keys);
+    if (ext == NULL)
+	return ret;
+
+    /* For swapping; see below */
+    tmp_len = ent->keys.len;
+    tmp_val = ent->keys.val;
+    tmp_kvno = ent->kvno;
+    (void) hdb_entry_get_pw_change_time(ent, &tmp_set_time);
+
+    hist_keys = &ext->data.u.hist_keys;
+
+    for (i = 0; i < hist_keys->len; i++) {
+	if (kvno != 0 && hist_keys->val[i].kvno != kvno)
+	    continue;
+
+	if (exclude_dead &&
+	    ((ent->max_life != NULL &&
+	      hist_keys->val[i].set_time != NULL &&
+	      (*hist_keys->val[i].set_time) < (now - (*ent->max_life))) ||
+	    (hist_keys->val[i].kvno < kvno &&
+	     (kvno - hist_keys->val[i].kvno) > kvno_diff)))
+	    /*
+	     * The KDC may want to to check for this keyset's set_time
+	     * is within the TGS principal's max_life, say.  But we stop
+	     * here.
+	     */
+	    continue;
+
+	/* Either the keys we want, or all the keys */
+	for (k = 0; k < hist_keys->val[i].keys.len; k++) {
+	    ret = hdb_unseal_key_mkey(context,
+				      &hist_keys->val[i].keys.val[k],
+				      db->hdb_master_key);
+	    /*
+	     * If kvno == 0 we might not want to bail here!  E.g., if we
+	     * no longer have the right master key, so just ignore this.
+	     *
+	     * We could filter out keys that we can't decrypt here
+	     * because of HDB_ERR_NO_MKEY.  However, it seems safest to
+	     * filter them out only where necessary, say, in kadm5.
+	     */
+	    if (ret && kvno != 0)
+		return ret;
+	    if (ret && ret != HDB_ERR_NO_MKEY)
+		return (ret);
+	}
+
+	if (kvno == 0)
+	    continue;
+
+	/*
+	 * What follows is a bit of a hack.
+	 *
+	 * This is the keyset we're being asked for, but it's not the
+	 * current keyset.  So we add the current keyset to the history,
+	 * leave the one we were asked for in the history, and pretend
+	 * the one we were asked for is also the current keyset.
+	 *
+	 * This is a bit of a defensive hack in case an entry fetched
+	 * this way ever gets modified then stored: if the keyset is not
+	 * changed we can detect this and put things back, else we won't
+	 * drop any keysets from history by accident.
+	 *
+	 * Note too that we only ever get called with a non-zero kvno
+	 * either in the KDC or in cases where we aren't changing the
+	 * HDB entry anyways, which is why this is just a defensive
+	 * hack.  We also don't fetch specific kvnos in the dump case,
+	 * so there's no danger that we'll dump this entry and load it
+	 * again, repeatedly causing the history to grow boundelessly.
+	 */
+	set_time = malloc(sizeof (*set_time));
+	if (set_time == NULL)
+	    return ENOMEM;
+
+	/* Swap key sets */
+	ent->kvno = hist_keys->val[i].kvno;
+	ent->keys.val = hist_keys->val[i].keys.val;
+	ent->keys.len = hist_keys->val[i].keys.len;
+	if (hist_keys->val[i].set_time != NULL)
+	    /* Sloppy, but the callers we expect won't care */
+	    (void) hdb_entry_set_pw_change_time(context, ent,
+						*hist_keys->val[i].set_time);
+	hist_keys->val[i].kvno = tmp_kvno;
+	hist_keys->val[i].keys.val = tmp_val;
+	hist_keys->val[i].keys.len = tmp_len;
+	if (hist_keys->val[i].set_time != NULL)
+	    /* Sloppy, but the callers we expect won't care */
+	    *hist_keys->val[i].set_time = tmp_set_time;
+
+	return 0;
+    }
+
+    return (ret);
+}
+
+krb5_error_code
 hdb_unseal_key(krb5_context context, HDB *db, Key *k)
 {
     if (db->hdb_master_key_set == 0)
@@ -526,14 +651,31 @@ hdb_seal_key_mkey(krb5_context context, Key *k, hdb_master_key mkey)
 krb5_error_code
 hdb_seal_keys_mkey(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
 {
-    size_t i;
-    for(i = 0; i < ent->keys.len; i++){
-	krb5_error_code ret;
+    HDB_extension *ext;
+    HDB_Ext_KeySet *hist_keys;
+    size_t i, k;
+    krb5_error_code ret;
 
+    for(i = 0; i < ent->keys.len; i++){
 	ret = hdb_seal_key_mkey(context, &ent->keys.val[i], mkey);
 	if (ret)
 	    return ret;
     }
+
+    ext = hdb_find_extension(ent, choice_HDB_extension_data_hist_keys);
+    if (ext == NULL)
+	return 0;
+    hist_keys = &ext->data.u.hist_keys;
+
+    for (i = 0; i < hist_keys->len; i++) {
+	for (k = 0; k < hist_keys->val[i].keys.len; k++) {
+	    ret = hdb_seal_key_mkey(context, &hist_keys->val[i].keys.val[k],
+				    mkey);
+	    if (ret)
+		return ret;
+	}
+    }
+
     return 0;
 }
 

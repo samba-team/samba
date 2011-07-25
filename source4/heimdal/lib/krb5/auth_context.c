@@ -58,7 +58,7 @@ krb5_auth_con_init(krb5_context context,
     p->remote_address = NULL;
     p->local_port     = 0;
     p->remote_port    = 0;
-    p->keytype        = KEYTYPE_NULL;
+    p->keytype        = KRB5_ENCTYPE_NULL;
     p->cksumtype      = CKSUMTYPE_NONE;
     *auth_context     = p;
     return 0;

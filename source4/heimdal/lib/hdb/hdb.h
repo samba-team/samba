@@ -57,6 +57,12 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_CANON		32	/* want canonicalition */
 #define HDB_F_ADMIN_DATA	64	/* want data that kdc don't use  */
 #define HDB_F_KVNO_SPECIFIED	128	/* we want a particular KVNO */
+#define HDB_F_CURRENT_KVNO	256	/* we want the current KVNO */
+#define HDB_F_LIVE_CLNT_KVNOS	512	/* we want all live keys for pre-auth */
+#define HDB_F_LIVE_SVC_KVNOS	1024	/* we want all live keys for tix */
+#define HDB_F_ALL_KVNOS		2048	/* we want all the keys, live or not */
+#define HDB_F_FOR_AS_REQ	4096	/* fetch is for a AS REQ */
+#define HDB_F_FOR_TGS_REQ	8192	/* fetch is for a TGS REQ */
 
 /* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
@@ -102,6 +108,8 @@ typedef struct HDB{
     hdb_master_key hdb_master_key;
     int hdb_openp;
     int hdb_capability_flags;
+    int lock_count;
+    int lock_type;
     /**
      * Open (or create) the a Kerberos database.
      *

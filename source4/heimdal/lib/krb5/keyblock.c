@@ -65,7 +65,7 @@ krb5_free_keyblock_contents(krb5_context context,
 	if (keyblock->keyvalue.data != NULL)
 	    memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
 	krb5_data_free (&keyblock->keyvalue);
-	keyblock->keytype = ENCTYPE_NULL;
+	keyblock->keytype = KRB5_ENCTYPE_NULL;
     }
 }
 

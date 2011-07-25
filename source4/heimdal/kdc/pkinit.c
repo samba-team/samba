@@ -1420,7 +1420,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	memset(&rep, 0, sizeof(rep));
 
 	pa_type = KRB5_PADATA_PK_AS_REP_19;
-	rep.element = choice_PA_PK_AS_REP_encKeyPack;
+	rep.element = choice_PA_PK_AS_REP_Win2k_encKeyPack;
 
 	ret = krb5_generate_random_keyblock(context, enctype,
 					    &cp->reply_key);

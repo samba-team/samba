@@ -55,6 +55,13 @@ PKCS12_key_gen(const void *key, size_t keylen,
     unsigned char *outp = out;
     int i, vlen;
 
+    /**
+     * The argument key is pointing to an utf16 string, and thus
+     * keylen that is no a multiple of 2 is invalid.
+     */
+    if (keylen & 1)
+	return 0;
+
     ctx = EVP_MD_CTX_create();
     if (ctx == NULL)
 	return 0;
@@ -83,7 +90,7 @@ PKCS12_key_gen(const void *key, size_t keylen,
      * empty string, in the empty string the UTF16 NUL terminator is
      * included into the string.
      */
-    if (key && keylen >= 0) {
+    if (key) {
 	for (i = 0; i < vlen / 2; i++) {
 	    I[(i * 2) + size_I] = 0;
 	    I[(i * 2) + size_I + 1] = ((unsigned char*)key)[i % (keylen + 1)];

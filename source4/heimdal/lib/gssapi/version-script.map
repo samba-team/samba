@@ -14,7 +14,7 @@ HEIMDAL_GSS_2.0 {
 		__gss_c_attr_stream_sizes_oid_desc;
 		__gss_c_cred_password_oid_desc;
 		__gss_c_cred_certificate_oid_desc;
-		GSS_C_ATTR_LOCAL_LOGIN_USER;
+		__gss_c_attr_local_login_user;
 		gss_accept_sec_context;
 		gss_acquire_cred;
 		gss_acquire_cred_with_password;

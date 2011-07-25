@@ -139,7 +139,7 @@ krb5_checksum_free(krb5_context context, krb5_checksum *cksum)
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_c_valid_enctype (krb5_enctype etype)
 {
-    return krb5_enctype_valid(NULL, etype);
+    return !krb5_enctype_valid(NULL, etype);
 }
 
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL

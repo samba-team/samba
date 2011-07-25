@@ -543,6 +543,11 @@ get_cred_kdc(krb5_context context,
 	/* this should go someplace else */
 	out_creds->times.endtime = in_creds->times.endtime;
 
+	/*
+	 * Windows KDCs always canonicalize the server name
+	 */
+	eflags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
+
 	/* XXX should do better testing */
 	if (flags.b.constrained_delegation || impersonate_principal)
 	    eflags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;

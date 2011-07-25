@@ -480,7 +480,7 @@ krb5_get_in_cred(krb5_context context,
 	}
     }
     if(pa) {
-	salt.salttype = pa->padata_type;
+	salt.salttype = (krb5_salttype)pa->padata_type;
 	salt.saltvalue = pa->padata_value;
 
 	ret = (*key_proc)(context, etype, salt, keyseed, &key);

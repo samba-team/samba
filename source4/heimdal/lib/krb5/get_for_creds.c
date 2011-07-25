@@ -407,7 +407,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
      */
 
     if (auth_context->flags & KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED) {
-	cred.enc_part.etype = ENCTYPE_NULL;
+	cred.enc_part.etype = KRB5_ENCTYPE_NULL;
 	cred.enc_part.kvno = NULL;
 	cred.enc_part.cipher.data = buf;
 	cred.enc_part.cipher.length = buf_size;

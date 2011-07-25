@@ -86,7 +86,7 @@ arcfour_mic_key(krb5_context context, krb5_keyblock *key,
     cksum_k5.checksum.data = k5_data;
     cksum_k5.checksum.length = sizeof(k5_data);
 
-    if (key->keytype == KEYTYPE_ARCFOUR_56) {
+    if (key->keytype == KRB5_ENCTYPE_ARCFOUR_HMAC_MD5_56) {
 	char L40[14] = "fortybits";
 
 	memcpy(L40 + 10, T, sizeof(T));
@@ -100,7 +100,7 @@ arcfour_mic_key(krb5_context context, krb5_keyblock *key,
     if (ret)
 	return ret;
 
-    key5.keytype = KEYTYPE_ARCFOUR;
+    key5.keytype = KRB5_ENCTYPE_ARCFOUR_HMAC_MD5;
     key5.keyvalue = cksum_k5.checksum;
 
     cksum_k6.checksum.data = key6_data;

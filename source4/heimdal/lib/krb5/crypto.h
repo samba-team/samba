@@ -69,7 +69,7 @@ struct salt_type {
 };
 
 struct _krb5_key_type {
-    krb5_keytype type; /* XXX */
+    krb5_enctype type;
     const char *name;
     size_t bits;
     size_t size;

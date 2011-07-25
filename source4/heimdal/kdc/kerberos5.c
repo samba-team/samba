@@ -978,7 +978,7 @@ _kdc_as_rep(krb5_context context,
     krb5_crypto crypto;
     Key *ckey, *skey;
     EncryptionKey *reply_key = NULL, session_key;
-    int flags = 0;
+    int flags = HDB_F_FOR_AS_REQ;
 #ifdef PKINIT
     pk_client_params *pkp = NULL;
 #endif

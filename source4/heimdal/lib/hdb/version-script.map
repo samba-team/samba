@@ -4,6 +4,7 @@ HEIMDAL_HDB_1.0 {
 	global:
 		encode_hdb_keyset;
 		hdb_add_master_key;
+		hdb_add_current_keys_to_history;
 		hdb_check_db_format;
 		hdb_clear_extension;
 		hdb_clear_master_key;
@@ -74,33 +75,44 @@ HEIMDAL_HDB_1.0 {
 		hdb_kt_ops;
 
 		# some random bits needed for libkadm
-		HDBFlags2int;
+		add_HDB_Ext_KeySet;
+		add_Keys;
 		asn1_HDBFlags_units;
 		copy_Event;
 		copy_HDB_extensions;
 		copy_Key;
+		copy_Keys;
 		copy_Salt;
 		decode_HDB_Ext_Aliases;
-		decode_HDB_Ext_PKINIT_acl;
 		decode_HDB_extension;
+		decode_HDB_Ext_PKINIT_acl;
 		decode_Key;
+		decode_Keys;
 		encode_HDB_Ext_Aliases;
-		encode_HDB_Ext_PKINIT_acl;
 		encode_HDB_extension;
+		encode_HDB_Ext_PKINIT_acl;
 		encode_Key;
+		encode_Keys;
 		free_Event;
+		free_hdb_entry;
 		free_HDB_Ext_Aliases;
-		free_HDB_Ext_PKINIT_acl;
 		free_HDB_extension;
 		free_HDB_extensions;
+		free_HDB_Ext_PKINIT_acl;
+		free_hdb_keyset;
 		free_Key;
+		free_Keys;
 		free_Salt;
-		free_hdb_entry;
+		HDBFlags2int;
 		int2HDBFlags;
 		length_HDB_Ext_Aliases;
-		length_HDB_Ext_PKINIT_acl;
 		length_HDB_extension;
+		length_HDB_Ext_PKINIT_acl;
 		length_Key;
+		length_Keys;
+		remove_Keys;
+		add_Keys;
+		add_HDB_Ext_Keyset;
 
 	local:
 		*;

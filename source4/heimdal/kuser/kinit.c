@@ -434,7 +434,7 @@ get_new_tickets(krb5_context context,
 						pac_flag ? TRUE : FALSE);
     if (canonicalize_flag)
 	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
-    if ((pk_enterprise_flag || enterprise_flag || canonicalize_flag) && windows_flag)
+    if (pk_enterprise_flag || enterprise_flag || canonicalize_flag || windows_flag)
 	krb5_get_init_creds_opt_set_win2k(context, opt, TRUE);
     if (pk_user_id || ent_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,

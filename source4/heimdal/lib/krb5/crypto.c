@@ -693,24 +693,36 @@ krb5_enctype_to_keytype(krb5_context context,
     return 0;
 }
 
+/**
+ * Check if a enctype is valid, return 0 if it is.
+ *
+ * @param context Kerberos context
+ * @param etype enctype to check if its valid or not
+ *
+ * @return Return an error code for an failure or 0 on success (enctype valid).
+ * @ingroup krb5_crypto
+ */
+
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_enctype_valid(krb5_context context,
 		   krb5_enctype etype)
 {
     struct _krb5_encryption_type *e = _krb5_find_enctype(etype);
+    if(e && (e->flags & F_DISABLED) == 0)
+	return 0;
+    if (context == NULL)
+	return KRB5_PROG_ETYPE_NOSUPP;
     if(e == NULL) {
 	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
 				N_("encryption type %d not supported", ""),
 				etype);
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
-    if (e->flags & F_DISABLED) {
-	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
-				N_("encryption type %s is disabled", ""),
-				e->name);
-	return KRB5_PROG_ETYPE_NOSUPP;
-    }
-    return 0;
+    /* Must be (e->flags & F_DISABLED) */
+    krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
+			    N_("encryption type %s is disabled", ""),
+			    e->name);
+    return KRB5_PROG_ETYPE_NOSUPP;
 }
 
 /**
@@ -1886,11 +1898,11 @@ _krb5_derive_key(krb5_context context,
 
     /* XXX keytype dependent post-processing */
     switch(kt->type) {
-    case KEYTYPE_DES3:
+    case KRB5_ENCTYPE_OLD_DES3_CBC_SHA1:
 	_krb5_DES3_random_to_key(context, key->key, k, nblocks * et->blocksize);
 	break;
-    case KEYTYPE_AES128:
-    case KEYTYPE_AES256:
+    case KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96:
+    case KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96:
 	memcpy(key->key->keyvalue.data, k, key->key->keyvalue.length);
 	break;
     default:
