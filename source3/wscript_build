@@ -820,7 +820,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
 
 bld.SAMBA3_LIBRARY('libsmb',
                    source=LIBSMB_SRC,
-                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT LIBCLI_SMB_COMMON util_cmdline tevent',
+                   deps='LIBNTLMSSP CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT cli_smb_common util_cmdline tevent',
                    vars=locals(),
                    private_library=True)
 
@@ -894,7 +894,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     smbconf REG_FULL FNAME_UTIL
                     LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
-                    LIBCLI_SMB_COMMON RPC_SERVER smbd_conn param_service
+                    cli_smb_common RPC_SERVER smbd_conn param_service
                     smbd_shim
                     ''',
                     private_library=True,
@@ -1164,7 +1164,7 @@ bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
                  deps='''talloc tdb_compat cap popt_samba3 passdb libsmb smbd_shim
                  param wbclient param KRBCLIENT LIBMSRPC_GEN
                  msrpc3 SMBREADLINE libsmb/smbclient RPC_NDR_SRVSVC INIT_LSA
-                 LIBCLI_SMB_COMMON''',
+                 cli_smb_common''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('net',
