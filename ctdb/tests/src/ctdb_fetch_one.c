@@ -117,7 +117,7 @@ int main(int argc, const char *argv[])
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
 
 	if (ctdb == NULL) {
-		printf("failed to connect to ctdb deamon.\n");
+		printf("failed to connect to ctdb daemon.\n");
 		exit(1);
 	}
 
