@@ -734,14 +734,15 @@ static int objectclass_do_add(struct oc_context *ac)
 		} else if (ldb_attr_cmp(objectclass->lDAPDisplayName, "site") == 0
 				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "serversContainer") == 0
 				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "nTDSDSA") == 0) {
+			if (ldb_attr_cmp(objectclass->lDAPDisplayName, "site") == 0)
+				systemFlags |= (int32_t)(SYSTEM_FLAG_CONFIG_ALLOW_RENAME);
 			systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
-
 		} else if (ldb_attr_cmp(objectclass->lDAPDisplayName, "siteLink") == 0
+				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "subnet") == 0
 				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "siteLinkBridge") == 0
 				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "nTDSConnection") == 0) {
 			systemFlags |= (int32_t)(SYSTEM_FLAG_CONFIG_ALLOW_RENAME);
 		}
-
 		/* TODO: If parent object is site or subnet, also add (SYSTEM_FLAG_CONFIG_ALLOW_RENAME) */
 
 		if (el || systemFlags != 0) {
