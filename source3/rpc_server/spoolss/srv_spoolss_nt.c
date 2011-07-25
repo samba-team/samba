@@ -2257,7 +2257,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		/* try for Win2k driver if "Windows NT x86" */
 
 		version = 3;
-		status = winreg_get_driver(info, b,
+		status = winreg_get_driver(tmp_ctx, b,
 					   r->in.architecture,
 					   r->in.driver,
 					   version, &info);
@@ -2267,7 +2267,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		}
 	}
 
-	if (printer_driver_in_use(info,
+	if (printer_driver_in_use(tmp_ctx,
 				  get_session_info_system(),
 				  p->msg_ctx,
 				  info)) {
@@ -2293,7 +2293,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 
 	if (delete_files &&
 	    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
-	    printer_driver_files_in_use(info,
+	    printer_driver_files_in_use(tmp_ctx,
 					get_session_info_system(),
 					p->msg_ctx,
 					info)) {
@@ -2306,7 +2306,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	/* also check for W32X86/3 if necessary; maybe we already have? */
 
 	if ( (version == 2) && ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
-		status = winreg_get_driver(info, b,
+		status = winreg_get_driver(tmp_ctx, b,
 					   r->in.architecture,
 					   r->in.driver, 3, &info_win2k);
 		if (W_ERROR_IS_OK(status)) {
@@ -2326,7 +2326,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status = winreg_del_driver(info, b,
+			status = winreg_del_driver(tmp_ctx, b,
 						   info_win2k,
 						   3);
 
@@ -2348,7 +2348,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		}
 	}
 
-	status = winreg_del_driver(info, b,
+	status = winreg_del_driver(tmp_ctx, b,
 				   info,
 				   version);
 	if (!W_ERROR_IS_OK(status)) {
