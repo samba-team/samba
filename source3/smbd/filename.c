@@ -849,8 +849,7 @@ NTSTATUS check_name(connection_struct *conn, const char *name)
 {
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
-		if (!((name[0] == '.') && (!name[1] ||
-					(name[1] == '.' && !name[2])))) {
+		if (!(ISDOT(name) || ISDOTDOT(name))) {
 			DEBUG(5,("check_name: file path name %s vetoed\n",
 						name));
 			return map_nt_error_from_unix(ENOENT);
