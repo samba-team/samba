@@ -1013,6 +1013,14 @@ static int rpc_conf_getparm(struct net_context *c, int argc,
 	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
 		rpc_conf_getparm_internal, argc, argv );
 }
+
+static int rpc_conf_getincludes(struct net_context *c, int argc,
+			     const char **argv)
+{
+	d_printf("Function not implemented yet\n");
+	return 0;
+}
+
 /* function calls */
 int net_rpc_conf(struct net_context *c, int argc,
 		 const char **argv)
@@ -1071,6 +1079,14 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("Retrieve the value of a parameter."),
 			N_("net rpc conf getparm\n"
 			   "    Retrieve the value of a parameter.")
+		},
+		{
+			"getincludes",
+			rpc_conf_getincludes,
+			NET_TRANSPORT_RPC,
+			N_("Show the includes of a share definition."),
+			N_("net rpc conf getincludes\n"
+			   "    Show the includes of a share definition.")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
