@@ -218,16 +218,29 @@ WERROR winreg_update_printer_internal(TALLOC_CTX *mem_ctx,
 {
 	WERROR result;
 	struct dcerpc_binding_handle *b;
+	TALLOC_CTX *tmp_ctx;
 
-	result = winreg_printer_binding_handle(mem_ctx, session_info, msg_ctx, &b);
-	W_ERROR_NOT_OK_RETURN(result);
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
 
-	return winreg_update_printer(mem_ctx, b,
-				     sharename,
-				     info2_mask,
-				     info2,
-				     devmode,
-				     secdesc);
+	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
+	if (!W_ERROR_IS_OK(result)) {
+		talloc_free(tmp_ctx);
+		return result;
+	}
+
+	result = winreg_update_printer(mem_ctx,
+				       b,
+				       sharename,
+				       info2_mask,
+				       info2,
+				       devmode,
+				       secdesc);
+
+	talloc_free(tmp_ctx);
+	return result;
 }
 
 WERROR winreg_set_printer_dataex_internal(TALLOC_CTX *mem_ctx,
