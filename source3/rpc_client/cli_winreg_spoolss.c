@@ -599,6 +599,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	uint32_t i, count = ARRAY_SIZE(subkeys);
 	uint32_t info2_mask = 0;
 	WERROR result = WERR_OK;
+	WERROR ignore;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_stackframe();
@@ -632,6 +633,13 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("winreg_create_printer: Could not open key %s: %s\n",
 			path, win_errstr(result)));
 		goto done;
+	}
+
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+	}
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 	}
 
 	/* Create the main key */
@@ -902,15 +910,11 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 				       secdesc);
 
 done:
-	if (winreg_handle != NULL) {
-		WERROR ignore;
-
-		if (is_valid_policy_hnd(&key_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
-		}
-		if (is_valid_policy_hnd(&hive_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
-		}
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+	}
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 	}
 
 	talloc_free(tmp_ctx);
