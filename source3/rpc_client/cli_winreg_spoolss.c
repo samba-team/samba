@@ -1666,6 +1666,21 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	}
 	if (!W_ERROR_IS_OK(result)) {
 		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+			WERROR ignore;
+
+			if (is_valid_policy_hnd(&key_hnd)) {
+				dcerpc_winreg_CloseKey(winreg_handle,
+						       tmp_ctx,
+						       &key_hnd,
+						       &ignore);
+			}
+
+			if (is_valid_policy_hnd(&hive_hnd)) {
+				dcerpc_winreg_CloseKey(winreg_handle,
+						       tmp_ctx,
+						       &hive_hnd,
+						       &ignore);
+			}
 			goto create_default;
 		}
 		goto done;
