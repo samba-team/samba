@@ -381,7 +381,7 @@ static PyMappingMethods py_lp_ctx_mapping = {
 };
 
 PyTypeObject PyLoadparmContext = {
-	.tp_name = "LoadParm",
+	.tp_name = "param.LoadParm",
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_getset = py_lp_ctx_getset,
 	.tp_methods = py_lp_ctx_methods,
@@ -428,7 +428,7 @@ static PyMethodDef py_lp_service_methods[] = {
 };
 
 PyTypeObject PyLoadparmService = {
-	.tp_name = "LoadparmService",
+	.tp_name = "param.LoadparmService",
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_methods = py_lp_service_methods,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
