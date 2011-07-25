@@ -1051,6 +1051,14 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>tcon &lt;sharename&gt;</term>
+		<listitem><para>Establishes a new tree connect (connection to a share).
+		Replaces the current tree connect. Prints the new tid (tree id).
+		Used for internal Samba testing purposes.
+		</para></listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
