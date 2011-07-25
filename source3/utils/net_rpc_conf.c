@@ -36,11 +36,392 @@
 #include "rpc_client/cli_winreg.h"
 #include "../lib/smbconf/smbconf.h"
 
+/* internal functions */
+/**********************************************************
+ *
+ * usage functions
+ *
+ **********************************************************/
+const char confpath[100] = "Software\\Samba\\smbconf";
+
+static int rpc_conf_list_usage(struct net_context *c, int argc,
+			       const char **argv)
+{
+	d_printf("%s net rpc conf list\n", _("Usage:"));
+	return -1;
+}
+
+static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
+				   struct dcerpc_binding_handle *b,
+				   struct policy_handle *parent_hnd,
+				   const char *share_name,
+				   struct smbconf_service *share,
+				   WERROR *werr)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR result = WERR_OK;
+	WERROR _werr;
+	struct policy_handle child_hnd;
+	int32_t includes_cnt, includes_idx = -1;
+	uint32_t num_vals, i, param_cnt = 0;
+	const char **val_names;
+	enum winreg_Type *types;
+	DATA_BLOB *data;
+	struct winreg_String key;
+	const char **multi_s = NULL;
+	const char *s = NULL;
+	struct smbconf_service tmp_share;
+
+	ZERO_STRUCT(tmp_share);
+
+	key.name = share_name;
+	status = dcerpc_winreg_OpenKey(b, frame, parent_hnd, key, 0,
+			       REG_KEY_READ, &child_hnd, &result);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to open subkey: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+	if (!(W_ERROR_IS_OK(result))) {
+		d_fprintf(stderr, _("Failed to open subkey: %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+	/* get all the info from the share key */
+	status = dcerpc_winreg_enumvals(frame,
+			b,
+			&child_hnd,
+			&num_vals,
+			&val_names,
+			&types,
+			&data,
+			&result);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to enumerate values: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+	if (!(W_ERROR_IS_OK(result))) {
+		d_fprintf(stderr, _("Failed to enumerate values: %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+	/* check for includes */
+	for (i = 0; i < num_vals; i++) {
+		if (strcmp(val_names[i], "includes") == 0){
+			if (!pull_reg_multi_sz(frame,
+					       &data[i],
+					       &multi_s))
+			{
+				result = WERR_NOMEM;
+				d_fprintf(stderr,
+					  _("Failed to enumerate values: %s\n"),
+					  win_errstr(result));
+				goto error;
+			}
+			includes_idx = i;
+		}
+	}
+	/* count the number of includes */
+	includes_cnt = 0;
+	if (includes_idx != -1) {
+		for (includes_cnt = 0;
+		     multi_s[includes_cnt] != NULL;
+		     includes_cnt ++);
+	}
+	/* place the name of the share in the smbconf_service struct */
+	tmp_share.name = talloc_strdup(frame, share_name);
+	if (tmp_share.name == NULL) {
+		result = WERR_NOMEM;
+		d_fprintf(stderr, _("Failed to create share: %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+	/* place the number of parameters in the smbconf_service struct */
+	tmp_share.num_params = num_vals;
+	if (includes_idx != -1) {
+		tmp_share.num_params = num_vals + includes_cnt - 1;
+	}
+	/* allocate memory for the param_names and param_values lists */
+	tmp_share.param_names = talloc_zero_array(frame, char *, tmp_share.num_params);
+	if (tmp_share.param_names == NULL) {
+		result = WERR_NOMEM;
+		d_fprintf(stderr, _("Failed to create share: %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+	tmp_share.param_values = talloc_zero_array(frame, char *, tmp_share.num_params);
+	if (tmp_share.param_values == NULL) {
+		result = WERR_NOMEM;
+		d_fprintf(stderr, _("Failed to create share: %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+	/* place all params except includes */
+	for (i = 0; i < num_vals; i++) {
+		if (strcmp(val_names[i], "includes") != 0) {
+			if (!pull_reg_sz(frame, &data[i], &s)) {
+				result = WERR_NOMEM;
+				d_fprintf(stderr,
+					  _("Failed to enumerate values: %s\n"),
+					  win_errstr(result));
+				goto error;
+			}
+			/* place param_names */
+			tmp_share.param_names[param_cnt] = talloc_strdup(frame, val_names[i]);
+			if (tmp_share.param_names[param_cnt] == NULL) {
+				result = WERR_NOMEM;
+				d_fprintf(stderr, _("Failed to create share: %s\n"),
+						win_errstr(result));
+				goto error;
+			}
+
+			/* place param_values */
+			tmp_share.param_values[param_cnt++] = talloc_strdup(frame, s);
+			if (tmp_share.param_values[param_cnt - 1] == NULL) {
+				result = WERR_NOMEM;
+				d_fprintf(stderr, _("Failed to create share: %s\n"),
+						win_errstr(result));
+				goto error;
+			}
+		}
+	}
+	/* place the includes last */
+	for (i = 0; i < includes_cnt; i++) {
+		tmp_share.param_names[param_cnt] = talloc_strdup(frame, "include");
+		if (tmp_share.param_names[param_cnt] == NULL) {
+				result = WERR_NOMEM;
+				d_fprintf(stderr, _("Failed to create share: %s\n"),
+						win_errstr(result));
+				goto error;
+		}
+
+		tmp_share.param_values[param_cnt++] = talloc_strdup(frame, multi_s[i]);
+		if (tmp_share.param_values[param_cnt - 1] == NULL) {
+				result = WERR_NOMEM;
+				d_fprintf(stderr, _("Failed to create share: %s\n"),
+						win_errstr(result));
+				goto error;
+		}
+	}
+
+	/* move everything to the main memory ctx */
+	for (i = 0; i < param_cnt; i++) {
+		tmp_share.param_names[i] = talloc_move(mem_ctx, &tmp_share.param_names[i]);
+		tmp_share.param_values[i] = talloc_move(mem_ctx, &tmp_share.param_values[i]);
+	}
+
+	tmp_share.name = talloc_move(mem_ctx, &tmp_share.name);
+	tmp_share.param_names = talloc_move(mem_ctx, &tmp_share.param_names);
+	tmp_share.param_values = talloc_move(mem_ctx, &tmp_share.param_values);
+	/* out parameter */
+	*share = tmp_share;
+error:
+	/* close child */
+	dcerpc_winreg_CloseKey(b, frame, &child_hnd, &_werr);
+	*werr = result;
+	TALLOC_FREE(frame);
+	return status;
+}
+
+static int rpc_conf_print_shares(uint32_t num_shares,
+				 struct smbconf_service *shares)
+{
+
+	uint32_t share_count, param_count;
+	const char *indent = "\t";
+
+	if (num_shares == 0) {
+		return 0;
+	}
+
+	for (share_count = 0; share_count < num_shares; share_count++) {
+		d_printf("\n");
+		if (shares[share_count].name != NULL) {
+		d_printf("[%s]\n", shares[share_count].name);
+		}
+
+		for (param_count = 0;
+		     param_count < shares[share_count].num_params;
+		     param_count++)
+		{
+			d_printf("%s%s = %s\n",
+				 indent,
+				 shares[share_count].param_names[param_count],
+				 shares[share_count].param_values[param_count]);
+		}
+	}
+	d_printf("\n");
+
+	return 0;
+
+}
+static NTSTATUS rpc_conf_list_internal(struct net_context *c,
+				       const struct dom_sid *domain_sid,
+				       const char *domain_name,
+				       struct cli_state *cli,
+				       struct rpc_pipe_client *pipe_hnd,
+				       TALLOC_CTX *mem_ctx,
+				       int argc,
+				       const char **argv )
+{
+
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+	struct winreg_String key;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd;
+	uint32_t num_subkeys;
+	uint32_t i;
+	struct smbconf_service *shares;
+	const char **subkeys = NULL;
+
+
+	ZERO_STRUCT(key);
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+
+	if (argc != 0 || c->display_usage) {
+		rpc_conf_list_usage(c, argc, argv);
+		goto error;
+	}
+
+	status = dcerpc_winreg_OpenHKLM(b, frame, NULL,
+			REG_KEY_READ, &hive_hnd, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to open hive: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("Failed to open hive: %s\n"),
+				win_errstr(werr));
+		goto error;
+	}
+
+	key.name = confpath;
+	status = dcerpc_winreg_OpenKey(b, frame, &hive_hnd, key, 0,
+				       REG_KEY_READ, &key_hnd, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to open smbconf key: %s\n"),
+				nt_errstr(status));
+		dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+		goto error;
+	}
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, _("Failed to open smbconf key: %s\n"),
+			win_errstr(werr));
+		dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+		goto error;
+	}
+
+	status = dcerpc_winreg_enum_keys(frame,
+					 b,
+					 &key_hnd,
+					 &num_subkeys,
+					 &subkeys,
+					 &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
+				win_errstr(werr));
+		goto error;
+	}
+
+	if (num_subkeys == 0) {
+		dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+		dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	/* get info from each subkey */
+	shares = talloc_zero_array(frame, struct smbconf_service, num_subkeys);
+	if (shares == NULL) {
+		werr = WERR_NOMEM;
+		d_fprintf(stderr, _("Failed to create shares: %s\n"),
+				win_errstr(werr));
+		goto error;
+
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		/* get each share and place it in the shares array */
+		status = rpc_conf_get_share(frame,
+				b,
+				&key_hnd,
+				subkeys[i],
+				&shares[i],
+				&werr);
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
+		if (!(W_ERROR_IS_OK(werr))) {
+			goto error;
+		}
+
+	}
+	/* print the shares array */
+	rpc_conf_print_shares(num_subkeys, shares);
+
+error:
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
+
+}
+
+
+static int rpc_conf_list(struct net_context *c, int argc,
+			     const char **argv)
+{
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_list_internal, argc, argv );
+}
 
 /* function calls */
 int net_rpc_conf(struct net_context *c, int argc,
 		 const char **argv)
 {
-	return 0;
+	struct functable func_table[] = {
+		{
+			"list",
+			rpc_conf_list,
+			NET_TRANSPORT_RPC,
+			N_("Dump the complete remote configuration in smb.conf like "
+			   "format."),
+			N_("net rpc conf list\n"
+			   "    Dump the complete remote configuration in smb.conf "
+			   "like format.")
+
+		},
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net rpc conf", func_table);
 
 }
