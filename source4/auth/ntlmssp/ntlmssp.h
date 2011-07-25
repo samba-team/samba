@@ -26,7 +26,6 @@
 struct gensec_ntlmssp_context {
 	struct gensec_security *gensec_security;
 	struct ntlmssp_state *ntlmssp_state;
-	struct auth4_context *auth_context;
 	struct auth_user_info_dc *user_info_dc;
 };
 

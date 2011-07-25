@@ -88,7 +88,7 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
 	NTSTATUS status;
 
 	status = auth_context->get_challenge(auth_context, chal);
@@ -111,7 +111,7 @@ static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
 
 	return auth_context->challenge_may_be_modified(auth_context);
 }
@@ -125,7 +125,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
 	NTSTATUS nt_status;
 	const uint8_t *chal;
 
@@ -155,7 +155,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
-	struct auth4_context *auth_context = gensec_ntlmssp->auth_context;
+	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
 	NTSTATUS nt_status;
 	struct auth_usersupplied_info *user_info;
 
@@ -288,8 +288,6 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
-
-	gensec_ntlmssp->auth_context = gensec_security->auth_context;
 
 	ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
 	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
