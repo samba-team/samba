@@ -1181,6 +1181,7 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_SAMBA"    "samba"
     ctdb_compat_managed_service "$CTDB_MANAGES_SCP"      "scp"
     ctdb_compat_managed_service "$CTDB_MANAGES_WINBIND"  "winbind"
+    ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "apache2"
     ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "httpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
     ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
