@@ -284,12 +284,12 @@ class Cluster(object):
         if self.have_ip_groups():
             print "Final group imbalances:         ", self.imbalance_groups[-1]
         if options.lcp2:
-            print "Max imbalance metric:        %6d" % max(self.imbalance_metric)
+            print "Max LCP2 imbalance  :        %6d" % max(self.imbalance_metric)
         print "Soft imbalance count:        %6d" % self.imbalance_count
         if self.have_ip_groups():
             print "Soft imbalance group counts:    ", self.imbalance_groups_count
         if options.lcp2:
-            print "Final imbalance metric:      %6d" % self.imbalance_metric[-1]
+            print "Final LCP2 imbalance  :      %6d" % self.imbalance_metric[-1]
         print "Maximum unhealthy:           %6d" % max(self.num_unhealthy)
         print_end()
 
