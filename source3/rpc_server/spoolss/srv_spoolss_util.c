@@ -127,13 +127,26 @@ WERROR winreg_printer_get_changeid_internal(TALLOC_CTX *mem_ctx,
 {
 	WERROR result;
 	struct dcerpc_binding_handle *b;
+	TALLOC_CTX *tmp_ctx;
 
-	result = winreg_printer_binding_handle(mem_ctx, session_info, msg_ctx, &b);
-	W_ERROR_NOT_OK_RETURN(result);
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
 
-	return winreg_printer_get_changeid(mem_ctx, b,
-					   printer,
-					   pchangeid);
+	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
+	if (!W_ERROR_IS_OK(result)) {
+		talloc_free(tmp_ctx);
+		return result;
+	}
+
+	result = winreg_printer_get_changeid(mem_ctx,
+					     b,
+					     printer,
+					     pchangeid);
+
+	talloc_free(tmp_ctx);
+	return result;
 }
 
 WERROR winreg_get_printer_internal(TALLOC_CTX *mem_ctx,
