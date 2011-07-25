@@ -298,9 +298,19 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 					       &result);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
+		result = ntstatus_to_werror(status);
 	}
 	if (!W_ERROR_IS_OK(result)) {
+		WERROR ignore;
+
+		if (is_valid_policy_hnd(hive_handle)) {
+			dcerpc_winreg_CloseKey(binding_handle,
+					       mem_ctx,
+					       hive_handle,
+					       &ignore);
+		}
+		ZERO_STRUCTP(hive_handle);
+
 		return result;
 	}
 
