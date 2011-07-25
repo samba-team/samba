@@ -2187,9 +2187,8 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	enum_names = talloc_move(mem_ctx, &enum_names);
-	enum_types = talloc_move(mem_ctx, &enum_types);
-	enum_data_blobs = talloc_move(mem_ctx, &enum_data_blobs);
+	talloc_steal(enum_values, enum_names);
+	talloc_steal(enum_values, enum_data_blobs);
 
 	*pnum_values = num_values;
 	if (penum_values) {
