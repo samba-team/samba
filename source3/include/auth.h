@@ -38,14 +38,12 @@ struct auth_serversupplied_info {
 
 	struct security_token *security_token;
 
-	/* This is the final session key, as used by SMB signing, and
-	 * (truncated to 16 bytes) encryption on the SAMR and LSA pipes
-	 * when over ncacn_np.
-	 * It is calculated by NTLMSSP from the session key in the info3,
-	 * and is  set from the Kerberos session key using
-	 * krb5_auth_con_getremotesubkey().
-	 *
-	 * Bottom line, it is not the same as the session keys in info3.
+	/* These are the intermediate session keys, as provided by a
+	 * NETLOGON server and used by NTLMSSP to negotiate key
+	 * exchange etc (which will provide the session_key in the
+	 * auth_session_info).  It is usually the same as the keys in
+	 * the info3, but is a variable length structure here to allow
+	 * it to be omitted if the auth module does not know it.
 	 */
 
 	DATA_BLOB session_key;
