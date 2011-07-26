@@ -2595,7 +2595,6 @@ struct smbd_echo_state {
 
 	struct tevent_fd *parent_fde;
 
-	struct tevent_fd *read_fde;
 	struct tevent_req *write_req;
 };
 
@@ -2828,10 +2827,13 @@ static void smbd_echo_reader(struct tevent_context *ev,
 	smbd_echo_activate_writer(state);
 }
 
+static void smbd_echo_got_packet(struct tevent_req *req);
+
 static void smbd_echo_loop(struct smbd_server_connection *sconn,
 			   int parent_pipe)
 {
 	struct smbd_echo_state *state;
+	struct tevent_req *read_req;
 
 	state = talloc_zero(sconn, struct smbd_echo_state);
 	if (state == NULL) {
@@ -2854,14 +2856,14 @@ static void smbd_echo_loop(struct smbd_server_connection *sconn,
 		TALLOC_FREE(state);
 		return;
 	}
-	state->read_fde = tevent_add_fd(state->ev, state, sconn->sock,
-					TEVENT_FD_READ, smbd_echo_reader,
-					state);
-	if (state->read_fde == NULL) {
-		DEBUG(1, ("tevent_add_fd failed\n"));
+
+	read_req = smbd_echo_read_send(state, state->ev, sconn);
+	if (read_req == NULL) {
+		DEBUG(1, ("smbd_echo_read_send failed\n"));
 		TALLOC_FREE(state);
 		return;
 	}
+	tevent_req_set_callback(read_req, smbd_echo_got_packet, state);
 
 	while (true) {
 		if (tevent_loop_once(state->ev) == -1) {
@@ -2872,6 +2874,66 @@ static void smbd_echo_loop(struct smbd_server_connection *sconn,
 	}
 	TALLOC_FREE(state);
 }
+
+static void smbd_echo_got_packet(struct tevent_req *req)
+{
+	struct smbd_echo_state *state = tevent_req_callback_data(
+		req, struct smbd_echo_state);
+	NTSTATUS status;
+	char *buf = NULL;
+	size_t buflen = 0;
+	uint32_t seqnum = 0;
+	bool reply;
+
+	status = smbd_echo_read_recv(req, state, &buf, &buflen, &seqnum);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("smbd_echo_read_recv returned %s\n",
+			  nt_errstr(status)));
+		exit(1);
+	}
+
+	reply = smbd_echo_reply((uint8_t *)buf, buflen, seqnum);
+	if (!reply) {
+		size_t num_pending;
+		struct iovec *tmp;
+		struct iovec *iov;
+
+		num_pending = talloc_array_length(state->pending);
+		tmp = talloc_realloc(state, state->pending, struct iovec,
+				     num_pending+1);
+		if (tmp == NULL) {
+			DEBUG(1, ("talloc_realloc failed\n"));
+			exit(1);
+		}
+		state->pending = tmp;
+
+		if (buflen >= smb_size) {
+			/*
+			 * place the seqnum in the packet so that the main process
+			 * can reply with signing
+			 */
+			SIVAL(buf, smb_ss_field, seqnum);
+			SIVAL(buf, smb_ss_field+4, NT_STATUS_V(NT_STATUS_OK));
+		}
+
+		iov = &state->pending[num_pending];
+		iov->iov_base = buf;
+		iov->iov_len = buflen;
+
+		DEBUG(10,("echo_handler[%d]: forward to main\n",
+			  (int)sys_getpid()));
+		smbd_echo_activate_writer(state);
+	}
+
+	req = smbd_echo_read_send(state, state->ev, state->sconn);
+	if (req == NULL) {
+		DEBUG(1, ("smbd_echo_read_send failed\n"));
+		exit(1);
+	}
+	tevent_req_set_callback(req, smbd_echo_got_packet, state);
+}
+
 
 /*
  * Handle SMBecho requests in a forked child process
