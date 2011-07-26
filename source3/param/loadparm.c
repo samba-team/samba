@@ -310,6 +310,7 @@ static void set_allowed_client_auth(void);
 
 static void add_to_file_list(const char *fname, const char *subfname);
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
+static void free_param_opts(struct parmlist_entry **popts);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_SMB2_02, "SMB2"}, /* for now keep PROTOCOL_SMB2_02 */
@@ -4605,6 +4606,7 @@ static void free_parameters_by_snum(int snum)
  */
 static void free_global_parameters(void)
 {
+	free_param_opts(&Globals.param_opt);
 	free_parameters_by_snum(GLOBAL_SECTION_SNUM);
 }
 
@@ -5420,7 +5422,6 @@ static bool do_section(const char *pszSectionName, void *userdata);
 static void init_copymap(struct loadparm_service *pservice);
 static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
-static void free_param_opts(struct parmlist_entry **popts);
 static void show_parameter(int parmIndex);
 static bool is_synonym_of(int parm1, int parm2, bool *inverse);
 
