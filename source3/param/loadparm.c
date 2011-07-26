@@ -8940,7 +8940,7 @@ void gfree_loadparm(void)
 /***************************************************************************
  Allow client apps to specify that they are a client
 ***************************************************************************/
-void lp_set_in_client(bool b)
+static void lp_set_in_client(bool b)
 {
     in_client = b;
 }
