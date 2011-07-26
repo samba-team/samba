@@ -329,8 +329,20 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	nt_status = gensec_ntlmssp_start(gensec_security);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
-					       struct gensec_ntlmssp_context);
+	gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+
+	ntlmssp_state = talloc_zero(gensec_ntlmssp,
+				    struct ntlmssp_state);
+	if (!ntlmssp_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ntlmssp_state->callback_private = gensec_ntlmssp;
+
+	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
+
 	ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	ntlmssp_state->role = NTLMSSP_CLIENT;

@@ -107,7 +107,6 @@ bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	struct ntlmssp_state *ntlmssp_state;
 
 	gensec_ntlmssp = talloc_zero(gensec_security,
 				     struct gensec_ntlmssp_context);
@@ -116,16 +115,6 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 	}
 
 	gensec_ntlmssp->gensec_security = gensec_security;
-
-	ntlmssp_state = talloc_zero(gensec_ntlmssp,
-				    struct ntlmssp_state);
-	if (!ntlmssp_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ntlmssp_state->callback_private = gensec_ntlmssp;
-
-	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
 
 	gensec_security->private_data = gensec_ntlmssp;
 	return NT_STATUS_OK;
