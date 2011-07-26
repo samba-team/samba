@@ -1018,6 +1018,9 @@ static bool wbinfo_sids_to_unix_ids(const char *arg)
 		case WBC_ID_TYPE_GID:
 			d_printf("%s -> gid %d\n", sidstr, unix_ids[i].id.gid);
 			break;
+		case WBC_ID_TYPE_BOTH:
+			d_printf("%s -> uid/gid %d\n", sidstr, unix_ids[i].id.uid);
+			break;
 		default:
 			d_printf("%s -> unmapped\n", sidstr);
 			break;
