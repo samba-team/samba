@@ -46,7 +46,7 @@ static void cli_echo_done(struct tevent_req *req)
 	*done -= 1;
 }
 
-static void cli_close_done(struct tevent_req *req)
+static void write_andx_done(struct tevent_req *req)
 {
 	int *done = (int *)tevent_req_callback_data_void(req);
 	NTSTATUS status;
@@ -117,7 +117,7 @@ bool run_async_echo(int dummy)
 			printf("cli_write_andx_send failed\n");
 			goto fail;
 		}
-		tevent_req_set_callback(req, cli_close_done, &num_reqs);
+		tevent_req_set_callback(req, write_andx_done, &num_reqs);
 		num_reqs += 1;
 
 		req = cli_echo_send(ev, ev, cli, 1,
