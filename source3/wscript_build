@@ -1052,10 +1052,6 @@ bld.SAMBA3_LIBRARY('CHARSET3',
                     deps='samba-util util_str',
                    private_library=True)
 
-bld.SAMBA3_SUBSYSTEM('ldb3',
-                    source='lib/ldb_compat.c',
-                    deps='samba-util')
-
 bld.SAMBA3_SUBSYSTEM('errors3',
                      source='libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c',
                      deps='errors')
@@ -1411,6 +1407,9 @@ bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
 if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('POPT_SAMBA', source='', deps='popt_samba3')
+    bld.SAMBA3_SUBSYSTEM('ldb3',
+                        source='lib/ldb_compat.c',
+                        deps='samba-util')
     bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
     bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
     bld.SAMBA3_SUBSYSTEM('cli-ldap', '', deps='UTIL_TEVENT')
