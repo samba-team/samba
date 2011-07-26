@@ -113,7 +113,7 @@ bool run_async_echo(int dummy)
 	for (i=0; i<10; i++) {
 		req = cli_write_andx_send(ev, ev, cli, 4711, 0, buf, 0, sizeof(buf));
 		if (req == NULL) {
-			printf("cli_close_send failed\n");
+			printf("cli_write_andx_send failed\n");
 			goto fail;
 		}
 		tevent_req_set_callback(req, cli_close_done, &num_reqs);
