@@ -1620,6 +1620,7 @@ bool lp_load_initial_only(const char *pszFname);
 bool lp_load_global(const char *file_name);
 bool lp_load_client(const char *file_name);
 bool lp_load_global_no_reinit(const char *file_name);
+bool lp_load_client_no_reinit(const char *file_name);
 bool lp_load_with_registry_shares(const char *pszFname,
 				  bool global_only,
 				  bool save_defaults,
