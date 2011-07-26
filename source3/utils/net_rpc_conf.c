@@ -99,6 +99,14 @@ static int rpc_conf_getincludes_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static int rpc_conf_delincludes_usage(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("%s\nnet rpc conf delincludes <sharename>\n",
+			_("Usage:"));
+	return -1;
+}
+
 static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -1068,6 +1076,147 @@ error:
 	return status;
 
 }
+
+static NTSTATUS rpc_conf_delincludes_internal(struct net_context *c,
+					      const struct dom_sid *domain_sid,
+					      const char *domain_name,
+					      struct cli_state *cli,
+					      struct rpc_pipe_client *pipe_hnd,
+					      TALLOC_CTX *mem_ctx,
+					      int argc,
+					      const char **argv )
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd, subkey_hnd;
+
+	bool key_exists = false;
+	uint32_t i, num_subkeys;
+	const char **subkeys;
+	struct winreg_String valuename;
+	struct winreg_String keyname;
+
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+	ZERO_STRUCT(subkey_hnd);
+
+	ZERO_STRUCT(keyname);
+	ZERO_STRUCT(valuename);
+
+	keyname.name = argv[0];
+	valuename.name = "includes";
+
+	if (argc != 1 || c->display_usage) {
+		rpc_conf_delincludes_usage(c, argc, argv);
+		goto error;
+	}
+/* try REG_KEY_WRITE */
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+	status = dcerpc_winreg_enum_keys(frame,
+					 b,
+					 &key_hnd,
+					 &num_subkeys,
+					 &subkeys,
+					 &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
+				win_errstr(werr));
+		goto error;
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		if (strcmp(subkeys[i], argv[0]) == 0) {
+			key_exists = true;
+		}
+	}
+
+	if (!key_exists) {
+		d_fprintf(stderr, _("ERROR: Share '%s' does not exist\n"),
+				argv[0]);
+		werr = WERR_BADFILE;
+		goto error;
+	}
+
+	status = dcerpc_winreg_OpenKey(b, frame, &key_hnd, keyname, 0,
+				       REG_KEY_WRITE, &subkey_hnd, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to open key '%s': %s\n"),
+				keyname.name, nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, _("Failed to open key '%s': %s\n"),
+				keyname.name, win_errstr(werr));
+		goto error;
+	}
+
+	status = dcerpc_winreg_DeleteValue(b,
+			                   frame,
+					   &subkey_hnd,
+					   valuename,
+					   &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to delete value %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		if (W_ERROR_EQUAL(werr, WERR_BADFILE)){
+			werr = WERR_OK;
+			goto error;
+		}
+
+		d_fprintf(stderr, _("Failed to delete value  %s\n"),
+				win_errstr(werr));
+		goto error;
+	}
+error:
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &subkey_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
+
+}
+
 static int rpc_conf_drop(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -1121,8 +1270,8 @@ static int rpc_conf_getincludes(struct net_context *c, int argc,
 static int rpc_conf_delincludes(struct net_context *c, int argc,
 				const char **argv)
 {
-	d_printf("Function not yet implemented\n");
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_delincludes_internal, argc, argv );
 }
 /* function calls */
 int net_rpc_conf(struct net_context *c, int argc,
