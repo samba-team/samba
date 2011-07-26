@@ -188,8 +188,8 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 
 static int auth_ntlmssp_state_destructor(void *ptr);
 
-NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
-			    struct auth_ntlmssp_state **auth_ntlmssp_state)
+NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
+			      struct auth_ntlmssp_state **auth_ntlmssp_state)
 {
 	NTSTATUS nt_status;
 	bool is_standalone;
@@ -212,20 +212,16 @@ NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
 		return nt_status;
 	}
 
+	ans->auth_context = talloc_steal(ans, auth_context);
+
 	if (auth_context->prepare_gensec) {
 		nt_status = auth_context->prepare_gensec(ans, &ans->gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			TALLOC_FREE(ans);
 			return nt_status;
 		} else {
-			nt_status = auth_context->gensec_start_mech_by_oid(ans->gensec_security, GENSEC_OID_NTLMSSP);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				TALLOC_FREE(ans);
-				return nt_status;
-			} else {
-				*auth_ntlmssp_state = ans;
-				return NT_STATUS_OK;
-			}
+			*auth_ntlmssp_state = ans;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -261,8 +257,6 @@ NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
 		return nt_status;
 	}
 
-	ans->auth_context = talloc_steal(ans, auth_context);
-
 	ans->ntlmssp_state->callback_private = ans;
 	ans->ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
 	ans->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
@@ -285,4 +279,13 @@ static int auth_ntlmssp_state_destructor(void *ptr)
 	TALLOC_FREE(ans->server_info);
 	TALLOC_FREE(ans->ntlmssp_state);
 	return 0;
+}
+
+NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	if (auth_ntlmssp_state->auth_context->gensec_start_mech_by_oid) {
+		return auth_ntlmssp_state->auth_context->gensec_start_mech_by_oid(auth_ntlmssp_state->gensec_security, GENSEC_OID_NTLMSSP);
+	}
+
+	return NT_STATUS_OK;
 }

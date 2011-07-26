@@ -36,9 +36,9 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 	struct auth_ntlmssp_state *a = NULL;
 	NTSTATUS status;
 
-	status = auth_ntlmssp_start(remote_address, &a);
+	status = auth_ntlmssp_prepare(remote_address, &a);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",
+		DEBUG(0, (__location__ ": auth_ntlmssp_prepare failed: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
@@ -49,6 +49,13 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 	if (do_seal) {
 		/* Always implies both sign and seal for ntlmssp */
 		auth_ntlmssp_want_feature(a, NTLMSSP_FEATURE_SEAL);
+	}
+
+	status = auth_ntlmssp_start(a);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	status = auth_ntlmssp_update(a, mem_ctx, *token_in, token_out);

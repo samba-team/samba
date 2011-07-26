@@ -86,13 +86,19 @@ bool is_encrypted_packet(const uint8_t *inbuf)
 static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 				  struct smb_srv_trans_enc_ctx *ec)
 {
-	NTSTATUS status = auth_ntlmssp_start(remote_address,
+	NTSTATUS status = auth_ntlmssp_prepare(remote_address,
 					     &ec->auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
 
 	auth_ntlmssp_want_feature(ec->auth_ntlmssp_state, NTLMSSP_FEATURE_SEAL);
+
+	status = auth_ntlmssp_start(ec->auth_ntlmssp_state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return nt_status_squash(status);
+	}
 
 	/*
 	 * We must remember to update the pointer copy for the common

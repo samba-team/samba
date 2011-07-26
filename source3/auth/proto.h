@@ -72,8 +72,9 @@ NTSTATUS auth_netlogond_init(void);
 NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *auth_ntlmssp_state,
 				struct auth_session_info **session_info);
-NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
+NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
 			    struct auth_ntlmssp_state **auth_ntlmssp_state);
+NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state *auth_ntlmssp_state);
 
 
 /* The following definitions come from auth/auth_sam.c  */
