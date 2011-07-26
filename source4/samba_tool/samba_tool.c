@@ -263,7 +263,7 @@ int net_help(struct net_context *ctx, const struct net_functable *ftable)
 {
 	d_printf("Available commands:\n");
 	net_help_builtin(ftable);
-	net_help_python();
+	/* net_help_python(); */
 	return 0;
 }
 
