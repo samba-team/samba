@@ -633,8 +633,8 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		return;
 	}
 
-	status = auth_ntlmssp_update(*auth_ntlmssp_state,
-					secblob, &chal);
+	status = auth_ntlmssp_update(*auth_ntlmssp_state, talloc_tos(),
+				     secblob, &chal);
 
 	data_blob_free(&secblob);
 
@@ -736,8 +736,8 @@ static void reply_spnego_auth(struct smb_request *req,
 		}
 	}
 
-	status = auth_ntlmssp_update(*auth_ntlmssp_state,
-					auth, &auth_reply);
+	status = auth_ntlmssp_update(*auth_ntlmssp_state, talloc_tos(),
+				     auth, &auth_reply);
 
 	data_blob_free(&auth);
 
@@ -1151,7 +1151,8 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 
 		status = auth_ntlmssp_update(vuser->auth_ntlmssp_state,
-						blob1, &chal);
+					     talloc_tos(),
+					     blob1, &chal);
 
 		data_blob_free(&blob1);
 

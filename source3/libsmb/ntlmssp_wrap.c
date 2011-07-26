@@ -186,12 +186,19 @@ DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, TALLOC_CT
 }
 
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
+			     TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB request, DATA_BLOB *reply)
 {
+	NTSTATUS status;
 	if (ans->gensec_security) {
-		return gensec_update(ans->gensec_security, ans, request, reply);
+		return gensec_update(ans->gensec_security, mem_ctx, request, reply);
 	}
-	return ntlmssp_update(ans->ntlmssp_state, request, reply);
+	status = ntlmssp_update(ans->ntlmssp_state, request, reply);
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return status;
+	}
+	talloc_steal(mem_ctx, reply->data);
+	return status;
 }
 
 NTSTATUS auth_ntlmssp_client_start(TALLOC_CTX *mem_ctx,

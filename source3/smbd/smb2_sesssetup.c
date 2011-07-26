@@ -393,6 +393,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 		}
 
 		status = auth_ntlmssp_update(session->auth_ntlmssp_state,
+					     talloc_tos(),
 					     secblob_in,
 					     &chal_out);
 	}
@@ -584,7 +585,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 	}
 
 	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
-				     auth,
+				     talloc_tos(), auth,
 				     &auth_out);
 	/* If status is NT_STATUS_OK then we need to get the token.
 	 * Map to guest is now internal to auth_ntlmssp */
@@ -637,7 +638,6 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 					uint64_t *out_session_id)
 {
 	NTSTATUS status;
-	DATA_BLOB secblob_out = data_blob_null;
 
 	if (session->auth_ntlmssp_state == NULL) {
 		status = auth_ntlmssp_start(session->sconn->remote_address,
@@ -650,20 +650,9 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 
 	/* RAW NTLMSSP */
 	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
+				     smb2req,
 				     in_security_buffer,
-				     &secblob_out);
-
-	if (NT_STATUS_IS_OK(status) ||
-			NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		*out_security_buffer = data_blob_talloc(smb2req,
-						secblob_out.data,
-						secblob_out.length);
-		if (secblob_out.data && out_security_buffer->data == NULL) {
-			TALLOC_FREE(session->auth_ntlmssp_state);
-			TALLOC_FREE(session);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
+				     out_security_buffer);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		*out_session_id = session->vuid;

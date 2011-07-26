@@ -217,7 +217,7 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	case SPNEGO_NTLMSSP:
 
 		ntlmssp_ctx = sp_ctx->mech_ctx.ntlmssp_state;
-		status = auth_ntlmssp_update(ntlmssp_ctx,
+		status = auth_ntlmssp_update(ntlmssp_ctx, mem_ctx,
 					     token_in, &token_out);
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {

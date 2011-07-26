@@ -56,15 +56,13 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 					 NTLMSSP_NEGOTIATE_SEAL);
 	}
 
-	status = auth_ntlmssp_update(a, *token_in, token_out);
+	status = auth_ntlmssp_update(a, mem_ctx, *token_in, token_out);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DEBUG(0, (__location__ ": auth_ntlmssp_update failed: %s\n",
 			  nt_errstr(status)));
 		goto done;
 	}
 
-	/* Make sure data is bound to the memctx, to be freed the caller */
-	talloc_steal(mem_ctx, token_out->data);
 	/* steal ntlmssp context too */
 	*ctx = talloc_move(mem_ctx, &a);
 
@@ -87,11 +85,8 @@ NTSTATUS ntlmssp_server_step(struct auth_ntlmssp_state *ctx,
 
 	/* this has to be done as root in order to verify the password */
 	become_root();
-	status = auth_ntlmssp_update(ctx, *token_in, token_out);
+	status = auth_ntlmssp_update(ctx, mem_ctx, *token_in, token_out);
 	unbecome_root();
-
-	/* put the output token data on the given mem_ctx */
-	talloc_steal(mem_ctx, token_out->data);
 
 	return status;
 }

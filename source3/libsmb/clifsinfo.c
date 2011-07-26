@@ -636,7 +636,8 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	}
 
 	do {
-		status = auth_ntlmssp_update(es->s.auth_ntlmssp_state, blob_in, &blob_out);
+		status = auth_ntlmssp_update(es->s.auth_ntlmssp_state, es->s.auth_ntlmssp_state,
+					     blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		data_blob_free(&param_out);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(status)) {

@@ -1037,6 +1037,7 @@ static NTSTATUS create_gssapi_auth_bind_req(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
+						 TALLOC_CTX *mem_ctx,
 						 DATA_BLOB *auth_token)
 {
 	struct auth_ntlmssp_state *ntlmssp_ctx;
@@ -1047,7 +1048,7 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 					    struct auth_ntlmssp_state);
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
-	status = auth_ntlmssp_update(ntlmssp_ctx, null_blob, auth_token);
+	status = auth_ntlmssp_update(ntlmssp_ctx, mem_ctx, null_blob, auth_token);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		data_blob_free(auth_token);
@@ -1171,7 +1172,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		break;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		ret = create_ntlmssp_auth_rpc_bind_req(cli, &auth_token);
+		ret = create_ntlmssp_auth_rpc_bind_req(cli, mem_ctx, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
@@ -1772,7 +1773,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		ntlmssp_ctx = talloc_get_type_abort(pauth->auth_ctx,
 						    struct auth_ntlmssp_state);
-		status = auth_ntlmssp_update(ntlmssp_ctx,
+		status = auth_ntlmssp_update(ntlmssp_ctx, state,
 					     auth.credentials, &auth_token);
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {

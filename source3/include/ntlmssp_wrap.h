@@ -79,6 +79,7 @@ DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans,
 				       TALLOC_CTX *mem_ctx);
 
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
+			     TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB request, DATA_BLOB *reply);
 
 NTSTATUS auth_ntlmssp_client_start(TALLOC_CTX *mem_ctx,
