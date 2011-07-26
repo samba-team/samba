@@ -608,7 +608,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	for (i=1; i<t->num_sids; i++) {
 
-		if (ids[i].type != WBC_ID_TYPE_GID) {
+		if (ids[i].type != WBC_ID_TYPE_GID &&
+		    ids[i].type != WBC_ID_TYPE_BOTH) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
 				   "ignoring it\n",
 				   sid_string_dbg(&t->sids[i])));

@@ -284,6 +284,12 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 					&state->non_cached[num_non_cached],
 					unix_id);
 				break;
+			case WBC_ID_TYPE_BOTH:
+				type = 'B';
+				idmap_cache_set_sid2both(
+					&state->non_cached[num_non_cached],
+					unix_id);
+				break;
 			default:
 				found = false;
 			}

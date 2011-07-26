@@ -261,7 +261,54 @@ void idmap_cache_set_sid2gid(const struct dom_sid *sid, gid_t gid)
 	}
 }
 
+
+/**
+ * Store a mapping in the idmap cache
+ * @param[in] sid		the sid to map
+ * @param[in] uid/gid		the uid/gid to map
+ *
+ * If both parameters are valid values, then a positive mapping in both
+ * directions is stored. If "is_null_sid(sid)" is true, then this will be a
+ * negative mapping of gid, we want to cache that for this id we could not
+ * find anything. Likewise if "id==-1", then we want to cache that we did not
+ * find a mapping for the sid passed here.
+ */
+
+void idmap_cache_set_sid2both(const struct dom_sid *sid, uid_t id)
+{
+	time_t now = time(NULL);
+	time_t timeout;
+	fstring sidstr, key, value;
+
+	if (!is_null_sid(sid)) {
+		fstr_sprintf(key, "IDMAP/SID2BOTH/%s",
+			     sid_to_fstring(sidstr, sid));
+		fstr_sprintf(value, "%d", (int)id);
+		timeout = (id == -1)
+			? lp_idmap_negative_cache_time()
+			: lp_idmap_cache_time();
+		gencache_set(key, value, now + timeout);
+	}
+	if (id != -1) {
+		fstr_sprintf(key, "IDMAP/BOTH2SID/%d", (int)id);
+		if (is_null_sid(sid)) {
+			/* negative id mapping */
+			fstrcpy(value, "-");
+			timeout = lp_idmap_negative_cache_time();
+		}
+		else {
+			sid_to_fstring(value, sid);
+			timeout = lp_idmap_cache_time();
+		}
+		gencache_set(key, value, now + timeout);
+	}
+}
+
+
 static char* key_xid2sid_str(TALLOC_CTX* mem_ctx, char t, const char* id) {
+	if (t == 'B') {
+		return talloc_asprintf(mem_ctx, "IDMAP/BOTH2SID/%s", id);
+	}
 	return talloc_asprintf(mem_ctx, "IDMAP/%cID2SID/%s", t, id);
 }
 
@@ -272,6 +319,9 @@ static char* key_xid2sid(TALLOC_CTX* mem_ctx, char t, int id) {
 }
 
 static char* key_sid2xid_str(TALLOC_CTX* mem_ctx, char t, const char* sid) {
+	if (t == 'B') {
+		return talloc_asprintf(mem_ctx, "IDMAP/SID2BOTH/%s", sid);
+	}
 	return talloc_asprintf(mem_ctx, "IDMAP/SID2%cID/%s", t, sid);
 }
 
@@ -328,6 +378,10 @@ bool idmap_cache_del_gid(gid_t gid) {
 	return idmap_cache_del_xid('G', gid);
 }
 
+bool idmap_cache_del_both(uid_t id) {
+	return idmap_cache_del_xid('B', id);
+}
+
 static bool idmap_cache_del_sid2xid(TALLOC_CTX* mem_ctx, char t, const char* sid)
 {
 	const char* sid_key = key_sid2xid_str(mem_ctx, t, sid);
@@ -367,7 +421,8 @@ bool idmap_cache_del_sid(const struct dom_sid *sid)
 	bool ret = true;
 
 	if (!idmap_cache_del_sid2xid(mem_ctx, 'U', sid_str) &&
-	    !idmap_cache_del_sid2xid(mem_ctx, 'G', sid_str))
+	    !idmap_cache_del_sid2xid(mem_ctx, 'G', sid_str) &&
+	    !idmap_cache_del_sid2xid(mem_ctx, 'B', sid_str))
 	{
 		DEBUG(3, ("no entry: %s\n", key_xid2sid_str(mem_ctx, '?', sid_str)));
 		ret = false;
