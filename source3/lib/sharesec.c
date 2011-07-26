@@ -293,7 +293,7 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 
 	if (data.dptr == NULL) {
 		return get_share_security_default(ctx, psize,
-						  GENERIC_ALL_ACCESS);
+						  SEC_RIGHTS_DIR_ALL);
 	}
 
 	status = unmarshall_sec_desc(ctx, data.dptr, data.dsize, &psd);
@@ -304,14 +304,14 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
 			  nt_errstr(status)));
 		return get_share_security_default(ctx, psize,
-						  GENERIC_ALL_ACCESS);
+						  SEC_RIGHTS_DIR_ALL);
 	}
 
 	if (psd) {
 		*psize = ndr_size_security_descriptor(psd, 0);
 	} else {
 		return get_share_security_default(ctx, psize,
-						  GENERIC_ALL_ACCESS);
+						  SEC_RIGHTS_DIR_ALL);
 	}
 
 	return psd;
