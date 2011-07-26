@@ -758,7 +758,7 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 						out_session_flags,
 						out_security_buffer,
 						out_session_id);
-	} else if (strncmp((char *)(in_security_buffer.data), "NTLMSSP", 7) == 0) {
+	} else if (in_security_buffer.length > 7 && strncmp((char *)(in_security_buffer.data), "NTLMSSP", 7) == 0) {
 		return smbd_smb2_raw_ntlmssp_auth(session,
 						smb2req,
 						in_security_mode,

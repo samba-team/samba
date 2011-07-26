@@ -1154,7 +1154,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		return;
 	}
 
-	if (strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0) {
+	if (blob1.length > 7 && strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0) {
 		DATA_BLOB chal;
 
 		if (!vuser->auth_ntlmssp_state) {
