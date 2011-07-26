@@ -1165,27 +1165,16 @@ static NTSTATUS rpc_conf_delincludes_internal(struct net_context *c,
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	/* key info */
-	struct policy_handle hive_hnd, key_hnd, subkey_hnd;
-
-	bool key_exists = false;
-	uint32_t i, num_subkeys;
-	const char **subkeys;
-	struct winreg_String valuename;
-	struct winreg_String keyname;
+	struct policy_handle hive_hnd, key_hnd;
 
 
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
-	ZERO_STRUCT(subkey_hnd);
 
-	ZERO_STRUCT(keyname);
-	ZERO_STRUCT(valuename);
-
-	keyname.name = argv[0];
-	valuename.name = "includes";
 
 	if (argc != 1 || c->display_usage) {
 		rpc_conf_delincludes_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto error;
 	}
 /* try REG_KEY_WRITE */
@@ -1204,75 +1193,13 @@ static NTSTATUS rpc_conf_delincludes_internal(struct net_context *c,
 		goto error;
 	}
 
-	status = dcerpc_winreg_enum_keys(frame,
-					 b,
-					 &key_hnd,
-					 &num_subkeys,
-					 &subkeys,
-					 &werr);
+	status = rpc_conf_del_value(frame,
+			            b,
+				    &key_hnd,
+				    argv[0],
+				    "includes",
+				    &werr);
 
-	if (!(NT_STATUS_IS_OK(status))) {
-		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
-				nt_errstr(status));
-		goto error;
-	}
-
-	if (!(W_ERROR_IS_OK(werr))) {
-		d_fprintf(stderr, _("Failed to enumerate keys: %s\n"),
-				win_errstr(werr));
-		goto error;
-	}
-
-	for (i = 0; i < num_subkeys; i++) {
-		if (strcmp(subkeys[i], argv[0]) == 0) {
-			key_exists = true;
-		}
-	}
-
-	if (!key_exists) {
-		d_fprintf(stderr, _("ERROR: Share '%s' does not exist\n"),
-				argv[0]);
-		werr = WERR_BADFILE;
-		goto error;
-	}
-
-	status = dcerpc_winreg_OpenKey(b, frame, &key_hnd, keyname, 0,
-				       REG_KEY_WRITE, &subkey_hnd, &werr);
-
-	if (!(NT_STATUS_IS_OK(status))) {
-		d_fprintf(stderr, _("Failed to open key '%s': %s\n"),
-				keyname.name, nt_errstr(status));
-		goto error;
-	}
-
-	if (!(W_ERROR_IS_OK(werr))) {
-		d_fprintf(stderr, _("Failed to open key '%s': %s\n"),
-				keyname.name, win_errstr(werr));
-		goto error;
-	}
-
-	status = dcerpc_winreg_DeleteValue(b,
-			                   frame,
-					   &subkey_hnd,
-					   valuename,
-					   &werr);
-
-	if (!(NT_STATUS_IS_OK(status))) {
-		d_fprintf(stderr, _("Failed to delete value %s\n"),
-				nt_errstr(status));
-		goto error;
-	}
-
-	if (!(W_ERROR_IS_OK(werr))) {
-		if (W_ERROR_EQUAL(werr, WERR_BADFILE)){
-			werr = WERR_OK;
-			goto error;
-		}
-
-		d_fprintf(stderr, _("Failed to delete value  %s\n"),
-				win_errstr(werr));
-		goto error;
-	}
 error:
 
 	if (!(W_ERROR_IS_OK(werr))) {
@@ -1281,7 +1208,6 @@ error:
 
 	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
 	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
-	dcerpc_winreg_CloseKey(b, frame, &subkey_hnd, &_werr);
 
 	TALLOC_FREE(frame);
 	return status;
