@@ -35,6 +35,7 @@
 #include "smbprofile.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "libsmb/libsmb.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 extern bool global_machine_password_needs_changing;
 
@@ -2430,6 +2431,160 @@ static int create_unlink_tmp(const char *dir)
 	}
 	TALLOC_FREE(fname);
 	return fd;
+}
+
+/*
+ * Read an smb packet in the echo handler child, giving the parent
+ * smbd one second to react once the socket becomes readable.
+ */
+
+struct smbd_echo_read_state {
+	struct tevent_context *ev;
+	struct smbd_server_connection *sconn;
+
+	char *buf;
+	size_t buflen;
+	uint32_t seqnum;
+};
+
+static void smbd_echo_read_readable(struct tevent_req *subreq);
+static void smbd_echo_read_waited(struct tevent_req *subreq);
+
+static struct tevent_req *smbd_echo_read_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct smbd_server_connection *sconn)
+{
+	struct tevent_req *req, *subreq;
+	struct smbd_echo_read_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_echo_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->sconn = sconn;
+
+	subreq = wait_for_read_send(state, ev, sconn->sock);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbd_echo_read_readable, req);
+	return req;
+}
+
+static void smbd_echo_read_readable(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_echo_read_state *state = tevent_req_data(
+		req, struct smbd_echo_read_state);
+	bool ok;
+	int err;
+
+	ok = wait_for_read_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+
+	/*
+	 * Give the parent smbd one second to step in
+	 */
+
+	subreq = tevent_wakeup_send(
+		state, state->ev, timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smbd_echo_read_waited, req);
+}
+
+static void smbd_echo_read_waited(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_echo_read_state *state = tevent_req_data(
+		req, struct smbd_echo_read_state);
+	struct smbd_server_connection *sconn = state->sconn;
+	bool ok;
+	NTSTATUS status;
+	size_t unread = 0;
+	bool encrypted;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	ok = smbd_lock_socket_internal(sconn);
+	if (!ok) {
+		tevent_req_nterror(req, map_nt_error_from_unix(errno));
+		DEBUG(0, ("%s: failed to lock socket\n", __location__));
+		return;
+	}
+
+	if (!fd_is_readable(sconn->sock)) {
+		DEBUG(10,("echo_handler[%d] the parent smbd was faster\n",
+			  (int)sys_getpid()));
+
+		ok = smbd_unlock_socket_internal(sconn);
+		if (!ok) {
+			tevent_req_nterror(req, map_nt_error_from_unix(errno));
+			DEBUG(1, ("%s: failed to unlock socket\n",
+				__location__));
+			return;
+		}
+
+		subreq = wait_for_read_send(state, state->ev, sconn->sock);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, smbd_echo_read_readable, req);
+		return;
+	}
+
+	status = receive_smb_talloc(state, sconn, sconn->sock, &state->buf,
+				    0 /* timeout */,
+				    &unread,
+				    &encrypted,
+				    &state->buflen,
+				    &state->seqnum,
+				    false /* trusted_channel*/);
+
+	if (tevent_req_nterror(req, status)) {
+		tevent_req_nterror(req, status);
+		DEBUG(1, ("echo_handler[%d]: receive_smb_raw_talloc failed: %s\n",
+			  (int)sys_getpid(), nt_errstr(status)));
+		return;
+	}
+
+	ok = smbd_unlock_socket_internal(sconn);
+	if (!ok) {
+		tevent_req_nterror(req, map_nt_error_from_unix(errno));
+		DEBUG(1, ("%s: failed to unlock socket\n", __location__));
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS smbd_echo_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				    char **pbuf, size_t *pbuflen, uint32_t *pseqnum)
+{
+	struct smbd_echo_read_state *state = tevent_req_data(
+		req, struct smbd_echo_read_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pbuf = talloc_move(mem_ctx, &state->buf);
+	*pbuflen = state->buflen;
+	*pseqnum = state->seqnum;
+	return NT_STATUS_OK;
 }
 
 struct smbd_echo_state {
