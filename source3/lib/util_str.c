@@ -1277,11 +1277,3 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	TALLOC_FREE(s);
 	return list;
 }
-
-char *sanitize_username(TALLOC_CTX *mem_ctx, const char *username)
-{
-	fstring tmp;
-
-	alpha_strcpy(tmp, username, ". _-$", sizeof(tmp));
-	return talloc_strdup(mem_ctx, tmp);
-}

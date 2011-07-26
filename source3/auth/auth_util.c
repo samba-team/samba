@@ -753,10 +753,8 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	}
 
 	result->unix_name = talloc_strdup(result, unix_username);
-	result->sanitized_username = sanitize_username(result, unix_username);
 
-	if ((result->unix_name == NULL)
-	    || (result->sanitized_username == NULL)) {
+	if (result->unix_name == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1039,12 +1037,6 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 
 	dst->unix_name = talloc_strdup(dst, src->unix_info->unix_name);
 	if (!dst->unix_name) {
-		TALLOC_FREE(dst);
-		return NULL;
-	}
-
-	dst->sanitized_username = talloc_strdup(dst, src->unix_info->sanitized_username);
-	if (!dst->sanitized_username) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}
@@ -1412,13 +1404,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	}
 
 	result->unix_name = talloc_strdup(result, found_username);
-
-	result->sanitized_username = sanitize_username(result,
-						       result->unix_name);
-	if (result->sanitized_username == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/* copy in the info3 */
 	result->info3 = i3 = copy_netr_SamInfo3(result, info3);

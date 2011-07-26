@@ -92,13 +92,6 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 
 	TALLOC_FREE(pwd);
 
-	result->sanitized_username = sanitize_username(result,
-						       result->unix_name);
-	if (result->sanitized_username == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	if (IS_DC && is_our_machine_account(username)) {
 		/*
 		 * This is a hack of monstrous proportions.
