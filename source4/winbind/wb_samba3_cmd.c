@@ -1517,3 +1517,97 @@ static void gid2sid_recv(struct composite_context *ctx)
 	wbsrv_samba3_async_epilogue(status, s3call);
 }
 
+static void sids2xids_recv(struct composite_context *ctx)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(ctx->async.private_data,
+				struct wbsrv_samba3_call);
+	NTSTATUS status;
+	struct id_map *ids;
+	unsigned i, count;
+	struct winbindd_response *resp = s3call->response;
+
+	DEBUG(5, ("sids2xids_recv called\n"));
+
+	status = wb_sids2xids_recv(ctx, &ids, &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/* fill in extra_data with the list of IDs. Each is prefixed
+	 * by 'U' or 'G' for user and group, and followed by a
+	 * newline */
+	resp->extra_data.data = talloc_strdup(resp, "");
+	if (resp->extra_data.data == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<count; i++) {
+		char type_char = '*';
+		if (ids[i].status != ID_MAPPED) {
+			resp->extra_data.data = talloc_asprintf_append_buffer(resp->extra_data.data, "\n");
+			if (resp->extra_data.data == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			continue;
+		}
+		switch (ids[i].xid.type) {
+		case ID_TYPE_UID:
+			type_char = 'U';
+			break;
+		case ID_TYPE_GID:
+			type_char = 'G';
+			break;
+		case ID_TYPE_BOTH:
+			type_char = 'B';
+			break;
+		case ID_TYPE_NOT_SPECIFIED:
+			type_char = 'N';
+			break;
+		}
+		resp->extra_data.data = talloc_asprintf_append_buffer(resp->extra_data.data, "%c%u\n",
+								      type_char, (unsigned)ids[i].xid.id);
+		if (resp->extra_data.data == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+	resp->length += strlen(resp->extra_data.data) + 1;
+
+done:
+	wbsrv_samba3_async_epilogue(status, s3call);
+}
+
+
+NTSTATUS wbsrv_samba3_sids2xids(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct wbsrv_service *service =
+		s3call->wbconn->listen_socket->service;
+	struct id_map *ids = NULL;
+	unsigned count = 0;
+	char *saveptr = NULL;
+	char *sidstr;
+
+	DEBUG(5, ("wbsrv_samba3_sids2xids called\n"));
+
+	for (sidstr = strtok_r(s3call->request->extra_data.data, "\n", &saveptr);
+	     sidstr;
+	     sidstr = strtok_r(NULL, "\n", &saveptr)) {
+		count += 1;
+		ids = talloc_realloc(s3call, ids, struct id_map, count);
+		NT_STATUS_HAVE_NO_MEMORY(ids);
+		ids[count-1].sid = dom_sid_parse_talloc(ids, sidstr);
+		NT_STATUS_HAVE_NO_MEMORY(ids->sid);
+	}
+
+	ctx = wb_sids2xids_send(s3call, service, count, ids);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	ctx->async.fn = sids2xids_recv;
+	ctx->async.private_data = s3call;
+	s3call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}

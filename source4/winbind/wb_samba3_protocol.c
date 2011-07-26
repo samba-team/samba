@@ -214,13 +214,15 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_samba3_call *s3call)
 	case WINBINDD_PAM_LOGOFF:
 		return wbsrv_samba3_pam_logoff(s3call);
 
+	case WINBINDD_SIDS_TO_XIDS:
+		return wbsrv_samba3_sids2xids(s3call);
+
 	/* Unimplemented commands */
 	case WINBINDD_GETPWSID:
 	case WINBINDD_PAM_CHAUTHTOK:
 	case WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP:
 	case WINBINDD_LOOKUPRIDS:
 	case WINBINDD_LOOKUPSIDS:
-	case WINBINDD_SIDS_TO_XIDS:
 	case WINBINDD_ALLOCATE_UID:
 	case WINBINDD_ALLOCATE_GID:
 	case WINBINDD_SHOW_SEQUENCE:
