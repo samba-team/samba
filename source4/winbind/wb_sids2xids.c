@@ -74,7 +74,7 @@ struct composite_context *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS wb_sids2xids_recv(struct composite_context *ctx,
-			   struct id_map **ids)
+			   struct id_map **ids, unsigned *count)
 {
 	NTSTATUS status = composite_wait(ctx);
 	struct sids2xids_state *state =	talloc_get_type(ctx->private_data,
@@ -86,6 +86,9 @@ NTSTATUS wb_sids2xids_recv(struct composite_context *ctx,
 	 * the results are filled into the pointers the caller
 	 * supplied */
 	*ids = state->ids;
+	if (count != NULL) {
+		*count = state->count;
+	}
 
 	talloc_free(ctx);
 	return status;

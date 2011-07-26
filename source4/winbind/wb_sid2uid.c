@@ -72,7 +72,7 @@ static void sid2uid_recv_uid(struct composite_context *ctx)
 
 	struct id_map *ids = NULL;
 
-	state->ctx->status = wb_sids2xids_recv(ctx, &ids);
+	state->ctx->status = wb_sids2xids_recv(ctx, &ids, NULL);
 	if (!composite_is_ok(state->ctx)) return;
 
 	if (ids->status != ID_MAPPED) {

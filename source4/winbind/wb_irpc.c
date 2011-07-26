@@ -172,7 +172,7 @@ static void wb_irpc_get_idmap_callback(struct composite_context *ctx)
 
 	switch(s->level) {
 		case WINBIND_IDMAP_LEVEL_SIDS_TO_XIDS:
-			status = wb_sids2xids_recv(ctx, &s->req->out.ids);
+			status = wb_sids2xids_recv(ctx, &s->req->out.ids, NULL);
 			break;
 		case WINBIND_IDMAP_LEVEL_XIDS_TO_SIDS:
 			status = wb_xids2sids_recv(ctx, &s->req->out.ids);
