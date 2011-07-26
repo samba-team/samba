@@ -76,7 +76,7 @@ SMBC_module_init(void * punused)
          * defaults ...
          */
 
-        if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, False)) {
+        if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
             DEBUG(5, ("Could not load config file: %s\n",
                       get_dyn_CONFIGFILE()));
         } else if (home) {
