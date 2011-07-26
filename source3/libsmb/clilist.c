@@ -573,7 +573,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 
 	state->max_matches = 1366; /* Match W2k */
 
-	state->setup[0] = TRANSACT2_FINDFIRST;
+	SSVAL(&state->setup[0], 0, TRANSACT2_FINDFIRST);
 
 	nlen = 2*(strlen(mask)+1);
 	state->param = TALLOC_ARRAY(state, uint8_t, 12+nlen+2);
@@ -735,7 +735,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->setup[0] = TRANSACT2_FINDNEXT;
+	SSVAL(&state->setup[0], 0, TRANSACT2_FINDNEXT);
 
 	nlen = 2*(strlen(state->mask) + 1);
 
