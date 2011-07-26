@@ -24,8 +24,10 @@
 #include "../libcli/auth/spnego.h"
 #include "serverid.h"
 #include "auth.h"
+#include "ntlmssp_wrap.h"
 #include "messages.h"
 #include "smbprofile.h"
+#include "auth/gensec/gensec.h"
 
 extern fstring remote_proto;
 
@@ -187,6 +189,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 	DATA_BLOB blob_out = data_blob_null;
 	nstring dos_name;
 	fstring unix_name;
+	NTSTATUS status;
 #ifdef DEVELOPER
 	size_t slen;
 #endif
@@ -195,8 +198,29 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
+	struct auth_ntlmssp_state *auth_ntlmssp_state;
+
+	sconn->use_gensec_hook = false;
+
+	/* See if we can get an SPNEGO blob out of the gensec hook (if auth_samba4 is loaded) */
+	status = auth_ntlmssp_prepare(sconn->remote_address,
+				      &auth_ntlmssp_state);
+	if (NT_STATUS_IS_OK(status)) {
+		status = auth_generic_start(auth_ntlmssp_state, GENSEC_OID_SPNEGO);
+		if (NT_STATUS_IS_OK(status)) {
+			status = auth_ntlmssp_update(auth_ntlmssp_state, ctx,
+						     data_blob_null, &blob);
+			/* If we get the list of OIDs, the 'OK' answer
+			 * is NT_STATUS_MORE_PROCESSING_REQUIRED */
+			if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				sconn->use_gensec_hook = true;
+			}
+		}
+		TALLOC_FREE(auth_ntlmssp_state);
+	}
 
 	sconn->smb1.negprot.spnego = true;
+
 	/* strangely enough, NT does not sent the single OID NTLMSSP when
 	   not a ADS member, it sends no OIDs at all
 
@@ -210,7 +234,9 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 
 	*/
 
-	if (lp_security() != SEC_ADS && !USE_KERBEROS_KEYTAB) {
+	if (sconn->use_gensec_hook) {
+		/* blob initialised above */
+	} else if (lp_security() != SEC_ADS && !USE_KERBEROS_KEYTAB) {
 #if 0
 		/* Code for PocketPC client */
 		blob = data_blob(guid, 16);

@@ -36,6 +36,7 @@
 #include "messages.h"
 #include "smbprofile.h"
 #include "../libcli/security/security.h"
+#include "auth/gensec/gensec.h"
 
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {
@@ -1134,27 +1135,12 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		return;
 	}
 
-	if (blob1.data[0] == ASN1_APPLICATION(0)) {
-
-		/* its a negTokenTarg packet */
-
-		reply_spnego_negotiate(req, vuid, blob1,
-				       &vuser->auth_ntlmssp_state);
-		data_blob_free(&blob1);
-		return;
-	}
-
-	if (blob1.data[0] == ASN1_CONTEXT(1)) {
-
-		/* its a auth packet */
-
-		reply_spnego_auth(req, vuid, blob1,
-				  &vuser->auth_ntlmssp_state);
-		data_blob_free(&blob1);
-		return;
-	}
-
-	if (blob1.length > 7 && strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0) {
+	/* Handle either raw NTLMSSP or hand off the whole blob to
+	 * GENSEC.  The processing at this layer is essentially
+	 * identical regardless.  In particular, both rely only on the
+	 * status code (not the contents of the packet) and do not
+	 * wrap the result */
+	if (sconn->use_gensec_hook || (blob1.length > 7 && strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0)) {
 		DATA_BLOB chal;
 
 		if (!vuser->auth_ntlmssp_state) {
@@ -1170,7 +1156,11 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 			auth_ntlmssp_want_feature(vuser->auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
 
-			status = auth_ntlmssp_start(vuser->auth_ntlmssp_state);
+			if (sconn->use_gensec_hook) {
+				status = auth_generic_start(vuser->auth_ntlmssp_state, GENSEC_OID_SPNEGO);
+			} else {
+				status = auth_ntlmssp_start(vuser->auth_ntlmssp_state);
+			}
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Kill the intermediate vuid */
 				invalidate_vuid(sconn, vuid);
@@ -1190,6 +1180,26 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				     &vuser->auth_ntlmssp_state,
 				     &chal, status, NULL, false);
 		data_blob_free(&chal);
+		return;
+	}
+
+	if (blob1.data[0] == ASN1_APPLICATION(0)) {
+
+		/* its a negTokenTarg packet */
+
+		reply_spnego_negotiate(req, vuid, blob1,
+				       &vuser->auth_ntlmssp_state);
+		data_blob_free(&blob1);
+		return;
+	}
+
+	if (blob1.data[0] == ASN1_CONTEXT(1)) {
+
+		/* its a auth packet */
+
+		reply_spnego_auth(req, vuid, blob1,
+				  &vuser->auth_ntlmssp_state);
+		data_blob_free(&blob1);
 		return;
 	}
 

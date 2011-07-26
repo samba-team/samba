@@ -25,6 +25,7 @@
 #include "../libcli/smb/smb_common.h"
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
+#include "../auth/gensec/gensec.h"
 #include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "libads/kerberos_proto.h"
@@ -649,7 +650,11 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 
 		auth_ntlmssp_want_feature(session->auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
 
-		status = auth_ntlmssp_start(session->auth_ntlmssp_state);
+		if (session->sconn->use_gensec_hook) {
+			status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_SPNEGO);
+		} else {
+			status = auth_ntlmssp_start(session->auth_ntlmssp_state);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
 			return status;
@@ -742,7 +747,21 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	if (in_security_buffer.data[0] == ASN1_APPLICATION(0)) {
+	/* Handle either raw NTLMSSP or hand off the whole blob to
+	 * GENSEC.  The processing at this layer is essentially
+	 * identical regardless.  In particular, both rely only on the
+	 * status code (not the contents of the packet) and do not
+	 * wrap the result */
+	if (session->sconn->use_gensec_hook
+	    || (in_security_buffer.length > 7 && strncmp((char *)(in_security_buffer.data), "NTLMSSP", 7) == 0)) {
+		return smbd_smb2_raw_ntlmssp_auth(session,
+						smb2req,
+						in_security_mode,
+						in_security_buffer,
+						out_session_flags,
+						out_security_buffer,
+						out_session_id);
+	} else if (in_security_buffer.data[0] == ASN1_APPLICATION(0)) {
 		return smbd_smb2_spnego_negotiate(session,
 						smb2req,
 						in_security_mode,
@@ -752,14 +771,6 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 						out_session_id);
 	} else if (in_security_buffer.data[0] == ASN1_CONTEXT(1)) {
 		return smbd_smb2_spnego_auth(session,
-						smb2req,
-						in_security_mode,
-						in_security_buffer,
-						out_session_flags,
-						out_security_buffer,
-						out_session_id);
-	} else if (in_security_buffer.length > 7 && strncmp((char *)(in_security_buffer.data), "NTLMSSP", 7) == 0) {
-		return smbd_smb2_raw_ntlmssp_auth(session,
 						smb2req,
 						in_security_mode,
 						in_security_buffer,
