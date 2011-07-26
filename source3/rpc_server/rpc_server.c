@@ -320,7 +320,7 @@ static void named_pipe_accept_function(struct tevent_context *ev_ctx,
 	struct tevent_req *subreq;
 	int ret;
 
-	npc = talloc_zero(NULL, struct named_pipe_client);
+	npc = talloc_zero(ev_ctx, struct named_pipe_client);
 	if (!npc) {
 		DEBUG(0, ("Out of memory!\n"));
 		close(fd);
@@ -588,6 +588,8 @@ static void named_pipe_packet_done(struct tevent_req *subreq)
 	data_blob_free(&npc->p->in_data.data);
 	data_blob_free(&npc->p->out_data.frag);
 	data_blob_free(&npc->p->out_data.rdata);
+
+	talloc_free_children(npc->p->mem_ctx);
 
 	/* Wait for the next packet */
 	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
@@ -1286,6 +1288,8 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 	data_blob_free(&ncacn_conn->p->in_data.data);
 	data_blob_free(&ncacn_conn->p->out_data.frag);
 	data_blob_free(&ncacn_conn->p->out_data.rdata);
+
+	talloc_free_children(ncacn_conn->p->mem_ctx);
 
 	/* Wait for the next packet */
 	subreq = dcerpc_read_ncacn_packet_send(ncacn_conn,
