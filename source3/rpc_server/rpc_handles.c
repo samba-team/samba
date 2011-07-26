@@ -76,7 +76,7 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 	}
 
 	if (local_address) {
-		p->local_address = tsocket_address_copy(remote_address, p);
+		p->local_address = tsocket_address_copy(local_address, p);
 		if (p->local_address == NULL) {
 			talloc_free(p);
 			return ENOMEM;
