@@ -32,11 +32,28 @@
 NTSTATUS wbsrv_samba3_packet_full_request(void *private_data, DATA_BLOB blob, size_t *size)
 {
 	uint32_t *len;
+	struct winbindd_request *req;
+
 	if (blob.length < 4) {
 		return STATUS_MORE_ENTRIES;
 	}
 	len = (uint32_t *)blob.data;
 	*size = (*len);
+	if (*size > blob.length) {
+		return STATUS_MORE_ENTRIES;
+	}
+	if (*size < sizeof(req)) {
+		/* its not a valid winbind packet. We need to accept
+		   it here, and wbsrv_samba3_pull_request() will throw
+		   it away */
+		return NT_STATUS_OK;
+	}
+
+	/* now we need to cope with possible extra_data, which is
+	   stuck on the end with no length prefix! This is a very very
+	   stupid protocol */
+	req = (struct winbindd_request *)blob.data;
+	*size = (*len) + req->extra_len;
 	if (*size > blob.length) {
 		return STATUS_MORE_ENTRIES;
 	}
@@ -46,7 +63,7 @@ NTSTATUS wbsrv_samba3_packet_full_request(void *private_data, DATA_BLOB blob, si
 
 NTSTATUS wbsrv_samba3_pull_request(struct wbsrv_samba3_call *call)
 {
-	if (call->in.length != sizeof(*call->request)) {
+	if (call->in.length < sizeof(*call->request)) {
 		DEBUG(0,("wbsrv_samba3_pull_request: invalid blob length %lu should be %lu\n"
 			 " make sure you use the correct winbind client tools!\n",
 			 (long)call->in.length, (long)sizeof(*call->request)));
@@ -58,6 +75,25 @@ NTSTATUS wbsrv_samba3_pull_request(struct wbsrv_samba3_call *call)
 
 	/* the packet layout is the same as the in memory layout of the request, so just copy it */
 	memcpy(call->request, call->in.data, sizeof(*call->request));
+
+	if (call->in.length != sizeof(*call->request) + call->request->extra_len) {
+		DEBUG(0,(__location__ " : invalid extra_len %u should be %u\n",
+			 call->request->extra_len, (unsigned)(call->in.length - sizeof(*call->request))));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* there may be extra data */
+	if (call->request->extra_len != 0) {
+		call->request->extra_data.data = talloc_size(call->request, call->request->extra_len+1);
+		NT_STATUS_HAVE_NO_MEMORY(call->request->extra_data.data);
+		/* guarantee a nul termination, as many of the uses of
+		   this field is for strings */
+		memcpy(call->request->extra_data.data, call->in.data + sizeof(*call->request),
+		       call->request->extra_len);
+		call->request->extra_data.data[call->request->extra_len] = 0;
+	} else {
+		call->request->extra_data.data = NULL;
+	}
 
 	return NT_STATUS_OK;
 }
