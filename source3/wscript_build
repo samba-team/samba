@@ -880,7 +880,7 @@ bld.SAMBA3_LIBRARY('smbconf',
 
 bld.SAMBA3_LIBRARY('smbd_conn',
                    source='smbd/conn.c',
-                   deps='string_init bitmap namearray',
+                   deps='string_init samba-util namearray',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('smbd_base',

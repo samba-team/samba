@@ -15,10 +15,10 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
 	deps='DYNCONFIG',
-	public_deps='samba-util bitmap param_local_h',
+	public_deps='samba-util param_local_h',
 	public_headers='param.h',
 	autoproto='param_proto.h',
-        autoproto_extra_source='../../lib/param/param_functions.c'
+	autoproto_extra_source='../../lib/param/param_functions.c'
 	)
 
 
