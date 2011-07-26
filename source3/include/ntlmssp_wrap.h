@@ -26,8 +26,6 @@ struct gensec_security;
 struct auth_ntlmssp_state {
 	/* used only by server implementation */
 	struct auth_context *auth_context;
-	struct auth_serversupplied_info *server_info;
-	struct tsocket_address *remote_address;
 	struct gensec_security *gensec_security;
 
 	/* used by both client and server implementation */
