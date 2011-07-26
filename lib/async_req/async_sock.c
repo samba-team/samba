@@ -667,3 +667,58 @@ ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*pbuf = talloc_move(mem_ctx, &state->buf);
 	return talloc_get_size(*pbuf);
 }
+
+struct wait_for_read_state {
+	struct tevent_req *req;
+	struct tevent_fd *fde;
+};
+
+static void wait_for_read_done(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags,
+			       void *private_data);
+
+struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      int fd)
+{
+	struct tevent_req *req;
+	struct wait_for_read_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wait_for_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->req = req;
+	state->fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ,
+				   wait_for_read_done, state);
+	if (tevent_req_nomem(state->fde, req)) {
+		return tevent_req_post(req, ev);
+	}
+	return req;
+}
+
+static void wait_for_read_done(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags,
+			       void *private_data)
+{
+	struct wait_for_read_state *state = talloc_get_type_abort(
+		private_data, struct wait_for_read_state);
+
+	if (flags & TEVENT_FD_READ) {
+		TALLOC_FREE(state->fde);
+		tevent_req_done(state->req);
+	}
+}
+
+bool wait_for_read_recv(struct tevent_req *req, int *perr)
+{
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		*perr = err;
+		return false;
+	}
+	return true;
+}

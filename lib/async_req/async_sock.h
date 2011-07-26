@@ -61,4 +61,9 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 uint8_t **pbuf, int *perrno);
 
+struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      int fd);
+bool wait_for_read_recv(struct tevent_req *req, int *perr);
+
 #endif
