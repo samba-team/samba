@@ -97,8 +97,8 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 
 /* Hook to allow GENSEC to handle blob-based authentication
  * mechanisms, without directly linking the mechansim code */
-static NTSTATUS start_gensec(TALLOC_CTX *mem_ctx, const char *oid_string,
-			      struct gensec_security **gensec_context)
+static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
+			       struct gensec_security **gensec_context)
 {
 	NTSTATUS status;
 	struct loadparm_context *lp_ctx;
@@ -165,15 +165,8 @@ static NTSTATUS start_gensec(TALLOC_CTX *mem_ctx, const char *oid_string,
 	gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
 	gensec_want_feature(gensec_ctx, GENSEC_FEATURE_UNIX_TOKEN);
 
-	status = gensec_start_mech_by_oid(gensec_ctx, oid_string);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC %s server code: %s\n",
-			  gensec_get_name_by_oid(gensec_ctx, oid_string), nt_errstr(status)));
-		TALLOC_FREE(frame);
-		return status;
-	}
-
 	*gensec_context = gensec_ctx;
+	TALLOC_FREE(frame);
 	return status;
 }
 
@@ -192,7 +185,8 @@ static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 	}
 	result->name = "samba4";
 	result->auth = check_samba4_security;
-	result->start_gensec = start_gensec;
+	result->prepare_gensec = prepare_gensec;
+	result->gensec_start_mech_by_oid = gensec_start_mech_by_oid;
 
         *auth_method = result;
 	return NT_STATUS_OK;

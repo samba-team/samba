@@ -212,14 +212,20 @@ NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
 		return nt_status;
 	}
 
-	if (auth_context->start_gensec) {
-		nt_status = auth_context->start_gensec(ans, GENSEC_OID_NTLMSSP, &ans->gensec_security);
+	if (auth_context->prepare_gensec) {
+		nt_status = auth_context->prepare_gensec(ans, &ans->gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			TALLOC_FREE(ans);
 			return nt_status;
 		} else {
-			*auth_ntlmssp_state = ans;
-			return NT_STATUS_OK;
+			nt_status = auth_context->gensec_start_mech_by_oid(ans->gensec_security, GENSEC_OID_NTLMSSP);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				TALLOC_FREE(ans);
+				return nt_status;
+			} else {
+				*auth_ntlmssp_state = ans;
+				return NT_STATUS_OK;
+			}
 		}
 	}
 
