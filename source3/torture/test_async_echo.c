@@ -54,7 +54,7 @@ static void cli_close_done(struct tevent_req *req)
 
 	status = cli_write_andx_recv(req, &written);
 	TALLOC_FREE(req);
-	printf("close returned %s\n", nt_errstr(status));
+	printf("cli_write_andx returned %s\n", nt_errstr(status));
 	*done -= 1;
 }
 
