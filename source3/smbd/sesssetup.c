@@ -1188,7 +1188,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 		reply_spnego_ntlmssp(req, vuid,
 				     &vuser->auth_ntlmssp_state,
-				     &chal, status, OID_NTLMSSP, false);
+				     &chal, status, NULL, false);
 		data_blob_free(&chal);
 		return;
 	}
