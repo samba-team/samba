@@ -367,7 +367,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	 * it.... */
 
 	sess_vuid = register_existing_vuid(sconn, sess_vuid,
-					   session_info, nullblob, user);
+					   session_info, nullblob);
 
 	reply_outbuf(req, 4, 0);
 	SSVAL(req->outbuf,smb_uid,sess_vuid);
@@ -448,8 +448,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 		/* register_existing_vuid keeps the server info */
 		if (register_existing_vuid(sconn, vuid,
-					   session_info, nullblob,
-					   auth_ntlmssp_get_username(*auth_ntlmssp_state)) !=
+					   session_info, nullblob) !=
 					   vuid) {
 			/* The problem is, *auth_ntlmssp_state points
 			 * into the vuser this will have
@@ -1641,7 +1640,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
-	nt_status = create_local_token(req, server_info, NULL, &session_info);
+	nt_status = create_local_token(req, server_info, NULL, sub_user, &session_info);
 	TALLOC_FREE(server_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1688,8 +1687,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		/* register_existing_vuid keeps the session_info */
 		sess_vuid = register_existing_vuid(sconn, sess_vuid,
 					session_info,
-					nt_resp.data ? nt_resp : lm_resp,
-					sub_user);
+					nt_resp.data ? nt_resp : lm_resp);
 		if (sess_vuid == UID_FIELD_INVALID) {
 			data_blob_free(&nt_resp);
 			data_blob_free(&lm_resp);

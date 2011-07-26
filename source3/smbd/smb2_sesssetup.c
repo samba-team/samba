@@ -174,7 +174,6 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	struct passwd *pw = NULL;
 	NTSTATUS status;
 	char *real_username;
-	fstring tmp;
 	bool username_was_mapped = false;
 	bool map_domainuser_to_guest = false;
 
@@ -255,11 +254,6 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	session->compat_vuser->session_keystr = NULL;
 	session->compat_vuser->vuid = session->vuid;
 	DLIST_ADD(session->sconn->smb1.sessions.validated_users, session->compat_vuser);
-
-	/* This is a potentially untrusted username */
-	alpha_strcpy(tmp, user, ". _-$", sizeof(tmp));
-	session->session_info->unix_info->sanitized_username =
-				talloc_strdup(session->session_info, tmp);
 
 	if (security_session_user_level(session->session_info, NULL) >= SECURITY_USER) {
 		session->compat_vuser->homes_snum =
@@ -442,8 +436,6 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 					uint16_t *out_session_flags,
 					uint64_t *out_session_id)
 {
-	fstring tmp;
-
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == Required) {
 		session->do_signing = true;
@@ -471,14 +463,6 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 	session->compat_vuser->session_keystr = NULL;
 	session->compat_vuser->vuid = session->vuid;
 	DLIST_ADD(session->sconn->smb1.sessions.validated_users, session->compat_vuser);
-
-	/* This is a potentially untrusted username */
-	alpha_strcpy(tmp,
-		     auth_ntlmssp_get_username(session->auth_ntlmssp_state),
-		     ". _-$",
-		     sizeof(tmp));
-	session->session_info->unix_info->sanitized_username = talloc_strdup(
-		session->session_info, tmp);
 
 	if (security_session_user_level(session->session_info, NULL) >= SECURITY_USER) {
 		session->compat_vuser->homes_snum =

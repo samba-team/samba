@@ -44,6 +44,7 @@ NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
 	nt_status = create_local_token(mem_ctx,
 				       auth_ntlmssp_state->server_info,
 				       &auth_ntlmssp_state->ntlmssp_state->session_key,
+				       auth_ntlmssp_state->ntlmssp_state->user,
 				       session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

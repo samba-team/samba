@@ -123,7 +123,8 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		 * Some internal functions need a local token to determine access to
 		 * resources.
 		 */
-		status = create_local_token(p, server_info, &session_info->session_key, &p->session_info);
+		status = create_local_token(p, server_info, &session_info->session_key, info3->base.account_name.string,
+					    &p->session_info);
 		talloc_free(server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to init local auth token\n"));

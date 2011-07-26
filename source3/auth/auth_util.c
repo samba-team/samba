@@ -457,6 +457,7 @@ static NTSTATUS log_nt_token(struct security_token *token)
 NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			    const struct auth_serversupplied_info *server_info,
 			    DATA_BLOB *session_key,
+			    const char *smb_username, /* for ->sanitized_username, for %U subs */
 			    struct auth_session_info **session_info_out)
 {
 	struct security_token *t;
@@ -465,6 +466,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	struct dom_sid tmp_sid;
 	struct auth_session_info *session_info;
 	struct wbcUnixId *ids;
+	fstring tmp;
 
 	/* Ensure we can't possible take a code path leading to a
 	 * null defref. */
@@ -498,11 +500,10 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	session_info->unix_info->sanitized_username = talloc_strdup(session_info, server_info->sanitized_username);
-	if (!session_info->unix_info->sanitized_username) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_NO_MEMORY;
-	}
+	/* This is a potentially untrusted username for use in %U */
+	alpha_strcpy(tmp, smb_username, ". _-$", sizeof(tmp));
+	session_info->unix_info->sanitized_username =
+				talloc_strdup(session_info->unix_info, tmp);
 
 	session_info->unix_info->system = server_info->system;
 
@@ -837,7 +838,6 @@ static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_i
 	struct netr_SamInfo3 info3;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
-	fstring tmp;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -869,7 +869,9 @@ static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_i
 	/* This should not be done here (we should produce a server
 	 * info, and later construct a session info from it), but for
 	 * now this does not change the previous behavior */
-	status = create_local_token(tmp_ctx, *server_info, NULL, session_info);
+	status = create_local_token(tmp_ctx, *server_info, NULL,
+				    (*server_info)->info3->base.account_name.string,
+				    session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("create_local_token failed: %s\n",
 			  nt_errstr(status)));
@@ -881,10 +883,6 @@ static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_i
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
 	(*session_info)->session_key = data_blob(zeros, sizeof(zeros));
-
-	alpha_strcpy(tmp, (*server_info)->info3->base.account_name.string,
-		     ". _-$", sizeof(tmp));
-	(*session_info)->unix_info->sanitized_username = talloc_strdup(*session_info, tmp);
 
 	status = NT_STATUS_OK;
 done:
@@ -953,9 +951,8 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 
 	status = make_server_info_pw(&result, pwd->pw_name, pwd);
 
-	TALLOC_FREE(pwd);
-
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(pwd);
 		return status;
 	}
 
@@ -963,7 +960,8 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 	result->guest = is_guest;
 
 	/* Now turn the server_info into a session_info with the full token etc */
-	status = create_local_token(mem_ctx, result, NULL, session_info);
+	status = create_local_token(mem_ctx, result, NULL, pwd->pw_name, session_info);
+	TALLOC_FREE(pwd);
 	talloc_free(result);
 	return status;
 }

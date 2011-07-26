@@ -111,15 +111,6 @@ bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *ans)
 	return ans->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL;
 }
 
-/* Needed for 'smb username' processing */
-const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans)
-{
-	if (ans->gensec_security) {
-		return ""; /* We can't get at this value, and it's just for the %U macros */
-	}
-	return ans->ntlmssp_state->user;
-}
-
 NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
 				   const char *user)
 {

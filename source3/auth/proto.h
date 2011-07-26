@@ -151,6 +151,7 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 			    const struct auth_serversupplied_info *server_info,
 			    DATA_BLOB *session_key,
+			    const char *smb_name,
 			    struct auth_session_info **session_info_out);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,

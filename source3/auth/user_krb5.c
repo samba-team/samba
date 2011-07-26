@@ -262,7 +262,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 
 	server_info->nss_token |= username_was_mapped;
 
-	status = create_local_token(mem_ctx, server_info, session_key, session_info);
+	status = create_local_token(mem_ctx, server_info, session_key, ntuser, session_info);
 	talloc_free(server_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("failed to create local token: %s\n",

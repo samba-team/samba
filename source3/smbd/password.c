@@ -265,10 +265,8 @@ int register_homes_share(const char *username)
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
 			struct auth_session_info *session_info,
-			DATA_BLOB response_blob,
-			const char *smb_name)
+			DATA_BLOB response_blob)
 {
-	fstring tmp;
 	user_struct *vuser;
 	bool guest = security_session_user_level(session_info, NULL) < SECURITY_USER;
 
@@ -279,12 +277,6 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	/* Use this to keep tabs on all our info from the authentication */
 	vuser->session_info = talloc_move(vuser, &session_info);
-
-	/* This is a potentially untrusted username */
-	alpha_strcpy(tmp, smb_name, ". _-$", sizeof(tmp));
-
-	vuser->session_info->unix_info->sanitized_username = talloc_strdup(
-		vuser->session_info, tmp);
 
 	/* Make clear that we require the optional unix_token and unix_info in the source3 code */
 	SMB_ASSERT(vuser->session_info->unix_token);
