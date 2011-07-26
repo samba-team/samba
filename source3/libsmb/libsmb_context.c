@@ -52,13 +52,11 @@ SMBC_module_init(void * punused)
 
     /* Here we would open the smb.conf file if needed ... */
 
-    lp_set_in_client(True);
-
     home = getenv("HOME");
     if (home) {
         char *conf = NULL;
         if (asprintf(&conf, "%s/.smb/smb.conf", home) > 0) {
-            if (lp_load(conf, True, False, False, True)) {
+            if (lp_load_client(conf)) {
                 conf_loaded = True;
             } else {
                 DEBUG(5, ("Could not load config file: %s\n",
@@ -76,7 +74,7 @@ SMBC_module_init(void * punused)
          * defaults ...
          */
 
-        if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
+        if (!lp_load_client(get_dyn_CONFIGFILE())) {
             DEBUG(5, ("Could not load config file: %s\n",
                       get_dyn_CONFIGFILE()));
         } else if (home) {
@@ -89,7 +87,7 @@ SMBC_module_init(void * punused)
             if (asprintf(&conf,
                          "%s/.smb/smb.conf.append",
                          home) > 0) {
-                if (!lp_load(conf, True, False, False, False)) {
+                if (!lp_load_client_no_reinit(conf)) {
                     DEBUG(10,
                           ("Could not append config file: "
                            "%s\n",
