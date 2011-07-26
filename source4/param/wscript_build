@@ -73,6 +73,6 @@ bld.SAMBA_SUBSYSTEM('pyparam_util',
 
 bld.SAMBA_LIBRARY('shares',
                   source=[],
-                  deps='share share_classic share_ldb',
+                  deps='share',
                   grouping_library=True,
                   private_library=True)
