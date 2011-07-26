@@ -111,7 +111,8 @@ bool run_async_echo(int dummy)
 	memset(buf, 0, sizeof(buf));
 
 	for (i=0; i<10; i++) {
-		req = cli_write_andx_send(ev, ev, cli, 4711, 0, buf, 0, sizeof(buf));
+		req = cli_write_andx_send(ev, ev, cli, 4711, 0, buf, 0,
+					  sizeof(buf));
 		if (req == NULL) {
 			printf("cli_write_andx_send failed\n");
 			goto fail;
@@ -119,7 +120,8 @@ bool run_async_echo(int dummy)
 		tevent_req_set_callback(req, cli_close_done, &num_reqs);
 		num_reqs += 1;
 
-		req = cli_echo_send(ev, ev, cli, 1, data_blob_const("hello", 5));
+		req = cli_echo_send(ev, ev, cli, 1,
+				    data_blob_const("hello", 5));
 		if (req == NULL) {
 			printf("cli_echo_send failed\n");
 			goto fail;
