@@ -271,11 +271,16 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 8254: Fix "acl check permissions = no".
     * BUG 8293: Fix log file rotating in SMB2.
     * BUG 8304: Fix uninitialized variable in error path.
+    * BUG 8307: brl_close_fnum does not call SMB_VFS_BRL_UNLOCK_WINDOWS on all
+      locks.
+    * BUG 8310: toupper_ascii() is broken on big-endian systems.
+    * BUG 8314: Fix smbd crash with unknown user.
 
 
 o   Christian Ambach <ambi@samba.org>
     * BUG 8231: Fix crash bug in 'net cache get'.
     * BUG 8244: Fix copying files larger than 2 GB to a Samba share.
+    * BUG 8263: Fix build with --with-fake-kaserver or --with-vfs-afsacl.
     * BUG 8278: Fix smbd panic when CTDB is unhealthy.
     * BUG 8286: Fix smbd crash on premature end of smb2 conn.
 
@@ -288,6 +293,11 @@ o   Andrew Bartlett <abartlet@samba.org>
 o   Gregor Beck <gbeck@sernet.de>
     * BUG 8193: Add new command 'enumerate_recursive'.
     * BUG 8253: Fix Winbind panic if verify_idpool() fails.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 8289: Fix possible XSS attack (CVE-2011-2694).
+    * BUG 8290: Fix Cross-Site Request Forgery in SWAT (CVE-2011-2522).
 
 
 o   Günther Deschner <gd@samba.org>
