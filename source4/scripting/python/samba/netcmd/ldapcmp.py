@@ -842,6 +842,12 @@ class cmd_ldapcmp(Command):
     """compare two ldap databases"""
     synopsis = "ldapcmp URL1 URL2 <domain|configuration|schema> [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptionsDouble,
+    }
+
     takes_args = ["URL1", "URL2", "context1?", "context2?", "context3?"]
 
     takes_options = [
