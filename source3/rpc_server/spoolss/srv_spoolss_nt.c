@@ -1536,9 +1536,8 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 			    DATA_BLOB *data)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct auth_session_info *session_info = NULL;
+	const struct auth_session_info *session_info = get_session_info_system();
 	struct spoolss_PrinterInfo2 *pinfo2;
-	NTSTATUS status;
 	WERROR result;
 	const char *drivername;
 	int snum;
@@ -1547,13 +1546,6 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) return;
-
-	status = make_session_info_system(tmp_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("do_drv_upgrade_printer: "
-			  "Could not create system session_info\n"));
-		goto done;
-	}
 
 	drivername = talloc_strndup(tmp_ctx, (const char *)data->data, data->length);
 	if (!drivername) {
@@ -4244,16 +4236,8 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 				      struct spoolss_PrinterInfo7 *r,
 				      int snum)
 {
-	struct auth_session_info *session_info;
+	const struct auth_session_info *session_info = get_session_info_system();
 	struct GUID guid;
-	NTSTATUS status;
-
-	status = make_session_info_system(mem_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("construct_printer_info7: "
-			  "Could not create system session_info\n"));
-		return WERR_NOMEM;
-	}
 
 	if (is_printer_published(mem_ctx, session_info, msg_ctx,
 				 servername,
@@ -4266,7 +4250,6 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 	}
 	W_ERROR_HAVE_NO_MEMORY(r->guid);
 
-	TALLOC_FREE(session_info);
 	return WERR_OK;
 }
 
