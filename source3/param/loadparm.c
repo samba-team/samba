@@ -8989,7 +8989,10 @@ static bool lp_load_ex(const char *pszFname,
 		lp_save_defaults();
 	}
 
-	free_param_opts(&Globals.param_opt);
+	if (!initialize_globals) {
+		free_param_opts(&Globals.param_opt);
+		apply_lp_set_cmdline();
+	}
 
 	lp_do_parameter(-1, "idmap config * : backend", Globals.szIdmapBackend);
 
