@@ -51,6 +51,7 @@ WERROR winreg_printer_binding_handle(TALLOC_CTX *mem_ctx,
 				       session_info,
 				       msg_ctx,
 				       winreg_binding_handle);
+	talloc_free(local);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("winreg_printer_binding_handle: Could not connect to winreg pipe: %s\n",
 			  nt_errstr(status)));
