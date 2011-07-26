@@ -282,11 +282,27 @@ static int auth_ntlmssp_state_destructor(void *ptr)
 	return 0;
 }
 
-NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state *auth_ntlmssp_state)
+NTSTATUS auth_generic_start(struct auth_ntlmssp_state *auth_ntlmssp_state, const char *oid)
 {
 	if (auth_ntlmssp_state->auth_context->gensec_start_mech_by_oid) {
-		return auth_ntlmssp_state->auth_context->gensec_start_mech_by_oid(auth_ntlmssp_state->gensec_security, GENSEC_OID_NTLMSSP);
+		return auth_ntlmssp_state->auth_context->gensec_start_mech_by_oid(auth_ntlmssp_state->gensec_security, oid);
+	}
+
+	if (strcmp(oid, GENSEC_OID_NTLMSSP) != 0) {
+		/* The caller will then free the auth_ntlmssp_state,
+		 * undoing what was done in auth_ntlmssp_prepare().
+		 *
+		 * We can't do that logic here, as
+		 * auth_ntlmssp_want_feature() may have been called in
+		 * between.
+		 */
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state *auth_ntlmssp_state)
+{
+	return auth_generic_start(auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
 }
