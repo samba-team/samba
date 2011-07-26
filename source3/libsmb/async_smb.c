@@ -139,6 +139,7 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 		 * delete the socket read fde.
 		 */
 		TALLOC_FREE(cli->conn.pending);
+		cli->conn.read_smb_req = NULL;
 		return;
 	}
 
@@ -193,7 +194,6 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	struct cli_state *cli;
 	struct tevent_req **pending;
 	int num_pending;
-	struct tevent_req *subreq;
 
 	cli = state->cli;
 	num_pending = talloc_array_length(cli->conn.pending);
@@ -207,7 +207,7 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	cli->conn.pending = pending;
 	talloc_set_destructor(req, cli_smb_req_destructor);
 
-	if (num_pending > 0) {
+	if (cli->conn.read_smb_req != NULL) {
 		return true;
 	}
 
@@ -215,12 +215,13 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	 * We're the first ones, add the read_smb request that waits for the
 	 * answer from the server
 	 */
-	subreq = read_smb_send(cli->conn.pending, state->ev, cli->conn.fd);
-	if (subreq == NULL) {
+	cli->conn.read_smb_req = read_smb_send(cli->conn.pending, state->ev,
+					       cli->conn.fd);
+	if (cli->conn.read_smb_req == NULL) {
 		cli_smb_req_unset_pending(req);
 		return false;
 	}
-	tevent_req_set_callback(subreq, cli_smb_received, cli);
+	tevent_req_set_callback(cli->conn.read_smb_req, cli_smb_received, cli);
 	return true;
 }
 
@@ -531,8 +532,16 @@ static void cli_smb_received(struct tevent_req *subreq)
 	uint16_t mid;
 	bool oplock_break;
 
+	if (subreq != cli->conn.read_smb_req) {
+		DEBUG(1, ("Internal error: cli_smb_received called with "
+			  "unexpected subreq\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+
 	received = read_smb_recv(subreq, talloc_tos(), &inbuf, &err);
 	TALLOC_FREE(subreq);
+	cli->conn.read_smb_req = NULL;
 	if (received == -1) {
 		cli_state_disconnect(cli);
 		status = map_nt_error_from_unix(err);
@@ -642,19 +651,22 @@ static void cli_smb_received(struct tevent_req *subreq)
 		TALLOC_FREE(chain);
 	}
  done:
-	if (talloc_array_length(cli->conn.pending) > 0) {
+	if ((talloc_array_length(cli->conn.pending) > 0) &&
+	    (cli->conn.read_smb_req == NULL)) {
 		/*
 		 * Set up another read request for the other pending cli_smb
 		 * requests
 		 */
 		state = tevent_req_data(cli->conn.pending[0],
 					struct cli_smb_state);
-		subreq = read_smb_send(cli->conn.pending, state->ev, cli->conn.fd);
-		if (subreq == NULL) {
+		cli->conn.read_smb_req = read_smb_send(
+			cli->conn.pending, state->ev, cli->conn.fd);
+		if (cli->conn.read_smb_req == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
-		tevent_req_set_callback(subreq, cli_smb_received, cli);
+		tevent_req_set_callback(cli->conn.read_smb_req,
+					cli_smb_received, cli);
 	}
 	return;
  fail:

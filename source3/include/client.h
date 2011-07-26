@@ -124,6 +124,7 @@ struct cli_state {
 		struct sockaddr_storage local_ss;
 		struct sockaddr_storage remote_ss;
 		const char *remote_name;
+		struct tevent_req *read_smb_req;
 		struct tevent_queue *outgoing;
 		struct tevent_req **pending;
 	} conn;
