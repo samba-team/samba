@@ -38,30 +38,76 @@ from samba.netcmd import (
 
 
 class cmd_user_add(Command):
-    """Create a new user."""
+    """Creates a new user"""
+
     synopsis = "%prog user add <username> [<password>] [options]"
 
-    takes_args = ["name", "password?"]
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+        Option("--must-change-at-next-login",
+                help="Force password to be changed on next login",
+                action="store_true"),
+        Option("--use-username-as-cn",
+                help="Force use of username as user's CN",
+                action="store_true"),
+        Option("--userou",
+                help="Alternative location (without domainDN counterpart) to default CN=Users in which new user object will be created",
+                type=str),
+        Option("--surname", help="User's surname", type=str),
+        Option("--given-name", help="User's given name", type=str),
+        Option("--initials", help="User's initials", type=str),
+        Option("--profile-path", help="User's profile path", type=str),
+        Option("--script-path", help="User's logon script path", type=str),
+        Option("--home-drive", help="User's home drive letter", type=str),
+        Option("--home-directory", help="User's home directory path", type=str),
+        Option("--job-title", help="User's job title", type=str),
+        Option("--department", help="User's department", type=str),
+        Option("--company", help="User's company", type=str),
+        Option("--description", help="User's description", type=str),
+        Option("--mail-address", help="User's email address", type=str),
+        Option("--internet-address", help="User's home page", type=str),
+        Option("--telephone-number", help="User's phone number", type=str),
+        Option("--physical-delivery-office", help="User's office location", type=str),
+    ]
 
-    def run(self, name, password=None, credopts=None, sambaopts=None, versionopts=None):
+    takes_args = ["username", "password?"]
+
+    def run(self, username, password=None, credopts=None, sambaopts=None,
+            versionopts=None, H=None, must_change_at_next_login=None,
+            use_username_as_cn=None, userou=None, surname=None, given_name=None, initials=None,
+            profile_path=None, script_path=None, home_drive=None, home_directory=None,
+            job_title=None, department=None, company=None, description=None,
+            mail_address=None, internet_address=None, telephone_number=None, physical_delivery_office=None):
+
+        while 1:
+            if password is not None and password is not '':
+                break
+            password = getpass("New Password: ")
+
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp )
-        net = Net(creds, lp, server=credopts.ipaddress)
-        try:
-            net.create_user(name)
-        except RuntimeError, msg:
-            raise CommandError("Failed to add user '%s': %s" % (name, msg))
+        creds = credopts.get_credentials(lp)
 
-        if password is not None:
-            try:
-                net.set_password(name, creds.get_domain(), password, creds)
-            except RuntimeError, msg:
-                raise CommandError("Failed to set password '%s': %s" % (name, msg))
+        try:
+            samdb = SamDB(url=H, session_info=system_session(),
+                          credentials=creds, lp=lp)
+            samdb.newuser(username, password,
+                          force_password_change_at_next_login_req=must_change_at_next_login,
+                          useusernameascn=use_username_as_cn, userou=userou, surname=surname, givenname=given_name, initials=initials,
+                          profilepath=profile_path, homedrive=home_drive, scriptpath=script_path, homedirectory=home_directory,
+                          jobtitle=job_title, department=department, company=company, description=description,
+                          mailaddress=mail_address, internetaddress=internet_address,
+                          telephonenumber=telephone_number, physicaldeliveryoffice=physical_delivery_office)
+        except Exception, e:
+            raise CommandError("Failed to add user '%s': " % username, e)
+
+        print("User '%s' created successfully" % username)
 
 
 
 class cmd_user_delete(Command):
     """Delete a user."""
+
     synopsis = "%prog user delete <username> [options]"
 
     takes_args = ["name"]
@@ -125,6 +171,7 @@ class cmd_user_setexpiry(Command):
     ]
 
     takes_args = ["username?"]
+
     def run(self, username=None, sambaopts=None, credopts=None,
             versionopts=None, H=None, filter=None, days=None, noexpiry=None):
         if username is None and filter is None:
