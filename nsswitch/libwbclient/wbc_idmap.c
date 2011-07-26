@@ -370,6 +370,10 @@ wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
 			id->type = WBC_ID_TYPE_GID;
 			id->id.gid = strtoul(p+1, &q, 10);
 			break;
+		case 'B':
+			id->type = WBC_ID_TYPE_BOTH;
+			id->id.uid = strtoul(p+1, &q, 10);
+			break;
 		default:
 			id->type = WBC_ID_TYPE_NOT_SPECIFIED;
 			q = strchr(p, '\n');

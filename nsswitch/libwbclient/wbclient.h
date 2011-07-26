@@ -796,7 +796,8 @@ wbcErr wbcQueryGidToSid(gid_t gid,
 enum wbcIdType {
 	WBC_ID_TYPE_NOT_SPECIFIED,
 	WBC_ID_TYPE_UID,
-	WBC_ID_TYPE_GID
+	WBC_ID_TYPE_GID,
+	WBC_ID_TYPE_BOTH
 };
 
 union wbcUnixIdContainer {
