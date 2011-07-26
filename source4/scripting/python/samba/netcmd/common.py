@@ -18,7 +18,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from samba.dcerpc import nbt
+from samba.net import Net
+
+
 def netcmd_dnsname(lp):
     '''return the full DNS name of our own host. Used as a default
        for hostname when running status queries'''
     return lp.get('netbios name').lower() + "." + lp.get('realm').lower()
+
+
+def netcmd_finddc(lp, creds):
+    '''return domain-name of a writable/ldap-capable DC for the domain.'''
+    net = Net(creds=creds, lp=lp)
+    realm = lp.get('realm')
+    cldap_ret = net.finddc(realm,
+                nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+    return cldap_ret.pdc_dns_name
