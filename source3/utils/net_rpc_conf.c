@@ -107,6 +107,77 @@ static int rpc_conf_delincludes_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static NTSTATUS rpc_conf_del_value(TALLOC_CTX *mem_ctx,
+				   struct dcerpc_binding_handle *b,
+				   struct policy_handle *parent_hnd,
+				   const char *share_name,
+				   const char *value,
+				   WERROR *werr)
+{
+
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR result = WERR_OK;
+	WERROR _werr;
+
+	struct winreg_String keyname, valuename;
+	struct policy_handle child_hnd;
+
+	ZERO_STRUCT(child_hnd);
+	ZERO_STRUCT(keyname);
+	ZERO_STRUCT(valuename);
+
+	keyname.name = share_name;
+	valuename.name = value;
+
+	status = dcerpc_winreg_OpenKey(b, frame, parent_hnd, keyname, 0,
+				       REG_KEY_WRITE, &child_hnd, &result);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to open key '%s': %s\n"),
+				keyname.name, nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(result))) {
+		d_fprintf(stderr, _("Failed to open key '%s': %s\n"),
+				keyname.name, win_errstr(result));
+		goto error;
+	}
+
+	status = dcerpc_winreg_DeleteValue(b,
+			                   frame,
+					   &child_hnd,
+					   valuename,
+					   &result);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to delete value %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(result))) {
+		if (W_ERROR_EQUAL(result, WERR_BADFILE)){
+			result = WERR_OK;
+			goto error;
+		}
+
+		d_fprintf(stderr, _("Failed to delete value  %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+
+error:
+	*werr = result;
+
+	dcerpc_winreg_CloseKey(b, frame, &child_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;;
+
+}
+
 static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
