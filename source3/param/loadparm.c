@@ -9142,6 +9142,22 @@ bool lp_load_client(const char *file_name)
 	return lp_load_global(file_name);
 }
 
+/**
+ * lp_load wrapper, loading only globals, but intended
+ * for subsequent calls, not reinitializing the globals
+ * to default values
+ */
+bool lp_load_global_no_reinit(const char *file_name)
+{
+	return lp_load_ex(file_name,
+			  true,   /* global_only */
+			  false,  /* save_defaults */
+			  false,  /* add_ipc */
+			  false,  /* initialize_globals */
+			  true,   /* allow_include_registry */
+			  false); /* load_all_shares*/
+}
+
 bool lp_load_with_registry_shares(const char *pszFname,
 				  bool global_only,
 				  bool save_defaults,
