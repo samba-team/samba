@@ -203,7 +203,7 @@ int set_ctrl( pam_handle_t *pamh, int flags, int argc, const char **argv )
 
     /* Read some options from the Samba config. Can be overridden by
        the PAM config. */
-    if(lp_load(service_file,True,False,False,True) == False) {
+    if(lp_load_client(service_file) == false) {
 	_log_err(pamh, LOG_ERR, "Error loading service file %s", service_file);
     }
 
