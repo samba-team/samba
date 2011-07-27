@@ -20,8 +20,8 @@ samba_tool="./bin/samba-tool"
 CONFIG="--configfile=$PREFIX/simple-dc/etc/smb.conf"
 
 #creation of two test subjects
-testit "newuser" $samba_tool newuser $CONFIG --given-name="User" --surname="Tester" --initial="UT" testuser testp@ssw0Rd
-testit "newuser" $samba_tool newuser $CONFIG --given-name="User1" --surname="Tester" --initial="UT" testuser1 testp@ssw0Rd
+testit "user add" $samba_tool user add $CONFIG --given-name="User" --surname="Tester" --initial="UT" testuser testp@ssw0Rd
+testit "user add" $samba_tool user add $CONFIG --given-name="User1" --surname="Tester" --initial="UT" testuser1 testp@ssw0Rd
 
 #test creation of six different groups
 testit "group add" $samba_tool group add $CONFIG --group-scope='Domain' --group-type='Security' --description='DomainSecurityGroup' --mail-address='dsg@samba.org' --notes='Notes' dsg
