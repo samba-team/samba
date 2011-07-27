@@ -549,11 +549,16 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 	struct lsa_RefDomainList *domains = NULL;
 	uint32_t i;
 	NTSTATUS status = NT_STATUS_OK;
+	struct dcesrv_handle *h;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
 	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
 	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	state = h->data;
 
 	*r->out.domains = NULL;
 
@@ -562,11 +567,6 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 	   an unknown SID. We could add a SID validator here. (tridge) 
 	   MS-DTYP 2.4.2
 	*/
-
-	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	domains = talloc_zero(r->out.domains,  struct lsa_RefDomainList);
 	if (domains == NULL) {
