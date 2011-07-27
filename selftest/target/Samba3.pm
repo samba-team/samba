@@ -872,6 +872,8 @@ sub provision($$$$$$$)
 
         resolv:host file = $dns_host_file
 
+        # The samba3.blackbox.smbclient_s3 test uses this to test that
+        # sending messages works, and that the %m sub works.
         message command = mv %s $shrdir/message.%m
 
 	# Begin extra options

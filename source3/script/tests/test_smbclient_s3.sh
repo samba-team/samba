@@ -260,6 +260,7 @@ EOF
 	return
     fi
 
+    # The server writes this into a file message.msgtest, via message.%m to test the % sub code
     cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmpguest -p 139 $ADDARGS -c "get message.msgtest $PREFIX/message_out.$$" 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
