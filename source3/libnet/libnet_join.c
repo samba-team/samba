@@ -1576,7 +1576,7 @@ static WERROR do_JoinConfig(struct libnet_JoinCtx *r)
 		return werr;
 	}
 
-	lp_load(get_dyn_CONFIGFILE(),true,false,false,true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	r->out.modified_config = true;
 	r->out.result = werr;
@@ -1604,7 +1604,7 @@ static WERROR libnet_unjoin_config(struct libnet_UnjoinCtx *r)
 		return werr;
 	}
 
-	lp_load(get_dyn_CONFIGFILE(),true,false,false,true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	r->out.modified_config = true;
 	r->out.result = werr;
