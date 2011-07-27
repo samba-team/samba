@@ -976,7 +976,7 @@ out_free:
 
 	/* Load smb.conf file */
 
-	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True))
+	if (!lp_load_global(get_dyn_CONFIGFILE()))
 		fprintf(stderr, "Can't load %s\n", get_dyn_CONFIGFILE());
 
 	/*
