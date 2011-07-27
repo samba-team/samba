@@ -83,16 +83,17 @@ static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObje
 {
 	union libnet_SetPassword r;
 	NTSTATUS status;
-	PyObject *py_creds;
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
-	const char *kwnames[] = { "account_name", "domain_name", "newpassword", "credentials", NULL };
+	const char *kwnames[] = { "account_name", "domain_name", "newpassword", NULL };
 
 	r.generic.level = LIBNET_SET_PASSWORD_GENERIC;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sssO:set_password", discard_const_p(char *, kwnames),
-					 &r.generic.in.account_name, &r.generic.in.domain_name,
-					 &r.generic.in.newpassword, &py_creds)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sss:set_password",
+					discard_const_p(char *, kwnames),
+					 &r.generic.in.account_name,
+					 &r.generic.in.domain_name,
+					 &r.generic.in.newpassword)) {
 		return NULL;
 	}
 
