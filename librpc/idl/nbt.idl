@@ -545,7 +545,11 @@ interface nbt
 		[case(NETLOGON_ANNOUNCE_UAS)] NETLOGON_DB_CHANGE uas;
 	} nbt_netlogon_request;
 
-#if 0
+#if 0 
+	/* These responses are all handled manually, as they cannot be encoded in IDL fully
+	   
+	   See push_nbt_netlogon_response()
+	*/
 		[case(NETLOGON_RESPONSE_FROM_PDC)] nbt_netlogon_response_from_pdc response;
 		[case(NETLOGON_RESPONSE_FROM_PDC_USER)] nbt_netlogon_response_from_pdc2 response2;
 
