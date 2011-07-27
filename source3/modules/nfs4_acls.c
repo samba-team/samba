@@ -519,8 +519,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 		if (ace->flags == aceNew->flags &&
 			ace->aceType==aceNew->aceType &&
-			((ace->aceFlags&SMB_ACE4_INHERIT_ONLY_ACE)==
-			 (aceNew->aceFlags&SMB_ACE4_INHERIT_ONLY_ACE)) &&
+			ace->aceFlags==aceNew->aceFlags &&
 			(ace->aceFlags&SMB_ACE4_IDENTIFIER_GROUP)==
 			(aceNew->aceFlags&SMB_ACE4_IDENTIFIER_GROUP)
 		) {
