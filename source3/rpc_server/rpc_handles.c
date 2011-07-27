@@ -128,8 +128,6 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 		return False;
 	}
 
-	TALLOC_FREE(p->auth.auth_ctx);
-
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
 
