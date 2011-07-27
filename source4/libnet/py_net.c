@@ -79,6 +79,56 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 static const char py_net_join_member_doc[] = "join_member(domain_name, netbios_name, level) -> (join_password, domain_sid, domain_name)\n\n" \
 "Join the domain with the specified name.";
 
+static PyObject *py_net_change_password(py_net_Object *self, PyObject *args, PyObject *kwargs)
+{
+	union libnet_ChangePassword r;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct tevent_context *ev;
+	const char *kwnames[] = { "newpassword", NULL };
+
+	ZERO_STRUCT(r);
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s:change_password",
+					discard_const_p(char *, kwnames),
+					&r.generic.in.newpassword)) {
+		return NULL;
+	}
+
+	r.generic.level = LIBNET_CHANGE_PASSWORD_GENERIC;
+	r.generic.in.account_name = cli_credentials_get_username(self->libnet_ctx->cred);
+	r.generic.in.domain_name = cli_credentials_get_domain(self->libnet_ctx->cred);
+	r.generic.in.oldpassword = cli_credentials_get_password(self->libnet_ctx->cred);
+
+	/* FIXME: we really need to get a context from the caller or we may end
+	 * up with 2 event contexts */
+	ev = s4_event_context_init(NULL);
+
+	mem_ctx = talloc_new(ev);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = libnet_ChangePassword(self->libnet_ctx, mem_ctx, &r);
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetString(PyExc_RuntimeError,
+				r.generic.out.error_string?r.generic.out.error_string:nt_errstr(status));
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+
+	Py_RETURN_NONE;
+}
+
+static const char py_net_change_password_doc[] = "change_password(newpassword) -> True\n\n" \
+"Change password for a user. You must supply credential with enough rights to do this.\n\n" \
+"Sample usage is:\n" \
+"net.set_password(newpassword=<new_password>\n";
+
+
 static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	union libnet_SetPassword r;
@@ -86,6 +136,8 @@ static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObje
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
 	const char *kwnames[] = { "account_name", "domain_name", "newpassword", NULL };
+
+	ZERO_STRUCT(r);
 
 	r.generic.level = LIBNET_SET_PASSWORD_GENERIC;
 
@@ -528,6 +580,7 @@ static const char py_net_finddc_doc[] = "finddc(domain, server_type)\n"
 
 static PyMethodDef net_obj_methods[] = {
 	{"join_member", (PyCFunction)py_net_join_member, METH_VARARGS|METH_KEYWORDS, py_net_join_member_doc},
+	{"change_password", (PyCFunction)py_net_change_password, METH_VARARGS|METH_KEYWORDS, py_net_change_password_doc},
 	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
 	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
 	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},
