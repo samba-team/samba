@@ -80,10 +80,11 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	context_fns = SMB_MALLOC_P(struct pipe_rpc_fns);
+	context_fns = talloc(p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
-		DEBUG(0,("malloc() failed!\n"));
-		return False;
+		DEBUG(0,("talloc() failed!\n"));
+		TALLOC_FREE(p);
+		return NULL;
 	}
 
 	context_fns->next = context_fns->prev = NULL;

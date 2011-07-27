@@ -356,10 +356,10 @@ static bool check_bind_req(struct pipes_struct *p,
 		return false;
 	}
 
-	context_fns = SMB_MALLOC_P(struct pipe_rpc_fns);
+	context_fns = talloc(p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
-		DEBUG(0,("check_bind_req: malloc() failed!\n"));
-		return False;
+		DEBUG(0,("check_bind_req: talloc() failed!\n"));
+		return false;
 	}
 
 	context_fns->next = context_fns->prev = NULL;

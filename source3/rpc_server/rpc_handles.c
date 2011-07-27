@@ -107,20 +107,6 @@ bool check_open_pipes(void)
  Close an rpc pipe.
 ****************************************************************************/
 
-static void free_pipe_rpc_context_internal(struct pipe_rpc_fns *list)
-{
-	struct pipe_rpc_fns *tmp = list;
-	struct pipe_rpc_fns *tmp2;
-
-	while (tmp) {
-		tmp2 = tmp->next;
-		SAFE_FREE(tmp);
-		tmp = tmp2;
-	}
-
-	return;
-}
-
 int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 {
 	if (!p) {
@@ -130,8 +116,6 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
-
-	free_pipe_rpc_context_internal(p->contexts);
 
 	DLIST_REMOVE(InternalPipes, p);
 
