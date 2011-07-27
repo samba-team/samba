@@ -1270,6 +1270,7 @@ static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
 */
 _PUBLIC_ void talloc_free_children(void *ptr)
 {
+	struct talloc_chunk *tc_name = NULL;
 	struct talloc_chunk *tc;
 
 	if (unlikely(ptr == NULL)) {
@@ -1278,7 +1279,29 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 
 	tc = talloc_chunk_from_ptr(ptr);
 
+	/* we do not want to free the context name if it is a child .. */
+	if (likely(tc->child)) {
+		for (tc_name = tc->child; tc_name; tc_name = tc_name->next) {
+			if (tc->name == TC_PTR_FROM_CHUNK(tc_name)) break;
+		}
+		if (tc_name) {
+			_TLIST_REMOVE(tc->child, tc_name);
+			if (tc->child) {
+				tc->child->parent = tc;
+			}
+		}
+	}
+
 	_talloc_free_children_internal(tc, ptr, __location__);
+
+	/* .. so we put it back after all other children have been freed */
+	if (tc_name) {
+		if (tc->child) {
+			tc->child->parent = NULL;
+		}
+		tc_name->parent = tc;
+		_TLIST_ADD(tc->child, tc_name);
+	}
 }
 
 /* 
