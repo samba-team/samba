@@ -934,8 +934,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				dcerpc_ncacn_disconnect_fn fn) {
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	struct tevent_req *subreq;
-	const char *cli_str;
-	const char *srv_str = NULL;
 	bool system_user = false;
 	char *pipe_name;
 	NTSTATUS status;
@@ -1044,20 +1042,6 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		talloc_free(ncacn_conn);
 		close(s);
 		return;
-	}
-
-	if (tsocket_address_is_inet(ncacn_conn->client, "ip")) {
-		cli_str = ncacn_conn->client_name;
-	} else {
-		cli_str = "";
-	}
-
-	if (ncacn_conn->server != NULL) {
-		if (tsocket_address_is_inet(ncacn_conn->server, "ip")) {
-			srv_str = ncacn_conn->server_name;
-		} else {
-			srv_str = NULL;
-		}
 	}
 
 	if (ncacn_conn->session_info == NULL) {
