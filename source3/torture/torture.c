@@ -503,16 +503,17 @@ static bool check_both_error(int line, NTSTATUS status,
 
 
 /* check if the server produced the expected error code */
-static bool check_error(int line, struct cli_state *c, 
+static bool check_error(int line, NTSTATUS status,
 			uint8 eclass, uint32 ecode, NTSTATUS nterr)
 {
-        if (cli_is_dos_error(c)) {
+	if (NT_STATUS_IS_DOS(status)) {
                 uint8 cclass;
                 uint32 num;
 
                 /* Check DOS error */
 
-                cli_dos_error(c, &cclass, &num);
+		cclass = NT_STATUS_DOS_CLASS(status);
+		num = NT_STATUS_DOS_CODE(status);
 
                 if (eclass != cclass || ecode != num) {
                         printf("unexpected error code class=%d code=%d\n", 
@@ -524,11 +525,7 @@ static bool check_error(int line, struct cli_state *c,
                 }
 
         } else {
-                NTSTATUS status;
-
                 /* Check NT error */
-
-                status = cli_nt_error(c);
 
                 if (NT_STATUS_V(nterr) != NT_STATUS_V(status)) {
                         printf("unexpected error code %s\n",
@@ -2924,7 +2921,7 @@ static bool run_unlinktest(int dummy)
 		printf("error: server allowed unlink on an open file\n");
 		correct = False;
 	} else {
-		correct = check_error(__LINE__, cli, ERRDOS, ERRbadshare, 
+		correct = check_error(__LINE__, status, ERRDOS, ERRbadshare,
 				      NT_STATUS_SHARING_VIOLATION);
 	}
 
@@ -4877,9 +4874,9 @@ static bool run_opentest(int dummy)
 	}
 
 	/* This will fail - but the error should be ERRnoaccess, not ERRbadshare. */
-	cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
+	status = cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
 
-        if (check_error(__LINE__, cli1, ERRDOS, ERRnoaccess, 
+        if (check_error(__LINE__, status, ERRDOS, ERRnoaccess,
 			NT_STATUS_ACCESS_DENIED)) {
 		printf("correct error code ERRDOS/ERRnoaccess returned\n");
 	}
@@ -4899,9 +4896,9 @@ static bool run_opentest(int dummy)
 	}
 
 	/* This will fail - but the error should be ERRshare. */
-	cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
+	status = cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
 
-	if (check_error(__LINE__, cli1, ERRDOS, ERRbadshare, 
+	if (check_error(__LINE__, status, ERRDOS, ERRbadshare,
 			NT_STATUS_SHARING_VIOLATION)) {
 		printf("correct error code ERRDOS/ERRbadshare returned\n");
 	}
@@ -6015,23 +6012,25 @@ bool torture_chkpath_test(int dummy)
 
 	status = cli_chkpath(cli, "\\chkpath.dir\\foo.txt");
 	if (!NT_STATUS_IS_OK(status)) {
-		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
+		ret = check_error(__LINE__, status, ERRDOS, ERRbadpath,
 				  NT_STATUS_NOT_A_DIRECTORY);
 	} else {
 		printf("* chkpath on a file should fail\n");
 		ret = False;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\bar.txt"))) {
-		ret = check_error(__LINE__, cli, ERRDOS, ERRbadfile, 
+	status = cli_chkpath(cli, "\\chkpath.dir\\bar.txt");
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = check_error(__LINE__, status, ERRDOS, ERRbadfile,
 				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
 		printf("* chkpath on a non existant file should fail\n");
 		ret = False;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\dirxx\\bar.txt"))) {
-		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
+	status = cli_chkpath(cli, "\\chkpath.dir\\dirxx\\bar.txt");
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = check_error(__LINE__, status, ERRDOS, ERRbadpath,
 				  NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	} else {
 		printf("* chkpath on a non existent component should fail\n");
@@ -7171,8 +7170,8 @@ static bool run_uid_regression_test(int dummy)
 		goto out;
 	} else {
 		/* Should be bad uid. */
-		if (!check_error(__LINE__, cli, ERRSRV, ERRbaduid,
-				NT_STATUS_USER_SESSION_DELETED)) {
+		if (!check_error(__LINE__, status, ERRSRV, ERRbaduid,
+				 NT_STATUS_USER_SESSION_DELETED)) {
 			correct = false;
 			goto out;
 		}
@@ -7205,7 +7204,7 @@ static bool run_uid_regression_test(int dummy)
 		goto out;
 	} else {
 		/* Should be bad tid. */
-		if (!check_error(__LINE__, cli, ERRSRV, ERRinvnid,
+		if (!check_error(__LINE__, status, ERRSRV, ERRinvnid,
 				NT_STATUS_NETWORK_NAME_DELETED)) {
 			correct = false;
 			goto out;
