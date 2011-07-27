@@ -304,12 +304,7 @@ int main(int argc, const char **argv)
 
 	poptFreeContext(pc);
 
-	ret = lp_load(get_dyn_CONFIGFILE(),
-		      true,  /* globals_only */
-		      false, /* save_defaults */
-		      false, /* add_ipc */
-		      true   /* initialize globals */);
-
+	ret = lp_load_global(get_dyn_CONFIGFILE());
 	if (!ret) {
 		printf("failure: error loading the configuration\n");
 		goto done;
