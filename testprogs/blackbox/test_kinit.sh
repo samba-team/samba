@@ -99,7 +99,7 @@ testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@34%
-testit "change user password with 'samba-tool user setpassword' (rpc)" $VALGRIND $samba_tool user setpassword nettestuser -W$DOMAIN -Unettestuser%$USERPASS $CONFIGURATION -k no --newpassword=$NEWUSERPASS $@ || failed=`expr $failed + 1`
+testit "change user password with 'samba-tool user password' (rpc)" $VALGRIND $samba_tool user password -W$DOMAIN -Unettestuser%$USERPASS $CONFIGURATION -k no --newpassword=$NEWUSERPASS $@ || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
 testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
