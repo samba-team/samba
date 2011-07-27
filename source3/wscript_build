@@ -817,7 +817,7 @@ bld.SAMBA3_SUBSYSTEM('LIBSMB_ERR',
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
                     source=LIBNTLMSSP_SRC,
-                    deps='LIBSMB_ERR NDR_NTLMSSP NTLMSSP_COMMON',
+                    deps='LIBSMB_ERR NDR_NTLMSSP NTLMSSP_COMMON gensec_runtime',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('libsmb',

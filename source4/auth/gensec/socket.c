@@ -25,6 +25,7 @@
 #include "lib/stream/packet.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
+#include "auth/gensec/gensec_socket.h"
 
 static const struct socket_ops gensec_socket_ops;
 

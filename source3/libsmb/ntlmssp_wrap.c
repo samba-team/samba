@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/auth/ntlmssp.h"
 #include "ntlmssp_wrap.h"
+#include "auth/gensec/gensec.h"
 
 NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *ans,
 				  TALLOC_CTX *sig_mem_ctx,
@@ -30,6 +31,10 @@ NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *ans,
 				  size_t pdu_length,
 				  DATA_BLOB *sig)
 {
+	if (ans->gensec_security) {
+		return gensec_sign_packet(ans->gensec_security,
+					  sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
+	}
 	return ntlmssp_sign_packet(ans->ntlmssp_state,
 				   sig_mem_ctx,
 				   data, length,
@@ -44,6 +49,10 @@ NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *ans,
 				   size_t pdu_length,
 				   const DATA_BLOB *sig)
 {
+	if (ans->gensec_security) {
+		return gensec_check_packet(ans->gensec_security,
+					   data, length, whole_pdu, pdu_length, sig);
+	}
 	return ntlmssp_check_packet(ans->ntlmssp_state,
 				    data, length,
 				    whole_pdu, pdu_length,
@@ -58,6 +67,10 @@ NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *ans,
 				  size_t pdu_length,
 				  DATA_BLOB *sig)
 {
+	if (ans->gensec_security) {
+		return gensec_seal_packet(ans->gensec_security,
+					  sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
+	}
 	return ntlmssp_seal_packet(ans->ntlmssp_state,
 				   sig_mem_ctx,
 				   data, length,
@@ -72,6 +85,10 @@ NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *ans,
 				    size_t pdu_length,
 				    const DATA_BLOB *sig)
 {
+	if (ans->gensec_security) {
+		return gensec_unseal_packet(ans->gensec_security,
+					    data, length, whole_pdu, pdu_length, sig);
+	}
 	return ntlmssp_unseal_packet(ans->ntlmssp_state,
 				     data, length,
 				     whole_pdu, pdu_length,
@@ -80,17 +97,26 @@ NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *ans,
 
 bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *ans)
 {
+	if (ans->gensec_security) {
+		return gensec_have_feature(ans->gensec_security, GENSEC_FEATURE_SIGN);
+	}
 	return ans->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN;
 }
 
 bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *ans)
 {
+	if (ans->gensec_security) {
+		return gensec_have_feature(ans->gensec_security, GENSEC_FEATURE_SEAL);
+	}
 	return ans->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL;
 }
 
 /* Needed for 'smb username' processing */
 const char *auth_ntlmssp_get_username(struct auth_ntlmssp_state *ans)
 {
+	if (ans->gensec_security) {
+		return ""; /* We can't get at this value, and it's just for the %U macros */
+	}
 	return ans->ntlmssp_state->user;
 }
 
@@ -129,17 +155,42 @@ void auth_ntlmssp_or_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
 
 void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
 {
-	ntlmssp_want_feature(ans->ntlmssp_state, feature);
+	if (ans->gensec_security) {
+		/* You need to negotiate signing to get a windows server to calculate a session key */
+		if (feature & NTLMSSP_FEATURE_SESSION_KEY) {
+			return gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		}
+		if (feature & NTLMSSP_FEATURE_SIGN) {
+			return gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SIGN);
+		}
+		if (feature & NTLMSSP_FEATURE_SEAL) {
+			return gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SEAL);
+		}
+	} else {
+		ntlmssp_want_feature(ans->ntlmssp_state, feature);
+	}
 }
 
 DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, TALLOC_CTX *mem_ctx)
 {
+	if (ans->gensec_security) {
+		DATA_BLOB session_key;
+		NTSTATUS status = gensec_session_key(ans->gensec_security, mem_ctx, &session_key);
+		if (NT_STATUS_IS_OK(status)) {
+			return session_key;
+		} else {
+			return data_blob_null;
+		}
+	}
 	return data_blob_talloc(mem_ctx, ans->ntlmssp_state->session_key.data, ans->ntlmssp_state->session_key.length);
 }
 
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
 			     const DATA_BLOB request, DATA_BLOB *reply)
 {
+	if (ans->gensec_security) {
+		return gensec_update(ans->gensec_security, ans, request, reply);
+	}
 	return ntlmssp_update(ans->ntlmssp_state, request, reply);
 }
 

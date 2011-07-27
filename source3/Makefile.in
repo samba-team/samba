@@ -550,6 +550,7 @@ LIBSMB_OBJ0 = \
 	       ../libcli/auth/ntlm_check.o \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_wrap.o \
+	       ../auth/gensec/gensec.o \
 	       ../libcli/auth/ntlmssp.o \
 	       ../libcli/auth/ntlmssp_sign.o \
 	       $(LIBNDR_NTLMSSP_OBJ) \

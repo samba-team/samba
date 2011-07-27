@@ -29,6 +29,7 @@
 #include "../libcli/auth/schannel.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
+#include "auth/gensec/schannel.h"
 
 _PUBLIC_ NTSTATUS gensec_schannel_init(void);
 

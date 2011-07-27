@@ -26,15 +26,25 @@
 #include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../lib/tsocket/tsocket.h"
+#include "auth/gensec/gensec.h"
 
 NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
 					struct auth_ntlmssp_state *auth_ntlmssp_state,
 					struct auth_session_info **session_info)
 {
-	NTSTATUS nt_status = create_local_token(mem_ctx,
-						auth_ntlmssp_state->server_info,
-						&auth_ntlmssp_state->ntlmssp_state->session_key,
+	NTSTATUS nt_status;
+	if (auth_ntlmssp_state->gensec_security) {
+
+		nt_status = gensec_session_info(auth_ntlmssp_state->gensec_security,
+						mem_ctx,
 						session_info);
+		return nt_status;
+	}
+
+	nt_status = create_local_token(mem_ctx,
+				       auth_ntlmssp_state->server_info,
+				       &auth_ntlmssp_state->ntlmssp_state->session_key,
+				       session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_local_token failed: %s\n",
@@ -190,6 +200,29 @@ NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
 	struct auth_ntlmssp_state *ans;
 	struct auth_context *auth_context;
 
+	ans = talloc_zero(NULL, struct auth_ntlmssp_state);
+	if (!ans) {
+		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = make_auth_context_subsystem(talloc_tos(), &auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(ans);
+		return nt_status;
+	}
+
+	if (auth_context->start_gensec) {
+		nt_status = auth_context->start_gensec(ans, GENSEC_OID_NTLMSSP, &ans->gensec_security);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			TALLOC_FREE(ans);
+			return nt_status;
+		} else {
+			*auth_ntlmssp_state = ans;
+			return NT_STATUS_OK;
+		}
+	}
+
 	if ((enum server_role)lp_server_role() == ROLE_STANDALONE) {
 		is_standalone = true;
 	} else {
@@ -204,12 +237,6 @@ NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
 		strlower_m(dns_domain);
 	}
 	dns_name = get_mydnsfullname();
-
-	ans = talloc_zero(NULL, struct auth_ntlmssp_state);
-	if (!ans) {
-		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	ans->remote_address = tsocket_address_copy(remote_address, ans);
 	if (ans->remote_address == NULL) {
@@ -228,10 +255,6 @@ NTSTATUS auth_ntlmssp_start(const struct tsocket_address *remote_address,
 		return nt_status;
 	}
 
-	nt_status = make_auth_context_subsystem(talloc_tos(), &auth_context);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
 	ans->auth_context = talloc_steal(ans, auth_context);
 
 	ans->ntlmssp_state->callback_private = ans;
