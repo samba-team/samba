@@ -64,7 +64,7 @@ testit "kinit with user password" $samba4kinit --password-file=$PREFIX/tmpuserpa
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@02%
-testit "change user password with 'samba-tool user setpassword' (unforced)" $VALGRIND $samba_tool user setpassword -W$DOMAIN -U$DOMAIN/nettestuser%$USERPASS  -k no $NEWUSERPASS $@ || failed=`expr $failed + 1`
+testit "change user password with 'samba-tool user password' (unforced)" $VALGRIND $samba_tool user password -W$DOMAIN -U$DOMAIN/nettestuser%$USERPASS  -k no --newpassword=$NEWUSERPASS $@ || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > ./tmpuserpassfile
 testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
@@ -139,7 +139,7 @@ testit "set password on user locally" $VALGRIND $samba_tool user setpassword net
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@05%
-testit "change user password with 'samba-tool user setpassword' (after must change flag set)" $VALGRIND $samba_tool user setpassword -W$DOMAIN -U$DOMAIN/nettestuser%$USERPASS -k no $NEWUSERPASS $@ || failed=`expr $failed + 1`
+testit "change user password with 'samba-tool user password' (after must change flag set)" $VALGRIND $samba_tool user password -W$DOMAIN -U$DOMAIN/nettestuser%$USERPASS -k no --newpassword=$NEWUSERPASS $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 NEWUSERPASS=testPaSS@06%
@@ -164,21 +164,21 @@ USERPASS=$NEWUSERPASS
 test_smbclient "Test login with user kerberos" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
 
 NEWUSERPASS=abcdefg
-testit_expect_failure "try to set a non-complex password (command should not succeed)" $VALGRIND $samba_tool user setpassword -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ && failed=`expr $failed + 1`
+testit_expect_failure "try to set a non-complex password (command should not succeed)" $VALGRIND $samba_tool user password -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no --newpassword="$NEWUSERPASS" $@ && failed=`expr $failed + 1`
 
 testit "allow non-complex passwords" $VALGRIND $samba_tool domain passwordsettings set $CONFIG --complexity=off || failed=`expr $failed + 1`
 
-testit "try to set a non-complex password (command should succeed)" $VALGRIND $samba_tool user setpassword -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ || failed=`expr $failed + 1`
+testit "try to set a non-complex password (command should succeed)" $VALGRIND $samba_tool user password -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no --newpassword="$NEWUSERPASS" $@ || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "test login with non-complex password" 'ls' -k no -Unettestuser@$REALM%$USERPASS || failed=`expr $failed + 1`
 
 NEWUSERPASS=abc
-testit_expect_failure "try to set a short password (command should not succeed)" $VALGRIND $samba_tool user setpassword -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ && failed=`expr $failed + 1`
+testit_expect_failure "try to set a short password (command should not succeed)" $VALGRIND $samba_tool user password -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no --newpassword="$NEWUSERPASS" $@ && failed=`expr $failed + 1`
 
 testit "allow short passwords (length 1)" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --min-pwd-length=1 || failed=`expr $failed + 1`
 
-testit "try to set a short password (command should succeed)" $VALGRIND $samba_tool setpassword -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ || failed=`expr $failed + 1`
+testit "try to set a short password (command should succeed)" $VALGRIND $samba_tool user password -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no --newpassword="$NEWUSERPASS" $@ || failed=`expr $failed + 1`
 USERPASS="$NEWUSERPASS"
 
 testit "require minimum password age of 1 day" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --min-pwd-age=1 || failed=`expr $failed + 1`
@@ -186,7 +186,7 @@ testit "require minimum password age of 1 day" $VALGRIND $samba_tool domain pass
 testit "show password settings" $VALGRIND $samba_tool domain passwordsettings $CONFIG show || failed=`expr $failed + 1`
 
 NEWUSERPASS="testPaSS@08%"
-testit_expect_failure "try to change password too quickly (command should not succeed)" $VALGRIND $samba_tool user setpassword -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no "$NEWUSERPASS" $@ && failed=`expr $failed + 1`
+testit_expect_failure "try to change password too quickly (command should not succeed)" $VALGRIND $samba_tool user password -W$DOMAIN "-U$DOMAIN/nettestuser%$USERPASS" -k no --newpassword="$NEWUSERPASS" $@ && failed=`expr $failed + 1`
 
 testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
 
