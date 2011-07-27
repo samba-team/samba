@@ -2315,12 +2315,6 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	/*
-	 * Turn off sign+seal to allow selected auth level to turn it back on.
-	 */
-	auth_ntlmssp_and_flags(ntlmssp_ctx, ~(NTLMSSP_NEGOTIATE_SIGN |
-						NTLMSSP_NEGOTIATE_SEAL));
-
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
 		auth_ntlmssp_want_feature(ntlmssp_ctx, NTLMSSP_FEATURE_SIGN);
 	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {

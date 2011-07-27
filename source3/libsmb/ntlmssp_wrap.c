@@ -138,11 +138,6 @@ NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
 	return ntlmssp_set_password(ans->ntlmssp_state, password);
 }
 
-void auth_ntlmssp_and_flags(struct auth_ntlmssp_state *ans, uint32_t flags)
-{
-	ans->ntlmssp_state->neg_flags &= flags;
-}
-
 void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
 {
 	if (ans->gensec_security) {

@@ -130,13 +130,6 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	/*
-	 * Turn off sign+seal to allow selected auth level to turn it back on.
-	 */
-	auth_ntlmssp_and_flags(sp_ctx->mech_ctx.ntlmssp_state,
-						~(NTLMSSP_NEGOTIATE_SIGN |
-						  NTLMSSP_NEGOTIATE_SEAL));
-
 	if (do_sign) {
 		auth_ntlmssp_want_feature(sp_ctx->mech_ctx.ntlmssp_state,
 					  NTLMSSP_FEATURE_SIGN);

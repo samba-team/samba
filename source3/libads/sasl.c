@@ -148,7 +148,6 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ADS_ERROR_NT(nt_status);
 	}
-	ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, ads->auth.user_name))) {
 		return ADS_ERROR_NT(nt_status);
