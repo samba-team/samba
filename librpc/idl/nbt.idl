@@ -494,7 +494,7 @@ interface nbt
 	} nbt_netlogon_query_for_pdc;
 
 	/* response from pdc */
-	typedef [flag(NDR_NOALIGN),public] struct {
+	typedef [public] struct {
 		netlogon_command command;
 		astring pdc_name;
 		[flag(NDR_ALIGN2)]   DATA_BLOB _pad;
