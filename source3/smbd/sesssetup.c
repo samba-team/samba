@@ -1550,7 +1550,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 		fstrcpy(sub_user, user);
 	} else {
-		fstrcpy(sub_user, lp_guestaccount());
+		fstrcpy(sub_user, "");
 	}
 
 	sub_set_smb_name(sub_user);
