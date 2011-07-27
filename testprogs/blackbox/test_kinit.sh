@@ -69,7 +69,7 @@ testit "kinit renew ticket" $samba4kinit $enctype --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
-testit "check time with kerberos ccache" $VALGRIND $samba_tool $CONFIGURATION -k yes $@ time $SERVER || failed=`expr $failed + 1`
+testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
 
 USERPASS=testPass@12%
 echo $USERPASS > $PREFIX/tmpuserpassfile
