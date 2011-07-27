@@ -131,11 +131,9 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
 
-	free_pipe_rpc_context_internal( p->contexts );
+	free_pipe_rpc_context_internal(p->contexts);
 
 	DLIST_REMOVE(InternalPipes, p);
-
-	ZERO_STRUCTP(p);
 
 	return 0;
 }
