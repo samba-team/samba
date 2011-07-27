@@ -518,7 +518,8 @@ static bool check_error(int line, struct cli_state *c,
                         printf("unexpected error code class=%d code=%d\n", 
                                (int)cclass, (int)num);
                         printf(" expected %d/%d %s (line=%d)\n", 
-                               (int)eclass, (int)ecode, nt_errstr(nterr), line);
+                               (int)eclass, (int)ecode, nt_errstr(nterr),
+			       line);
                         return False;
                 }
 
@@ -530,8 +531,10 @@ static bool check_error(int line, struct cli_state *c,
                 status = cli_nt_error(c);
 
                 if (NT_STATUS_V(nterr) != NT_STATUS_V(status)) {
-                        printf("unexpected error code %s\n", nt_errstr(status));
-                        printf(" expected %s (line=%d)\n", nt_errstr(nterr), line);
+                        printf("unexpected error code %s\n",
+			       nt_errstr(status));
+                        printf(" expected %s (line=%d)\n", nt_errstr(nterr),
+			       line);
                         return False;
                 }
         }
