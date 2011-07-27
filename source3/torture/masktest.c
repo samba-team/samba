@@ -480,7 +480,7 @@ static void usage(void)
 	argv += 1;
 
 	load_case_tables();
-	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
+	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
 
 	if (getenv("USER")) {
