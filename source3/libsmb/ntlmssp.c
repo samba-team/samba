@@ -205,6 +205,7 @@ void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature)
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 	if (feature & NTLMSSP_FEATURE_SEAL) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 	if (feature & NTLMSSP_FEATURE_CCACHE) {
