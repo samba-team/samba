@@ -194,6 +194,38 @@ class cmd_user_setexpiry(Command):
 
 
 
+class cmd_user_password(Command):
+    """Change password for a user account (the one provided in authentication)"""
+
+    synopsis = "%prog user password [options]"
+
+    takes_options = [
+        Option("--newpassword", help="New password", type=str),
+        ]
+
+    def run(self, credopts=None, sambaopts=None, versionopts=None,
+                newpassword=None):
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
+        # FIXME: How to ensure user is authenticated before prompting for new password?
+        net = Net(creds, lp, server=credopts.ipaddress)
+
+        password = newpassword
+        while 1:
+            if password is not None and password is not '':
+                break
+            password = getpass("New Password: ")
+
+        try:
+            net.change_password(password)
+        except Exception, msg:
+            raise CommandError("Failed to change password : %s" % msg)
+        print "Changed password OK"
+
+
+
 class cmd_user_setpassword(Command):
     """(Re)sets the password of a user account"""
 
@@ -252,4 +284,5 @@ class cmd_user(SuperCommand):
     subcommands["delete"] = cmd_user_delete()
     subcommands["enable"] = cmd_user_enable()
     subcommands["setexpiry"] = cmd_user_setexpiry()
+    subcommands["password"] = cmd_user_password()
     subcommands["setpassword"] = cmd_user_setpassword()
