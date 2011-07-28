@@ -59,7 +59,7 @@ int main(int argc, const char *argv[])
 
 	lp_set_cmdline("log level", "0");
 
-	if (!lp_load(config_file,false,true,false,true)) {
+	if (!lp_load_global(config_file)) {
 		fprintf(stderr,"Error loading services.\n");
 		return 1;
 	}
