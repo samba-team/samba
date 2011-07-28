@@ -143,7 +143,13 @@ def ip_to_list_of_ints(ip):
     try:
         l = socket.inet_pton(socket.AF_INET6, ip)
     except:
-        l = socket.inet_pton(socket.AF_INET, ip)
+        # Pad with leading 0s.  This makes IPv4 addresses comparable
+        # with IPv6 but reduces the overall effectiveness of the
+        # algorithm.  The alternative would be to treat these
+        # addresses separately while trying to keep all the IPs in
+        # overall balance.
+        l = "".join(itertools.repeat("\0", 12)) + \
+            socket.inet_pton(socket.AF_INET, ip)
 
     return map(lambda x: struct.unpack('B', x)[0], l)
 
