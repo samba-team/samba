@@ -216,7 +216,7 @@ int main(int argc, const char **argv)
 	load_case_tables();
 	lp_set_cmdline("log level", "0");
 	setup_logging(argv[0], DEBUG_STDERR);
-	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	if ((argc < 3) || (argc > 6)) {
 		d_fprintf(stderr,
