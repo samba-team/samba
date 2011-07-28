@@ -519,10 +519,8 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 		if (ace->flags == aceNew->flags &&
 			ace->aceType==aceNew->aceType &&
-			ace->aceFlags==aceNew->aceFlags &&
-			(ace->aceFlags&SMB_ACE4_IDENTIFIER_GROUP)==
-			(aceNew->aceFlags&SMB_ACE4_IDENTIFIER_GROUP)
-		) {
+			ace->aceFlags==aceNew->aceFlags)
+		{
 			/* keep type safety; e.g. gid is an u.short */
 			if (ace->flags & SMB_ACE4_ID_SPECIAL)
 			{
