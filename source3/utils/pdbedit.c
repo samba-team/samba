@@ -1077,7 +1077,7 @@ int main (int argc, char **argv)
 	if (user_name == NULL)
 		user_name = poptGetArg(pc);
 
-	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True)) {
+	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
 		exit(1);
 	}
