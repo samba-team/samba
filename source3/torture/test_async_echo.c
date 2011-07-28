@@ -69,7 +69,7 @@ bool run_async_echo(int dummy)
 	NTSTATUS status;
 	bool ret = false;
 	int i, num_reqs;
-	uint8_t buf[32768];
+	uint8_t buf[65536];
 
 	printf("Starting ASYNC_ECHO\n");
 
