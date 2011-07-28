@@ -8969,7 +8969,7 @@ static void usage(void)
 			set_dyn_CONFIGFILE(getenv("SMB_CONF_PATH"));
 		}
 	}
-	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
+	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
 
 	if (argc < 2) {
