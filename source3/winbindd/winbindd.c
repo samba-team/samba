@@ -79,7 +79,7 @@ static bool reload_services_file(const char *lfile)
 	}
 
 	reopen_logs();
-	ret = lp_load(get_dyn_CONFIGFILE(),False,False,True,True);
+	ret = lp_load_global(get_dyn_CONFIGFILE());
 
 	reopen_logs();
 	load_interfaces();
