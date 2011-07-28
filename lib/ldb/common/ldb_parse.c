@@ -534,8 +534,18 @@ static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *mem_ctx, const ch
 
 	while (isspace((unsigned char)*p)) p++;
 
-	while (*p && (next = ldb_parse_filter(ret->u.list.elements, &p))) {
+	while (*p) {
+		if (*p == ')') {
+			break;
+		}
+
+		next = ldb_parse_filter(ret->u.list.elements, &p);
 		struct ldb_parse_tree **e;
+		if (next == NULL) {
+			/* an invalid filter element */
+			talloc_free(ret);
+			return NULL;
+		}
 		e = talloc_realloc(ret, ret->u.list.elements, 
 				     struct ldb_parse_tree *, 
 				     ret->u.list.num_elements + 1);
