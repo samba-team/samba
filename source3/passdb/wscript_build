@@ -7,7 +7,7 @@ PDB_SMBPASSWD_SRC = 'pdb_smbpasswd.c'
 PDB_WBC_SAM_SRC =   'pdb_wbc_sam.c'
 
 bld.SAMBA3_MODULE('pdb_tdbsam',
-                 subsystem='passdb',
+                 subsystem='pdb',
                  source=PDB_TDBSAM_SRC,
                  deps='samba-util tdb',
                  init_function='',
@@ -15,14 +15,14 @@ bld.SAMBA3_MODULE('pdb_tdbsam',
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_tdbsam'))
 
 bld.SAMBA3_MODULE('pdb_ldap',
-                 subsystem='passdb',
+                 subsystem='pdb',
                  source=PDB_LDAP_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ldap'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_ldap') and bld.env.HAVE_LDAP)
 
 bld.SAMBA3_MODULE('pdb_ads',
-                 subsystem='passdb',
+                 subsystem='pdb',
                  source=PDB_ADS_SRC,
                  deps='cli-ldap-common TLDAP',
                  init_function='',
@@ -30,7 +30,7 @@ bld.SAMBA3_MODULE('pdb_ads',
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_ads'))
 
 bld.SAMBA3_MODULE('pdb_smbpasswd',
-                 subsystem='passdb',
+                 subsystem='pdb',
                  source=PDB_SMBPASSWD_SRC,
                  deps='samba-util',
                  init_function='',
@@ -38,7 +38,7 @@ bld.SAMBA3_MODULE('pdb_smbpasswd',
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_smbpasswd'))
 
 bld.SAMBA3_MODULE('pdb_wbc_sam',
-                 subsystem='passdb',
+                 subsystem='pdb',
                  source=PDB_WBC_SAM_SRC,
                  deps='samba-util',
                  init_function='',
@@ -46,7 +46,7 @@ bld.SAMBA3_MODULE('pdb_wbc_sam',
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_wbc_sam'))
 
 bld.SAMBA3_MODULE('pdb_samba4',
-                  subsystem='passdb',
+                  subsystem='pdb',
                   source='pdb_samba4.c',
                   init_function='',
                   deps='IDMAP samdb',
