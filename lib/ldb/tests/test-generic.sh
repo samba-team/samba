@@ -57,6 +57,9 @@ $VALGRIND ldbsearch$EXEEXT '(&(uid=uham)(uid=uham)(!(objectclass=xxx)))'  || exi
 $VALGRIND ldbsearch$EXEEXT '(&(objectclass=person)(uid=uham)(!(uid=uhamxx)))' uid \* \+ dn  || exit 1
 $VALGRIND ldbsearch$EXEEXT '(&(uid=uham)(uid=uha*)(title=*))' uid || exit 1
 
+echo "Testing invalid search expression"
+$VALGRIND ldbsearch$EXEEXT '(&(uid=uham)(title=foo\blah))' uid && exit 1
+
 # note that the "((" is treated as an attribute not an expression
 # this matches the openldap ldapsearch behaviour of looking for a '='
 # to see if the first argument is an expression or not
