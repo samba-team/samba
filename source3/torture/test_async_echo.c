@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "libsmb/libsmb.h"
-#include "async_smb.h"
 #include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/ndr_echo_c.h"
 
@@ -100,15 +99,6 @@ bool run_async_echo(int dummy)
 	}
 	tevent_req_set_callback(req, rpccli_sleep_done, &num_reqs);
 	num_reqs += 1;
-
-	/* Wait until the rpc operation arrives at the smb layer */
-	while (tevent_req_is_in_progress(req) &&
-	       !cli_has_async_calls(cli)) {
-		if (tevent_loop_once(ev) != 0) {
-			printf("tevent_loop_once failed\n");
-			goto fail;
-		}
-	}
 
 	req = cli_echo_send(ev, ev, cli, 1, data_blob_const("hello", 5));
 	if (req == NULL) {
