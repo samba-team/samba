@@ -142,7 +142,7 @@ class cmd_user_enable(Command):
             raise CommandError("Either the username or '--filter' must be specified!")
 
         if filter is None:
-            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (username)
+            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -178,7 +178,7 @@ class cmd_user_setexpiry(Command):
             raise CommandError("Either the username or '--filter' must be specified!")
 
         if filter is None:
-            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (username)
+            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)

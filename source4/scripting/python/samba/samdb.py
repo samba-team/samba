@@ -189,7 +189,7 @@ pwdLastSet: 0
         :param groupname: Name of the target group
         """
 
-        groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (groupname, "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
+        groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (ldb.binary_encode(groupname), "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
         self.transaction_start()
         try:
             targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
@@ -214,7 +214,8 @@ pwdLastSet: 0
             operation
         """
 
-        groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (groupname, "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
+        groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (
+            ldb.binary_encode(groupname), "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
         groupmembers = listofmembers.split(',')
 
         self.transaction_start()
@@ -234,7 +235,8 @@ changetype: modify
 
             for member in groupmembers:
                 targetmember = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                                    expression="(|(sAMAccountName=%s)(CN=%s))" % (member, member), attrs=[])
+                                    expression="(|(sAMAccountName=%s)(CN=%s))" % (
+                    ldb.binary_encode(member), ldb.binary_encode(member)), attrs=[])
 
                 if len(targetmember) != 1:
                     continue
@@ -378,7 +380,7 @@ member: %s
 
             # Sets the password for it
             if setpassword:
-                self.setpassword("(samAccountName=%s)" % username, password,
+                self.setpassword("(samAccountName=%s)" % ldb.binary_encode(username), password,
                                  force_password_change_at_next_login_req)
         except Exception:
             self.transaction_cancel()

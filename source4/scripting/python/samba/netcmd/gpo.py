@@ -131,10 +131,10 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None):
     search_scope = ldb.SCOPE_ONELEVEL
 
     if gpo is not None:
-        search_expr = "(&(objectClass=groupPolicyContainer)(name=%s))" % gpo
+        search_expr = "(&(objectClass=groupPolicyContainer)(name=%s))" % ldb.binary_encode(gpo)
 
     if displayname is not None:
-        search_expr = "(&(objectClass=groupPolicyContainer)(displayname=%s))" % displayname
+        search_expr = "(&(objectClass=groupPolicyContainer)(displayname=%s))" % ldb.binary_encode(displayname)
 
     if dn is not None:
         base_dn = dn
@@ -253,7 +253,7 @@ class cmd_list(Command):
 
         try:
             msg = self.samdb.search(expression='(&(|(samAccountName=%s)(samAccountName=%s$))(objectClass=User))' %
-                                                (username,username))
+                                                (ldb.binary_encode(username),ldb.binary_encode(username)))
             user_dn = msg[0].dn
         except Exception, e:
             raise CommandError("Failed to find account %s" % username, e)

@@ -72,7 +72,7 @@ class cmd_delegation_show(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
         print "Searching for: %s" % (cleanedaccount)
-        res = sam.search(expression="sAMAccountName=%s" % cleanedaccount,
+        res = sam.search(expression="sAMAccountName=%s" % ldb.binary_encode(cleanedaccount),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
         if len(res) != 1:
@@ -122,7 +122,7 @@ class cmd_delegation_for_any_service(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-	search_filter = "sAMAccountName=%s" % cleanedaccount
+	search_filter = "sAMAccountName=%s" % ldb.binary_encode(cleanedaccount)
         flag = dsdb.UF_TRUSTED_FOR_DELEGATION
         try:
             sam.toggle_userAccountFlags(search_filter, flag, on=on, strict=True)
@@ -154,7 +154,7 @@ class cmd_delegation_for_any_protocol(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-	search_filter = "sAMAccountName=%s" % cleanedaccount
+	search_filter = "sAMAccountName=%s" % ldb.binary_encode(cleanedaccount)
         flag = dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
         try:
             sam.toggle_userAccountFlags(search_filter, flag, on=on, strict=True)
@@ -178,7 +178,7 @@ class cmd_delegation_add_service(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-        res = sam.search(expression="sAMAccountName=%s" % cleanedaccount,
+        res = sam.search(expression="sAMAccountName=%s" % ldb.binary_encode(cleanedaccount),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["msDS-AllowedToDelegateTo"])
         if len(res) != 1:
@@ -211,7 +211,7 @@ class cmd_delegation_del_service(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-        res = sam.search(expression="sAMAccountName=%s" % cleanedaccount,
+        res = sam.search(expression="sAMAccountName=%s" % ldb.binary_encode(cleanedaccount),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["msDS-AllowedToDelegateTo"])
         if len(res) != 1:

@@ -317,7 +317,7 @@ class cmd_domain_machinepassword(Command):
         secretsdb = Ldb(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
         result = secretsdb.search(attrs=["secret"],
-            expression="(&(objectclass=primaryDomain)(samaccountname=%s))" % secret)
+            expression="(&(objectclass=primaryDomain)(samaccountname=%s))" % ldb.binary_encode(secret))
 
         if len(result) != 1:
             raise CommandError("search returned %d records, expected 1" % len(result))

@@ -69,7 +69,7 @@ class cmd_spn_list(Command):
         # to the correct domain
         (cleaneduser, realm, domain) = _get_user_realm_domain(user)
         print cleaneduser
-        res = sam.search(expression="samaccountname=%s" % cleaneduser,
+        res = sam.search(expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["servicePrincipalName"])
         if len(res) >0:
@@ -102,7 +102,7 @@ class cmd_spn_add(Command):
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
         sam = SamDB(paths.samdb, session_info=system_session(),
                     credentials=creds, lp=lp)
-        res = sam.search(expression="servicePrincipalName=%s" % name,
+        res = sam.search(expression="servicePrincipalName=%s" % ldb.binary_encode(name),
                             scope=ldb.SCOPE_SUBTREE,
                             )
         if len(res) != 0  and not force:
@@ -110,7 +110,7 @@ class cmd_spn_add(Command):
                                    " affected to another user" % name)
 
         (cleaneduser, realm, domain) = _get_user_realm_domain(user)
-        res = sam.search(expression="samaccountname=%s" % cleaneduser,
+        res = sam.search(expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["servicePrincipalName"])
         if len(res) >0:
@@ -151,7 +151,7 @@ class cmd_spn_delete(Command):
         paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
         sam = SamDB(paths.samdb, session_info=system_session(),
                     credentials=creds, lp=lp)
-        res = sam.search(expression="servicePrincipalName=%s" % name,
+        res = sam.search(expression="servicePrincipalName=%s" % ldb.binary_encode(name),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["servicePrincipalName", "samAccountName"])
         if len(res) >0:

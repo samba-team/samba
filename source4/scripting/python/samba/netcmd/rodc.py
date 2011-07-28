@@ -52,7 +52,7 @@ class cmd_rodc_preload(Command):
                                expression="objectclass=user",
                                scope=ldb.SCOPE_BASE, attrs=[])
         else:
-            res = samdb.search(expression="(&(samAccountName=%s)(objectclass=user))" % account,
+            res = samdb.search(expression="(&(samAccountName=%s)(objectclass=user))" % ldb.binary_encode(account),
                                scope=ldb.SCOPE_SUBTREE, attrs=[])
         if len(res) != 1:
             raise Exception("Failed to find account '%s'" % account)

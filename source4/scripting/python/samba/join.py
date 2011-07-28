@@ -147,7 +147,7 @@ class dc_join(object):
             # find the krbtgt link
             print("checking samaccountname")
             res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
-                                   expression='samAccountName=%s' % ctx.samname,
+                                   expression='samAccountName=%s' % ldb.binary_encode(ctx.samname),
                                    attrs=["msDS-krbTgtLink"])
             if res:
                 ctx.del_noerror(res[0].dn, recursive=True)
@@ -408,7 +408,7 @@ class dc_join(object):
         ctx.samdb.modify(m)
 
         print "Setting account password for %s" % ctx.samname
-        ctx.samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))" % ctx.samname,
+        ctx.samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))" % ldb.binary_encode(ctx.samname),
                               ctx.acct_pass,
                               force_change_at_next_login=False,
                               username=ctx.samname)
