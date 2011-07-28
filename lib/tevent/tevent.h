@@ -1395,7 +1395,9 @@ typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
  * @param[in]  req      The tevent request to add to the queue.
  *
  * @param[in]  trigger  The function triggered by the queue when the request
- *                      is called.
+ *                      is called. Since tevent 0.9.14 it's possible to
+ *                      pass NULL, in order to just add a "blocker" to the
+ *                      queue.
  *
  * @param[in]  private_data The private data passed to the trigger function.
  *

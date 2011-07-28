@@ -163,6 +163,13 @@ bool tevent_queue_add(struct tevent_queue *queue,
 	e->trigger = trigger;
 	e->private_data = private_data;
 
+	/*
+	 * if there is no trigger, it is just a blocker
+	 */
+	if (trigger == NULL) {
+		e->triggered = true;
+	}
+
 	DLIST_ADD_END(queue->list, e, struct tevent_queue_entry *);
 	queue->length++;
 	talloc_set_destructor(e, tevent_queue_entry_destructor);
