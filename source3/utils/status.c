@@ -393,7 +393,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		}
 	}
 
-	if (!lp_load(get_dyn_CONFIGFILE(),False,False,False,True)) {
+	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
 			get_dyn_CONFIGFILE());
 		ret = -1;
