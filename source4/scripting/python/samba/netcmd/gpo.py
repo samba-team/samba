@@ -22,6 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
 import samba.getopt as options
 import ldb
 
@@ -40,6 +41,7 @@ import samba.security
 import samba.auth
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 from samba.netcmd.common import netcmd_finddc
+from samba import smb
 
 
 def samdb_connect(ctx):
@@ -155,6 +157,42 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None):
         raise CommandError(mesg, e)
 
     return msg
+
+
+def parse_unc(unc):
+    '''Parse UNC string into a hostname, a service, and a filepath'''
+    if unc.startswith('\\\\') and unc.startswith('//'):
+        return []
+    tmp = unc[2:].split('/', 2)
+    if len(tmp) == 3:
+        return tmp
+    tmp = unc[2:].split('\\', 2)
+    if len(tmp) == 3:
+        return tmp;
+    return []
+
+
+def copy_directory_recurse(conn, remotedir, localdir):
+    if not os.path.isdir(localdir):
+        os.mkdir(localdir)
+    r_dirs = [ remotedir ]
+    l_dirs = [ localdir ]
+    while r_dirs:
+        r_dir = r_dirs.pop()
+        l_dir = l_dirs.pop()
+
+        dirlist = conn.list(r_dir)
+        for e in dirlist:
+            r_name = r_dir + '\\' + e['name']
+            l_name = l_dir + os.path.sep + e['name']
+
+            if e['attrib'] & smb.FILE_ATTRIBUTE_DIRECTORY:
+                r_dirs.append(r_name)
+                l_dirs.append(l_name)
+                os.mkdir(l_name)
+            elif e['attrib'] & smb.FILE_ATTRIBUTE_ARCHIVE:
+                data = conn.loadfile(r_name)
+                file(l_name, 'w').write(data)
 
 
 class cmd_listall(Command):
@@ -658,6 +696,62 @@ class cmd_setinheritance(Command):
 
 class cmd_fetch(Command):
     """Download a GPO"""
+
+    synopsis = "%prog gpo fetch <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = [ 'gpo' ]
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--tmpdir", help="Temporary directory for copying policy files", type=str)
+        ]
+
+    def run(self, gpo, H=None, tmpdir=None, sambaopts=None, credopts=None, versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        dc_hostname = netcmd_finddc(self.lp, self.creds)
+        self.url = dc_url(self.lp, self.creds, H, dc=dc_hostname)
+
+        samdb_connect(self)
+        try:
+            msg = get_gpo_info(self.samdb, gpo)[0]
+        except Exception, e:
+            raise CommandError("GPO %s does not exist" % gpo)
+
+        unc = msg['gPCFileSysPath'][0]
+        try:
+            [dom_name, service, sharepath] = parse_unc(unc)
+        except:
+            raise CommandError("Invalid GPO path (%s)" % unc)
+
+        try:
+            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
+        except Exception, e:
+            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
+
+        if tmpdir is None:
+            tmpdir = "/tmp"
+
+        try:
+            localdir = tmpdir + os.path.sep + "policy"
+            if not os.path.isdir(localdir):
+                os.mkdir(localdir)
+            gpodir = localdir + os.path.sep + gpo
+            if not os.path.isdir(gpodir):
+                os.mkdir(gpodir)
+            copy_directory_recurse(conn, sharepath, gpodir)
+        except Exception, e:
+            raise CommandError("Error copying GPO", e)
+        print('GPO copied to %s' % gpodir)
+
 
 class cmd_create(Command):
     """Create a GPO"""
