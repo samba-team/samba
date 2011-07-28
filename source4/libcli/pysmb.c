@@ -59,13 +59,20 @@ static void dos_format(char *s)
 }
 
 
-static struct smbcli_tree *do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_private_data *spdata,
-			const char *hostname, const char *service)
+/*
+ * Connect to SMB share using smb_composite_connect
+ */
+static NTSTATUS do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_private_data *spdata,
+			const char *hostname, const char *service, struct smbcli_tree **tree)
 {
 	struct smb_composite_connect io;
 	NTSTATUS status;
 
 	gensec_init();
+
+	*tree = NULL;
+
+	ZERO_STRUCT(io);
 
 	io.in.dest_host = hostname;
 
@@ -88,12 +95,17 @@ static struct smbcli_tree *do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_privat
 	status = smb_composite_connect(&io, mem_ctx,
 					lpcfg_resolve_context(spdata->lp_ctx),
 					spdata->ev_ctx);
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	if (NT_STATUS_IS_OK(status)) {
+		*tree = io.out.tree;
+	}
 
-	return io.out.tree;
+	return status;
 }
 
 
+/*
+ * Read SMB file and return the contents of the file as python string
+ */
 static PyObject * py_smb_loadfile(py_talloc_Object *self, PyObject *args)
 {
 	struct smb_composite_loadfile io;
@@ -105,6 +117,8 @@ static PyObject * py_smb_loadfile(py_talloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
+	ZERO_STRUCT(io);
+
 	io.in.fname = filename;
 
 	spdata = self->ptr;
@@ -114,7 +128,9 @@ static PyObject * py_smb_loadfile(py_talloc_Object *self, PyObject *args)
 	return Py_BuildValue("s#", io.out.data, io.out.size);
 }
 
-
+/*
+ * Create a SMB file with given string as the contents
+ */
 static PyObject * py_smb_savefile(py_talloc_Object *self, PyObject *args)
 {
 	struct smb_composite_savefile io;
@@ -138,6 +154,10 @@ static PyObject * py_smb_savefile(py_talloc_Object *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+
+/*
+ * Callback function to accumulate directory contents in a python list
+ */
 static void py_smb_list_callback(struct clilist_file_info *f, const char *mask, void *state)
 {
 	PyObject *py_dirlist;
@@ -160,6 +180,9 @@ static void py_smb_list_callback(struct clilist_file_info *f, const char *mask, 
 }
 
 
+/*
+ * List the directory contents for specified directory (Ignore '.' and '..' dirs)
+ */
 static PyObject *py_smb_list(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct smb_private_data *spdata;
@@ -167,19 +190,14 @@ static PyObject *py_smb_list(py_talloc_Object *self, PyObject *args, PyObject *k
 	const char *kwnames[] = { "directory", "mask", "attribs", NULL };
 	char *base_dir;
 	char *user_mask = NULL;
-	uint16_t attribute = 0;
 	char *mask;
+	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY
+				| FILE_ATTRIBUTE_ARCHIVE;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "z|sH",
 					discard_const_p(char *, kwnames),
 					&base_dir, &user_mask, &attribute)) {
 		return NULL;
-	}
-
-	if (attribute == 0) {
-		attribute = FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN |
-				FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY |
-				FILE_ATTRIBUTE_ARCHIVE;
 	}
 
 	if (user_mask == NULL) {
@@ -203,6 +221,10 @@ static PyObject *py_smb_list(py_talloc_Object *self, PyObject *args, PyObject *k
 	return py_dirlist;
 }
 
+
+/*
+ * Read ACL on a given file/directory as a security descriptor object
+ */
 static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
@@ -214,11 +236,13 @@ static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject 
 		return NULL;
 	}
 
-	spdata = self->ptr;
+	ZERO_STRUCT(io);
 
 	io.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	io.query_secdesc.in.file.path = filename;
 	io.query_secdesc.in.secinfo_flags = 0;
+
+	spdata = self->ptr;
 
 	status = smb_raw_query_secdesc(spdata->tree, self->talloc_ctx, &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
@@ -228,6 +252,9 @@ static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject 
 }
 
 
+/*
+ * Set ACL on file/directory using given security descriptor object
+ */
 static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
@@ -249,6 +276,8 @@ static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject 
 				"Expected dcerpc.security.descriptor for security_descriptor argument, got %s", talloc_get_name(py_talloc_get_ptr(py_sd)));
 		return NULL;
 	}
+
+	ZERO_STRUCT(io);
 
 	io.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
 	io.set_secdesc.in.file.path = filename;
@@ -286,6 +315,7 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 	const char *service = NULL;
 	py_talloc_Object *smb;
 	struct smb_private_data *spdata;
+	NTSTATUS status;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zz|OO",
 					discard_const_p(char *, kwnames),
@@ -324,7 +354,8 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	spdata->tree = do_smb_connect(smb->talloc_ctx, spdata, hostname, service);
+	status = do_smb_connect(smb->talloc_ctx, spdata, hostname, service, &spdata->tree);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	if (spdata->tree == NULL) {
 		Py_DECREF(smb);
 		return NULL;
