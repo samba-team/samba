@@ -21,7 +21,7 @@
 #
 
 import samba.getopt as options
-import sys
+import sys, ldb
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -258,7 +258,7 @@ class cmd_user_setpassword(Command):
             password = getpass("New Password: ")
 
         if filter is None:
-            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (username)
+            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
