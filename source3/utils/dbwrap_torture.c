@@ -281,7 +281,7 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	ev_ctx = tevent_context_init(mem_ctx);
 	if (ev_ctx == NULL) {
