@@ -1411,4 +1411,37 @@ int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 
 struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handle *h);
 
+/* For unit testing ctdb_transaction.c. */
+struct ctdb_public_ip_list {
+	struct ctdb_public_ip_list *next;
+	uint32_t pnn;
+	ctdb_sock_addr addr;
+};
+uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2);
+uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
+			   struct ctdb_public_ip_list *ips,
+			   int pnn);
+uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn);
+void lcp2_init(struct ctdb_context * tmp_ctx,
+	       struct ctdb_node_map * nodemap,
+	       uint32_t mask,
+	       struct ctdb_public_ip_list *all_ips,
+	       uint32_t **lcp2_imbalances,
+	       bool **newly_healthy);
+void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
+			      struct ctdb_node_map *nodemap,
+			      uint32_t mask,
+			      struct ctdb_public_ip_list *all_ips,
+			      uint32_t *lcp2_imbalances);
+bool lcp2_failback(struct ctdb_context *ctdb,
+		   struct ctdb_node_map *nodemap,
+		   uint32_t mask,
+		   struct ctdb_public_ip_list *all_ips,
+		   uint32_t *lcp2_imbalances,
+		   bool *newly_healthy);
+void ctdb_takeover_run_core(struct ctdb_context *ctdb,
+			    struct ctdb_node_map *nodemap,
+			    struct ctdb_public_ip_list **all_ips_p);
+
+
 #endif
