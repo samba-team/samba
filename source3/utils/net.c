@@ -878,7 +878,7 @@ static struct functable net_func[] = {
 		}
 	}
 
-	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 #if defined(HAVE_BIND_TEXTDOMAIN_CODESET)
 	/* Bind our gettext results to 'unix charset'
