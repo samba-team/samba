@@ -1471,7 +1471,7 @@ int main(int argc, const char **argv)
 	if (argc <= 1)
 		usage(pc);
 
-	lp_load(get_dyn_CONFIGFILE(),False,False,False,True);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	/* Need to invert sense of return code -- samba
          * routines mostly return True==1 for success, but
