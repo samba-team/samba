@@ -300,7 +300,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	if (!lp_load(get_dyn_CONFIGFILE(),True,False,False,True)) {
+	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n",
 				get_dyn_CONFIGFILE());
 	}
