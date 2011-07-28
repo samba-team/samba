@@ -150,8 +150,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			   struct dcerpc_binding_handle *b,
 			   const struct spoolss_DriverInfo8 *r);
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 const struct auth_session_info *server_info,
-				 struct messaging_context *msg_ctx,
+				 struct dcerpc_binding_handle *b,
 				 struct spoolss_DriverInfo8 *r);
 bool delete_driver_files(const struct auth_session_info *server_info,
 			 const struct spoolss_DriverInfo8 *r);

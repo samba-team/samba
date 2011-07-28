@@ -1401,8 +1401,7 @@ static bool trim_overlap_drv_files(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 const struct auth_session_info *session_info,
-				 struct messaging_context *msg_ctx,
+				 struct dcerpc_binding_handle *b,
 				 struct spoolss_DriverInfo8 *info)
 {
 	int 				i;
@@ -1412,7 +1411,6 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 	uint32_t num_drivers;
 	const char **drivers;
 	WERROR result;
-	struct dcerpc_binding_handle *b;
 
 	if ( !info )
 		return False;
@@ -1424,14 +1422,6 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 	DEBUG(5,("printer_driver_files_in_use: Beginning search of drivers...\n"));
 
 	/* get the list of drivers */
-
-	result = winreg_printer_binding_handle(mem_ctx,
-					       session_info,
-					       msg_ctx,
-					       &b);
-	if (!W_ERROR_IS_OK(result)) {
-		return false;
-	}
 
 	result = winreg_get_driver_list(mem_ctx, b,
 					info->architecture, version,

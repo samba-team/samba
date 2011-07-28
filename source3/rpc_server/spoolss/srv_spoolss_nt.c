@@ -2284,8 +2284,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	if (delete_files &&
 	    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
 	    printer_driver_files_in_use(tmp_ctx,
-					get_session_info_system(),
-					p->msg_ctx,
+					b,
 					info)) {
 		/* no idea of the correct error here */
 		status = WERR_ACCESS_DENIED;
@@ -2304,8 +2303,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 			if (delete_files &&
 			    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
 			    printer_driver_files_in_use(info,
-							get_session_info_system(),
-							p->msg_ctx,
+							b,
 							info_win2k)) {
 				/* no idea of the correct error here */
 				talloc_free(info_win2k);
