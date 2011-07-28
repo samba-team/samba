@@ -149,7 +149,8 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 					struct tevent_context *ev,
 					struct tevent_req *req,
 					tevent_queue_trigger_fn_t trigger,
-					void *private_data)
+					void *private_data,
+					bool allow_direct)
 {
 	struct tevent_queue_entry *e;
 
@@ -171,6 +172,24 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 		e->triggered = true;
 	}
 
+	if (queue->length > 0) {
+		/*
+		 * if there are already entries in the
+		 * queue do not optimize.
+		 */
+		allow_direct = false;
+	}
+
+	if (req->async.fn != NULL) {
+		/*
+		 * If the callers wants to optimize for the
+		 * empty queue case, call the trigger only
+		 * if there is no callback defined for the
+		 * request yet.
+		 */
+		allow_direct = false;
+	}
+
 	DLIST_ADD_END(queue->list, e, struct tevent_queue_entry *);
 	queue->length++;
 	talloc_set_destructor(e, tevent_queue_entry_destructor);
@@ -180,6 +199,18 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 	}
 
 	if (queue->list->triggered) {
+		return e;
+	}
+
+	/*
+	 * If allowed we directly call the trigger
+	 * avoiding possible delays caused by
+	 * an immediate event.
+	 */
+	if (allow_direct) {
+		queue->list->triggered = true;
+		queue->list->trigger(queue->list->req,
+				     queue->list->private_data);
 		return e;
 	}
 
@@ -200,12 +231,34 @@ bool tevent_queue_add(struct tevent_queue *queue,
 	struct tevent_queue_entry *e;
 
 	e = tevent_queue_add_internal(queue, ev, req,
-				      trigger, private_data);
+				      trigger, private_data, false);
 	if (e == NULL) {
 		return false;
 	}
 
 	return true;
+}
+
+struct tevent_queue_entry *tevent_queue_add_entry(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					void *private_data)
+{
+	return tevent_queue_add_internal(queue, ev, req,
+					 trigger, private_data, false);
+}
+
+struct tevent_queue_entry *tevent_queue_add_optimize_empty(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					void *private_data)
+{
+	return tevent_queue_add_internal(queue, ev, req,
+					 trigger, private_data, true);
 }
 
 void tevent_queue_start(struct tevent_queue *queue)

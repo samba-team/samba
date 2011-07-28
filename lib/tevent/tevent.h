@@ -1347,6 +1347,7 @@ struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
  */
 
 struct tevent_queue;
+struct tevent_queue_entry;
 
 #ifdef DOXYGEN
 /**
@@ -1381,6 +1382,8 @@ struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
  *                          tevent_queue_add().
  *
  * @see tevent_queue_add()
+ * @see tevent_queue_add_entry()
+ * @see tevent_queue_add_optimize_empty()
  */
 typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
 					  void *private_data);
@@ -1409,6 +1412,79 @@ bool tevent_queue_add(struct tevent_queue *queue,
 		      struct tevent_req *req,
 		      tevent_queue_trigger_fn_t trigger,
 		      void *private_data);
+
+/**
+ * @brief Add a tevent request to the queue.
+ *
+ * The request can be removed from the queue by calling talloc_free()
+ * (or a similar function) on the returned queue entry. This
+ * is the only difference to tevent_queue_add().
+ *
+ * @param[in]  queue    The queue to add the request.
+ *
+ * @param[in]  ev       The event handle to use for the request.
+ *
+ * @param[in]  req      The tevent request to add to the queue.
+ *
+ * @param[in]  trigger  The function triggered by the queue when the request
+ *                      is called. Since tevent 0.9.14 it's possible to
+ *                      pass NULL, in order to just add a "blocker" to the
+ *                      queue.
+ *
+ * @param[in]  private_data The private data passed to the trigger function.
+ *
+ * @return              a pointer to the tevent_queue_entry if the request
+ *                      has been successfully added, NULL otherwise.
+ *
+ * @see tevent_queue_add()
+ * @see tevent_queue_add_optimize_empty()
+ */
+struct tevent_queue_entry *tevent_queue_add_entry(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					void *private_data);
+
+/**
+ * @brief Add a tevent request to the queue using a possible optimization.
+ *
+ * This tries to optimize for the empty queue case and may calls
+ * the trigger function directly. This is the only difference compared
+ * to tevent_queue_add_entry().
+ *
+ * The caller needs to be prepared that the trigger function has
+ * already called tevent_req_notify_callback(), tevent_req_error(),
+ * tevent_req_done() or a similar function.
+ *
+ * The request can be removed from the queue by calling talloc_free()
+ * (or a similar function) on the returned queue entry.
+ *
+ * @param[in]  queue    The queue to add the request.
+ *
+ * @param[in]  ev       The event handle to use for the request.
+ *
+ * @param[in]  req      The tevent request to add to the queue.
+ *
+ * @param[in]  trigger  The function triggered by the queue when the request
+ *                      is called. Since tevent 0.9.14 it's possible to
+ *                      pass NULL, in order to just add a "blocker" to the
+ *                      queue.
+ *
+ * @param[in]  private_data The private data passed to the trigger function.
+ *
+ * @return              a pointer to the tevent_queue_entry if the request
+ *                      has been successfully added, NULL otherwise.
+ *
+ * @see tevent_queue_add()
+ * @see tevent_queue_add_entry()
+ */
+struct tevent_queue_entry *tevent_queue_add_optimize_empty(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					void *private_data);
 
 /**
  * @brief Start a tevent queue.
