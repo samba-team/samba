@@ -222,40 +222,45 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		return 0;
 	}
 
-	if (pollrtn > 0) {
-		/* at least one file descriptor is ready - check
-		   which ones and call the handler, being careful to allow
-		   the handler to remove itself when called */
-		for (fde = ev->fd_events; fde; fde = fde->next) {
-			struct pollfd *pfd;
-			uint64_t pfd_idx = fde->additional_flags;
-			uint16_t flags = 0;
+	if (pollrtn <= 0) {
+		/*
+		 * No fd's ready
+		 */
+		return 0;
+	}
 
-			pfd = &poll_ev->fds[pfd_idx];
+	/* at least one file descriptor is ready - check
+	   which ones and call the handler, being careful to allow
+	   the handler to remove itself when called */
 
-			if (pfd->revents & (POLLHUP|POLLERR)) {
-				/* If we only wait for TEVENT_FD_WRITE, we
-				   should not tell the event handler about it,
-				   and remove the writable flag, as we only
-				   report errors when waiting for read events
-				   to match the select behavior. */
-				if (!(fde->flags & TEVENT_FD_READ)) {
-					TEVENT_FD_NOT_WRITEABLE(fde);
-					continue;
-				}
-				flags |= TEVENT_FD_READ;
+	for (fde = ev->fd_events; fde; fde = fde->next) {
+		struct pollfd *pfd;
+		uint64_t pfd_idx = fde->additional_flags;
+		uint16_t flags = 0;
+
+		pfd = &poll_ev->fds[pfd_idx];
+
+		if (pfd->revents & (POLLHUP|POLLERR)) {
+			/* If we only wait for TEVENT_FD_WRITE, we
+			   should not tell the event handler about it,
+			   and remove the writable flag, as we only
+			   report errors when waiting for read events
+			   to match the select behavior. */
+			if (!(fde->flags & TEVENT_FD_READ)) {
+				TEVENT_FD_NOT_WRITEABLE(fde);
+				continue;
 			}
-			if (pfd->revents & POLLIN) {
-				flags |= TEVENT_FD_READ;
-			}
-			if (pfd->revents & POLLOUT) {
-				flags |= TEVENT_FD_WRITE;
-			}
-			if (flags != 0) {
-				fde->handler(ev, fde, flags,
-					     fde->private_data);
-				break;
-			}
+			flags |= TEVENT_FD_READ;
+		}
+		if (pfd->revents & POLLIN) {
+			flags |= TEVENT_FD_READ;
+		}
+		if (pfd->revents & POLLOUT) {
+			flags |= TEVENT_FD_WRITE;
+		}
+		if (flags != 0) {
+			fde->handler(ev, fde, flags, fde->private_data);
+			break;
 		}
 	}
 
