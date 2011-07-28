@@ -1435,6 +1435,17 @@ void tevent_queue_stop(struct tevent_queue *queue);
  */
 size_t tevent_queue_length(struct tevent_queue *queue);
 
+/**
+ * @brief Is the tevent queue running.
+ *
+ * The queue is started by default.
+ *
+ * @param[in]  queue    The queue.
+ *
+ * @return              Wether the queue is running or not..
+ */
+bool tevent_queue_running(struct tevent_queue *queue);
+
 typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
 				   void *private_data,
 				   uint32_t level,

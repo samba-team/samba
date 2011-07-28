@@ -215,3 +215,8 @@ size_t tevent_queue_length(struct tevent_queue *queue)
 {
 	return queue->length;
 }
+
+bool tevent_queue_running(struct tevent_queue *queue)
+{
+	return queue->running;
+}
