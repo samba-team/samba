@@ -32,23 +32,26 @@ class Option(optparse.Option):
 
 class Command(object):
     """A samba-tool command."""
-
+   
     def _get_description(self):
         return self.__doc__.splitlines()[0].rstrip("\n")
 
-    def _get_name(self):
-        name = self.__class__.__name__
-        if name.startswith("cmd_"):
-            return name[4:]
-        return name
+    description = property(_get_description)
 
-    name = property(_get_name)
+    # synopsis must be defined in all subclasses in order to provide the command usage
+    synopsis = ""
+    takes_args = []
+    takes_options = []
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+    outf = sys.stdout
 
     def usage(self, *args):
         parser, _ = self._create_parser()
         parser.print_usage()
-
-    description = property(_get_description)
 
     def show_command_error(self, e):
         '''display a command error'''
@@ -83,18 +86,6 @@ class Command(object):
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
         sys.exit(1)
-
-    outf = sys.stdout
-
-    # synopsis must be defined in all subclasses in order to provide the command usage
-    synopsis = ""
-    takes_args = []
-    takes_options = []
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
 
     def _create_parser(self):
         parser = optparse.OptionParser(self.synopsis)
