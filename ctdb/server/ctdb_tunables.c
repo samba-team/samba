@@ -46,6 +46,7 @@ static const struct {
 	{ "RerecoveryTimeout",   10,  offsetof(struct ctdb_tunable, rerecovery_timeout) },
 	{ "EnableBans",           1,  offsetof(struct ctdb_tunable, enable_bans) },
 	{ "DeterministicIPs",     1,  offsetof(struct ctdb_tunable, deterministic_public_ips) },
+	{ "LCP2PublicIPs",        0,  offsetof(struct ctdb_tunable, lcp2_public_ip_assignment) },
 	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable,  reclock_ping_period) },
 	{ "NoIPFailback",         0,  offsetof(struct ctdb_tunable, no_ip_failback) },
 	{ "DisableIPFailover",    0,  offsetof(struct ctdb_tunable, disable_ip_failover) },

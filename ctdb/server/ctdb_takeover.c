@@ -3,6 +3,7 @@
 
    Copyright (C) Ronnie Sahlberg  2007
    Copyright (C) Andrew Tridgell  2007
+   Copyright (C) Martin Schwenke  2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1058,13 +1059,6 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 	return 0;
 }
 
-struct ctdb_public_ip_list {
-	struct ctdb_public_ip_list *next;
-	uint32_t pnn;
-	ctdb_sock_addr addr;
-};
-
-
 /* Given a physical node, return the number of
    public addresses that is currently assigned to this node.
 */
@@ -1255,112 +1249,119 @@ create_merged_ip_list(struct ctdb_context *ctdb)
 	return ip_list;
 }
 
-/*
-  make any IP alias changes for public addresses that are necessary 
+/* 
+ * This is the length of the longtest common prefix between the IPs.
+ * It is calculated by XOR-ing the 2 IPs together and counting the
+ * number of leading zeroes.  The implementation means that all
+ * addresses end up being 128 bits long.
+ * Not static, so we can easily link it into a unit test.
+ *
+ * FIXME? Should we consider IPv4 and IPv6 separately given that the
+ * 12 bytes of 0 prefix padding will hurt the algorithm if there are
+ * lots of nodes and IP addresses?
  */
-int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 {
-  int i, num_healthy, retries, num_ips;
-	struct ctdb_public_ip ip;
-	struct ctdb_public_ipv4 ipv4;
-	uint32_t mask, *nodes;
-	struct ctdb_public_ip_list *all_ips, *tmp_ip;
-	int maxnode, maxnum=0, minnode, minnum=0, num;
-	TDB_DATA data;
-	struct timeval timeout;
-	struct client_async_data *async_data;
-	struct ctdb_client_control_state *state;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	uint32_t ip1_k[IP_KEYLEN];
+	uint32_t *t;
+	int i;
+	uint32_t x;
 
-	/*
-	 * ip failover is completely disabled, just send out the 
-	 * ipreallocated event.
-	 */
-	if (ctdb->tunable.disable_ip_failover != 0) {
-		goto ipreallocated;
-	}
+	uint32_t distance = 0;
 
-	ZERO_STRUCT(ip);
-
-	/* Count how many completely healthy nodes we have */
-	num_healthy = 0;
-	for (i=0;i<nodemap->num;i++) {
-		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
-			num_healthy++;
+	memcpy(ip1_k, ip_key(ip1), sizeof(ip1_k));
+	t = ip_key(ip2);
+	for (i=0; i<IP_KEYLEN; i++) {
+		x = ip1_k[i] ^ t[i];
+		if (x == 0) {
+			distance += 32;
+		} else {
+			/* Count number of leading zeroes. 
+			 * FIXME? This could be optimised...
+			 */
+			while ((x & (1 << 31)) == 0) {
+				x <<= 1;
+				distance += 1;
+			}
 		}
 	}
 
-	if (num_healthy > 0) {
-		/* We have healthy nodes, so only consider them for 
-		   serving public addresses
-		*/
-		mask = NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED;
-	} else {
-		/* We didnt have any completely healthy nodes so
-		   use "disabled" nodes as a fallback
-		*/
-		mask = NODE_FLAGS_INACTIVE;
-	}
+	return distance;
+}
 
-	/* since nodes only know about those public addresses that
-	   can be served by that particular node, no single node has
-	   a full list of all public addresses that exist in the cluster.
-	   Walk over all node structures and create a merged list of
-	   all public addresses that exist in the cluster.
+/* Calculate the IP distance for the given IP relative to IPs on the
+   given node.  The ips argument is generally the all_ips variable
+   used in the main part of the algorithm.
+ * Not static, so we can easily link it into a unit test.
+ */
+uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
+			   struct ctdb_public_ip_list *ips,
+			   int pnn)
+{
+	struct ctdb_public_ip_list *t;
+	uint32_t d;
 
-	   keep the tree of ips around as ctdb->ip_tree
-	*/
-	all_ips = create_merged_ip_list(ctdb);
+	uint32_t sum = 0;
 
-	/* Count how many ips we have */
-	num_ips = 0;
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		num_ips++;
-	}
-
-	/* If we want deterministic ip allocations, i.e. that the ip addresses
-	   will always be allocated the same way for a specific set of
-	   available/unavailable nodes.
-	*/
-	if (1 == ctdb->tunable.deterministic_public_ips) {		
-		DEBUG(DEBUG_NOTICE,("Deterministic IPs enabled. Resetting all ip allocations\n"));
-		for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
-			tmp_ip->pnn = i%nodemap->num;
-		}
-	}
-
-
-	/* mark all public addresses with a masked node as being served by
-	   node -1
-	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
+	for (t=ips; t != NULL; t=t->next) {
+		if (t->pnn != pnn) {
 			continue;
 		}
-		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
-			tmp_ip->pnn = -1;
-		}
-	}
 
-	/* verify that the assigned nodes can serve that public ip
-	   and set it to -1 if not
-	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
+		/* Optimisation: We never calculate the distance
+		 * between an address and itself.  This allows us to
+		 * calculate the effect of removing an address from a
+		 * node by simply calculating the distance between
+		 * that address and all of the exitsing addresses.
+		 * Moreover, we assume that we're only ever dealing
+		 * with addresses from all_ips so we can identify an
+		 * address via a pointer rather than doing a more
+		 * expensive address comparison. */
+		if (&(t->addr) == ip) {
 			continue;
 		}
-		if (can_node_serve_ip(ctdb, tmp_ip->pnn, tmp_ip) != 0) {
-			/* this node can not serve this ip. */
-			tmp_ip->pnn = -1;
-		}
+
+		d = ip_distance(ip, &(t->addr));
+		sum += d * d;  /* Cheaper than pulling in math.h :-) */
 	}
 
+	return sum;
+}
 
-	/* now we must redistribute all public addresses with takeover node
-	   -1 among the nodes available
-	*/
-	retries = 0;
-try_again:
+/* Return the LCP2 imbalance metric for addresses currently assigned
+   to the given node.
+ * Not static, so we can easily link it into a unit test.
+ */
+uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn)
+{
+	struct ctdb_public_ip_list *t;
+
+	uint32_t imbalance = 0;
+
+	for (t=all_ips; t!=NULL; t=t->next) {
+		if (t->pnn != pnn) {
+			continue;
+		}
+		/* Pass the rest of the IPs rather than the whole
+		   all_ips input list.
+		*/
+		imbalance += ip_distance_2_sum(&(t->addr), t->next, pnn);
+	}
+
+	return imbalance;
+}
+
+/* Allocate any unassigned IPs just by looping through the IPs and
+ * finding the best node for each.
+ * Not static, so we can easily link it into a unit test.
+ */
+void basic_allocate_unassigned(struct ctdb_context *ctdb,
+			       struct ctdb_node_map *nodemap,
+			       uint32_t mask,
+			       struct ctdb_public_ip_list *all_ips)
+{
+	struct ctdb_public_ip_list *tmp_ip;
+
 	/* loop over all ip's and find a physical node to cover for 
 	   each unassigned ip.
 	*/
@@ -1372,26 +1373,26 @@ try_again:
 			}
 		}
 	}
+}
 
-	/* If we dont want ips to fail back after a node becomes healthy
-	   again, we wont even try to reallocat the ip addresses so that
-	   they are evenly spread out.
-	   This can NOT be used at the same time as DeterministicIPs !
-	*/
-	if (1 == ctdb->tunable.no_ip_failback) {
-		if (1 == ctdb->tunable.deterministic_public_ips) {
-			DEBUG(DEBUG_ERR, ("ERROR: You can not use 'DeterministicIPs' and 'NoIPFailback' at the same time\n"));
-		}
-		goto finished;
-	}
+/* Basic non-deterministic rebalancing algorithm.
+ * Not static, so we can easily link it into a unit test.
+ */
+bool basic_failback(struct ctdb_context *ctdb,
+		    struct ctdb_node_map *nodemap,
+		    uint32_t mask,
+		    struct ctdb_public_ip_list *all_ips,
+		    int num_ips,
+		    int *retries)
+{
+	int i;
+	int maxnode, maxnum=0, minnode, minnum=0, num;
+	struct ctdb_public_ip_list *tmp_ip;
 
-
-	/* now, try to make sure the ip adresses are evenly distributed
-	   across the node.
-	   for each ip address, loop over all nodes that can serve this
-	   ip and make sure that the difference between the node
-	   serving the most and the node serving the least ip's are not greater
-	   than 1.
+	/* for each ip address, loop over all nodes that can serve
+	   this ip and make sure that the difference between the node
+	   serving the most and the node serving the least ip's are
+	   not greater than 1.
 	*/
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		if (tmp_ip->pnn == -1) {
@@ -1455,7 +1456,7 @@ try_again:
 		   want to spend too much time balancing the ip coverage.
 		*/
 		if ( (maxnum > minnum+1)
-		  && (retries < (num_ips + 5)) ){
+		     && (*retries < (num_ips + 5)) ){
 			struct ctdb_public_ip_list *tmp;
 
 			/* mark one of maxnode's vnn's as unassigned and try
@@ -1464,13 +1465,402 @@ try_again:
 			for (tmp=all_ips;tmp;tmp=tmp->next) {
 				if (tmp->pnn == maxnode) {
 					tmp->pnn = -1;
-					retries++;
-					goto try_again;
+					(*retries)++;
+					return true;
 				}
 			}
 		}
 	}
 
+	return false;
+}
+
+/* Do necessary LCP2 initialisation.  Bury it in a function here so
+ * that we can unit test it.
+ * Not static, so we can easily link it into a unit test.
+ */
+void lcp2_init(struct ctdb_context * tmp_ctx,
+	       struct ctdb_node_map * nodemap,
+	       uint32_t mask,
+	       struct ctdb_public_ip_list *all_ips,
+	       uint32_t **lcp2_imbalances,
+	       bool **newly_healthy)
+{
+	int i;
+	struct ctdb_public_ip_list *tmp_ip;
+
+	*newly_healthy = talloc_array(tmp_ctx, bool, nodemap->num);
+	CTDB_NO_MEMORY_FATAL(tmp_ctx, *newly_healthy);
+	*lcp2_imbalances = talloc_array(tmp_ctx, uint32_t, nodemap->num);
+	CTDB_NO_MEMORY_FATAL(tmp_ctx, *lcp2_imbalances);
+
+	for (i=0;i<nodemap->num;i++) {
+		(*lcp2_imbalances)[i] = lcp2_imbalance(all_ips, i);
+		/* First step: is the node "healthy"? */
+		(*newly_healthy)[i] = ! (bool)(nodemap->nodes[i].flags & mask);
+	}
+
+	/* 2nd step: if a ndoe has IPs assigned then it must have been
+	 * healthy before, so we remove it from consideration... */
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn != -1) {
+			(*newly_healthy)[tmp_ip->pnn] = false;
+		}
+	}
+}
+
+/* Allocate any unassigned addresses using the LCP2 algorithm to find
+ * the IP/node combination that will cost the least.
+ * Not static, so we can easily link it into a unit test.
+ */
+void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
+			      struct ctdb_node_map *nodemap,
+			      uint32_t mask,
+			      struct ctdb_public_ip_list *all_ips,
+			      uint32_t *lcp2_imbalances)
+{
+	struct ctdb_public_ip_list *tmp_ip;
+	int dstnode;
+
+	int minnode;
+	uint32_t mindsum, dstdsum, dstimbl, minimbl;
+	struct ctdb_public_ip_list *minip;
+
+	bool should_loop = true;
+	bool have_unassigned = true;
+
+	while (have_unassigned && should_loop) {
+		should_loop = false;
+
+		DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
+		DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES (UNASSIGNED)\n"));
+
+		minnode = -1;
+		mindsum = 0;
+		minip = NULL;
+
+		/* loop over each unassigned ip. */
+		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+			if (tmp_ip->pnn != -1) {
+				continue;
+			}
+
+			for (dstnode=0; dstnode < nodemap->num; dstnode++) {
+				/* only check nodes that can actually serve this ip */
+				if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
+					/* no it couldnt   so skip to the next node */
+					continue;
+				}
+				if (nodemap->nodes[dstnode].flags & mask) {
+					continue;
+				}
+
+				dstdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, dstnode);
+				dstimbl = lcp2_imbalances[dstnode] + dstdsum;
+				DEBUG(DEBUG_DEBUG,(" %s -> %d [+%d]\n",
+						   ctdb_addr_to_str(&(tmp_ip->addr)),
+						   dstnode,
+						   dstimbl - lcp2_imbalances[dstnode]));
+
+
+				if ((minnode == -1) || (dstdsum < mindsum)) {
+					minnode = dstnode;
+					minimbl = dstimbl;
+					mindsum = dstdsum;
+					minip = tmp_ip;
+					should_loop = true;
+				}
+			}
+		}
+
+		DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
+
+		/* If we found one then assign it to the given node. */
+		if (minnode != -1) {
+			minip->pnn = minnode;
+			lcp2_imbalances[minnode] = minimbl;
+			DEBUG(DEBUG_INFO,(" %s -> %d [+%d]\n",
+					  ctdb_addr_to_str(&(minip->addr)),
+					  minnode,
+					  mindsum));
+		}
+
+		/* There might be a better way but at least this is clear. */
+		have_unassigned = false;
+		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+			if (tmp_ip->pnn == -1) {
+				have_unassigned = true;
+			}
+		}
+	}
+
+	/* We know if we have an unassigned addresses so we might as
+	 * well optimise.
+	 */
+	if (have_unassigned) {
+		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+			if (tmp_ip->pnn == -1) {
+				DEBUG(DEBUG_WARNING,("Failed to find node to cover ip %s\n",
+						     ctdb_addr_to_str(&tmp_ip->addr)));
+			}
+		}
+	}
+}
+
+/* LCP2 algorithm for rebalancing the cluster.  This finds the source
+ * node with the highest LCP2 imbalance, and then determines the best
+ * IP/destination node combination to move from the source node.
+ *
+ * Not static, so we can easily link it into a unit test.
+ */
+bool lcp2_failback(struct ctdb_context *ctdb,
+		   struct ctdb_node_map *nodemap,
+		   uint32_t mask,
+		   struct ctdb_public_ip_list *all_ips,
+		   uint32_t *lcp2_imbalances,
+		   bool *newly_healthy)
+{
+	int srcnode, dstnode, mindstnode, i, num_newly_healthy;
+	uint32_t srcimbl, srcdsum, maximbl, dstimbl, dstdsum;
+	uint32_t minsrcimbl, mindstimbl, b;
+	struct ctdb_public_ip_list *minip;
+	struct ctdb_public_ip_list *tmp_ip;
+
+	/* It is only worth continuing if we have suitable target
+	 * nodes to transfer IPs to.  This check is much cheaper than
+	 * continuing on...
+	 */
+	num_newly_healthy = 0;
+	for (i = 0; i < nodemap->num; i++) {
+		if (newly_healthy[i]) {
+			num_newly_healthy++;
+		}
+	}
+	if (num_newly_healthy == 0) {
+		return false;
+	}
+
+        /* Get the node with the highest imbalance metric. */
+        srcnode = -1;
+        maximbl = 0;
+	for (i=0; i < nodemap->num; i++) {
+		b = lcp2_imbalances[i];
+		if ((srcnode == -1) || (b > maximbl)) {
+			srcnode = i;
+			maximbl = b;
+		}
+	}
+
+        /* This means that all nodes had 0 or 1 addresses, so can't be
+	 * imbalanced.
+	 */
+        if (maximbl == 0) {
+		return false;
+	}
+
+	/* Find an IP and destination node that best reduces imbalance. */
+	minip = NULL;
+	minsrcimbl = 0;
+	mindstnode = -1;
+	mindstimbl = 0;
+
+	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
+	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n", srcnode, maximbl));
+
+	for (tmp_ip=all_ips; tmp_ip; tmp_ip=tmp_ip->next) {
+		/* Only consider addresses on srcnode. */
+		if (tmp_ip->pnn != srcnode) {
+			continue;
+		}
+
+		/* What is this IP address costing the source node? */
+		srcdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, srcnode);
+		srcimbl = maximbl - srcdsum;
+
+		/* Consider this IP address would cost each potential
+		 * destination node.  Destination nodes are limited to
+		 * those that are newly healthy, since we don't want
+		 * to do gratuitous failover of IPs just to make minor
+		 * balance improvements.
+		 */
+		for (dstnode=0; dstnode < nodemap->num; dstnode++) {
+			if (! newly_healthy[dstnode]) {
+				continue;
+			}
+			/* only check nodes that can actually serve this ip */
+			if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
+				/* no it couldnt   so skip to the next node */
+				continue;
+			}
+
+			dstdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, dstnode);
+			dstimbl = lcp2_imbalances[dstnode] + dstdsum;
+			DEBUG(DEBUG_DEBUG,(" %d [%d] -> %s -> %d [+%d]\n",
+					   srcnode, srcimbl - lcp2_imbalances[srcnode],
+					   ctdb_addr_to_str(&(tmp_ip->addr)),
+					   dstnode, dstimbl - lcp2_imbalances[dstnode]));
+
+			if ((dstimbl < maximbl) && (dstdsum < srcdsum) && \
+			    ((mindstnode == -1) ||				\
+			     ((srcimbl + dstimbl) < (minsrcimbl + mindstimbl)))) {
+
+				minip = tmp_ip;
+				minsrcimbl = srcimbl;
+				mindstnode = dstnode;
+				mindstimbl = dstimbl;
+			}
+		}
+	}
+	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
+
+        if (mindstnode != -1) {
+		/* We found a move that makes things better... */
+		DEBUG(DEBUG_INFO,("%d [%d] -> %s -> %d [+%d]\n",
+				  srcnode, minsrcimbl - lcp2_imbalances[srcnode],
+				  ctdb_addr_to_str(&(minip->addr)),
+				  mindstnode, mindstimbl - lcp2_imbalances[mindstnode]));
+
+
+		lcp2_imbalances[srcnode] = srcimbl;
+		lcp2_imbalances[mindstnode] = mindstimbl;
+		minip->pnn = mindstnode;
+
+		return true;
+	}
+
+        return false;
+	
+}
+
+/* The calculation part of the IP allocation algorithm.
+ * Not static, so we can easily link it into a unit test.
+ */
+void ctdb_takeover_run_core(struct ctdb_context *ctdb,
+			    struct ctdb_node_map *nodemap,
+			    struct ctdb_public_ip_list **all_ips_p)
+{
+	int i, num_healthy, retries, num_ips;
+	uint32_t mask;
+	struct ctdb_public_ip_list *all_ips, *tmp_ip;
+	uint32_t *lcp2_imbalances;
+	bool *newly_healthy;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	/* Count how many completely healthy nodes we have */
+	num_healthy = 0;
+	for (i=0;i<nodemap->num;i++) {
+		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
+			num_healthy++;
+		}
+	}
+
+	if (num_healthy > 0) {
+		/* We have healthy nodes, so only consider them for 
+		   serving public addresses
+		*/
+		mask = NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED;
+	} else {
+		/* We didnt have any completely healthy nodes so
+		   use "disabled" nodes as a fallback
+		*/
+		mask = NODE_FLAGS_INACTIVE;
+	}
+
+	/* since nodes only know about those public addresses that
+	   can be served by that particular node, no single node has
+	   a full list of all public addresses that exist in the cluster.
+	   Walk over all node structures and create a merged list of
+	   all public addresses that exist in the cluster.
+
+	   keep the tree of ips around as ctdb->ip_tree
+	*/
+	all_ips = create_merged_ip_list(ctdb);
+	*all_ips_p = all_ips; /* minimal code changes */
+
+	/* Count how many ips we have */
+	num_ips = 0;
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		num_ips++;
+	}
+
+	/* If we want deterministic ip allocations, i.e. that the ip addresses
+	   will always be allocated the same way for a specific set of
+	   available/unavailable nodes.
+	*/
+	if (1 == ctdb->tunable.deterministic_public_ips) {		
+		DEBUG(DEBUG_NOTICE,("Deterministic IPs enabled. Resetting all ip allocations\n"));
+		for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
+			tmp_ip->pnn = i%nodemap->num;
+		}
+	}
+
+
+	/* mark all public addresses with a masked node as being served by
+	   node -1
+	*/
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
+			continue;
+		}
+		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
+			tmp_ip->pnn = -1;
+		}
+	}
+
+	/* verify that the assigned nodes can serve that public ip
+	   and set it to -1 if not
+	*/
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
+			continue;
+		}
+		if (can_node_serve_ip(ctdb, tmp_ip->pnn, tmp_ip) != 0) {
+			/* this node can not serve this ip. */
+			tmp_ip->pnn = -1;
+		}
+	}
+
+        if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
+		lcp2_init(tmp_ctx, nodemap, mask, all_ips, &lcp2_imbalances, &newly_healthy);
+	}
+
+	/* now we must redistribute all public addresses with takeover node
+	   -1 among the nodes available
+	*/
+	retries = 0;
+try_again:
+	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
+		lcp2_allocate_unassigned(ctdb, nodemap, mask, all_ips, lcp2_imbalances);
+	} else {
+		basic_allocate_unassigned(ctdb, nodemap, mask, all_ips);
+	}
+
+	/* If we dont want ips to fail back after a node becomes healthy
+	   again, we wont even try to reallocat the ip addresses so that
+	   they are evenly spread out.
+	   This can NOT be used at the same time as DeterministicIPs !
+	*/
+	if (1 == ctdb->tunable.no_ip_failback) {
+		if (1 == ctdb->tunable.deterministic_public_ips) {
+			DEBUG(DEBUG_ERR, ("ERROR: You can not use 'DeterministicIPs' and 'NoIPFailback' at the same time\n"));
+		}
+		goto finished;
+	}
+
+
+	/* now, try to make sure the ip adresses are evenly distributed
+	   across the node.
+	*/
+	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
+		if (lcp2_failback(ctdb, nodemap, mask, all_ips, lcp2_imbalances, newly_healthy)) {
+			goto try_again;
+		}
+	} else {
+		if (basic_failback(ctdb, nodemap, mask, all_ips, num_ips, &retries)) {
+			goto try_again;
+		}
+	}
 
 	/* finished distributing the public addresses, now just send the 
 	   info out to the nodes
@@ -1480,6 +1870,38 @@ finished:
 	/* at this point ->pnn is the node which will own each IP
 	   or -1 if there is no node that can cover this ip
 	*/
+
+	return;
+}
+
+/*
+  make any IP alias changes for public addresses that are necessary 
+ */
+int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+{
+	int i;
+	struct ctdb_public_ip ip;
+	struct ctdb_public_ipv4 ipv4;
+	uint32_t *nodes;
+	struct ctdb_public_ip_list *all_ips, *tmp_ip;
+	TDB_DATA data;
+	struct timeval timeout;
+	struct client_async_data *async_data;
+	struct ctdb_client_control_state *state;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	/*
+	 * ip failover is completely disabled, just send out the 
+	 * ipreallocated event.
+	 */
+	if (ctdb->tunable.disable_ip_failover != 0) {
+		goto ipreallocated;
+	}
+
+	ZERO_STRUCT(ip);
+
+	/* Do the IP reassignment calculations */
+	ctdb_takeover_run_core(ctdb, nodemap, &all_ips);
 
 	/* now tell all nodes to delete any alias that they should not
 	   have.  This will be a NOOP on nodes that don't currently
