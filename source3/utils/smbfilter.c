@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
 		netbiosname = argv[2];
 	}
 
-	if (!lp_load(configfile,True,False,False,True)) {
+	if (!lp_load_global(configfile)) {
 		d_printf("Unable to load config file\n");
 	}
 
