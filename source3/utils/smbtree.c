@@ -318,7 +318,7 @@ static bool print_tree(struct user_auth_info *user_info)
 	while(poptGetNextOpt(pc) != -1);
 	poptFreeContext(pc);
 
-	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
+	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
 
 	/* Parse command line args */
