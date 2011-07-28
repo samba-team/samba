@@ -380,6 +380,12 @@ static struct tevent_req *rpc_tstream_trans_send(TALLOC_CTX *mem_ctx,
 	if (tstream_is_cli_np(transp->stream)) {
 		use_trans = true;
 	}
+	if (tevent_queue_length(transp->write_queue) > 0) {
+		use_trans = false;
+	}
+	if (tevent_queue_length(transp->read_queue) > 0) {
+		use_trans = false;
+	}
 
 	if (use_trans) {
 		tstream_cli_np_use_trans(transp->stream);
