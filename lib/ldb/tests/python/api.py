@@ -30,6 +30,10 @@ class NoContextTests(unittest.TestCase):
         self.assertEquals(0, ldb.string_to_time("19700101000000.0Z"))
         self.assertEquals(1195499412, ldb.string_to_time("20071119191012.0Z"))
 
+    def test_binary_encode(self):
+        encoded = self.binary_encode('test\\x')
+        decoded = self.binary_decode(encoded)
+        self.assertEquals(decoded, 'test\\x')
 
 class SimpleLdb(unittest.TestCase):
 

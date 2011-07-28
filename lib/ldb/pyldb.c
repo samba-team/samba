@@ -3170,6 +3170,53 @@ static PyObject *py_valid_attr_name(PyObject *self, PyObject *args)
 	return PyBool_FromLong(ldb_valid_attr_name(name));
 }
 
+/*
+  encode a string using RFC2254 rules
+ */
+static PyObject *py_binary_encode(PyObject *self, PyObject *args)
+{
+	char *str, *encoded;
+	Py_ssize_t size;
+	struct ldb_val val;
+	PyObject *ret;
+
+	if (!PyArg_ParseTuple(args, "s#", &str, &size))
+		return NULL;
+	val.data = (uint8_t *)str;
+	val.length = size;
+
+	encoded = ldb_binary_encode(NULL, val);
+	if (encoded == NULL) {
+		PyErr_SetString(PyExc_TypeError, "unable to encode binary string");
+		return NULL;
+	}
+	ret = PyString_FromString(encoded);
+	talloc_free(encoded);
+	return ret;
+}
+
+/*
+  decode a string using RFC2254 rules
+ */
+static PyObject *py_binary_decode(PyObject *self, PyObject *args)
+{
+	char *str;
+	struct ldb_val val;
+	PyObject *ret;
+
+	if (!PyArg_ParseTuple(args, "s", &str))
+		return NULL;
+
+	val = ldb_binary_decode(NULL, str);
+	if (val.data == NULL) {
+		PyErr_SetString(PyExc_TypeError, "unable to decode binary string");
+		return NULL;
+	}
+	ret = Py_BuildValue("s#", val.data, val.length);
+	talloc_free(val.data);
+	return ret;
+}
+
 static PyMethodDef py_ldb_global_methods[] = {
 	{ "register_module", py_register_module, METH_VARARGS, 
 		"S.register_module(module) -> None\n"
@@ -3185,6 +3232,12 @@ static PyMethodDef py_ldb_global_methods[] = {
 		"Check whether the supplied name is a valid attribute name." },
 	{ "open", (PyCFunction)py_ldb_new, METH_VARARGS|METH_KEYWORDS,
 		NULL },
+	{ "binary_encode", py_binary_encode, METH_VARARGS,
+		"S.binary_encode(string) -> string\n"
+		"Perform a RFC2254 binary encoding on a string" },
+	{ "binary_decode", py_binary_decode, METH_VARARGS,
+		"S.binary_decode(string) -> string\n"
+		"Perform a RFC2254 binary decode on a string" },
 	{ NULL }
 };
 
