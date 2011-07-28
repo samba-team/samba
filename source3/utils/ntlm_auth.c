@@ -2639,7 +2639,7 @@ enum {
 
 	poptFreeContext(pc);
 
-	if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
+	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		d_fprintf(stderr, "ntlm_auth: error opening config file %s. Error was %s\n",
 			get_dyn_CONFIGFILE(), strerror(errno));
 		exit(1);
