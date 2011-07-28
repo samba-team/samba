@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	char *path;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	lp_load(get_dyn_CONFIGFILE(),1,0,0,1);
+	lp_load_global(get_dyn_CONFIGFILE());
 	smbw_setup_shared();
 
 	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {
