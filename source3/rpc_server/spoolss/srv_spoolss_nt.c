@@ -2142,8 +2142,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	}
 
 	if (printer_driver_in_use(tmp_ctx,
-				  get_session_info_system(),
-				  p->msg_ctx,
+				  b,
 				  info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
@@ -2260,8 +2259,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	}
 
 	if (printer_driver_in_use(tmp_ctx,
-				  get_session_info_system(),
-				  p->msg_ctx,
+				  b,
 				  info)) {
 		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;

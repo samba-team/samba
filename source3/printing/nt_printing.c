@@ -1174,16 +1174,14 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 ****************************************************************************/
 
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
-			   const struct auth_session_info *session_info,
-			   struct messaging_context *msg_ctx,
-                           const struct spoolss_DriverInfo8 *r)
+			   struct dcerpc_binding_handle *b,
+			   const struct spoolss_DriverInfo8 *r)
 {
 	int snum;
 	int n_services = lp_numservices();
 	bool in_use = False;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	WERROR result;
-	struct dcerpc_binding_handle *b = NULL;
 
 	if (!r) {
 		return false;
@@ -1196,16 +1194,6 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 	for (snum=0; snum<n_services && !in_use; snum++) {
 		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
 			continue;
-		}
-
-		if (b == NULL) {
-			result = winreg_printer_binding_handle(mem_ctx,
-							       session_info,
-							       msg_ctx,
-							       &b);
-			if (!W_ERROR_IS_OK(result)) {
-				return false;
-			}
 		}
 
 		result = winreg_get_printer(mem_ctx, b,
