@@ -464,8 +464,8 @@ int main( int argc, char *argv[] )
 	}
 
 	if ( configfile == NULL ) {
-		lp_load(get_dyn_CONFIGFILE(), True, False, False, True);
-	} else if (!lp_load(configfile, True, False, False, True)) {
+		lp_load_global(get_dyn_CONFIGFILE());
+	} else if (!lp_load_global(configfile)) {
 		printf("Unable to parse configfile '%s'\n",configfile);
 		exit( 1 );
 	}
