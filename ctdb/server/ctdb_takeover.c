@@ -2892,12 +2892,16 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 			TALLOC_CTX *mem_ctx;
 
 			DLIST_REMOVE(ctdb->vnn, vnn);
-			if (vnn->iface == NULL) {
+			if (vnn->iface != NULL) {
+				ctdb_vnn_unassign_iface(ctdb, vnn);
+			}
+			if (vnn->pnn != ctdb->pnn) {
 				talloc_free(vnn);
 				return 0;
 			}
 
 			mem_ctx = talloc_new(ctdb);
+			talloc_steal(mem_ctx, vnn);
 			ret = ctdb_event_script_callback(ctdb, 
 					 mem_ctx, delete_ip_callback, mem_ctx,
 					 false,
@@ -2906,8 +2910,6 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 					 ctdb_vnn_iface_string(vnn),
 					 ctdb_addr_to_str(&vnn->public_address),
 					 vnn->public_netmask_bits);
-			ctdb_vnn_unassign_iface(ctdb, vnn);
-			talloc_free(vnn);
 			if (ret != 0) {
 				return -1;
 			}

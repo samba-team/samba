@@ -39,13 +39,21 @@ static void sigterm(int sig)
 	_exit(1);
 }
 
+/* This is attached to the event script state. */
+struct event_script_callback {
+	struct ctdb_event_script_state *state;
+
+	/* Warning: this can free us! */
+	void (*fn)(struct ctdb_context *, int, void *);
+	void *private_data;
+};
+	
+
 struct ctdb_event_script_state {
 	struct ctdb_context *ctdb;
+	struct event_script_callback *callback;
 	pid_t child;
-	/* Warning: this can free us! */
-	void (*callback)(struct ctdb_context *, int, void *);
 	int fd[2];
-	void *private_data;
 	bool from_user;
 	enum ctdb_eventscript_call call;
 	const char *options;
@@ -570,6 +578,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
 	int status;
+	struct event_script_callback *callback;
 
 	if (state->child) {
 		DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
@@ -603,8 +612,13 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 
 	/* This is allowed to free us; talloc will prevent double free anyway,
 	 * but beware if you call this outside the destructor! */
-	if (state->callback) {
-		state->callback(state->ctdb, status, state->private_data);
+	callback = state->callback;
+
+	if (callback) {
+		/* Make sure destructor doesn't free itself! */
+		talloc_steal(NULL, callback);
+		callback->fn(state->ctdb, status, callback->private_data);
+		talloc_free(callback);
 	}
 
 	return 0;
@@ -653,11 +667,19 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 	}
 }
 
+static int remove_callback(struct event_script_callback *callback)
+{
+	/* Detach ourselves from the running script state */
+	callback->state->callback = NULL;
+	return 0;
+}
+
 /*
   run the event script in the background, calling the callback when 
   finished
  */
-static int ctdb_event_script_callback_v(struct ctdb_context *ctdb, 
+static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
+					const void *mem_ctx,
 					void (*callback)(struct ctdb_context *, int, void *),
 					void *private_data,
 					bool from_user,
@@ -669,9 +691,15 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state = talloc(ctdb->event_script_ctx, struct ctdb_event_script_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
+	/* The callback isn't done if the context is freed. */
+	state->callback = talloc(mem_ctx, struct event_script_callback);
+	CTDB_NO_MEMORY(ctdb, state->callback);
+	talloc_set_destructor(state->callback, remove_callback);
+	state->callback->state = state;
+	state->callback->fn = callback;
+	state->callback->private_data = private_data;
+
 	state->ctdb = ctdb;
-	state->callback = callback;
-	state->private_data = private_data;
 	state->from_user = from_user;
 	state->call = call;
 	state->options = talloc_vasprintf(state, fmt, ap);
@@ -767,7 +795,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 /*
   run the event script in the background, calling the callback when 
-  finished
+  finished.  If mem_ctx is freed, callback will never be called.
  */
 int ctdb_event_script_callback(struct ctdb_context *ctdb, 
 			       TALLOC_CTX *mem_ctx,
@@ -781,7 +809,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 	int ret;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb, callback, private_data, from_user, call, fmt, ap);
+	ret = ctdb_event_script_callback_v(ctdb, mem_ctx, callback, private_data, from_user, call, fmt, ap);
 	va_end(ap);
 
 	return ret;
@@ -815,7 +843,7 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 	struct callback_status status;
 
 	va_start(ap, fmt);
-	ret = ctdb_event_script_callback_v(ctdb,
+	ret = ctdb_event_script_callback_v(ctdb, ctdb,
 			event_script_callback, &status, false, call, fmt, ap);
 	if (ret != 0) {
 		return ret;
