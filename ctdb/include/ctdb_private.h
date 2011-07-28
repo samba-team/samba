@@ -120,6 +120,7 @@ struct ctdb_tunable {
 	uint32_t stat_history_interval;
 	uint32_t deferred_attach_timeout;
 	uint32_t vacuum_fast_path_count;
+	uint32_t lcp2_public_ip_assignment;
 };
 
 /*
