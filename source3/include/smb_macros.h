@@ -132,13 +132,11 @@
 /* Note that chain_size must be available as an extern int to this macro. */
 #define smb_offset(p,buf) (PTR_DIFF(p,buf+4))
 
-#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
-#define _smb_setlen(buf,len) do { buf[0] = 0; buf[1] = ((len)&0x10000)>>16; \
-        buf[2] = ((len)&0xFF00)>>8; buf[3] = (len)&0xFF; } while (0)
+#define smb_len(buf) (RIVAL(buf, 0) & 0x1FFFF)
+#define _smb_setlen(buf,len) RSIVAL(buf, 0, (len) & 0x1FFFF)
 
-#define smb_len_large(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
-#define _smb_setlen_large(buf,len) do { buf[0] = 0; buf[1] = ((len)&0xFF0000)>>16; \
-        buf[2] = ((len)&0xFF00)>>8; buf[3] = (len)&0xFF; } while (0)
+#define smb_len_large(buf) (RIVAL(buf, 0) & 0xFFFFFF)
+#define _smb_setlen_large(buf,len) RSIVAL(buf, 0, (len) & 0xFFFFFF)
 
 #define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == Required) : false)
 #define IS_CONN_ENCRYPTED(conn) ((conn) ? (conn)->encrypted_tid : false)
