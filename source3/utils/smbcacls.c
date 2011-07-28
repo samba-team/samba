@@ -1222,7 +1222,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 
 	setlinebuf(stdout);
 
-	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
+	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
 
 	auth_info = user_auth_info_init(frame);
