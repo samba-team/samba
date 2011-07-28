@@ -209,7 +209,9 @@ class cmd_user_password(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        # FIXME: How to ensure user is authenticated before prompting for new password?
+        # get old password now, to get the password prompts in the right order
+        old_password = creds.get_password()
+
         net = Net(creds, lp, server=credopts.ipaddress)
 
         password = newpassword
