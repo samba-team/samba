@@ -1300,7 +1300,7 @@ int net_conf(struct net_context *c, int argc, const char **argv)
 			net_conf_delincludes,
 			NET_TRANSPORT_LOCAL,
 			N_("Delete includes from a share definition."),
-			N_("net conf setincludes\n"
+			N_("net conf delincludes\n"
 			   "    Delete includes from a share definition.")
 		},
 		{NULL, NULL, 0, NULL, NULL}
