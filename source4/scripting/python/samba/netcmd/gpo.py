@@ -4,6 +4,7 @@
 #
 # Copyright Andrew Tridgell 2010
 # Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
+# Copyright Amitay Isaacs 2011 <amitay@gmail.com>
 #
 # based on C implementation by Guenther Deschner and Wilco Baan Hofman
 #
@@ -38,6 +39,8 @@ from samba.ndr import ndr_unpack
 import samba.security
 import samba.auth
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
+from samba.netcmd.common import netcmd_finddc
+
 
 def samdb_connect(ctx):
     '''make a ldap connection to the server'''
@@ -92,10 +95,72 @@ def encode_gplink(gplist):
     return ret
 
 
+def dc_url(lp, creds, url=None, dc=None):
+    '''If URL is not specified, return URL for writable DC.
+    If dc is provided, use that to construct ldap URL'''
+
+    if url is None:
+        if dc is None:
+            try:
+                dc = netcmd_finddc(lp, creds)
+            except Exception, e:
+                raise RunTimeError("Could not find a DC for domain", e)
+        url = 'ldap://' + dc
+    return url
+
+
+def get_gpo_dn(samdb, gpo):
+    '''Construct the DN for gpo'''
+
+    dn = samdb.get_default_basedn()
+    dn.add_child(ldb.Dn(samdb, "CN=Policies,DC=System"))
+    dn.add_child(ldb.Dn(samdb, "CN=%s" % gpo))
+    return dn
+
+
+def get_gpo_info(samdb, gpo=None, displayname=None, dn=None):
+    '''Get GPO information using gpo, displayname or dn'''
+
+    policies_dn = samdb.get_default_basedn()
+    policies_dn.add_child(ldb.Dn(samdb, "CN=Policies,CN=System"))
+
+    base_dn = policies_dn
+    search_expr = "(objectClass=groupPolicyContainer)"
+    search_scope = ldb.SCOPE_ONELEVEL
+
+    if gpo is not None:
+        search_expr = "(&(objectClass=groupPolicyContainer)(name=%s))" % gpo
+
+    if displayname is not None:
+        search_expr = "(&(objectClass=groupPolicyContainer)(displayname=%s))" % displayname
+
+    if dn is not None:
+        base_dn = dn
+        search_scope = ldb.SCOPE_BASE
+
+    try:
+        msg = samdb.search(base=base_dn, scope=search_scope,
+                            expression=search_expr,
+                            attrs=['nTSecurityDescriptor',
+                                    'versionNumber',
+                                    'flags',
+                                    'name',
+                                    'displayName',
+                                    'gPCFileSysPath'])
+    except Exception, e:
+        if gpo is not None:
+            mesg = "Cannot get information for GPO %s" % gpo
+        else:
+            mesg = "Cannot get information for GPOs"
+        raise CommandError(mesg, e)
+
+    return msg
+
+
 class cmd_listall(Command):
     """list all GPOs"""
 
-    synopsis = "%prog gpo listall"
+    synopsis = "%prog gpo listall [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -104,31 +169,19 @@ class cmd_listall(Command):
 
     def run(self, H=None, sambaopts=None, credopts=None, versionopts=None):
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
-        samdb_connect(self)
+        self.url = dc_url(self.lp, self.creds, H)
 
-        policies_dn = self.samdb.get_default_basedn()
-        policies_dn.add_child(ldb.Dn(self.samdb, "CN=Policies,CN=System"))
+        samdb_connect(self)
 
         gpo_flags = [
             ("GPO_FLAG_USER_DISABLE", dsdb.GPO_FLAG_USER_DISABLE ),
             ( "GPO_FLAG_MACHINE_DISABLE", dsdb.GPO_FLAG_MACHINE_DISABLE ) ]
 
-        try:
-            msg = self.samdb.search(base=policies_dn, scope=ldb.SCOPE_ONELEVEL,
-                                    expression="(objectClass=groupPolicyContainer)",
-                                    attrs=['nTSecurityDescriptor',
-                                            'versionNumber',
-                                            'flags',
-                                            'name',
-                                            'displayName',
-                                            'gPCFileSysPath'])
-        except Exception, e:
-            raise CommandError("Failed to list policies in %s" % policies_dn, e)
+        msg = get_gpo_info(self.samdb, None)
+
         for m in msg:
             print("GPO          : %s" % m['name'][0])
             print("display name : %s" % m['displayName'][0])
@@ -142,7 +195,7 @@ class cmd_listall(Command):
 class cmd_list(Command):
     """list GPOs for an account"""
 
-    synopsis = "%prog gpo list <username>"
+    synopsis = "%prog gpo list <username> [options]"
 
     takes_args = [ 'username' ]
 
@@ -153,10 +206,10 @@ class cmd_list(Command):
 
     def run(self, username, H=None, sambaopts=None, credopts=None, versionopts=None):
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
 
         samdb_connect(self)
 
@@ -202,9 +255,10 @@ class cmd_list(Command):
 
                     try:
                         gmsg = self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE,
-                                                 attrs=['flags', 'ntSecurityDescriptor'])
+                                                 attrs=['name', 'displayName', 'flags',
+                                                        'ntSecurityDescriptor'])
                     except Exception:
-                        print "Failed to fetch gpo object %s" % g['dn']
+                        print("Failed to fetch gpo object %s" % g['dn'])
                         continue
 
                     secdesc_ndr = gmsg[0]['ntSecurityDescriptor'][0]
@@ -216,7 +270,7 @@ class cmd_list(Command):
                                                     dcerpc.security.SEC_ADS_LIST |
                                                     dcerpc.security.SEC_ADS_READ_PROP)
                     except RuntimeError:
-                        print "Failed access check on %s" % msg.dn
+                        print("Failed access check on %s" % msg.dn)
                         continue
 
                     # check the flags on the GPO
@@ -225,7 +279,7 @@ class cmd_list(Command):
                         continue
                     if not is_computer and (flags & dsdb.GPO_FLAG_USER_DISABLE):
                         continue
-                    gpos.append(g)
+                    gpos.append((gmsg[0]['displayName'][0], gmsg[0]['name'][0]))
 
             # check if this blocks inheritance
             gpoptions = int(attr_default(msg, 'gPOptions', 0))
@@ -241,15 +295,15 @@ class cmd_list(Command):
         else:
             msg_str = 'user'
 
-        print "GPOs for %s %s" % (msg_str, username)
+        print("GPOs for %s %s" % (msg_str, username))
         for g in gpos:
-            print "\t%s" % g['dn']
+            print("    %s %s" % (g[0], g[1]))
 
 
 class cmd_show(Command):
     """Show information for a GPO"""
 
-    synopsis = "%prog gpo show <dn>"
+    synopsis = "%prog gpo show <gpo> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -257,18 +311,18 @@ class cmd_show(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'dn' ]
+    takes_args = [ 'gpo' ]
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
         ]
 
-    def run(self, dn, H=None, sambaopts=None, credopts=None, versionopts=None):
+    def run(self, gpo, H=None, sambaopts=None, credopts=None, versionopts=None):
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
 
         samdb_connect(self)
 
@@ -277,16 +331,9 @@ class cmd_show(Command):
             ( "GPO_FLAG_MACHINE_DISABLE", dsdb.GPO_FLAG_MACHINE_DISABLE ) ]
 
         try:
-            msg = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                                    expression="(objectClass=groupPolicyContainer)",
-                                    attrs=['nTSecurityDescriptor',
-                                         'versionNumber',
-                                         'flags',
-                                         'name',
-                                         'displayName',
-                                         'gPCFileSysPath'])[0]
+            msg = get_gpo_info(self.samdb, gpo)[0]
         except Exception, e:
-            raise CommandError("Could not find GPC with DN %s (%s)" % dn, e)
+            raise CommandError("GPO %s does not exist" % gpo, e)
 
         secdesc_ndr = msg['ntSecurityDescriptor'][0]
         secdesc = ndr_unpack(dcerpc.security.descriptor, secdesc_ndr)
@@ -304,7 +351,7 @@ class cmd_show(Command):
 class cmd_getlink(Command):
     """List GPO Links for a container"""
 
-    synopsis = "%prog gpo getlink <container_dn>"
+    synopsis = "%prog gpo getlink <container_dn> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -321,10 +368,10 @@ class cmd_getlink(Command):
     def run(self, container_dn, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
 
         samdb_connect(self)
 
@@ -341,20 +388,22 @@ class cmd_getlink(Command):
             raise CommandError("Could not find Container DN %s (%s)" % container_dn, e)
 
         if 'gPLink' in msg:
-            print "GPO(s) linked to DN=%s" % container_dn
+            print("GPO(s) linked to DN %s" % container_dn)
             gplist = parse_gplink(msg['gPLink'][0])
             for g in gplist:
-                print("GPO DN       : %s" % g['dn'])
-                print("Options      : %s" % flags_string(gplink_options, g['options']))
+                msg = get_gpo_info(self.samdb, dn=g['dn'])
+                print("    GPO     : %s" % msg[0]['name'][0])
+                print("    Name    : %s" % msg[0]['displayName'][0])
+                print("    Options : %s" % flags_string(gplink_options, g['options']))
                 print("")
         else:
-            print "No GPO(s) linked to DN=%s" % container_dn
+            print("No GPO(s) linked to DN=%s" % container_dn)
 
 
 class cmd_setlink(Command):
     """Add or Update a GPO link to a container"""
 
-    synopsis = "%prog gpo setlink <container_dn> <gpo_dn>"
+    synopsis = "%prog gpo setlink <container_dn> <gpo> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -362,7 +411,7 @@ class cmd_setlink(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'container_dn', 'gpo_dn' ]
+    takes_args = [ 'container_dn', 'gpo' ]
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -372,13 +421,13 @@ class cmd_setlink(Command):
             help="Enforce policy")
         ]
 
-    def run(self, container_dn, gpo_dn, H=None, disabled=False, enforced=False,
+    def run(self, container_dn, gpo, H=None, disabled=False, enforced=False,
                 sambaopts=None, credopts=None, versionopts=None):
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
 
         samdb_connect(self)
 
@@ -390,11 +439,10 @@ class cmd_setlink(Command):
 
         # Check if valid GPO DN
         try:
-            msg = self.samdb.search(base=gpo_dn, scope=ldb.SCOPE_BASE,
-                                    expression="(objectClass=groupPolicyContainer)",
-                                    attrs=['dn'])[0]
+            msg = get_gpo_info(self.samdb, gpo=gpo)[0]
         except Exception, e:
-                raise CommandError("DN (%s) is not a GPO" % gpo_dn)
+            raise CommandError("GPO %s does not exist" % gpo_dn, e)
+        gpo_dn = get_gpo_dn(self.samdb, gpo)
 
         # Check if valid Container DN
         try:
@@ -402,7 +450,7 @@ class cmd_setlink(Command):
                                     expression="(objectClass=*)",
                                     attrs=['gPlink'])[0]
         except Exception, e:
-            raise CommandError("Could not find container DN %s (%s)" % dn, e)
+            raise CommandError("Could not find container DN %s" % container_dn, e)
 
         # Update existing GPlinks or Add new one
         existing_gplink = False
@@ -434,16 +482,16 @@ class cmd_setlink(Command):
         try:
             self.samdb.modify(m)
         except Exception, e:
-            raise CommandError("Error adding GPO Link (%s)" % e)
+            raise CommandError("Error adding GPO Link", e)
 
-        print "Added/Updated GPO link"
+        print("Added/Updated GPO link")
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
 
 class cmd_dellink(Command):
     """Delete GPO link from a container"""
 
-    synopsis = "%prog gpo dellink <container_dn> <gpo_dn>"
+    synopsis = "%prog gpo dellink <container_dn> <gpo> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -451,7 +499,7 @@ class cmd_dellink(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'container_dn', 'gpo_dn' ]
+    takes_args = [ 'container_dn', 'gpo' ]
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -460,20 +508,19 @@ class cmd_dellink(Command):
     def run(self, container_dn, gpo_dn, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
 
         samdb_connect(self)
 
-        # Check if valid GPO DN
+        # Check if valid GPO
         try:
-            msg = self.samdb.search(base=gpo_dn, scope=ldb.SCOPE_BASE,
-                                    expression="(objectClass=groupPolicyContainer)",
-                                    attrs=['dn'])[0]
+            msg = get_gpo_info(self.sambdb, gpo=gpo)[0]
         except Exception, e:
-                raise CommandError("DN (%s) is not a GPO" % gpo_dn)
+                raise CommandError("GPO %s does not exist" % gpo, e)
+        gpo_dn = get_gpo_dn(self.samdb, gpo)
 
         # Check if valid Container DN and get existing GPlinks
         try:
@@ -481,7 +528,7 @@ class cmd_dellink(Command):
                                     expression="(objectClass=*)",
                                     attrs=['gPlink'])[0]
         except Exception, e:
-            raise CommandError("Could not find container DN %s (%s)" % dn, e)
+            raise CommandError("Could not find container DN %s" % dn, e)
 
         if 'gPLink' in msg:
             gplist = parse_gplink(msg['gPLink'][0])
@@ -491,7 +538,6 @@ class cmd_dellink(Command):
                     break
         else:
             raise CommandError("Specified GPO is not linked to this container");
-
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, container_dn)
@@ -507,14 +553,14 @@ class cmd_dellink(Command):
         except Exception, e:
             raise CommandError("Error Removing GPO Link (%s)" % e)
 
-        print "Deleted GPO link."
+        print("Deleted GPO link.")
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
 
 class cmd_getinheritance(Command):
     """Get inheritance flag for a container"""
 
-    synopsis = "%prog gpo getinheritance <container_dn>"
+    synopsis = "%prog gpo getinheritance <container_dn> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -543,22 +589,22 @@ class cmd_getinheritance(Command):
                                     expression="(objectClass=*)",
                                     attrs=['gPOptions'])[0]
         except Exception, e:
-            raise CommandError("Could not find Container DN %s (%s)" % (container_dn, e))
+            raise CommandError("Could not find Container DN %s" % container_dn, e)
 
         inheritance = 0
         if 'gPOptions' in msg:
             inheritance = int(msg['gPOptions'][0]);
 
         if inheritance == dsdb.GPO_BLOCK_INHERITANCE:
-            print "Container has GPO_BLOCK_INHERITANCE"
+            print("Container has GPO_BLOCK_INHERITANCE")
         else:
-            print "Container has GPO_INHERIT"
+            print("Container has GPO_INHERIT")
 
 
 class cmd_setinheritance(Command):
     """Set inheritance flag on a container"""
 
-    synopsis = "%prog gpo setinheritance <container_dn> <block|inherit>"
+    synopsis = "%prog gpo setinheritance <container_dn> <block|inherit> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -594,7 +640,7 @@ class cmd_setinheritance(Command):
                                     expression="(objectClass=*)",
                                     attrs=['gPOptions'])[0]
         except Exception, e:
-            raise CommandError("Could not find Container DN %s (%s)" % (container_dn, e))
+            raise CommandError("Could not find Container DN %s" % container_dn, e)
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, container_dn)
@@ -607,7 +653,7 @@ class cmd_setinheritance(Command):
         try:
             self.samdb.modify(m)
         except Exception, e:
-            raise CommandError("Error setting inheritance state %s (%s)" % (inherit_state, e))
+            raise CommandError("Error setting inheritance state %s" % inherit_state, e)
 
 
 class cmd_fetch(Command):
