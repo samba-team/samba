@@ -40,6 +40,8 @@ class Command(object):
 
     # synopsis must be defined in all subclasses in order to provide the command usage
     synopsis = ""
+    # long_description is a string describing the command in details
+    long_description = ""
     takes_args = []
     takes_options = []
     takes_optiongroups = {
@@ -47,6 +49,8 @@ class Command(object):
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
         }
+    # This epilog will print at the end when the user invokes the command w/ -h or --help
+    epilog = ""
     outf = sys.stdout
 
     def usage(self, *args):
@@ -88,7 +92,8 @@ class Command(object):
         sys.exit(1)
 
     def _create_parser(self):
-        parser = optparse.OptionParser(self.synopsis)
+        parser = optparse.OptionParser(usage=self.synopsis, epilog=self.epilog, 
+                                       description=self.long_description)
         parser.add_options(self.takes_options)
         optiongroups = {}
         for name, optiongroup in self.takes_optiongroups.iteritems():
