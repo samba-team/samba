@@ -39,6 +39,13 @@ enum rpc_service_mode_e {
 enum rpc_service_mode_e rpc_epmapper_mode(void);
 
 /**
+ * @brief Get the mode in which epmapper is started.
+ *
+ * @return The mode.
+ */
+enum rpc_service_mode_e rpc_spoolss_mode(void);
+
+/**
  * @brief Register an endpoint at the endpoint mapper.
  *
  * This just sets up a register and monitor loop to try to regsiter the
