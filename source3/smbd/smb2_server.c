@@ -452,9 +452,30 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 
 	SMB_ASSERT(sconn->smb2.max_credits >= sconn->smb2.credits_granted);
 
-	/* Remember what we gave out. */
-	credits_granted = MIN(credits_requested, (sconn->smb2.max_credits -
-		sconn->smb2.credits_granted));
+	if (credits_requested) {
+		uint16_t modified_credits_requested;
+		uint32_t multiplier;
+
+		/*
+		 * Split up max_credits into 1/16ths, and then scale
+		 * the requested credits by how many 16ths have been
+		 * currently granted. Less than 1/16th == grant all
+		 * requested (100%), scale down as more have been
+		 * granted. Never ask for less than 1 as the client
+		 * asked for at least 1. JRA.
+		 */
+
+		multiplier = 16 - (((sconn->smb2.credits_granted * 16) / sconn->smb2.max_credits) % 16);
+
+		modified_credits_requested = (multiplier * credits_requested) / 16;
+		if (modified_credits_requested == 0) {
+			modified_credits_requested = 1;
+		}
+
+		/* Remember what we gave out. */
+		credits_granted = MIN(modified_credits_requested,
+					(sconn->smb2.max_credits - sconn->smb2.credits_granted));
+	}
 
 	if (credits_granted == 0 && sconn->smb2.credits_granted == 0) {
 		/* First negprot packet, or ensure the client credits can
