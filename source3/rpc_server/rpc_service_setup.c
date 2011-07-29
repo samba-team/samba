@@ -60,7 +60,7 @@ enum rpc_service_mode_e rpc_epmapper_mode(void)
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 					   "rpc_server",
 					   "epmapper",
-					   "disabled");
+					   "daemon");
 
 	if (strcasecmp_m(rpcsrv_type, "external") == 0) {
 		state = RPC_SERVICE_MODE_EXTERNAL;
