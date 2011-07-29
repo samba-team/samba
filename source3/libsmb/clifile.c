@@ -2253,6 +2253,7 @@ static void cli_open_done(struct tevent_req *subreq)
 	if (NT_STATUS_IS_OK(status)) {
 		state->fnum = SVAL(vwv+2, 0);
 		tevent_req_done(req);
+		return;
 	}
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
