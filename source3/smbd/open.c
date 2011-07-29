@@ -1338,7 +1338,7 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
  Open a file with a share mode - old openX method - map into NTCreate.
 ****************************************************************************/
 
-bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
+bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 int deny_mode, int open_func,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
@@ -1354,7 +1354,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 
 	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "
 		  "open_func = 0x%x\n",
-		  smb_fname_str_dbg(smb_fname), (unsigned int)deny_mode,
+		  smb_base_fname, (unsigned int)deny_mode,
 		  (unsigned int)open_func ));
 
 	/* Create the NT compatible access_mask. */
@@ -1429,7 +1429,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 
 		case DENY_DOS:
 			private_flags |= NTCREATEX_OPTIONS_PRIVATE_DENY_DOS;
-	                if (is_executable(smb_fname->base_name)) {
+	                if (is_executable(smb_base_fname)) {
 				share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
 			} else {
 				if (GET_OPENX_MODE(deny_mode) == DOS_OPEN_RDONLY) {
@@ -1454,7 +1454,7 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 	DEBUG(10,("map_open_params_to_ntcreate: file %s, access_mask = 0x%x, "
 		  "share_mode = 0x%x, create_disposition = 0x%x, "
 		  "create_options = 0x%x private_flags = 0x%x\n",
-		  smb_fname_str_dbg(smb_fname),
+		  smb_base_fname,
 		  (unsigned int)access_mask,
 		  (unsigned int)share_mode,
 		  (unsigned int)create_disposition,
