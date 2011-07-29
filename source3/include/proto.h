@@ -706,6 +706,13 @@ bool any_nt_status_not_ok(NTSTATUS err1, NTSTATUS err2, NTSTATUS *result);
 int timeval_to_msec(struct timeval t);
 char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname);
 bool is_executable(const char *fname);
+bool map_open_params_to_ntcreate(const char *smb_base_fname,
+				 int deny_mode, int open_func,
+				 uint32 *paccess_mask,
+				 uint32 *pshare_mode,
+				 uint32 *pcreate_disposition,
+				 uint32 *pcreate_options,
+				 uint32_t *pprivate_flags);
 
 /* The following definitions come from lib/util_cmdline.c  */
 
