@@ -608,13 +608,6 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 			 uint32 access_mask,
 			 uint32 share_access,
 			 uint32 create_options);
-bool map_open_params_to_ntcreate(const char *smb_base_fname,
-				 int deny_mode, int open_func,
-				 uint32 *paccess_mask,
-				 uint32 *pshare_mode,
-				 uint32 *pcreate_disposition,
-				 uint32 *pcreate_options,
-				 uint32_t *pprivate_flags);
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid);
 NTSTATUS open_file_fchmod(connection_struct *conn,
