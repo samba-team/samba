@@ -113,7 +113,7 @@ static PyObject * py_smb_loadfile(py_talloc_Object *self, PyObject *args)
 	NTSTATUS status;
 	struct smb_private_data *spdata;
 
-	if (!PyArg_ParseTuple(args, "s", &filename)) {
+	if (!PyArg_ParseTuple(args, "s:loadfile", &filename)) {
 		return NULL;
 	}
 
@@ -139,7 +139,7 @@ static PyObject * py_smb_savefile(py_talloc_Object *self, PyObject *args)
 	NTSTATUS status;
 	struct smb_private_data *spdata;
 
-	if (!PyArg_ParseTuple(args, "ss", &filename, &data)) {
+	if (!PyArg_ParseTuple(args, "ss:savefile", &filename, &data)) {
 		return NULL;
 	}
 
@@ -194,7 +194,7 @@ static PyObject *py_smb_list(py_talloc_Object *self, PyObject *args, PyObject *k
 	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY
 				| FILE_ATTRIBUTE_ARCHIVE;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "z|sH",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "z|sH:list",
 					discard_const_p(char *, kwnames),
 					&base_dir, &user_mask, &attribute)) {
 		return NULL;
@@ -223,6 +223,72 @@ static PyObject *py_smb_list(py_talloc_Object *self, PyObject *args, PyObject *k
 
 
 /*
+ * Create a directory
+ */
+static PyObject *py_smb_mkdir(py_talloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *dirname;
+	struct smb_private_data *spdata;
+
+	if (!PyArg_ParseTuple(args, "s:mkdir", &dirname)) {
+		return NULL;
+	}
+
+	spdata = self->ptr;	
+	status = smbcli_mkdir(spdata->tree, dirname);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+
+/*
+ * Remove a directory
+ */
+static PyObject *py_smb_rmdir(py_talloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *dirname;
+	struct smb_private_data *spdata;
+
+	if (!PyArg_ParseTuple(args, "s:rmdir", &dirname)) {
+		return NULL;
+	}
+
+	spdata = self->ptr;	
+	status = smbcli_rmdir(spdata->tree, dirname);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+
+/*
+ * Check existence of a path
+ */
+static PyObject *py_smb_chkpath(py_talloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	const char *path;
+	struct smb_private_data *spdata;
+
+	if (!PyArg_ParseTuple(args, "s:chkpath", &path)) {
+		return NULL;
+	}
+
+	spdata = self->ptr;	
+	status = smbcli_chkpath(spdata->tree, path);
+
+	if (NT_STATUS_IS_OK(status)) {
+		Py_RETURN_TRUE;
+	}
+
+	Py_RETURN_FALSE;
+}
+
+
+/*
  * Read ACL on a given file/directory as a security descriptor object
  */
 static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
@@ -232,7 +298,7 @@ static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject 
 	struct smb_private_data *spdata;
 	const char *filename;
 
-	if (!PyArg_ParseTuple(args, "s", &filename)) {
+	if (!PyArg_ParseTuple(args, "s:get_acl", &filename)) {
 		return NULL;
 	}
 
@@ -264,7 +330,7 @@ static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject 
 	PyObject *py_sd;
 	struct security_descriptor *sd;
 
-	if (!PyArg_ParseTuple(args, "sO", &filename, &py_sd)) {
+	if (!PyArg_ParseTuple(args, "sO:set_acl", &filename, &py_sd)) {
 		return NULL;
 	}
 
@@ -293,15 +359,34 @@ static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject 
 
 static PyMethodDef py_smb_methods[] = {
 	{ "loadfile", (PyCFunction)py_smb_loadfile, METH_VARARGS,
-		"Read contents of a file" },
+		"loadfile(path) -> file contents as a string\n\n \
+		Read contents of a file." },
 	{ "savefile", (PyCFunction)py_smb_savefile, METH_VARARGS,
-		"Write contents to a file" },
+		"savefile(path, str) -> None\n\n \
+		Write string str to file." },
 	{ "list", (PyCFunction)py_smb_list, METH_VARARGS|METH_KEYWORDS,
-		"List contents of a directory" },
+		"list(path) -> directory contents as a dictionary\n\n \
+		List contents of a directory. The keys are, \n \
+		\tname: Long name of the directory item\n \
+		\tshort_name: Short name of the directory item\n \
+		\tsize: File size in bytes\n \
+		\tattrib: Attributes\n \
+		\tmtime: Modification time\n" },
+	{ "mkdir", (PyCFunction)py_smb_mkdir, METH_VARARGS,
+		"mkdir(path) -> None\n\n \
+		Create a directory." },
+	{ "rmdir", (PyCFunction)py_smb_rmdir, METH_VARARGS,
+		"rmdir(path) -> None\n\n \
+		Delete a directory." },
+	{ "chkpath", (PyCFunction)py_smb_chkpath, METH_VARARGS,
+		"chkpath(path) -> True or False\n\n \
+		Return true if path exists, false otherwise." },
 	{ "get_acl", (PyCFunction)py_smb_getacl, METH_VARARGS,
-		"Get security descriptor for a file" },
+		"get_acl(path) -> security_descriptor object\n\n \
+		Get security descriptor for file." },
 	{ "set_acl", (PyCFunction)py_smb_setacl, METH_VARARGS,
-		"Set security descriptor for a file" },
+		"set_acl(path, security_descriptor) -> None\n\n \
+		Set security descriptor for file." },
 	{ NULL },
 };
 
@@ -372,7 +457,8 @@ static PyTypeObject PySMB = {
 	.tp_new = py_smb_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_smb_methods,
-	.tp_doc = "Create a SMB connection to <hostname> using <service>",
+	.tp_doc = "SMB(hostname, service[, lp[, creds]]) -> SMB connection object\n",
+
 };
 
 void initsmb(void)
