@@ -6628,7 +6628,7 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 			 uint32 access_mask,
 			 uint32 share_access,
 			 uint32 create_options);
-bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
+bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 int deny_mode, int open_func,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
