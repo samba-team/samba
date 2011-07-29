@@ -24,6 +24,20 @@
 
 struct ndr_interface_table;
 
+enum rpc_service_mode_e {
+	RPC_SERVICE_MODE_DISABLED = 0,
+	RPC_SERVICE_MODE_EMBEDDED,
+	RPC_SERVICE_MODE_EXTERNAL,
+	RPC_SERVICE_MODE_DAEMON
+};
+
+/**
+ * @brief Get the mode in which epmapper is started.
+ *
+ * @return The mode.
+ */
+enum rpc_service_mode_e rpc_epmapper_mode(void);
+
 /**
  * @brief Register an endpoint at the endpoint mapper.
  *

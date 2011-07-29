@@ -52,6 +52,27 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
 
+enum rpc_service_mode_e rpc_epmapper_mode(void)
+{
+	const char *rpcsrv_type;
+	enum rpc_service_mode_e state;
+
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server",
+					   "epmapper",
+					   "disabled");
+
+	if (strcasecmp_m(rpcsrv_type, "external") == 0) {
+		state = RPC_SERVICE_MODE_EXTERNAL;
+	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+		state = RPC_SERVICE_MODE_DAEMON;
+	} else {
+		state = RPC_SERVICE_MODE_DISABLED;
+	}
+
+	return state;
+}
+
 static bool rpc_setup_epmapper(struct tevent_context *ev_ctx,
 			       struct messaging_context *msg_ctx)
 {
