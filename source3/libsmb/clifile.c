@@ -2149,12 +2149,19 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 ****************************************************************************/
 
 struct cli_open_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *fname;
 	uint16_t vwv[15];
 	uint16_t fnum;
+	unsigned openfn;
+	unsigned dos_deny;
+	uint8_t additional_flags;
 	struct iovec bytes;
 };
 
 static void cli_open_done(struct tevent_req *subreq);
+static void cli_open_ntcreate_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 				   struct event_context *ev,
@@ -2164,64 +2171,61 @@ struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_open_state *state;
-	unsigned openfn;
-	unsigned accessmode;
-	uint8_t additional_flags;
 	uint8_t *bytes;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_open_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fname = fname;
 
-	openfn = 0;
 	if (flags & O_CREAT) {
-		openfn |= (1<<4);
+		state->openfn |= (1<<4);
 	}
 	if (!(flags & O_EXCL)) {
 		if (flags & O_TRUNC)
-			openfn |= (1<<1);
+			state->openfn |= (1<<1);
 		else
-			openfn |= (1<<0);
+			state->openfn |= (1<<0);
 	}
 
-	accessmode = (share_mode<<4);
+	state->dos_deny = (share_mode<<4);
 
 	if ((flags & O_ACCMODE) == O_RDWR) {
-		accessmode |= 2;
+		state->dos_deny |= 2;
 	} else if ((flags & O_ACCMODE) == O_WRONLY) {
-		accessmode |= 1;
+		state->dos_deny |= 1;
 	}
 
 #if defined(O_SYNC)
 	if ((flags & O_SYNC) == O_SYNC) {
-		accessmode |= (1<<14);
+		state->dos_deny |= (1<<14);
 	}
 #endif /* O_SYNC */
 
 	if (share_mode == DENY_FCB) {
-		accessmode = 0xFF;
+		state->dos_deny = 0xFF;
 	}
 
 	SCVAL(state->vwv + 0, 0, 0xFF);
 	SCVAL(state->vwv + 0, 1, 0);
 	SSVAL(state->vwv + 1, 0, 0);
 	SSVAL(state->vwv + 2, 0, 0);  /* no additional info */
-	SSVAL(state->vwv + 3, 0, accessmode);
+	SSVAL(state->vwv + 3, 0, state->dos_deny);
 	SSVAL(state->vwv + 4, 0, aSYSTEM | aHIDDEN);
 	SSVAL(state->vwv + 5, 0, 0);
 	SIVAL(state->vwv + 6, 0, 0);
-	SSVAL(state->vwv + 8, 0, openfn);
+	SSVAL(state->vwv + 8, 0, state->openfn);
 	SIVAL(state->vwv + 9, 0, 0);
 	SIVAL(state->vwv + 11, 0, 0);
 	SIVAL(state->vwv + 13, 0, 0);
 
-	additional_flags = 0;
-
 	if (cli->use_oplocks) {
 		/* if using oplocks then ask for a batch oplock via
                    core and extended methods */
-		additional_flags =
+		state->additional_flags =
 			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK;
 		SSVAL(state->vwv+2, 0, SVAL(state->vwv+2, 0) | 6);
 	}
@@ -2237,7 +2241,8 @@ struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 	state->bytes.iov_base = (void *)bytes;
 	state->bytes.iov_len = talloc_get_size(bytes);
 
-	subreq = cli_smb_req_create(state, ev, cli, SMBopenX, additional_flags,
+	subreq = cli_smb_req_create(state, ev, cli, SMBopenX,
+				    state->additional_flags,
 				    15, state->vwv, 1, &state->bytes);
 	if (subreq == NULL) {
 		TALLOC_FREE(req);
@@ -2278,14 +2283,60 @@ static void cli_open_done(struct tevent_req *subreq)
 	uint8_t wct;
 	uint16_t *vwv;
 	NTSTATUS status;
+	uint32_t access_mask, share_mode, create_disposition, create_options;
 
 	status = cli_smb_recv(subreq, 3, &wct, &vwv, NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
+	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_IS_OK(status)) {
+		state->fnum = SVAL(vwv+2, 0);
+		tevent_req_done(req);
+		return;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
-	state->fnum = SVAL(vwv+2, 0);
+
+	/*
+	 * For the new shiny OS/X Lion SMB server, try a ntcreate
+	 * fallback.
+	 */
+
+	if (!map_open_params_to_ntcreate(state->fname, state->dos_deny,
+					state->openfn, &access_mask,
+					&share_mode, &create_disposition,
+					&create_options)) {
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return;
+	}
+
+	subreq = cli_ntcreate_send(state, state->ev, state->cli,
+				state->fname, 0, access_mask,
+				0, share_mode, create_disposition,
+				create_options, 0);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_open_ntcreate_done, req);
+}
+
+static void cli_open_ntcreate_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_open_state *state = tevent_req_data(
+		req, struct cli_open_state);
+	NTSTATUS status;
+
+	status = cli_ntcreate_recv(subreq, &state->fnum);
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
 	tevent_req_done(req);
 }
 
