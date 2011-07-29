@@ -88,7 +88,7 @@ static void popt_samba_callback(poptContext con,
 		fault_setup();
 
 		/* and logging */
-		setup_logging(pname, DEBUG_STDOUT);
+		setup_logging(pname, DEBUG_DEFAULT_STDOUT);
 		talloc_set_log_fn(popt_s4_talloc_log_fn);
 		talloc_set_abort_fn(smb_panic);
 
