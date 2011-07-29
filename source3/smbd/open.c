@@ -697,23 +697,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Return True if the filename is one of the special executable types.
-********************************************************************/
-
-bool is_executable(const char *fname)
-{
-	if ((fname = strrchr_m(fname,'.'))) {
-		if (strequal(fname,".com") ||
-		    strequal(fname,".dll") ||
-		    strequal(fname,".exe") ||
-		    strequal(fname,".sym")) {
-			return True;
-		}
-	}
-	return False;
-}
-
 /****************************************************************************
  Check if we can open a file with a share mode.
  Returns True if conflict, False if not.
