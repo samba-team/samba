@@ -161,13 +161,6 @@ class SuperCommand(Command):
             return 0
         raise CommandError("No such subcommand '%s'" % subcommand)
 
-    def usage(self, myname, subcommand=None, *args):
-        if subcommand is None or not subcommand in self.subcommands:
-            print "Usage: samba-tool %s (%s) [options]" % (myname,
-                " | ".join(self.subcommands.keys()))
-        else:
-            return self.subcommands[subcommand].usage(*args)
-
 
 
 class CommandError(Exception):
