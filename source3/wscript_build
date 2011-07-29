@@ -699,7 +699,7 @@ bld.SAMBA3_LIBRARY('msrpc3',
                    source='${LIBMSRPC_SRC}',
                    deps='''ndr ndr-standard
                     RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
-                    LIBTSOCKET KRB5_WRAP rpccommon
+                    LIBTSOCKET KRB5_WRAP dcerpc-binding
                     libsmb''',
                    vars=locals(),
                    private_library=True)
@@ -812,7 +812,7 @@ bld.SAMBA3_LIBRARY('smbd_shim',
 
 bld.SAMBA3_SUBSYSTEM('LIBSMB_ERR',
                     source='',
-                    deps='errors3 pdb ldap lber MSRPC_PARSE LIBCLI_AUTH rpccommon',
+                    deps='errors3 pdb ldap lber MSRPC_PARSE LIBCLI_AUTH dcerpc-binding',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
