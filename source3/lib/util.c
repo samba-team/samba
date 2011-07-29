@@ -3075,3 +3075,20 @@ bool tevent_req_poll_ntstatus(struct tevent_req *req,
 	}
 	return ret;
 }
+
+/*******************************************************************
+ Return True if the filename is one of the special executable types.
+********************************************************************/
+
+bool is_executable(const char *fname)
+{
+	if ((fname = strrchr_m(fname,'.'))) {
+		if (strequal(fname,".com") ||
+		    strequal(fname,".dll") ||
+		    strequal(fname,".exe") ||
+		    strequal(fname,".sym")) {
+			return True;
+		}
+	}
+	return False;
+}
