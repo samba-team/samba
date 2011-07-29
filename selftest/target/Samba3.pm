@@ -924,6 +924,7 @@ sub provision($$$$$$$)
 	print CONF "
 [tmp]
 	path = $shrdir
+        comment = smb username is [%U]
 [tmpguest]
 	path = $shrdir
         guest ok = yes
