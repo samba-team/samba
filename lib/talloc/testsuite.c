@@ -1320,6 +1320,48 @@ static bool test_rusty(void)
 	return true;
 }
 
+static bool test_free_children(void)
+{
+	void *root;
+	const char *p1, *p2, *name, *name2;
+
+	talloc_enable_null_tracking();
+	root = talloc_new(NULL);
+	p1 = talloc_strdup(root, "foo1");
+	p2 = talloc_strdup(p1, "foo2");
+
+	talloc_set_name(p1, "%s", "testname");
+	talloc_free_children(p1);
+	/* check its still a valid talloc ptr */
+	talloc_get_size(talloc_get_name(p1));
+	if (strcmp(talloc_get_name(p1), "testname") != 0) {
+		return false;
+	}
+
+	talloc_set_name(p1, "%s", "testname");
+	name = talloc_get_name(p1);
+	talloc_free_children(p1);
+	/* check its still a valid talloc ptr */
+	talloc_get_size(talloc_get_name(p1));
+	torture_assert("name", name == talloc_get_name(p1), "name ptr changed");
+	torture_assert("namecheck", strcmp(talloc_get_name(p1), "testname") == 0,
+		       "wrong name");
+	CHECK_BLOCKS("name1", p1, 2);
+
+	/* note that this does not free the old child name */
+	talloc_set_name_const(p1, "testname2");
+	name2 = talloc_get_name(p1);
+	/* but this does */
+	talloc_free_children(p1);
+	torture_assert("namecheck", strcmp(talloc_get_name(p1), "testname2") == 0,
+		       "wrong name");
+	CHECK_BLOCKS("name1", p1, 1);
+
+	talloc_report_full(root, stdout);
+	talloc_free(root);
+	return true;
+}
+
 
 static void test_reset(void)
 {
@@ -1379,6 +1421,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_free_ref_null_context();
 	test_reset();
 	ret &= test_rusty();
+	test_reset();
+	ret &= test_free_children();
 
 	if (ret) {
 		test_reset();
