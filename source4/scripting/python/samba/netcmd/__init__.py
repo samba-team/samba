@@ -148,7 +148,12 @@ class SuperCommand(Command):
     def _run(self, myname, subcommand=None, *args):
         if subcommand in self.subcommands:
             return self.subcommands[subcommand]._run(subcommand, *args)
-        print "Usage: samba-tool %s <subcommand> [options]" % myname
+        
+        if (myname == "samba-tool"):
+            usage = "samba-tool <subcommand>"
+        else:
+            usage = "samba-tool %s <subcommand>" % myname
+        print "Usage: %s [options]" %usage        
         print "Available subcommands:"
         subcmds = self.subcommands.keys()
         subcmds.sort()
@@ -157,7 +162,7 @@ class SuperCommand(Command):
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:
-            print "For more help on a specific subcommand, please type: samba-tool %s <subcommand> (-h|--help)" % myname
+            print "For more help on a specific subcommand, please type: %s (-h|--help)" % usage
             return 0
         raise CommandError("No such subcommand '%s'" % subcommand)
 

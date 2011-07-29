@@ -23,41 +23,15 @@ import sys
 sys.path.insert(0, "bin/python")
 
 from samba import netcmd
-from samba.netcmd import Command, CommandError
+from samba.netcmd import SuperCommand
 
 
-class MainCommand(Command):
-    """Main class for samba tool commands"""
 
-    commands = {}
+class cmd_sambatool(SuperCommand):
+    """samba-tool SuperCommand"""
+    
+    subcommands = netcmd.commands
 
-    def _run(self, myname, command=None, *args):
-        if command in self.commands:
-            return self.commands[command]._run(command, *args)
-        print "Usage: samba-tool <command> [options]"
-        print "Available commands:"
-        cmds = self.commands.keys()
-        cmds.sort()
-        for cmd in cmds:
-            print "    %-16s - %s" % (cmd, self.commands[cmd].description)
-        if command in [None]:
-            raise CommandError("You must specify a command")
-        if command in ['help', '-h', '--help']:
-            print "For more help on a specific command, please type: samba-tool <command> (-h|--help)"
-            return 0
-        raise CommandError("No such command '%s'" % command)
-
-    def usage(self, myname, command=None, *args):
-        if command is None or not command in self.commands:
-            print "Usage: samba-tool %s (%s) [options]" % (myname,
-                    " | ".join(self.commands.keys()))
-        else:
-            return self.commands[command].usage(*args)
-
-
-class cmd_sambatool(MainCommand):
-    """Samba Tool Commands"""
-    commands = netcmd.commands
 
 
 if __name__ == '__main__':
