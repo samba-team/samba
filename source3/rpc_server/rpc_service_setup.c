@@ -656,30 +656,30 @@ static bool rpc_setup_spoolss(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_spoolss;
 	struct rpc_srv_callbacks spoolss_cb;
-	const char *rpcsrv_type;
 	struct dcerpc_binding_vector *v;
+	enum rpc_service_mode_e spoolss_mode = rpc_spoolss_mode();
 	NTSTATUS status;
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "spoolss",
-					   "embedded");
+	if (_lp_disable_spoolss() ||
+	    spoolss_mode == RPC_SERVICE_MODE_DISABLED) {
+		return true;
+	}
 
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
+	if (spoolss_mode == RPC_SERVICE_MODE_EMBEDDED) {
 		spoolss_cb.init         = spoolss_init_cb;
 		spoolss_cb.shutdown     = spoolss_shutdown_cb;
 		spoolss_cb.private_data = msg_ctx;
 
 		status = rpc_spoolss_init(&spoolss_cb);
-	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0 ||
-		   strcasecmp_m(rpcsrv_type, "external") == 0) {
+	} else if (spoolss_mode == RPC_SERVICE_MODE_EXTERNAL ||
+		   spoolss_mode == RPC_SERVICE_MODE_DAEMON) {
 		status = rpc_spoolss_init(NULL);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	if (strcasecmp_m(rpcsrv_type, "embedded")) {
+	if (spoolss_mode == RPC_SERVICE_MODE_EMBEDDED) {
 		enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 
 		if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
