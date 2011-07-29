@@ -1413,8 +1413,8 @@ if not bld.env.toplevel_build:
                         source='lib/ldb_compat.c',
                         deps='samba-util')
     bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
-    bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
-    bld.SAMBA3_SUBSYSTEM('cli-ldap', '', deps='UTIL_TEVENT')
+    bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='tevent-util')
+    bld.SAMBA3_SUBSYSTEM('cli-ldap', '', deps='tevent-util')
     bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX', '')
 
 ########################## INCLUDES #################################

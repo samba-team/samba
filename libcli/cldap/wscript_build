@@ -4,7 +4,7 @@
 bld.SAMBA_LIBRARY('cli_cldap',
                   source='cldap.c',
                   public_deps='cli-ldap',
-                  deps='LIBTSOCKET samba-util UTIL_TEVENT ldb LIBCLI_NETLOGON',
+                  deps='LIBTSOCKET samba-util tevent-util ldb LIBCLI_NETLOGON',
                   private_library=True
                   )
 

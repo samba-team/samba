@@ -31,4 +31,4 @@ bld.SAMBA_LIBRARY('samba-sockets',
                   source=[],
                   private_library=True,
                   grouping_library=True,
-                  deps='LIBTSOCKET samba_socket UTIL_TEVENT')
+                  deps='LIBTSOCKET samba_socket tevent-util')

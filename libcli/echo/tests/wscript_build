@@ -4,5 +4,5 @@ bld.SAMBA_MODULE('TORTURE_LIBCLI_ECHO',
         source='echo.c',
         subsystem='smbtorture',
         init_function='torture_libcli_echo_init',
-        deps='LIBTSOCKET UTIL_TEVENT LIBCLI_ECHO',
+        deps='LIBTSOCKET tevent-util LIBCLI_ECHO',
         internal_module=True);

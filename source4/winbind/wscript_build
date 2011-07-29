@@ -26,5 +26,5 @@ bld.SAMBA_SUBSYSTEM('IDMAP',
 
 bld.SAMBA_BINARY('wbinfo',
 	source='../../nsswitch/wbinfo.c',
-	deps='samba-util LIBCLI_AUTH popt POPT_SAMBA winbind-client wbclient tevent UTIL_TEVENT LIBASYNC_REQ security ndr NDR_SECURITY'
+	deps='samba-util LIBCLI_AUTH popt POPT_SAMBA winbind-client wbclient tevent tevent-util LIBASYNC_REQ security ndr NDR_SECURITY'
 	)

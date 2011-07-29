@@ -14,7 +14,7 @@ bld.SAMBA_SUBSYSTEM('lmhosts',
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_LIBRARY('cli-nbt',
                       source='nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c',
-                      public_deps='ndr NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket samba-util lmhosts',
+                      public_deps='ndr NDR_NBT tevent tevent-util NDR_SECURITY samba_socket samba-util lmhosts',
                       private_library=True
                       )
 

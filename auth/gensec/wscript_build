@@ -2,6 +2,6 @@
 
 bld.SAMBA_SUBSYSTEM('gensec_runtime',
                     source='gensec.c',
-                    deps='UTIL_TEVENT tevent samba-util LIBTSOCKET',
+                    deps='tevent-util tevent samba-util LIBTSOCKET',
                     public_headers='gensec.h',
                     autoproto='gensec_toplevel_proto.h')

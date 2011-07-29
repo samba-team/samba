@@ -48,12 +48,13 @@ bld.SAMBA_LIBRARY('UTIL_TDB',
                   private_library=True
 	)
 
-bld.SAMBA_SUBSYSTEM('UTIL_TEVENT',
+bld.SAMBA_LIBRARY('tevent-util',
 	source='tevent_unix.c tevent_ntstatus.c tevent_werror.c',
 	local_include=False,
 	public_deps='tevent',
 	public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
 	header_path=[ ('*', 'util') ],
+		  vnum='0.0.1'
 	)
 
 
