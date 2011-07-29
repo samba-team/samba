@@ -2722,3 +2722,20 @@ char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname)
 
 	return ptr;
 }
+
+/*******************************************************************
+ Return True if the filename is one of the special executable types.
+********************************************************************/
+
+bool is_executable(const char *fname)
+{
+	if ((fname = strrchr_m(fname,'.'))) {
+		if (strequal(fname,".com") ||
+		    strequal(fname,".dll") ||
+		    strequal(fname,".exe") ||
+		    strequal(fname,".sym")) {
+			return True;
+		}
+	}
+	return False;
+}
