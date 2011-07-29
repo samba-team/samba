@@ -1242,6 +1242,7 @@ const char *strip_hostname(const char *s);
 bool tevent_req_poll_ntstatus(struct tevent_req *req,
 			      struct tevent_context *ev,
 			      NTSTATUS *status);
+bool is_executable(const char *fname);
 
 /* The following definitions come from lib/util_file.c  */
 
@@ -6608,7 +6609,6 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 				    const char *inherit_from_dir,
 				    const char *fname,
 				    SMB_STRUCT_STAT *psbuf);
-bool is_executable(const char *fname);
 bool is_stat_open(uint32 access_mask);
 bool request_timed_out(struct timeval request_time,
 		       struct timeval timeout);
