@@ -116,6 +116,14 @@ static int rpc_conf_getincludes_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static int rpc_conf_setincludes_usage(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("%s\nnet rpc conf setincludes <sharename> [<filename>]*\n",
+			_("Usage:"));
+	return -1;
+}
+
 static int rpc_conf_delincludes_usage(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -1421,6 +1429,137 @@ error:
 
 }
 
+static NTSTATUS rpc_conf_setincludes_internal(struct net_context *c,
+					      const struct dom_sid *domain_sid,
+					      const char *domain_name,
+					      struct cli_state *cli,
+					      struct rpc_pipe_client *pipe_hnd,
+					      TALLOC_CTX *mem_ctx,
+					      int argc,
+					      const char **argv )
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd, share_hnd;
+
+	struct winreg_String key, keyclass;
+	enum winreg_CreateAction action = 0;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+	ZERO_STRUCT(share_hnd);
+
+	ZERO_STRUCT(key);
+	ZERO_STRUCT(keyclass);
+
+	if (argc < 1 || c->display_usage) {
+		rpc_conf_setincludes_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+	key.name = argv[0];
+	keyclass.name = "";
+
+	status = dcerpc_winreg_CreateKey(b, frame, &key_hnd, key, keyclass,
+			0, REG_KEY_READ, NULL, &share_hnd,
+			&action, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], nt_errstr(status));
+		goto error;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], win_errstr(werr));
+		goto error;
+	}
+
+	switch (action) {
+		case REG_ACTION_NONE:
+			/* Is there any other way to treat this? */
+			werr = WERR_CREATE_FAILED;
+			d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], win_errstr(werr));
+			goto error;
+		case REG_CREATED_NEW_KEY:
+			DEBUG(5, ("net rpc conf setincludes:"
+					"createkey created %s\n", argv[0]));
+			break;
+		case REG_OPENED_EXISTING_KEY:
+			DEBUG(5, ("net rpc conf setincludes:"
+					"createkey opened existing %s\n", argv[0]));
+
+			/* delete posibly existing value */
+			status = rpc_conf_del_value(frame,
+						    b,
+						    &key_hnd,
+						    argv[0],
+						    "includes",
+						    &werr);
+
+			if (!(NT_STATUS_IS_OK(status))) {
+				goto error;
+			}
+
+			if (!(W_ERROR_IS_OK(werr))) {
+				goto error;
+			}
+			break;
+	}
+
+	/* set the 'includes' values */
+	status = dcerpc_winreg_set_multi_sz(frame, b, &share_hnd,
+					    "includes", argv + 1, &werr);
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, "ERROR: Could not set includes\n %s\n",
+				nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, "ERROR: Could not set includes\n %s\n",
+				win_errstr(werr));
+		goto error;
+	}
+
+error:
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &share_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static NTSTATUS rpc_conf_delincludes_internal(struct net_context *c,
 					      const struct dom_sid *domain_sid,
 					      const char *domain_name,
@@ -1553,8 +1692,8 @@ static int rpc_conf_getincludes(struct net_context *c, int argc,
 static int rpc_conf_setincludes(struct net_context *c, int argc,
 				const char **argv)
 {
-	d_printf("Function not yet implemented\n");
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_setincludes_internal, argc, argv );
 }
 
 static int rpc_conf_delincludes(struct net_context *c, int argc,
