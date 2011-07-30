@@ -152,6 +152,23 @@ conf.define('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5', 1)
 conf.define('HAVE_ENCTYPE_ARCFOUR_HMAC', 1)
 conf.define('HAVE_KRB5_PDU_NONE_DECL', 1)
 
+heimdal_includedirs = []
+heimdal_libdirs = []
+krb5_config = conf.find_program("krb5-config.heimdal", var="HEIMDAL_KRB5_CONFIG")
+if not krb5_config:
+    krb5_config = conf.find_program("krb5-config", var="HEIMDAL_KRB5_CONFIG")
+if krb5_config:
+    # Not ideal, but seems like the best way to get at these paths:
+    f = open(krb5_config, 'r')
+    try:
+        for l in f:
+            if l.startswith("libdir="):
+                heimdal_libdirs.append(l.strip()[len("libdir="):])
+            elif l.startswith("includedir="):
+                heimdal_includedirs.append(l.strip()[len("includedir="):])
+    finally:
+        f.close()
+
 if conf.CHECK_BUNDLED_SYSTEM('com_err', checkfunctions='com_right_r com_err', headers='com_err.h'):
     conf.define('USING_SYSTEM_COM_ERR', 1)
 
@@ -160,8 +177,8 @@ def check_system_heimdal_lib(name, functions='', headers='', onlyif=None):
     # used.
     if conf.LIB_MAY_BE_BUNDLED(name):
         return False
-    setattr(conf.env, "CPPPATH_%s" % name.upper(), ["/usr/include/heimdal"])
-    setattr(conf.env, "LIBPATH_%s" % name.upper(), ["/usr/lib/heimdal"])
+    setattr(conf.env, "CPPPATH_%s" % name.upper(), heimdal_includedirs)
+    setattr(conf.env, "LIBPATH_%s" % name.upper(), heimdal_libdirs)
     conf.CHECK_BUNDLED_SYSTEM(name, checkfunctions=functions, headers=headers,
         onlyif=onlyif)
     conf.define('USING_SYSTEM_%s' % name.upper(), 1)
