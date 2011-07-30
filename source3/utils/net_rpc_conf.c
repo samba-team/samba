@@ -1331,6 +1331,12 @@ static int rpc_conf_getparm(struct net_context *c, int argc,
 		rpc_conf_getparm_internal, argc, argv );
 }
 
+static int rpc_conf_setparm(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("Function not yet implemented\n");
+	return 0;
+}
 static int rpc_conf_delparm(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -1409,6 +1415,14 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("Retrieve the value of a parameter."),
 			N_("net rpc conf getparm\n"
 			   "    Retrieve the value of a parameter.")
+		},
+		{
+			"setparm",
+			rpc_conf_setparm,
+			NET_TRANSPORT_RPC,
+			N_("Store a parameter."),
+			N_("net rpc conf setparm\n"
+			   "    Store a parameter.")
 		},
 		{
 			"delparm",
