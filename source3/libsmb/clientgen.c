@@ -446,6 +446,11 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 	return ret;
 }
 
+uint32_t cli_state_capabilities(struct cli_state *cli)
+{
+	return cli->capabilities;
+}
+
 struct cli_echo_state {
 	uint16_t vwv[1];
 	DATA_BLOB data;
