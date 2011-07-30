@@ -1348,7 +1348,7 @@ def rebuild_sd(samdb, names):
 
 def hasATProvision(samdb):
         entry = samdb.search(expression="dn=@PROVISION", base = "",
-                                scope=SCOPE_SUBTREE,
+                                scope=SCOPE_BASE,
                                 attrs=["dn"])
 
         if entry != None and len(entry) == 1:
