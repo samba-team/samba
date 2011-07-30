@@ -1550,12 +1550,20 @@ static int rpc_conf_getincludes(struct net_context *c, int argc,
 		rpc_conf_getincludes_internal, argc, argv );
 }
 
+static int rpc_conf_setincludes(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("Function not yet implemented\n");
+	return 0;
+}
+
 static int rpc_conf_delincludes(struct net_context *c, int argc,
 				const char **argv)
 {
 	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
 		rpc_conf_delincludes_internal, argc, argv );
 }
+
 /* function calls */
 int net_rpc_conf(struct net_context *c, int argc,
 		 const char **argv)
@@ -1638,6 +1646,14 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("Show the includes of a share definition."),
 			N_("net rpc conf getincludes\n"
 			   "    Show the includes of a share definition.")
+		},
+		{
+			"setincludes",
+			rpc_conf_setincludes,
+			NET_TRANSPORT_RPC,
+			N_("Set includes for a share."),
+			N_("net rpc conf setincludes\n"
+			   "    Set includes for a share.")
 		},
 		{
 			"delincludes",
