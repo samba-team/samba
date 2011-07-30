@@ -839,13 +839,16 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			dsdb_flags = DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
 			search_dn = ldb_get_root_basedn(sam_ctx);
 		}
+		if (format_desired == DRSUAPI_DS_NAME_FORMAT_GUID){
+			 dsdb_flags = dsdb_flags| DSDB_SEARCH_SHOW_DELETED;
+		}
 
 		/* search with the 'phantom root' flag */
 		ret = dsdb_search(sam_ctx, mem_ctx, &res,
 				  search_dn,
 				  LDB_SCOPE_SUBTREE,
 				  result_attrs,
-				  DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				  dsdb_flags,
 				  "%s", result_filter);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2, ("DsCrackNameOneFilter phantom root search failed: %s",
