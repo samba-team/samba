@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+# Copyright Matthieu Patou <mat@matws.net> 2011
+# script to call a DRSUAPI crackname
+# this is useful for plugfest testing and replication debug
+
+import sys
+from optparse import OptionParser
+
+sys.path.insert(0, "bin/python")
+
+import samba.getopt as options
+from samba.dcerpc import drsuapi, misc
+
+def do_DsBind(drs):
+    '''make a DsBind call, returning the binding handle'''
+    bind_info = drsuapi.DsBindInfoCtr()
+    bind_info.length = 28
+    bind_info.info = drsuapi.DsBindInfo28()
+    bind_info.info.supported_extensions	= 0
+    (info, handle) = drs.DsBind(misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID), bind_info)
+    return handle
+
+
+########### main code ###########
+if __name__ == "__main__":
+    parser = OptionParser("crackname server [options]")
+    sambaopts = options.SambaOptions(parser)
+    parser.add_option_group(sambaopts)
+    credopts = options.CredentialsOptionsDouble(parser)
+    parser.add_option_group(credopts)
+
+    parser.add_option("", "--name", type='str',
+                      default='{ED9F5546-9729-4B04-9385-3FCFE2B17BA1}', help="name to crack")
+    parser.add_option("", "--outformat", type='int',
+                      default=drsuapi.DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
+                      help='format desired')
+    parser.add_option("", "--informat", type='int',
+                      default=drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID,
+                      help='format offered')
+
+    (opts, args) = parser.parse_args()
+
+    lp = sambaopts.get_loadparm()
+    creds = credopts.get_credentials(lp)
+
+    if len(args) != 1:
+        parser.error("You must supply a server")
+
+    if creds.is_anonymous():
+        parser.error("You must supply credentials")
+
+    server = args[0]
+
+    binding_str = "ncacn_ip_tcp:%s[seal,print]" % server
+
+    drs = drsuapi.drsuapi(binding_str, lp, creds)
+    drs_handle = do_DsBind(drs)
+    print "DRS Handle: %s" % drs_handle
+
+    req = drsuapi.DsNameRequest1()
+    names = drsuapi.DsNameString()
+    names.str = opts.name
+
+    req.codepage = 1252
+    req.language = 1033
+    req.format_flags = 0
+    req.format_offered = opts.informat
+    req.format_desired = opts.outformat
+    req.count = 1
+    req.names = [names]
+
+    (result, ctr) = drs.DsCrackNames(drs_handle, 1, req)
+    print ctr.array[0].status
+    print ctr.array[0].result_name
