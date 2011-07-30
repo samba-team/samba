@@ -675,6 +675,9 @@ static WERROR fill_neighbor_from_repsTo(TALLOC_CTX *mem_ctx,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
+	neigh->last_success = reps_to->last_success;
+	neigh->result_last_attempt = reps_to->result_last_attempt;
+	neigh->consecutive_sync_failures = reps_to->consecutive_sync_failures;
 	return WERR_OK;
 }
 
