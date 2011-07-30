@@ -91,6 +91,15 @@ static int rpc_conf_getparm_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static int rpc_conf_setparm_usage(struct net_context *c, int argc,
+				  const char **argv)
+{
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net rpc conf setparm <section> <param> <value>\n"));
+	return -1;
+}
+
 static int rpc_conf_delparm_usage(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -115,6 +124,26 @@ static int rpc_conf_delincludes_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static bool rpc_conf_reg_valname_forbidden(const char * valname)
+{
+	const char *forbidden_valnames[] = {
+		"lock directory",
+		"lock dir",
+		"config backend",
+		"include",
+		"includes", /* this has a special meaning internally */
+		NULL
+	};
+	const char **forbidden = NULL;
+
+	for (forbidden = forbidden_valnames; *forbidden != NULL; forbidden++) {
+		if (strwicmp(valname, *forbidden) == 0) {
+			return true;
+		}
+	}
+	return false;
+
+}
 static NTSTATUS rpc_conf_del_value(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -1066,6 +1095,176 @@ error:
 
 }
 
+static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
+					  const struct dom_sid *domain_sid,
+					  const char *domain_name,
+					  struct cli_state *cli,
+					  struct rpc_pipe_client *pipe_hnd,
+					  TALLOC_CTX *mem_ctx,
+					  int argc,
+					  const char **argv )
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd, share_hnd;
+
+	struct winreg_String key, keyclass;
+	enum winreg_CreateAction action = 0;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+	ZERO_STRUCT(share_hnd);
+
+	ZERO_STRUCT(key);
+	ZERO_STRUCT(keyclass);
+
+	if (argc != 3 || c->display_usage) {
+		rpc_conf_setparm_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+	key.name = argv[0];
+	keyclass.name = "";
+
+	status = dcerpc_winreg_CreateKey(b, frame, &key_hnd, key, keyclass,
+			0, REG_KEY_READ, NULL, &share_hnd,
+			&action, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], nt_errstr(status));
+		goto error;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], win_errstr(werr));
+		goto error;
+	}
+
+	switch (action) {
+		case REG_ACTION_NONE:
+			werr = WERR_CREATE_FAILED;
+			d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], win_errstr(werr));
+			goto error;
+		case REG_CREATED_NEW_KEY:
+			DEBUG(5, ("net rpc conf setparm:"
+					"createkey created %s\n", argv[0]));
+			break;
+		case REG_OPENED_EXISTING_KEY:
+			DEBUG(5, ("net rpc conf setparm:"
+					"createkey opened existing %s\n", argv[0]));
+
+			/* delete posibly existing value */
+			status = rpc_conf_del_value(frame,
+						    b,
+						    &key_hnd,
+						    argv[0],
+						    argv[1],
+						    &werr);
+
+			if (!(NT_STATUS_IS_OK(status))) {
+				goto error;
+			}
+
+			if (!(W_ERROR_IS_OK(werr))) {
+				goto error;
+			}
+
+			break;
+	}
+
+
+	const char *canon_valname;
+	const char *canon_valstr;
+	/* check if parameter is valid for writing */
+	if (!lp_canonicalize_parameter_with_value(argv[1], argv[2],
+						  &canon_valname,
+						  &canon_valstr))
+	{
+		if (canon_valname == NULL) {
+			d_fprintf(stderr, "invalid parameter '%s' given\n",
+				  argv[1]);
+		} else {
+			d_fprintf(stderr, "invalid value '%s' given for "
+				  "parameter '%s'\n", argv[1], argv[2]);
+		}
+		werr = WERR_INVALID_PARAM;
+		goto error;
+	}
+
+	if (rpc_conf_reg_valname_forbidden(canon_valname)) {
+		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
+			  canon_valname);
+		werr = WERR_INVALID_PARAM;
+		goto error;
+	}
+
+	if (!strequal(argv[0], "global") &&
+	    lp_parameter_is_global(argv[1]))
+	{
+		d_fprintf(stderr, "Global parameter '%s' not allowed in "
+			  "service definition ('%s').\n", canon_valname,
+			  argv[0]);
+		werr = WERR_INVALID_PARAM;
+		goto error;
+	}
+
+	/* set the parameter */
+	status = dcerpc_winreg_set_sz(frame, b, &share_hnd,
+					argv[1], argv[2], &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				argv[1], argv[2], nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				argv[1], argv[2], win_errstr(werr));
+		goto error;
+	}
+
+error:
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &share_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static NTSTATUS rpc_conf_delparm_internal(struct net_context *c,
 					  const struct dom_sid *domain_sid,
 					  const char *domain_name,
@@ -1334,8 +1533,8 @@ static int rpc_conf_getparm(struct net_context *c, int argc,
 static int rpc_conf_setparm(struct net_context *c, int argc,
 				const char **argv)
 {
-	d_printf("Function not yet implemented\n");
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_setparm_internal, argc, argv );
 }
 static int rpc_conf_delparm(struct net_context *c, int argc,
 				const char **argv)
