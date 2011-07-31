@@ -29,7 +29,7 @@ bld.SAMBA_MODULE('ldb_samba_dsdb',
 	subsystem='ldb',
 	init_function='ldb_samba_dsdb_module_init',
 	module_init_name='ldb_init_module',
-	deps='samdb talloc events ndr DSDB_MODULE_HELPERS',
+	deps='samdb talloc ndr DSDB_MODULE_HELPERS',
 	internal_module=False,
 	)
 
@@ -40,7 +40,7 @@ bld.SAMBA_MODULE('ldb_samba_secrets',
 	init_function='ldb_samba_secrets_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events ndr'
+	deps='samdb talloc ndr'
 	)
 
 
@@ -50,7 +50,7 @@ bld.SAMBA_MODULE('ldb_objectguid',
 	init_function='ldb_objectguid_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events ndr DSDB_MODULE_HELPERS'
+	deps='samdb talloc ndr DSDB_MODULE_HELPERS'
 	)
 
 
@@ -60,7 +60,7 @@ bld.SAMBA_MODULE('ldb_repl_meta_data',
 	init_function='ldb_repl_meta_data_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events ndr NDR_DRSUAPI NDR_DRSBLOBS ndr DSDB_MODULE_HELPERS security'
+	deps='samdb talloc ndr NDR_DRSUAPI NDR_DRSBLOBS ndr DSDB_MODULE_HELPERS security'
 	)
 
 
@@ -70,7 +70,7 @@ bld.SAMBA_MODULE('ldb_schema_load',
 	init_function='ldb_schema_load_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events DSDB_MODULE_HELPERS'
+	deps='samdb talloc DSDB_MODULE_HELPERS'
 	)
 
 
@@ -80,7 +80,7 @@ bld.SAMBA_MODULE('ldb_schema_data',
 	init_function='ldb_schema_data_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events DSDB_MODULE_HELPERS'
+	deps='samdb talloc DSDB_MODULE_HELPERS'
 	)
 
 
@@ -90,7 +90,7 @@ bld.SAMBA_MODULE('ldb_naming_fsmo',
 	init_function='ldb_naming_fsmo_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events DSDB_MODULE_HELPERS'
+	deps='samdb talloc DSDB_MODULE_HELPERS'
 	)
 
 
@@ -100,7 +100,7 @@ bld.SAMBA_MODULE('ldb_pdc_fsmo',
 	init_function='ldb_pdc_fsmo_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events DSDB_MODULE_HELPERS'
+	deps='samdb talloc DSDB_MODULE_HELPERS'
 	)
 
 
@@ -110,7 +110,7 @@ bld.SAMBA_MODULE('ldb_samldb',
 	init_function='ldb_samldb_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_RIDALLOC'
+	deps='talloc samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_RIDALLOC'
 	)
 
 
@@ -120,7 +120,7 @@ bld.SAMBA_MODULE('ldb_samba3sam',
 	init_function='ldb_samba3sam_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events ldb smbpasswdparser security NDR_SECURITY'
+	deps='talloc ldb smbpasswdparser security NDR_SECURITY'
 	)
 
 
@@ -130,7 +130,7 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	init_function='ldb_samba3sid_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events ldb security NDR_SECURITY ldbsamba DSDB_MODULE_HELPERS'
+	deps='talloc ldb security NDR_SECURITY ldbsamba DSDB_MODULE_HELPERS'
 	)
 
 
@@ -140,7 +140,7 @@ bld.SAMBA_MODULE('ldb_simple_ldap_map',
 	init_function='ldb_simple_ldap_map_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events ldb ndr ldbsamba'
+	deps='talloc ldb ndr ldbsamba'
 	)
 
 
@@ -150,7 +150,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	init_function='ldb_rootdse_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samdb MESSAGING security DSDB_MODULE_HELPERS'
+	deps='talloc samdb MESSAGING security DSDB_MODULE_HELPERS'
 	)
 
 
@@ -160,7 +160,7 @@ bld.SAMBA_MODULE('ldb_password_hash',
 	init_function='ldb_password_hash_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samdb LIBCLI_AUTH NDR_DRSBLOBS authkrb5 krb5 DSDB_MODULE_HELPERS'
+	deps='talloc samdb LIBCLI_AUTH NDR_DRSBLOBS authkrb5 krb5 DSDB_MODULE_HELPERS'
 	)
 
 
@@ -170,7 +170,7 @@ bld.SAMBA_MODULE('ldb_local_password',
 	init_function='ldb_local_password_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events ndr samdb'
+	deps='talloc ndr samdb'
 	)
 
 bld.SAMBA_MODULE('ldb_extended_dn_in',
@@ -179,7 +179,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_in',
 	init_function='ldb_extended_dn_in_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='ldb talloc events samba-util'
+	deps='ldb talloc samba-util'
 	)
 
 
@@ -188,7 +188,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_out',
 	init_function='ldb_extended_dn_out_module_init',
 	module_init_name='ldb_init_module',
 	subsystem='ldb',
-	deps='talloc events ndr samba-util samdb',
+	deps='talloc ndr samba-util samdb',
 	internal_module=False,
 	)
 
@@ -199,7 +199,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_store',
 	init_function='ldb_extended_dn_store_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util samdb DSDB_MODULE_HELPERS'
+	deps='talloc samba-util samdb DSDB_MODULE_HELPERS'
 	)
 
 
@@ -209,7 +209,7 @@ bld.SAMBA_MODULE('ldb_show_deleted',
 	init_function='ldb_show_deleted_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util DSDB_MODULE_HELPERS'
+	deps='talloc samba-util DSDB_MODULE_HELPERS'
 	)
 
 
@@ -220,7 +220,7 @@ bld.SAMBA_MODULE('ldb_partition',
 	init_function='ldb_partition_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samdb DSDB_MODULE_HELPERS'
+	deps='talloc samdb DSDB_MODULE_HELPERS'
 	)
 
 
@@ -230,7 +230,7 @@ bld.SAMBA_MODULE('ldb_new_partition',
 	init_function='ldb_new_partition_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samdb DSDB_MODULE_HELPERS'
+	deps='talloc samdb DSDB_MODULE_HELPERS'
 	)
 
 
@@ -240,7 +240,7 @@ bld.SAMBA_MODULE('ldb_update_keytab',
 	init_function='ldb_update_keytab_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events credentials ldb com_err KERBEROS_UTIL DSDB_MODULE_HELPERS'
+	deps='talloc credentials ldb com_err KERBEROS_UTIL DSDB_MODULE_HELPERS'
 	)
 
 
@@ -250,7 +250,7 @@ bld.SAMBA_MODULE('ldb_objectclass',
 	init_function='ldb_objectclass_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events security NDR_SECURITY samdb DSDB_MODULE_HELPERS samba-util DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc security NDR_SECURITY samdb DSDB_MODULE_HELPERS samba-util DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -270,7 +270,7 @@ bld.SAMBA_MODULE('ldb_subtree_rename',
 	init_function='ldb_subtree_rename_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util ldb samdb-common'
+	deps='talloc samba-util ldb samdb-common'
 	)
 
 
@@ -280,7 +280,7 @@ bld.SAMBA_MODULE('ldb_subtree_delete',
 	init_function='ldb_subtree_delete_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util DSDB_MODULE_HELPERS'
+	deps='talloc samba-util DSDB_MODULE_HELPERS'
 	)
 
 
@@ -290,7 +290,7 @@ bld.SAMBA_MODULE('ldb_linked_attributes',
 	init_function='ldb_linked_attributes_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samdb DSDB_MODULE_HELPERS'
+	deps='talloc samdb DSDB_MODULE_HELPERS'
 	)
 
 
@@ -300,7 +300,7 @@ bld.SAMBA_MODULE('ldb_ranged_results',
 	init_function='ldb_ranged_results_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util ldb'
+	deps='talloc samba-util ldb'
 	)
 
 
@@ -310,7 +310,7 @@ bld.SAMBA_MODULE('ldb_anr',
 	init_function='ldb_anr_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util samdb'
+	deps='talloc samba-util samdb'
 	)
 
 
@@ -320,7 +320,7 @@ bld.SAMBA_MODULE('ldb_instancetype',
 	init_function='ldb_instancetype_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samba-util samdb DSDB_MODULE_HELPERS'
+	deps='talloc samba-util samdb DSDB_MODULE_HELPERS'
 	)
 
 
@@ -330,7 +330,7 @@ bld.SAMBA_MODULE('ldb_operational',
 	init_function='ldb_operational_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc tevent samba-util samdb-common DSDB_MODULE_HELPERS samdb'
+	deps='talloc samba-util samdb-common DSDB_MODULE_HELPERS samdb'
 	)
 
 
@@ -340,7 +340,7 @@ bld.SAMBA_MODULE('ldb_descriptor',
 	init_function='ldb_descriptor_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events security NDR_SECURITY samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc security NDR_SECURITY samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -350,7 +350,7 @@ bld.SAMBA_MODULE('ldb_resolve_oids',
 	init_function='ldb_resolve_oids_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events ndr'
+	deps='samdb talloc ndr'
 	)
 
 
@@ -360,7 +360,7 @@ bld.SAMBA_MODULE('ldb_acl',
 	init_function='ldb_acl_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events security samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc security samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -379,7 +379,7 @@ bld.SAMBA_MODULE('ldb_aclread',
 	init_function='ldb_aclread_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events security samdb DSDB_MODULE_HELPERS',
+	deps='talloc security samdb DSDB_MODULE_HELPERS',
 	)
 
 bld.SAMBA_MODULE('ldb_simple_dn',
@@ -397,5 +397,5 @@ bld.SAMBA_MODULE('ldb_dirsync',
 	init_function='ldb_dirsync_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events security samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc security samdb DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
