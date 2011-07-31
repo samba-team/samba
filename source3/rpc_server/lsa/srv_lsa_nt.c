@@ -47,7 +47,7 @@
 #include "lib/privileges.h"
 #include "rpc_server/srv_access_check.h"
 #include "../librpc/gen_ndr/ndr_wkssvc.h"
-#include "../libcli/auth/proto.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
