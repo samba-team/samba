@@ -609,22 +609,30 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid_dc)
     if not os.path.isdir(dir):
         create_gpo_struct(dir)
+
+    def acl_error(e):
+        if os.geteuid() == 0:
+            message(ERROR, "Unable to set ACLs on policies related objects: %s" % e)
+        else:
+            message(ERROR, "Unable to set ACLs on policies related objects. "
+                    "ACLs must be set as root if file system ACLs "
+                    "(rather than posix:eadb) are used.")
+
     # We always reinforce acls on GPO folder because they have to be in sync
     # with the one in DS
     try:
         set_gpos_acl(paths.sysvol, names.dnsdomain, names.domainsid,
             names.domaindn, samdb, lp)
     except TypeError, e:
-        message(ERROR, "Unable to set ACLs on policies related objects,"
-                       " if not using posix:eadb, you must be root to do it")
+        acl_error(e)
 
     if resetacls:
        try:
             setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.wheel_gid,
                         names.domainsid, names.dnsdomain, names.domaindn, lp)
        except TypeError, e:
-            message(ERROR, "Unable to set ACLs on sysvol share, if not using"
-                           "posix:eadb, you must be root to do it")
+           acl_error(e)
+
 
 def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
     """For a given hash associating dn and a number, this function will
