@@ -31,7 +31,6 @@
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
-#include "../lib/crypto/md4.h"
 #include "rpc_client/init_lsa.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "../libcli/security/security.h"
