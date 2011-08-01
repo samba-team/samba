@@ -227,6 +227,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 	size_t pw_len;
 
 	if (!NT_STATUS_IS_OK(gensec_session_info(gensec_security,
+						 mem_ctx,
 						 &session_info))) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx,
 						KRB5_KPASSWD_HARDERROR,

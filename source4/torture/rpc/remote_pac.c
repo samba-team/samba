@@ -129,7 +129,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	/* Extract the PAC using Samba's code */
 
-	status = gensec_session_info(gensec_server_context, &session_info);
+	status = gensec_session_info(gensec_server_context, gensec_server_context, &session_info);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
 	torture_assert(tctx, session_info->torture != NULL, "gensec_session_info failed to fill in torture sub struct");
 	torture_assert(tctx, session_info->torture->pac_srv_sig != NULL, "pac_srv_sig not present");
@@ -468,7 +468,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	/* Extract the PAC using Samba's code */
 
-	status = gensec_session_info(gensec_server_context, &kinit_session_info);
+	status = gensec_session_info(gensec_server_context, gensec_server_context, &kinit_session_info);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
 
 
@@ -530,7 +530,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	/* Extract the PAC using Samba's code */
 
-	status = gensec_session_info(gensec_server_context, &s2u4self_session_info);
+	status = gensec_session_info(gensec_server_context, gensec_server_context, &s2u4self_session_info);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
 
 	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx,

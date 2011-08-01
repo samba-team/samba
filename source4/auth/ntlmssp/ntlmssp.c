@@ -181,6 +181,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
  */
 
 NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
+				    TALLOC_CTX *mem_ctx,
 				    DATA_BLOB *session_key)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
@@ -195,7 +196,10 @@ NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
 	if (!ntlmssp_state->session_key.data) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
-	*session_key = ntlmssp_state->session_key;
+	*session_key = data_blob_talloc(mem_ctx, ntlmssp_state->session_key.data, ntlmssp_state->session_key.length);
+	if (!session_key->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }

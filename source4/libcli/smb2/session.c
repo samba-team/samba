@@ -233,8 +233,6 @@ static void smb2_session_setup_spnego_handler(struct smb2_request *subreq)
 		tevent_req_data(req,
 		struct smb2_session_setup_spnego_state);
 	struct smb2_session *session = subreq->session;
-	NTSTATUS session_key_err;
-	DATA_BLOB session_key;
 	NTSTATUS peer_status;
 	NTSTATUS status;
 
@@ -267,10 +265,7 @@ static void smb2_session_setup_spnego_handler(struct smb2_request *subreq)
 		return;
 	}
 
-	session_key_err = gensec_session_key(session->gensec, &session_key);
-	if (NT_STATUS_IS_OK(session_key_err)) {
-		session->session_key = session_key;
-	}
+	gensec_session_key(session->gensec, session, &session->session_key);
 
 	if (session->transport->signing_required) {
 		if (session->session_key.length == 0) {

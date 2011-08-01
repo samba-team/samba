@@ -132,8 +132,9 @@ struct gensec_security_ops {
 				   size_t *len_processed);
 	NTSTATUS (*packet_full_request)(struct gensec_security *gensec_security,
 					DATA_BLOB blob, size_t *size);
-	NTSTATUS (*session_key)(struct gensec_security *gensec_security, DATA_BLOB *session_key);
-	NTSTATUS (*session_info)(struct gensec_security *gensec_security,
+	NTSTATUS (*session_key)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx,
+				DATA_BLOB *session_key);
+	NTSTATUS (*session_info)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx,
 				 struct auth_session_info **session_info);
 	void (*want_feature)(struct gensec_security *gensec_security,
 				    uint32_t feature);
@@ -233,6 +234,7 @@ const char *gensec_get_target_service(struct gensec_security *gensec_security);
 NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname);
 const char *gensec_get_target_hostname(struct gensec_security *gensec_security);
 NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
+			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *session_key);
 NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security,
 				  const char *mech_oid);
@@ -269,6 +271,7 @@ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 			     struct auth4_context *auth_context,
 			     struct gensec_security **gensec_security);
 NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
+			     TALLOC_CTX *mem_ctx,
 			     struct auth_session_info **session_info);
 
 NTSTATUS gensec_set_local_address(struct gensec_security *gensec_security,

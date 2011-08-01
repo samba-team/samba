@@ -43,9 +43,6 @@ struct gensec_gssapi_state {
 	OM_uint32 want_flags, got_flags;
 	gss_OID gss_oid;
 
-	DATA_BLOB session_key;
-	DATA_BLOB pac;
-
 	struct smb_krb5_context *smb_krb5_context;
 	struct gssapi_creds_container *client_cred;
 	struct gssapi_creds_container *server_cred;

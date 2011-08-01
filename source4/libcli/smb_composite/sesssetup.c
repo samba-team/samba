@@ -200,10 +200,9 @@ static void request_handler(struct smbcli_request *req)
 				c->status = NT_STATUS_INTERNAL_ERROR;
 				break;
 			}
-			session_key_err = gensec_session_key(session->gensec, &session_key);
+			session_key_err = gensec_session_key(session->gensec, session, &session->user_session_key);
 			if (NT_STATUS_IS_OK(session_key_err)) {
-				set_user_session_key(session, &session_key);
-				smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
+				smbcli_transport_simple_set_signing(session->transport, session->user_session_key, null_data_blob);
 			}
 		}
 

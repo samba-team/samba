@@ -575,7 +575,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		char *grouplist = NULL;
 		struct auth_session_info *session_info;
 
-		nt_status = gensec_session_info(state->gensec_state, &session_info); 
+		nt_status = gensec_session_info(state->gensec_state, mem_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("gensec_session_info failed: %s\n", nt_errstr(nt_status)));
 			mux_printf(mux_id, "BH %s\n", nt_errstr(nt_status));
@@ -604,7 +604,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	if (strncmp(buf, "GK", 2) == 0) {
 		char *base64_key;
 		DEBUG(10, ("Requested session key\n"));
-		nt_status = gensec_session_key(state->gensec_state, &session_key);
+		nt_status = gensec_session_key(state->gensec_state, mem_ctx, &session_key);
 		if(!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("gensec_session_key failed: %s\n", nt_errstr(nt_status)));
 			mux_printf(mux_id, "BH No session key\n");
@@ -671,7 +671,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	} else if /* OK */ (state->gensec_state->gensec_role == GENSEC_SERVER) {
 		struct auth_session_info *session_info;
 
-		nt_status = gensec_session_info(state->gensec_state, &session_info);
+		nt_status = gensec_session_info(state->gensec_state, mem_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_code = "BH Failed to retrive session info";
 			reply_arg = nt_errstr(nt_status);

@@ -434,6 +434,7 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 	}
 
 	status = gensec_session_key(s->drs_pipe->pipe->conn->security_state.generic_state,
+				    s,
 				    &s->gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_Format(PyExc_RuntimeError, "Unable to get session key from drspipe: %s",

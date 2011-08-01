@@ -114,6 +114,7 @@ static void dreplsrv_out_drsuapi_connect_done(struct composite_context *creq)
 	state->drsuapi->drsuapi_handle = state->drsuapi->pipe->binding_handle;
 
 	status = gensec_session_key(state->drsuapi->pipe->conn->security_state.generic_state,
+				    state->drsuapi,
 				    &state->drsuapi->gensec_skey);
 	if (tevent_req_nterror(req, status)) {
 		return;

@@ -148,7 +148,8 @@ _PUBLIC_ NTSTATUS gensec_unwrap(struct gensec_security *gensec_security,
 }
 
 _PUBLIC_ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
-			    DATA_BLOB *session_key)
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *session_key)
 {
 	if (!gensec_security->ops->session_key) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -157,7 +158,7 @@ _PUBLIC_ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	return gensec_security->ops->session_key(gensec_security, session_key);
+	return gensec_security->ops->session_key(gensec_security, mem_ctx, session_key);
 }
 
 /**
@@ -171,12 +172,13 @@ _PUBLIC_ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
  */
 
 _PUBLIC_ NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
-			     struct auth_session_info **session_info)
+				      TALLOC_CTX *mem_ctx,
+				      struct auth_session_info **session_info)
 {
 	if (!gensec_security->ops->session_info) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return gensec_security->ops->session_info(gensec_security, session_info);
+	return gensec_security->ops->session_info(gensec_security, mem_ctx, session_info);
 }
 
 /**

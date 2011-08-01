@@ -257,6 +257,7 @@ static PyObject *py_gensec_set_credentials(PyObject *self, PyObject *args)
 
 static PyObject *py_gensec_session_info(PyObject *self)
 {
+	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	PyObject *py_session_info;
 	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
@@ -265,7 +266,9 @@ static PyObject *py_gensec_session_info(PyObject *self)
 		PyErr_SetString(PyExc_RuntimeError, "no mechanism selected");
 		return NULL;
 	}
-	status = gensec_session_info(security, &info);
+	mem_ctx = talloc_new(NULL);
+
+	status = gensec_session_info(security, mem_ctx, &info);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetNTSTATUS(status);
 		return NULL;
@@ -273,6 +276,7 @@ static PyObject *py_gensec_session_info(PyObject *self)
 
 	py_session_info = py_return_ndr_struct("samba.dcerpc.auth", "session_info",
 						 info, info);
+	talloc_free(mem_ctx);
 	return py_session_info;
 }
 

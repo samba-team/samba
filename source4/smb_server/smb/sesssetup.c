@@ -379,10 +379,11 @@ static void sesssetup_spnego_send(struct tevent_req *subreq)
 		goto failed;
 	}
 
-	status = gensec_session_info(smb_sess->gensec_ctx, &session_info);
+	status = gensec_session_info(smb_sess->gensec_ctx, smb_sess, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	skey_status = gensec_session_key(smb_sess->gensec_ctx, &session_key);
+	/* The session_key is only needed until the end of the smbsrv_setup_signing() call */
+	skey_status = gensec_session_key(smb_sess->gensec_ctx, req, &session_key);
 	if (NT_STATUS_IS_OK(skey_status)) {
 		smbsrv_setup_signing(req->smb_conn, &session_key, NULL);
 	}

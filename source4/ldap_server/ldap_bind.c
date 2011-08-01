@@ -68,8 +68,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		errstr = NULL;
 
 		talloc_unlink(call->conn, call->conn->session_info);
-		call->conn->session_info = session_info;
-		talloc_steal(call->conn, session_info);
+		call->conn->session_info = talloc_steal(call->conn, session_info);
 
 		/* don't leak the old LDB */
 		talloc_unlink(call->conn, call->conn->ldb);
@@ -277,7 +276,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 			old_session_info = conn->session_info;
 			conn->session_info = NULL;
-			status = gensec_session_info(conn->gensec, &conn->session_info);
+			status = gensec_session_info(conn->gensec, conn, &conn->session_info);
 			if (!NT_STATUS_IS_OK(status)) {
 				conn->session_info = old_session_info;
 				result = LDAP_OPERATIONS_ERROR;
@@ -286,7 +285,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 							 req->creds.SASL.mechanism, nt_errstr(status));
 			} else {
 				talloc_unlink(conn, old_session_info);
-				talloc_steal(conn, conn->session_info);
 				
 				/* don't leak the old LDB */
 				talloc_unlink(conn, conn->ldb);

@@ -119,6 +119,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 	
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_session_info(dce_conn->auth_state.gensec_security,
+					     dce_conn,
 					     &dce_conn->auth_state.session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
@@ -175,6 +176,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 			       &dce_conn->auth_state.auth_info->credentials);
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_session_info(dce_conn->auth_state.gensec_security,
+					     dce_conn,
 					     &dce_conn->auth_state.session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
@@ -254,6 +256,7 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_session_info(dce_conn->auth_state.gensec_security,
+					     dce_conn,
 					     &dce_conn->auth_state.session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));

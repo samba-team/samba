@@ -213,6 +213,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
  */
 
 NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
+				     TALLOC_CTX *mem_ctx,
 				     struct auth_session_info **session_info) 
 {
 	NTSTATUS nt_status;
@@ -221,17 +222,14 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
-	nt_status = gensec_generate_session_info(ntlmssp_state,
+	nt_status = gensec_generate_session_info(mem_ctx,
 						 gensec_security,
 						 gensec_ntlmssp->user_info_dc,
 						 session_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	(*session_info)->session_key = data_blob_talloc(*session_info, 
-							ntlmssp_state->session_key.data,
-							ntlmssp_state->session_key.length);
-
-	return NT_STATUS_OK;
+	return gensec_ntlmssp_session_key(gensec_security, *session_info,
+					  &(*session_info)->session_key);
 }
 
 /**

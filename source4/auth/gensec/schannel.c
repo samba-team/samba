@@ -43,7 +43,8 @@ static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t 
 }
 
 static NTSTATUS schannel_session_key(struct gensec_security *gensec_security,
-					    DATA_BLOB *session_key)
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *session_key)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -215,10 +216,11 @@ _PUBLIC_ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
  */
 
 static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
-					 struct auth_session_info **_session_info)
+				      TALLOC_CTX *mem_ctx,
+				      struct auth_session_info **_session_info)
 {
 	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-	return auth_anonymous_session_info(state, gensec_security->settings->lp_ctx, _session_info);
+	return auth_anonymous_session_info(mem_ctx, gensec_security->settings->lp_ctx, _session_info);
 }
 
 static NTSTATUS schannel_start(struct gensec_security *gensec_security)

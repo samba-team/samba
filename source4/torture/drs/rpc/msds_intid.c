@@ -185,7 +185,7 @@ static bool _test_DsaBind(struct torture_context *tctx,
 	bi->drs_handle = bi->drs_pipe->binding_handle;
 
 	status = gensec_session_key(bi->drs_pipe->conn->security_state.generic_state,
-	                            &bi->gensec_skey);
+	                            mem_ctx, &bi->gensec_skey);
 	torture_assert_ntstatus_ok(tctx, status, "failed to get gensec session key");
 
 	/* Bind to DRSUAPI interface */

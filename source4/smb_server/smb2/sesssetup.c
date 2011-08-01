@@ -79,7 +79,7 @@ static void smb2srv_sesssetup_callback(struct tevent_req *subreq)
 		goto failed;
 	}
 
-	status = gensec_session_info(smb_sess->gensec_ctx, &session_info);
+	status = gensec_session_info(smb_sess->gensec_ctx, smb_sess, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}

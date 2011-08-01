@@ -295,6 +295,7 @@ static size_t gensec_spnego_max_wrapped_size(struct gensec_security *gensec_secu
 }
 
 static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
+					  TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *session_key)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
@@ -303,11 +304,13 @@ static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_securit
 	}
 	
 	return gensec_session_key(spnego_state->sub_sec_security, 
+				  mem_ctx,
 				  session_key);
 }
 
 static NTSTATUS gensec_spnego_session_info(struct gensec_security *gensec_security,
-								      struct auth_session_info **session_info) 
+					   TALLOC_CTX *mem_ctx,
+					   struct auth_session_info **session_info)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	if (!spnego_state->sub_sec_security) {
@@ -315,6 +318,7 @@ static NTSTATUS gensec_spnego_session_info(struct gensec_security *gensec_securi
 	}
 	
 	return gensec_session_info(spnego_state->sub_sec_security, 
+				   mem_ctx,
 				   session_info);
 }
 

@@ -169,9 +169,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		break;
 	}
 
-	gensec_gssapi_state->session_key = data_blob(NULL, 0);
-	gensec_gssapi_state->pac = data_blob(NULL, 0);
-
 	ret = smb_krb5_init_context(gensec_gssapi_state,
 				    NULL,
 				    gensec_security->settings->lp_ctx,
@@ -1242,6 +1239,7 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
  * This breaks all the abstractions, but what do you expect...
  */
 static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_security, 
+					  TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *session_key) 
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
@@ -1251,11 +1249,6 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 
 	if (gensec_gssapi_state->sasl_state != STAGE_DONE) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	if (gensec_gssapi_state->session_key.data) {
-		*session_key = gensec_gssapi_state->session_key;
-		return NT_STATUS_OK;
 	}
 
 	maj_stat = gsskrb5_get_subkey(&min_stat,
@@ -1269,10 +1262,9 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 	DEBUG(10, ("Got KRB5 session key of length %d%s\n",
 		   (int)KRB5_KEY_LENGTH(subkey),
 		   (gensec_gssapi_state->sasl_state == STAGE_DONE)?" (done)":""));
-	*session_key = data_blob_talloc(gensec_gssapi_state,
+	*session_key = data_blob_talloc(mem_ctx,
 					KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
 	krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context, subkey);
-	gensec_gssapi_state->session_key = *session_key;
 	dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
 
 	return NT_STATUS_OK;
@@ -1282,6 +1274,7 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
  * this session.  This uses either the PAC (if present) or a local
  * database lookup */
 static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_security,
+					   TALLOC_CTX *mem_ctx_out,
 					   struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
@@ -1302,7 +1295,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 		
-	mem_ctx = talloc_named(gensec_gssapi_state, 0, "gensec_gssapi_session_info context"); 
+	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	nt_status = gssapi_obtain_pac_blob(mem_ctx,  gensec_gssapi_state->gssapi_context,
@@ -1391,7 +1384,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return nt_status;
 	}
 
-	nt_status = gensec_gssapi_session_key(gensec_security, &session_info->session_key);
+	nt_status = gensec_gssapi_session_key(gensec_security, session_info, &session_info->session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
@@ -1436,9 +1429,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		/* It has been taken from this place... */
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 	}
-	talloc_steal(gensec_gssapi_state, session_info);
+	*_session_info = talloc_steal(mem_ctx_out, session_info);
 	talloc_free(mem_ctx);
-	*_session_info = session_info;
 
 	return NT_STATUS_OK;
 }
