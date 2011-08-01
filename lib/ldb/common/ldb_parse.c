@@ -808,50 +808,104 @@ char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, const struct ldb_parse_tree *tre
 
 
 /*
-  replace any occurrences of an attribute name in the parse tree with a
-  new name
+  walk a parse tree, calling the provided callback on each node
 */
-void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree, 
-				 const char *attr, 
-				 const char *replace)
+int ldb_parse_tree_walk(struct ldb_parse_tree *tree,
+			int (*callback)(struct ldb_parse_tree *tree, void *),
+			void *private_context)
 {
 	unsigned int i;
+	int ret;
+
+	ret = callback(tree, private_context);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	switch (tree->operation) {
 	case LDB_OP_AND:
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			ldb_parse_tree_attr_replace(tree->u.list.elements[i],
-						    attr, replace);
+			ret = ldb_parse_tree_walk(tree->u.list.elements[i], callback, private_context);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 		break;
 	case LDB_OP_NOT:
-		ldb_parse_tree_attr_replace(tree->u.isnot.child, attr, replace);
+		ret = ldb_parse_tree_walk(tree->u.isnot.child, callback, private_context);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 		break;
 	case LDB_OP_EQUALITY:
 	case LDB_OP_GREATER:
 	case LDB_OP_LESS:
 	case LDB_OP_APPROX:
-		if (ldb_attr_cmp(tree->u.equality.attr, attr) == 0) {
-			tree->u.equality.attr = replace;
+	case LDB_OP_SUBSTRING:
+	case LDB_OP_PRESENT:
+	case LDB_OP_EXTENDED:
+		break;
+	}
+	return LDB_SUCCESS;
+}
+
+struct parse_tree_attr_replace_ctx {
+	const char *attr;
+	const char *replace;
+};
+
+/*
+  callback for ldb_parse_tree_attr_replace()
+ */
+static int parse_tree_attr_replace(struct ldb_parse_tree *tree, void *private_context)
+{
+	struct parse_tree_attr_replace_ctx *ctx = private_context;
+	switch (tree->operation) {
+	case LDB_OP_EQUALITY:
+	case LDB_OP_GREATER:
+	case LDB_OP_LESS:
+	case LDB_OP_APPROX:
+		if (ldb_attr_cmp(tree->u.equality.attr, ctx->attr) == 0) {
+			tree->u.equality.attr = ctx->replace;
 		}
 		break;
 	case LDB_OP_SUBSTRING:
-		if (ldb_attr_cmp(tree->u.substring.attr, attr) == 0) {
-			tree->u.substring.attr = replace;
+		if (ldb_attr_cmp(tree->u.substring.attr, ctx->attr) == 0) {
+			tree->u.substring.attr = ctx->replace;
 		}
 		break;
 	case LDB_OP_PRESENT:
-		if (ldb_attr_cmp(tree->u.present.attr, attr) == 0) {
-			tree->u.present.attr = replace;
+		if (ldb_attr_cmp(tree->u.present.attr, ctx->attr) == 0) {
+			tree->u.present.attr = ctx->replace;
 		}
 		break;
 	case LDB_OP_EXTENDED:
 		if (tree->u.extended.attr &&
-		    ldb_attr_cmp(tree->u.extended.attr, attr) == 0) {
-			tree->u.extended.attr = replace;
+		    ldb_attr_cmp(tree->u.extended.attr, ctx->attr) == 0) {
+			tree->u.extended.attr = ctx->replace;
 		}
 		break;
+	default:
+		break;
 	}
+	return LDB_SUCCESS;
+}
+
+/*
+  replace any occurrences of an attribute name in the parse tree with a
+  new name
+*/
+void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree,
+				 const char *attr,
+				 const char *replace)
+{
+	struct parse_tree_attr_replace_ctx ctx;
+
+	ctx.attr    = attr;
+	ctx.replace = replace;
+
+	ldb_parse_tree_walk(tree, parse_tree_attr_replace, &ctx);
 }
 
 /*

@@ -348,4 +348,11 @@ int ldb_init_module(const char *version);
  */
 bool ldb_dn_replace_components(struct ldb_dn *dn, struct ldb_dn *new_dn);
 
+/*
+  walk a parse tree, calling the provided callback on each node
+*/
+int ldb_parse_tree_walk(struct ldb_parse_tree *tree,
+			int (*callback)(struct ldb_parse_tree *tree, void *),
+			void *private_context);
+
 #endif
