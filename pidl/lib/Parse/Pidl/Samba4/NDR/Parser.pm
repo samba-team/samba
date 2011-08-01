@@ -1215,7 +1215,7 @@ sub ParsePtrPull($$$$$)
 	} elsif ($l->{POINTER_TYPE} eq "ignore") {
                 #We want to consume the pointer bytes, but ignore the pointer value
 	        $self->pidl("NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &_ptr_$e->{NAME}));");
-		$self->pidl("_ptr_$e->{NAME} = NULL;");
+		$self->pidl("_ptr_$e->{NAME} = 0;");
 	} else {
 		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
