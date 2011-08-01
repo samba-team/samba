@@ -108,11 +108,26 @@ static PyObject *py_get_gplink_options(PyObject *self, PyObject *args)
 	return py_ret;
 }
 
+static PyObject *py_ads_to_dir_access_mask(PyObject *self, PyObject *args)
+{
+	uint32_t access_mask, dir_mask;
+
+	if (! PyArg_ParseTuple(args, "I", &access_mask))
+		return NULL;
+
+	dir_mask = gp_ads_to_dir_access_mask(access_mask);
+
+	return Py_BuildValue("I", dir_mask);
+}
+
+
 static PyMethodDef py_policy_methods[] = {
 	{ "get_gpo_flags", (PyCFunction)py_get_gpo_flags, METH_VARARGS,
 		"get_gpo_flags(flags) -> list" },
-    { "get_gplink_options", (PyCFunction)py_get_gplink_options, METH_VARARGS,
-        "get_gplink_options(options) -> list" },
+	{ "get_gplink_options", (PyCFunction)py_get_gplink_options, METH_VARARGS,
+		"get_gplink_options(options) -> list" },
+	{ "ads_to_dir_access_mask", (PyCFunction)py_ads_to_dir_access_mask, METH_VARARGS,
+		"ads_to_dir_access_mask(access_mask) -> dir_mask" },
 	{ NULL }
 };
 
