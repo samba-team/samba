@@ -179,37 +179,3 @@ class CommandError(Exception):
         self.message = message
         self.inner_exception = inner_exception
         self.exception_info = sys.exc_info()
-
-
-
-commands = {}
-from samba.netcmd.netacl import cmd_acl
-commands["acl"] = cmd_acl()
-from samba.netcmd.fsmo import cmd_fsmo
-commands["fsmo"] = cmd_fsmo()
-from samba.netcmd.time import cmd_time
-commands["time"] = cmd_time()
-from samba.netcmd.user import cmd_user
-commands["user"] = cmd_user()
-from samba.netcmd.vampire import cmd_vampire
-commands["vampire"] = cmd_vampire()
-from samba.netcmd.spn import cmd_spn
-commands["spn"] = cmd_spn()
-from samba.netcmd.group import cmd_group
-commands["group"] = cmd_group()
-from samba.netcmd.rodc import cmd_rodc
-commands["rodc"] = cmd_rodc()
-from samba.netcmd.drs import cmd_drs
-commands["drs"] = cmd_drs()
-from samba.netcmd.gpo import cmd_gpo
-commands["gpo"] = cmd_gpo()
-from samba.netcmd.ldapcmp import cmd_ldapcmp
-commands["ldapcmp"] = cmd_ldapcmp()
-from samba.netcmd.testparm import cmd_testparm
-commands["testparm"] =  cmd_testparm()
-from samba.netcmd.dbcheck import cmd_dbcheck
-commands["dbcheck"] =  cmd_dbcheck()
-from samba.netcmd.delegation import cmd_delegation
-commands["delegation"] = cmd_delegation()
-from samba.netcmd.domain import cmd_domain
-commands["domain"] = cmd_domain()
