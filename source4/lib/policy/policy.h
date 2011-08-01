@@ -123,5 +123,6 @@ NTSTATUS gp_get_ini_uint(struct gp_ini_context *ini, const char *section, const 
 NTSTATUS gp_create_gpo (struct gp_context *gp_ctx, const char *display_name, struct gp_object **ret);
 NTSTATUS gp_create_gpt_security_descriptor (TALLOC_CTX *mem_ctx, struct security_descriptor *ds_sd, struct security_descriptor **ret);
 NTSTATUS gp_set_acl (struct gp_context *gp_ctx, const char *dn_str, const struct security_descriptor *sd);
+uint32_t gp_ads_to_dir_access_mask(uint32_t access_mask);
 
 #endif

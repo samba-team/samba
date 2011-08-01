@@ -24,7 +24,7 @@
 #include "param/param.h"
 #include "lib/policy/policy.h"
 
-static uint32_t gp_ads_to_dir_access_mask(uint32_t access_mask)
+uint32_t gp_ads_to_dir_access_mask(uint32_t access_mask)
 {
 	uint32_t fs_mask;
 
