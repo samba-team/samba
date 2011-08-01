@@ -589,6 +589,23 @@ static Py_ssize_t py_ldb_dn_len(PyLdbDnObject *self)
 	return ldb_dn_get_comp_num(PyLdbDn_AsDn((PyObject *)self));
 }
 
+/*
+  copy a DN as a python object
+ */
+static PyObject *py_ldb_dn_copy(struct ldb_dn *dn)
+{
+	PyLdbDnObject *py_ret;
+
+	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	py_ret->mem_ctx = talloc_new(NULL);
+	py_ret->dn = ldb_dn_copy(py_ret->mem_ctx, dn);
+	return (PyObject *)py_ret;
+}
+
 static PyObject *py_ldb_dn_concat(PyLdbDnObject *self, PyObject *py_other)
 {
 	struct ldb_dn *dn = PyLdbDn_AsDn((PyObject *)self), 
@@ -759,7 +776,7 @@ static PyObject *py_ldb_get_root_basedn(PyLdbObject *self)
 	struct ldb_dn *dn = ldb_get_root_basedn(PyLdb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
-	return PyLdbDn_FromDn(dn);
+	return py_ldb_dn_copy(dn);
 }
 
 
@@ -768,7 +785,7 @@ static PyObject *py_ldb_get_schema_basedn(PyLdbObject *self)
 	struct ldb_dn *dn = ldb_get_schema_basedn(PyLdb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
-	return PyLdbDn_FromDn(dn);
+	return py_ldb_dn_copy(dn);
 }
 
 static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
@@ -776,7 +793,7 @@ static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 	struct ldb_dn *dn = ldb_get_config_basedn(PyLdb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
-	return PyLdbDn_FromDn(dn);
+	return py_ldb_dn_copy(dn);
 }
 
 static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
@@ -784,7 +801,7 @@ static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 	struct ldb_dn *dn = ldb_get_default_basedn(PyLdb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
-	return PyLdbDn_FromDn(dn);
+	return py_ldb_dn_copy(dn);
 }
 
 static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
