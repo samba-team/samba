@@ -56,7 +56,7 @@ unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
 
 bool cli_ucs2(struct cli_state *cli)
 {
-	return ((cli->capabilities & CAP_UNICODE) != 0);
+	return ((cli_state_capabilities(cli) & CAP_UNICODE) != 0);
 }
 
 /****************************************************************************
@@ -84,11 +84,11 @@ void cli_setup_packet_buf(struct cli_state *cli, char *buf)
 		SCVAL(buf,smb_flg,0x8);
 	}
 	flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-	if (cli->capabilities & CAP_UNICODE)
+	if (cli_state_capabilities(cli) & CAP_UNICODE)
 		flags2 |= FLAGS2_UNICODE_STRINGS;
-	if ((cli->capabilities & CAP_DFS) && cli->dfsroot)
+	if ((cli_state_capabilities(cli) & CAP_DFS) && cli->dfsroot)
 		flags2 |= FLAGS2_DFS_PATHNAMES;
-	if (cli->capabilities & CAP_STATUS32)
+	if (cli_state_capabilities(cli) & CAP_STATUS32)
 		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 	if (cli->use_spnego)
 		flags2 |= FLAGS2_EXTENDED_SECURITY;

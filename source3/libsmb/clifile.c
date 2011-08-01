@@ -2765,7 +2765,7 @@ NTSTATUS cli_lock64(struct cli_state *cli, uint16_t fnum,
 	int ltype;
 	NTSTATUS status;
 
-	if (! (cli->capabilities & CAP_LARGE_FILES)) {
+	if (! (cli_state_capabilities(cli) & CAP_LARGE_FILES)) {
 		return cli_lock32(cli, fnum, offset, len, timeout, lock_type);
 	}
 
@@ -2878,7 +2878,7 @@ NTSTATUS cli_unlock64(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (! (cli->capabilities & CAP_LARGE_FILES)) {
+	if (! (cli_state_capabilities(cli) & CAP_LARGE_FILES)) {
 		return cli_unlock(cli, fnum, offset, len);
 	}
 

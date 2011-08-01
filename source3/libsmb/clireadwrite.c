@@ -37,7 +37,7 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 	    && (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
 		return CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
 	}
-	if (cli->capabilities & CAP_LARGE_READX) {
+	if (cli_state_capabilities(cli) & CAP_LARGE_READX) {
 		return cli->is_samba
 			? CLI_SAMBA_MAX_LARGE_READX_SIZE
 			: CLI_WINDOWS_MAX_LARGE_READX_SIZE;
@@ -62,7 +62,7 @@ static size_t cli_write_max_bufsize(struct cli_state *cli,
 	    !client_is_signing_on(cli) &&
 	    !cli_encryption_on(cli) &&
 	    (cli->server_posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
-	    (cli->capabilities & CAP_LARGE_FILES)) {
+	    (cli_state_capabilities(cli) & CAP_LARGE_FILES)) {
 		/* Only do massive writes if we can do them direct
 		 * with no signing or encrypting - not on a pipe. */
 		return CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
@@ -72,7 +72,7 @@ static size_t cli_write_max_bufsize(struct cli_state *cli,
 		return CLI_SAMBA_MAX_LARGE_WRITEX_SIZE;
 	}
 
-	if (((cli->capabilities & CAP_LARGE_WRITEX) == 0)
+	if (((cli_state_capabilities(cli) & CAP_LARGE_WRITEX) == 0)
 	    || client_is_signing_on(cli)
 	    || strequal(cli->dev, "LPT1:")) {
 		size_t data_offset = smb_size - 4;
@@ -803,7 +803,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_write_andx_state *state;
-	bool bigoffset = ((cli->capabilities & CAP_LARGE_FILES) != 0);
+	bool bigoffset = ((cli_state_capabilities(cli) & CAP_LARGE_FILES) != 0);
 	uint8_t wct = bigoffset ? 14 : 12;
 	size_t max_write = cli_write_max_bufsize(cli, mode, wct);
 	uint16_t *vwv;

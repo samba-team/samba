@@ -379,7 +379,7 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 	if (cli->use_level_II_oplocks)
 		capabilities |= CAP_LEVEL_II_OPLOCKS;
 
-	capabilities |= (cli->capabilities & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_DFS));
+	capabilities |= (cli_state_capabilities(cli) & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_DFS));
 	return capabilities;
 }
 
@@ -2050,7 +2050,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	/* if the server supports extended security then use SPNEGO */
 
-	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
+	if (cli_state_capabilities(cli) & CAP_EXTENDED_SECURITY) {
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass,
 							     workgroup, NULL);
 		if (!ADS_ERR_OK(status)) {
@@ -2648,12 +2648,12 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->servertime = ts.tv_sec;
 		cli->secblob = data_blob(bytes, num_bytes);
 		cli->capabilities = IVAL(vwv + 9, 1);
-		if (cli->capabilities & CAP_RAW_MODE) {
+		if (cli_state_capabilities(cli) & CAP_RAW_MODE) {
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
 		/* work out if they sent us a workgroup */
-		if (!(cli->capabilities & CAP_EXTENDED_SECURITY) &&
+		if (!(cli_state_capabilities(cli) & CAP_EXTENDED_SECURITY) &&
 		    smb_buflen(inbuf) > 8) {
 			ssize_t ret;
 			status = smb_bytes_talloc_string(
