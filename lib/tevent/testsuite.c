@@ -101,7 +101,9 @@ static bool test_event_context(struct torture_context *test,
 #ifdef SA_RESTART
 	se1 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESTART, count_handler, &alarm_count);
 #endif
+#ifdef SA_RESETHAND
 	se2 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESETHAND, count_handler, &alarm_count);
+#endif
 #ifdef SA_SIGINFO
 	se3 = event_add_signal(ev_ctx, ev_ctx, SIGUSR1, SA_SIGINFO, count_handler, &info_count);
 #endif

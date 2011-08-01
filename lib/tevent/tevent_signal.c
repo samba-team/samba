@@ -355,16 +355,20 @@ int tevent_common_check_signal(struct tevent_context *ev)
 						    (void*)&sig_state->sig_info[i][ofs], 
 						    se->private_data);
 				}
+#ifdef SA_RESETHAND
 				if (se->sa_flags & SA_RESETHAND) {
 					talloc_free(se);
 				}
+#endif
 				continue;
 			}
 #endif
 			se->handler(ev, se, i, count, NULL, se->private_data);
+#ifdef SA_RESETHAND
 			if (se->sa_flags & SA_RESETHAND) {
 				talloc_free(se);
 			}
+#endif
 		}
 
 #ifdef SA_SIGINFO
