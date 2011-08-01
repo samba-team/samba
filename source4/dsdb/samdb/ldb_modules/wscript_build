@@ -188,7 +188,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_out',
 	init_function='ldb_extended_dn_out_module_init',
 	module_init_name='ldb_init_module',
 	subsystem='ldb',
-	deps='talloc ndr samba-util samdb',
+	deps='talloc ndr samba-util samdb DSDB_MODULE_HELPERS',
 	internal_module=False,
 	)
 

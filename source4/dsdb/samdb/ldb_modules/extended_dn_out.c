@@ -144,8 +144,6 @@ static bool add_attrs(void *mem_ctx, char ***attrs, const char *attr)
    cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
    CN=Adminstrator,CN=users,DC=samba,DC=example,DC=com
 */
-
-
 static int fix_dn(struct ldb_context *ldb, struct ldb_dn *dn)
 {
 	int i, ret;
@@ -169,6 +167,7 @@ static int fix_dn(struct ldb_context *ldb, struct ldb_dn *dn)
 	}
 	return LDB_SUCCESS;
 }
+
 
 /* Inject the extended DN components, so the DN cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com becomes
    <GUID=541203ae-f7d6-47ef-8390-bfcf019f9583>;<SID=S-1-5-21-4177067393-1453636373-93818737-500>;cn=Adminstrator,cn=users,dc=samba,dc=example,dc=com */
@@ -349,6 +348,54 @@ struct extended_search_context {
 	int extended_type;
 };
 
+
+/*
+   fix one-way links to have the right string DN, to cope with
+   renames of the target
+*/
+static int fix_one_way_link(struct extended_search_context *ac, struct ldb_dn *dn)
+{
+	struct GUID guid;
+	NTSTATUS status;
+	int ret;
+	struct ldb_dn *real_dn;
+
+	status = dsdb_get_extended_dn_guid(dn, &guid, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		/* this is a strange DN that doesn't have a GUID! just
+		   return the current DN string?? */
+		return LDB_SUCCESS;
+	}
+
+	ret = dsdb_module_dn_by_guid(ac->module, dn, &guid, &real_dn, ac->req);
+	if (ret != LDB_SUCCESS) {
+		/* it could be on another server, we need to leave the
+		   string DN alone */
+		return LDB_SUCCESS;
+	}
+
+	if (strcmp(ldb_dn_get_linearized(dn), ldb_dn_get_linearized(real_dn)) == 0) {
+		/* its already correct */
+		talloc_free(real_dn);
+		return LDB_SUCCESS;
+	}
+
+	/* fix the DN by replacing its components with those from the
+	 * real DN
+	 */
+	if (!ldb_dn_replace_components(dn, real_dn)) {
+		talloc_free(real_dn);
+		return ldb_operr(ldb_module_get_ctx(ac->module));
+	}
+	talloc_free(real_dn);
+
+	return LDB_SUCCESS;
+}
+
+
+/*
+  this is called to post-process the results from the search
+ */
 static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		int (*handle_dereference)(struct ldb_dn *dn,
 				struct dsdb_openldap_dereference_result **dereference_attrs, 
@@ -438,6 +485,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	for (i = 0; ac->schema && i < msg->num_elements; i++) {
 		bool make_extended_dn;
 		const struct dsdb_attribute *attribute;
+
 		attribute = dsdb_attribute_by_lDAPDisplayName(ac->schema, msg->elements[i].name);
 		if (!attribute) {
 			continue;
@@ -539,6 +587,18 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 							 dereference_control->attributes,
 							 msg->elements[i].name,
 							 &msg->elements[i].values[j]);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(dsdb_dn);
+					return ldb_module_done(ac->req, NULL, NULL, ret);
+				}
+			}
+
+			/* note that we don't fixup objectCategory as
+			   it should not be possible to move
+			   objectCategory elements in the schema */
+			if (attribute->one_way_link &&
+			    strcasecmp(attribute->lDAPDisplayName, "objectCategory") != 0) {
+				ret = fix_one_way_link(ac, dn);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(dsdb_dn);
 					return ldb_module_done(ac->req, NULL, NULL, ret);
