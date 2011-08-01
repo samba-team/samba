@@ -96,16 +96,21 @@ class cmd_dbcheck(Command):
 
         if yes and fix:
             samdb.transaction_start()
+        try:
+            chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose,
+                    fix=fix, yes=yes, quiet=quiet)
 
-        chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose, fix=fix, yes=yes, quiet=quiet)
-
-        if reindex:
-            print("Re-indexing...")
-            error_count = 0
-            if chk.reindex_database():
-                print("completed re-index OK")
-        else:
-            error_count = chk.check_database(DN=DN, scope=search_scope, controls=controls, attrs=attrs)
+            if reindex:
+                print("Re-indexing...")
+                error_count = 0
+                if chk.reindex_database():
+                    print("completed re-index OK")
+            else:
+                error_count = chk.check_database(DN=DN, scope=search_scope,
+                        controls=controls, attrs=attrs)
+        except:
+            samdb.transaction_cancel()
+            raise
 
         if yes and fix:
             samdb.transaction_commit()
