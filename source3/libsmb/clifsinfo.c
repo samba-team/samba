@@ -472,6 +472,7 @@ NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 	uint16 setup[1];
 	uint8_t param[2];
 	uint8_t *rdata = NULL;
+	uint32_t rdata_count;
 	NTSTATUS status;
 
 	SSVAL(setup, 0, TRANSACT2_QFSINFO);
@@ -484,7 +485,7 @@ NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 			   NULL,
 			   NULL, 0, NULL, /* rsetup */
 			   NULL, 0, NULL, /* rparam */
-			   &rdata, 56, NULL);
+			   &rdata, 56, &rdata_count);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
