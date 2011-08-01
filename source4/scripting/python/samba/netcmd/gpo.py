@@ -179,7 +179,7 @@ def parse_unc(unc):
     return []
 
 
-def copy_directory_recurse(conn, remotedir, localdir):
+def copy_directory_remote_to_local(conn, remotedir, localdir):
     if not os.path.isdir(localdir):
         os.mkdir(localdir)
     r_dirs = [ remotedir ]
@@ -191,13 +191,13 @@ def copy_directory_recurse(conn, remotedir, localdir):
         dirlist = conn.list(r_dir)
         for e in dirlist:
             r_name = r_dir + '\\' + e['name']
-            l_name = l_dir + os.path.sep + e['name']
+            l_name = os.path.join(l_dir, e['name'])
 
             if e['attrib'] & smb.FILE_ATTRIBUTE_DIRECTORY:
                 r_dirs.append(r_name)
                 l_dirs.append(l_name)
                 os.mkdir(l_name)
-            elif e['attrib'] & smb.FILE_ATTRIBUTE_ARCHIVE:
+            else:
                 data = conn.loadfile(r_name)
                 file(l_name, 'w').write(data)
 
@@ -720,30 +720,38 @@ class cmd_fetch(Command):
         except Exception, e:
             raise CommandError("GPO %s does not exist" % gpo)
 
+        # verify UNC path
         unc = msg['gPCFileSysPath'][0]
         try:
             [dom_name, service, sharepath] = parse_unc(unc)
         except:
             raise CommandError("Invalid GPO path (%s)" % unc)
 
+        # SMB connect to DC
         try:
             conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
         except Exception, e:
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
 
+        # Copy GPT
         if tmpdir is None:
             tmpdir = "/tmp"
+        if not os.path.isdir(tmpdir):
+            raise CommandError("Temoprary directory '%s' does not exist" % tmpdir)
+
+        localdir = os.path.join(tmpdir, "policy")
+        if not os.path.isdir(localdir):
+            os.mkdir(localdir)
+
+        gpodir = os.path.join(localdir, gpo)
+        if os.path.isdir(gpodir):
+            raise CommandError("GPO directory '%s' already exists, refusing to overwrite" % gpodir)
 
         try:
-            localdir = tmpdir + os.path.sep + "policy"
-            if not os.path.isdir(localdir):
-                os.mkdir(localdir)
-            gpodir = localdir + os.path.sep + gpo
-            if not os.path.isdir(gpodir):
-                os.mkdir(gpodir)
-            copy_directory_recurse(conn, sharepath, gpodir)
+            os.mkdir(gpodir)
+            copy_directory_remote_to_local(conn, sharepath, gpodir)
         except Exception, e:
-            raise CommandError("Error copying GPO", e)
+            raise CommandError("Error copying GPO from DC", e)
         print('GPO copied to %s' % gpodir)
 
 
