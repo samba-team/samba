@@ -875,7 +875,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (cli->protocol <= PROTOCOL_LANMAN1) {
+	if (cli_state_protocol(cli) <= PROTOCOL_LANMAN1) {
 		subreq = cli_list_old_send(state, ev, cli, mask, attribute);
 		state->recv_fn = cli_list_old_recv;
 	} else {

@@ -73,7 +73,7 @@ void cli_setup_packet_buf(struct cli_state *cli, char *buf)
 	SSVAL(buf,smb_uid, cli_state_get_uid(cli));
 	SSVAL(buf,smb_mid,cli->smb1.mid);
 
-	if (cli->protocol <= PROTOCOL_CORE) {
+	if (cli_state_protocol(cli) <= PROTOCOL_CORE) {
 		return;
 	}
 

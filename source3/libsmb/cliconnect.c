@@ -1995,7 +1995,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 		workgroup = user2;
 	}
 
-	if (cli->protocol < PROTOCOL_LANMAN1) {
+	if (cli_state_protocol(cli) < PROTOCOL_LANMAN1) {
 		return NT_STATUS_OK;
 	}
 
@@ -2005,7 +2005,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	/* if its an older server then we have to use the older request format */
 
-	if (cli->protocol < PROTOCOL_NT1) {
+	if (cli_state_protocol(cli) < PROTOCOL_NT1) {
 		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
 			DEBUG(1, ("Server requested LM password but 'client lanman auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
@@ -2390,7 +2390,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		}
 	}
 
-	if ((cli->protocol >= PROTOCOL_NT1) && (num_bytes == 3)) {
+	if ((cli_state_protocol(cli) >= PROTOCOL_NT1) && (num_bytes == 3)) {
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
@@ -2402,7 +2402,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 
 	cli->dfsroot = false;
 
-	if ((wct > 2) && (cli->protocol >= PROTOCOL_LANMAN2)) {
+	if ((wct > 2) && (cli_state_protocol(cli) >= PROTOCOL_LANMAN2)) {
 		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
 	}
 
@@ -2559,13 +2559,13 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	if (cli->protocol < PROTOCOL_NT1)
+	if (cli_state_protocol(cli) < PROTOCOL_NT1)
 		cli->use_spnego = False;
 
 	/* setup the protocol strings */
 	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
 		uint8_t c = 2;
-		if (prots[numprots].prot > cli->protocol) {
+		if (prots[numprots].prot > cli_state_protocol(cli)) {
 			break;
 		}
 		bytes = (uint8_t *)talloc_append_blob(
@@ -2618,21 +2618,21 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	protnum = SVAL(vwv, 0);
 
 	if ((protnum >= ARRAY_SIZE(prots))
-	    || (prots[protnum].prot > cli->protocol)) {
+	    || (prots[protnum].prot > cli_state_protocol(cli))) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
 	cli->protocol = prots[protnum].prot;
 
-	if ((cli->protocol < PROTOCOL_NT1) &&
+	if ((cli_state_protocol(cli) < PROTOCOL_NT1) &&
 	    client_is_signing_mandatory(cli)) {
 		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
-	if (cli->protocol >= PROTOCOL_NT1) {    
+	if (cli_state_protocol(cli) >= PROTOCOL_NT1) {
 		struct timespec ts;
 		bool negotiated_smb_signing = false;
 
@@ -2695,7 +2695,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			cli_set_signing_negotiated(cli);
 		}
 
-	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
+	} else if (cli_state_protocol(cli) >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;
 		cli->sec_mode = SVAL(vwv + 1, 0);
 		cli->max_xmit = SVAL(vwv + 2, 0);
