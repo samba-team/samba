@@ -2666,10 +2666,9 @@ sub HeaderInterface($$$)
 	if (defined $interface->{PROPERTIES}->{uuid}) {
 		my $name = uc $interface->{NAME};
 		$self->pidl_hdr("#define NDR_$name\_UUID " . 
-		Parse::Pidl::Util::make_str(lc($interface->{PROPERTIES}->{uuid})));
+		Parse::Pidl::Util::make_str(lc($interface->{UUID})));
 
-		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
-		$self->pidl_hdr("#define NDR_$name\_VERSION $interface->{PROPERTIES}->{version}");
+		$self->pidl_hdr("#define NDR_$name\_VERSION $interface->{VERSION}");
 
 		$self->pidl_hdr("#define NDR_$name\_NAME \"$interface->{NAME}\"");
 
