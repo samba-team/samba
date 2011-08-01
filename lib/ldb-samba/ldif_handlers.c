@@ -449,8 +449,13 @@ static int ldif_write_sddlSecurityDescriptor(struct ldb_context *ldb, void *mem_
 }
 
 /* 
-   canonicalise an objectCategory.  We use the short form as the canonical form:
-   cn=Person,cn=Schema,cn=Configuration,<basedn> becomes 'person'
+   canonicalise an objectCategory.  We use the long form as the canonical form:
+   'person' becomes cn=Person,cn=Schema,cn=Configuration,<basedn>
+
+   Also any short name of an objectClass that points to a different
+   class (such as user) has the canonical form of the class it's
+   defaultObjectCategory points to (eg
+   cn=Person,cn=Schema,cn=Configuration,<basedn>)
 */
 
 static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_ctx,
