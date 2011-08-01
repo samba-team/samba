@@ -144,7 +144,7 @@ static bool reg_match_one(struct cli_state *cli, const char *pattern, const char
 
 	if (strcmp(file,"..") == 0) file = ".";
 
-	return ms_fnmatch(pattern, file, cli->protocol, False) == 0;
+	return ms_fnmatch(pattern, file, cli_state_protocol(cli), False) == 0;
 }
 
 static char *reg_test(struct cli_state *cli, const char *pattern, const char *long_name, const char *short_name)
