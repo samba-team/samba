@@ -3725,7 +3725,7 @@ int dsdb_modify(struct ldb_context *ldb, const struct ldb_message *message,
 /*
   a delete with a set of flags
 */
-int dsdb_delete(struct ldb_context *ldb, const struct ldb_dn *dn,
+int dsdb_delete(struct ldb_context *ldb, struct ldb_dn *dn,
 		uint32_t dsdb_flags)
 {
 	struct ldb_request *req;
