@@ -33,6 +33,8 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <ldb_module.h>
+#include "dsdb/samdb/samdb.h"
+#include "util.h"
 
 /*
   TODO: if relax is not set then we need to reject the fancy RMD_* and
@@ -261,6 +263,165 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 	return LDB_SUCCESS;
 }
 
+
+struct extended_dn_filter_ctx {
+	bool test_only;
+	bool matched;
+	struct ldb_module *module;
+	struct ldb_request *req;
+	struct dsdb_schema *schema;
+};
+
+/*
+  called on all nodes in the parse tree
+ */
+static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *private_context)
+{
+	struct extended_dn_filter_ctx *filter_ctx;
+	int ret;
+	struct ldb_dn *dn;
+	const struct ldb_val *sid_val, *guid_val;
+	const char *no_attrs[] = { NULL };
+	struct ldb_result *res;
+	const char *expression;
+	const struct dsdb_attribute *attribute;
+
+	if (tree->operation != LDB_OP_EQUALITY) {
+		return LDB_SUCCESS;
+	}
+
+	filter_ctx = talloc_get_type_abort(private_context, struct extended_dn_filter_ctx);
+
+	attribute = dsdb_attribute_by_lDAPDisplayName(filter_ctx->schema, tree->u.equality.attr);
+	if (attribute == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	if (attribute->dn_format != DSDB_NORMAL_DN) {
+		return LDB_SUCCESS;
+	}
+
+	/* add one_way_link check here */
+
+
+	if (memchr(tree->u.equality.value.data, '<', tree->u.equality.value.length) == NULL) {
+		/* its definately not a magic DN */
+		return LDB_SUCCESS;
+	}
+
+	dn = ldb_dn_from_ldb_val(filter_ctx, ldb_module_get_ctx(filter_ctx->module), &tree->u.equality.value);
+	if (dn == NULL) {
+		/* testing against windows shows that we don't raise
+		   an error here */
+		return LDB_SUCCESS;
+	}
+
+	sid_val  = ldb_dn_get_extended_component(dn, "SID");
+	guid_val = ldb_dn_get_extended_component(dn, "GUID");
+
+	if (sid_val == NULL && guid_val == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	if (filter_ctx->test_only) {
+		filter_ctx->matched = true;
+		return LDB_SUCCESS;
+	}
+
+
+	/*
+	  prioritise the GUID - we have had instances of
+	  duplicate SIDs in the database in the
+	  ForeignSecurityPrinciples due to provision errors
+	*/
+	if (guid_val) {
+		expression = talloc_asprintf(filter_ctx, "objectGUID=%s", ldb_binary_encode(filter_ctx, *guid_val));
+	} else {
+		expression = talloc_asprintf(filter_ctx, "objectSID=%s", ldb_binary_encode(filter_ctx, *sid_val));
+	}
+
+	ret = dsdb_module_search(filter_ctx->module,
+				 filter_ctx,
+				 &res,
+				 NULL,
+				 LDB_SCOPE_SUBTREE,
+				 no_attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_SEARCH_SHOW_DELETED |
+				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 filter_ctx->req,
+				 "%s", expression);
+	if (ret != LDB_SUCCESS) {
+		return LDB_SUCCESS;
+	}
+	if (res->count != 1) {
+		return LDB_SUCCESS;
+	}
+
+	/* replace the search expression element with the matching DN */
+	tree->u.equality.value.data = (uint8_t *)talloc_strdup(tree, ldb_dn_get_linearized(res->msgs[0]->dn));
+	if (tree->u.equality.value.data == NULL) {
+		return ldb_oom(ldb_module_get_ctx(filter_ctx->module));
+	}
+	tree->u.equality.value.length = strlen((const char *)tree->u.equality.value.data);
+	talloc_free(res);
+
+	filter_ctx->matched = true;
+	return LDB_SUCCESS;
+}
+
+/*
+  fix the parse tree to change any extended DN components to their
+  caconical form
+ */
+static int extended_dn_fix_filter(struct ldb_module *module, struct ldb_request *req)
+{
+	struct extended_dn_filter_ctx *filter_ctx;
+	int ret;
+
+	filter_ctx = talloc_zero(req, struct extended_dn_filter_ctx);
+	if (filter_ctx == NULL) {
+		return ldb_module_oom(module);
+	}
+
+	/* first pass through the existing tree to see if anything
+	   needs to be modified. Filtering DNs on the input side is rare,
+	   so this avoids copying the parse tree in most cases */
+	filter_ctx->test_only = true;
+	filter_ctx->matched   = false;
+	filter_ctx->module    = module;
+	filter_ctx->req       = req;
+	filter_ctx->schema    = dsdb_get_schema(ldb_module_get_ctx(module), filter_ctx);
+
+	ret = ldb_parse_tree_walk(req->op.search.tree, extended_dn_filter_callback, filter_ctx);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(filter_ctx);
+		return ret;
+	}
+
+	if (!filter_ctx->matched) {
+		/* nothing matched, no need for a new parse tree */
+		talloc_free(filter_ctx);
+		return LDB_SUCCESS;
+	}
+
+	filter_ctx->test_only = false;
+	filter_ctx->matched   = false;
+
+	ret = ldb_parse_tree_walk(req->op.search.tree, extended_dn_filter_callback, filter_ctx);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(filter_ctx);
+		return ret;
+	}
+
+	talloc_free(filter_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
+  fix DNs and filter expressions to cope with the semantics of
+  extended DNs
+ */
 static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn)
 {
 	struct extended_search_context *ac;
@@ -279,6 +440,11 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		NULL
 	};
 	bool all_partitions = false;
+
+	ret = extended_dn_fix_filter(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	if (!ldb_dn_has_extended(dn)) {
 		/* Move along there isn't anything to see here */
