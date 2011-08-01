@@ -162,8 +162,9 @@ class SuperCommand(Command):
         print "Available subcommands:"
         subcmds = self.subcommands.keys()
         subcmds.sort()
+        max_length = len(max(subcmds, key=len))
         for cmd in subcmds:
-            print "    %-20s - %s" % (cmd, self.subcommands[cmd].description)
+            print "  %*s  - %s" % (-max_length, cmd, self.subcommands[cmd].description)
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:
