@@ -198,6 +198,12 @@ sub ParseArrayPushHeader($$$$$$)
 		} else {
 			$size = $length = "ndr_string_length($var_name, sizeof(*$var_name))";
 		}
+		if (defined($l->{SIZE_IS})) {
+			$size = ParseExpr($l->{SIZE_IS}, $env, $e);
+		}
+		if (defined($l->{LENGTH_IS})) {
+			$length = ParseExpr($l->{LENGTH_IS}, $env, $e);
+		}
 	} else {
 		$size = ParseExpr($l->{SIZE_IS}, $env, $e);
 		$length = ParseExpr($l->{LENGTH_IS}, $env, $e);
@@ -352,7 +358,7 @@ sub ParseArrayPullHeader($$$$$$)
 		$self->pidl("}");
 	}
 
-	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
+	if ($l->{IS_CONFORMANT} and (defined($l->{SIZE_IS}) or not $l->{IS_ZERO_TERMINATED})) {
 		$self->defer("if ($var_name) {");
 		$self->defer_indent;
 		my $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
@@ -364,7 +370,7 @@ sub ParseArrayPullHeader($$$$$$)
 		$self->defer("}");
 	}
 
-	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
+	if ($l->{IS_VARYING} and (defined($l->{LENGTH_IS}) or not $l->{IS_ZERO_TERMINATED})) {
 		$self->defer("if ($var_name) {");
 		$self->defer_indent;
 		my $length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, 
@@ -775,7 +781,7 @@ sub ParseElementPrint($$$$$)
 				$var_name = get_pointer_to($var_name); 
 			}
 			
-			if ($l->{IS_ZERO_TERMINATED}) {
+			if ($l->{IS_ZERO_TERMINATED} and not defined($l->{LENGTH_IS})) {
 				$length = "ndr_string_length($var_name, sizeof(*$var_name))";
 			} else {
 				$length = ParseExprExt($l->{LENGTH_IS}, $env, $e->{ORIGINAL}, 
@@ -1272,6 +1278,9 @@ sub ParseStructPushPrimitives($$$$$)
 					$size = "ndr_charset_length($varname->$e->{NAME}, CH_$e->{PROPERTIES}->{charset})";
 				} else {
 					$size = "ndr_string_length($varname->$e->{NAME}, sizeof(*$varname->$e->{NAME}))";
+				}
+				if (defined($e->{LEVELS}[0]->{SIZE_IS})) {
+					$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e->{ORIGINAL});
 				}
 			} else {
 				$size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env, $e->{ORIGINAL});
