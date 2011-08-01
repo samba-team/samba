@@ -116,7 +116,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	if (cli->protocol < PROTOCOL_LANMAN2 ||
+	if (cli_state_protocol(cli) < PROTOCOL_LANMAN2 ||
 	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		TALLOC_FREE(mutex);
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
