@@ -107,6 +107,8 @@ struct dsdb_attribute {
 	bool isDefunct;
 	bool systemOnly;
 
+	bool one_way_link;
+
 	/* internal stuff */
 	const struct dsdb_syntax *syntax;
 	const struct ldb_schema_attribute *ldb_schema_attribute;

@@ -328,6 +328,7 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 {
 	int ret;
 	struct dsdb_class *schema_class;
+	struct dsdb_attribute *attribute;
 
 	schema_fill_from_ids(schema);
 
@@ -351,6 +352,33 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 		schema_class->subclasses_direct = NULL;
 		schema_class->subclasses = NULL;
 		schema_class->posssuperiors = NULL;
+	}
+
+	/* setup fast access to one_way_link */
+	for (attribute=schema->attributes; attribute; attribute=attribute->next) {
+		if (dsdb_dn_oid_to_format(attribute->syntax->ldap_oid) == DSDB_INVALID_DN) {
+			attribute->one_way_link = false;
+			continue;
+		}
+
+		/* these are not considered to be one way links for
+		   the purpose of DN link fixups */
+		if (ldb_attr_cmp("distinguishedName", attribute->lDAPDisplayName) == 0 ||
+		    ldb_attr_cmp("objectCategory", attribute->lDAPDisplayName) == 0) {
+			attribute->one_way_link = false;
+			continue;
+		}
+
+		if (attribute->linkID == 0) {
+			attribute->one_way_link = true;
+			continue;
+		}
+		/* handle attributes with a linkID but no backlink */
+		if (dsdb_attribute_by_linkID(schema, attribute->linkID) == NULL) {
+			attribute->one_way_link = true;
+			continue;
+		}
+		attribute->one_way_link = false;
 	}
 
 	return LDB_SUCCESS;
