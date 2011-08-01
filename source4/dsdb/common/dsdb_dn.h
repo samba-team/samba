@@ -1,10 +1,3 @@
-enum dsdb_dn_format {
-	DSDB_NORMAL_DN,
-	DSDB_BINARY_DN,
-	DSDB_STRING_DN,
-	DSDB_INVALID_DN
-};
-
 struct dsdb_dn {
 	struct ldb_dn *dn;
 	DATA_BLOB extra_part;

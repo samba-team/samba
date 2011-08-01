@@ -354,9 +354,11 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 		schema_class->posssuperiors = NULL;
 	}
 
-	/* setup fast access to one_way_link */
+	/* setup fast access to one_way_link and DN format */
 	for (attribute=schema->attributes; attribute; attribute=attribute->next) {
-		if (dsdb_dn_oid_to_format(attribute->syntax->ldap_oid) == DSDB_INVALID_DN) {
+		attribute->dn_format = dsdb_dn_oid_to_format(attribute->syntax->ldap_oid);
+
+		if (attribute->dn_format == DSDB_INVALID_DN) {
 			attribute->one_way_link = false;
 			continue;
 		}
@@ -380,6 +382,7 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 		}
 		attribute->one_way_link = false;
 	}
+
 
 	return LDB_SUCCESS;
 }

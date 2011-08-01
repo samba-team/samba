@@ -24,6 +24,14 @@
 
 #include "prefixmap.h"
 
+enum dsdb_dn_format {
+	DSDB_NORMAL_DN,
+	DSDB_BINARY_DN,
+	DSDB_STRING_DN,
+	DSDB_INVALID_DN
+};
+
+
 struct dsdb_attribute;
 struct dsdb_class;
 struct dsdb_schema;
@@ -108,6 +116,7 @@ struct dsdb_attribute {
 	bool systemOnly;
 
 	bool one_way_link;
+	enum dsdb_dn_format dn_format;
 
 	/* internal stuff */
 	const struct dsdb_syntax *syntax;
