@@ -2565,7 +2565,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 		return false;
 	}
 
-	if ( the_cli->protocol != PROTOCOL_NT1 ) {
+	if ( cli_state_protocol(the_cli) != PROTOCOL_NT1 ) {
 		DEBUG(0,("spoolss_connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
 		cli_shutdown(the_cli);
 		return false;
