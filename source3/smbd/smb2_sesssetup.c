@@ -591,9 +591,9 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 	/* If status is NT_STATUS_OK then we need to get the token.
 	 * Map to guest is now internal to auth_ntlmssp */
 	if (NT_STATUS_IS_OK(status)) {
-		status = auth_ntlmssp_steal_session_info(session,
-				session->auth_ntlmssp_state,
-				&session->session_info);
+		status = auth_ntlmssp_session_info(session,
+						   session->auth_ntlmssp_state,
+						   &session->session_info);
 	}
 
 	if (!NT_STATUS_IS_OK(status) &&
@@ -672,9 +672,9 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 		return status;
 	}
 
-	status = auth_ntlmssp_steal_session_info(session,
-						 session->auth_ntlmssp_state,
-						 &session->session_info);
+	status = auth_ntlmssp_session_info(session,
+					   session->auth_ntlmssp_state,
+					   &session->session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(session->auth_ntlmssp_state);

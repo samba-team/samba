@@ -117,7 +117,7 @@ NTSTATUS ntlmssp_server_get_user_info(struct auth_ntlmssp_state *ctx,
 {
 	NTSTATUS status;
 
-	status = auth_ntlmssp_steal_session_info(mem_ctx, ctx, session_info);
+	status = auth_ntlmssp_session_info(mem_ctx, ctx, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, (__location__ ": Failed to get authenticated user "
 			  "info: %s\n", nt_errstr(status)));

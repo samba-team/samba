@@ -28,9 +28,9 @@
 #include "../lib/tsocket/tsocket.h"
 #include "auth/gensec/gensec.h"
 
-NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
-					struct auth_ntlmssp_state *auth_ntlmssp_state,
-					struct auth_session_info **session_info)
+NTSTATUS auth_ntlmssp_session_info(TALLOC_CTX *mem_ctx,
+				   struct auth_ntlmssp_state *auth_ntlmssp_state,
+				   struct auth_session_info **session_info)
 {
 	NTSTATUS nt_status;
 	if (auth_ntlmssp_state->gensec_security) {
