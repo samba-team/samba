@@ -551,7 +551,7 @@ SMBC_getatr(SMBCCTX * context,
         }
 
 	/* if this is NT then don't bother with the getatr */
-	if (targetcli->capabilities & CAP_NT_SMBS) {
+	if (cli_state_capabilities(targetcli) & CAP_NT_SMBS) {
                 errno = EPERM;
 		TALLOC_FREE(frame);
                 return False;

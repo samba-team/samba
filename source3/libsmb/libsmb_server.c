@@ -485,7 +485,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	   here before trying to connect to the original share.
 	   cli_check_msdfs_proxy() will fail if it is a normal share. */
 
-	if ((c->capabilities & CAP_DFS) &&
+	if ((cli_state_capabilities(c) & CAP_DFS) &&
 			cli_check_msdfs_proxy(ctx, c, share,
 				&newserver, &newshare,
 				/* FIXME: cli_check_msdfs_proxy() does
