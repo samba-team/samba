@@ -916,6 +916,7 @@ static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx)
 {
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	struct dcerpc_binding_vector *v;
 	const char *rpcsrv_type;
 	TALLOC_CTX *tmp_ctx;
@@ -944,8 +945,9 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 					   "tcpip",
 					   "no");
 
-	if (strcasecmp_m(rpcsrv_type, "yes") == 0 ||
-	    strcasecmp_m(rpcsrv_type, "true") == 0) {
+	if ((strcasecmp_m(rpcsrv_type, "yes") == 0 ||
+	     strcasecmp_m(rpcsrv_type, "true") == 0)
+	    && epm_mode != RPC_SERVICE_MODE_DISABLED) {
 		status = rpc_setup_tcpip_sockets(ev_ctx,
 						 msg_ctx,
 						 &ndr_table_winreg,
