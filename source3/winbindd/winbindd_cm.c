@@ -825,7 +825,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	}
 
 	if (!is_dc_trusted_domain_situation(domain->name) &&
-	    (*cli)->protocol >= PROTOCOL_NT1 &&
+	    cli_state_protocol(*cli) >= PROTOCOL_NT1 &&
 	    cli_state_capabilities(*cli) & CAP_EXTENDED_SECURITY)
 	{
 		ADS_STATUS ads_status;
