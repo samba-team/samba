@@ -340,5 +340,12 @@ int ldb_module_init_chain(struct ldb_context *ldb, struct ldb_module *module);
  */
 int ldb_init_module(const char *version);
 
+/* replace the components of a DN with those from another DN, without
+ * touching the extended components
+ *
+ * return true if successful and false if not
+ * if false is returned the dn may be marked invalid
+ */
+bool ldb_dn_replace_components(struct ldb_dn *dn, struct ldb_dn *new_dn);
 
 #endif
