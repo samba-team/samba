@@ -392,31 +392,39 @@ interface frsrpc
 	/* Function 0x03 */
 	WERROR frsrpc_FrsNOP();
 
+	/*
+	 *For Op from 4 to 10 Microsoft use
+	 *the notation OpnumxxNotUsedOnWire
+	 *where xx is the number of the OP.
+	 *They are only declared in the IDL of MS-FRS1.pdf.
+	 *Not in the core of the document.
+	 */
+
 	/*****************/
 	/* Function 0x04 */
-	[todo] void FRSRPC_BACKUP_COMPLETE();
+	/*[todo] void FRSRPC_BACKUP_COMPLETE();*/
 
 	/*****************/
 	/* Function 0x05 */
-	[todo] void FRSRPC_BACKUP_COMPLETE_5();
+	/*[todo] void FRSRPC_BACKUP_COMPLETE_5();*/
 
 	/*****************/
 	/* Function 0x06 */
-	[todo] void FRSRPC_BACKUP_COMPLETE_6();
+	/*[todo] void FRSRPC_BACKUP_COMPLETE_6();*/
 
 	/*****************/
 	/* Function 0x07 */
-	[todo] void FRSRPC_BACKUP_COMPLETE_7();
+	/*[todo] void FRSRPC_BACKUP_COMPLETE_7();*/
 
 	/*****************/
 	/* Function 0x08 */
-	[todo] void FRSRPC_BACKUP_COMPLETE_8();
+	/*[todo] void FRSRPC_BACKUP_COMPLETE_8();*/
 
 	/*****************/
 	/* Function 0x09 */
-	[todo] void FRSRPC_BACKUP_COMPLETE_9();
+	/*[todo] void FRSRPC_BACKUP_COMPLETE_9();*/
 
 	/*****************/
 	/* Function 0x0a */
-	[todo] void FRSRPC_VERIFY_PROMOTION_PARENT_EX();
+	/*[todo] void FRSRPC_VERIFY_PROMOTION_PARENT_EX();*/
 }
