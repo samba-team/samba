@@ -236,8 +236,7 @@ import "nbt.idl";
 		[out,ref] winsif_Address *server_address,
 		/*
 		 * TODO: fix pidl to handles this completly correct...
-		 *       currently it gives a warning about a missing pointer
-		 *       and completely ignores the size_is(80).
+		 *       currently it gives a warning about a missing pointer.
 		 */
 		[out,ref,string,charset(DOS),size_is(80)] uint8 *unc_name
 	);
