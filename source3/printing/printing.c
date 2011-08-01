@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "printing/notify.h"
 #include "printing/pcap.h"
+#include "printing/queue_process.h"
 #include "serverid.h"
 #include "smbd/smbd.h"
 #include "auth.h"
@@ -1597,119 +1598,6 @@ void print_queue_receive(struct messaging_context *msg,
 	SAFE_FREE(lpqcommand);
 	SAFE_FREE(lprmcommand);
 	return;
-}
-
-static void printing_pause_fd_handler(struct tevent_context *ev,
-				      struct tevent_fd *fde,
-				      uint16_t flags,
-				      void *private_data)
-{
-	/*
-	 * If pause_pipe[1] is closed it means the parent smbd
-	 * and children exited or aborted.
-	 */
-	exit_server_cleanly(NULL);
-}
-
-extern struct child_pid *children;
-extern int num_children;
-
-static void add_child_pid(pid_t pid)
-{
-	struct child_pid *child;
-
-        child = SMB_MALLOC_P(struct child_pid);
-        if (child == NULL) {
-                DEBUG(0, ("Could not add child struct -- malloc failed\n"));
-                return;
-        }
-        child->pid = pid;
-        DLIST_ADD(children, child);
-        num_children += 1;
-}
-
-static pid_t background_lpq_updater_pid = -1;
-
-/****************************************************************************
-main thread of the background lpq updater
-****************************************************************************/
-void start_background_queue(struct tevent_context *ev,
-			    struct messaging_context *msg_ctx)
-{
-	/* Use local variables for this as we don't
-	 * need to save the parent side of this, just
-	 * ensure it closes when the process exits.
-	 */
-	int pause_pipe[2];
-
-	DEBUG(3,("start_background_queue: Starting background LPQ thread\n"));
-
-	if (pipe(pause_pipe) == -1) {
-		DEBUG(5,("start_background_queue: cannot create pipe. %s\n", strerror(errno) ));
-		exit(1);
-	}
-
-	background_lpq_updater_pid = sys_fork();
-
-	if (background_lpq_updater_pid == -1) {
-		DEBUG(5,("start_background_queue: background LPQ thread failed to start. %s\n", strerror(errno) ));
-		exit(1);
-	}
-
-	/* Track the printing pid along with other smbd children */
-	add_child_pid(background_lpq_updater_pid);
-
-	if(background_lpq_updater_pid == 0) {
-		struct tevent_fd *fde;
-		int ret;
-		NTSTATUS status;
-
-		/* Child. */
-		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
-
-		close(pause_pipe[0]);
-		pause_pipe[0] = -1;
-
-		status = reinit_after_fork(msg_ctx, ev, procid_self(), true);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("reinit_after_fork() failed\n"));
-			smb_panic("reinit_after_fork() failed");
-		}
-
-		smbd_setup_sig_term_handler();
-		smbd_setup_sig_hup_handler(ev, msg_ctx);
-
-		if (!serverid_register(procid_self(),
-				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-				       |FLAG_MSG_PRINT_GENERAL)) {
-			exit(1);
-		}
-
-		if (!locking_init()) {
-			exit(1);
-		}
-
-		messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
-				   print_queue_receive);
-
-		fde = tevent_add_fd(ev, ev, pause_pipe[1], TEVENT_FD_READ,
-				    printing_pause_fd_handler,
-				    NULL);
-		if (!fde) {
-			DEBUG(0,("tevent_add_fd() failed for pause_pipe\n"));
-			smb_panic("tevent_add_fd() failed for pause_pipe");
-		}
-
-		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
-		ret = tevent_loop_wait(ev);
-		/* should not be reached */
-		DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
-			 ret, (ret == 0) ? "out of events" : strerror(errno)));
-		exit(1);
-	}
-
-	close(pause_pipe[1]);
 }
 
 /****************************************************************************

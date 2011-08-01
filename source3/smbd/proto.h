@@ -966,8 +966,6 @@ void reload_printers(struct tevent_context *ev,
 		     struct messaging_context *msg_ctx);
 bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 		     bool test);
-void reload_pcap_change_notify(struct tevent_context *ev,
-			       struct messaging_context *msg_ctx);
 void exit_server(const char *const explanation);
 void exit_server_cleanly(const char *const explanation);
 void exit_server_fault(void);

@@ -27,7 +27,7 @@
 #include "../lib/async_req/async_sock.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/select.h"
-#include "printing/pcap.h"
+#include "printing/queue_process.h"
 #include "system/select.h"
 #include "passdb.h"
 #include "auth.h"
@@ -882,7 +882,7 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 	DEBUG(1,("Reloading services after SIGHUP\n"));
 	reload_services(msg_ctx, smbd_server_conn->sock, False);
 	if (am_parent) {
-		pcap_cache_reload(ev, msg_ctx, &reload_pcap_change_notify);
+		printing_subsystem_update(ev, msg_ctx);
 	}
 }
 

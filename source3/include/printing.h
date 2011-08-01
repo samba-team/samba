@@ -234,8 +234,6 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid);
 bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid);
 void rap_jobid_delete(const char* sharename, uint32 jobid);
 bool print_backend_init(struct messaging_context *msg_ctx);
-void start_background_queue(struct tevent_context *ev,
-			    struct messaging_context *msg);
 void printing_end(void);
 
 /* The following definitions come from printing/lpq_parse.c  */

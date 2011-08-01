@@ -32,8 +32,8 @@
 #include "memcache.h"
 #include "ctdbd_conn.h"
 #include "printing/printer_list.h"
+#include "printing/queue_process.h"
 #include "rpc_server/rpc_service_setup.h"
-#include "printing/pcap.h"
 #include "printing.h"
 #include "serverid.h"
 #include "passdb.h"
@@ -69,8 +69,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 	change_to_root_user();
 	reload_services(msg, smbd_server_conn->sock, False);
 	if (am_parent) {
-		pcap_cache_reload(ev_ctx, msg,
-				  &reload_pcap_change_notify);
+		printing_subsystem_update(ev_ctx, msg);
 	}
 }
 
@@ -585,28 +584,6 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	return true;
 }
 
-static bool smbd_parent_housekeeping(const struct timeval *now, void *private_data)
-{
-	struct messaging_context *msg_ctx =
-		talloc_get_type_abort(private_data, struct messaging_context);
-	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
-	time_t t = time_mono(NULL);
-
-	DEBUG(5, ("parent housekeeping\n"));
-
-	/* if periodic printcap rescan is enabled, see if it's time to reload */
-	if ((printcap_cache_time != 0)
-	 && (t >= (last_printer_reload_time + printcap_cache_time))) {
-		DEBUG( 3,( "Printcap cache time expired.\n"));
-		pcap_cache_reload(messaging_event_context(msg_ctx),
-				  msg_ctx,
-				  &reload_pcap_change_notify);
-		last_printer_reload_time = t;
-	}
-
-	return true;
-}
-
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
@@ -754,14 +731,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			       |FLAG_MSG_DBWRAP)) {
 		DEBUG(0, ("open_sockets_smbd: Failed to register "
 			  "myself in serverid.tdb\n"));
-		return false;
-	}
-
-	if (!(event_add_idle(ev_ctx, NULL,
-			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
-			     "parent_housekeeping", smbd_parent_housekeeping,
-			     msg_ctx))) {
-		DEBUG(0, ("Could not add parent_housekeeping event\n"));
 		return false;
 	}
 
@@ -1252,9 +1221,6 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	/* Publish nt printers, this requires a working winreg pipe */
-	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
-
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if
 	   smbd is launched via inetd and we fork a copy of 
@@ -1262,7 +1228,13 @@ extern void build_options(bool screen);
 
 	if (is_daemon && !interactive
 	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
-		start_background_queue(ev_ctx, msg_ctx);
+		if (!printing_subsystem_init(ev_ctx, msg_ctx, true)) {
+			exit(1);
+		}
+	} else {
+		if (!printing_subsystem_init(ev_ctx, msg_ctx, false)) {
+			exit(1);
+		}
 	}
 
 	if (is_daemon && !_lp_disable_spoolss()) {

@@ -972,6 +972,7 @@ PRINTBACKEND_OBJ = printing/printing.o \
 		   printing/nt_printing_ads.o \
 		   librpc/gen_ndr/ndr_ntprinting.o \
 		    ../librpc/ndr/ndr_ntprinting.o \
+		   printing/queue_process.o \
 		   $(PRINTBASE_OBJ)
 
 SMBD_OBJ = $(SMBD_OBJ_BASE) $(SMBD_OBJ_MAIN)

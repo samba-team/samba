@@ -60,6 +60,7 @@ bool logged_ioctl_message = false;
 
 time_t last_smb_conf_reload_time = 0;
 time_t last_printer_reload_time = 0;
+
 /****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.

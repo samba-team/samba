@@ -143,12 +143,3 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 
 	return(ret);
 }
-
-/****************************************************************************
- Notify smbds of new printcap data
-**************************************************************************/
-void reload_pcap_change_notify(struct tevent_context *ev,
-			       struct messaging_context *msg_ctx)
-{
-	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
-}

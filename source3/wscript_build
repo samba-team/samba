@@ -408,7 +408,8 @@ PRINTBACKEND_SRC = '''printing/printing.c
                       printing/nt_printing.c
                       printing/nt_printing_tdb.c
                       printing/nt_printing_migrate_internal.c
-                      printing/nt_printing_ads.c'''
+                      printing/nt_printing_ads.c
+                      printing/queue_process.c'''
 
 NMBD_SRC1 = '''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
             nmbd/nmbd_become_lmb.c nmbd/nmbd_browserdb.c
