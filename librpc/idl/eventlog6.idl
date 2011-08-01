@@ -64,7 +64,7 @@ interface eventlog6
 
 	typedef struct {
 		[range(0, MAX_RPC_STRING_ARRAY_COUNT)] uint32 count;
-		[size_is(count),charset(UTF16),string] uint16 *ptr;
+		[size_is(count),charset(UTF16),string] uint16 **ptr;
 	} eventlog6_StringArray;
 
 	typedef struct {
