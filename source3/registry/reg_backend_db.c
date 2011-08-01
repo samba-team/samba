@@ -1287,6 +1287,7 @@ struct regdb_delete_subkey_context {
 	const char *key;
 	const char *subkey;
 	const char *path;
+	bool lazy;
 };
 
 static NTSTATUS regdb_delete_subkey_action(struct db_context *db,
@@ -1301,6 +1302,10 @@ static NTSTATUS regdb_delete_subkey_action(struct db_context *db,
 
 	werr = regdb_delete_key_lists(db, delete_ctx->path);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	if (delete_ctx->lazy) {
+		goto done;
+	}
 
 	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
@@ -1323,7 +1328,7 @@ done:
 	return werror_to_ntstatus(werr);
 }
 
-static WERROR regdb_delete_subkey(const char *key, const char *subkey)
+static WERROR regdb_delete_subkey(const char *key, const char *subkey, bool lazy)
 {
 	WERROR werr;
 	char *path;
@@ -1349,6 +1354,7 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 	delete_ctx.key = key;
 	delete_ctx.subkey = subkey;
 	delete_ctx.path = path;
+	delete_ctx.lazy = lazy;
 
 	werr = ntstatus_to_werror(dbwrap_trans_do(regdb,
 						  regdb_delete_subkey_action,

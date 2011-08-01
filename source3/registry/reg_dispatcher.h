@@ -25,7 +25,7 @@ bool store_reg_keys(struct registry_key_handle *key,
 		    struct regsubkey_ctr *subkeys);
 bool store_reg_values(struct registry_key_handle *key, struct regval_ctr *val);
 WERROR create_reg_subkey(struct registry_key_handle *key, const char *subkey);
-WERROR delete_reg_subkey(struct registry_key_handle *key, const char *subkey);
+WERROR delete_reg_subkey(struct registry_key_handle *key, const char *subkey, bool lazy);
 int fetch_reg_keys(struct registry_key_handle *key,
 		   struct regsubkey_ctr *subkey_ctr);
 int fetch_reg_values(struct registry_key_handle *key, struct regval_ctr *val);
