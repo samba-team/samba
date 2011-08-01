@@ -41,6 +41,7 @@ import samba.security
 import samba.auth
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 from samba.netcmd.common import netcmd_finddc
+from samba import policy
 from samba import smb
 
 
@@ -61,18 +62,24 @@ def attr_default(msg, attrname, default):
     return default
 
 
-def flags_string(flags, value):
-    '''return a set of flags as a string'''
-    if value == 0:
-        return 'NONE'
-    ret = ''
-    for (str, val) in flags:
-        if val & value:
-            ret += str + ' '
-            value &= ~val
-    if value != 0:
-        ret += '0x%08x' % value
-    return ret.rstrip()
+def gpo_flags_string(value):
+    '''return gpo flags string'''
+    flags = policy.get_gpo_flags(value)
+    if not flags:
+        ret = 'NONE'
+    else:
+        ret = ' '.join(flags)
+    return ret
+
+
+def gplink_options_string(value):
+    '''return gplink options string'''
+    options = policy.get_gplink_options(value)
+    if not options:
+        ret = 'NONE'
+    else:
+        ret = ' '.join(options)
+    return ret
 
 
 def parse_gplink(gplink):
@@ -214,10 +221,6 @@ class cmd_listall(Command):
 
         samdb_connect(self)
 
-        gpo_flags = [
-            ("GPO_FLAG_USER_DISABLE", dsdb.GPO_FLAG_USER_DISABLE ),
-            ( "GPO_FLAG_MACHINE_DISABLE", dsdb.GPO_FLAG_MACHINE_DISABLE ) ]
-
         msg = get_gpo_info(self.samdb, None)
 
         for m in msg:
@@ -226,7 +229,7 @@ class cmd_listall(Command):
             print("path         : %s" % m['gPCFileSysPath'][0])
             print("dn           : %s" % m.dn)
             print("version      : %s" % attr_default(m, 'versionNumber', '0'))
-            print("flags        : %s" % flags_string(gpo_flags, int(attr_default(m, 'flags', 0))))
+            print("flags        : %s" % gpo_flags_string(int(attr_default(m, 'flags', 0))))
             print("")
 
 
@@ -364,10 +367,6 @@ class cmd_show(Command):
 
         samdb_connect(self)
 
-        gpo_flags = [
-            ("GPO_FLAG_USER_DISABLE", dsdb.GPO_FLAG_USER_DISABLE ),
-            ( "GPO_FLAG_MACHINE_DISABLE", dsdb.GPO_FLAG_MACHINE_DISABLE ) ]
-
         try:
             msg = get_gpo_info(self.samdb, gpo)[0]
         except Exception, e:
@@ -381,7 +380,7 @@ class cmd_show(Command):
         print("path         : %s" % msg['gPCFileSysPath'][0])
         print("dn           : %s" % msg.dn)
         print("version      : %s" % attr_default(msg, 'versionNumber', '0'))
-        print("flags        : %s" % flags_string(gpo_flags, int(attr_default(msg, 'flags', 0))))
+        print("flags        : %s" % gpo_flags_string(int(attr_default(msg, 'flags', 0))))
         print("ACL          : %s" % secdesc.as_sddl())
         print("")
 
@@ -413,11 +412,6 @@ class cmd_getlink(Command):
 
         samdb_connect(self)
 
-        gplink_options = [
-                ("GPLINK_OPT_DISABLE", dsdb.GPLINK_OPT_DISABLE),
-                ("GPLINK_OPT_ENFORCE", dsdb.GPLINK_OPT_ENFORCE),
-            ]
-
         try:
             msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
                                     expression="(objectClass=*)",
@@ -432,7 +426,7 @@ class cmd_getlink(Command):
                 msg = get_gpo_info(self.samdb, dn=g['dn'])
                 print("    GPO     : %s" % msg[0]['name'][0])
                 print("    Name    : %s" % msg[0]['displayName'][0])
-                print("    Options : %s" % flags_string(gplink_options, g['options']))
+                print("    Options : %s" % gplink_options_string(g['options']))
                 print("")
         else:
             print("No GPO(s) linked to DN=%s" % container_dn)
