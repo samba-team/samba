@@ -4503,7 +4503,7 @@ static bool run_properties(int dummy)
 
 	cli_sockopt(cli, sockops);
 
-	d_printf("Capabilities 0x%08x\n", cli->capabilities);
+	d_printf("Capabilities 0x%08x\n", cli_state_capabilities(cli));
 
 	if (!torture_close_connection(cli)) {
 		correct = False;
