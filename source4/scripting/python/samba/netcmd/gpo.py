@@ -43,6 +43,7 @@ from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHE
 from samba.netcmd.common import netcmd_finddc
 from samba import policy
 from samba import smb
+import uuid
 
 
 def samdb_connect(ctx):
@@ -788,7 +789,181 @@ class cmd_fetch(Command):
 
 
 class cmd_create(Command):
-    """Create a GPO"""
+    """Create an empty GPO"""
+
+    synopsis = "%prog gpo create <displayname> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = [ 'displayname' ]
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        Option("--tmpdir", help="Temporary directory for copying policy files", type=str)
+        ]
+
+    def run(self, displayname, H=None, tmpdir=None, sambaopts=None, credopts=None, 
+            versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
+
+        dc_hostname = netcmd_finddc(self.lp, self.creds)
+        samdb_connect(self)
+
+        msg = get_gpo_info(self.samdb, displayname=displayname)
+        if msg.count > 0:
+            raise CommandError("A GPO already existing with name '%s'" % displayname)
+
+        # Create new GUID
+        guid  = str(uuid.uuid4())
+        gpo = "{%s}" % guid.upper()
+        realm = self.lp.get('realm')
+        unc_path = "\\\\%s\\sysvol\\%s\\Policies\\%s" % (realm, realm, gpo)
+
+        # Create GPT
+        if tmpdir is None:
+            tmpdir = "/tmp"
+        if not os.path.isdir(tmpdir):
+            raise CommandError("Temporary directory '%s' does not exist" % tmpdir)
+
+        localdir = os.path.join(tmpdir, "policy")
+        if not os.path.isdir(localdir):
+            os.mkdir(localdir)
+
+        gpodir = os.path.join(localdir, gpo)
+        if os.path.isdir(gpodir):
+            raise CommandError("GPO directory '%s' already exists, refusing to overwrite" % gpodir)
+
+        try:
+            os.mkdir(gpodir)
+            os.mkdir(os.path.join(gpodir, "Machine"))
+            os.mkdir(os.path.join(gpodir, "User"))
+            gpt_contents = "[General]\r\nVersion=0\r\n"
+            file(os.path.join(gpodir, "GPT.INI"), "w").write(gpt_contents)
+        except Exception, e:
+            raise CommandError("Error Creating GPO files", e) 
+
+        # Add cn=<guid>
+        gpo_dn = self.samdb.get_default_basedn()
+        gpo_dn.add_child(ldb.Dn(self.samdb, "CN=Policies,CN=System"))
+        gpo_dn.add_child(ldb.Dn(self.samdb, "CN=%s" % gpo))
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, gpo_dn.get_linearized())
+        m['a01'] = ldb.MessageElement("top", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a02'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a03'] = ldb.MessageElement("groupPolicyContainer", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a04'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_ADD, "displayName")
+        m['a05'] = ldb.MessageElement(gpo, ldb.FLAG_MOD_ADD, "name")
+        m['a06'] = ldb.MessageElement(gpo, ldb.FLAG_MOD_ADD, "CN")
+        m['a07'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_ADD, "gPCFileSysPath")
+        m['a08'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "flags")
+        m['a09'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "versionNumber")
+        m['a10'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
+        m['a11'] = ldb.MessageElement("2", ldb.FLAG_MOD_ADD, "gpcFunctionalityVersion")
+        try:
+            self.samdb.add(m)
+        except Exception, e:
+            raise CommandError("Error adding GPO in AD", e)
+
+        # Add cn=User,cn=<guid>
+        child_dn = gpo_dn
+        child_dn.add_child(ldb.Dn(self.samdb, "CN=User"))
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, child_dn.get_linearized())
+        m['a01'] = ldb.MessageElement("top", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a02'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a03'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
+        m['a04'] = ldb.MessageElement("User", ldb.FLAG_MOD_ADD, "CN")
+        m['a05'] = ldb.MessageElement("User", ldb.FLAG_MOD_ADD, "name")
+        try:
+            self.samdb.add(m)
+        except Exception, e:
+            raise CommandError("Error adding GPO in AD", e)
+
+        # Add cn=User,cn=<guid>
+        child_dn = gpo_dn
+        child_dn.add_child(ldb.Dn(self.samdb, "CN=Machine"))
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, child_dn.get_linearized())
+        m['a01'] = ldb.MessageElement("top", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a02'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a03'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
+        m['a04'] = ldb.MessageElement("Machine", ldb.FLAG_MOD_ADD, "CN")
+        m['a05'] = ldb.MessageElement("Machine", ldb.FLAG_MOD_ADD, "name")
+        try:
+            self.samdb.add(m)
+        except Exception, e:
+            raise CommandError("Error adding GPO in AD", e)
+
+        # Copy GPO files over SMB
+        [dom_name, service, sharepath] = parse_unc(unc_path)
+        try:
+            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
+        except Exception, e:
+            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
+
+        try:
+            create_directory_hier(conn, sharepath)
+            copy_directory_local_to_remote(conn, gpodir, sharepath)
+        except Exception, e:
+            raise CommandError("Error Copying GPO to DC", e)
+
+        # Get new security descriptor
+        msg = get_gpo_info(self.samdb, gpo=gpo)[0]
+        ds_sd_ndr = msg['ntSecurityDescriptor'][0]
+        ds_sd = ndr_unpack(dcerpc.security.descriptor, ds_sd_ndr)
+
+        # Create a file system security descriptor
+        fs_sd = dcerpc.security.descriptor()
+        fs_sd.owner_sid = ds_sd.owner_sid
+        fs_sd.group_sid = ds_sd.group_sid
+        fs_sd.type = ds_sd.type
+        fs_sd.revision = ds_sd.revision
+
+        # Copy sacl
+        fs_sd.sacl = ds_sd.sacl
+
+        # Copy dacl
+        dacl = ds_sd.dacl
+        for ace in dacl.aces:
+            # Don't add the allow for SID_BUILTIN_PREW2K
+            if (not (ace.type & dcerpc.security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) and 
+                    ace.trustee == dcerpc.security.SID_BUILTIN_PREW2K):
+                continue
+
+            # Copy the ace from the directory server security descriptor
+            new_ace = ace
+
+            # Set specific inheritance flags for within the GPO
+            new_ace.flags |= (dcerpc.security.SEC_ACE_FLAG_OBJECT_INHERIT |
+                             dcerpc.security.SEC_ACE_FLAG_CONTAINER_INHERIT)
+            if ace.trustee == dcerpc.security.SID_CREATOR_OWNER:
+                new_ace.flags |= dcerpc.security.SEC_ACE_FLAG_INHERIT_ONLY
+
+            # Get a directory access mask from the assigned access mask on the ldap object
+            new_ace.access_mask = policy.ads_to_dir_access_mask(ace.access_mask)
+
+            # Add the ace to DACL
+            fs_sd.dacl_add(new_ace)
+
+        # Set ACL
+        try:
+            conn.set_acl(sharepath, fs_sd)
+        except Exception, e:
+            raise CommandError("Error setting ACL on GPT", e)
+
+        print "GPO '%s' created as %s" % (displayname, gpo)
+
 
 class cmd_setacl(Command):
     """Set ACL on a GPO"""
