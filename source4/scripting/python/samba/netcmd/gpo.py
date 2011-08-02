@@ -202,6 +202,38 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
                 file(l_name, 'w').write(data)
 
 
+def copy_directory_local_to_remote(conn, localdir, remotedir):
+    if not conn.chkpath(remotedir):
+        conn.mkdir(remotedir)
+    l_dirs = [ localdir ]
+    r_dirs = [ remotedir ]
+    while l_dirs:
+        l_dir = l_dirs.pop()
+        r_dir = r_dirs.pop()
+
+        dirlist = os.listdir(l_dir)
+        for e in dirlist:
+            l_name = os.path.join(l_dir, e)
+            r_name = r_dir + '\\' + e
+
+            if os.path.isdir(l_name):
+                l_dirs.append(l_name)
+                r_dirs.append(r_name)
+                conn.mkdir(r_name)
+            else:
+                data = file(l_name, 'r').read()
+                conn.savefile(r_name, data)
+
+
+def create_directory_hier(conn, remotedir):
+    elems = remotedir.replace('/', '\\').split('\\')
+    path = ""
+    for e in elems:
+        path = path + '\\' + e
+        if not conn.chkpath(path):
+            conn.mkdir(path)
+
+
 class cmd_listall(Command):
     """list all GPOs"""
 
