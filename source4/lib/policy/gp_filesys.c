@@ -417,7 +417,7 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 		                                    remote_path, dirent->d_name);
 		NT_STATUS_HAVE_NO_MEMORY(entry_remote_path);
 
-		if (stat(dirent->d_name, &s) != 0) {
+		if (stat(entry_local_path, &s) != 0) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (s.st_mode & S_IFDIR) {
