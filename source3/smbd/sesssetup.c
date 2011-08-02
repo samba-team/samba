@@ -1140,7 +1140,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	 * identical regardless.  In particular, both rely only on the
 	 * status code (not the contents of the packet) and do not
 	 * wrap the result */
-	if (sconn->use_gensec_hook || (blob1.length > 7 && strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0)) {
+	if (sconn->use_gensec_hook || ntlmssp_blob_matches_magic(&blob1)) {
 		DATA_BLOB chal;
 
 		if (!vuser->auth_ntlmssp_state) {

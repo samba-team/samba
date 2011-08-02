@@ -169,3 +169,5 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_stae,
 			const DATA_BLOB *in,
 			DATA_BLOB *out);
 NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
+
+bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob);

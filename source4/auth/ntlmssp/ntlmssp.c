@@ -63,7 +63,7 @@ static const struct ntlmssp_callbacks {
 static NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security, 
 				     const DATA_BLOB *first_packet) 
 {
-	if (first_packet->length > 8 && memcmp("NTLMSSP\0", first_packet->data, 8) == 0) {
+	if (ntlmssp_blob_matches_magic(first_packet)) {
 		return NT_STATUS_OK;
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;

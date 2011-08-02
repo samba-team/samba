@@ -753,7 +753,7 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 	 * status code (not the contents of the packet) and do not
 	 * wrap the result */
 	if (session->sconn->use_gensec_hook
-	    || (in_security_buffer.length > 7 && strncmp((char *)(in_security_buffer.data), "NTLMSSP", 7) == 0)) {
+	    || ntlmssp_blob_matches_magic(&in_security_buffer)) {
 		return smbd_smb2_raw_ntlmssp_auth(session,
 						smb2req,
 						in_security_mode,

@@ -132,3 +132,13 @@ void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
 	}
 }
+
+/* Does this blob looks like it could be NTLMSSP? */
+bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob)
+{
+	if (blob->length > 8 && memcmp("NTLMSSP\0", blob->data, 8) == 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
