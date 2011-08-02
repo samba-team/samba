@@ -67,7 +67,7 @@ static NTSTATUS try_trans2(struct cli_state *cli,
 			   op, 0,
 			   NULL, 0, 0, /* setup */
 			   param, param_len, 2,
-			   data, data_len, cli->max_xmit,
+			   data, data_len, CLI_BUFFER_SIZE,
 			   NULL,		/* recv_flags2 */
 			   NULL, 0, NULL,	/* rsetup */
 			   &rparam, 0, rparam_len,
@@ -313,7 +313,7 @@ static NTSTATUS try_nttrans(struct cli_state *cli,
 			   op, 0,
 			   NULL, 0, 0, /* setup */
 			   param, param_len, 2,
-			   data, data_len, cli->max_xmit,
+			   data, data_len, CLI_BUFFER_SIZE,
 			   NULL,		/* recv_flags2 */
 			   NULL, 0, NULL,	/* rsetup */
 			   &rparam, 0, rparam_len,

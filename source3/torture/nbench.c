@@ -298,7 +298,7 @@ static struct tevent_req *nbench_cmd_send(TALLOC_CTX *mem_ctx,
 		}
 		subreq = cli_qpathinfo_send(state, ev, nb_state->cli, fname,
 					    ival(state->cmd->params[2]),
-					    0, nb_state->cli->max_xmit);
+					    0, CLI_BUFFER_SIZE);
 		break;
 	}
 	default:
