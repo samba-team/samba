@@ -165,7 +165,14 @@ static void py_smb_list_callback(struct clilist_file_info *f, const char *mask, 
 		dict = PyDict_New();
 		if(dict) {
 			PyDict_SetItemString(dict, "name", PyString_FromString(f->name));
-			PyDict_SetItemString(dict, "short_name", PyString_FromString(f->short_name));
+			
+			/* Windows does not always return short_name */
+			if (f->short_name) {
+				PyDict_SetItemString(dict, "short_name", PyString_FromString(f->short_name));
+			} else {
+				PyDict_SetItemString(dict, "short_name", Py_None);
+			}
+
 			PyDict_SetItemString(dict, "size", PyLong_FromUnsignedLongLong(f->size));
 			PyDict_SetItemString(dict, "attrib", PyInt_FromLong(f->attrib));
 			PyDict_SetItemString(dict, "mtime", PyInt_FromLong(f->mtime));
