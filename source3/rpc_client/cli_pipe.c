@@ -3287,8 +3287,8 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		ntlmssp_ctx = talloc_get_type_abort(a->auth_ctx,
 						    struct auth_ntlmssp_state);
-		sk = auth_ntlmssp_get_session_key(ntlmssp_ctx);
-		make_dup = true;
+		sk = auth_ntlmssp_get_session_key(ntlmssp_ctx, mem_ctx);
+		make_dup = false;
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
 		gse_ctx = talloc_get_type_abort(a->auth_ctx,

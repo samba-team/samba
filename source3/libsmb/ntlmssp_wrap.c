@@ -132,9 +132,9 @@ void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
 	ntlmssp_want_feature(ans->ntlmssp_state, feature);
 }
 
-DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans)
+DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, TALLOC_CTX *mem_ctx)
 {
-	return ans->ntlmssp_state->session_key;
+	return data_blob_talloc(mem_ctx, ans->ntlmssp_state->session_key.data, ans->ntlmssp_state->session_key.length);
 }
 
 NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,

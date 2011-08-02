@@ -340,9 +340,8 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 		return gse_get_session_key(mem_ctx,
 					   sp_ctx->mech_ctx.gssapi_state);
 	case SPNEGO_NTLMSSP:
-		sk = auth_ntlmssp_get_session_key(
-					sp_ctx->mech_ctx.ntlmssp_state);
-		return data_blob_dup_talloc(mem_ctx, &sk);
+		return auth_ntlmssp_get_session_key(
+			sp_ctx->mech_ctx.ntlmssp_state, mem_ctx);
 	default:
 		DEBUG(0, ("Unsupported type in request!\n"));
 		return data_blob_null;
