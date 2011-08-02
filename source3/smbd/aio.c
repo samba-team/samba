@@ -779,6 +779,7 @@ static int handle_aio_smb2_read_complete(struct aio_extra *aio_ex, int errcode)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(subreq, status);
+		return errcode;
 	}
 
 	tevent_req_done(subreq);
@@ -812,6 +813,7 @@ static int handle_aio_smb2_write_complete(struct aio_extra *aio_ex, int errcode)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(subreq, status);
+		return errcode;
 	}
 
 	tevent_req_done(subreq);
