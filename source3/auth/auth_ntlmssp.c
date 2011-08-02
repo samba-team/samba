@@ -223,10 +223,9 @@ NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			TALLOC_FREE(ans);
 			return nt_status;
-		} else {
-			*auth_ntlmssp_state = ans;
-			return NT_STATUS_OK;
 		}
+		*auth_ntlmssp_state = ans;
+		return NT_STATUS_OK;
 	}
 
 	if ((enum server_role)lp_server_role() == ROLE_STANDALONE) {
