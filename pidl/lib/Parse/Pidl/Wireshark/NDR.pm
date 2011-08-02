@@ -332,6 +332,10 @@ sub ElementLevel($$$$$$$)
 			} else {
 				warn("Unable to handle string with flags $e->{PROPERTIES}->{flag}");
 			}
+		} elsif ($l->{DATA_TYPE} eq "DATA_BLOB") {
+			my $remain = 0;
+			$remain = 1 if (property_matches($e->{ORIGINAL}, "flag", ".*LIBNDR_FLAG_REMAINING.*"));
+			$self->pidl_code("offset = dissect_ndr_datablob(tvb, offset, pinfo, tree, drep, $hf, $remain);");
 		} else {
 			my $call;
 
