@@ -305,7 +305,7 @@ struct ldb_parse_tree {
 		struct {
 			const char *attr;
 			int dnAttributes;
-			char *rule_id;
+			const char *rule_id;
 			struct ldb_val value;
 		} extended;
 		struct {
