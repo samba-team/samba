@@ -191,7 +191,7 @@ static struct cli_state *open_nbt_connection(void)
 
 	c->use_kerberos = use_kerberos;
 
-	c->timeout = 120000; /* set a really long timeout (2 minutes) */
+	cli_set_timeout(c, 120000); /* set a really long timeout (2 minutes) */
 	if (use_oplocks) c->use_oplocks = True;
 	if (use_level_II_oplocks) c->use_level_II_oplocks = True;
 
@@ -374,7 +374,7 @@ static bool torture_open_connection_share(struct cli_state **c,
 		return False;
 	}
 
-	(*c)->timeout = 120000; /* set a really long timeout (2 minutes) */
+	cli_set_timeout(*c, 120000); /* set a really long timeout (2 minutes) */
 
 	if (do_encrypt) {
 		return force_cli_encryption(*c,
