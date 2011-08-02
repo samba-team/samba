@@ -132,7 +132,6 @@ NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
 void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
 {
 	if (ans->gensec_security) {
-		/* You need to negotiate signing to get a windows server to calculate a session key */
 		if (feature & NTLMSSP_FEATURE_SESSION_KEY) {
 			return gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 		}
