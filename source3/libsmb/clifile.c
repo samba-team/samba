@@ -2594,7 +2594,8 @@ NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 	uint16_t vwv[8];
 	uint8_t bytes[10];
 	NTSTATUS status;
-	int saved_timeout;
+	unsigned int set_timeout = 0;
+	unsigned int saved_timeout = 0;
 
 	SCVAL(vwv + 0, 0, 0xff);
 	SCVAL(vwv + 0, 1, 0);
@@ -2610,17 +2611,21 @@ NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 	SIVAL(bytes, 2, offset);
 	SIVAL(bytes, 6, len);
 
-	saved_timeout = cli->timeout;
-
 	if (timeout != 0) {
-		cli->timeout = (timeout == -1)
-			? 0x7FFFFFFF : (timeout + 2*1000);
+		if (timeout == -1) {
+			set_timeout = 0x7FFFFFFF;
+		} else {
+			set_timeout = timeout + 2*1000;
+		}
+		saved_timeout = cli_set_timeout(cli, set_timeout);
 	}
 
 	status = cli_smb(talloc_tos(), cli, SMBlockingX, 0, 8, vwv,
 			 10, bytes, NULL, 0, NULL, NULL, NULL, NULL);
 
-	cli->timeout = saved_timeout;
+	if (saved_timeout != 0) {
+		cli_set_timeout(cli, saved_timeout);
+	}
 
 	return status;
 }
@@ -2761,7 +2766,8 @@ NTSTATUS cli_lock64(struct cli_state *cli, uint16_t fnum,
 {
 	uint16_t vwv[8];
 	uint8_t bytes[20];
-        int saved_timeout = cli->timeout;
+	unsigned int set_timeout = 0;
+	unsigned int saved_timeout = 0;
 	int ltype;
 	NTSTATUS status;
 
@@ -2786,17 +2792,21 @@ NTSTATUS cli_lock64(struct cli_state *cli, uint16_t fnum,
 	SOFF_T_R(bytes, 4, offset);
 	SOFF_T_R(bytes, 12, len);
 
-	saved_timeout = cli->timeout;
-
 	if (timeout != 0) {
-		cli->timeout = (timeout == -1)
-			? 0x7FFFFFFF : (timeout + 2*1000);
+		if (timeout == -1) {
+			set_timeout = 0x7FFFFFFF;
+		} else {
+			set_timeout = timeout + 2*1000;
+		}
+		saved_timeout = cli_set_timeout(cli, set_timeout);
 	}
 
 	status = cli_smb(talloc_tos(), cli, SMBlockingX, 0, 8, vwv,
 			 20, bytes, NULL, 0, NULL, NULL, NULL, NULL);
 
-	cli->timeout = saved_timeout;
+	if (saved_timeout != 0) {
+		cli_set_timeout(cli, saved_timeout);
+	}
 
 	return status;
 }
