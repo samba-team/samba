@@ -264,6 +264,40 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 }
 
 
+/*
+  windows ldap searchs don't allow a baseDN with more
+  than one extended component, or an extended
+  component and a string DN
+
+  We only enforce this over ldap, not for internal
+  use, as there are just too many places where we
+  internally want to use a DN that has come from a
+  search with extended DN enabled, or comes from a DRS
+  naming context.
+
+  Enforcing this would also make debugging samba much
+  harder, as we'd need to use ldb_dn_minimise() in a
+  lot of places, and that would lose the DN string
+  which is so useful for working out what a request is
+  for
+*/
+static bool ldb_dn_match_allowed(struct ldb_dn *dn, struct ldb_request *req)
+{
+	int num_components = ldb_dn_get_comp_num(dn);
+	int num_ex_components = ldb_dn_get_extended_comp_num(dn);
+
+	if (num_ex_components == 0) {
+		return true;
+	}
+
+	if ((num_components != 0 || num_ex_components != 1) &&
+	    ldb_req_is_untrusted(req)) {
+		return false;
+	}
+	return true;
+}
+
+
 struct extended_dn_filter_ctx {
 	bool test_only;
 	bool matched;
@@ -271,6 +305,20 @@ struct extended_dn_filter_ctx {
 	struct ldb_request *req;
 	struct dsdb_schema *schema;
 };
+
+/*
+  create a always non-matching node from a equality node
+ */
+static void set_parse_tree_false(struct ldb_parse_tree *tree)
+{
+	const char *attr = tree->u.equality.attr;
+	struct ldb_val value = tree->u.equality.value;
+	tree->operation = LDB_OP_EXTENDED;
+	tree->u.extended.attr = attr;
+	tree->u.extended.value = value;
+	tree->u.extended.rule_id = SAMBA_LDAP_MATCH_ALWAYS_FALSE;
+	tree->u.extended.dnAttributes = 0;
+}
 
 /*
   called on all nodes in the parse tree
@@ -283,8 +331,11 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 	const struct ldb_val *sid_val, *guid_val;
 	const char *no_attrs[] = { NULL };
 	struct ldb_result *res;
-	const char *expression;
 	const struct dsdb_attribute *attribute;
+	bool has_extended_component;
+	enum ldb_scope scope;
+	struct ldb_dn *base_dn;
+	const char *expression;
 
 	if (tree->operation != LDB_OP_EQUALITY) {
 		return LDB_SUCCESS;
@@ -301,11 +352,10 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
-	/* add one_way_link check here */
+	has_extended_component = (memchr(tree->u.equality.value.data, '<',
+					 tree->u.equality.value.length) != NULL);
 
-
-	if (memchr(tree->u.equality.value.data, '<', tree->u.equality.value.length) == NULL) {
-		/* its definately not a magic DN */
+	if (!attribute->one_way_link && !has_extended_component) {
 		return LDB_SUCCESS;
 	}
 
@@ -316,50 +366,73 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
-	sid_val  = ldb_dn_get_extended_component(dn, "SID");
-	guid_val = ldb_dn_get_extended_component(dn, "GUID");
-
-	if (sid_val == NULL && guid_val == NULL) {
-		return LDB_SUCCESS;
-	}
-
 	if (filter_ctx->test_only) {
 		filter_ctx->matched = true;
 		return LDB_SUCCESS;
 	}
 
+	if (!ldb_dn_match_allowed(dn, filter_ctx->req)) {
+		/* we need to make this element of the filter always
+		   be false */
+		set_parse_tree_false(tree);
+		return LDB_SUCCESS;
+	}
 
-	/*
-	  prioritise the GUID - we have had instances of
-	  duplicate SIDs in the database in the
-	  ForeignSecurityPrinciples due to provision errors
-	*/
+	guid_val = ldb_dn_get_extended_component(dn, "GUID");
+	sid_val  = ldb_dn_get_extended_component(dn, "SID");
+
 	if (guid_val) {
 		expression = talloc_asprintf(filter_ctx, "objectGUID=%s", ldb_binary_encode(filter_ctx, *guid_val));
-	} else {
+		scope = LDB_SCOPE_SUBTREE;
+		base_dn = NULL;
+	} else if (sid_val) {
 		expression = talloc_asprintf(filter_ctx, "objectSID=%s", ldb_binary_encode(filter_ctx, *sid_val));
+		scope = LDB_SCOPE_SUBTREE;
+		base_dn = NULL;
+	} else if (attribute->searchFlags & SEARCH_FLAG_ATTINDEX) {
+		/* if it is indexed, then fixing the string DN will do
+		   no good here, as we will not find the attribute in
+		   the index. So for now fall through to a standard DN
+		   component comparison */
+		return LDB_SUCCESS;
+	} else {
+		/* fallback to searching using the string DN as the base DN */
+		expression = "objectClass=*";
+		base_dn = dn;
+		scope = LDB_SCOPE_BASE;
 	}
 
 	ret = dsdb_module_search(filter_ctx->module,
 				 filter_ctx,
 				 &res,
-				 NULL,
-				 LDB_SCOPE_SUBTREE,
+				 base_dn,
+				 scope,
 				 no_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_DELETED |
+				 DSDB_SEARCH_SHOW_EXTENDED_DN |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
 				 filter_ctx->req,
 				 "%s", expression);
+	if (scope == LDB_SCOPE_BASE && ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* note that this will need to change for multi-domain
+		   support */
+		set_parse_tree_false(tree);
+		return LDB_SUCCESS;
+	}
+
 	if (ret != LDB_SUCCESS) {
 		return LDB_SUCCESS;
 	}
+
+
 	if (res->count != 1) {
 		return LDB_SUCCESS;
 	}
 
 	/* replace the search expression element with the matching DN */
-	tree->u.equality.value.data = (uint8_t *)talloc_strdup(tree, ldb_dn_get_linearized(res->msgs[0]->dn));
+	tree->u.equality.value.data = (uint8_t *)talloc_strdup(tree,
+							       ldb_dn_get_extended_linearized(tree, res->msgs[0]->dn, 1));
 	if (tree->u.equality.value.data == NULL) {
 		return ldb_oom(ldb_module_get_ctx(filter_ctx->module));
 	}
@@ -408,6 +481,11 @@ static int extended_dn_fix_filter(struct ldb_module *module, struct ldb_request 
 	filter_ctx->test_only = false;
 	filter_ctx->matched   = false;
 
+	req->op.search.tree = ldb_parse_tree_copy_shallow(req, req->op.search.tree);
+	if (req->op.search.tree == NULL) {
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
+
 	ret = ldb_parse_tree_walk(req->op.search.tree, extended_dn_filter_callback, filter_ctx);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(filter_ctx);
@@ -441,9 +519,11 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	};
 	bool all_partitions = false;
 
-	ret = extended_dn_fix_filter(module, req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+	if (req->operation == LDB_SEARCH) {
+		ret = extended_dn_fix_filter(module, req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	if (!ldb_dn_has_extended(dn)) {
@@ -452,28 +532,8 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	} else {
 		/* It looks like we need to map the DN */
 		const struct ldb_val *sid_val, *guid_val, *wkguid_val;
-		int num_components = ldb_dn_get_comp_num(dn);
-		int num_ex_components = ldb_dn_get_extended_comp_num(dn);
 
-		/*
-		  windows ldap searchs don't allow a baseDN with more
-		  than one extended component, or an extended
-		  component and a string DN
-
-		  We only enforce this over ldap, not for internal
-		  use, as there are just too many places where we
-		  internally want to use a DN that has come from a
-		  search with extended DN enabled, or comes from a DRS
-		  naming context.
-
-		  Enforcing this would also make debugging samba much
-		  harder, as we'd need to use ldb_dn_minimise() in a
-		  lot of places, and that would lose the DN string
-		  which is so useful for working out what a request is
-		  for
-		 */
-		if ((num_components != 0 || num_ex_components != 1) &&
-		    ldb_req_is_untrusted(req)) {
+		if (!ldb_dn_match_allowed(dn, req)) {
 			return ldb_error(ldb_module_get_ctx(module),
 					 LDB_ERR_INVALID_DN_SYNTAX, "invalid number of DN components");
 		}
