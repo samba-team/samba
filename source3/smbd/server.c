@@ -31,10 +31,8 @@
 #include "secrets.h"
 #include "memcache.h"
 #include "ctdbd_conn.h"
-#include "printing/printer_list.h"
 #include "printing/queue_process.h"
 #include "rpc_server/rpc_service_setup.h"
-#include "printing.h"
 #include "serverid.h"
 #include "passdb.h"
 #include "auth.h"
@@ -1173,14 +1171,7 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	if (!printer_list_parent_init()) {
-		exit(1);
-	}
-
 	if (!W_ERROR_IS_OK(registry_init_full()))
-		exit(1);
-
-	if (!print_backend_init(msg_ctx))
 		exit(1);
 
 	/* Open the share_info.tdb here, so we don't have to open

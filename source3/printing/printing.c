@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "printing/notify.h"
 #include "printing/pcap.h"
+#include "printing/printer_list.h"
 #include "printing/queue_process.h"
 #include "serverid.h"
 #include "smbd/smbd.h"
@@ -196,6 +197,10 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 	const char *sversion = "INFO/version";
 	int services = lp_numservices();
 	int snum;
+
+	if (!printer_list_parent_init()) {
+		return false;
+	}
 
 	unlink(cache_path("printing.tdb"));
 	mkdir(cache_path("printing"),0755);

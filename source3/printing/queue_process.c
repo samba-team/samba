@@ -273,6 +273,10 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 
 	use_background_queue = background_queue;
 
+	if (!print_backend_init(msg_ctx)) {
+		return false;
+	}
+
 	/* Publish nt printers, this requires a working winreg pipe */
 	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
 
