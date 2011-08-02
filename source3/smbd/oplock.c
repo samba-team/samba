@@ -688,6 +688,7 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 					  DATA_BLOB *data)
 {
 	struct share_mode_entry msg;
+	struct smbd_server_connection *sconn;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -707,7 +708,10 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id, (unsigned long long)msg.op_mid));
 
-	schedule_deferred_open_message_smb(msg.op_mid);
+	sconn = msg_ctx_to_sconn(msg_ctx);
+	if (sconn != NULL) {
+		schedule_deferred_open_message_smb(sconn, msg.op_mid);
+	}
 }
 
 static void process_open_retry_message(struct messaging_context *msg_ctx,
@@ -717,6 +721,7 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 				       DATA_BLOB *data)
 {
 	struct share_mode_entry msg;
+	struct smbd_server_connection *sconn;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -735,7 +740,10 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   (unsigned long long)msg.op_mid));
 
-	schedule_deferred_open_message_smb(msg.op_mid);
+	sconn = msg_ctx_to_sconn(msg_ctx);
+	if (sconn != NULL) {
+		schedule_deferred_open_message_smb(sconn, msg.op_mid);
+	}
 }
 
 /****************************************************************************

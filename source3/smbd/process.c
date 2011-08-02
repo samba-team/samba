@@ -680,13 +680,14 @@ void remove_deferred_open_message_smb(struct smbd_server_connection *sconn,
  schedule it for immediate processing.
 ****************************************************************************/
 
-void schedule_deferred_open_message_smb(uint64_t mid)
+void schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
+					uint64_t mid)
 {
 	struct pending_message_list *pml;
 	int i = 0;
 
-	if (smbd_server_conn->using_smb2) {
-		schedule_deferred_open_message_smb2(smbd_server_conn, mid);
+	if (sconn->using_smb2) {
+		schedule_deferred_open_message_smb2(sconn, mid);
 		return;
 	}
 

@@ -176,13 +176,18 @@ static void notify_deferred_opens(struct messaging_context *msg_ctx,
  		}
 
  		if (procid_is_me(&e->pid)) {
+			struct smbd_server_connection *sconn;
  			/*
  			 * We need to notify ourself to retry the open.  Do
  			 * this by finding the queued SMB record, moving it to
  			 * the head of the queue and changing the wait time to
  			 * zero.
  			 */
- 			schedule_deferred_open_message_smb(e->op_mid);
+			sconn = msg_ctx_to_sconn(msg_ctx);
+			if (sconn != NULL) {
+				schedule_deferred_open_message_smb(
+					sconn, e->op_mid);
+			}
  		} else {
 			char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 
