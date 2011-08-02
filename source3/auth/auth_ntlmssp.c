@@ -173,8 +173,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	/* Clear out the session keys, and pass them to the caller.
 	 * They will not be used in this form again - instead the
 	 * NTLMSSP code will decide on the final correct session key,
-	 * and put it back here at the end of
-	 * auth_ntlmssp_steal_server_info */
+	 * and supply it to create_local_token() */
 	if (auth_ntlmssp_state->server_info->session_key.length) {
 		DEBUG(10, ("Got NT session key of length %u\n",
 			(unsigned int)auth_ntlmssp_state->server_info->session_key.length));
