@@ -436,7 +436,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		c->use_ccache = True;
 	}
 
-	c->timeout = smbc_getTimeout(context);
+	cli_set_timeout(c, smbc_getTimeout(context));
 
 	status = cli_negprot(c);
 
