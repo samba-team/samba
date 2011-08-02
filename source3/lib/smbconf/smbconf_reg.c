@@ -754,7 +754,7 @@ static sbcErr smbconf_reg_drop(struct smbconf_ctx *ctx)
 		goto done;
 	}
 
-	werr = reg_deletekey_recursive(parent_key, p+1);
+	werr = reg_deletesubkeys_recursive(parent_key, p+1);
 	if (!W_ERROR_IS_OK(werr)) {
 		err = SBC_ERR_IO_FAILURE;
 		goto done;
