@@ -1175,7 +1175,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		 * in a TGS REP even if the client did not specify
 		 * the canonicalize flag.
 		 */
-		if (flags & HDB_F_CANON|HDB_F_FOR_TGS_REQ) {
+		if (flags & (HDB_F_CANON|HDB_F_FOR_TGS_REQ)) {
 			ret = krb5_copy_principal(context, principal, &alloc_principal);
 			if (ret) {
 				return ret;
