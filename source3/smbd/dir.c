@@ -447,10 +447,6 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	if (fsp) {
 		dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
 	} else {
-		status = check_name(conn,path);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 		dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
 	}
 
