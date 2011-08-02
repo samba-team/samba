@@ -194,7 +194,8 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	cli_nps->cli = state->cli;
 	cli_nps->npipe = talloc_move(cli_nps, &state->npipe);
 	cli_nps->fnum = state->fnum;
-	cli_nps->default_timeout = state->cli->timeout;
+	cli_nps->default_timeout = cli_set_timeout(state->cli, 0);
+	cli_set_timeout(state->cli, cli_nps->default_timeout);
 
 	talloc_set_destructor(cli_nps, tstream_cli_np_destructor);
 
