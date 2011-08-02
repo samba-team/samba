@@ -27,6 +27,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../lib/tsocket/tsocket.h"
 #include "auth/gensec/gensec.h"
+#include "librpc/rpc/dcerpc.h"
 
 NTSTATUS auth_ntlmssp_session_info(TALLOC_CTX *mem_ctx,
 				   struct auth_ntlmssp_state *auth_ntlmssp_state,
@@ -285,6 +286,41 @@ NTSTATUS auth_generic_start(struct auth_ntlmssp_state *auth_ntlmssp_state, const
 		 * between.
 		 */
 		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_generic_authtype_start(struct auth_ntlmssp_state *auth_ntlmssp_state, 
+				     uint8_t auth_type, uint8_t auth_level)
+{
+	if (auth_ntlmssp_state->auth_context->gensec_start_mech_by_authtype) {
+		return auth_ntlmssp_state->auth_context->gensec_start_mech_by_authtype(auth_ntlmssp_state->gensec_security,
+										       auth_type, auth_level);
+	}
+
+	if (auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
+		/* The caller will then free the auth_ntlmssp_state,
+		 * undoing what was done in auth_ntlmssp_prepare().
+		 *
+		 * We can't do that logic here, as
+		 * auth_ntlmssp_want_feature() may have been called in
+		 * between.
+		 */
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+		auth_ntlmssp_want_feature(auth_ntlmssp_state, NTLMSSP_FEATURE_SIGN);
+	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		/* Always implies both sign and seal for ntlmssp */
+		auth_ntlmssp_want_feature(auth_ntlmssp_state, NTLMSSP_FEATURE_SEAL);
+	} else if (auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
+		/* Default features */
+	} else {
+		DEBUG(2,("auth_level %d not supported in DCE/RPC authentication\n",
+			 auth_level));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return NT_STATUS_OK;

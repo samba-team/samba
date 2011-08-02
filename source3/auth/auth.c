@@ -462,9 +462,10 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
 
 	/* Look for the first module to provide a start_gensec hook, and set that if provided */
 	for (method = (*auth_context)->auth_method_list; method; method = method->next) {
-		if (method->prepare_gensec && method->gensec_start_mech_by_oid) {
+		if (method->prepare_gensec) {
 			(*auth_context)->prepare_gensec = method->prepare_gensec;
 			(*auth_context)->gensec_start_mech_by_oid = method->gensec_start_mech_by_oid;
+			(*auth_context)->gensec_start_mech_by_authtype = method->gensec_start_mech_by_authtype;
 			break;
 		}
 	}

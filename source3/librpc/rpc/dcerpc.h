@@ -39,6 +39,8 @@ struct NL_AUTH_MESSAGE;
 struct pipe_auth_data {
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
+	
+	bool gensec_hook;
 
 	void *auth_ctx;
 

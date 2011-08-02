@@ -135,7 +135,7 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
 #Plugin S4 DC tests (confirms named pipe auth forwarding).  This can be expanded once kerberos is supported in the plugin DC
 #
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
-    for t in [ "rpc.lsalookup", "rpc.lsa.secrets", "rpc.lsa-getuser", "rpc.handles", "rpc.asyncbind", "rpc.authcontext", "rpc.lsa"]:
+    for t in ncacn_np_tests:
         env = "plugin_s4_dc"
         transport = "ncacn_np"
         plantestsuite_loadlist("samba4.%s with %s" % (t, bindoptions), env, [valgrindify(smb4torture), "$LISTOPT", "%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', '-k', 'no', t])

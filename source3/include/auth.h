@@ -88,6 +88,7 @@ struct auth_context {
 	NTSTATUS (*prepare_gensec)(TALLOC_CTX *mem_ctx,
 				 struct gensec_security **gensec_context);
 	NTSTATUS (*gensec_start_mech_by_oid)(struct gensec_security *gensec_context, const char *oid_string);
+	NTSTATUS (*gensec_start_mech_by_authtype)(struct gensec_security *gensec_context, uint8_t auth_type, uint8_t auth_level);
 };
 
 typedef struct auth_methods
@@ -113,6 +114,7 @@ typedef struct auth_methods
 	NTSTATUS (*prepare_gensec)(TALLOC_CTX *mem_ctx,
 				 struct gensec_security **gensec_context);
 	NTSTATUS (*gensec_start_mech_by_oid)(struct gensec_security *gensec_context, const char *oid_string);
+	NTSTATUS (*gensec_start_mech_by_authtype)(struct gensec_security *gensec_context, uint8_t auth_type, uint8_t auth_level);
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
 
