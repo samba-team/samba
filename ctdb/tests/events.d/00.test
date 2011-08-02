@@ -73,10 +73,21 @@ case $cmd in
 	exit 0
 	;;
 
+     updateip)
+	echo "ctdb updateip event for $1"
+	exit 0
+	;;
+
      recovered)
 	echo "ctdb recovered event"
 	exit 0
 	;;
+
+     ipreallocated)
+	echo "ctdb ipreallocated event"
+	exit 0
+	;;
+
 
      shutdown)
 	echo "ctdb shutdown event"
