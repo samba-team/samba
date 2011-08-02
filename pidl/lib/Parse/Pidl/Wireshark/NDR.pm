@@ -770,8 +770,8 @@ sub ProcessImport
 	my @imports = @_;
 	foreach (@imports) {
 		next if($_ eq "security");
-		s/\.idl\"$//;
 		s/^\"//;
+		s/\.idl"?$//;
 		$self->pidl_hdr("#include \"packet-dcerpc-$_\.h\"");
 	}
 	$self->pidl_hdr("");
