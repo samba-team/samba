@@ -52,6 +52,8 @@ struct ldb_module;
 /* force single value checking on this attribute */
 #define LDB_FLAG_INTERNAL_FORCE_SINGLE_VALUE_CHECK 0x80
 
+/* an extended match rule that always fails to match */
+#define SAMBA_LDAP_MATCH_ALWAYS_FALSE "1.3.6.1.4.1.7165.4.5.1"
 
 /*
    these function pointers define the operations that a ldb module can intercept

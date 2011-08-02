@@ -380,6 +380,16 @@ static int ldb_comparator_bitmask(const char *oid, const struct ldb_val *v1, con
 	return LDB_SUCCESS;
 }
 
+/*
+  always return false
+*/
+static int ldb_comparator_false(const char *oid, const struct ldb_val *v1, const struct ldb_val *v2,
+				bool *matched)
+{
+	*matched = false;
+	return LDB_SUCCESS;
+}
+
 
 /*
   extended match, handles things like bitops
@@ -395,7 +405,8 @@ static int ldb_match_extended(struct ldb_context *ldb,
 		int (*comparator)(const char *, const struct ldb_val *, const struct ldb_val *, bool *);
 	} rules[] = {
 		{ LDB_OID_COMPARATOR_AND, ldb_comparator_bitmask},
-		{ LDB_OID_COMPARATOR_OR, ldb_comparator_bitmask}
+		{ LDB_OID_COMPARATOR_OR, ldb_comparator_bitmask},
+		{ SAMBA_LDAP_MATCH_ALWAYS_FALSE, ldb_comparator_false}
 	};
 	int (*comp)(const char *,const struct ldb_val *, const struct ldb_val *, bool *) = NULL;
 	struct ldb_message_element *el;
