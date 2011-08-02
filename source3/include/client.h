@@ -51,7 +51,7 @@ struct cli_state {
 	 * A list of subsidiary connections for DFS.
 	 */
         struct cli_state *prev, *next;
-	int protocol;
+	enum protocol_types protocol;
 	int sec_mode;
 	int rap_error;
 	NTSTATUS raw_status; /* maybe via NT_STATUS_DOS() */
