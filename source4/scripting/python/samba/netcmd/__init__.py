@@ -165,6 +165,7 @@ class SuperCommand(Command):
         max_length = len(max(subcmds, key=len))
         for cmd in subcmds:
             print "  %*s  - %s" % (-max_length, cmd, self.subcommands[cmd].description)
+        print " *  server connection needed"
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:

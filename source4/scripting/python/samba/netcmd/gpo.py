@@ -956,7 +956,7 @@ class cmd_create(Command):
 
 
 class cmd_gpo(SuperCommand):
-    """Group Policy Object (GPO) commands"""
+    """Group Policy Object (GPO) management"""
 
     subcommands = {}
     subcommands["listall"] = cmd_listall()

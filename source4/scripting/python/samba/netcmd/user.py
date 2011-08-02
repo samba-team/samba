@@ -287,7 +287,7 @@ class cmd_user_setpassword(Command):
 
 
 class cmd_user(SuperCommand):
-    """User management [server connection needed]"""
+    """User management *"""
 
     subcommands = {}
     subcommands["add"] = cmd_user_add()

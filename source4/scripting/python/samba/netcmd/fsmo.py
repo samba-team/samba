@@ -33,7 +33,7 @@ from samba.netcmd import (
 from samba.samdb import SamDB
 
 class cmd_fsmo(Command):
-    """Manage flexible single master (FSMO) roles [server connection needed]"""
+    """Flexible Single Master Operations (FSMO) roles management *"""
 
     synopsis = "(show | transfer <options> | seize <options>)"
 

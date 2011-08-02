@@ -192,7 +192,7 @@ class cmd_spn_delete(Command):
             raise CommandError("Service principal %s not affected" % name)
 
 class cmd_spn(SuperCommand):
-    """SPN management [server connection needed]"""
+    """Service Principal Name (SPN) management *"""
 
     subcommands = {}
     subcommands["add"] = cmd_spn_add()

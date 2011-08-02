@@ -228,7 +228,7 @@ class cmd_delegation_del_service(Command):
             raise CommandError(err)
 
 class cmd_delegation(SuperCommand):
-    """Delegation management [server connection needed]"""
+    """Delegation management *"""
 
     subcommands = {}
     subcommands["show"] = cmd_delegation_show()
