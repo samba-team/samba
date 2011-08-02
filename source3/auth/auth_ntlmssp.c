@@ -160,8 +160,13 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 							&auth_ntlmssp_state->server_info,
 							auth_ntlmssp_state->ntlmssp_state->user,
 							auth_ntlmssp_state->ntlmssp_state->domain);
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
+
+	talloc_steal(auth_ntlmssp_state, auth_ntlmssp_state->server_info);
 
 	auth_ntlmssp_state->server_info->nss_token |= username_was_mapped;
 
@@ -186,8 +191,6 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	}
 	return nt_status;
 }
-
-static int auth_ntlmssp_state_destructor(void *ptr);
 
 NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
 			      struct auth_ntlmssp_state **auth_ntlmssp_state)
@@ -264,22 +267,8 @@ NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
 	ans->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	ans->ntlmssp_state->check_password = auth_ntlmssp_check_password;
 
-	talloc_set_destructor((TALLOC_CTX *)ans, auth_ntlmssp_state_destructor);
-
 	*auth_ntlmssp_state = ans;
 	return NT_STATUS_OK;
-}
-
-static int auth_ntlmssp_state_destructor(void *ptr)
-{
-	struct auth_ntlmssp_state *ans;
-
-	ans = talloc_get_type(ptr, struct auth_ntlmssp_state);
-
-	TALLOC_FREE(ans->remote_address);
-	TALLOC_FREE(ans->server_info);
-	TALLOC_FREE(ans->ntlmssp_state);
-	return 0;
 }
 
 NTSTATUS auth_generic_start(struct auth_ntlmssp_state *auth_ntlmssp_state, const char *oid)
