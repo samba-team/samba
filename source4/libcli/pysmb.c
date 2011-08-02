@@ -24,6 +24,7 @@
 #include "param/param.h"
 #include "param/pyparam.h"
 #include "system/dir.h"
+#include "system/filesys.h"
 #include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/pycredentials.h"
@@ -297,9 +298,11 @@ static PyObject *py_smb_chkpath(py_talloc_Object *self, PyObject *args)
 static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
-	union smb_fileinfo io;
+	union smb_open io;
+	union smb_fileinfo fio;
 	struct smb_private_data *spdata;
 	const char *filename;
+	int fnum;
 
 	if (!PyArg_ParseTuple(args, "s:get_acl", &filename)) {
 		return NULL;
@@ -307,17 +310,48 @@ static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject 
 
 	ZERO_STRUCT(io);
 
-	io.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
-	io.query_secdesc.in.file.path = filename;
-	io.query_secdesc.in.secinfo_flags = 0;
+	spdata = self->ptr;	
 
-	spdata = self->ptr;
-
-	status = smb_raw_query_secdesc(spdata->tree, self->talloc_ctx, &io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | 
+					NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = filename;
+	
+	status = smb_raw_open(spdata->tree, self->talloc_ctx, &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
+	fnum = io.ntcreatex.out.file.fnum;
+
+	ZERO_STRUCT(fio);
+
+	fio.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	fio.query_secdesc.in.file.fnum = fnum;
+	fio.query_secdesc.in.secinfo_flags = SECINFO_OWNER |
+						SECINFO_GROUP |
+						SECINFO_DACL |
+						SECINFO_PROTECTED_DACL |
+						SECINFO_UNPROTECTED_DACL |
+						SECINFO_DACL |
+						SECINFO_PROTECTED_SACL |
+						SECINFO_UNPROTECTED_SACL;
+
+
+	status = smb_raw_query_secdesc(spdata->tree, self->talloc_ctx, &fio);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	smbcli_close(spdata->tree, fnum);
+
 	return py_return_ndr_struct("samba.dcerpc.security", "descriptor",
-				self->talloc_ctx, io.query_secdesc.out.sd);
+				self->talloc_ctx, fio.query_secdesc.out.sd);
 }
 
 
@@ -327,11 +361,13 @@ static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject 
 static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
-	union smb_setfileinfo io;
+	union smb_open io;
+	union smb_setfileinfo fio;
 	struct smb_private_data *spdata;
 	const char *filename;
 	PyObject *py_sd;
 	struct security_descriptor *sd;
+	int fnum;
 
 	if (!PyArg_ParseTuple(args, "sO:set_acl", &filename, &py_sd)) {
 		return NULL;
@@ -341,19 +377,43 @@ static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject 
 
 	sd = py_talloc_get_type(py_sd, struct security_descriptor);
 	if (!sd) {
-		PyErr_Format(PyExc_TypeError,
-				"Expected dcerpc.security.descriptor for security_descriptor argument, got %s", talloc_get_name(py_talloc_get_ptr(py_sd)));
+		PyErr_Format(PyExc_TypeError, 
+			"Expected dcerpc.security.descriptor as argument, got %s", 
+			talloc_get_name(py_talloc_get_ptr(py_sd)));
 		return NULL;
 	}
 
 	ZERO_STRUCT(io);
 
-	io.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
-	io.set_secdesc.in.file.path = filename;
-	io.set_secdesc.in.secinfo_flags = 0;
-	io.set_secdesc.in.sd = sd;
+	spdata = self->ptr;	
 
-	status = smb_raw_set_secdesc(spdata->tree, &io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | 
+					NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = filename;
+	
+	status = smb_raw_open(spdata->tree, self->talloc_ctx, &io);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	fnum = io.ntcreatex.out.file.fnum;
+
+	ZERO_STRUCT(fio);
+
+	fio.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	fio.set_secdesc.in.file.fnum = fnum;
+	fio.set_secdesc.in.secinfo_flags = 0;
+	fio.set_secdesc.in.sd = sd;
+
+	status = smb_raw_set_secdesc(spdata->tree, &fio);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
