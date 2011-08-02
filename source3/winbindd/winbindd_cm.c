@@ -813,7 +813,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*cli)->timeout = 10000; 	/* 10 seconds */
+	cli_set_timeout(*cli, 10000); /* 10 seconds */
 
 	(*cli)->use_kerberos = True;
 
