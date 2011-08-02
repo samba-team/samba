@@ -323,6 +323,12 @@ sub ElementLevel($$$$$$$)
 				$self->pidl_code("proto_item_append_text(tree, \": %s\", data);");
 			} elsif (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*")) {
 				$self->pidl_code("offset = dissect_ndr_vstring(tvb, offset, pinfo, tree, drep, $bs, $hf, FALSE, NULL);");
+			} elsif (property_matches($e, "flag", ".*STR_NULLTERM.*")) {
+				if ($bs == 2) {
+					$self->pidl_code("offset = dissect_null_term_wstring(tvb, offset, pinfo, tree, drep, $hf , 0);")
+				} else {
+					$self->pidl_code("offset = dissect_null_term_string(tvb, offset, pinfo, tree, drep, $hf , 0);")
+				}
 			} else {
 				warn("Unable to handle string with flags $e->{PROPERTIES}->{flag}");
 			}
