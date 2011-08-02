@@ -582,7 +582,7 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	/* If it's still there and was processed, remove it. */
 	msg = get_deferred_open_message_smb(mid);
 	if (msg && msg->processed) {
-		remove_deferred_open_message_smb(mid);
+		remove_deferred_open_message_smb(smbd_server_conn, mid);
 	}
 }
 
@@ -652,12 +652,13 @@ static bool push_queued_message(struct smb_request *req,
  Function to delete a sharing violation open message by mid.
 ****************************************************************************/
 
-void remove_deferred_open_message_smb(uint64_t mid)
+void remove_deferred_open_message_smb(struct smbd_server_connection *sconn,
+				      uint64_t mid)
 {
 	struct pending_message_list *pml;
 
-	if (smbd_server_conn->using_smb2) {
-		remove_deferred_open_message_smb2(smbd_server_conn, mid);
+	if (sconn->using_smb2) {
+		remove_deferred_open_message_smb2(sconn, mid);
 		return;
 	}
 

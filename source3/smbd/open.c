@@ -1621,7 +1621,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				sconn_server_id(req->sconn));
 
 			/* Ensure we don't reprocess this message. */
-			remove_deferred_open_message_smb(req->mid);
+			remove_deferred_open_message_smb(req->sconn, req->mid);
 		}
 	}
 
