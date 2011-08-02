@@ -41,7 +41,8 @@ extern bool global_machine_password_needs_changing;
 
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf);
-static struct pending_message_list *get_deferred_open_message_smb(uint64_t mid);
+static struct pending_message_list *get_deferred_open_message_smb(
+	struct smbd_server_connection *sconn, uint64_t mid);
 
 static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 {
@@ -580,7 +581,7 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 		    msg->seqnum, msg->encrypted, &msg->pcd);
 
 	/* If it's still there and was processed, remove it. */
-	msg = get_deferred_open_message_smb(mid);
+	msg = get_deferred_open_message_smb(smbd_server_conn, mid);
 	if (msg && msg->processed) {
 		remove_deferred_open_message_smb(smbd_server_conn, mid);
 	}
@@ -763,7 +764,8 @@ bool open_was_deferred(struct smbd_server_connection *sconn, uint64_t mid)
  Return the message queued by this mid.
 ****************************************************************************/
 
-static struct pending_message_list *get_deferred_open_message_smb(uint64_t mid)
+static struct pending_message_list *get_deferred_open_message_smb(
+	struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct pending_message_list *pml;
 
@@ -791,7 +793,7 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 					pp_state);
 	}
 
-	pml = get_deferred_open_message_smb(smbreq->mid);
+	pml = get_deferred_open_message_smb(smbreq->sconn, smbreq->mid);
 	if (!pml) {
 		return false;
 	}
