@@ -1119,6 +1119,52 @@ static int samba_syntax_operator_fn(struct ldb_context *ldb, enum ldb_parse_op o
 }
 
 /*
+  see if two DNs match, comparing first by GUID, then by SID, and
+  finally by string components
+ */
+static int samba_dn_extended_match(struct ldb_context *ldb,
+				   const struct ldb_val *v1,
+				   const struct ldb_val *v2,
+				   bool *matched)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *dn1, *dn2;
+	const struct ldb_val *guid1, *guid2, *sid1, *sid2;
+
+	tmp_ctx = talloc_new(ldb);
+
+	dn1 = ldb_dn_from_ldb_val(tmp_ctx, ldb, v1);
+	dn2 = ldb_dn_from_ldb_val(tmp_ctx, ldb, v2);
+	if (!dn1 || !dn2) {
+		/* couldn't parse as DN's */
+		talloc_free(tmp_ctx);
+		(*matched) = false;
+		return LDB_SUCCESS;
+	}
+
+	guid1 = ldb_dn_get_extended_component(dn1, "GUID");
+	guid2 = ldb_dn_get_extended_component(dn2, "GUID");
+	if (guid1 && guid2) {
+		(*matched) = (data_blob_cmp(guid1, guid2) == 0);
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	sid1 = ldb_dn_get_extended_component(dn1, "SID");
+	sid2 = ldb_dn_get_extended_component(dn2, "SID");
+	if (sid1 && sid2) {
+		(*matched) = (data_blob_cmp(sid1, sid2) == 0);
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	(*matched) = (ldb_dn_compare(dn1, dn2) == 0);
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+/*
   special operation for DNs, to take account of the RMD_FLAGS deleted bit
  */
 static int samba_syntax_operator_dn(struct ldb_context *ldb, enum ldb_parse_op operation,
@@ -1127,9 +1173,17 @@ static int samba_syntax_operator_dn(struct ldb_context *ldb, enum ldb_parse_op o
 {
 	if (operation == LDB_OP_PRESENT && dsdb_dn_is_deleted_val(v1)) {
 		/* If the DN is deleted, then we can't search for it */
+
+		/* should this be for equality too? */
 		*matched = false;
 		return LDB_SUCCESS;
 	}
+
+	if (operation == LDB_OP_EQUALITY &&
+	    samba_dn_extended_match(ldb, v1, v2, matched) == LDB_SUCCESS) {
+		return LDB_SUCCESS;
+	}
+
 	return samba_syntax_operator_fn(ldb, operation, a, v1, v2, matched);
 }
 
