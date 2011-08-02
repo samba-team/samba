@@ -654,7 +654,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			   NULL, 0xffff, 0, 0,
 			   setup, 1, 0,
 			   param, param_len, 2,
-			   NULL, 0, cli->max_xmit,
+			   NULL, 0, CLI_BUFFER_SIZE,
 			   &recv_flags2,
 			   NULL, 0, NULL, /* rsetup */
 			   NULL, 0, NULL,

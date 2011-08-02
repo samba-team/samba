@@ -599,7 +599,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 				SMBtrans2, NULL, -1, 0, 0,
 				state->setup, 1, 0,
 				state->param, param_len, 10,
-				NULL, 0, cli->max_xmit);
+				NULL, 0, CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -783,7 +783,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 				SMBtrans2, NULL, -1, 0, 0,
 				state->setup, 1, 0,
 				state->param, param_len, 10,
-				NULL, 0, state->cli->max_xmit);
+				NULL, 0, CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

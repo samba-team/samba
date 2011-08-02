@@ -612,7 +612,7 @@ struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	subreq = cli_qpathinfo_send(state, ev, cli, fname, SMB_QUERY_POSIX_ACL,
-				    0, cli->max_xmit);
+				    0, CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -4142,7 +4142,7 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, -1, 0, 0,
 			   setup, 1, 0,
 			   param, param_len, 2,
-			   data,  data_len, cli->max_xmit,
+			   data,  data_len, CLI_BUFFER_SIZE,
 			   NULL,
 			   NULL, 0, NULL, /* rsetup */
 			   NULL, 0, NULL, /* rparam */
@@ -4327,7 +4327,7 @@ struct tevent_req *cli_get_ea_list_path_send(TALLOC_CTX *mem_ctx,
 	}
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_INFO_QUERY_ALL_EAS, 4,
-				    cli->max_xmit);
+				    CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -5376,7 +5376,7 @@ struct tevent_req *cli_shadow_copy_data_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->get_names = get_names;
-	ret_size = get_names ? cli->max_xmit : 16;
+	ret_size = get_names ? CLI_BUFFER_SIZE : 16;
 
 	SIVAL(state->setup + 0, 0, FSCTL_GET_SHADOW_COPY_DATA);
 	SSVAL(state->setup + 2, 0, fnum);

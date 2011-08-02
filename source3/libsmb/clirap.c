@@ -590,7 +590,7 @@ struct tevent_req *cli_qpathinfo1_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 	subreq = cli_qpathinfo_send(state, ev, cli, fname, SMB_INFO_STANDARD,
-				    22, cli->max_xmit);
+				    22, CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -766,7 +766,7 @@ struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 	}
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_QUERY_FILE_ALL_INFO,
-				    68, cli->max_xmit);
+				    68, CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -901,7 +901,7 @@ struct tevent_req *cli_qpathinfo_streams_send(TALLOC_CTX *mem_ctx,
 	}
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_FILE_STREAM_INFORMATION,
-				    0, cli->max_xmit);
+				    0, CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1079,7 +1079,7 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 
 	status = cli_qfileinfo(talloc_tos(), cli, fnum,
 			       SMB_QUERY_FILE_NAME_INFO,
-			       4, cli->max_xmit, &recv_flags2,
+			       4, CLI_BUFFER_SIZE, &recv_flags2,
 			       &rdata, &num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1133,7 +1133,7 @@ NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
 
 	status = cli_qfileinfo(talloc_tos(), cli, fnum,
 			       SMB_QUERY_FILE_ALL_INFO,
-			       68, MIN(cli->max_xmit, 0xffff),
+			       68, CLI_BUFFER_SIZE,
 			       NULL,
 			       &rdata, &num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1192,7 +1192,7 @@ struct tevent_req *cli_qpathinfo_basic_send(TALLOC_CTX *mem_ctx,
 	}
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_QUERY_FILE_BASIC_INFO,
-				    36, cli->max_xmit);
+				    36, CLI_BUFFER_SIZE);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1283,7 +1283,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 
 	status = cli_qpathinfo(talloc_tos(), cli, fname,
 			       SMB_QUERY_FILE_ALT_NAME_INFO,
-			       4, cli->max_xmit, &rdata, &num_rdata);
+			       4, CLI_BUFFER_SIZE, &rdata, &num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
