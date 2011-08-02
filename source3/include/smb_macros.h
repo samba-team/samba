@@ -105,7 +105,6 @@
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
 #define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
-#define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
 #define reply_nterror(req,status) reply_nt_error(req,status,__LINE__,__FILE__)
