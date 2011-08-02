@@ -167,14 +167,14 @@ static void notify_deferred_opens(struct messaging_context *msg_ctx,
 	if (!should_notify_deferred_opens()) {
 		return;
 	}
- 
+
  	for (i=0; i<lck->num_share_modes; i++) {
  		struct share_mode_entry *e = &lck->share_modes[i];
- 
+
  		if (!is_deferred_open_entry(e)) {
  			continue;
  		}
- 
+
  		if (procid_is_me(&e->pid)) {
  			/*
  			 * We need to notify ourself to retry the open.  Do
