@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-
-bld.SAMBA_BINARY('samba-tool-c',
-	source='samba_tool.c vampire.c gpo.c',
-	autoproto='proto.h',
-	deps='samba-hostconfig samba-util samba-net popt POPT_SAMBA POPT_CREDENTIALS samba-policy auth4',
-	pyembed=True,
-	install=False
-	)
