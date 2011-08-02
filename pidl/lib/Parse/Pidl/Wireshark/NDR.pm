@@ -819,7 +819,7 @@ sub ProcessInterface($$)
 	
 	    my $maj = $x->{VERSION};
 	    $maj =~ s/\.(.*)$//g;
-	    $self->pidl_def("static guint16 ver_dcerpc_$x->{NAME} = $maj;");
+	    $self->pidl_def("static guint32 ver_dcerpc_$x->{NAME} = $maj;");
 	    $self->pidl_def("");
 	}
 
