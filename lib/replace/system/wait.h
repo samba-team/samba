@@ -44,10 +44,6 @@
 #include <setjmp.h>
 #endif
 
-#ifndef SA_RESETHAND
-#define SA_RESETHAND SA_ONESHOT
-#endif
-
 #if !defined(HAVE_SIG_ATOMIC_T_TYPE)
 typedef int sig_atomic_t;
 #endif
