@@ -60,43 +60,39 @@ static void dos_format(char *s)
 
 
 /*
- * Connect to SMB share using smb_composite_connect
+ * Connect to SMB share using smb_full_connection
  */
 static NTSTATUS do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_private_data *spdata,
 			const char *hostname, const char *service, struct smbcli_tree **tree)
 {
-	struct smb_composite_connect io;
+	struct smbcli_state *smb_state;
 	NTSTATUS status;
-
-	gensec_init();
+	struct smbcli_options options;
+	struct smbcli_session_options session_options;
 
 	*tree = NULL;
 
-	ZERO_STRUCT(io);
+	gensec_init();
 
-	io.in.dest_host = hostname;
+	smb_state = smbcli_state_init(mem_ctx);
 
-	io.in.dest_ports = lpcfg_smb_ports(spdata->lp_ctx);
-	io.in.socket_options = lpcfg_socket_options(spdata->lp_ctx);
-	io.in.gensec_settings = lpcfg_gensec_settings(mem_ctx, spdata->lp_ctx);
+	lpcfg_smbcli_options(spdata->lp_ctx, &options);
+	lpcfg_smbcli_session_options(spdata->lp_ctx, &session_options);
 
-	io.in.called_name = lpcfg_netbios_name(spdata->lp_ctx);
-	io.in.workgroup = lpcfg_workgroup(spdata->lp_ctx);
-
-	lpcfg_smbcli_options(spdata->lp_ctx, &io.in.options);
-	lpcfg_smbcli_session_options(spdata->lp_ctx, &io.in.session_options);
-
-	io.in.service = service;
-	io.in.service_type = NULL;
-
-	io.in.credentials = spdata->creds;
-	io.in.fallback_to_anonymous = false;
-
-	status = smb_composite_connect(&io, mem_ctx,
+	status = smbcli_full_connection(mem_ctx, &smb_state, hostname, 
+					lpcfg_smb_ports(spdata->lp_ctx),
+					service, 
+					NULL,
+					lpcfg_socket_options(spdata->lp_ctx),
+					spdata->creds,
 					lpcfg_resolve_context(spdata->lp_ctx),
-					spdata->ev_ctx);
+					spdata->ev_ctx,
+					&options,
+					&session_options,
+					lpcfg_gensec_settings(mem_ctx, spdata->lp_ctx));
+
 	if (NT_STATUS_IS_OK(status)) {
-		*tree = io.out.tree;
+		*tree = smb_state->tree;
 	}
 
 	return status;
