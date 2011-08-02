@@ -70,8 +70,6 @@ extern time_t last_printer_reload_time;
  structure to hold a linked list of queued messages.
  for processing.
 ****************************************************************************/
-struct pending_message_list;
-extern struct pending_message_list *deferred_open_queue;
 extern uint32_t common_flags2;
 
 struct smb_srv_trans_enc_ctx;
@@ -447,6 +445,7 @@ struct smbd_smb2_tcon {
 	connection_struct *compat_conn;
 };
 
+struct pending_message_list;
 struct pending_auth_data;
 
 struct smbd_server_connection {
@@ -477,6 +476,9 @@ struct smbd_server_connection {
 
 	/* number of open connections (tcons) */
 	int num_tcons_open;
+
+	struct pending_message_list *deferred_open_queue;
+
 
 	/* open directory handles. */
 	struct {

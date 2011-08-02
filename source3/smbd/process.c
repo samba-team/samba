@@ -641,7 +641,8 @@ static bool push_queued_message(struct smb_request *req,
 		return false;
 	}
 
-	DLIST_ADD_END(deferred_open_queue, msg, struct pending_message_list *);
+	DLIST_ADD_END(req->sconn->deferred_open_queue, msg,
+		      struct pending_message_list *);
 
 	DEBUG(10,("push_message: pushed message length %u on "
 		  "deferred_open_queue\n", (unsigned int)msg_len));
@@ -663,13 +664,13 @@ void remove_deferred_open_message_smb(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	for (pml = deferred_open_queue; pml; pml = pml->next) {
+	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
 		if (mid == (uint64_t)SVAL(pml->buf.data,smb_mid)) {
 			DEBUG(10,("remove_deferred_open_message_smb: "
 				  "deleting mid %llu len %u\n",
 				  (unsigned long long)mid,
 				  (unsigned int)pml->buf.length ));
-			DLIST_REMOVE(deferred_open_queue, pml);
+			DLIST_REMOVE(sconn->deferred_open_queue, pml);
 			TALLOC_FREE(pml);
 			return;
 		}
@@ -692,7 +693,7 @@ void schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	for (pml = deferred_open_queue; pml; pml = pml->next) {
+	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
 		uint64_t msg_mid = (uint64_t)SVAL(pml->buf.data,smb_mid);
 
 		DEBUG(10,("schedule_deferred_open_message_smb: [%d] "
@@ -730,7 +731,7 @@ void schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 
 			TALLOC_FREE(pml->te);
 			pml->te = te;
-			DLIST_PROMOTE(deferred_open_queue, pml);
+			DLIST_PROMOTE(sconn->deferred_open_queue, pml);
 			return;
 		}
 	}
@@ -752,7 +753,7 @@ bool open_was_deferred(struct smbd_server_connection *sconn, uint64_t mid)
 		return open_was_deferred_smb2(sconn, mid);
 	}
 
-	for (pml = deferred_open_queue; pml; pml = pml->next) {
+	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
 		if (((uint64_t)SVAL(pml->buf.data,smb_mid)) == mid && !pml->processed) {
 			return True;
 		}
@@ -769,7 +770,7 @@ static struct pending_message_list *get_deferred_open_message_smb(
 {
 	struct pending_message_list *pml;
 
-	for (pml = deferred_open_queue; pml; pml = pml->next) {
+	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
 		if (((uint64_t)SVAL(pml->buf.data,smb_mid)) == mid) {
 			return pml;
 		}
