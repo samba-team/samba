@@ -208,7 +208,7 @@ commands["rodc"] = cmd_rodc()
 from samba.netcmd.drs import cmd_drs
 commands["drs"] = cmd_drs()
 from samba.netcmd.gpo import cmd_gpo
-commands["gpo2"] = cmd_gpo()
+commands["gpo"] = cmd_gpo()
 from samba.netcmd.ldapcmp import cmd_ldapcmp
 commands["ldapcmp"] = cmd_ldapcmp()
 from samba.netcmd.testparm import cmd_testparm
