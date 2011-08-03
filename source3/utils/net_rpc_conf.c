@@ -34,7 +34,12 @@
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "../libcli/registry/util_reg.h"
 #include "rpc_client/cli_winreg.h"
-#include "../lib/smbconf/smbconf.h"
+#include "lib/smbconf/smbconf.h"
+#include "lib/smbconf/smbconf_init.h"
+#include "lib/smbconf/smbconf_reg.h"
+#include "lib/param/loadparm.h"
+
+
 
 /* internal functions */
 /**********************************************************
@@ -84,6 +89,21 @@ static int rpc_conf_addshare_usage(struct net_context *c, int argc,
 	return -1;
 
 }
+
+static int rpc_conf_import_usage(struct net_context *c, int argc,
+				 const char**argv)
+{
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net rpc conf import [--test|-T] <filename> "
+		   "[<servicename>]\n"
+		   "\t[--test|-T]    testmode - do not act, just print "
+			"what would be done\n"
+		   "\t<servicename>  only import service <servicename>, "
+			"ignore the rest\n"));
+	return -1;
+}
+
 static int rpc_conf_showshare_usage(struct net_context *c, int argc,
 				    const char **argv)
 {
@@ -237,6 +257,149 @@ error:
 
 	TALLOC_FREE(frame);
 	return status;;
+
+}
+static NTSTATUS rpc_conf_set_share(TALLOC_CTX *mem_ctx,
+				   struct dcerpc_binding_handle *b,
+				   struct policy_handle *parent_hnd,
+				   struct smbconf_service *service,
+				   WERROR *werr)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR result = WERR_OK;
+	WERROR _werr;
+	enum winreg_CreateAction action;
+	uint32_t i, j;
+
+	const char **includes;
+
+	struct winreg_String wkey, wkeyclass;
+	struct policy_handle share_hnd;
+
+	ZERO_STRUCT(share_hnd);
+	ZERO_STRUCT(wkey);
+	ZERO_STRUCT(wkeyclass);
+
+	wkey.name = service->name;
+	wkeyclass.name = "";
+	action = REG_ACTION_NONE;
+
+	status = dcerpc_winreg_CreateKey(b,
+					 frame,
+					 parent_hnd,
+					 wkey,
+					 wkeyclass,
+					 0,
+					 REG_KEY_ALL,
+					 NULL,
+					 &share_hnd,
+					 &action,
+					 &result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("winreg_CreateKey: Could not create smbconf key\n");
+		goto error;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		d_printf("winreg_CreateKey: Could not create smbconf key\n");
+		goto error;
+	}
+
+	for (i = 0; i < service->num_params; i++) {
+		if (strequal(service->param_names[i], "include") == 0)
+		{
+
+			status = dcerpc_winreg_set_sz(frame, b, &share_hnd,
+						      service->param_names[i],
+						      service->param_values[i],
+						      &result);
+
+			if (!(NT_STATUS_IS_OK(status))) {
+				d_fprintf(stderr,
+					  "ERROR: Share: '%s'\n"
+					  "Could not set parameter '%s'"
+					  " with value %s\n %s\n",
+					  service->name,
+					  service->param_names[i],
+					  service->param_values[i],
+					  nt_errstr(status));
+				goto error;
+			}
+
+			if (!(W_ERROR_IS_OK(result))) {
+				d_fprintf(stderr,
+					  "ERROR: Share: '%s'\n"
+					  "Could not set parameter '%s'"
+					  " with value %s\n %s\n",
+					  service->name,
+					  service->param_names[i],
+					  service->param_values[i],
+					  win_errstr(result));
+				goto error;
+			}
+		} else {
+
+			includes = talloc_zero_array(frame,
+						     const char *,
+						     service->num_params + 1);
+			if (includes == NULL) {
+				result = WERR_NOMEM;
+				d_fprintf(stderr, "ERROR: out of memory\n");
+				goto error;
+			}
+
+			for (j = i; j < service->num_params; j++) {
+
+				includes[j - i] = talloc_strdup(
+							frame,
+							service->param_values[j]);
+
+				if (includes[j-i] == NULL) {
+					result = WERR_NOMEM;
+					d_fprintf(stderr, "ERROR: out of memory\n");
+					goto error;
+				}
+			}
+
+			status = dcerpc_winreg_set_multi_sz(frame, b, &share_hnd,
+						"includes",
+						includes,
+						&result);
+
+			if (!(NT_STATUS_IS_OK(status))) {
+				d_fprintf(stderr, "ERROR: Share: '%s'\n"
+						"Could not set includes\n %s\n",
+						service->name,
+						nt_errstr(status));
+				goto error;
+			}
+
+			if (!(W_ERROR_IS_OK(result))) {
+				d_fprintf(stderr, "ERROR: Share: '%s'\n"
+						"Could not set includes\n %s\n",
+						service->name,
+						win_errstr(result));
+				goto error;
+			}
+
+			i = service->num_params;
+		}
+	}
+
+error:
+	/* in case of error, should it delete the created key? */
+	if (!(W_ERROR_IS_OK(result))) {
+		status =  werror_to_ntstatus(result);
+
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &share_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
 
 }
 
@@ -920,6 +1083,187 @@ error:
 	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
 	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
 
+	TALLOC_FREE(frame);
+	return status;
+}
+
+static NTSTATUS rpc_conf_import_internal(struct net_context *c,
+					 const struct dom_sid *domain_sid,
+					 const char *domain_name,
+					 struct cli_state *cli,
+					 struct rpc_pipe_client *pipe_hnd,
+					 TALLOC_CTX *mem_ctx,
+					 int argc,
+					 const char **argv )
+{
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	struct policy_handle hive_hnd, key_hnd;
+
+	const char *filename = NULL;
+	const char *servicename = NULL;
+	char *conf_source = NULL;
+	TALLOC_CTX *frame;
+	struct smbconf_ctx *txt_ctx;
+	struct smbconf_service *service = NULL;
+	struct smbconf_service **services = NULL;
+	uint32_t num_shares, i;
+	sbcErr err;
+
+	WERROR werr = WERR_OK;
+	NTSTATUS status = NT_STATUS_OK;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	frame = talloc_stackframe();
+
+	if (c->display_usage) {
+		rpc_conf_import_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	switch (argc) {
+		case 0:
+		default:
+			rpc_conf_import_usage(c, argc, argv);
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		case 2:
+			servicename = talloc_strdup(frame, argv[1]);
+			if (servicename == NULL) {
+				d_printf(_("error: out of memory!\n"));
+				goto error;
+			}
+		case 1:
+			filename = argv[0];
+			break;
+	}
+
+	DEBUG(3,("rpc_conf_import: reading configuration from file %s.\n",
+		filename));
+
+	conf_source = talloc_asprintf(frame, "file:%s", filename);
+	if (conf_source == NULL) {
+		d_fprintf(stderr, _("error: out of memory!\n"));
+		goto error;
+	}
+
+	err = smbconf_init(frame, &txt_ctx, conf_source);
+	if (!SBC_ERROR_IS_OK(err)) {
+		d_fprintf(stderr, _("error loading file '%s': %s\n"), filename,
+			 sbcErrorString(err));
+		goto error;
+	}
+
+	if (c->opt_testmode) {
+		d_printf(_("\nTEST MODE - "
+			 "would import the following configuration:\n\n"));
+	}
+
+	if (servicename != NULL) {
+		err = smbconf_get_share(txt_ctx, frame,
+					servicename,
+					&service);
+		if (!SBC_ERROR_IS_OK(err)) {
+			goto error;
+		}
+
+		num_shares = 1;
+
+	} else {
+
+		err = smbconf_get_config(txt_ctx, frame,
+					  &num_shares,
+					  &services);
+		if (!SBC_ERROR_IS_OK(err)) {
+			goto error;
+		}
+	}
+
+	if (c->opt_testmode) {
+		if (servicename != NULL) {
+			rpc_conf_print_shares(1, service);
+		}
+		for (i = 0; i < num_shares; i++) {
+			rpc_conf_print_shares(1, services[i]);
+		}
+		goto error;
+	}
+
+	status = rpc_conf_drop_internal(c,
+			       domain_sid,
+			       domain_name,
+			       cli,
+			       pipe_hnd,
+			       frame,
+			       0,
+			       NULL );
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+	if (servicename != NULL) {
+		status = rpc_conf_set_share(frame,
+					    b,
+					    &key_hnd,
+					    service,
+					    &werr);
+
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
+
+		if (!(W_ERROR_IS_OK(werr))) {
+			goto error;
+		}
+
+	} else {
+
+		for (i = 0; i < num_shares; i++) {
+			status = rpc_conf_set_share(frame,
+					b,
+					&key_hnd,
+					services[i],
+					&werr);
+
+			if (!(NT_STATUS_IS_OK(status))) {
+				goto error;
+			}
+
+			if (!(W_ERROR_IS_OK(werr))) {
+				goto error;
+			}
+
+		}
+	}
+
+error:
+	if (!SBC_ERROR_IS_OK(err)) {
+		d_fprintf(stderr, "ERROR: %s\n", sbcErrorString(err));
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1918,8 +2262,8 @@ static int rpc_conf_list(struct net_context *c, int argc,
 static int rpc_conf_import(struct net_context *c, int argc,
 				const char **argv)
 {
-	d_printf("Function not yet implemented\n");
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_import_internal, argc, argv );
 }
 static int rpc_conf_delshare(struct net_context *c, int argc,
 			     const char **argv)
