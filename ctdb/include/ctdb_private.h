@@ -797,6 +797,7 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
+void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args);
 
 #define CTDB_BAD_REQID ((uint32_t)-1)
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);

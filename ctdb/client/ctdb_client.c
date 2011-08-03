@@ -186,7 +186,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req
 /*
   this is called in the client, when data comes in from the daemon
  */
-static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
+void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_context *ctdb = talloc_get_type(args, struct ctdb_context);
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
