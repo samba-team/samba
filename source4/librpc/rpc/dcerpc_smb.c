@@ -79,6 +79,7 @@ struct smb_read_state {
 */
 static void smb_read_callback(struct smbcli_request *req)
 {
+	struct dcecli_connection *c;
 	struct smb_private *smb;
 	struct smb_read_state *state;
 	union smb_read *io;
@@ -88,11 +89,12 @@ static void smb_read_callback(struct smbcli_request *req)
 	state = talloc_get_type(req->async.private_data, struct smb_read_state);
 	smb = talloc_get_type(state->c->transport.private_data, struct smb_private);
 	io = state->io;
+	c = state->c;
 
 	status = smb_raw_read_recv(state->req, io);
 	if (NT_STATUS_IS_ERR(status)) {
-		pipe_dead(state->c, status);
 		talloc_free(state);
+		pipe_dead(c, status);
 		return;
 	}
 
@@ -101,8 +103,8 @@ static void smb_read_callback(struct smbcli_request *req)
 	if (state->received < 16) {
 		DEBUG(0,("dcerpc_smb: short packet (length %d) in read callback!\n",
 			 (int)state->received));
-		pipe_dead(state->c, NT_STATUS_INFO_LENGTH_MISMATCH);
 		talloc_free(state);
+		pipe_dead(c, NT_STATUS_INFO_LENGTH_MISMATCH);
 		return;
 	}
 
@@ -110,7 +112,6 @@ static void smb_read_callback(struct smbcli_request *req)
 
 	if (frag_length <= state->received) {
 		DATA_BLOB data = state->data;
-		struct dcecli_connection *c = state->c;
 		data.length = state->received;
 		talloc_steal(state->c, data.data);
 		talloc_free(state);
@@ -128,8 +129,8 @@ static void smb_read_callback(struct smbcli_request *req)
 
 	state->req = smb_raw_read_send(smb->tree, io);
 	if (state->req == NULL) {
-		pipe_dead(state->c, NT_STATUS_NO_MEMORY);
 		talloc_free(state);
+		pipe_dead(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -257,7 +258,7 @@ static NTSTATUS smb_send_trans_request(struct dcecli_connection *c, DATA_BLOB *b
 	struct smb_trans_state *state;
 	uint16_t max_data;
 
-	state = talloc(smb, struct smb_trans_state);
+	state = talloc(c, struct smb_trans_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
