@@ -346,9 +346,9 @@ static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject 
 
 
 	status = smb_raw_query_secdesc(spdata->tree, self->talloc_ctx, &fio);
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-
 	smbcli_close(spdata->tree, fnum);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	return py_return_ndr_struct("samba.dcerpc.security", "descriptor",
 				self->talloc_ctx, fio.query_secdesc.out.sd);
@@ -414,6 +414,8 @@ static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject 
 	fio.set_secdesc.in.sd = sd;
 
 	status = smb_raw_set_secdesc(spdata->tree, &fio);
+	smbcli_close(spdata->tree, fnum);
+
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
