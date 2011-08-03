@@ -20,13 +20,13 @@
  */
 
 #include "includes.h"
-#include "rpc_server.h"
 #include "fake_file.h"
 #include "rpc_dce.h"
 #include "ntdomain.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "rpc_server/srv_pipe_hnd.h"
 #include "rpc_server/srv_pipe.h"
+#include "rpc_server/rpc_server.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
 
