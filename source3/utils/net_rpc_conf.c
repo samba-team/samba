@@ -1641,6 +1641,13 @@ static int rpc_conf_showshare(struct net_context *c, int argc,
 		rpc_conf_showshare_internal, argc, argv );
 }
 
+static int rpc_conf_addshare(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("Function not yet implemented\n");
+	return 0;
+}
+
 static int rpc_conf_listshares(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -1745,6 +1752,14 @@ int net_rpc_conf(struct net_context *c, int argc,
 			N_("net rpc conf showshare\n"
 			   "    Show the definition of a remote share.")
 
+		},
+		{
+			"addshare",
+			rpc_conf_addshare,
+			NET_TRANSPORT_RPC,
+			N_("Create a new remote share."),
+			N_("net rpc conf addshare\n"
+			   "    Create a new remote share.")
 		},
 		{
 			"delshare",
