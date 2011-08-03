@@ -25,6 +25,7 @@
 #include "include/messages.h"
 #include "printing.h"
 #include "printing/pcap.h"
+#include "printing/queue_process.h"
 #include "serverid.h"
 #include "locking/proto.h"
 #include "smbd/proto.h"
@@ -86,7 +87,7 @@ static void bq_sig_term_handler(struct tevent_context *ev,
 	exit_server_cleanly("termination signal");
 }
 
-void bq_setup_sig_term_handler(void)
+static void bq_setup_sig_term_handler(void)
 {
 	struct tevent_signal *se;
 
