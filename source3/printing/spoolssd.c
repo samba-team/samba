@@ -23,6 +23,7 @@
 #include "messages.h"
 #include "include/printing.h"
 #include "printing/nt_printing_migrate_internal.h"
+#include "printing/pcap.h"
 #include "ntdomain.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_spoolss.h"
@@ -694,6 +695,9 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 
 	spoolss_reopen_logs();
 	spoolss_prefork_config();
+
+	/* Publish nt printers, this requires a working winreg pipe */
+	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
 
 	/* the listening fd must be created before the children are actually
 	 * forked out. */

@@ -156,15 +156,14 @@ static void printing_pause_fd_handler(struct tevent_context *ev,
 	exit_server_cleanly(NULL);
 }
 
-
-pid_t background_lpq_updater_pid = -1;
-
 /****************************************************************************
 main thread of the background lpq updater
 ****************************************************************************/
-static void start_background_queue(struct tevent_context *ev,
-				   struct messaging_context *msg_ctx)
+pid_t start_background_queue(struct tevent_context *ev,
+			     struct messaging_context *msg_ctx)
 {
+	pid_t pid;
+
 	/* Use local variables for this as we don't
 	 * need to save the parent side of this, just
 	 * ensure it closes when the process exits.
@@ -178,14 +177,14 @@ static void start_background_queue(struct tevent_context *ev,
 		exit(1);
 	}
 
-	background_lpq_updater_pid = sys_fork();
+	pid = sys_fork();
 
-	if (background_lpq_updater_pid == -1) {
+	if (pid == -1) {
 		DEBUG(5,("start_background_queue: background LPQ thread failed to start. %s\n", strerror(errno) ));
 		exit(1);
 	}
 
-	if(background_lpq_updater_pid == 0) {
+	if (pid == 0) {
 		struct tevent_fd *fde;
 		int ret;
 		NTSTATUS status;
@@ -205,6 +204,10 @@ static void start_background_queue(struct tevent_context *ev,
 
 		bq_setup_sig_term_handler();
 		bq_setup_sig_hup_handler(ev, msg_ctx);
+
+		if (!pcap_cache_loaded()) {
+			pcap_cache_reload(ev, msg_ctx, &reload_printers);
+		}
 
 		if (!printing_subsystem_queue_tasks(ev, msg_ctx)) {
 			exit(1);
@@ -242,39 +245,48 @@ static void start_background_queue(struct tevent_context *ev,
 	}
 
 	close(pause_pipe[1]);
-}
 
-static bool use_background_queue;
+	return pid;
+}
 
 /* Run before the parent forks */
 bool printing_subsystem_init(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
 			     bool background_queue)
 {
-	bool ret = true;
-
-	use_background_queue = background_queue;
+	pid_t pid = -1;
 
 	if (!print_backend_init(msg_ctx)) {
 		return false;
 	}
 
-	/* Publish nt printers, this requires a working winreg pipe */
-	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
-
 	if (background_queue) {
-		start_background_queue(ev_ctx, msg_ctx);
+
+		pid = start_background_queue(ev_ctx, msg_ctx);
+
 	} else {
+		bool ret;
+
 		ret = printing_subsystem_queue_tasks(ev_ctx, msg_ctx);
+
+		/* Publish nt printers, this requires a working winreg pipe */
+		pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
+
+		return ret;
 	}
 
-	return ret;
+	if (pid == -1) {
+		return false;
+	}
+	background_lpq_updater_pid = pid;
+
+	return true;
 }
 
 void printing_subsystem_update(struct tevent_context *ev_ctx,
 			       struct messaging_context *msg_ctx)
 {
-	if (use_background_queue) return;
+	if (background_lpq_updater_pid != -1) return;
 
 	pcap_cache_reload(ev_ctx, msg_ctx, &reload_pcap_change_notify);
 }

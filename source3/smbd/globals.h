@@ -66,6 +66,8 @@ extern int trans_num;
 
 extern time_t last_smb_conf_reload_time;
 extern time_t last_printer_reload_time;
+extern pid_t background_lpq_updater_pid;
+
 /****************************************************************************
  structure to hold a linked list of queued messages.
  for processing.

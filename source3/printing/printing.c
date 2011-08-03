@@ -1609,6 +1609,8 @@ void print_queue_receive(struct messaging_context *msg,
 update the internal database from the system print queue for a queue
 ****************************************************************************/
 
+extern pid_t background_lpq_updater_pid;
+
 static void print_queue_update(struct messaging_context *msg_ctx,
 			       int snum, bool force)
 {
