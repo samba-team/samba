@@ -53,6 +53,54 @@ test_exit ()
     exit $(($testfailures+0))
 }
 
+ctdb_check_time_logs ()
+{
+    local threshold=20
+
+    local jump=false
+    local prev=""
+    local ds_prev=""
+    local node=""
+
+    out=$(onnode all tail -n 20 /var/log/ctdb.test.time.log 2>&1)
+
+    if [ $? -eq 0 ] ; then
+	local line
+	while read line ; do
+	    case "$line" in
+		\>\>\ NODE:\ *\ \<\<)
+		    node="${line#>> NODE: }"
+		    node=${node% <<*}
+		    ds_prev=""
+		    ;;
+		*\ *)
+		    set -- $line
+		    ds_curr="$1${2:0:1}"
+		    if [ -n "$ds_prev" ] && \
+			[ $(($ds_curr - $ds_prev)) -ge $threshold ] ; then
+			echo "Node $node had time jump of $(($ds_curr - $ds_prev))ds between $(date +'%T' -d @${ds_prev%?}) and $(date +'%T' -d @${ds_curr%?})"
+			jump=true
+		    fi
+		    prev="$line"
+		    ds_prev="$ds_curr"
+		    ;;
+	    esac
+	done <<<"$out"
+    else
+	echo Error getting time logs
+    fi
+    if $jump ; then
+	echo "Check time sync (test client first):"
+	date
+	onnode -p all date
+	echo "Information from test client:"
+	hostname
+	top -b -n 1
+	echo "Information from cluster nodes:"
+	onnode all "top -b -n 1 ; echo '/proc/slabinfo' ; cat /proc/slabinfo"
+    fi
+}
+
 ctdb_test_exit ()
 {
     local status=$?
@@ -67,6 +115,10 @@ ctdb_test_exit ()
     set +e
 
     echo "*** TEST COMPLETED (RC=$status) AT $(date '+%F %T'), CLEANING UP..."
+
+    if [ -n "$CTDB_TEST_REAL_CLUSTER" -a $status -ne 0 ] ; then
+	ctdb_check_time_logs
+    fi
 
     eval "$ctdb_test_exit_hook" || true
     unset ctdb_test_exit_hook
@@ -856,6 +908,8 @@ restart_ctdb ()
 	
     onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
+    local debug_out=$(onnode -p all ctdb status -Y 2>&1; onnode -p all ctdb scriptstatus 2>&1)
+
     echo "Setting RerecoveryTimeout to 1"
     onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
 
@@ -869,6 +923,13 @@ restart_ctdb ()
     onnode -q 0 $CTDB recover
 
     echo "ctdb is ready"
+
+    if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
+	echo "OUCH!  Cluster is UNHEALTHY again..."
+	echo "$debug_out"
+	# Try to make the calling test fail
+	status=1
+    fi
 }
 
 ctdb_restart_when_done ()

@@ -108,15 +108,9 @@ try_command_on_node $test_node "echo 'function testparm () { tp=\$(which testpar
 
 n="$rc_local_d/samba-skip-share-check"
 n_contents='loadconfig() {
-    name="$1"
-    if [ -f /etc/sysconfig/$name ]; then
-	. /etc/sysconfig/$name
-    elif [ -f /etc/default/$name ]; then
-	. /etc/default/$name
-    elif [ -f $CTDB_BASE/sysconfig/$name ]; then
-	. $CTDB_BASE/sysconfig/$name
-    fi
-    if [ "$name" = "ctdb" ] ; then
+    _loadconfig "$@"
+
+    if [ "$1" = "ctdb" ] ; then
         CTDB_SAMBA_SKIP_SHARE_CHECK=no
     fi
 }
