@@ -1915,6 +1915,12 @@ static int rpc_conf_list(struct net_context *c, int argc,
 		rpc_conf_list_internal, argc, argv );
 }
 
+static int rpc_conf_import(struct net_context *c, int argc,
+				const char **argv)
+{
+	d_printf("Function not yet implemented\n");
+	return 0;
+}
 static int rpc_conf_delshare(struct net_context *c, int argc,
 			     const char **argv)
 {
@@ -1978,6 +1984,16 @@ int net_rpc_conf(struct net_context *c, int argc,
 			   "    Dump the complete remote configuration in smb.conf "
 			   "like format.")
 
+		},
+		{
+			"import",
+			rpc_conf_import,
+			NET_TRANSPORT_RPC,
+			N_("Import configuration from file in smb.conf "
+			   "format."),
+			N_("net rpc conf import\n"
+			   "    Import configuration from file in smb.conf "
+			   "format.")
 		},
 		{
 			"listshares",
