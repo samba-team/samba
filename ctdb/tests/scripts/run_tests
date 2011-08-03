@@ -18,8 +18,10 @@ EOF
 ######################################################################
 
 with_summary=false
+with_desc=false
+quiet=false
 
-temp=$(getopt -n "$prog" -o "xhs" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "xdhqs" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -28,11 +30,19 @@ eval set -- "$temp"
 while true ; do
     case "$1" in
 	-x) set -x; shift ;;
+	-d) with_desc=true ; shift ;;  # 4th line of output is description
+	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
 	--) shift ; break ;;
 	*) usage ;;
     esac
 done
+
+if $quiet ; then
+    show_progress() { cat >/dev/null ; }
+else
+    show_progress() { cat ; }
+fi
 
 ######################################################################
 
@@ -43,22 +53,40 @@ summary=""
 rows=$(if tty -s ; then stty size ; else echo x 80 ; fi | sed -e 's@.* @@' -e 's@^0$@80@')
 ww=$((rows - 7))
 
+tf=$(mktemp)
+sf=$(mktemp)
+
+set -o pipefail
+
 for f; do
     [ -x $f ] || fail "test \"$f\" is not executable"
     tests_total=$(($tests_total + 1))
-    if ctdb_test_run "$f" ; then
-	tests_passed=$(($tests_passed + 1))
-	t="PASSED"
-    else
-	t="FAILED"
+    ctdb_test_run "$f" | tee "$tf" | show_progress
+    status=$?
+    if $with_summary ; then
+	if [ $status -eq 0 ] ; then
+	    tests_passed=$(($tests_passed + 1))
+	    t=" PASSED "
+	else
+	    t="*FAILED*"
+	fi
+	if $with_desc ; then
+	    desc=$(tail -n +4 $tf | head -n 1)
+	    f="$desc"
+	fi
+	echo "$t $f" >>"$sf"
     fi
-    summary=$(printf "%s\n%-${ww}s%s" "$summary" "$f" "$t")
 done
 
+rm -f "$tf"
+
 if $with_summary ; then
-    echo "$summary"
+    echo
+    cat "$sf"
     echo
     echo "${tests_passed}/${tests_total} tests passed"
 fi
+
+rm -f "$sf"
 
 test_exit
