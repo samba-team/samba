@@ -955,10 +955,6 @@ class cmd_create(Command):
         print "GPO '%s' created as %s" % (displayname, gpo)
 
 
-class cmd_setacl(Command):
-    """Set ACL on a GPO"""
-
-
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) commands"""
 
@@ -973,4 +969,3 @@ class cmd_gpo(SuperCommand):
     subcommands["setinheritance"] = cmd_setinheritance()
     subcommands["fetch"] = cmd_fetch()
     subcommands["create"] = cmd_create()
-    subcommands["setacl"] = cmd_setacl()
