@@ -857,17 +857,13 @@ class cmd_create(Command):
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, gpo_dn.get_linearized())
-        m['a01'] = ldb.MessageElement("top", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a02'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a03'] = ldb.MessageElement("groupPolicyContainer", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a04'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_ADD, "displayName")
-        m['a05'] = ldb.MessageElement(gpo, ldb.FLAG_MOD_ADD, "name")
-        m['a06'] = ldb.MessageElement(gpo, ldb.FLAG_MOD_ADD, "CN")
-        m['a07'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_ADD, "gPCFileSysPath")
-        m['a08'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "flags")
-        m['a09'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "versionNumber")
-        m['a10'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
-        m['a11'] = ldb.MessageElement("2", ldb.FLAG_MOD_ADD, "gpcFunctionalityVersion")
+        m['a01'] = ldb.MessageElement("groupPolicyContainer", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a02'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_ADD, "displayName")
+        m['a03'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_ADD, "gPCFileSysPath")
+        m['a04'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "flags")
+        m['a05'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "versionNumber")
+        m['a06'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
+        m['a07'] = ldb.MessageElement("2", ldb.FLAG_MOD_ADD, "gpcFunctionalityVersion")
         try:
             self.samdb.add(m)
         except Exception, e:
@@ -879,11 +875,8 @@ class cmd_create(Command):
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, child_dn.get_linearized())
-        m['a01'] = ldb.MessageElement("top", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a02'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a03'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
-        m['a04'] = ldb.MessageElement("User", ldb.FLAG_MOD_ADD, "CN")
-        m['a05'] = ldb.MessageElement("User", ldb.FLAG_MOD_ADD, "name")
+        m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
         try:
             self.samdb.add(m)
         except Exception, e:
@@ -895,11 +888,8 @@ class cmd_create(Command):
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, child_dn.get_linearized())
-        m['a01'] = ldb.MessageElement("top", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a02'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a03'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
-        m['a04'] = ldb.MessageElement("Machine", ldb.FLAG_MOD_ADD, "CN")
-        m['a05'] = ldb.MessageElement("Machine", ldb.FLAG_MOD_ADD, "name")
+        m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
+        m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
         try:
             self.samdb.add(m)
         except Exception, e:
