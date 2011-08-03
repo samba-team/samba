@@ -67,6 +67,23 @@ static int rpc_conf_delshare_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static int rpc_conf_addshare_usage(struct net_context *c, int argc,
+				   const char **argv)
+{
+	d_printf("%s\n%s",
+		 _("Usage:"),
+		 _(" net rpc conf addshare <sharename> <path> "
+		   "[writeable={y|N} [guest_ok={y|N} [<comment>]]]\n"
+		   "\t<sharename>      the new share name.\n"
+		   "\t<path>           the path on the filesystem to export.\n"
+		   "\twriteable={y|N}  set \"writeable to \"yes\" or "
+		   "\"no\" (default) on this share.\n"
+		   "\tguest_ok={y|N}   set \"guest ok\" to \"yes\" or "
+		   "\"no\" (default)   on this share.\n"
+		   "\t<comment>        optional comment for the new share.\n"));
+	return -1;
+
+}
 static int rpc_conf_showshare_usage(struct net_context *c, int argc,
 				    const char **argv)
 {
@@ -998,6 +1015,242 @@ error:
 	return status;
 }
 
+static NTSTATUS rpc_conf_addshare_internal(struct net_context *c,
+					   const struct dom_sid *domain_sid,
+					   const char *domain_name,
+					   struct cli_state *cli,
+					   struct rpc_pipe_client *pipe_hnd,
+					   TALLOC_CTX *mem_ctx,
+					   int argc,
+					   const char **argv )
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd, share_hnd;
+	char *sharename = NULL;
+	const char *path = NULL;
+	const char *comment = NULL;
+	const char *guest_ok = "no";
+	const char *read_only = "yes";
+	struct winreg_String key, keyclass;
+	enum winreg_CreateAction action = 0;
+
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+	ZERO_STRUCT(share_hnd);
+
+	ZERO_STRUCT(key);
+	ZERO_STRUCT(keyclass);
+
+	if (c->display_usage) {
+		rpc_conf_addshare_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	switch (argc) {
+		case 0:
+		case 1:
+		default:
+			rpc_conf_addshare_usage(c, argc, argv);
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		case 5:
+			comment = argv[4];
+		case 4:
+			if (!strnequal(argv[3], "guest_ok=", 9)) {
+				rpc_conf_addshare_usage(c, argc, argv);
+				status = NT_STATUS_INVALID_PARAMETER;
+				goto error;
+			}
+			switch (argv[3][9]) {
+				case 'y':
+				case 'Y':
+					guest_ok = "yes";
+					break;
+				case 'n':
+				case 'N':
+					guest_ok = "no";
+					break;
+				default:
+					rpc_conf_addshare_usage(c, argc, argv);
+					status = NT_STATUS_INVALID_PARAMETER;
+					goto error;
+			}
+		case 3:
+			if (!strnequal(argv[2], "writeable=", 10)) {
+				rpc_conf_addshare_usage(c, argc, argv);
+				status = NT_STATUS_INVALID_PARAMETER;
+				goto error;
+			}
+			switch (argv[2][10]) {
+				case 'y':
+				case 'Y':
+					read_only = "no";
+					break;
+				case 'n':
+				case 'N':
+					read_only = "yes";
+					break;
+				default:
+					rpc_conf_addshare_usage(c, argc, argv);
+					status = NT_STATUS_INVALID_PARAMETER;
+					goto error;
+			}
+		case 2:
+			path = argv[1];
+			sharename = talloc_strdup(frame, argv[0]);
+			if (sharename == NULL) {
+				d_printf(_("error: out of memory!\n"));
+				goto error;
+			}
+
+			break;
+	}
+
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+	key.name = argv[0];
+	keyclass.name = "";
+
+	status = dcerpc_winreg_CreateKey(b, frame, &key_hnd, key, keyclass,
+			0, REG_KEY_READ, NULL, &share_hnd,
+			&action, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], nt_errstr(status));
+		goto error;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], win_errstr(werr));
+		goto error;
+	}
+
+	switch (action) {
+		case REG_ACTION_NONE:
+			werr = WERR_CREATE_FAILED;
+			d_fprintf(stderr, _("ERROR: Could not create share key '%s'\n%s\n"),
+				argv[0], win_errstr(werr));
+			goto error;
+		case REG_CREATED_NEW_KEY:
+			DEBUG(5, ("net rpc conf setincludes:"
+					"createkey created %s\n", argv[0]));
+			break;
+		case REG_OPENED_EXISTING_KEY:
+			d_fprintf(stderr, _("ERROR: Share '%s' already exists\n"), argv[0]);
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+	}
+
+	/* set the path parameter */
+	status = dcerpc_winreg_set_sz(frame, b, &share_hnd,
+					"path", path, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				"path", path, nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				"path", path, win_errstr(werr));
+		goto error;
+	}
+
+	/* set the writeable parameter */
+	status = dcerpc_winreg_set_sz(frame, b, &share_hnd,
+					"read only", read_only, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				"read only", read_only, nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				"read only", read_only, win_errstr(werr));
+		goto error;
+	}
+
+	/* set the guest ok parameter */
+	status = dcerpc_winreg_set_sz(frame, b, &share_hnd,
+					"guest ok", guest_ok, &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				"guest ok", guest_ok, nt_errstr(status));
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+				" with value %s\n %s\n",
+				"guest ok", guest_ok, win_errstr(werr));
+		goto error;
+	}
+
+	if (argc == 5) {
+		/* set the comment parameter */
+		status = dcerpc_winreg_set_sz(frame, b, &share_hnd,
+						"comment", comment, &werr);
+
+		if (!(NT_STATUS_IS_OK(status))) {
+			d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+					" with value %s\n %s\n",
+					"comment", comment, nt_errstr(status));
+			goto error;
+		}
+
+		if (!(W_ERROR_IS_OK(werr))) {
+			d_fprintf(stderr, "ERROR: Could not set parameter '%s'"
+					" with value %s\n %s\n",
+					"comment", comment, win_errstr(werr));
+			goto error;
+		}
+	}
+error:
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &share_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static NTSTATUS rpc_conf_getparm_internal(struct net_context *c,
 					  const struct dom_sid *domain_sid,
 					  const char *domain_name,
@@ -1644,8 +1897,8 @@ static int rpc_conf_showshare(struct net_context *c, int argc,
 static int rpc_conf_addshare(struct net_context *c, int argc,
 				const char **argv)
 {
-	d_printf("Function not yet implemented\n");
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_addshare_internal, argc, argv );
 }
 
 static int rpc_conf_listshares(struct net_context *c, int argc,
