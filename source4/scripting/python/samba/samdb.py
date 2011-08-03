@@ -48,6 +48,8 @@ class SamDB(samba.Ldb):
         elif url is None and lp is not None:
             url = lp.samdb_url()
 
+        self.url = url
+
         super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
             session_info=session_info, credentials=credentials, flags=flags,
             options=options)
@@ -61,6 +63,7 @@ class SamDB(samba.Ldb):
     def connect(self, url=None, flags=0, options=None):
         if self.lp is not None:
             url = self.lp.private_path(url)
+        self.url = url
 
         super(SamDB, self).connect(url=url, flags=flags,
                 options=options)
