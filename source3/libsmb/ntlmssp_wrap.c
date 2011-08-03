@@ -133,13 +133,13 @@ void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
 {
 	if (ans->gensec_security) {
 		if (feature & NTLMSSP_FEATURE_SESSION_KEY) {
-			return gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+			gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 		}
 		if (feature & NTLMSSP_FEATURE_SIGN) {
-			return gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SIGN);
+			gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SIGN);
 		}
 		if (feature & NTLMSSP_FEATURE_SEAL) {
-			return gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SEAL);
+			gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SEAL);
 		}
 	} else {
 		ntlmssp_want_feature(ans->ntlmssp_state, feature);
