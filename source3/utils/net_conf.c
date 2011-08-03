@@ -91,7 +91,7 @@ static int net_conf_addshare_usage(struct net_context *c, int argc,
 	d_printf("%s\n%s",
 		 _("Usage:"),
 		 _(" net conf addshare <sharename> <path> "
-		   "[writeable={y|N} [guest_ok={y|N} [<comment>]]\n"
+		   "[writeable={y|N} [guest_ok={y|N} [<comment>]]]\n"
 		   "\t<sharename>      the new share name.\n"
 		   "\t<path>           the path on the filesystem to export.\n"
 		   "\twriteable={y|N}  set \"writeable to \"yes\" or "
