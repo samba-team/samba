@@ -446,6 +446,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 	ssize_t data_used;
 	char *data;
 	uint32_t to_send;
+	size_t i;
 	bool ok;
 
 	status = dcerpc_read_ncacn_packet_recv(subreq, npc, &pkt, &recv_buffer);
@@ -478,13 +479,6 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 	 * the RPC marshalling code */
 	to_send = out->frag.length - out->current_pdu_sent;
 	if (to_send > 0) {
-
-		DEBUG(10, ("Current_pdu_len = %u, "
-			   "current_pdu_sent = %u "
-			   "Returning %u bytes\n",
-			   (unsigned int)out->frag.length,
-			   (unsigned int)out->current_pdu_sent,
-			   (unsigned int)to_send));
 
 		npc->iov = talloc_zero(npc, struct iovec);
 		if (!npc->iov) {
@@ -522,11 +516,6 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 		npc->iov[npc->count].iov_base = out->frag.data;
 		npc->iov[npc->count].iov_len = out->frag.length;
 
-		DEBUG(10, ("PDU number: %d, PDU Length: %u\n",
-			   (unsigned int)npc->count,
-			   (unsigned int)npc->iov[npc->count].iov_len));
-		dump_data(11, (const uint8_t *)npc->iov[npc->count].iov_base,
-				npc->iov[npc->count].iov_len);
 		npc->count++;
 	}
 
@@ -544,19 +533,31 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 		return;
 	}
 
-	DEBUG(10, ("Sending a total of %u bytes\n",
+	DEBUG(10, ("Sending %u fragments in a total of %u bytes\n",
+		   (unsigned int)npc->count,
 		   (unsigned int)npc->p->out_data.data_sent_length));
 
-	subreq = tstream_writev_queue_send(npc, npc->ev,
-					   npc->tstream,
-					   npc->write_queue,
-					   npc->iov, npc->count);
-	if (!subreq) {
-		DEBUG(2, ("Failed to send packet\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	for (i = 0; i < npc->count; i++) {
+		DEBUG(10, ("Sending PDU number: %d, PDU Length: %u\n",
+			  (unsigned int)i,
+			  (unsigned int)npc->iov[i].iov_len));
+		dump_data(11, (const uint8_t *)npc->iov[i].iov_base,
+				npc->iov[i].iov_len);
+
+		subreq = tstream_writev_queue_send(npc,
+						   npc->ev,
+						   npc->tstream,
+						   npc->write_queue,
+						   (npc->iov + i),
+						   1);
+		if (!subreq) {
+			DEBUG(2, ("Failed to send packet\n"));
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		tevent_req_set_callback(subreq, named_pipe_packet_done, npc);
 	}
-	tevent_req_set_callback(subreq, named_pipe_packet_done, npc);
+
 	return;
 
 fail:
@@ -580,6 +581,10 @@ static void named_pipe_packet_done(struct tevent_req *subreq)
 	if (ret == -1) {
 		DEBUG(2, ("Writev failed!\n"));
 		goto fail;
+	}
+
+	if (tevent_queue_length(npc->write_queue) > 0) {
+		return;
 	}
 
 	/* clear out any data that may have been left around */
