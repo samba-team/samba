@@ -168,7 +168,7 @@ void get_xsrf_token(const char *username, const char *pass,
 		char tmp[3];
 
 		snprintf(tmp, sizeof(tmp), "%02x", token[i]);
-		strncat(token_str, tmp, sizeof(tmp));
+		strlcat(token_str, tmp, sizeof(tmp));
 	}
 }
 
