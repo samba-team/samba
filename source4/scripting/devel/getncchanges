@@ -101,6 +101,7 @@ if __name__ == "__main__":
     parser.add_option("", "--exop", dest="exop", help="extended operation",)
     parser.add_option("", "--pas", dest="use_pas", action='store_true', default=False,
                       help="send partial attribute set",)
+    parser.add_option("", "--nb-iter", type='int', help="Number of getncchange iterations")
     parser.add_option("", "--dest-dsa", type='str',
                       default='"9c637462-5b8c-4467-aef2-bdb1f57bc4ef"', help="destination DSA GUID")
     parser.add_option("", "--replica-flags", type='int',
@@ -170,8 +171,10 @@ if __name__ == "__main__":
     req8.mapping_ctr.num_mappings	     = 0
     req8.mapping_ctr.mappings		     = None
 
+    nb_iter = 0
     while True:
         (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
-        if ctr.more_data == 0:
+        nb_iter += 1
+        if ctr.more_data == 0 or opts.nb_iter == nb_iter:
             break
         req8.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
