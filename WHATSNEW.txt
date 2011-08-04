@@ -52,7 +52,6 @@ Major enhancements in Samba 3.5.11 include:
 
 o  Fix access to Samba shares when Windows security patch KB2536276 is installed
    (bug #7460).
-o  Fix DoS in Winbind and smbd with many file descriptors open (bug #7949).
 o  Fix Winbind panics if verify_idpool() fails (bug #8253).
 
 
@@ -87,7 +86,6 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 7841: Make WINBINDD_LOOKUPRIDS ask the right domain.
-    * BUG 7949: Fix DoS in Winbind and smbd with many file descriptors open.
     * BUG 8276: Close all sockets attached to a subnet in close_subnet().
 
 
