@@ -1715,6 +1715,7 @@ only use %d.\n", count, FD_SETSIZE));
 	if (ClientNMB < 0 || ClientNMB >= FD_SETSIZE) {
 		errno = EBADF;
 		SAFE_FREE(pset);
+		SAFE_FREE(sock_array);
 		return True;
 	}
 
@@ -1752,6 +1753,7 @@ only use %d.\n", count, FD_SETSIZE));
 	if (ClientDGRAM < 0 || ClientDGRAM >= FD_SETSIZE) {
 		errno = EBADF;
 		SAFE_FREE(pset);
+		SAFE_FREE(sock_array);
 		return True;
 	}
 	FD_SET(ClientDGRAM,pset);
