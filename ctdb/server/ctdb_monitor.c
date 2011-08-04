@@ -306,7 +306,6 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 			   "ctdb_start_monitoring: ctdb_recheck_persistent_health() OK\n"));
 
 	DEBUG(DEBUG_NOTICE,(__location__ " Recoveries finished. Running the \"startup\" event.\n"));
-	DEBUG(DEBUG_ERR,(__location__ " Allow clients to attach to databases.\n"));
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 			     timeval_current(),
 			     ctdb_check_health, ctdb);
