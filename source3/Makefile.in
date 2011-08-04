@@ -1934,7 +1934,7 @@ bin/smbconftort@EXEEXT@: $(SMBCONFTORT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 
 bin/pthreadpooltest@EXEEXT@: $(PTHREADPOOLTEST_OBJ)
 	@echo Linking $@
-	@$(CC) -o $@ $(PTHREADPOOLTEST_OBJ) $(LDFLAGS) -lpthread
+	@$(CC) -o $@ $(PTHREADPOOLTEST_OBJ) $(LDFLAGS) $(LIBS) $(PTHREAD_LDFLAGS)
 
 bin/masktest@EXEEXT@: $(BINARY_PREREQS) $(MASKTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
