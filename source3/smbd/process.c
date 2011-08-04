@@ -887,7 +887,7 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 	DEBUG(1,("Reloading services after SIGHUP\n"));
 	reload_services(msg_ctx, smbd_server_conn->sock, False);
 	if (am_parent) {
-		printing_subsystem_update(ev, msg_ctx);
+		printing_subsystem_update(ev, msg_ctx, true);
 	}
 }
 

@@ -64,7 +64,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 	change_to_root_user();
 	reload_services(msg, smbd_server_conn->sock, False);
 	if (am_parent) {
-		printing_subsystem_update(ev_ctx, msg);
+		printing_subsystem_update(ev_ctx, msg, false);
 	}
 }
 
@@ -1259,6 +1259,10 @@ extern void build_options(bool screen);
 
 	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
+
+	/* force a printer update now that all messaging has been set up,
+	 * before we allow clients to start connecting */
+	printing_subsystem_update(ev_ctx, msg_ctx, true);
 
 	TALLOC_FREE(frame);
 	/* make sure we always have a valid stackframe */

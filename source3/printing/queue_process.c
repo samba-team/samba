@@ -295,9 +295,17 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 }
 
 void printing_subsystem_update(struct tevent_context *ev_ctx,
-			       struct messaging_context *msg_ctx)
+			       struct messaging_context *msg_ctx,
+			       bool force)
 {
-	if (background_lpq_updater_pid != -1) return;
+	if (background_lpq_updater_pid != -1) {
+		if (force) {
+			/* Send a sighup to the background process.
+			 * this will force it to reload printers */
+			kill(background_lpq_updater_pid, SIGHUP);
+		}
+		return;
+	}
 
 	pcap_cache_reload(ev_ctx, msg_ctx, &reload_pcap_change_notify);
 }
