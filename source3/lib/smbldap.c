@@ -1432,6 +1432,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	char           *utf8_filter;
 	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
 	struct		timeval timeout;
+	int		alarm_timer;
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
@@ -1477,11 +1478,21 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	 * covers the case where the server's operation takes too long. It
 	 * does not cover the case where the request hangs on its way to the
 	 * server. The server side timeout is not strictly necessary, it's
-	 * just a bit more kind to the server. VL. */
+	 * just a bit more kind to the server. VL.
+	 * We prefer to get the server termination though because otherwise we
+	 * have to rebind to the LDAP server aѕ we get a LDAP_SERVER_DOWN in the
+	 * alarm termination case. So let's call the alarm 2s later, which
+	 * should be enough for the server to report the timelimit exceeded.
+	 * in case the ldal timeout is 0 (no limit) we set the _no_ alarm
+	 * accordingly. BJ. */
 
 	got_alarm = 0;
 	CatchSignal(SIGALRM, gotalarm_sig);
-	alarm(lp_ldap_timeout());
+	alarm_timer = lp_ldap_timeout();
+	if (alarm_timer > 0) {
+		alarm_timer += 2;
+	}
+	alarm(alarm_timer);
 	/* End setup timeout. */
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
