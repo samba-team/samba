@@ -1723,7 +1723,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 	if (fds == NULL) {
 		DEBUG(1, ("create_listen_pollfds: malloc fail for attrs. "
 			  "size %d\n", count));
-		SAFE_FREE(fds);
+		TALLOC_FREE(fds);
 		return true;
 	}
 
