@@ -1317,6 +1317,7 @@ static bool test_rusty(void)
 	talloc_increase_ref_count(p1);
 	talloc_report_full(root, stdout);
 	talloc_free(root);
+	CHECK_BLOCKS("null_context", NULL, 2);
 	return true;
 }
 
