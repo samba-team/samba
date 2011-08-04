@@ -78,7 +78,7 @@ case "$1" in
     startup)
 	# create a state directory to keep/track the multipath device
 	# state
-	/bin/mkdir -p $CTDB_VARDIR/state/multipathd
+	mkdir -p $CTDB_VARDIR/state/multipathd
 	exit 0
 	;;
 

@@ -32,7 +32,7 @@ loadconfig
 
 start_samba() {
 	# create the state directory for samba
-	/bin/mkdir -p $CTDB_VARDIR/state/samba
+	mkdir -p $CTDB_VARDIR/state/samba
 
 	# make sure samba is not already started
 	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
