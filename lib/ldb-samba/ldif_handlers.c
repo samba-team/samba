@@ -1130,6 +1130,7 @@ static int samba_dn_extended_match(struct ldb_context *ldb,
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_dn *dn1, *dn2;
 	const struct ldb_val *guid1, *guid2, *sid1, *sid2;
+	uint32_t rmd_flags1, rmd_flags2;
 
 	tmp_ctx = talloc_new(ldb);
 
@@ -1141,6 +1142,18 @@ static int samba_dn_extended_match(struct ldb_context *ldb,
 		(*matched) = false;
 		return LDB_SUCCESS;
 	}
+
+	rmd_flags1 = dsdb_dn_rmd_flags(dn1);
+	rmd_flags2 = dsdb_dn_rmd_flags(dn2);
+
+	if ((rmd_flags1 & DSDB_RMD_FLAG_DELETED) !=
+	    (rmd_flags2 & DSDB_RMD_FLAG_DELETED)) {
+		/* only match if they have the same deletion status */
+		talloc_free(tmp_ctx);
+		(*matched) = false;
+		return LDB_SUCCESS;
+	}
+
 
 	guid1 = ldb_dn_get_extended_component(dn1, "GUID");
 	guid2 = ldb_dn_get_extended_component(dn2, "GUID");
