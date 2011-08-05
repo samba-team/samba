@@ -325,7 +325,7 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		/* We only setup an extended DN GUID on DN elements */
-		if (dsdb_dn_oid_to_format(schema_attr->syntax->ldap_oid) == DSDB_INVALID_DN) {
+		if (schema_attr->dn_format == DSDB_INVALID_DN) {
 			continue;
 		}
 
@@ -400,7 +400,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 		}
 
 		/* We only setup an extended DN GUID on these particular DN objects */
-		if (dsdb_dn_oid_to_format(schema_attr->syntax->ldap_oid) == DSDB_INVALID_DN) {
+		if (schema_attr->dn_format == DSDB_INVALID_DN) {
 			continue;
 		}
 

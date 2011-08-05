@@ -76,7 +76,7 @@ static int extended_dn_out_dereference_setup_control(struct ldb_context *ldb, st
 	}
 
 	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (dsdb_dn_oid_to_format(cur->syntax->ldap_oid) != DSDB_NORMAL_DN) {
+		if (cur->dn_format != DSDB_NORMAL_DN) {
 			continue;
 		}
 		dereference_control->dereference
@@ -508,7 +508,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		}
 
 		/* Look to see if this attributeSyntax is a DN */
-		if (dsdb_dn_oid_to_format(attribute->syntax->ldap_oid) == DSDB_INVALID_DN) {
+		if (attribute->dn_format == DSDB_INVALID_DN) {
 			continue;
 		}
 
