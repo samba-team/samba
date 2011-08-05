@@ -156,7 +156,7 @@ static void message_idmap_flush(struct messaging_context *msg_ctx,
 				struct server_id server_id,
 				DATA_BLOB* data)
 {
-	const char* msg = data ? (const char*)data->data : NULL;
+	const char *msg = data ? (const char *)data->data : NULL;
 
 	if ((msg == NULL) || (msg[0] == '\0')) {
 		flush_gid_cache();
@@ -172,14 +172,14 @@ static void message_idmap_flush(struct messaging_context *msg_ctx,
 
 
 static void message_idmap_delete(struct messaging_context *msg_ctx,
-				 void* private_data,
+				 void *private_data,
 				 uint32_t msg_type,
 				 struct server_id server_id,
 				 DATA_BLOB* data)
 {
-	const char* msg = (data && data->data) ? (const char*)data->data : "<NULL>";
+	const char *msg = (data && data->data) ? (const char *)data->data : "<NULL>";
 	bool do_kill = (msg_type == MSG_IDMAP_KILL);
-	struct user_struct* validated_users = smbd_server_conn->smb1.sessions.validated_users;
+	struct user_struct *validated_users = smbd_server_conn->smb1.sessions.validated_users;
 	struct id id;
 
 	if (!parse_id(msg, &id)) {
@@ -187,7 +187,7 @@ static void message_idmap_delete(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	if( do_kill && id_in_use(validated_users, &id) ) {
+	if (do_kill && id_in_use(validated_users, &id)) {
 		exit_server_cleanly(msg);
 	} else {
 		delete_from_cache(&id);
