@@ -61,6 +61,7 @@
 		<arg choice="opt">--uid-info uid</arg>
 		<arg choide="opt">--usage</arg>
 		<arg choice="opt">--user-domgroups sid</arg>
+		<arg choice="opt">--user-sidinfo sid</arg>
 		<arg choice="opt">--user-sids sid</arg>
 		<arg choice="opt">-U uid</arg>
 		<arg choice="opt">-V</arg>
@@ -412,6 +413,13 @@
 		<listitem><para>Get user domain groups.
 		</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>--user-sidinfo <replaceable>sid</replaceable></term>
+		<listitem><para>Get user info by sid.
+		</para></listitem>
+		</varlistentry>
+
 
 		<varlistentry>
 		<term>--user-sids <replaceable>sid</replaceable></term>
