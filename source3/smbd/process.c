@@ -202,7 +202,7 @@ int srv_set_message(char *buf,
 static bool valid_smb_header(struct smbd_server_connection *sconn,
 			     const uint8_t *inbuf)
 {
-	if (is_encrypted_packet(inbuf)) {
+	if (is_encrypted_packet(sconn, inbuf)) {
 		return true;
 	}
 	/*
@@ -464,7 +464,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if (is_encrypted_packet((uint8_t *)*buffer)) {
+	if (is_encrypted_packet(sconn, (uint8_t *)*buffer)) {
 		status = srv_decrypt_buffer(*buffer);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "

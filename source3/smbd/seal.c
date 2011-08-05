@@ -55,7 +55,8 @@ static uint16_t srv_enc_ctx(const struct smb_srv_trans_enc_ctx *ec)
  Is this an incoming encrypted packet ?
 ******************************************************************************/
 
-bool is_encrypted_packet(const uint8_t *inbuf)
+bool is_encrypted_packet(struct smbd_server_connection *sconn,
+			 const uint8_t *inbuf)
 {
 	NTSTATUS status;
 	uint16_t enc_num;
