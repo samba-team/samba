@@ -199,16 +199,29 @@ bool verify_xsrf_token(const char *formname)
 	const char *pass = cgi_user_pass();
 	const char *token = cgi_variable_nonull(XSRF_TOKEN);
 	const char *time_str = cgi_variable_nonull(XSRF_TIME);
+	char *p = NULL;
+	long long xsrf_time_ll = 0;
 	time_t xsrf_time = 0;
 	time_t now = time(NULL);
 
-	if (sizeof(time_t) == sizeof(int)) {
-		xsrf_time = atoi(time_str);
-	} else if (sizeof(time_t) == sizeof(long)) {
-		xsrf_time = atol(time_str);
-	} else if (sizeof(time_t) == sizeof(long long)) {
-		xsrf_time = atoll(time_str);
+	errno = 0;
+	xsrf_time_ll = strtoll(time_str, &p, 10);
+	if (errno != 0) {
+		return false;
 	}
+	if (p == NULL) {
+		return false;
+	}
+	if (PTR_DIFF(p, time_str) > strlen(time_str)) {
+		return false;
+	}
+	if (xsrf_time_ll > _TYPE_MAXIMUM(time_t)) {
+		return false;
+	}
+	if (xsrf_time_ll < _TYPE_MINIMUM(time_t)) {
+		return false;
+	}
+	xsrf_time = xsrf_time_ll;
 
 	if (abs(now - xsrf_time) > XSRF_TIMEOUT) {
 		return false;
