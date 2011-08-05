@@ -299,10 +299,10 @@ interface frsrpc
 			frsrpc_CommPktChangeOrderCommand remote_co;
 		[case(FRSRPC_COMM_PKT_CHUNK_CO_EXT_WIN2K)][subcontext(4)]
 			frsrpc_CommPktCoRecordExtensionWin2k co_ext_win2k;
-		[case(FRSRPC_COMM_PKT_CHUNK_CO_EXTENTION_2)][subcontext(4)]
+		[case(FRSRPC_COMM_PKT_CHUNK_CO_EXTENTION_2)]
 			frsrpc_CommPktChangeOrderRecordExtension co_extension2;
 		[case(FRSRPC_COMM_PKT_CHUNK_EOP)]
-			[value(0xFFFFFFFF)] uint32 bop;
+			[value(0xFFFFFFFF)] uint32 bopend;
 	} frsrpc_CommPktChunkData;
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
