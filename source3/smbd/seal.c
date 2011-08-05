@@ -46,9 +46,9 @@ struct smb_srv_trans_enc_ctx {
  Return global enc context - this must change if we ever do multiple contexts.
 ******************************************************************************/
 
-static uint16_t srv_enc_ctx(void)
+static uint16_t srv_enc_ctx(const struct smb_srv_trans_enc_ctx *ec)
 {
-	return srv_trans_enc_ctx->es->enc_ctx_num;
+	return ec->es->enc_ctx_num;
 }
 
 /******************************************************************************
@@ -73,7 +73,7 @@ bool is_encrypted_packet(const uint8_t *inbuf)
 	}
 
 	/* Encrypted messages are 0xFF'E'<ctx> */
-	if (srv_trans_enc_ctx && enc_num == srv_enc_ctx()) {
+	if (srv_trans_enc_ctx && enc_num == srv_enc_ctx(srv_trans_enc_ctx)) {
 		return true;
 	}
 	return false;
