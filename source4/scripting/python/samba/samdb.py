@@ -27,6 +27,7 @@ import samba
 import ldb
 import time
 import base64
+import os
 from samba import dsdb
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
@@ -62,7 +63,7 @@ class SamDB(samba.Ldb):
             dsdb._dsdb_set_am_rodc(self, am_rodc)
 
     def connect(self, url=None, flags=0, options=None):
-        if self.lp is not None:
+        if self.lp is not None and not os.path.exists(url):
             url = self.lp.private_path(url)
         self.url = url
 
