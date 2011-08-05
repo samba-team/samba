@@ -30,6 +30,7 @@ import base64
 from samba import dsdb
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
+from samba.common import normalise_int32
 
 __docformat__ = "restructuredText"
 
@@ -170,7 +171,7 @@ pwdLastSet: 0
             "objectClass": "group"}
 
         if grouptype is not None:
-            ldbmessage["groupType"] = self.normalise_int32(grouptype)
+            ldbmessage["groupType"] = normalise_int32(grouptype)
 
         if description is not None:
             ldbmessage["description"] = description
@@ -774,9 +775,3 @@ accountExpires: %u
         if sd:
             m["nTSecurityDescriptor"] = ndr_pack(sd)
         self.add(m)
-
-    def normalise_int32(self, ivalue):
-        '''normalise a ldap integer to signed 32 bit'''
-        if int(ivalue) & 0x80000000:
-            return str(int(ivalue) - 0x100000000)
-        return str(ivalue)

@@ -50,3 +50,8 @@ def confirm(msg, forced = False, allow_all=False):
         print("Unknown response '%s'" % v)
 
 
+def normalise_int32(ivalue):
+    '''normalise a ldap integer to signed 32 bit'''
+    if int(ivalue) & 0x80000000:
+        return str(int(ivalue) - 0x100000000)
+    return str(ivalue)
