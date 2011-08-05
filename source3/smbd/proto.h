@@ -48,7 +48,6 @@
 
 /* The following definitions come from smbd/signing.c  */
 
-struct smbd_server_connection;
 bool srv_check_sign_mac(struct smbd_server_connection *conn,
 			const char *inbuf, uint32_t *seqnum, bool trusted_channel);
 void srv_calculate_sign_mac(struct smbd_server_connection *conn,
@@ -940,7 +939,7 @@ void reply_getattrE(struct smb_request *req);
 bool is_encrypted_packet(struct smbd_server_connection *sconn,
 			 const uint8_t *inbuf);
 void srv_free_enc_buffer(struct smbd_server_connection *sconn, char *buf);
-NTSTATUS srv_decrypt_buffer(char *buf);
+NTSTATUS srv_decrypt_buffer(struct smbd_server_connection *sconn, char *buf);
 NTSTATUS srv_encrypt_buffer(char *buf, char **buf_out);
 NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 					unsigned char **ppdata,

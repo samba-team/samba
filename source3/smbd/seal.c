@@ -343,7 +343,7 @@ void srv_free_enc_buffer(struct smbd_server_connection *sconn, char *buf)
  Decrypt an incoming buffer.
 ******************************************************************************/
 
-NTSTATUS srv_decrypt_buffer(char *buf)
+NTSTATUS srv_decrypt_buffer(struct smbd_server_connection *sconn, char *buf)
 {
 	/* Ignore non-session messages. */
 	if(CVAL(buf,0)) {

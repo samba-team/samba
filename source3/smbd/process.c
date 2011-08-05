@@ -465,7 +465,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_encrypted_packet(sconn, (uint8_t *)*buffer)) {
-		status = srv_decrypt_buffer(*buffer);
+		status = srv_decrypt_buffer(sconn, *buffer);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "
 				"incoming packet! Error %s\n",
