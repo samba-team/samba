@@ -97,46 +97,43 @@ static void spoolss_prefork_config(void)
 static void spoolss_reopen_logs(int child_id)
 {
 	char *lfile = lp_logfile();
-	char *extension;
+	char *ext;
 	int rc;
 
 	if (child_id) {
-		rc = asprintf(&extension, ".%s.%d", DAEMON_NAME, child_id);
+		rc = asprintf(&ext, ".%s.%d", DAEMON_NAME, child_id);
 	} else {
-		rc = asprintf(&extension, ".%s", DAEMON_NAME);
+		rc = asprintf(&ext, ".%s", DAEMON_NAME);
 	}
 
 	if (rc == -1) {
 		/* if we can't allocate, set it to NULL
 		 * and logging will flow in the original file */
-		extension = NULL;
+		ext = NULL;
 	}
 
+	rc = 0;
 	if (lfile == NULL || lfile[0] == '\0') {
-		rc = asprintf(&lfile, "%s/log%s", get_dyn_LOGFILEBASE(),
-			      extension?extension:"");
-		if (rc > 0) {
-			lp_set_logfile(lfile);
-			SAFE_FREE(lfile);
-		}
+		rc = asprintf(&lfile, "%s/log%s",
+			      get_dyn_LOGFILEBASE(), ext?ext:"");
 	} else {
-		rc = 0;
-		if (extension && strstr(lfile, extension) == NULL) {
+		if (ext && strstr(lfile, ext) == NULL) {
 			if (strstr(lfile, DAEMON_NAME) == NULL) {
-				rc = asprintf(&lfile, "%s%s", lp_logfile(),
-						      extension?extension:"");
+				rc = asprintf(&lfile, "%s%s",
+					      lp_logfile(), ext?ext:"");
+			} else {
+				rc = asprintf(&lfile, "%s.%d",
+					      lp_logfile(), child_id);
 			}
-		} else if (child_id) {
-			rc = asprintf(&lfile, "%s.%d", lfile, child_id);
-		}
-
-		if (rc > 0) {
-			lp_set_logfile(lfile);
-			SAFE_FREE(lfile);
 		}
 	}
 
-	SAFE_FREE(extension);
+	if (rc > 0) {
+		lp_set_logfile(lfile);
+		SAFE_FREE(lfile);
+	}
+
+	SAFE_FREE(ext);
 
 	reopen_logs();
 }
@@ -545,6 +542,7 @@ static void spoolss_handle_client(struct tevent_req *req)
 /* ==== Main Process Functions ==== */
 
 extern pid_t background_lpq_updater_pid;
+static char *bq_logfile;
 
 static void check_updater_child(void)
 {
@@ -559,7 +557,8 @@ static void check_updater_child(void)
 	if (pid > 0) {
 		DEBUG(2, ("The background queue child died... Restarting!\n"));
 		pid = start_background_queue(server_event_context(),
-					     server_messaging_context());
+					     server_messaging_context(),
+					     bq_logfile);
 		background_lpq_updater_pid = pid;
 	}
 }
@@ -710,6 +709,23 @@ static void print_queue_forward(struct messaging_context *msg,
 			   MSG_PRINTER_UPDATE, data->data, data->length);
 }
 
+char *get_bq_logfile(void)
+{
+	char *lfile = lp_logfile();
+	int rc;
+
+	if (lfile == NULL || lfile[0] == '\0') {
+		rc = asprintf(&lfile, "%s/log.%s.bq",
+					get_dyn_LOGFILEBASE(), DAEMON_NAME);
+	} else {
+		rc = asprintf(&lfile, "%s.bq", lp_logfile());
+	}
+	if (rc == -1) {
+		lfile = NULL;
+	}
+	return lfile;
+}
+
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		    struct messaging_context *msg_ctx)
 {
@@ -754,7 +770,8 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
 
 	/* always start the backgroundqueue listner in spoolssd */
-	pid = start_background_queue(ev_ctx, msg_ctx);
+	bq_logfile = get_bq_logfile();
+	pid = start_background_queue(ev_ctx, msg_ctx, bq_logfile);
 	if (pid > 0) {
 		background_lpq_updater_pid = pid;
 	}

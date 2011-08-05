@@ -81,6 +81,14 @@ static bool printing_subsystem_queue_tasks(struct tevent_context *ev_ctx,
 	return true;
 }
 
+static void bq_reopen_logs(char *logfile)
+{
+	if (logfile) {
+		lp_set_logfile(logfile);
+	}
+	reopen_logs();
+}
+
 static void bq_sig_term_handler(struct tevent_context *ev,
 				struct tevent_signal *se,
 				int signum,
@@ -119,6 +127,7 @@ static void bq_sig_hup_handler(struct tevent_context *ev,
 
 	DEBUG(1, ("Reloading pcap cache after SIGHUP\n"));
 	pcap_cache_reload(ev, msg_ctx, &reload_pcap_change_notify);
+	bq_reopen_logs(NULL);
 }
 
 static void bq_setup_sig_hup_handler(struct tevent_context *ev,
@@ -164,7 +173,8 @@ static void printing_pause_fd_handler(struct tevent_context *ev,
 main thread of the background lpq updater
 ****************************************************************************/
 pid_t start_background_queue(struct tevent_context *ev,
-			     struct messaging_context *msg_ctx)
+			     struct messaging_context *msg_ctx,
+			     char *logfile)
 {
 	pid_t pid;
 
@@ -206,6 +216,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
+		bq_reopen_logs(logfile);
 		bq_setup_sig_term_handler();
 		bq_setup_sig_hup_handler(ev, msg_ctx);
 
@@ -273,7 +284,7 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 
 	} else if (start_daemons && background_queue) {
 
-		pid = start_background_queue(ev_ctx, msg_ctx);
+		pid = start_background_queue(ev_ctx, msg_ctx, NULL);
 
 	} else {
 		bool ret;
