@@ -936,7 +936,6 @@ void reply_getattrE(struct smb_request *req);
 
 /* The following definitions come from smbd/seal.c  */
 
-uint16_t srv_enc_ctx(void);
 bool is_encrypted_packet(const uint8_t *inbuf);
 void srv_free_enc_buffer(char *buf);
 NTSTATUS srv_decrypt_buffer(char *buf);

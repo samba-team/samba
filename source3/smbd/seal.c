@@ -46,7 +46,7 @@ struct smb_srv_trans_enc_ctx {
  Return global enc context - this must change if we ever do multiple contexts.
 ******************************************************************************/
 
-uint16_t srv_enc_ctx(void)
+static uint16_t srv_enc_ctx(void)
 {
 	return srv_trans_enc_ctx->es->enc_ctx_num;
 }
