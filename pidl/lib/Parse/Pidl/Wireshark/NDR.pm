@@ -639,7 +639,7 @@ sub Struct($$$$)
 	$self->pidl_code("int old_offset;");
 	$self->pidl_code("");
 
-	if ($e->{ALIGN} > 1) {
+	if ($e->{ALIGN} > 1 and not property_matches($e, "flag", ".*LIBNDR_FLAG_NOALIGN.*")) {
 		$self->pidl_code("ALIGN_TO_$e->{ALIGN}_BYTES;");
 	}
 	$self->pidl_code("");
