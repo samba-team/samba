@@ -905,16 +905,15 @@ sub ProcessInterface($$)
 	    . ", 0x" . substr($if_uuid, 35, 2) . " }");
 	    $self->pidl_def("};");
 	
-	    my $maj = $x->{VERSION};
+	    my $maj = 0x0000FFFF & $x->{VERSION};
 	    $maj =~ s/\.(.*)$//g;
-	    $self->pidl_def("static guint32 ver_dcerpc_$x->{NAME} = $maj;");
+	    $self->pidl_def("static guint16 ver_dcerpc_$x->{NAME} = $maj;");
 	    $self->pidl_def("");
 	}
 
 	$return_types{$x->{NAME}} = {};
 
 	$self->Interface($x);
-
 	$self->pidl_code("\n".DumpFunctionTable($x));
 
 	foreach (keys %{$return_types{$x->{NAME}}}) {
