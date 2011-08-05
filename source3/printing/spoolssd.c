@@ -94,26 +94,49 @@ static void spoolss_prefork_config(void)
 	spoolss_spawn_rate = rate;
 }
 
-static void spoolss_reopen_logs(void)
+static void spoolss_reopen_logs(int child_id)
 {
 	char *lfile = lp_logfile();
+	char *extension;
 	int rc;
 
+	if (child_id) {
+		rc = asprintf(&extension, ".%s.%d", DAEMON_NAME, child_id);
+	} else {
+		rc = asprintf(&extension, ".%s", DAEMON_NAME);
+	}
+
+	if (rc == -1) {
+		/* if we can't allocate, set it to NULL
+		 * and logging will flow in the original file */
+		extension = NULL;
+	}
+
 	if (lfile == NULL || lfile[0] == '\0') {
-		rc = asprintf(&lfile, "%s/log.%s", get_dyn_LOGFILEBASE(), DAEMON_NAME);
+		rc = asprintf(&lfile, "%s/log%s", get_dyn_LOGFILEBASE(),
+			      extension?extension:"");
 		if (rc > 0) {
 			lp_set_logfile(lfile);
 			SAFE_FREE(lfile);
 		}
 	} else {
-		if (strstr(lfile, DAEMON_NAME) == NULL) {
-			rc = asprintf(&lfile, "%s.%s", lp_logfile(), DAEMON_NAME);
-			if (rc > 0) {
-				lp_set_logfile(lfile);
-				SAFE_FREE(lfile);
+		rc = 0;
+		if (extension && strstr(lfile, extension) == NULL) {
+			if (strstr(lfile, DAEMON_NAME) == NULL) {
+				rc = asprintf(&lfile, "%s%s", lp_logfile(),
+						      extension?extension:"");
 			}
+		} else if (child_id) {
+			rc = asprintf(&lfile, "%s.%d", lfile, child_id);
+		}
+
+		if (rc > 0) {
+			lp_set_logfile(lfile);
+			SAFE_FREE(lfile);
 		}
 	}
+
+	SAFE_FREE(extension);
 
 	reopen_logs();
 }
@@ -125,7 +148,7 @@ static void update_conf(struct tevent_context *ev,
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 	reload_printers(ev, msg);
 
-	spoolss_reopen_logs();
+	spoolss_reopen_logs(0);
 	spoolss_prefork_config();
 }
 
@@ -233,6 +256,7 @@ static bool spoolss_shutdown_cb(void *ptr)
 struct spoolss_chld_sig_hup_ctx {
 	struct messaging_context *msg_ctx;
 	struct pf_worker_data *pf;
+	int child_id;
 };
 
 static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
@@ -255,12 +279,13 @@ static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
 	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
 	reload_printers(ev, shc->msg_ctx);
-	spoolss_reopen_logs();
+	spoolss_reopen_logs(shc->child_id);
 }
 
 static bool spoolss_setup_chld_hup_handler(struct tevent_context *ev_ctx,
+					   struct messaging_context *msg_ctx,
 					   struct pf_worker_data *pf,
-					   struct messaging_context *msg_ctx)
+					   int child_id)
 {
 	struct spoolss_chld_sig_hup_ctx *shc;
 	struct tevent_signal *se;
@@ -270,6 +295,7 @@ static bool spoolss_setup_chld_hup_handler(struct tevent_context *ev_ctx,
 		DEBUG(1, ("failed to setup SIGHUP handler"));
 		return false;
 	}
+	shc->child_id = child_id;
 	shc->pf = pf;
 	shc->msg_ctx = msg_ctx;
 
@@ -287,7 +313,7 @@ static bool spoolss_setup_chld_hup_handler(struct tevent_context *ev_ctx,
 }
 
 static bool spoolss_child_init(struct tevent_context *ev_ctx,
-					struct pf_worker_data *pf)
+			       int child_id, struct pf_worker_data *pf)
 {
 	NTSTATUS status;
 	struct rpc_srv_callbacks spoolss_cb;
@@ -301,9 +327,9 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 		smb_panic("reinit_after_fork() failed");
 	}
 
-	spoolss_reopen_logs();
+	spoolss_reopen_logs(child_id);
 
-	ok = spoolss_setup_chld_hup_handler(ev_ctx, pf, msg_ctx);
+	ok = spoolss_setup_chld_hup_handler(ev_ctx, msg_ctx, pf, child_id);
 	if (!ok) {
 		return false;
 	}
@@ -346,6 +372,7 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 struct spoolss_children_data {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	int child_id;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
 	int *listen_fds;
@@ -369,7 +396,7 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	bool ok;
 	int ret;
 
-	ok = spoolss_child_init(ev_ctx, pf);
+	ok = spoolss_child_init(ev_ctx, child_id, pf);
 	if (!ok) {
 		return 1;
 	}
@@ -378,6 +405,7 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	if (!data) {
 		return 1;
 	}
+	data->child_id = child_id;
 	data->pf = pf;
 	data->ev_ctx = ev_ctx;
 	data->msg_ctx = msg_ctx;
@@ -719,7 +747,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		smb_panic("reinit_after_fork() failed");
 	}
 
-	spoolss_reopen_logs();
+	spoolss_reopen_logs(0);
 	spoolss_prefork_config();
 
 	/* Publish nt printers, this requires a working winreg pipe */
