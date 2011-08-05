@@ -803,7 +803,7 @@ NTSTATUS srv_encryption_start(connection_struct *conn)
  Shutdown all server contexts.
 ******************************************************************************/
 
-void server_encryption_shutdown(void)
+void server_encryption_shutdown(struct smbd_server_connection *sconn)
 {
 	srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 	srv_free_encryption_context(&srv_trans_enc_ctx);

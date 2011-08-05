@@ -948,7 +948,7 @@ NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 					unsigned char **pparam,
 					size_t *p_param_size);
 NTSTATUS srv_encryption_start(connection_struct *conn);
-void server_encryption_shutdown(void);
+void server_encryption_shutdown(struct smbd_server_connection *sconn);
 
 /* The following definitions come from smbd/sec_ctx.c  */
 
