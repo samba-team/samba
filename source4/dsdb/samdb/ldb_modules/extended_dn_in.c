@@ -343,6 +343,11 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 
 	filter_ctx = talloc_get_type_abort(private_context, struct extended_dn_filter_ctx);
 
+	if (filter_ctx->test_only && filter_ctx->matched) {
+		/* the tree already matched */
+		return LDB_SUCCESS;
+	}
+
 	attribute = dsdb_attribute_by_lDAPDisplayName(filter_ctx->schema, tree->u.equality.attr);
 	if (attribute == NULL) {
 		return LDB_SUCCESS;
@@ -366,7 +371,19 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
+	guid_val = ldb_dn_get_extended_component(dn, "GUID");
+	sid_val  = ldb_dn_get_extended_component(dn, "SID");
+
+	if (!guid_val && !sid_val && (attribute->searchFlags & SEARCH_FLAG_ATTINDEX)) {
+		/* if it is indexed, then fixing the string DN will do
+		   no good here, as we will not find the attribute in
+		   the index. So for now fall through to a standard DN
+		   component comparison */
+		return LDB_SUCCESS;
+	}
+
 	if (filter_ctx->test_only) {
+		/* we need to copy the tree */
 		filter_ctx->matched = true;
 		return LDB_SUCCESS;
 	}
@@ -378,9 +395,6 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
-	guid_val = ldb_dn_get_extended_component(dn, "GUID");
-	sid_val  = ldb_dn_get_extended_component(dn, "SID");
-
 	if (guid_val) {
 		expression = talloc_asprintf(filter_ctx, "objectGUID=%s", ldb_binary_encode(filter_ctx, *guid_val));
 		scope = LDB_SCOPE_SUBTREE;
@@ -389,12 +403,6 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		expression = talloc_asprintf(filter_ctx, "objectSID=%s", ldb_binary_encode(filter_ctx, *sid_val));
 		scope = LDB_SCOPE_SUBTREE;
 		base_dn = NULL;
-	} else if (attribute->searchFlags & SEARCH_FLAG_ATTINDEX) {
-		/* if it is indexed, then fixing the string DN will do
-		   no good here, as we will not find the attribute in
-		   the index. So for now fall through to a standard DN
-		   component comparison */
-		return LDB_SUCCESS;
 	} else {
 		/* fallback to searching using the string DN as the base DN */
 		expression = "objectClass=*";
