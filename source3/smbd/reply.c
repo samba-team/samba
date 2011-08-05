@@ -482,7 +482,7 @@ static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 
 	if (!srv_send_smb(sconn, (char *)outbuf, false, 0, false,
 			  NULL)) {
-		exit_server_cleanly("netbios_session_regarget: srv_send_smb "
+		exit_server_cleanly("netbios_session_retarget: srv_send_smb "
 				    "failed.");
 	}
 
