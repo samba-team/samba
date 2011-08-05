@@ -324,7 +324,7 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
  Free an encryption-allocated buffer.
 ******************************************************************************/
 
-void srv_free_enc_buffer(char *buf)
+void srv_free_enc_buffer(struct smbd_server_connection *sconn, char *buf)
 {
 	/* We know this is an smb buffer, and we
 	 * didn't malloc, only copy, for a keepalive,

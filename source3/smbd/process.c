@@ -168,12 +168,12 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 			 get_peer_addr(sconn->sock, addr, sizeof(addr)),
 			 (int)ret, strerror(errno) ));
 
-		srv_free_enc_buffer(buf_out);
+		srv_free_enc_buffer(sconn, buf_out);
 		goto out;
 	}
 
 	SMB_PERFCOUNT_SET_MSGLEN_OUT(pcd, len);
-	srv_free_enc_buffer(buf_out);
+	srv_free_enc_buffer(sconn, buf_out);
 out:
 	SMB_PERFCOUNT_END(pcd);
 
