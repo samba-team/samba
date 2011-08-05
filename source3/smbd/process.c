@@ -144,7 +144,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 	}
 
 	if (do_encrypt) {
-		NTSTATUS status = srv_encrypt_buffer(buffer, &buf_out);
+		NTSTATUS status = srv_encrypt_buffer(sconn, buffer, &buf_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("send_smb: SMB encryption failed "
 				"on outgoing packet! Error %s\n",

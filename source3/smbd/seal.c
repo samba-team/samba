@@ -361,7 +361,8 @@ NTSTATUS srv_decrypt_buffer(struct smbd_server_connection *sconn, char *buf)
  Encrypt an outgoing buffer. Return the encrypted pointer in buf_out.
 ******************************************************************************/
 
-NTSTATUS srv_encrypt_buffer(char *buf, char **buf_out)
+NTSTATUS srv_encrypt_buffer(struct smbd_server_connection *sconn, char *buf,
+			    char **buf_out)
 {
 	*buf_out = buf;
 

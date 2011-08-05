@@ -940,7 +940,8 @@ bool is_encrypted_packet(struct smbd_server_connection *sconn,
 			 const uint8_t *inbuf);
 void srv_free_enc_buffer(struct smbd_server_connection *sconn, char *buf);
 NTSTATUS srv_decrypt_buffer(struct smbd_server_connection *sconn, char *buf);
-NTSTATUS srv_encrypt_buffer(char *buf, char **buf_out);
+NTSTATUS srv_encrypt_buffer(struct smbd_server_connection *sconn, char *buf,
+			    char **buf_out);
 NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 					unsigned char **ppdata,
 					size_t *p_data_size,
