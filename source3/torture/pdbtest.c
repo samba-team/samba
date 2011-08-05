@@ -255,6 +255,13 @@ int main(int argc, char **argv)
 		POPT_TABLEEND
 	};
 
+	/* test trustdom calls */
+	struct pdb_trusted_domain *td;
+	struct pdb_trusted_domain *new_td;
+	struct trustAuthInOutBlob taiob;
+	struct AuthenticationInformation aia;
+	enum ndr_err_code ndr_err;
+
 	load_case_tables();
 
 	pc = poptGetContext("pdbtest", argc, (const char **) argv,
@@ -373,13 +380,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error in delete_sam_account %s\n", 
 					get_friendly_nt_error_msg(rv));
 	}
-
-	/* test trustdom calls */
-	struct pdb_trusted_domain *td;
-	struct pdb_trusted_domain *new_td;
-	struct trustAuthInOutBlob taiob;
-	struct AuthenticationInformation aia;
-	enum ndr_err_code ndr_err;
 
 	td = talloc_zero(ctx ,struct pdb_trusted_domain);
 	if (!td) {
