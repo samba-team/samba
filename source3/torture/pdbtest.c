@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    passdb testing utility
-   
+
    Copyright (C) Wilco Baan Hofman 2006
    Copyright (C) Jelmer Vernooij 2006
 
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -38,7 +38,7 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 	uint32 s1_len, s2_len;
 	const char *s1_buf, *s2_buf;
 	const uint8 *d1_buf, *d2_buf;
-		
+
 	/* Check Unix username */
 	s1_buf = pdb_get_username(s1);
 	s2_buf = pdb_get_username(s2);
@@ -131,43 +131,43 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 		DEBUG(0, ("Logoff time is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check kickoff time */
 	if (pdb_get_kickoff_time(s1) != pdb_get_logoff_time(s2)) {
 		DEBUG(0, ("Kickoff time is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check bad password time */
 	if (pdb_get_bad_password_time(s1) != pdb_get_bad_password_time(s2)) {
 		DEBUG(0, ("Bad password time is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check password last set time */
 	if (pdb_get_pass_last_set_time(s1) != pdb_get_pass_last_set_time(s2)) {
 		DEBUG(0, ("Password last set time is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check password can change time */
 	if (pdb_get_pass_can_change_time(s1) != pdb_get_pass_can_change_time(s2)) {
 		DEBUG(0, ("Password can change time is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check password must change time */
 	if (pdb_get_pass_must_change_time(s1) != pdb_get_pass_must_change_time(s2)) {
 		DEBUG(0, ("Password must change time is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check logon divs */
 	if (pdb_get_logon_divs(s1) != pdb_get_logon_divs(s2)) {
 		DEBUG(0, ("Logon divs not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check logon hours */
 	if (pdb_get_hours_len(s1) != pdb_get_hours_len(s2)) {
 		DEBUG(0, ("Logon hours length not written correctly\n"));
@@ -185,7 +185,7 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 			ret = False;
 		}
 	}
-	
+
 	/* Check profile path */
 	s1_buf = pdb_get_profile_path(s1);
 	s2_buf = pdb_get_profile_path(s2);
@@ -211,7 +211,7 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 		DEBUG(0, ("Home dir is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* Check logon script */
 	s1_buf = pdb_get_logon_script(s1);
 	s2_buf = pdb_get_logon_script(s2);
@@ -224,9 +224,9 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 		DEBUG(0, ("Logon script is not written correctly\n"));
 		ret = False;
 	}
-	
+
 	/* TODO Check user and group sids */
-		
+
 	return ret;	
 }
 
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 			    long_options, 0);
 
 	poptSetOtherOptionHelp(pc, "backend[:settings] username");
-	
+
 	while(poptGetNextOpt(pc) != -1);
 
 	poptFreeContext(pc);
@@ -279,19 +279,19 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error initializing '%s': %s\n", backend, get_friendly_nt_error_msg(rv));
 		exit(1);
 	}
-	
+
 	ctx = talloc_init("PDBTEST");
-	
+
 	if (!(out = samu_new(ctx))) {
 		fprintf(stderr, "Can't create samu structure.\n");
 		exit(1);
 	}
-	
+
 	if ((pwd = Get_Pwnam_alloc(ctx, unix_user)) == NULL) {
 		fprintf(stderr, "Error getting user information for %s\n", unix_user);
 		exit(1);
 	}
-	
+
 	samu_set_unix(out, pwd);
 
 	pdb_set_profile_path(out, "\\\\torture\\profile", PDB_SET);
@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 	pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &expire);
 	pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &min_age);
 	pdb_set_pass_last_set_time(out, time(NULL), PDB_SET);
-	
+
 	if (expire == 0 || expire == (uint32)-1) {
 		pdb_set_pass_must_change_time(out, get_time_t_max(), PDB_SET);
 	} else {
@@ -336,7 +336,7 @@ int main(int argc, char **argv)
 	} else {
 		pdb_set_pass_can_change_time(out, time(NULL)+min_age, PDB_SET);
 	}
-	
+
 	/* Create account */
 	if (!NT_STATUS_IS_OK(rv = pdb->add_sam_account(pdb, out))) {
 		fprintf(stderr, "Error in add_sam_account: %s\n", 
@@ -348,7 +348,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Can't create samu structure.\n");
 		exit(1);
 	}
-	
+
 	/* Get account information through getsampwnam() */
 	if (NT_STATUS_IS_ERR(pdb->getsampwnam(pdb, in, out->username))) {
 		fprintf(stderr, "Error getting sampw of added user %s.\n",
@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 		}
 		TALLOC_FREE(ctx);
 	}
-	
+
 	/* Verify integrity */
 	if (samu_correct(out, in)) {
 		printf("User info written correctly\n");
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 		printf("User info NOT written correctly\n");
 		error = True;
 	}
-	
+
 	/* Delete account */
 	if (!NT_STATUS_IS_OK(rv = pdb->delete_sam_account(pdb, out))) {
 		fprintf(stderr, "Error in delete_sam_account %s\n", 
