@@ -199,7 +199,8 @@ int srv_set_message(char *buf,
 	return (smb_size + num_words*2 + num_bytes);
 }
 
-static bool valid_smb_header(const uint8_t *inbuf)
+static bool valid_smb_header(struct smbd_server_connection *sconn,
+			     const uint8_t *inbuf)
 {
 	if (is_encrypted_packet(inbuf)) {
 		return true;
@@ -1371,7 +1372,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
 	 * so subtract 4 from it. */
-	if (!valid_smb_header(req->inbuf)
+	if (!valid_smb_header(sconn, req->inbuf)
 	    || (size < (smb_size - 4))) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
 			 smb_len(req->inbuf)));
@@ -1611,7 +1612,7 @@ static void process_smb(struct smbd_server_connection *sconn,
 		if (smbd_is_smb2_header(inbuf, nread)) {
 			smbd_smb2_first_negprot(sconn, inbuf, nread);
 			return;
-		} else if (nread >= smb_size && valid_smb_header(inbuf)
+		} else if (nread >= smb_size && valid_smb_header(sconn, inbuf)
 				&& CVAL(inbuf, smb_com) != 0x72) {
 			/* This is a non-negprot SMB1 packet.
 			   Disable SMB2 from now on. */
@@ -2665,7 +2666,7 @@ static bool smbd_echo_reply(uint8_t *inbuf, size_t inbuf_len,
 		DEBUG(10, ("Got short packet: %d bytes\n", (int)inbuf_len));
 		return false;
 	}
-	if (!valid_smb_header(inbuf)) {
+	if (!valid_smb_header(smbd_server_conn, inbuf)) {
 		DEBUG(10, ("Got invalid SMB header\n"));
 		return false;
 	}
