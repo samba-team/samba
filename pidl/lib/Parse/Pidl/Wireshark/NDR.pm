@@ -361,11 +361,18 @@ sub ElementLevel($$$$$$$)
 		}
 	} elsif ($_->{TYPE} eq "SUBCONTEXT") {
 		my $num_bits = ($l->{HEADER_SIZE}*8);
+		my $hf2 = $self->register_hf_field($hf."_", "Subcontext length", "$ifname.$pn.$_->{NAME}subcontext", "FT_UINT$num_bits", "BASE_HEX", "NULL", 0, "");
+		$self->{hf_used}->{$hf2} = 1;
+		$self->pidl_code("dcerpc_info *di = pinfo->private_data;");
 		$self->pidl_code("guint$num_bits size;");
-		$self->pidl_code("int start_offset = offset;");
+		$self->pidl_code("int conformant = di->conformant_run;");
 		$self->pidl_code("tvbuff_t *subtvb;");
-		$self->pidl_code("offset = dissect_ndr_uint$num_bits(tvb, offset, pinfo, tree, drep, $hf, &size);");
-		$self->pidl_code("proto_tree_add_text(tree, tvb, start_offset, offset - start_offset + size, \"Subcontext size\");");
+		$self->pidl_code("");
+		# We need to be able to dissect the length of the context in every case
+		# and conformant run skips the dissections of scalars ...
+		$self->pidl_code("if (!conformant) {");
+		$self->indent;
+		$self->pidl_code("offset = dissect_ndr_uint$num_bits(tvb, offset, pinfo, tree, drep, $hf2, &size);");
 
 		$self->pidl_code("subtvb = tvb_new_subset(tvb, offset, size, -1);");
 		$self->pidl_code("$myname\_(subtvb, 0, pinfo, tree, drep);");
