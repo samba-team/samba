@@ -359,6 +359,7 @@ static void spoolss_next_client(void *pvt);
 static int spoolss_children_main(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
 				 struct pf_worker_data *pf,
+				 int child_id,
 				 int listen_fd_size,
 				 int *listen_fds,
 				 int lock_fd,
