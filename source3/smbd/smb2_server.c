@@ -444,16 +444,25 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 			const struct iovec *in_vector,
 			struct iovec *out_vector)
 {
+	const uint8_t *inhdr = (const uint8_t *)in_vector->iov_base;
 	uint8_t *outhdr = (uint8_t *)out_vector->iov_base;
-	uint16_t credits_requested = 0;
+	uint16_t credits_requested;
+	uint32_t out_flags;
 	uint16_t credits_granted = 0;
 
-	if (in_vector != NULL) {
-		const uint8_t *inhdr = (const uint8_t *)in_vector->iov_base;
-		credits_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
-	}
+	credits_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
+	out_flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 
 	SMB_ASSERT(sconn->smb2.max_credits >= sconn->smb2.credits_granted);
+
+	if (out_flags & SMB2_HDR_FLAG_ASYNC) {
+		/*
+		 * In case we already send an async interim
+		 * response, we should not grant
+		 * credits on the final response.
+		 */
+		credits_requested = 0;
+	}
 
 	if (credits_requested) {
 		uint16_t modified_credits_requested;
@@ -1748,7 +1757,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	/* Set credit for this operation (zero credits if this
 	   is a final reply for an async operation). */
 	smb2_set_operation_credit(req->sconn,
-			req->async ? NULL : &req->in.vector[i],
+			&req->in.vector[i],
 			&req->out.vector[i]);
 
 	if (req->do_signing) {
