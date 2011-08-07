@@ -124,7 +124,9 @@ def build(bld):
                           vnum=VERSION,
                           private_library=private_library,
                           pc_files=pyldb_pc_files,
-                          pyext=True)
+                          pyext=True,
+                          abi_directory='ABI',
+                          abi_match='pyldb_*')
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
         if Options.is_install:
@@ -147,7 +149,7 @@ def build(bld):
                           vnum=VERSION,
                           private_library=private_library,
                           manpages='man/ldb.3',
-                          abi_directory = 'ABI',
+                          abi_directory='ABI',
                           abi_match = abi_match)
 
         # generate a include/ldb_version.h
