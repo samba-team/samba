@@ -34,8 +34,7 @@ typedef struct {
 	struct ldb_context *ldb_ctx;
 } PyLdbObject;
 
-#define PyLdb_AsLdbContext(pyobj) ((PyLdbObject *)pyobj)->ldb_ctx
-#define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
+#define pyldb_Ldb_AsLdbContext(pyobj) ((PyLdbObject *)pyobj)->ldb_ctx
 
 typedef struct {
 	PyObject_HEAD
@@ -43,40 +42,37 @@ typedef struct {
 	struct ldb_dn *dn;
 } PyLdbDnObject;
 
-PyObject *PyLdbDn_FromDn(struct ldb_dn *);
-bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
-#define PyLdbDn_AsDn(pyobj) ((PyLdbDnObject *)pyobj)->dn
-#define PyLdbDn_Check(ob) PyObject_TypeCheck(ob, &PyLdbDn)
+PyObject *pyldb_Dn_FromDn(struct ldb_dn *);
+bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
+#define pyldb_Dn_AsDn(pyobj) ((PyLdbDnObject *)pyobj)->dn
 
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message *msg;
 } PyLdbMessageObject;
-#define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
-#define PyLdbMessage_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
+#define pyldb_Message_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
 
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_module *mod;
 } PyLdbModuleObject;
-#define PyLdbModule_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
+#define pyldb_Module_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
 
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message_element *el;
 } PyLdbMessageElementObject;
-#define PyLdbMessageElement_AsMessageElement(pyobj) ((PyLdbMessageElementObject *)pyobj)->el
-#define PyLdbMessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
+#define pyldb_MessageElement_AsMessageElement(pyobj) ((PyLdbMessageElementObject *)pyobj)->el
 
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_parse_tree *tree;
 } PyLdbTreeObject;
-#define PyLdbTree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
+#define pyldb_Tree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
 
 typedef struct {
 	PyObject_HEAD

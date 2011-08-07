@@ -38,14 +38,13 @@ typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
 #endif
 
-/* FIXME: These should be in a header file somewhere, once we finish moving
- * away from SWIG .. */
+/* FIXME: These should be in a header file somewhere */
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
 /*	if (!PyLdb_Check(py_ldb)) { \
 		PyErr_SetString(py_ldb_get_exception(), "Ldb connection object required"); \
 		return NULL; \
 	} */\
-	ldb = PyLdb_AsLdbContext(py_ldb);
+	ldb = pyldb_Ldb_AsLdbContext(py_ldb);
 
 static PyObject *py_ldb_get_exception(void)
 {
@@ -168,8 +167,8 @@ static PyObject *py_samdb_set_ntds_settings_dn(PyLdbObject *self, PyObject *args
 		return NULL;
 	}
 
-	if (!PyObject_AsDn(tmp_ctx, py_ntds_settings_dn, ldb, &ntds_settings_dn)) {
-		/* exception thrown by "PyObject_AsDn" */
+	if (!pyldb_Object_AsDn(tmp_ctx, py_ntds_settings_dn, ldb, &ntds_settings_dn)) {
+		/* exception thrown by "pyldb_Object_AsDn" */
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
@@ -778,13 +777,13 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
-	   PyErr_NoMemory();
-	   return NULL;
+		PyErr_NoMemory();
+		return NULL;
 	}
 
-	if (!PyObject_AsDn(mem_ctx, py_dn, ldb, &dn)) {
-	   talloc_free(mem_ctx);
-	   return NULL;
+	if (!pyldb_Object_AsDn(mem_ctx, py_dn, ldb, &dn)) {
+		talloc_free(mem_ctx);
+		return NULL;
 	}
 
 	ret = dsdb_load_partition_usn(ldb, dn, &highest_uSN, &urgent_uSN);
@@ -916,7 +915,7 @@ static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret = PyLdbDn_FromDn(dn);
+	ret = pyldb_Dn_FromDn(dn);
 	talloc_free(dn);
 	return ret;
 }

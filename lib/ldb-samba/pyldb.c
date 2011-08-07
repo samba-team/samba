@@ -54,7 +54,7 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_lp_ctx))
 		return NULL;
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	lp_ctx = lpcfg_from_py_object(ldb, py_lp_ctx);
 	if (lp_ctx == NULL) {
@@ -82,7 +82,7 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	ldb_set_opaque(ldb, "credentials", creds);
 
@@ -102,7 +102,7 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "si", &py_opaque_name, &value))
 		return NULL;
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	/* see if we have a cached copy */
 	old_val = (int *)ldb_get_opaque(ldb, py_opaque_name);
@@ -158,7 +158,7 @@ static PyObject *py_ldb_set_utf8_casefold(PyObject *self)
 {
 	struct ldb_context *ldb;
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
@@ -190,7 +190,7 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 	if (!ret)
 		return NULL;
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	info = PyAuthSession_AsSession(py_session_info);
 
@@ -206,7 +206,7 @@ static PyObject *py_ldb_register_samba_handlers(PyObject *self)
 
 	/* XXX: Perhaps call this from PySambaLdb's init function ? */
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 	ret = ldb_register_samba_handlers(ldb);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_error, ret, ldb);

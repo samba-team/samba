@@ -146,12 +146,12 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 		return NULL;
 	}
 
-	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(py_ldb);
 
 	if (py_dn == Py_None) {
 		user_dn = NULL;
 	} else {
-		if (!PyObject_AsDn(ldb_ctx, py_dn, ldb_ctx, &user_dn)) {
+		if (!pyldb_Object_AsDn(ldb_ctx, py_dn, ldb_ctx, &user_dn)) {
 			talloc_free(mem_ctx);
 			return NULL;
 		}
@@ -240,7 +240,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 	}
 
 	if (py_ldb != Py_None) {
-		ldb = PyLdb_AsLdbContext(py_ldb);
+		ldb = pyldb_Ldb_AsLdbContext(py_ldb);
 	}
 
 	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);

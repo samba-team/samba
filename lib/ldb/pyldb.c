@@ -40,10 +40,15 @@ static PyObject *PyExc_LdbError;
 staticforward PyTypeObject PyLdbControl;
 staticforward PyTypeObject PyLdbResult;
 staticforward PyTypeObject PyLdbMessage;
+#define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
 staticforward PyTypeObject PyLdbModule;
 staticforward PyTypeObject PyLdbDn;
+#define pyldb_Dn_Check(ob) PyObject_TypeCheck(ob, &PyLdbDn)
 staticforward PyTypeObject PyLdb;
+#define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
 staticforward PyTypeObject PyLdbMessageElement;
+#define pyldb_MessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
+
 staticforward PyTypeObject PyLdbTree;
 static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 static PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
@@ -132,7 +137,7 @@ static PyObject *py_ldb_control_new(PyTypeObject *type, PyObject *args, PyObject
 		return NULL;
 	}
 
-	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(py_ldb);
 	parsed_controls = ldb_parse_control_from_string(ldb_ctx, mem_ctx, data);
 
 	if (!parsed_controls) {
@@ -341,7 +346,7 @@ static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx,
 	res->msgs = talloc_array(res, struct ldb_message *, res->count);
 	for (i = 0; i < res->count; i++) {
 		PyObject *item = PyList_GetItem(obj, i);
-		res->msgs[i] = PyLdbMessage_AsMessage(item);
+		res->msgs[i] = pyldb_Message_AsMessage(item);
 	}
 	return res;
 }
@@ -468,7 +473,7 @@ static int py_ldb_dn_compare(PyLdbDnObject *dn1, PyLdbDnObject *dn2)
 
 static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self)
 {
-	struct ldb_dn *dn = PyLdbDn_AsDn((PyObject *)self);
+	struct ldb_dn *dn = pyldb_Dn_AsDn((PyObject *)self);
 	struct ldb_dn *parent;
 	PyLdbDnObject *py_ret;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
@@ -499,9 +504,9 @@ static PyObject *py_ldb_dn_add_child(PyLdbDnObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_other))
 		return NULL;
 
-	dn = PyLdbDn_AsDn((PyObject *)self);
+	dn = pyldb_Dn_AsDn((PyObject *)self);
 
-	if (!PyObject_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
+	if (!pyldb_Object_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
 		return NULL;
 
 	return ldb_dn_add_child(dn, other)?Py_True:Py_False;
@@ -514,9 +519,9 @@ static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_other))
 		return NULL;
 
-	dn = PyLdbDn_AsDn((PyObject *)self);
+	dn = pyldb_Dn_AsDn((PyObject *)self);
 
-	if (!PyObject_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
+	if (!pyldb_Object_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
 		return NULL;
 
 	return ldb_dn_add_base(dn, other)?Py_True:Py_False;
@@ -529,9 +534,9 @@ static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_base))
 		return NULL;
 
-	dn = PyLdbDn_AsDn((PyObject *)self);
+	dn = pyldb_Dn_AsDn((PyObject *)self);
 
-	if (!PyObject_AsDn(NULL, py_base, dn_ldb_ctx(dn), &base))
+	if (!pyldb_Object_AsDn(NULL, py_base, dn_ldb_ctx(dn), &base))
 		return NULL;
 
 	return PyBool_FromLong(ldb_dn_compare_base(base, dn) == 0);
@@ -586,7 +591,7 @@ static PyMethodDef py_ldb_dn_methods[] = {
 
 static Py_ssize_t py_ldb_dn_len(PyLdbDnObject *self)
 {
-	return ldb_dn_get_comp_num(PyLdbDn_AsDn((PyObject *)self));
+	return ldb_dn_get_comp_num(pyldb_Dn_AsDn((PyObject *)self));
 }
 
 /*
@@ -608,11 +613,11 @@ static PyObject *py_ldb_dn_copy(struct ldb_dn *dn)
 
 static PyObject *py_ldb_dn_concat(PyLdbDnObject *self, PyObject *py_other)
 {
-	struct ldb_dn *dn = PyLdbDn_AsDn((PyObject *)self), 
+	struct ldb_dn *dn = pyldb_Dn_AsDn((PyObject *)self), 
 				  *other;
 	PyLdbDnObject *py_ret;
-	
-	if (!PyObject_AsDn(NULL, py_other, NULL, &other))
+
+	if (!pyldb_Object_AsDn(NULL, py_other, NULL, &other))
 		return NULL;
 
 	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
@@ -646,7 +651,7 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 					 &py_ldb, &str))
 		return NULL;
 
-	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(py_ldb);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -709,7 +714,7 @@ static PyObject *py_ldb_set_debug(PyLdbObject *self, PyObject *args)
 
 	Py_INCREF(cb);
 	/* FIXME: Where do we DECREF cb ? */
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_set_debug(self->ldb_ctx, py_ldb_debug, cb), PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_set_debug(self->ldb_ctx, py_ldb_debug, cb), pyldb_Ldb_AsLdbContext(self));
 
 	Py_RETURN_NONE;
 }
@@ -720,7 +725,7 @@ static PyObject *py_ldb_set_create_perms(PyTypeObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "I", &perms))
 		return NULL;
 
-	ldb_set_create_perms(PyLdb_AsLdbContext(self), perms);
+	ldb_set_create_perms(pyldb_Ldb_AsLdbContext(self), perms);
 
 	Py_RETURN_NONE;
 }
@@ -731,38 +736,38 @@ static PyObject *py_ldb_set_modules_dir(PyTypeObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &modules_dir))
 		return NULL;
 
-	ldb_set_modules_dir(PyLdb_AsLdbContext(self), modules_dir);
+	ldb_set_modules_dir(pyldb_Ldb_AsLdbContext(self), modules_dir);
 
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_transaction_start(PyLdbObject *self)
 {
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_start(PyLdb_AsLdbContext(self)), PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_start(pyldb_Ldb_AsLdbContext(self)), pyldb_Ldb_AsLdbContext(self));
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_transaction_commit(PyLdbObject *self)
 {
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_commit(PyLdb_AsLdbContext(self)), PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_commit(pyldb_Ldb_AsLdbContext(self)), pyldb_Ldb_AsLdbContext(self));
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_transaction_prepare_commit(PyLdbObject *self)
 {
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_prepare_commit(PyLdb_AsLdbContext(self)), PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_prepare_commit(pyldb_Ldb_AsLdbContext(self)), pyldb_Ldb_AsLdbContext(self));
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_transaction_cancel(PyLdbObject *self)
 {
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_cancel(PyLdb_AsLdbContext(self)), PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_transaction_cancel(pyldb_Ldb_AsLdbContext(self)), pyldb_Ldb_AsLdbContext(self));
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_setup_wellknown_attributes(PyLdbObject *self)
 {
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_setup_wellknown_attributes(PyLdb_AsLdbContext(self)), PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_setup_wellknown_attributes(pyldb_Ldb_AsLdbContext(self)), pyldb_Ldb_AsLdbContext(self));
 	Py_RETURN_NONE;
 }
 
@@ -773,7 +778,7 @@ static PyObject *py_ldb_repr(PyLdbObject *self)
 
 static PyObject *py_ldb_get_root_basedn(PyLdbObject *self)
 {
-	struct ldb_dn *dn = ldb_get_root_basedn(PyLdb_AsLdbContext(self));
+	struct ldb_dn *dn = ldb_get_root_basedn(pyldb_Ldb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
 	return py_ldb_dn_copy(dn);
@@ -782,7 +787,7 @@ static PyObject *py_ldb_get_root_basedn(PyLdbObject *self)
 
 static PyObject *py_ldb_get_schema_basedn(PyLdbObject *self)
 {
-	struct ldb_dn *dn = ldb_get_schema_basedn(PyLdb_AsLdbContext(self));
+	struct ldb_dn *dn = ldb_get_schema_basedn(pyldb_Ldb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
 	return py_ldb_dn_copy(dn);
@@ -790,7 +795,7 @@ static PyObject *py_ldb_get_schema_basedn(PyLdbObject *self)
 
 static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 {
-	struct ldb_dn *dn = ldb_get_config_basedn(PyLdb_AsLdbContext(self));
+	struct ldb_dn *dn = ldb_get_config_basedn(pyldb_Ldb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
 	return py_ldb_dn_copy(dn);
@@ -798,7 +803,7 @@ static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 
 static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 {
-	struct ldb_dn *dn = ldb_get_default_basedn(PyLdb_AsLdbContext(self));
+	struct ldb_dn *dn = ldb_get_default_basedn(pyldb_Ldb_AsLdbContext(self));
 	if (dn == NULL)
 		Py_RETURN_NONE;
 	return py_ldb_dn_copy(dn);
@@ -847,7 +852,7 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 					 &url, &flags, &py_options))
 		return -1;
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	if (py_options == Py_None) {
 		options = NULL;
@@ -912,10 +917,10 @@ static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwa
 			return NULL;
 	}
 
-	ret = ldb_connect(PyLdb_AsLdbContext(self), url, flags, options);
+	ret = ldb_connect(pyldb_Ldb_AsLdbContext(self), url, flags, options);
 	talloc_free(options);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, pyldb_Ldb_AsLdbContext(self));
 
 	Py_RETURN_NONE;
 }
@@ -943,7 +948,7 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args, PyObject *kwar
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ldb_ctx = PyLdb_AsLdbContext(self);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
 
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
@@ -958,7 +963,7 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args, PyObject *kwar
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	msg = PyLdbMessage_AsMessage(py_msg);
+	msg = pyldb_Message_AsMessage(py_msg);
 
 	if (validate) {
 		ret = ldb_msg_sanity_check(ldb_ctx, msg);
@@ -1033,7 +1038,7 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 	msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_obj));
 
 	if (dn_value) {
-		if (!PyObject_AsDn(msg, dn_value, ldb_ctx, &msg->dn)) {
+		if (!pyldb_Object_AsDn(msg, dn_value, ldb_ctx, &msg->dn)) {
 			PyErr_SetString(PyExc_TypeError, "unable to import dn object");
 			return NULL;
 		}
@@ -1087,7 +1092,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ldb_ctx = PyLdb_AsLdbContext(self);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
 
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
@@ -1098,7 +1103,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 	}
 
 	if (PyLdbMessage_Check(py_obj)) {
-		msg = PyLdbMessage_AsMessage(py_obj);
+		msg = pyldb_Message_AsMessage(py_obj);
 	} else if (PyDict_Check(py_obj)) {
 		msg = PyDict_AsMessage(mem_ctx, py_obj, ldb_ctx, LDB_FLAG_MOD_ADD);
 	} else {
@@ -1179,7 +1184,7 @@ static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args, PyObject *kwar
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ldb_ctx = PyLdb_AsLdbContext(self);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
 
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
@@ -1189,7 +1194,7 @@ static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args, PyObject *kwar
 		talloc_free(controls);
 	}
 
-	if (!PyObject_AsDn(mem_ctx, py_dn, ldb_ctx, &dn)) {
+	if (!pyldb_Object_AsDn(mem_ctx, py_dn, ldb_ctx, &dn)) {
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -1245,7 +1250,7 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 	struct ldb_request *req;
 	const char * const kwnames[] = { "dn1", "dn2", "controls", NULL };
 
-	ldb_ctx = PyLdb_AsLdbContext(self);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|O",
 					 discard_const_p(char *, kwnames),
@@ -1258,7 +1263,7 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
@@ -1269,12 +1274,12 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 	}
 
 
-	if (!PyObject_AsDn(mem_ctx, py_dn1, ldb, &dn1)) {
+	if (!pyldb_Object_AsDn(mem_ctx, py_dn1, ldb, &dn1)) {
 		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	if (!PyObject_AsDn(mem_ctx, py_dn2, ldb, &dn2)) {
+	if (!pyldb_Object_AsDn(mem_ctx, py_dn2, ldb, &dn2)) {
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -1323,7 +1328,7 @@ static PyObject *py_ldb_schema_attribute_remove(PyLdbObject *self, PyObject *arg
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	ldb_schema_attribute_remove(PyLdb_AsLdbContext(self), name);
+	ldb_schema_attribute_remove(pyldb_Ldb_AsLdbContext(self), name);
 
 	Py_RETURN_NONE;
 }
@@ -1336,9 +1341,9 @@ static PyObject *py_ldb_schema_attribute_add(PyLdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "sIs", &attribute, &flags, &syntax))
 		return NULL;
 
-	ret = ldb_schema_attribute_add(PyLdb_AsLdbContext(self), attribute, flags, syntax);
+	ret = ldb_schema_attribute_add(pyldb_Ldb_AsLdbContext(self), attribute, flags, syntax);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, pyldb_Ldb_AsLdbContext(self));
 
 	Py_RETURN_NONE;
 }
@@ -1373,12 +1378,12 @@ static PyObject *py_ldb_write_ldif(PyLdbObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ldif.msg = PyLdbMessage_AsMessage(py_msg);
+	ldif.msg = pyldb_Message_AsMessage(py_msg);
 	ldif.changetype = changetype;
 
 	mem_ctx = talloc_new(NULL);
 
-	string = ldb_ldif_write_string(PyLdb_AsLdbContext(self), mem_ctx, &ldif);
+	string = ldb_ldif_write_string(pyldb_Ldb_AsLdbContext(self), mem_ctx, &ldif);
 	if (!string) {
 		PyErr_SetString(PyExc_KeyError, "Failed to generate LDIF");
 		return NULL;
@@ -1445,10 +1450,10 @@ static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ldb = PyLdb_AsLdbContext(self);
+	ldb = pyldb_Ldb_AsLdbContext(self);
 	ldb_ret = ldb_msg_difference(ldb, ldb,
-	                             PyLdbMessage_AsMessage(py_msg_old),
-	                             PyLdbMessage_AsMessage(py_msg_new),
+	                             pyldb_Message_AsMessage(py_msg_old),
+	                             pyldb_Message_AsMessage(py_msg_new),
 	                             &diff);
 	if (ldb_ret != LDB_SUCCESS) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to generate the Ldb Message diff");
@@ -1480,13 +1485,13 @@ static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 	old_val.data = (uint8_t *)PyString_AsString(val);
 	old_val.length = PyString_Size(val);
 
-	a = ldb_schema_attribute_by_name(PyLdb_AsLdbContext(self), element_name);
+	a = ldb_schema_attribute_by_name(pyldb_Ldb_AsLdbContext(self), element_name);
 
 	if (a == NULL) {
 		Py_RETURN_NONE;
 	}
 
-	if (a->syntax->ldif_write_fn(PyLdb_AsLdbContext(self), mem_ctx, &old_val, &new_val) != 0) {
+	if (a->syntax->ldif_write_fn(pyldb_Ldb_AsLdbContext(self), mem_ctx, &old_val, &new_val) != 0) {
 		talloc_free(mem_ctx);
 		Py_RETURN_NONE;
 	}
@@ -1528,7 +1533,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ldb_ctx = PyLdb_AsLdbContext(self);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
 
 	if (py_attrs == Py_None) {
 		attrs = NULL;
@@ -1543,7 +1548,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_base == Py_None) {
 		base = ldb_get_default_basedn(ldb_ctx);
 	} else {
-		if (!PyObject_AsDn(ldb_ctx, py_base, ldb_ctx, &base)) {
+		if (!pyldb_Object_AsDn(ldb_ctx, py_base, ldb_ctx, &base)) {
 			talloc_free(attrs);
 			return NULL;
 		}
@@ -1609,7 +1614,7 @@ static PyObject *py_ldb_get_opaque(PyLdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	data = ldb_get_opaque(PyLdb_AsLdbContext(self), name);
+	data = ldb_get_opaque(pyldb_Ldb_AsLdbContext(self), name);
 
 	if (data == NULL)
 		Py_RETURN_NONE;
@@ -1629,14 +1634,14 @@ static PyObject *py_ldb_set_opaque(PyLdbObject *self, PyObject *args)
 
 	/* FIXME: More interpretation */
 
-	ldb_set_opaque(PyLdb_AsLdbContext(self), name, data);
+	ldb_set_opaque(pyldb_Ldb_AsLdbContext(self), name, data);
 
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_modules(PyLdbObject *self)
 {
-	struct ldb_context *ldb = PyLdb_AsLdbContext(self);
+	struct ldb_context *ldb = pyldb_Ldb_AsLdbContext(self);
 	PyObject *ret = PyList_New(0);
 	struct ldb_module *mod;
 
@@ -1649,7 +1654,7 @@ static PyObject *py_ldb_modules(PyLdbObject *self)
 
 static PyObject *py_ldb_sequence_number(PyLdbObject *self, PyObject *args)
 {
-	struct ldb_context *ldb = PyLdb_AsLdbContext(self);
+	struct ldb_context *ldb = pyldb_Ldb_AsLdbContext(self);
 	int type, ret;
 	uint64_t value;
 
@@ -1774,7 +1779,7 @@ static PyObject *PyLdbModule_FromModule(struct ldb_module *mod)
 
 static PyObject *py_ldb_get_firstmodule(PyLdbObject *self, void *closure)
 {
-	return PyLdbModule_FromModule(PyLdb_AsLdbContext(self)->modules);
+	return PyLdbModule_FromModule(pyldb_Ldb_AsLdbContext(self)->modules);
 }
 
 static PyGetSetDef py_ldb_getset[] = {
@@ -1784,13 +1789,13 @@ static PyGetSetDef py_ldb_getset[] = {
 
 static int py_ldb_contains(PyLdbObject *self, PyObject *obj)
 {
-	struct ldb_context *ldb_ctx = PyLdb_AsLdbContext(self);
+	struct ldb_context *ldb_ctx = pyldb_Ldb_AsLdbContext(self);
 	struct ldb_dn *dn;
 	struct ldb_result *result;
 	unsigned int count;
 	int ret;
 
-	if (!PyObject_AsDn(ldb_ctx, obj, ldb_ctx, &dn)) {
+	if (!pyldb_Object_AsDn(ldb_ctx, obj, ldb_ctx, &dn)) {
 		return -1;
 	}
 
@@ -1942,29 +1947,30 @@ static PyTypeObject PyLdbResult = {
 
 static PyObject *py_ldb_module_repr(PyLdbModuleObject *self)
 {
-	return PyString_FromFormat("<ldb module '%s'>", PyLdbModule_AsModule(self)->ops->name);
+	return PyString_FromFormat("<ldb module '%s'>",
+		pyldb_Module_AsModule(self)->ops->name);
 }
 
 static PyObject *py_ldb_module_str(PyLdbModuleObject *self)
 {
-	return PyString_FromString(PyLdbModule_AsModule(self)->ops->name);
+	return PyString_FromString(pyldb_Module_AsModule(self)->ops->name);
 }
 
 static PyObject *py_ldb_module_start_transaction(PyLdbModuleObject *self)
 {
-	PyLdbModule_AsModule(self)->ops->start_transaction(PyLdbModule_AsModule(self));
+	pyldb_Module_AsModule(self)->ops->start_transaction(pyldb_Module_AsModule(self));
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_module_end_transaction(PyLdbModuleObject *self)
 {
-	PyLdbModule_AsModule(self)->ops->end_transaction(PyLdbModule_AsModule(self));
+	pyldb_Module_AsModule(self)->ops->end_transaction(pyldb_Module_AsModule(self));
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_module_del_transaction(PyLdbModuleObject *self)
 {
-	PyLdbModule_AsModule(self)->ops->del_transaction(PyLdbModule_AsModule(self));
+	pyldb_Module_AsModule(self)->ops->del_transaction(pyldb_Module_AsModule(self));
 	Py_RETURN_NONE;
 }
 
@@ -1993,7 +1999,7 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 			return NULL;
 	}
 
-	ret = ldb_build_search_req(&req, mod->ldb, NULL, PyLdbDn_AsDn(py_base), 
+	ret = ldb_build_search_req(&req, mod->ldb, NULL, pyldb_Dn_AsDn(py_base), 
 			     scope, NULL /* expr */, attrs,
 			     NULL /* controls */, NULL, NULL, NULL);
 
@@ -2027,9 +2033,9 @@ static PyObject *py_ldb_module_add(PyLdbModuleObject *self, PyObject *args)
 
 	req = talloc_zero(NULL, struct ldb_request);
 	req->operation = LDB_ADD;
-	req->op.add.message = PyLdbMessage_AsMessage(py_message);
+	req->op.add.message = pyldb_Message_AsMessage(py_message);
 
-	mod = PyLdbModule_AsModule(self);
+	mod = pyldb_Module_AsModule(self);
 	ret = mod->ops->add(mod, req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
@@ -2049,9 +2055,9 @@ static PyObject *py_ldb_module_modify(PyLdbModuleObject *self, PyObject *args)
 
 	req = talloc_zero(NULL, struct ldb_request);
 	req->operation = LDB_MODIFY;
-	req->op.mod.message = PyLdbMessage_AsMessage(py_message);
+	req->op.mod.message = pyldb_Message_AsMessage(py_message);
 
-	mod = PyLdbModule_AsModule(self);
+	mod = pyldb_Module_AsModule(self);
 	ret = mod->ops->modify(mod, req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
@@ -2070,9 +2076,9 @@ static PyObject *py_ldb_module_delete(PyLdbModuleObject *self, PyObject *args)
 
 	req = talloc_zero(NULL, struct ldb_request);
 	req->operation = LDB_DELETE;
-	req->op.del.dn = PyLdbDn_AsDn(py_dn);
+	req->op.del.dn = pyldb_Dn_AsDn(py_dn);
 
-	ret = PyLdbModule_AsModule(self)->ops->del(PyLdbModule_AsModule(self), req);
+	ret = pyldb_Module_AsModule(self)->ops->del(pyldb_Module_AsModule(self), req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
 
@@ -2091,10 +2097,10 @@ static PyObject *py_ldb_module_rename(PyLdbModuleObject *self, PyObject *args)
 	req = talloc_zero(NULL, struct ldb_request);
 
 	req->operation = LDB_RENAME;
-	req->op.rename.olddn = PyLdbDn_AsDn(py_dn1);
-	req->op.rename.newdn = PyLdbDn_AsDn(py_dn2);
+	req->op.rename.olddn = pyldb_Dn_AsDn(py_dn1);
+	req->op.rename.newdn = pyldb_Dn_AsDn(py_dn2);
 
-	ret = PyLdbModule_AsModule(self)->ops->rename(PyLdbModule_AsModule(self), req);
+	ret = pyldb_Module_AsModule(self)->ops->rename(pyldb_Module_AsModule(self), req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
 
@@ -2152,12 +2158,12 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 {
 	struct ldb_message_element *me;
 
-	if (PyLdbMessageElement_Check(set_obj)) {
+	if (pyldb_MessageElement_Check(set_obj)) {
 		PyLdbMessageElementObject *set_obj_as_me = (PyLdbMessageElementObject *)set_obj;
 		/* We have to talloc_reference() the memory context, not the pointer
 		 * which may not actually be it's own context */
 		if (talloc_reference(mem_ctx, set_obj_as_me->mem_ctx)) {
-			return PyLdbMessageElement_AsMessageElement(set_obj);
+			return pyldb_MessageElement_AsMessageElement(set_obj);
 		}
 		return NULL;
 	}
@@ -2224,15 +2230,15 @@ static PyObject *py_ldb_msg_element_get(PyLdbMessageElementObject *self, PyObjec
 	unsigned int i;
 	if (!PyArg_ParseTuple(args, "I", &i))
 		return NULL;
-	if (i >= PyLdbMessageElement_AsMessageElement(self)->num_values)
+	if (i >= pyldb_MessageElement_AsMessageElement(self)->num_values)
 		Py_RETURN_NONE;
 
-	return PyObject_FromLdbValue(&(PyLdbMessageElement_AsMessageElement(self)->values[i]));
+	return PyObject_FromLdbValue(&(pyldb_MessageElement_AsMessageElement(self)->values[i]));
 }
 
 static PyObject *py_ldb_msg_element_flags(PyLdbMessageElementObject *self, PyObject *args)
 {
-	struct ldb_message_element *el = PyLdbMessageElement_AsMessageElement(self);
+	struct ldb_message_element *el = pyldb_MessageElement_AsMessageElement(self);
 	return PyInt_FromLong(el->flags);
 }
 
@@ -2243,7 +2249,7 @@ static PyObject *py_ldb_msg_element_set_flags(PyLdbMessageElementObject *self, P
 	if (!PyArg_ParseTuple(args, "I", &flags))
 		return NULL;
 
-	el = PyLdbMessageElement_AsMessageElement(self);
+	el = pyldb_MessageElement_AsMessageElement(self);
 	el->flags = flags;
 	Py_RETURN_NONE;
 }
@@ -2257,12 +2263,12 @@ static PyMethodDef py_ldb_msg_element_methods[] = {
 
 static Py_ssize_t py_ldb_msg_element_len(PyLdbMessageElementObject *self)
 {
-	return PyLdbMessageElement_AsMessageElement(self)->num_values;
+	return pyldb_MessageElement_AsMessageElement(self)->num_values;
 }
 
 static PyObject *py_ldb_msg_element_find(PyLdbMessageElementObject *self, Py_ssize_t idx)
 {
-	struct ldb_message_element *el = PyLdbMessageElement_AsMessageElement(self);
+	struct ldb_message_element *el = pyldb_MessageElement_AsMessageElement(self);
 	if (idx < 0 || idx >= el->num_values) {
 		PyErr_SetString(PyExc_IndexError, "Out of range");
 		return NULL;
@@ -2277,14 +2283,16 @@ static PySequenceMethods py_ldb_msg_element_seq = {
 
 static int py_ldb_msg_element_cmp(PyLdbMessageElementObject *self, PyLdbMessageElementObject *other)
 {
-	int ret = ldb_msg_element_compare(PyLdbMessageElement_AsMessageElement(self),
-									  PyLdbMessageElement_AsMessageElement(other));
+	int ret = ldb_msg_element_compare(pyldb_MessageElement_AsMessageElement(self),
+									  pyldb_MessageElement_AsMessageElement(other));
 	return SIGN(ret);
 }
 
 static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
 {
-	return PyObject_GetIter(ldb_msg_element_to_set(NULL, PyLdbMessageElement_AsMessageElement(self)));
+	struct ldb_message_element *el = ldb_msg_element_to_set(NULL,
+		pyldb_MessageElement_AsMessageElement(self));
+	return PyObject_GetIter(el);
 }
 
 static PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el, TALLOC_CTX *mem_ctx)
@@ -2395,7 +2403,7 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 {
 	char *element_str = NULL;
 	Py_ssize_t i;
-	struct ldb_message_element *el = PyLdbMessageElement_AsMessageElement(self);
+	struct ldb_message_element *el = pyldb_MessageElement_AsMessageElement(self);
 	PyObject *ret;
 
 	for (i = 0; i < el->num_values; i++) {
@@ -2418,7 +2426,7 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 
 static PyObject *py_ldb_msg_element_str(PyLdbMessageElementObject *self)
 {
-	struct ldb_message_element *el = PyLdbMessageElement_AsMessageElement(self);
+	struct ldb_message_element *el = pyldb_MessageElement_AsMessageElement(self);
 
 	if (el->num_values == 1)
 		return PyString_FromStringAndSize((char *)el->values[0].data, el->values[0].length);
@@ -2471,7 +2479,7 @@ static PyObject *py_ldb_msg_from_dict(PyTypeObject *type, PyObject *args)
 		return NULL;
 	}
 
-	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
+	ldb_ctx = pyldb_Ldb_AsLdbContext(py_ldb);
 
 	msg = PyDict_AsMessage(ldb_ctx, py_dict, ldb_ctx, mod_flags);
 	if (!msg) {
@@ -2498,7 +2506,7 @@ static PyObject *py_ldb_msg_remove_attr(PyLdbMessageObject *self, PyObject *args
 
 static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self)
 {
-	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	Py_ssize_t i, j = 0;
 	PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
 	if (msg->dn != NULL) {
@@ -2516,14 +2524,14 @@ static PyObject *py_ldb_msg_getitem_helper(PyLdbMessageObject *self, PyObject *p
 {
 	struct ldb_message_element *el;
 	char *name;
-	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	if (!PyString_Check(py_name)) {
 		PyErr_SetNone(PyExc_TypeError);
 		return NULL;
 	}
 	name = PyString_AsString(py_name);
 	if (!strcmp(name, "dn"))
-		return PyLdbDn_FromDn(msg->dn);
+		return pyldb_Dn_FromDn(msg->dn);
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
 		return NULL;
@@ -2563,11 +2571,11 @@ static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args)
 
 static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 {
-	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	Py_ssize_t i, j = 0;
 	PyObject *l = PyList_New(msg->num_elements + (msg->dn == NULL?0:1));
 	if (msg->dn != NULL) {
-		PyList_SetItem(l, 0, Py_BuildValue("(sO)", "dn", PyLdbDn_FromDn(msg->dn)));
+		PyList_SetItem(l, 0, Py_BuildValue("(sO)", "dn", pyldb_Dn_FromDn(msg->dn)));
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++, j++) {
@@ -2580,7 +2588,7 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 
 static PyObject *py_ldb_msg_elements(PyLdbMessageObject *self)
 {
-	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	Py_ssize_t i = 0;
 	PyObject *l = PyList_New(msg->num_elements);
 	for (i = 0; i < msg->num_elements; i++) {
@@ -2591,7 +2599,7 @@ static PyObject *py_ldb_msg_elements(PyLdbMessageObject *self)
 
 static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
 {
-	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	PyLdbMessageElementObject *py_element;
 	int ret;
 	struct ldb_message_element *el;
@@ -2659,15 +2667,15 @@ static int py_ldb_msg_setitem(PyLdbMessageObject *self, PyObject *name, PyObject
 									   value, 0, attr_name);
 		if (el == NULL)
 			return -1;
-		ldb_msg_remove_attr(PyLdbMessage_AsMessage(self), attr_name);
-		ldb_msg_add(PyLdbMessage_AsMessage(self), el, el->flags);
+		ldb_msg_remove_attr(pyldb_Message_AsMessage(self), attr_name);
+		ldb_msg_add(pyldb_Message_AsMessage(self), el, el->flags);
 	}
 	return 0;
 }
 
 static Py_ssize_t py_ldb_msg_length(PyLdbMessageObject *self)
 {
-	return PyLdbMessage_AsMessage(self)->num_elements;
+	return pyldb_Message_AsMessage(self)->num_elements;
 }
 
 static PyMappingMethods py_ldb_msg_mapping = {
@@ -2704,7 +2712,7 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 
 	if (pydn != NULL) {
 		struct ldb_dn *dn;
-		if (!PyObject_AsDn(NULL, pydn, NULL, &dn)) {
+		if (!pyldb_Object_AsDn(NULL, pydn, NULL, &dn)) {
 			talloc_free(mem_ctx);
 			return NULL;
 		}
@@ -2739,19 +2747,19 @@ static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg)
 
 static PyObject *py_ldb_msg_get_dn(PyLdbMessageObject *self, void *closure)
 {
-	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
-	return PyLdbDn_FromDn(msg->dn);
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	return pyldb_Dn_FromDn(msg->dn);
 }
 
 static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *closure)
 {
-	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
-	if (!PyLdbDn_Check(value)) {
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	if (!pyldb_Dn_Check(value)) {
 		PyErr_SetNone(PyExc_TypeError);
 		return -1;
 	}
 
-	msg->dn = talloc_reference(msg, PyLdbDn_AsDn(value));
+	msg->dn = talloc_reference(msg, pyldb_Dn_AsDn(value));
 	return 0;
 }
 
@@ -2779,8 +2787,8 @@ static void py_ldb_msg_dealloc(PyLdbMessageObject *self)
 static int py_ldb_msg_compare(PyLdbMessageObject *py_msg1,
 			      PyLdbMessageObject *py_msg2)
 {
-	struct ldb_message *msg1 = PyLdbMessage_AsMessage(py_msg1),
-			   *msg2 = PyLdbMessage_AsMessage(py_msg2);
+	struct ldb_message *msg1 = pyldb_Message_AsMessage(py_msg1),
+			   *msg2 = pyldb_Message_AsMessage(py_msg2);
 	unsigned int i;
 	int ret;
 
@@ -2861,7 +2869,7 @@ static int py_module_search(struct ldb_module *mod, struct ldb_request *req)
 	PyObject *py_ldb = (PyObject *)mod->private_data;
 	PyObject *py_result, *py_base, *py_attrs, *py_tree;
 
-	py_base = PyLdbDn_FromDn(req->op.search.base);
+	py_base = pyldb_Dn_FromDn(req->op.search.base);
 
 	if (py_base == NULL)
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -2960,7 +2968,7 @@ static int py_module_del(struct ldb_module *mod, struct ldb_request *req)
 	PyObject *py_ldb = (PyObject *)mod->private_data;
 	PyObject *py_result, *py_dn;
 
-	py_dn = PyLdbDn_FromDn(req->op.del.dn);
+	py_dn = pyldb_Dn_FromDn(req->op.del.dn);
 
 	if (py_dn == NULL)
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -2983,12 +2991,12 @@ static int py_module_rename(struct ldb_module *mod, struct ldb_request *req)
 	PyObject *py_ldb = (PyObject *)mod->private_data;
 	PyObject *py_result, *py_olddn, *py_newdn;
 
-	py_olddn = PyLdbDn_FromDn(req->op.rename.olddn);
+	py_olddn = pyldb_Dn_FromDn(req->op.rename.olddn);
 
 	if (py_olddn == NULL)
 		return LDB_ERR_OPERATIONS_ERROR;
 
-	py_newdn = PyLdbDn_FromDn(req->op.rename.newdn);
+	py_newdn = pyldb_Dn_FromDn(req->op.rename.newdn);
 
 	if (py_newdn == NULL)
 		return LDB_ERR_OPERATIONS_ERROR;

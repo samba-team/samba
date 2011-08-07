@@ -186,7 +186,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	result->lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
-	result->samdb = PyLdb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
+	result->samdb = pyldb_Ldb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
 
 	return NT_STATUS_OK;
 }
@@ -378,5 +378,5 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 		return NULL;
 	}
 
-	return PyLdb_AsLdbContext(PyObject_GetAttrString(py_result, "ldb"));
+	return pyldb_Ldb_AsLdbContext(PyObject_GetAttrString(py_result, "ldb"));
 }

@@ -417,7 +417,7 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 		return NULL;
 	}
 
-	samdb = PyLdb_AsLdbContext(py_ldb);
+	samdb = pyldb_Ldb_AsLdbContext(py_ldb);
 	if (samdb == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected ldb object");
 		talloc_free(s);

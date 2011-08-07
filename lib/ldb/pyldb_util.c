@@ -68,7 +68,7 @@ static PyTypeObject * PyLdb_GetPyType(const char *typename)
  * @param ldb_ctx LDB context
  * @return Whether or not the conversion succeeded
  */
-bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, 
+bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, 
 		   struct ldb_context *ldb_ctx, struct ldb_dn **dn)
 {
 	struct ldb_dn *odn;
@@ -86,7 +86,7 @@ bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	}
 
 	if (PyObject_TypeCheck(object, PyLdb_Dn_Type)) {
-		*dn = PyLdbDn_AsDn(object);
+		*dn = pyldb_Dn_AsDn(object);
 		return true;
 	}
 
@@ -94,7 +94,7 @@ bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	return false;
 }
 
-PyObject *PyLdbDn_FromDn(struct ldb_dn *dn)
+PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn)
 {
 	PyLdbDnObject *py_ret;
 	PyTypeObject *PyLdb_Dn_Type;
