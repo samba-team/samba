@@ -51,7 +51,7 @@ This is the latest stable release of Samba 3.5.
 Major enhancements in Samba 3.5.11 include:
 
 o  Fix access to Samba shares when Windows security patch KB2536276 is installed
-   (bug #7460).
+   (bug #8238).
 o  Fix Winbind panics if verify_idpool() fails (bug #8253).
 
 
