@@ -18,15 +18,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Utility methods for security descriptor manipulation."""
+
 import samba
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE, SCOPE_BASE
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
-class SDUtils:
-    '''Some utilities for manipulation of security descriptors
-    on objects'''
+class SDUtils(object):
+    """Some utilities for manipulation of security descriptors
+    on objects"""
 
     def __init__(self, samdb):
         self.ldb = samdb
