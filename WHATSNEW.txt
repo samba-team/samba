@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.6.0
-                             , 2011
+                          August 9, 2011
                    =============================
 
 
@@ -251,6 +251,33 @@ o   Andreas Schneider <asn@samba.org>
 
 Changes since 3.6.0rc3
 ----------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 8327: Fix the reload of the configuration, also reload activated
+      registry shares.
+    * BUG 8328: Cleanup of idmap_tdb2 code.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7462: Make SA_RESETHAND conditional on its existance.
+    * BUG 8324: smbclient cannot list directories from a big-endian machine.
+    * BUG 8335: File copy aborts with smb2_validate_message_id: bad message_id.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8326: WinXP cannot join a Samba3 domain with a 'even' hostname.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 8303: db_ctdb_send_schedule_for_deletion() is not defined.
+
+
+o   Alban Browaeys <prahal@yahoo.com>
+    * BUG 8341: Fix segfault in libsmbclient.
+
+
+o   Volker Lendecke <vlendec@samba.org>
+    * BUG 8343: Fix SMB2 crash reading with aio_fork beyond the end of file.
 
 
 Changes since 3.6.0rc2
