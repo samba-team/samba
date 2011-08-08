@@ -1072,6 +1072,9 @@ is_ctdb_managed_service ()
 
 ctdb_start_stop_service ()
 {
+    # Do nothing unless configured to...
+    [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] || return 0
+
     _service_name="${1:-${service_name}}"
 
     [ "$event_name" = "monitor" ] || return 0
