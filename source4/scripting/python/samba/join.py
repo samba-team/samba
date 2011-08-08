@@ -480,7 +480,7 @@ class dc_join(object):
                     replica_flags=ctx.replica_flags)
             repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                     destination_dsa_guid, rodc=ctx.RODC,
-                    replica_flags=ctx.replica_flags)
+                    replica_flags=ctx.domain_replica_flags)
             if ctx.RODC:
                 repl.replicate(ctx.acct_dn, source_dsa_invocation_id,
                         destination_dsa_guid,
@@ -534,7 +534,7 @@ class dc_join(object):
 
 
 def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
-              targetdir=None, domain=None):
+              targetdir=None, domain=None, domain_critical_only=False):
     """join as a RODC"""
 
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain)
@@ -569,6 +569,10 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
                            drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
                            drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
                            drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
+    ctx.domain_replica_flags = ctx.replica_flags
+    if domain_critical_only:
+        ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
+
     ctx.do_join()
 
 
@@ -576,7 +580,7 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 
 def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
-            targetdir=None, domain=None):
+            targetdir=None, domain=None, domain_critical_only=False):
     """join as a DC"""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain)
 
@@ -590,6 +594,9 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
                          drsuapi.DRSUAPI_DRS_PER_SYNC |
                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
                          drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+    ctx.domain_replica_flags = ctx.replica_flags
+    if domain_critical_only:
+        ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
 
     ctx.do_join()
     print "Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid)
