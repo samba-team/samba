@@ -44,6 +44,7 @@ typedef struct {
 static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_Join_member r;
+	int _level = 0;
 	NTSTATUS status;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
@@ -51,8 +52,10 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssi:Join", discard_const_p(char *, kwnames),
 					 &r.in.domain_name, &r.in.netbios_name, 
-					 &r.in.level))
+					 &_level)) {
 		return NULL;
+	}
+	r.in.level = _level;
 
 	mem_ctx = talloc_new(self->mem_ctx);
 	if (mem_ctx == NULL) {
