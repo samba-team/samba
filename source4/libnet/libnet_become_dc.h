@@ -107,6 +107,10 @@ struct libnet_BecomeDC_StoreChunk {
 	const struct libnet_BecomeDC_SourceDSA *source_dsa;
 	const struct libnet_BecomeDC_DestDSA *dest_dsa;
 	const struct libnet_BecomeDC_Partition *partition;
+	uint32_t req_level;
+	const struct drsuapi_DsGetNCChangesRequest5 *req5;
+	const struct drsuapi_DsGetNCChangesRequest8 *req8;
+	const struct drsuapi_DsGetNCChangesRequest10 *req10;
 	uint32_t ctr_level;
 	const struct drsuapi_DsGetNCChangesCtr1 *ctr1;
 	const struct drsuapi_DsGetNCChangesCtr6 *ctr6;

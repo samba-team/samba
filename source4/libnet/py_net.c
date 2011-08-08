@@ -463,16 +463,20 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
  */
 static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
-	const char *kwnames[] = { "state", "level", "ctr", "schema", NULL };
-	PyObject *py_state, *py_ctr, *py_schema;
+	const char *kwnames[] = { "state", "level", "ctr",
+				  "schema", "req_level", "req",
+				  NULL };
+	PyObject *py_state, *py_ctr, *py_schema, *py_req;
 	struct replicate_state *s;
 	unsigned level;
+	unsigned req_level = 0;
 	NTSTATUS (*chunk_handler)(void *private_data, const struct libnet_BecomeDC_StoreChunk *c);
 	NTSTATUS status;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OIO|O",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OIO|OIO",
 					 discard_const_p(char *, kwnames),
-	                                 &py_state, &level, &py_ctr, &py_schema)) {
+	                                 &py_state, &level, &py_ctr,
+					 &py_schema, &req_level, &py_req)) {
 		return NULL;
 	}
 
@@ -509,6 +513,41 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 		PyErr_Format(PyExc_TypeError, "Bad level %u in replicate_chunk", level);
 		return NULL;
 	}
+
+	s->chunk.req5 = NULL;
+	s->chunk.req8 = NULL;
+	s->chunk.req10 = NULL;
+	if (py_req) {
+		switch (req_level) {
+		case 0:
+			break;
+		case 5:
+			if (!py_check_dcerpc_type(py_req, "samba.dcerpc.drsuapi", "DsGetNCChangesRequest5")) {
+				return NULL;
+			}
+
+			s->chunk.req5 = pytalloc_get_ptr(py_req);
+			break;
+		case 8:
+			if (!py_check_dcerpc_type(py_req, "samba.dcerpc.drsuapi", "DsGetNCChangesRequest8")) {
+				return NULL;
+			}
+
+			s->chunk.req8 = pytalloc_get_ptr(py_req);
+			break;
+		case 10:
+			if (!py_check_dcerpc_type(py_req, "samba.dcerpc.drsuapi", "DsGetNCChangesRequest10")) {
+				return NULL;
+			}
+
+			s->chunk.req10 = pytalloc_get_ptr(py_req);
+			break;
+		default:
+			PyErr_Format(PyExc_TypeError, "Bad req_level %u in replicate_chunk", req_level);
+			return NULL;
+		}
+	}
+	s->chunk.req_level = req_level;
 
 	chunk_handler = libnet_vampire_cb_store_chunk;
 	if (py_schema) {

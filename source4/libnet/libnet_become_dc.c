@@ -2615,6 +2615,10 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 						   struct libnet_BecomeDC_Partition *partition,
 						   struct drsuapi_DsGetNCChanges *r)
 {
+	uint32_t req_level = 0;
+	struct drsuapi_DsGetNCChangesRequest5 *req5 = NULL;
+	struct drsuapi_DsGetNCChangesRequest8 *req8 = NULL;
+	struct drsuapi_DsGetNCChangesRequest10 *req10 = NULL;
 	uint32_t ctr_level = 0;
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
@@ -2626,6 +2630,23 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		return r->out.result;
+	}
+
+	switch (r->in.level) {
+	case 0:
+		/* none */
+		break;
+	case 5:
+		req5 = &r->in.req->req5;
+		break;
+	case 8:
+		req8 = &r->in.req->req8;
+		break;
+	case 10:
+		req10 = &r->in.req->req10;
+		break;
+	default:
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (*r->out.level_out == 1) {
@@ -2691,6 +2712,10 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	s->_sc.source_dsa	= &s->source_dsa;
 	s->_sc.dest_dsa		= &s->dest_dsa;
 	s->_sc.partition	= partition;
+	s->_sc.req_level	= req_level;
+	s->_sc.req5		= req5;
+	s->_sc.req8		= req8;
+	s->_sc.req10		= req10;
 	s->_sc.ctr_level	= ctr_level;
 	s->_sc.ctr1		= ctr1;
 	s->_sc.ctr6		= ctr6;
