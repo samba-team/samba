@@ -1696,7 +1696,11 @@ static int ctdb_fetch_func(struct ctdb_call_info *call)
 /*
   attach to a specific database - client call
 */
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name, bool persistent, uint32_t tdb_flags)
+struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
+				    struct timeval timeout,
+				    const char *name,
+				    bool persistent,
+				    uint32_t tdb_flags)
 {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
@@ -1731,7 +1735,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 	ctdb_db->db_id = *(uint32_t *)data.dptr;
 	talloc_free(data.dptr);
 
-	ret = ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(2, 0), CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
+	ret = ctdb_ctrl_getdbpath(ctdb, timeout, CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to get dbpath for database '%s'\n", name));
 		talloc_free(ctdb_db);

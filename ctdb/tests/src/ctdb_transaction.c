@@ -260,9 +260,11 @@ int main(int argc, const char *argv[])
 
 	/* attach to a specific database */
 	if (unsafe_writes == 1) {
-		ctdb_db = ctdb_attach(ctdb, "transaction.tdb", true, TDB_NOSYNC);
+		ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(2, 0),
+				      "transaction.tdb", true, TDB_NOSYNC);
 	} else {
-		ctdb_db = ctdb_attach(ctdb, "transaction.tdb", true, 0);
+		ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(2, 0),
+				      "transaction.tdb", true, 0);
 	}
 
 	if (!ctdb_db) {
