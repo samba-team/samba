@@ -276,9 +276,14 @@ sub PythonStruct($$$$$$)
 		$self->indent;
 		$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(py_obj);");
 		$self->pidl("DATA_BLOB blob;");
+		$self->pidl("int blob_length = 0;");
 		$self->pidl("enum ndr_err_code err;");
-		$self->pidl("if (!PyArg_ParseTuple(args, \"s#:__ndr_unpack__\", &blob.data, &blob.length))");
-		$self->pidl("\treturn NULL;");
+		$self->pidl("if (!PyArg_ParseTuple(args, \"s#:__ndr_unpack__\", &blob.data, &blob_length)) {");
+		$self->indent;
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("blob.length = blob_length;");
 		$self->pidl("");
 		$self->pidl("err = ndr_pull_struct_blob_all(&blob, py_talloc_get_mem_ctx(py_obj), object, (ndr_pull_flags_fn_t)ndr_pull_$name);");
 		$self->pidl("if (err != NDR_ERR_SUCCESS) {");
