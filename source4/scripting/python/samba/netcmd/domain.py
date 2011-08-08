@@ -75,12 +75,16 @@ class cmd_domain_join(Command):
         Option("--server", help="DC to join", type=str),
         Option("--site", help="site to join", type=str),
         Option("--targetdir", help="where to store provision", type=str),
+        Option("--domain-critical-only",
+               help="only replicate critical domain objects",
+               action="store_true"),
         ]
 
     takes_args = ["domain", "role?"]
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
-            versionopts=None, server=None, site=None, targetdir=None):
+            versionopts=None, server=None, site=None, targetdir=None,
+            domain_critical_only=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -102,11 +106,13 @@ class cmd_domain_join(Command):
             return
         elif role == "DC":
             join_DC(server=server, creds=creds, lp=lp, domain=domain,
-                    site=site, netbios_name=netbios_name, targetdir=targetdir)
+                    site=site, netbios_name=netbios_name, targetdir=targetdir,
+                    domain_critical_only=domain_critical_only)
             return
         elif role == "RODC":
             join_RODC(server=server, creds=creds, lp=lp, domain=domain,
-                      site=site, netbios_name=netbios_name, targetdir=targetdir)
+                      site=site, netbios_name=netbios_name, targetdir=targetdir,
+                      domain_critical_only=domain_critical_only)
             return
         else:
             raise CommandError("Invalid role %s (possible values: MEMBER, BDC, RODC)" % role)
