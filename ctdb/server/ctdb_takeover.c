@@ -2633,8 +2633,6 @@ int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
 
 	iface = ctdb_find_iface(ctdb, info->name);
 	if (iface == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ "iface[%s] is unknown\n",
-				  info->name));
 		return -1;
 	}
 

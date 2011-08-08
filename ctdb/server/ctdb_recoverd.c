@@ -1638,7 +1638,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
 		rec->need_takeover_run = true;
 	}
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - takeip finished\n"));
 
 	/* execute the "recovered" event script on all nodes */
 	ret = run_recovered_eventscript(ctdb, nodemap, "do_recovery");

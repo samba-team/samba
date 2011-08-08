@@ -27,3 +27,12 @@ ctdb_test_init "$@"
 
 echo "Checking connectivity between nodes..."
 onnode all onnode all true
+
+# We're seeing some weirdness with CTDB controls timing out.  We're
+# wondering if time is jumping forward, so this creates a time log on
+# each node that we can examine later if tests fail weirdly.
+if [ -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
+    echo "Starting time logging on each node..."
+    f="/var/log/ctdb.test.time.log"
+    onnode -p all "[ -f $f ] || while : ; do date '+%s %N' ; sleep 1 ; done >$f 2>&1 </dev/null &"  &
+fi

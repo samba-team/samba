@@ -196,7 +196,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	DEBUG(DEBUG_NOTICE,("Starting CTDB daemon\n"));
+	DEBUG(DEBUG_NOTICE,("CTDB starting on node\n"));
 
 	gettimeofday(&ctdb->ctdbd_start_time, NULL);
 	gettimeofday(&ctdb->last_recovery_started, NULL);
