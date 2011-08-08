@@ -19,14 +19,17 @@ EOF
 # $POSIXLY_CORRECT means that the command passed to onnode can take
 # options and getopt won't reorder things to make them options to this
 # script.
-_temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "Yh" -l help -- "$@") || \
+_temp=$(getopt -n "$prog" -o "Yvh" -l help -- "$@") || \
     usage
 
 eval set -- "$_temp"
 
+verbose=false
+
 while true ; do
     case "$1" in
 	-Y) shift ;;
+	-v) verbose=true ; shift ;;
 	--) shift ; break ;;
 	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
     esac
@@ -50,12 +53,20 @@ setup_pstore ()
 
 case "$1" in
     ip)
+	# NOTE: all nodes share the same public addresses file.
+
 	# This is completely stateless and IPs move unnecessarily.
 	_f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
 	if [ -f "$_f" ] ; then
-	    echo ":Public IP:Node:"
+	    if $verbose ; then
+		echo ":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:"
+
+	    else
+		echo ":Public IP:Node:"
+	    fi
+	    # Here IPs are distributed across nodes in a stupid way...
 	    _n=0
-	    while read _ip _iface ; do
+	    while read _ip _ifaces ; do
 		case "_$ip" in
 		    \#*) : ;;
 		    *)
@@ -70,7 +81,20 @@ case "$1" in
 				_n=-1 # Never down!  :-)
 			    fi
 			done
-			echo ":${_ip}:${_n}:"
+			if $verbose ; then
+			    # If more than 1 interface, assume all
+			    # addresses are on the 1st.
+			    _first_iface="${_ifaces%%,*}"
+			    # Only show interface if address is on
+			    # this node.
+			    _my_iface=""
+			    if [ "PNN:$_n" = $(ctdb -Y pnn) ]; then
+				_my_iface="$_first_iface"
+			    fi
+			    echo ":${_ip}:${_n}:${_my_iface}:${_first_iface}:${_ifaces}:"
+			else
+			    echo ":${_ip}:${_n}:"
+			fi
 		esac
 	    done <"$_f"
 	fi
