@@ -89,7 +89,7 @@ int main(int argc, const char *argv[])
 
 	ev = event_context_init(NULL);
 
-	ctdb = ctdb_cmdline_client(ev);
+	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
 
 	/* attach to a specific database */
 	ctdb_db = ctdb_attach(ctdb, dbname, false, 0);

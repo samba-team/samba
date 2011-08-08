@@ -5134,7 +5134,7 @@ int main(int argc, const char *argv[])
 			}
 
 			/* initialise ctdb */
-			ctdb = ctdb_cmdline_client(ev);
+			ctdb = ctdb_cmdline_client(ev, TIMELIMIT());
 
 			if (ctdb_commands[i].without_daemon == false) {
 				const char *socket_name;

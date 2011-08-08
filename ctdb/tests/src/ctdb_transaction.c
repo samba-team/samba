@@ -252,7 +252,7 @@ int main(int argc, const char *argv[])
 
 	ev = event_context_init(NULL);
 
-	ctdb = ctdb_cmdline_client(ev);
+	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
 	if (ctdb == NULL) {
 		DEBUG(DEBUG_ERR, ("Could not attach to daemon\n"));
 		return 1;

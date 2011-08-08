@@ -188,7 +188,8 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
 
-struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev);
+struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev,
+					 struct timeval req_timeout);
 
 struct ctdb_statistics;
 int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_statistics *status);

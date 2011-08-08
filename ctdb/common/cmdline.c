@@ -111,7 +111,8 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 /*
   startup a client only ctdb context
  */
-struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
+struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev,
+					 struct timeval req_timeout)
 {
 	struct ctdb_context *ctdb;
 	char *socket_name;
@@ -152,7 +153,7 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 	}
 
 	/* get our pnn */
-	ctdb->pnn = ctdb_ctrl_getpnn(ctdb, timeval_current_ofs(3, 0), CTDB_CURRENT_NODE);
+	ctdb->pnn = ctdb_ctrl_getpnn(ctdb, req_timeout, CTDB_CURRENT_NODE);
 	if (ctdb->pnn == (uint32_t)-1) {
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to get ctdb pnn\n"));
 		talloc_free(ctdb);
