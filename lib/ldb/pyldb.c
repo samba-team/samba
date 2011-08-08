@@ -3201,7 +3201,7 @@ static PyObject *py_valid_attr_name(PyObject *self, PyObject *args)
 static PyObject *py_binary_encode(PyObject *self, PyObject *args)
 {
 	char *str, *encoded;
-	Py_ssize_t size;
+	int size = 0;
 	struct ldb_val val;
 	PyObject *ret;
 
