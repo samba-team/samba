@@ -63,9 +63,13 @@ static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
 static PyObject *py_unix2nttime(PyObject *self, PyObject *args)
 {
 	time_t t;
+	unsigned int _t;
 	NTTIME nt;
-	if (!PyArg_ParseTuple(args, "I", &t))
+
+	if (!PyArg_ParseTuple(args, "I", &_t)) {
 		return NULL;
+	}
+	t = _t;
 
 	unix_to_nt_time(&nt, t);
 
