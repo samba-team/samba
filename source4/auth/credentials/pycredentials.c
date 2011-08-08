@@ -60,8 +60,12 @@ static PyObject *py_creds_set_username(py_talloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
-	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
 		return NULL;
+	}
+	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_username(PyCredentials_AsCliCredentials(self), newval, obt));
 }
@@ -76,8 +80,12 @@ static PyObject *py_creds_set_password(py_talloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
-	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
 		return NULL;
+	}
+	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_password(PyCredentials_AsCliCredentials(self), newval, obt));
 }
@@ -91,8 +99,12 @@ static PyObject *py_creds_set_domain(py_talloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
-	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
 		return NULL;
+	}
+	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_domain(PyCredentials_AsCliCredentials(self), newval, obt));
 }
@@ -106,8 +118,12 @@ static PyObject *py_creds_set_realm(py_talloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
-	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
 		return NULL;
+	}
+	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_realm(PyCredentials_AsCliCredentials(self), newval, obt));
 }
@@ -135,8 +151,12 @@ static PyObject *py_creds_set_workstation(py_talloc_Object *self, PyObject *args
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
-	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
 		return NULL;
+	}
+	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_workstation(PyCredentials_AsCliCredentials(self), newval, obt));
 }
@@ -171,8 +191,12 @@ static PyObject *py_creds_parse_string(py_talloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
-	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
 		return NULL;
+	}
+	obt = _obt;
 
 	cli_credentials_parse_string(PyCredentials_AsCliCredentials(self), newval, obt);
 	Py_RETURN_NONE;
