@@ -42,10 +42,11 @@
 #define SPOOLSS_SPAWN_RATE 5
 #define SPOOLSS_MIN_LIFE 60 /* 1 minute minimum life time */
 
-#define SPOOLSS_ALL_FINE 0x00
+#define SPOOLSS_INIT     0x00
 #define SPOOLSS_NEW_MAX  0x01
 #define SPOLLSS_ENOSPC   0x02
 
+static struct prefork_pool *spoolss_pool;
 static int spoolss_min_children;
 static int spoolss_max_children;
 static int spoolss_spawn_rate;
@@ -60,7 +61,8 @@ static void spoolss_prefork_config(void)
 	int ret;
 
 	if (!spoolss_prefork_config_init) {
-		spoolss_prefork_status = SPOOLSS_ALL_FINE;
+		spoolss_pool = NULL;
+		spoolss_prefork_status = SPOOLSS_INIT;
 		spoolss_min_children = 0;
 		spoolss_max_children = 0;
 		spoolss_spawn_rate = 0;
@@ -186,11 +188,6 @@ static void spoolss_setup_sig_term_handler(struct tevent_context *ev_ctx)
 	}
 }
 
-struct spoolss_hup_ctx {
-	struct messaging_context *msg_ctx;
-	struct prefork_pool *pfp;
-};
-
 static void spoolss_sig_hup_handler(struct tevent_context *ev,
 				    struct tevent_signal *se,
 				    int signum,
@@ -198,36 +195,29 @@ static void spoolss_sig_hup_handler(struct tevent_context *ev,
 				    void *siginfo,
 				    void *pvt)
 {
-	struct spoolss_hup_ctx *hup_ctx;
+	struct messaging_context *msg_ctx;
 
-	hup_ctx = talloc_get_type_abort(pvt, struct spoolss_hup_ctx);
+	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	update_conf(ev, hup_ctx->msg_ctx);
+	update_conf(ev, msg_ctx);
 
 	/* relay to all children */
-	prefork_send_signal_to_all(hup_ctx->pfp, SIGHUP);
+	if (spoolss_pool) {
+		prefork_send_signal_to_all(spoolss_pool, SIGHUP);
+	}
 }
 
 static void spoolss_setup_sig_hup_handler(struct tevent_context *ev_ctx,
-					  struct prefork_pool *pfp,
 					  struct messaging_context *msg_ctx)
 {
-	struct spoolss_hup_ctx *hup_ctx;
 	struct tevent_signal *se;
-
-	hup_ctx = talloc(ev_ctx, struct spoolss_hup_ctx);
-	if (!hup_ctx) {
-		exit_server("failed to setup SIGHUP handler");
-	}
-	hup_ctx->pfp = pfp;
-	hup_ctx->msg_ctx = msg_ctx;
 
 	se = tevent_add_signal(ev_ctx,
 			       ev_ctx,
 			       SIGHUP, 0,
 			       spoolss_sig_hup_handler,
-			       hup_ctx);
+			       msg_ctx);
 	if (!se) {
 		exit_server("failed to setup SIGHUP handler");
 	}
@@ -565,7 +555,6 @@ static void check_updater_child(void)
 
 static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
 				    struct messaging_context *msg_ctx,
-				    struct prefork_pool *pfp,
 				    struct timeval current_time);
 static void spoolssd_check_children(struct tevent_context *ev_ctx,
 				    struct tevent_timer *te,
@@ -605,54 +594,37 @@ static void spoolssd_sigchld_handler(struct tevent_context *ev_ctx,
 }
 
 static bool spoolssd_setup_children_monitor(struct tevent_context *ev_ctx,
-					    struct messaging_context *msg_ctx,
-					    struct prefork_pool *pfp)
+					    struct messaging_context *msg_ctx)
 {
 	bool ok;
 
 	/* add our oun sigchld callback */
-	prefork_set_sigchld_callback(pfp, spoolssd_sigchld_handler, msg_ctx);
+	prefork_set_sigchld_callback(spoolss_pool,
+				     spoolssd_sigchld_handler, msg_ctx);
 
-	ok = spoolssd_schedule_check(ev_ctx, msg_ctx, pfp,
+	ok = spoolssd_schedule_check(ev_ctx, msg_ctx,
 				     tevent_timeval_current());
 	return ok;
 }
 
-struct schedule_check_state {
-	struct messaging_context *msg_ctx;
-	struct prefork_pool *pfp;
-};
-
 static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
 				    struct messaging_context *msg_ctx,
-				    struct prefork_pool *pfp,
 				    struct timeval current_time)
 {
 	struct tevent_timer *te;
 	struct timeval next_event;
-	struct schedule_check_state *state;
 
 	/* check situation again in 10 seconds */
 	next_event = tevent_timeval_current_ofs(10, 0);
 
-	state = talloc(ev_ctx, struct schedule_check_state);
-	if (!state) {
-		DEBUG(0, ("Out of memory!\n"));
-		return false;
-	}
-	state->msg_ctx = msg_ctx;
-	state->pfp = pfp;
-
 	/* TODO: check when the socket becomes readable, so that children
 	 * are checked only when there is some activity ? */
-	te = tevent_add_timer(ev_ctx, pfp, next_event,
-				spoolssd_check_children, state);
+	te = tevent_add_timer(ev_ctx, spoolss_pool, next_event,
+				spoolssd_check_children, msg_ctx);
 	if (!te) {
 		DEBUG(2, ("Failed to set up children monitoring!\n"));
-		talloc_free(state);
 		return false;
 	}
-	talloc_steal(te, state);
 
 	return true;
 }
@@ -662,26 +634,27 @@ static void spoolssd_check_children(struct tevent_context *ev_ctx,
 				    struct timeval current_time,
 				    void *pvt)
 {
-	struct schedule_check_state *state;
+	struct messaging_context *msg_ctx;
+	time_t now = time(NULL);
 	int active, total;
 	int ret, n;
 
-	state = talloc_get_type_abort(pvt, struct schedule_check_state);
+	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
 	if ((spoolss_prefork_status & SPOOLSS_NEW_MAX) &&
 	    !(spoolss_prefork_status & SPOLLSS_ENOSPC)) {
-		ret = prefork_expand_pool(state->pfp, spoolss_max_children);
+		ret = prefork_expand_pool(spoolss_pool, spoolss_max_children);
 		if (ret == ENOSPC) {
 			spoolss_prefork_status |= SPOLLSS_ENOSPC;
 		}
 		spoolss_prefork_status &= ~SPOOLSS_NEW_MAX;
 	}
 
-	active = prefork_count_active_children(state->pfp, &total);
+	active = prefork_count_active_children(spoolss_pool, &total);
 
 	if (total - active < spoolss_spawn_rate) {
-		n = prefork_add_children(ev_ctx, state->msg_ctx,
-					 state->pfp, spoolss_spawn_rate);
+		n = prefork_add_children(ev_ctx, msg_ctx,
+					 spoolss_pool, spoolss_spawn_rate);
 		if (n < spoolss_spawn_rate) {
 			DEBUG(10, ("Tried to start 5 children but only,"
 				   "%d were actually started.!\n", n));
@@ -690,13 +663,13 @@ static void spoolssd_check_children(struct tevent_context *ev_ctx,
 
 	if (total - active > spoolss_min_children) {
 		if ((total - spoolss_min_children) >= spoolss_spawn_rate) {
-			prefork_retire_children(state->pfp, spoolss_spawn_rate,
-						time(NULL) - SPOOLSS_MIN_LIFE);
+			prefork_retire_children(spoolss_pool,
+						spoolss_spawn_rate,
+						now - SPOOLSS_MIN_LIFE);
 		}
 	}
 
-	ret = spoolssd_schedule_check(ev_ctx, state->msg_ctx,
-					state->pfp, current_time);
+	ret = spoolssd_schedule_check(ev_ctx, msg_ctx, current_time);
 }
 
 static void print_queue_forward(struct messaging_context *msg,
@@ -729,7 +702,6 @@ char *get_bq_logfile(void)
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		    struct messaging_context *msg_ctx)
 {
-	struct prefork_pool *pool;
 	struct rpc_srv_callbacks spoolss_cb;
 	struct dcerpc_binding_vector *v;
 	TALLOC_CTX *mem_ctx;
@@ -790,7 +762,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-
 	/* start children before any more initialization is done */
 	ok = prefork_create_pool(ev_ctx, /* mem_ctx */
 				 ev_ctx, msg_ctx,
@@ -798,10 +769,10 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 				 spoolss_min_children,
 				 spoolss_max_children,
 				 &spoolss_children_main, NULL,
-				 &pool);
+				 &spoolss_pool);
 
 	spoolss_setup_sig_term_handler(ev_ctx);
-	spoolss_setup_sig_hup_handler(ev_ctx, pool, msg_ctx);
+	spoolss_setup_sig_hup_handler(ev_ctx, msg_ctx);
 
 	if (!serverid_register(procid_self(),
 				FLAG_MSG_GENERAL|FLAG_MSG_SMBD
@@ -869,7 +840,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	talloc_free(mem_ctx);
 
-	ok = spoolssd_setup_children_monitor(ev_ctx, msg_ctx, pool);
+	ok = spoolssd_setup_children_monitor(ev_ctx, msg_ctx);
 	if (!ok) {
 		DEBUG(0, ("Failed to setup children monitoring!\n"));
 		exit(1);
