@@ -160,8 +160,9 @@ static pmdaMetric metrictab[] = {
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
 };
 
-static struct ctdb_context *ctdb;
 static struct event_context *ev;
+static struct ctdb_context *ctdb;
+static struct ctdb_statistics *stats;
 
 static void
 pmda_ctdb_q_read_cb(uint8_t *data, size_t cnt, void *args)
@@ -208,9 +209,9 @@ pmda_ctdb_daemon_connect(void)
 	}
 
 	/*
-	 * ctdb_socket_connect() sets up a default queue callback handler calls
-	 * exit() if ctdbd is unavailable on recv, override with our own to
-	 * handle this
+	 * ctdb_socket_connect() sets a default queue callback handler that
+	 * calls exit() if ctdbd is unavailable on recv, use our own wrapper to
+	 * work around this
 	 */
 
 	memset(&addr, 0, sizeof(addr));
@@ -273,7 +274,7 @@ pmda_ctdb_daemon_disconnect(void)
 }
 
 static int
-fill_node(unsigned int item, struct ctdb_statistics *stats, pmAtomValue *atom)
+fill_node(unsigned int item, pmAtomValue *atom)
 {
 	switch (item) {
 	case 10:
@@ -308,7 +309,7 @@ fill_node(unsigned int item, struct ctdb_statistics *stats, pmAtomValue *atom)
 }
 
 static int
-fill_client(unsigned int item, struct ctdb_statistics *stats, pmAtomValue *atom)
+fill_client(unsigned int item, pmAtomValue *atom)
 {
 	switch (item) {
 	case 18:
@@ -328,7 +329,7 @@ fill_client(unsigned int item, struct ctdb_statistics *stats, pmAtomValue *atom)
 }
 
 static int
-fill_timeout(unsigned int item, struct ctdb_statistics *stats, pmAtomValue *atom)
+fill_timeout(unsigned int item, pmAtomValue *atom)
 {
 	switch (item) {
 	case 21:
@@ -353,127 +354,100 @@ fill_timeout(unsigned int item, struct ctdb_statistics *stats, pmAtomValue *atom
 static int
 pmda_ctdb_fetch_cb(pmdaMetric *mdesc, unsigned int inst, pmAtomValue *atom)
 {
-	struct ctdb_statistics stats;
 	int ret;
-	TDB_DATA data;
-	int32_t res;
-	struct timeval ctdb_timeout;
-
 	__pmID_int *id = (__pmID_int *)&(mdesc->m_desc.pmid);
 
 	if (inst != PM_IN_NULL)
 		return PM_ERR_INST;
 
-	if (ctdb == NULL) {
-		fprintf(stderr, "ctdbd disconnected, stats not available\n");
+	if (stats == NULL) {
+		fprintf(stderr, "stats not available\n");
 		ret = PM_ERR_VALUE;
 		goto err_out;
 	}
 
-	ctdb_timeout = timeval_current_ofs(1, 0);
-	ret = ctdb_control(ctdb, ctdb->pnn, 0,
-			   CTDB_CONTROL_STATISTICS, 0, tdb_null,
-			   ctdb, &data, &res, &ctdb_timeout, NULL);
-
-	if (ret != 0 || res != 0) {
-		fprintf(stderr, "ctdb control for statistics failed, reconnecting\n");
-		if (ctdb != NULL)
-			pmda_ctdb_daemon_disconnect();
-		ret = PM_ERR_VALUE;
-		goto err_out;
-	}
-
-	if (data.dsize != sizeof(struct ctdb_statistics)) {
-		fprintf(stderr, "incorrect statistics size %zu - not %zu\n",
-			data.dsize, sizeof(struct ctdb_statistics));
-		ret = PM_ERR_VALUE;
-		goto err_out;
-	}
-
-	stats = *(struct ctdb_statistics *)data.dptr;
-	talloc_free(data.dptr);
 
 	switch (id->cluster) {
 	case 0:
-		atom->ul = stats.num_clients;
+		atom->ul = stats->num_clients;
 		break;
 	case 1:
-		atom->ul = stats.frozen;
+		atom->ul = stats->frozen;
 		break;
 	case 3:
-		atom->ul = stats.recovering;
+		atom->ul = stats->recovering;
 		break;
 	case 4:
-		atom->ul = stats.client_packets_sent;
+		atom->ul = stats->client_packets_sent;
 		break;
 	case 5:
-		atom->ul = stats.client_packets_recv;
+		atom->ul = stats->client_packets_recv;
 		break;
 	case 6:
-		atom->ul = stats.node_packets_sent;
+		atom->ul = stats->node_packets_sent;
 		break;
 	case 7:
-		atom->ul = stats.node_packets_recv;
+		atom->ul = stats->node_packets_recv;
 		break;
 	case 8:
-		atom->ul = stats.keepalive_packets_sent;
+		atom->ul = stats->keepalive_packets_sent;
 		break;
 	case 9:
-		atom->ul = stats.keepalive_packets_recv;
+		atom->ul = stats->keepalive_packets_recv;
 		break;
 	case 10:
-		ret = fill_node(id->item, &stats, atom);
+		ret = fill_node(id->item, atom);
 		if (ret)
 			goto err_out;
 		break;
 	case 11:
-		ret = fill_client(id->item, &stats, atom);
+		ret = fill_client(id->item, atom);
 		if (ret)
 			goto err_out;
 		break;
 	case 12:
-		ret = fill_timeout(id->item, &stats, atom);
+		ret = fill_timeout(id->item, atom);
 		if (ret)
 			goto err_out;
 		break;
 	case 13:
-		atom->ul = stats.total_calls;
+		atom->ul = stats->total_calls;
 		break;
 	case 14:
-		atom->ul = stats.pending_calls;
+		atom->ul = stats->pending_calls;
 		break;
 	case 15:
-		atom->ul = stats.lockwait_calls;
+		atom->ul = stats->lockwait_calls;
 		break;
 	case 16:
-		atom->ul = stats.pending_lockwait_calls;
+		atom->ul = stats->pending_lockwait_calls;
 		break;
 	case 17:
-		atom->ul = stats.childwrite_calls;
+		atom->ul = stats->childwrite_calls;
 		break;
 	case 18:
-		atom->ul = stats.pending_childwrite_calls;
+		atom->ul = stats->pending_childwrite_calls;
 		break;
 	case 19:
-		atom->ul = stats.memory_used;
+		atom->ul = stats->memory_used;
 		break;
 	case 20:
-		atom->ul = stats.max_hop_count;
+		atom->ul = stats->max_hop_count;
 		break;
 	case 21:
-		atom->d = stats.reclock.ctdbd;
+		atom->d = stats->reclock.ctdbd;
 		break;
 	case 22:
-		atom->d = stats.reclock.recd;
+		atom->d = stats->reclock.recd;
 		break;
 	case 23:
-		atom->d = stats.max_call_latency;
+		atom->d = stats->max_call_latency;
 		break;
 	case 24:
-		atom->d = stats.max_lockwait_latency;
+		atom->d = stats->max_lockwait_latency;
 		break;
 	case 25:
-		atom->d = stats.max_childwrite_latency;
+		atom->d = stats->max_childwrite_latency;
 		break;
 	default:
 		return PM_ERR_PMID;
@@ -492,11 +466,47 @@ err_out:
 static int
 pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmResult **resp, pmdaExt *pmda)
 {
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+	struct timeval ctdb_timeout;
+
 	if (ctdb == NULL) {
 		fprintf(stderr, "attempting reconnect to ctdbd\n");
-		pmda_ctdb_daemon_connect();
+		ret = pmda_ctdb_daemon_connect();
+		if (ret < 0) {
+			fprintf(stderr, "reconnect failed\n");
+			return PM_ERR_VALUE;
+		}
 	}
-	return pmdaFetch(numpmid, pmidlist, resp, pmda);
+
+	ctdb_timeout = timeval_current_ofs(1, 0);
+	ret = ctdb_control(ctdb, ctdb->pnn, 0,
+			   CTDB_CONTROL_STATISTICS, 0, tdb_null,
+			   ctdb, &data, &res, &ctdb_timeout, NULL);
+
+	if (ret != 0 || res != 0) {
+		fprintf(stderr, "ctdb control for statistics failed, reconnecting\n");
+		pmda_ctdb_daemon_disconnect();
+		ret = PM_ERR_VALUE;
+		goto err_out;
+	}
+
+	stats = (struct ctdb_statistics *)data.dptr;
+
+	if (data.dsize != sizeof(struct ctdb_statistics)) {
+		fprintf(stderr, "incorrect statistics size %zu - not %zu\n",
+			data.dsize, sizeof(struct ctdb_statistics));
+		ret = PM_ERR_VALUE;
+		goto err_stats;
+	}
+
+	ret = pmdaFetch(numpmid, pmidlist, resp, pmda);
+
+err_stats:
+	talloc_free(stats);
+err_out:
+	return ret;
 }
 
 /*
@@ -505,13 +515,7 @@ pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmResult **resp, pmdaExt *pmda)
 void
 pmda_ctdb_init(pmdaInterface *dp)
 {
-	int ret;
-
 	if (dp->status != 0)
-		return;
-
-	ret = pmda_ctdb_daemon_connect();
-	if (ret < 0)
 		return;
 
 	dp->version.two.fetch = pmda_ctdb_fetch;
