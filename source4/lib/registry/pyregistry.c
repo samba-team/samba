@@ -212,11 +212,14 @@ static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
 	char *name;
 	uint32_t type;
 	DATA_BLOB value;
+	int value_length = 0;
 	WERROR result;
 	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 
-	if (!PyArg_ParseTuple(args, "siz#", &name, &type, &value.data, &value.length))
+	if (!PyArg_ParseTuple(args, "siz#", &name, &type, &value.data, &value_length)) {
 		return NULL;
+	}
+	value.length = value_length;
 
 	if (value.data != NULL)
 		result = hive_key_set_value(key, name, type, value);
