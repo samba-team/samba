@@ -4188,7 +4188,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 */
 	nrf_el->flags = LDB_FLAG_MOD_REPLACE;
 
-	if (DEBUGLVL(4)) {
+	if (CHECK_DEBUGLVL(4)) {
 		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
 		DEBUG(4, ("DRS replication uptodate modify message:\n%s\n", s));
 		talloc_free(s);
