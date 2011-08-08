@@ -243,6 +243,10 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 		struct pollfd *pfd;
 		uint16 flags = 0;
 
+		if ((fde->flags & (EVENT_FD_READ|EVENT_FD_WRITE)) == 0) {
+			continue;
+		}
+
 		if (pollfd_idx[fde->fd] >= num_pfds) {
 			DEBUG(1, ("internal error: pollfd_idx[fde->fd] (%d) "
 				  ">= num_pfds (%d)\n", pollfd_idx[fde->fd],
