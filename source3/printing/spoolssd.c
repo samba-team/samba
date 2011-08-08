@@ -713,14 +713,27 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	DEBUG(1, ("Forking SPOOLSS Daemon\n"));
 
+	/*
+	 * Block signals before forking child as it will have to
+	 * set its own handlers. Child will re-enable SIGHUP as
+	 * soon as the handlers are set up.
+	 */
+	BlockSignals(true, SIGTERM);
+	BlockSignals(true, SIGHUP);
+
 	pid = sys_fork();
 
 	if (pid == -1) {
 		DEBUG(0, ("Failed to fork SPOOLSS [%s]\n",
 			   strerror(errno)));
 	}
+
+	/* parent or error */
 	if (pid != 0) {
-		/* parent or error */
+
+		/* Re-enable SIGHUP before returnig */
+		BlockSignals(false, SIGTERM);
+		BlockSignals(false, SIGHUP);
 		return pid;
 	}
 
@@ -737,6 +750,12 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	spoolss_reopen_logs(0);
 	spoolss_prefork_config();
+
+	spoolss_setup_sig_term_handler(ev_ctx);
+	spoolss_setup_sig_hup_handler(ev_ctx, msg_ctx);
+
+	BlockSignals(false, SIGTERM);
+	BlockSignals(false, SIGHUP);
 
 	/* Publish nt printers, this requires a working winreg pipe */
 	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
@@ -770,9 +789,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 				 spoolss_max_children,
 				 &spoolss_children_main, NULL,
 				 &spoolss_pool);
-
-	spoolss_setup_sig_term_handler(ev_ctx);
-	spoolss_setup_sig_hup_handler(ev_ctx, msg_ctx);
 
 	if (!serverid_register(procid_self(),
 				FLAG_MSG_GENERAL|FLAG_MSG_SMBD

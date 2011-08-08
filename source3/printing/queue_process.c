@@ -191,7 +191,23 @@ pid_t start_background_queue(struct tevent_context *ev,
 		exit(1);
 	}
 
+	/*
+	 * Block signals before forking child as it will have to
+	 * set its own handlers. Child will re-enable SIGHUP as
+	 * soon as the handlers are set up.
+	 */
+	BlockSignals(true, SIGTERM);
+	BlockSignals(true, SIGHUP);
+
 	pid = sys_fork();
+
+	/* parent or error */
+	if (pid != 0) {
+		/* Re-enable SIGHUP before returnig */
+		BlockSignals(false, SIGTERM);
+		BlockSignals(false, SIGHUP);
+		return pid;
+	}
 
 	if (pid == -1) {
 		DEBUG(5,("start_background_queue: background LPQ thread failed to start. %s\n", strerror(errno) ));
@@ -219,6 +235,9 @@ pid_t start_background_queue(struct tevent_context *ev,
 		bq_reopen_logs(logfile);
 		bq_setup_sig_term_handler();
 		bq_setup_sig_hup_handler(ev, msg_ctx);
+
+		BlockSignals(false, SIGTERM);
+		BlockSignals(false, SIGHUP);
 
 		if (!pcap_cache_loaded()) {
 			pcap_cache_reload(ev, msg_ctx, &reload_printers);
