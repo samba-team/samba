@@ -393,7 +393,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	if (s->parent->interactive) {
-		smbd_process(sconn);
+		smbd_process(ev, sconn);
 		exit_server_cleanly("end of interactive mode");
 		return;
 	}
@@ -472,7 +472,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 					    "serverid.tdb");
 		}
 
-		smbd_process(smbd_server_conn);
+		smbd_process(ev, smbd_server_conn);
 	 exit:
 		exit_server_cleanly("end of child");
 		return;
@@ -1259,7 +1259,7 @@ extern void build_options(bool screen);
 	        /* Stop zombies */
 		smbd_setup_sig_chld_handler(ev_ctx);
 
-		smbd_process(smbd_server_conn);
+		smbd_process(ev_ctx, smbd_server_conn);
 
 		exit_server_cleanly(NULL);
 		return(0);

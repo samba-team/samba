@@ -903,7 +903,8 @@ void smbd_setup_sig_hup_handler(struct tevent_context *ev,
 	}
 }
 
-static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *conn)
+static NTSTATUS smbd_server_connection_loop_once(struct tevent_context *ev_ctx,
+						 struct smbd_server_connection *conn)
 {
 	int timeout;
 	int num_pfds = 0;
@@ -917,11 +918,10 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	 * select for longer than it would take to wait for them.
 	 */
 
-	event_add_to_poll_args(server_event_context(), conn,
-			       &conn->pfds, &num_pfds, &timeout);
+	event_add_to_poll_args(ev_ctx, conn, &conn->pfds, &num_pfds, &timeout);
 
 	/* Process a signal and timed events now... */
-	if (run_events_poll(server_event_context(), 0, NULL, 0)) {
+	if (run_events_poll(ev_ctx, 0, NULL, 0)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -943,8 +943,7 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		return map_nt_error_from_unix(errno);
 	}
 
-	retry = run_events_poll(server_event_context(), ret, conn->pfds,
-				num_pfds);
+	retry = run_events_poll(ev_ctx, ret, conn->pfds, num_pfds);
 	if (retry) {
 		return NT_STATUS_RETRY;
 	}
@@ -2960,7 +2959,8 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
  Process commands from the client
 ****************************************************************************/
 
-void smbd_process(struct smbd_server_connection *sconn)
+void smbd_process(struct tevent_context *ev_ctx,
+		  struct smbd_server_connection *sconn)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct sockaddr_storage ss;
@@ -3128,7 +3128,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 			   MSG_DEBUG, debug_message);
 
 	if ((lp_keepalive() != 0)
-	    && !(event_add_idle(server_event_context(), NULL,
+	    && !(event_add_idle(ev_ctx, NULL,
 				timeval_set(lp_keepalive(), 0),
 				"keepalive", keepalive_fn,
 				NULL))) {
@@ -3136,14 +3136,14 @@ void smbd_process(struct smbd_server_connection *sconn)
 		exit(1);
 	}
 
-	if (!(event_add_idle(server_event_context(), NULL,
+	if (!(event_add_idle(ev_ctx, NULL,
 			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
 			     "deadtime", deadtime_fn, sconn))) {
 		DEBUG(0, ("Could not add deadtime event\n"));
 		exit(1);
 	}
 
-	if (!(event_add_idle(server_event_context(), NULL,
+	if (!(event_add_idle(ev_ctx, NULL,
 			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "housekeeping", housekeeping_fn, sconn))) {
 		DEBUG(0, ("Could not add housekeeping event\n"));
@@ -3200,7 +3200,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 		exit_server("init_dptrs() failed");
 	}
 
-	sconn->smb1.fde = event_add_fd(server_event_context(),
+	sconn->smb1.fde = event_add_fd(ev_ctx,
 						  sconn,
 						  sconn->sock,
 						  EVENT_FD_READ,
@@ -3219,7 +3219,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 
 		errno = 0;
 
-		status = smbd_server_connection_loop_once(sconn);
+		status = smbd_server_connection_loop_once(ev_ctx, sconn);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY) &&
 		    !NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("smbd_server_connection_loop_once failed: %s,"
