@@ -1,0 +1,166 @@
+#!/bin/sh
+
+prog="ctdb"
+
+usage ()
+{
+    cat >&2 <<EOF
+Usage: $prog [-Y] cmd
+
+A fake CTDB stub that prints items depending on the variables
+FAKE_CTDB_PNN (default 0) depending on command-line options.
+
+Note that -Y is ignored.
+
+EOF
+    exit 1
+}
+
+# $POSIXLY_CORRECT means that the command passed to onnode can take
+# options and getopt won't reorder things to make them options to this
+# script.
+_temp=$(getopt -n "$prog" -o "Yvh" -l help -- "$@") || \
+    usage
+
+eval set -- "$_temp"
+
+verbose=false
+
+while true ; do
+    case "$1" in
+	-Y) shift ;;
+	-v) verbose=true ; shift ;;
+	--) shift ; break ;;
+	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
+    esac
+done
+
+[ $# -ge 1 ] || usage
+
+setup_tickles ()
+{
+    # Make sure tickles file exists.
+    tickles_file="$CTDB_VARDIR/fake-ctdb/tickles"
+    mkdir -p $(dirname "$tickles_file")
+    touch "$tickles_file"
+}
+
+setup_pstore ()
+{
+    pstore_dir="$CTDB_VARDIR/fake-ctdb/pstore/$1"
+    mkdir -p "$pstore_dir"
+}
+
+case "$1" in
+    ip)
+	# NOTE: all nodes share the same public addresses file.
+
+	# This is completely stateless and IPs move unnecessarily.
+	_f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+	if [ -f "$_f" ] ; then
+	    if $verbose ; then
+		echo ":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:"
+
+	    else
+		echo ":Public IP:Node:"
+	    fi
+	    # Here IPs are distributed across nodes in a stupid way...
+	    _n=0
+	    while read _ip _ifaces ; do
+		case "_$ip" in
+		    \#*) : ;;
+		    *)
+			# Find a node that is up... but don't loop forever.
+			_orig=$_n
+			while [ -f "${FAKE_CTDB_NODES_DOWN}/${_n}" ] ; do
+			    _n=$(($_n + 1))
+			    if [ _n -eq $FAKE_CTDB_NUMNODES ] ; then
+				_n=0
+			    fi
+			    if [ $_n -eq $_orig ] ; then
+				_n=-1 # Never down!  :-)
+			    fi
+			done
+			if $verbose ; then
+			    # If more than 1 interface, assume all
+			    # addresses are on the 1st.
+			    _first_iface="${_ifaces%%,*}"
+			    # Only show interface if address is on
+			    # this node.
+			    _my_iface=""
+			    if [ "PNN:$_n" = $(ctdb -Y pnn) ]; then
+				_my_iface="$_first_iface"
+			    fi
+			    echo ":${_ip}:${_n}:${_my_iface}:${_first_iface}:${_ifaces}:"
+			else
+			    echo ":${_ip}:${_n}:"
+			fi
+		esac
+	    done <"$_f"
+	fi
+	;;
+    pnn|xpnn)
+	# Defaults to 0
+	echo "PNN:${FAKE_CTDB_PNN:-0}"
+	;;
+    gettickles)
+	setup_tickles
+	echo ":source ip:port:destination ip:port:"
+	while read src dst ; do
+	    echo ":${src}:${dst}:"
+	done <"$tickles_file"
+	;;
+    addtickle)
+	setup_tickles
+	echo "$2 $3" >>"$tickles_file"
+	;;
+    deltickle)
+	setup_tickles
+	_t=$(grep -F -v "$2 $3" "$tickles_file")
+	echo "$_t" >"$tickles_file"
+	;;
+    pstore)
+	setup_pstore "$2"
+	cat "$4" >"${pstore_dir}/$3"
+	;;
+    pfetch)
+	setup_pstore "$2"
+	cat "${pstore_dir}/$3" >"$4" 2>/dev/null
+	;;
+    ifaces)
+	# Assume -Y.
+	echo ":Name:LinkStatus:References:"
+	_f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+	if [ -r "$_f" ] ; then
+	    while read _ip _iface ; do
+		case "_$ip" in
+		    \#*) : ;;
+		    *)
+			_status=1
+			# For now assume _iface contains only 1.
+			if [ -f "{FAKE_CTDB_IFACES_DOWN}/${_iface}" ] ; then
+			    _status=0
+			fi
+			# Nobody looks at references
+			echo ":${_iface}:${_status}:0"
+		esac
+	    done <"$_f" |
+	    sort -u
+	fi
+	;;
+    setifacelink)
+	# Existence of file means CTDB thinks interface is down.
+	_f="${FAKE_CTDB_IFACES_DOWN}/$2"
+	case "$3" in
+	    up)   rm -f "$_f" ;;
+	    down) touch "$_f" ;;
+	    *)
+		echo "ctdb setifacelink: unsupported interface status $3"
+		exit 1
+	esac
+	;;
+    *)
+	echo "${prog}: command \"$1\" not implemented in stub"
+	exit 1
+esac
+

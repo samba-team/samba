@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Ensure that testparm always uses our canned configuration instead of
+# the global one, unless some other file is specified.  This requires
+# testparm to be installed but is quicker than reimplementing all the
+# various command-line options.
+
+file_specified=false
+for i ; do
+    case "$i" in
+	-*) : ;;
+	*) file_specified=true
+    esac
+done
+
+if $file_specified ; then
+    # This should include the shares, since this is used when the
+    # samba eventscript caches the output.
+    /usr/bin/testparm "$@"
+else
+    # We force our own smb.conf and add the shares.
+    /usr/bin/testparm "$@" "${CTDB_ETCDIR}/samba/smb.conf"
+
+    for i in $FAKE_SHARES ; do
+	bi=$(basename "$i")
+cat <<EOF
+
+[${bi}]
+	path		= $i
+	comment		= fake share $bi
+	guest ok  	= no
+	read only	= no
+	browseable	= yes
+EOF
+    done
+fi

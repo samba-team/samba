@@ -1,0 +1,46 @@
+# Hey Emacs, this is a -*- shell-script -*- !!!  :-)
+
+# Use a "service" command in $PATH if one exists.
+service ()
+{
+    if _t=$(which "service" 2>/dev/null) ; then
+	"$_t" "$@"
+    else
+	_nice=""
+	_service "$@"
+    fi
+}
+
+nice_service ()
+{
+    if _t=$(which "service" 2>/dev/null) ; then
+	nice "$_t" "$@"
+    else
+	_nice="nice"
+	_service "$@"
+    fi
+}
+
+# Always succeeds
+set_proc () { : ; }
+
+get_proc ()
+{
+    case "$1" in
+	net/bonding/*)
+	    cat "$FAKE_PROC_NET_BONDING/${1##*/}"
+	    ;;
+	sys/net/ipv4/conf/all/arp_filter)
+	    echo 1
+	    ;;
+	*)
+	    echo "get_proc: \"$1\" not implemented"
+	    exit 1
+    esac
+}
+
+# Always succeeds
+iptables () { : ; }
+
+CTDB_INIT_STYLE="redhat"
+PATH="${EVENTSCRIPTS_PATH}:$PATH"
