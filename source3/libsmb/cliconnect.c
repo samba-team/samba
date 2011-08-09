@@ -2051,8 +2051,10 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	/* if the server supports extended security then use SPNEGO */
 
 	if (cli_state_capabilities(cli) & CAP_EXTENDED_SECURITY) {
+		const char *remote_realm = cli_state_remote_realm(cli);
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass,
-							     workgroup, NULL);
+							     workgroup,
+							     remote_realm);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
 			return ads_ntstatus(status);
