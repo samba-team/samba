@@ -256,7 +256,7 @@ smb.conf changes
    multicast dns register	       New	       Yes
    ncalrpc dir			       New
    send spnego principal	       New	       No
-   smb2 max credits		       New	       128
+   smb2 max credits		       New	       8192
    smb2 max read		       New	       1048576
    smb2 max trans		       New	       1048576
    smb2 max write		       New	       1048576
