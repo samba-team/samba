@@ -1359,8 +1359,8 @@ struct tevent_queue_entry;
  *
  * @return              An allocated tevent queue on success, NULL on error.
  *
- * @see tevent_start()
- * @see tevent_stop()
+ * @see tevent_queue_start()
+ * @see tevent_queue_stop()
  */
 struct tevent_queue *tevent_queue_create(TALLOC_CTX *mem_ctx,
 					 const char *name);
