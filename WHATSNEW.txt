@@ -264,6 +264,10 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 8335: File copy aborts with smb2_validate_message_id: bad message_id.
 
 
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8330: Fix NFSv4 ACL merging logic.
+
+
 o   Andrew Bartlett <abartlet@samba.org>
     * BUG 8326: WinXP cannot join a Samba3 domain with a 'even' hostname.
 
@@ -276,8 +280,18 @@ o   Alban Browaeys <prahal@yahoo.com>
     * BUG 8341: Fix segfault in libsmbclient.
 
 
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8362: Fix build issue on old glibc systems.
+
+
 o   Volker Lendecke <vlendec@samba.org>
     * BUG 8343: Fix SMB2 crash reading with aio_fork beyond the end of file.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8347: Fix regression for HP-UX, AIX and OSF.
+    * BUG 8357: Make sure we grant credits on async read/write operations.
+    * BUG 8358: Fix a bug in run_poll_events().
 
 
 Changes since 3.6.0rc2
