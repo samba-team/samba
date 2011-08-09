@@ -167,6 +167,27 @@ static void smb_conf_updated(struct messaging_context *msg,
 	update_conf(ev_ctx, msg);
 }
 
+static void update_pcap(struct tevent_context *ev_ctx,
+			struct messaging_context *msg_ctx)
+{
+	change_to_root_user();
+	reload_printers(ev_ctx, msg_ctx);
+}
+
+static void pcap_updated(struct messaging_context *msg,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id server_id,
+			 DATA_BLOB *data)
+{
+	struct tevent_context *ev_ctx;
+
+	ev_ctx = talloc_get_type_abort(private_data, struct tevent_context);
+
+	DEBUG(10, ("Got message that pcap updated. Reloading.\n"));
+	update_pcap(ev_ctx, msg);
+}
+
 static void spoolss_sig_term_handler(struct tevent_context *ev,
 				     struct tevent_signal *se,
 				     int signum,
@@ -322,7 +343,10 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	if (!serverid_register(procid_self(), FLAG_MSG_GENERAL)) {
+	if (!serverid_register(procid_self(),
+				FLAG_MSG_GENERAL |
+				FLAG_MSG_PRINT_NOTIFY |
+				FLAG_MSG_PRINT_GENERAL)) {
 		return false;
 	}
 
@@ -332,6 +356,8 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
+	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
+			   pcap_updated);
 
 	/* try to reinit rpc queues */
 	spoolss_cb.init = spoolss_init_cb;
@@ -352,7 +378,7 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	reload_printers(ev_ctx, msg_ctx);
+	pcap_cache_reload(ev_ctx, msg_ctx, &update_pcap);
 
 	return true;
 }
@@ -790,8 +816,10 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 				 &spoolss_pool);
 
 	if (!serverid_register(procid_self(),
-				FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-				|FLAG_MSG_PRINT_GENERAL)) {
+				FLAG_MSG_GENERAL |
+				FLAG_MSG_SMBD |
+				FLAG_MSG_PRINT_NOTIFY |
+				FLAG_MSG_PRINT_GENERAL)) {
 		exit(1);
 	}
 
@@ -803,6 +831,8 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 	messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
 			   print_queue_forward);
+	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
+			   pcap_updated);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
