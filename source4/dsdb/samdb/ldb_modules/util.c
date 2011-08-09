@@ -751,7 +751,7 @@ int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, str
 	attrs[1] = NULL;
 
 	ret = dsdb_module_search_dn(module, mem_ctx, &res, base, attrs,
-	                            DSDB_FLAG_NEXT_MODULE, parent);
+	                            DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_EXTENDED_DN, parent);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

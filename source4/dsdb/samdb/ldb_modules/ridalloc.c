@@ -263,6 +263,8 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 		.next_rid	= 0,
 		.used_pool	= 0,
 	};
+	const char *no_attrs[] = { NULL };
+	struct ldb_result *res;
 
 	/*
 	  steps:
@@ -339,7 +341,21 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	msg = ldb_msg_new(tmp_ctx);
 	msg->dn = machine_dn;
 
-	ret = ldb_msg_add_string(msg, "rIDSetReferences", ldb_dn_get_linearized(rid_set_dn));
+	/* we need the extended DN of the RID Set object for
+	 * rIDSetReferences */
+	ret = dsdb_module_search_dn(module, msg, &res, rid_set_dn, no_attrs,
+				    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT, parent);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to find extended DN of RID Set %s - %s",
+				       ldb_dn_get_linearized(msg->dn),
+				       ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	rid_set_dn = res->msgs[0]->dn;
+
+
+	ret = ldb_msg_add_string(msg, "rIDSetReferences", ldb_dn_get_extended_linearized(msg, rid_set_dn, 1));
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
