@@ -122,8 +122,8 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 						      ignore_attids,
 						      tmp_ctx, &object);
 			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
-					 cur->object.identifier->dn));
+				DEBUG(4,("debug: Failed to convert schema object %s into ldb msg, will try during next loop\n",
+					  cur->object.identifier->dn));
 
 				failed_obj_count++;
 			} else {
@@ -136,7 +136,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 								       working_schema,
 								       object.msg);
 				if (!W_ERROR_IS_OK(werr)) {
-					DEBUG(1,("Warning: failed to convert object %s into a schema element: %s\n",
+					DEBUG(4,("debug: failed to convert object %s into a schema element, will try during next loop: %s\n",
 						 ldb_dn_get_linearized(object.msg->dn),
 						 win_errstr(werr)));
 					failed_obj_count++;
