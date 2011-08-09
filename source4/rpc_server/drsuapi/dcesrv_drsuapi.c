@@ -25,6 +25,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "libcli/security/security.h"
 #include "libcli/security/session.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
@@ -502,7 +503,7 @@ static WERROR dcesrv_drsuapi_DsRemoveDSServer(struct dcesrv_call_state *dce_call
 		}
 
 		if (r->in.req->req1.commit) {
-			ret = ldb_delete(b_state->sam_ctx, ntds_dn);
+			ret = dsdb_delete(b_state->sam_ctx, ntds_dn, DSDB_TREE_DELETE);
 			if (ret != LDB_SUCCESS) {
 				return WERR_FOOBAR;
 			}
