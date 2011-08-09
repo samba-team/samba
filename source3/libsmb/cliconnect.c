@@ -1785,8 +1785,10 @@ fail:
  dest_realm: The realm we're connecting to, if NULL we use our default realm.
 ****************************************************************************/
 
-ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
-			      const char *pass, const char *user_domain,
+static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
+			      const char *user,
+			      const char *pass,
+			      const char *user_domain,
 			      const char * dest_realm)
 {
 	char *principal = NULL;
