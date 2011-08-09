@@ -61,7 +61,12 @@ release_lib() {
 	exit 1
     }
 
-    echo "Transferring"
+    echo "Push git tag $tagname"
+    git push ssh://git.samba.org/data/git/samba.git refs/tags/$tagname:refs/tags/$tagname || {
+	exit 1
+    }
+
+    echo "Transferring for FTP"
     rsync -Pav $tarname.asc $tgzname master.samba.org:~ftp/pub/$lib/ || {
 	exit 1
     }
