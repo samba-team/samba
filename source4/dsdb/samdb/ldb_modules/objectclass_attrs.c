@@ -88,6 +88,45 @@ static int oc_validate_dsheuristics(struct ldb_message_element *el)
 	return LDB_SUCCESS;
 }
 
+/*
+  auto normalise values on input
+ */
+static int oc_auto_normalise(struct ldb_context *ldb, const struct dsdb_attribute *attr,
+			     struct ldb_message *msg, struct ldb_message_element *el)
+{
+	int i;
+	bool values_copied = false;
+
+	for (i=0; i<el->num_values; i++) {
+		struct ldb_val v;
+		int ret;
+		ret = attr->ldb_schema_attribute->syntax->canonicalise_fn(ldb, el->values, &el->values[i], &v);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		if (data_blob_cmp(&v, &el->values[i]) == 0) {
+			/* no need to replace it */
+			talloc_free(v.data);
+			continue;
+		}
+
+		/* we need to copy the values array on the first change */
+		if (!values_copied) {
+			struct ldb_val *v2;
+			v2 = talloc_array(msg->elements, struct ldb_val, el->num_values);
+			if (v2 == NULL) {
+				return ldb_oom(ldb);
+			}
+			memcpy(v2, el->values, sizeof(struct ldb_val) * el->num_values);
+			el->values = v2;
+			values_copied = true;
+		}
+
+		el->values[i] = v;
+	}
+	return LDB_SUCCESS;
+}
+
 static int attr_handler(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
@@ -169,6 +208,14 @@ static int attr_handler(struct oc_context *ac)
 		/* "dSHeuristics" syntax check */
 		if (ldb_attr_cmp(attr->lDAPDisplayName, "dSHeuristics") == 0) {
 			ret = oc_validate_dsheuristics(&(msg->elements[i]));
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		/* auto normalise some attribute values */
+		if (attr->syntax->auto_normalise) {
+			ret = oc_auto_normalise(ldb, attr, msg, &msg->elements[i]);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}

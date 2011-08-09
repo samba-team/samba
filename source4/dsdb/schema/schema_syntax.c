@@ -2365,7 +2365,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldb_to_drsuapi		= dsdb_syntax_BOOL_ldb_to_drsuapi,
 		.validate_ldb		= dsdb_syntax_BOOL_validate_ldb,
 		.equality               = "booleanMatch",
-		.comment                = "Boolean"
+		.comment                = "Boolean",
+		.auto_normalise		= true
 	},{
 		.name			= "Integer",
 		.ldap_oid		= LDB_SYNTAX_INTEGER,
@@ -2376,7 +2377,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.validate_ldb		= dsdb_syntax_INT32_validate_ldb,
 		.equality               = "integerMatch",
 		.comment                = "Integer",
-		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32
+		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32,
+		.auto_normalise		= true
 	},{
 		.name			= "String(Octet)",
 		.ldap_oid		= LDB_SYNTAX_OCTET_STRING,
@@ -2417,7 +2419,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_INT32_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_INT32_ldb_to_drsuapi,
 		.validate_ldb		= dsdb_syntax_INT32_validate_ldb,
-		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32
+		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32,
+		.auto_normalise		= true
 	},{
 	/* not used in w2k3 forest */
 		.name			= "String(Numeric)",
@@ -2473,6 +2476,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.validate_ldb		= dsdb_syntax_NTTIME_UTC_validate_ldb,
 		.equality               = "generalizedTimeMatch",
 		.comment                = "UTC Time",
+		.auto_normalise		= true
 	},{
 		.name			= "String(Generalized-Time)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.24",
@@ -2484,6 +2488,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.equality               = "generalizedTimeMatch",
 		.comment                = "Generalized Time",
 		.ldb_syntax             = LDB_SYNTAX_UTC_TIME,
+		.auto_normalise		= true
 	},{
 	/* not used in w2k3 schema */
 		.name			= "String(Case Sensitive)",
@@ -2522,6 +2527,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.equality               = "integerMatch",
 		.comment                = "Large Integer",
 		.ldb_syntax             = LDB_SYNTAX_INTEGER,
+		.auto_normalise		= true
 	},{
 		.name			= "String(NT-Sec-Desc)",
 		.ldap_oid		= LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR,

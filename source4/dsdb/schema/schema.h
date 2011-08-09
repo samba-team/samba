@@ -73,6 +73,7 @@ struct dsdb_syntax {
 	WERROR (*validate_ldb)(const struct dsdb_syntax_ctx *ctx,
 			       const struct dsdb_attribute *attr,
 			       const struct ldb_message_element *in);
+	bool auto_normalise;
 };
 
 struct dsdb_attribute {
