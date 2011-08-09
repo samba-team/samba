@@ -229,9 +229,11 @@ static WERROR dsdb_syntax_BOOL_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx,
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		if (strcmp("TRUE", (const char *)in->values[i].data) == 0) {
+		if (in->values[i].length >= 4 &&
+		    strncmp("TRUE", (const char *)in->values[i].data, in->values[i].length) == 0) {
 			SIVAL(blobs[i].data, 0, 0x00000001);
-		} else if (strcmp("FALSE", (const char *)in->values[i].data) == 0) {
+		} else if (in->values[i].length >= 5 &&
+			   strncmp("FALSE", (const char *)in->values[i].data, in->values[i].length) == 0) {
 			SIVAL(blobs[i].data, 0, 0x00000000);
 		} else {
 			return WERR_FOOBAR;
@@ -252,22 +254,23 @@ static WERROR dsdb_syntax_BOOL_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 	}
 
 	for (i=0; i < in->num_values; i++) {
-		int t, f;
-
 		if (in->values[i].length == 0) {
 			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 		}
 
-		t = strncmp("TRUE",
+		if (in->values[i].length >= 4 &&
+		    strncmp("TRUE",
 			    (const char *)in->values[i].data,
-			    in->values[i].length);
-		f = strncmp("FALSE",
-			    (const char *)in->values[i].data,
-			    in->values[i].length);
-
-		if (t != 0 && f != 0) {
-			return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
+			    in->values[i].length) == 0) {
+			continue;
 		}
+		if (in->values[i].length >= 5 &&
+		    strncmp("FALSE",
+			    (const char *)in->values[i].data,
+			    in->values[i].length) == 0) {
+			continue;
+		}
+		return WERR_DS_INVALID_ATTRIBUTE_SYNTAX;
 	}
 
 	return WERR_OK;
