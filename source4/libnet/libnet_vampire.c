@@ -626,6 +626,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
 	struct dsdb_extended_replicated_objects *objs;
+	uint32_t req_replica_flags;
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
 	uint32_t i;
@@ -667,6 +668,35 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	switch (c->req_level) {
+	case 0:
+		/* none */
+		req_replica_flags = 0;
+		break;
+	case 5:
+		req_replica_flags = c->req5->replica_flags;
+		break;
+	case 8:
+		req_replica_flags = c->req8->replica_flags;
+		break;
+	case 10:
+		req_replica_flags = c->req10->replica_flags;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (req_replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+		/*
+		 * If we only replicate the critical objects
+		 * we should not remember what we already
+		 * got, as it is incomplete.
+		 */
+		ZERO_STRUCT(s_dsa->highwatermark);
+		uptodateness_vector = NULL;
+	}
+
+	/* TODO: avoid hardcoded flags */
 	s_dsa->replica_flags		= DRSUAPI_DRS_WRIT_REP
 					| DRSUAPI_DRS_INIT_SYNC
 					| DRSUAPI_DRS_PER_SYNC;
