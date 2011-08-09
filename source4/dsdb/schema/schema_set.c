@@ -321,6 +321,7 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	struct dsdb_attribute *a;
 	unsigned int i;
 	unsigned int num_int_id;
+	int ret;
 
 	/* free all caches */
 	dsdb_sorted_accessors_free(schema);
@@ -405,6 +406,12 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 
 	dsdb_setup_attribute_shortcuts(ldb, schema);
 
+	ret = schema_fill_constructed(schema);
+	if (ret != LDB_SUCCESS) {
+		dsdb_sorted_accessors_free(schema);
+		return ret;
+	}
+
 	return LDB_SUCCESS;
 
 failed:
@@ -422,11 +429,6 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	int ret;
 
 	ret = dsdb_setup_sorted_accessors(ldb, schema);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = schema_fill_constructed(schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
