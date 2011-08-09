@@ -2871,7 +2871,7 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 		goto fail;
 	}
 
-	cli = cli_state_create(NULL, fd, desthost, signing_state);
+	cli = cli_state_create(NULL, fd, desthost, NULL, signing_state);
 	if (cli == NULL) {
 		goto fail;
 	}

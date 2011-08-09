@@ -164,6 +164,7 @@ NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char 
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
 				   const char *remote_name,
+				   const char *remote_realm,
 				   int signing_state)
 {
 	struct cli_state *cli = NULL;
@@ -241,6 +242,13 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	cli->conn.remote_name = talloc_strdup(cli, remote_name);
 	if (cli->conn.remote_name == NULL) {
 		goto error;
+	}
+
+	if (remote_realm) {
+		cli->conn.remote_realm = talloc_strdup(cli, remote_realm);
+		if (cli->conn.remote_realm == NULL) {
+			goto error;
+		}
 	}
 
 	cli->conn.fd = fd;
@@ -379,6 +387,11 @@ const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli)
 const char *cli_state_remote_name(struct cli_state *cli)
 {
 	return cli->conn.remote_name;
+}
+
+const char *cli_state_remote_realm(struct cli_state *cli)
+{
+	return cli->conn.remote_realm;
 }
 
 uint16_t cli_state_get_vc_num(struct cli_state *cli)

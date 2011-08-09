@@ -162,6 +162,7 @@ NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char 
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
 				   const char *remote_name,
+				   const char *remote_realm,
 				   int signing_state);
 bool cli_state_encryption_on(struct cli_state *cli);
 void cli_nt_pipes_close(struct cli_state *cli);
@@ -170,6 +171,7 @@ void cli_sockopt(struct cli_state *cli, const char *options);
 const struct sockaddr_storage *cli_state_local_sockaddr(struct cli_state *cli);
 const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli);
 const char *cli_state_remote_name(struct cli_state *cli);
+const char *cli_state_remote_realm(struct cli_state *cli);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 uint16_t cli_getpid(struct cli_state *cli);
