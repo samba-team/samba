@@ -1,7 +1,7 @@
 /*
- * scannedonly VFS module for Samba 3.5
+ * scannedonly VFS module for Samba 3.5 and beyond
  *
- * Copyright 2007,2008,2009,2010 (C) Olivier Sessink
+ * Copyright 2007,2008,2009,2010,2011 (C) Olivier Sessink
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,8 @@ struct Tscannedonly {
 
 struct scannedonly_DIR {
 	char *base;
-	int notify_loop_done;
+	int recheck_tries_done; /* if 0 the directory listing has not yet
+	been checked for files that need to be scanned. */
 	SMB_STRUCT_DIR *DIR;
 };
 #define SCANNEDONLY_DEBUG 9
@@ -441,8 +442,7 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 
 	notify_scanner(handle, smb_fname->base_name);
 
-	didloop = 0;
-	if (loop && sDIR && !sDIR->notify_loop_done) {
+	if (loop && sDIR && sDIR->recheck_tries_done == 0) {
 		/* check the rest of the directory and notify the
 		   scanner if some file needs scanning */
 		long offset;
@@ -467,27 +467,29 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 			talloc_free(smb_fname2);
 			dire = SMB_VFS_NEXT_READDIR(handle, sDIR->DIR,NULL);
 		}
-		sDIR->notify_loop_done = 1;
-		didloop = 1;
+		sDIR->recheck_tries_done = 1;
 		SMB_VFS_NEXT_SEEKDIR(handle, sDIR->DIR, offset);
 	}
 	if (recheck_time > 0
 	    && ((recheck_size > 0
 		 && smb_fname->st.st_ex_size < (1024 * recheck_size))
-		|| didloop)) {
-		int i = 0;
+		 || (sDIR && sDIR->recheck_tries_done < recheck_tries)
+		)) {
+		int numloops = sDIR ? sDIR->recheck_tries_done : 0;
 		flush_sendbuffer(handle);
 		while (retval != 0	/*&& errno == ENOENT */
-		       && i < recheck_tries) {
+		       && numloops < recheck_tries) {
 			DEBUG(SCANNEDONLY_DEBUG,
 			      ("scannedonly_allow_access, wait (try=%d "
 			       "(max %d), %d ms) for %s\n",
-			       i, recheck_tries,
+			       numloops, recheck_tries,
 			       recheck_time, cache_smb_fname->base_name));
 			smb_msleep(recheck_time);
 			retval = SMB_VFS_NEXT_STAT(handle, cache_smb_fname);
-			i++;
+			numloops++;
 		}
+		if (sDIR)
+			sDIR->recheck_tries_done = numloops;
 	}
 	/* still no cachefile, or still too old, return 0 */
 	if (retval != 0
@@ -525,7 +527,7 @@ static SMB_STRUCT_DIR *scannedonly_opendir(vfs_handle_struct * handle,
 	DEBUG(SCANNEDONLY_DEBUG,
 			("scannedonly_opendir, fname=%s, base=%s\n",fname,sDIR->base));
 	sDIR->DIR = DIRp;
-	sDIR->notify_loop_done = 0;
+	sDIR->recheck_tries_done = 0;
 	return (SMB_STRUCT_DIR *) sDIR;
 }
 
@@ -553,7 +555,7 @@ static SMB_STRUCT_DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
 	DEBUG(SCANNEDONLY_DEBUG,
 			("scannedonly_fdopendir, fname=%s, base=%s\n",fname,sDIR->base));
 	sDIR->DIR = DIRp;
-	sDIR->notify_loop_done = 0;
+	sDIR->recheck_tries_done = 0;
 	return (SMB_STRUCT_DIR *) sDIR;
 }
 
