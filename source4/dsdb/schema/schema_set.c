@@ -30,6 +30,11 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/tsort.h"
 
+/* change this when we change something in our schema code that
+ * requires a re-index of the database
+ */
+#define SAMDB_INDEXING_VERSION "2"
+
 /*
   override the name to attribute handler function
  */
@@ -91,6 +96,12 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	}
 
 	ret = ldb_msg_add_string(msg_idx, "@IDXONE", "1");
+	if (ret != LDB_SUCCESS) {
+		goto op_error;
+	}
+
+
+	ret = ldb_msg_add_string(msg_idx, "@IDXVERSION", SAMDB_INDEXING_VERSION);
 	if (ret != LDB_SUCCESS) {
 		goto op_error;
 	}
