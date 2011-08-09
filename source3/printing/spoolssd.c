@@ -51,6 +51,7 @@ static int spoolss_min_children;
 static int spoolss_max_children;
 static int spoolss_spawn_rate;
 static int spoolss_prefork_status;
+static int spoolss_child_id = 0;
 
 static void spoolss_prefork_config(void)
 {
@@ -147,8 +148,10 @@ static void update_conf(struct tevent_context *ev,
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 	reload_printers(ev, msg);
 
-	spoolss_reopen_logs(0);
-	spoolss_prefork_config();
+	spoolss_reopen_logs(spoolss_child_id);
+	if (spoolss_child_id == 0) {
+		spoolss_prefork_config();
+	}
 }
 
 static void smb_conf_updated(struct messaging_context *msg,
@@ -243,7 +246,6 @@ static bool spoolss_shutdown_cb(void *ptr)
 struct spoolss_chld_sig_hup_ctx {
 	struct messaging_context *msg_ctx;
 	struct pf_worker_data *pf;
-	int child_id;
 };
 
 static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
@@ -266,13 +268,12 @@ static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
 	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
 	reload_printers(ev, shc->msg_ctx);
-	spoolss_reopen_logs(shc->child_id);
+	spoolss_reopen_logs(spoolss_child_id);
 }
 
 static bool spoolss_setup_chld_hup_handler(struct tevent_context *ev_ctx,
 					   struct messaging_context *msg_ctx,
-					   struct pf_worker_data *pf,
-					   int child_id)
+					   struct pf_worker_data *pf)
 {
 	struct spoolss_chld_sig_hup_ctx *shc;
 	struct tevent_signal *se;
@@ -282,7 +283,6 @@ static bool spoolss_setup_chld_hup_handler(struct tevent_context *ev_ctx,
 		DEBUG(1, ("failed to setup SIGHUP handler"));
 		return false;
 	}
-	shc->child_id = child_id;
 	shc->pf = pf;
 	shc->msg_ctx = msg_ctx;
 
@@ -314,9 +314,10 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 		smb_panic("reinit_after_fork() failed");
 	}
 
+	spoolss_child_id = child_id;
 	spoolss_reopen_logs(child_id);
 
-	ok = spoolss_setup_chld_hup_handler(ev_ctx, msg_ctx, pf, child_id);
+	ok = spoolss_setup_chld_hup_handler(ev_ctx, msg_ctx, pf);
 	if (!ok) {
 		return false;
 	}
@@ -359,7 +360,6 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 struct spoolss_children_data {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
-	int child_id;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
 	int *listen_fds;
@@ -392,7 +392,6 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	if (!data) {
 		return 1;
 	}
-	data->child_id = child_id;
 	data->pf = pf;
 	data->ev_ctx = ev_ctx;
 	data->msg_ctx = msg_ctx;

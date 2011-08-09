@@ -121,7 +121,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 
 			pfp->pool[i].status = PF_WORKER_IDLE;
 			ret = pfp->main_fn(ev_ctx, msg_ctx,
-					   &pfp->pool[i], i,
+					   &pfp->pool[i], i + 1,
 					   pfp->listen_fd_size,
 					   pfp->listen_fds,
 					   pfp->lock_fd,
@@ -206,7 +206,7 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 
 			pfp->pool[i].status = PF_WORKER_IDLE;
 			ret = pfp->main_fn(ev_ctx, msg_ctx,
-					   &pfp->pool[i], i,
+					   &pfp->pool[i], i + 1,
 					   pfp->listen_fd_size,
 					   pfp->listen_fds,
 					   pfp->lock_fd,
