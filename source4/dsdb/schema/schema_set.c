@@ -200,6 +200,44 @@ op_error:
 	return ldb_operr(ldb);
 }
 
+
+/*
+  create extra attribute shortcuts
+ */
+static void dsdb_setup_attribute_shortcuts(struct ldb_context *ldb, struct dsdb_schema *schema)
+{
+	struct dsdb_attribute *attribute;
+
+	/* setup fast access to one_way_link and DN format */
+	for (attribute=schema->attributes; attribute; attribute=attribute->next) {
+		attribute->dn_format = dsdb_dn_oid_to_format(attribute->syntax->ldap_oid);
+
+		if (attribute->dn_format == DSDB_INVALID_DN) {
+			attribute->one_way_link = false;
+			continue;
+		}
+
+		/* these are not considered to be one way links for
+		   the purpose of DN link fixups */
+		if (ldb_attr_cmp("distinguishedName", attribute->lDAPDisplayName) == 0 ||
+		    ldb_attr_cmp("objectCategory", attribute->lDAPDisplayName) == 0) {
+			attribute->one_way_link = false;
+			continue;
+		}
+
+		if (attribute->linkID == 0) {
+			attribute->one_way_link = true;
+			continue;
+		}
+		/* handle attributes with a linkID but no backlink */
+		if (dsdb_attribute_by_linkID(schema, attribute->linkID) == NULL) {
+			attribute->one_way_link = true;
+			continue;
+		}
+		attribute->one_way_link = false;
+	}
+}
+
 static int uint32_cmp(uint32_t c1, uint32_t c2)
 {
 	if (c1 == c2) return 0;
@@ -353,6 +391,8 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	TYPESAFE_QSORT(schema->attributes_by_msDS_IntId, schema->num_int_id_attr, dsdb_compare_attribute_by_msDS_IntId);
 	TYPESAFE_QSORT(schema->attributes_by_attributeID_oid, schema->num_attributes, dsdb_compare_attribute_by_attributeID_oid);
 	TYPESAFE_QSORT(schema->attributes_by_linkID, schema->num_attributes, dsdb_compare_attribute_by_linkID);
+
+	dsdb_setup_attribute_shortcuts(ldb, schema);
 
 	return LDB_SUCCESS;
 
