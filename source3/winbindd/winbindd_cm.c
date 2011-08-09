@@ -850,18 +850,19 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 			winbindd_set_locator_kdc_envs(domain);
 
-			ads_status = cli_session_setup_spnego(*cli,
-							      machine_krb5_principal, 
-							      machine_password,
-							      lp_workgroup(),
-							      domain->alt_name);
+			result = cli_session_setup(*cli,
+						   machine_krb5_principal,
+						   machine_password,
+						   strlen(machine_password)+1,
+						   machine_password,
+						   strlen(machine_password)+1,
+						   lp_workgroup());
 
-			if (!ADS_ERR_OK(ads_status)) {
+			if (!NT_STATUS_IS_OK(result)) {
 				DEBUG(4,("failed kerberos session setup with %s\n",
-					 ads_errstr(ads_status)));
+					nt_errstr(result)));
 			}
 
-			result = ads_ntstatus(ads_status);
 			if (NT_STATUS_IS_OK(result)) {
 				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
 				result = cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
@@ -879,14 +880,16 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			  "[%s]\\[%s]\n",  controller, lp_netbios_name(),
 			  lp_workgroup(), machine_account));
 
-		ads_status = cli_session_setup_spnego(*cli,
-						      machine_account, 
-						      machine_password, 
-						      lp_workgroup(),
-						      NULL);
-		if (!ADS_ERR_OK(ads_status)) {
+		result = cli_session_setup(*cli,
+					   machine_account,
+					   machine_password,
+					   strlen(machine_password)+1,
+					   machine_password,
+					   strlen(machine_password)+1,
+					   lp_workgroup());
+		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(4, ("authenticated session setup failed with %s\n",
-				ads_errstr(ads_status)));
+				nt_errstr(result)));
 		}
 
 		result = ads_ntstatus(ads_status);
