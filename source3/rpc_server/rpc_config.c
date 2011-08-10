@@ -60,8 +60,6 @@ enum rpc_service_mode_e rpc_service_mode(const char *name)
 		state = RPC_SERVICE_MODE_EMBEDDED;
 	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
 		state = RPC_SERVICE_MODE_EXTERNAL;
-	} else if (strcasecmp(rpcsrv_type, "daemon") == 0) {
-		state = RPC_SERVICE_MODE_DAEMON;
 	} else {
 		state = RPC_SERVICE_MODE_DISABLED;
 	}

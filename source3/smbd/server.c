@@ -33,6 +33,7 @@
 #include "ctdbd_conn.h"
 #include "printing/queue_process.h"
 #include "rpc_server/rpc_service_setup.h"
+#include "rpc_server/rpc_config.h"
 #include "serverid.h"
 #include "passdb.h"
 #include "auth.h"
@@ -1210,9 +1211,7 @@ extern void build_options(bool screen);
 	}
 
 	if (is_daemon && !interactive) {
-		enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
-
-		if (epm_mode == RPC_SERVICE_MODE_DAEMON) {
+		if (rpc_epmapper_daemon() == RPC_DAEMON_FORK) {
 			start_epmd(ev_ctx, msg_ctx);
 		}
 	}
@@ -1225,20 +1224,21 @@ extern void build_options(bool screen);
 	 * -- bad things will happen if smbd is launched via inetd
 	 *  and we fork a copy of ourselves here */
 	if (is_daemon && !interactive) {
-		enum rpc_service_mode_e lsarpc_mode = rpc_lsarpc_mode();
 
-		if (lsarpc_mode == RPC_SERVICE_MODE_DAEMON) {
+		if (rpc_lsasd_daemon() == RPC_DAEMON_FORK) {
 			start_lsasd(ev_ctx, msg_ctx);
 		}
 
-		if (!_lp_disable_spoolss()) {
+		if (!_lp_disable_spoolss() &&
+		    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
 			bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
 
 			if (!printing_subsystem_init(ev_ctx, msg_ctx, true, bgq)) {
 				exit(1);
 			}
 		}
-	} else if (!_lp_disable_spoolss()) {
+	} else if (!_lp_disable_spoolss() &&
+		   (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
 		if (!printing_subsystem_init(ev_ctx, msg_ctx, false, false)) {
 			exit(1);
 		}
