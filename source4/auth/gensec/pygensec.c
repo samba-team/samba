@@ -36,7 +36,7 @@ static PyObject *py_get_name_by_authtype(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &type))
 		return NULL;
 
-	security = py_talloc_get_type(self, struct gensec_security);
+	security = pytalloc_get_type(self, struct gensec_security);
 
 	name = gensec_get_name_by_authtype(security, type);
 	if (name == NULL)
@@ -78,7 +78,7 @@ static struct gensec_settings *settings_from_object(TALLOC_CTX *mem_ctx, PyObjec
 static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
-	py_talloc_Object *self;
+	pytalloc_Object *self;
 	struct gensec_settings *settings;
 	const char *kwnames[] = { "settings", NULL };
 	PyObject *py_settings;
@@ -88,7 +88,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", discard_const_p(char *, kwnames), &py_settings))
 		return NULL;
 
-	self = (py_talloc_Object*)type->tp_alloc(type, 0);
+	self = (pytalloc_Object*)type->tp_alloc(type, 0);
 	if (self == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -149,7 +149,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
-	py_talloc_Object *self;
+	pytalloc_Object *self;
 	struct gensec_settings *settings = NULL;
 	const char *kwnames[] = { "settings", "auth_context", NULL };
 	PyObject *py_settings = Py_None;
@@ -161,7 +161,7 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", discard_const_p(char *, kwnames), &py_settings, &py_auth_context))
 		return NULL;
 
-	self = (py_talloc_Object*)type->tp_alloc(type, 0);
+	self = (pytalloc_Object*)type->tp_alloc(type, 0);
 	if (self == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -201,11 +201,11 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 	}
 
 	if (py_auth_context != Py_None) {
-		auth_context = py_talloc_get_type(py_auth_context, struct auth4_context);
+		auth_context = pytalloc_get_type(py_auth_context, struct auth4_context);
 		if (!auth_context) {
 			PyErr_Format(PyExc_TypeError,
 				     "Expected auth.AuthContext for auth_context argument, got %s",
-				     talloc_get_name(py_talloc_get_ptr(py_auth_context)));
+				     talloc_get_name(pytalloc_get_ptr(py_auth_context)));
 			return NULL;
 		}
 	}
@@ -233,7 +233,7 @@ static PyObject *py_gensec_set_credentials(PyObject *self, PyObject *args)
 {
 	PyObject *py_creds = Py_None;
 	struct cli_credentials *creds;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	NTSTATUS status;
 
 	if (!PyArg_ParseTuple(args, "O", &py_creds))
@@ -243,7 +243,7 @@ static PyObject *py_gensec_set_credentials(PyObject *self, PyObject *args)
 	if (!creds) {
 		PyErr_Format(PyExc_TypeError,
 			     "Expected samba.credentaials for credentials argument got  %s",
-			     talloc_get_name(py_talloc_get_ptr(py_creds)));
+			     talloc_get_name(pytalloc_get_ptr(py_creds)));
 	}
 
 	status = gensec_set_credentials(security, creds);
@@ -260,7 +260,7 @@ static PyObject *py_gensec_session_info(PyObject *self)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	PyObject *py_session_info;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	struct auth_session_info *info;
 	if (security->ops == NULL) {
 		PyErr_SetString(PyExc_RuntimeError, "no mechanism selected");
@@ -283,7 +283,7 @@ static PyObject *py_gensec_session_info(PyObject *self)
 static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
 {
 	char *name;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	NTSTATUS status;
 
 	if (!PyArg_ParseTuple(args, "s", &name))
@@ -301,7 +301,7 @@ static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
 static PyObject *py_gensec_start_mech_by_sasl_name(PyObject *self, PyObject *args)
 {
 	char *sasl_name;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	NTSTATUS status;
 
 	if (!PyArg_ParseTuple(args, "s", &sasl_name))
@@ -319,7 +319,7 @@ static PyObject *py_gensec_start_mech_by_sasl_name(PyObject *self, PyObject *arg
 static PyObject *py_gensec_start_mech_by_authtype(PyObject *self, PyObject *args)
 {
 	int authtype, level;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	NTSTATUS status;
 	if (!PyArg_ParseTuple(args, "ii", &authtype, &level))
 		return NULL;
@@ -336,7 +336,7 @@ static PyObject *py_gensec_start_mech_by_authtype(PyObject *self, PyObject *args
 static PyObject *py_gensec_want_feature(PyObject *self, PyObject *args)
 {
 	int feature;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	/* This is i (and declared as an int above) by design, as they are handled as an integer in python */
 	if (!PyArg_ParseTuple(args, "i", &feature))
 		return NULL;
@@ -349,7 +349,7 @@ static PyObject *py_gensec_want_feature(PyObject *self, PyObject *args)
 static PyObject *py_gensec_have_feature(PyObject *self, PyObject *args)
 {
 	int feature;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	/* This is i (and declared as an int above) by design, as they are handled as an integer in python */
 	if (!PyArg_ParseTuple(args, "i", &feature))
 		return NULL;
@@ -366,7 +366,7 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB in, out;
 	PyObject *ret, *py_in;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	PyObject *finished_processing;
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
@@ -409,7 +409,7 @@ static PyObject *py_gensec_wrap(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB in, out;
 	PyObject *ret, *py_in;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
 		return NULL;
@@ -443,7 +443,7 @@ static PyObject *py_gensec_unwrap(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB in, out;
 	PyObject *ret, *py_in;
-	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
 		return NULL;
@@ -505,7 +505,7 @@ static PyTypeObject Py_Security = {
 	.tp_name = "gensec.Security",
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_gensec_security_methods,
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 };
 
 void initgensec(void);
@@ -513,7 +513,7 @@ void initgensec(void)
 {
 	PyObject *m;
 
-	Py_Security.tp_base = PyTalloc_GetObjectType();
+	Py_Security.tp_base = pytalloc_GetObjectType();
 	if (Py_Security.tp_base == NULL)
 		return;
 

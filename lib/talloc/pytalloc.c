@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Python Talloc Module
-   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2010
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 void inittalloc(void);
 
 /* print a talloc tree report for a talloc python object */
-static PyObject *py_talloc_report_full(PyObject *self, PyObject *args)
+static PyObject *pytalloc_report_full(PyObject *self, PyObject *args)
 {
 	PyObject *py_obj = Py_None;
 	PyTypeObject *type;
@@ -36,20 +36,20 @@ static PyObject *py_talloc_report_full(PyObject *self, PyObject *args)
 		talloc_report_full(NULL, stdout);
 	} else {
 		type = (PyTypeObject*)PyObject_Type(py_obj);
-		talloc_report_full(py_talloc_get_mem_ctx(py_obj), stdout);
+		talloc_report_full(pytalloc_get_mem_ctx(py_obj), stdout);
 	}
 	return Py_None;
 }
 
 /* enable null tracking */
-static PyObject *py_talloc_enable_null_tracking(PyObject *self)
+static PyObject *pytalloc_enable_null_tracking(PyObject *self)
 {
 	talloc_enable_null_tracking();
 	return Py_None;
 }
 
 /* return the number of talloc blocks */
-static PyObject *py_talloc_total_blocks(PyObject *self, PyObject *args)
+static PyObject *pytalloc_total_blocks(PyObject *self, PyObject *args)
 {
 	PyObject *py_obj = Py_None;
 	PyTypeObject *type;
@@ -63,15 +63,15 @@ static PyObject *py_talloc_total_blocks(PyObject *self, PyObject *args)
 
 	type = (PyTypeObject*)PyObject_Type(py_obj);
 
-	return PyLong_FromLong(talloc_total_blocks(py_talloc_get_mem_ctx(py_obj)));
+	return PyLong_FromLong(talloc_total_blocks(pytalloc_get_mem_ctx(py_obj)));
 }
 
 static PyMethodDef talloc_methods[] = {
-	{ "report_full", (PyCFunction)py_talloc_report_full, METH_VARARGS,
+	{ "report_full", (PyCFunction)pytalloc_report_full, METH_VARARGS,
 		"show a talloc tree for an object"},
-	{ "enable_null_tracking", (PyCFunction)py_talloc_enable_null_tracking, METH_NOARGS,
+	{ "enable_null_tracking", (PyCFunction)pytalloc_enable_null_tracking, METH_NOARGS,
 		"enable tracking of the NULL object"},
-	{ "total_blocks", (PyCFunction)py_talloc_total_blocks, METH_VARARGS,
+	{ "total_blocks", (PyCFunction)pytalloc_total_blocks, METH_VARARGS,
 		"return talloc block count"},
 	{ NULL }
 };
@@ -79,9 +79,9 @@ static PyMethodDef talloc_methods[] = {
 /**
  * Default (but only slightly more useful than the default) implementation of Repr().
  */
-static PyObject *py_talloc_default_repr(PyObject *obj)
+static PyObject *pytalloc_default_repr(PyObject *obj)
 {
-	py_talloc_Object *talloc_obj = (py_talloc_Object *)obj;
+	pytalloc_Object *talloc_obj = (pytalloc_Object *)obj;
 	PyTypeObject *type = (PyTypeObject*)PyObject_Type(obj);
 
 	return PyString_FromFormat("<%s talloc object at 0x%p>", 
@@ -91,9 +91,9 @@ static PyObject *py_talloc_default_repr(PyObject *obj)
 /**
  * Simple dealloc for talloc-wrapping PyObjects
  */
-static void py_talloc_dealloc(PyObject* self)
+static void pytalloc_dealloc(PyObject* self)
 {
-	py_talloc_Object *obj = (py_talloc_Object *)self;
+	pytalloc_Object *obj = (pytalloc_Object *)self;
 	assert(talloc_unlink(NULL, obj->talloc_ctx) != -1);
 	obj->talloc_ctx = NULL;
 	self->ob_type->tp_free(self);
@@ -102,24 +102,24 @@ static void py_talloc_dealloc(PyObject* self)
 /**
  * Default (but only slightly more useful than the default) implementation of cmp.
  */
-static int py_talloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
+static int pytalloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
 {
-	py_talloc_Object *obj1 = (py_talloc_Object *)_obj1,
-					 *obj2 = (py_talloc_Object *)_obj2;
+	pytalloc_Object *obj1 = (pytalloc_Object *)_obj1,
+					 *obj2 = (pytalloc_Object *)_obj2;
 	if (obj1->ob_type != obj2->ob_type)
 		return (obj1->ob_type - obj2->ob_type);
 
-	return ((char *)py_talloc_get_ptr(obj1) - (char *)py_talloc_get_ptr(obj2));
+	return ((char *)pytalloc_get_ptr(obj1) - (char *)pytalloc_get_ptr(obj2));
 }
 
 static PyTypeObject TallocObject_Type = {
 	.tp_name = "talloc.Object",
 	.tp_doc = "Python wrapper for a talloc-maintained object.",
-	.tp_basicsize = sizeof(py_talloc_Object),
-	.tp_dealloc = (destructor)py_talloc_dealloc,
+	.tp_basicsize = sizeof(pytalloc_Object),
+	.tp_dealloc = (destructor)pytalloc_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-	.tp_repr = py_talloc_default_repr,
-	.tp_compare = py_talloc_default_cmp,
+	.tp_repr = pytalloc_default_repr,
+	.tp_compare = pytalloc_default_cmp,
 };
 
 void inittalloc(void)

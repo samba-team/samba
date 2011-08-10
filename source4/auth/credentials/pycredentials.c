@@ -37,7 +37,7 @@ static PyObject *PyString_FromStringOrNULL(const char *str)
 
 static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	py_talloc_Object *ret = (py_talloc_Object *)type->tp_alloc(type, 0);
+	pytalloc_Object *ret = (pytalloc_Object *)type->tp_alloc(type, 0);
 	if (ret == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -51,12 +51,12 @@ static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwar
 	return (PyObject *)ret;
 }
 
-static PyObject *py_creds_get_username(py_talloc_Object *self)
+static PyObject *py_creds_get_username(pytalloc_Object *self)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_username(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_set_username(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_username(pytalloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
@@ -70,13 +70,13 @@ static PyObject *py_creds_set_username(py_talloc_Object *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_username(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
-static PyObject *py_creds_get_password(py_talloc_Object *self)
+static PyObject *py_creds_get_password(pytalloc_Object *self)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_password(PyCredentials_AsCliCredentials(self)));
 }
 
 
-static PyObject *py_creds_set_password(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_password(pytalloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
@@ -90,12 +90,12 @@ static PyObject *py_creds_set_password(py_talloc_Object *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_password(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
-static PyObject *py_creds_get_domain(py_talloc_Object *self)
+static PyObject *py_creds_get_domain(pytalloc_Object *self)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_domain(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_set_domain(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_domain(pytalloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
@@ -109,12 +109,12 @@ static PyObject *py_creds_set_domain(py_talloc_Object *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_domain(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
-static PyObject *py_creds_get_realm(py_talloc_Object *self)
+static PyObject *py_creds_get_realm(pytalloc_Object *self)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_realm(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_set_realm(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_realm(pytalloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
@@ -128,12 +128,12 @@ static PyObject *py_creds_set_realm(py_talloc_Object *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_realm(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
-static PyObject *py_creds_get_bind_dn(py_talloc_Object *self)
+static PyObject *py_creds_get_bind_dn(pytalloc_Object *self)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_bind_dn(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_set_bind_dn(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_bind_dn(pytalloc_Object *self, PyObject *args)
 {
 	char *newval;
 	if (!PyArg_ParseTuple(args, "s", &newval))
@@ -142,12 +142,12 @@ static PyObject *py_creds_set_bind_dn(py_talloc_Object *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_bind_dn(PyCredentials_AsCliCredentials(self), newval));
 }
 
-static PyObject *py_creds_get_workstation(py_talloc_Object *self)
+static PyObject *py_creds_get_workstation(pytalloc_Object *self)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_workstation(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_set_workstation(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_workstation(pytalloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
@@ -161,33 +161,33 @@ static PyObject *py_creds_set_workstation(py_talloc_Object *self, PyObject *args
 	return PyBool_FromLong(cli_credentials_set_workstation(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
-static PyObject *py_creds_is_anonymous(py_talloc_Object *self)
+static PyObject *py_creds_is_anonymous(pytalloc_Object *self)
 {
 	return PyBool_FromLong(cli_credentials_is_anonymous(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_set_anonymous(py_talloc_Object *self)
+static PyObject *py_creds_set_anonymous(pytalloc_Object *self)
 {
 	cli_credentials_set_anonymous(PyCredentials_AsCliCredentials(self));
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_creds_authentication_requested(py_talloc_Object *self)
+static PyObject *py_creds_authentication_requested(pytalloc_Object *self)
 {
         return PyBool_FromLong(cli_credentials_authentication_requested(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_wrong_password(py_talloc_Object *self)
+static PyObject *py_creds_wrong_password(pytalloc_Object *self)
 {
         return PyBool_FromLong(cli_credentials_wrong_password(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_set_cmdline_callbacks(py_talloc_Object *self)
+static PyObject *py_creds_set_cmdline_callbacks(pytalloc_Object *self)
 {
         return PyBool_FromLong(cli_credentials_set_cmdline_callbacks(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_parse_string(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_parse_string(pytalloc_Object *self, PyObject *args)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
@@ -202,14 +202,14 @@ static PyObject *py_creds_parse_string(py_talloc_Object *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_creds_get_nt_hash(py_talloc_Object *self)
+static PyObject *py_creds_get_nt_hash(pytalloc_Object *self)
 {
 	const struct samr_Password *ntpw = cli_credentials_get_nt_hash(PyCredentials_AsCliCredentials(self), self->ptr);
 
 	return PyString_FromStringAndSize(discard_const_p(char, ntpw->hash), 16);
 }
 
-static PyObject *py_creds_set_kerberos_state(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_kerberos_state(pytalloc_Object *self, PyObject *args)
 {
 	int state;
 	if (!PyArg_ParseTuple(args, "i", &state))
@@ -219,7 +219,7 @@ static PyObject *py_creds_set_kerberos_state(py_talloc_Object *self, PyObject *a
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_creds_set_krb_forwardable(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_krb_forwardable(pytalloc_Object *self, PyObject *args)
 {
 	int state;
 	if (!PyArg_ParseTuple(args, "i", &state))
@@ -229,7 +229,7 @@ static PyObject *py_creds_set_krb_forwardable(py_talloc_Object *self, PyObject *
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_guess(pytalloc_Object *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
 	struct loadparm_context *lp_ctx;
@@ -260,7 +260,7 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_machine_account(pytalloc_Object *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
 	struct loadparm_context *lp_ctx;
@@ -312,7 +312,7 @@ static PyObject *PyCredentialCacheContainer_from_ccache_container(struct ccache_
 }
 
 
-static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_get_named_ccache(pytalloc_Object *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
 	char *ccache_name;
@@ -358,7 +358,7 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 	return NULL;
 }
 
-static PyObject *py_creds_set_gensec_features(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_set_gensec_features(pytalloc_Object *self, PyObject *args)
 {
 	unsigned int gensec_features;
 
@@ -370,7 +370,7 @@ static PyObject *py_creds_set_gensec_features(py_talloc_Object *self, PyObject *
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_creds_get_gensec_features(py_talloc_Object *self, PyObject *args)
+static PyObject *py_creds_get_gensec_features(pytalloc_Object *self, PyObject *args)
 {
 	unsigned int gensec_features;
 
@@ -445,7 +445,7 @@ static PyMethodDef py_creds_methods[] = {
 
 PyTypeObject PyCredentials = {
 	.tp_name = "credentials.Credentials",
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_new = py_creds_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_creds_methods,
@@ -454,14 +454,14 @@ PyTypeObject PyCredentials = {
 
 PyTypeObject PyCredentialCacheContainer = {
 	.tp_name = "credentials.CredentialCacheContainer",
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 void initcredentials(void)
 {
 	PyObject *m;
-	PyTypeObject *talloc_type = PyTalloc_GetObjectType();
+	PyTypeObject *talloc_type = pytalloc_GetObjectType();
 	if (talloc_type == NULL)
 		return;
 

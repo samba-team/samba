@@ -23,7 +23,7 @@
 #include "pytalloc.h"
 #include <assert.h>
 
-_PUBLIC_ PyTypeObject *PyTalloc_GetObjectType(void)
+_PUBLIC_ PyTypeObject *pytalloc_GetObjectType(void)
 {
 	static PyTypeObject *type = NULL;
 	PyObject *mod;
@@ -46,10 +46,10 @@ _PUBLIC_ PyTypeObject *PyTalloc_GetObjectType(void)
 /**
  * Import an existing talloc pointer into a Python object.
  */
-_PUBLIC_ PyObject *py_talloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
+_PUBLIC_ PyObject *pytalloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
 						   void *ptr)
 {
-	py_talloc_Object *ret = (py_talloc_Object *)py_type->tp_alloc(py_type, 0);
+	pytalloc_Object *ret = (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
 	ret->talloc_ctx = talloc_new(NULL);
 	if (ret->talloc_ctx == NULL) {
 		return NULL;
@@ -65,9 +65,9 @@ _PUBLIC_ PyObject *py_talloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx
 /**
  * Import an existing talloc pointer into a Python object.
  */
-_PUBLIC_ PyObject *py_talloc_steal(PyTypeObject *py_type, void *ptr)
+_PUBLIC_ PyObject *pytalloc_steal(PyTypeObject *py_type, void *ptr)
 {
-	return py_talloc_steal_ex(py_type, ptr, ptr);
+	return pytalloc_steal_ex(py_type, ptr, ptr);
 }
 
 
@@ -76,15 +76,15 @@ _PUBLIC_ PyObject *py_talloc_steal(PyTypeObject *py_type, void *ptr)
  * original parent, and creating a reference to the object in the python
  * object
  */
-_PUBLIC_ PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr)
+_PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr)
 {
-	py_talloc_Object *ret;
+	pytalloc_Object *ret;
 
 	if (ptr == NULL) {
 		Py_RETURN_NONE;
 	}
 
-	ret = (py_talloc_Object *)py_type->tp_alloc(py_type, 0);
+	ret = (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
 	ret->talloc_ctx = talloc_new(NULL);
 	if (ret->talloc_ctx == NULL) {
 		return NULL;
@@ -102,7 +102,7 @@ static void py_cobject_talloc_free(void *ptr)
 	talloc_free(ptr);
 }
 
-_PUBLIC_ PyObject *PyCObject_FromTallocPtr(void *ptr)
+_PUBLIC_ PyObject *pytalloc_CObject_FromTallocPtr(void *ptr)
 {
 	if (ptr == NULL) {
 		Py_RETURN_NONE;
@@ -110,9 +110,9 @@ _PUBLIC_ PyObject *PyCObject_FromTallocPtr(void *ptr)
 	return PyCObject_FromVoidPtr(ptr, py_cobject_talloc_free);
 }
 
-_PUBLIC_ int PyTalloc_Check(PyObject *obj)
+_PUBLIC_ int pytalloc_Check(PyObject *obj)
 {
-	PyTypeObject *tp = PyTalloc_GetObjectType();
+	PyTypeObject *tp = pytalloc_GetObjectType();
 
 	return PyObject_TypeCheck(obj, tp);
 }

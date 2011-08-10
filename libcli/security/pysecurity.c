@@ -44,19 +44,19 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	security_descriptor = py_talloc_get_type(py_sec_desc, struct security_descriptor);
+	security_descriptor = pytalloc_get_type(py_sec_desc, struct security_descriptor);
 	if (!security_descriptor) {
 		PyErr_Format(PyExc_TypeError,
 			     "Expected dcerpc.security.descriptor for security_descriptor argument got  %s",
-			     talloc_get_name(py_talloc_get_ptr(py_sec_desc)));
+			     talloc_get_name(pytalloc_get_ptr(py_sec_desc)));
 		return NULL;
 	}
 
-	security_token = py_talloc_get_type(py_security_token, struct security_token);
+	security_token = pytalloc_get_type(py_security_token, struct security_token);
 	if (!security_token) {
 		PyErr_Format(PyExc_TypeError,
 			     "Expected dcerpc.security.token for token argument, got %s",
-			     talloc_get_name(py_talloc_get_ptr(py_security_token)));
+			     talloc_get_name(pytalloc_get_ptr(py_security_token)));
 		return NULL;
 	}
 

@@ -1,6 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    Samba utility functions
+
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2010
    Copyright (C) Kamen Mazdrashki <kamen.mazdrashki@postpath.com> 2009
 
@@ -341,7 +342,7 @@ static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
 	if (dom_sid_Type == NULL)
 		return NULL;
 
-	return py_talloc_reference((PyTypeObject *)dom_sid_Type, sid);
+	return pytalloc_reference((PyTypeObject *)dom_sid_Type, sid);
 }
 
 static PyObject *py_net_vampire(py_net_Object *self, PyObject *args, PyObject *kwargs)
@@ -453,7 +454,7 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 	s->chunk.forest = &s->forest;
 	s->chunk.dest_dsa = &s->dest_dsa;
 
-	return PyCObject_FromTallocPtr(s);
+	return pytalloc_CObject_FromTallocPtr(s);
 }
 
 
@@ -486,7 +487,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 		if (!py_check_dcerpc_type(py_ctr, "samba.dcerpc.drsuapi", "DsGetNCChangesCtr1")) {
 			return NULL;
 		}
-		s->chunk.ctr1                         = py_talloc_get_ptr(py_ctr);
+		s->chunk.ctr1                         = pytalloc_get_ptr(py_ctr);
 		s->partition.nc                       = *s->chunk.ctr1->naming_context;
 		s->partition.more_data                = s->chunk.ctr1->more_data;
 		s->partition.source_dsa_guid          = s->chunk.ctr1->source_dsa_guid;
@@ -497,7 +498,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 		if (!py_check_dcerpc_type(py_ctr, "samba.dcerpc.drsuapi", "DsGetNCChangesCtr6")) {
 			return NULL;
 		}
-		s->chunk.ctr6                         = py_talloc_get_ptr(py_ctr);
+		s->chunk.ctr6                         = pytalloc_get_ptr(py_ctr);
 		s->partition.nc                       = *s->chunk.ctr6->naming_context;
 		s->partition.more_data                = s->chunk.ctr6->more_data;
 		s->partition.source_dsa_guid          = s->chunk.ctr6->source_dsa_guid;

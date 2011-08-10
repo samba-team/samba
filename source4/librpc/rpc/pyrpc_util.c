@@ -298,7 +298,7 @@ PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 		return NULL;
 	}
 
-	return py_talloc_reference_ex(py_type, r_ctx, r);
+	return pytalloc_reference_ex(py_type, r_ctx, r);
 }
 
 PyObject *PyString_FromStringOrNULL(const char *str)

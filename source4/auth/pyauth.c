@@ -207,7 +207,7 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 
 static PyObject *PyAuthContext_FromContext(struct auth4_context *auth_context)
 {
-	return py_talloc_reference(&PyAuthContext, auth_context);
+	return pytalloc_reference(&PyAuthContext, auth_context);
 }
 
 static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
@@ -252,7 +252,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 	}
 
 	if (py_imessaging_ctx != Py_None) {
-		imessaging_context = py_talloc_get_type(py_imessaging_ctx, struct imessaging_context);
+		imessaging_context = pytalloc_get_type(py_imessaging_ctx, struct imessaging_context);
 	}
 
 	if (py_methods == Py_None && py_ldb == Py_None) {
@@ -298,7 +298,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 
 static PyTypeObject PyAuthContext = {
 	.tp_name = "AuthContext",
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_new = py_auth_context_new,
 };
@@ -314,7 +314,7 @@ void initauth(void)
 {
 	PyObject *m;
 
-	PyAuthContext.tp_base = PyTalloc_GetObjectType();
+	PyAuthContext.tp_base = pytalloc_GetObjectType();
 	if (PyAuthContext.tp_base == NULL)
 		return;
 

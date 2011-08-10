@@ -203,7 +203,7 @@ static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
 	if (dom_sid_Type == NULL)
 		return NULL;
 
-	return py_talloc_reference((PyTypeObject *)dom_sid_Type, sid);
+	return pytalloc_reference((PyTypeObject *)dom_sid_Type, sid);
 }
 
 NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,

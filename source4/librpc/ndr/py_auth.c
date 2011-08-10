@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
-   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2011
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2011
 
    This program is free software; you can redistribute it and/or modify
@@ -46,7 +47,7 @@ static void PyType_AddGetSet(PyTypeObject *type, PyGetSetDef *getset)
 
 static PyObject *py_auth_session_get_credentials(PyObject *self, void *closure)
 {
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
+	struct auth_session_info *session = pytalloc_get_type(self, struct auth_session_info);
 	PyObject *py_credentials;
 	/* This is evil, as the credentials are not IDL structures */
 	py_credentials = py_return_ndr_struct("samba.credentials", "Credentials", session->credentials, session->credentials);
@@ -55,7 +56,7 @@ static PyObject *py_auth_session_get_credentials(PyObject *self, void *closure)
 
 static int py_auth_session_set_credentials(PyObject *self, PyObject *value, void *closure)
 {
-	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
+	struct auth_session_info *session = pytalloc_get_type(self, struct auth_session_info);
 	session->credentials = talloc_reference(session, PyCredentials_AsCliCredentials(value));
 	return 0;
 }

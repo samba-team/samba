@@ -63,7 +63,7 @@ static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, 
 
 static PyObject *py_ntacl_print(PyObject *self, PyObject *args)
 {
-	struct xattr_NTACL *ntacl = py_talloc_get_ptr(self);
+	struct xattr_NTACL *ntacl = pytalloc_get_ptr(self);
 	struct ndr_print *pr;
 	TALLOC_CTX *mem_ctx;
 

@@ -33,9 +33,9 @@ extern PyTypeObject PyHiveKey;
 
 void initregistry(void);
 
-/*#define PyRegistryKey_AsRegistryKey(obj) py_talloc_get_type(obj, struct registry_key)*/
-#define PyRegistry_AsRegistryContext(obj) ((struct registry_context *)py_talloc_get_ptr(obj))
-#define PyHiveKey_AsHiveKey(obj) ((struct hive_key*)py_talloc_get_ptr(obj))
+/*#define PyRegistryKey_AsRegistryKey(obj) pytalloc_get_type(obj, struct registry_key)*/
+#define PyRegistry_AsRegistryContext(obj) ((struct registry_context *)pytalloc_get_ptr(obj))
+#define PyHiveKey_AsHiveKey(obj) ((struct hive_key*)pytalloc_get_ptr(obj))
 
 
 static PyObject *py_get_predefined_key_by_name(PyObject *self, PyObject *args)
@@ -51,7 +51,7 @@ static PyObject *py_get_predefined_key_by_name(PyObject *self, PyObject *args)
 	result = reg_get_predefined_key_by_name(ctx, name, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_steal(&PyRegistryKey, key);
+	return pytalloc_steal(&PyRegistryKey, key);
 }
 
 static PyObject *py_key_del_abs(PyObject *self, PyObject *args)
@@ -82,7 +82,7 @@ static PyObject *py_get_predefined_key(PyObject *self, PyObject *args)
 	result = reg_get_predefined_key(ctx, hkey, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_steal(&PyRegistryKey, key);
+	return pytalloc_steal(&PyRegistryKey, key);
 }
 
 static PyObject *py_diff_apply(PyObject *self, PyObject *args)
@@ -138,7 +138,7 @@ static PyObject *registry_new(PyTypeObject *type, PyObject *args, PyObject *kwar
 	struct registry_context *ctx;
 	result = reg_open_local(NULL, &ctx);
 	PyErr_WERROR_IS_ERR_RAISE(result);
-	return py_talloc_steal(&PyRegistry, ctx);
+	return pytalloc_steal(&PyRegistry, ctx);
 }
 
 static PyMethodDef registry_methods[] = {
@@ -160,7 +160,7 @@ PyTypeObject PyRegistry = {
 	.tp_name = "Registry",
 	.tp_methods = registry_methods,
 	.tp_new = registry_new,
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
@@ -293,20 +293,20 @@ static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwar
 	talloc_free(mem_ctx);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_steal(&PyHiveKey, hive_key);
+	return pytalloc_steal(&PyHiveKey, hive_key);
 }
 
 PyTypeObject PyHiveKey = {
 	.tp_name = "HiveKey",
 	.tp_methods = hive_key_methods,
 	.tp_new = hive_new,
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 PyTypeObject PyRegistryKey = {
 	.tp_name = "RegistryKey",
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
@@ -357,7 +357,7 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 
-	return py_talloc_steal(&PyRegistry, reg_ctx);
+	return pytalloc_steal(&PyRegistry, reg_ctx);
 }
 
 static PyObject *py_open_directory(PyObject *self, PyObject *args)
@@ -372,7 +372,7 @@ static PyObject *py_open_directory(PyObject *self, PyObject *args)
 	result = reg_open_directory(NULL, location, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_steal(&PyHiveKey, key);
+	return pytalloc_steal(&PyHiveKey, key);
 }
 
 static PyObject *py_create_directory(PyObject *self, PyObject *args)
@@ -387,7 +387,7 @@ static PyObject *py_create_directory(PyObject *self, PyObject *args)
 	result = reg_create_directory(NULL, location, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_steal(&PyHiveKey, key);
+	return pytalloc_steal(&PyHiveKey, key);
 }
 
 static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -435,7 +435,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 	talloc_free(mem_ctx);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return py_talloc_steal(&PyHiveKey, key);
+	return pytalloc_steal(&PyHiveKey, key);
 }
 
 static PyObject *py_str_regtype(PyObject *self, PyObject *args)
@@ -476,7 +476,7 @@ static PyMethodDef py_registry_methods[] = {
 void initregistry(void)
 {
 	PyObject *m;
-	PyTypeObject *talloc_type = PyTalloc_GetObjectType();
+	PyTypeObject *talloc_type = pytalloc_GetObjectType();
 
 	if (talloc_type == NULL)
 		return;

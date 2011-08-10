@@ -110,6 +110,9 @@ def build(bld):
             public_deps='talloc',
             pyext=True,
             vnum=VERSION,
+            hide_symbols=True,
+            abi_directory='ABI',
+            abi_match='pytalloc_*',
             private_library=private_library,
             public_headers='pytalloc.h'
             )

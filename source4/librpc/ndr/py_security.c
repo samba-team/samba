@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba utility functions
-   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2010
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,7 +44,7 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 
 static PyObject *py_dom_sid_split(PyObject *py_self, PyObject *args)
 {
-	struct dom_sid *self = py_talloc_get_ptr(py_self);
+	struct dom_sid *self = pytalloc_get_ptr(py_self);
 	struct dom_sid *domain_sid;
 	TALLOC_CTX *mem_ctx;
 	uint32_t rid;
@@ -63,15 +64,15 @@ static PyObject *py_dom_sid_split(PyObject *py_self, PyObject *args)
 		return NULL;
 	}
 
-	py_domain_sid = py_talloc_steal(&dom_sid_Type, domain_sid);
+	py_domain_sid = pytalloc_steal(&dom_sid_Type, domain_sid);
 	talloc_free(mem_ctx);
 	return Py_BuildValue("(OI)", py_domain_sid, rid);
 }
 
 static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
 {
-	struct dom_sid *self = py_talloc_get_ptr(py_self), *other;
-	other = py_talloc_get_ptr(py_other);
+	struct dom_sid *self = pytalloc_get_ptr(py_self), *other;
+	other = pytalloc_get_ptr(py_other);
 	if (other == NULL)
 		return -1;
 
@@ -80,7 +81,7 @@ static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
 
 static PyObject *py_dom_sid_str(PyObject *py_self)
 {
-	struct dom_sid *self = py_talloc_get_ptr(py_self);
+	struct dom_sid *self = pytalloc_get_ptr(py_self);
 	char *str = dom_sid_string(NULL, self);
 	PyObject *ret = PyString_FromString(str);
 	talloc_free(str);
@@ -89,7 +90,7 @@ static PyObject *py_dom_sid_str(PyObject *py_self)
 
 static PyObject *py_dom_sid_repr(PyObject *py_self)
 {
-	struct dom_sid *self = py_talloc_get_ptr(py_self);
+	struct dom_sid *self = pytalloc_get_ptr(py_self);
 	char *str = dom_sid_string(NULL, self);
 	PyObject *ret = PyString_FromFormat("dom_sid('%s')", str);
 	talloc_free(str);
@@ -99,7 +100,7 @@ static PyObject *py_dom_sid_repr(PyObject *py_self)
 static int py_dom_sid_init(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	char *str = NULL;
-	struct dom_sid *sid = py_talloc_get_ptr(self);
+	struct dom_sid *sid = pytalloc_get_ptr(self);
 	const char *kwnames[] = { "str", NULL };
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", discard_const_p(char *, kwnames), &str))
@@ -134,7 +135,7 @@ static void py_dom_sid_patch(PyTypeObject *type)
 
 static PyObject *py_descriptor_sacl_add(PyObject *self, PyObject *args)
 {
-	struct security_descriptor *desc = py_talloc_get_ptr(self);
+	struct security_descriptor *desc = pytalloc_get_ptr(self);
 	NTSTATUS status;
 	struct security_ace *ace;
 	PyObject *py_ace;
@@ -142,7 +143,7 @@ static PyObject *py_descriptor_sacl_add(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_ace))
 		return NULL;
 
-	ace = py_talloc_get_ptr(py_ace);
+	ace = pytalloc_get_ptr(py_ace);
 	status = security_descriptor_sacl_add(desc, ace);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	Py_RETURN_NONE;
@@ -150,7 +151,7 @@ static PyObject *py_descriptor_sacl_add(PyObject *self, PyObject *args)
 
 static PyObject *py_descriptor_dacl_add(PyObject *self, PyObject *args)
 {
-	struct security_descriptor *desc = py_talloc_get_ptr(self);
+	struct security_descriptor *desc = pytalloc_get_ptr(self);
 	NTSTATUS status;
 	struct security_ace *ace;
 	PyObject *py_ace;
@@ -158,7 +159,7 @@ static PyObject *py_descriptor_dacl_add(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_ace))
 		return NULL;
 
-	ace = py_talloc_get_ptr(py_ace);
+	ace = pytalloc_get_ptr(py_ace);
 
 	status = security_descriptor_dacl_add(desc, ace);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
@@ -167,7 +168,7 @@ static PyObject *py_descriptor_dacl_add(PyObject *self, PyObject *args)
 
 static PyObject *py_descriptor_dacl_del(PyObject *self, PyObject *args)
 {
-	struct security_descriptor *desc = py_talloc_get_ptr(self);
+	struct security_descriptor *desc = pytalloc_get_ptr(self);
 	NTSTATUS status;
 	struct dom_sid *sid;
 	PyObject *py_sid;
@@ -175,7 +176,7 @@ static PyObject *py_descriptor_dacl_del(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_sid))
 		return NULL;
 
-	sid = py_talloc_get_ptr(py_sid);
+	sid = pytalloc_get_ptr(py_sid);
 	status = security_descriptor_dacl_del(desc, sid);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	Py_RETURN_NONE;
@@ -183,7 +184,7 @@ static PyObject *py_descriptor_dacl_del(PyObject *self, PyObject *args)
 
 static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
 {
-	struct security_descriptor *desc = py_talloc_get_ptr(self);
+	struct security_descriptor *desc = pytalloc_get_ptr(self);
 	NTSTATUS status;
 	struct dom_sid *sid;
 	PyObject *py_sid;
@@ -191,7 +192,7 @@ static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_sid))
 		return NULL;
 
-	sid = py_talloc_get_ptr(py_sid);
+	sid = pytalloc_get_ptr(py_sid);
 	status = security_descriptor_sacl_del(desc, sid);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	Py_RETURN_NONE;
@@ -199,7 +200,7 @@ static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
 
 static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	return py_talloc_steal(self, security_descriptor_initialise(NULL));
+	return pytalloc_steal(self, security_descriptor_initialise(NULL));
 }
 
 static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
@@ -212,7 +213,7 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "sO!", &sddl, &dom_sid_Type, &py_sid))
 		return NULL;
 
-	sid = py_talloc_get_ptr(py_sid);
+	sid = pytalloc_get_ptr(py_sid);
 
 	secdesc = sddl_decode(NULL, sddl, sid);
 	if (secdesc == NULL) {
@@ -220,14 +221,14 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	return py_talloc_steal((PyTypeObject *)self, secdesc);
+	return pytalloc_steal((PyTypeObject *)self, secdesc);
 }
 
 static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 {
 	struct dom_sid *sid;
 	PyObject *py_sid = Py_None;
-	struct security_descriptor *desc = py_talloc_get_ptr(self);
+	struct security_descriptor *desc = pytalloc_get_ptr(self);
 	char *text;
 	PyObject *ret;
 
@@ -235,7 +236,7 @@ static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 		return NULL;
 
 	if (py_sid != Py_None)
-		sid = py_talloc_get_ptr(py_sid);
+		sid = pytalloc_get_ptr(py_sid);
 	else
 		sid = NULL;
 
@@ -277,11 +278,11 @@ static PyObject *py_token_is_sid(PyObject *self, PyObject *args)
 {
 	PyObject *py_sid;
 	struct dom_sid *sid;
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 	if (!PyArg_ParseTuple(args, "O", &py_sid))
 		return NULL;
 
-	sid = py_talloc_get_ptr(py_sid);
+	sid = pytalloc_get_ptr(py_sid);
 
 	return PyBool_FromLong(security_token_is_sid(token, sid));
 }
@@ -290,39 +291,39 @@ static PyObject *py_token_has_sid(PyObject *self, PyObject *args)
 {
 	PyObject *py_sid;
 	struct dom_sid *sid;
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 	if (!PyArg_ParseTuple(args, "O", &py_sid))
 		return NULL;
 
-	sid = py_talloc_get_ptr(py_sid);
+	sid = pytalloc_get_ptr(py_sid);
 
 	return PyBool_FromLong(security_token_has_sid(token, sid));
 }
 
 static PyObject *py_token_is_anonymous(PyObject *self)
 {
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 	
 	return PyBool_FromLong(security_token_is_anonymous(token));
 }
 
 static PyObject *py_token_is_system(PyObject *self)
 {
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 	
 	return PyBool_FromLong(security_token_is_system(token));
 }
 
 static PyObject *py_token_has_builtin_administrators(PyObject *self)
 {
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 	
 	return PyBool_FromLong(security_token_has_builtin_administrators(token));
 }
 
 static PyObject *py_token_has_nt_authenticated_users(PyObject *self)
 {
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 	
 	return PyBool_FromLong(security_token_has_nt_authenticated_users(token));
 }
@@ -330,7 +331,7 @@ static PyObject *py_token_has_nt_authenticated_users(PyObject *self)
 static PyObject *py_token_has_privilege(PyObject *self, PyObject *args)
 {
 	int priv;
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 
 	if (!PyArg_ParseTuple(args, "i", &priv))
 		return NULL;
@@ -341,7 +342,7 @@ static PyObject *py_token_has_privilege(PyObject *self, PyObject *args)
 static PyObject *py_token_set_privilege(PyObject *self, PyObject *args)
 {
 	int priv;
-	struct security_token *token = py_talloc_get_ptr(self);
+	struct security_token *token = pytalloc_get_ptr(self);
 
 	if (!PyArg_ParseTuple(args, "i", &priv))
 		return NULL;
@@ -352,7 +353,7 @@ static PyObject *py_token_set_privilege(PyObject *self, PyObject *args)
 
 static PyObject *py_token_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	return py_talloc_steal(self, security_token_initialise(NULL));
+	return pytalloc_steal(self, security_token_initialise(NULL));
 }	
 
 static PyMethodDef py_token_extra_methods[] = {
@@ -414,7 +415,7 @@ static PyObject *py_random_sid(PyObject *self)
 
         sid = dom_sid_parse_talloc(NULL, str);
 	talloc_free(str);
-	ret = py_talloc_steal(&dom_sid_Type, sid);
+	ret = pytalloc_steal(&dom_sid_Type, sid);
 	return ret;
 }
 

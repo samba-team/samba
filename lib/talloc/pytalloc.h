@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _PY_TALLOC_H_
-#define _PY_TALLOC_H_
+#ifndef _PYTALLOC_H_
+#define _PYTALLOC_H_
 
 #include <Python.h>
 #include <talloc.h>
@@ -27,30 +27,28 @@ typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *talloc_ctx;
 	void *ptr;
-} py_talloc_Object;
+} pytalloc_Object;
 
-PyTypeObject *PyTalloc_GetObjectType(void);
-int PyTalloc_Check(PyObject *);
+PyTypeObject *pytalloc_GetObjectType(void);
+int pytalloc_Check(PyObject *);
 
-/* Retrieve the pointer for a py_talloc_object. Like talloc_get_type() 
- * but for py_talloc_Objects. */
+/* Retrieve the pointer for a pytalloc_object. Like talloc_get_type() 
+ * but for pytalloc_Objects. */
 
 /* FIXME: Call PyErr_SetString(PyExc_TypeError, "expected " __STR(type) ") 
  * when talloc_get_type() returns NULL. */
-#define py_talloc_get_type(py_obj, type) (talloc_get_type(py_talloc_get_ptr(py_obj), type))
+#define pytalloc_get_type(py_obj, type) (talloc_get_type(pytalloc_get_ptr(py_obj), type))
 
-#define py_talloc_get_ptr(py_obj) (((py_talloc_Object *)py_obj)->ptr)
-#define py_talloc_get_mem_ctx(py_obj)  ((py_talloc_Object *)py_obj)->talloc_ctx
+#define pytalloc_get_ptr(py_obj) (((pytalloc_Object *)py_obj)->ptr)
+#define pytalloc_get_mem_ctx(py_obj)  ((pytalloc_Object *)py_obj)->talloc_ctx
 
-PyObject *py_talloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
-PyObject *py_talloc_steal(PyTypeObject *py_type, void *ptr);
-PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
-#define py_talloc_reference(py_type, talloc_ptr) py_talloc_reference_ex(py_type, talloc_ptr, talloc_ptr)
+PyObject *pytalloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
+PyObject *pytalloc_steal(PyTypeObject *py_type, void *ptr);
+PyObject *pytalloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
+#define pytalloc_reference(py_type, talloc_ptr) pytalloc_reference_ex(py_type, talloc_ptr, talloc_ptr)
 
-#define py_talloc_new(type, typeobj) py_talloc_steal(typeobj, talloc_zero(NULL, type))
+#define pytalloc_new(type, typeobj) pytalloc_steal(typeobj, talloc_zero(NULL, type))
 
-PyObject *PyCObject_FromTallocPtr(void *);
+PyObject *pytalloc_CObject_FromTallocPtr(void *);
 
-PyObject *PyString_FromString_check_null(const char *ptr);
-
-#endif /* _PY_TALLOC_H_ */
+#endif /* _PYTALLOC_H_ */

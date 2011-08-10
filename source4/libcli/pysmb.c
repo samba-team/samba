@@ -103,7 +103,7 @@ static NTSTATUS do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_private_data *spd
 /*
  * Read SMB file and return the contents of the file as python string
  */
-static PyObject * py_smb_loadfile(py_talloc_Object *self, PyObject *args)
+static PyObject * py_smb_loadfile(pytalloc_Object *self, PyObject *args)
 {
 	struct smb_composite_loadfile io;
 	const char *filename;
@@ -128,7 +128,7 @@ static PyObject * py_smb_loadfile(py_talloc_Object *self, PyObject *args)
 /*
  * Create a SMB file with given string as the contents
  */
-static PyObject * py_smb_savefile(py_talloc_Object *self, PyObject *args)
+static PyObject * py_smb_savefile(pytalloc_Object *self, PyObject *args)
 {
 	struct smb_composite_savefile io;
 	const char *filename;
@@ -187,7 +187,7 @@ static void py_smb_list_callback(struct clilist_file_info *f, const char *mask, 
 /*
  * List the directory contents for specified directory (Ignore '.' and '..' dirs)
  */
-static PyObject *py_smb_list(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_smb_list(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct smb_private_data *spdata;
 	PyObject *py_dirlist;
@@ -229,7 +229,7 @@ static PyObject *py_smb_list(py_talloc_Object *self, PyObject *args, PyObject *k
 /*
  * Create a directory
  */
-static PyObject *py_smb_mkdir(py_talloc_Object *self, PyObject *args)
+static PyObject *py_smb_mkdir(pytalloc_Object *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *dirname;
@@ -250,7 +250,7 @@ static PyObject *py_smb_mkdir(py_talloc_Object *self, PyObject *args)
 /*
  * Remove a directory
  */
-static PyObject *py_smb_rmdir(py_talloc_Object *self, PyObject *args)
+static PyObject *py_smb_rmdir(pytalloc_Object *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *dirname;
@@ -271,7 +271,7 @@ static PyObject *py_smb_rmdir(py_talloc_Object *self, PyObject *args)
 /*
  * Check existence of a path
  */
-static PyObject *py_smb_chkpath(py_talloc_Object *self, PyObject *args)
+static PyObject *py_smb_chkpath(pytalloc_Object *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *path;
@@ -295,7 +295,7 @@ static PyObject *py_smb_chkpath(py_talloc_Object *self, PyObject *args)
 /*
  * Read ACL on a given file/directory as a security descriptor object
  */
-static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -358,7 +358,7 @@ static PyObject *py_smb_getacl(py_talloc_Object *self, PyObject *args, PyObject 
 /*
  * Set ACL on file/directory using given security descriptor object
  */
-static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -375,11 +375,11 @@ static PyObject *py_smb_setacl(py_talloc_Object *self, PyObject *args, PyObject 
 
 	spdata = self->ptr;
 
-	sd = py_talloc_get_type(py_sd, struct security_descriptor);
+	sd = pytalloc_get_type(py_sd, struct security_descriptor);
 	if (!sd) {
 		PyErr_Format(PyExc_TypeError, 
 			"Expected dcerpc.security.descriptor as argument, got %s", 
-			talloc_get_name(py_talloc_get_ptr(py_sd)));
+			talloc_get_name(pytalloc_get_ptr(py_sd)));
 		return NULL;
 	}
 
@@ -463,7 +463,7 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 	const char *kwnames[] = { "hostname", "service", "creds", "lp", NULL };
 	const char *hostname = NULL;
 	const char *service = NULL;
-	py_talloc_Object *smb;
+	pytalloc_Object *smb;
 	struct smb_private_data *spdata;
 	NTSTATUS status;
 
@@ -473,7 +473,7 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	smb = (py_talloc_Object *)type->tp_alloc(type, 0);
+	smb = (pytalloc_Object *)type->tp_alloc(type, 0);
 	if (smb == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -518,7 +518,7 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 
 static PyTypeObject PySMB = {
 	.tp_name = "smb.SMB",
-	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_new = py_smb_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_smb_methods,
@@ -529,7 +529,7 @@ static PyTypeObject PySMB = {
 void initsmb(void)
 {
 	PyObject *m;
-	PyTypeObject *talloc_type = PyTalloc_GetObjectType();
+	PyTypeObject *talloc_type = pytalloc_GetObjectType();
 	if (talloc_type == NULL) {
 		return;
 	}
