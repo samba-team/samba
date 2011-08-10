@@ -59,8 +59,8 @@ case "$1" in
 	ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
 	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
 
-	ipvsadm -A -t $CTDB_LVS_PUBLIC_IP:0 -p 999999 -s lc
-	ipvsadm -A -u $CTDB_LVS_PUBLIC_IP:0 -p 999999 -s lc
+	ipvsadm -A -t $CTDB_LVS_PUBLIC_IP:0 -p 999999999 -s lc
+	ipvsadm -A -u $CTDB_LVS_PUBLIC_IP:0 -p 999999999 -s lc
 
 	# add all nodes (except ourselves) to the lvs config
 	ctdb lvs | egrep -v "^$PNN:" | sed -e "s/.*://" | while read IP; do
