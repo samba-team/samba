@@ -38,7 +38,7 @@ enum pf_server_cmds {
 };
 
 /**
-* @brief This structure is shared betwee the controlling parent and the
+* @brief This structure is shared between the controlling parent and the
 *        the child. The parent can only write to the 'cmds' and
 *        'allowed_clients' variables, while a child is running.
 *        The child can change 'status', and 'num_clients'.
@@ -121,7 +121,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 			 prefork_main_fn_t *main_fn, void *private_data,
 			 struct prefork_pool **pf_pool);
 /**
-* @brief Function used to attemp to expand the size of children.
+* @brief Function used to attempt to expand the size of children.
 *
 * @param pfp		The pool structure.
 * @param new_max	The new max number of children.
@@ -130,7 +130,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 *	  ENOSPC if the mmap area could not be grown to the requested size
 *	  EINVAL if the new max is invalid.
 *
-* NOTE: this funciton can easily fail if the mmap area cannot be enlarged.
+* NOTE: this function can easily fail if the mmap area cannot be enlarged.
 *	A well behaving parent MUST NOT error out if this happen.
 */
 int prefork_expand_pool(struct prefork_pool *pfp, int new_max);
@@ -153,7 +153,7 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 			 struct prefork_pool *pfp,
 			 int num_children);
 /**
-* @brief Commands a number fo children to stop and exit
+* @brief Commands a number of children to stop and exit
 *
 * @param pfp		The pool.
 * @param num_children	The number of children we need to retire.
@@ -164,8 +164,8 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 *
 * @return Number of children that were signaled to stop
 *
-* NOTE: Only children that has no attached clients can be stopped.
-*	If all the available children are too young or are busy than it
+* NOTE: Only children that have no attached clients can be stopped.
+*	If all the available children are too young or are busy then it
 *	is possible that none will be asked to stop.
 */
 int prefork_retire_children(struct prefork_pool *pfp,
@@ -227,7 +227,7 @@ void prefork_set_sigchld_callback(struct prefork_pool *pfp,
 /**
 * @brief Try to listen and accept on one of the listening sockets.
 *	 Asynchronusly tries to grab the lock and perform an accept.
-*	 Will automatically updated the 'status' of the child and handle
+*	 Will automatically update the 'status' of the child and handle
 *	 all the locking/unlocking/timingout as necessary.
 *	 Changes behavior depending on whether the child already has other
 *	 client connections. If not it blocks on the lock call for periods of
