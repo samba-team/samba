@@ -47,6 +47,13 @@ case "$1" in
 	;;
 
       monitor)
+	# and that its directories are available
+	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
+	    exportfs | grep -v '^#' | grep '^/' |
+	    sed -e 's/[[:space:]]\+[^[:space:]]*$//' |
+	    ctdb_check_directories
+	} || exit $?
+
 	if ctdb_service_needs_reconfigure ; then
 	    ctdb_service_reconfigure
 	    exit 0
@@ -104,13 +111,6 @@ case "$1" in
 		}
 	    fi
 	}
-
-	# and that its directories are available
-	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-	    exportfs | grep -v '^#' | grep '^/' |
-	    sed -e 's/[[:space:]]\+[^[:space:]]*$//' |
-	    ctdb_check_directories
-	} || exit $?
 
 	# check that lockd responds to rpc requests
 	if ctdb_check_rpc "LOCKD" 100021 1 >/dev/null ; then
