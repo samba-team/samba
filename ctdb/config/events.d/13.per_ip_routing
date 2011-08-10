@@ -3,8 +3,10 @@
 . $CTDB_BASE/functions
 loadconfig
 
+ctdb_setup_service_state_dir "per_ip_routing"
+
 [ -z "$CTDB_PER_IP_ROUTING_STATE" ] && {
-	CTDB_PER_IP_ROUTING_STATE="$CTDB_VARDIR/state/per_ip_routing"
+	CTDB_PER_IP_ROUTING_STATE="$service_state_dir"
 }
 
 AUTO_LINK_LOCAL="no"

@@ -5,13 +5,12 @@
 
 loadconfig
 
-STATEDIR=$CTDB_VARDIR/state/gpfs
-
+ctdb_setup_service_state_dir "gpfs"
 
 check_if_healthy() {
-        mkdir -p $STATEDIR/fs
+        mkdir -p "$service_state_dir/fs"
 
-        [ -f "$STATEDIR/gpfsnoquorum" ] && {
+        [ -f "$service_state_dir/gpfsnoquorum" ] && {
                 logger No GPFS quorum. Node is UNHEALTHY
                 $CTDB_BASE/events.d/62.cnfs unhealthy "No GPFS quorum. Nodfe is UNHEALTHY."
 		exit 0
@@ -23,21 +22,18 @@ check_if_healthy() {
 
 case "$1" in
     startup)
-        mkdir -p $STATEDIR
         check_if_healthy
         ;;
 
 
     gpfsquorumreached)
-        mkdir -p $STATEDIR
-        rm -f "$STATEDIR/gpfsnoquorum"
+        rm -f "$service_state_dir/gpfsnoquorum"
         logger "GPFS quorum has been reached."
         check_if_healthy
         ;;
 
     gpfsquorumloss)
-        mkdir -p $STATEDIR
-        touch "$STATEDIR/gpfsnoquorum"
+        touch "$service_state_dir/gpfsnoquorum"
         logger "GPFS quorum has been lost."
         $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS quorum was lost! Marking node as UNHEALTHY."
         ;;
