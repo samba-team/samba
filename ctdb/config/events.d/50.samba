@@ -25,17 +25,17 @@ case $CTDB_INIT_STYLE in
 esac
 
 service_name="samba"
-service_start="start_samba"
-service_stop="stop_samba"
 
 loadconfig
 
-start_samba() {
-	# create the state directory for samba
-	mkdir -p $CTDB_VARDIR/state/samba
+service_start ()
+{
+	# If set then we force-start the relevant service.
+	_service_name="$1"
 
 	# make sure samba is not already started
-	is_ctdb_managed_service "samba" && {
+	if [ "$_service_name" = "samba" ] || \
+	    is_ctdb_managed_service "samba" ; then
 		service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
 		service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
 		killall -0 -q smbd && {
@@ -49,10 +49,11 @@ start_samba() {
 		    # make absolutely sure samba is dead
 		    killall -q -9 nmbd
 		}
-	}
+	fi
 
 	# make sure winbind is not already started
-	check_ctdb_manages_winbind && {
+	if [ "$_service_name" = "winbind" ] || \
+	    check_ctdb_manages_winbind ; then
 		service "$CTDB_SERVICE_WINBIND" stop > /dev/null 2>&1
 		killall -0 -q winbindd && {
 		    sleep 1
@@ -60,47 +61,52 @@ start_samba() {
 		    killall -q -9 winbindd
 		}
 
-	}
+	fi
 
 	# start the winbind service
-	check_ctdb_manages_winbind && {
+	if [ "$_service_name" = "winbind" ] || \
+	    check_ctdb_manages_winbind ; then
 		service "$CTDB_SERVICE_WINBIND" start || {
-			echo failed to start winbind
-			exit 1
+		    echo failed to start winbind
+		    exit 1
 		}
-
-	}
+	fi
 
 	# start Samba service. Start it reniced, as under very heavy load 
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
-	is_ctdb_managed_service "samba" && {
+	if [ "$_service_name" = "samba" ] || \
+	    is_ctdb_managed_service "samba" ; then
 		net serverid wipe
 
 		nice_service "$CTDB_SERVICE_NMB" start || {
 			echo failed to start nmbd
 			exit 1
 		}
-
 		nice_service "$CTDB_SERVICE_SMB" start || {
 			echo failed to start samba
 			exit 1
 		}
-	}
-	return 0
+	fi
 }
 
-stop_samba() {
+service_stop ()
+{
+	# If set then we force-stop the relevant service.
+	_service_name="$1"
+
 	# shutdown Samba when ctdb goes down
-	is_ctdb_managed_service "samba" && {
+	if [ "$_service_name" = "samba" ] || \
+	    is_ctdb_managed_service "samba" ; then
 		service "$CTDB_SERVICE_SMB" stop
 		service "$CTDB_SERVICE_NMB" stop
-	}
+	fi
 
 	# stop the winbind service
-	check_ctdb_manages_winbind && {
+	if [ "$_service_name" = "winbind" ] || \
+	    check_ctdb_manages_winbind ; then
 		service "$CTDB_SERVICE_WINBIND" stop
-	}
+	fi
 
 	return 0
 }
