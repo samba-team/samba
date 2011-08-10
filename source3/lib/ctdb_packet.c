@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "../lib/util/select.h"
 #include "system/filesys.h"
-#include "system/select.h"
 #include "ctdb_packet.h"
 
 struct ctdb_packet_context {
