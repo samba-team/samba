@@ -25,6 +25,7 @@
 #include "auth.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "../lib/tsocket/tsocket.h"
+#include "rpc_server/rpc_config.h"
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
@@ -305,7 +306,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *h;
 	struct pipe_auth_data *auth;
 	const char *ncalrpc_sock;
-	const char *rpcsrv_type;
+	enum rpc_service_mode_e epmd_mode;
 	struct epm_entry_t *entries;
 	uint32_t num_ents, i;
 	TALLOC_CTX *tmp_ctx;
@@ -325,11 +326,9 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", "epmapper",
-					   "none");
+	epmd_mode = rpc_epmapper_mode();
 
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
+	if (epmd_mode == RPC_SERVICE_MODE_EMBEDDED) {
 		struct tsocket_address *local;
 		int rc;
 
@@ -353,7 +352,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 				  "epmapper (%s)", nt_errstr(status)));
 			goto done;
 		}
-	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	} else if (epmd_mode == RPC_SERVICE_MODE_EXTERNAL) {
 		/* Connect to the endpoint mapper locally */
 		ncalrpc_sock = talloc_asprintf(tmp_ctx,
 					      "%s/%s",
