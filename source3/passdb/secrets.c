@@ -55,19 +55,24 @@ static void get_rand_seed(void *userdata, int *new_seed)
 	}
 }
 
-/* open up the secrets database */
-bool secrets_init(void)
+/* open up the secrets database with specified private_dir path */
+bool secrets_init_path(const char *private_dir)
 {
 	char *fname = NULL;
 	unsigned char dummy;
 
-	if (db_ctx != NULL)
+	if (db_ctx != NULL) {
 		return True;
+	}
+
+	if (private_dir == NULL) {
+		return False;
+	}
 
 	fname = talloc_asprintf(talloc_tos(), "%s/secrets.tdb",
-				lp_private_dir());
+				private_dir);
 	if (fname == NULL) {
-		return false;
+		return False;
 	}
 
 	db_ctx = db_open(NULL, fname, 0,
@@ -75,7 +80,6 @@ bool secrets_init(void)
 
 	if (db_ctx == NULL) {
 		DEBUG(0,("Failed to open %s\n", fname));
-		TALLOC_FREE(fname);
 		return False;
 	}
 
@@ -93,6 +97,12 @@ bool secrets_init(void)
 	generate_random_buffer(&dummy, sizeof(dummy));
 
 	return True;
+}
+
+/* open up the secrets database */
+bool secrets_init(void)
+{
+	return secrets_init_path(lp_private_dir());
 }
 
 struct db_context *secrets_db_ctx(void)
