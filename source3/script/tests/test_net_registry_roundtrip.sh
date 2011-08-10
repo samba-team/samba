@@ -15,15 +15,16 @@ fi
 SCRIPTDIR="$1"
 SERVERCONFFILE="$2"
 CONFIGURATION="$3"
+RPC="$4"
 
 NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 
-
 if test "x${RPC}" = "xrpc" ; then
-	NETREG="${NET} -U${USERNAME}%${PASSWORD} -I ${SERVER_IP} rpc registry"
+	NETCMD="${NET} -U${USERNAME}%${PASSWORD} -I ${SERVER_IP} rpc"
 else
-	NETREG="${NET} registry"
+	NETCMD="${NET}"
 fi
+
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
@@ -72,23 +73,23 @@ conf_roundtrip()
 
     sed -e "$SED_INVALID_PARAMS" $1 >$DIR/conf_in
 
-    conf_roundtrip_step $NET conf drop
+    conf_roundtrip_step $NETCMD conf drop
     test "x$?" = "x0" || {
         return 1
     }
 
-    test -z "$($NET conf list)" 2>>$LOG
+    test -z "$($NETCMD conf list)" 2>>$LOG
     if [ "$?" = "1" ]; then
 	echo "ERROR: conf drop failed" | tee -a $LOG
 	return 1
     fi
 
-    conf_roundtrip_step $NET conf import $DIR/conf_in
+    conf_roundtrip_step $NETCMD conf import $DIR/conf_in
     test "x$?" = "x0" || {
         return 1
     }
 
-    conf_roundtrip_step $NET conf list > $DIR/conf_exp
+    conf_roundtrip_step $NETCMD conf list > $DIR/conf_exp
     test "x$?" = "x0" || {
         return 1
     }
@@ -99,28 +100,28 @@ conf_roundtrip()
 	return 1
     fi
 
-    conf_roundtrip_step $NET -d10 registry export $REGPATH $DIR/conf_exp.reg
+    conf_roundtrip_step $NETCMD -d10 registry export $REGPATH $DIR/conf_exp.reg
     test "x$?" = "x0" || {
         return 1
     }
 
-    conf_roundtrip_step $NET conf drop
+    conf_roundtrip_step $NETCMD conf drop
     test "x$?" = "x0" || {
         return 1
     }
 
-    test -z "$($NET conf list)" 2>>$LOG
+    test -z "$($NETCMD conf list)" 2>>$LOG
     if [ "$?" = "1" ]; then
 	echo "ERROR: conf drop failed" | tee -a $LOG
 	return 1
     fi
 
-    conf_roundtrip_step $NET registry import $DIR/conf_exp.reg
+    conf_roundtrip_step $NETCMD registry import $DIR/conf_exp.reg
     test "x$?" = "x0" || {
         return 1
     }
 
-    conf_roundtrip_step $NET conf list >$DIR/conf_out
+    conf_roundtrip_step $NETCMD conf list >$DIR/conf_out
     test "x$?" = "x0"  || {
         return 1
     }
@@ -131,7 +132,7 @@ conf_roundtrip()
 	return 1
     fi
 
-    conf_roundtrip_step $NET registry export $REGPATH $DIR/conf_out.reg
+    conf_roundtrip_step $NETCMD registry export $REGPATH $DIR/conf_out.reg
     test "x$?" = "x0" || {
         return 1
     }
