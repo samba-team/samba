@@ -289,7 +289,7 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom)
 		ret = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
-	ctx->script = lp_parm_const_string(-1, config_option, "script", "NULL");
+	ctx->script = lp_parm_const_string(-1, config_option, "script", NULL);
 	talloc_free(config_option);
 
 	idmap_script = lp_parm_const_string(-1, "idmap", "script", NULL);
