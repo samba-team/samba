@@ -142,6 +142,35 @@ static void bq_setup_sig_hup_handler(struct tevent_context *ev,
 	}
 }
 
+static void bq_sig_chld_handler(struct tevent_context *ev_ctx,
+				struct tevent_signal *se,
+				int signum, int count,
+				void *siginfo, void *pvt)
+{
+	int status;
+	pid_t pid;
+
+	pid = sys_waitpid(-1, &status, WNOHANG);
+	if (WIFEXITED(status)) {
+		DEBUG(6, ("Bq child process %d terminated with %d\n",
+			  (int)pid, WEXITSTATUS(status)));
+	} else {
+		DEBUG(3, ("Bq child process %d terminated abnormally\n",
+			  (int)pid));
+	}
+}
+
+static void bq_setup_sig_chld_handler(struct tevent_context *ev_ctx)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(ev_ctx, ev_ctx, SIGCHLD, 0,
+				bq_sig_chld_handler, NULL);
+	if (!se) {
+		exit_server("failed to setup SIGCHLD handler");
+	}
+}
+
 static void bq_smb_conf_updated(struct messaging_context *msg_ctx,
 				void *private_data,
 				uint32_t msg_type,
@@ -235,13 +264,10 @@ pid_t start_background_queue(struct tevent_context *ev,
 		bq_reopen_logs(logfile);
 		bq_setup_sig_term_handler();
 		bq_setup_sig_hup_handler(ev, msg_ctx);
+		bq_setup_sig_chld_handler(ev);
 
 		BlockSignals(false, SIGTERM);
 		BlockSignals(false, SIGHUP);
-
-		if (!pcap_cache_loaded()) {
-			pcap_cache_reload(ev, msg_ctx, &reload_printers);
-		}
 
 		if (!printing_subsystem_queue_tasks(ev, msg_ctx)) {
 			exit(1);
@@ -268,6 +294,8 @@ pid_t start_background_queue(struct tevent_context *ev,
 			DEBUG(0,("tevent_add_fd() failed for pause_pipe\n"));
 			smb_panic("tevent_add_fd() failed for pause_pipe");
 		}
+
+		pcap_cache_reload(ev, msg_ctx, &reload_pcap_change_notify);
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		ret = tevent_loop_wait(ev);
