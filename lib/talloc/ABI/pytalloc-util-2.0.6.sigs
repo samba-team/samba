@@ -1,4 +1,5 @@
 pytalloc_CObject_FromTallocPtr: PyObject *(void *)
+pytalloc_Check: int (PyObject *)
 pytalloc_GetObjectType: PyTypeObject *(void)
 pytalloc_reference_ex: PyObject *(PyTypeObject *, TALLOC_CTX *, void *)
 pytalloc_steal: PyObject *(PyTypeObject *, void *)
