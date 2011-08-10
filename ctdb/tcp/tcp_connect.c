@@ -154,6 +154,10 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	}
 
 	tnode->fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+	if (tnode->fd == -1) {
+		DEBUG(DEBUG_ERR, (__location__ "Failed to create socket\n"));
+		return;
+	}
 	set_nonblocking(tnode->fd);
 	set_close_on_exec(tnode->fd);
 
@@ -196,7 +200,12 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	sock_in.ip.sin_len = sockin_size;
 	sock_out.ip.sin_len = sockout_size;
 #endif
-	bind(tnode->fd, (struct sockaddr *)&sock_in, sockin_size);
+	if (bind(tnode->fd, (struct sockaddr *)&sock_in, sockin_size) == -1) {
+		DEBUG(DEBUG_ERR, (__location__ "Failed to bind socket %s(%d)\n",
+				  strerror(errno), errno));
+		close(tnode->fd);
+		return;
+	}
 
 	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sockout_size) != 0 &&
 	    errno != EINPROGRESS) {

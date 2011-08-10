@@ -129,7 +129,7 @@ void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_a
 		tm = localtime(&log_entries[tmp_entry].t.tv_sec);
 		strftime(tbuf, sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
-		if (log_entries[tmp_entry].message) {
+		if (log_entries[tmp_entry].message[0] != '\0') {
 			fprintf(f, "%s:%s %s", tbuf,
 				get_debug_by_level(log_entries[tmp_entry].level),
 				log_entries[tmp_entry].message);
@@ -137,9 +137,17 @@ void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_a
 	}
 
 	fsize = ftell(f);
+	if (fsize < 0) {
+		fclose(f);
+		DEBUG(DEBUG_ERR, ("Cannot get file size for log entries\n"));
+		return;
+	}
 	rewind(f);
 	data.dptr = talloc_size(NULL, fsize);
-	CTDB_NO_MEMORY_VOID(ctdb, data.dptr);
+	if (data.dptr == NULL) {
+		fclose(f);
+		CTDB_NO_MEMORY_VOID(ctdb, data.dptr);
+	}
 	data.dsize = fread(data.dptr, 1, fsize, f);
 	fclose(f);
 

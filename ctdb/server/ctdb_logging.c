@@ -547,6 +547,10 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	/* We'll fail if stderr/stdout not already open; it's simpler. */
 	old_stdout = dup(STDOUT_FILENO);
 	old_stderr = dup(STDERR_FILENO);
+	if (old_stdout < 0 || old_stderr < 0) {
+		DEBUG(DEBUG_ERR, ("Failed to dup stdout/stderr for child logging\n"));
+		return -1;
+	}
 	if (dup2(p[1], STDOUT_FILENO) < 0 || dup2(p[1], STDERR_FILENO) < 0) {
 		int saved_errno = errno;
 		dup2(old_stdout, STDOUT_FILENO);

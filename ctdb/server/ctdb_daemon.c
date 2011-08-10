@@ -1273,6 +1273,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, 
 			   EVENT_FD_READ,
 			   ctdb_accept_client, ctdb);
+	if (fde == NULL) {
+		ctdb_fatal(ctdb, "Failed to add daemon socket to event loop");
+	}
 	tevent_fd_set_auto_close(fde);
 
 	/* release any IPs we hold from previous runs of the daemon */

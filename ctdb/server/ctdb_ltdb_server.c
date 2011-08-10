@@ -1187,7 +1187,10 @@ static int ctdb_attach_persistent(struct ctdb_context *ctdb,
 		int invalid_name = 0;
 		
 		s = talloc_strdup(ctdb, de->d_name);
-		CTDB_NO_MEMORY(ctdb, s);
+		if (s == NULL) {
+			closedir(d);
+			CTDB_NO_MEMORY(ctdb, s);
+		}
 
 		/* only accept names ending in .tdb */
 		p = strstr(s, ".tdb.");

@@ -83,6 +83,11 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
 						      "msg_count=%d on node %d\n",
 						      msg_count, ctdb_get_pnn(ctdb));
+	if (data.dptr == NULL) {
+		printf("Failed to create record\n");
+		talloc_free(tmp_ctx);
+		return;
+	}
 	data.dsize = strlen((const char *)data.dptr)+1;
 
 	ret = ctdb_record_store(h, data);

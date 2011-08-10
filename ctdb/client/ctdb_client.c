@@ -3315,7 +3315,7 @@ static void async_callback(struct ctdb_client_control_state *state)
 	struct ctdb_context *ctdb = talloc_get_type(state->ctdb, struct ctdb_context);
 	int ret;
 	TDB_DATA outdata;
-	int32_t res;
+	int32_t res = -1;
 	uint32_t destnode = state->c->hdr.destnode;
 
 	/* one more node has responded with recmode data */
