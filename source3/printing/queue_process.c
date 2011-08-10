@@ -30,6 +30,7 @@
 #include "locking/proto.h"
 #include "smbd/proto.h"
 #include "rpc_server/rpc_service_setup.h"
+#include "printing/load.h"
 
 extern pid_t start_spoolssd(struct event_context *ev_ctx,
 			    struct messaging_context *msg_ctx);
@@ -357,6 +358,9 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 			       bool force)
 {
 	if (background_lpq_updater_pid != -1) {
+		if (pcap_cache_loaded()) {
+			load_printers(ev_ctx, msg_ctx);
+		}
 		if (force) {
 			/* Send a sighup to the background process.
 			 * this will force it to reload printers */
@@ -365,5 +369,5 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	pcap_cache_reload(ev_ctx, msg_ctx, &reload_pcap_change_notify);
+	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
 }

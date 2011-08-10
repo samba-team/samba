@@ -1260,9 +1260,9 @@ extern void build_options(bool screen);
 	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
 
-	/* force a printer update now that all messaging has been set up,
+	/* do a printer update now that all messaging has been set up,
 	 * before we allow clients to start connecting */
-	printing_subsystem_update(ev_ctx, msg_ctx, true);
+	printing_subsystem_update(ev_ctx, msg_ctx, false);
 
 	TALLOC_FREE(frame);
 	/* make sure we always have a valid stackframe */
