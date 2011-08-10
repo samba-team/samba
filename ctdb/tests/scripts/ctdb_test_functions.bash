@@ -488,10 +488,11 @@ wait_until_node_has_status ()
     local pnn="$1"
     local status="$2"
     local timeout="${3:-30}"
+    local proxy_pnn="${4:-any}"
 
     echo "Waiting until node $pnn has status \"$status\"..."
 
-    if ! wait_until $timeout onnode any $CTDB_TEST_WRAPPER node_has_status "$pnn" "$status" ; then
+    if ! wait_until $timeout onnode $proxy_pnn $CTDB_TEST_WRAPPER node_has_status "$pnn" "$status" ; then
 	for i in "onnode -q any $CTDB status" "onnode -q any onnode all $CTDB scriptstatus" ; do
 	    echo "$i"
 	    $i || true
@@ -889,47 +890,54 @@ restart_ctdb ()
 	echo -n " (scheduled)"
     fi
     echo "..."
-    
-    local i=0
-    while : ; do
+
+    local i
+    for i in $(seq 1 5) ; do
 	if [ -n "$CTDB_NODES_SOCKETS" ] ; then
 	    daemons_stop
 	    daemons_start "$@"
 	else
 	    onnode -p all $CTDB_TEST_WRAPPER _restart_ctdb "$@"
-	fi && break
+	fi || {
+	    echo "Restart failed.  Trying again in a few seconds..."
+	    sleep_for 5
+	    continue
+	}
 
-	i=$(($i + 1))
-	[ $i -lt 5 ] || break
+	onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || {
+	    echo "Cluster didn't become healthy.  Restarting..."
+	    continue
+	}
 
-	echo "That didn't seem to work - sleeping for a while..."
-	sleep_for 5
+	local debug_out=$(onnode -p all ctdb status -Y 2>&1; onnode -p all ctdb scriptstatus 2>&1)
+
+	echo "Setting RerecoveryTimeout to 1"
+	onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
+
+	# In recent versions of CTDB, forcing a recovery like this
+	# blocks until the recovery is complete.  Hopefully this will
+	# help the cluster to stabilise before a subsequent test.
+	echo "Forcing a recovery..."
+	onnode -q 0 $CTDB recover
+	sleep_for 1
+	echo "Forcing a recovery..."
+	onnode -q 0 $CTDB recover
+
+	# Cluster is still healthy.  Good, we're done!
+	if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
+	    echo "Cluster become UNHEALTHY again.  Restarting..."
+	    continue
+	fi
+
+	echo "ctdb is ready"
+	return 0
     done
-	
-    onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
-    local debug_out=$(onnode -p all ctdb status -Y 2>&1; onnode -p all ctdb scriptstatus 2>&1)
-
-    echo "Setting RerecoveryTimeout to 1"
-    onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
-
-    # In recent versions of CTDB, forcing a recovery like this blocks
-    # until the recovery is complete.  Hopefully this will help the
-    # cluster to stabilise before a subsequent test.
-    echo "Forcing a recovery..."
-    onnode -q 0 $CTDB recover
-    sleep_for 1
-    echo "Forcing a recovery..."
-    onnode -q 0 $CTDB recover
-
-    echo "ctdb is ready"
-
-    if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
-	echo "OUCH!  Cluster is UNHEALTHY again..."
-	echo "$debug_out"
-	# Try to make the calling test fail
-	status=1
-    fi
+    echo "Cluster UNHEALTHY...  too many attempts..."
+    echo "$debug_out"
+    # Try to make the calling test fail
+    status=1
+    return 1
 }
 
 ctdb_restart_when_done ()
