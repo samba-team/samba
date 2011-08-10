@@ -75,14 +75,14 @@ lock_file() {
 			stat -c%y "$lckf"
 			return 1
 		}
-		/bin/kill -0 $pid && {
+		kill -0 $pid && {
 			lock_debug "lock file $lckf is valid for process $pid"
 			stat -c%y "$lckf"
 			return 1
 		}
 		lock_debug "stale lock file $lckf for $machine:$pid"
 		cat "$lckf"
-		/bin/rm -f "$lckf"
+		rm -f "$lckf"
 	fi
 	echo "$host:$$" > "$lckf"
 	return 0
@@ -99,7 +99,7 @@ unlock_file() {
 		lock_debug "lock nesting now $locknesting"
 	else
 		lckf="$lock_root/$1"
-		/bin/rm -f "$lckf"
+		rm -f "$lckf"
 	fi
 }
 

@@ -2,11 +2,11 @@
 # script to manage nfs in a clustered environment
 
 start_nfs() {
-	/bin/mkdir -p $CTDB_VARDIR/state/nfs
-	/bin/mkdir -p $CTDB_VARDIR/state/statd/ip
+	mkdir -p $CTDB_VARDIR/state/nfs
+	mkdir -p $CTDB_VARDIR/state/statd/ip
 	startstop_nfs stop
 	startstop_nfs start
-	echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle
+	set_proc "sys/net/ipv4/tcp_tw_recycle" 1
 }
 
 . $CTDB_BASE/functions

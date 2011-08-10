@@ -1,6 +1,15 @@
+# Hey Emacs, this is a -*- shell-script -*- !!!
+
 # utility functions for ctdb event scripts
 
 PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
+
+[ -z "$CTDB_VARDIR" ] && {
+    export CTDB_VARDIR="/var/ctdb"
+}
+[ -z "$CTDB_ETCDIR" ] && {
+    export CTDB_ETCDIR="/etc"
+}
 
 #######################################
 # pull in a system config file, if any
@@ -15,11 +24,10 @@ _loadconfig() {
 	loadconfig "ctdb"
     fi
 
-
-    if [ -f /etc/sysconfig/$1 ]; then
-	. /etc/sysconfig/$1
-    elif [ -f /etc/default/$1 ]; then
-	. /etc/default/$1
+    if [ -f $CTDB_ETCDIR/sysconfig/$1 ]; then
+	. $CTDB_ETCDIR/sysconfig/$1
+    elif [ -f $CTDB_ETCDIR/default/$1 ]; then
+	. $CTDB_ETCDIR/default/$1
     elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
 	. $CTDB_BASE/sysconfig/$1
     fi
@@ -46,7 +54,10 @@ detect_init_style() {
 
 ######################################################
 # simulate /sbin/service on platforms that don't have it
-service() { 
+# _service() makes it easier to hook the service() function for
+# testing.
+_service ()
+{
   _service_name="$1"
   _op="$2"
 
@@ -54,90 +65,45 @@ service() {
   [ -z "$_service_name" ] && return
 
   if [ -x /sbin/service ]; then
-      /sbin/service "$_service_name" "$_op"
-  elif [ -x /etc/init.d/$_service_name ]; then
-      /etc/init.d/$_service_name "$_op"
-  elif [ -x /etc/rc.d/init.d/$_service_name ]; then
-      /etc/rc.d/init.d/$_service_name "$_op"
+      $_nice /sbin/service "$_service_name" "$_op"
+  elif [ -x $CTDB_ETCDIR/init.d/$_service_name ]; then
+      $_nice $CTDB_ETCDIR/init.d/$_service_name "$_op"
+  elif [ -x $CTDB_ETCDIR/rc.d/init.d/$_service_name ]; then
+      $_nice $CTDB_ETCDIR/rc.d/init.d/$_service_name "$_op"
   fi
+}
+
+service()
+{
+    _nice=""
+    _service "$@"
 }
 
 ######################################################
 # simulate /sbin/service (niced) on platforms that don't have it
-nice_service() { 
-  _service_name="$1"
-  _op="$2"
-
-  # do nothing, when no service was specified
-  [ -z "$_service_name" ] && return
-
-  if [ -x /sbin/service ]; then
-      nice /sbin/service "$_service_name" "$_op"
-  elif [ -x /etc/init.d/$_service_name ]; then
-      nice /etc/init.d/$_service_name "$_op"
-  elif [ -x /etc/rc.d/init.d/$_service_name ]; then
-      nice /etc/rc.d/init.d/$_service_name "$_op"
-  fi
+nice_service()
+{
+    _nice="nice"
+    _service "$@"
 }
 
 ######################################################
-# wait for a command to return a zero exit status
-# usage: ctdb_wait_command SERVICE_NAME <command>
-######################################################
-ctdb_wait_command() {
-  service_name="$1"
-  wait_cmd="$2"
-  [ -z "$wait_cmd" ] && return;
-  all_ok=0
-  echo "Waiting for service $service_name to start"
-  while [ $all_ok -eq 0 ]; do
-	  $wait_cmd > /dev/null 2>&1 && all_ok=1
-	  ctdb status > /dev/null 2>&1 || {
-  		echo "ctdb daemon has died. Exiting wait for $service_name"
-		exit 1
-	  }
-	  [ $all_ok -eq 1 ] || sleep 1
-  done
-  echo "Local service $service_name is up"
+# wrapper around /proc/ settings to allow them to be hooked
+# for testing
+# 1st arg is relative path under /proc/, 2nd arg is value to set
+set_proc ()
+{
+    echo "$2" >"/proc/$1"
 }
 
-
 ######################################################
-# wait for a set of tcp ports
-# usage: ctdb_wait_tcp_ports SERVICE_NAME <ports...>
-######################################################
-ctdb_wait_tcp_ports() {
-  service_name="$1"
-  shift
-  wait_ports="$*"
-  [ -z "$wait_ports" ] && return;
-  all_ok=0
-  echo "Waiting for tcp service $service_name to start"
-  while [ $all_ok -eq 0 ]; do
-  	  all_ok=1
-  	  for p in $wait_ports; do
-	      if [ -x /usr/bin/netcat ]; then
-	          /usr/bin/netcat -z 127.0.0.1 $p > /dev/null || all_ok=0
-	      elif [ -x /usr/bin/nc ]; then
-	          /usr/bin/nc -z 127.0.0.1 $p > /dev/null || all_ok=0
-	      elif [ -x /usr/bin/netstat ]; then
-	          (netstat -a -n | egrep "0.0.0.0:$p[[:space:]]*LISTEN" > /dev/null) || all_ok=0
-	      elif [ -x /bin/netstat ]; then
-	          (netstat -a -n | egrep "0.0.0.0:$p[[:space:]]*LISTEN" > /dev/null) || all_ok=0
-	      else 
-		  echo "No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
-		  return 127
-	      fi
-	  done
-	  [ $all_ok -eq 1 ] || sleep 1
-	  ctdb status > /dev/null 2>&1 || {
-  		echo "ctdb daemon has died. Exiting tcp wait $service_name"
-		return 1
-	  }
-  done
-  echo "Local tcp services for $service_name are up"
+# wrapper around getting file contents from /proc/ to allow
+# this to be hooked for testing
+# 1st arg is relative path under /proc/
+get_proc ()
+{
+    cat "/proc/$1"
 }
-
 
 ######################################################
 # check that a rpc server is registered with portmap
@@ -260,7 +226,7 @@ kill_tcp_connections() {
 	esac
 	_killcount=`expr $_killcount + 1`
      done < $connfile
-    /bin/rm -f $connfile
+    rm -f $connfile
 
     [ $_failed = 0 ] || {
 	echo "Failed to send killtcp control"
@@ -302,7 +268,7 @@ kill_tcp_connections_local_only() {
 	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
 	_killcount=`expr $_killcount + 1`
      done < $connfile
-    /bin/rm -f $connfile
+    rm -f $connfile
 
     [ $_failed = 0 ] || {
 	echo "Failed to send killtcp control"
@@ -345,7 +311,7 @@ tickle_tcp_connections() {
 	echo "Tickle TCP connection $destip:$destport $srcip:$srcport"
 	ctdb tickle $destip:$destport $srcip:$srcport >/dev/null 2>&1 || _failed=1
      done < $connfile
-    /bin/rm -f $connfile
+    rm -f $connfile
 
     [ $_failed = 0 ] || {
 	echo "Failed to send tickle control"
@@ -358,10 +324,10 @@ tickle_tcp_connections() {
 ########################################################
 startstop_nfs() {
 	PLATFORM="unknown"
-	[ -x /etc/init.d/nfsserver ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
 		PLATFORM="sles"
 	}
-	[ -x /etc/init.d/nfslock ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfslock ] && {
 		PLATFORM="rhel"
 	}
 
@@ -375,7 +341,7 @@ startstop_nfs() {
 			service nfsserver stop > /dev/null 2>&1
 			;;
 		restart)
-			echo 0 >/proc/fs/nfsd/threads
+			set_proc "fs/nfsd/threads" 0
 			service nfsserver stop > /dev/null 2>&1
 			pkill -9 nfsd
 			service nfsserver start
@@ -393,7 +359,7 @@ startstop_nfs() {
 			service nfslock stop > /dev/null 2>&1
 			;;
 		restart)
-			echo 0 >/proc/fs/nfsd/threads
+			set_proc "fs/nfsd/threads" 0
 			service nfs stop > /dev/null 2>&1
 			service nfslock stop > /dev/null 2>&1
 			pkill -9 nfsd
@@ -414,10 +380,10 @@ startstop_nfs() {
 ########################################################
 startstop_nfslock() {
 	PLATFORM="unknown"
-	[ -x /etc/init.d/nfsserver ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
 		PLATFORM="sles"
 	}
-	[ -x /etc/init.d/nfslock ] && {
+	[ -x $CTDB_ETCDIR/init.d/nfslock ] && {
 		PLATFORM="rhel"
 	}
 
@@ -593,10 +559,9 @@ ctdb_check_counter_equal () {
 
 ########################################################
 
-ctdb_spool_dir="/var/spool/ctdb"
-ctdb_status_dir="$ctdb_spool_dir/status"
-ctdb_fail_dir="$ctdb_spool_dir/failcount"
-ctdb_active_dir="$ctdb_spool_dir/active"
+ctdb_status_dir="$CTDB_VARDIR/status"
+ctdb_fail_dir="$CTDB_VARDIR/failcount"
+ctdb_active_dir="$CTDB_VARDIR/active"
 
 log_status_cat ()
 {
@@ -814,7 +779,7 @@ ipv4_is_valid_addr()
 # iptables doesn't like being re-entered, so flock-wrap it.
 iptables()
 {
-	flock -w 30 /var/ctdb/iptables-ctdb.flock /sbin/iptables "$@"
+	flock -w 30 $CTDB_VARDIR/iptables-ctdb.flock /sbin/iptables "$@"
 }
 
 ########################################################

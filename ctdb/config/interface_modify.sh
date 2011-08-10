@@ -17,11 +17,11 @@ add_ip_to_iface()
 	local _script_dir="$_readd_base/$_ip.$_maskbits"
 
 	# we make sure the interface is up first
-	/sbin/ip link set $_iface up || {
+	ip link set $_iface up || {
 		echo "Failed to bringup interface $_iface"
 		return 1;
 	}
-	/sbin/ip addr add $_ip/$_maskbits brd + dev $_iface || {
+	ip addr add $_ip/$_maskbits brd + dev $_iface || {
 		echo "Failed to add $_ip/$_maskbits on dev $_iface"
 		return 1;
 	}
@@ -48,19 +48,19 @@ delete_ip_from_iface()
 	# this _very_ annoying behaviour we have to keep a record of the secondaries and re-add
 	# them afterwards. yuck
 	local _secondaries=""
-	if /sbin/ip addr list dev $_iface primary | grep -q "inet $_ip/$_maskbits " ; then
-	    _secondaries=`/sbin/ip addr list dev $_iface secondary | grep " inet " | awk '{print $2}'`
+	if ip addr list dev $_iface primary | grep -q "inet $_ip/$_maskbits " ; then
+	    _secondaries=`ip addr list dev $_iface secondary | grep " inet " | awk '{print $2}'`
 	fi
 	local _failed=0
-	/sbin/ip addr del $_ip/$_maskbits dev $_iface || _failed=1
+	ip addr del $_ip/$_maskbits dev $_iface || _failed=1
 	[ -z "$_secondaries" ] || {
 	    local _i=""
 	    for _i in $_secondaries; do
-		if /sbin/ip addr list dev $_iface | grep -q "inet $_i" ; then
+		if ip addr list dev $_iface | grep -q "inet $_i" ; then
 		    echo "kept secondary $_i on dev $_iface"
 		else
 		    echo "re-adding secondary address $_i to dev $_iface"
-		    /sbin/ip addr add $_i brd + dev $_iface || _failed=1
+		    ip addr add $_i brd + dev $_iface || _failed=1
 		fi
 		local _s_ip=`echo "$_i" | cut -d '/' -f1`
 		local _s_maskbits=`echo "$_i" | cut -d '/' -f2`

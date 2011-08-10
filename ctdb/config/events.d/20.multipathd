@@ -49,7 +49,7 @@ multipathd_check()
 		timeleft=$(($timeleft - 1))
 
 		# see if the process still exists
-		/bin/kill -0 $pid > /dev/null 2>&1 || {
+		kill -0 $pid > /dev/null 2>&1 || {
 			# it doesn't exist, grab its exit status
 			wait $pid
 			[ $? = 0 ] || {
@@ -78,7 +78,7 @@ case "$1" in
     startup)
 	# create a state directory to keep/track the multipath device
 	# state
-	/bin/mkdir -p $CTDB_VARDIR/state/multipathd
+	mkdir -p $CTDB_VARDIR/state/multipathd
 	exit 0
 	;;
 

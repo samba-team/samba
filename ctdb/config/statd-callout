@@ -9,10 +9,6 @@
     export CTDB_BASE="/etc/ctdb"
 }
 
-[ -z "$CTDB_VARDIR" ] && {
-    export CTDB_VARDIR="/var/ctdb"
-}
-
 . $CTDB_BASE/functions
 loadconfig ctdb
 loadconfig nfs
@@ -34,7 +30,7 @@ case "$1" in
 			continue
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
-		/bin/mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
+		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
 		touch $CTDB_VARDIR/state/statd/ip/$IP/$2
 	done
 	;;
@@ -50,7 +46,7 @@ case "$1" in
 		} 
 		IP=`echo $LINE | cut -f2 -d:`
 		mkdir -p $CTDB_VARDIR/state/statd/ip/$IP
-		/bin/rm -f $CTDB_VARDIR/state/statd/ip/$IP/$2
+		rm -f $CTDB_VARDIR/state/statd/ip/$IP/$2
 	done
 	;;
   updatelocal)
@@ -187,11 +183,11 @@ case "$1" in
 
 		ls $CTDB_VARDIR/state/statd/ip/$IP | while read CLIENT; do
 			rm $CTDB_VARDIR/state/statd/ip/$IP/$CLIENT
-			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
-			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
+			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
+			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
 			STATE=`expr "$STATE" "+" "1"`
-			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
-			/usr/bin/smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
+			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
+			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
 		done
 	done
 	;;
