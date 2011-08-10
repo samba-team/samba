@@ -35,6 +35,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_contexts.h"
+#include "rpc_server/rpc_config.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -771,7 +772,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 struct rpc_pipe_client **cli_pipe)
 {
 	struct rpc_pipe_client *cli = NULL;
-	const char *server_type;
+	enum rpc_service_mode_e pipe_mode;
 	const char *pipe_name;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
@@ -799,11 +800,10 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 
 	DEBUG(5, ("Connecting to %s pipe.\n", pipe_name));
 
-	server_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", pipe_name,
-					   "embedded");
+	pipe_mode = rpc_service_mode(pipe_name);
 
-	if (strcasecmp_m(server_type, "embedded") == 0) {
+	switch (pipe_mode) {
+	case RPC_SERVICE_MODE_EMBEDDED:
 		status = rpc_pipe_open_internal(tmp_ctx,
 						syntax, session_info,
 						remote_address, msg_ctx,
@@ -811,8 +811,8 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-	} else if (strcasecmp_m(server_type, "daemon") == 0 ||
-		   strcasecmp_m(server_type, "external") == 0) {
+		break;
+	case RPC_SERVICE_MODE_EXTERNAL:
 		/* It would be nice to just use rpc_pipe_open_ncalrpc() but
 		 * for now we need to use the special proxy setup to connect
 		 * to spoolssd. */
@@ -824,10 +824,11 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-	} else {
+		break;
+	case RPC_SERVICE_MODE_DISABLED:
 		status = NT_STATUS_NOT_IMPLEMENTED;
-		DEBUG(0, ("Wrong servertype specified in config file: %s",
-			  nt_errstr(status)));
+		DEBUG(0, ("Service pipe %s is disabled in config file: %s",
+			  pipe_name, nt_errstr(status)));
 		goto done;
         }
 
