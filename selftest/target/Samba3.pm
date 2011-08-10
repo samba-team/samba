@@ -902,6 +902,7 @@ sub provision($$$$$$$)
 
 	ncalrpc dir = $prefix_abs/ncalrpc
 	rpc_server:epmapper = daemon
+	rpc_server:spoolss = daemon
 	rpc_server:tcpip = yes
 
         resolv:host file = $dns_host_file
