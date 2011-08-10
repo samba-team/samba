@@ -146,7 +146,8 @@ static int count_commas(const char *str)
  attributes and a user SID.
 *********************************************************************/
 
-static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *pwd, bool create)
+static NTSTATUS samu_set_unix_internal(struct pdb_methods *methods,
+				       struct samu *user, const struct passwd *pwd, bool create)
 {
 	const char *guest_account = lp_guestaccount();
 	const char *domain = lp_netbios_name();
@@ -246,11 +247,11 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 	   initialized and will fill in these fields later (such as from a 
 	   netr_SamInfo3 structure) */
 
-	if ( create && (pdb_capabilities() & PDB_CAP_STORE_RIDS)) {
+	if ( create && (methods->capabilities(methods) & PDB_CAP_STORE_RIDS)) {
 		uint32_t user_rid;
 		struct dom_sid user_sid;
 
-		if ( !pdb_new_rid( &user_rid ) ) {
+		if ( !methods->new_rid(methods, &user_rid) ) {
 			DEBUG(3, ("Could not allocate a new RID\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -282,12 +283,13 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 
 NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd)
 {
-	return samu_set_unix_internal( user, pwd, False );
+	return samu_set_unix_internal( NULL, user, pwd, False );
 }
 
-NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd)
+NTSTATUS samu_alloc_rid_unix(struct pdb_methods *methods,
+			     struct samu *user, const struct passwd *pwd)
 {
-	return samu_set_unix_internal( user, pwd, True );
+	return samu_set_unix_internal( methods, user, pwd, True );
 }
 
 /**********************************************************

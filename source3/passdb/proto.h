@@ -66,7 +66,8 @@ bool login_cache_delentry(const struct samu *sampass);
 const char *my_sam_name(void);
 struct samu *samu_new( TALLOC_CTX *ctx );
 NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd);
-NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd);
+NTSTATUS samu_alloc_rid_unix(struct pdb_methods *methods,
+			     struct samu *user, const struct passwd *pwd);
 char *pdb_encode_acct_ctrl(uint32_t acct_ctrl, size_t length);
 uint32_t pdb_decode_acct_ctrl(const char *p);
 void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32_t acct_ctrl);

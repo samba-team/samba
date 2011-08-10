@@ -496,7 +496,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 
 	/* we have a valid SID coming out of this call */
 
-	status = samu_alloc_rid_unix( sam_pass, pwd );
+	status = samu_alloc_rid_unix(methods, sam_pass, pwd);
 
 	TALLOC_FREE( pwd );
 
@@ -521,7 +521,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 
 	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
 
-	status = pdb_add_sam_account(sam_pass);
+	status = methods->add_sam_account(methods, sam_pass);
 
 	TALLOC_FREE(sam_pass);
 
@@ -579,7 +579,9 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 	NTSTATUS status;
 	fstring username;
 
-	status = pdb_delete_sam_account(sam_acct);
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
+
+	status = methods->delete_sam_account(methods, sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
