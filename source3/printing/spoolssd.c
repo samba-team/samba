@@ -54,6 +54,9 @@ static int spoolss_spawn_rate;
 static int spoolss_prefork_status;
 static int spoolss_child_id = 0;
 
+pid_t start_spoolssd(struct tevent_context *ev_ctx,
+		     struct messaging_context *msg_ctx);
+
 static void spoolss_prefork_config(void)
 {
 	static int spoolss_prefork_config_init = false;
@@ -714,7 +717,7 @@ static void print_queue_forward(struct messaging_context *msg,
 			   MSG_PRINTER_UPDATE, data->data, data->length);
 }
 
-char *get_bq_logfile(void)
+static char *get_bq_logfile(void)
 {
 	char *lfile = lp_logfile();
 	int rc;
