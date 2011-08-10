@@ -44,7 +44,7 @@ monitor_interfaces()
 	    # When we use VLANs for bond interfaces, there will only
 	    # be an entry in /proc for the underlying real interface
 	    REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
-	    bi=$(get_proc "net/bonding/$REALIFACE") 2>/dev/null && {
+	    bi=$(get_proc "net/bonding/$REALIFACE" 2>/dev/null) && {
 		echo "$bi" | grep -q 'Currently Active Slave: None' && {
 			echo "ERROR: No active slaves for bond device $REALIFACE"
 			fail=1
