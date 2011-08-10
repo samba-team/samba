@@ -52,117 +52,52 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
 
-enum rpc_service_mode_e rpc_epmapper_mode(void)
+/* the default is "embedded" so this table
+ * lists only services that are not using
+ * the default in order to keep enumerating it
+ * in rpc_service_mode() as short as possible
+ */
+struct rpc_service_defaults {
+	const char *name;
+	const char *def_mode;
+} rpc_service_defaults[] = {
+	{ "epmapper", "external" },
+	/* { "spoolss", "embedded" }, */
+	/* { "lsarpc", "embedded" }, */
+	/* { "samr", "embedded" }, */
+	/* { "netlogon", "embedded" }, */
+
+	{ NULL, NULL }
+};
+
+enum rpc_service_mode_e rpc_service_mode(const char *name)
 {
 	const char *rpcsrv_type;
 	enum rpc_service_mode_e state;
+	const char *def;
+	int i;
 
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "epmapper",
-					   "daemon");
-
-	if (strcasecmp_m(rpcsrv_type, "external") == 0) {
-		state = RPC_SERVICE_MODE_EXTERNAL;
-	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
-		state = RPC_SERVICE_MODE_DAEMON;
-	} else {
-		state = RPC_SERVICE_MODE_DISABLED;
+	def = "embedded";
+	for (i = 0; rpc_service_defaults[i].name; i++) {
+		if (strcasecmp_m(name, rpc_service_defaults[i].name) == 0) {
+			def = rpc_service_defaults[i].def_mode;
+		}
 	}
 
-	return state;
-}
-
-enum rpc_service_mode_e rpc_spoolss_mode(void)
-{
-	const char *rpcsrv_type;
-	enum rpc_service_mode_e state;
-
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "spoolss",
-					   "embedded");
+					   "rpc_server", name, def);
 
 	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
 		state = RPC_SERVICE_MODE_EMBEDDED;
 	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
 		state = RPC_SERVICE_MODE_EXTERNAL;
-	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
+	} else if (strcasecmp(rpcsrv_type, "daemon") == 0) {
 		state = RPC_SERVICE_MODE_DAEMON;
 	} else {
 		state = RPC_SERVICE_MODE_DISABLED;
 	}
 
 	return state;
-}
-
-enum rpc_service_mode_e rpc_lsarpc_mode(void)
-{
-	const char *rpcsrv_type;
-	enum rpc_service_mode_e mode;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "lsarpc",
-					   "embedded");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
-		mode = RPC_SERVICE_MODE_EMBEDDED;
-	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
-		mode = RPC_SERVICE_MODE_EXTERNAL;
-	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
-		mode = RPC_SERVICE_MODE_DAEMON;
-	} else {
-		mode = RPC_SERVICE_MODE_DISABLED;
-	}
-
-	return mode;
-}
-
-enum rpc_service_mode_e rpc_samr_mode(void)
-{
-	const char *rpcsrv_type;
-	enum rpc_service_mode_e mode;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "samr",
-					   "embedded");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
-		mode = RPC_SERVICE_MODE_EMBEDDED;
-	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
-		mode = RPC_SERVICE_MODE_EXTERNAL;
-	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
-		mode = RPC_SERVICE_MODE_DAEMON;
-	} else {
-		mode = RPC_SERVICE_MODE_DISABLED;
-	}
-
-	return mode;
-}
-
-enum rpc_service_mode_e rpc_netlogon_mode(void)
-{
-	const char *rpcsrv_type;
-	enum rpc_service_mode_e mode;
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "netlogon",
-					   "embedded");
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
-		mode = RPC_SERVICE_MODE_EMBEDDED;
-	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
-		mode = RPC_SERVICE_MODE_EXTERNAL;
-	} else if (strcasecmp_m(rpcsrv_type, "daemon") == 0) {
-		mode = RPC_SERVICE_MODE_DAEMON;
-	} else {
-		mode = RPC_SERVICE_MODE_DISABLED;
-	}
-
-	return mode;
 }
 
 static bool rpc_setup_epmapper(struct tevent_context *ev_ctx,

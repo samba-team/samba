@@ -32,22 +32,20 @@ enum rpc_service_mode_e {
 };
 
 /**
- * @brief Get the mode in which epmapper is started.
+ * @brief Get the mode in which a service is started.
  *
- * @return The mode.
- */
-enum rpc_service_mode_e rpc_epmapper_mode(void);
-
-/**
- * @brief Get the mode in which epmapper is started.
+ * @param name		Name of the service
+ * @param def_mode	The default mode for the service
  *
- * @return The mode.
+ * @return The actual configured mode.
  */
-enum rpc_service_mode_e rpc_spoolss_mode(void);
+enum rpc_service_mode_e rpc_service_mode(const char *name);
 
-enum rpc_service_mode_e rpc_lsarpc_mode(void);
-enum rpc_service_mode_e rpc_samr_mode(void);
-enum rpc_service_mode_e rpc_netlogon_mode(void);
+#define rpc_epmapper_mode() rpc_service_mode("epmapper")
+#define rpc_spoolss_mode() rpc_service_mode("spoolss")
+#define rpc_lsarpc_mode() rpc_service_mode("lsarpc")
+#define rpc_samr_mode() rpc_service_mode("samr")
+#define rpc_netlogon_mode() rpc_service_mode("netlogon")
 
 /**
  * @brief Register an endpoint at the endpoint mapper.
