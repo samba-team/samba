@@ -25,6 +25,7 @@
 #include "printing/nt_printing_migrate_internal.h"
 #include "printing/queue_process.h"
 #include "printing/pcap.h"
+#include "printing/load.h"
 #include "ntdomain.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_spoolss.h"
@@ -359,6 +360,14 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
 			   pcap_updated);
 
+	/* As soon as messaging is up check if pcap has been loaded already.
+	 * If so then we probably missed a message and should load_printers()
+	 * ourselves. If pcap has not been loaded yet, then ignore, we will get
+	 * a message as soon as the bq process completes the reload. */
+	if (pcap_cache_loaded()) {
+		load_printers(ev_ctx, msg_ctx);
+	}
+
 	/* try to reinit rpc queues */
 	spoolss_cb.init = spoolss_init_cb;
 	spoolss_cb.shutdown = spoolss_shutdown_cb;
@@ -377,8 +386,6 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 			  nt_errstr(status)));
 		return false;
 	}
-
-	pcap_cache_reload(ev_ctx, msg_ctx, &update_pcap);
 
 	return true;
 }
@@ -782,9 +789,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	BlockSignals(false, SIGTERM);
 	BlockSignals(false, SIGHUP);
 
-	/* Publish nt printers, this requires a working winreg pipe */
-	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
-
 	/* always start the backgroundqueue listner in spoolssd */
 	bq_logfile = get_bq_logfile();
 	pid = start_background_queue(ev_ctx, msg_ctx, bq_logfile);
@@ -833,6 +837,14 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 			   print_queue_forward);
 	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
 			   pcap_updated);
+
+	/* As soon as messaging is up check if pcap has been loaded already.
+	 * If so then we probably missed a message and should load_printers()
+	 * ourselves. If pcap has not been loaded yet, then ignore, we will get
+	 * a message as soon as the bq process completes the reload. */
+	if (pcap_cache_loaded()) {
+		load_printers(ev_ctx, msg_ctx);
+	}
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
