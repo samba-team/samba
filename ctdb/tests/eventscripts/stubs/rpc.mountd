@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Restart always "works".  However, the test infrastructure may
+# continue to mark the service as down, so that's what matters.
+
+exit 0

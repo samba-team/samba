@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "$FAKE_WBINFO_FAIL" = "yes" ] ; then
+   exit 1
+fi
+
+exit 0

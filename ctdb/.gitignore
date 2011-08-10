@@ -25,3 +25,4 @@ tests/bin
 tests/events.d/00.ctdb_test_trigger
 tests/var
 tests/takeover/ctdb_takeover.pyc
+tests/eventscripts/var

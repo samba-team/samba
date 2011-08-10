@@ -1,0 +1,7 @@
+#!/bin/sh
+
+opts="10.0.0.0/16"  #(rw,async,insecure,no_root_squash,no_subtree_check)
+
+for i in $FAKE_SHARES ; do
+    echo "${i} ${opts}"
+done

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+link="yes"
+
+if [ -f  "${FAKE_ETHTOOL_LINK_DOWN}/${1}" ] ; then
+    link="no"
+fi
+
+# Expect to add more fields later.
+cat <<EOF
+	Link detected: ${link}
+EOF

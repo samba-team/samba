@@ -18,7 +18,7 @@ loadconfig
 
 monitor_interfaces()
 {
-	local INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES |
+	INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES |
 		sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//"`
 
 	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
@@ -27,14 +27,12 @@ monitor_interfaces()
 
 	# For all but the 1st line, get the 2nd last field with commas
 	# changes to spaces.
-	local IFACES=`ctdb -Y ip -v | sed -e '1d' -e 's/:[^:]*:$//' -e 's/^.*://' -e 's/,/ /g'`
-
-	local IFACE
+	IFACES=`ctdb -Y ip -v | sed -e '1d' -e 's/:[^:]*:$//' -e 's/^.*://' -e 's/,/ /g'`
 
 	INTERFACES=`for IFACE in $INTERFACES $IFACES ; do echo $IFACE ; done | sort | uniq`
 
-	local fail=0
-	local ok=0
+	fail=0
+	ok=0
 	for IFACE in $INTERFACES ; do
 
 	    ip addr show $IFACE 2>/dev/null >/dev/null || {
@@ -45,7 +43,7 @@ monitor_interfaces()
 	    # These interfaces are sometimes bond devices
 	    # When we use VLANs for bond interfaces, there will only
 	    # be an entry in /proc for the underlying real interface
-	    local REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
+	    REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
 	    bi=$(get_proc "net/bonding/$REALIFACE") 2>/dev/null && {
 		echo "$bi" | grep -q 'Currently Active Slave: None' && {
 			echo "ERROR: No active slaves for bond device $REALIFACE"
@@ -91,7 +89,7 @@ monitor_interfaces()
 			# cable is plugged but the interface has not been
 			# brought up previously. Bring the interface up and
 			# try again...
-			/sbin/ip link set $IFACE up
+			ip link set $IFACE up
 			ethtool $IFACE | grep -q 'Link detected: yes' || {
 			    echo "ERROR: No link on the public network interface $IFACE"
 			    fail=1
