@@ -36,6 +36,50 @@
 #define SERVER_TCP_LOW_PORT  1024
 #define SERVER_TCP_HIGH_PORT 1300
 
+/* the default is "embedded" so this table
+ * lists only daemons that are not using
+ * the default in order to keep enumerating it
+ * in rpc_daemon_type() as short as possible
+ */
+struct rpc_daemon_defaults {
+	const char *name;
+	const char *def_type;
+} rpc_daemon_defaults[] = {
+	{ "epmd", "fork" },
+	/* { "spoolssd", "embedded" }, */
+	/* { "lsasd", "embedded" }, */
+
+	{ NULL, NULL }
+};
+
+enum rpc_daemon_type_e rpc_daemon_type(const char *name)
+{
+	const char *rpcsrv_type;
+	enum rpc_daemon_type_e type;
+	const char *def;
+	int i;
+
+	def = "embedded";
+	for (i = 0; rpc_daemon_defaults[i].name; i++) {
+		if (strcasecmp_m(name, rpc_daemon_defaults[i].name) == 0) {
+			def = rpc_daemon_defaults[i].def_type;
+		}
+	}
+
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_daemon", name, def);
+
+	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
+		type = RPC_DAEMON_EMBEDDED;
+	} else if (strcasecmp_m(rpcsrv_type, "fork") == 0) {
+		type = RPC_DAEMON_FORK;
+	} else {
+		type = RPC_DAEMON_DISABLED;
+	}
+
+	return type;
+}
+
 static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 					    struct auth_session_info **session_info)
 {

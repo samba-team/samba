@@ -20,6 +20,27 @@
 #ifndef _RPC_SERVER_H_
 #define _RPC_SERVER_H_
 
+enum rpc_daemon_type_e {
+	RPC_DAEMON_DISABLED = 0,
+	RPC_DAEMON_EMBEDDED,
+	RPC_DAEMON_FORK
+};
+
+/**
+ * @brief Get the mode in which a server is started.
+ *
+ * @param name		Name of the rpc server
+ * @param def_type	The default type for the server
+ *
+ * @return The actual configured type.
+ */
+enum rpc_daemon_type_e rpc_daemon_type(const char *name);
+
+#define rpc_epmapper_daemon() rpc_daemon_type("epmd")
+#define rpc_spoolss_daemon() rpc_daemon_type("spoolssd")
+#define rpc_lsasd_daemon() rpc_daemon_type("lsasd")
+
+
 struct pipes_struct;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
