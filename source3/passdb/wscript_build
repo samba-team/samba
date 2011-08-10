@@ -53,3 +53,10 @@ bld.SAMBA3_MODULE('pdb_samba4',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_samba4'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_samba4'))
 
+if bld.env.toplevel_build:
+    bld.SAMBA3_PYTHON('pypassdb',
+                      source='py_passdb.c',
+                      deps='pdb',
+                      public_deps='samba-util tdb talloc pyrpc_util',
+                      realname='samba/passdb.so'
+                      )
