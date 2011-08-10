@@ -110,3 +110,8 @@ def SAMBA3_BINARY(bld, name, *args, **kwargs):
 	s3_fix_kwargs(bld, kwargs)
 	return bld.SAMBA_BINARY(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_BINARY = SAMBA3_BINARY
+
+def SAMBA3_PYTHON(bld, name, *args, **kwargs):
+    s3_fix_kwargs(bld, kwargs)
+    return bld.SAMBA_PYTHON(name, *args, **kwargs)
+Build.BuildContext.SAMBA3_PYTHON = SAMBA3_PYTHON
