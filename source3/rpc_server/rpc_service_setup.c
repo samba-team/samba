@@ -50,55 +50,8 @@
 #include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/rpc_config.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
-
-/* the default is "embedded" so this table
- * lists only services that are not using
- * the default in order to keep enumerating it
- * in rpc_service_mode() as short as possible
- */
-struct rpc_service_defaults {
-	const char *name;
-	const char *def_mode;
-} rpc_service_defaults[] = {
-	{ "epmapper", "external" },
-	/* { "spoolss", "embedded" }, */
-	/* { "lsarpc", "embedded" }, */
-	/* { "samr", "embedded" }, */
-	/* { "netlogon", "embedded" }, */
-
-	{ NULL, NULL }
-};
-
-enum rpc_service_mode_e rpc_service_mode(const char *name)
-{
-	const char *rpcsrv_type;
-	enum rpc_service_mode_e state;
-	const char *def;
-	int i;
-
-	def = "embedded";
-	for (i = 0; rpc_service_defaults[i].name; i++) {
-		if (strcasecmp_m(name, rpc_service_defaults[i].name) == 0) {
-			def = rpc_service_defaults[i].def_mode;
-		}
-	}
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", name, def);
-
-	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
-		state = RPC_SERVICE_MODE_EMBEDDED;
-	} else if (strcasecmp_m(rpcsrv_type, "external") == 0) {
-		state = RPC_SERVICE_MODE_EXTERNAL;
-	} else if (strcasecmp(rpcsrv_type, "daemon") == 0) {
-		state = RPC_SERVICE_MODE_DAEMON;
-	} else {
-		state = RPC_SERVICE_MODE_DISABLED;
-	}
-
-	return state;
-}
 
 static bool rpc_setup_epmapper(struct tevent_context *ev_ctx,
 			       struct messaging_context *msg_ctx)

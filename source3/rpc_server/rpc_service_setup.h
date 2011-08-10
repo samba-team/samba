@@ -24,29 +24,6 @@
 
 struct ndr_interface_table;
 
-enum rpc_service_mode_e {
-	RPC_SERVICE_MODE_DISABLED = 0,
-	RPC_SERVICE_MODE_EMBEDDED,
-	RPC_SERVICE_MODE_EXTERNAL,
-	RPC_SERVICE_MODE_DAEMON
-};
-
-/**
- * @brief Get the mode in which a service is started.
- *
- * @param name		Name of the service
- * @param def_mode	The default mode for the service
- *
- * @return The actual configured mode.
- */
-enum rpc_service_mode_e rpc_service_mode(const char *name);
-
-#define rpc_epmapper_mode() rpc_service_mode("epmapper")
-#define rpc_spoolss_mode() rpc_service_mode("spoolss")
-#define rpc_lsarpc_mode() rpc_service_mode("lsarpc")
-#define rpc_samr_mode() rpc_service_mode("samr")
-#define rpc_netlogon_mode() rpc_service_mode("netlogon")
-
 /**
  * @brief Register an endpoint at the endpoint mapper.
  *
