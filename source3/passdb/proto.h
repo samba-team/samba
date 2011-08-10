@@ -201,6 +201,7 @@ uint32_t pdb_build_fields_present(struct samu *sampass);
 
 NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) ;
 struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
+const struct pdb_init_function_entry *pdb_get_backends(void);
 struct event_context *pdb_get_event_context(void);
 NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected);
 struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx);

@@ -99,6 +99,12 @@ struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 	return NULL;
 }
 
+const struct pdb_init_function_entry *pdb_get_backends(void)
+{
+	return backends;
+}
+
+
 /*
  * The event context for the passdb backend. I know this is a bad hack and yet
  * another static variable, but our pdb API is a global thing per
