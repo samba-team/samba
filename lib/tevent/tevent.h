@@ -111,7 +111,7 @@ typedef void (*tevent_signal_handler_t)(struct tevent_context *ev,
 struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 
 /**
- * @brief Create a event_context structure and name it.
+ * @brief Create a event_context structure and select a specific backend.
  *
  * This must be the first events call, and all subsequent calls pass this
  * event_context as the first element. Event handlers also receive this as
@@ -119,7 +119,7 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
- * @param[in]  name     The name for the tevent context.
+ * @param[in]  name     The name of the backend to use.
  *
  * @return              An allocated tevent context, NULL on error.
  */
