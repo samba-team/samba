@@ -3658,6 +3658,14 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	/* This is a special control to bypass the password_hash module for use in pdb_samba4 for Samba3 upgrades */
+	if (dsdb_flags & DSDB_BYPASS_PASSWORD_HASH) {
+		ret = ldb_request_add_control(req, DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID, true, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
