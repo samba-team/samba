@@ -1,28 +1,42 @@
 #!/bin/sh
 # script to manage nfs in a clustered environment
 
-start_nfs() {
-	mkdir -p $CTDB_VARDIR/state/nfs
-	mkdir -p $CTDB_VARDIR/state/statd/ip
-	startstop_nfs stop
-	startstop_nfs start
-	set_proc "sys/net/ipv4/tcp_tw_recycle" 1
-}
-
 . $CTDB_BASE/functions
 
 service_name="nfs"
-service_start="start_nfs"
-service_stop="startstop_nfs stop"
-service_reconfigure="startstop_nfs restart"
+service_start ()
+{
+    startstop_nfs stop
+    startstop_nfs start
+    set_proc "sys/net/ipv4/tcp_tw_recycle" 1
+    touch "$service_state_dir/update-trigger"
+}
+service_stop ()
+{
+    startstop_nfs stop
+}
+service_reconfigure ()
+{
+    startstop_nfs restart
+
+    # if the ips have been reallocated, we must restart the lockmanager
+    # across all nodes and ping all statd listeners
+    [ -x $CTDB_BASE/statd-callout ] && {
+	$CTDB_BASE/statd-callout notify &
+    } >/dev/null 2>&1
+}
 
 loadconfig
 
 [ "$NFS_SERVER_MODE" != "GANESHA" ] || exit 0
 
+ctdb_setup_service_state_dir
+
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
+
+ctdb_service_check_reconfigure
 
 case "$1" in 
      init)
@@ -30,8 +44,6 @@ case "$1" in
 	;;
      startup)
 	ctdb_service_start
-	mkdir -p $CTDB_VARDIR/state/statd
-	touch $CTDB_VARDIR/state/statd/update-trigger
 	;;
 
      shutdown)
@@ -53,11 +65,6 @@ case "$1" in
 	    sed -e 's/[[:space:]]\+[^[:space:]]*$//' |
 	    ctdb_check_directories
 	} || exit $?
-
-	if ctdb_service_needs_reconfigure ; then
-	    ctdb_service_reconfigure
-	    exit 0
-	fi
 
 	update_tickles 2049
 
@@ -181,23 +188,15 @@ case "$1" in
 
 	# once every 600 seconds, update the statd state database for which
 	# clients need notifications
-	LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger 2>/dev/null`
+	LAST_UPDATE=`stat --printf="%Y" "$service_state_dir/update-trigger"`
 	CURRENT_TIME=`date +"%s"`
 	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 600)) ] && {
-	    mkdir -p $CTDB_VARDIR/state/statd
-	    touch $CTDB_VARDIR/state/statd/update-trigger
+	    touch "$service_state_dir/update-trigger"
 	    $CTDB_BASE/statd-callout updatelocal &
 	    $CTDB_BASE/statd-callout updateremote &
 	}
        	;;
 
-    ipreallocated)
-	# if the ips have been reallocated, we must restart the lockmanager
-	# across all nodes and ping all statd listeners
-	[ -x $CTDB_BASE/statd-callout ] && {
-		$CTDB_BASE/statd-callout notify &
-	} >/dev/null 2>&1
-	;;
     *)
 	ctdb_standard_event_handler "$@"
 	;;

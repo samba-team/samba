@@ -27,15 +27,24 @@ cleanup_httpd_semaphore_leak() {
 
 ##########
 
-service_start="cleanup_httpd_semaphore_leak; service $service_name start"
-service_stop="service $service_name stop; killall -q -9 $service_name || true"
-service_reconfigure="service $service_name restart"
+service_start ()
+{
+    cleanup_httpd_semaphore_leak
+    service $service_name start
+}
+service_stop ()
+{
+    service $service_name stop
+    killall -q -9 $service_name || true
+}
 
 loadconfig
 
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
+
+ctdb_service_check_reconfigure
 
 case "$1" in
     startup)
@@ -47,26 +56,21 @@ case "$1" in
 	;;
 
     monitor)
-	if ctdb_service_needs_reconfigure ; then
-	    ctdb_service_reconfigure
-	    exit 0
-	fi
-
 	if ctdb_check_tcp_ports 80 >/dev/null 2>/dev/null ; then
 	    ctdb_counter_init
 	else
 	    ctdb_counter_incr
 
-	    ctdb_check_counter_equal 5 || {
+	    ctdb_check_counter warn -eq 2 || {
 		echo "HTTPD is not running. Trying to restart HTTPD."
-		ctdb_service_stop
-		ctdb_service_start
+		service_stop
+		service_start
 		exit 0
 	    }
-            ctdb_check_counter_limit 10 quiet|| {
+            ctdb_check_counter warn -ge 5 || {
 		echo "HTTPD is not running. Trying to restart HTTPD."
-		ctdb_service_stop
-		ctdb_service_start
+		service_stop
+		service_start
 		exit 1
 	    }
 	fi

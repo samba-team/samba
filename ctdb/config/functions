@@ -355,8 +355,8 @@ startstop_nfs() {
 			service nfs start
 			;;
 		stop)
-			service nfs stop > /dev/null 2>&1
-			service nfslock stop > /dev/null 2>&1
+			service nfs stop
+			service nfslock stop
 			;;
 		restart)
 			set_proc "fs/nfsd/threads" 0
@@ -423,18 +423,6 @@ startstop_nfslock() {
 		exit 1
 		;;
 	esac
-}
-
-# better use delete_ip_from_iface() together with add_ip_to_iface
-# remove_ip should be removed in future
-remove_ip() {
-	local _ip_maskbits=$1
-	local _iface=$2
-	local _ip=`echo "$_ip_maskbits" | cut -d '/' -f1`
-	local _maskbits=`echo "$_ip_maskbits" | cut -d '/' -f2`
-
-	delete_ip_from_iface "$_iface" "$_ip" "$_maskbits"
-	return $?
 }
 
 add_ip_to_iface()
@@ -515,16 +503,17 @@ setup_iface_ip_readd_script()
 # ctdb_check_counter_limit succeeds when count >= <limit>
 ########################################################
 _ctdb_counter_common () {
-    _counter_file="$ctdb_fail_dir/$service_name"
+    _service_name="${1:-${service_name}}"
+    _counter_file="$ctdb_fail_dir/$_service_name"
     mkdir -p "${_counter_file%/*}" # dirname
 }
 ctdb_counter_init () {
-    _ctdb_counter_common
+    _ctdb_counter_common "$1"
 
     >"$_counter_file"
 }
 ctdb_counter_incr () {
-    _ctdb_counter_common
+    _ctdb_counter_common "$1"
 
     # unary counting!
     echo -n 1 >> "$_counter_file"
@@ -555,6 +544,24 @@ ctdb_check_counter_equal () {
 	return 1
     fi
     return 0
+}
+ctdb_check_counter () {
+    _msg="${1:-error}"  # "error"  - anything else is silent on fail
+    _op="${2:--ge}"  # an integer operator supported by test
+    _limit="${3:-${service_fail_limit}}"
+    shift 3
+    _ctdb_counter_common "$1"
+
+    # unary counting!
+    _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
+    if [ $_size $_op $_limit ] ; then
+	if [ "$_msg" = "error" ] ; then
+	    echo "ERROR: $_limit consecutive failures for $_service_name, marking node unhealthy"
+	    exit 1		
+	else
+	    return 1
+	fi
+    fi
 }
 
 ########################################################
@@ -638,39 +645,80 @@ ctdb_setstatus ()
     esac
 }
 
+##################################################################
+# Reconfigure a service on demand
+
+_ctdb_service_reconfigure_common ()
+{
+    _d="$ctdb_status_dir/${1:-${service_name}}"
+    mkdir -p "$_d"
+    _ctdb_service_reconfigure_flag="$_d/reconfigure"
+}
+
 ctdb_service_needs_reconfigure ()
 {
-    [ -e "$ctdb_status_dir/$service_name/reconfigure" ]
+    _ctdb_service_reconfigure_common "$@"
+    [ -e "$_ctdb_service_reconfigure_flag" ]
 }
 
 ctdb_service_set_reconfigure ()
 {
-    d="$ctdb_status_dir/$service_name"
-    mkdir -p "$d"
-    >"$d/reconfigure"
+    _ctdb_service_reconfigure_common "$@"
+    >"$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_unset_reconfigure ()
 {
-    rm -f "$ctdb_status_dir/$service_name/reconfigure"
+    _ctdb_service_reconfigure_common "$@"
+    rm -f "$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_reconfigure ()
 {
     echo "Reconfiguring service \"$service_name\"..."
-    if [ -n "$service_reconfigure" ] ; then
-	eval $service_reconfigure
-    else
-	service "$service_name" restart
-    fi
-    ctdb_service_unset_reconfigure
-    ctdb_counter_init
+    ctdb_service_unset_reconfigure "$@"
+    service_reconfigure "$@" || return $?
+    ctdb_counter_init "$@"
 }
+
+# Default service_reconfigure() function.
+service_reconfigure ()
+{
+    service "${1:-$service_name}" restart
+}
+
+ctdb_service_check_reconfigure ()
+{
+    # Only do this for certain events.
+    case "$event_name" in
+	monitor|ipreallocated) : ;;
+	*) return 0
+    esac
+
+    if ctdb_service_needs_reconfigure "$@" ; then
+	ctdb_service_reconfigure "$@"
+
+	# Fall through to non-monitor events.
+	[ "$event_name" = "monitor" ] || return 0
+
+	# We don't want to proceed with the rest of the monitor event
+	# here, so we exit.  However, if we exit 0 then, if the
+	# service was previously broken, we might return a false
+	# positive.  So we simply retrieve the status of this script
+	# from the previous monitor loop and exit with that status.
+	ctdb scriptstatus | \
+	    grep -q -E "^${script_name}[[:space:]]+Status:OK[[:space:]]"
+	exit $?
+    fi
+}
+
+##################################################################
+# Does CTDB manage this service? - and associated auto-start/stop
 
 ctdb_compat_managed_service ()
 {
-    if [ "$1" = "yes" ] ; then
-	t="$t $2 "
+    if [ "$1" = "yes" -a "$2" = "$_service_name" ] ; then
+	CTDB_MANAGED_SERVICES="$CTDB_MANAGED_SERVICES $2"
     fi
 }
 
@@ -678,8 +726,17 @@ is_ctdb_managed_service ()
 {
     _service_name="${1:-${service_name}}"
 
+    # $t is used just for readability and to allow better accurate
+    # matching via leading/trailing spaces
     t=" $CTDB_MANAGED_SERVICES "
 
+    # Return 0 if "<space>$_service_name<space>" appears in $t
+    if [ "${t#* ${_service_name} }" != "${t}" ] ; then
+	return 0
+    fi
+
+    # If above didn't match then update $CTDB_MANAGED_SERVICES for
+    # backward compatibility and try again.
     ctdb_compat_managed_service "$CTDB_MANAGES_VSFTPD"   "vsftpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_SAMBA"    "samba"
     ctdb_compat_managed_service "$CTDB_MANAGES_SCP"      "scp"
@@ -690,7 +747,9 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
     ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs-ganesha-gpfs"
 
-    # Returns 0 if "<space>$_service_name<space>" appears in $t
+    t=" $CTDB_MANAGED_SERVICES "
+
+    # Return 0 if "<space>$_service_name<space>" appears in $t
     [ "${t#* ${_service_name} }" != "${t}" ]
 }
 
@@ -702,39 +761,58 @@ ctdb_start_stop_service ()
 
     if is_ctdb_managed_service "$_service_name" ; then
 	if ! is_ctdb_previously_managed_service "$_service_name" ; then
-	    echo "Starting service $_service_name"
-	    ctdb_service_start || exit $?
-	    ctdb_service_managed "$_service_name"
-	    exit 0
+	    echo "Starting service \"$_service_name\" - now managed"
+	    ctdb_service_start "$_service_name"
+	    exit $?
 	fi
     else
 	if is_ctdb_previously_managed_service "$_service_name" ; then
-	    echo "Stopping service $_service_name"
-	    ctdb_service_stop || exit $?
-	    ctdb_service_unmanaged "$_service_name"
-	    exit 0
+	    echo "Stopping service \"$_service_name\" - no longer managed"
+	    ctdb_service_stop "$_service_name"
+	    exit $?
 	fi
     fi
 }
 
 ctdb_service_start ()
 {
-    if [ -n "$service_start" ] ; then
-	eval $service_start || return $?
-    else
-	service "$service_name" start || return $?
-    fi
-    ctdb_counter_init
+    # The service is marked managed if we've ever tried to start it.
+    ctdb_service_managed "$@"
+
+    # Here we only want $1.  If no argument is passed then
+    # service_start needs to know.
+    service_start "$@" || return $?
+
+    ctdb_counter_init "$@"
 }
 
 ctdb_service_stop ()
 {
-    if [ -n "$service_stop" ] ; then
-	eval $service_stop
-    else
-	service "$service_name" stop
-    fi
+    ctdb_service_unmanaged "$@"
+    service_stop "$@"
 }
+
+# Default service_start() and service_stop() functions.
+ 
+# These may be overridden in an eventscript.  When overriding, the
+# following convention must be followed.  If these functions are
+# called with no arguments then they may use internal logic to
+# determine whether the service is managed and, therefore, whether
+# they should take any action.  However, if the service name is
+# specified as an argument then an attempt must be made to start or
+# stop the service.  This is because the auto-start/stop code calls
+# them with the service name as an argument.
+service_start ()
+{
+    service "${1:-${service_name}}" start
+}
+
+service_stop ()
+{
+    service "${1:-${service_name}}" stop
+}
+
+##################################################################
 
 ctdb_standard_event_handler ()
 {
