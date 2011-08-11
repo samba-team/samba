@@ -15,7 +15,10 @@ service_stop ()
 {
     startstop_nfs stop
 }
-service_reconfigure="startstop_nfs restart"
+service_reconfigure ()
+{
+    startstop_nfs restart
+}
 
 loadconfig
 
