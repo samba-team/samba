@@ -286,6 +286,15 @@ CTDB_DEBUGLEVEL=ERR
 # This parameter controls how many entries we allow for this in memory log
 # CTDB_LOG_RINGBUF_SIZE=500000
 
+# Monitor filesystem useage.
+# when set, and the 40.fs_use eventscript is enabled, this variable
+# allows to monitor the filesystem use and flag a node as unhealthy when
+# the filesystem becomes too full.
+# This is useful for example when /var grows too big.
+# Example: monitor both / and /var and make the node unhealthy when eitehr go
+# above 90%
+# CTDB_CHECK_FS_USE="/:90 /var:90"
+
 # 
 #
 # set any default tuning options for ctdb
