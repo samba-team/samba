@@ -500,11 +500,13 @@ class dc_join(object):
     def join_finalise(ctx):
         '''finalise the join, mark us synchronised and setup secrets db'''
 
-        print "Setting isSynchronized"
+        print "Setting isSynchronized and dsServiceName"
         m = ldb.Message()
-        m.dn = ldb.Dn(ctx.samdb, '@ROOTDSE')
+        m.dn = ldb.Dn(ctx.local_samdb, '@ROOTDSE')
         m["isSynchronized"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isSynchronized")
-        ctx.samdb.modify(m)
+        m["dsServiceName"] = ldb.MessageElement("<GUID=%s>" % str(ctx.ntds_guid),
+                                                ldb.FLAG_MOD_REPLACE, "dsServiceName")
+        ctx.local_samdb.modify(m)
 
         secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
 
