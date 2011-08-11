@@ -132,6 +132,8 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 		return;
 	}
 
+	talloc_set_destructor(req, NULL);
+
 	if (num_pending == 1) {
 		/*
 		 * The pending read_smb tevent_req is a child of
@@ -661,7 +663,6 @@ static void cli_smb_received(struct tevent_req *subreq)
 
 	if (state->chained_requests == NULL) {
 		state->inbuf = talloc_move(state, &inbuf);
-		talloc_set_destructor(req, NULL);
 		cli_smb_req_unset_pending(req);
 		state->chain_num = 0;
 		state->chain_length = 1;
