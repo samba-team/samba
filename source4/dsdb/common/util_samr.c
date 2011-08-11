@@ -70,7 +70,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		DEBUG(0,("Failed to start a transaction for user creation: %s\n",
 			 ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
 	/* check if the user already exists */
