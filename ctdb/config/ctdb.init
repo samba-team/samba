@@ -215,6 +215,16 @@ wait_until_ready () {
 
 ctdbd=${CTDBD:-/usr/sbin/ctdbd}
 
+drop_all_public_ips() {
+    [ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
+	return
+    }
+
+    cat $CTDB_PUBLIC_ADDRESSES | while read IP IFACE REST; do
+	ip addr del $IP dev $IFACE >/dev/null 2>/dev/null
+    done
+}
+
 start() {
     echo -n $"Starting ctdbd service: "
 
@@ -224,6 +234,10 @@ start() {
     }
 
     build_ctdb_options
+
+    # make sure we drop any ips that might still be held if previous
+    # instance of ctdb got killed with -9 or similar
+    drop_all_public_ips
 
     check_persistent_databases || return $?
 
@@ -305,6 +319,9 @@ stop() {
 	    pkill -9 -f $CTDB_BASE/events.d/
 	}
     done
+    # make sure all ips are dropped, pfkill -9 might leave them hanging around
+    drop_all_public_ips
+
     case $init_style in
 	suse)
 	    # re-set the return code to the recorded RETVAL in order
@@ -318,6 +335,7 @@ stop() {
 	    echo ""
 	    ;;
     esac
+
     return $RETVAL
 }
 
