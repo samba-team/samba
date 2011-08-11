@@ -719,23 +719,8 @@ static void cli_smb_received(struct tevent_req *subreq)
  done:
 	TALLOC_FREE(frame);
 
-	if ((talloc_array_length(cli->conn.pending) > 0) &&
-	    (cli->conn.read_smb_req == NULL)) {
-		/*
-		 * Set up another read request for the other pending cli_smb
-		 * requests
-		 */
-		state = tevent_req_data(cli->conn.pending[0],
-					struct cli_smb_state);
-		cli->conn.read_smb_req = read_smb_send(
-			cli->conn.pending, state->ev, cli->conn.fd);
-		if (cli->conn.read_smb_req == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			cli_state_notify_pending(cli, status);
-			return;
-		}
-		tevent_req_set_callback(cli->conn.read_smb_req,
-					cli_smb_received, cli);
+	if (!cli_state_receive_next(cli)) {
+		cli_state_notify_pending(cli, NT_STATUS_NO_MEMORY);
 	}
 }
 
