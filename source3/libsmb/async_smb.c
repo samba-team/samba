@@ -551,6 +551,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 {
 	struct cli_state *cli = tevent_req_callback_data(
 		subreq, struct cli_state);
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_req *req;
 	struct cli_smb_state *state;
 	NTSTATUS status;
@@ -569,12 +570,13 @@ static void cli_smb_received(struct tevent_req *subreq)
 		return;
 	}
 
-	received = read_smb_recv(subreq, talloc_tos(), &inbuf, &err);
+	received = read_smb_recv(subreq, frame, &inbuf, &err);
 	TALLOC_FREE(subreq);
 	cli->conn.read_smb_req = NULL;
 	if (received == -1) {
 		status = map_nt_error_from_unix(err);
 		cli_state_notify_pending(cli, status);
+		TALLOC_FREE(frame);
 		return;
 	}
 
@@ -583,6 +585,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 		DEBUG(10, ("Got non-SMB PDU\n"));
 		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		cli_state_notify_pending(cli, status);
+		TALLOC_FREE(frame);
 		return;
 	}
 
@@ -594,6 +597,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 			DEBUG(10, ("get_enc_ctx_num returned %s\n",
 				   nt_errstr(status)));
 			cli_state_notify_pending(cli, status);
+			TALLOC_FREE(frame);
 			return;
 		}
 
@@ -603,6 +607,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 				   cli->trans_enc_state->enc_ctx_num));
 			status = NT_STATUS_INVALID_HANDLE;
 			cli_state_notify_pending(cli, status);
+			TALLOC_FREE(frame);
 			return;
 		}
 
@@ -612,6 +617,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 			DEBUG(10, ("common_decrypt_buffer returned %s\n",
 				   nt_errstr(status)));
 			cli_state_notify_pending(cli, status);
+			TALLOC_FREE(frame);
 			return;
 		}
 	}
@@ -626,7 +632,6 @@ static void cli_smb_received(struct tevent_req *subreq)
 	}
 	if (i == num_pending) {
 		/* Dump unexpected reply */
-		TALLOC_FREE(inbuf);
 		goto done;
 	}
 
@@ -644,7 +649,6 @@ static void cli_smb_received(struct tevent_req *subreq)
 
 		if (!oplock_break) {
 			/* Dump unexpected reply */
-			TALLOC_FREE(inbuf);
 			goto done;
 		}
 	}
@@ -655,9 +659,9 @@ static void cli_smb_received(struct tevent_req *subreq)
 	if (!oplock_break /* oplock breaks are not signed */
 	    && !cli_check_sign_mac(cli, (char *)inbuf, state->seqnum+1)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
-		TALLOC_FREE(inbuf);
 		status = NT_STATUS_ACCESS_DENIED;
 		cli_state_notify_pending(cli, status);
+		TALLOC_FREE(frame);
 		return;
 	}
 
@@ -668,8 +672,8 @@ static void cli_smb_received(struct tevent_req *subreq)
 		state->chain_length = 1;
 		tevent_req_done(req);
 	} else {
-		struct tevent_req **chain = talloc_move(
-			talloc_tos(), &state->chained_requests);
+		struct tevent_req **chain = talloc_move(frame,
+					    &state->chained_requests);
 		int num_chained = talloc_array_length(chain);
 
 		for (i=0; i<num_chained; i++) {
@@ -681,10 +685,10 @@ static void cli_smb_received(struct tevent_req *subreq)
 			cli_smb_req_unset_pending(req);
 			tevent_req_done(chain[i]);
 		}
-		TALLOC_FREE(inbuf);
-		TALLOC_FREE(chain);
 	}
  done:
+	TALLOC_FREE(frame);
+
 	if ((talloc_array_length(cli->conn.pending) > 0) &&
 	    (cli->conn.read_smb_req == NULL)) {
 		/*
