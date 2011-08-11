@@ -211,7 +211,14 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	talloc_set_destructor(req, cli_smb_req_destructor);
 
 	if (!cli_state_receive_next(cli)) {
+		/*
+		 * the caller should notify the current request
+		 *
+		 * And all other pending requests get notified
+		 * by cli_state_notify_pending().
+		 */
 		cli_smb_req_unset_pending(req);
+		cli_state_notify_pending(cli, NT_STATUS_NO_MEMORY);
 		return false;
 	}
 
