@@ -580,7 +580,8 @@ static NTSTATUS pdb_samba4_create_user(struct pdb_methods *m,
 
 	/* Internally this uses transactions to ensure all the steps
 	 * happen or fail as one */
-	status = dsdb_add_user(state->ldb, tmp_ctx, name, acct_flags, &sid, &dn);
+	status = dsdb_add_user(state->ldb, tmp_ctx, name, acct_flags, NULL,
+			       &sid, &dn);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return status;

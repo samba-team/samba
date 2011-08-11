@@ -1205,7 +1205,8 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dsdb_add_user(d_state->sam_ctx, mem_ctx, account_name, r->in.acct_flags, &sid, &dn);
+	status = dsdb_add_user(d_state->sam_ctx, mem_ctx, account_name, r->in.acct_flags, NULL,
+			       &sid, &dn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -36,6 +36,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		       TALLOC_CTX *mem_ctx,
 		       const char *account_name,
 		       uint32_t acct_flags,
+		       const struct dom_sid *forced_sid,
 		       struct dom_sid **sid,
 		       struct ldb_dn **dn)
 {
@@ -143,6 +144,18 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 	ldb_msg_add_string(msg, "sAMAccountName", account_name);
 	ldb_msg_add_string(msg, "objectClass", obj_class);
 
+	/* This is only here for migrations using pdb_samba4, the
+	 * caller and the samldb are responsible for ensuring it makes
+	 * sense */
+	if (forced_sid) {
+		ret = samdb_msg_add_dom_sid(ldb, msg, msg, "objectSID", forced_sid);
+		if (ret != LDB_SUCCESS) {
+			ldb_transaction_cancel(ldb);
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
 	/* create the user */
 	ret = ldb_add(ldb, msg);
 	switch (ret) {
@@ -244,7 +257,9 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	*dn = talloc_steal(mem_ctx, account_dn);
-	*sid = talloc_steal(mem_ctx, account_sid);
+	if (sid) {
+		*sid = talloc_steal(mem_ctx, account_sid);
+	}
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
