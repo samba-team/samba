@@ -2025,15 +2025,24 @@ void chain_reply(struct smb_request *req)
 	SMB_PERFCOUNT_SET_MSGLEN_IN(&req->pcd, smblen);
 
 	/*
-	 * Check if the client tries to fool us. The request so far uses the
-	 * space to the end of the byte buffer in the request just
-	 * processed. The chain_offset can't point into that area. If that was
-	 * the case, we could end up with an endless processing of the chain,
-	 * we would always handle the same request.
+	 * Check if the client tries to fool us. The chain offset
+	 * needs to point beyond the current request in the chain, it
+	 * needs to strictly grow. Otherwise we might be tricked into
+	 * an endless loop always processing the same request over and
+	 * over again. We used to assume that vwv and the byte buffer
+	 * array in a chain are always attached, but OS/2 the
+	 * Write&X/Read&X chain puts the Read&X vwv array right behind
+	 * the Write&X vwv chain. The Write&X bcc array is put behind
+	 * the Read&X vwv array. So now we check whether the chain
+	 * offset points strictly behind the previous vwv
+	 * array. req->buf points right after the vwv array of the
+	 * previous request. See
+	 * https://bugzilla.samba.org/show_bug.cgi?id=8360 for more
+	 * information.
 	 */
 
-	already_used = PTR_DIFF(req->buf+req->buflen, smb_base(req->inbuf));
-	if (chain_offset < already_used) {
+	already_used = PTR_DIFF(req->buf, smb_base(req->inbuf));
+	if (chain_offset <= already_used) {
 		goto error;
 	}
 
