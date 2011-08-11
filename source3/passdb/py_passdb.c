@@ -959,10 +959,16 @@ static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
 	struct pdb_methods *methods;
 	struct pdb_domain_info *domain_info;
 	PyObject *py_domain_info;
+	TALLOC_CTX *tframe;
 
 	methods = pytalloc_get_ptr(self);
 
-	domain_info = methods->get_domain_info(methods, pytalloc_get_mem_ctx(self));
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	domain_info = methods->get_domain_info(methods, tframe);
 	if (! domain_info) {
 		Py_RETURN_NONE;
 	}
@@ -980,7 +986,7 @@ static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
 	struct GUID guid;
 	*/
 
-	talloc_free(domain_info);
+	talloc_free(tframe);
 
 	return py_domain_info;
 }
@@ -1432,6 +1438,12 @@ static PyObject *py_passdb_backends(PyObject *self)
 {
 	PyObject *py_blist;
 	const struct pdb_init_function_entry *entry;
+	TALLOC_CTX *tframe;
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	entry = pdb_get_backends();
 	if(! entry) {
@@ -1448,6 +1460,8 @@ static PyObject *py_passdb_backends(PyObject *self)
 		entry = entry->next;
 	}
 
+	talloc_free(tframe);
+
 	return py_blist;
 }
 
@@ -1455,8 +1469,14 @@ static PyObject *py_passdb_backends(PyObject *self)
 static PyObject *py_set_smb_config(PyObject *self, PyObject *args)
 {
 	const char *smb_config;
+	TALLOC_CTX *tframe;
 
 	if (!PyArg_ParseTuple(args, "s", &smb_config)) {
+		return NULL;
+	}
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
 		return NULL;
 	}
 
@@ -1466,6 +1486,8 @@ static PyObject *py_set_smb_config(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
+	talloc_free(tframe);
+
 	Py_RETURN_NONE;
 }
 
@@ -1473,8 +1495,14 @@ static PyObject *py_set_smb_config(PyObject *self, PyObject *args)
 static PyObject *py_set_secrets_dir(PyObject *self, PyObject *args)
 {
 	const char *private_dir;
+	TALLOC_CTX *tframe;
 
 	if (!PyArg_ParseTuple(args, "s", &private_dir)) {
+		return NULL;
+	}
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
 		return NULL;
 	}
 
@@ -1484,6 +1512,8 @@ static PyObject *py_set_secrets_dir(PyObject *self, PyObject *args)
 				private_dir);
 		return NULL;
 	}
+
+	talloc_free(tframe);
 
 	Py_RETURN_NONE;
 }
