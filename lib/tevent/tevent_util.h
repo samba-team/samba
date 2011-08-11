@@ -183,6 +183,7 @@ do { \
 const char **ev_str_list_add(const char **list, const char *s);
 int ev_set_blocking(int fd, bool set);
 size_t ev_str_list_length(const char **list);
+bool ev_set_close_on_exec(int fd);
 
 /* Defined here so we can build against older talloc versions that don't
  * have this define yet. */

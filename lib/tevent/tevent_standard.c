@@ -100,6 +100,17 @@ static int epoll_ctx_destructor(struct std_event_context *std_ev)
 static void epoll_init_ctx(struct std_event_context *std_ev)
 {
 	std_ev->epoll_fd = epoll_create(64);
+	if (std_ev->epoll_fd == -1) {
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to create epoll handle.\n");
+		return;
+	}
+
+	if (!ev_set_close_on_exec(std_ev->epoll_fd)) {
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_WARNING,
+			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
+	}
+
 	std_ev->pid = getpid();
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
 }
@@ -126,6 +137,12 @@ static void epoll_check_reopen(struct std_event_context *std_ev)
 			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
+
+	if (!ev_set_close_on_exec(std_ev->epoll_fd)) {
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_WARNING,
+			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
+	}
+
 	std_ev->pid = getpid();
 	for (fde=std_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(std_ev, fde);
