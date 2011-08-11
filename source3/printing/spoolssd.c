@@ -108,29 +108,27 @@ static void spoolss_reopen_logs(int child_id)
 	int rc;
 
 	if (child_id) {
-		rc = asprintf(&ext, ".%s.%d", DAEMON_NAME, child_id);
+		rc = asprintf(&ext, "%s.%d", DAEMON_NAME, child_id);
 	} else {
-		rc = asprintf(&ext, ".%s", DAEMON_NAME);
+		rc = asprintf(&ext, "%s", DAEMON_NAME);
 	}
 
 	if (rc == -1) {
-		/* if we can't allocate, set it to NULL
-		 * and logging will flow in the original file */
-		ext = NULL;
+		return;
 	}
 
 	rc = 0;
 	if (lfile == NULL || lfile[0] == '\0') {
-		rc = asprintf(&lfile, "%s/log%s",
-			      get_dyn_LOGFILEBASE(), ext?ext:"");
+		rc = asprintf(&lfile, "%s/log.%s",
+			      get_dyn_LOGFILEBASE(), ext);
 	} else {
-		if (ext && strstr(lfile, ext) == NULL) {
-			if (strstr(lfile, DAEMON_NAME) == NULL) {
-				rc = asprintf(&lfile, "%s%s",
-					      lp_logfile(), ext?ext:"");
-			} else {
+		if (strstr(lfile, ext) == NULL) {
+			if (child_id) {
 				rc = asprintf(&lfile, "%s.%d",
 					      lp_logfile(), child_id);
+			} else {
+				rc = asprintf(&lfile, "%s.%s",
+					      lp_logfile(), ext);
 			}
 		}
 	}
@@ -912,7 +910,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	ret = tevent_loop_wait(ev_ctx);
 
 	/* should not be reached */
-	DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
+	DEBUG(0,("spoolssd tevent_loop_wait() exited with %d - %s\n",
 		 ret, (ret == 0) ? "out of events" : strerror(errno)));
 	exit(1);
 }
