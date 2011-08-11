@@ -1045,7 +1045,9 @@ void winbindd_register_handlers(void)
 	/* get broadcast messages */
 
 	if (!serverid_register(procid_self(),
-			       FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP)) {
+			       FLAG_MSG_GENERAL |
+			       FLAG_MSG_WINBIND |
+			       FLAG_MSG_DBWRAP)) {
 		DEBUG(1, ("Could not register myself in serverid.tdb\n"));
 		exit(1);
 	}

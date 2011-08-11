@@ -932,7 +932,9 @@ static bool open_sockets(bool isdaemon, int port)
 	/* get broadcast messages */
 
 	if (!serverid_register(procid_self(),
-			       FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP)) {
+				FLAG_MSG_GENERAL |
+				FLAG_MSG_NMBD |
+				FLAG_MSG_DBWRAP)) {
 		DEBUG(1, ("Could not register myself in serverid.tdb\n"));
 		exit(1);
 	}

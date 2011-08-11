@@ -146,18 +146,21 @@ bool message_send_all(struct messaging_context *msg_ctx,
 	struct msg_all msg_all;
 
 	msg_all.msg_type = msg_type;
-	if (msg_type < 1000)
+	if (msg_type < 0x100) {
 		msg_all.msg_flag = FLAG_MSG_GENERAL;
-	else if (msg_type > 1000 && msg_type < 2000)
+	} else if (msg_type > 0x100 && msg_type < 0x200) {
 		msg_all.msg_flag = FLAG_MSG_NMBD;
-	else if (msg_type > 2100 && msg_type < 3000)
+	} else if (msg_type > 0x200 && msg_type < 0x300) {
 		msg_all.msg_flag = FLAG_MSG_PRINT_GENERAL;
-	else if (msg_type > 3000 && msg_type < 4000)
+	} else if (msg_type > 0x300 && msg_type < 0x400) {
 		msg_all.msg_flag = FLAG_MSG_SMBD;
-	else if (msg_type > 4000 && msg_type < 5000)
+	} else if (msg_type > 0x400 && msg_type < 0x600) {
+		msg_all.msg_flag = FLAG_MSG_WINBIND;
+	} else if (msg_type > 4000 && msg_type < 5000) {
 		msg_all.msg_flag = FLAG_MSG_DBWRAP;
-	else
-		return False;
+	} else {
+		return false;
+	}
 
 	msg_all.buf = buf;
 	msg_all.len = len;
@@ -167,7 +170,7 @@ bool message_send_all(struct messaging_context *msg_ctx,
 	serverid_traverse(traverse_fn, &msg_all);
 	if (n_sent)
 		*n_sent = msg_all.n_sent;
-	return True;
+	return true;
 }
 
 struct event_context *messaging_event_context(struct messaging_context *msg_ctx)
