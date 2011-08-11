@@ -823,7 +823,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	if (!serverid_register(procid_self(),
 				FLAG_MSG_GENERAL |
-				FLAG_MSG_SMBD |
 				FLAG_MSG_PRINT_GENERAL)) {
 		exit(1);
 	}

@@ -177,8 +177,8 @@ void start_epmd(struct tevent_context *ev_ctx,
 	epmd_setup_sig_hup_handler(ev_ctx, msg_ctx);
 
 	ok = serverid_register(procid_self(),
-			       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-			       |FLAG_MSG_PRINT_GENERAL);
+			       FLAG_MSG_GENERAL |
+			       FLAG_MSG_PRINT_GENERAL);
 	if (!ok) {
 		DEBUG(0, ("Failed to register serverid in epmd!\n"));
 		exit(1);
