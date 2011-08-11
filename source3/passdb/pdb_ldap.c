@@ -1942,17 +1942,6 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
 }
 
 /**********************************************************************
- Helper function to determine for update_sam_account whether
- we need LDAP modification.
-*********************************************************************/
-
-static bool element_is_changed(const struct samu *sampass,
-			       enum pdb_elements element)
-{
-	return IS_SAM_CHANGED(sampass, element);
-}
-
-/**********************************************************************
  Update struct samu.
 *********************************************************************/
 
@@ -1997,7 +1986,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	DEBUG(4, ("ldapsam_update_sam_account: user %s to be modified has dn: %s\n", pdb_get_username(newpwd), dn));
 
 	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
-				element_is_changed)) {
+				pdb_element_is_changed)) {
 		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
 		TALLOC_FREE(dn);
 		if (mods != NULL)
@@ -2013,7 +2002,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 		return NT_STATUS_OK;
 	}
 
-	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, element_is_changed);
+	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, pdb_element_is_changed);
 
 	if (mods != NULL) {
 		ldap_mods_free(mods,True);
@@ -2133,18 +2122,6 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 }
 
 /**********************************************************************
- Helper function to determine for update_sam_account whether
- we need LDAP modification.
- *********************************************************************/
-
-static bool element_is_set_or_changed(const struct samu *sampass,
-				      enum pdb_elements element)
-{
-	return (IS_SAM_SET(sampass, element) ||
-		IS_SAM_CHANGED(sampass, element));
-}
-
-/**********************************************************************
  Add struct samu to LDAP.
 *********************************************************************/
 
@@ -2194,7 +2171,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	ldap_msgfree(result);
 	result = NULL;
 
-	if (element_is_set_or_changed(newpwd, PDB_USERSID)) {
+	if (pdb_element_is_set_or_changed(newpwd, PDB_USERSID)) {
 		rc = ldapsam_get_ldap_user_by_sid(ldap_state,
 						  sid, &result);
 		if (rc == LDAP_SUCCESS) {
@@ -2330,7 +2307,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	}
 
 	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
-				element_is_set_or_changed)) {
+				pdb_element_is_set_or_changed)) {
 		DEBUG(0, ("ldapsam_add_sam_account: init_ldap_from_sam failed!\n"));
 		if (mods != NULL) {
 			ldap_mods_free(mods, true);
@@ -2354,7 +2331,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 			break;
 	}
 
-	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,ldap_op, element_is_set_or_changed);
+	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,ldap_op, pdb_element_is_set_or_changed);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("ldapsam_add_sam_account: failed to modify/add user with uid = %s (dn = %s)\n",
 			 pdb_get_username(newpwd),dn));
@@ -5367,7 +5344,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!init_ldap_from_sam(ldap_state, entry, &mods, user, element_is_set_or_changed)) {
+	if (!init_ldap_from_sam(ldap_state, entry, &mods, user, pdb_element_is_set_or_changed)) {
 		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

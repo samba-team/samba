@@ -197,6 +197,10 @@ bool pdb_set_backend_private_data(struct samu *sampass, void *private_data,
 bool pdb_set_pass_can_change(struct samu *sampass, bool canchange);
 bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext);
 uint32_t pdb_build_fields_present(struct samu *sampass);
+bool pdb_element_is_changed(const struct samu *sampass,
+			    enum pdb_elements element);
+bool pdb_element_is_set_or_changed(const struct samu *sampass,
+				   enum pdb_elements element);
 
 /* The following definitions come from passdb/pdb_interface.c  */
 

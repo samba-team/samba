@@ -1088,3 +1088,26 @@ uint32_t pdb_build_fields_present(struct samu *sampass)
 	/* value set to all for testing */
 	return 0x00ffffff;
 }
+
+/**********************************************************************
+ Helper function to determine for update_sam_account whether
+ we need LDAP modification.
+*********************************************************************/
+
+bool pdb_element_is_changed(const struct samu *sampass,
+			    enum pdb_elements element)
+{
+	return IS_SAM_CHANGED(sampass, element);
+}
+
+/**********************************************************************
+ Helper function to determine for update_sam_account whether
+ we need LDAP modification.
+ *********************************************************************/
+
+bool pdb_element_is_set_or_changed(const struct samu *sampass,
+				   enum pdb_elements element)
+{
+	return (IS_SAM_SET(sampass, element) ||
+		IS_SAM_CHANGED(sampass, element));
+}
