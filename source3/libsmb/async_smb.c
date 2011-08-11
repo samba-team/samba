@@ -225,6 +225,33 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	return true;
 }
 
+static void cli_state_notify_pending(struct cli_state *cli, NTSTATUS status)
+{
+	cli_state_disconnect(cli);
+
+	/*
+	 * Cancel all pending requests. We do not do a for-loop walking
+	 * cli->conn.pending because that array changes in
+	 * cli_smb_req_destructor().
+	 */
+	while (talloc_array_length(cli->conn.pending) > 0) {
+		struct tevent_req *req;
+		struct cli_smb_state *state;
+
+		req = cli->conn.pending[0];
+		state = tevent_req_data(req, struct cli_smb_state);
+
+		cli_smb_req_unset_pending(req);
+
+		/*
+		 * we need to defer the callback, because we may notify more
+		 * then one caller.
+		 */
+		tevent_req_defer_callback(req, state->ev);
+		tevent_req_nterror(req, status);
+	}
+}
+
 /*
  * Fetch a smb request's mid. Only valid after the request has been sent by
  * cli_smb_req_send().
@@ -490,8 +517,8 @@ static void cli_smb_sent(struct tevent_req *subreq)
 	nwritten = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
-		cli_state_disconnect(state->cli);
-		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		NTSTATUS status = map_nt_error_from_unix(err);
+		cli_state_notify_pending(state->cli, status);
 		return;
 	}
 
@@ -536,23 +563,25 @@ static void cli_smb_received(struct tevent_req *subreq)
 		DEBUG(1, ("Internal error: cli_smb_received called with "
 			  "unexpected subreq\n"));
 		status = NT_STATUS_INTERNAL_ERROR;
-		goto fail;
+		cli_state_notify_pending(cli, status);
+		return;
 	}
 
 	received = read_smb_recv(subreq, talloc_tos(), &inbuf, &err);
 	TALLOC_FREE(subreq);
 	cli->conn.read_smb_req = NULL;
 	if (received == -1) {
-		cli_state_disconnect(cli);
 		status = map_nt_error_from_unix(err);
-		goto fail;
+		cli_state_notify_pending(cli, status);
+		return;
 	}
 
 	if ((IVAL(inbuf, 4) != 0x424d53ff) /* 0xFF"SMB" */
 	    && (SVAL(inbuf, 4) != 0x45ff)) /* 0xFF"E" */ {
 		DEBUG(10, ("Got non-SMB PDU\n"));
 		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		goto fail;
+		cli_state_notify_pending(cli, status);
+		return;
 	}
 
 	if (cli_encryption_on(cli) && (CVAL(inbuf, 0) == 0)) {
@@ -562,7 +591,8 @@ static void cli_smb_received(struct tevent_req *subreq)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("get_enc_ctx_num returned %s\n",
 				   nt_errstr(status)));
-			goto fail;
+			cli_state_notify_pending(cli, status);
+			return;
 		}
 
 		if (enc_ctx_num != cli->trans_enc_state->enc_ctx_num) {
@@ -570,7 +600,8 @@ static void cli_smb_received(struct tevent_req *subreq)
 				   enc_ctx_num,
 				   cli->trans_enc_state->enc_ctx_num));
 			status = NT_STATUS_INVALID_HANDLE;
-			goto fail;
+			cli_state_notify_pending(cli, status);
+			return;
 		}
 
 		status = common_decrypt_buffer(cli->trans_enc_state,
@@ -578,7 +609,8 @@ static void cli_smb_received(struct tevent_req *subreq)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("common_decrypt_buffer returned %s\n",
 				   nt_errstr(status)));
-			goto fail;
+			cli_state_notify_pending(cli, status);
+			return;
 		}
 	}
 
@@ -623,8 +655,8 @@ static void cli_smb_received(struct tevent_req *subreq)
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
 		TALLOC_FREE(inbuf);
 		status = NT_STATUS_ACCESS_DENIED;
-		cli_state_disconnect(cli);
-		goto fail;
+		cli_state_notify_pending(cli, status);
+		return;
 	}
 
 	if (state->chained_requests == NULL) {
@@ -663,23 +695,11 @@ static void cli_smb_received(struct tevent_req *subreq)
 			cli->conn.pending, state->ev, cli->conn.fd);
 		if (cli->conn.read_smb_req == NULL) {
 			status = NT_STATUS_NO_MEMORY;
-			goto fail;
+			cli_state_notify_pending(cli, status);
+			return;
 		}
 		tevent_req_set_callback(cli->conn.read_smb_req,
 					cli_smb_received, cli);
-	}
-	return;
- fail:
-	/*
-	 * Cancel all pending requests. We don't do a for-loop walking
-	 * cli->conn.pending because that array changes in
-	 * cli_smb_req_destructor().
-	 */
-	while (talloc_array_length(cli->conn.pending) > 0) {
-		req = cli->conn.pending[0];
-		talloc_set_destructor(req, NULL);
-		cli_smb_req_unset_pending(req);
-		tevent_req_nterror(req, status);
 	}
 }
 
