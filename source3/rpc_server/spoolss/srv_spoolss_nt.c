@@ -283,15 +283,6 @@ static void srv_spoolss_replycloseprinter(int snum,
 		if (prn_hnd->notify.msg_ctx != NULL) {
 			messaging_deregister(prn_hnd->notify.msg_ctx,
 					     MSG_PRINTER_NOTIFY2, NULL);
-
-			/*
-			 * Tell the serverid.tdb we're no longer
-			 * interested in printer notify messages.
-			 */
-
-			serverid_register_msg_flags(
-				messaging_server_id(prn_hnd->notify.msg_ctx),
-				false, FLAG_MSG_PRINT_NOTIFY);
 		}
 	}
 
@@ -2636,10 +2627,6 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_NOTIFY2,
 				   receive_notify2_message_list);
-		/* Tell the connections db we're now interested in printer
-		 * notify messages. */
-		serverid_register_msg_flags(messaging_server_id(msg_ctx),
-					    true, FLAG_MSG_PRINT_NOTIFY);
 	}
 
 	/*

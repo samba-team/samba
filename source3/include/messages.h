@@ -42,7 +42,7 @@
 #define FLAG_MSG_GENERAL		0x0001
 #define FLAG_MSG_SMBD			0x0002
 #define FLAG_MSG_NMBD			0x0004
-#define FLAG_MSG_PRINT_NOTIFY		0x0008
+/* #define FLAG_MSG_PRINT_NOTIFY		0x0008  Obsolete */
 #define FLAG_MSG_PRINT_GENERAL		0x0010
 /* dbwrap messages 4001-4999 */
 #define FLAG_MSG_DBWRAP			0x0020

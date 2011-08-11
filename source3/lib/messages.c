@@ -150,8 +150,6 @@ bool message_send_all(struct messaging_context *msg_ctx,
 		msg_all.msg_flag = FLAG_MSG_GENERAL;
 	else if (msg_type > 1000 && msg_type < 2000)
 		msg_all.msg_flag = FLAG_MSG_NMBD;
-	else if (msg_type > 2000 && msg_type < 2100)
-		msg_all.msg_flag = FLAG_MSG_PRINT_NOTIFY;
 	else if (msg_type > 2100 && msg_type < 3000)
 		msg_all.msg_flag = FLAG_MSG_PRINT_GENERAL;
 	else if (msg_type > 3000 && msg_type < 4000)

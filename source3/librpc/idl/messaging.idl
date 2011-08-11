@@ -45,7 +45,7 @@ interface messaging
 		MSG_SEND_PACKET			= 0x0103,
 
 		/* printing messages */
-		MSG_PRINTER_NOTIFY		= 0x2001, /* Obsolete */
+		/* MSG_PRINTER_NOTIFY		= 0x2001,  Obsoleted */
 		MSG_PRINTER_NOTIFY2		= 0x0202,
 		MSG_PRINTER_DRVUPGRADE		= 0x0203,
 		MSG_PRINTERDATA_INIT_RESET	= 0x0204,
