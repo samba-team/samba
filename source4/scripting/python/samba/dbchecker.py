@@ -77,10 +77,17 @@ class dbcheck(object):
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
         error_count = 0
+
         for object in res:
             error_count += self.check_object(object.dn, attrs=attrs)
+
+        if DN is None:
+            error_count += self.check_rootdse()
+
         if error_count != 0 and not self.fix:
             self.report("Please use --fix to fix these errors")
+
+
         self.report('Checked %u objects (%u errors)' % (len(res), error_count))
 
         return error_count
@@ -479,6 +486,42 @@ class dbcheck(object):
                     self.fix_metadata(dn, att)
 
         return error_count
+
+    ################################################################
+    # check special @ROOTDSE attributes
+    def check_rootdse(self):
+        '''check the @ROOTDSE special object'''
+        dn = ldb.Dn(self.samdb, '@ROOTDSE')
+        if self.verbose:
+            self.report("Checking object %s" % dn)
+        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE)
+        if len(res) != 1:
+            self.report("Object %s disappeared during check" % dn)
+            return 1
+        obj = res[0]
+        error_count = 0
+
+        # check that the dsServiceName is in GUID form
+        if not 'dsServiceName' in obj:
+            self.report('ERROR: dsServiceName missing in @ROOTDSE')
+            return error_count+1
+
+        if not obj['dsServiceName'][0].startswith('<GUID='):
+            self.report('ERROR: dsServiceName not in GUID form in @ROOTDSE')
+            error_count += 1
+            if not self.confirm('Change dsServiceName to GUID form?'):
+                return error_count
+            res = self.samdb.search(base=ldb.Dn(self.samdb, obj['dsServiceName'][0]),
+                                    scope=ldb.SCOPE_BASE, attrs=['objectGUID'])
+            guid_str = str(ndr_unpack(misc.GUID, res[0]['objectGUID'][0]))
+            m = ldb.Message()
+            m.dn = dn
+            m['dsServiceName'] = ldb.MessageElement("<GUID=%s>" % guid_str,
+                                                    ldb.FLAG_MOD_REPLACE, 'dsServiceName')
+            if self.do_modify(m, [], "Failed to change dsServiceName to GUID form", validate=False):
+                self.report("Changed dsServiceName to GUID form")
+        return error_count
+
 
     ###############################################
     # re-index the database
