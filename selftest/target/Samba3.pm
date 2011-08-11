@@ -285,6 +285,7 @@ sub setup_plugin_s4_dc($$$$)
         auth methods = guest samba4
         domain logons = yes
         rpc_server:epmapper = external
+        rpc_daemon:epmd = disabled
         rpc_server:tcpip = no
         rpc_server:lsass = external
         rpc_server:lsarpc = external
@@ -901,9 +902,12 @@ sub provision($$$$$$$)
 	lpq cache time = 0
 
 	ncalrpc dir = $prefix_abs/ncalrpc
-	rpc_server:epmapper = daemon
-	rpc_server:spoolss = daemon
+	rpc_server:epmapper = external
+	rpc_server:spoolss = external
 	rpc_server:tcpip = yes
+
+	rpc_daemon:epmd = fork
+	rpc_daemon:spoolssd = fork
 
         resolv:host file = $dns_host_file
 
