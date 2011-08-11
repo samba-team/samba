@@ -187,7 +187,8 @@ static int cli_smb_req_destructor(struct tevent_req *req)
 	return 0;
 }
 
-static void cli_smb_received(struct tevent_req *subreq);
+static bool cli_state_receive_next(struct cli_state *cli);
+static void cli_state_notify_pending(struct cli_state *cli, NTSTATUS status);
 
 bool cli_smb_req_set_pending(struct tevent_req *req)
 {
@@ -209,9 +210,32 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	cli->conn.pending = pending;
 	talloc_set_destructor(req, cli_smb_req_destructor);
 
+	if (!cli_state_receive_next(cli)) {
+		cli_smb_req_unset_pending(req);
+		return false;
+	}
+
+	return true;
+}
+
+static void cli_smb_received(struct tevent_req *subreq);
+
+static bool cli_state_receive_next(struct cli_state *cli)
+{
+	size_t num_pending = talloc_array_length(cli->conn.pending);
+	struct tevent_req *req;
+	struct cli_smb_state *state;
+
 	if (cli->conn.read_smb_req != NULL) {
 		return true;
 	}
+
+	if (num_pending == 0) {
+		return true;
+	}
+
+	req = cli->conn.pending[0];
+	state = tevent_req_data(req, struct cli_smb_state);
 
 	/*
 	 * We're the first ones, add the read_smb request that waits for the
@@ -220,7 +244,6 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 	cli->conn.read_smb_req = read_smb_send(cli->conn.pending, state->ev,
 					       cli->conn.fd);
 	if (cli->conn.read_smb_req == NULL) {
-		cli_smb_req_unset_pending(req);
 		return false;
 	}
 	tevent_req_set_callback(cli->conn.read_smb_req, cli_smb_received, cli);
