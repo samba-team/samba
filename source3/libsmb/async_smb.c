@@ -700,20 +700,57 @@ static void cli_smb_received(struct tevent_req *subreq)
 		cli_smb_req_unset_pending(req);
 		state->chain_num = 0;
 		state->chain_length = 1;
+
+		if (talloc_array_length(cli->conn.pending) == 0) {
+			tevent_req_done(req);
+			TALLOC_FREE(frame);
+			return;
+		}
+
+		tevent_req_defer_callback(req, state->ev);
 		tevent_req_done(req);
 	} else {
 		struct tevent_req **chain = talloc_move(frame,
 					    &state->chained_requests);
 		int num_chained = talloc_array_length(chain);
 
+		/*
+		 * We steal the inbuf to the chain,
+		 * so that it will stay until all
+		 * requests of the chain are finished.
+		 *
+		 * Each requests in the chain will
+		 * hold a talloc reference to the chain.
+		 * This way we do not expose the talloc_reference()
+		 * behavior to the callers.
+		 */
+		talloc_steal(chain, inbuf);
+
 		for (i=0; i<num_chained; i++) {
-			state = tevent_req_data(chain[i], struct
-						cli_smb_state);
+			struct tevent_req **ref;
+
+			req = chain[i];
+			state = tevent_req_data(req, struct cli_smb_state);
+
+			cli_smb_req_unset_pending(req);
+
+			/*
+			 * as we finish multiple requests here
+			 * we need to defer the callbacks as
+			 * they could destroy our current stack state.
+			 */
+			tevent_req_defer_callback(req, state->ev);
+
+			ref = talloc_reference(state, chain);
+			if (tevent_req_nomem(ref, req)) {
+				continue;
+			}
+
 			state->inbuf = inbuf;
 			state->chain_num = i;
 			state->chain_length = num_chained;
-			cli_smb_req_unset_pending(req);
-			tevent_req_done(chain[i]);
+
+			tevent_req_done(req);
 		}
 	}
  done:
