@@ -33,6 +33,7 @@
 #include "source4/auth/session.h"
 #include "source4/auth/system_session_proto.h"
 #include "source4/param/param.h"
+#include "source4/dsdb/common/util.h"
 
 struct pdb_samba4_state {
 	struct tevent_context *ev;
@@ -338,7 +339,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	const char *pw;
 	struct ldb_message *msg;
 	struct ldb_request *req;
-	unsigned int j;
+	uint32_t dsdb_flags = 0;
 	/* TODO: All fields :-) */
 
 	msg = ldb_msg_new(talloc_tos());
@@ -350,7 +351,8 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 
 	/* build modify request */
 	ret = ldb_build_mod_req(&req, state->ldb, talloc_tos(), msg, NULL, NULL,
-				NULL, NULL);
+				ldb_op_default_callback,
+				NULL);
         if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return ret;
@@ -455,9 +457,8 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 			changed_history = true;
 		}
 		if (changed_lm_pw || changed_nt_pw || changed_history) {
-			ret |= ldb_request_add_control(req,
-						       DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID,
-						       true, NULL);
+			/* These attributes can only be modified directly by using a special control */
+			dsdb_flags = DSDB_BYPASS_PASSWORD_HASH;
 		}
 	}
 
@@ -577,15 +578,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 		return LDB_SUCCESS;
 	}
 
-	/* mark everything here as a replace */
-	for (j=0;j<msg->num_elements;j++) {
-		msg->elements[j].flags = LDB_FLAG_MOD_REPLACE;
-	}
-
-	ret = ldb_request(state->ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
+	ret = dsdb_replace(state->ldb, msg, dsdb_flags);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to modify account record %s to set user attributes: %s\n",

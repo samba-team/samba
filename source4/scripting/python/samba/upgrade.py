@@ -375,8 +375,8 @@ def import_registry(samba4_registry, samba3_regdb):
             key_handle.set_value(value_name, value_type, value_data)
 
 
-def upgrade_provision(samba3, logger, credentials, session_info,
-                      smbconf, targetdir):
+def upgrade_from_passdb(samba3, logger, credentials, session_info,
+                        smbconf, targetdir):
     oldconf = samba3.get_conf()
 
     if oldconf.get("domain logons") == "True":

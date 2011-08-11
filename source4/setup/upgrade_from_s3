@@ -26,7 +26,7 @@ sys.path.insert(0, "bin/python")
 import samba
 import samba.getopt as options
 from samba.auth import system_session
-from samba.upgrade import upgrade_provision
+from samba.upgrade import upgrade_from_passdb
 from samba.samba3 import Samba3
 parser = optparse.OptionParser("upgrade_from_s3 [options] <libdir> <smbconf>")
 sambaopts = options.SambaOptions(parser)
@@ -73,6 +73,6 @@ lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
 creds = credopts.get_credentials(lp)
 
-upgrade_provision(samba3, logger, credentials=creds,
-                  session_info=system_session(), smbconf=smbconf,
-                  targetdir=opts.targetdir)
+upgrade_from_passdb(samba3, logger, credentials=creds,
+		    session_info=system_session(), smbconf=smbconf,
+		    targetdir=opts.targetdir)
