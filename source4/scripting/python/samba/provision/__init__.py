@@ -1745,7 +1745,8 @@ def provision(logger, session_info, credentials, smbconf=None,
                     domainsid, names.dnsdomain, names.domaindn, lp)
 
             logger.info("Setting up sam.ldb rootDSE marking as synchronized")
-            setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
+            setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"),
+                              { 'NTDSGUID' : names.ntdsguid })
 
             secretsdb_self_join(secrets_ldb, domain=names.domain,
                 realm=names.realm, dnsdomain=names.dnsdomain,

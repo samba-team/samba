@@ -3,3 +3,5 @@ dn: @ROOTDSE
 changetype: modify
 replace: isSynchronized
 isSynchronized: TRUE
+replace: dsServiceName
+dsServiceName: <GUID=${NTDSGUID}>
