@@ -2195,7 +2195,8 @@ static int setup_io(struct ph_context *ac,
 	}
 
 	/* Checks and converts the actual "unicodePwd" attribute */
-	if (quoted_utf16 &&
+	if (!ac->hash_values &&
+	    quoted_utf16 &&
 	    quoted_utf16->length >= 4 &&
 	    quoted_utf16->data[0] == '"' &&
 	    quoted_utf16->data[1] == 0 &&
@@ -2251,7 +2252,8 @@ static int setup_io(struct ph_context *ac,
 	}
 
 	/* Checks and converts the previous "unicodePwd" attribute */
-	if (old_quoted_utf16 &&
+	if (!ac->hash_values &&
+	    old_quoted_utf16 &&
 	    old_quoted_utf16->length >= 4 &&
 	    old_quoted_utf16->data[0] == '"' &&
 	    old_quoted_utf16->data[1] == 0 &&
