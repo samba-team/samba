@@ -131,16 +131,6 @@ struct dsdb_extended_replicated_objects {
 	const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 };
 
-struct dsdb_naming_fsmo {
-	bool we_are_master;
-	struct ldb_dn *master_dn;
-};
-
-struct dsdb_pdc_fsmo {
-	bool we_are_master;
-	struct ldb_dn *master_dn;
-};
-
 #define DSDB_EXTENDED_CREATE_PARTITION_OID "1.3.6.1.4.1.7165.4.4.4"
 struct dsdb_create_partition_exop {
 	struct ldb_dn *new_dn;

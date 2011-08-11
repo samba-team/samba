@@ -84,26 +84,6 @@ bld.SAMBA_MODULE('ldb_schema_data',
 	)
 
 
-bld.SAMBA_MODULE('ldb_naming_fsmo',
-	source='naming_fsmo.c',
-	subsystem='ldb',
-	init_function='ldb_naming_fsmo_module_init',
-	module_init_name='ldb_init_module',
-	internal_module=False,
-	deps='samdb talloc DSDB_MODULE_HELPERS'
-	)
-
-
-bld.SAMBA_MODULE('ldb_pdc_fsmo',
-	source='pdc_fsmo.c',
-	subsystem='ldb',
-	init_function='ldb_pdc_fsmo_module_init',
-	module_init_name='ldb_init_module',
-	internal_module=False,
-	deps='samdb talloc DSDB_MODULE_HELPERS'
-	)
-
-
 bld.SAMBA_MODULE('ldb_samldb',
 	source='samldb.c',
 	subsystem='ldb',

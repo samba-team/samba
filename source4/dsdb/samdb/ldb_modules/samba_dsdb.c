@@ -303,18 +303,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 
 	ret = prepare_modules_line(ldb, tmp_ctx,
 				   rootdse_msg,
-				   partition_msg, "defaultNamingContext",
-				   "pdc_fsmo", backend_modules);
-	CHECK_LDB_RET(ret);
-
-	ret = prepare_modules_line(ldb, tmp_ctx,
-				   rootdse_msg,
-				   partition_msg, "configurationNamingContext",
-				   "naming_fsmo", backend_modules);
-	CHECK_LDB_RET(ret);
-
-	ret = prepare_modules_line(ldb, tmp_ctx,
-				   rootdse_msg,
 				   partition_msg, "schemaNamingContext",
 				   "schema_data", backend_modules);
 	CHECK_LDB_RET(ret);
