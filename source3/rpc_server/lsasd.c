@@ -53,6 +53,8 @@ static int lsasd_min_children;
 static int lsasd_max_children;
 static int lsasd_spawn_rate;
 static int lsasd_prefork_status;
+static struct prefork_pool *lsasd_pool = NULL;
+static int lsasd_child_id = 0;
 
 void start_lsasd(struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx);
@@ -153,8 +155,10 @@ static void lsasd_smb_conf_updated(struct messaging_context *msg,
 	change_to_root_user();
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
-	lsasd_reopen_logs(0);
-	lsasd_prefork_config();
+	lsasd_reopen_logs(lsasd_child_id);
+	if (lsasd_child_id == 0) {
+		lsasd_prefork_config();
+	}
 }
 
 static void lsasd_sig_term_handler(struct tevent_context *ev,
@@ -187,11 +191,6 @@ static void lsasd_setup_sig_term_handler(struct tevent_context *ev_ctx)
 	}
 }
 
-struct lsasd_hup_ctx {
-	struct messaging_context *msg_ctx;
-	struct prefork_pool *pfp;
-};
-
 static void lsasd_sig_hup_handler(struct tevent_context *ev,
 				    struct tevent_signal *se,
 				    int signum,
@@ -199,40 +198,26 @@ static void lsasd_sig_hup_handler(struct tevent_context *ev,
 				    void *siginfo,
 				    void *pvt)
 {
-	struct lsasd_hup_ctx *hup_ctx;
-
-	hup_ctx = talloc_get_type_abort(pvt, struct lsasd_hup_ctx);
 
 	change_to_root_user();
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
-	lsasd_reopen_logs(0);
+	lsasd_reopen_logs(lsasd_child_id);
 	lsasd_prefork_config();
 
 	/* relay to all children */
-	prefork_send_signal_to_all(hup_ctx->pfp, SIGHUP);
+	prefork_send_signal_to_all(lsasd_pool, SIGHUP);
 }
 
-static void lsasd_setup_sig_hup_handler(struct tevent_context *ev_ctx,
-					struct prefork_pool *pfp,
-					struct messaging_context *msg_ctx)
+static void lsasd_setup_sig_hup_handler(struct tevent_context *ev_ctx)
 {
-	struct lsasd_hup_ctx *hup_ctx;
 	struct tevent_signal *se;
-
-	hup_ctx = talloc(ev_ctx, struct lsasd_hup_ctx);
-	if (!hup_ctx) {
-		DEBUG(0, ("failed to setup SIGHUP handler\n"));
-		exit(1);
-	}
-	hup_ctx->pfp = pfp;
-	hup_ctx->msg_ctx = msg_ctx;
 
 	se = tevent_add_signal(ev_ctx,
 			       ev_ctx,
 			       SIGHUP, 0,
 			       lsasd_sig_hup_handler,
-			       hup_ctx);
+			       NULL);
 	if (!se) {
 		DEBUG(0, ("failed to setup SIGHUP handler\n"));
 		exit(1);
@@ -246,7 +231,6 @@ static void lsasd_setup_sig_hup_handler(struct tevent_context *ev_ctx,
 struct lsasd_chld_sig_hup_ctx {
 	struct messaging_context *msg_ctx;
 	struct pf_worker_data *pf;
-	int child_id;
 };
 
 static void lsasd_chld_sig_hup_handler(struct tevent_context *ev,
@@ -256,42 +240,27 @@ static void lsasd_chld_sig_hup_handler(struct tevent_context *ev,
 					 void *siginfo,
 					 void *pvt)
 {
-	struct lsasd_chld_sig_hup_ctx *shc;
-
-	shc = talloc_get_type_abort(pvt, struct lsasd_chld_sig_hup_ctx);
+	struct pf_worker_data *pf = (struct pf_worker_data *)pvt;
 
 	/* avoid wasting CPU cycles if we are going to exit soon anyways */
-	if (shc->pf != NULL &&
-	    shc->pf->cmds == PF_SRV_MSG_EXIT) {
+	if (pf->cmds == PF_SRV_MSG_EXIT) {
 		return;
 	}
 
 	change_to_root_user();
-	lsasd_reopen_logs(shc->child_id);
+	lsasd_reopen_logs(lsasd_child_id);
 }
 
 static bool lsasd_setup_chld_hup_handler(struct tevent_context *ev_ctx,
-					 struct pf_worker_data *pf,
-					 struct messaging_context *msg_ctx,
-					 int child_id)
+					 struct pf_worker_data *pf)
 {
-	struct lsasd_chld_sig_hup_ctx *shc;
 	struct tevent_signal *se;
-
-	shc = talloc(ev_ctx, struct lsasd_chld_sig_hup_ctx);
-	if (!shc) {
-		DEBUG(1, ("failed to setup SIGHUP handler"));
-		return false;
-	}
-	shc->child_id = child_id;
-	shc->pf = pf;
-	shc->msg_ctx = msg_ctx;
 
 	se = tevent_add_signal(ev_ctx,
 			       ev_ctx,
 			       SIGHUP, 0,
 			       lsasd_chld_sig_hup_handler,
-			       shc);
+			       pf);
 	if (!se) {
 		DEBUG(1, ("failed to setup SIGHUP handler"));
 		return false;
@@ -315,9 +284,10 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 		smb_panic("reinit_after_fork() failed");
 	}
 
+	lsasd_child_id = child_id;
 	lsasd_reopen_logs(child_id);
 
-	ok = lsasd_setup_chld_hup_handler(ev_ctx, pf, msg_ctx, child_id);
+	ok = lsasd_setup_chld_hup_handler(ev_ctx, pf);
 	if (!ok) {
 		return false;
 	}
@@ -356,7 +326,6 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 struct lsasd_children_data {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
-	int child_id;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
 	int *listen_fds;
@@ -389,7 +358,6 @@ static int lsasd_children_main(struct tevent_context *ev_ctx,
 	if (!data) {
 		return 1;
 	}
-	data->child_id = child_id;
 	data->pf = pf;
 	data->ev_ctx = ev_ctx;
 	data->msg_ctx = msg_ctx;
@@ -589,7 +557,6 @@ static void lsasd_handle_client(struct tevent_req *req)
 
 static bool lsasd_schedule_check(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
-				 struct prefork_pool *pfp,
 				 struct timeval current_time);
 
 static void lsasd_check_children(struct tevent_context *ev_ctx,
@@ -627,60 +594,36 @@ static void lsasd_sigchld_handler(struct tevent_context *ev_ctx,
 }
 
 static bool lsasd_setup_children_monitor(struct tevent_context *ev_ctx,
-					 struct messaging_context *msg_ctx,
-					 struct prefork_pool *pfp)
+					 struct messaging_context *msg_ctx)
 {
 	bool ok;
 
 	/* add our oun sigchld callback */
-	prefork_set_sigchld_callback(pfp, lsasd_sigchld_handler, msg_ctx);
+	prefork_set_sigchld_callback(lsasd_pool, lsasd_sigchld_handler, msg_ctx);
 
-	ok = lsasd_schedule_check(ev_ctx,
-				  msg_ctx,
-				  pfp,
-				  tevent_timeval_current());
+	ok = lsasd_schedule_check(ev_ctx, msg_ctx, tevent_timeval_current());
 
 	return ok;
 }
 
-struct schedule_check_state {
-	struct messaging_context *msg_ctx;
-	struct prefork_pool *pfp;
-};
-
 static bool lsasd_schedule_check(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
-				 struct prefork_pool *pfp,
 				 struct timeval current_time)
 {
 	struct tevent_timer *te;
 	struct timeval next_event;
-	struct schedule_check_state *state;
-
-	state = talloc(ev_ctx, struct schedule_check_state);
-	if (!state) {
-		DEBUG(0, ("Out of memory!\n"));
-		return false;
-	}
-	state->msg_ctx = msg_ctx;
-	state->pfp = pfp;
 
 	/* check situation again in 10 seconds */
 	next_event = tevent_timeval_current_ofs(10, 0);
 
 	/* TODO: check when the socket becomes readable, so that children
 	 * are checked only when there is some activity ? */
-	te = tevent_add_timer(ev_ctx,
-			      pfp,
-			      next_event,
-			      lsasd_check_children,
-			      state);
+	te = tevent_add_timer(ev_ctx, lsasd_pool, next_event,
+			      lsasd_check_children, msg_ctx);
 	if (!te) {
 		DEBUG(2, ("Failed to set up children monitoring!\n"));
-		talloc_free(state);
 		return false;
 	}
-	talloc_steal(te, state);
 
 	return true;
 }
@@ -690,29 +633,28 @@ static void lsasd_check_children(struct tevent_context *ev_ctx,
 				 struct timeval current_time,
 				 void *pvt)
 {
-	struct schedule_check_state *state;
+	struct messaging_context *msg_ctx;
+	time_t now = time(NULL);
 	int active, total;
 	int rc, n;
 	bool ok;
 
-	state = talloc_get_type_abort(pvt, struct schedule_check_state);
+	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
 	if ((lsasd_prefork_status & LSASD_NEW_MAX) &&
 	    !(lsasd_prefork_status & LSASD_ENOSPC)) {
-		rc = prefork_expand_pool(state->pfp, lsasd_max_children);
+		rc = prefork_expand_pool(lsasd_pool, lsasd_max_children);
 		if (rc == ENOSPC) {
 			lsasd_prefork_status |= LSASD_ENOSPC;
 		}
 		lsasd_prefork_status &= ~LSASD_NEW_MAX;
 	}
 
-	active = prefork_count_active_children(state->pfp, &total);
+	active = prefork_count_active_children(lsasd_pool, &total);
 
 	if (total - active < lsasd_spawn_rate) {
-		n = prefork_add_children(ev_ctx,
-					 state->msg_ctx,
-					 state->pfp,
-					 lsasd_spawn_rate);
+		n = prefork_add_children(ev_ctx, msg_ctx,
+					 lsasd_pool, lsasd_spawn_rate);
 		if (n < lsasd_spawn_rate) {
 			DEBUG(10, ("Tried to start 5 children but only,"
 				   "%d were actually started.!\n", n));
@@ -721,16 +663,13 @@ static void lsasd_check_children(struct tevent_context *ev_ctx,
 
 	if (total - active > lsasd_min_children) {
 		if ((total - lsasd_min_children) >= lsasd_spawn_rate) {
-			prefork_retire_children(state->pfp,
+			prefork_retire_children(lsasd_pool,
 						lsasd_spawn_rate,
-						time(NULL) - LSASD_MIN_LIFE);
+						now - LSASD_MIN_LIFE);
 		}
 	}
 
-	ok = lsasd_schedule_check(ev_ctx,
-				  state->msg_ctx,
-				  state->pfp,
-				  current_time);
+	ok = lsasd_schedule_check(ev_ctx, msg_ctx, current_time);
 }
 
 /*
@@ -911,7 +850,6 @@ done:
 void start_lsasd(struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx)
 {
-	struct prefork_pool *pool;
 	NTSTATUS status;
 	int listen_fd[LSASD_MAX_SOCKETS];
 	int listen_fd_size = 0;
@@ -961,7 +899,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	lsasd_prefork_config();
 
 	lsasd_setup_sig_term_handler(ev_ctx);
-	lsasd_setup_sig_hup_handler(ev_ctx, pool, msg_ctx);
+	lsasd_setup_sig_hup_handler(ev_ctx);
 
 	BlockSignals(false, SIGTERM);
 	BlockSignals(false, SIGHUP);
@@ -981,7 +919,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 				 lsasd_max_children,
 				 &lsasd_children_main,
 				 NULL,
-				 &pool);
+				 &lsasd_pool);
 	if (!ok) {
 		exit(1);
 	}
@@ -1016,7 +954,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	ok = lsasd_setup_children_monitor(ev_ctx, msg_ctx, pool);
+	ok = lsasd_setup_children_monitor(ev_ctx, msg_ctx);
 	if (!ok) {
 		DEBUG(0, ("Failed to setup children monitoring!\n"));
 		exit(1);
@@ -1028,7 +966,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	rc = tevent_loop_wait(ev_ctx);
 
 	/* should not be reached */
-	DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
+	DEBUG(0,("lsasd: tevent_loop_wait() exited with %d - %s\n",
 		 rc, (rc == 0) ? "out of events" : strerror(errno)));
 	exit(1);
 }
