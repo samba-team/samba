@@ -678,6 +678,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 			state->inbuf = inbuf;
 			state->chain_num = i;
 			state->chain_length = num_chained;
+			cli_smb_req_unset_pending(req);
 			tevent_req_done(chain[i]);
 		}
 		TALLOC_FREE(inbuf);
