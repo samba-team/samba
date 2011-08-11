@@ -170,6 +170,37 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	return LDB_SUCCESS;
 }
 
+/*
+  see if we are master for a FSMO role
+ */
+static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *dn, bool *master,
+				     struct ldb_request *parent)
+{
+	const char *attrs[] = { "fSMORoleOwner", NULL };
+	TALLOC_CTX *tmp_ctx = talloc_new(parent);
+	struct ldb_result *res;
+	int ret;
+	struct ldb_dn *owner_dn;
+
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res,
+				    dn, attrs, DSDB_FLAG_NEXT_MODULE, parent);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	owner_dn = ldb_msg_find_attr_as_dn(ldb_module_get_ctx(module),
+					   tmp_ctx, res->msgs[0], "fSMORoleOwner");
+	if (!owner_dn) {
+		*master = false;
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	*master = (ldb_dn_compare(owner_dn, samdb_ntds_settings_dn(ldb_module_get_ctx(module))) == 0);
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
 
 /*
   add dynamically generated attributes to rootDSE result
@@ -190,6 +221,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		"rootDomainNamingContext",
 		"schemaNamingContext",
 		"serverName",
+		"validFSMOs",
 		NULL
 	};
 
@@ -346,38 +378,21 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (do_attribute_explicit(attrs, "validFSMOs")) {
-		const struct dsdb_naming_fsmo *naming_fsmo;
-		const struct dsdb_pdc_fsmo *pdc_fsmo;
-		const char *dn_str;
+		struct ldb_dn *dns[3];
 
-		if (schema && schema->fsmo.we_are_master) {
-			dn_str = ldb_dn_get_linearized(ldb_get_schema_basedn(ldb));
-			if (dn_str && dn_str[0]) {
-				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != LDB_SUCCESS) {
-					goto failed;
-				}
+		dns[0] = ldb_get_schema_basedn(ldb);
+		dns[1] = samdb_partitions_dn(ldb, msg);
+		dns[2] = ldb_get_default_basedn(ldb);
+
+		for (i=0; i<3; i++) {
+			bool master;
+			int ret = dsdb_module_we_are_master(module, dns[i], &master, req);
+			if (ret != LDB_SUCCESS) {
+				goto failed;
 			}
-		}
-
-		naming_fsmo = talloc_get_type(ldb_get_opaque(ldb, "dsdb_naming_fsmo"),
-					      struct dsdb_naming_fsmo);
-		if (naming_fsmo && naming_fsmo->we_are_master) {
-			dn_str = ldb_dn_get_linearized(samdb_partitions_dn(ldb, msg));
-			if (dn_str && dn_str[0]) {
-				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != LDB_SUCCESS) {
-					goto failed;
-				}
-			}
-		}
-
-		pdc_fsmo = talloc_get_type(ldb_get_opaque(ldb, "dsdb_pdc_fsmo"),
-					   struct dsdb_pdc_fsmo);
-		if (pdc_fsmo && pdc_fsmo->we_are_master) {
-			dn_str = ldb_dn_get_linearized(ldb_get_default_basedn(ldb));
-			if (dn_str && dn_str[0]) {
-				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != LDB_SUCCESS) {
-					goto failed;
-				}
+			if (master && ldb_msg_add_fmt(msg, "validFSMOs", "%s",
+						      ldb_dn_get_linearized(dns[i])) != LDB_SUCCESS) {
+				goto failed;
 			}
 		}
 	}
