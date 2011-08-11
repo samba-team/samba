@@ -39,6 +39,9 @@ interface messaging
 		MSG_IDMAP_DELETE                = 0x000F,
 		MSG_IDMAP_KILL                  = 0x0010,
 
+		/* Changes to smb.conf are really of general interest */
+		MSG_SMB_CONF_UPDATED		= 0x0021,
+
 		/* nmbd messages */
 		MSG_FORCE_ELECTION		= 0x0101,
 		MSG_WINS_NEW_ENTRY		= 0x0102,
@@ -54,7 +57,7 @@ interface messaging
 		MSG_PRINTER_PCAP		= 0x0207,
 
 		/* smbd messages */
-		MSG_SMB_CONF_UPDATED		= 0x0301,
+		/* MSG_SMB_CONF_UPDATED		= 0x0301,  Obsoleted */
 		MSG_SMB_FORCE_TDIS		= 0x0302,
 		MSG_SMB_SAM_SYNC		= 0x0303,
 		MSG_SMB_SAM_REPL		= 0x0304,

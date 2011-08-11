@@ -47,7 +47,6 @@
 /* dbwrap messages 4001-4999 */
 #define FLAG_MSG_DBWRAP			0x0020
 
-
 /*
  * ctdb gives us 64-bit server ids for messaging_send. This is done to avoid
  * pid clashes and to be able to register for special messages like "all
