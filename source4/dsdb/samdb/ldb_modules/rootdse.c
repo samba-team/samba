@@ -217,13 +217,17 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	const char *dn_attrs[] = {
 		"configurationNamingContext",
 		"defaultNamingContext",
-		"dsServiceName",
 		"rootDomainNamingContext",
 		"schemaNamingContext",
 		"serverName",
 		"validFSMOs",
 		NULL
 	};
+	const char *guid_attrs[] = {
+		"dsServiceName",
+		NULL
+	};
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 	schema = dsdb_get_schema(ldb, NULL);
@@ -290,7 +294,6 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (priv && do_attribute(attrs, "supportedControl")) {
-		unsigned int i;
 		for (i = 0; i < priv->num_controls; i++) {
 			char *control = talloc_strdup(msg, priv->controls[i]);
 			if (!control) {
@@ -304,7 +307,6 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  	}
 
 	if (priv && do_attribute(attrs, "namingContexts")) {
-		unsigned int i;
 		for (i = 0; i < priv->num_partitions; i++) {
 			struct ldb_dn *dn = priv->partitions[i];
 			if (ldb_msg_add_steal_string(msg, "namingContexts",
@@ -317,7 +319,6 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanisms"),
 				       char *);
 	if (server_sasl && do_attribute(attrs, "supportedSASLMechanisms")) {
-		unsigned int i;
 		for (i = 0; server_sasl && server_sasl[i]; i++) {
 			char *sasl_name = talloc_strdup(msg, server_sasl[i]);
 			if (!sasl_name) {
@@ -441,7 +442,6 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (do_attribute_explicit(attrs, "tokenGroups")) {
-		unsigned int i;
 		/* Obtain the user's session_info */
 		struct auth_session_info *session_info
 			= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
@@ -461,11 +461,59 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	edn_control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
 
+	/* convert any GUID attributes to be in the right form */
+	for (i=0; guid_attrs[i]; i++) {
+		struct ldb_result *res;
+		struct ldb_message_element *el;
+		struct ldb_dn *attr_dn;
+		const char *no_attrs[] = { NULL };
+		int ret;
+
+		if (!do_attribute(attrs, guid_attrs[i])) continue;
+
+		attr_dn = ldb_msg_find_attr_as_dn(ldb, req, msg, guid_attrs[i]);
+		if (attr_dn == NULL) {
+			continue;
+		}
+
+		ret = dsdb_module_search_dn(module, req, &res,
+					    attr_dn, no_attrs,
+					    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_EXTENDED_DN,
+					    req);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
+
+		el = ldb_msg_find_element(msg, guid_attrs[i]);
+		if (el == NULL) {
+			return ldb_operr(ldb);
+		}
+
+		talloc_steal(el->values, res->msgs[0]->dn);
+		if (edn_control) {
+			struct ldb_extended_dn_control *edn;
+			int edn_type = 0;
+			edn = talloc_get_type(edn_control->data, struct ldb_extended_dn_control);
+			if (edn != NULL) {
+				edn_type = edn->type;
+			}
+			el->values[0].data  = (uint8_t *)ldb_dn_get_extended_linearized(el->values,
+											res->msgs[0]->dn,
+											edn_type);
+		} else {
+			el->values[0].data  = (uint8_t *)talloc_strdup(el->values,
+								       ldb_dn_get_linearized(res->msgs[0]->dn));
+		}
+		if (el->values[0].data == NULL) {
+			return ldb_oom(ldb);
+		}
+		el->values[0].length = strlen((const char *)el->values[0].data);
+	}
+
 	/* if the client sent us the EXTENDED_DN control then we need
 	   to expand the DNs to have GUID and SID. W2K8 join relies on
 	   this */
 	if (edn_control) {
-		unsigned int i;
 		int ret;
 		for (i=0; dn_attrs[i]; i++) {
 			if (!do_attribute(attrs, dn_attrs[i])) continue;
