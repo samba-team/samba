@@ -185,9 +185,13 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		tevent_cleanup_pending_signal_handlers(se);
 	}
 
-	/* clean up nesting or we get an abort when nesting
-	 * is not allowed. -- SSS */
-	ev->nesting.allowed = false;
+	/* removing nesting hook or we get an abort when nesting is
+	 * not allowed. -- SSS
+	 * Note that we need to leave the allowed flag at its current
+	 * value, otherwise the use in tevent_re_initialise() will
+	 * leave the event context with allowed forced to false, which
+	 * will break users that expect nesting to be allowed
+	 */
 	ev->nesting.level = 0;
 	ev->nesting.hook_fn = NULL;
 	ev->nesting.hook_private = NULL;
