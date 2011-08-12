@@ -579,20 +579,19 @@ static void cli_smb_sent(struct tevent_req *subreq)
 	}
 }
 
+static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
+					TALLOC_CTX *frame,
+					uint8_t *inbuf);
+
 static void cli_smb_received(struct tevent_req *subreq)
 {
 	struct cli_state *cli = tevent_req_callback_data(
 		subreq, struct cli_state);
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_req *req;
-	struct cli_smb_state *state;
 	NTSTATUS status;
 	uint8_t *inbuf;
 	ssize_t received;
-	int num_pending;
-	int i, err;
-	uint16_t mid;
-	bool oplock_break;
+	int err;
 
 	if (subreq != cli->conn.read_smb_req) {
 		DEBUG(1, ("Internal error: cli_smb_received called with "
@@ -613,13 +612,48 @@ static void cli_smb_received(struct tevent_req *subreq)
 		return;
 	}
 
+	status = cli_state_dispatch_smb1(cli, frame, inbuf);
+	TALLOC_FREE(frame);
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * We should not do any more processing
+		 * as the dispatch function called
+		 * tevent_req_done().
+		 */
+		return;
+	} else if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		/*
+		 * We got an error, so notify all pending requests
+		 */
+		cli_state_notify_pending(cli, status);
+		return;
+	}
+
+	/*
+	 * We got NT_STATUS_RETRY, so we may ask for a
+	 * next incoming pdu.
+	 */
+	if (!cli_state_receive_next(cli)) {
+		cli_state_notify_pending(cli, NT_STATUS_NO_MEMORY);
+	}
+}
+
+static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
+					TALLOC_CTX *frame,
+					uint8_t *inbuf)
+{
+	struct tevent_req *req;
+	struct cli_smb_state *state;
+	NTSTATUS status;
+	int num_pending;
+	int i;
+	uint16_t mid;
+	bool oplock_break;
+
 	if ((IVAL(inbuf, 4) != 0x424d53ff) /* 0xFF"SMB" */
 	    && (SVAL(inbuf, 4) != 0x45ff)) /* 0xFF"E" */ {
 		DEBUG(10, ("Got non-SMB PDU\n"));
-		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		cli_state_notify_pending(cli, status);
-		TALLOC_FREE(frame);
-		return;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	if (cli_encryption_on(cli) && (CVAL(inbuf, 0) == 0)) {
@@ -629,19 +663,14 @@ static void cli_smb_received(struct tevent_req *subreq)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("get_enc_ctx_num returned %s\n",
 				   nt_errstr(status)));
-			cli_state_notify_pending(cli, status);
-			TALLOC_FREE(frame);
-			return;
+			return status;
 		}
 
 		if (enc_ctx_num != cli->trans_enc_state->enc_ctx_num) {
 			DEBUG(10, ("wrong enc_ctx %d, expected %d\n",
 				   enc_ctx_num,
 				   cli->trans_enc_state->enc_ctx_num));
-			status = NT_STATUS_INVALID_HANDLE;
-			cli_state_notify_pending(cli, status);
-			TALLOC_FREE(frame);
-			return;
+			return NT_STATUS_INVALID_HANDLE;
 		}
 
 		status = common_decrypt_buffer(cli->trans_enc_state,
@@ -649,9 +678,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("common_decrypt_buffer returned %s\n",
 				   nt_errstr(status)));
-			cli_state_notify_pending(cli, status);
-			TALLOC_FREE(frame);
-			return;
+			return status;
 		}
 	}
 
@@ -665,7 +692,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	}
 	if (i == num_pending) {
 		/* Dump unexpected reply */
-		goto done;
+		return NT_STATUS_RETRY;
 	}
 
 	oplock_break = false;
@@ -682,7 +709,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 
 		if (!oplock_break) {
 			/* Dump unexpected reply */
-			goto done;
+			return NT_STATUS_RETRY;
 		}
 	}
 
@@ -692,27 +719,10 @@ static void cli_smb_received(struct tevent_req *subreq)
 	if (!oplock_break /* oplock breaks are not signed */
 	    && !cli_check_sign_mac(cli, (char *)inbuf, state->seqnum+1)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
-		status = NT_STATUS_ACCESS_DENIED;
-		cli_state_notify_pending(cli, status);
-		TALLOC_FREE(frame);
-		return;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (state->chained_requests == NULL) {
-		state->inbuf = talloc_move(state, &inbuf);
-		cli_smb_req_unset_pending(req);
-		state->chain_num = 0;
-		state->chain_length = 1;
-
-		if (talloc_array_length(cli->conn.pending) == 0) {
-			tevent_req_done(req);
-			TALLOC_FREE(frame);
-			return;
-		}
-
-		tevent_req_defer_callback(req, state->ev);
-		tevent_req_done(req);
-	} else {
+	if (state->chained_requests != NULL) {
 		struct tevent_req **chain = talloc_move(frame,
 					    &state->chained_requests);
 		int num_chained = talloc_array_length(chain);
@@ -755,13 +765,24 @@ static void cli_smb_received(struct tevent_req *subreq)
 
 			tevent_req_done(req);
 		}
-	}
- done:
-	TALLOC_FREE(frame);
 
-	if (!cli_state_receive_next(cli)) {
-		cli_state_notify_pending(cli, NT_STATUS_NO_MEMORY);
+		return NT_STATUS_RETRY;
 	}
+
+	cli_smb_req_unset_pending(req);
+
+	state->inbuf = talloc_move(state, &inbuf);
+	state->chain_num = 0;
+	state->chain_length = 1;
+
+	if (talloc_array_length(cli->conn.pending) == 0) {
+		tevent_req_done(req);
+		return NT_STATUS_OK;
+	}
+
+	tevent_req_defer_callback(req, state->ev);
+	tevent_req_done(req);
+	return NT_STATUS_RETRY;
 }
 
 NTSTATUS cli_smb_recv(struct tevent_req *req,
