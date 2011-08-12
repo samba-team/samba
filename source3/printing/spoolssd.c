@@ -56,6 +56,8 @@ static int spoolss_child_id = 0;
 
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx);
+static void spoolss_manage_pool(struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx);
 
 static void spoolss_prefork_config(void)
 {
@@ -75,13 +77,13 @@ static void spoolss_prefork_config(void)
 	}
 
 	prefork_str = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "spoolssd", "prefork", "none");
+					   "spoolss", "prefork", "none");
 	if (strcmp(prefork_str, "none") == 0) {
 		use_defaults = true;
 	} else {
 		ret = sscanf(prefork_str, "%d:%d:%d", &min, &max, &rate);
 		if (ret != 3) {
-			DEBUG(0, ("invalid format for spoolssd:prefork!\n"));
+			DEBUG(0, ("invalid format for spoolss:prefork!\n"));
 			use_defaults = true;
 		}
 	}
@@ -153,6 +155,7 @@ static void update_conf(struct tevent_context *ev,
 	spoolss_reopen_logs(spoolss_child_id);
 	if (spoolss_child_id == 0) {
 		spoolss_prefork_config();
+		spoolss_manage_pool(ev, msg);
 	}
 }
 
@@ -585,6 +588,58 @@ static void check_updater_child(void)
 	}
 }
 
+static void spoolss_manage_pool(struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx)
+{
+	time_t now = time(NULL);
+	int active, total;
+	int ret, n;
+
+	if ((spoolss_prefork_status & SPOOLSS_NEW_MAX) &&
+	    !(spoolss_prefork_status & SPOLLSS_ENOSPC)) {
+		ret = prefork_expand_pool(spoolss_pool, spoolss_max_children);
+		if (ret == ENOSPC) {
+			spoolss_prefork_status |= SPOLLSS_ENOSPC;
+		}
+		spoolss_prefork_status &= ~SPOOLSS_NEW_MAX;
+	}
+
+	active = prefork_count_active_children(spoolss_pool, &total);
+
+	if ((total < spoolss_max_children) &&
+	    ((total < spoolss_min_children) ||
+	     (total - active < spoolss_spawn_rate))) {
+		n = prefork_add_children(ev_ctx, msg_ctx,
+					 spoolss_pool, spoolss_spawn_rate);
+		if (n < spoolss_spawn_rate) {
+			DEBUG(10, ("Tried to start %d children but only,"
+				   "%d were actually started.!\n",
+				   spoolss_spawn_rate, n));
+		}
+	}
+
+	if (total - active > spoolss_min_children) {
+		if ((total - spoolss_min_children) >= spoolss_spawn_rate) {
+			prefork_retire_children(spoolss_pool,
+						spoolss_spawn_rate,
+						now - SPOOLSS_MIN_LIFE);
+		}
+	}
+
+	n = prefork_count_allowed_connections(spoolss_pool);
+	if (n <= spoolss_spawn_rate) {
+		do {
+			prefork_increase_allowed_clients(spoolss_pool);
+			n = prefork_count_allowed_connections(spoolss_pool);
+		} while (n <= spoolss_spawn_rate);
+	} else if (n > spoolss_max_children + spoolss_spawn_rate) {
+		do {
+			prefork_decrease_allowed_clients(spoolss_pool);
+			n = prefork_count_allowed_connections(spoolss_pool);
+		} while (n > spoolss_max_children + spoolss_spawn_rate);
+	}
+}
+
 static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
 				    struct messaging_context *msg_ctx,
 				    struct timeval current_time);
@@ -598,28 +653,12 @@ static void spoolssd_sigchld_handler(struct tevent_context *ev_ctx,
 				     void *pvt)
 {
 	struct messaging_context *msg_ctx;
-	int active, total;
-	int n, r;
 
 	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
-	/* now check we do not descend below the minimum */
-	active = prefork_count_active_children(pfp, &total);
-
-	n = 0;
-	if (total < spoolss_min_children) {
-		n = total - spoolss_min_children;
-	} else if (total - active < (total / 4)) {
-		n = spoolss_min_children;
-	}
-
-	if (n > 0) {
-		r = prefork_add_children(ev_ctx, msg_ctx, pfp, n);
-		if (r < n) {
-			DEBUG(10, ("Tried to start %d children but only,"
-				   "%d were actually started.!\n", n, r));
-		}
-	}
+	/* run pool management so we can fork/retire or increase
+	 * the allowed connections per child based on load */
+	spoolss_manage_pool(ev_ctx, msg_ctx);
 
 	/* also check if the updater child is alive and well */
 	check_updater_child();
@@ -667,41 +706,12 @@ static void spoolssd_check_children(struct tevent_context *ev_ctx,
 				    void *pvt)
 {
 	struct messaging_context *msg_ctx;
-	time_t now = time(NULL);
-	int active, total;
-	int ret, n;
 
 	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
-	if ((spoolss_prefork_status & SPOOLSS_NEW_MAX) &&
-	    !(spoolss_prefork_status & SPOLLSS_ENOSPC)) {
-		ret = prefork_expand_pool(spoolss_pool, spoolss_max_children);
-		if (ret == ENOSPC) {
-			spoolss_prefork_status |= SPOLLSS_ENOSPC;
-		}
-		spoolss_prefork_status &= ~SPOOLSS_NEW_MAX;
-	}
+	spoolss_manage_pool(ev_ctx, msg_ctx);
 
-	active = prefork_count_active_children(spoolss_pool, &total);
-
-	if (total - active < spoolss_spawn_rate) {
-		n = prefork_add_children(ev_ctx, msg_ctx,
-					 spoolss_pool, spoolss_spawn_rate);
-		if (n < spoolss_spawn_rate) {
-			DEBUG(10, ("Tried to start 5 children but only,"
-				   "%d were actually started.!\n", n));
-		}
-	}
-
-	if (total - active > spoolss_min_children) {
-		if ((total - spoolss_min_children) >= spoolss_spawn_rate) {
-			prefork_retire_children(spoolss_pool,
-						spoolss_spawn_rate,
-						now - SPOOLSS_MIN_LIFE);
-		}
-	}
-
-	ret = spoolssd_schedule_check(ev_ctx, msg_ctx, current_time);
+	spoolssd_schedule_check(ev_ctx, msg_ctx, current_time);
 }
 
 static void print_queue_forward(struct messaging_context *msg,
@@ -905,6 +915,8 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	}
 
 	DEBUG(1, ("SPOOLSS Daemon Started (%d)\n", getpid()));
+
+	spoolss_manage_pool(ev_ctx, msg_ctx);
 
 	/* loop forever */
 	ret = tevent_loop_wait(ev_ctx);
