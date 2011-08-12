@@ -22,7 +22,14 @@
 
 static bool lp_load_for_s4_ctx(const char *filename)
 {
-	return lp_load(filename, false, false, false, false);
+	TALLOC_CTX *mem_ctx;
+	bool status;
+
+	mem_ctx = talloc_stackframe();
+	status =  lp_load(filename, false, false, false, false);
+	talloc_free(mem_ctx);
+
+	return status;
 }
 
 /* These are in the order that they appear in the s4 loadparm file.
