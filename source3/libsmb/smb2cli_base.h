@@ -28,7 +28,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      const uint8_t *fixed,
 				      uint16_t fixed_len,
 				      const uint8_t *dyn,
-				      uint16_t dyn_len);
+				      uint32_t dyn_len);
 NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 				     int num_reqs);
 struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
@@ -39,7 +39,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    const uint8_t *fixed,
 				    uint16_t fixed_len,
 				    const uint8_t *dyn,
-				    uint16_t dyn_len);
+				    uint32_t dyn_len);
 NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  struct iovec **piov, int body_size);
 
