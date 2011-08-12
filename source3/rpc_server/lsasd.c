@@ -26,6 +26,7 @@
 
 #include "../lib/tsocket/tsocket.h"
 #include "lib/server_prefork.h"
+#include "lib/server_prefork_util.h"
 #include "librpc/rpc/dcerpc_ep.h"
 
 #include "rpc_server/rpc_server.h"
@@ -37,70 +38,23 @@
 #include "librpc/gen_ndr/srv_netlogon.h"
 
 #define DAEMON_NAME "lsasd"
-
-#define LSASD_MIN_CHILDREN 5
-#define LSASD_MAX_CHILDREN 25
-#define LSASD_SPAWN_RATE   5
-#define LSASD_MIN_LIFE     60 /* 1 minute minimum life time */
-
 #define LSASD_MAX_SOCKETS 64
 
-#define LSASD_ALL_FINE 0x00
-#define LSASD_NEW_MAX  0x01
-#define LSASD_ENOSPC   0x02
-
-static int lsasd_min_children;
-static int lsasd_max_children;
-static int lsasd_spawn_rate;
-static int lsasd_prefork_status;
 static struct prefork_pool *lsasd_pool = NULL;
 static int lsasd_child_id = 0;
 
+static struct pf_daemon_config default_pf_lsasd_cfg = {
+	.prefork_status = PFH_INIT,
+	.min_children = 5,
+	.max_children = 25,
+	.spawn_rate = 5,
+	.max_allowed_clients = 100,
+	.child_min_life = 60 /* 1 minute minimum life time */
+};
+static struct pf_daemon_config pf_lsasd_cfg = { 0 };
+
 void start_lsasd(struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx);
-
-static void lsasd_prefork_config(void)
-{
-	static int lsasd_prefork_config_init = false;
-	const char *prefork_str;
-	int min, max, rate;
-	bool use_defaults = false;
-	int ret;
-
-	if (!lsasd_prefork_config_init) {
-		lsasd_prefork_status = LSASD_ALL_FINE;
-		lsasd_min_children = 0;
-		lsasd_max_children = 0;
-		lsasd_spawn_rate = 0;
-		lsasd_prefork_config_init = true;
-	}
-
-	prefork_str = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "lsasd", "prefork", "none");
-	if (strcmp(prefork_str, "none") == 0) {
-		use_defaults = true;
-	} else {
-		ret = sscanf(prefork_str, "%d:%d:%d", &min, &max, &rate);
-		if (ret != 3) {
-			DEBUG(0, ("invalid format for lsasd:prefork!\n"));
-			use_defaults = true;
-		}
-	}
-
-	if (use_defaults) {
-		min = LSASD_MIN_CHILDREN;
-		max = LSASD_MAX_CHILDREN;
-		rate = LSASD_SPAWN_RATE;
-	}
-
-	if (max > lsasd_max_children && lsasd_max_children != 0) {
-		lsasd_prefork_status |= LSASD_NEW_MAX;
-	}
-
-	lsasd_min_children = min;
-	lsasd_max_children = max;
-	lsasd_spawn_rate = rate;
-}
 
 static void lsasd_reopen_logs(int child_id)
 {
@@ -151,13 +105,20 @@ static void lsasd_smb_conf_updated(struct messaging_context *msg,
 				  struct server_id server_id,
 				  DATA_BLOB *data)
 {
+	struct tevent_context *ev_ctx;
+
 	DEBUG(10, ("Got message saying smb.conf was updated. Reloading.\n"));
+	ev_ctx = talloc_get_type_abort(private_data, struct tevent_context);
+
 	change_to_root_user();
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
 	lsasd_reopen_logs(lsasd_child_id);
 	if (lsasd_child_id == 0) {
-		lsasd_prefork_config();
+		pfh_daemon_config(DAEMON_NAME,
+				  &pf_lsasd_cfg,
+				  &default_pf_lsasd_cfg);
+		pfh_manage_pool(ev_ctx, msg, &pf_lsasd_cfg, lsasd_pool);
 	}
 }
 
@@ -203,7 +164,9 @@ static void lsasd_sig_hup_handler(struct tevent_context *ev,
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
 	lsasd_reopen_logs(lsasd_child_id);
-	lsasd_prefork_config();
+	pfh_daemon_config(DAEMON_NAME,
+			  &pf_lsasd_cfg,
+			  &default_pf_lsasd_cfg);
 
 	/* relay to all children */
 	prefork_send_signal_to_all(lsasd_pool, SIGHUP);
@@ -569,28 +532,12 @@ static void lsasd_sigchld_handler(struct tevent_context *ev_ctx,
 				  void *pvt)
 {
 	struct messaging_context *msg_ctx;
-	int active, total;
-	int n, r;
 
 	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
-	/* now check we do not descend below the minimum */
-	active = prefork_count_active_children(pfp, &total);
-
-	n = 0;
-	if (total < lsasd_min_children) {
-		n = total - lsasd_min_children;
-	} else if (total - active < (total / 4)) {
-		n = lsasd_min_children;
-	}
-
-	if (n > 0) {
-		r = prefork_add_children(ev_ctx, msg_ctx, pfp, n);
-		if (r < n) {
-			DEBUG(10, ("Tried to start %d children but only,"
-				   "%d were actually started.!\n", n, r));
-		}
-	}
+	/* run pool management so we can fork/retire or increase
+	 * the allowed connections per child based on load */
+	pfh_manage_pool(ev_ctx, msg_ctx, &pf_lsasd_cfg, lsasd_pool);
 }
 
 static bool lsasd_setup_children_monitor(struct tevent_context *ev_ctx,
@@ -634,42 +581,12 @@ static void lsasd_check_children(struct tevent_context *ev_ctx,
 				 void *pvt)
 {
 	struct messaging_context *msg_ctx;
-	time_t now = time(NULL);
-	int active, total;
-	int rc, n;
-	bool ok;
 
 	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
-	if ((lsasd_prefork_status & LSASD_NEW_MAX) &&
-	    !(lsasd_prefork_status & LSASD_ENOSPC)) {
-		rc = prefork_expand_pool(lsasd_pool, lsasd_max_children);
-		if (rc == ENOSPC) {
-			lsasd_prefork_status |= LSASD_ENOSPC;
-		}
-		lsasd_prefork_status &= ~LSASD_NEW_MAX;
-	}
+	pfh_manage_pool(ev_ctx, msg_ctx, &pf_lsasd_cfg, lsasd_pool);
 
-	active = prefork_count_active_children(lsasd_pool, &total);
-
-	if (total - active < lsasd_spawn_rate) {
-		n = prefork_add_children(ev_ctx, msg_ctx,
-					 lsasd_pool, lsasd_spawn_rate);
-		if (n < lsasd_spawn_rate) {
-			DEBUG(10, ("Tried to start 5 children but only,"
-				   "%d were actually started.!\n", n));
-		}
-	}
-
-	if (total - active > lsasd_min_children) {
-		if ((total - lsasd_min_children) >= lsasd_spawn_rate) {
-			prefork_retire_children(lsasd_pool,
-						lsasd_spawn_rate,
-						now - LSASD_MIN_LIFE);
-		}
-	}
-
-	ok = lsasd_schedule_check(ev_ctx, msg_ctx, current_time);
+	lsasd_schedule_check(ev_ctx, msg_ctx, current_time);
 }
 
 /*
@@ -713,7 +630,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 
 	/* Start to listen on tcpip sockets */
 	for (i = 0; i < *listen_fd_size; i++) {
-		rc = listen(listen_fd[i], lsasd_max_children);
+		rc = listen(listen_fd[i], pf_lsasd_cfg.max_allowed_clients);
 		if (rc == -1) {
 			DEBUG(0, ("Failed to listen on tcpip socket - %s\n",
 				  strerror(errno)));
@@ -731,7 +648,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	listen_fd[*listen_fd_size] = fd;
 	(*listen_fd_size)++;
 
-	rc = listen(fd, lsasd_max_children);
+	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
 		DEBUG(0, ("Failed to listen on lsarpc pipe - %s\n",
 			  strerror(errno)));
@@ -769,7 +686,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
-	rc = listen(fd, lsasd_max_children);
+	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
 		DEBUG(0, ("Failed to listen on samr pipe - %s\n",
 			  strerror(errno)));
@@ -809,7 +726,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
-	rc = listen(fd, lsasd_max_children);
+	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
 		DEBUG(0, ("Failed to listen on samr pipe - %s\n",
 			  strerror(errno)));
@@ -896,7 +813,9 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	}
 
 	lsasd_reopen_logs(0);
-	lsasd_prefork_config();
+	pfh_daemon_config(DAEMON_NAME,
+			  &pf_lsasd_cfg,
+			  &default_pf_lsasd_cfg);
 
 	lsasd_setup_sig_term_handler(ev_ctx);
 	lsasd_setup_sig_hup_handler(ev_ctx);
@@ -915,8 +834,8 @@ void start_lsasd(struct tevent_context *ev_ctx,
 				 msg_ctx,
 				 listen_fd_size,
 				 listen_fd,
-				 lsasd_min_children,
-				 lsasd_max_children,
+				 pf_lsasd_cfg.min_children,
+				 pf_lsasd_cfg.max_children,
 				 &lsasd_children_main,
 				 NULL,
 				 &lsasd_pool);
