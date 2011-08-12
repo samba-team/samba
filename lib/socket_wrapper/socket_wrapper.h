@@ -58,6 +58,8 @@ ssize_t swrap_send(int s, const void *buf, size_t len, int flags);
 int swrap_readv(int s, const struct iovec *vector, size_t count);
 int swrap_writev(int s, const struct iovec *vector, size_t count);
 int swrap_close(int);
+int swrap_dup(int oldfd);
+int swrap_dup2(int oldfd, int newfd);
 
 #ifdef SOCKET_WRAPPER_REPLACE
 
@@ -160,7 +162,16 @@ int swrap_close(int);
 #undef close
 #endif
 #define close(s)			swrap_close(s)
+
+#ifdef dup
+#undef dup
 #endif
+#define dup(s)			swrap_dup(s)
 
+#ifdef dup2
+#undef dup2
+#endif
+#define dup2(s, s2)		swrap_dup2(s, s2)
 
+#endif /* SOCKET_WRAPPER_REPLACE */
 #endif /* __SOCKET_WRAPPER_H__ */

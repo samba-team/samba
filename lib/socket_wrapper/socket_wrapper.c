@@ -127,6 +127,8 @@
 #define real_writev writev
 #define real_socket socket
 #define real_close close
+#define real_dup dup
+#define real_dup2 dup2
 #endif
 
 #ifdef HAVE_GETTIMEOFDAY_TZ
@@ -225,7 +227,6 @@ struct socket_info
 	int connected;
 	int defer_connect;
 
-	char *path;
 	char *tmp_path;
 
 	struct sockaddr *myname;
@@ -2523,7 +2524,6 @@ _PUBLIC_ int swrap_close(int fd)
 		swrap_dump_packet(si, NULL, SWRAP_CLOSE_ACK, NULL, 0);
 	}
 
-	if (si->path) free(si->path);
 	if (si->myname) free(si->myname);
 	if (si->peername) free(si->peername);
 	if (si->tmp_path) {
@@ -2533,4 +2533,122 @@ _PUBLIC_ int swrap_close(int fd)
 	free(si);
 
 	return ret;
+}
+
+_PUBLIC_ int swrap_dup(int fd)
+{
+	struct socket_info *si, *si2;
+	int fd2;
+
+	si = find_socket_info(fd);
+
+	if (!si) {
+		return real_dup(fd);
+	}
+
+	if (si->tmp_path) {
+		/* we would need reference counting to handle this */
+		errno = EINVAL;
+		return -1;
+	}
+
+	fd2 = real_dup(fd);
+	if (fd2 == -1) {
+		return -1;
+	}
+
+	si2 = (struct socket_info *)malloc(sizeof(struct socket_info));
+	if (si2 == NULL) {
+		real_close(fd2);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	/* copy the whole structure, then duplicate pointer elements */
+	*si2 = *si;
+
+	si2->fd = fd2;
+
+	if (si2->myname) {
+		si2->myname = sockaddr_dup(si2->myname, si2->myname_len);
+		if (si2->myname == NULL) {
+			real_close(fd2);
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
+	if (si2->peername) {
+		si2->peername = sockaddr_dup(si2->peername, si2->peername_len);
+		if (si2->peername == NULL) {
+			real_close(fd2);
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
+	SWRAP_DLIST_ADD(sockets, si2);
+	return fd2;
+}
+
+_PUBLIC_ int swrap_dup2(int fd, int newfd)
+{
+	struct socket_info *si, *si2;
+	int fd2;
+
+	si = find_socket_info(fd);
+
+	if (!si) {
+		return real_dup2(fd, newfd);
+	}
+
+	if (si->tmp_path) {
+		/* we would need reference counting to handle this */
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (find_socket_info(newfd)) {
+		/* dup2() does an implicit close of newfd, which we
+		 * need to emulate */
+		swrap_close(newfd);
+	}
+
+	fd2 = real_dup2(fd, newfd);
+	if (fd2 == -1) {
+		return -1;
+	}
+
+	si2 = (struct socket_info *)malloc(sizeof(struct socket_info));
+	if (si2 == NULL) {
+		real_close(fd2);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	/* copy the whole structure, then duplicate pointer elements */
+	*si2 = *si;
+
+	si2->fd = fd2;
+
+	if (si2->myname) {
+		si2->myname = sockaddr_dup(si2->myname, si2->myname_len);
+		if (si2->myname == NULL) {
+			real_close(fd2);
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
+	if (si2->peername) {
+		si2->peername = sockaddr_dup(si2->peername, si2->peername_len);
+		if (si2->peername == NULL) {
+			real_close(fd2);
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
+	SWRAP_DLIST_ADD(sockets, si2);
+	return fd2;
 }
