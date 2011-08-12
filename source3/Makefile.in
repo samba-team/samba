@@ -466,6 +466,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  @CCAN_OBJ@ \
 	  lib/server_contexts.o \
 	  lib/server_prefork.o \
+	  lib/server_prefork_util.o \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
 	  ../libcli/security/secdesc.o ../libcli/security/access_check.o \
 	  ../libcli/security/secace.o ../libcli/security/object_tree.o \
