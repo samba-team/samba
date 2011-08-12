@@ -39,6 +39,7 @@
 
 
 static PyTypeObject *dom_sid_Type = NULL;
+static PyTypeObject *guid_Type = NULL;
 
 staticforward PyTypeObject PySamu;
 staticforward PyTypeObject PyPDB;
@@ -960,6 +961,8 @@ static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
 	struct pdb_domain_info *domain_info;
 	PyObject *py_domain_info;
 	TALLOC_CTX *tframe;
+	struct dom_sid *sid;
+	struct GUID *guid;
 
 	methods = pytalloc_get_ptr(self);
 
@@ -973,6 +976,21 @@ static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
 		Py_RETURN_NONE;
 	}
 
+	sid = dom_sid_dup(tframe, &domain_info->sid);
+	if (sid == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	guid = talloc(tframe, struct GUID);
+	if (guid == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+	*guid = domain_info->guid;
+
 	if ((py_domain_info = PyDict_New()) == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -981,10 +999,8 @@ static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
 	PyDict_SetItemString(py_domain_info, "name", PyString_FromString(domain_info->name));
 	PyDict_SetItemString(py_domain_info, "dns_domain", PyString_FromString(domain_info->name));
 	PyDict_SetItemString(py_domain_info, "dns_forest", PyString_FromString(domain_info->name));
-	/*
-	struct dom_sid sid;
-	struct GUID guid;
-	*/
+	PyDict_SetItemString(py_domain_info, "dom_sid", pytalloc_steal(dom_sid_Type, sid));
+	PyDict_SetItemString(py_domain_info, "guid", pytalloc_steal(guid_Type, guid));
 
 	talloc_free(tframe);
 
@@ -1577,7 +1593,15 @@ void initpassdb(void)
 		return;
 	}
 
-	/* FIXME: Load passdb backends
-	 *        Currently there is no equivalent public function for lazy_initialize_passdb()
-	 */
+	/* Import GUID type from dcerpc.misc */
+	mod = PyImport_ImportModule("samba.dcerpc.misc");
+	if (mod == NULL) {
+		return;
+	}
+
+	guid_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "GUID");
+	Py_DECREF(mod);
+	if (guid_Type == NULL) {
+		return;
+	}
 }
