@@ -753,6 +753,13 @@ bld.SAMBA3_SUBSYSTEM('param',
                    source=PARAM_WITHOUT_REG_SRC,
                    deps='samba-util PARAM_UTIL smbd_conn ldap lber LOADPARM_CTX samba3core smbconf param_local_h param/param_global_h''')
 
+if bld.env.toplevel_build:
+    bld.SAMBA3_PYTHON('pys3param',
+                      source='param/pyparam.c',
+                      deps='param',
+                      public_deps='samba-hostconfig pytalloc talloc',
+                      realname='samba/samba3/param.so')
+    
 bld.SAMBA3_SUBSYSTEM('param_service',
                      source='param/service.c',
                      deps = 'USER_UTIL param USER_UTIL PRINTING')
