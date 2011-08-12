@@ -1534,6 +1534,34 @@ static PyObject *py_set_secrets_dir(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_get_global_sam_sid(PyObject *self)
+{
+	struct dom_sid *domain_sid, *domain_sid_copy;
+	TALLOC_CTX *tframe;
+	PyObject *py_dom_sid;
+
+	tframe = talloc_stackframe();
+	if (tframe == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	domain_sid = get_global_sam_sid();
+
+	domain_sid_copy = dom_sid_dup(tframe, domain_sid);
+	if (domain_sid_copy == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_dom_sid = pytalloc_steal(dom_sid_Type, domain_sid_copy);
+
+	talloc_free(tframe);
+
+	return py_dom_sid;
+}
+
 
 static PyMethodDef py_passdb_methods[] = {
 	{ "get_backends", (PyCFunction)py_passdb_backends, METH_NOARGS,
@@ -1545,6 +1573,9 @@ static PyMethodDef py_passdb_methods[] = {
 	{ "set_secrets_dir", (PyCFunction)py_set_secrets_dir, METH_VARARGS,
 		"set_secrets_dir(private_dir) -> None\n\n \
 		Set path to private directory to load secrets database from non-default location." },
+	{ "get_global_sam_sid", (PyCFunction)py_get_global_sam_sid, METH_NOARGS,
+		"get_global_sam_sid() -> dom_sid\n\n \
+		Return domain SID." },
 	{ NULL },
 };
 
