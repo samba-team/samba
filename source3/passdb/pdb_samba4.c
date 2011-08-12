@@ -2203,14 +2203,14 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 
 	state->ev = s4_event_context_init(state);
 	if (!state->ev) {
-		DEBUG(10, ("s4_event_context_init failed\n"));
-		goto fail;
+		DEBUG(0, ("s4_event_context_init failed\n"));
+		goto nomem;
 	}
 
 	state->lp_ctx = loadparm_init_s3(state, loadparm_s3_context());
 	if (state->lp_ctx == NULL) {
-		DEBUG(10, ("loadparm_init_s3 failed\n"));
-		goto fail;
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		goto nomem;
 	}
 
 	state->ldb = samdb_connect(state,
@@ -2219,14 +2219,16 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 				   system_session(state->lp_ctx), 0);
 
 	if (!state->ldb) {
-		DEBUG(10, ("samdb_connect failed\n"));
+		DEBUG(0, ("samdb_connect failed\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
 
 	state->idmap_ctx = idmap_init(state, state->ev,
 				      state->lp_ctx);
 	if (!state->idmap_ctx) {
-		DEBUG(10, ("samdb_connect failed\n"));
+		DEBUG(0, ("idmap failed\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
 
