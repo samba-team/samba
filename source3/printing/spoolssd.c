@@ -1,7 +1,7 @@
 /*
    Unix SMB/Netbios implementation.
    SPOOLSS Daemon
-   Copyright (C) Simo Sorce 2010
+   Copyright (C) Simo Sorce <idra@samba.org> 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,74 +34,26 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "librpc/rpc/dcerpc_ep.h"
 #include "lib/server_prefork.h"
+#include "lib/server_prefork_util.h"
 
 #define SPOOLSS_PIPE_NAME "spoolss"
 #define DAEMON_NAME "spoolssd"
 
-#define SPOOLSS_MIN_CHILDREN 5
-#define SPOOLSS_MAX_CHILDREN 25
-#define SPOOLSS_SPAWN_RATE 5
-#define SPOOLSS_MIN_LIFE 60 /* 1 minute minimum life time */
-
-#define SPOOLSS_INIT     0x00
-#define SPOOLSS_NEW_MAX  0x01
-#define SPOLLSS_ENOSPC   0x02
-
-static struct prefork_pool *spoolss_pool;
-static int spoolss_min_children;
-static int spoolss_max_children;
-static int spoolss_spawn_rate;
-static int spoolss_prefork_status;
+static struct prefork_pool *spoolss_pool = NULL;
 static int spoolss_child_id = 0;
+
+static struct pf_daemon_config default_pf_spoolss_cfg = {
+	.prefork_status = PFH_INIT,
+	.min_children = 5,
+	.max_children = 25,
+	.spawn_rate = 5,
+	.max_allowed_clients = 100,
+	.child_min_life = 60 /* 1 minute minimum life time */
+};
+static struct pf_daemon_config pf_spoolss_cfg = { 0 };
 
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx);
-static void spoolss_manage_pool(struct tevent_context *ev_ctx,
-				struct messaging_context *msg_ctx);
-
-static void spoolss_prefork_config(void)
-{
-	static int spoolss_prefork_config_init = false;
-	const char *prefork_str;
-	int min, max, rate;
-	bool use_defaults = false;
-	int ret;
-
-	if (!spoolss_prefork_config_init) {
-		spoolss_pool = NULL;
-		spoolss_prefork_status = SPOOLSS_INIT;
-		spoolss_min_children = 0;
-		spoolss_max_children = 0;
-		spoolss_spawn_rate = 0;
-		spoolss_prefork_config_init = true;
-	}
-
-	prefork_str = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "spoolss", "prefork", "none");
-	if (strcmp(prefork_str, "none") == 0) {
-		use_defaults = true;
-	} else {
-		ret = sscanf(prefork_str, "%d:%d:%d", &min, &max, &rate);
-		if (ret != 3) {
-			DEBUG(0, ("invalid format for spoolss:prefork!\n"));
-			use_defaults = true;
-		}
-	}
-
-	if (use_defaults) {
-		min = SPOOLSS_MIN_CHILDREN;
-		max = SPOOLSS_MAX_CHILDREN;
-		rate = SPOOLSS_SPAWN_RATE;
-	}
-
-	if (max > spoolss_max_children && spoolss_max_children != 0) {
-		spoolss_prefork_status |= SPOOLSS_NEW_MAX;
-	}
-
-	spoolss_min_children = min;
-	spoolss_max_children = max;
-	spoolss_spawn_rate = rate;
-}
 
 static void spoolss_reopen_logs(int child_id)
 {
@@ -154,8 +106,10 @@ static void update_conf(struct tevent_context *ev,
 
 	spoolss_reopen_logs(spoolss_child_id);
 	if (spoolss_child_id == 0) {
-		spoolss_prefork_config();
-		spoolss_manage_pool(ev, msg);
+		pfh_daemon_config(DAEMON_NAME,
+				  &pf_spoolss_cfg,
+				  &default_pf_spoolss_cfg);
+		pfh_manage_pool(ev, msg, &pf_spoolss_cfg, spoolss_pool);
 	}
 }
 
@@ -588,58 +542,6 @@ static void check_updater_child(void)
 	}
 }
 
-static void spoolss_manage_pool(struct tevent_context *ev_ctx,
-				struct messaging_context *msg_ctx)
-{
-	time_t now = time(NULL);
-	int active, total;
-	int ret, n;
-
-	if ((spoolss_prefork_status & SPOOLSS_NEW_MAX) &&
-	    !(spoolss_prefork_status & SPOLLSS_ENOSPC)) {
-		ret = prefork_expand_pool(spoolss_pool, spoolss_max_children);
-		if (ret == ENOSPC) {
-			spoolss_prefork_status |= SPOLLSS_ENOSPC;
-		}
-		spoolss_prefork_status &= ~SPOOLSS_NEW_MAX;
-	}
-
-	active = prefork_count_active_children(spoolss_pool, &total);
-
-	if ((total < spoolss_max_children) &&
-	    ((total < spoolss_min_children) ||
-	     (total - active < spoolss_spawn_rate))) {
-		n = prefork_add_children(ev_ctx, msg_ctx,
-					 spoolss_pool, spoolss_spawn_rate);
-		if (n < spoolss_spawn_rate) {
-			DEBUG(10, ("Tried to start %d children but only,"
-				   "%d were actually started.!\n",
-				   spoolss_spawn_rate, n));
-		}
-	}
-
-	if (total - active > spoolss_min_children) {
-		if ((total - spoolss_min_children) >= spoolss_spawn_rate) {
-			prefork_retire_children(spoolss_pool,
-						spoolss_spawn_rate,
-						now - SPOOLSS_MIN_LIFE);
-		}
-	}
-
-	n = prefork_count_allowed_connections(spoolss_pool);
-	if (n <= spoolss_spawn_rate) {
-		do {
-			prefork_increase_allowed_clients(spoolss_pool);
-			n = prefork_count_allowed_connections(spoolss_pool);
-		} while (n <= spoolss_spawn_rate);
-	} else if (n > spoolss_max_children + spoolss_spawn_rate) {
-		do {
-			prefork_decrease_allowed_clients(spoolss_pool);
-			n = prefork_count_allowed_connections(spoolss_pool);
-		} while (n > spoolss_max_children + spoolss_spawn_rate);
-	}
-}
-
 static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
 				    struct messaging_context *msg_ctx,
 				    struct timeval current_time);
@@ -658,7 +560,7 @@ static void spoolssd_sigchld_handler(struct tevent_context *ev_ctx,
 
 	/* run pool management so we can fork/retire or increase
 	 * the allowed connections per child based on load */
-	spoolss_manage_pool(ev_ctx, msg_ctx);
+	pfh_manage_pool(ev_ctx, msg_ctx, &pf_spoolss_cfg, spoolss_pool);
 
 	/* also check if the updater child is alive and well */
 	check_updater_child();
@@ -709,7 +611,7 @@ static void spoolssd_check_children(struct tevent_context *ev_ctx,
 
 	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
-	spoolss_manage_pool(ev_ctx, msg_ctx);
+	pfh_manage_pool(ev_ctx, msg_ctx, &pf_spoolss_cfg, spoolss_pool);
 
 	spoolssd_schedule_check(ev_ctx, msg_ctx, current_time);
 }
@@ -791,7 +693,9 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	}
 
 	spoolss_reopen_logs(0);
-	spoolss_prefork_config();
+	pfh_daemon_config(DAEMON_NAME,
+			  &pf_spoolss_cfg,
+			  &default_pf_spoolss_cfg);
 
 	spoolss_setup_sig_term_handler(ev_ctx);
 	spoolss_setup_sig_hup_handler(ev_ctx, msg_ctx);
@@ -813,7 +717,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	ret = listen(listen_fd, spoolss_max_children);
+	ret = listen(listen_fd, pf_spoolss_cfg.max_allowed_clients);
 	if (ret == -1) {
 		DEBUG(0, ("Failed to listen on spoolss pipe - %s\n",
 			  strerror(errno)));
@@ -824,8 +728,8 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	ok = prefork_create_pool(ev_ctx, /* mem_ctx */
 				 ev_ctx, msg_ctx,
 				 1, &listen_fd,
-				 spoolss_min_children,
-				 spoolss_max_children,
+				 pf_spoolss_cfg.min_children,
+				 pf_spoolss_cfg.max_children,
 				 &spoolss_children_main, NULL,
 				 &spoolss_pool);
 	if (!ok) {
@@ -916,7 +820,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	DEBUG(1, ("SPOOLSS Daemon Started (%d)\n", getpid()));
 
-	spoolss_manage_pool(ev_ctx, msg_ctx);
+	pfh_manage_pool(ev_ctx, msg_ctx, &pf_spoolss_cfg, spoolss_pool);
 
 	/* loop forever */
 	ret = tevent_loop_wait(ev_ctx);
