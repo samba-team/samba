@@ -599,6 +599,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 			  "unexpected subreq\n"));
 		status = NT_STATUS_INTERNAL_ERROR;
 		cli_state_notify_pending(cli, status);
+		TALLOC_FREE(frame);
 		return;
 	}
 
