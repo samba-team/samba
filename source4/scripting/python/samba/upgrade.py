@@ -26,7 +26,9 @@ import pwd
 
 from samba import Ldb, registry
 from samba.param import LoadParm
-from samba.provision import provision
+from samba.provision import provision, FILL_FULL
+from samba.samba3 import passdb
+from samba.samba3 import param as s3param
 
 def import_sam_policy(samldb, policy, dn):
     """Import a Samba 3 policy database."""
@@ -375,11 +377,15 @@ def import_registry(samba4_registry, samba3_regdb):
             key_handle.set_value(value_name, value_type, value_data)
 
 
-def upgrade_from_passdb(samba3, logger, credentials, session_info,
-                        smbconf, targetdir):
-    oldconf = samba3.get_conf()
+def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
+    """Upgrade from samba3 database to samba4 AD database
+    """
 
-    if oldconf.get("domain logons") == "True":
+    # Read samba3 smb.conf
+    oldconf = s3param.get_context();
+    oldconf.load(smbconf)
+
+    if oldconf.get("domain logons"):
         serverrole = "domain controller"
     else:
         if oldconf.get("security") == "user":
@@ -391,15 +397,16 @@ def upgrade_from_passdb(samba3, logger, credentials, session_info,
     realm = oldconf.get("realm")
     netbiosname = oldconf.get("netbios name")
 
+    # secrets db
     secrets_db = samba3.get_secrets_db()
 
-    if domainname is None:
+    if not domainname:
         domainname = secrets_db.domains()[0]
         logger.warning("No domain specified in smb.conf file, assuming '%s'",
                 domainname)
 
-    if realm is None:
-        if oldconf.get("domain logons") == "True":
+    if not realm:
+        if oldconf.get("domain logons"):
             logger.warning("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (generally it's the upcased DNS domainname).")
             return
         else:
@@ -407,23 +414,62 @@ def upgrade_from_passdb(samba3, logger, credentials, session_info,
             logger.warning("No realm specified in smb.conf file, assuming '%s'",
                     realm)
 
-    domainguid = secrets_db.get_domain_guid(domainname)
-    domainsid = secrets_db.get_sid(domainname)
+    # Find machine account and password
+    machinepass = None
+    machinerid = 2000
+    machinesid = None
+
+    try:
+        machinepass = secrets_db.get_machine_password(netbiosname)
+    except:
+        pass
+
+    # We must close the direct pytdb database before the C code loads it
+    secrets_db.close()
+
+    # We must load the group mapping into memory before the passdb code touches it
+    groupdb = samba3.get_groupmapping_db()
+    for sid in groupdb.groupsids():
+        (gid, sid_name_use, nt_name, comment) = groupdb.get_group(sid)
+        # FIXME: import_sam_group(samdb, sid, gid, sid_name_use, nt_name, comment, domaindn)
+    groupdb.close()
+
+    passdb.set_secrets_dir(samba3.libdir)
+
+    try:
+        domainsid = str(passdb.get_global_sam_sid())
+    except:
+        pass
+
+    try:
+        machineacct = old_passdb.getsampwnam('%s$' % netbiosname)
+        machinesid, machinerid = machineacct.user_sid.split()
+    except:
+        pass
+
     if domainsid is None:
         logger.warning("Can't find domain secrets for '%s'; using random SID",
             domainname)
 
-    if netbiosname is not None:
-        machinepass = secrets_db.get_machine_password(netbiosname)
-    else:
-        machinepass = None
+    # Import users from old passdb backend
+    old_passdb = passdb.PDB(oldconf.get('passdb backend'))
+    userlist = old_passdb.search_users(0)
+    userdata = {}
+    for entry in userlist:
+        if machinesid and machinerid == entry['rid']:
+            continue
+        username = entry['account_name']
+        if entry['rid'] < 1000:
+            print("Skipping wellknown rid=%d (for username=%s)\n" % (entry['rid'], username))
+            continue
+        userdata[username] = old_passdb.getsampwnam(username)
 
-    result = provision(logger=logger,
-                       session_info=session_info, credentials=credentials,
+    # Do full provision
+    result = provision(logger, session_info, None,
                        targetdir=targetdir, realm=realm, domain=domainname,
-                       domainguid=domainguid, domainsid=domainsid,
+                       domainsid=domainsid, next_rid=machinerid,
                        hostname=netbiosname, machinepass=machinepass,
-                       serverrole=serverrole)
+                       serverrole=serverrole, samdb_fill=FILL_FULL)
 
     import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
 
@@ -431,20 +477,15 @@ def upgrade_from_passdb(samba3, logger, credentials, session_info,
 
     # FIXME: import_idmap(samdb,samba3.get_idmap_db(),domaindn)
 
-    groupdb = samba3.get_groupmapping_db()
-    for sid in groupdb.groupsids():
-        (gid, sid_name_use, nt_name, comment) = groupdb.get_group(sid)
-        # FIXME: import_sam_group(samdb, sid, gid, sid_name_use, nt_name, comment, domaindn)
-
     # FIXME: Aliases
 
-    passdb = samba3.get_sam_db()
-    for name in passdb:
-        user = passdb[name]
-        #FIXME: import_sam_account(result.samdb, user, domaindn, domainsid)
+    # Export users to samba4 backend
+    new_smbconf = result.lp.configfile
+    newconf = s3param.get_context()
+    newconf.load(new_smbconf)
 
-    if hasattr(passdb, 'ldap_url'):
-        logger.info("Enabling Samba3 LDAP mappings for SAM database")
+    new_passdb = passdb.PDB('samba4')
 
-        enable_samba3sam(result.samdb, passdb.ldap_url)
-
+    for username in userdata:
+        print "adding user %s" % username
+        new_passdb.add_sam_account(userdata[username])

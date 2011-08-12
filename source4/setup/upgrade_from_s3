@@ -26,17 +26,13 @@ sys.path.insert(0, "bin/python")
 import samba
 import samba.getopt as options
 from samba.auth import system_session
-from samba.upgrade import upgrade_from_passdb
+from samba.upgrade import upgrade_from_samba3
 from samba.samba3 import Samba3
-parser = optparse.OptionParser("upgrade_from_s3 [options] <libdir> <smbconf>")
+parser = optparse.OptionParser("upgrade_from_s3 [options] <libdir>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
-credopts = options.CredentialsOptions(parser)
-parser.add_option_group(credopts)
 parser.add_option("--quiet", help="Be quiet")
-parser.add_option("--blank",
-                  help="do not add users or groups, just the structure")
 parser.add_option("--targetdir", type="string", metavar="DIR",
                   help="Set target directory")
 
@@ -60,19 +56,12 @@ if not os.path.isdir(libdir):
     print "error: %s is not a directory"
     sys.exit(1)
 
-if len(args) > 1:
-    smbconf = args[1]
-else:
-    smbconf = os.path.join(libdir, "smb.conf")
+lp = sambaopts.get_loadparm()
+smbconf = lp.configfile
 
 samba3 = Samba3(libdir, smbconf)
 
 logger.info("Provisioning")
 
-lp = sambaopts.get_loadparm()
-smbconf = lp.configfile
-creds = credopts.get_credentials(lp)
-
-upgrade_from_passdb(samba3, logger, credentials=creds,
-		    session_info=system_session(), smbconf=smbconf,
-		    targetdir=opts.targetdir)
+upgrade_from_samba3(samba3, logger, session_info=system_session(),
+            smbconf=smbconf, targetdir=opts.targetdir)
