@@ -128,6 +128,17 @@ struct cli_state {
 		struct tevent_req *read_smb_req;
 		struct tevent_queue *outgoing;
 		struct tevent_req **pending;
+		/*
+		 * The incoming dispatch function should return:
+		 * - NT_STATUS_RETRY, if more incoming PDUs are expected.
+		 * - NT_STATUS_OK, if no more processing is desired, e.g.
+		 *                 the dispatch function called
+		 *                 tevent_req_done().
+		 * - All other return values disconnect the connection.
+		 */
+		NTSTATUS (*dispatch_incoming)(struct cli_state *cli,
+					      TALLOC_CTX *frame,
+					      uint8_t *inbuf);
 	} conn;
 
 	struct {

@@ -228,6 +228,9 @@ bool cli_smb_req_set_pending(struct tevent_req *req)
 }
 
 static void cli_smb_received(struct tevent_req *subreq);
+static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
+					TALLOC_CTX *frame,
+					uint8_t *inbuf);
 
 static bool cli_state_receive_next(struct cli_state *cli)
 {
@@ -245,6 +248,8 @@ static bool cli_state_receive_next(struct cli_state *cli)
 
 	req = cli->conn.pending[0];
 	state = tevent_req_data(req, struct cli_smb_state);
+
+	cli->conn.dispatch_incoming = cli_state_dispatch_smb1;
 
 	/*
 	 * We're the first ones, add the read_smb request that waits for the
@@ -579,10 +584,6 @@ static void cli_smb_sent(struct tevent_req *subreq)
 	}
 }
 
-static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
-					TALLOC_CTX *frame,
-					uint8_t *inbuf);
-
 static void cli_smb_received(struct tevent_req *subreq)
 {
 	struct cli_state *cli = tevent_req_callback_data(
@@ -612,7 +613,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 		return;
 	}
 
-	status = cli_state_dispatch_smb1(cli, frame, inbuf);
+	status = cli->conn.dispatch_incoming(cli, frame, inbuf);
 	TALLOC_FREE(frame);
 	if (NT_STATUS_IS_OK(status)) {
 		/*
