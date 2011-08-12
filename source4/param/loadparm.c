@@ -3514,6 +3514,10 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 	char *n2;
 	bool bRetval;
 
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->load(filename);
+	}
+
 	filename = talloc_strdup(lp_ctx, filename);
 
 	lp_ctx->szConfigFile = filename;

@@ -92,6 +92,7 @@ sub print_header($$)
 	$file->("\tstruct loadparm_service * (*get_default_loadparm_service)(void);\n");
 	$file->("\tstruct loadparm_service * (*get_servicebynum)(int snum);\n");
 	$file->("\tint (*get_numservices)(void);\n");
+	$file->("\tbool (*load)(const char *filename);\n");
 	$file->("\tbool (*set_cmdline)(const char *pszParmName, const char *pszParmValue);\n");
 }
 

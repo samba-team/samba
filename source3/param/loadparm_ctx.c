@@ -20,6 +20,11 @@
 #include "includes.h"
 #include "../source4/param/s3_param.h"
 
+static bool lp_load_for_s4_ctx(const char *filename)
+{
+	return lp_load(filename, false, false, false, false);
+}
+
 /* These are in the order that they appear in the s4 loadparm file.
  * All of the s4 loadparm functions should be here eventually, once
  * they are implemented in the s3 loadparm, have the same format (enum
@@ -33,6 +38,7 @@ static const struct loadparm_s3_context s3_fns =
 	.get_servicebynum = lp_servicebynum,
 	.get_default_loadparm_service = lp_default_loadparm_service,
 	.get_numservices = lp_numservices,
+	.load = lp_load_for_s4_ctx,
 	.set_cmdline = lp_set_cmdline,
 
 	.server_role = lp_server_role,
