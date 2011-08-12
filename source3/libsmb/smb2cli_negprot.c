@@ -66,7 +66,10 @@ struct tevent_req *smb2cli_negprot_send(TALLOC_CTX *mem_ctx,
 	SSVAL(buf, 0, 0x202);	/* SMB2.002 */
 	SSVAL(buf, 2, 0x210);	/* SMB2.1 */
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_NEGPROT, 0,
+	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_NEGPROT,
+				  0, 0, /* flags */
+				  cli->smb2.pid,
+				  0, 0, /* tid, uid */
 				  state->fixed, sizeof(state->fixed),
 				  state->dyn, sizeof(state->dyn));
 	if (tevent_req_nomem(subreq, req)) {

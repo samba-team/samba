@@ -70,7 +70,11 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	SSVAL(fixed, 4, SMB2_HDR_BODY + 8);
 	SSVAL(fixed, 6, dyn_len);
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_TCON, 0,
+	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_TCON,
+				  0, 0, /* flags */
+				  cli->smb2.pid,
+				  0, /* tid */
+				  cli->smb2.uid,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
@@ -166,7 +170,11 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 	}
 	SSVAL(state->fixed, 0, 4);
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_TDIS, 0,
+	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_TDIS,
+				  0, 0, /* flags */
+				  cli->smb2.pid,
+				  cli->smb2.tid,
+				  cli->smb2.uid,
 				  state->fixed, sizeof(state->fixed),
 				  NULL, 0);
 	if (tevent_req_nomem(subreq, req)) {

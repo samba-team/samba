@@ -175,7 +175,11 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct cli_state *cli,
 				      uint16_t cmd,
-				      uint32_t flags,
+				      uint32_t additional_flags,
+				      uint32_t clear_flags,
+				      uint32_t pid,
+				      uint32_t tid,
+				      uint64_t uid,
 				      const uint8_t *fixed,
 				      uint16_t fixed_len,
 				      const uint8_t *dyn,
@@ -183,6 +187,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smb2cli_req_state *state;
+	uint32_t flags = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_req_state);
@@ -197,6 +202,9 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(req);
 		return NULL;
 	}
+
+	flags |= additional_flags;
+	flags &= ~clear_flags;
 
 	state->fixed = fixed;
 	state->fixed_len = fixed_len;
@@ -306,7 +314,11 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct cli_state *cli,
 				    uint16_t cmd,
-				    uint32_t flags,
+				    uint32_t additional_flags,
+				    uint32_t clear_flags,
+				    uint32_t pid,
+				    uint32_t tid,
+				    uint64_t uid,
 				    const uint8_t *fixed,
 				    uint16_t fixed_len,
 				    const uint8_t *dyn,
@@ -315,7 +327,9 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	NTSTATUS status;
 
-	req = smb2cli_req_create(mem_ctx, ev, cli, cmd, flags,
+	req = smb2cli_req_create(mem_ctx, ev, cli, cmd,
+				 additional_flags, clear_flags,
+				 pid, tid, uid,
 				 fixed, fixed_len, dyn, dyn_len);
 	if (req == NULL) {
 		return NULL;

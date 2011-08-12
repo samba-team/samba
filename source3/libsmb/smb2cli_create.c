@@ -127,7 +127,11 @@ struct tevent_req *smb2cli_create_send(
 		data_blob_free(&blob);
 	}
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_CREATE, 0,
+	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_CREATE,
+				  0, 0, /* flags */
+				  cli->smb2.pid,
+				  cli->smb2.tid,
+				  cli->smb2.uid,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {

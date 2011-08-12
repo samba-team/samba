@@ -75,7 +75,11 @@ struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 	SSVAL(fixed, 26, dyn_len);
 	SSVAL(fixed, 28, outbuf_len);
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_FIND, 0,
+	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_FIND,
+				  0, 0, /* flags */
+				  cli->smb2.pid,
+				  cli->smb2.tid,
+				  cli->smb2.uid,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
