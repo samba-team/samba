@@ -69,9 +69,9 @@ class TdbDatabase(object):
 class Registry(TdbDatabase):
     """Simple read-only support for reading the Samba3 registry.
 
-    :note: This object uses the same syntax for registry key paths as 
-        Samba 3. This particular format uses forward slashes for key path 
-        separators and abbreviations for the predefined key names. 
+    :note: This object uses the same syntax for registry key paths as
+        Samba 3. This particular format uses forward slashes for key path
+        separators and abbreviations for the predefined key names.
         e.g.: HKLM/Software/Bar.
     """
     def __len__(self):
@@ -100,9 +100,9 @@ class Registry(TdbDatabase):
 
     def values(self, key):
         """Return a dictionary with the values set for a specific key.
-        
+
         :param key: Key to retrieve values for.
-        :return: Dictionary with value names as key, tuple with type and 
+        :return: Dictionary with value names as key, tuple with type and
             data as value."""
         data = self.tdb.get("%s/%s\x00" % (REGISTRY_VALUE_PREFIX, key))
         if data is None:
@@ -129,7 +129,7 @@ class PolicyDatabase(TdbDatabase):
     """Samba 3 Account Policy database reader."""
     def __init__(self, file):
         """Open a policy database
-        
+
         :param file: Path to the file to open.
         """
         super(PolicyDatabase, self).__init__(file)
@@ -176,7 +176,7 @@ class GroupMappingDatabase(TdbDatabase):
         """Retrieve the group mapping information for a particular group.
 
         :param sid: SID of the group
-        :return: None if the group can not be found, otherwise 
+        :return: None if the group can not be found, otherwise
             a tuple with gid, sid_name_use, the NT name and comment.
         """
         data = self.tdb.get("%s%s\0" % (GROUP_PREFIX, sid))
@@ -276,7 +276,7 @@ class SecretsDatabase(TdbDatabase):
 
     def get_ldap_bind_pw(self, host):
         return self.tdb.get("SECRETS/LDAP_BIND_PW/%s" % host)
-    
+
     def get_afs_keyfile(self, host):
         return self.tdb.get("SECRETS/AFS_KEYFILE/%s" % host)
 
@@ -285,7 +285,7 @@ class SecretsDatabase(TdbDatabase):
 
     def get_machine_last_change_time(self, host):
         return fetch_uint32(self.tdb, "SECRETS/MACHINE_LAST_CHANGE_TIME/%s" % host)
-            
+
     def get_machine_password(self, host):
         return self.tdb.get("SECRETS/MACHINE_PASSWORD/%s" % host)
 
@@ -317,7 +317,7 @@ class ShareInfoDatabase(TdbDatabase):
 
     def get_secdesc(self, name):
         """Obtain the security descriptor on a particular share.
-        
+
         :param name: Name of the share
         """
         secdesc = self.tdb.get("SECDESC/%s" % name)
@@ -368,7 +368,7 @@ acb_info_mapping = {
         'U': ACB_NORMAL,    # 'U'ser account (normal).
         'M': ACB_MNS,       # 'M'NS logon user account. What is this ?
         'W': ACB_WSTRUST,   # 'W'orkstation account.
-        'S': ACB_SVRTRUST,  # 'S'erver account. 
+        'S': ACB_SVRTRUST,  # 'S'erver account.
         'L': ACB_AUTOLOCK,  # 'L'ocked account.
         'X': ACB_PWNOEXP,   # No 'X'piry on password
         'I': ACB_DOMTRUST,  # 'I'nterdomain trust account.
@@ -390,10 +390,10 @@ def decode_acb(text):
 
 class SAMUser(object):
     """Samba 3 SAM User.
-    
+
     :note: Unknown or unset fields are set to None.
     """
-    def __init__(self, name, uid=None, lm_password=None, nt_password=None, acct_ctrl=None, 
+    def __init__(self, name, uid=None, lm_password=None, nt_password=None, acct_ctrl=None,
                  last_change_time=None, nt_username=None, fullname=None, logon_time=None, logoff_time=None,
                  acct_desc=None, group_rid=None, bad_password_count=None, logon_count=None,
                  domain=None, dir_drive=None, munged_dial=None, homedir=None, logon_script=None,
@@ -433,7 +433,7 @@ class SAMUser(object):
         self.hours = hours
         self.logon_divs = logon_divs
 
-    def __eq__(self, other): 
+    def __eq__(self, other):
         if not isinstance(other, SAMUser):
             return False
         return self.__dict__ == other.__dict__
@@ -519,11 +519,11 @@ class TdbSam(TdbDatabase):
                 yield k[len(TDBSAM_USER_PREFIX):].rstrip("\0")
 
     __iter__ = usernames
-    
+
     def __getitem__(self, name):
         data = self.tdb["%s%s\0" % (TDBSAM_USER_PREFIX, name)]
         user = SAMUser(name)
-    
+
         def unpack_string(data):
             (length, ) = struct.unpack("<L", data[:4])
             data = data[4:]
@@ -602,7 +602,7 @@ class TdbSam(TdbDatabase):
 
 def shellsplit(text):
     """Very simple shell-like line splitting.
-    
+
     :param text: Text to split.
     :return: List with parts of the line as strings.
     """
@@ -690,7 +690,7 @@ class ParamFile(object):
                 section = self._sanitize_name(l[1:-1])
                 self._sections.setdefault(section, {})
             elif "=" in l:
-               (k, v) = l.split("=", 1) 
+               (k, v) = l.split("=", 1)
                self._sections[section][self._sanitize_name(k)] = v
             else:
                 raise Exception("Unable to parser line %d: %r" % (i+1,l))
