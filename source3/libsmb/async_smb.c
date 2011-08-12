@@ -89,6 +89,8 @@ struct cli_smb_state {
 	int chain_num;
 	int chain_length;
 	struct tevent_req **chained_requests;
+
+	bool one_way;
 };
 
 static uint16_t cli_alloc_mid(struct cli_state *cli)
@@ -411,6 +413,22 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 			tevent_req_oom(result);
 		}
 	}
+
+	switch (smb_command) {
+	case SMBtranss:
+	case SMBtranss2:
+	case SMBnttranss:
+	case SMBntcancel:
+		state->one_way = true;
+		break;
+	case SMBlockingX:
+		if ((wct == 8) &&
+		    (CVAL(vwv+3, 0) == LOCKING_ANDX_OPLOCK_RELEASE)) {
+			state->one_way = true;
+		}
+		break;
+	}
+
 	return result;
 }
 
@@ -561,21 +579,10 @@ static void cli_smb_sent(struct tevent_req *subreq)
 		return;
 	}
 
-	switch (CVAL(state->header, smb_com)) {
-	case SMBtranss:
-	case SMBtranss2:
-	case SMBnttranss:
-	case SMBntcancel:
+	if (state->one_way) {
 		state->inbuf = NULL;
 		tevent_req_done(req);
 		return;
-	case SMBlockingX:
-		if ((CVAL(state->header, smb_wct) == 8) &&
-		    (CVAL(state->vwv+3, 0) == LOCKING_ANDX_OPLOCK_RELEASE)) {
-			state->inbuf = NULL;
-			tevent_req_done(req);
-			return;
-		}
 	}
 
 	if (!cli_smb_req_set_pending(req)) {
