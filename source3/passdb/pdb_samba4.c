@@ -2213,10 +2213,18 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 		goto nomem;
 	}
 
-	state->ldb = samdb_connect(state,
+	if (location) {
+		state->ldb = samdb_connect_url(state,
+				   state->ev,
+				   state->lp_ctx,
+				   system_session(state->lp_ctx),
+				   0, location);
+	} else {
+		state->ldb = samdb_connect(state,
 				   state->ev,
 				   state->lp_ctx,
 				   system_session(state->lp_ctx), 0);
+	}
 
 	if (!state->ldb) {
 		DEBUG(0, ("samdb_connect failed\n"));
