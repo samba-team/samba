@@ -154,7 +154,6 @@ nfs_check_rpc_service ()
 	    _rpc_prog=nlockmgr
 	    _version=4
 	    _restart="echo 'Trying to restart lock manager service'"
-	    _restart="${_restart}; startstop_nfs restart"
 	    _restart="${_restart}; startstop_nfslock restart"
 	    ;;
 	statd)
