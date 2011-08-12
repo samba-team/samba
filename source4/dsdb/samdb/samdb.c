@@ -89,22 +89,20 @@ struct cli_credentials *samdb_credentials(struct loadparm_context *lp_ctx)
 }
 
 /*
-  connect to the SAM database
+  connect to the SAM database specified by URL
   return an opaque context pointer on success, or NULL on failure
  */
-struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx, 
+struct ldb_context *samdb_connect_url(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev_ctx,
 				  struct loadparm_context *lp_ctx,
 				  struct auth_session_info *session_info,
-				  unsigned int flags)
+				  unsigned int flags, const char *url)
 {
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;
-	const char *url;
 	struct cli_credentials *credentials;
 	int ret;
 
-	url  = "sam.ldb";
 	credentials = samdb_credentials(lp_ctx);
 
 	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, credentials, flags);
@@ -138,6 +136,19 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	return ldb;
 }
 
+
+/*
+  connect to the SAM database
+  return an opaque context pointer on success, or NULL on failure
+ */
+struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
+				  struct tevent_context *ev_ctx,
+				  struct loadparm_context *lp_ctx,
+				  struct auth_session_info *session_info,
+				  unsigned int flags)
+{
+	return samdb_connect_url(mem_ctx, ev_ctx, lp_ctx, session_info, flags, "sam.ldb");
+}
 
 /****************************************************************************
  Create the SID list for this user.
