@@ -58,5 +58,5 @@ if bld.env.toplevel_build:
                       source='py_passdb.c',
                       deps='pdb',
                       public_deps='samba-util tdb talloc pyrpc_util',
-                      realname='samba/passdb.so'
+                      realname='samba/samba3/passdb.so'
                       )
