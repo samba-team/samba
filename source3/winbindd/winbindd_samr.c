@@ -56,7 +56,7 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a samr connection */
-	status = rpc_pipe_open_interface(mem_ctx,
+	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_samr.syntax_id,
 					session_info,
 					NULL,
@@ -133,7 +133,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create a lsa connection */
-	status = rpc_pipe_open_interface(mem_ctx,
+	status = rpc_pipe_open_internal(mem_ctx,
 					&ndr_table_lsarpc.syntax_id,
 					session_info,
 					NULL,

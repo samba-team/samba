@@ -461,7 +461,7 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
  * @return              NT_STATUS_OK on success, a corresponding NT status if an
  *                      error occured.
  */
-static NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
+NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
 				const struct auth_session_info *session_info,
 				const struct tsocket_address *remote_address,
