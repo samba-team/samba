@@ -85,9 +85,9 @@ sub slapd_stop($$)
 	return 1;
 }
 
-sub check_or_start($$)
+sub check_or_start($$$)
 {
-	my ($self, $env_vars) = @_;
+	my ($self, $env_vars, $process_model) = @_;
 	return 0 if ( -p $env_vars->{SAMBA_TEST_FIFO});
 
 	unlink($env_vars->{SAMBA_TEST_FIFO});
@@ -135,16 +135,8 @@ sub check_or_start($$)
 		}
 		my $samba =  Samba::bindir_path($self, "samba");
 
-		# allow selection of the process model using
-		# the environment varibale SAMBA_PROCESS_MODEL
-		# that allows us to change the process model for
-		# individual machines in the build farm
-		my $model = "single";
-		if (defined($ENV{SAMBA_PROCESS_MODEL})) {
-			$model = $ENV{SAMBA_PROCESS_MODEL};
-		}
 		chomp($pwd);
-		my $cmdline = "$valgrind ${pwd}/$samba $optarg $env_vars->{CONFIGURATION} -M $model -i";
+		my $cmdline = "$valgrind ${pwd}/$samba $optarg $env_vars->{CONFIGURATION} -M $process_model -i";
 		my $ret = system("$cmdline");
 		if ($ret == -1) {
 			print "Unable to start $cmdline: $ret: $!\n";
@@ -1423,7 +1415,7 @@ sub setup_member($$$)
 	my $env = $self->provision_member($path, $dc_vars);
 
 	if (defined $env) {
-		$self->check_or_start($env);
+		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
@@ -1440,7 +1432,7 @@ sub setup_rpc_proxy($$$)
 	my $env = $self->provision_rpc_proxy($path, $dc_vars);
 
 	if (defined $env) {
-	        $self->check_or_start($env);
+	        $self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
@@ -1455,7 +1447,7 @@ sub setup_dc($$)
 
 	my $env = $self->provision_dc($path);
 	if (defined $env) {
-		$self->check_or_start($env);
+		$self->check_or_start($env, "standard");
 
 		$self->wait_for_start($env);
 
@@ -1470,7 +1462,7 @@ sub setup_fl2000dc($$)
 
 	my $env = $self->provision_fl2000dc($path);
 	if (defined $env) {
-		$self->check_or_start($env);
+		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
@@ -1487,7 +1479,7 @@ sub setup_fl2003dc($$)
 	my $env = $self->provision_fl2003dc($path);
 
 	if (defined $env) {
-		$self->check_or_start($env);
+		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
@@ -1503,7 +1495,7 @@ sub setup_fl2008r2dc($$)
 	my $env = $self->provision_fl2008r2dc($path);
 
 	if (defined $env) {
-		$self->check_or_start($env);
+		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
@@ -1520,7 +1512,7 @@ sub setup_vampire_dc($$$)
 	my $env = $self->provision_vampire_dc($path, $dc_vars);
 
 	if (defined $env) {
-		$self->check_or_start($env);
+		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
@@ -1573,7 +1565,7 @@ sub setup_rodc($$$)
 		return undef;
 	}
 
-	$self->check_or_start($env);
+	$self->check_or_start($env, "single");
 
 	$self->wait_for_start($env);
 
@@ -1588,7 +1580,7 @@ sub setup_plugin_s4_dc($$)
 
 	my $env = $self->provision_plugin_s4_dc($path);
 	if (defined $env) {
-		$self->check_or_start($env);
+		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
