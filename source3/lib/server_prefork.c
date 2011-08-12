@@ -345,6 +345,23 @@ static void prefork_cleanup_loop(struct prefork_pool *pfp)
 
 }
 
+int prefork_count_allowed_connections(struct prefork_pool *pfp)
+{
+	int c;
+	int i;
+
+	c = 0;
+	for (i = 0; i < pfp->pool_size; i++) {
+		if (pfp->pool[i].status == PF_WORKER_NONE) {
+			continue;
+		}
+
+		c += pfp->pool[i].allowed_clients - pfp->pool[i].num_clients;
+	}
+
+	return c;
+}
+
 void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max)
 {
 	int i;
@@ -356,6 +373,21 @@ void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max)
 
 		if (pfp->pool[i].allowed_clients < max) {
 			pfp->pool[i].allowed_clients++;
+		}
+	}
+}
+
+void prefork_decrease_allowed_clients(struct prefork_pool *pfp)
+{
+	int i;
+
+	for (i = 0; i < pfp->pool_size; i++) {
+		if (pfp->pool[i].status == PF_WORKER_NONE) {
+			continue;
+		}
+
+		if (pfp->pool[i].allowed_clients > 1) {
+			pfp->pool[i].allowed_clients--;
 		}
 	}
 }

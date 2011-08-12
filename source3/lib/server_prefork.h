@@ -181,15 +181,32 @@ int prefork_retire_children(struct prefork_pool *pfp,
 int prefork_count_active_children(struct prefork_pool *pfp, int *total);
 
 /**
-* @brief Inform all children that they are allowed to accept 'max' clients
-*	 now. Use this when all children are already busy and more clients
-*	 are trying to connect. It will allow each child to handle more than
-*	 one client at a time, up to 'max'.
+* @brief Count the number of actual connections currently allowed
+*
+* @param pfp		The pool.
+*
+* @return The number of connections that can still be opened by clients
+*	  with the current pool of children.
+*/
+int prefork_count_allowed_connections(struct prefork_pool *pfp);
+
+/**
+* @brief Increase the amount of clients each child is allowed to handle
+*	 simultaneaously. It will allow each child to handle more than
+*	 one client at a time, up to 'max' (currently set to 100).
 *
 * @param pfp	The pool.
-* @param max	Max number of clients per child.
+* @param max	Max number of allowed connections per child
 */
 void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max);
+
+/**
+* @brief Decrease the amount of clients each child is allowed to handle.
+*	 Min is 1.
+*
+* @param pfp	The pool.
+*/
+void prefork_decrease_allowed_clients(struct prefork_pool *pfp);
 
 /**
 * @brief Reset the maximum allowd clients per child to 1.
