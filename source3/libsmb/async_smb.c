@@ -162,7 +162,9 @@ void cli_smb_req_unset_pending(struct tevent_req *req)
 	/*
 	 * Remove ourselves from the cli->conn.pending array
 	 */
-	cli->conn.pending[i] = cli->conn.pending[num_pending-1];
+	for (; i < (num_pending - 1); i++) {
+		cli->conn.pending[i] = cli->conn.pending[i+1];
+	}
 
 	/*
 	 * No NULL check here, we're shrinking by sizeof(void *), and
