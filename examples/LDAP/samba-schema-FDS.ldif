@@ -137,6 +137,10 @@ attributeTypes: ( 1.3.6.1.4.1.7165.2.1.76 NAME 'sambaTrustAuthIncoming' DESC 'Au
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.77 NAME 'sambaSecurityIdentifier' DESC 'SID of a trusted domain' EQUALITY caseIgnoreIA5Match SUBSTR caseExactIA5SubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} SINGLE-VALUE )
 #
 attributeTypes: ( 1.3.6.1.4.1.7165.2.1.78 NAME 'sambaTrustForestTrustInfo' DESC 'Forest trust information for a trusted domain object' EQUALITY caseExactMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1050} )
+#
+attributeTypes: ( 1.3.6.1.4.1.7165.2.1.79 NAME 'sambaTrustPosixOffset' DESC 'POSIX offset of a trust' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.7165.2.1.80 NAME 'sambaSupportedEncryptionTypes' DESC 'Supported encryption types of a trust' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 ##
 #######################################################################
 ##              objectClasses: used by Samba 3.0 schema               ##
@@ -183,4 +187,4 @@ objectClasses: ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaTrustedDomainPassword' SUP t
 ##
 ## used for IPA_ldapsam
 ##
-objectClasses: ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL DESC 'Samba Trusted Domain Object' MUST ( cn ) MAY ( sambaTrustType $ sambaTrustAttributes $ sambaTrustDirection $ sambaTrustPartner $ sambaFlatName $ sambaTrustAuthOutgoing $ sambaTrustAuthIncoming $ sambaSecurityIdentifier $ sambaTrustForestTrustInfo ) )
+objectClasses: ( 1.3.6.1.4.1.7165.2.2.16 NAME 'sambaTrustedDomain' SUP top STRUCTURAL DESC 'Samba Trusted Domain Object' MUST ( cn ) MAY ( sambaTrustType $ sambaTrustAttributes $ sambaTrustDirection $ sambaTrustPartner $ sambaFlatName $ sambaTrustAuthOutgoing $ sambaTrustAuthIncoming $ sambaSecurityIdentifier $ sambaTrustForestTrustInfo $ sambaTrustPosixOffset $ sambaSupportedEncryptionTypes) )
