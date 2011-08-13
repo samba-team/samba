@@ -1511,7 +1511,6 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	if (ltdb_cache_load(module) != 0) {
 		talloc_free(module);
-		talloc_free(ltdb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
