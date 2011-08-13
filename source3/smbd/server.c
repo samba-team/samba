@@ -1197,6 +1197,15 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
+	/* This MUST be done before start_epmd() because otherwise
+	 * start_epmd() forks and races against dcesrv_ep_setup() to
+	 * call directory_create_or_exist() */
+	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
+		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
+			  lp_ncalrpc_dir(), strerror(errno)));
+		return -1;
+	}
+
 	if (is_daemon && !interactive) {
 		enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 
