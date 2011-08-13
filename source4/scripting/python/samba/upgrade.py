@@ -416,8 +416,9 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
 
     # Find machine account and password
     machinepass = None
-    machinerid = 2000
+    machinerid = None
     machinesid = None
+    next_rid = 1000
 
     try:
         machinepass = secrets_db.get_machine_password(netbiosname)
@@ -456,18 +457,22 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     userlist = old_passdb.search_users(0)
     userdata = {}
     for entry in userlist:
-        if machinesid and machinerid == entry['rid']:
+        if machinerid and machinerid == entry['rid']:
             continue
         username = entry['account_name']
         if entry['rid'] < 1000:
             print("Skipping wellknown rid=%d (for username=%s)\n" % (entry['rid'], username))
             continue
+        if entry['rid'] >= next_rid:
+            next_rid = entry['rid'] + 1
+        
         userdata[username] = old_passdb.getsampwnam(username)
 
     # Do full provision
     result = provision(logger, session_info, None,
                        targetdir=targetdir, realm=realm, domain=domainname,
-                       domainsid=domainsid, next_rid=machinerid,
+                       domainsid=domainsid, next_rid=next_rid,
+                       dc_rid=machinerid,
                        hostname=netbiosname, machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL)
 

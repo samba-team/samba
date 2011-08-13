@@ -1069,13 +1069,17 @@ def setup_samdb_rootdse(samdb, names):
 def setup_self_join(samdb, names, machinepass, dnspass,
                     domainsid, next_rid, invocationid,
                     policyguid, policyguid_dc, domainControllerFunctionality,
-                    ntdsguid):
+                    ntdsguid, dc_rid=None):
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
         ntdsguid_line = "objectGUID: %s\n"%ntdsguid
     else:
         ntdsguid_line = ""
+
+    if dc_rid is None:
+        dc_rid = next_rid
+
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), {
               "CONFIGDN": names.configdn,
               "SCHEMADN": names.schemadn,
@@ -1086,7 +1090,7 @@ def setup_self_join(samdb, names, machinepass, dnspass,
               "DNSNAME": "%s.%s" % (names.hostname, names.dnsdomain),
               "MACHINEPASS_B64": b64encode(machinepass.encode('utf-16-le')),
               "DOMAINSID": str(domainsid),
-              "DCRID": str(next_rid),
+              "DCRID": str(dc_rid),
               "SAMBA_VERSION_STRING": version,
               "NTDSGUID": ntdsguid_line,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(
@@ -1175,11 +1179,14 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
         logger, domainsid, domainguid, policyguid, policyguid_dc, fill,
         adminpass, krbtgtpass, machinepass, invocationid, dnspass, ntdsguid,
         serverrole, am_rodc=False, dom_for_fun_level=None, schema=None,
-        next_rid=1000):
+        next_rid=None, dc_rid=None):
     """Setup a complete SAM Database.
 
     :note: This will wipe the main SAM database file!
     """
+
+    if next_rid is None:
+        next_rid = 1000
 
     # Provision does not make much sense values larger than 1000000000
     # as the upper range of the rIDAvailablePool is 1073741823 and
@@ -1386,14 +1393,15 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 
             logger.info("Setting up self join")
             setup_self_join(samdb, names=names, invocationid=invocationid,
-                dnspass=dnspass,
-                machinepass=machinepass,
-                domainsid=domainsid,
-                next_rid=next_rid,
-                policyguid=policyguid,
-                policyguid_dc=policyguid_dc,
-                domainControllerFunctionality=domainControllerFunctionality,
-                ntdsguid=ntdsguid)
+                            dnspass=dnspass,
+                            machinepass=machinepass,
+                            domainsid=domainsid,
+                            next_rid=next_rid,
+                            dc_rid=dc_rid,
+                            policyguid=policyguid,
+                            policyguid_dc=policyguid_dc,
+                            domainControllerFunctionality=domainControllerFunctionality,
+                            ntdsguid=ntdsguid)
 
             ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
             names.ntdsguid = samdb.searchone(basedn=ntds_dn,
@@ -1510,7 +1518,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
         domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
-        next_rid=1000, adminpass=None, ldapadminpass=None, krbtgtpass=None,
+        next_rid=1000, dc_rid=None, adminpass=None, ldapadminpass=None, krbtgtpass=None,
         domainguid=None, policyguid=None, policyguid_dc=None,
         invocationid=None, machinepass=None, ntdsguid=None, dnspass=None,
         root=None, nobody=None, users=None, wheel=None, backup=None, aci=None,
@@ -1712,7 +1720,7 @@ def provision(logger, session_info, credentials, smbconf=None,
             invocationid=invocationid, machinepass=machinepass,
             dnspass=dnspass, ntdsguid=ntdsguid, serverrole=serverrole,
             dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
-            next_rid=next_rid)
+            next_rid=next_rid, dc_rid=dc_rid)
 
         if serverrole == "domain controller":
             if paths.netlogon is None:
