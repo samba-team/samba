@@ -29,6 +29,10 @@
 #define Py_RETURN_NONE	return Py_INCREF(Py_None), Py_None
 #endif
 
+#ifndef Py_TYPE /* Py_TYPE is only available on Python > 2.6 */
+#define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
+#endif
+
 #ifndef PY_CHECK_TYPE
 #define PY_CHECK_TYPE(type, var, fail) \
 	if (!PyObject_TypeCheck(var, type)) {\
