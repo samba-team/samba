@@ -1389,6 +1389,11 @@ static TDB_DATA regdb_fetch_key_internal(struct db_context *db,
  * Existence of a key is authoritatively defined by
  * the existence of the record that contains the list
  * of its subkeys.
+ *
+ * Return false, if the record does not match the correct
+ * structure of an initial 4-byte counter and then a
+ * list of the corresponding number of zero-terminated
+ * strings.
  */
 static bool regdb_key_exists(struct db_context *db, const char *key)
 {
@@ -1396,6 +1401,10 @@ static bool regdb_key_exists(struct db_context *db, const char *key)
 	TDB_DATA value;
 	bool ret = false;
 	char *path;
+	uint32_t buflen;
+	const char *buf;
+	uint32_t num_items, i;
+	int32_t len;
 
 	if (key == NULL) {
 		goto done;
@@ -1412,7 +1421,69 @@ static bool regdb_key_exists(struct db_context *db, const char *key)
 	}
 
 	value = regdb_fetch_key_internal(db, mem_ctx, path);
-	ret = (value.dptr != NULL);
+	if (value.dptr == NULL) {
+		goto done;
+	}
+
+	if (value.dsize == 0) {
+		DEBUG(10, ("regdb_key_exists: subkeylist-record for key "
+			  "[%s] is empty: Could be a deleted record in a "
+			  "clustered (ctdb) environment?\n",
+			  path));
+		goto done;
+	}
+
+	len = tdb_unpack(value.dptr, value.dsize, "d", &num_items);
+	if (len == (int32_t)-1) {
+		DEBUG(1, ("regdb_key_exists: ERROR: subkeylist-record for key "
+			  "[%s] is invalid: Could not parse initial 4-byte "
+			  "counter. record data length is %u.\n",
+			  path, (unsigned int)value.dsize));
+		goto done;
+	}
+
+	/*
+	 * Note: the tdb_unpack check above implies that len <= value.dsize
+	 */
+	buflen = value.dsize - len;
+	buf = (const char *)value.dptr + len;
+
+	len = 0;
+
+	for (i = 0; i < num_items; i++) {
+		if (buflen == 0) {
+			break;
+		}
+		len = strnlen(buf, buflen) + 1;
+		if (buflen < len) {
+			DEBUG(1, ("regdb_key_exists: ERROR: subkeylist-record "
+				  "for key [%s] is corrupt: %u items expected, "
+				  "item number %u is not zero terminated.\n",
+				  path, num_items, i+1));
+			goto done;
+		}
+
+		buf += len;
+		buflen -= len;
+	}
+
+	if (buflen > 0) {
+		DEBUG(1, ("regdb_key_exists: ERROR: subkeylist-record for key "
+			  "[%s] is corrupt: %u items expected and found, but "
+			  "the record contains additional %u bytes\n",
+			  path, num_items, buflen));
+		goto done;
+	}
+
+	if (i < num_items) {
+		DEBUG(1, ("regdb_key_exists: ERROR: subkeylist-record for key "
+			  "[%s] is corrupt: %u items expected, but only %u "
+			  "items found.\n",
+			  path, num_items, i+1));
+		goto done;
+	}
+
+	ret = true;
 
 done:
 	TALLOC_FREE(mem_ctx);
