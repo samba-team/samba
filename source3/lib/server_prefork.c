@@ -50,7 +50,7 @@ static bool prefork_setup_sigchld_handler(struct tevent_context *ev_ctx,
 
 static int prefork_pool_destructor(struct prefork_pool *pfp)
 {
-	munmap(pfp->pool, pfp->pool_size * sizeof(struct pf_worker_data));
+	anonymous_shared_free(pfp->pool);
 	return 0;
 }
 
@@ -97,9 +97,8 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 	pfp->pool_size = max_children;
 	data_size = sizeof(struct pf_worker_data) * max_children;
 
-	pfp->pool = mmap(NULL, data_size, PROT_READ|PROT_WRITE,
-			 MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-	if (pfp->pool == MAP_FAILED) {
+	pfp->pool = anonymous_shared_allocate(data_size);
+	if (pfp->pool == NULL) {
 		DEBUG(1, ("Failed to mmap memory for prefork pool!\n"));
 		talloc_free(pfp);
 		return false;
@@ -153,9 +152,10 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
  */
 int prefork_expand_pool(struct prefork_pool *pfp, int new_max)
 {
-	struct pf_worker_data *pool;
+	struct prefork_pool *pool;
 	size_t old_size;
 	size_t new_size;
+	int ret;
 
 	if (new_max <= pfp->pool_size) {
 		return EINVAL;
@@ -164,10 +164,12 @@ int prefork_expand_pool(struct prefork_pool *pfp, int new_max)
 	old_size = sizeof(struct pf_worker_data) * pfp->pool_size;
 	new_size = sizeof(struct pf_worker_data) * new_max;
 
-	pool = mremap(pfp->pool, old_size, new_size, 0);
-	if (pool == MAP_FAILED) {
-		DEBUG(3, ("Failed to mremap memory for prefork pool!\n"));
-		return ENOSPC;
+	pool = anonymous_shared_resize(&pfp->pool, new_size, false);
+	if (pool == NULL) {
+		ret = errno;
+		DEBUG(3, ("Failed to mremap memory (%d: %s)!\n",
+			  ret, strerror(ret)));
+		return ret;
 	}
 
 	memset(&pool[pfp->pool_size], 0, new_size - old_size);
