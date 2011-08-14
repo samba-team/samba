@@ -148,6 +148,7 @@ bool torture_casetable(struct torture_context *tctx,
 		torture_comment(tctx, "%04x (%c)\n", c, isprint(c)?c:'.');
 
 		fname = form_name(c);
+		if (fname == NULL) continue;
 		fnum = smbcli_nt_create_full(cli->tree, fname, 0,
 #if 0
 					     SEC_RIGHT_MAXIMUM_ALLOWED, 
@@ -158,9 +159,10 @@ bool torture_casetable(struct torture_context *tctx,
 					     NTCREATEX_SHARE_ACCESS_NONE,
 					     NTCREATEX_DISP_OPEN_IF, 0, 0);
 
-		torture_assert(tctx, fnum != -1, 
-					   talloc_asprintf(tctx, 
-			"Failed to create file with char %04x\n", c));
+		if (fnum == -1) {
+			torture_comment(tctx, "Failed to create file with char %04x\n", c);
+			continue;
+		}
 
 		size = 0;
 
