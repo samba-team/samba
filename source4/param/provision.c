@@ -25,7 +25,7 @@
 #include "librpc/ndr/libndr.h"
 #include "param/provision.h"
 #include "param/secrets.h"
-#include "lib/talloc/pytalloc.h"
+#include <pytalloc.h>
 #include "scripting/python/modules.h"
 #include "param/pyparam.h"
 #include "dynconfig/dynconfig.h"
