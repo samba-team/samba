@@ -98,6 +98,13 @@ if test x"$libreplace_cv_HAVE_MMAP" = x"yes"; then
     AC_DEFINE(HAVE_MMAP,1,[Whether mmap works])
 fi
 
+AC_CACHE_CHECK([for working mremap],libreplace_cv_HAVE_MREMAP,[
+AC_TRY_RUN([#include "$libreplacedir/test/shared_mremap.c"],
+           libreplace_cv_HAVE_MREMAP=yes,libreplace_cv_HAVE_MREMAP=no,libreplace_cv_HAVE_MREMAP=cross)])
+if test x"$libreplace_cv_HAVE_MREMAP" = x"yes"; then
+    AC_DEFINE(HAVE_MREMAP,1,[Whether mremap works])
+fi
+
 
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(sys/time.h time.h)
