@@ -1073,6 +1073,70 @@ void *anonymous_shared_allocate(size_t orig_bufsz)
 	return ptr;
 }
 
+void *anonymous_shared_resize(void *ptr, size_t new_size, bool maymove)
+{
+#ifdef HAVE_MREMAP
+	void *buf;
+	size_t pagesz = getpagesize();
+	size_t pagecnt;
+	size_t bufsz;
+	struct anonymous_shared_header *hdr;
+	int flags = 0;
+
+	if (ptr == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	hdr = (struct anonymous_shared_header *)ptr;
+	hdr--;
+	if (hdr->u.length > (new_size + sizeof(*hdr))) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	bufsz = new_size + sizeof(*hdr);
+
+	/* round up to full pages */
+	pagecnt = bufsz / pagesz;
+	if (bufsz % pagesz) {
+		pagecnt += 1;
+	}
+	bufsz = pagesz * pagecnt;
+
+	if (new_size >= bufsz) {
+		/* integer wrap */
+		errno = ENOSPC;
+		return NULL;
+	}
+
+	if (bufsz <= hdr->u.length) {
+		return ptr;
+	}
+
+	if (maymove) {
+		flags = MREMAP_MAYMOVE;
+	}
+
+	buf = mremap(hdr, hdr->u.length, bufsz, flags);
+
+	if (buf == MAP_FAILED) {
+		errno = ENOSPC;
+		return NULL;
+	}
+
+	hdr = (struct anonymous_shared_header *)buf;
+	hdr->u.length = bufsz;
+
+	ptr = (void *)(&hdr[1]);
+
+	return ptr;
+#else
+	errno = ENOSPC;
+	return NULL;
+#endif
+}
+
 void anonymous_shared_free(void *ptr)
 {
 	struct anonymous_shared_header *hdr;
