@@ -335,6 +335,8 @@ static int db_ctdb_transaction_start(struct db_context *db)
 
 	if (ctx->transaction) {
 		ctx->transaction->nesting++;
+		DEBUG(5, (__location__ " transaction start on db 0x%08x: nesting %d -> %d\n",
+			  ctx->db_id, ctx->transaction->nesting - 1, ctx->transaction->nesting));
 		return 0;
 	}
 
@@ -369,7 +371,7 @@ static int db_ctdb_transaction_start(struct db_context *db)
 
 	ctx->transaction = h;
 
-	DEBUG(5,(__location__ " Started transaction on db 0x%08x\n", ctx->db_id));
+	DEBUG(5,(__location__ " transaction started on db 0x%08x\n", ctx->db_id));
 
 	return 0;
 }
@@ -786,6 +788,8 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 
 	if (h->nesting != 0) {
 		h->nesting--;
+		DEBUG(5, (__location__ " transaction commit on db 0x%08x: nesting %d -> %d\n",
+			  ctx->db_id, ctx->transaction->nesting + 1, ctx->transaction->nesting));
 		return 0;
 	}
 
@@ -798,7 +802,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 		goto done;
 	}
 
-	DEBUG(5,(__location__ " Commit transaction on db 0x%08x\n", ctx->db_id));
+	DEBUG(5,(__location__ " transaction commit on db 0x%08x\n", ctx->db_id));
 
 	/*
 	 * As the last db action before committing, bump the database sequence
@@ -891,6 +895,8 @@ static int db_ctdb_transaction_cancel(struct db_context *db)
 	if (h->nesting != 0) {
 		h->nesting--;
 		h->nested_cancel = true;
+		DEBUG(5, (__location__ " transaction cancel on db 0x%08x: nesting %d -> %d\n",
+			  ctx->db_id, ctx->transaction->nesting + 1, ctx->transaction->nesting));
 		return 0;
 	}
 
