@@ -815,9 +815,15 @@ static WERROR reg_deletekey_recursive_internal(struct registry_key *parent,
 	uint32 i;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
+	DEBUG(5, ("reg_deletekey_recursive_internal: deleting '%s' from '%s'\n",
+		  path, parent->key->name));
+
 	/* recurse through subkeys first */
 	werr = reg_openkey(mem_ctx, parent, path, REG_KEY_ALL, &key);
 	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(3, ("reg_deletekey_recursive_internal: error opening "
+			  "subkey '%s' of '%s': '%s'\n",
+			  path, parent->key->name, win_errstr(werr)));
 		goto done;
 	}
 
@@ -840,6 +846,10 @@ static WERROR reg_deletekey_recursive_internal(struct registry_key *parent,
 	}
 
 done:
+
+	DEBUG(5, ("reg_deletekey_recursive_internal: done deleting '%s' from "
+		  "'%s': %s\n",
+		  path, parent->key->name, win_errstr(werr)));
 	TALLOC_FREE(mem_ctx);
 	return werr;
 }
@@ -883,6 +893,10 @@ static WERROR reg_deletekey_recursive_trans(struct registry_key *parent,
 			DEBUG(0, ("reg_deletekey_recursive_trans: "
 				  "error committing transaction: %s\n",
 				  win_errstr(werr)));
+		} else {
+			DEBUG(5, ("reg_reletekey_recursive_trans: deleted key '%s' from '%s'\n",
+				  path, parent->key->name));
+
 		}
 	}
 
