@@ -1118,7 +1118,7 @@ bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
 
 bld.SAMBA3_BINARY('smbd/smbd',
                  source='${SMBD_SRC_MAIN}',
-                 deps='smbd_base EPMD',
+                 deps='smbd_base EPMD LSASD',
                  install_path='${SBINDIR}',
                  vars=locals())
 

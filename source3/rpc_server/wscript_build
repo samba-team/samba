@@ -52,6 +52,10 @@ bld.SAMBA3_SUBSYSTEM('EPMD',
                     source='epmd.c',
                     deps='samba-util')
 
+bld.SAMBA3_SUBSYSTEM('LSASD',
+                    source='lsasd.c',
+                    deps='samba-util')
+
 bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
                     source='srv_access_check.c',
                     deps='samba-util')
