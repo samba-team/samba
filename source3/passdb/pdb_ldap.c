@@ -6576,13 +6576,10 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 					       ldap_state->domain_name, True);
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(2, ("pdb_init_ldapsam: WARNING: Could not get domain "
-			  "info, nor add one to the domain\n"));
-		DEBUGADD(2, ("pdb_init_ldapsam: Continuing on regardless, "
-			     "will be unable to allocate new users/groups, "
-			     "and will risk BDCs having inconsistent SIDs\n"));
-		sid_copy(&ldap_state->domain_sid, get_global_sam_sid());
-		return NT_STATUS_OK;
+		DEBUG(0, ("pdb_init_ldapsam: WARNING: Could not get domain "
+			  "info, nor add one to the domain. "
+			  "We cannot work reliably without it.\n"));
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	/* Given that the above might fail, everything below this must be
