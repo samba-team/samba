@@ -1900,7 +1900,8 @@ static void search_end_groups(struct pdb_search *search)
 	SAFE_FREE(state->groups);
 }
 
-static bool pdb_search_grouptype(struct pdb_search *search,
+static bool pdb_search_grouptype(struct pdb_methods *methods,
+				 struct pdb_search *search,
 				 const struct dom_sid *sid, enum lsa_SidType type)
 {
 	struct group_search *state;
@@ -1911,8 +1912,9 @@ static bool pdb_search_grouptype(struct pdb_search *search,
 		return False;
 	}
 
-	if (!pdb_enum_group_mapping(sid, type, &state->groups, &state->num_groups,
-				    True)) {
+	if (!NT_STATUS_IS_OK(methods->enum_group_mapping(methods, sid, type, 
+							 &state->groups, &state->num_groups,
+							 True))) {
 		DEBUG(0, ("Could not enum groups\n"));
 		return False;
 	}
@@ -1927,7 +1929,7 @@ static bool pdb_search_grouptype(struct pdb_search *search,
 static bool pdb_default_search_groups(struct pdb_methods *methods,
 				      struct pdb_search *search)
 {
-	return pdb_search_grouptype(search, get_global_sam_sid(), SID_NAME_DOM_GRP);
+	return pdb_search_grouptype(methods, search, get_global_sam_sid(), SID_NAME_DOM_GRP);
 }
 
 static bool pdb_default_search_aliases(struct pdb_methods *methods,
@@ -1935,7 +1937,7 @@ static bool pdb_default_search_aliases(struct pdb_methods *methods,
 				       const struct dom_sid *sid)
 {
 
-	return pdb_search_grouptype(search, sid, SID_NAME_ALIAS);
+	return pdb_search_grouptype(methods, search, sid, SID_NAME_ALIAS);
 }
 
 static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,
