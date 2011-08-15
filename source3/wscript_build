@@ -757,7 +757,7 @@ if bld.env.toplevel_build:
     bld.SAMBA3_PYTHON('pys3param',
                       source='param/pyparam.c',
                       deps='param',
-                      public_deps='samba-hostconfig pytalloc talloc',
+                      public_deps='samba-hostconfig pytalloc-util talloc',
                       realname='samba/samba3/param.so')
     
 bld.SAMBA3_SUBSYSTEM('param_service',
