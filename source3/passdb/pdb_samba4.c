@@ -565,7 +565,6 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	PDB_BAD_PASSWORD_COUNT,
 	PDB_LOGON_COUNT,
 	PDB_UNKNOWN6,
-	PDB_PWHISTORY,
 	PDB_BACKEND_PRIVATE_DATA,
 
  */
