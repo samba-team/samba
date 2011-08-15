@@ -393,6 +393,29 @@ member: %s
         else:
             self.transaction_commit()
 
+
+    def deleteuser(self, username):
+        """Deletes a user
+
+        :param username: Name of the target user
+        """
+
+        filter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (ldb.binary_encode(username), "CN=Person,CN=Schema,CN=Configuration", self.domain_dn())
+        self.transaction_start()
+        try:
+            target = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                                 expression=filter, attrs=[])
+            if len(target) == 0:
+                raise Exception('Unable to find user "%s"' % username)
+            assert(len(target) == 1)
+            self.delete(target[0].dn)
+        except Exception:
+            self.transaction_cancel()
+            raise
+        else:
+            self.transaction_commit()
+
+
     def setpassword(self, search_filter, password,
             force_change_at_next_login=False, username=None):
         """Sets the password for a user
