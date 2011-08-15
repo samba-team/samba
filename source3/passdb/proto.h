@@ -39,7 +39,7 @@
 
 /* The following definitions come from passdb/account_pol.c  */
 
-void account_policy_names_list(const char ***names, int *num_names);
+void account_policy_names_list(TALLOC_CTX *mem_ctx, const char ***names, int *num_names);
 const char *decode_account_policy_name(enum pdb_policy_type type);
 const char *get_account_policy_attr(enum pdb_policy_type type);
 const char *account_policy_get_desc(enum pdb_policy_type type);

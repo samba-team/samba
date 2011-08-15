@@ -1142,7 +1142,7 @@ int main (int argc, char **argv)
 			const char **names;
 			int count;
 			int i;
-			account_policy_names_list(&names, &count);
+			account_policy_names_list(talloc_tos(), &names, &count);
 			fprintf(stderr, "No account policy by that name!\n");
 			if (count !=0) {
 				fprintf(stderr, "Account policy names are:\n");
@@ -1150,7 +1150,7 @@ int main (int argc, char **argv)
                         		d_fprintf(stderr, "%s\n", names[i]);
 				}
 			}
-			SAFE_FREE(names);
+			TALLOC_FREE(names);
 			exit(1);
 		}
 		if (!pdb_get_account_policy(field, &value)) {

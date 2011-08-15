@@ -499,7 +499,7 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 		const char **names;
                 int i, count;
 
-                account_policy_names_list(&names, &count);
+                account_policy_names_list(talloc_tos(), &names, &count);
 		d_fprintf(stderr, _("No account policy \"%s\"!\n\n"), argv[0]);
 		d_fprintf(stderr, _("Valid account policies are:\n"));
 
@@ -507,7 +507,8 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 			d_fprintf(stderr, "%s\n", names[i]);
 		}
 
-		SAFE_FREE(names);
+		TALLOC_FREE(names);
+
 		return -1;
 	}
 
@@ -551,7 +552,7 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
 		const char **names;
 		int count;
 		int i;
-                account_policy_names_list(&names, &count);
+                account_policy_names_list(talloc_tos(), &names, &count);
                 d_fprintf(stderr, _("No account policy by that name!\n"));
                 if (count != 0) {
                         d_fprintf(stderr, _("Valid account policies "
@@ -560,7 +561,7 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
 				d_fprintf(stderr, "%s\n", names[i]);
 			}
                 }
-                SAFE_FREE(names);
+                TALLOC_FREE(names);
                 return -1;
         }
 
@@ -592,7 +593,7 @@ static int net_sam_policy_list(struct net_context *c, int argc, const char **arg
 		return 0;
 	}
 
-	account_policy_names_list(&names, &count);
+	account_policy_names_list(talloc_tos(), &names, &count);
         if (count != 0) {
 		d_fprintf(stderr, _("Valid account policies "
 			  "are:\n"));
@@ -600,7 +601,7 @@ static int net_sam_policy_list(struct net_context *c, int argc, const char **arg
 			d_fprintf(stderr, "%s\n", names[i]);
 		}
 	}
-        SAFE_FREE(names);
+        TALLOC_FREE(names);
         return -1;
 }
 
