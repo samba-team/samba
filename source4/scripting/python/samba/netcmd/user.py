@@ -106,21 +106,29 @@ class cmd_user_add(Command):
 
 
 class cmd_user_delete(Command):
-    """Delete a user."""
+    """Delete a user"""
 
-    synopsis = "%prog user delete <username> [options]"
+    synopsis = "%prog user delete <username>"
 
-    takes_args = ["name"]
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+    ]
 
-    def run(self, name, credopts=None, sambaopts=None, versionopts=None):
+    takes_args = ["username"]
+
+    def run(self, username, credopts=None, sambaopts=None, versionopts=None, H=None):
+
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        net = Net(creds, lp, server=credopts.ipaddress)
-        try:
-            net.delete_user(name)
-        except RuntimeError, msg:
-            raise CommandError("Failed to delete user '%s': %s" % (name, msg))
 
+        try:
+            samdb = SamDB(url=H, session_info=system_session(),
+                          credentials=creds, lp=lp)
+            samdb.deleteuser(username)
+        except Exception, e:
+            raise CommandError('Failed to remove user "%s"' % username, e)
+        print("Deleted user %s" % username)
 
 
 class cmd_user_enable(Command):
