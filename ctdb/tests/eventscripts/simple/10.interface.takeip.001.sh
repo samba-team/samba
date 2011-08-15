@@ -8,6 +8,6 @@ setup_ctdb
 
 iface=$(ctdb_get_1_interface)
 
-required_result 1 "must supply interface, IP and maskbits"
+required_result 1 "ERROR: must supply interface, IP and maskbits"
 
 simple_test

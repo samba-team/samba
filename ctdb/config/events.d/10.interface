@@ -56,7 +56,7 @@ monitor_interfaces()
 	for iface in $all_interfaces ; do
 
 	    ip addr show $iface 2>/dev/null >/dev/null || {
-		echo Interface $iface does not exist but it is used by public addresses.
+		echo "WARNING: Interface $iface does not exist but it is used by public addresses."
 		continue
 	    }
 
@@ -80,7 +80,7 @@ monitor_interfaces()
 			# overall bond status can be up but none of the actual
 			# physical interfaces have a link.
 			echo "$bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
-				echo No active slaves for 802.ad bond device $realiface
+				echo "ERROR: No active slaves for 802.ad bond device $realiface"
 				mark_down $iface
 				continue
 			}
@@ -159,7 +159,7 @@ case "$1" in
      # called when ctdbd wants to claim an IP address
      takeip)
 	if [ $# != 4 ]; then
-	   echo "must supply interface, IP and maskbits"
+	   echo "ERROR: must supply interface, IP and maskbits"
 	   exit 1
 	fi
 	iface=$2
@@ -182,7 +182,7 @@ case "$1" in
      # called when ctdbd wants to release an IP address
      releaseip)
 	if [ $# != 4 ]; then
-	   echo "must supply interface, IP and maskbits"
+	   echo "ERROR: must supply interface, IP and maskbits"
 	   exit 1
 	fi
 
@@ -221,7 +221,7 @@ case "$1" in
      # called when ctdbd wants to update an IP address
      updateip)
 	if [ $# != 5 ]; then
-	   echo "must supply old interface, new interface, IP and maskbits"
+	   echo "ERROR: must supply old interface, new interface, IP and maskbits"
 	   exit 1
 	fi
 
