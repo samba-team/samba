@@ -16,104 +16,117 @@ loadconfig
 	exit 0
 }
 
+mark_up ()
+{
+    up_interfaces_found=true
+    ctdb setifacelink $1 up >/dev/null 2>&1
+}
+
+mark_down ()
+{
+    fail=true
+    ctdb setifacelink $1 down >/dev/null 2>&1
+}
+
+# This sets $all_interfaces as a side-effect.
+get_all_interfaces ()
+{
+    # Get all the interfaces listed in the public_addresses file
+    all_interfaces=$(sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//" $CTDB_PUBLIC_ADDRESSES)
+
+    # Add some special interfaces if they're defined
+    [ "$CTDB_PUBLIC_INTERFACE" ] && all_interfaces="$CTDB_PUBLIC_INTERFACE $all_interfaces"
+    [ "$CTDB_NATGW_PUBLIC_IFACE" ] && all_interfaces="$CTDB_NATGW_PUBLIC_IFACE $all_interfaces"
+
+    # For all but the 1st line, get the 2nd last field with commas
+    # changes to spaces.
+    ctdb_ifaces=$(ctdb -Y ip -v | sed -e '1d' -e 's/:[^:]*:$//' -e 's/^.*://' -e 's/,/ /g')
+
+    # Add $ctdb_interfaces and uniquify
+    all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
+}
+
 monitor_interfaces()
 {
-	INTERFACES=`cat $CTDB_PUBLIC_ADDRESSES |
-		sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//"`
+	get_all_interfaces
 
-	[ "$CTDB_PUBLIC_INTERFACE" ] && INTERFACES="$CTDB_PUBLIC_INTERFACE $INTERFACES"
-	[ "$CTDB_NATGW_PUBLIC_IFACE" ] && INTERFACES="$CTDB_NATGW_PUBLIC_IFACE $INTERFACES"
+	fail=false
+	up_interfaces_found=false
 
+	for iface in $all_interfaces ; do
 
-	# For all but the 1st line, get the 2nd last field with commas
-	# changes to spaces.
-	IFACES=`ctdb -Y ip -v | sed -e '1d' -e 's/:[^:]*:$//' -e 's/^.*://' -e 's/,/ /g'`
-
-	INTERFACES=`for IFACE in $INTERFACES $IFACES ; do echo $IFACE ; done | sort | uniq`
-
-	fail=0
-	ok=0
-	for IFACE in $INTERFACES ; do
-
-	    ip addr show $IFACE 2>/dev/null >/dev/null || {
-		echo Interface $IFACE does not exist but it is used by public addresses.
+	    ip addr show $iface 2>/dev/null >/dev/null || {
+		echo Interface $iface does not exist but it is used by public addresses.
 		continue
 	    }
 
 	    # These interfaces are sometimes bond devices
 	    # When we use VLANs for bond interfaces, there will only
 	    # be an entry in /proc for the underlying real interface
-	    REALIFACE=`echo $IFACE |sed -e 's/\..*$//'`
-	    bi=$(get_proc "net/bonding/$REALIFACE" 2>/dev/null) && {
+	    realiface=`echo $iface |sed -e 's/\..*$//'`
+	    bi=$(get_proc "net/bonding/$realiface" 2>/dev/null) && {
 		echo "$bi" | grep -q 'Currently Active Slave: None' && {
-			echo "ERROR: No active slaves for bond device $REALIFACE"
-			fail=1
-			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
-			continue;
+			echo "ERROR: No active slaves for bond device $realiface"
+			mark_down $iface
+			continue
 		}
 		echo "$bi" | grep -q '^MII Status: up' || {
-			echo "ERROR: public network interface $REALIFACE is down"
-			fail=1
-			ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
-			continue;
+			echo "ERROR: public network interface $realiface is down"
+			mark_down $iface
+			continue
 		}
 		echo "$bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
+			# This works around a bug in the driver where the
+			# overall bond status can be up but none of the actual
+			# physical interfaces have a link.
 			echo "$bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
-				echo No active slaves for 802.ad bond device $REALIFACE
-				ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
-				fail=1
+				echo No active slaves for 802.ad bond device $realiface
+				mark_down $iface
 				continue
 			}
 		}
-		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
-		continue;
+		mark_up $iface
+		continue
 	    }
 
-	    case $IFACE in
+	    case $iface in
 	    lo*)
 		# loopback is always working
-		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+		mark_up $iface
 		;;
 	    ib*)
 		# we dont know how to test ib links
-		ok=1 # we only set ok for interfaces known to ctdbd
-		ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+		mark_up $iface
 		;;
 	    *)
-		[ -z "$IFACE" ] || {
-		    [ "$(basename $(readlink /sys/class/net/$IFACE/device/driver) 2>/dev/null)" = virtio_net ] ||
-		    ethtool $IFACE | grep -q 'Link detected: yes' || {
+		[ -z "$iface" ] || {
+		    [ "$(basename $(readlink /sys/class/net/$iface/device/driver) 2>/dev/null)" = virtio_net ] ||
+		    ethtool $iface | grep -q 'Link detected: yes' || {
 			# On some systems, this is not successful when a
 			# cable is plugged but the interface has not been
 			# brought up previously. Bring the interface up and
 			# try again...
-			ip link set $IFACE up
-			ethtool $IFACE | grep -q 'Link detected: yes' || {
-			    echo "ERROR: No link on the public network interface $IFACE"
-			    fail=1
-			    ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
+			ip link set $iface up
+			ethtool $iface | grep -q 'Link detected: yes' || {
+			    echo "ERROR: No link on the public network interface $iface"
+			    mark_down $iface
 			    continue
 			}
 		    }
-		    ok=1 # we only set ok for interfaces known to ctdbd
-		    ctdb setifacelink $IFACE up >/dev/null 2>/dev/null
+		    mark_up $iface
 		}
 		;;
 	    esac
 
 	done
 
-	test x"$fail" = x"0" && {
-		return 0;
-	}
+	$fail || return 0
 
-	test x"$ok" = x"1" && {
-		return 2;
-	}
+	$up_interfaces_found && \
+	    [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" = "yes" ] && \
+	    return 0
 
-	return 1;
+	return 1
 }
 
 case "$1" in 
@@ -132,10 +145,9 @@ case "$1" in
      # and we start the services to become healthy
      startup)
 	# Assume all links are good initially
-	INTERFACES=`for IFACE in $INTERFACES ; do echo $IFACE ; done | sort | uniq`
-
-	for IFACE in $INTERFACES ; do
-		ctdb setifacelink $IFACE down >/dev/null 2>/dev/null
+	get_all_interfaces
+	for iface in $all_interfaces ; do
+		ctdb setifacelink $iface up >/dev/null 2>/dev/null
 	done
 	
 	monitor_interfaces
@@ -270,21 +282,7 @@ case "$1" in
 	;;
 
      monitor)
-	monitor_interfaces
-	ret=$?
-
-	test x"$ret" = x"2" && {
-		test x"$CTDB_PARTIALLY_ONLINE_INTERFACES" != x"yes" && {
-			exit 1;
-		}
-		# as long as we have one interface available don't become
-		# unhealthy
-		ret=0
-	}
-
-	test x"$ret" != x"0" && {
-		exit 1;
-	}
+	monitor_interfaces || exit 1
 	;;
     *)
 	ctdb_standard_event_handler "$@"
