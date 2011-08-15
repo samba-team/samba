@@ -61,9 +61,9 @@ case "$1" in
       monitor)
 	# Check that directories for shares actually exist.
 	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-	    exportfs | grep -v '^#' | grep '^/' |
-	    sed -e 's/[[:space:]]\+[^[:space:]]*$//' |
-	    ctdb_check_directories
+	    exportfs -v | grep '^/' | 
+	    sed -r -e 's@[[:space:]]+[^[:space:]()]+\([^[:space:]()]+\)$@@' | 
+	    ctdb_check_directories 
 	} || exit $?
 
 	update_tickles 2049
