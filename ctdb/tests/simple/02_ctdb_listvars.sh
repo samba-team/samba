@@ -37,5 +37,5 @@ try_command_on_node -v 0 "$CTDB listvars"
 
 sanity_check_output \
     5 \
-    '^[[:alpha:]]+[[:space:]]*=[[:space:]]*[[:digit:]]+$' \
+    '^[[:alpha:]][[:alnum:]]+[[:space:]]*=[[:space:]]*[[:digit:]]+$' \
     "$out"
