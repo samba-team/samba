@@ -467,5 +467,6 @@ plantestsuite("samba4.blackbox.provision-backend.py", "none", ["PYTHON=%s" % pyt
 # Test renaming the DC
 plantestsuite("samba4.blackbox.renamedc.sh", "none", ["PYTHON=%s" % python, os.path.join(bbdir, "renamedc.sh"), '$PREFIX/provision'])
 
-# check the database is all OK. PLEASE LEAVE THIS AS THE LAST TEST
-plantestsuite("samba4.blackbox.dbcheck.sh", "dc:local", ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
+# check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
+for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
+    plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
