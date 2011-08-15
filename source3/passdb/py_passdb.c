@@ -46,6 +46,7 @@ static PyTypeObject *dom_sid_Type = NULL;
 static PyTypeObject *guid_Type = NULL;
 
 staticforward PyTypeObject PySamu;
+staticforward PyTypeObject PyGroupmap;
 staticforward PyTypeObject PyPDB;
 
 static PyObject *py_pdb_error;
@@ -949,13 +950,189 @@ static PyObject *py_samu_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
 }
 
 static PyTypeObject PySamu = {
-	.tp_name = "passdb.samu",
+	.tp_name = "passdb.Samu",
 	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_getset = py_samu_getsetters,
 	.tp_methods = NULL,
 	.tp_new = py_samu_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-	.tp_doc = "samu() -> samu object\n",
+	.tp_doc = "Samu() -> samu object\n",
+};
+
+
+static PyObject *py_groupmap_get_gid(PyObject *obj, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+	PyObject *py_gid;
+
+	py_gid = PyInt_FromLong(group_map->gid);
+	return py_gid;
+}
+
+static int py_groupmap_set_gid(PyObject *obj, PyObject *value, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+
+	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	group_map->gid = PyInt_AsLong(value);
+	return 0;
+}
+
+static PyObject *py_groupmap_get_sid(PyObject *obj, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+	PyObject *py_sid;
+	struct dom_sid *group_sid;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	group_sid = dom_sid_dup(mem_ctx, &group_map->sid);
+	if (group_sid == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	py_sid = pytalloc_steal(dom_sid_Type, group_sid);
+
+	talloc_free(mem_ctx);
+
+	return py_sid;
+}
+
+static int py_groupmap_set_sid(PyObject *obj, PyObject *value, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+
+	PY_CHECK_TYPE(dom_sid_Type, value, return -1;);
+	group_map->sid = *pytalloc_get_type(value, struct dom_sid);
+	return 0;
+}
+
+static PyObject *py_groupmap_get_sid_name_use(PyObject *obj, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+	PyObject *py_sid_name_use;
+
+	py_sid_name_use = PyInt_FromLong(group_map->sid_name_use);
+	return py_sid_name_use;
+}
+
+static int py_groupmap_set_sid_name_use(PyObject *obj, PyObject *value, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+
+	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	group_map->sid_name_use = PyInt_AsLong(value);
+	return 0;
+}
+
+static PyObject *py_groupmap_get_nt_name(PyObject *obj, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+	PyObject *py_nt_name;
+	if (group_map->nt_name == NULL) {
+		py_nt_name = Py_None;
+		Py_INCREF(py_nt_name);
+	} else {
+		py_nt_name = PyString_FromString(group_map->nt_name);
+	}
+	return py_nt_name;
+}
+
+static int py_groupmap_set_nt_name(PyObject *obj, PyObject *value, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+
+	PY_CHECK_TYPE(&PyString_Type, value, return -1;);
+	if (value == Py_None) {
+		fstrcpy(group_map->nt_name, NULL);
+	} else {
+		fstrcpy(group_map->nt_name, PyString_AsString(value));
+	}
+	return 0;
+}
+
+static PyObject *py_groupmap_get_comment(PyObject *obj, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+	PyObject *py_comment;
+	if (group_map->comment == NULL) {
+		py_comment = Py_None;
+		Py_INCREF(py_comment);
+	} else {
+		py_comment = PyString_FromString(group_map->comment);
+	}
+	return py_comment;
+}
+
+static int py_groupmap_set_comment(PyObject *obj, PyObject *value, void *closure)
+{
+	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
+
+	PY_CHECK_TYPE(&PyString_Type, value, return -1;);
+	if (value == Py_None) {
+		fstrcpy(group_map->comment, NULL);
+	} else {
+		fstrcpy(group_map->comment, PyString_AsString(value));
+	}
+	return 0;
+}
+
+static PyGetSetDef py_groupmap_getsetters[] = {
+	{ discard_const_p(char, "gid"), py_groupmap_get_gid, py_groupmap_set_gid },
+	{ discard_const_p(char, "sid"), py_groupmap_get_sid, py_groupmap_set_sid },
+	{ discard_const_p(char, "sid_name_use"), py_groupmap_get_sid_name_use, py_groupmap_set_sid_name_use },
+	{ discard_const_p(char, "nt_name"), py_groupmap_get_nt_name, py_groupmap_set_nt_name },
+	{ discard_const_p(char, "comment"), py_groupmap_get_comment, py_groupmap_set_comment },
+	{ NULL }
+};
+
+static PyObject *py_groupmap_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	GROUP_MAP *group_map;
+	TALLOC_CTX *mem_ctx;
+	PyObject *py_group_map;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	group_map = talloc_zero(mem_ctx, GROUP_MAP);
+	if (group_map == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	py_group_map = pytalloc_steal(type, group_map);
+	if (py_group_map == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+
+	return py_group_map;
+}
+
+
+static PyTypeObject PyGroupmap = {
+	.tp_name = "passdb.Groupmap",
+	.tp_basicsize = sizeof(pytalloc_Object),
+	.tp_getset = py_groupmap_getsetters,
+	.tp_methods = NULL,
+	.tp_new = py_groupmap_new,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_doc = "Groupmap() -> group map object\n",
 };
 
 
@@ -1303,6 +1480,857 @@ static PyObject *py_pdb_rename_sam_account(pytalloc_Object *self, PyObject *args
 	Py_RETURN_NONE;
 }
 
+
+static PyObject *py_pdb_getgrsid(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	GROUP_MAP *group_map;
+	struct dom_sid *domain_sid;
+	PyObject *py_domain_sid, *py_group_map;
+
+	if (!PyArg_ParseTuple(args, "O!:getgrsid", dom_sid_Type, &py_domain_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	domain_sid = pytalloc_get_ptr(py_domain_sid);
+
+	py_group_map = py_groupmap_new(&PyGroupmap, NULL, NULL);
+	if (py_group_map == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	group_map = pytalloc_get_ptr(py_group_map);
+
+	status = methods->getgrsid(methods, group_map, *domain_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to get group information by sid, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	return py_group_map;
+}
+
+
+static PyObject *py_pdb_getgrgid(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	GROUP_MAP *group_map;
+	PyObject *py_group_map;
+	unsigned int gid_value;
+
+	if (!PyArg_ParseTuple(args, "I:getgrgid", &gid_value)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_group_map = py_groupmap_new(&PyGroupmap, NULL, NULL);
+	if (py_group_map == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	group_map = pytalloc_get_ptr(py_group_map);
+
+	status = methods->getgrgid(methods, group_map, gid_value);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to get group information by gid, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	return py_group_map;
+}
+
+
+static PyObject *py_pdb_getgrnam(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	GROUP_MAP *group_map;
+	PyObject *py_group_map;
+	const char *groupname;
+
+	if (!PyArg_ParseTuple(args, "s:getgrnam", &groupname)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_group_map = py_groupmap_new(&PyGroupmap, NULL, NULL);
+	if (py_group_map == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	group_map = pytalloc_get_ptr(py_group_map);
+
+	status = methods->getgrnam(methods, group_map, groupname);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to get group information by name, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	return py_group_map;
+}
+
+
+static PyObject *py_pdb_create_dom_group(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *groupname;
+	uint32_t group_rid;
+
+	if (!PyArg_ParseTuple(args, "s:create_dom_group", &groupname)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->create_dom_group(methods, tframe, groupname, &group_rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to create domain group (%s), (%d,%s)",
+				groupname,
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	return PyInt_FromLong(group_rid);
+}
+
+
+static PyObject *py_pdb_delete_dom_group(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	unsigned int group_rid;
+
+	if (!PyArg_ParseTuple(args, "I:delete_dom_group", &group_rid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->delete_dom_group(methods, tframe, group_rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to delete domain group (rid=%d), (%d,%s)",
+				group_rid,
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_add_group_mapping_entry(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_group_map;
+	GROUP_MAP *group_map;
+
+	if (!PyArg_ParseTuple(args, "O!:add_group_mapping_entry", &PyGroupmap, &py_group_map)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	group_map = pytalloc_get_ptr(py_group_map);
+
+	status = methods->add_group_mapping_entry(methods, group_map);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to add group mapping entry, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_update_group_mapping_entry(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_group_map;
+	GROUP_MAP *group_map;
+
+	if (!PyArg_ParseTuple(args, "O!:update_group_mapping_entry", &PyGroupmap, &py_group_map)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	group_map = pytalloc_get_ptr(py_group_map);
+
+	status = methods->update_group_mapping_entry(methods, group_map);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to update group mapping entry, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_delete_group_mapping_entry(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_group_sid;
+	struct dom_sid *group_sid;
+
+	if (!PyArg_ParseTuple(args, "O!:delete_group_mapping_entry", dom_sid_Type, &py_group_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	group_sid = pytalloc_get_ptr(py_group_sid);
+
+	status = methods->delete_group_mapping_entry(methods, *group_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to delete group mapping entry, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	enum lsa_SidType sid_name_use;
+	int lsa_sidtype_value;
+	int unix_only;
+	PyObject *py_domain_sid;
+	struct dom_sid *domain_sid;
+	GROUP_MAP *gmap, *group_map;
+	size_t num_entries;
+	PyObject *py_gmap_list, *py_group_map;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "O!ii:enum_group_mapping", dom_sid_Type, &py_domain_sid,
+					&lsa_sidtype_value, &unix_only)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	sid_name_use = lsa_sidtype_value;
+
+	domain_sid = pytalloc_get_ptr(py_domain_sid);
+
+	status = methods->enum_group_mapping(methods, domain_sid, sid_name_use,
+						&gmap, &num_entries, unix_only);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to enumerate group mappings, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_gmap_list = PyList_New(0);
+	if (py_gmap_list == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	for(i=0; i<num_entries; i++) {
+		py_group_map = py_groupmap_new(&PyGroupmap, NULL, NULL);
+		if (py_group_map) {
+			group_map = pytalloc_get_ptr(py_group_map);
+			*group_map = gmap[i];
+
+			PyList_Append(py_gmap_list, py_group_map);
+		}
+	}
+
+	free(gmap);
+	talloc_free(tframe);
+
+	return py_gmap_list;
+}
+
+
+static PyObject *py_pdb_enum_group_members(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_group_sid;
+	struct dom_sid *group_sid;
+	uint32_t *member_rids;
+	size_t num_members;
+	PyObject *py_rid_list;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "O!:enum_group_members", dom_sid_Type, &py_group_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	group_sid = pytalloc_get_ptr(py_group_sid);
+
+	status = methods->enum_group_members(methods, tframe, group_sid,
+						&member_rids, &num_members);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to enumerate group members, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_rid_list = PyList_New(0);
+	if (py_rid_list == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	for(i=0; i<num_members; i++) {
+		PyList_Append(py_rid_list, PyInt_FromLong(member_rids[i]));
+	}
+
+	talloc_free(tframe);
+
+	return py_rid_list;
+}
+
+
+static PyObject *py_pdb_add_groupmem(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	uint32_t group_rid, member_rid;
+
+	if (!PyArg_ParseTuple(args, "II:add_groupmem", &group_rid, &member_rid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->add_groupmem(methods, tframe, group_rid, member_rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to add group member, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_del_groupmem(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	uint32_t group_rid, member_rid;
+
+	if (!PyArg_ParseTuple(args, "II:del_groupmem", &group_rid, &member_rid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->del_groupmem(methods, tframe, group_rid, member_rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to rename sam account, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_create_alias(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *alias_name;
+	uint32_t rid;
+
+	if (!PyArg_ParseTuple(args, "s:create_alias", &alias_name)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->create_alias(methods, alias_name, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to create alias (%s), (%d,%s)",
+				alias_name,
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	return PyInt_FromLong(rid);
+}
+
+
+static PyObject *py_pdb_delete_alias(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_alias_sid;
+	struct dom_sid *alias_sid;
+
+	if (!PyArg_ParseTuple(args, "O!:delete_alias", dom_sid_Type, &py_alias_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	alias_sid = pytalloc_get_ptr(py_alias_sid);
+
+	status = methods->delete_alias(methods, alias_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to delete alias, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_get_aliasinfo(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_alias_sid;
+	struct dom_sid *alias_sid;
+	struct acct_info alias_info;
+	PyObject *py_alias_info;
+
+	if (!PyArg_ParseTuple(args, "O!:get_aliasinfo", dom_sid_Type, &py_alias_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	alias_sid = pytalloc_get_ptr(py_alias_sid);
+
+	status = methods->get_aliasinfo(methods, alias_sid, &alias_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to get alias information, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_alias_info = PyDict_New();
+	if (py_alias_info == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	PyDict_SetItemString(py_alias_info, "acct_name", PyString_FromString(alias_info.acct_name));
+	PyDict_SetItemString(py_alias_info, "acct_desc", PyString_FromString(alias_info.acct_desc));
+	PyDict_SetItemString(py_alias_info, "rid", PyInt_FromLong(alias_info.rid));
+
+	talloc_free(tframe);
+
+	return py_alias_info;
+}
+
+
+static PyObject *py_pdb_set_aliasinfo(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_alias_sid, *py_alias_info;
+	struct dom_sid *alias_sid;
+	struct acct_info alias_info;
+
+	if (!PyArg_ParseTuple(args, "O!O:set_alias_info", dom_sid_Type, &py_alias_sid,
+				&py_alias_info)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	alias_sid = pytalloc_get_ptr(py_alias_sid);
+
+	fstrcpy(alias_info.acct_name, PyString_AsString(PyDict_GetItemString(py_alias_info, "acct_name")));
+	fstrcpy(alias_info.acct_desc, PyString_AsString(PyDict_GetItemString(py_alias_info, "acct_desc")));
+
+	status = methods->set_aliasinfo(methods, alias_sid, &alias_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to set alias information, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_add_aliasmem(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_alias_sid, *py_member_sid;
+	struct dom_sid *alias_sid, *member_sid;
+
+	if (!PyArg_ParseTuple(args, "O!O!:add_aliasmem", dom_sid_Type, &py_alias_sid,
+					dom_sid_Type, &py_member_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	alias_sid = pytalloc_get_ptr(py_alias_sid);
+	member_sid = pytalloc_get_ptr(py_member_sid);
+
+	status = methods->add_aliasmem(methods, alias_sid, member_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to add member to alias, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_del_aliasmem(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_alias_sid, *py_member_sid;
+	const struct dom_sid *alias_sid, *member_sid;
+
+	if (!PyArg_ParseTuple(args, "O!O!:del_aliasmem", dom_sid_Type, &py_alias_sid,
+					dom_sid_Type, &py_member_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	alias_sid = pytalloc_get_ptr(py_alias_sid);
+	member_sid = pytalloc_get_ptr(py_member_sid);
+
+	status = methods->del_aliasmem(methods, alias_sid, member_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to delete member from alias, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_enum_aliasmem(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_alias_sid;
+	struct dom_sid *alias_sid, *member_sid;
+	PyObject *py_member_list, *py_member_sid;
+	size_t num_members;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "O!:enum_aliasmem", dom_sid_Type, &py_alias_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	alias_sid = pytalloc_get_ptr(py_alias_sid);
+
+	status = methods->enum_aliasmem(methods, alias_sid, tframe, &member_sid, &num_members);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to enumerate members for alias, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_member_list = PyList_New(0);
+	if (py_member_list == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	for(i=0; i<num_members; i++) {
+		py_member_sid = pytalloc_steal(dom_sid_Type, &member_sid[i]);
+		if (py_member_sid) {
+			PyList_Append(py_member_list, py_member_sid);
+		}
+	}
+
+	talloc_free(tframe);
+
+	return py_member_list;
+}
+
+
+static PyObject *py_pdb_get_account_policy(pytalloc_Object *self)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_acct_policy;
+	uint32_t value;
+	const char **names;
+	int count, i;
+	enum pdb_policy_type type;
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_acct_policy = PyDict_New();
+	if (py_acct_policy == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	account_policy_names_list(tframe, &names, &count);
+	for (i=0; i<count; i++) {
+		type = account_policy_name_to_typenum(names[i]);
+		status = methods->get_account_policy(methods, type, &value);
+		if (NT_STATUS_IS_OK(status)) {
+			PyDict_SetItemString(py_acct_policy, names[i], PyInt_FromLong(value));
+		}
+	}
+
+	talloc_free(tframe);
+
+	return py_acct_policy;
+}
+
+
+static PyObject *py_pdb_set_account_policy(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_acct_policy, *py_value;
+	const char **names;
+	int count, i;
+	enum pdb_policy_type type;
+
+	if (!PyArg_ParseTuple(args, "O!:set_account_policy", PyDict_Type, &py_acct_policy)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	account_policy_names_list(tframe, &names, &count);
+	for (i=0; i<count; i++) {
+		if ((py_value = PyDict_GetItemString(py_acct_policy, names[i])) != NULL) {
+			type = account_policy_name_to_typenum(names[i]);
+			status = methods->set_account_policy(methods, type, PyInt_AsLong(py_value));
+			if (!NT_STATUS_IS_OK(status)) {
+				PyErr_Format(py_pdb_error, "Error setting account policy (%s), (%d,%s)",
+						names[i],
+						NT_STATUS_V(status),
+						get_friendly_nt_error_msg(status));
+			}
+		}
+	}
+
+
+	talloc_free(tframe);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_pdb_search_users(pytalloc_Object *self, PyObject *args)
 {
 	NTSTATUS status;
@@ -1374,16 +2402,158 @@ static PyObject *py_pdb_search_users(pytalloc_Object *self, PyObject *args)
 	return py_userlist;
 }
 
+
+static PyObject *py_pdb_search_groups(pytalloc_Object *self)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	struct pdb_search *search;
+	struct samr_displayentry *entry;
+	PyObject *py_grouplist, *py_dict;
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	search = talloc_zero(tframe, struct pdb_search);
+	if (search == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	if (!methods->search_groups(methods, search)) {
+		PyErr_Format(py_pdb_error, "Unable to search groups, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	entry = talloc_zero(tframe, struct samr_displayentry);
+	if (entry == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_grouplist = PyList_New(0);
+	if (py_grouplist == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	while (search->next_entry(search, entry)) {
+		py_dict = PyDict_New();
+		if (py_dict == NULL) {
+			PyErr_NoMemory();
+		} else {
+			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
+			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
+			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
+			PyDict_SetItemString(py_dict, "account_name", PyString_FromString(entry->account_name));
+			PyDict_SetItemString(py_dict, "fullname", PyString_FromString(entry->fullname));
+			PyDict_SetItemString(py_dict, "description", PyString_FromString(entry->description));
+			PyList_Append(py_grouplist, py_dict);
+		}
+	}
+	search->search_end(search);
+
+	talloc_free(tframe);
+
+	return py_grouplist;
+}
+
+
+static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	struct pdb_search *search;
+	struct samr_displayentry *entry;
+	PyObject *py_aliaslist, *py_dict;
+	PyObject *py_domain_sid;
+	struct dom_sid *dom_sid;
+
+	if (!PyArg_ParseTuple(args, "O!:search_users", dom_sid_Type, &py_domain_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	dom_sid = pytalloc_get_ptr(py_domain_sid);
+
+	search = talloc_zero(tframe, struct pdb_search);
+	if (search == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	if (!methods->search_aliases(methods, search, dom_sid)) {
+		PyErr_Format(py_pdb_error, "Unable to search aliases, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	entry = talloc_zero(tframe, struct samr_displayentry);
+	if (entry == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_aliaslist = PyList_New(0);
+	if (py_aliaslist == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	while (search->next_entry(search, entry)) {
+		py_dict = PyDict_New();
+		if (py_dict == NULL) {
+			PyErr_NoMemory();
+		} else {
+			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
+			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
+			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
+			PyDict_SetItemString(py_dict, "account_name", PyString_FromString(entry->account_name));
+			PyDict_SetItemString(py_dict, "fullname", PyString_FromString(entry->fullname));
+			PyDict_SetItemString(py_dict, "description", PyString_FromString(entry->description));
+			PyList_Append(py_aliaslist, py_dict);
+		}
+	}
+	search->search_end(search);
+
+	talloc_free(tframe);
+
+	return py_aliaslist;
+}
+
 static PyMethodDef py_pdb_methods[] = {
 	{ "domain_info", (PyCFunction)py_pdb_domain_info, METH_NOARGS,
 		"domain_info() -> str\n\n \
-		Get domain for the database." },
+		Get domain information for the database." },
 	{ "getsampwnam", (PyCFunction)py_pdb_getsampwnam, METH_VARARGS,
 		"getsampwnam(username) -> samu object\n\n \
-		Get user information." },
+		Get user information by name." },
 	{ "getsampwsid", (PyCFunction)py_pdb_getsampwsid, METH_VARARGS,
-		"getsampwsid(sid) -> samu object\n\n \
-		Get user information from user_sid (dcerpc.security.dom_sid object)." },
+		"getsampwsid(user_sid) -> samu object\n\n \
+		Get user information by sid (dcerpc.security.dom_sid object)." },
 	{ "create_user", (PyCFunction)py_pdb_create_user, METH_VARARGS,
 		"create_user(username, acct_flags) -> rid\n\n \
 		Create user. acct_flags are samr account control flags." },
@@ -1402,11 +2572,105 @@ static PyMethodDef py_pdb_methods[] = {
 	{ "rename_sam_account", (PyCFunction)py_pdb_rename_sam_account, METH_VARARGS,
 		"rename_sam_account(samu object1, new_username) -> None\n\n \
 		Rename SAM account." },
+	/* update_login_attempts */
+	{ "getgrsid", (PyCFunction)py_pdb_getgrsid, METH_VARARGS,
+		"getgrsid(group_sid) -> groupmap object\n\n \
+		Get group information by sid (dcerpc.security.dom_sid object)." },
+	{ "getgrgid", (PyCFunction)py_pdb_getgrgid, METH_VARARGS,
+		"getgrsid(gid) -> groupmap object\n\n \
+		Get group information by gid." },
+	{ "getgrnam", (PyCFunction)py_pdb_getgrnam, METH_VARARGS,
+		"getgrsid(groupname) -> groupmap object\n\n \
+		Get group information by name." },
+	{ "create_dom_group", (PyCFunction)py_pdb_create_dom_group, METH_VARARGS,
+		"create_dom_group(groupname) -> group_rid\n\n \
+		Create new domain group by name." },
+	{ "delete_dom_group", (PyCFunction)py_pdb_delete_dom_group, METH_VARARGS,
+		"delete_dom_group(group_rid) -> None\n\n \
+		Delete domain group identified by rid" },
+	{ "add_group_mapping_entry", (PyCFunction)py_pdb_add_group_mapping_entry, METH_VARARGS,
+		"add_group_mapping_entry(groupmap) -> None\n \
+		Add group mapping entry for groupmap object." },
+	{ "update_group_mapping_entry", (PyCFunction)py_pdb_update_group_mapping_entry, METH_VARARGS,
+		"update_group_mapping_entry(groupmap) -> None\n\n \
+		Update group mapping entry for groupmap object." },
+	{ "delete_group_mapping_entry", (PyCFunction)py_pdb_delete_group_mapping_entry, METH_VARARGS,
+		"delete_group_mapping_entry(groupmap) -> None\n\n \
+		Delete group mapping entry for groupmap object." },
+	{ "enum_group_mapping", (PyCFunction)py_pdb_enum_group_mapping, METH_VARARGS,
+		"enum_group_mapping(domain_sid) -> List\n\n \
+		Return list of group mappings as groupmap objects." },
+	{ "enum_group_members", (PyCFunction)py_pdb_enum_group_members, METH_VARARGS,
+		"enum_group_members(group_sid) -> List\n\n \
+		Return list of group members." },
+	/* enum_group_memberships */
+	/* set_unix_primary_group */
+	{ "add_groupmem", (PyCFunction)py_pdb_add_groupmem, METH_VARARGS,
+		"add_groupmem(group_rid, member_rid) -> None\n\n \
+		Add user to group." },
+	{ "del_groupmem", (PyCFunction)py_pdb_del_groupmem, METH_VARARGS,
+		"del_groupmem(group_rid, member_rid) -> None\n\n \
+		Remove user from from group." },
+	{ "create_alias", (PyCFunction)py_pdb_create_alias, METH_VARARGS,
+		"create_alias(alias_name) -> alias_rid\n\n \
+		Create alias entry." },
+	{ "delete_alias", (PyCFunction)py_pdb_delete_alias, METH_VARARGS,
+		"delete_alias(alias_sid) -> None\n\n \
+		Delete alias entry." },
+	{ "get_aliasinfo", (PyCFunction)py_pdb_get_aliasinfo, METH_VARARGS,
+		"get_aliasinfo(alias_sid) -> Mapping\n\n \
+		Get alias information as a dictionary with keys - acct_name, acct_desc, rid." },
+	{ "set_aliasinfo", (PyCFunction)py_pdb_set_aliasinfo, METH_VARARGS,
+		"set_alias_info(alias_sid, Mapping) -> None\n\n \
+		Set alias information from a dictionary with keys - acct_name, acct_desc." },
+	{ "add_aliasmem", (PyCFunction)py_pdb_add_aliasmem, METH_VARARGS,
+		"add_aliasmem(alias_sid, member_sid) -> None\n\n \
+		Add user to alias entry." },
+	{ "del_aliasmem", (PyCFunction)py_pdb_del_aliasmem, METH_VARARGS,
+		"del_aliasmem(alias_sid, member_sid) -> None\n\n \
+		Remove a user from alias entry." },
+	{ "enum_aliasmem", (PyCFunction)py_pdb_enum_aliasmem, METH_VARARGS,
+		"enum_aliasmem(alias_sid) -> List\n\n \
+		Return a list of users for alias entry." },
+	/* enum_alias_memberships */
+	/* lookup_rids */
+	/* lookup_names */
+	{ "get_account_policy", (PyCFunction)py_pdb_get_account_policy, METH_NOARGS,
+		"get_account_policy() -> Mapping\n\n \
+		Get account policy information as a dictionary." },
+	{ "set_account_policy", (PyCFunction)py_pdb_set_account_policy, METH_VARARGS,
+		"get_account_policy(Mapping) -> None\n\n \
+		Set account policy settings from a dicionary." },
+	/* get_seq_num */
 	{ "search_users", (PyCFunction)py_pdb_search_users, METH_VARARGS,
 		"search_users(acct_flags) -> List\n\n \
 		Search users. acct_flags are samr account control flags.\n \
-		Each entry in the list is a dictionary with keys - \
-		idx, rid, acct_flags, account_name, fullname, description." },
+		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
+	{ "search_groups", (PyCFunction)py_pdb_search_groups, METH_NOARGS,
+		"search_groups() -> List\n\n \
+		Search unix only groups. \n \
+		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
+	{ "search_aliases", (PyCFunction)py_pdb_search_aliases, METH_VARARGS,
+		"search_aliases(domain_sid) -> List\n\n \
+		Search aliases. domain_sid is dcerpc.security.dom_sid object.\n \
+		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
+	/* uid_to_sid */
+	/* gid_to_sid */
+	/* sid_to_id */
+	/* capabilities */
+	/* new_rid */
+	/* get_trusteddom_pw */
+	/* set_trusteddom_pw */
+	/* del_trusteddom_pw */
+	/* enum_trusteddoms */
+	/* get_trusted_domain */
+	/* get_trusted_domain_by_sid */
+	/* set_trusted_domain */
+	/* del_trusted_domain */
+	/* enum_trusted_domains */
+	/* get_secret */
+	/* set_secret */
+	/* delete_secret */
 	{ NULL },
 };
 
@@ -1603,6 +2867,11 @@ void initpassdb(void)
 		return;
 	}
 
+	PyGroupmap.tp_base = talloc_type;
+	if (PyType_Ready(&PyGroupmap) < 0) {
+		return;
+	}
+
 	m = Py_InitModule3("passdb", py_passdb_methods, "SAMBA Password Database");
 	if (m == NULL) {
 	    return;
@@ -1615,6 +2884,12 @@ void initpassdb(void)
 
 	Py_INCREF(&PyPDB);
 	PyModule_AddObject(m, "PDB", (PyObject *)&PyPDB);
+
+	Py_INCREF(&PySamu);
+	PyModule_AddObject(m, "Samu", (PyObject *)&PySamu);
+
+	Py_INCREF(&PyGroupmap);
+	PyModule_AddObject(m, "Groupmap", (PyObject *)&PyGroupmap);
 
 	/* Import dom_sid type from dcerpc.security */
 	mod = PyImport_ImportModule("samba.dcerpc.security");
