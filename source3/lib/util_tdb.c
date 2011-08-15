@@ -388,7 +388,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 				goto no_space;
 			*w = SVAL(buf, 0);
 			break;
-		case 'd': /* signed 32-bit integer (standard int in most systems) */
+		case 'd': /* unsigned 32-bit integer (standard int in most systems) */
 			len = 4;
 			d = va_arg(ap, uint32 *);
 			if (bufsize < len)
