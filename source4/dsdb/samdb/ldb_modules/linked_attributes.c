@@ -105,7 +105,7 @@ static int la_guid_from_dn(struct la_context *ac, struct ldb_dn *dn, struct GUID
 		return ldb_operr(ldb_module_get_ctx(ac->module));
 	}
 
-	ret = dsdb_find_guid_by_dn(ldb_module_get_ctx(ac->module), dn, guid);
+	ret = dsdb_module_guid_by_dn(ac->module, dn, guid, ac->req);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(4,(__location__ ": Failed to find GUID for dn %s\n",
 			 ldb_dn_get_linearized(dn)));
@@ -227,20 +227,18 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 					       el->name);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
-		/* We have a valid attribute, now find out if it is a forward link */
-		if ((schema_attr->linkID == 0)) {
+
+		/* this could be a link with no partner, in which case
+		   there is no special work to do */
+		if (schema_attr->linkID == 0) {
 			continue;
 		}
 
-		if ((schema_attr->linkID & 1) == 1) {
-			unsigned int functional_level;
-
-			functional_level = dsdb_functional_level(ldb);
-			SMB_ASSERT(functional_level > DS_DOMAIN_FUNCTION_2000);
-		}
+		/* this part of the code should only be handling forward links */
+		SMB_ASSERT((schema_attr->linkID & 1) == 0);
 
 		/* Even link IDs are for the originating attribute */
-		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
+		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID ^ 1);
 		if (!target_attr) {
 			/*
 			 * windows 2003 has a broken schema where
@@ -344,7 +342,7 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 				continue;
 			}
 
-			target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
+			target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID ^ 1);
 			if (!target_attr) {
 				/*
 				 * windows 2003 has a broken schema where
@@ -467,14 +465,11 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			continue;
 		}
 
-		if ((schema_attr->linkID & 1) == 1) {
-			unsigned int functional_level;
+		/* this part of the code should only be handling forward links */
+		SMB_ASSERT((schema_attr->linkID & 1) == 0);
 
-			functional_level = dsdb_functional_level(ldb);
-			SMB_ASSERT(functional_level > DS_DOMAIN_FUNCTION_2000);
-		}
 		/* Now find the target attribute */
-		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID + 1);
+		target_attr = dsdb_attribute_by_linkID(ac->schema, schema_attr->linkID ^ 1);
 		if (!target_attr) {
 			/*
 			 * windows 2003 has a broken schema where
@@ -929,7 +924,7 @@ static int la_down_req(struct la_context *ac)
 static int la_find_dn_target(struct ldb_module *module, struct la_context *ac,
 			     struct GUID *guid, struct ldb_dn **dn)
 {
-	return dsdb_find_dn_by_guid(ldb_module_get_ctx(ac->module), ac, guid, dn);
+	return dsdb_module_dn_by_guid(ac->module, ac, guid, dn, ac->req);
 }
 
 /* apply one la_context op change */
