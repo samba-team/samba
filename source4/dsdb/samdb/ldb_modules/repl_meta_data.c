@@ -2724,6 +2724,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 						OBJECT_TOMBSTONE=4, OBJECT_REMOVED=5 };
 	enum deletion_state deletion_state, next_deletion_state;
 	bool enabled;
+	int functional_level;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
@@ -2739,6 +2740,8 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	if (!schema) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	functional_level = dsdb_functional_level(ldb);
 
 	old_dn = ldb_dn_copy(tmp_ctx, req->op.del.dn);
 
@@ -2940,7 +2943,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 
 		/* we also mark it as recycled, meaning this object can't be
 		   recovered (we are stripping its attributes) */
-		if (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008_R2) {
+		if (functional_level >= DS_DOMAIN_FUNCTION_2008_R2) {
 			ret = ldb_msg_add_string(msg, "isRecycled", "TRUE");
 			if (ret != LDB_SUCCESS) {
 				DEBUG(0,(__location__ ": Failed to add isRecycled string to the msg\n"));
@@ -2964,12 +2967,24 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 				/* don't remove the rDN */
 				continue;
 			}
-			if (sa->linkID && sa->linkID & 1) {
+			if (sa->linkID && (sa->linkID & 1)) {
+				/*
+				  we have a backlink in this object
+				  that needs to be removed. We're not
+				  allowed to remove it directly
+				  however, so we instead setup a
+				  modify to delete the corresponding
+				  forward link
+				 */
 				ret = replmd_delete_remove_link(module, schema, old_dn, el, sa, req);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(tmp_ctx);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
+				/* now we continue, which means we
+				   won't remove this backlink
+				   directly
+				*/
 				continue;
 			}
 			if (!sa->linkID && ldb_attr_in_list(preserved_attrs, el->name)) {
