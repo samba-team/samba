@@ -522,7 +522,7 @@ skip:
 									el->name, ldb_dn_get_linearized(copydn)));
 								return ldb_operr(ldb);
 							}
-							ret = dsdb_find_dn_by_guid(ldb, newmsg, &guid, &tdn);
+							ret = dsdb_module_dn_by_guid(dsc->module, newmsg, &guid, &tdn, req);
 							if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 								DEBUG(2, (" Search of guid %s returned 0 objects, skipping it !\n",
 											GUID_string(newmsg, &guid)));
