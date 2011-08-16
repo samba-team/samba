@@ -115,8 +115,6 @@ service_stop ()
 	    check_ctdb_manages_winbind ; then
 		service "$CTDB_SERVICE_WINBIND" stop
 	fi
-
-	return 0
 }
 
 service_reconfigure ()
