@@ -22,6 +22,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
 #include "dbwrap/dbwrap_open.h"
+#include "dbwrap/dbwrap_ctdb.h"
 #include "util_tdb.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_private.h"

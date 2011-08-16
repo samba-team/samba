@@ -46,6 +46,7 @@
 #include "ctdb_private.h"
 #include "ctdbd_conn.h"
 #include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_ctdb.h"
 #include "g_lock.h"
 #include "messages.h"
 
