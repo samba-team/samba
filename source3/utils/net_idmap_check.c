@@ -28,6 +28,7 @@
 #include "system/filesys.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
+#include "dbwrap/dbwrap_rbt.h"
 #include "net.h"
 #include "../libcli/security/dom_sid.h"
 #include "cbuf.h"

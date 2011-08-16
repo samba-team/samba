@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_rbt.h"
 #include "talloc_dict.h"
 #include "util_tdb.h"
 

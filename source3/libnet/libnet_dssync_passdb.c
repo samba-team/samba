@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/ndr_drsuapi.h"
 #include "util_tdb.h"
 #include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_rbt.h"
 #include "../libds/common/flag_mapping.h"
 #include "passdb.h"
 

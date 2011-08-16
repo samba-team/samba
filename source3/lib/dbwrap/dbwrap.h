@@ -56,8 +56,6 @@ struct db_context {
 	bool persistent;
 };
 
-struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx);
-
 
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,

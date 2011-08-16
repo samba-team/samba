@@ -30,6 +30,7 @@
 #include "nsswitch/winbind_client.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
+#include "dbwrap/dbwrap_rbt.h"
 #include "talloc_dict.h"
 #include "async_smb.h"
 #include "libsmb/libsmb.h"

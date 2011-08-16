@@ -25,6 +25,7 @@
 #include "reg_objects.h"
 #include "util_tdb.h"
 #include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_rbt.h"
 #include "../libcli/registry/util_reg.h"
 
 #undef DBGC_CLASS

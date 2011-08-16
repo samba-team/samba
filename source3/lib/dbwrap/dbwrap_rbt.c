@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_rbt.h"
 #include "../lib/util/rbtree.h"
 
 #define DBWRAP_RBT_ALIGN(_size_) (((_size_)+15)&~15)
