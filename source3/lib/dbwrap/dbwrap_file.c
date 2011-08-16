@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "dbwrap/dbwrap_file.h"
 
 struct db_file_ctx {
 	const char *dirname;
