@@ -115,3 +115,26 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 	DEBUG(10, ("Stats: children: %d, allowed connections: %d\n",
 		  total, prefork_count_allowed_connections(pool)));
 }
+
+void pfh_client_terminated(struct pf_worker_data *pf)
+{
+	if (pf->num_clients >= 0) {
+		pf->num_clients--;
+	} else {
+		if (pf->status != PF_WORKER_EXITING) {
+			DEBUG(1, ("Invalid num clients, stopping!\n"));
+		}
+		pf->status = PF_WORKER_EXITING;
+		pf->num_clients = -1;
+	}
+}
+
+bool pfh_child_allowed_to_accept(struct pf_worker_data *pf)
+{
+	if (pf->status == PF_WORKER_EXITING ||
+	    pf->status == PF_WORKER_ACCEPTING) {
+		return false;
+	}
+
+	return (pf->num_clients < pf->allowed_clients);
+}

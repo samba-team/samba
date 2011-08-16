@@ -46,4 +46,7 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 		     struct pf_daemon_config *cfg,
 		     struct prefork_pool *pool);
 
+void pfh_client_terminated(struct pf_worker_data *pf);
+bool pfh_child_allowed_to_accept(struct pf_worker_data *pf);
+
 #endif /* _SERVER_PREFORK_UTIL_H_ */
