@@ -886,6 +886,8 @@ _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 		}
 	}
 
+	tdb_increment_seqnum_nonblock(tdb);
+
 	if (tdb_unlockall(tdb) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to unlock\n"));
 		goto failed;
