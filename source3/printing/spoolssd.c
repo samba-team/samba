@@ -39,6 +39,7 @@
 #define SPOOLSS_PIPE_NAME "spoolss"
 #define DAEMON_NAME "spoolssd"
 
+static struct server_id parent_id;
 static struct prefork_pool *spoolss_pool = NULL;
 static int spoolss_child_id = 0;
 
@@ -455,6 +456,7 @@ static void spoolss_handle_client(struct tevent_req *req)
 {
 	struct spoolss_children_data *data;
 	struct spoolss_new_client *client;
+	const DATA_BLOB ping = data_blob_null;
 	int ret;
 	int sd;
 
@@ -471,6 +473,10 @@ static void spoolss_handle_client(struct tevent_req *req)
 		DEBUG(6, ("No client connection was available after all!\n"));
 		return;
 	}
+
+	/* Warn parent that our status changed */
+	messaging_send(data->msg_ctx, parent_id,
+			MSG_PREFORK_CHILD_EVENT, &ping);
 
 	DEBUG(2, ("Spoolss preforked child %d got client connection!\n",
 		  (int)(data->pf->pid)));
@@ -502,6 +508,20 @@ static void check_updater_child(void)
 					     bq_logfile);
 		background_lpq_updater_pid = pid;
 	}
+}
+
+static void child_ping(struct messaging_context *msg_ctx,
+			void *private_data,
+			uint32_t msg_type,
+			struct server_id server_id,
+			DATA_BLOB *data)
+{
+	struct tevent_context *ev_ctx;
+
+	ev_ctx = talloc_get_type_abort(private_data, struct tevent_context);
+
+	DEBUG(10, ("Got message that a child changed status.\n"));
+	pfh_manage_pool(ev_ctx, msg_ctx, &pf_spoolss_cfg, spoolss_pool);
 }
 
 static bool spoolssd_schedule_check(struct tevent_context *ev_ctx,
@@ -654,6 +674,9 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		smb_panic("reinit_after_fork() failed");
 	}
 
+	/* save the parent process id so the children can use it later */
+	parent_id = procid_self();
+
 	spoolss_reopen_logs(0);
 	pfh_daemon_config(DAEMON_NAME,
 			  &pf_spoolss_cfg,
@@ -714,6 +737,8 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 			   print_queue_forward);
 	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
 			   pcap_updated);
+	messaging_register(msg_ctx, ev_ctx,
+			   MSG_PREFORK_CHILD_EVENT, child_ping);
 
 	/* As soon as messaging is up check if pcap has been loaded already.
 	 * If so then we probably missed a message and should load_printers()
