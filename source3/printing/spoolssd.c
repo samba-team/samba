@@ -353,8 +353,6 @@ struct spoolss_children_data {
 	struct pf_worker_data *pf;
 	int listen_fd_size;
 	int *listen_fds;
-
-	bool listening;
 };
 
 static void spoolss_next_client(void *pvt);
@@ -385,7 +383,6 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	data->msg_ctx = msg_ctx;
 	data->listen_fd_size = listen_fd_size;
 	data->listen_fds = listen_fds;
-	data->listening = false;
 
 	/* loop until it is time to exit */
 	while (pf->status != PF_WORKER_EXITING) {
@@ -409,13 +406,7 @@ static void spoolss_client_terminated(void *pvt)
 
 	data = talloc_get_type_abort(pvt, struct spoolss_children_data);
 
-	if (data->pf->num_clients) {
-		data->pf->num_clients--;
-	} else {
-		DEBUG(2, ("Invalid num clients, aborting!\n"));
-		data->pf->status = PF_WORKER_EXITING;
-		return;
-	}
+	pfh_client_terminated(data->pf);
 
 	spoolss_next_client(pvt);
 }
@@ -436,20 +427,9 @@ static void spoolss_next_client(void *pvt)
 
 	data = talloc_get_type_abort(pvt, struct spoolss_children_data);
 
-	if (data->pf->num_clients == 0) {
-		data->pf->status = PF_WORKER_ALIVE;
-	}
-
-	if (data->pf->cmds == PF_SRV_MSG_EXIT) {
-		DEBUG(2, ("Parent process commands we terminate!\n"));
-		return;
-	}
-
-	if (data->listening ||
-	    data->pf->num_clients >= data->pf->allowed_clients) {
+	if (!pfh_child_allowed_to_accept(data->pf)) {
 		/* nothing to do for now we are already listening
-		 * or reached the number of clients we are allowed
-		 * to handle in parallel */
+		 * or we are not allowed to listen further */
 		return;
 	}
 
@@ -469,8 +449,6 @@ static void spoolss_next_client(void *pvt)
 		return;
 	}
 	tevent_req_set_callback(req, spoolss_handle_client, next);
-
-	data->listening = true;
 }
 
 static void spoolss_handle_client(struct tevent_req *req)
@@ -488,8 +466,6 @@ static void spoolss_handle_client(struct tevent_req *req)
 
 	/* this will free the request too */
 	talloc_free(client);
-	/* we are done listening */
-	data->listening = false;
 
 	if (ret != 0) {
 		DEBUG(6, ("No client connection was available after all!\n"));
