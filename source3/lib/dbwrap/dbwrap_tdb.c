@@ -188,6 +188,13 @@ static int db_tdb_exists(struct db_context *db, TDB_DATA key)
 	return tdb_exists(ctx->wtdb->tdb, key);
 }
 
+static int db_tdb_wipe(struct db_context *db)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_tdb_ctx);
+	return tdb_wipe_all(ctx->wtdb->tdb);
+}
+
 static int db_tdb_parse(struct db_context *db, TDB_DATA key,
 			int (*parser)(TDB_DATA key, TDB_DATA data,
 				      void *private_data),
@@ -383,6 +390,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->transaction_commit = db_tdb_transaction_commit;
 	result->transaction_cancel = db_tdb_transaction_cancel;
 	result->exists = db_tdb_exists;
+	result->wipe = db_tdb_wipe;
 	return result;
 
  fail:
