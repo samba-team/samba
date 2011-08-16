@@ -353,7 +353,6 @@ struct spoolss_children_data {
 	struct pf_worker_data *pf;
 	int listen_fd_size;
 	int *listen_fds;
-	int lock_fd;
 
 	bool listening;
 };
@@ -366,7 +365,6 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 				 int child_id,
 				 int listen_fd_size,
 				 int *listen_fds,
-				 int lock_fd,
 				 void *private_data)
 {
 	struct spoolss_children_data *data;
@@ -385,7 +383,6 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	data->pf = pf;
 	data->ev_ctx = ev_ctx;
 	data->msg_ctx = msg_ctx;
-	data->lock_fd = lock_fd;
 	data->listen_fd_size = listen_fd_size;
 	data->listen_fds = listen_fds;
 	data->listening = false;
@@ -465,8 +462,7 @@ static void spoolss_next_client(void *pvt)
 
 	req = prefork_listen_send(next, data->ev_ctx, data->pf,
 				  data->listen_fd_size,
-				  data->listen_fds,
-				  data->lock_fd);
+				  data->listen_fds);
 	if (!req) {
 		DEBUG(1, ("Failed to make listening request!?\n"));
 		talloc_free(next);
@@ -495,18 +491,8 @@ static void spoolss_handle_client(struct tevent_req *req)
 	/* we are done listening */
 	data->listening = false;
 
-	if (ret > 0) {
-		DEBUG(1, ("Failed to accept client connection!\n"));
-		/* bail out if we are not serving any other client */
-		if (data->pf->num_clients == 0) {
-			data->pf->status = PF_WORKER_EXITING;
-		}
-		return;
-	}
-
-	if (ret == -2) {
-		DEBUG(1, ("Server asks us to die!\n"));
-		data->pf->status = PF_WORKER_EXITING;
+	if (ret != 0) {
+		DEBUG(6, ("No client connection was available after all!\n"));
 		return;
 	}
 

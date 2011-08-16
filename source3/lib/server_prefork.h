@@ -67,7 +67,6 @@ struct pf_worker_data {
 * @param pf		The mmaped area used to communicate with parent
 * @param listen_fd_size The number of file descriptors to monitor
 * @param listen_fds	The array of file descriptors
-* @param lock_fd	The locking file descriptor
 * @param private_data	Private data that needs to be passed to the main
 *			function from the calling parent.
 *
@@ -79,7 +78,6 @@ typedef int (prefork_main_fn_t)(struct tevent_context *ev,
 				int child_id,
 				int listen_fd_size,
 				int *listen_fds,
-				int lock_fd,
 				void *private_data);
 
 /**
@@ -256,7 +254,6 @@ void prefork_set_sigchld_callback(struct prefork_pool *pfp,
 * @param pf		The child/parent shared structure
 * @param listen_fd_size	The number of listening file descriptors
 * @param listen_fds	The array of listening file descriptors
-* @param lock_fd	The locking file descriptor
 *
 * @return The tevent request pointer or NULL on allocation errors.
 */
@@ -264,8 +261,7 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct pf_worker_data *pf,
 					int listen_fd_size,
-					int *listen_fds,
-					int lock_fd);
+					int *listen_fds);
 /**
 * @brief Returns the file descriptor after the new client connection has
 *	 been accepted.

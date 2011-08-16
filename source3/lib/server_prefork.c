@@ -31,8 +31,6 @@ struct prefork_pool {
 	int listen_fd_size;
 	int *listen_fds;
 
-	int lock_fd;
-
 	prefork_main_fn_t *main_fn;
 	void *private_data;
 
@@ -87,13 +85,6 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 	pfp->main_fn = main_fn;
 	pfp->private_data = private_data;
 
-	pfp->lock_fd = create_unlink_tmp(NULL);
-	if (pfp->lock_fd == -1) {
-		DEBUG(1, ("Failed to create prefork lock fd!\n"));
-		talloc_free(pfp);
-		return false;
-	}
-
 	pfp->pool_size = max_children;
 	data_size = sizeof(struct pf_worker_data) * max_children;
 
@@ -123,7 +114,6 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 					   &pfp->pool[i], i + 1,
 					   pfp->listen_fd_size,
 					   pfp->listen_fds,
-					   pfp->lock_fd,
 					   pfp->private_data);
 			exit(ret);
 
@@ -211,7 +201,6 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 					   &pfp->pool[i], i + 1,
 					   pfp->listen_fd_size,
 					   pfp->listen_fds,
-					   pfp->lock_fd,
 					   pfp->private_data);
 
 			pfp->pool[i].status = PF_WORKER_EXITING;
@@ -457,298 +446,12 @@ void prefork_set_sigchld_callback(struct prefork_pool *pfp,
 
 /* ==== Functions used by children ==== */
 
-static SIG_ATOMIC_T pf_alarm;
-
-static void pf_alarm_cb(int signum)
-{
-	pf_alarm = 1;
-}
-
-
-/*
- * Parameters:
- * pf - the worker shared data structure
- * lock_fd - the file descriptor used for locking
- * timeout - expressed in seconds:
- *		-1 never timeouts,
- *		0 timeouts immediately
- *		N seconds before timing out
- *
- * Returns values:
- * negative errno on fatal error
- * 0 on success to acquire lock
- * -1 on timeout/lock held by other
- * -2 on server msg to terminate
- * ERRNO on other errors
- */
-
-static int prefork_grab_lock(struct pf_worker_data *pf,
-			     int lock_fd, int timeout)
-{
-	struct flock lock;
-	int op;
-	int ret;
-
-	if (pf->cmds == PF_SRV_MSG_EXIT) {
-		return -2;
-	}
-
-	pf_alarm = 0;
-
-	if (timeout > 0) {
-		CatchSignal(SIGALRM, pf_alarm_cb);
-		alarm(timeout);
-	}
-
-	if (timeout == 0) {
-		op = F_SETLK;
-	} else {
-		op = F_SETLKW;
-	}
-
-	ret = 0;
-	do {
-		ZERO_STRUCT(lock);
-		lock.l_type = F_WRLCK;
-		lock.l_whence = SEEK_SET;
-
-		ret = fcntl(lock_fd, op, &lock);
-		if (ret == 0) break;
-
-		ret = errno;
-
-		if (pf->cmds == PF_SRV_MSG_EXIT) {
-			ret = -2;
-			goto done;
-		}
-
-		switch (ret) {
-		case EINTR:
-			break;
-
-		case EACCES:
-		case EAGAIN:
-			/* lock held by other proc */
-			ret = -1;
-			goto done;
-		default:
-			goto done;
-		}
-
-		if (pf_alarm == 1) {
-			/* timed out */
-			ret = -1;
-			goto done;
-		}
-	} while (timeout != 0);
-
-	if (ret != 0) {
-		/* We have the Lock */
-		pf->status = PF_WORKER_ACCEPTING;
-	}
-
-done:
-	if (timeout > 0) {
-		alarm(0);
-		CatchSignal(SIGALRM, SIG_IGN);
-	}
-
-	if (ret > 0) {
-		DEBUG(1, ("Failed to get lock (%d, %s)!\n",
-			  ret, strerror(ret)));
-	}
-	return ret;
-}
-
-/*
- * Parameters:
- * pf - the worker shared data structure
- * lock_fd - the file descriptor used for locking
- * timeout - expressed in seconds:
- *		-1 never timeouts,
- *		0 timeouts immediately
- *		N seconds before timing out
- *
- * Returns values:
- * negative errno on fatal error
- * 0 on success to release lock
- * -1 on timeout
- * ERRNO on error
- */
-
-static int prefork_release_lock(struct pf_worker_data *pf,
-				int lock_fd, int timeout)
-{
-	struct flock lock;
-	int op;
-	int ret;
-
-	pf_alarm = 0;
-
-	if (timeout > 0) {
-		CatchSignal(SIGALRM, pf_alarm_cb);
-		alarm(timeout);
-	}
-
-	if (timeout == 0) {
-		op = F_SETLK;
-	} else {
-		op = F_SETLKW;
-	}
-
-	do {
-		ZERO_STRUCT(lock);
-		lock.l_type = F_UNLCK;
-		lock.l_whence = SEEK_SET;
-
-		ret = fcntl(lock_fd, op, &lock);
-		if (ret == 0) break;
-
-		ret = errno;
-
-		if (ret != EINTR) {
-			goto done;
-		}
-
-		if (pf_alarm == 1) {
-			/* timed out */
-			ret = -1;
-			goto done;
-		}
-	} while (timeout != 0);
-
-done:
-	if (timeout > 0) {
-		alarm(0);
-		CatchSignal(SIGALRM, SIG_IGN);
-	}
-
-	if (ret > 0) {
-		DEBUG(1, ("Failed to release lock (%d, %s)!\n",
-			  ret, strerror(ret)));
-	}
-	return ret;
-}
-
-/* ==== async code ==== */
-
-#define PF_ASYNC_LOCK_GRAB	0x01
-#define PF_ASYNC_LOCK_RELEASE	0x02
-#define PF_ASYNC_ACTION_MASK	0x03
-#define PF_ASYNC_LOCK_DONE	0x04
-
-struct pf_lock_state {
-	struct pf_worker_data *pf;
-	int lock_fd;
-	int flags;
-};
-
-static void prefork_lock_handler(struct tevent_context *ev,
-					struct tevent_timer *te,
-					struct timeval curtime, void *pvt);
-
-static struct tevent_req *prefork_lock_send(TALLOC_CTX *mem_ctx,
-						struct tevent_context *ev,
-						struct pf_worker_data *pf,
-						int lock_fd, int action)
-{
-	struct tevent_req *req;
-	struct pf_lock_state *state;
-
-	req = tevent_req_create(mem_ctx, &state, struct pf_lock_state);
-	if (!req) {
-		return NULL;
-	}
-
-	state->pf = pf;
-	state->lock_fd = lock_fd;
-	state->flags = action;
-
-	/* try once immediately */
-	prefork_lock_handler(ev, NULL, tevent_timeval_zero(), req);
-	if (state->flags & PF_ASYNC_LOCK_DONE) {
-		tevent_req_post(req, ev);
-	}
-
-	return req;
-}
-
-static void prefork_lock_handler(struct tevent_context *ev,
-				 struct tevent_timer *te,
-				 struct timeval curtime, void *pvt)
-{
-	struct tevent_req *req;
-	struct pf_lock_state *state;
-	struct timeval tv;
-	int timeout = 0;
-	int ret;
-
-	req = talloc_get_type_abort(pvt, struct tevent_req);
-	state = tevent_req_data(req, struct pf_lock_state);
-
-	if (state->pf->num_clients > 0) {
-		timeout = 1;
-	}
-
-	switch (state->flags & PF_ASYNC_ACTION_MASK) {
-	case PF_ASYNC_LOCK_GRAB:
-		ret = prefork_grab_lock(state->pf, state->lock_fd, timeout);
-		break;
-	case PF_ASYNC_LOCK_RELEASE:
-		ret = prefork_release_lock(state->pf, state->lock_fd, timeout);
-		break;
-	default:
-		ret = EINVAL;
-		break;
-	}
-
-	switch (ret) {
-	case 0:
-		state->flags |= PF_ASYNC_LOCK_DONE;
-		tevent_req_done(req);
-		return;
-	case -1:
-		if (timeout) {
-			tv = tevent_timeval_zero();
-		} else {
-			tv = tevent_timeval_current_ofs(0, 100000);
-		}
-		te = tevent_add_timer(ev, state, tv,
-					prefork_lock_handler, req);
-		tevent_req_nomem(te, req);
-		return;
-	case -2:
-		/* server tells us to stop */
-		state->flags |= PF_ASYNC_LOCK_DONE;
-		tevent_req_error(req, -2);
-		return;
-	default:
-		state->flags |= PF_ASYNC_LOCK_DONE;
-		tevent_req_error(req, ret);
-		return;
-	}
-}
-
-static int prefork_lock_recv(struct tevent_req *req)
-{
-	int ret;
-
-	if (!tevent_req_is_unix_error(req, &ret)) {
-		ret = 0;
-	}
-
-	tevent_req_received(req);
-	return ret;
-}
-
 struct pf_listen_state {
 	struct tevent_context *ev;
 	struct pf_worker_data *pf;
 
 	int listen_fd_size;
 	int *listen_fds;
-
-	int lock_fd;
 
 	int accept_fd;
 
@@ -758,21 +461,28 @@ struct pf_listen_state {
 	int error;
 };
 
-static void prefork_listen_lock_done(struct tevent_req *subreq);
+struct pf_listen_ctx {
+	TALLOC_CTX *fde_ctx;
+	struct tevent_req *req;
+	int listen_fd;
+};
+
 static void prefork_listen_accept_handler(struct tevent_context *ev,
 					  struct tevent_fd *fde,
 					  uint16_t flags, void *pvt);
-static void prefork_listen_release_done(struct tevent_req *subreq);
 
 struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct pf_worker_data *pf,
 					int listen_fd_size,
-					int *listen_fds,
-					int lock_fd)
+					int *listen_fds)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct pf_listen_state *state;
+	struct pf_listen_ctx *ctx;
+	struct tevent_fd *fde;
+	TALLOC_CTX *fde_ctx;
+	int i;
 
 	req = tevent_req_create(mem_ctx, &state, struct pf_listen_state);
 	if (!req) {
@@ -781,57 +491,21 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->pf = pf;
-	state->lock_fd = lock_fd;
 	state->listen_fd_size = listen_fd_size;
 	state->listen_fds = listen_fds;
 	state->accept_fd = -1;
 	state->error = 0;
 
-	subreq = prefork_lock_send(state, state->ev, state->pf,
-				   state->lock_fd, PF_ASYNC_LOCK_GRAB);
-	if (tevent_req_nomem(subreq, req)) {
+	fde_ctx = talloc_new(state);
+	if (tevent_req_nomem(fde_ctx, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_callback(subreq, prefork_listen_lock_done, req);
-	return req;
-}
-
-struct pf_listen_ctx {
-	TALLOC_CTX *fde_ctx;
-	struct tevent_req *req;
-	int listen_fd;
-};
-
-static void prefork_listen_lock_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req;
-	struct pf_listen_state *state;
-	struct pf_listen_ctx *ctx;
-	struct tevent_fd *fde;
-	TALLOC_CTX *fde_ctx;
-	int ret;
-	int i;
-
-	req = tevent_req_callback_data(subreq, struct tevent_req);
-	state = tevent_req_data(req, struct pf_listen_state);
-
-	ret = prefork_lock_recv(subreq);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	fde_ctx = talloc_new(state);
-	if (tevent_req_nomem(fde_ctx, req)) {
-		return;
-	}
-
-	/* next step, accept */
+	/* race on accept */
 	for (i = 0; i < state->listen_fd_size; i++) {
 		ctx = talloc(fde_ctx, struct pf_listen_ctx);
 		if (tevent_req_nomem(ctx, req)) {
-			return;
+			return tevent_req_post(req, ev);
 		}
 		ctx->fde_ctx = fde_ctx;
 		ctx->req = req;
@@ -841,9 +515,11 @@ static void prefork_listen_lock_done(struct tevent_req *subreq)
 				    ctx->listen_fd, TEVENT_FD_READ,
 				    prefork_listen_accept_handler, ctx);
 		if (tevent_req_nomem(fde, req)) {
-			return;
+			return tevent_req_post(req, ev);
 		}
 	}
+
+	return req;
 }
 
 static void prefork_listen_accept_handler(struct tevent_context *ev,
@@ -851,7 +527,7 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 					  uint16_t flags, void *pvt)
 {
 	struct pf_listen_state *state;
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct pf_listen_ctx *ctx;
 	struct sockaddr_storage addr;
 	socklen_t addrlen;
@@ -860,22 +536,18 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	int ret;
 
 	ctx = talloc_get_type_abort(pvt, struct pf_listen_ctx);
+	req = ctx->req;
 	state = tevent_req_data(ctx->req, struct pf_listen_state);
 
 	ZERO_STRUCT(addr);
 	addrlen = sizeof(addr);
 	sd = accept(ctx->listen_fd, (struct sockaddr *)&addr, &addrlen);
 	if (sd == -1) {
-		if (errno == EINTR) {
-			/* keep trying */
-			return;
-		}
 		err = errno;
 		DEBUG(6, ("Accept failed! (%d, %s)\n", err, strerror(err)));
 	}
 
 	/* do not track the listen fds anymore */
-	req = ctx->req;
 	talloc_free(ctx->fde_ctx);
 	ctx = NULL;
 	if (err) {
@@ -910,28 +582,6 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	}
 
 done:
-	/* release lock now */
-	subreq = prefork_lock_send(state, state->ev, state->pf,
-				   state->lock_fd, PF_ASYNC_LOCK_RELEASE);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, prefork_listen_release_done, req);
-}
-
-static void prefork_listen_release_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req;
-	int ret;
-
-	req = tevent_req_callback_data(subreq, struct tevent_req);
-
-	ret = prefork_lock_recv(subreq);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return;
-	}
-
 	tevent_req_done(req);
 }
 
