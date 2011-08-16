@@ -168,14 +168,14 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 int prefork_retire_children(struct prefork_pool *pfp,
 			    int num_children, time_t age_limit);
 /**
-* @brief Count the number of active children
+* @brief Count the number of children
 *
 * @param pfp	The pool.
-* @param total	Returns the number of children currently alive
+* @param active	Number of children currently active if not NULL
 *
-* @return The number of children actually serving clients
+* @return The total number of children.
 */
-int prefork_count_active_children(struct prefork_pool *pfp, int *total);
+int prefork_count_children(struct prefork_pool *pfp, int *active);
 
 /**
 * @brief Count the number of actual connections currently allowed

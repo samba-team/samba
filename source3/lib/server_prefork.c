@@ -279,7 +279,7 @@ int prefork_retire_children(struct prefork_pool *pfp,
 	return j;
 }
 
-int prefork_count_active_children(struct prefork_pool *pfp, int *total)
+int prefork_count_children(struct prefork_pool *pfp, int *active)
 {
 	int i, a, t;
 
@@ -292,15 +292,18 @@ int prefork_count_active_children(struct prefork_pool *pfp, int *total)
 
 		t++;
 
-		if (pfp->pool[i].num_clients <= 0) {
+		if ((pfp->pool[i].status == PF_WORKER_EXITING) ||
+		    (pfp->pool[i].num_clients <= 0)) {
 			continue;
 		}
 
 		a++;
 	}
 
-	*total = t;
-	return a;
+	if (active) {
+		*active = a;
+	}
+	return t;
 }
 
 static void prefork_cleanup_loop(struct prefork_pool *pfp)

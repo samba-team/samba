@@ -65,7 +65,7 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 		     struct prefork_pool *pool)
 {
 	time_t now = time(NULL);
-	int active, total;
+	int total, avail;
 	int ret, n;
 
 	if ((cfg->prefork_status & PFH_NEW_MAX) &&
@@ -77,43 +77,62 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 		cfg->prefork_status &= ~PFH_NEW_MAX;
 	}
 
-	active = prefork_count_active_children(pool, &total);
+	total = prefork_count_children(pool, NULL);
+	avail = prefork_count_allowed_connections(pool);
+	DEBUG(10, ("(Pre)Stats: children: %d, allowed connections: %d\n",
+		   total, avail));
 
-	if ((total < cfg->max_children) &&
-	    ((total < cfg->min_children) ||
-	     (total - active < cfg->spawn_rate))) {
+	if ((total < cfg->max_children) && (avail < cfg->spawn_rate)) {
 		n = prefork_add_children(ev_ctx, msg_ctx,
 					 pool, cfg->spawn_rate);
 		if (n < cfg->spawn_rate) {
-			DEBUG(10, ("Tried to start %d children but only,"
-				   "%d were actually started.!\n",
+			DEBUG(10, ("Attempted to add %d children but only "
+				   "%d were actually added!\n",
 				   cfg->spawn_rate, n));
 		}
-	}
-
-	if (total - active > cfg->min_children) {
-		if ((total - cfg->min_children) >= cfg->spawn_rate) {
-			prefork_retire_children(pool, cfg->spawn_rate,
+	} else if ((avail - cfg->min_children) >= cfg->spawn_rate) {
+		/* be a little slower in retiring children, to allow for
+		 * double spikes of traffic to be handled more gracefully */
+		n = (cfg->spawn_rate / 2) + 1;
+		if (n > cfg->spawn_rate) {
+			n = cfg->spawn_rate;
+		}
+		if ((total - n) < cfg->min_children) {
+			n = total - cfg->min_children;
+		}
+		if (n >= 0) {
+			prefork_retire_children(pool, n,
 						now - cfg->child_min_life);
 		}
 	}
 
-	n = prefork_count_allowed_connections(pool);
-	if (n <= cfg->spawn_rate) {
-		do {
+	/* total/avail may have just been changed in the above if/else */
+	total = prefork_count_children(pool, NULL);
+	avail = prefork_count_allowed_connections(pool);
+	if ((total == cfg->max_children) && (avail < cfg->spawn_rate)) {
+		n = avail;
+		while (avail < cfg->spawn_rate) {
 			prefork_increase_allowed_clients(pool,
 						cfg->max_allowed_clients);
-			n = prefork_count_allowed_connections(pool);
-		} while (n <= cfg->spawn_rate);
-	} else if (n > cfg->max_children + cfg->spawn_rate) {
-		do {
+			avail = prefork_count_allowed_connections(pool);
+			/* if avail didn't change do not loop forever */
+			if (n == avail) break;
+			n = avail;
+		}
+	} else if (avail > total + cfg->spawn_rate) {
+		n = avail;
+		while (avail > total + cfg->spawn_rate) {
 			prefork_decrease_allowed_clients(pool);
-			n = prefork_count_allowed_connections(pool);
-		} while (n > cfg->max_children + cfg->spawn_rate);
+			avail = prefork_count_allowed_connections(pool);
+			/* if avail didn't change do not loop forever */
+			if (n == avail) break;
+			n = avail;
+		}
 	}
 
 	DEBUG(10, ("Stats: children: %d, allowed connections: %d\n",
-		  total, prefork_count_allowed_connections(pool)));
+		  prefork_count_children(pool, NULL),
+		  prefork_count_allowed_connections(pool)));
 }
 
 void pfh_client_terminated(struct pf_worker_data *pf)
