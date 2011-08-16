@@ -58,11 +58,6 @@ struct db_context {
 
 struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx);
 
-struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
-			       const char *name,
-			       int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode);
-
 struct messaging_context;
 
 struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
