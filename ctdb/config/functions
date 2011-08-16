@@ -68,6 +68,20 @@ ctdb_set_current_debuglevel ()
     . "$_f"
 }
 
+debug ()
+{
+    if [ $CTDB_CURRENT_DEBUGLEVEL -ge 4 ] ; then
+	# If there are arguments then echo them.  Otherwise expect to
+	# use stdin, which allows us to pass lots of debug using a
+	# here document.
+	if [ -n "$1" ] ; then
+	    echo "DEBUG: $*"
+	elif ! tty -s ; then
+	    sed -e 's@^@DEBUG: @'
+	fi
+    fi
+}
+
 ##############################################################
 # determine on what type of system (init style) we are running
 detect_init_style() {
@@ -1124,6 +1138,11 @@ update_tickles ()
 		[ -x "$i" ] && . "$i"
 	done
 }
+
+# We'll call this here to ensure $CTDB_CURRENT_DEBUGLEVEL is set.
+# This gives us a chance to override the debug level using a file in
+# $CTDB_BASE/rc.local.d/.
+ctdb_set_current_debuglevel
 
 script_name="${0##*/}"       # basename
 service_name="$script_name"  # default is just the script name
