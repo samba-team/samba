@@ -292,7 +292,7 @@ int prefork_count_active_children(struct prefork_pool *pfp, int *total)
 
 		t++;
 
-		if (pfp->pool[i].num_clients == 0) {
+		if (pfp->pool[i].num_clients <= 0) {
 			continue;
 		}
 
@@ -343,7 +343,12 @@ int prefork_count_allowed_connections(struct prefork_pool *pfp)
 
 	c = 0;
 	for (i = 0; i < pfp->pool_size; i++) {
-		if (pfp->pool[i].status == PF_WORKER_NONE) {
+		if (pfp->pool[i].status == PF_WORKER_NONE ||
+		    pfp->pool[i].status == PF_WORKER_EXITING) {
+			continue;
+		}
+
+		if (pfp->pool[i].num_clients < 0) {
 			continue;
 		}
 
@@ -358,7 +363,12 @@ void prefork_increase_allowed_clients(struct prefork_pool *pfp, int max)
 	int i;
 
 	for (i = 0; i < pfp->pool_size; i++) {
-		if (pfp->pool[i].status == PF_WORKER_NONE) {
+		if (pfp->pool[i].status == PF_WORKER_NONE ||
+		    pfp->pool[i].status == PF_WORKER_EXITING) {
+			continue;
+		}
+
+		if (pfp->pool[i].num_clients < 0) {
 			continue;
 		}
 
@@ -373,7 +383,12 @@ void prefork_decrease_allowed_clients(struct prefork_pool *pfp)
 	int i;
 
 	for (i = 0; i < pfp->pool_size; i++) {
-		if (pfp->pool[i].status == PF_WORKER_NONE) {
+		if (pfp->pool[i].status == PF_WORKER_NONE ||
+		    pfp->pool[i].status == PF_WORKER_EXITING) {
+			continue;
+		}
+
+		if (pfp->pool[i].num_clients < 0) {
 			continue;
 		}
 
