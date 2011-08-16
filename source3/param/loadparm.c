@@ -4700,7 +4700,7 @@ static void init_globals(bool reinit_globals)
 	 * wipe out smb.conf options set with lp_set_cmdline().  The
 	 * apply_lp_set_cmdline() call puts these values back in the
 	 * table once the defaults are set */
-	memset((void *)&Globals, '\0', sizeof(Globals));
+	ZERO_STRUCT(Globals);
 
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
