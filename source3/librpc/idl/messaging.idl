@@ -42,6 +42,9 @@ interface messaging
 		/* Changes to smb.conf are really of general interest */
 		MSG_SMB_CONF_UPDATED		= 0x0021,
 
+		MSG_PREFORK_CHILD_EVENT		= 0x0031,
+		MSG_PREFORK_PARENT_EVENT	= 0x0032,
+
 		/* nmbd messages */
 		MSG_FORCE_ELECTION		= 0x0101,
 		MSG_WINS_NEW_ENTRY		= 0x0102,
