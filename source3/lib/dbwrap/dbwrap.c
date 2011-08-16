@@ -77,6 +77,23 @@ int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 }
 
 
+static int delete_record(struct db_record *rec, void *data)
+{
+	NTSTATUS status = rec->delete_rec(rec);
+	return NT_STATUS_IS_OK(status) ? 0 : -1;
+}
+
+/*
+ * Fallback wipe ipmlementation using traverse and delete if no genuine
+ * wipe operation is provided
+ */
+int dbwrap_fallback_wipe(struct db_context *db)
+{
+	NTSTATUS status = dbwrap_trans_traverse(db, &delete_record, NULL);
+	return NT_STATUS_IS_OK(status) ? 0 : -1;
+}
+
+
 TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		      TDB_DATA key)
 {
@@ -185,4 +202,9 @@ int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 	} else {
 		return dbwrap_fallback_parse_record(db, key, parser, private_data);
 	}
+}
+
+int dbwrap_wipe(struct db_context *db)
+{
+	return db->wipe(db);
 }

@@ -116,6 +116,9 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	if ((result != NULL) && (result->parse_record == NULL)) {
 		result->parse_record = dbwrap_fallback_parse_record;
 	}
+	if ((result != NULL) && (result->wipe == NULL)) {
+		result->wipe = dbwrap_fallback_wipe;
+	}
 
 	return result;
 }

@@ -53,6 +53,7 @@ struct db_context {
 					  void *private_data),
 			    void *private_data);
 	int (*exists)(struct db_context *db,TDB_DATA key);
+	int (*wipe)(struct db_context *db);
 	void *private_data;
 	bool persistent;
 };
@@ -77,6 +78,7 @@ int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 			int (*parser)(TDB_DATA key, TDB_DATA data,
 				      void *private_data),
 			void *private_data);
+int dbwrap_wipe(struct db_context *db);
 
 
 /* The following definitions come from lib/dbwrap_util.c  */

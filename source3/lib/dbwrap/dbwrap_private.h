@@ -34,5 +34,7 @@ int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 					       void *private_data),
 				 void *private_data);
 
+int dbwrap_fallback_wipe(struct db_context *db);
+
 #endif /* __DBWRAP_PRIVATE_H__ */
 
