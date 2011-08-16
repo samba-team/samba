@@ -374,7 +374,7 @@ static void lsasd_next_client(void *pvt)
 	data = talloc_get_type_abort(pvt, struct lsasd_children_data);
 
 	if (data->pf->num_clients == 0) {
-		data->pf->status = PF_WORKER_IDLE;
+		data->pf->status = PF_WORKER_ALIVE;
 	}
 
 	if (data->pf->cmds == PF_SRV_MSG_EXIT) {

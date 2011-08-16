@@ -109,7 +109,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 
 		case 0: /* THE CHILD */
 
-			pfp->pool[i].status = PF_WORKER_IDLE;
+			pfp->pool[i].status = PF_WORKER_ALIVE;
 			ret = pfp->main_fn(ev_ctx, msg_ctx,
 					   &pfp->pool[i], i + 1,
 					   pfp->listen_fd_size,
@@ -196,7 +196,7 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 
 		case 0: /* THE CHILD */
 
-			pfp->pool[i].status = PF_WORKER_IDLE;
+			pfp->pool[i].status = PF_WORKER_ALIVE;
 			ret = pfp->main_fn(ev_ctx, msg_ctx,
 					   &pfp->pool[i], i + 1,
 					   pfp->listen_fd_size,
@@ -252,7 +252,8 @@ int prefork_retire_children(struct prefork_pool *pfp,
 
 	for (i = 0; i < pfp->pool_size; i++) {
 		oldest[i].num = i;
-		if (pfp->pool[i].status == PF_WORKER_IDLE) {
+		if (pfp->pool[i].status == PF_WORKER_ALIVE ||
+		    pfp->pool[i].status == PF_WORKER_ACCEPTING) {
 			oldest[i].started = pfp->pool[i].started;
 		} else {
 			oldest[i].started = now;
@@ -264,7 +265,8 @@ int prefork_retire_children(struct prefork_pool *pfp,
 		prefork_sort_oldest);
 
 	for (i = 0, j = 0; i < pfp->pool_size && j < num_children; i++) {
-		if (pfp->pool[i].status == PF_WORKER_IDLE &&
+		if ((pfp->pool[i].status == PF_WORKER_ALIVE ||
+		     pfp->pool[i].status == PF_WORKER_ACCEPTING) &&
 		    pfp->pool[i].started <= age_limit) {
 			/* tell the child it's time to give up */
 			DEBUG(5, ("Retiring pid %d!\n", pfp->pool[i].pid));
@@ -519,6 +521,8 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	pf->status = PF_WORKER_ACCEPTING;
+
 	return req;
 }
 
@@ -538,6 +542,14 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	ctx = talloc_get_type_abort(pvt, struct pf_listen_ctx);
 	req = ctx->req;
 	state = tevent_req_data(ctx->req, struct pf_listen_state);
+
+	if (state->pf->cmds == PF_SRV_MSG_EXIT) {
+		/* We have been asked to exit, so drop here and the next
+		 * child will pick it up */
+		state->pf->status = PF_WORKER_EXITING;
+		state->error = EINTR;
+		goto done;
+	}
 
 	ZERO_STRUCT(addr);
 	addrlen = sizeof(addr);
@@ -609,8 +621,10 @@ int prefork_listen_recv(struct tevent_req *req,
 		*fd = state->accept_fd;
 		*srv_addr = talloc_move(mem_ctx, &state->srv_addr);
 		*cli_addr = talloc_move(mem_ctx, &state->cli_addr);
-		state->pf->status = PF_WORKER_BUSY;
 		state->pf->num_clients++;
+	}
+	if (state->pf->status == PF_WORKER_ACCEPTING) {
+		state->pf->status = PF_WORKER_ALIVE;
 	}
 
 	tevent_req_received(req);

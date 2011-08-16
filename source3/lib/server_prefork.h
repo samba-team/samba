@@ -26,9 +26,8 @@ struct prefork_pool;
 
 enum pf_worker_status {
 	PF_WORKER_NONE = 0,
-	PF_WORKER_IDLE,
+	PF_WORKER_ALIVE,
 	PF_WORKER_ACCEPTING,
-	PF_WORKER_BUSY,
 	PF_WORKER_EXITING
 };
 
