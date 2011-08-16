@@ -35,10 +35,6 @@ interface messaging
 		MSG_REQ_DMALLOC_LOG_CHANGED	= 0x000C,
 		MSG_SHUTDOWN			= 0x000D,
 
-		MSG_IDMAP_FLUSH                 = 0x000E,
-		MSG_IDMAP_DELETE                = 0x000F,
-		MSG_IDMAP_KILL                  = 0x0010,
-
 		/* Changes to smb.conf are really of general interest */
 		MSG_SMB_CONF_UPDATED		= 0x0021,
 
@@ -93,6 +89,10 @@ interface messaging
 		MSG_WINBIND_VALIDATE_CACHE	= 0x0408,
 		MSG_WINBIND_DUMP_DOMAIN_LIST	= 0x0409,
 		MSG_WINBIND_IP_DROPPED		= 0x040A,
+
+		MSG_IDMAP_FLUSH                 = 0x040E,
+		MSG_IDMAP_DELETE                = 0x040F,
+		MSG_IDMAP_KILL                  = 0x0410,
 
 		/* event messages */
 		MSG_DUMP_EVENT_LIST		= 0x0500,
