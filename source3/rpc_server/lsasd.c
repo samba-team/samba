@@ -40,6 +40,7 @@
 #define DAEMON_NAME "lsasd"
 #define LSASD_MAX_SOCKETS 64
 
+static struct server_id parent_id;
 static struct prefork_pool *lsasd_pool = NULL;
 static int lsasd_child_id = 0;
 
@@ -394,6 +395,7 @@ static void lsasd_handle_client(struct tevent_req *req)
 {
 	struct lsasd_children_data *data;
 	struct lsasd_new_client *client;
+	const DATA_BLOB ping = data_blob_null;
 	int rc;
 	int sd;
 	TALLOC_CTX *tmp_ctx;
@@ -422,6 +424,10 @@ static void lsasd_handle_client(struct tevent_req *req)
 		DEBUG(6, ("No client connection was available after all!\n"));
 		goto done;
 	}
+
+	/* Warn parent that our status changed */
+	messaging_send(data->msg_ctx, parent_id,
+			MSG_PREFORK_CHILD_EVENT, &ping);
 
 	DEBUG(2, ("LSASD preforked child %d got client connection!\n",
 		  (int)(data->pf->pid)));
@@ -480,6 +486,20 @@ done:
 /*
  * MAIN
  */
+
+static void child_ping(struct messaging_context *msg_ctx,
+			void *private_data,
+			uint32_t msg_type,
+			struct server_id server_id,
+			DATA_BLOB *data)
+{
+	struct tevent_context *ev_ctx;
+
+	ev_ctx = talloc_get_type_abort(private_data, struct tevent_context);
+
+	DEBUG(10, ("Got message that a child changed status.\n"));
+	pfh_manage_pool(ev_ctx, msg_ctx, &pf_lsasd_cfg, lsasd_pool);
+}
 
 static bool lsasd_schedule_check(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
@@ -767,6 +787,9 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	/* child */
 	close_low_fds(false);
 
+	/* save the parent process id so the children can use it later */
+	parent_id = procid_self();
+
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,
 				   procid_self(), true);
@@ -814,6 +837,8 @@ void start_lsasd(struct tevent_context *ev_ctx,
 			   ev_ctx,
 			   MSG_SMB_CONF_UPDATED,
 			   lsasd_smb_conf_updated);
+	messaging_register(msg_ctx, ev_ctx,
+			   MSG_PREFORK_CHILD_EVENT, child_ping);
 
 	status = rpc_lsarpc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
