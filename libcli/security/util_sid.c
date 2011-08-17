@@ -275,15 +275,6 @@ int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2)
 	return dom_sid_compare_auth(sid1, sid2);
 }
 
-/*****************************************************************
- Compare two sids.
-*****************************************************************/
-
-bool sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
-{
-	return dom_sid_compare(sid1, sid2) == 0;
-}
-
 /********************************************************************
  Add SID to an array SIDs
 ********************************************************************/

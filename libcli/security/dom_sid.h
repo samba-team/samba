@@ -89,7 +89,6 @@ void sid_copy(struct dom_sid *dst, const struct dom_sid *src);
 bool sid_blob_parse(DATA_BLOB in, struct dom_sid *sid);
 bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid);
 int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2);
-bool sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2);
 NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			  struct dom_sid **sids, uint32_t *num);
 NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
