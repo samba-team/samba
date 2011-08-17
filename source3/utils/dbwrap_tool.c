@@ -116,7 +116,7 @@ static int dbwrap_tool_delete(struct db_context *db,
 
 static int delete_fn(struct db_record *rec, void *priv)
 {
-	rec->delete_rec(rec);
+	dbwrap_record_delete(rec);
 	return 0;
 }
 
@@ -128,11 +128,11 @@ static int dbwrap_tool_erase(struct db_context *db,
 			     const char *keyname,
 			     void *data)
 {
-	int ret;
+	NTSTATUS status;
 
-	ret = db->traverse(db, delete_fn, NULL);
+	status = dbwrap_traverse(db, delete_fn, NULL, NULL);
 
-	if (ret < 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "ERROR erasing the database\n");
 		return -1;
 	}
@@ -142,8 +142,8 @@ static int dbwrap_tool_erase(struct db_context *db,
 
 static int listkey_fn(struct db_record *rec, void *private_data)
 {
-	int length = rec->key.dsize;
-	unsigned char *p = (unsigned char *)rec->key.dptr;
+	int length = dbwrap_record_get_key(rec).dsize;
+	unsigned char *p = (unsigned char *)dbwrap_record_get_key(rec).dptr;
 
 	while (length--) {
 		if (isprint(*p) && !strchr("\"\\", *p)) {
@@ -163,11 +163,11 @@ static int dbwrap_tool_listkeys(struct db_context *db,
 				const char *keyname,
 				void *data)
 {
-	int ret;
+	NTSTATUS status;
 
-	ret = db->traverse_read(db, listkey_fn, NULL);
+	status = dbwrap_traverse_read(db, listkey_fn, NULL, NULL);
 
-	if (ret < 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "ERROR listing db keys\n");
 		return -1;
 	}
