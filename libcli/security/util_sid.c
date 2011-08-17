@@ -337,8 +337,9 @@ void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids,
 	/* This loop will copy the remainder of the array
 	   if i < num of sids in the array */
 
-	for ( ; i<*num; i++ )
+	for ( ; i<*num; i++ ) {
 		sid_copy( &sid_list[i], &sid_list[i+1] );
+	}
 
 	return;
 }
