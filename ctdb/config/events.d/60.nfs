@@ -70,6 +70,7 @@ case "$1" in
 	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
 	    exportfs -v | grep '^/' | 
 	    sed -r -e 's@[[:space:]]+[^[:space:]()]+\([^[:space:]()]+\)$@@' | 
+	    sort -u | 
 	    ctdb_check_directories 
 	} || exit $?
 
