@@ -206,18 +206,21 @@ static bool get_group_map_from_sid(struct dom_sid sid, GROUP_MAP *map)
 
 static bool dbrec2map(const struct db_record *rec, GROUP_MAP *map)
 {
-	if ((rec->key.dsize < strlen(GROUP_PREFIX))
-	    || (strncmp((char *)rec->key.dptr, GROUP_PREFIX,
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	TDB_DATA value = dbwrap_record_get_value(rec);
+
+	if ((key.dsize < strlen(GROUP_PREFIX))
+	    || (strncmp((char *)key.dptr, GROUP_PREFIX,
 			GROUP_PREFIX_LEN) != 0)) {
 		return False;
 	}
 
-	if (!string_to_sid(&map->sid, (const char *)rec->key.dptr
+	if (!string_to_sid(&map->sid, (const char *)key.dptr
 			   + GROUP_PREFIX_LEN)) {
 		return False;
 	}
 
-	return tdb_unpack(rec->value.dptr, rec->value.dsize, "ddff",
+	return tdb_unpack(value.dptr, value.dsize, "ddff",
 			  &map->gid, &map->sid_name_use, &map->nt_name,
 			  &map->comment) != -1;
 }
@@ -267,7 +270,7 @@ static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 	state.gid = gid;
 	state.map = map;
 
-	db->traverse_read(db, find_map, (void *)&state);
+	dbwrap_traverse_read(db, find_map, (void *)&state, NULL);
 
 	return state.found;
 }
@@ -284,7 +287,7 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 	state.name = name;
 	state.map = map;
 
-	db->traverse_read(db, find_map, (void *)&state);
+	dbwrap_traverse_read(db, find_map, (void *)&state, NULL);
 
 	return state.found;
 }
@@ -371,6 +374,7 @@ static bool enum_group_mapping(const struct dom_sid *domsid,
 			       size_t *p_num_entries, bool unix_only)
 {
 	struct enum_map_state state;
+	NTSTATUS status;
 
 	state.domsid = domsid;
 	state.sid_name_use = sid_name_use;
@@ -378,7 +382,8 @@ static bool enum_group_mapping(const struct dom_sid *domsid,
 	state.num_maps = 0;
 	state.maps = NULL;
 
-	if (db->traverse_read(db, collect_map, (void *)&state) < 0) {
+	status = dbwrap_traverse_read(db, collect_map, (void *)&state, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
@@ -479,6 +484,7 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	char *new_memberstring;
 	struct db_record *rec;
 	NTSTATUS status;
+	TDB_DATA value;
 
 	if (!get_group_map_from_sid(*alias, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -498,12 +504,12 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (db->transaction_start(db) != 0) {
+	if (dbwrap_transaction_start(db) != 0) {
 		DEBUG(0, ("transaction_start failed\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	rec = db->fetch_locked(db, key, string_term_tdb_data(key));
+	rec = dbwrap_fetch_locked(db, key, string_term_tdb_data(key));
 
 	if (rec == NULL) {
 		DEBUG(10, ("fetch_lock failed\n"));
@@ -512,11 +518,13 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 		goto cancel;
 	}
 
+	value = dbwrap_record_get_value(rec);
+
 	sid_to_fstring(string_sid, alias);
 
-	if (rec->value.dptr != NULL) {
+	if (value.dptr != NULL) {
 		new_memberstring = talloc_asprintf(
-			key, "%s %s", (char *)(rec->value.dptr), string_sid);
+			key, "%s %s", (char *)(value.dptr), string_sid);
 	} else {
 		new_memberstring = talloc_strdup(key, string_sid);
 	}
@@ -527,7 +535,7 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 		goto cancel;
 	}
 
-	status = rec->store(rec, string_term_tdb_data(new_memberstring), 0);
+	status = dbwrap_record_store(rec, string_term_tdb_data(new_memberstring), 0);
 
 	TALLOC_FREE(key);
 
@@ -536,7 +544,7 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 		goto cancel;
 	}
 
-	if (db->transaction_commit(db) != 0) {
+	if (dbwrap_transaction_commit(db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return status;
@@ -545,7 +553,7 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	return NT_STATUS_OK;
 
  cancel:
-	if (db->transaction_cancel(db) != 0) {
+	if (dbwrap_transaction_cancel(db) != 0) {
 		smb_panic("transaction_cancel failed");
 	}
 
@@ -565,12 +573,14 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 	const char *p;
 	char *alias_string;
 	TALLOC_CTX *frame;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	TDB_DATA value = dbwrap_record_get_value(rec);
 
-	if (strncmp((const char *)rec->key.dptr, MEMBEROF_PREFIX,
+	if (strncmp((const char *)key.dptr, MEMBEROF_PREFIX,
 		    MEMBEROF_PREFIX_LEN) != 0)
 		return 0;
 
-	p = (const char *)rec->value.dptr;
+	p = (const char *)value.dptr;
 
 	frame = talloc_stackframe();
 
@@ -589,7 +599,7 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 		 * list currently scanned. The key represents the alias
 		 * member. Add that. */
 
-		member_string = strchr((const char *)rec->key.dptr, '/');
+		member_string = strchr((const char *)key.dptr, '/');
 
 		/* Above we tested for MEMBEROF_PREFIX which includes the
 		 * slash. */
@@ -636,7 +646,7 @@ static NTSTATUS enum_aliasmem(const struct dom_sid *alias, TALLOC_CTX *mem_ctx,
 	state.num = num;
 	state.mem_ctx = mem_ctx;
 
-	db->traverse_read(db, collect_aliasmem, &state);
+	dbwrap_traverse_read(db, collect_aliasmem, &state, NULL);
 	return NT_STATUS_OK;
 }
 
@@ -650,7 +660,7 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	char *key;
 	fstring sid_string;
 
-	if (db->transaction_start(db) != 0) {
+	if (dbwrap_transaction_start(db) != 0) {
 		DEBUG(0, ("transaction_start failed\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -725,7 +735,7 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 		goto cancel;
 	}
 
-	if (db->transaction_commit(db) != 0) {
+	if (dbwrap_transaction_commit(db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return status;
@@ -734,7 +744,7 @@ static NTSTATUS del_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	return NT_STATUS_OK;
 
  cancel:
-	if (db->transaction_cancel(db) != 0) {
+	if (dbwrap_transaction_cancel(db) != 0) {
 		smb_panic("transaction_cancel failed");
 	}
 	return status;
