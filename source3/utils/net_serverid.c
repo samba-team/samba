@@ -37,7 +37,7 @@ static int net_serverid_list(struct net_context *c, int argc,
 			     const char **argv)
 {
 	d_printf("pid unique_id msg_flags\n");
-	return serverid_traverse_read(net_serverid_list_fn, NULL) > 0 ? 0 : -1;
+	return serverid_traverse_read(net_serverid_list_fn, NULL) ? 0 : -1;
 }
 
 static int net_serverid_wipe_fn(struct db_record *rec,
