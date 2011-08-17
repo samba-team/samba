@@ -25,6 +25,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/ioctl.h>
+#include <stddef.h>
 #include "libctdb_private.h"
 #include "io_elem.h"
 #include "local_tdb.h"
