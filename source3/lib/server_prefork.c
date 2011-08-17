@@ -553,7 +553,8 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	struct pf_listen_ctx *ctx;
 	struct sockaddr_storage addr;
 	socklen_t addrlen;
-	int err = 0;
+	int soerr = 0;
+	socklen_t solen = sizeof(soerr);
 	int sd = -1;
 	int ret;
 
@@ -564,8 +565,23 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	if (state->pf->cmds == PF_SRV_MSG_EXIT) {
 		/* We have been asked to exit, so drop here and the next
 		 * child will pick it up */
-		state->pf->status = PF_WORKER_EXITING;
+		if (state->pf->num_clients <= 0) {
+			state->pf->status = PF_WORKER_EXITING;
+		}
 		state->error = EINTR;
+		goto done;
+	}
+
+	/* before proceeding check that the listening fd is ok */
+	ret = getsockopt(ctx->listen_fd, SOL_SOCKET, SO_ERROR, &soerr, &solen);
+	if (ret == -1) {
+		/* this is a fatal error, we cannot continue listening */
+		state->error = EBADF;
+		goto done;
+	}
+	if (soerr != 0) {
+		/* this is a fatal error, we cannot continue listening */
+		state->error = soerr;
 		goto done;
 	}
 
@@ -573,15 +589,9 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	addrlen = sizeof(addr);
 	sd = accept(ctx->listen_fd, (struct sockaddr *)&addr, &addrlen);
 	if (sd == -1) {
-		err = errno;
-		DEBUG(6, ("Accept failed! (%d, %s)\n", err, strerror(err)));
-	}
-
-	/* do not track the listen fds anymore */
-	talloc_free(ctx->fde_ctx);
-	ctx = NULL;
-	if (err) {
-		state->error = err;
+		state->error = errno;
+		DEBUG(6, ("Accept failed! (%d, %s)\n",
+			  state->error, strerror(state->error)));
 		goto done;
 	}
 
@@ -612,6 +622,8 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	}
 
 done:
+	/* do not track the listen fds anymore */
+	talloc_free(ctx->fde_ctx);
 	tevent_req_done(req);
 }
 
