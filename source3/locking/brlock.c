@@ -1593,18 +1593,22 @@ static int traverse_fn(struct db_record *rec, void *state)
 	unsigned int i;
 	unsigned int num_locks = 0;
 	unsigned int orig_num_locks = 0;
+	TDB_DATA dbkey;
+	TDB_DATA value;
+
+	dbkey = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
 
 	/* In a traverse function we must make a copy of
 	   dbuf before modifying it. */
 
-	locks = (struct lock_struct *)memdup(rec->value.dptr,
-					     rec->value.dsize);
+	locks = (struct lock_struct *)memdup(value.dptr, value.dsize);
 	if (!locks) {
 		return -1; /* Terminate traversal. */
 	}
 
-	key = (struct file_id *)rec->key.dptr;
-	orig_num_locks = num_locks = rec->value.dsize/sizeof(*locks);
+	key = (struct file_id *)dbkey.dptr;
+	orig_num_locks = num_locks = value.dsize/sizeof(*locks);
 
 	/* Ensure the lock db is clean of entries from invalid processes. */
 
@@ -1618,9 +1622,9 @@ static int traverse_fn(struct db_record *rec, void *state)
 			TDB_DATA data;
 			data.dptr = (uint8_t *)locks;
 			data.dsize = num_locks*sizeof(struct lock_struct);
-			rec->store(rec, data, TDB_REPLACE);
+			dbwrap_record_store(rec, data, TDB_REPLACE);
 		} else {
-			rec->delete_rec(rec);
+			dbwrap_record_delete(rec);
 		}
 	}
 
@@ -1652,13 +1656,21 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 	       void *private_data)
 {
 	struct brl_forall_cb cb;
+	NTSTATUS status;
+	int count = 0;
 
 	if (!brlock_db) {
 		return 0;
 	}
 	cb.fn = fn;
 	cb.private_data = private_data;
-	return brlock_db->traverse(brlock_db, traverse_fn, &cb);
+	status = dbwrap_traverse(brlock_db, traverse_fn, &cb, &count);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	} else {
+		return count;
+	}
 }
 
 /*******************************************************************
@@ -1679,7 +1691,7 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 
 	if (br_lck->num_locks == 0) {
 		/* No locks - delete this entry. */
-		NTSTATUS status = br_lck->record->delete_rec(br_lck->record);
+		NTSTATUS status = dbwrap_record_delete(br_lck->record);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("delete_rec returned %s\n",
 				  nt_errstr(status)));
@@ -1692,8 +1704,7 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 		data.dptr = (uint8 *)br_lck->lock_data;
 		data.dsize = br_lck->num_locks * sizeof(struct lock_struct);
 
-		status = br_lck->record->store(br_lck->record, data,
-					       TDB_REPLACE);
+		status = dbwrap_record_store(br_lck->record, data, TDB_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
 			smb_panic("Could not store byte range mode entry");
@@ -1747,14 +1758,16 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_read_only) {
-		if (brlock_db->fetch(brlock_db, br_lck, key, &data) != 0) {
+		NTSTATUS status;
+		status = dbwrap_fetch(brlock_db, br_lck, key, &data);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not fetch byte range lock record\n"));
 			TALLOC_FREE(br_lck);
 			return NULL;
 		}
 		br_lck->record = NULL;
 	} else {
-		br_lck->record = brlock_db->fetch_locked(brlock_db, br_lck, key);
+		br_lck->record = dbwrap_fetch_locked(brlock_db, br_lck, key);
 
 		if (br_lck->record == NULL) {
 			DEBUG(3, ("Could not lock byte range lock entry\n"));
@@ -1762,7 +1775,7 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 
-		data = br_lck->record->value;
+		data = dbwrap_record_get_value(br_lck->record);
 	}
 
 	br_lck->read_only = do_read_only;
@@ -1844,7 +1857,7 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 	}
 
 	if ((fsp->brlock_rec != NULL)
-	    && (brlock_db->get_seqnum(brlock_db) == fsp->brlock_seqnum)) {
+	    && (dbwrap_get_seqnum(brlock_db) == fsp->brlock_seqnum)) {
 		return fsp->brlock_rec;
 	}
 
@@ -1854,7 +1867,7 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 	if (br_lock == NULL) {
 		return NULL;
 	}
-	fsp->brlock_seqnum = brlock_db->get_seqnum(brlock_db);
+	fsp->brlock_seqnum = dbwrap_get_seqnum(brlock_db);
 
 	fsp->brlock_rec = talloc_move(fsp, &br_lock);
 
