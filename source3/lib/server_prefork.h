@@ -226,6 +226,16 @@ void prefork_reset_allowed_clients(struct prefork_pool *pfp);
 void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num);
 
 /**
+* @brief Send a message to all children that the server changed something
+*	 in the pool and they may want to take action.
+*
+* @param msg_ctx	The messaging context.
+* @param pfp		The pool.
+*/
+void prefork_warn_active_children(struct messaging_context *msg_ctx,
+				  struct prefork_pool *pfp);
+
+/**
 * @brief Sets the SIGCHLD callback
 *
 * @param pfp		The pool handler.

@@ -67,6 +67,7 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 	time_t now = time(NULL);
 	int total, avail;
 	int ret, n;
+	bool msg = false;
 
 	if ((cfg->prefork_status & PFH_NEW_MAX) &&
 	    !(cfg->prefork_status & PFH_ENOSPC)) {
@@ -119,6 +120,7 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 			if (n == avail) break;
 			n = avail;
 		}
+		msg = true;
 	} else if (avail > total + cfg->spawn_rate) {
 		n = avail;
 		while (avail > total + cfg->spawn_rate) {
@@ -128,6 +130,14 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 			if (n == avail) break;
 			n = avail;
 		}
+	}
+
+	/* send message to all children when we change maximum allowed
+	 * connections, so that they can decide to start again to listen to
+	 * sockets if they were already topping the number of allowed
+	 * clients. Useful only when we increase allowed clients */
+	if (msg) {
+		prefork_warn_active_children(msg_ctx, pool);
 	}
 
 	DEBUG(10, ("Stats: children: %d, allowed connections: %d\n",

@@ -19,6 +19,8 @@
 */
 
 #include "includes.h"
+#include "serverid.h"
+#include "messages.h"
 #include "system/time.h"
 #include "system/shmem.h"
 #include "system/filesys.h"
@@ -420,6 +422,23 @@ void prefork_send_signal_to_all(struct prefork_pool *pfp, int signal_num)
 		}
 
 		kill(pfp->pool[i].pid, signal_num);
+	}
+}
+
+void prefork_warn_active_children(struct messaging_context *msg_ctx,
+				  struct prefork_pool *pfp)
+{
+	const DATA_BLOB ping = data_blob_null;
+	int i;
+
+	for (i = 0; i < pfp->pool_size; i++) {
+		if (pfp->pool[i].status == PF_WORKER_NONE) {
+			continue;
+		}
+
+		messaging_send(msg_ctx,
+				pid_to_procid(pfp->pool[i].pid),
+				MSG_PREFORK_PARENT_EVENT, &ping);
 	}
 }
 
