@@ -127,19 +127,22 @@ static int sessionid_traverse_read_fn(struct db_record *rec,
 			 state->private_data);
 }
 
-int sessionid_traverse_read(int (*fn)(const char *key,
-				      struct sessionid *session,
-				      void *private_data),
-			    void *private_data)
+NTSTATUS sessionid_traverse_read(int (*fn)(const char *key,
+					  struct sessionid *session,
+					  void *private_data),
+				 void *private_data)
 {
 	struct db_context *db;
 	struct sessionid_traverse_read_state state;
+	NTSTATUS status;
 
 	db = session_db_ctx();
 	if (db == NULL) {
-		return -1;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	state.fn = fn;
 	state.private_data = private_data;
-	return db->traverse(db, sessionid_traverse_read_fn, &state);
+	status = dbwrap_traverse_read(db, sessionid_traverse_read_fn, &state,
+				      NULL);
+	return status;
 }

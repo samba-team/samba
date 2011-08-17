@@ -1679,10 +1679,10 @@ NTSTATUS sessionid_traverse(int (*fn)(struct db_record *rec, const char *key,
 				      struct sessionid *session,
 				      void *private_data),
 			    void *private_data);
-int sessionid_traverse_read(int (*fn)(const char *key,
-				      struct sessionid *session,
-				      void *private_data),
-			    void *private_data);
+NTSTATUS sessionid_traverse_read(int (*fn)(const char *key,
+					   struct sessionid *session,
+					   void *private_data),
+				 void *private_data);
 
 /* The following definitions come from utils/passwd_util.c  */
 
