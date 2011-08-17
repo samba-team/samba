@@ -456,21 +456,6 @@ NTSTATUS dbwrap_traverse(struct db_context *db,
 }
 
 
-
-NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
-{
-	struct db_record *rec;
-	NTSTATUS status;
-
-	rec = db->fetch_locked(db, talloc_tos(), key);
-	if (rec == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	status = rec->delete_rec(rec);
-	TALLOC_FREE(rec);
-	return status;
-}
-
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 		      TDB_DATA data, int flags)
 {
