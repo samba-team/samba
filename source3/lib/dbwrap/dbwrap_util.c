@@ -487,18 +487,6 @@ NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 	return status;
 }
 
-TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-		      TDB_DATA key)
-{
-	TDB_DATA result;
-
-	if (db->fetch(db, mem_ctx, key, &result) != 0) {
-		return make_tdb_data(NULL, 0);
-	}
-
-	return result;
-}
-
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
 {
 	return dbwrap_delete(db, string_term_tdb_data(key));
