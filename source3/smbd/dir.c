@@ -427,7 +427,6 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	struct smbd_server_connection *sconn = conn->sconn;
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
-	NTSTATUS status;
 
 	if (fsp && fsp->is_directory && fsp->fh->fd != -1) {
 		path = fsp->fsp_name->base_name;
