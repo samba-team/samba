@@ -874,7 +874,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		if (!lck->fresh) {
 			/* There has been an entry before, delete it */
 
-			status = lck->record->delete_rec(lck->record);
+			status = dbwrap_record_delete(lck->record);
 			if (!NT_STATUS_IS_OK(status)) {
 				char *errmsg;
 
@@ -893,7 +893,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		goto done;
 	}
 
-	status = lck->record->store(lck->record, data, TDB_REPLACE);
+	status = dbwrap_record_store(lck->record, data, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *errmsg;
 
@@ -973,20 +973,23 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	struct share_mode_lock *lck;
 	struct file_id tmp;
 	TDB_DATA key = locking_key(&id, &tmp);
+	TDB_DATA value;
 
 	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
-	if (!(lck->record = lock_db->fetch_locked(lock_db, lck, key))) {
+	if (!(lck->record = dbwrap_fetch_locked(lock_db, lck, key))) {
 		DEBUG(3, ("Could not lock share entry\n"));
 		TALLOC_FREE(lck);
 		return NULL;
 	}
 
+	value = dbwrap_record_get_value(lck->record);
+
 	if (!fill_share_mode_lock(lck, id, servicepath, smb_fname,
-				  lck->record->value, old_write_time)) {
+				  value, old_write_time)) {
 		DEBUG(3, ("fill_share_mode_lock failed\n"));
 		TALLOC_FREE(lck);
 		return NULL;
@@ -1004,13 +1007,15 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	struct file_id tmp;
 	TDB_DATA key = locking_key(&id, &tmp);
 	TDB_DATA data;
+	NTSTATUS status;
 
 	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
-	if (lock_db->fetch(lock_db, lck, key, &data) != 0) {
+	status = dbwrap_fetch(lock_db, lck, key, &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not fetch share entry\n"));
 		TALLOC_FREE(lck);
 		return NULL;
@@ -1699,14 +1704,19 @@ static int traverse_fn(struct db_record *rec, void *_state)
 	const char *del_tokens;
 	uint32_t total_del_token_size = 0;
 	int i;
+	TDB_DATA key;
+	TDB_DATA value;
+
+	key = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
 
 	/* Ensure this is a locking_key record. */
-	if (rec->key.dsize != sizeof(struct file_id))
+	if (key.dsize != sizeof(struct file_id))
 		return 0;
 
-	data = (struct locking_data *)rec->value.dptr;
-	shares = (struct share_mode_entry *)(rec->value.dptr + sizeof(*data));
-	del_tokens = (const char *)rec->value.dptr + sizeof(*data) +
+	data = (struct locking_data *)value.dptr;
+	shares = (struct share_mode_entry *)(value.dptr + sizeof(*data));
+	del_tokens = (const char *)value.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares);
 
 	for (i = 0; i < data->u.s.num_delete_token_entries; i++) {
@@ -1716,10 +1726,10 @@ static int traverse_fn(struct db_record *rec, void *_state)
 		del_tokens += del_token_size;
 	}
 
-	sharepath = (const char *)rec->value.dptr + sizeof(*data) +
+	sharepath = (const char *)value.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
 		total_del_token_size;
-	fname = (const char *)rec->value.dptr + sizeof(*data) +
+	fname = (const char *)value.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
 		total_del_token_size +
 		strlen(sharepath) + 1;
@@ -1741,6 +1751,8 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 		      void *private_data)
 {
 	struct forall_state state;
+	NTSTATUS status;
+	int count;
 
 	if (lock_db == NULL)
 		return 0;
@@ -1748,5 +1760,12 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 	state.fn = fn;
 	state.private_data = private_data;
 
-	return lock_db->traverse_read(lock_db, traverse_fn, (void *)&state);
+	status = dbwrap_traverse_read(lock_db, traverse_fn, (void *)&state,
+				      &count);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	} else {
+		return count;
+	}
 }
