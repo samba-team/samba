@@ -56,19 +56,25 @@ struct db_context {
 	bool persistent;
 };
 
+/* The following definitions come from lib/dbwrap.c  */
 
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 		      TDB_DATA data, int flags);
 TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		      TDB_DATA key);
+NTSTATUS dbwrap_traverse(struct db_context *db,
+			 int (*f)(struct db_record*, void*),
+			 void *private_data);
+
+
+/* The following definitions come from lib/dbwrap_util.c  */
+
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
 			       TDB_DATA data, int flags);
 TDB_DATA dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
 			       const char *key);
-
-/* The following definitions come from lib/dbwrap_util.c  */
 
 int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr);
 int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v);
@@ -103,9 +109,6 @@ NTSTATUS dbwrap_trans_do(struct db_context *db,
 NTSTATUS dbwrap_trans_traverse(struct db_context *db,
 			       int (*f)(struct db_record*, void*),
 			       void *private_data);
-NTSTATUS dbwrap_traverse(struct db_context *db,
-			 int (*f)(struct db_record*, void*),
-			 void *private_data);
 
 NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
