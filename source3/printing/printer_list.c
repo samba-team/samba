@@ -280,19 +280,16 @@ static NTSTATUS printer_list_traverse(printer_list_trv_fn_t *fn,
 						void *private_data)
 {
 	struct db_context *db;
-	int ret;
+	NTSTATUS status;
 
 	db = get_printer_list_db();
 	if (db == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	ret = db->traverse(db, fn, private_data);
-	if (ret < 0) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	status = dbwrap_traverse(db, fn, private_data, NULL);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 struct printer_list_clean_state {
@@ -310,14 +307,20 @@ static int printer_list_clean_fn(struct db_record *rec, void *private_data)
 	char *comment;
 	char *location;
 	int ret;
+	TDB_DATA key;
+	TDB_DATA value;
+
+	key = dbwrap_record_get_key(rec);
 
 	/* skip anything that does not contain PL_DATA_FORMAT data */
-	if (strncmp((char *)rec->key.dptr,
+	if (strncmp((char *)key.dptr,
 		    PL_KEY_PREFIX, sizeof(PL_KEY_PREFIX)-1)) {
 		return 0;
 	}
 
-	ret = tdb_unpack(rec->value.dptr, rec->value.dsize,
+	value = dbwrap_record_get_value(rec);
+
+	ret = tdb_unpack(value.dptr, value.dsize,
 			 PL_DATA_FORMAT, &time_h, &time_l, &name, &comment,
 			 &location);
 	if (ret == -1) {
@@ -333,7 +336,7 @@ static int printer_list_clean_fn(struct db_record *rec, void *private_data)
 	refresh = (time_t)(((uint64_t)time_h << 32) + time_l);
 
 	if (refresh < state->last_refresh) {
-		state->status = rec->delete_rec(rec);
+		state->status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(state->status)) {
 			return -1;
 		}
@@ -378,13 +381,19 @@ static int printer_list_exec_fn(struct db_record *rec, void *private_data)
 	char *comment;
 	char *location;
 	int ret;
+	TDB_DATA key;
+	TDB_DATA value;
+
+	key = dbwrap_record_get_key(rec);
 
 	/* always skip PL_TIMESTAMP_KEY key */
-	if (strequal((const char *)rec->key.dptr, PL_TIMESTAMP_KEY)) {
+	if (strequal((const char *)key.dptr, PL_TIMESTAMP_KEY)) {
 		return 0;
 	}
 
-	ret = tdb_unpack(rec->value.dptr, rec->value.dsize,
+	value = dbwrap_record_get_value(rec);
+
+	ret = tdb_unpack(value.dptr, value.dsize,
 			 PL_DATA_FORMAT, &time_h, &time_l, &name, &comment,
 			 &location);
 	if (ret == -1) {
