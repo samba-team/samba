@@ -438,7 +438,8 @@ int main(int argc, char **argv)
 
 	if (!strequal(td->domain_name, new_td->domain_name) ||
 	    !strequal(td->netbios_name, new_td->netbios_name) ||
-	    !sid_equal(&td->security_identifier, &new_td->security_identifier) ||
+	    !dom_sid_equal(&td->security_identifier,
+			   &new_td->security_identifier) ||
 	    td->trust_direction != new_td->trust_direction ||
 	    td->trust_type != new_td->trust_type ||
 	    td->trust_attributes != new_td->trust_attributes ||

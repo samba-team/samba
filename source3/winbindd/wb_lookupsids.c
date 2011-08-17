@@ -367,7 +367,7 @@ static bool wb_lookupsids_find_dom_idx(struct lsa_DomainInfo *domain,
 	struct lsa_DomainInfo *new_domain;
 
 	for (i=0; i<list->count; i++) {
-		if (sid_equal(domain->sid, list->domains[i].sid)) {
+		if (dom_sid_equal(domain->sid, list->domains[i].sid)) {
 			*idx = i;
 			return true;
 		}

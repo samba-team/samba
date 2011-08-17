@@ -4571,7 +4571,7 @@ struct winbindd_tdc_domain*
 	wcache_tdc_fetch_list(&dom_list, &num_domains);
 
 	for (i = 0; i<num_domains; i++) {
-		if (sid_equal(sid, &(dom_list[i].sid))) {
+		if (dom_sid_equal(sid, &(dom_list[i].sid))) {
 			DEBUG(10, ("wcache_tdc_fetch_domainbysid: "
 				   "Found domain %s for SID %s\n",
 				   dom_list[i].domain_name,

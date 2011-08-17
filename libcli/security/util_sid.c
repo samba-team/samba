@@ -337,7 +337,7 @@ void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids,
 		/* if we find the SID, then decrement the count
 		   and break out of the loop */
 
-		if ( sid_equal(sid, &sid_list[i]) ) {
+		if (dom_sid_equal(sid, &sid_list[i])) {
 			*num -= 1;
 			break;
 		}
@@ -377,5 +377,5 @@ bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 bool is_null_sid(const struct dom_sid *sid)
 {
 	static const struct dom_sid null_sid = {0};
-	return sid_equal(sid, &null_sid);
+	return dom_sid_equal(sid, &null_sid);
 }

@@ -46,13 +46,13 @@ onefs_sid_to_identity(const struct dom_sid *sid, struct ifs_identity *id,
 	uid_t uid = 0;
 	gid_t gid = 0;
 
-	if (!sid || sid_equal(sid, &global_sid_NULL))
+	if (!sid || dom_sid_equal(sid, &global_sid_NULL))
 		type = IFS_ID_TYPE_NULL;
-	else if (sid_equal(sid, &global_sid_World))
+	else if (dom_sid_equal(sid, &global_sid_World))
 		type = IFS_ID_TYPE_EVERYONE;
-	else if (sid_equal(sid, &global_sid_Creator_Owner))
+	else if (dom_sid_equal(sid, &global_sid_Creator_Owner))
 		type = IFS_ID_TYPE_CREATOR_OWNER;
-	else if (sid_equal(sid, &global_sid_Creator_Group))
+	else if (dom_sid_equal(sid, &global_sid_Creator_Group))
 		type = IFS_ID_TYPE_CREATOR_GROUP;
 	else if (is_group) {
 		if (!sid_to_gid(sid, &gid))
@@ -156,7 +156,7 @@ sid_in_ignore_list(struct dom_sid * sid, int snum)
 
 	while (*sid_list) {
 		if (string_to_sid(&match, *sid_list))
-			if (sid_equal(sid, &match))
+			if (dom_sid_equal(sid, &match))
 				return true;
 		sid_list++;
 	}
