@@ -41,20 +41,26 @@
 static int net_idmap_dump_one_entry(struct db_record *rec,
 				    void *unused)
 {
-	if (strcmp((char *)rec->key.dptr, "USER HWM") == 0) {
-		printf(_("USER HWM %d\n"), IVAL(rec->value.dptr,0));
+	TDB_DATA key;
+	TDB_DATA value;
+
+	key = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
+
+	if (strcmp((char *)key.dptr, "USER HWM") == 0) {
+		printf(_("USER HWM %d\n"), IVAL(value.dptr,0));
 		return 0;
 	}
 
-	if (strcmp((char *)rec->key.dptr, "GROUP HWM") == 0) {
-		printf(_("GROUP HWM %d\n"), IVAL(rec->value.dptr,0));
+	if (strcmp((char *)key.dptr, "GROUP HWM") == 0) {
+		printf(_("GROUP HWM %d\n"), IVAL(value.dptr,0));
 		return 0;
 	}
 
-	if (strncmp((char *)rec->key.dptr, "S-", 2) != 0)
+	if (strncmp((char *)key.dptr, "S-", 2) != 0)
 		return 0;
 
-	printf("%s %s\n", rec->value.dptr, rec->key.dptr);
+	printf("%s %s\n", value.dptr, key.dptr);
 	return 0;
 }
 
@@ -105,6 +111,7 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 	struct db_context *db;
 	TALLOC_CTX *mem_ctx;
 	const char* dbfile;
+	NTSTATUS status;
 	int ret = -1;
 
 	if ( argc > 1  || c->display_usage) {
@@ -131,7 +138,13 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	db->traverse_read(db, net_idmap_dump_one_entry, NULL);
+	status = dbwrap_traverse_read(db, net_idmap_dump_one_entry, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("error traversing the database\n"));
+		ret = -1;
+		goto done;
+	}
+
 	ret = 0;
 
 done:
@@ -235,7 +248,7 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	if (db->transaction_start(db) != 0) {
+	if (dbwrap_transaction_start(db) != 0) {
 		d_fprintf(stderr, _("Failed to start transaction.\n"));
 		ret = -1;
 		goto done;
@@ -289,12 +302,12 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (ret == 0) {
-		if(db->transaction_commit(db) != 0) {
+		if(dbwrap_transaction_commit(db) != 0) {
 			d_fprintf(stderr, _("Failed to commit transaction.\n"));
 			ret = -1;
 		}
 	} else {
-		if (db->transaction_cancel(db) != 0) {
+		if (dbwrap_transaction_cancel(db) != 0) {
 			d_fprintf(stderr, _("Failed to cancel transaction.\n"));
 		}
 	}
@@ -316,14 +329,15 @@ NTSTATUS dbwrap_delete_mapping(struct db_context *db, TDB_DATA key1, bool force)
 	TDB_DATA key2;
 	bool is_valid_mapping;
 	NTSTATUS status = NT_STATUS_OK;
+	TDB_DATA value;
 
-	rec1 = db->fetch_locked(db, mem_ctx, key1);
+	rec1 = dbwrap_fetch_locked(db, mem_ctx, key1);
 	if (rec1 == NULL) {
 		DEBUG(1, ("failed to fetch: %.*s\n", (int)key1.dsize, key1.dptr));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	key2 = rec1->value;
+	key2 = dbwrap_record_get_value(rec1);
 	if (key2.dptr == NULL) {
 		DEBUG(1, ("could not find %.*s\n", (int)key1.dsize, key1.dptr));
 		status = NT_STATUS_NOT_FOUND;
@@ -333,33 +347,34 @@ NTSTATUS dbwrap_delete_mapping(struct db_context *db, TDB_DATA key1, bool force)
 	DEBUG(2, ("mapping: %.*s -> %.*s\n",
 		  (int)key1.dsize, key1.dptr, (int)key2.dsize, key2.dptr));
 
-	rec2 = db->fetch_locked(db, mem_ctx, key2);
+	rec2 = dbwrap_fetch_locked(db, mem_ctx, key2);
 	if (rec2 == NULL) {
 		DEBUG(1, ("failed to fetch: %.*s\n", (int)key2.dsize, key2.dptr));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	is_valid_mapping = tdb_data_equal(key1, rec2->value);
+	value = dbwrap_record_get_value(rec2);
+	is_valid_mapping = tdb_data_equal(key1, value);
 
 	if (!is_valid_mapping) {
 		DEBUG(1, ("invalid mapping: %.*s -> %.*s -> %.*s\n",
 			  (int)key1.dsize, key1.dptr, (int)key2.dsize, key2.dptr,
-			  (int)rec2->value.dsize, rec2->value.dptr ));
+			  (int)value.dsize, value.dptr ));
 		if ( !force ) {
 			status = NT_STATUS_FILE_INVALID;
 			goto done;
 		}
 	}
 
-	status = rec1->delete_rec(rec1);
+	status = dbwrap_record_delete(rec1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("failed to delete: %.*s\n", (int)key1.dsize, key1.dptr));
 		goto done;
 	}
 
 	if (is_valid_mapping) {
-		status = rec2->delete_rec(rec2);
+		status = dbwrap_record_delete(rec2);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("failed to delete: %.*s\n", (int)key2.dsize, key2.dptr));
 		}
@@ -618,13 +633,13 @@ static int net_idmap_aclmapset(struct net_context *c, int argc, const char **arg
 		goto fail;
 	}
 
-	if (!(rec = db->fetch_locked(
+	if (!(rec = dbwrap_fetch_locked(
 		      db, mem_ctx, string_term_tdb_data(src)))) {
 		d_fprintf(stderr, _("could not fetch db record\n"));
 		goto fail;
 	}
 
-	status = rec->store(rec, string_term_tdb_data(dst), 0);
+	status = dbwrap_record_store(rec, string_term_tdb_data(dst), 0);
 	TALLOC_FREE(rec);
 
 	if (!NT_STATUS_IS_OK(status)) {
