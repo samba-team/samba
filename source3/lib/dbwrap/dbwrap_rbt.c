@@ -320,7 +320,7 @@ static int db_rbt_wipe(struct db_context *db)
 {
 	struct db_rbt_ctx *old_ctx = talloc_get_type_abort(
 		db->private_data, struct db_rbt_ctx);
-	struct db_rbt_ctx *new_ctx = TALLOC_ZERO_P(db, struct db_rbt_ctx);
+	struct db_rbt_ctx *new_ctx = talloc_zero(db, struct db_rbt_ctx);
 	if (new_ctx == NULL) {
 		return -1;
 	}
@@ -369,7 +369,7 @@ static int db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 static int db_rbt_traverse_internal(struct rb_node *n,
 				    int (*f)(struct db_record *db,
 					     void *private_data),
-				    void *private_data)
+				    void *private_data, uint32_t* count)
 {
 	struct db_rbt_node *r;
 	struct db_record rec;
@@ -379,7 +379,7 @@ static int db_rbt_traverse_internal(struct rb_node *n,
 		return 0;
 	}
 
-	ret = db_rbt_traverse_internal(n->rb_left, f, private_data);
+	ret = db_rbt_traverse_internal(n->rb_left, f, private_data, count);
 	if (ret != 0) {
 		return ret;
 	}
@@ -389,11 +389,12 @@ static int db_rbt_traverse_internal(struct rb_node *n,
 	db_rbt_parse_node(r, &rec.key, &rec.value);
 
 	ret = f(&rec, private_data);
+	(*count) ++;
 	if (ret != 0) {
 		return ret;
 	}
 
-	return db_rbt_traverse_internal(n->rb_right, f, private_data);
+	return db_rbt_traverse_internal(n->rb_right, f, private_data, count);
 }
 
 static int db_rbt_traverse(struct db_context *db,
@@ -403,8 +404,16 @@ static int db_rbt_traverse(struct db_context *db,
 {
 	struct db_rbt_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_rbt_ctx);
+	uint32_t count = 0;
 
-	return db_rbt_traverse_internal(ctx->tree.rb_node, f, private_data);
+	int ret =  db_rbt_traverse_internal(ctx->tree.rb_node, f, private_data, &count);
+	if (ret != 0) {
+		return -1;
+	}
+	if (count > INT_MAX) {
+		return -1;
+	}
+	return count;
 }
 
 static int db_rbt_get_seqnum(struct db_context *db)
