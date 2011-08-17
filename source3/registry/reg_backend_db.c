@@ -415,11 +415,16 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	const char *keyname;
 	NTSTATUS status;
+	TDB_DATA key;
+	TDB_DATA value;
 	struct db_context *db = (struct db_context *)private_data;
 
-	if (rec->key.dptr == NULL || rec->key.dsize == 0) {
+	key = dbwrap_record_get_key(rec);
+	if (key.dptr == NULL || key.dsize == 0) {
 		return 0;
 	}
+
+	value = dbwrap_record_get_value(rec);
 
 	if (db == NULL) {
 		DEBUG(0, ("regdb_normalize_keynames_fn: ERROR: "
@@ -427,34 +432,33 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 		return 1;
 	}
 
-	if (strncmp((const char *)rec->key.dptr, REGDB_VERSION_KEYNAME,
+	if (strncmp((const char *)key.dptr, REGDB_VERSION_KEYNAME,
 	    strlen(REGDB_VERSION_KEYNAME)) == 0)
 	{
 		return 0;
 	}
 
-	keyname = strchr((const char *) rec->key.dptr, '/');
+	keyname = strchr((const char *)key.dptr, '/');
 	if (keyname) {
 		keyname = talloc_string_sub(mem_ctx,
-					    (const char *) rec->key.dptr,
+					    (const char *)key.dptr,
 					    "/",
 					    "\\");
 
 		DEBUG(2, ("regdb_normalize_keynames_fn: Convert %s to %s\n",
-			  (const char *) rec->key.dptr,
+			  (const char *)key.dptr,
 			  keyname));
 
 		/* Delete the original record and store the normalized key */
-		status = rec->delete_rec(rec);
+		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("regdb_normalize_keynames_fn: "
 				 "tdb_delete for [%s] failed!\n",
-				 rec->key.dptr));
+				 (const char *)key.dptr));
 			return 1;
 		}
 
-		status = dbwrap_store_bystring(db, keyname, rec->value,
-					       TDB_REPLACE);
+		status = dbwrap_store_bystring(db, keyname, value, TDB_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("regdb_normalize_keynames_fn: "
 				 "failed to store new record for [%s]!\n",
@@ -488,20 +492,21 @@ static WERROR regdb_store_regdb_version(struct db_context *db, uint32_t version)
 static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 {
 	TALLOC_CTX *mem_ctx;
-	int rc;
+	NTSTATUS status;
 	WERROR werr;
 
 	mem_ctx = talloc_stackframe();
 
-	rc = db->traverse(db, regdb_normalize_keynames_fn, db);
-
-	talloc_free(mem_ctx);
-
-	if (rc < 0) {
-		return WERR_REG_IO_FAILURE;
+	status = dbwrap_traverse(db, regdb_normalize_keynames_fn, db, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
 	}
 
 	werr = regdb_store_regdb_version(db, REGDB_VERSION_V2);
+
+done:
+	talloc_free(mem_ctx);
 	return werr;
 }
 
@@ -515,9 +520,12 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 	uint32_t buflen, len;
 	uint32_t num_items;
 	uint32_t i;
+	TDB_DATA key;
+	TDB_DATA value;
 	struct db_context *db = (struct db_context *)private_data;
 
-	if (rec->key.dptr == NULL || rec->key.dsize == 0) {
+	key = dbwrap_record_get_key(rec);
+	if (key.dptr == NULL || key.dsize == 0) {
 		return 0;
 	}
 
@@ -527,7 +535,7 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 		return 1;
 	}
 
-	keyname = (const char *)rec->key.dptr;
+	keyname = (const char *)key.dptr;
 
 	if (strncmp(keyname, REGDB_VERSION_KEYNAME,
 		    strlen(REGDB_VERSION_KEYNAME)) == 0)
@@ -542,7 +550,7 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 
 		DEBUG(10, ("regdb_upgrade_v2_to_v3: deleting [%s]\n", keyname));
 
-		status = rec->delete_rec(rec);
+		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("regdb_upgrade_v2_to_v3: tdb_delete for [%s] "
 				  "failed!\n", keyname));
@@ -572,8 +580,9 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 	DEBUG(10, ("regdb_upgrade_v2_to_v3: scanning subkey list of [%s]\n",
 		   keyname));
 
-	buf = rec->value.dptr;
-	buflen = rec->value.dsize;
+	value = dbwrap_record_get_value(rec);
+	buf = value.dptr;
+	buflen = value.dsize;
 
 	len = tdb_unpack(buf, buflen, "d", &num_items);
 	if (len == (uint32_t)-1) {
@@ -597,11 +606,11 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 
 static WERROR regdb_upgrade_v2_to_v3(struct db_context *db)
 {
-	int rc;
+	NTSTATUS status;
 	WERROR werr;
 
-	rc = regdb->traverse(db, regdb_upgrade_v2_to_v3_fn, db);
-	if (rc < 0) {
+	status = dbwrap_traverse(db, regdb_upgrade_v2_to_v3_fn, db, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
@@ -664,7 +673,7 @@ WERROR regdb_init(void)
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
-	if (regdb->transaction_start(regdb) != 0) {
+	if (dbwrap_transaction_start(regdb) != 0) {
 		return WERR_REG_IO_FAILURE;
 	}
 
@@ -674,7 +683,7 @@ WERROR regdb_init(void)
 
 		werr = regdb_upgrade_v1_to_v2(regdb);
 		if (!W_ERROR_IS_OK(werr)) {
-			regdb->transaction_cancel(regdb);
+			dbwrap_transaction_cancel(regdb);
 			return werr;
 		}
 
@@ -687,7 +696,7 @@ WERROR regdb_init(void)
 
 		werr = regdb_upgrade_v2_to_v3(regdb);
 		if (!W_ERROR_IS_OK(werr)) {
-			regdb->transaction_cancel(regdb);
+			dbwrap_transaction_cancel(regdb);
 			return werr;
 		}
 
@@ -696,7 +705,7 @@ WERROR regdb_init(void)
 
 	/* future upgrade code should go here */
 
-	if (regdb->transaction_commit(regdb) != 0) {
+	if (dbwrap_transaction_commit(regdb) != 0) {
 		return WERR_REG_IO_FAILURE;
 	}
 
@@ -762,19 +771,19 @@ int regdb_close( void )
 
 WERROR regdb_transaction_start(void)
 {
-	return (regdb->transaction_start(regdb) == 0) ?
+	return (dbwrap_transaction_start(regdb) == 0) ?
 		WERR_OK : WERR_REG_IO_FAILURE;
 }
 
 WERROR regdb_transaction_commit(void)
 {
-	return (regdb->transaction_commit(regdb) == 0) ?
+	return (dbwrap_transaction_commit(regdb) == 0) ?
 		WERR_OK : WERR_REG_IO_FAILURE;
 }
 
 WERROR regdb_transaction_cancel(void)
 {
-	return (regdb->transaction_cancel(regdb) == 0) ?
+	return (dbwrap_transaction_cancel(regdb) == 0) ?
 		WERR_OK : WERR_REG_IO_FAILURE;
 }
 
@@ -785,7 +794,7 @@ WERROR regdb_transaction_cancel(void)
  ***********************************************************************/
 int regdb_get_seqnum(void)
 {
-	return regdb->get_seqnum(regdb);
+	return dbwrap_get_seqnum(regdb);
 }
 
 
@@ -1584,7 +1593,7 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	werr = regsubkey_ctr_reinit(ctr);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	werr = regsubkey_ctr_set_seqnum(ctr, db->get_seqnum(db));
+	werr = regsubkey_ctr_set_seqnum(ctr, dbwrap_get_seqnum(db));
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	value = regdb_fetch_key_internal(db, frame, key);
@@ -1733,7 +1742,7 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 		goto done;
 	}
 
-	werr = regval_ctr_set_seqnum(values, db->get_seqnum(db));
+	werr = regval_ctr_set_seqnum(values, dbwrap_get_seqnum(db));
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	value = regdb_fetch_key_internal(db, ctx, keystr);
