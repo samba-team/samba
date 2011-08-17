@@ -126,3 +126,21 @@ NTSTATUS dbwrap_traverse(struct db_context *db,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS dbwrap_traverse_read(struct db_context *db,
+			      int (*f)(struct db_record*, void*),
+			      void *private_data,
+			      int *count)
+{
+	int ret = db->traverse_read(db, f, private_data);
+
+	if (ret < 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (count != NULL) {
+		*count = ret;
+	}
+
+	return NT_STATUS_OK;
+}
