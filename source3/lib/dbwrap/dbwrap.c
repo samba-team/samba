@@ -217,3 +217,18 @@ int dbwrap_get_flags(struct db_context *db)
 {
 	return db->get_flags(db);
 }
+
+int dbwrap_transaction_start(struct db_context *db)
+{
+	return db->transaction_start(db);
+}
+
+int dbwrap_transaction_commit(struct db_context *db)
+{
+	return db->transaction_commit(db);
+}
+
+int dbwrap_transaction_cancel(struct db_context *db)
+{
+	return db->transaction_cancel(db);
+}
