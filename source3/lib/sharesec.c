@@ -41,7 +41,7 @@ extern const struct generic_mapping file_generic_mapping;
 
 static int delete_fn(struct db_record *rec, void *priv)
 {
-	rec->delete_rec(rec);
+	dbwrap_record_delete(rec);
 	return 0;
 }
 
@@ -58,25 +58,29 @@ static int upgrade_v2_to_v3(struct db_record *rec, void *priv)
 	char *newkey = NULL;
 	bool *p_upgrade_ok = (bool *)priv;
 	NTSTATUS status;
+	TDB_DATA key;
+	TDB_DATA value;
+
+	key = dbwrap_record_get_key(rec);
 
 	/* Is there space for a one character sharename ? */
-	if (rec->key.dsize <= prefix_len+2) {
+	if (key.dsize <= prefix_len+2) {
 		return 0;
 	}
 
 	/* Does it start with the share key prefix ? */
-	if (memcmp(rec->key.dptr, SHARE_SECURITY_DB_KEY_PREFIX_STR,
+	if (memcmp(key.dptr, SHARE_SECURITY_DB_KEY_PREFIX_STR,
 			prefix_len) != 0) {
 		return 0;
 	}
 
 	/* Is it a null terminated string as a key ? */
-	if (rec->key.dptr[rec->key.dsize-1] != '\0') {
+	if (key.dptr[key.dsize-1] != '\0') {
 		return 0;
 	}
 
 	/* Bytes after the prefix are the sharename string. */
-	servicename = (char *)&rec->key.dptr[prefix_len];
+	servicename = (char *)&key.dptr[prefix_len];
 	c_servicename = canonicalize_servicename(talloc_tos(), servicename);
 	if (!c_servicename) {
 		smb_panic("out of memory upgrading share security db from v2 -> v3");
@@ -89,16 +93,17 @@ static int upgrade_v2_to_v3(struct db_record *rec, void *priv)
 	}
 
 	/* Oops. Need to canonicalize name, delete old then store new. */
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("upgrade_v2_to_v3: Failed to delete secdesc for "
-			  "%s: %s\n", rec->key.dptr, nt_errstr(status)));
+			  "%s: %s\n", (const char *)key.dptr,
+			  nt_errstr(status)));
 		TALLOC_FREE(c_servicename);
 		*p_upgrade_ok = false;
 		return -1;
 	} else {
 		DEBUG(10, ("upgrade_v2_to_v3: deleted secdesc for "
-                          "%s\n", rec->key.dptr ));
+                          "%s\n", (const char *)key.dptr));
 	}
 
 	if (!(newkey = talloc_asprintf(talloc_tos(),
@@ -107,9 +112,10 @@ static int upgrade_v2_to_v3(struct db_record *rec, void *priv)
 		smb_panic("out of memory upgrading share security db from v2 -> v3");
 	}
 
+	value = dbwrap_record_get_value(rec);
 	status = dbwrap_store(share_db,
 				string_term_tdb_data(newkey),
-				rec->value,
+				value,
 				TDB_REPLACE);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -134,8 +140,8 @@ bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
-	int ret;
 	bool upgrade_ok = true;
+	NTSTATUS status;
 
 	if (share_db != NULL) {
 		return True;
@@ -154,7 +160,7 @@ bool share_info_db_init(void)
 		return true;
 	}
 
-	if (share_db->transaction_start(share_db) != 0) {
+	if (dbwrap_transaction_start(share_db) != 0) {
 		DEBUG(0, ("transaction_start failed\n"));
 		TALLOC_FREE(share_db);
 		return false;
@@ -165,7 +171,7 @@ bool share_info_db_init(void)
 		/*
 		 * Race condition
 		 */
-		if (share_db->transaction_cancel(share_db)) {
+		if (dbwrap_transaction_cancel(share_db)) {
 			smb_panic("transaction_cancel failed");
 		}
 		return true;
@@ -186,8 +192,8 @@ bool share_info_db_init(void)
 	}
 
 	if (vers_id != SHARE_DATABASE_VERSION_V2) {
-		ret = share_db->traverse(share_db, delete_fn, NULL);
-		if (ret < 0) {
+		status = dbwrap_traverse(share_db, delete_fn, NULL, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("traverse failed\n"));
 			goto cancel;
 		}
@@ -200,8 +206,8 @@ bool share_info_db_init(void)
 
 	/* Finally upgrade to version 3, with canonicalized sharenames. */
 
-	ret = share_db->traverse(share_db, upgrade_v2_to_v3, &upgrade_ok);
-	if (ret < 0 || upgrade_ok == false) {
+	status = dbwrap_traverse(share_db, upgrade_v2_to_v3, &upgrade_ok, NULL);
+	if (!NT_STATUS_IS_OK(status) || upgrade_ok == false) {
 		DEBUG(0, ("traverse failed\n"));
 		goto cancel;
 	}
@@ -211,7 +217,7 @@ bool share_info_db_init(void)
 		goto cancel;
 	}
 
-	if (share_db->transaction_commit(share_db) != 0) {
+	if (dbwrap_transaction_commit(share_db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
 		return false;
 	}
@@ -219,7 +225,7 @@ bool share_info_db_init(void)
 	return true;
 
  cancel:
-	if (share_db->transaction_cancel(share_db)) {
+	if (dbwrap_transaction_cancel(share_db)) {
 		smb_panic("transaction_cancel failed");
 	}
 
