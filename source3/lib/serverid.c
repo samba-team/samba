@@ -314,6 +314,7 @@ bool serverid_traverse_read(int (*fn)(const struct server_id *id,
 {
 	struct db_context *db;
 	struct serverid_traverse_read_state state;
+	NTSTATUS status;
 
 	db = serverid_db();
 	if (db == NULL) {
@@ -321,7 +322,10 @@ bool serverid_traverse_read(int (*fn)(const struct server_id *id,
 	}
 	state.fn = fn;
 	state.private_data = private_data;
-	return db->traverse_read(db, serverid_traverse_read_fn, &state);
+
+	status = dbwrap_traverse_read(db, serverid_traverse_read_fn, &state,
+				      NULL);
+	return NT_STATUS_IS_OK(status);
 }
 
 struct serverid_traverse_state {
