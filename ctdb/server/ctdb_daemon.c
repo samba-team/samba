@@ -434,6 +434,10 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
 			ctdb_fatal(ctdb, "Failed to write header with cleared REVOKE flag");
 		}
+		/* and clear out the tracking data */
+		if (tdb_delete(ctdb_db->rottdb, key) != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to clear out trackingdb record\n"));
+		}
 	}
 
 	/* if we are revoking, we must defer all other calls until the revoke
