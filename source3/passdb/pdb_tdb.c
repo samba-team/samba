@@ -73,11 +73,15 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 	TDB_DATA data;
 	NTSTATUS status;
 	bool ret;
+	TDB_DATA key;
+	TDB_DATA value;
 
-	if (rec->key.dsize < USERPREFIX_LEN) {
+	key = dbwrap_record_get_key(rec);
+
+	if (key.dsize < USERPREFIX_LEN) {
 		return 0;
 	}
-	if (strncmp((char *)rec->key.dptr, USERPREFIX, USERPREFIX_LEN) != 0) {
+	if (strncmp((char *)key.dptr, USERPREFIX, USERPREFIX_LEN) != 0) {
 		return 0;
 	}
 
@@ -89,33 +93,35 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 	}
 
 	DEBUG(10,("tdbsam_convert: Try unpacking a record with (key:%s) "
-		  "(version:%d)\n", rec->key.dptr, state->from));
+		  "(version:%d)\n", (char *)key.dptr, state->from));
+
+	value = dbwrap_record_get_value(rec);
 
 	switch (state->from) {
 	case 0:
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V0,
-					    (uint8 *)rec->value.dptr,
-					    rec->value.dsize);
+					    (uint8 *)value.dptr,
+					    value.dsize);
 		break;
 	case 1:
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V1,
-					    (uint8 *)rec->value.dptr,
-					    rec->value.dsize);
+					    (uint8 *)value.dptr,
+					    value.dsize);
 		break;
 	case 2:
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V2,
-					    (uint8 *)rec->value.dptr,
-					    rec->value.dsize);
+					    (uint8 *)value.dptr,
+					    value.dsize);
 		break;
 	case 3:
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V3,
-					    (uint8 *)rec->value.dptr,
-					    rec->value.dsize);
+					    (uint8 *)value.dptr,
+					    value.dsize);
 		break;
 	case 4:
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V4,
-					    (uint8 *)rec->value.dptr,
-					    rec->value.dsize);
+					    (uint8 *)value.dptr,
+					    value.dsize);
 		break;
 	default:
 		/* unknown tdbsam version */
@@ -123,7 +129,7 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 	}
 	if (!ret) {
 		DEBUG(0,("tdbsam_convert: Bad struct samu entry returned "
-			 "from TDB (key:%s) (version:%d)\n", rec->key.dptr,
+			 "from TDB (key:%s) (version:%d)\n", (char *)key.dptr,
 			 state->from));
 		TALLOC_FREE(user);
 		state->success = false;
@@ -140,7 +146,7 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 		return -1;
 	}
 
-	status = rec->store(rec, data, TDB_MODIFY);
+	status = dbwrap_record_store(rec, data, TDB_MODIFY);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not store the new record: %s\n",
 			  nt_errstr(status)));
@@ -165,14 +171,20 @@ static int backup_copy_fn(struct db_record *orig_rec, void *state)
 	struct tdbsam_backup_state *bs = (struct tdbsam_backup_state *)state;
 	struct db_record *new_rec;
 	NTSTATUS status;
+	TDB_DATA key;
+	TDB_DATA value;
 
-	new_rec = bs->new_db->fetch_locked(bs->new_db, talloc_tos(), orig_rec->key);
+	key = dbwrap_record_get_key(orig_rec);
+
+	new_rec = dbwrap_fetch_locked(bs->new_db, talloc_tos(), key);
 	if (new_rec == NULL) {
 		bs->success = false;
 		return 1;
 	}
 
-	status = new_rec->store(new_rec, orig_rec->value, TDB_INSERT);
+	value = dbwrap_record_get_value(orig_rec);
+
+	status = dbwrap_record_store(new_rec, value, TDB_INSERT);
 
 	TALLOC_FREE(new_rec);
 
@@ -198,7 +210,7 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 	struct db_context *tmp_db = NULL;
 	struct db_context *orig_db = *pp_db;
 	struct tdbsam_backup_state bs;
-	int ret;
+	NTSTATUS status;
 
 	tmp_fname = talloc_asprintf(frame, "%s.tmp", dbname);
 	if (!tmp_fname) {
@@ -220,16 +232,16 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 		return false;
 	}
 
-	if (orig_db->transaction_start(orig_db) != 0) {
+	if (dbwrap_transaction_start(orig_db) != 0) {
 		DEBUG(0, ("tdbsam_convert_backup: Could not start transaction (1)\n"));
 		unlink(tmp_fname);
 		TALLOC_FREE(tmp_db);
 		TALLOC_FREE(frame);
 		return false;
 	}
-	if (tmp_db->transaction_start(tmp_db) != 0) {
+	if (dbwrap_transaction_start(tmp_db) != 0) {
 		DEBUG(0, ("tdbsam_convert_backup: Could not start transaction (2)\n"));
-		orig_db->transaction_cancel(orig_db);
+		dbwrap_transaction_cancel(orig_db);
 		unlink(tmp_fname);
 		TALLOC_FREE(tmp_db);
 		TALLOC_FREE(frame);
@@ -239,8 +251,8 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 	bs.new_db = tmp_db;
 	bs.success = true;
 
-        ret = orig_db->traverse(orig_db, backup_copy_fn, (void *)&bs);
-        if (ret < 0) {
+        status = dbwrap_traverse(orig_db, backup_copy_fn, (void *)&bs, NULL);
+        if (!NT_STATUS_IS_OK(status)) {
                 DEBUG(0, ("tdbsam_convert_backup: traverse failed\n"));
                 goto cancel;
         }
@@ -250,10 +262,10 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 		goto cancel;
 	}
 
-	if (orig_db->transaction_commit(orig_db) != 0) {
+	if (dbwrap_transaction_commit(orig_db) != 0) {
 		smb_panic("tdbsam_convert_backup: orig commit failed\n");
 	}
-	if (tmp_db->transaction_commit(tmp_db) != 0) {
+	if (dbwrap_transaction_commit(tmp_db) != 0) {
 		smb_panic("tdbsam_convert_backup: orig commit failed\n");
 	}
 
@@ -294,11 +306,11 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 
   cancel:
 
-	if (orig_db->transaction_cancel(orig_db) != 0) {
+	if (dbwrap_transaction_cancel(orig_db) != 0) {
 		smb_panic("tdbsam_convert: transaction_cancel failed");
 	}
 
-	if (tmp_db->transaction_cancel(tmp_db) != 0) {
+	if (dbwrap_transaction_cancel(tmp_db) != 0) {
 		smb_panic("tdbsam_convert: transaction_cancel failed");
 	}
 
@@ -343,7 +355,7 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 {
 	struct tdbsam_convert_state state;
 	struct db_context *db = NULL;
-	int ret;
+	NTSTATUS status;
 
 	/* We only need the update backup for local db's. */
 	if (db_is_local(name) && !tdbsam_convert_backup(name, pp_db)) {
@@ -355,7 +367,7 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 	state.from = from;
 	state.success = true;
 
-	if (db->transaction_start(db) != 0) {
+	if (dbwrap_transaction_start(db) != 0) {
 		DEBUG(0, ("tdbsam_convert: Could not start transaction\n"));
 		return false;
 	}
@@ -365,8 +377,8 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 		goto cancel;
 	}
 
-	ret = db->traverse(db, tdbsam_convert_one, &state);
-	if (ret < 0) {
+	status = dbwrap_traverse(db, tdbsam_convert_one, &state, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("tdbsam_convert: traverse failed\n"));
 		goto cancel;
 	}
@@ -388,7 +400,7 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 		goto cancel;
 	}
 
-	if (db->transaction_commit(db) != 0) {
+	if (dbwrap_transaction_commit(db) != 0) {
 		DEBUG(0, ("tdbsam_convert: Could not commit transaction\n"));
 		return false;
 	}
@@ -396,7 +408,7 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 	return true;
 
  cancel:
-	if (db->transaction_cancel(db) != 0) {
+	if (dbwrap_transaction_cancel(db) != 0) {
 		smb_panic("tdbsam_convert: transaction_cancel failed");
 	}
 
@@ -696,7 +708,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 
 	/* it's outaa here!  8^) */
 
-	if (db_sam->transaction_start(db_sam) != 0) {
+	if (dbwrap_transaction_start(db_sam) != 0) {
 		DEBUG(0, ("Could not start transaction\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -721,7 +733,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 		goto cancel;
 	}
 
-	if (db_sam->transaction_commit(db_sam) != 0) {
+	if (dbwrap_transaction_commit(db_sam) != 0) {
 		DEBUG(0, ("Could not commit transaction\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -729,7 +741,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 
  cancel:
-	if (db_sam->transaction_cancel(db_sam) != 0) {
+	if (dbwrap_transaction_cancel(db_sam) != 0) {
 		smb_panic("transaction_cancel failed");
 	}
 
@@ -843,7 +855,7 @@ static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd,
 		return False;
 	}
 
-	if (db_sam->transaction_start(db_sam) != 0) {
+	if (dbwrap_transaction_start(db_sam) != 0) {
 		DEBUG(0, ("Could not start transaction\n"));
 		return false;
 	}
@@ -902,7 +914,7 @@ static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd,
 		}
 	}
 
-	if (db_sam->transaction_commit(db_sam) != 0) {
+	if (dbwrap_transaction_commit(db_sam) != 0) {
 		DEBUG(0, ("Could not commit transaction\n"));
 		return false;
 	}
@@ -910,7 +922,7 @@ static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd,
 	return true;
 
  cancel:
-	if (db_sam->transaction_cancel(db_sam) != 0) {
+	if (dbwrap_transaction_cancel(db_sam) != 0) {
 		smb_panic("transaction_cancel failed");
 	}
 	return false;
@@ -990,7 +1002,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (db_sam->transaction_start(db_sam) != 0) {
+	if (dbwrap_transaction_start(db_sam) != 0) {
 		DEBUG(0, ("Could not start transaction\n"));
 		TALLOC_FREE(new_acct);
 		return NT_STATUS_ACCESS_DENIED;
@@ -1050,7 +1062,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 
 	tdb_delete_samacct_only( old_acct );
 
-	if (db_sam->transaction_commit(db_sam) != 0) {
+	if (dbwrap_transaction_commit(db_sam) != 0) {
 		/*
 		 * Ok, we're screwed. We've changed the posix account, but
 		 * could not adapt passdb.tdb. Shall we change the posix
@@ -1065,7 +1077,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 
  cancel:
-	if (db_sam->transaction_cancel(db_sam) != 0) {
+	if (dbwrap_transaction_cancel(db_sam) != 0) {
 		smb_panic("transaction_cancel failed");
 	}
 
@@ -1121,13 +1133,16 @@ static int tdbsam_collect_rids(struct db_record *rec, void *private_data)
 		private_data, struct tdbsam_search_state);
 	size_t prefixlen = strlen(RIDPREFIX);
 	uint32 rid;
+	TDB_DATA key;
 
-	if ((rec->key.dsize < prefixlen)
-	    || (strncmp((char *)rec->key.dptr, RIDPREFIX, prefixlen))) {
+	key = dbwrap_record_get_key(rec);
+
+	if ((key.dsize < prefixlen)
+	    || (strncmp((char *)key.dptr, RIDPREFIX, prefixlen))) {
 		return 0;
 	}
 
-	rid = strtoul((char *)rec->key.dptr+prefixlen, NULL, 16);
+	rid = strtoul((char *)key.dptr+prefixlen, NULL, 16);
 
 	ADD_TO_LARGE_ARRAY(state, uint32, rid, &state->rids, &state->num_rids,
 			   &state->array_size);
@@ -1223,7 +1238,7 @@ static bool tdbsam_search_users(struct pdb_methods *methods,
 	state->acct_flags = acct_flags;
 	state->methods = methods;
 
-	db_sam->traverse_read(db_sam, tdbsam_collect_rids, state);
+	dbwrap_traverse_read(db_sam, tdbsam_collect_rids, state, NULL);
 
 	search->private_data = state;
 	search->next_entry = tdbsam_search_next_entry;
