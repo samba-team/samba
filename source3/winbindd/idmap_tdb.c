@@ -69,29 +69,33 @@ static int convert_fn(struct db_record *rec, void *private_data)
 	uint32 rid;
 	fstring keystr;
 	fstring dom_name;
+	TDB_DATA key;
 	TDB_DATA key2;
+	TDB_DATA value;
 	struct convert_fn_state *s = (struct convert_fn_state *)private_data;
 
-	DEBUG(10,("Converting %s\n", (const char *)rec->key.dptr));
+	key = dbwrap_record_get_key(rec);
 
-	p = strchr((const char *)rec->key.dptr, '/');
+	DEBUG(10,("Converting %s\n", (const char *)key.dptr));
+
+	p = strchr((const char *)key.dptr, '/');
 	if (!p)
 		return 0;
 
 	*p = 0;
-	fstrcpy(dom_name, (const char *)rec->key.dptr);
+	fstrcpy(dom_name, (const char *)key.dptr);
 	*p++ = '/';
 
 	domain = find_domain_from_name(dom_name);
 	if (domain == NULL) {
 		/* We must delete the old record. */
 		DEBUG(0,("Unable to find domain %s\n", dom_name ));
-		DEBUG(0,("deleting record %s\n", (const char *)rec->key.dptr ));
+		DEBUG(0,("deleting record %s\n", (const char *)key.dptr ));
 
-		status = rec->delete_rec(rec);
+		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to delete record %s:%s\n",
-				(const char *)rec->key.dptr,
+				(const char *)key.dptr,
 				nt_errstr(status)));
 			s->failed = true;
 			return -1;
@@ -107,7 +111,9 @@ static int convert_fn(struct db_record *rec, void *private_data)
 	sid_to_fstring(keystr, &sid);
 	key2 = string_term_tdb_data(keystr);
 
-	status = dbwrap_store(s->db, key2, rec->value, TDB_INSERT);
+	value = dbwrap_record_get_value(rec);
+
+	status = dbwrap_store(s->db, key2, value, TDB_INSERT);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to add record %s:%s\n",
 			(const char *)key2.dptr,
@@ -116,19 +122,19 @@ static int convert_fn(struct db_record *rec, void *private_data)
 		return -1;
 	}
 
-	status = dbwrap_store(s->db, rec->value, key2, TDB_REPLACE);
+	status = dbwrap_store(s->db, value, key2, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to update record %s:%s\n",
-			(const char *)rec->value.dptr,
+			(const char *)value.dptr,
 			nt_errstr(status)));
 		s->failed = true;
 		return -1;
 	}
 
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to delete record %s:%s\n",
-			(const char *)rec->key.dptr,
+			(const char *)key.dptr,
 			nt_errstr(status)));
 		s->failed = true;
 		return -1;
@@ -146,6 +152,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 	int32 vers;
 	bool bigendianheader;
 	struct convert_fn_state s;
+	NTSTATUS status;
 
 #if BUILD_TDB2
 	/* If we are bigendian, tdb is bigendian if NOT converted. */
@@ -155,13 +162,13 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 	} u;
 	u.large = 0x0102;
 	if (u.small[0] == 0x01)
-		bigendianheader = !(db->get_flags(db) & TDB_CONVERT);
+		bigendianheader = !(dbwrap_get_flags(db) & TDB_CONVERT);
 	else {
 		assert(u.small[0] == 0x02);
-		bigendianheader = (db->get_flags(db) & TDB_CONVERT);
+		bigendianheader = (dbwrap_get_flags(db) & TDB_CONVERT);
 	}
 #else
-	bigendianheader = (db->get_flags(db) & TDB_BIGENDIAN) ? True : False;
+	bigendianheader = (dbwrap_get_flags(db) & TDB_BIGENDIAN) ? True : False;
 #endif
 	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
 
@@ -206,7 +213,12 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 	s.failed = false;
 
 	/* the old format stored as DOMAIN/rid - now we store the SID direct */
-	db->traverse(db, convert_fn, &s);
+	status = dbwrap_traverse(db, convert_fn, &s, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Database traverse failed during conversion\n"));
+		return false;
+	}
 
 	if (s.failed) {
 		DEBUG(0, ("Problem during conversion\n"));
@@ -246,7 +258,7 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 		return NT_STATUS_OK;
 	}
 
-	if (ctx->db->transaction_start(ctx->db) != 0) {
+	if (dbwrap_transaction_start(ctx->db) != 0) {
 		DEBUG(0, ("Unable to start upgrade transaction!\n"));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
@@ -254,7 +266,7 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	if (update_uid) {
 		ret = dbwrap_store_int32(ctx->db, HWM_USER, dom->low_id);
 		if (ret == -1) {
-			ctx->db->transaction_cancel(ctx->db);
+			dbwrap_transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
@@ -264,14 +276,14 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	if (update_gid) {
 		ret = dbwrap_store_int32(ctx->db, HWM_GROUP, dom->low_id);
 		if (ret == -1) {
-			ctx->db->transaction_cancel(ctx->db);
+			dbwrap_transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
 	}
 
-	if (ctx->db->transaction_commit(ctx->db) != 0) {
+	if (dbwrap_transaction_commit(ctx->db) != 0) {
 		DEBUG(0, ("Unable to commit upgrade transaction!\n"));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
@@ -327,20 +339,20 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 			ret = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
-		if (db->transaction_start(db) != 0) {
+		if (dbwrap_transaction_start(db) != 0) {
 			DEBUG(0, ("Unable to start upgrade transaction!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
 			goto done;
 		}
 
 		if (!idmap_tdb_upgrade(dom, db)) {
-			db->transaction_cancel(db);
+			dbwrap_transaction_cancel(db);
 			DEBUG(0, ("Unable to open idmap database, it's in an old format, and upgrade failed!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
 			goto done;
 		}
 
-		if (db->transaction_commit(db) != 0) {
+		if (dbwrap_transaction_commit(db) != 0) {
 			DEBUG(0, ("Unable to commit upgrade transaction!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
 			goto done;
