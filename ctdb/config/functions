@@ -358,8 +358,8 @@ ctdb_check_tcp_ports()
 
 	# We didn't match the port, so flag an error, print some debug
 	if [ ! -f "$_ctdb_service_started_file" ] ; then
-	    cat <<EOF
-ERROR: $service_name tcp port $_p is not responding
+	    echo "ERROR: $service_name tcp port $_p is not responding"
+debug <<EOF
 $_cmd shows this output:
 $_ns
 EOF
