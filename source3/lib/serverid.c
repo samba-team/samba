@@ -350,6 +350,7 @@ bool serverid_traverse(int (*fn)(struct db_record *rec,
 {
 	struct db_context *db;
 	struct serverid_traverse_state state;
+	NTSTATUS status;
 
 	db = serverid_db();
 	if (db == NULL) {
@@ -357,5 +358,7 @@ bool serverid_traverse(int (*fn)(struct db_record *rec,
 	}
 	state.fn = fn;
 	state.private_data = private_data;
-	return db->traverse(db, serverid_traverse_fn, &state);
+
+	status = dbwrap_traverse(db, serverid_traverse_fn, &state, NULL);
+	return NT_STATUS_IS_OK(status);
 }
