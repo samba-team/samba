@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -173,6 +174,9 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	for (i=0; i<trusts.count; i++) {
 
 		if (trusts.array[i].sid == NULL) {
+			continue;
+		}
+		if (dom_sid_equal(trusts.array[i].sid, &global_sid_NULL)) {
 			continue;
 		}
 
