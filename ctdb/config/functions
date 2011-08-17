@@ -38,6 +38,51 @@ loadconfig () {
 }
 
 ##############################################################
+# make sure CTDB_CURRENT_DEBUGLEVEL is set to the desired debug level
+# (integer)
+#
+# If it is already set then do nothing, since it might have been set
+# via a file in rc.local.d/.  If it is not set then set it by sourcing
+# /var/ctdb/eventscript_debuglevel. If this file does not exist then
+# create it using output from "ctdb getdebug".  If the option 1st arg
+# is "create" then don't source an existing file but create a new one
+# instead - this is useful for creating the file just once in each
+# event run in 00.ctdb.  If there's a problem getting the debug level
+# from ctdb then it is silently set to 0 - no use spamming logs if our
+# debug code is broken...
+ctdb_set_current_debuglevel ()
+{
+    [ -z "$CTDB_CURRENT_DEBUGLEVEL" ] || return 0
+
+    _f="$CTDB_VARDIR/eventscript_debuglevel"
+
+    if [ "$1" = "create" -o ! -r "$_f" ] ; then
+	_t=$(ctdb getdebug -Y 2>/dev/null)
+	# get last field of output
+	_t="${_t%:}"
+	_t="${_t##*:}"
+	# Defaults to 0
+	echo "export CTDB_CURRENT_DEBUGLEVEL=\"${_t:-0}\"" >"$_f"
+    fi
+
+    . "$_f"
+}
+
+debug ()
+{
+    if [ $CTDB_CURRENT_DEBUGLEVEL -ge 4 ] ; then
+	# If there are arguments then echo them.  Otherwise expect to
+	# use stdin, which allows us to pass lots of debug using a
+	# here document.
+	if [ -n "$1" ] ; then
+	    echo "DEBUG: $*"
+	elif ! tty -s ; then
+	    sed -e 's@^@DEBUG: @'
+	fi
+    fi
+}
+
+##############################################################
 # determine on what type of system (init style) we are running
 detect_init_style() {
     # only do detection if not already set:
@@ -279,16 +324,166 @@ ctdb_check_directories() {
 # check a set of tcp ports
 # usage: ctdb_check_tcp_ports <ports...>
 ######################################################
-ctdb_check_tcp_ports() {
 
-    for p ; do
-	if ! netstat -a -t -n | grep -q "0\.0\.0\.0:$p .*LISTEN" ; then
-            if ! netstat -a -t -n | grep -q ":::$p .*LISTEN" ; then
-		echo "ERROR: $service_name tcp port $p is not responding"
+# This flag file is created when a service is initially started.  It
+# is deleted the first time TCP port checks for that service succeed.
+# Until then ctdb_check_tcp_ports() prints a more subtle "error"
+# message if a port check fails.
+_ctdb_check_tcp_common ()
+{
+    _ctdb_service_started_file="$ctdb_fail_dir/$service_name.started"
+}
+
+ctdb_check_tcp_init ()
+{
+    _ctdb_check_tcp_common
+    mkdir -p "${_ctdb_service_started_file%/*}" # dirname
+    touch "$_ctdb_service_started_file"
+}
+
+ctdb_check_tcp_ports()
+{
+    if [ -z "$1" ] ; then
+	echo "INTERNAL ERROR: ctdb_check_tcp_ports - no ports specified"
+	exit 1
+    fi
+
+    # Set default value for CTDB_TCP_PORT_CHECKS if unset.
+    # If any of these defaults are unsupported then this variable can
+    # be overridden in /etc/sysconfig/ctdb or via a file in
+    # /etc/ctdb/rc.local.d/.
+    : ${CTDB_TCP_PORT_CHECKERS:=ctdb nmap netstat}
+
+    for _c in $CTDB_TCP_PORT_CHECKERS ; do
+	ctdb_check_tcp_ports_$_c "$@"
+	case "$?" in
+	    0)
+		rm -f "$_ctdb_service_started_file"
+		return 0
+		;;
+	    1)
+		_ctdb_check_tcp_common
+		if [ ! -f "$_ctdb_service_started_file" ] ; then
+		    echo "ERROR: $service_name tcp port $_p is not responding"
+		    debug <<EOF
+$ctdb_check_tcp_ports_debug
+EOF
+		else
+		    echo "INFO: $service_name tcp port $_p is not responding"
+		fi
+
 		return 1
-            fi
-	fi
+		;;
+	    127)
+		debug <<EOF
+ctdb_check_ports - checker $_c not implemented
+output from checker was:
+$ctdb_check_tcp_ports_debug
+EOF
+		;;
+	    *)
+		
+	esac
     done
+
+    echo "INTERNAL ERROR: ctdb_check_ports - no working checkers in CTDB_TCP_PORT_CHECKERS=\"$CTDB_TCP_PORT_CHECKERS\""
+
+    return 127
+}
+
+ctdb_check_tcp_ports_netstat ()
+{
+    _cmd='netstat -l -t -n'
+    _ns=$($_cmd 2>&1)
+    if [ $? -eq 127 ] ; then
+	# netstat probably not installed - unlikely?
+	ctdb_check_tcp_ports_debug="$_ns"
+	return 127
+    fi
+
+    for _p ; do  # process each function argument (port)
+	for _a in '0\.0\.0\.0' '::' ; do
+	    _pat="[[:space:]]${_a}:${_p}[[:space:]]+[^[:space:]]+[[:space:]]+LISTEN"
+	    if echo "$_ns" | grep -E -q "$_pat" ; then
+		# We matched the port, so process next port
+		continue 2
+	    fi
+	done
+
+	# We didn't match the port, so flag an error.
+	ctdb_check_tcp_ports_debug="$_cmd shows this output:
+$_ns"
+	return 1
+    done
+
+    return 0
+}
+
+ctdb_check_tcp_ports_nmap ()
+{
+    # nmap wants a comma-separated list of ports
+    _ports=""
+    for _p ; do
+	_ports="${_ports}${_ports:+,}${_p}"
+    done
+
+    _cmd="nmap -n -oG - -PS 127.0.0.1 -p $_ports"
+
+    _nmap_out=$($_cmd 2>&1)
+    if [ $? -eq 127 ] ; then
+	# nmap probably not installed
+	ctdb_check_tcp_ports_debug="$_nmap_out"
+	return 127
+    fi
+
+    # get the port-related output
+    _port_info=$(echo "$_nmap_out" | sed -n -r -e 's@^.*Ports:[[:space:]]@@p')
+
+    for _p ; do
+	# looking for something like this:
+	#  445/open/tcp//microsoft-ds///
+	# possibly followed by a comma
+	_t="$_p/open/tcp//"
+	case "$_port_info" in
+	    # The info we're after must be either at the beginning of
+	    # the string or it must follow a space.
+            $_t*|*\ $_t*) : ;;
+	    *)
+		# Nope, flag an error...
+		ctdb_check_tcp_ports_debug="$_cmd shows this output:
+$_nmap_out"
+		return 1
+	esac
+    done
+
+    return 0
+}
+
+# Use the new "ctdb checktcpport" command to check the port.
+# This is very cheap.
+ctdb_check_tcp_ports_ctdb ()
+{
+    for _p ; do  # process each function argument (port)
+	_cmd="ctdb checktcpport $_p"
+	_out=$($_cmd 2>&1)
+	case "$?" in
+	    0)
+		ctdb_check_tcp_ports_debug="\"$_cmd\" was able to bind to port"
+		return 1
+		;;
+	    98)
+		# Couldn't bind, something already listening, next port...
+		continue
+		;;
+	    *)
+		ctdb_check_tcp_ports_debug="$_cmd (exited with $?) with output:
+$_out"
+		# assume not implemented
+		return 127
+	esac
+    done
+
+    return 0
 }
 
 ######################################################
@@ -906,6 +1101,7 @@ ctdb_service_start ()
     service_start "$@" || return $?
 
     ctdb_counter_init "$@"
+    ctdb_check_tcp_init
 }
 
 ctdb_service_stop ()
@@ -1093,6 +1289,11 @@ update_tickles ()
 		[ -x "$i" ] && . "$i"
 	done
 }
+
+# We'll call this here to ensure $CTDB_CURRENT_DEBUGLEVEL is set.
+# This gives us a chance to override the debug level using a file in
+# $CTDB_BASE/rc.local.d/.
+ctdb_set_current_debuglevel
 
 script_name="${0##*/}"       # basename
 service_name="$script_name"  # default is just the script name

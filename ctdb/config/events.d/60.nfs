@@ -9,7 +9,6 @@ service_start ()
     startstop_nfs stop
     startstop_nfs start
     set_proc "sys/net/ipv4/tcp_tw_recycle" 1
-    touch "$service_state_dir/update-trigger"
 }
 service_stop ()
 {
@@ -31,6 +30,14 @@ loadconfig
 [ "$NFS_SERVER_MODE" != "GANESHA" ] || exit 0
 
 ctdb_setup_service_state_dir
+
+statd_update_trigger="$service_state_dir/update-trigger"
+# We want this file to always exist.  The corner case is when
+# auto-start/stop is switched off, NFS is added as a managed service
+# some time after ctdbd is started and someone else starts the NFS
+# service for us.  In this case this file might not otherwise exist
+# when we get to a monitor event.
+touch "$statd_update_trigger"
 
 ctdb_start_stop_service
 
@@ -105,10 +112,10 @@ case "$1" in
 
 	# once every 600 seconds, update the statd state database for which
 	# clients need notifications
-	LAST_UPDATE=`stat --printf="%Y" "$service_state_dir/update-trigger"`
+	LAST_UPDATE=`stat --printf="%Y" "$statd_update_trigger"`
 	CURRENT_TIME=`date +"%s"`
 	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 600)) ] && {
-	    touch "$service_state_dir/update-trigger"
+	    touch "$statd_update_trigger"
 	    $CTDB_BASE/statd-callout updatelocal &
 	    $CTDB_BASE/statd-callout updateremote &
 	}
