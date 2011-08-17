@@ -233,6 +233,22 @@ static bool lsasd_setup_chld_hup_handler(struct tevent_context *ev_ctx,
 	return true;
 }
 
+static void parent_ping(struct messaging_context *msg_ctx,
+			void *private_data,
+			uint32_t msg_type,
+			struct server_id server_id,
+			DATA_BLOB *data)
+{
+
+	/* The fact we received this message is enough to let make the event
+	 * loop if it was idle. lsasd_children_main will cycle through
+	 * lsasd_next_client at least once. That function will take whatever
+	 * action is necessary */
+
+	DEBUG(10, ("Got message that the parent changed status.\n"));
+	return;
+}
+
 static bool lsasd_child_init(struct tevent_context *ev_ctx,
 			     int child_id,
 			     struct pf_worker_data *pf)
@@ -262,6 +278,8 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_SMB_CONF_UPDATED, lsasd_smb_conf_updated);
+	messaging_register(msg_ctx, ev_ctx,
+			   MSG_PREFORK_PARENT_EVENT, parent_ping);
 
 	status = rpc_lsarpc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
