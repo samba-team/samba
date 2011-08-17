@@ -3348,6 +3348,47 @@ static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+/*
+  check if a service is bound to a port or not
+ */
+static int control_chktcpport(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int s, ret;
+	unsigned v;
+	int port;
+        struct sockaddr_in sin;
+
+	if (argc != 1) {
+		printf("Use: ctdb chktcport <port>\n");
+		return EINVAL;
+	}
+
+	port = atoi(argv[0]);
+
+	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (s == -1) {
+		printf("Failed to open local socket\n");
+		return errno;
+	}
+
+	v = fcntl(s, F_GETFL, 0);
+        fcntl(s, F_SETFL, v | O_NONBLOCK);
+
+	bzero(&sin, sizeof(sin));
+	sin.sin_family = PF_INET;
+	sin.sin_port   = htons(port);
+	ret = bind(s, (struct sockaddr *)&sin, sizeof(sin));
+	close(s);
+	if (ret == -1) {
+		printf("Failed to bind to local socket: %d %s\n", errno, strerror(errno));
+		return errno;
+	}
+
+	return 0;
+}
+
+
+
 static void log_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
@@ -4974,6 +5015,7 @@ static const struct {
 	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file", "<tdb-file> <key> [<file>]" },
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
+	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
 };
 
 /*
