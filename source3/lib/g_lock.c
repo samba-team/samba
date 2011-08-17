@@ -198,17 +198,19 @@ static NTSTATUS g_lock_trylock(struct g_lock_ctx *ctx, const char *name,
 	TDB_DATA data;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS store_status;
+	TDB_DATA value;
 
 again:
-	rec = ctx->db->fetch_locked(ctx->db, talloc_tos(),
-				    string_term_tdb_data(name));
+	rec = dbwrap_fetch_locked(ctx->db, talloc_tos(),
+				  string_term_tdb_data(name));
 	if (rec == NULL) {
 		DEBUG(10, ("fetch_locked(\"%s\") failed\n", name));
 		status = NT_STATUS_LOCK_NOT_GRANTED;
 		goto done;
 	}
 
-	if (!g_lock_parse(talloc_tos(), rec->value, &num_locks, &locks)) {
+	value = dbwrap_record_get_value(rec);
+	if (!g_lock_parse(talloc_tos(), value, &num_locks, &locks)) {
 		DEBUG(10, ("g_lock_parse for %s failed\n", name));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
@@ -282,7 +284,7 @@ again:
 	}
 
 	data = make_tdb_data((uint8_t *)locks, num_locks * sizeof(*locks));
-	store_status = rec->store(rec, data, 0);
+	store_status = dbwrap_record_store(rec, data, 0);
 	if (!NT_STATUS_IS_OK(store_status)) {
 		DEBUG(1, ("rec->store failed: %s\n",
 			  nt_errstr(store_status)));
@@ -512,16 +514,19 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 	int i, num_locks;
 	enum g_lock_type lock_type;
 	NTSTATUS status;
+	TDB_DATA value;
 
-	rec = ctx->db->fetch_locked(ctx->db, talloc_tos(),
-				    string_term_tdb_data(name));
+	rec = dbwrap_fetch_locked(ctx->db, talloc_tos(),
+				  string_term_tdb_data(name));
 	if (rec == NULL) {
 		DEBUG(10, ("fetch_locked(\"%s\") failed\n", name));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
 
-	if (!g_lock_parse(talloc_tos(), rec->value, &num_locks, &locks)) {
+	value = dbwrap_record_get_value(rec);
+
+	if (!g_lock_parse(talloc_tos(), value, &num_locks, &locks)) {
 		DEBUG(10, ("g_lock_parse for %s failed\n", name));
 		status = NT_STATUS_FILE_INVALID;
 		goto done;
@@ -547,12 +552,12 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 	num_locks -= 1;
 
 	if (num_locks == 0) {
-		status = rec->delete_rec(rec);
+		status = dbwrap_record_delete(rec);
 	} else {
 		TDB_DATA data;
 		data = make_tdb_data((uint8_t *)locks,
 				     sizeof(struct g_lock_rec) * num_locks);
-		status = rec->store(rec, data, 0);
+		status = dbwrap_record_store(rec, data, 0);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -633,13 +638,15 @@ struct g_lock_locks_state {
 
 static int g_lock_locks_fn(struct db_record *rec, void *priv)
 {
+	TDB_DATA key;
 	struct g_lock_locks_state *state = (struct g_lock_locks_state *)priv;
 
-	if ((rec->key.dsize == 0) || (rec->key.dptr[rec->key.dsize-1] != 0)) {
+	key = dbwrap_record_get_key(rec);
+	if ((key.dsize == 0) || (key.dptr[key.dsize-1] != 0)) {
 		DEBUG(1, ("invalid key in g_lock.tdb, ignoring\n"));
 		return 0;
 	}
-	return state->fn((char *)rec->key.dptr, state->private_data);
+	return state->fn((char *)key.dptr, state->private_data);
 }
 
 int g_lock_locks(struct g_lock_ctx *ctx,
@@ -647,11 +654,18 @@ int g_lock_locks(struct g_lock_ctx *ctx,
 		 void *private_data)
 {
 	struct g_lock_locks_state state;
+	NTSTATUS status;
+	int count;
 
 	state.fn = fn;
 	state.private_data = private_data;
 
-	return ctx->db->traverse_read(ctx->db, g_lock_locks_fn, &state);
+	status = dbwrap_traverse_read(ctx->db, g_lock_locks_fn, &state, &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	} else {
+		return count;
+	}
 }
 
 NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
@@ -664,10 +678,11 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 	int i, num_locks;
 	struct g_lock_rec *locks = NULL;
 	bool ret;
+	NTSTATUS status;
 
-	if (ctx->db->fetch(ctx->db, talloc_tos(), string_term_tdb_data(name),
-			   &data) != 0) {
-		return NT_STATUS_NOT_FOUND;
+	status = dbwrap_fetch_bystring(ctx->db, talloc_tos(), name, &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if ((data.dsize == 0) || (data.dptr == NULL)) {
