@@ -83,6 +83,14 @@ static int rpc_conf_drop_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+static int rpc_conf_getparm_usage(struct net_context *c, int argc,
+			       const char **argv)
+{
+	d_printf("%s\nnet rpc conf getparm <sharename> <parameter>\n",
+			_("Usage:"));
+	return -1;
+}
+
 static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -858,6 +866,111 @@ error:
 	return status;
 }
 
+static NTSTATUS rpc_conf_getparm_internal(struct net_context *c,
+					  const struct dom_sid *domain_sid,
+					  const char *domain_name,
+					  struct cli_state *cli,
+					  struct rpc_pipe_client *pipe_hnd,
+					  TALLOC_CTX *mem_ctx,
+					  int argc,
+					  const char **argv )
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
+	WERROR werr = WERR_OK;
+	WERROR _werr;
+
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+
+	/* key info */
+	struct policy_handle hive_hnd, key_hnd;
+	struct smbconf_service *service = NULL;
+
+	bool param_is_set = false;
+	uint32_t param_count;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+
+	if (argc != 2 || c->display_usage) {
+		rpc_conf_getparm_usage(c, argc, argv);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	status = rpc_conf_open_conf(frame,
+				    b,
+				    REG_KEY_READ,
+				    &hive_hnd,
+				    &key_hnd,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		goto error;
+	}
+
+
+	service = talloc(frame, struct smbconf_service);
+
+	status = rpc_conf_get_share(frame,
+			            b,
+				    &key_hnd,
+				    argv[0],
+				    service,
+				    &werr);
+
+	if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+	}
+
+	if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+		d_fprintf(stderr, _("ERROR: Share %s does not exist\n"),
+				argv[0]);
+		goto error;
+	}
+
+	if (!(W_ERROR_IS_OK(werr))) {
+			goto error;
+	}
+
+	for (param_count = 0;
+	     param_count < service->num_params;
+	     param_count++)
+	{
+		/* should includes also be printed? */
+		if (strcmp(service->param_names[param_count], argv[1]) == 0) {
+			d_printf(_("%s\n"),
+				service->param_values[param_count]);
+			param_is_set = true;
+		}
+	}
+
+	if (!param_is_set) {
+		d_fprintf(stderr, _("ERROR: Given parameter '%s' has not been set\n"),
+				argv[1]);
+		werr = WERR_BADFILE;
+		goto error;
+	}
+
+error:
+
+	if (!(W_ERROR_IS_OK(werr))) {
+		status =  werror_to_ntstatus(werr);
+	}
+
+	dcerpc_winreg_CloseKey(b, frame, &hive_hnd, &_werr);
+	dcerpc_winreg_CloseKey(b, frame, &key_hnd, &_werr);
+
+	TALLOC_FREE(frame);
+	return status;
+
+}
+
 static int rpc_conf_drop(struct net_context *c, int argc,
 				const char **argv)
 {
@@ -897,8 +1010,8 @@ static int rpc_conf_delshare(struct net_context *c, int argc,
 static int rpc_conf_getparm(struct net_context *c, int argc,
 			     const char **argv)
 {
-
-	return 0;
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+		rpc_conf_getparm_internal, argc, argv );
 }
 /* function calls */
 int net_rpc_conf(struct net_context *c, int argc,
