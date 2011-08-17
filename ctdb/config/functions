@@ -352,7 +352,7 @@ ctdb_check_tcp_ports()
     # If any of these defaults are unsupported then this variable can
     # be overridden in /etc/sysconfig/ctdb or via a file in
     # /etc/ctdb/rc.local.d/.
-    : ${CTDB_TCP_PORT_CHECKERS:=nmap netstat}
+    : ${CTDB_TCP_PORT_CHECKERS:=ctdb nmap netstat}
 
     for _c in $CTDB_TCP_PORT_CHECKERS ; do
 	ctdb_check_tcp_ports_$_c "$@"
@@ -453,6 +453,33 @@ ctdb_check_tcp_ports_nmap ()
 		ctdb_check_tcp_ports_debug="$_cmd shows this output:
 $_nmap_out"
 		return 1
+	esac
+    done
+
+    return 0
+}
+
+# Use the new "ctdb checktcpport" command to check the port.
+# This is very cheap.
+ctdb_check_tcp_ports_ctdb ()
+{
+    for _p ; do  # process each function argument (port)
+	_cmd="ctdb checktcpport $_p"
+	_out=$($_cmd 2>&1)
+	case "$?" in
+	    0)
+		ctdb_check_tcp_ports_debug="\"$_cmd\" was able to bind to port"
+		return 1
+		;;
+	    98)
+		# Couldn't bind, something already listening, next port...
+		continue
+		;;
+	    *)
+		ctdb_check_tcp_ports_debug="$_cmd (exited with $?) with output:
+$_out"
+		# assume not implemented
+		return 127
 	esac
     done
 
