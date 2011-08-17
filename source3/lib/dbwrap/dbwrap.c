@@ -79,6 +79,22 @@ TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
+		      TDB_DATA data, int flags)
+{
+	struct db_record *rec;
+	NTSTATUS status;
+
+	rec = db->fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = rec->store(rec, data, flags);
+	TALLOC_FREE(rec);
+	return status;
+}
+
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
 {
 	struct db_record *rec;
