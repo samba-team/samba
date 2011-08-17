@@ -212,3 +212,8 @@ int dbwrap_wipe(struct db_context *db)
 {
 	return db->wipe(db);
 }
+
+int dbwrap_get_flags(struct db_context *db)
+{
+	return db->get_flags(db);
+}

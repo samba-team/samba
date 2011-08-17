@@ -79,6 +79,7 @@ int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 				      void *private_data),
 			void *private_data);
 int dbwrap_wipe(struct db_context *db);
+int dbwrap_get_flags(struct db_context *db);
 
 
 /* The following definitions come from lib/dbwrap_util.c  */
