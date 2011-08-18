@@ -819,6 +819,32 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 				    uint16_t flags,
 				    void *private_data);
 
+int create_dcerpc_ncalrpc_socket(const char *name)
+{
+	int fd = -1;
+
+	if (name == NULL) {
+		name = "DEFAULT";
+	}
+
+	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
+		DEBUG(0, ("Failed to create ncalrpc directory %s - %s\n",
+			  lp_ncalrpc_dir(), strerror(errno)));
+		return -1;
+	}
+
+	fd = create_pipe_sock(lp_ncalrpc_dir(), name, 0755);
+	if (fd == -1) {
+		DEBUG(0, ("Failed to create ncalrpc socket! [%s/%s]\n",
+			  lp_ncalrpc_dir(), name));
+		return -1;
+	}
+
+	DEBUG(10, ("Openened ncalrpc socket fd %d for %s\n", fd, name));
+
+	return fd;
+}
+
 bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
 				 const char *name,
@@ -839,28 +865,18 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 	if (name == NULL) {
 		name = "DEFAULT";
 	}
-	state->ep.name = talloc_strdup(state, name);
 
+	state->ep.name = talloc_strdup(state, name);
 	if (state->ep.name == NULL) {
 		DEBUG(0, ("Out of memory\n"));
 		talloc_free(state);
 		return false;
 	}
 
-	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
-		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
-			  lp_ncalrpc_dir(), strerror(errno)));
-		goto out;
-	}
-
-	state->fd = create_pipe_sock(lp_ncalrpc_dir(), name, 0755);
+	state->fd = create_dcerpc_ncalrpc_socket(name);
 	if (state->fd == -1) {
-		DEBUG(0, ("Failed to create pipe socket! [%s/%s]\n",
-			  lp_ncalrpc_dir(), name));
 		goto out;
 	}
-
-	DEBUG(10, ("Openened pipe socket fd %d for %s\n", state->fd, name));
 
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
