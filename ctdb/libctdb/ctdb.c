@@ -166,7 +166,7 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 	sun.sun_family = AF_UNIX;
 	if (!addr)
 		addr = CTDB_PATH;
-	strncpy(sun.sun_path, addr, sizeof(sun.sun_path));
+	strncpy(sun.sun_path, addr, sizeof(sun.sun_path)-1);
 	ctdb->fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctdb->fd < 0)
 		goto free_fail;
