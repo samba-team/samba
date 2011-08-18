@@ -2482,7 +2482,6 @@ static PyObject *py_pdb_search_groups(pytalloc_Object *self)
 
 static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
 {
-	NTSTATUS status;
 	struct pdb_methods *methods;
 	TALLOC_CTX *tframe;
 	struct pdb_search *search;
@@ -2512,9 +2511,7 @@ static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
 	}
 
 	if (!methods->search_aliases(methods, search, dom_sid)) {
-		PyErr_Format(py_pdb_error, "Unable to search aliases, (%d,%s)",
-				NT_STATUS_V(status),
-				get_friendly_nt_error_msg(status));
+		PyErr_Format(py_pdb_error, "Unable to search aliases");
 		talloc_free(tframe);
 		return NULL;
 	}
