@@ -1,0 +1,54 @@
+#include "idl_types.h"
+
+import "misc.idl";
+import "security.idl";
+import "fscc.idl";
+/* bkup blobs interface definition */
+
+
+[
+	pointer_default(unique),
+	helpstring("bkup blobs")
+]
+
+
+interface bkup
+{
+	typedef [v1_enum] enum {
+		STREAM_ID_DATA	= 1,
+		STREAM_ID_EX_DATA = 2,
+		STREAM_ID_SECURITY_DATA = 3,
+		STREAM_ID_ALTERNATE_DATA = 4,
+		STREAM_ID_LINK = 5,
+		STREAM_ID_OBJECTID = 7,
+		STREAM_ID_REPARSE_DATA = 8,
+		STREAM_ID_SPARSE_BLOCK = 9,
+		STREAM_ID_TXFS_DATA = 10
+	} bkup_StreamId;
+
+	typedef [v1_enum] enum {
+		STREAM_ATTRIBUTE_NORMAL = 0,
+		STREAM_ATTRIBUTE_SECURITY = 2,
+		STREAM_ATTRIBUTE_SPARSE = 8
+	} bkup_StreamAttribute;
+
+	typedef [nodiscriminant] union {
+		[default] DATA_BLOB blob;
+		[flag(NDR_ALIGN2),case(STREAM_ID_SECURITY_DATA)] security_descriptor sd;
+		[case(STREAM_ID_OBJECTID)] fscc_FileObjectIdBuffer_2 object;
+	} bkup_StreamData;
+
+	typedef [public] struct {
+		bkup_StreamId id;
+		bkup_StreamAttribute attribute;
+		hyper size;
+		uint32 stream_name_size;
+		[charset(UTF16),flag(STR_NOTERM)] uint16 stream_name[stream_name_size];
+		[subcontext(0), subcontext_size(size), switch_is(id)] [flag(NDR_REMAINING)]  bkup_StreamData data;
+	} bkup_Win32StreamId;
+
+	typedef [nopush, nopull, flag(NDR_NOALIGN), public] struct {
+		uint32 num_stream;
+		bkup_Win32StreamId streams[num_stream];
+	} bkup_NTBackupFile;
+}
