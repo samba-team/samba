@@ -83,6 +83,8 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 	}
 	for (i = 0; i < listen_fd_size; i++) {
 		pfp->listen_fds[i] = listen_fds[i];
+		/* force sockets in non-blocking mode */
+		set_blocking(listen_fds[i], false);
 	}
 	pfp->main_fn = main_fn;
 	pfp->private_data = private_data;

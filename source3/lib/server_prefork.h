@@ -109,6 +109,9 @@ typedef void (prefork_sigchld_fn_t)(struct tevent_context *ev_ctx,
 * @param pf_pool	The allocated pool.
 *
 * @return True if it was successful, False otherwise.
+*
+* NOTE: each listen_fd is forced to non-blocking mode once handed over.
+* You should not toush listen_fds once you hand the to the prefork library.
 */
 bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 			 struct tevent_context *ev_ctx,
