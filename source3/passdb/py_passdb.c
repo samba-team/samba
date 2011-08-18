@@ -43,6 +43,7 @@
 
 
 static PyTypeObject *dom_sid_Type = NULL;
+static PyTypeObject *security_Type = NULL;
 static PyTypeObject *guid_Type = NULL;
 
 staticforward PyTypeObject PySamu;
@@ -2544,6 +2545,777 @@ static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
 	return py_aliaslist;
 }
 
+
+static PyObject *py_pdb_uid_to_sid(pytalloc_Object *self, PyObject *args)
+{
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	unsigned int uid;
+	struct dom_sid user_sid, *copy_user_sid;
+	PyObject *py_user_sid;
+
+	if (!PyArg_ParseTuple(args, "I:uid_to_sid", &uid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!methods->uid_to_sid(methods, uid, &user_sid)) {
+		PyErr_Format(py_pdb_error, "Unable to get sid for uid=%d", uid);
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	copy_user_sid = dom_sid_dup(tframe, &user_sid);
+	if (copy_user_sid == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_user_sid = pytalloc_steal(dom_sid_Type, copy_user_sid);
+
+	talloc_free(tframe);
+
+	return py_user_sid;
+}
+
+
+static PyObject *py_pdb_gid_to_sid(pytalloc_Object *self, PyObject *args)
+{
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	unsigned int gid;
+	struct dom_sid group_sid, *copy_group_sid;
+	PyObject *py_group_sid;
+
+	if (!PyArg_ParseTuple(args, "I:gid_to_sid", &gid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!methods->gid_to_sid(methods, gid, &group_sid)) {
+		PyErr_Format(py_pdb_error, "Unable to get sid for gid=%d", gid);
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	copy_group_sid = dom_sid_dup(tframe, &group_sid);
+	if (copy_group_sid == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_group_sid = pytalloc_steal(dom_sid_Type, copy_group_sid);
+
+	talloc_free(tframe);
+
+	return py_group_sid;
+}
+
+
+static PyObject *py_pdb_sid_to_id(pytalloc_Object *self, PyObject *args)
+{
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_sid;
+	struct dom_sid *sid;
+	union unid_t id;
+	enum lsa_SidType type;
+
+	if (!PyArg_ParseTuple(args, "O!:sid_to_id", dom_sid_Type, &py_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	sid = pytalloc_get_ptr(py_sid);
+
+	if (!methods->sid_to_id(methods, sid, &id, &type)) {
+		PyErr_Format(py_pdb_error, "Unable to get id for sid");
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	return Py_BuildValue("(II)", id.uid, type);
+}
+
+
+static PyObject *py_pdb_new_rid(pytalloc_Object *self)
+{
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	uint32_t rid;
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!methods->new_rid(methods, &rid)) {
+		PyErr_Format(py_pdb_error, "Unable to get new rid");
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	return PyInt_FromLong(rid);
+}
+
+
+static PyObject *py_pdb_get_trusteddom_pw(pytalloc_Object *self, PyObject *args)
+{
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *domain;
+	char *pwd;
+	struct dom_sid sid, *copy_sid;
+	PyObject *py_sid;
+	time_t last_set_time;
+	PyObject *py_value;
+
+	if (!PyArg_ParseTuple(args, "s:get_trusteddom_pw", &domain)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!methods->get_trusteddom_pw(methods, domain, &pwd, &sid, &last_set_time)) {
+		PyErr_Format(py_pdb_error, "Unable to get trusted domain password");
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	copy_sid = dom_sid_dup(tframe, &sid);
+	if (copy_sid == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_sid = pytalloc_steal(dom_sid_Type, copy_sid);
+	if (py_sid == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	py_value = PyDict_New();
+	if (py_value == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	PyDict_SetItemString(py_value, "pwd", PyString_FromString(pwd));
+	PyDict_SetItemString(py_value, "sid", py_sid);
+	PyDict_SetItemString(py_value, "last_set_tim", PyInt_FromLong(last_set_time));
+
+	return py_value;
+}
+
+
+static PyObject *py_pdb_set_trusteddom_pw(pytalloc_Object *self, PyObject *args)
+{
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *domain;
+	const char *pwd;
+	const struct dom_sid *domain_sid;
+	PyObject *py_domain_sid;
+
+	if (!PyArg_ParseTuple(args, "ssO!:set_trusteddom_pw", &domain, &pwd,
+					dom_sid_Type, &py_domain_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	domain_sid = pytalloc_get_ptr(py_domain_sid);
+
+	if (!methods->set_trusteddom_pw(methods, domain, pwd, domain_sid)) {
+		PyErr_Format(py_pdb_error, "Unable to set trusted domain password");
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_del_trusteddom_pw(pytalloc_Object *self, PyObject *args)
+{
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *domain;
+
+	if (!PyArg_ParseTuple(args, "s:del_trusteddom_pw", &domain)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!methods->del_trusteddom_pw(methods, domain)) {
+		PyErr_Format(py_pdb_error, "Unable to delete trusted domain password");
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_enum_trusteddoms(pytalloc_Object *self)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	uint32_t num_domains;
+	struct trustdom_info **domains;
+	PyObject *py_domain_list, *py_dict;
+	int i;
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->enum_trusteddoms(methods, tframe, &num_domains, &domains);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to enumerate trusted domains, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_domain_list = PyList_New(0);
+	if (py_domain_list == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	for(i=0; i<num_domains; i++) {
+		py_dict = PyDict_New();
+		if (py_dict) {
+			PyDict_SetItemString(py_dict, "name",
+					PyString_FromString(domains[i]->name));
+			PyDict_SetItemString(py_dict, "sid",
+					pytalloc_steal(dom_sid_Type, &domains[i]->sid));
+		}
+
+		PyList_Append(py_domain_list, py_dict);
+	}
+
+	talloc_free(tframe);
+
+	return py_domain_list;
+}
+
+
+static PyObject *py_pdb_get_trusted_domain(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *domain;
+	struct pdb_trusted_domain *td;
+	PyObject *py_domain_info;
+
+	if (!PyArg_ParseTuple(args, "s:get_trusted_domain", &domain)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->get_trusted_domain(methods, tframe, domain, &td);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to get trusted domain information, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_domain_info = PyDict_New();
+	if (py_domain_info == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	PyDict_SetItemString(py_domain_info, "domain_name",
+			PyString_FromString(td->domain_name));
+	PyDict_SetItemString(py_domain_info, "netbios_name",
+			PyString_FromString(td->netbios_name));
+	PyDict_SetItemString(py_domain_info, "security_identifier",
+			pytalloc_steal(dom_sid_Type, &td->security_identifier));
+	PyDict_SetItemString(py_domain_info, "trust_auth_incoming",
+			PyString_FromStringAndSize((char *)td->trust_auth_incoming.data,
+						td->trust_auth_incoming.length));
+	PyDict_SetItemString(py_domain_info, "trust_auth_outgoing",
+			PyString_FromStringAndSize((char *)td->trust_auth_outgoing.data,
+						td->trust_auth_outgoing.length));
+	PyDict_SetItemString(py_domain_info, "trust_direction",
+			PyInt_FromLong(td->trust_direction));
+	PyDict_SetItemString(py_domain_info, "trust_type",
+			PyInt_FromLong(td->trust_type));
+	PyDict_SetItemString(py_domain_info, "trust_attributes",
+			PyInt_FromLong(td->trust_attributes));
+	PyDict_SetItemString(py_domain_info, "trust_forest_trust_info",
+			PyString_FromStringAndSize((char *)td->trust_forest_trust_info.data,
+						td->trust_forest_trust_info.length));
+
+	talloc_free(tframe);
+
+	return py_domain_info;
+}
+
+
+static PyObject *py_pdb_get_trusted_domain_by_sid(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	PyObject *py_domain_sid;
+	struct dom_sid *domain_sid;
+	struct pdb_trusted_domain *td;
+	PyObject *py_domain_info;
+
+	if (!PyArg_ParseTuple(args, "O!:get_trusted_domain_by_sid", dom_sid_Type, &py_domain_sid)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	domain_sid = pytalloc_get_ptr(py_domain_sid);
+
+	status = methods->get_trusted_domain_by_sid(methods, tframe, domain_sid, &td);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to get trusted domain information, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_domain_info = PyDict_New();
+	if (py_domain_info == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	PyDict_SetItemString(py_domain_info, "domain_name",
+			PyString_FromString(td->domain_name));
+	PyDict_SetItemString(py_domain_info, "netbios_name",
+			PyString_FromString(td->netbios_name));
+	PyDict_SetItemString(py_domain_info, "security_identifier",
+			pytalloc_steal(dom_sid_Type, &td->security_identifier));
+	PyDict_SetItemString(py_domain_info, "trust_auth_incoming",
+			PyString_FromStringAndSize((char *)td->trust_auth_incoming.data,
+						td->trust_auth_incoming.length));
+	PyDict_SetItemString(py_domain_info, "trust_auth_outgoing",
+			PyString_FromStringAndSize((char *)td->trust_auth_outgoing.data,
+						td->trust_auth_outgoing.length));
+	PyDict_SetItemString(py_domain_info, "trust_direction",
+			PyInt_FromLong(td->trust_direction));
+	PyDict_SetItemString(py_domain_info, "trust_type",
+			PyInt_FromLong(td->trust_type));
+	PyDict_SetItemString(py_domain_info, "trust_attributes",
+			PyInt_FromLong(td->trust_attributes));
+	PyDict_SetItemString(py_domain_info, "trust_forest_trust_info",
+			PyString_FromStringAndSize((char *)td->trust_forest_trust_info.data,
+						td->trust_forest_trust_info.length));
+
+	talloc_free(tframe);
+
+	return py_domain_info;
+}
+
+
+static PyObject *py_pdb_set_trusted_domain(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *domain;
+	PyObject *py_td_info;
+	struct pdb_trusted_domain td_info;
+	PyObject *py_tmp;
+	Py_ssize_t len;
+
+	if (!PyArg_ParseTuple(args, "sO!:set_trusted_domain", &domain, &PyDict_Type, &py_td_info)) {
+		return NULL;
+	}
+
+	py_tmp = PyDict_GetItemString(py_td_info, "domain_name");
+	td_info.domain_name = PyString_AsString(py_tmp);
+
+	py_tmp = PyDict_GetItemString(py_td_info, "netbios_name");
+	td_info.netbios_name = PyString_AsString(py_tmp);
+
+	py_tmp = PyDict_GetItemString(py_td_info, "security_identifier");
+	td_info.security_identifier = *pytalloc_get_type(py_tmp, struct dom_sid);
+
+	py_tmp = PyDict_GetItemString(py_td_info, "trust_auth_incoming");
+	PyString_AsStringAndSize(py_tmp, (char **)&td_info.trust_auth_incoming.data, &len);
+	td_info.trust_auth_incoming.length = len;
+
+	py_tmp = PyDict_GetItemString(py_td_info, "trust_auth_outgoing");
+	PyString_AsStringAndSize(py_tmp, (char **)&td_info.trust_auth_outgoing.data, &len);
+	td_info.trust_auth_outgoing.length = len;
+
+	py_tmp = PyDict_GetItemString(py_td_info, "trust_direction");
+	td_info.trust_direction = PyInt_AsLong(py_tmp);
+
+	py_tmp = PyDict_GetItemString(py_td_info, "trust_type");
+	td_info.trust_type = PyInt_AsLong(py_tmp);
+
+	py_tmp = PyDict_GetItemString(py_td_info, "trust_attributes");
+	td_info.trust_attributes = PyInt_AsLong(py_tmp);
+
+	py_tmp = PyDict_GetItemString(py_td_info, "trust_forest_trust_info");
+	PyString_AsStringAndSize(py_tmp, (char **)&td_info.trust_forest_trust_info.data, &len);
+	td_info.trust_forest_trust_info.length = len;
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->set_trusted_domain(methods, domain, &td_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to set trusted domain information, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_del_trusted_domain(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *domain;
+
+	if (!PyArg_ParseTuple(args, "s:del_trusted_domain", &domain)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->del_trusted_domain(methods, domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to delete trusted domain, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_enum_trusted_domains(pytalloc_Object *self)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	uint32_t num_domains;
+	struct pdb_trusted_domain **td_info, *td;
+	PyObject *py_td_info, *py_domain_info;
+	int i;
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->enum_trusted_domains(methods, tframe, &num_domains, &td_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to delete trusted domain, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_td_info = PyList_New(0);
+	if (py_td_info == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	for (i=0; i<num_domains; i++) {
+
+		py_domain_info = PyDict_New();
+		if (py_domain_info == NULL) {
+			PyErr_NoMemory();
+			Py_DECREF(py_td_info);
+			talloc_free(tframe);
+			return NULL;
+		}
+
+		td = td_info[i];
+
+		PyDict_SetItemString(py_domain_info, "domain_name",
+				PyString_FromString(td->domain_name));
+		PyDict_SetItemString(py_domain_info, "netbios_name",
+				PyString_FromString(td->netbios_name));
+		PyDict_SetItemString(py_domain_info, "security_identifier",
+				pytalloc_steal(dom_sid_Type, &td->security_identifier));
+		PyDict_SetItemString(py_domain_info, "trust_auth_incoming",
+				PyString_FromStringAndSize((char *)td->trust_auth_incoming.data,
+							td->trust_auth_incoming.length));
+		PyDict_SetItemString(py_domain_info, "trust_auth_outgoing",
+				PyString_FromStringAndSize((char *)td->trust_auth_outgoing.data,
+							td->trust_auth_outgoing.length));
+		PyDict_SetItemString(py_domain_info, "trust_direction",
+				PyInt_FromLong(td->trust_direction));
+		PyDict_SetItemString(py_domain_info, "trust_type",
+				PyInt_FromLong(td->trust_type));
+		PyDict_SetItemString(py_domain_info, "trust_attributes",
+				PyInt_FromLong(td->trust_attributes));
+		PyDict_SetItemString(py_domain_info, "trust_forest_trust_info",
+				PyString_FromStringAndSize((char *)td->trust_forest_trust_info.data,
+							td->trust_forest_trust_info.length));
+		PyList_Append(py_td_info, py_domain_info);
+	}
+
+	talloc_free(tframe);
+
+	return py_td_info;
+}
+
+
+static PyObject *py_pdb_get_secret(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *secret_name;
+	DATA_BLOB secret_current, secret_old;
+	NTTIME secret_current_lastchange, secret_old_lastchange;
+	PyObject *py_sd;
+	struct security_descriptor *sd;
+	PyObject *py_secret;
+
+	if (!PyArg_ParseTuple(args, "s:get_secret_name", &secret_name)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_sd = pytalloc_new(struct security_descriptor, security_Type);
+	if (py_sd == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+	sd = pytalloc_get_ptr(py_sd);
+
+	status = methods->get_secret(methods, tframe, secret_name,
+					&secret_current,
+					&secret_current_lastchange,
+					&secret_old,
+					&secret_old_lastchange,
+					&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to get information for secret (%s), (%d,%s)",
+				secret_name,
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_secret = PyDict_New();
+	if (py_secret == NULL) {
+		PyErr_NoMemory();
+		Py_DECREF(py_sd);
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	PyDict_SetItemString(py_secret, "secret_current",
+			PyString_FromStringAndSize((char *)secret_current.data, secret_current.length));
+	PyDict_SetItemString(py_secret, "secret_current_lastchange",
+			PyLong_FromUnsignedLongLong(secret_current_lastchange));
+	PyDict_SetItemString(py_secret, "secret_old",
+			PyString_FromStringAndSize((char *)secret_old.data, secret_old.length));
+	PyDict_SetItemString(py_secret, "secret_old_lastchange",
+			PyLong_FromUnsignedLongLong(secret_old_lastchange));
+	PyDict_SetItemString(py_secret, "sd", py_sd);
+
+	talloc_free(tframe);
+
+	return py_secret;
+}
+
+
+static PyObject *py_pdb_set_secret(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *secret_name;
+	PyObject *py_secret;
+	PyObject *py_secret_cur, *py_secret_old, *py_sd;
+	DATA_BLOB secret_current, secret_old;
+	struct security_descriptor *sd;
+	Py_ssize_t len;
+
+	if (!PyArg_ParseTuple(args, "sO!:set_secret_name", &secret_name, PyDict_Type, &py_secret)) {
+		return NULL;
+	}
+
+	py_secret_cur = PyDict_GetItemString(py_secret, "secret_current");
+	py_secret_old = PyDict_GetItemString(py_secret, "secret_old");
+	py_sd = PyDict_GetItemString(py_secret, "sd");
+
+	PY_CHECK_TYPE(&PyString_Type, py_secret_cur, return NULL;);
+	PY_CHECK_TYPE(&PyString_Type, py_secret_old, return NULL;);
+	PY_CHECK_TYPE(security_Type, py_sd, return NULL;);
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	PyString_AsStringAndSize(py_secret_cur, (char **)&secret_current.data, &len);
+	secret_current.length = len;
+	PyString_AsStringAndSize(py_secret_old, (char **)&secret_old.data, &len);
+	secret_current.length = len;
+	sd = pytalloc_get_ptr(py_sd);
+
+	status = methods->set_secret(methods, secret_name, &secret_current, &secret_old, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to set information for secret (%s), (%d,%s)",
+				secret_name,
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_pdb_delete_secret(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	const char *secret_name;
+
+	if (!PyArg_ParseTuple(args, "s:delete_secret", &secret_name)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->delete_secret(methods, secret_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to delete secret (%s), (%d,%s)",
+				secret_name,
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	talloc_free(tframe);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_pdb_methods[] = {
 	{ "domain_info", (PyCFunction)py_pdb_domain_info, METH_NOARGS,
 		"domain_info() -> str\n\n \
@@ -2598,11 +3370,11 @@ static PyMethodDef py_pdb_methods[] = {
 		"delete_group_mapping_entry(groupmap) -> None\n\n \
 		Delete group mapping entry for groupmap object." },
 	{ "enum_group_mapping", (PyCFunction)py_pdb_enum_group_mapping, METH_VARARGS,
-		"enum_group_mapping(domain_sid) -> List\n\n \
-		Return list of group mappings as groupmap objects." },
+		"enum_group_mapping([domain_sid, [type, [unix_only]]]) -> List\n\n \
+		Return list of group mappings as groupmap objects. Optional arguments are domain_sid object, type of group, unix only flag." },
 	{ "enum_group_members", (PyCFunction)py_pdb_enum_group_members, METH_VARARGS,
 		"enum_group_members(group_sid) -> List\n\n \
-		Return list of group members." },
+		Return list of users (dom_sid object) in group." },
 	/* enum_group_memberships */
 	/* set_unix_primary_group */
 	{ "add_groupmem", (PyCFunction)py_pdb_add_groupmem, METH_VARARGS,
@@ -2631,7 +3403,7 @@ static PyMethodDef py_pdb_methods[] = {
 		Remove a user from alias entry." },
 	{ "enum_aliasmem", (PyCFunction)py_pdb_enum_aliasmem, METH_VARARGS,
 		"enum_aliasmem(alias_sid) -> List\n\n \
-		Return a list of users for alias entry." },
+		Return a list of members (dom_sid object) for alias entry." },
 	/* enum_alias_memberships */
 	/* lookup_rids */
 	/* lookup_names */
@@ -2654,23 +3426,55 @@ static PyMethodDef py_pdb_methods[] = {
 		"search_aliases(domain_sid) -> List\n\n \
 		Search aliases. domain_sid is dcerpc.security.dom_sid object.\n \
 		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
-	/* uid_to_sid */
-	/* gid_to_sid */
-	/* sid_to_id */
+	{ "uid_to_sid", (PyCFunction)py_pdb_uid_to_sid, METH_VARARGS,
+		"uid_to_sid(uid) -> sid\n\n \
+		Return sid for given user id." },
+	{ "gid_to_sid", (PyCFunction)py_pdb_gid_to_sid, METH_VARARGS,
+		"gid_to_sid(gid) -> sid\n\n \
+		Return sid for given group id." },
+	{ "sid_to_id", (PyCFunction)py_pdb_sid_to_id, METH_VARARGS,
+		"sid_to_id(sid) -> Tuple\n\n \
+		Return id and type for given sid." },
 	/* capabilities */
-	/* new_rid */
-	/* get_trusteddom_pw */
-	/* set_trusteddom_pw */
-	/* del_trusteddom_pw */
-	/* enum_trusteddoms */
-	/* get_trusted_domain */
-	/* get_trusted_domain_by_sid */
-	/* set_trusted_domain */
-	/* del_trusted_domain */
-	/* enum_trusted_domains */
-	/* get_secret */
-	/* set_secret */
-	/* delete_secret */
+	{ "new_rid", (PyCFunction)py_pdb_new_rid, METH_NOARGS,
+		"new_rid() -> rid\n\n \
+		Get a new rid." },
+	{ "get_trusteddom_pw", (PyCFunction)py_pdb_get_trusteddom_pw, METH_VARARGS,
+		"get_trusteddom_pw(domain) -> Mapping\n\n \
+		Get trusted domain password, sid and last set time in a dictionary." },
+	{ "set_trusteddom_pw", (PyCFunction)py_pdb_set_trusteddom_pw, METH_VARARGS,
+		"set_trusteddom_pw(domain, pwd, sid) -> None\n\n \
+		Set trusted domain password." },
+	{ "del_trusteddom_pw", (PyCFunction)py_pdb_del_trusteddom_pw, METH_VARARGS,
+		"del_trusteddom_pw(domain) -> None\n\n \
+		Delete trusted domain password." },
+	{ "enum_trusteddoms", (PyCFunction)py_pdb_enum_trusteddoms, METH_NOARGS,
+		"enum_trusteddoms() -> List\n\n \
+		Get list of trusted domains. Each item is a dictionary with name and sid keys" },
+	{ "get_trusted_domain", (PyCFunction)py_pdb_get_trusted_domain, METH_VARARGS,
+		"get_trusted_domain(domain) -> Mapping\n\n \
+		Get trusted domain information by name. Information is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info." },
+	{ "get_trusted_domain_by_sid", (PyCFunction)py_pdb_get_trusted_domain_by_sid, METH_VARARGS,
+		"get_trusted_domain_by_sid(domain_sid) -> Mapping\n\n \
+		Get trusted domain information by sid. Information is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info" },
+	{ "set_trusted_domain", (PyCFunction)py_pdb_set_trusted_domain, METH_VARARGS,
+		"set_trusted_domain(domain, Mapping) -> None\n\n \
+		Set trusted domain information for domain. Mapping is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info." },
+	{ "del_trusted_domain", (PyCFunction)py_pdb_del_trusted_domain, METH_VARARGS,
+		"del_trusted_domain(domain) -> None\n\n \
+		Delete trusted domain." },
+	{ "enum_trusted_domains", (PyCFunction)py_pdb_enum_trusted_domains, METH_VARARGS,
+		"enum_trusted_domains() -> List\n\n \
+		Get list of trusted domains. Each entry is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info." },
+	{ "get_secret", (PyCFunction)py_pdb_get_secret, METH_VARARGS,
+		"get_secret(secret_name) -> Mapping\n\n \
+		Get secret information for secret_name. Information is a dictionary with keys - secret_current, secret_current_lastchange, secret_old, secret_old_lastchange, sd." },
+	{ "set_secret", (PyCFunction)py_pdb_set_secret, METH_VARARGS,
+		"set_secret(secret_name, Mapping) -> None\n\n \
+		Set secret information for secret_name using dictionary with keys - secret_current, sd." },
+	{ "delete_secret", (PyCFunction)py_pdb_delete_secret, METH_VARARGS,
+		"delete_secret(secret_name) -> None\n\n \
+		Delete secret information for secret_name." },
 	{ NULL },
 };
 
@@ -2898,8 +3702,14 @@ void initpassdb(void)
 	}
 
 	dom_sid_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "dom_sid");
-	Py_DECREF(mod);
 	if (dom_sid_Type == NULL) {
+		return;
+	}
+
+	/* Import security_descriptor type from dcerpc.security */
+	security_Type = (PyTypeObject *)PyObject_GetAttrString(mod, "descriptor");
+	Py_DECREF(mod);
+	if (security_Type == NULL) {
 		return;
 	}
 
