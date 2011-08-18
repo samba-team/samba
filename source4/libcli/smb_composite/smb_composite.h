@@ -27,10 +27,12 @@
   particularly designed to be used in async applications
 */
 
+#ifndef __SMB_COMPOSITE_H__
+#define __SMB_COMPOSITE_H__
+
 #include "libcli/raw/signing.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
-
 
 /*
   a composite open/read(s)/close request that loads a whole file
@@ -45,6 +47,13 @@ struct smb_composite_loadfile {
 		uint32_t size;
 	} out;
 };
+
+struct composite_context *smb_composite_loadfile_send(struct smbcli_tree *tree, 
+						     struct smb_composite_loadfile *io);
+NTSTATUS smb_composite_loadfile_recv(struct composite_context *c, TALLOC_CTX *mem_ctx);
+NTSTATUS smb_composite_loadfile(struct smbcli_tree *tree, 
+				TALLOC_CTX *mem_ctx,
+				struct smb_composite_loadfile *io);
 
 struct smb_composite_fetchfile {
 	struct {
@@ -68,6 +77,13 @@ struct smb_composite_fetchfile {
 	} out;
 };
 
+struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetchfile *io,
+						       struct tevent_context *event_ctx);
+NTSTATUS smb_composite_fetchfile_recv(struct composite_context *c,
+				      TALLOC_CTX *mem_ctx);
+NTSTATUS smb_composite_fetchfile(struct smb_composite_fetchfile *io,
+				 TALLOC_CTX *mem_ctx);
+
 /*
   a composite open/write(s)/close request that saves a whole file from
   memory. Used as a demo of the composite system.
@@ -80,6 +96,11 @@ struct smb_composite_savefile {
 	} in;
 };
 
+struct composite_context *smb_composite_savefile_send(struct smbcli_tree *tree, 
+						      struct smb_composite_savefile *io);
+NTSTATUS smb_composite_savefile_recv(struct composite_context *c);
+NTSTATUS smb_composite_savefile(struct smbcli_tree *tree, 
+				struct smb_composite_savefile *io);
 
 /*
   a composite request for a full connection to a remote server. Includes
@@ -111,6 +132,15 @@ struct smb_composite_connect {
 	} out;
 };
 
+struct composite_context *smb_composite_connect_send(struct smb_composite_connect *io,
+						     TALLOC_CTX *mem_ctx,
+						     struct resolve_context *resolve_ctx,
+						     struct tevent_context *event_ctx);
+NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem_ctx);
+NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx,
+			       struct resolve_context *resolve_ctx,
+			       struct tevent_context *ev);
+
 
 /*
   generic session setup interface that takes care of which
@@ -128,6 +158,11 @@ struct smb_composite_sesssetup {
 		uint16_t vuid;
 	} out;		
 };
+
+struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *session, 
+						       struct smb_composite_sesssetup *io);
+NTSTATUS smb_composite_sesssetup_recv(struct composite_context *c);
+NTSTATUS smb_composite_sesssetup(struct smbcli_session *session, struct smb_composite_sesssetup *io);
 
 /*
   query file system info
@@ -151,6 +186,15 @@ struct smb_composite_fsinfo {
 	} out;
 };
 
+struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree, 
+						    struct smb_composite_fsinfo *io,
+						    struct resolve_context *resolve_ctx);
+NTSTATUS smb_composite_fsinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx);
+NTSTATUS smb_composite_fsinfo(struct smbcli_tree *tree, 
+			      TALLOC_CTX *mem_ctx,
+			      struct smb_composite_fsinfo *io,
+			      struct resolve_context *resolve_ctx);
+
 /*
   composite call for appending new acl to the file's security descriptor and get 
   new full acl
@@ -167,6 +211,13 @@ struct smb_composite_appendacl {
 		struct security_descriptor *sd;
 	} out;
 };
+
+struct composite_context *smb_composite_appendacl_send(struct smbcli_tree *tree, 
+							struct smb_composite_appendacl *io);
+NTSTATUS smb_composite_appendacl_recv(struct composite_context *c, TALLOC_CTX *mem_ctx);
+NTSTATUS smb_composite_appendacl(struct smbcli_tree *tree, 
+				TALLOC_CTX *mem_ctx,
+				struct smb_composite_appendacl *io);
 
 /*
   a composite API to fire connect() calls to multiple targets, picking the
@@ -189,4 +240,20 @@ struct smb_composite_connectmulti {
 struct smbcli_session;
 struct resolve_context;
 
-#include "libcli/smb_composite/proto.h"
+struct composite_context *smb2_composite_unlink_send(struct smb2_tree *tree, 
+						     union smb_unlink *io);
+NTSTATUS smb2_composite_unlink(struct smb2_tree *tree, union smb_unlink *io);
+struct composite_context *smb2_composite_mkdir_send(struct smb2_tree *tree, 
+						     union smb_mkdir *io);
+NTSTATUS smb2_composite_mkdir(struct smb2_tree *tree, union smb_mkdir *io);
+struct composite_context *smb2_composite_rmdir_send(struct smb2_tree *tree, 
+						    struct smb_rmdir *io);
+NTSTATUS smb2_composite_rmdir(struct smb2_tree *tree, struct smb_rmdir *io);
+struct tevent_req *smb2_composite_setpathinfo_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct smb2_tree *tree,
+						   const union smb_setfileinfo *io);
+NTSTATUS smb2_composite_setpathinfo_recv(struct tevent_req *req);
+NTSTATUS smb2_composite_setpathinfo(struct smb2_tree *tree, union smb_setfileinfo *io);
+
+#endif /* __SMB_COMPOSITE_H__ */
