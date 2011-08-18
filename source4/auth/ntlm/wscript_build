@@ -51,7 +51,7 @@ bld.SAMBA_MODULE('auth4_unix',
 bld.SAMBA_LIBRARY('auth4',
 	source='auth.c auth_util.c auth_simple.c',
 	autoproto='auth_proto.h',
-	deps='samba-util security samdb credentials tevent-util LIBWBCLIENT_OLD auth_unix_token',
+	deps='samba-util security samdb samba-credentials tevent-util LIBWBCLIENT_OLD auth_unix_token',
 	private_library=True
 	)
 

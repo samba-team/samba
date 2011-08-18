@@ -6,7 +6,7 @@ bld.SAMBA_MODULE('gensec_ntlmssp',
 	autoproto='proto.h',
 	subsystem='gensec',
 	init_function='gensec_ntlmssp_init',
-	deps='credentials NTLMSSP_COMMON',
+	deps='samba-credentials NTLMSSP_COMMON',
 	internal_module=True
 	)
 

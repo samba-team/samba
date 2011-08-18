@@ -37,6 +37,6 @@ bld.SAMBA_MODULE('ldb_ildap',
                  source='ldb_ildap.c',
                  init_function='ldb_ildap_init',
                  module_init_name='ldb_init_module',
-                 deps='talloc cli-ldap credentials auth_system_session',
+                 deps='talloc cli-ldap samba-credentials auth_system_session',
                  internal_module=False,
                  subsystem='ldb')

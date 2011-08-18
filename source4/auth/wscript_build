@@ -9,7 +9,7 @@ bld.RECURSE('credentials')
 bld.SAMBA_SUBSYSTEM('auth_session',
 	source='session.c',
 	autoproto='session_proto.h',
-	public_deps='credentials',
+	public_deps='samba-credentials',
 	public_headers='session.h',
 	header_path='samba',
 	deps='samdb auth4_sam'
@@ -24,14 +24,14 @@ bld.SAMBA_SUBSYSTEM('auth_unix_token',
 
 bld.SAMBA_SUBSYSTEM('samba_server_gensec',
 	source='samba_server_gensec.c',
-	public_deps='credentials gensec auth4'
+	public_deps='samba-credentials gensec auth4'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('auth_system_session',
 	source='system_session.c',
 	autoproto='system_session_proto.h',
-	public_deps='credentials',
+	public_deps='samba-credentials',
 	deps='auth_session',
 	)
 

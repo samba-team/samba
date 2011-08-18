@@ -11,7 +11,7 @@ bld.SAMBA_MODULE('service_kdc',
 
 bld.SAMBA_SUBSYSTEM('HDB_SAMBA4',
 	source='hdb-samba4.c',
-	deps='ldb auth4_sam auth_sam_reply credentials hdb db-glue samba-hostconfig com_err',
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue samba-hostconfig com_err',
 	includes='../heimdal/kdc',
 	)
 
@@ -19,14 +19,14 @@ bld.SAMBA_SUBSYSTEM('HDB_SAMBA4',
 bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 	source='wdc-samba4.c',
 	includes='../heimdal/kdc',
-	deps='ldb auth4_sam auth_sam_reply credentials hdb PAC_GLUE samba-hostconfig com_err'
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
 	includes='../heimdal/kdc',
-	deps='ldb auth4_sam auth_sam_reply credentials hdb samba-hostconfig com_err'
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb samba-hostconfig com_err'
 	)
 
 bld.SAMBA_LIBRARY('pac',
@@ -38,7 +38,7 @@ bld.SAMBA_LIBRARY('pac',
 
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
-	deps='ldb auth4_sam auth_sam_reply credentials hdb samba-hostconfig com_err kdc-policy',
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb samba-hostconfig com_err kdc-policy',
 	private_library=True,
 	includes='../heimdal/kdc',
 	)
@@ -53,7 +53,7 @@ bld.SAMBA_LIBRARY('kdc-policy',
 
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
 	source='mit_samba.c',
-	deps='ldb auth4_sam auth_sam_reply credentials hdb db-glue PAC_GLUE samba-hostconfig com_err'
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue PAC_GLUE samba-hostconfig com_err'
 	)
 
 

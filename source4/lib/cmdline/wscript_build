@@ -3,7 +3,7 @@
 bld.SAMBA_LIBRARY('cmdline-credentials',
                   source='credentials.c',
                   autoproto='credentials.h',
-                  public_deps='credentials popt',
+                  public_deps='samba-credentials popt',
                   private_library=True)
 
 bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
@@ -17,7 +17,7 @@ bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
 bld.SAMBA_SUBSYSTEM('POPT_CREDENTIALS',
 	source='popt_credentials.c',
 	autoproto='popt_credentials.h',
-	public_deps='credentials CREDENTIALS_SECRETS cmdline-credentials popt',
+	public_deps='samba-credentials CREDENTIALS_SECRETS cmdline-credentials popt',
 	deps='samba-util'
 	)
 
