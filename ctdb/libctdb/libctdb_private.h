@@ -8,6 +8,7 @@
 #include <ctdb_protocol.h>
 #include <syslog.h>
 #include <tdb.h>
+#include <stddef.h>
 
 #ifndef offsetof
 #define offsetof(t,f) ((unsigned int)&((t *)0)->f)
