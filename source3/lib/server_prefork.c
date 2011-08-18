@@ -240,9 +240,11 @@ static int prefork_sort_oldest(const void *ap, const void *bp)
 	return -1;
 }
 
-int prefork_retire_children(struct prefork_pool *pfp,
+int prefork_retire_children(struct messaging_context *msg_ctx,
+			    struct prefork_pool *pfp,
 			    int num_children, time_t age_limit)
 {
+	const DATA_BLOB ping = data_blob_null;
 	time_t now = time(NULL);
 	struct prefork_oldest *oldest;
 	int i, j;
@@ -267,13 +269,15 @@ int prefork_retire_children(struct prefork_pool *pfp,
 		prefork_sort_oldest);
 
 	for (i = 0, j = 0; i < pfp->pool_size && j < num_children; i++) {
-		if ((pfp->pool[i].status == PF_WORKER_ALIVE ||
-		     pfp->pool[i].status == PF_WORKER_ACCEPTING) &&
-		    pfp->pool[i].started <= age_limit) {
+		if (((pfp->pool[i].status == PF_WORKER_ALIVE) &&
+		     (pfp->pool[i].num_clients < 1)) &&
+		    (pfp->pool[i].started <= age_limit)) {
 			/* tell the child it's time to give up */
 			DEBUG(5, ("Retiring pid %d!\n", pfp->pool[i].pid));
 			pfp->pool[i].cmds = PF_SRV_MSG_EXIT;
-			kill(pfp->pool[i].pid, SIGHUP);
+			messaging_send(msg_ctx,
+					pid_to_procid(pfp->pool[i].pid),
+					MSG_PREFORK_PARENT_EVENT, &ping);
 			j++;
 		}
 	}
@@ -581,12 +585,11 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	req = ctx->req;
 	state = tevent_req_data(ctx->req, struct pf_listen_state);
 
-	if (state->pf->cmds == PF_SRV_MSG_EXIT) {
+	if ((state->pf->cmds == PF_SRV_MSG_EXIT) &&
+	    (state->pf->num_clients <= 0)) {
 		/* We have been asked to exit, so drop here and the next
 		 * child will pick it up */
-		if (state->pf->num_clients <= 0) {
-			state->pf->status = PF_WORKER_EXITING;
-		}
+		state->pf->status = PF_WORKER_EXITING;
 		state->error = EINTR;
 		goto done;
 	}

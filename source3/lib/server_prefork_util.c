@@ -102,7 +102,7 @@ void pfh_manage_pool(struct tevent_context *ev_ctx,
 			n = total - cfg->min_children;
 		}
 		if (n >= 0) {
-			prefork_retire_children(pool, n,
+			prefork_retire_children(msg_ctx, pool, n,
 						now - cfg->child_min_life);
 		}
 	}

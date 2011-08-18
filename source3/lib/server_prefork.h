@@ -152,6 +152,7 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 /**
 * @brief Commands a number of children to stop and exit
 *
+* @param msg_ctx	The messaging context.
 * @param pfp		The pool.
 * @param num_children	The number of children we need to retire.
 * @param age_limit	The minimum age a child has been active to be
@@ -165,7 +166,8 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 *	If all the available children are too young or are busy then it
 *	is possible that none will be asked to stop.
 */
-int prefork_retire_children(struct prefork_pool *pfp,
+int prefork_retire_children(struct messaging_context *msg_ctx,
+			    struct prefork_pool *pfp,
 			    int num_children, time_t age_limit);
 /**
 * @brief Count the number of children
