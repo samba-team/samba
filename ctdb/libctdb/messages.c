@@ -57,34 +57,7 @@ void remove_message_handlers(struct ctdb_connection *ctdb)
 	}
 }
 
-bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
-				   struct ctdb_request *req)
-{
-	struct message_handler_info *info = req->extra;
-	struct ctdb_reply_control *reply;
-
-	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_REGISTER_SRVID);
-	if (!reply) {
-		return false;
-	}
-	if (reply->status != 0) {
-		DEBUG(ctdb, LOG_ERR,
-		      "ctdb_set_message_handler_recv: status %i",
-		      reply->status);
-		return false;
-	}
-
-	/* Put ourselves in list of handlers. */
-	DLIST_ADD(ctdb->message_handlers, info);
-	/* Keep safe from destructor */
-	req->extra = NULL;
-	return true;
-}
-
-static void free_info(struct ctdb_connection *ctdb, struct ctdb_request *req)
-{
-	free(req->extra);
-}
+static void free_info(struct ctdb_connection *ctdb, struct ctdb_request *req);
 
 struct ctdb_request *
 ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
@@ -122,6 +95,35 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 	      "ctdb_set_message_handler_send: sending request %u for id %llx",
 	      req->hdr.hdr->reqid, srvid);
 	return req;
+}
+
+static void free_info(struct ctdb_connection *ctdb, struct ctdb_request *req)
+{
+	free(req->extra);
+}
+
+bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
+				   struct ctdb_request *req)
+{
+	struct message_handler_info *info = req->extra;
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_REGISTER_SRVID);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status != 0) {
+		DEBUG(ctdb, LOG_ERR,
+		      "ctdb_set_message_handler_recv: status %i",
+		      reply->status);
+		return false;
+	}
+
+	/* Put ourselves in list of handlers. */
+	DLIST_ADD(ctdb->message_handlers, info);
+	/* Keep safe from destructor */
+	req->extra = NULL;
+	return true;
 }
 
 struct ctdb_request *
