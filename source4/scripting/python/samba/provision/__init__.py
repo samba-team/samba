@@ -437,6 +437,7 @@ class ProvisionResult(object):
         self.domaindn = None
         self.lp = None
         self.samdb = None
+        self.idmap = None
 
 
 def check_install(lp, session_info, credentials):
@@ -1904,6 +1905,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     result.paths = paths
     result.lp = lp
     result.samdb = samdb
+    result.idmap = idmap
     return result
 
 
