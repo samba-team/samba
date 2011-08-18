@@ -33,14 +33,11 @@
 #include "../libcli/security/dom_sid.h"
 #include "cbuf.h"
 #include "srprs.h"
-#include <termios.h>
 #include "util_tdb.h"
+#include "interact.h"
 
 static int traverse_commit(struct db_record *diff_rec, void* data);
 static int traverse_check(struct db_record *rec, void* data);
-
-static char* interact_edit(TALLOC_CTX* mem_ctx, const char* str);
-static int interact_prompt(const char* msg, const char* accept, char def);
 
 /* TDB_DATA *******************************************************************/
 static char*    print_data(TALLOC_CTX* mem_ctx, TDB_DATA d);
@@ -670,31 +667,6 @@ struct record* reverse_record(struct record* in)
 
 /******************************************************************************/
 
-int interact_prompt(const char* msg, const char* acc, char def) {
-	struct termios old_tio, new_tio;
-	int c;
-
-	tcgetattr(STDIN_FILENO, &old_tio);
-	new_tio=old_tio;
-	new_tio.c_lflag &=(~ICANON & ~ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
-
-	do {
-		d_printf("%s? [%c]\n", msg, def);
-		fflush(stdout);
-		c = getchar();
-		if (c == '\n') {
-			c = def;
-			break;
-		}
-		else if (strchr(acc, tolower(c)) != NULL) {
-			break;
-		}
-		d_printf("Invalid input '%c'\n", c);
-	} while(c != EOF);
-	tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
-	return c;
-}
 
 char* print_data(TALLOC_CTX* mem_ctx, TDB_DATA d)
 {
@@ -724,70 +696,6 @@ TDB_DATA parse_data(TALLOC_CTX* mem_ctx, const char** ptr) {
 	talloc_free(ost);
 	return ret;
 }
-
-static const char* get_editor(void) {
-	static const char* editor = NULL;
-	if (editor == NULL) {
-		editor = getenv("VISUAL");
-		if (editor == NULL) {
-			editor = getenv("EDITOR");
-		}
-		if (editor == NULL) {
-			editor = "vi";
-		}
-	}
-	return editor;
-}
-
-char* interact_edit(TALLOC_CTX* mem_ctx, const char* str) {
-	char fname[] = "/tmp/net_idmap_check.XXXXXX";
-	char buf[128];
-	char* ret = NULL;
-	FILE* file;
-
-	int fd = mkstemp(fname);
-	if (fd == -1) {
-		DEBUG(0, ("failed to mkstemp %s: %s\n", fname,
-			  strerror(errno)));
-		return NULL;
-	}
-
-	file  = fdopen(fd, "w");
-	if (!file) {
-		DEBUG(0, ("failed to open %s for writing: %s\n", fname,
-			  strerror(errno)));
-		close(fd);
-		unlink(fname);
-		return NULL;
-	}
-
-	fprintf(file, "%s", str);
-	fclose(file);
-
-	snprintf(buf, sizeof(buf), "%s %s\n", get_editor(), fname);
-	if (system(buf) != 0) {
-		DEBUG(0, ("failed to start editor %s: %s\n", buf,
-			  strerror(errno)));
-		unlink(fname);
-		return NULL;
-	}
-
-	file = fopen(fname, "r");
-	if (!file) {
-		DEBUG(0, ("failed to open %s for reading: %s\n", fname,
-			  strerror(errno)));
-		unlink(fname);
-		return NULL;
-	}
-	while ( fgets(buf, sizeof(buf), file) ) {
-		ret = talloc_strdup_append(ret, buf);
-	}
-	fclose(file);
-	unlink(fname);
-
-	return talloc_steal(mem_ctx, ret);
-}
-
 
 static int traverse_print_diff(struct db_record *rec, void* data) {
 	struct check_ctx* ctx = (struct check_ctx*)data;
