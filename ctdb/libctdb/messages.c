@@ -60,7 +60,7 @@ void deliver_message(struct ctdb_connection *ctdb, struct ctdb_req_header *hdr)
 	if (!found) {
 		DEBUG(ctdb, LOG_WARNING,
 		      "ctdb_service: messsage for unregistered srvid %llu",
-		      msg->srvid);
+		      (unsigned long long)msg->srvid);
 	}
 }
 
@@ -112,7 +112,7 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 
 	DEBUG(ctdb, LOG_DEBUG,
 	      "ctdb_set_message_handler_send: sending request %u for id %llx",
-	      req->hdr.hdr->reqid, srvid);
+	      req->hdr.hdr->reqid, (unsigned long long)srvid);
 	return req;
 }
 
@@ -179,7 +179,7 @@ ctdb_remove_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 
 	DEBUG(ctdb, LOG_DEBUG,
 	      "ctdb_set_remove_handler_send: sending request %u for id %llu",
-	      req->hdr.hdr->reqid, srvid);
+	      req->hdr.hdr->reqid, (unsigned long long)srvid);
 	return req;
 }
 
