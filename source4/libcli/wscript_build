@@ -84,7 +84,8 @@ bld.SAMBA_LIBRARY('cli_raw',
 	autoproto='raw/raw_proto.h',
 	public_deps='samba_socket LIBPACKET LIBCRYPTO',
 	deps='cli_composite LIBCLI_RESOLVE security ndr samba-util errors charset talloc LIBCLI_SMB_COMPOSITE tevent NDR_NBT_BUF cli_smb_common',
-	private_library=True
+	public_headers='raw/request.h:smb_request.h raw/signing.h:smb_signing.h',
+	private_library=True,
 	)
 
 bld.RECURSE('smb2')
