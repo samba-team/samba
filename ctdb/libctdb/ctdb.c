@@ -559,6 +559,117 @@ void ctdb_detachdb(struct ctdb_connection *ctdb, struct ctdb_db *db)
 	free(db);
 }
 
+static void destroy_req_db(struct ctdb_connection *ctdb,
+			   struct ctdb_request *req);
+static void attachdb_done(struct ctdb_connection *ctdb,
+			  struct ctdb_request *req,
+			  void *_db);
+static void attachdb_getdbpath_done(struct ctdb_connection *ctdb,
+				    struct ctdb_request *req,
+				    void *_db);
+
+struct ctdb_request *
+ctdb_attachdb_send(struct ctdb_connection *ctdb,
+		   const char *name, bool persistent, uint32_t tdb_flags,
+		   ctdb_callback_t callback, void *private_data)
+{
+	struct ctdb_request *req;
+	struct ctdb_db *db;
+	uint32_t opcode;
+
+	/* FIXME: Search if db already open. */
+	db = malloc(sizeof(*db));
+	if (!db) {
+		return NULL;
+	}
+
+	if (persistent) {
+		opcode = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
+	} else {
+		opcode = CTDB_CONTROL_DB_ATTACH;
+	}
+
+	req = new_ctdb_control_request(ctdb, opcode, CTDB_CURRENT_NODE, name,
+				       strlen(name) + 1, attachdb_done, db);
+	if (!req) {
+		DEBUG(ctdb, LOG_ERR,
+		      "ctdb_attachdb_send: failed allocating DB_ATTACH");
+		free(db);
+		return NULL;
+	}
+
+	db->ctdb = ctdb;
+	db->tdb_flags = tdb_flags;
+	db->persistent = persistent;
+	db->callback = callback;
+	db->private_data = private_data;
+
+	req->extra_destructor = destroy_req_db;
+	/* This is set non-NULL when we succeed, see ctdb_attachdb_recv */
+	req->extra = NULL;
+
+	/* Flags get overloaded into srvid. */
+	req->hdr.control->srvid = tdb_flags;
+	DEBUG(db->ctdb, LOG_DEBUG,
+	      "ctdb_attachdb_send: DB_ATTACH request %p", req);
+	return req;
+}
+
+static void destroy_req_db(struct ctdb_connection *ctdb,
+			   struct ctdb_request *req)
+{
+	/* Incomplete db is in priv_data. */
+	free(req->priv_data);
+	/* second request is chained off this one. */
+	if (req->extra) {
+		ctdb_request_free(ctdb, req->extra);
+	}
+}
+
+static void attachdb_done(struct ctdb_connection *ctdb,
+			  struct ctdb_request *req,
+			  void *_db)
+{
+	struct ctdb_db *db = _db;
+	struct ctdb_request *req2;
+	struct ctdb_reply_control *reply;
+	enum ctdb_controls control = CTDB_CONTROL_DB_ATTACH;
+
+	if (db->persistent) {
+		control = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
+	}
+
+	reply = unpack_reply_control(ctdb, req, control);
+	if (!reply || reply->status != 0) {
+		if (reply) {
+			DEBUG(ctdb, LOG_ERR,
+			      "ctdb_attachdb_send(async): DB_ATTACH status %i",
+			      reply->status);
+		}
+		/* We failed.  Hand request to user and have them discover it
+		 * via ctdb_attachdb_recv. */
+		db->callback(ctdb, req, db->private_data);
+		return;
+	}
+	db->id = *(uint32_t *)reply->data;
+
+	/* Now we do another call, to get the dbpath. */
+	req2 = new_ctdb_control_request(db->ctdb, CTDB_CONTROL_GETDBPATH,
+					CTDB_CURRENT_NODE,
+					&db->id, sizeof(db->id),
+					attachdb_getdbpath_done, db);
+	if (!req2) {
+		DEBUG(db->ctdb, LOG_ERR,
+		      "ctdb_attachdb_send(async): failed to allocate");
+		db->callback(ctdb, req, db->private_data);
+		return;
+	}
+	req->extra = req2;
+	req2->extra = req;
+	DEBUG(db->ctdb, LOG_DEBUG,
+	      "ctdb_attachdb_send(async): created getdbpath request");
+}
+
 static void attachdb_getdbpath_done(struct ctdb_connection *ctdb,
 				    struct ctdb_request *req,
 				    void *_db)
@@ -614,108 +725,6 @@ struct ctdb_db *ctdb_attachdb_recv(struct ctdb_connection *ctdb,
 	DEBUG(db->ctdb, LOG_DEBUG,
 	      "ctdb_attachdb_recv: db %p, tdb %s", db, (char *)reply->data);
 	return db;
-}
-
-static void attachdb_done(struct ctdb_connection *ctdb,
-			  struct ctdb_request *req,
-			  void *_db)
-{
-	struct ctdb_db *db = _db;
-	struct ctdb_request *req2;
-	struct ctdb_reply_control *reply;
-	enum ctdb_controls control = CTDB_CONTROL_DB_ATTACH;
-
-	if (db->persistent) {
-		control = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
-	}
-
-	reply = unpack_reply_control(ctdb, req, control);
-	if (!reply || reply->status != 0) {
-		if (reply) {
-			DEBUG(ctdb, LOG_ERR,
-			      "ctdb_attachdb_send(async): DB_ATTACH status %i",
-			      reply->status);
-		}
-		/* We failed.  Hand request to user and have them discover it
-		 * via ctdb_attachdb_recv. */
-		db->callback(ctdb, req, db->private_data);
-		return;
-	}
-	db->id = *(uint32_t *)reply->data;
-
-	/* Now we do another call, to get the dbpath. */
-	req2 = new_ctdb_control_request(db->ctdb, CTDB_CONTROL_GETDBPATH,
-					CTDB_CURRENT_NODE,
-					&db->id, sizeof(db->id),
-					attachdb_getdbpath_done, db);
-	if (!req2) {
-		DEBUG(db->ctdb, LOG_ERR,
-		      "ctdb_attachdb_send(async): failed to allocate");
-		db->callback(ctdb, req, db->private_data);
-		return;
-	}
-	req->extra = req2;
-	req2->extra = req;
-	DEBUG(db->ctdb, LOG_DEBUG,
-	      "ctdb_attachdb_send(async): created getdbpath request");
-}
-
-static void destroy_req_db(struct ctdb_connection *ctdb,
-			   struct ctdb_request *req)
-{
-	/* Incomplete db is in priv_data. */
-	free(req->priv_data);
-	/* second request is chained off this one. */
-	if (req->extra) {
-		ctdb_request_free(ctdb, req->extra);
-	}
-}
-
-struct ctdb_request *
-ctdb_attachdb_send(struct ctdb_connection *ctdb,
-		   const char *name, bool persistent, uint32_t tdb_flags,
-		   ctdb_callback_t callback, void *private_data)
-{
-	struct ctdb_request *req;
-	struct ctdb_db *db;
-	uint32_t opcode;
-
-	/* FIXME: Search if db already open. */
-	db = malloc(sizeof(*db));
-	if (!db) {
-		return NULL;
-	}
-
-	if (persistent) {
-		opcode = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
-	} else {
-		opcode = CTDB_CONTROL_DB_ATTACH;
-	}
-
-	req = new_ctdb_control_request(ctdb, opcode, CTDB_CURRENT_NODE, name,
-				       strlen(name) + 1, attachdb_done, db);
-	if (!req) {
-		DEBUG(ctdb, LOG_ERR,
-		      "ctdb_attachdb_send: failed allocating DB_ATTACH");
-		free(db);
-		return NULL;
-	}
-
-	db->ctdb = ctdb;
-	db->tdb_flags = tdb_flags;
-	db->persistent = persistent;
-	db->callback = callback;
-	db->private_data = private_data;
-
-	req->extra_destructor = destroy_req_db;
-	/* This is set non-NULL when we succeed, see ctdb_attachdb_recv */
-	req->extra = NULL;
-
-	/* Flags get overloaded into srvid. */
-	req->hdr.control->srvid = tdb_flags;
-	DEBUG(db->ctdb, LOG_DEBUG,
-	      "ctdb_attachdb_send: DB_ATTACH request %p", req);
-	return req;
 }
 
 static unsigned long lock_magic(struct ctdb_lock *lock)
