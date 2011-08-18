@@ -192,11 +192,6 @@ static void lsasd_setup_sig_hup_handler(struct tevent_context *ev_ctx)
  * Children
  **********************************************************/
 
-struct lsasd_chld_sig_hup_ctx {
-	struct messaging_context *msg_ctx;
-	struct pf_worker_data *pf;
-};
-
 static void lsasd_chld_sig_hup_handler(struct tevent_context *ev,
 					 struct tevent_signal *se,
 					 int signum,
@@ -204,19 +199,11 @@ static void lsasd_chld_sig_hup_handler(struct tevent_context *ev,
 					 void *siginfo,
 					 void *pvt)
 {
-	struct pf_worker_data *pf = (struct pf_worker_data *)pvt;
-
-	/* avoid wasting CPU cycles if we are going to exit soon anyways */
-	if (pf->cmds == PF_SRV_MSG_EXIT) {
-		return;
-	}
-
 	change_to_root_user();
 	lsasd_reopen_logs(lsasd_child_id);
 }
 
-static bool lsasd_setup_chld_hup_handler(struct tevent_context *ev_ctx,
-					 struct pf_worker_data *pf)
+static bool lsasd_setup_chld_hup_handler(struct tevent_context *ev_ctx)
 {
 	struct tevent_signal *se;
 
@@ -224,7 +211,7 @@ static bool lsasd_setup_chld_hup_handler(struct tevent_context *ev_ctx,
 			       ev_ctx,
 			       SIGHUP, 0,
 			       lsasd_chld_sig_hup_handler,
-			       pf);
+			       NULL);
 	if (!se) {
 		DEBUG(1, ("failed to setup SIGHUP handler"));
 		return false;
@@ -267,7 +254,7 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 	lsasd_child_id = child_id;
 	lsasd_reopen_logs(child_id);
 
-	ok = lsasd_setup_chld_hup_handler(ev_ctx, pf);
+	ok = lsasd_setup_chld_hup_handler(ev_ctx);
 	if (!ok) {
 		return false;
 	}
