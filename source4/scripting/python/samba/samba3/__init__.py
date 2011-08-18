@@ -208,6 +208,14 @@ class IdmapDatabase(TdbDatabase):
     def _check_version(self):
         assert fetch_int32(self.tdb, "IDMAP_VERSION\0") == IDMAP_VERSION_V2
 
+    def ids(self):
+        """Retrieve a list of all ids in this database."""
+        for k in self.tdb.iterkeys():
+            if k.startswith(IDMAP_USER_PREFIX):
+                yield k.rstrip("\0").split(" ")
+            if k.startswith(IDMAP_GROUP_PREFIX):
+                yield k.rstrip("\0").split(" ")
+
     def uids(self):
         """Retrieve a list of all uids in this database."""
         for k in self.tdb.iterkeys():
@@ -219,6 +227,12 @@ class IdmapDatabase(TdbDatabase):
         for k in self.tdb.iterkeys():
             if k.startswith(IDMAP_GROUP_PREFIX):
                 yield int(k[len(IDMAP_GROUP_PREFIX):].rstrip("\0"))
+
+    def get_sid(self, xid, id_type):
+        data = self.tdb.get("%s %s\0" % (id_type, str(xid)))
+        if data is None:
+            return data
+        return data.rstrip("\0")
 
     def get_user_sid(self, uid):
         """Retrieve the SID associated with a particular uid.
