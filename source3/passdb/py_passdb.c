@@ -1864,7 +1864,8 @@ static PyObject *py_pdb_enum_group_members(pytalloc_Object *self, PyObject *args
 	struct dom_sid *group_sid;
 	uint32_t *member_rids;
 	size_t num_members;
-	PyObject *py_rid_list;
+	PyObject *py_sid_list;
+	struct dom_sid *domain_sid, *member_sid;
 	int i;
 
 	if (!PyArg_ParseTuple(args, "O!:enum_group_members", dom_sid_Type, &py_group_sid)) {
@@ -1890,20 +1891,23 @@ static PyObject *py_pdb_enum_group_members(pytalloc_Object *self, PyObject *args
 		return NULL;
 	}
 
-	py_rid_list = PyList_New(0);
-	if (py_rid_list == NULL) {
+	py_sid_list = PyList_New(0);
+	if (py_sid_list == NULL) {
 		PyErr_NoMemory();
 		talloc_free(tframe);
 		return NULL;
 	}
 
+	domain_sid = get_global_sam_sid();
+
 	for(i=0; i<num_members; i++) {
-		PyList_Append(py_rid_list, PyInt_FromLong(member_rids[i]));
+		member_sid = dom_sid_add_rid(tframe, domain_sid, member_rids[i]);
+		PyList_Append(py_sid_list, pytalloc_steal(dom_sid_Type, member_sid));
 	}
 
 	talloc_free(tframe);
 
-	return py_rid_list;
+	return py_sid_list;
 }
 
 
