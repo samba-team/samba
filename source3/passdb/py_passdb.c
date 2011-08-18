@@ -1791,16 +1791,19 @@ static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args
 	struct pdb_methods *methods;
 	TALLOC_CTX *tframe;
 	enum lsa_SidType sid_name_use;
-	int lsa_sidtype_value;
-	int unix_only;
+	int lsa_sidtype_value = SID_NAME_UNKNOWN;
+	int unix_only = 0;
 	PyObject *py_domain_sid;
-	struct dom_sid *domain_sid;
+	struct dom_sid *domain_sid = NULL;
 	GROUP_MAP *gmap, *group_map;
 	size_t num_entries;
 	PyObject *py_gmap_list, *py_group_map;
 	int i;
 
-	if (!PyArg_ParseTuple(args, "O!ii:enum_group_mapping", dom_sid_Type, &py_domain_sid,
+	py_domain_sid = Py_None;
+	Py_INCREF(Py_None);
+
+	if (!PyArg_ParseTuple(args, "|O!ii:enum_group_mapping", dom_sid_Type, &py_domain_sid,
 					&lsa_sidtype_value, &unix_only)) {
 		return NULL;
 	}
@@ -1814,7 +1817,9 @@ static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args
 
 	sid_name_use = lsa_sidtype_value;
 
-	domain_sid = pytalloc_get_ptr(py_domain_sid);
+	if (py_domain_sid != Py_None) {
+		domain_sid = pytalloc_get_ptr(py_domain_sid);
+	}
 
 	status = methods->enum_group_mapping(methods, domain_sid, sid_name_use,
 						&gmap, &num_entries, unix_only);
