@@ -30,7 +30,6 @@
 #ifndef __SMB_COMPOSITE_H__
 #define __SMB_COMPOSITE_H__
 
-#include "libcli/raw/signing.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 
