@@ -1,19 +1,34 @@
                    ==============================
                    Release Notes for Samba 3.4.15
-			   , 2011
+			   August 23, 2011
                    ==============================
 
 
 This is the latest stable release of Samba 3.4.
-
-Major enhancements in Samba 3.4.15 include:
 
 
 Changes since 3.4.14
 --------------------
 
 
-o   
+o   David Disseldorp <ddiss@suse.de>
+    * BUG 7836: Make newly added printers visible to clients,
+    * BUG 7994: Make cups async printcap retrieval notify parent smbd of error	      status.
+    * BUG 8269: Stop spamming log with "Could not find child X -- ignoring"
+      messages.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8362: Fix build issue on old glibc systems.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 6364: Pull realm from supplied username on libnet join.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8276: Return the used number of sockets in create_listen_fdset().
+    * BUG 8347: Fix CVE-2011-2522 regression for HP-UX, AIX and OSF.
 
 
 ######################################################################
