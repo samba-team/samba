@@ -305,7 +305,7 @@ struct smbcli_request {
       goto failed; \
 }
 
-#include "libcli/raw/interfaces.h" 
+#include "libcli/raw/interfaces.h"
 
 NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms);
 struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms);
