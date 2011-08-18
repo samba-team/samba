@@ -93,7 +93,7 @@ NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 	return NT_STATUS_OK;
 }
 
-#define MONITOR_WAIT_TIME 15
+#define MONITOR_WAIT_TIME 30
 static void rpc_ep_monitor_loop(struct tevent_req *subreq);
 
 static void rpc_ep_register_loop(struct tevent_req *subreq)
