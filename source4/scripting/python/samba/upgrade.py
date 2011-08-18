@@ -29,6 +29,11 @@ from samba.param import LoadParm
 from samba.provision import provision, FILL_FULL
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
+from samba.dcerpc import lsa
+from samba.dcerpc.security import dom_sid
+from samba import dsdb
+from samba.ndr import ndr_pack
+
 
 def import_sam_policy(samldb, policy, dn):
     """Import a Samba 3 policy database."""
@@ -145,29 +150,131 @@ def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn)
         })
 
 
-def import_idmap(samdb,samba3_idmap,domaindn):
+def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
+    """Create idmap entry"""
+
+    # First try to see if we already have this entry
+    found = False
+    try:
+        msg = idmapdb.search(expression='objectSid=%s' % str(sid))
+        if msg.count == 1:
+            found = True
+    except Exception, e:
+        raise e
+
+    if found:
+        print msg.count
+        print dir(msg)
+        try:
+            m = ldb.Message()
+            m.dn = ldb.Dn(idmapdb, msg[0]['dn'])
+            m['xidNumber'] = ldb.MessageElement(str(xid), ldb.FLAG_MOD_REPLACE, 'xidNumber')
+            m['type'] = ldb.MessageElement(xid_type, ldb.FLAG_MOD_REPLACE, 'type')
+            idmapdb.modify(m)
+        except ldb.LdbError, e:
+            logger.warn('Could not modify idmap entry for sid=%s, id=%s, type=%s (%s)',
+                            str(sid), str(xid), xid_type, str(e))
+        except Exception, e:
+            raise e
+    else:
+        try:
+            idmapdb.add({"dn": "CN=%s" % str(sid),
+                        "cn": str(sid),
+                        "objectClass": "sidMap",
+                        "objectSid": ndr_pack(sid),
+                        "type": xid_type,
+                        "xidNumber": str(xid)})
+        except ldb.LdbError, e:
+            logger.warn('Could not add idmap entry for sid=%s, id=%s, type=%s (%s)',
+                            str(sid), str(xid), xid_type, str(e))
+        except Exception, e:
+            raise e
+
+
+def import_idmap(idmapdb, samba3_idmap, logger):
     """Import idmap data.
 
-    :param samdb: SamDB handle.
     :param samba3_idmap: Samba 3 IDMAP database to import from
-    :param domaindn: Domain DN.
     """
-    samdb.add({
-        "dn": domaindn,
-        "userHwm": str(samba3_idmap.get_user_hwm()),
-        "groupHwm": str(samba3_idmap.get_group_hwm())})
 
-    for uid in samba3_idmap.uids():
-        samdb.add({"dn": "SID=%s,%s" % (samba3_idmap.get_user_sid(uid), domaindn),
-                          "SID": samba3_idmap.get_user_sid(uid),
-                          "type": "user",
-                          "unixID": str(uid)})
+    currentxid = max(samba3_idmap.get_user_hwm(), samba3_idmap.get_group_hwm())
+    lowerbound = currentxid
+    # FIXME: upperbound
 
-    for gid in samba3_idmap.uids():
-        samdb.add({"dn": "SID=%s,%s" % (samba3_idmap.get_group_sid(gid), domaindn),
-                          "SID": samba3_idmap.get_group_sid(gid),
-                          "type": "group",
-                          "unixID": str(gid)})
+    m = ldb.Message()
+    m.dn = ldb.Dn(idmapdb, 'CN=CONFIG')
+    m['lowerbound'] = ldb.MessageElement(str(lowerbound), ldb.FLAG_MOD_REPLACE, 'lowerBound')
+    m['xidNumber'] = ldb.MessageElement(str(currentxid), ldb.FLAG_MOD_REPLACE, 'xidNumber')
+    idmapdb.modify(m)
+
+    for id_type, xid in samba3_idmap.ids():
+        if id_type == 'UID':
+            xid_type = 'ID_TYPE_UID'
+        elif id_type == 'GID':
+            xid_type = 'ID_TYPE_GID'
+        else:
+            logger.warn('Wrong type of entry in idmap (%s), Ignoring', id_type)
+            continue
+
+        sid = samba3_idmap.get_sid(xid, id_type)
+        add_idmap_entry(idmapdb, dom_sid(sid), xid, xid_type, logger)
+
+
+def add_group_from_mapping_entry(samdb, groupmap, logger):
+    """Add or modify group from group mapping entry"""
+
+    # First try to see if we already have this entry
+    try:
+        msg = samdb.search(base='<SID=%s>' % str(groupmap.sid), scope=ldb.SCOPE_BASE)
+        found = True
+    except ldb.LdbError, (ecode, emsg):
+        if ecode == ldb.ERR_NO_SUCH_OBJECT:
+            found = False
+        else:
+            raise ldb.LdbError(ecode, emsg)
+    except Exception, e:
+        raise e
+
+    if found:
+        logger.warn('Group already exists sid=%s, groupname=%s existing_groupname=%s, Ignoring.',
+                            str(groupmap.sid), groupmap.nt_name, msg[0]['sAMAccountName'][0])
+    else:
+        if groupmap.sid_name_use == lsa.SID_NAME_WKN_GRP:
+            return
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, "CN=%s,CN=Users,%s" % (groupmap.nt_name, samdb.get_default_basedn()))
+        m['a01'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD, 'cn')
+        m['a02'] = ldb.MessageElement('group', ldb.FLAG_MOD_ADD, 'objectClass')
+        m['a03'] = ldb.MessageElement(ndr_pack(groupmap.sid), ldb.FLAG_MOD_ADD, 'objectSid')
+        m['a04'] = ldb.MessageElement(groupmap.comment, ldb.FLAG_MOD_ADD, 'description')
+        m['a05'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD, 'sAMAccountName')
+
+        if groupmap.sid_name_use == lsa.SID_NAME_ALIAS:
+            m['a06'] = ldb.MessageElement(str(dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP), ldb.FLAG_MOD_ADD, 'groupType')
+
+        try:
+            samdb.add(m, controls=["relax:0"])
+        except ldb.LdbError, e:
+            logger.warn('Could not add group name=%s (%s)', groupmap.nt_name, str(e))
+        except Exception, e:
+            raise(e)
+
+
+def add_users_to_group(samdb, group, members):
+    """Add user/member to group/alias"""
+
+    for member_sid in members:
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, "<SID=%s" % str(group.sid))
+        m['a01'] = ldb.MessageElement("<SID=%s>" % str(member_sid), ldb.FLAG_MOD_REPLACE, 'member')
+
+        try:
+            samdb.modify(m)
+        except ldb.LdbError, e:
+            logger.warn("Could not add member to group '%s'", groupmap.nt_name)
+        except Exception, e:
+            raise(e)
 
 
 def import_wins(samba4_winsdb, samba3_winsdb):
@@ -428,69 +535,115 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     # We must close the direct pytdb database before the C code loads it
     secrets_db.close()
 
-    # We must load the group mapping into memory before the passdb code touches it
-    groupdb = samba3.get_groupmapping_db()
-    for sid in groupdb.groupsids():
-        (gid, sid_name_use, nt_name, comment) = groupdb.get_group(sid)
-        # FIXME: import_sam_group(samdb, sid, gid, sid_name_use, nt_name, comment, domaindn)
-    groupdb.close()
-
     passdb.set_secrets_dir(samba3.libdir)
 
+    # Get domain sid
     try:
-        domainsid = str(passdb.get_global_sam_sid())
+        domainsid = passdb.get_global_sam_sid()
     except:
-        pass
+        raise Exception("Can't find domain sid for '%s', Exiting." % domainname)
 
+    # Get machine account, sid, rid
     try:
         machineacct = old_passdb.getsampwnam('%s$' % netbiosname)
         machinesid, machinerid = machineacct.user_sid.split()
     except:
         pass
 
-    if domainsid is None:
-        logger.warning("Can't find domain secrets for '%s'; using random SID",
-            domainname)
+    # Connect to old password backend
+    old_passdb = passdb.PDB(oldconf.get('passdb backend'))
+
+    # Import groups from old passdb backend
+    logger.info("Exporting groups")
+    grouplist = old_passdb.enum_group_mapping()
+    groupmembers = {}
+    for group in grouplist:
+        sid, rid = group.sid.split()
+        if sid == domainsid:
+            if rid >= next_rid:
+               next_rid = rid + 1
+
+        # Get members for each group/alias
+        if group.sid_name_use == lsa.SID_NAME_ALIAS or group.sid_name_use == lsa.SID_NAME_WKN_GRP:
+            members = old_passdb.enum_aliasmem(group.sid)
+        elif group.sid_name_use == lsa.SID_NAME_DOM_GRP:
+            try:
+                members = old_passdb.enum_group_members(group.sid)
+            except:
+                continue
+        else:
+            logger.warn("Ignoring group '%s' with sid_name_use=%d",
+                        group.nt_name, group.sid_name_use)
+            continue
+        groupmembers[group.nt_name] = members
+
 
     # Import users from old passdb backend
-    old_passdb = passdb.PDB(oldconf.get('passdb backend'))
+    logger.info("Exporting users")
     userlist = old_passdb.search_users(0)
     userdata = {}
+    uids = {}
     for entry in userlist:
         if machinerid and machinerid == entry['rid']:
             continue
         username = entry['account_name']
         if entry['rid'] < 1000:
-            print("Skipping wellknown rid=%d (for username=%s)\n" % (entry['rid'], username))
+            logger.info("  Skipping wellknown rid=%d (for username=%s)", entry['rid'], username)
             continue
         if entry['rid'] >= next_rid:
             next_rid = entry['rid'] + 1
         
         userdata[username] = old_passdb.getsampwnam(username)
+        try:
+            uids[username] = old_passdb.sid_to_id(userdata[username].user_sid)[0]
+        except:
+            try:
+                uids[username] = pwd.getpwnam(username).pw_uid
+            except:
+                pass
+
+    logger.info("Next rid = %d", next_rid)
 
     # Do full provision
     result = provision(logger, session_info, None,
                        targetdir=targetdir, realm=realm, domain=domainname,
-                       domainsid=domainsid, next_rid=next_rid,
+                       domainsid=str(domainsid), next_rid=next_rid,
                        dc_rid=machinerid,
                        hostname=netbiosname, machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL)
 
+    logger.info("Import WINS")
     import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
 
-    # FIXME: import_registry(registry.Registry(), samba3.get_registry())
-
-    # FIXME: import_idmap(samdb,samba3.get_idmap_db(),domaindn)
-
-    # FIXME: Aliases
-
-    # Export users to samba4 backend
     new_smbconf = result.lp.configfile
     newconf = s3param.get_context()
     newconf.load(new_smbconf)
 
+    # Migrate idmap
+    logger.info("Migrating idmap database")
+    import_idmap(result.idmap, samba3.get_idmap_db(), logger)
+
+    # Connect to samba4 backend
     new_passdb = passdb.PDB('samba4')
 
+    # Export groups to samba4 backend
+    logger.info("Importing groups")
+    for g in grouplist:
+        # Ignore uninitialized groups (gid = -1)
+        if g.gid != 0xffffffff:
+            add_idmap_entry(result.idmap, g.sid, g.gid, "GID", logger)
+            add_group_from_mapping_entry(result.samdb, g, logger)
+
+    # Export users to samba4 backend
+    logger.info("Importing users")
     for username in userdata:
-        print "adding user %s" % username
         new_passdb.add_sam_account(userdata[username])
+        if username in uids:
+            add_idmap_entry(result.idmap, userdata[username].user_sid, uids[username], "UID", logger)
+
+    logger.info("Adding users to groups")
+    for g in grouplist:
+        if g.nt_name in groupmembers:
+            add_users_to_group(result.samdb, g, groupmembers[g.nt_name])
+
+    # FIXME: import_registry(registry.Registry(), samba3.get_registry())
