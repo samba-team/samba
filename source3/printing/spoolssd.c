@@ -224,11 +224,6 @@ static bool spoolss_shutdown_cb(void *ptr)
 
 /* Children */
 
-struct spoolss_chld_sig_hup_ctx {
-	struct messaging_context *msg_ctx;
-	struct pf_worker_data *pf;
-};
-
 static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
 					 struct tevent_signal *se,
 					 int signum,
@@ -236,19 +231,13 @@ static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
 					 void *siginfo,
 					 void *pvt)
 {
-	struct spoolss_chld_sig_hup_ctx *shc;
+	struct messaging_context *msg_ctx;
 
-	shc = talloc_get_type_abort(pvt, struct spoolss_chld_sig_hup_ctx);
-
-	/* avoid wasting CPU cycles if we are going to exit soon anyways */
-	if (shc->pf != NULL &&
-	    shc->pf->cmds == PF_SRV_MSG_EXIT) {
-		return;
-	}
+	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
 
 	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	reload_printers(ev, shc->msg_ctx);
+	reload_printers(ev, msg_ctx);
 	spoolss_reopen_logs(spoolss_child_id);
 }
 
@@ -256,22 +245,13 @@ static bool spoolss_setup_chld_hup_handler(struct tevent_context *ev_ctx,
 					   struct messaging_context *msg_ctx,
 					   struct pf_worker_data *pf)
 {
-	struct spoolss_chld_sig_hup_ctx *shc;
 	struct tevent_signal *se;
-
-	shc = talloc(ev_ctx, struct spoolss_chld_sig_hup_ctx);
-	if (!shc) {
-		DEBUG(1, ("failed to setup SIGHUP handler"));
-		return false;
-	}
-	shc->pf = pf;
-	shc->msg_ctx = msg_ctx;
 
 	se = tevent_add_signal(ev_ctx,
 			       ev_ctx,
 			       SIGHUP, 0,
 			       spoolss_chld_sig_hup_handler,
-			       shc);
+			       msg_ctx);
 	if (!se) {
 		DEBUG(1, ("failed to setup SIGHUP handler"));
 		return false;
