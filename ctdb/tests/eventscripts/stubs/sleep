@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "$REALLY_SLEEP" = "yes" ] ; then
+    /bin/sleep "$@"
+else
+    :
+fi
