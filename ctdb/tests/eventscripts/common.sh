@@ -109,7 +109,7 @@ tcp_port_down ()
 {
     for _i ; do
 	debug "Marking TCP port \"${_i}\" as not listening"
-	FAKE_NETSTAT_TCP_LISTEN=$(echo "$FAKE_NETSTAT_TCP_LISTEN" | sed -r -e "s@[[:space:]]*[\.0-9]+:${_i}@@g")
+	FAKE_TCP_LISTEN=$(echo "$FAKE_TCP_LISTEN" | sed -r -e "s@[[:space:]]*[\.0-9]+:${_i}@@g")
     done
 }
 
@@ -303,7 +303,7 @@ setup_samba ()
 	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
 	export CTDB_MANAGED_SERVICES="foo samba winbind bar"
 
-	export FAKE_NETSTAT_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
+	export FAKE_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
 	export FAKE_WBINFO_FAIL="no"
     else
 	debug "Marking Samba services as down, not listening and not managed by CTDB"
@@ -321,7 +321,7 @@ setup_samba ()
 	unset CTDB_MANAGES_SAMBA
 	unset CTDB_MANAGES_WINBIND
 
-	export FAKE_NETSTAT_TCP_LISTEN=""
+	export FAKE_TCP_LISTEN=""
 	export FAKE_WBINFO_FAIL="yes"
     fi
 

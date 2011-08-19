@@ -8,7 +8,7 @@ usage ()
 Usage: $prog [ -t | --unix ] [ -n ] [ -a ] [ -l ]
 
 A fake netstat stub that prints items depending on the variables
-FAKE_NETSTAT_TCP_ESTABLISHED, FAKE_NETSTAT_TCP_LISTEN,
+FAKE_NETSTAT_TCP_ESTABLISHED, FAKE_TCP_LISTEN,
 FAKE_NETSTAT_UNIX_LISTEN, depending on command-line options.
 
 Note that -n is ignored.
@@ -73,7 +73,7 @@ if $tcp ; then
     done
 
     if $all || $listen ; then
-	for i in $FAKE_NETSTAT_TCP_LISTEN ; do
+	for i in $FAKE_TCP_LISTEN ; do
 	    printf "$tcp_fmt" $i "0.0.0.0:*" "LISTEN"
 	done
     fi
