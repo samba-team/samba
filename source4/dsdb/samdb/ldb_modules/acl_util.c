@@ -88,45 +88,6 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 						guid);
 }
 
-int dsdb_module_check_access_on_guid(struct ldb_module *module,
-				     TALLOC_CTX *mem_ctx,
-				     struct GUID *guid,
-				     uint32_t access_mask,
-				     const struct GUID *oc_guid,
-				     struct ldb_request *parent)
-{
-	int ret;
-	struct ldb_result *acl_res;
-	static const char *acl_attrs[] = {
-		"nTSecurityDescriptor",
-		"objectSid",
-		NULL
-	};
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-	if(!session_info) {
-		return ldb_operr(ldb);
-	}
-	ret = dsdb_module_search(module, mem_ctx, &acl_res, NULL, LDB_SCOPE_SUBTREE,
-				 acl_attrs,
-				 DSDB_FLAG_NEXT_MODULE |
-				 DSDB_SEARCH_SHOW_RECYCLED,
-				 parent,
-				 "objectGUID=%s", GUID_string(mem_ctx, guid));
-
-	if (ret != LDB_SUCCESS || acl_res->count == 0) {
-		DEBUG(0,("access_check: failed to find object %s\n", GUID_string(mem_ctx, guid)));
-		return ret;
-	}
-	return dsdb_check_access_on_dn_internal(ldb, acl_res,
-						mem_ctx,
-						session_info->security_token,
-						acl_res->msgs[0]->dn,
-						access_mask,
-						oc_guid);
-}
-
 int acl_check_access_on_attribute(struct ldb_module *module,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor *sd,
