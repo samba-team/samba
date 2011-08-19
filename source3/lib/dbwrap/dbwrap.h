@@ -65,6 +65,9 @@ TDB_DATA dbwrap_record_get_value(const struct db_record *rec);
 void *dbwrap_record_get_private_data(const struct db_record *rec);
 NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags);
 NTSTATUS dbwrap_record_delete(struct db_record *rec);
+struct db_record *dbwrap_fetch_locked(struct db_context *db,
+				      TALLOC_CTX *mem_ctx,
+				      TDB_DATA key);
 
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,

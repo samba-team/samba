@@ -123,6 +123,13 @@ NTSTATUS dbwrap_record_delete(struct db_record *rec)
 	return rec->delete_rec(rec);
 }
 
+struct db_record *dbwrap_fetch_locked(struct db_context *db,
+				      TALLOC_CTX *mem_ctx,
+				      TDB_DATA key)
+{
+	return db->fetch_locked(db, mem_ctx, key);
+}
+
 TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		      TDB_DATA key)
 {
