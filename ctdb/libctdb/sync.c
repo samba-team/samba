@@ -53,7 +53,7 @@ static struct ctdb_request *synchronous(struct ctdb_connection *ctdb,
 			if (!*done)
 				ctdb_cancel(ctdb, req);
 			else
-				ctdb_request_free(ctdb, req);
+				ctdb_request_free(req);
 			return NULL;
 		}
 	}
@@ -78,7 +78,7 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 			  &done);
 	if (req != NULL) {
 		ret = ctdb_getrecmaster_recv(ctdb, req, recmaster);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 	}
 	return ret;
 }
@@ -97,7 +97,7 @@ struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 			  &done);
 	if (req != NULL) {
 		ret = ctdb_attachdb_recv(ctdb, req);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 	}
 	return ret;
 }
@@ -114,7 +114,7 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 			  &done);
 	if (req != NULL) {
 		ret = ctdb_getpnn_recv(ctdb, req, pnn);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 	}
 	return ret;
 }
@@ -133,7 +133,7 @@ bool ctdb_getnodemap(struct ctdb_connection *ctdb,
 			  &done);
 	if (req != NULL) {
 		ret = ctdb_getnodemap_recv(ctdb, req, nodemap);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 	}
 	return ret;
 }
@@ -152,7 +152,7 @@ bool ctdb_getpublicips(struct ctdb_connection *ctdb,
 			  &done);
 	if (req != NULL) {
 		ret = ctdb_getpublicips_recv(ctdb, req, ips);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 	}
 	return ret;
 }
@@ -170,7 +170,7 @@ bool ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
 			  &done);
 	if (req != NULL) {
 		ret = ctdb_set_message_handler_recv(ctdb, req);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 	}
 	return ret;
 }

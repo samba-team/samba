@@ -99,7 +99,7 @@ static void gnm_cb(struct ctdb_connection *ctdb,
 	struct ctdb_node_map *nodemap;
 
 	status = ctdb_getnodemap_recv(ctdb, req, &nodemap);
-	ctdb_request_free(ctdb, req);
+	ctdb_request_free(req);
 	if (!status) {
 		printf("Error reading NODEMAP\n");
 		return;
@@ -128,7 +128,7 @@ static void ips_cb(struct ctdb_connection *ctdb,
 	struct ctdb_all_public_ips *ips;
 
 	status = ctdb_getpublicips_recv(ctdb, req, &ips);
-	ctdb_request_free(ctdb, req);
+	ctdb_request_free(req);
 	if (!status) {
 		printf("Error reading PUBLIC IPS\n");
 		return;
@@ -145,7 +145,7 @@ static void pnn_cb(struct ctdb_connection *ctdb,
 	uint32_t pnn;
 
 	status = ctdb_getpnn_recv(ctdb, req, &pnn);
-	ctdb_request_free(ctdb, req);
+	ctdb_request_free(req);
 	if (!status) {
 		printf("Error reading PNN\n");
 		return;
@@ -160,7 +160,7 @@ static void rm_cb(struct ctdb_connection *ctdb,
 	uint32_t rm;
 
 	status = ctdb_getrecmaster_recv(ctdb, req, &rm);
-	ctdb_request_free(ctdb, req);
+	ctdb_request_free(req);
 	if (!status) {
 		printf("Error reading RECMASTER\n");
 		return;
@@ -218,7 +218,7 @@ void message_handler_cb(struct ctdb_connection *ctdb,
 	if (!ctdb_set_message_handler_recv(ctdb, req)) {
 		err(1, "registering message");
 	}
-	ctdb_request_free(ctdb, req);
+	ctdb_request_free(req);
 	printf("Message handler registered\n");
 	registered = true;
 }

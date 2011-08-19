@@ -133,7 +133,7 @@ static void set_pnn(struct ctdb_connection *ctdb,
 		      "ctdb_connect(async): failed to get pnn");
 		ctdb->broken = true;
 	}
-	ctdb_request_free(ctdb, req);
+	ctdb_request_free(req);
 }
 
 struct ctdb_connection *ctdb_connect(const char *addr,
@@ -199,12 +199,12 @@ void ctdb_disconnect(struct ctdb_connection *ctdb)
 
 	while ((i = ctdb->outq) != NULL) {
 		DLIST_REMOVE(ctdb->outq, i);
-		ctdb_request_free(ctdb, i);
+		ctdb_request_free(i);
 	}
 
 	while ((i = ctdb->doneq) != NULL) {
 		DLIST_REMOVE(ctdb->doneq, i);
-		ctdb_request_free(ctdb, i);
+		ctdb_request_free(i);
 	}
 
 	if (ctdb->in)
@@ -253,8 +253,10 @@ struct ctdb_request *new_ctdb_request(struct ctdb_connection *ctdb, size_t len,
 	return req;
 }
 
-void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req)
+void ctdb_request_free(struct ctdb_request *req)
 {
+	struct ctdb_connection *ctdb = req->ctdb;
+
 	if (req->next || req->prev) {
 		DEBUG(ctdb, LOG_ALERT,
 		      "ctdb_request_free: request not complete! ctdb_cancel? %p (id %u)",
@@ -535,7 +537,7 @@ void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 			  struct ctdb_request *req,
 			  void *unused)
 {
-	ctdb_request_free(ctdb, req);
+	ctdb_request_free(req);
 }
 
 void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
@@ -544,7 +546,7 @@ void ctdb_cancel(struct ctdb_connection *ctdb, struct ctdb_request *req)
 		DEBUG(ctdb, LOG_ALERT,
 		      "ctdb_cancel: request completed! ctdb_request_free? %p (id %u)",
 		      req, req->hdr.hdr ? req->hdr.hdr->reqid : 0);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 		return;
 	}
 
@@ -625,7 +627,7 @@ static void destroy_req_db(struct ctdb_connection *ctdb,
 	free(req->priv_data);
 	/* second request is chained off this one. */
 	if (req->extra) {
-		ctdb_request_free(ctdb, req->extra);
+		ctdb_request_free(req->extra);
 	}
 }
 
@@ -820,7 +822,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 			      " NULL_FUNC returned %i", reply->status);
 		}
 		lock->callback(lock->ctdb_db, NULL, tdb_null, private);
-		ctdb_request_free(ctdb, req); /* Also frees lock. */
+		ctdb_request_free(req); /* Also frees lock. */
 		return;
 	}
 
@@ -829,7 +831,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 		/* Now it's their responsibility to free lock & request! */
 		req->extra_destructor = NULL;
 		lock->callback(lock->ctdb_db, lock, data, private);
-		ctdb_request_free(ctdb, req);
+		ctdb_request_free(req);
 		return;
 	}
 
@@ -975,7 +977,7 @@ static void traverse_remhnd_cb(struct ctdb_connection *ctdb,
 				tdb_null, tdb_null,
 				state->cbdata);
 	}
-	ctdb_request_free(ctdb, state->handle);
+	ctdb_request_free(state->handle);
 	state->handle = NULL;
 	free(state);
 }
@@ -1045,7 +1047,7 @@ static void traverse_start_cb(struct ctdb_connection *ctdb,
 {
 	struct ctdb_traverse_state *state = private_data;
 
-        ctdb_request_free(ctdb, state->handle);
+        ctdb_request_free(state->handle);
 	state->handle = NULL;
 }
 
@@ -1064,12 +1066,12 @@ static void traverse_msghnd_cb(struct ctdb_connection *ctdb,
 				TRAVERSE_STATUS_ERROR,
 				tdb_null, tdb_null,
 				state->cbdata);
-	        ctdb_request_free(ctdb, state->handle);
+	        ctdb_request_free(state->handle);
 		state->handle = NULL;
 		free(state);
 		return;
         }
-        ctdb_request_free(ctdb, state->handle);
+        ctdb_request_free(state->handle);
 	state->handle = NULL;
 
 	t.db_id = ctdb_db->id;

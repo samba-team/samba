@@ -173,7 +173,7 @@ struct ctdb_request;
  * This frees a request: you should only call it once it has been
  * handed to your callback.  For incomplete requests, see ctdb_cancel().
  */
-void ctdb_request_free(struct ctdb_connection *ctdb, struct ctdb_request *req);
+void ctdb_request_free(struct ctdb_request *req);
 
 /**
  * ctdb_callback_t - callback for completed requests.
