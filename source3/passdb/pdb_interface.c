@@ -24,6 +24,7 @@
 #include "system/passwd.h"
 #include "passdb.h"
 #include "secrets.h"
+#include "messages.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../librpc/gen_ndr/drsblobs.h"
 #include "../librpc/gen_ndr/ndr_drsblobs.h"
@@ -608,6 +609,8 @@ NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	uid_t uid = -1;
+	NTSTATUS status;
+	char *msg_data;
 
 	/* sanity check to make sure we don't delete root */
 
@@ -619,7 +622,26 @@ NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return pdb->delete_user(pdb, mem_ctx, sam_acct);
+	status = pdb->delete_user(pdb, mem_ctx, sam_acct);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	msg_data = talloc_asprintf(mem_ctx, "USER %s",
+				   pdb_get_username(sam_acct));
+	if (!msg_data) {
+		/* not fatal, and too late to rollback,
+		 * just return */
+		return status;
+	}
+	message_send_all(server_messaging_context(),
+			 ID_CACHE_DELETE,
+			 msg_data,
+			 strlen(msg_data) + 1,
+			 NULL);
+
+	TALLOC_FREE(msg_data);
+	return status;
 }
 
 NTSTATUS pdb_add_sam_account(struct samu *sam_acct) 

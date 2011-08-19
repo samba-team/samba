@@ -24,7 +24,7 @@ struct id_cache_ref {
 		struct dom_sid sid;
 		const char *name;
 	} id;
-	enum {UID, GID, SID, NAME} type;
+	enum {UID, GID, SID, USERNAME} type;
 };
 
 bool id_cache_ref_parse(const char* str, struct id_cache_ref* id);

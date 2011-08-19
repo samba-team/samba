@@ -24,6 +24,8 @@
 #include "messages.h"
 #include "ntdomain.h"
 
+#include "lib/id_cache.h"
+
 #include "../lib/tsocket/tsocket.h"
 #include "lib/server_prefork.h"
 #include "lib/server_prefork_util.h"
@@ -267,6 +269,7 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 			   MSG_SMB_CONF_UPDATED, lsasd_smb_conf_updated);
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_PARENT_EVENT, parent_ping);
+	id_cache_register_msgs(msg_ctx);
 
 	status = rpc_lsarpc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {

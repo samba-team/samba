@@ -56,6 +56,10 @@ bool id_cache_ref_parse(const char* str, struct id_cache_ref* id)
 		id->id.sid = sid;
 		id->type = SID;
 		return true;
+	} else if (strncmp(str, "USER ", 5) == 0) {
+		id->id.name = str + 5;
+		id->type = USERNAME;
+		return true;
 	}
 	return false;
 }
@@ -112,6 +116,15 @@ static bool delete_sid_cache(const struct dom_sid* psid)
 	return true;
 }
 
+static bool delete_getpwnam_cache(const char *username)
+{
+	DATA_BLOB name = data_blob_string_const_null(username);
+	DEBUG(6, ("Delete passwd struct for %s from memcache\n",
+		  username));
+	memcache_delete(NULL, GETPWNAM_CACHE, name);
+	return true;
+}
+
 static void flush_gid_cache(void)
 {
 	DEBUG(3, ("Flush GID <-> SID memcache\n"));
@@ -140,6 +153,8 @@ static void delete_from_cache(const struct id_cache_ref* id)
 		delete_sid_cache(&id->id.sid);
 		idmap_cache_del_sid(&id->id.sid);
 		break;
+	case USERNAME:
+		delete_getpwnam_cache(id->id.name);
 	default:
 		break;
 	}
