@@ -602,7 +602,7 @@ static NTSTATUS pdb_samba4_getsamupriv(struct pdb_samba4_state *state,
 		"badPwdCount", "logonCount", "countryCode", "codePage",
 		"unicodePwd", "dBCSPwd", NULL };
 
-	int rc = dsdb_search_one(state->ldb, mem_ctx, msg, NULL, LDB_SCOPE_SUBTREE, attrs, 0, "%s", filter); 
+	int rc = dsdb_search_one(state->ldb, mem_ctx, msg, ldb_get_default_basedn(state->ldb), LDB_SCOPE_SUBTREE, attrs, 0, "%s", filter);
 	if (rc != LDB_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
 			   ldb_errstring(state->ldb)));
@@ -866,7 +866,7 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = dsdb_search_one(state->ldb, tmp_ctx, &msg, NULL, LDB_SCOPE_SUBTREE, attrs, 0, "%s", expression);
+	rc = dsdb_search_one(state->ldb, tmp_ctx, &msg, ldb_get_default_basedn(state->ldb), LDB_SCOPE_SUBTREE, attrs, 0, "%s", expression);
 	if (rc == LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -1825,7 +1825,7 @@ static bool pdb_samba4_search_filter(struct pdb_methods *m,
 		return false;
 	}
 
-	rc = dsdb_search(state->ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs, 0, "%s", expression);
+	rc = dsdb_search(state->ldb, tmp_ctx, &res, ldb_get_default_basedn(state->ldb), LDB_SCOPE_SUBTREE, attrs, 0, "%s", expression);
 	if (rc != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		DEBUG(10, ("dsdb_search failed: %s\n",
