@@ -2290,8 +2290,8 @@ static int py_ldb_msg_element_cmp(PyLdbMessageElementObject *self, PyLdbMessageE
 
 static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
 {
-	struct ldb_message_element *el = ldb_msg_element_to_set(NULL,
-		pyldb_MessageElement_AsMessageElement(self));
+	PyObject *el = ldb_msg_element_to_set(NULL,
+					      pyldb_MessageElement_AsMessageElement(self));
 	return PyObject_GetIter(el);
 }
 
