@@ -118,6 +118,11 @@ NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags)
 	return rec->store(rec, data, flags);
 }
 
+NTSTATUS dbwrap_record_delete(struct db_record *rec)
+{
+	return rec->delete_rec(rec);
+}
+
 TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		      TDB_DATA key)
 {
