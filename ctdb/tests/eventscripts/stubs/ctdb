@@ -166,8 +166,35 @@ case "$1" in
 		exit 1
 	esac
 	;;
+    getdebug)
+	case "$CTDB_DEBUGLEVEL" in
+	    -3) _t="EMERG"  ;;
+	    -2) _t="ALERT"  ;;
+	    -1) _t="CRIT"   ;;
+	    0) _t="ERR"     ;;
+	    1) _t="WARNING" ;;
+	    2) _t="NOTICE"  ;;
+	    3) _t="INFO"    ;;
+	    4) _t="DEBUG"   ;;
+	    *) _t="ERR"     ;;
+	esac
+
+	cat<<EOF
+:Name:Level:
+:${_t}:${CTDB_DEBUGLEVEL}:
+EOF
+	;;
+    checktcpport)
+	for _i in $FAKE_TCP_LISTEN ; do
+	    if [ "$2" = "${_i##*:}" ] ; then
+		exit 98
+	    fi
+	done
+
+	exit 0
+	;;
     *)
 	echo "${prog}: command \"$1\" not implemented in stub"
-	exit 1
+	usage
 esac
 
