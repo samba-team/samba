@@ -658,7 +658,7 @@ static PyObject *py_samu_get_pw_history(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_nt_pw_his = PyString_FromStringAndSize(nt_pw_his, hist_len);
+	py_nt_pw_his = PyString_FromStringAndSize(nt_pw_his, hist_len*PW_HISTORY_ENTRY_LEN);
 	return py_nt_pw_his;
 }
 
@@ -670,7 +670,7 @@ static int py_samu_set_pw_history(PyObject *obj, PyObject *value, void *closure)
 	uint32_t hist_len;
 
 	PyString_AsStringAndSize(value, &nt_pw_his, &len);
-	hist_len = len;
+	hist_len = len / PW_HISTORY_ENTRY_LEN;
 	if (!pdb_set_pw_history(sam_acct, (uint8_t *)nt_pw_his, hist_len, PDB_CHANGED)) {
 		return -1;
 	}
