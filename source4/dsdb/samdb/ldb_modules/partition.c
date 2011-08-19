@@ -542,6 +542,9 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 	/* Search from the base DN */
 	if (ldb_dn_is_null(req->op.search.base)) {
+		if (!phantom_root) {
+			return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, "empty base DN");
+		}
 		return partition_send_all(module, ac, req);
 	}
 
