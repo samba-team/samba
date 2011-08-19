@@ -535,7 +535,7 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     # We must close the direct pytdb database before the C code loads it
     secrets_db.close()
 
-    passdb.set_secrets_dir(samba3.libdir)
+    passdb.set_secrets_dir(samba3.privatedir)
 
     # Get domain sid
     try:

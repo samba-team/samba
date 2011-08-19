@@ -754,11 +754,17 @@ class Samba3(object):
         self.libdir = libdir
         self.lp = ParamFile()
         self.lp.read(self.smbconfpath)
+        self.privatedir = self.lp.get("private dir") or libdir
 
     def libdir_path(self, path):
         if path[0] == "/" or path[0] == ".":
             return path
         return os.path.join(self.libdir, path)
+
+    def privatedir_path(self, path):
+        if path[0] == "/" or path[0] == ".":
+            return path
+        return os.path.join(self.privatedir, path)
 
     def get_conf(self):
         return self.lp
@@ -789,7 +795,7 @@ class Samba3(object):
         return Registry(self.libdir_path("registry.tdb"))
 
     def get_secrets_db(self):
-        return SecretsDatabase(self.libdir_path("secrets.tdb"))
+        return SecretsDatabase(self.privatedir_path("secrets.tdb"))
 
     def get_shareinfo_db(self):
         return ShareInfoDatabase(self.libdir_path("share_info.tdb"))
