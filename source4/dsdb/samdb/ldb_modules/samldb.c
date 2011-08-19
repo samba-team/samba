@@ -187,7 +187,7 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 	}
 
 	ret = dsdb_module_search(ac->module, ac, &res,
-				 NULL, LDB_SCOPE_SUBTREE, noattrs,
+				 ldb_get_default_basedn(ldb), LDB_SCOPE_SUBTREE, noattrs,
 				 DSDB_FLAG_NEXT_MODULE,
 				 ac->req,
 				 "(sAMAccountName=%s)",
@@ -260,7 +260,8 @@ static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac,
 	const char *no_attrs[] = { NULL };
 	int ret;
 
-	ret = dsdb_module_search(ac->module, tmp_ctx, &res, NULL,
+	ret = dsdb_module_search(ac->module, tmp_ctx, &res,
+				 ldb_get_default_basedn(ldb_module_get_ctx(ac->module)),
 				 LDB_SCOPE_SUBTREE, no_attrs,
 				 DSDB_FLAG_NEXT_MODULE,
 				 ac->req,
@@ -1075,7 +1076,9 @@ static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid)
 		return ldb_operr(ldb);
 	}
 
-	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE,
+	ret = dsdb_module_search(ac->module, ac, &res,
+				 ldb_get_default_basedn(ldb),
+				 LDB_SCOPE_SUBTREE,
 				 noattrs, DSDB_FLAG_NEXT_MODULE,
 				 ac->req,
 				 "(objectSid=%s)",
@@ -1181,7 +1184,9 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return LDB_SUCCESS;
 	}
 
-	ret = dsdb_module_search(ac->module, ac, &group_res, NULL, LDB_SCOPE_SUBTREE,
+	ret = dsdb_module_search(ac->module, ac, &group_res,
+				 ldb_get_default_basedn(ldb),
+				 LDB_SCOPE_SUBTREE,
 				 noattrs, DSDB_FLAG_NEXT_MODULE,
 				 ac->req,
 				 "(objectSid=%s)",
@@ -1199,7 +1204,9 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	ret = dsdb_module_search(ac->module, ac, &group_res, NULL, LDB_SCOPE_SUBTREE,
+	ret = dsdb_module_search(ac->module, ac, &group_res,
+				 ldb_get_default_basedn(ldb),
+				 LDB_SCOPE_SUBTREE,
 				 noattrs, DSDB_FLAG_NEXT_MODULE,
 				 ac->req,
 				 "(objectSid=%s)",
@@ -1561,7 +1568,9 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 
 	/* Make sure that a "sAMAccountName" is only used once */
 
-	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE, no_attrs,
+	ret = dsdb_module_search(ac->module, ac, &res,
+				 ldb_get_default_basedn(ldb),
+				 LDB_SCOPE_SUBTREE, no_attrs,
 				 DSDB_FLAG_NEXT_MODULE, ac->req,
 				 "(sAMAccountName=%s)", enc_str);
 	if (ret != LDB_SUCCESS) {
@@ -2211,7 +2220,9 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	}
 
 	/* Deny delete requests from groups which are primary ones */
-	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE, noattrs,
+	ret = dsdb_module_search(ac->module, ac, &res,
+				 ldb_get_default_basedn(ldb),
+				 LDB_SCOPE_SUBTREE, noattrs,
 				 DSDB_FLAG_NEXT_MODULE,
 				 ac->req,
 				 "(&(primaryGroupID=%u)(objectClass=user))", rid);
