@@ -75,7 +75,7 @@ def get_subst_vars(samdb):
     vars['NETBIOSNAME'] = lp.get('netbios name').upper()
     vars['WORKGROUP'] = lp.get('workgroup')
     vars['NTDSGUID']  = samdb.get_ntds_GUID()
-    res = samdb.search(base=None, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+    res = samdb.search(base=samdb.get_default_basedn(), scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
     guid = samdb.schema_format_value("objectGUID", res[0]['objectGUID'][0])
     vars['DOMAINGUID'] = guid
     return vars
@@ -128,7 +128,7 @@ for line in file:
     spn_list.append(line)
 
 # get the current list of SPNs in our sam
-res = samdb.search(base="",
+res = samdb.search(base=samdb.get_default_basedn(),
                    expression='(&(objectClass=computer)(samaccountname=%s$))' % sub_vars['NETBIOSNAME'],
                    attrs=["servicePrincipalName"])
 if not res or len(res) != 1:
