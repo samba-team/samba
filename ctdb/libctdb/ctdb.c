@@ -311,8 +311,7 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_request *req,
 }
 
 /* Sanity-checking wrapper for reply. */
-struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
-						struct ctdb_request *req,
+struct ctdb_reply_control *unpack_reply_control(struct ctdb_request *req,
 						enum ctdb_controls control)
 {
 	size_t len;
@@ -321,13 +320,13 @@ struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 	/* Library user error if this isn't a reply to a call. */
 	if (len < sizeof(*inhdr)) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ALERT,
+		DEBUG(req->ctdb, LOG_ALERT,
 		      "Short ctdbd control reply: %zu bytes", len);
 		return NULL;
 	}
 	if (req->hdr.hdr->operation != CTDB_REQ_CONTROL) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ALERT,
+		DEBUG(req->ctdb, LOG_ALERT,
 		      "This was not a ctdbd control request: operation %u",
 		      req->hdr.hdr->operation);
 		return NULL;
@@ -336,7 +335,7 @@ struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 	/* ... or if it was a different control from what we expected. */
 	if (req->hdr.control->opcode != control) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ALERT,
+		DEBUG(req->ctdb, LOG_ALERT,
 		      "This was not an opcode %u ctdbd control request: %u",
 		      control, req->hdr.control->opcode);
 		return NULL;
@@ -345,7 +344,7 @@ struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
 	/* ctdbd or our error if this isn't a reply call. */
 	if (inhdr->hdr.operation != CTDB_REPLY_CONTROL) {
 		errno = EIO;
-		DEBUG(ctdb, LOG_CRIT,
+		DEBUG(req->ctdb, LOG_CRIT,
 		      "Invalid ctdbd control reply: operation %u",
 		      inhdr->hdr.operation);
 		return NULL;
@@ -643,7 +642,7 @@ static void attachdb_done(struct ctdb_connection *ctdb,
 		control = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
 	}
 
-	reply = unpack_reply_control(ctdb, req, control);
+	reply = unpack_reply_control(req, control);
 	if (!reply || reply->status != 0) {
 		if (reply) {
 			DEBUG(ctdb, LOG_ERR,
@@ -700,7 +699,7 @@ struct ctdb_db *ctdb_attachdb_recv(struct ctdb_connection *ctdb,
 		return NULL;
 	}
 
-	reply = unpack_reply_control(ctdb, dbpath_req, CTDB_CONTROL_GETDBPATH);
+	reply = unpack_reply_control(dbpath_req, CTDB_CONTROL_GETDBPATH);
 	if (!reply) {
 		return NULL;
 	}

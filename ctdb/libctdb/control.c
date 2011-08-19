@@ -32,7 +32,7 @@ bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 {
 	struct ctdb_reply_control *reply;
 
-	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_RECMASTER);
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_RECMASTER);
 	if (!reply) {
 		return false;
 	}
@@ -59,7 +59,7 @@ bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 {
 	struct ctdb_reply_control *reply;
 
-	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_PNN);
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_PNN);
 	if (!reply) {
 		return false;
 	}
@@ -86,7 +86,7 @@ bool ctdb_getnodemap_recv(struct ctdb_connection *ctdb,
 	struct ctdb_reply_control *reply;
 
 	*nodemap = NULL;
-	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_NODEMAP);
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_NODEMAP);
 	if (!reply) {
 		return false;
 	}
@@ -133,7 +133,7 @@ bool ctdb_getpublicips_recv(struct ctdb_connection *ctdb,
 	struct ctdb_reply_control *reply;
 
 	*ips = NULL;
-	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_PUBLIC_IPS);
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_PUBLIC_IPS);
 	if (!reply) {
 		return false;
 	}

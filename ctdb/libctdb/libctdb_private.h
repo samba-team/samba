@@ -90,8 +90,7 @@ struct ctdb_request *new_ctdb_control_request(struct ctdb_connection *ctdb,
 					      ctdb_callback_t, void *);
 uint32_t new_reqid(struct ctdb_connection *ctdb);
 
-struct ctdb_reply_control *unpack_reply_control(struct ctdb_connection *ctdb,
-						struct ctdb_request *req,
+struct ctdb_reply_control *unpack_reply_control(struct ctdb_request *req,
 						enum ctdb_controls control);
 void ctdb_cancel_callback(struct ctdb_connection *ctdb,
 			  struct ctdb_request *req,

@@ -127,7 +127,7 @@ bool ctdb_set_message_handler_recv(struct ctdb_connection *ctdb,
 	struct message_handler_info *info = req->extra;
 	struct ctdb_reply_control *reply;
 
-	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_REGISTER_SRVID);
+	reply = unpack_reply_control(req, CTDB_CONTROL_REGISTER_SRVID);
 	if (!reply) {
 		return false;
 	}
@@ -189,7 +189,7 @@ bool ctdb_remove_message_handler_recv(struct ctdb_connection *ctdb,
 	struct message_handler_info *handler = req->extra;
 	struct ctdb_reply_control *reply;
 
-	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_DEREGISTER_SRVID);
+	reply = unpack_reply_control(req, CTDB_CONTROL_DEREGISTER_SRVID);
 	if (!reply) {
 		return false;
 	}
