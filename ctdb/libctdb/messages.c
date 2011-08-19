@@ -216,8 +216,9 @@ bool ctdb_send_message(struct ctdb_connection *ctdb,
 	struct ctdb_req_message *pkt;
 
 	/* We just discard it once it's finished: no reply. */
-	req = new_ctdb_request(offsetof(struct ctdb_req_message, data) + data.dsize,
-			       ctdb_cancel_callback, NULL);
+	req = new_ctdb_request(
+		ctdb, offsetof(struct ctdb_req_message, data) + data.dsize,
+		ctdb_cancel_callback, NULL);
 	if (!req) {
 		DEBUG(ctdb, LOG_ERR, "ctdb_set_message: allocating message");
 		return false;

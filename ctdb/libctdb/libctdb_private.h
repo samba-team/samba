@@ -80,7 +80,8 @@ struct ctdb_connection {
 };
 
 /* ctdb.c */
-struct ctdb_request *new_ctdb_request(size_t len, ctdb_callback_t, void *);
+struct ctdb_request *new_ctdb_request(struct ctdb_connection *ctdb, size_t len,
+				      ctdb_callback_t cb, void *cbdata);
 struct ctdb_request *new_ctdb_control_request(struct ctdb_connection *ctdb,
 					      uint32_t opcode,
 					      uint32_t destnode,

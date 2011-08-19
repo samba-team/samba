@@ -232,7 +232,7 @@ int ctdb_which_events(struct ctdb_connection *ctdb)
 	return events;
 }
 
-struct ctdb_request *new_ctdb_request(size_t len,
+struct ctdb_request *new_ctdb_request(struct ctdb_connection *ctdb, size_t len,
 				      ctdb_callback_t cb, void *cbdata)
 {
 	struct ctdb_request *req = malloc(sizeof(*req));
@@ -243,6 +243,7 @@ struct ctdb_request *new_ctdb_request(size_t len,
 		free(req);
 		return NULL;
 	}
+	req->ctdb = ctdb;
 	req->hdr.hdr = io_elem_data(req->io, NULL);
 	req->reply = NULL;
 	req->callback = cb;
@@ -509,7 +510,9 @@ struct ctdb_request *new_ctdb_control_request(struct ctdb_connection *ctdb,
 	struct ctdb_request *req;
 	struct ctdb_req_control *pkt;
 
-	req = new_ctdb_request(offsetof(struct ctdb_req_control, data) + extra, callback, cbdata);
+	req = new_ctdb_request(
+		ctdb, offsetof(struct ctdb_req_control, data) + extra,
+		callback, cbdata);
 	if (!req)
 		return NULL;
 
@@ -870,8 +873,10 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	}
 
 	/* Slow path: create request. */
-	req = new_ctdb_request(offsetof(struct ctdb_req_call, data)
-			       + key.dsize, readrecordlock_retry, cbdata);
+	req = new_ctdb_request(
+		ctdb_db->ctdb,
+		offsetof(struct ctdb_req_call, data) + key.dsize,
+		readrecordlock_retry, cbdata);
 	if (!req) {
 		DEBUG(ctdb_db->ctdb, LOG_ERR,
 		      "ctdb_readrecordlock_async: allocation failed");
