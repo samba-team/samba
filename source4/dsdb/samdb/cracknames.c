@@ -837,7 +837,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			search_dn = samdb_result_dn(sam_ctx, mem_ctx, domain_res->msgs[0], "ncName", NULL);
 		} else {
 			dsdb_flags = DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
-			search_dn = ldb_get_root_basedn(sam_ctx);
+			search_dn = NULL;
 		}
 		if (format_desired == DRSUAPI_DS_NAME_FORMAT_GUID){
 			 dsdb_flags = dsdb_flags| DSDB_SEARCH_SHOW_DELETED;
