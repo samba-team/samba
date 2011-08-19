@@ -136,12 +136,13 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 	while ((timelimit == 0) || (timeval_elapsed(&start) < timelimit)) {
 		struct db_record *rec;
 		TDB_DATA data;
+		TDB_DATA value;
 		int ret;
 		NTSTATUS status;
 
 		if (!no_trans) {
 			if (verbose) DEBUG(1, ("starting transaction\n"));
-			ret = db->transaction_start(db);
+			ret = dbwrap_transaction_start(db);
 			if (ret != 0) {
 				DEBUG(0, ("Failed to start transaction on node "
 					  "%d\n", pnn));
@@ -152,22 +153,23 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 		}
 
 		if (verbose) DEBUG(1, ("calling fetch_lock\n"));
-		rec = db->fetch_locked(db, tmp_ctx, key);
+		rec = dbwrap_fetch_locked(db, tmp_ctx, key);
 		if (rec == NULL) {
 			DEBUG(0, ("Failed to fetch record\n"));
 			goto fail;
 		}
 		if (verbose) DEBUG(1, ("fetched record ok\n"));
 		do_sleep(torture_delay);
+		value = dbwrap_record_get_value(rec);
 
-		data.dsize = MAX(rec->value.dsize, sizeof(uint32_t) * (pnn+1));
+		data.dsize = MAX(value.dsize, sizeof(uint32_t) * (pnn+1));
 		data.dptr = (unsigned char *)talloc_zero_size(tmp_ctx,
 							      data.dsize);
 		if (data.dptr == NULL) {
 			DEBUG(0, ("Failed to allocate data\n"));
 			goto fail;
 		}
-		memcpy(data.dptr, rec->value.dptr,rec->value.dsize);
+		memcpy(data.dptr, value.dptr, value.dsize);
 
 		counters = (uint32_t *)data.dptr;
 
@@ -175,11 +177,11 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 		counters[pnn]++;
 
 		if (verbose) DEBUG(1, ("storing data\n"));
-		status = rec->store(rec, data, TDB_REPLACE);
+		status = dbwrap_record_store(rec, data, TDB_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to store record\n"));
 			if (!no_trans) {
-				ret = db->transaction_cancel(db);
+				ret = dbwrap_transaction_cancel(db);
 				if (ret != 0) {
 					DEBUG(0, ("Error cancelling transaction.\n"));
 				}
@@ -192,7 +194,7 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 
 		if (!no_trans) {
 			if (verbose) DEBUG(1, ("calling transaction_commit\n"));
-			ret = db->transaction_commit(db);
+			ret = dbwrap_transaction_commit(db);
 			if (ret != 0) {
 				DEBUG(0, ("Failed to commit transaction\n"));
 				goto fail;
