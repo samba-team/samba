@@ -7,3 +7,6 @@
 	${LOCKDIR_LINE}
 	${STATEDIR_LINE}
 	${CACHEDIR_LINE}
+
+	passdb backend = samba4
+

@@ -320,6 +320,14 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
+		.label		= "passdb backend",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(passdb_backend),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
 		.label		= "dcerpc endpoint servers",
 		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
@@ -1511,6 +1519,7 @@ FN_GLOBAL_LIST(nsupdate_command, szNSUpdateCommand)
 FN_GLOBAL_LIST(dcerpc_endpoint_servers, dcerpc_ep_servers)
 FN_GLOBAL_LIST(server_services, server_services)
 FN_GLOBAL_STRING(ntptr_providor, ntptr_providor)
+FN_GLOBAL_STRING(passdb_backend, passdb_backend)
 FN_GLOBAL_STRING(auto_services, szAutoServices)
 FN_GLOBAL_STRING(passwd_chat, szPasswdChat)
 FN_GLOBAL_LIST(passwordserver, szPasswordServers)

@@ -8,6 +8,8 @@
 	${STATEDIR_LINE}
 	${CACHEDIR_LINE}
 
+	passdb backend = samba4
+
 [netlogon]
 	path = ${NETLOGONPATH}
 	read only = no

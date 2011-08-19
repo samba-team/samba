@@ -75,7 +75,9 @@ static const struct loadparm_s3_context s3_fns =
 
 	.private_dir = lp_private_dir,
 	.ncalrpc_dir = lp_ncalrpc_dir,
-	.lockdir = lp_lockdir
+	.lockdir = lp_lockdir,
+
+	.passdb_backend = lp_passdb_backend
 };
 
 const struct loadparm_s3_context *loadparm_s3_context(void)
