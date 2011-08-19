@@ -98,6 +98,21 @@ int dbwrap_fallback_wipe(struct db_context *db)
  * Wrapper functions for the backend methods
  */
 
+TDB_DATA dbwrap_record_get_key(const struct db_record *rec)
+{
+	return rec->key;
+}
+
+TDB_DATA dbwrap_record_get_value(const struct db_record *rec)
+{
+	return rec->value;
+}
+
+void *dbwrap_record_get_private_data(const struct db_record *rec)
+{
+	return rec->private_data;
+}
+
 TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		      TDB_DATA key)
 {
