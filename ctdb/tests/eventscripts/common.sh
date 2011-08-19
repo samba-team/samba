@@ -305,6 +305,11 @@ setup_samba ()
 
 	export FAKE_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
 	export FAKE_WBINFO_FAIL="no"
+
+	# Some things in 50.samba are backgrounded and waited for.  If
+	# we don't sleep at all then timeouts can happen.  This avoids
+	# that...  :-)
+	export FAKE_SLEEP_FORCE=0.1
     else
 	debug "Marking Samba services as down, not listening and not managed by CTDB"
         # Get into known state.
