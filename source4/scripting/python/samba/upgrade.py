@@ -261,7 +261,7 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
             raise(e)
 
 
-def add_users_to_group(samdb, group, members):
+def add_users_to_group(samdb, group, members, logger):
     """Add user/member to group/alias"""
 
     for member_sid in members:
@@ -583,6 +583,7 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     userlist = old_passdb.search_users(0)
     userdata = {}
     uids = {}
+    admin_user = None
     for entry in userlist:
         if machinerid and machinerid == entry['rid']:
             continue
@@ -601,6 +602,12 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
                 uids[username] = pwd.getpwnam(username).pw_uid
             except:
                 pass
+
+        if not admin_user and username.lower() == 'root':
+            admin_user = username
+        if username.lower() == 'administrator':
+            admin_user = username
+
 
     logger.info("Next rid = %d", next_rid)
 
@@ -646,6 +653,19 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     logger.info("Adding users to groups")
     for g in grouplist:
         if g.nt_name in groupmembers:
-            add_users_to_group(result.samdb, g, groupmembers[g.nt_name])
+            add_users_to_group(result.samdb, g, groupmembers[g.nt_name], logger)
+
+    # Set password for administrator
+    if admin_user:
+        logger.info("Setting password for administrator")
+        admin_userdata = new_passdb.getsampwnam("administrator")
+        admin_userdata.nt_passwd = userdata[admin_user].nt_passwd
+        if userdata[admin_user].lanman_passwd:
+            admin_userdata.lanman_passwd = userdata[admin_user].lanman_passwd
+        admin_userdata.pass_last_set_time = userdata[admin_user].pass_last_set_time
+        if userdata[admin_user].pw_history:
+            admin_userdata.pw_history = userdata[admin_user].pw_history
+        new_passdb.update_sam_account(admin_userdata)
+        logger.info("Administrator password has been set to password of user '%s'", admin_user)
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
