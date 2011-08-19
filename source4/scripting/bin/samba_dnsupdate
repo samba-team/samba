@@ -230,7 +230,7 @@ def get_subst_vars():
     vars['HOSTNAME']  = lp.get('netbios name').lower() + "." + vars['DNSDOMAIN']
     vars['NTDSGUID']  = samdb.get_ntds_GUID()
     vars['SITE']      = samdb.server_site_name()
-    res = samdb.search(base=None, scope=SCOPE_BASE, attrs=["objectGUID"])
+    res = samdb.search(base=samdb.get_default_basedn(), scope=SCOPE_BASE, attrs=["objectGUID"])
     guid = samdb.schema_format_value("objectGUID", res[0]['objectGUID'][0])
     vars['DOMAINGUID'] = guid
     am_rodc = samdb.am_rodc()
