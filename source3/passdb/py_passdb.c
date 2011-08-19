@@ -1366,7 +1366,8 @@ static PyObject *py_pdb_add_sam_account(pytalloc_Object *self, PyObject *args)
 
 	status = methods->add_sam_account(methods, sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_Format(py_pdb_error, "Unable to add sam account, (%d,%s)",
+		PyErr_Format(py_pdb_error, "Unable to add sam account '%s', (%d,%s)",
+				sam_acct->username,
 				NT_STATUS_V(status),
 				get_friendly_nt_error_msg(status));
 		talloc_free(tframe);
