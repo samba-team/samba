@@ -2,6 +2,8 @@
 
 prog="ctdb"
 
+not_implemented_exit_code=1
+
 usage ()
 {
     cat >&2 <<EOF
@@ -13,12 +15,10 @@ FAKE_CTDB_PNN (default 0) depending on command-line options.
 Note that -Y is ignored.
 
 EOF
-    exit 1
+    exit $not_implemented_exit_code
 }
 
-# $POSIXLY_CORRECT means that the command passed to onnode can take
-# options and getopt won't reorder things to make them options to this
-# script.
+# Don't set $POSIXLY_CORRECT here.
 _temp=$(getopt -n "$prog" -o "Yvh" -l help -- "$@") || \
     usage
 
@@ -50,6 +50,13 @@ setup_pstore ()
     pstore_dir="$CTDB_VARDIR/fake-ctdb/pstore/$1"
     mkdir -p "$pstore_dir"
 }
+
+# For testing backward compatibility...
+for i in $CTDB_NOT_IMPLEMENTED ; do
+    if [ "$i" = "$1" ] ; then
+	usage
+    fi
+done
 
 case "$1" in
     ip)
