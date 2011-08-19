@@ -601,7 +601,6 @@ static void dns_task_init(struct task_server *task)
 	struct interface *ifaces;
 	int ret;
 	struct ldb_result *res;
-	struct ldb_dn *rootdn;
 	static const char * const attrs[] = { "name", NULL};
 	unsigned int i;
 
@@ -641,14 +640,8 @@ static void dns_task_init(struct task_server *task)
 		return;
 	}
 
-	rootdn = ldb_dn_new(dns, dns->samdb, "");
-	if (rootdn == NULL) {
-		task_server_terminate(task, "dns: out of memory", true);
-		return;
-	}
-
 	// TODO: this search does not work against windows
-	ret = dsdb_search(dns->samdb, dns, &res, rootdn, LDB_SCOPE_SUBTREE,
+	ret = dsdb_search(dns->samdb, dns, &res, NULL, LDB_SCOPE_SUBTREE,
 			  attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS, "(objectClass=dnsZone)");
 	if (ret != LDB_SUCCESS) {
 		task_server_terminate(task,
