@@ -336,6 +336,7 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 	enum ldb_scope scope;
 	struct ldb_dn *base_dn;
 	const char *expression;
+	uint32_t dsdb_flags;
 
 	if (tree->operation != LDB_OP_EQUALITY) {
 		return LDB_SUCCESS;
@@ -395,14 +396,20 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
+	dsdb_flags = DSDB_FLAG_NEXT_MODULE |
+		DSDB_SEARCH_SHOW_DELETED |
+		DSDB_SEARCH_SHOW_EXTENDED_DN;
+
 	if (guid_val) {
 		expression = talloc_asprintf(filter_ctx, "objectGUID=%s", ldb_binary_encode(filter_ctx, *guid_val));
 		scope = LDB_SCOPE_SUBTREE;
 		base_dn = NULL;
+		dsdb_flags |= DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
 	} else if (sid_val) {
 		expression = talloc_asprintf(filter_ctx, "objectSID=%s", ldb_binary_encode(filter_ctx, *sid_val));
 		scope = LDB_SCOPE_SUBTREE;
 		base_dn = NULL;
+		dsdb_flags |= DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
 	} else {
 		/* fallback to searching using the string DN as the base DN */
 		expression = "objectClass=*";
@@ -416,10 +423,7 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 				 base_dn,
 				 scope,
 				 no_attrs,
-				 DSDB_FLAG_NEXT_MODULE |
-				 DSDB_SEARCH_SHOW_DELETED |
-				 DSDB_SEARCH_SHOW_EXTENDED_DN |
-				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 dsdb_flags,
 				 filter_ctx->req,
 				 "%s", expression);
 	if (scope == LDB_SCOPE_BASE && ret == LDB_ERR_NO_SUCH_OBJECT) {
@@ -557,7 +561,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		 */
 		if (guid_val) {
 			all_partitions = true;
-			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
+			base_dn = NULL;
 			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)",
 							 ldb_binary_encode(req, *guid_val));
 			if (!base_dn_filter) {
@@ -568,7 +572,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 		} else if (sid_val) {
 			all_partitions = true;
-			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
+			base_dn = NULL;
 			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)",
 							 ldb_binary_encode(req, *sid_val));
 			if (!base_dn_filter) {
