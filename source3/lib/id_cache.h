@@ -29,4 +29,4 @@ struct id_cache_ref {
 
 bool id_cache_ref_parse(const char* str, struct id_cache_ref* id);
 
-void msg_idmap_register_msgs(struct messaging_context *ctx);
+void id_cache_register_msgs(struct messaging_context *ctx);

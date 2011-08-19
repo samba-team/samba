@@ -197,13 +197,13 @@ static bool do_idmap(struct messaging_context *msg_ctx,
 	}
 
 	if (strcmp(argv[1], "flush") == 0) {
-		msg_type = MSG_IDMAP_FLUSH;
+		msg_type = ID_CACHE_FLUSH;
 	}
 	else if (strcmp(argv[1], "delete") == 0) {
-		msg_type = MSG_IDMAP_DELETE;
+		msg_type = ID_CACHE_DELETE;
 	}
 	else if (strcmp(argv[1], "kill") == 0) {
-		msg_type = MSG_IDMAP_KILL;
+		msg_type = ID_CACHE_KILL;
 	}
 	else if (strcmp(argv[1], "help") == 0) {
 		fprintf(stdout, "%s", usage);

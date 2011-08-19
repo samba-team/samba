@@ -86,7 +86,7 @@ static bool id_in_use(const struct user_struct* user,
 	return false;
 }
 
-static void message_idmap_kill(struct messaging_context *msg_ctx,
+static void id_cache_kill(struct messaging_context *msg_ctx,
 				 void *private_data,
 				 uint32_t msg_type,
 				 struct server_id server_id,
@@ -106,7 +106,7 @@ static void message_idmap_kill(struct messaging_context *msg_ctx,
 	}
 }
 
-void msg_idmap_register_kill_msg(struct messaging_context *ctx)
+void id_cache_register_kill_msg(struct messaging_context *ctx)
 {
-	messaging_register(ctx, NULL, MSG_IDMAP_KILL, message_idmap_kill);
+	messaging_register(ctx, NULL, ID_CACHE_KILL, id_cache_kill);
 }
