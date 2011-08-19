@@ -1883,7 +1883,9 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	} else {
 		kdc_db_ctx->my_krbtgt_number = 0;
 		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb, kdc_db_ctx,
-					  &msg, NULL, LDB_SCOPE_SUBTREE,
+					  &msg,
+					  ldb_get_default_basedn(kdc_db_ctx->samdb),
+					  LDB_SCOPE_SUBTREE,
 					  krbtgt_attrs,
 					  0,
 					  "(&(objectClass=user)(samAccountName=krbtgt))");
