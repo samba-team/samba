@@ -358,6 +358,7 @@ ctdb_check_tcp_ports()
 	ctdb_check_tcp_ports_$_c "$@"
 	case "$?" in
 	    0)
+		_ctdb_check_tcp_common
 		rm -f "$_ctdb_service_started_file"
 		return 0
 		;;
