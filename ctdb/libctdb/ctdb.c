@@ -275,8 +275,7 @@ void ctdb_request_free(struct ctdb_request *req)
 }
 
 /* Sanity-checking wrapper for reply. */
-static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
-						 struct ctdb_request *req,
+static struct ctdb_reply_call *unpack_reply_call(struct ctdb_request *req,
 						 uint32_t callid)
 {
 	size_t len;
@@ -285,7 +284,7 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
 	/* Library user error if this isn't a reply to a call. */
 	if (req->hdr.hdr->operation != CTDB_REQ_CALL) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ALERT,
+		DEBUG(req->ctdb, LOG_ALERT,
 		      "This was not a ctdbd call request: operation %u",
 		      req->hdr.hdr->operation);
 		return NULL;
@@ -293,7 +292,7 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
 
 	if (req->hdr.call->callid != callid) {
 		errno = EINVAL;
-		DEBUG(ctdb, LOG_ALERT,
+		DEBUG(req->ctdb, LOG_ALERT,
 		      "This was not a ctdbd %u call request: %u",
 		      callid, req->hdr.call->callid);
 		return NULL;
@@ -302,7 +301,7 @@ static struct ctdb_reply_call *unpack_reply_call(struct ctdb_connection *ctdb,
 	/* ctdbd or our error if this isn't a reply call. */
 	if (len < sizeof(*inhdr) || inhdr->hdr.operation != CTDB_REPLY_CALL) {
 		errno = EIO;
-		DEBUG(ctdb, LOG_CRIT,
+		DEBUG(req->ctdb, LOG_CRIT,
 		      "Invalid ctdbd call reply: len %zu, operation %u",
 		      len, inhdr->hdr.operation);
 		return NULL;
@@ -814,7 +813,7 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 	TDB_DATA data;
 
 	/* OK, we've received reply to noop migration */
-	reply = unpack_reply_call(ctdb, req, CTDB_NULL_FUNC);
+	reply = unpack_reply_call(req, CTDB_NULL_FUNC);
 	if (!reply || reply->status != 0) {
 		if (reply) {
 			DEBUG(ctdb, LOG_ERR,
