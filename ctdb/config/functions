@@ -466,7 +466,8 @@ ctdb_check_tcp_ports_ctdb ()
     for _p ; do  # process each function argument (port)
 	_cmd="ctdb checktcpport $_p"
 	_out=$($_cmd 2>&1)
-	case "$?" in
+	_ret=$?
+	case "$_ret" in
 	    0)
 		ctdb_check_tcp_ports_debug="\"$_cmd\" was able to bind to port"
 		return 1
@@ -476,7 +477,7 @@ ctdb_check_tcp_ports_ctdb ()
 		continue
 		;;
 	    *)
-		ctdb_check_tcp_ports_debug="$_cmd (exited with $?) with output:
+		ctdb_check_tcp_ports_debug="$_cmd (exited with $_ret) with output:
 $_out"
 		# assume not implemented
 		return 127
