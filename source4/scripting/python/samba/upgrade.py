@@ -637,6 +637,8 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     # Export users to samba4 backend
     logger.info("Importing users")
     for username in userdata:
+        if username.lower() == 'administrator' or username.lower() == 'root':
+            continue
         new_passdb.add_sam_account(userdata[username])
         if username in uids:
             add_idmap_entry(result.idmap, userdata[username].user_sid, uids[username], "UID", logger)
