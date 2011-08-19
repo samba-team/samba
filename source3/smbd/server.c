@@ -39,6 +39,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "smbprofile.h"
+#include "lib/id_cache.h"
 
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);
@@ -749,6 +750,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	brl_register_msgs(msg_ctx);
 
 	msg_idmap_register_msgs(msg_ctx);
+	msg_idmap_register_kill_msg(msg_ctx);
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {

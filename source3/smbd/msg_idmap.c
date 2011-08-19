@@ -17,58 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * @brief  Notify smbd about idmap changes
- * @file   msg_idmap.c
- * @author Gregor Beck <gb@sernet.de>
- * @date   Feb 2011
- *
- */
-
 #include "includes.h"
+#include "smbd/globals.h"
 #include "smbd/smbd.h"
-#include "globals.h"
 #include "../libcli/security/dom_sid.h"
 #include "idmap_cache.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "messages.h"
-
-struct id {
-	union {
-		uid_t uid;
-		gid_t gid;
-		struct dom_sid sid;
-	} id;
-	enum {UID, GID, SID} type;
-};
-
-static bool parse_id(const char* str, struct id* id)
-{
-	struct dom_sid sid;
-	unsigned long ul;
-	char c, trash;
-
-	if (sscanf(str, "%cID %lu%c", &c, &ul, &trash) == 2) {
-		switch(c) {
-		case 'G':
-			id->id.gid = ul;
-			id->type = GID;
-			return true;
-		case 'U':
-			id->id.uid = ul;
-			id->type = UID;
-			return true;
-		default:
-			break;
-		}
-	} else if (string_to_sid(&sid, str)) {
-		id->id.sid = sid;
-		id->type = SID;
-		return true;
-	}
-	return false;
-}
+#include "lib/id_cache.h"
 
 static bool uid_in_use(const struct user_struct* user, uid_t uid)
 {
@@ -113,8 +70,8 @@ static bool sid_in_use(const struct user_struct* user, const struct dom_sid* psi
 	return false;
 }
 
-
-static bool id_in_use(const struct user_struct* user, const struct id* id)
+static bool id_in_use(const struct user_struct* user,
+		      const struct id_cache_ref* id)
 {
 	switch(id->type) {
 	case UID:
@@ -129,74 +86,27 @@ static bool id_in_use(const struct user_struct* user, const struct id* id)
 	return false;
 }
 
-static void delete_from_cache(const struct id* id)
-{
-	switch(id->type) {
-	case UID:
-		delete_uid_cache(id->id.uid);
-		idmap_cache_del_uid(id->id.uid);
-		break;
-	case GID:
-		delete_gid_cache(id->id.gid);
-		idmap_cache_del_gid(id->id.gid);
-		break;
-	case SID:
-		delete_sid_cache(&id->id.sid);
-		idmap_cache_del_sid(&id->id.sid);
-		break;
-	default:
-		break;
-	}
-}
-
-
-static void message_idmap_flush(struct messaging_context *msg_ctx,
-				void* private_data,
-				uint32_t msg_type,
-				struct server_id server_id,
-				DATA_BLOB* data)
-{
-	const char *msg = data ? (const char *)data->data : NULL;
-
-	if ((msg == NULL) || (msg[0] == '\0')) {
-		flush_gid_cache();
-		flush_uid_cache();
-	} else if (strncmp(msg, "GID", 3)) {
-		flush_gid_cache();
-	} else if (strncmp(msg, "UID", 3)) {
-		flush_uid_cache();
-	} else {
-		DEBUG(0, ("Invalid argument: %s\n", msg));
-	}
-}
-
-
-static void message_idmap_delete(struct messaging_context *msg_ctx,
+static void message_idmap_kill(struct messaging_context *msg_ctx,
 				 void *private_data,
 				 uint32_t msg_type,
 				 struct server_id server_id,
 				 DATA_BLOB* data)
 {
 	const char *msg = (data && data->data) ? (const char *)data->data : "<NULL>";
-	bool do_kill = (msg_type == MSG_IDMAP_KILL);
 	struct user_struct *validated_users = smbd_server_conn->smb1.sessions.validated_users;
-	struct id id;
+	struct id_cache_ref id;
 
-	if (!parse_id(msg, &id)) {
+	if (!id_cache_ref_parse(msg, &id)) {
 		DEBUG(0, ("Invalid ?ID: %s\n", msg));
 		return;
 	}
 
-	if (do_kill && id_in_use(validated_users, &id)) {
+	if (id_in_use(validated_users, &id)) {
 		exit_server_cleanly(msg);
-	} else {
-		delete_from_cache(&id);
 	}
 }
 
-void msg_idmap_register_msgs(struct messaging_context *ctx)
+void msg_idmap_register_kill_msg(struct messaging_context *ctx)
 {
-	messaging_register(ctx, NULL, MSG_IDMAP_FLUSH,  message_idmap_flush);
-	messaging_register(ctx, NULL, MSG_IDMAP_DELETE, message_idmap_delete);
-	messaging_register(ctx, NULL, MSG_IDMAP_KILL,   message_idmap_delete);
+	messaging_register(ctx, NULL, MSG_IDMAP_KILL, message_idmap_kill);
 }

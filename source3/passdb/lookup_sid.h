@@ -91,10 +91,5 @@ NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 				const char *username,
 				struct passwd **_pwd,
 				struct dom_sid **_group_sid);
-bool delete_uid_cache(uid_t uid);
-bool delete_gid_cache(gid_t gid);
-bool delete_sid_cache(const struct dom_sid* psid);
-void flush_uid_cache(void);
-void flush_gid_cache(void);
 
 #endif /* _PASSDB_LOOKUP_SID_H_ */
