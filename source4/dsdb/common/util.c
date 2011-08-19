@@ -3875,6 +3875,9 @@ int dsdb_search(struct ldb_context *ldb,
 	char *expression = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
+	/* cross-partitions searches with a basedn break multi-domain support */
+	SMB_ASSERT(basedn == NULL || (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) == 0);
+
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);

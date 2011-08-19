@@ -127,6 +127,8 @@ int dsdb_module_search_tree(struct ldb_module *module,
 
 	tmp_ctx = talloc_new(mem_ctx);
 
+	/* cross-partitions searches with a basedn break multi-domain support */
+	SMB_ASSERT(basedn == NULL || (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) == 0);
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
@@ -197,6 +199,9 @@ int dsdb_module_search(struct ldb_module *module,
 	va_list ap;
 	char *expression;
 	struct ldb_parse_tree *tree;
+
+	/* cross-partitions searches with a basedn break multi-domain support */
+	SMB_ASSERT(basedn == NULL || (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) == 0);
 
 	tmp_ctx = talloc_new(mem_ctx);
 
