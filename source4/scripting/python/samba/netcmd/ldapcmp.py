@@ -72,7 +72,9 @@ class LDAPBase(object):
         self.view = view
         self.verbose = verbose
         self.host = host
-        self.base_dn = self.find_basedn()
+        self.base_dn = str(self.ldb.get_default_basedn())
+        self.config_dn = str(self.ldb.get_config_basedn())
+        self.schema_dn = str(self.ldb.get_schema_basedn())
         self.domain_netbios = self.find_netbios()
         self.server_names = self.find_servers()
         self.domain_name = re.sub("[Dd][Cc]=", "", self.base_dn).replace(",", ".")
@@ -105,18 +107,12 @@ class LDAPBase(object):
         return srv
 
     def find_netbios(self):
-        res = self.ldb.search(base="CN=Partitions,CN=Configuration,%s" % self.base_dn, \
+        res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn, \
                 scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
         assert len(res) > 0
         for x in res:
             if "nETBIOSName" in x.keys():
                 return x["nETBIOSName"][0]
-
-    def find_basedn(self):
-        res = self.ldb.search(base="", expression="(objectClass=*)", scope=SCOPE_BASE,
-                attrs=["defaultNamingContext"])
-        assert len(res) == 1
-        return res[0]["defaultNamingContext"][0]
 
     def object_exists(self, object_dn):
         res = None
@@ -253,13 +249,13 @@ class LDAPBase(object):
         """ Build dictionary that maps GUID to 'name' attribute found in Schema or Extended-Rights.
         """
         self.guid_map = {}
-        res = self.ldb.search(base="cn=schema,cn=configuration,%s" % self.base_dn, \
-                expression="(schemaIdGuid=*)", scope=SCOPE_SUBTREE, attrs=["schemaIdGuid", "name"])
+        res = self.ldb.search(base=self.schema_dn,
+                              expression="(schemaIdGuid=*)", scope=SCOPE_SUBTREE, attrs=["schemaIdGuid", "name"])
         for item in res:
             self.guid_map[self.guid_as_string(item["schemaIdGuid"]).lower()] = item["name"][0]
         #
-        res = self.ldb.search(base="cn=extended-rights,cn=configuration,%s" % self.base_dn, \
-                expression="(rightsGuid=*)", scope=SCOPE_SUBTREE, attrs=["rightsGuid", "name"])
+        res = self.ldb.search(base="cn=extended-rights,%s" % self.config_dn,
+                              expression="(rightsGuid=*)", scope=SCOPE_SUBTREE, attrs=["rightsGuid", "name"])
         for item in res:
             self.guid_map[str(item["rightsGuid"]).lower()] = item["name"][0]
 
@@ -267,8 +263,8 @@ class LDAPBase(object):
         """ Build dictionary that maps GUID to 'name' attribute found in Schema or Extended-Rights.
         """
         self.sid_map = {}
-        res = self.ldb.search(base="%s" % self.base_dn, \
-                expression="(objectSid=*)", scope=SCOPE_SUBTREE, attrs=["objectSid", "sAMAccountName"])
+        res = self.ldb.search(base=self.base_dn,
+                              expression="(objectSid=*)", scope=SCOPE_SUBTREE, attrs=["objectSid", "sAMAccountName"])
         for item in res:
             try:
                 self.sid_map["%s" % ndr_unpack(security.dom_sid, item["objectSid"][0])] = item["sAMAccountName"][0]
@@ -797,11 +793,11 @@ class LDAPBundel(object):
             Parse all DNs and filter those that are 'strange' or abnormal.
         """
         if context.upper() == "DOMAIN":
-            search_base = "%s" % self.con.base_dn
+            search_base = self.con.base_dn
         elif context.upper() == "CONFIGURATION":
-            search_base = "CN=Configuration,%s" % self.con.base_dn
+            search_base = self.con.config_dn
         elif context.upper() == "SCHEMA":
-            search_base = "CN=Schema,CN=Configuration,%s" % self.con.base_dn
+            search_base = self.con.schema_dn
 
         dn_list = []
         if not self.search_base:
