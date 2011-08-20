@@ -580,8 +580,6 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 	NTSTATUS status;
 	fstring username;
 
-	memcache_flush(NULL, PDB_GETPWSID_CACHE);
-
 	status = methods->delete_sam_account(methods, sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -610,17 +608,24 @@ NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 	struct pdb_methods *pdb = pdb_get_methods();
 	uid_t uid = -1;
 	NTSTATUS status;
+	const struct dom_sid *user_sid;
 	char *msg_data;
+
+	user_sid = pdb_get_user_sid(sam_acct);
 
 	/* sanity check to make sure we don't delete root */
 
-	if ( !sid_to_uid( pdb_get_user_sid(sam_acct), &uid ) ) {
+	if ( !sid_to_uid(user_sid, &uid ) ) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if ( uid == 0 ) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	memcache_delete(NULL,
+			PDB_GETPWSID_CACHE,
+			data_blob_const(user_sid, sizeof(*user_sid)));
 
 	status = pdb->delete_user(pdb, mem_ctx, sam_acct);
 	if (!NT_STATUS_IS_OK(status)) {
