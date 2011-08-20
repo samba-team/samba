@@ -1450,6 +1450,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	int		to = lp_ldap_timeout();
 	time_t		abs_endtime = calc_ldap_abs_endtime(to);
 	struct		timeval timeout;
+	struct		timeval *timeout_ptr = NULL;
 	int		alarm_timer;
 	size_t		converted_size;
 
@@ -1487,9 +1488,12 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		return LDAP_NO_MEMORY;
 	}
 
-	/* Setup timeout for the ldap_search_ext_s call - local and remote. */
-	timeout.tv_sec = lp_ldap_timeout();
-	timeout.tv_usec = 0;
+	/* Setup remote timeout for the ldap_search_ext_s call. */
+	if (to) {
+		timeout.tv_sec = to;
+		timeout.tv_usec = 0;
+		timeout_ptr = &timeout;
+	}
 
 	/* Setup alarm timeout.... Do we need both of these ? JRA.
 	 * Yes, I think we do need both of these. The server timeout only
@@ -1517,7 +1521,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
 				       discard_const_p(char *, attrs),
-				       attrsonly, sctrls, cctrls, &timeout,
+				       attrsonly, sctrls, cctrls, timeout_ptr,
 				       sizelimit, res);
 		if (rc != LDAP_SUCCESS) {
 			char *ld_error = NULL;
