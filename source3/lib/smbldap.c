@@ -1345,13 +1345,13 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 	return NT_STATUS_OK;
 }
 
-static bool got_alarm;
+static SIG_ATOMIC_T got_alarm;
 
 static void (*old_handler)(int);
 
 static void gotalarm_sig(int dummy)
 {
-	got_alarm = True;
+	got_alarm = 1;
 }
 
 static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
@@ -1370,7 +1370,7 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 	}
 
 	if (*attempts == 0) {
-		got_alarm = False;
+		got_alarm = 0;
 		old_handler = CatchSignal(SIGALRM, gotalarm_sig);
 		alarm(endtime - now);
 
