@@ -1500,7 +1500,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		}
 
 		/* cd into the parent dir to pin it. */
-		ret = SMB_VFS_CHDIR(fsp->conn, parent_dir);
+		ret = vfs_ChDir(fsp->conn, parent_dir);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -1511,12 +1511,14 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		/* Must use lstat here. */
 		ret = SMB_VFS_LSTAT(fsp->conn, &local_fname);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
+			goto out;
 		}
 
 		/* Ensure it matches the fsp stat. */
 		if (!check_same_stat(&local_fname.st, &fsp->fsp_name->st)) {
-                        return NT_STATUS_ACCESS_DENIED;
+                        status = NT_STATUS_ACCESS_DENIED;
+			goto out;
                 }
                 path = final_component;
         } else {
@@ -1538,6 +1540,8 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 	} else {
 		status = map_nt_error_from_unix(errno);
 	}
+
+  out:
 
 	if (as_root) {
 		vfs_ChDir(fsp->conn,saved_dir);
