@@ -1410,8 +1410,8 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 	}
 
  no_next:
-	CatchSignal(SIGALRM, SIG_IGN);
 	alarm(0);
+	CatchSignal(SIGALRM, SIG_IGN);
 	ldap_state->last_use = now;
 	return False;
 }
