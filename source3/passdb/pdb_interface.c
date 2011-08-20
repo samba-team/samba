@@ -667,8 +667,11 @@ NTSTATUS pdb_update_sam_account(struct samu *sam_acct)
 NTSTATUS pdb_delete_sam_account(struct samu *sam_acct) 
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	const struct dom_sid *user_sid = pdb_get_user_sid(sam_acct);
 
-	memcache_flush(NULL, PDB_GETPWSID_CACHE);
+	memcache_delete(NULL,
+			PDB_GETPWSID_CACHE,
+			data_blob_const(user_sid, sizeof(*user_sid)));
 
 	return pdb->delete_sam_account(pdb, sam_acct);
 }
