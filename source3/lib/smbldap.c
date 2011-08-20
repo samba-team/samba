@@ -1347,8 +1347,6 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 
 static SIG_ATOMIC_T got_alarm;
 
-static void (*old_handler)(int);
-
 static void gotalarm_sig(int dummy)
 {
 	got_alarm = 1;
@@ -1371,7 +1369,7 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 
 	if (*attempts == 0) {
 		got_alarm = 0;
-		old_handler = CatchSignal(SIGALRM, gotalarm_sig);
+		CatchSignal(SIGALRM, gotalarm_sig);
 		alarm(endtime - now);
 
 		if (ldap_state->pid != sys_getpid())
@@ -1412,7 +1410,7 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 	}
 
  no_next:
-	CatchSignal(SIGALRM, old_handler);
+	CatchSignal(SIGALRM, SIG_IGN);
 	alarm(0);
 	ldap_state->last_use = now;
 	return False;
