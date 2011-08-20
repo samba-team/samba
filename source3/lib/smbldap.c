@@ -1369,6 +1369,35 @@ static time_t calc_ldap_abs_endtime(int ldap_to)
 	return time_mono(NULL)+ldap_to+1;
 }
 
+static int end_ldap_local_alarm(time_t absolute_endtime, int rc)
+{
+	if (absolute_endtime) {
+		alarm(0);
+		CatchSignal(SIGALRM, SIG_IGN);
+		if (got_alarm) {
+			/* Client timeout error code. */
+			got_alarm = 0;
+			return LDAP_TIMEOUT;
+		}
+	}
+	return rc;
+}
+
+static void setup_ldap_local_alarm(struct smbldap_state *ldap_state, time_t absolute_endtime)
+{
+	time_t now = time_mono(NULL);
+
+	if (absolute_endtime) {
+		got_alarm = 0;
+		CatchSignal(SIGALRM, gotalarm_sig);
+		alarm(absolute_endtime - now);
+	}
+
+	if (ldap_state->pid != sys_getpid()) {
+		smbldap_close(ldap_state);
+	}
+}
+
 static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 			    int *attempts, time_t abs_endtime)
 {
@@ -1382,17 +1411,6 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 		smbldap_close(ldap_state);
 		*rc = LDAP_TIMEOUT;
 		goto no_next;
-	}
-
-	if (*attempts == 0) {
-		if (abs_endtime) {
-			got_alarm = 0;
-			CatchSignal(SIGALRM, gotalarm_sig);
-			alarm(abs_endtime - now);
-		}
-
-		if (ldap_state->pid != sys_getpid())
-			smbldap_close(ldap_state);
 	}
 
 	while (1) {
@@ -1429,8 +1447,6 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 	}
 
  no_next:
-	alarm(0);
-	CatchSignal(SIGALRM, SIG_IGN);
 	ldap_state->last_use = now;
 	return False;
 }
@@ -1451,7 +1467,6 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	time_t		abs_endtime = calc_ldap_abs_endtime(to);
 	struct		timeval timeout;
 	struct		timeval *timeout_ptr = NULL;
-	int		alarm_timer;
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
@@ -1495,27 +1510,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		timeout_ptr = &timeout;
 	}
 
-	/* Setup alarm timeout.... Do we need both of these ? JRA.
-	 * Yes, I think we do need both of these. The server timeout only
-	 * covers the case where the server's operation takes too long. It
-	 * does not cover the case where the request hangs on its way to the
-	 * server. The server side timeout is not strictly necessary, it's
-	 * just a bit more kind to the server. VL.
-	 * We prefer to get the server termination though because otherwise we
-	 * have to rebind to the LDAP server aѕ we get a LDAP_SERVER_DOWN in the
-	 * alarm termination case. So let's call the alarm 2s later, which
-	 * should be enough for the server to report the timelimit exceeded.
-	 * in case the ldal timeout is 0 (no limit) we set the _no_ alarm
-	 * accordingly. BJ. */
-
-	got_alarm = 0;
-	CatchSignal(SIGALRM, gotalarm_sig);
-	alarm_timer = lp_ldap_timeout();
-	if (alarm_timer > 0) {
-		alarm_timer += 2;
-	}
-	alarm(alarm_timer);
-	/* End setup timeout. */
+	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
@@ -1546,15 +1541,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	}
 
 	TALLOC_FREE(utf8_filter);
-
-	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIG_IGN);
-	alarm(0);
-
-	if (got_alarm != 0)
-		return LDAP_TIMELIMIT_EXCEEDED;
-
-	return rc;
+	return end_ldap_local_alarm(abs_endtime, rc);
 }
 
 int smbldap_search(struct smbldap_state *ldap_state, 
@@ -1673,6 +1660,8 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		return LDAP_NO_MEMORY;
 	}
 
+	setup_ldap_local_alarm(ldap_state, abs_endtime);
+
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
 		if (rc != LDAP_SUCCESS) {
@@ -1698,7 +1687,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 	}
 
 	TALLOC_FREE(utf8_dn);
-	return rc;
+	return end_ldap_local_alarm(abs_endtime, rc);
 }
 
 int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs[])
@@ -1716,6 +1705,8 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
+
+	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
@@ -1742,7 +1733,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	}
 
 	TALLOC_FREE(utf8_dn);
-	return rc;
+	return end_ldap_local_alarm(abs_endtime, rc);
 }
 
 int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
@@ -1760,6 +1751,8 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
+
+	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
@@ -1786,7 +1779,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	}
 
 	TALLOC_FREE(utf8_dn);
-	return rc;
+	return end_ldap_local_alarm(abs_endtime, rc);
 }
 
 int smbldap_extended_operation(struct smbldap_state *ldap_state, 
@@ -1800,6 +1793,8 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 
 	if (!ldap_state)
 		return (-1);
+
+	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid,
@@ -1827,7 +1822,7 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 		}
 	}
 
-	return rc;
+	return end_ldap_local_alarm(abs_endtime, rc);
 }
 
 /*******************************************************************
