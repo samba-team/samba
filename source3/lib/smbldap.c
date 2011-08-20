@@ -1352,8 +1352,25 @@ static void gotalarm_sig(int dummy)
 	got_alarm = 1;
 }
 
+static time_t calc_ldap_abs_endtime(int ldap_to)
+{
+	if (ldap_to == 0) {
+		/* No timeout - don't
+		   return a value for
+		   the alarm. */
+		return (time_t)0;
+	}
+
+	/* Make the alarm time one second beyond
+	   the timout we're setting for the
+	   remote search timeout, to allow that
+	   to fire in preference. */
+
+	return time_mono(NULL)+ldap_to+1;
+}
+
 static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
-			    int *attempts, time_t endtime)
+			    int *attempts, time_t abs_endtime)
 {
 	time_t now = time_mono(NULL);
 	int open_rc = LDAP_SERVER_DOWN;
@@ -1361,16 +1378,18 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 	if (*rc != LDAP_SERVER_DOWN)
 		goto no_next;
 
-	if (now >= endtime) {
+	if (abs_endtime && now >= abs_endtime) {
 		smbldap_close(ldap_state);
 		*rc = LDAP_TIMEOUT;
 		goto no_next;
 	}
 
 	if (*attempts == 0) {
-		got_alarm = 0;
-		CatchSignal(SIGALRM, gotalarm_sig);
-		alarm(endtime - now);
+		if (abs_endtime) {
+			got_alarm = 0;
+			CatchSignal(SIGALRM, gotalarm_sig);
+			alarm(abs_endtime - now);
+		}
 
 		if (ldap_state->pid != sys_getpid())
 			smbldap_close(ldap_state);
@@ -1428,7 +1447,8 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_filter;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
+	int		to = lp_ldap_timeout();
+	time_t		abs_endtime = calc_ldap_abs_endtime(to);
 	struct		timeval timeout;
 	int		alarm_timer;
 	size_t		converted_size;
@@ -1493,7 +1513,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	alarm(alarm_timer);
 	/* End setup timeout. */
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
+	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
 				       discard_const_p(char *, attrs),
@@ -1638,7 +1658,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
+	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
@@ -1649,7 +1669,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
+	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
 		if (rc != LDAP_SUCCESS) {
 			char *ld_error = NULL;
@@ -1682,7 +1702,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
+	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
@@ -1693,7 +1713,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
+	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
 		if (rc != LDAP_SUCCESS) {
 			char *ld_error = NULL;
@@ -1726,7 +1746,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	char           *utf8_dn;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
+	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
@@ -1737,7 +1757,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		return LDAP_NO_MEMORY;
 	}
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
+	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
 		if (rc != LDAP_SUCCESS) {
 			char *ld_error = NULL;
@@ -1772,12 +1792,12 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
-	time_t		endtime = time_mono(NULL)+lp_ldap_timeout();
+	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 
 	if (!ldap_state)
 		return (-1);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, endtime)) {
+	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
 		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid,
 					       reqdata, serverctrls,
 					       clientctrls, retoidp, retdatap);
