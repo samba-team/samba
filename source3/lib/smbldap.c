@@ -1513,30 +1513,32 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+		char *ld_error = NULL;
+		int ld_errno;
+
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
 				       discard_const_p(char *, attrs),
 				       attrsonly, sctrls, cctrls, timeout_ptr,
 				       sizelimit, res);
-		if (rc != LDAP_SUCCESS) {
-			char *ld_error = NULL;
-			int ld_errno;
+		if (rc == LDAP_SUCCESS) {
+			break;
+		}
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_STRING, &ld_error);
-			DEBUG(10, ("Failed search for base: %s, error: %d (%s) "
-				   "(%s)\n", base, ld_errno,
-				   ldap_err2string(rc),
-				   ld_error ? ld_error : "unknown"));
-			SAFE_FREE(ld_error);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(10, ("Failed search for base: %s, error: %d (%s) "
+			   "(%s)\n", base, ld_errno,
+			   ldap_err2string(rc),
+			   ld_error ? ld_error : "unknown"));
+		SAFE_FREE(ld_error);
 
-			if (ld_errno == LDAP_SERVER_DOWN) {
-				ldap_unbind(ldap_state->ldap_struct);
-				ldap_state->ldap_struct = NULL;
-			}
+		if (ld_errno == LDAP_SERVER_DOWN) {
+			ldap_unbind(ldap_state->ldap_struct);
+			ldap_state->ldap_struct = NULL;
 		}
 	}
 
@@ -1663,26 +1665,28 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+		char *ld_error = NULL;
+		int ld_errno;
+
 		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
-		if (rc != LDAP_SUCCESS) {
-			char *ld_error = NULL;
-			int ld_errno;
+		if (rc == LDAP_SUCCESS) {
+			break;
+		}
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_STRING, &ld_error);
-			DEBUG(10, ("Failed to modify dn: %s, error: %d (%s) "
-				   "(%s)\n", dn, ld_errno,
-				   ldap_err2string(rc),
-				   ld_error ? ld_error : "unknown"));
-			SAFE_FREE(ld_error);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(10, ("Failed to modify dn: %s, error: %d (%s) "
+			   "(%s)\n", dn, ld_errno,
+			   ldap_err2string(rc),
+			   ld_error ? ld_error : "unknown"));
+		SAFE_FREE(ld_error);
 
-			if (ld_errno == LDAP_SERVER_DOWN) {
-				ldap_unbind(ldap_state->ldap_struct);
-				ldap_state->ldap_struct = NULL;
-			}
+		if (ld_errno == LDAP_SERVER_DOWN) {
+			ldap_unbind(ldap_state->ldap_struct);
+			ldap_state->ldap_struct = NULL;
 		}
 	}
 
@@ -1709,26 +1713,28 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+		char *ld_error = NULL;
+		int ld_errno;
+
 		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
-		if (rc != LDAP_SUCCESS) {
-			char *ld_error = NULL;
-			int ld_errno;
+		if (rc == LDAP_SUCCESS) {
+			break;
+		}
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_STRING, &ld_error);
-			DEBUG(10, ("Failed to add dn: %s, error: %d (%s) "
-				   "(%s)\n", dn, ld_errno,
-				   ldap_err2string(rc),
-				   ld_error ? ld_error : "unknown"));
-			SAFE_FREE(ld_error);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(10, ("Failed to add dn: %s, error: %d (%s) "
+			   "(%s)\n", dn, ld_errno,
+			   ldap_err2string(rc),
+			   ld_error ? ld_error : "unknown"));
+		SAFE_FREE(ld_error);
 
-			if (ld_errno == LDAP_SERVER_DOWN) {
-				ldap_unbind(ldap_state->ldap_struct);
-				ldap_state->ldap_struct = NULL;
-			}
+		if (ld_errno == LDAP_SERVER_DOWN) {
+			ldap_unbind(ldap_state->ldap_struct);
+			ldap_state->ldap_struct = NULL;
 		}
 	}
 
@@ -1755,26 +1761,28 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+		char *ld_error = NULL;
+		int ld_errno;
+
 		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
-		if (rc != LDAP_SUCCESS) {
-			char *ld_error = NULL;
-			int ld_errno;
+		if (rc == LDAP_SUCCESS) {
+			break;
+		}
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_STRING, &ld_error);
-			DEBUG(10, ("Failed to delete dn: %s, error: %d (%s) "
-				   "(%s)\n", dn, ld_errno,
-				   ldap_err2string(rc),
-				   ld_error ? ld_error : "unknown"));
-			SAFE_FREE(ld_error);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(10, ("Failed to delete dn: %s, error: %d (%s) "
+			   "(%s)\n", dn, ld_errno,
+			   ldap_err2string(rc),
+			   ld_error ? ld_error : "unknown"));
+		SAFE_FREE(ld_error);
 
-			if (ld_errno == LDAP_SERVER_DOWN) {
-				ldap_unbind(ldap_state->ldap_struct);
-				ldap_state->ldap_struct = NULL;
-			}
+		if (ld_errno == LDAP_SERVER_DOWN) {
+			ldap_unbind(ldap_state->ldap_struct);
+			ldap_state->ldap_struct = NULL;
 		}
 	}
 
@@ -1797,28 +1805,30 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
 	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+		char *ld_error = NULL;
+		int ld_errno;
+
 		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid,
 					       reqdata, serverctrls,
 					       clientctrls, retoidp, retdatap);
-		if (rc != LDAP_SUCCESS) {
-			char *ld_error = NULL;
-			int ld_errno;
+		if (rc == LDAP_SUCCESS) {
+			break;
+		}
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_NUMBER, &ld_errno);
 
-			ldap_get_option(ldap_state->ldap_struct,
-					LDAP_OPT_ERROR_STRING, &ld_error);
-			DEBUG(10, ("Extended operation failed with error: "
-				   "%d (%s) (%s)\n", ld_errno,
-				   ldap_err2string(rc),
-				   ld_error ? ld_error : "unknown"));
-			SAFE_FREE(ld_error);
+		ldap_get_option(ldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(10, ("Extended operation failed with error: "
+			   "%d (%s) (%s)\n", ld_errno,
+			   ldap_err2string(rc),
+			   ld_error ? ld_error : "unknown"));
+		SAFE_FREE(ld_error);
 
-			if (ld_errno == LDAP_SERVER_DOWN) {
-				ldap_unbind(ldap_state->ldap_struct);
-				ldap_state->ldap_struct = NULL;
-			}
+		if (ld_errno == LDAP_SERVER_DOWN) {
+			ldap_unbind(ldap_state->ldap_struct);
+			ldap_state->ldap_struct = NULL;
 		}
 	}
 
