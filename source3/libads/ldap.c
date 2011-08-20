@@ -100,11 +100,13 @@ static void gotalarm_sig(int signum)
 	}
 #endif
 
-	/* Setup timeout */
-	gotalarm = 0;
-	CatchSignal(SIGALRM, gotalarm_sig);
-	alarm(to);
-	/* End setup timeout. */
+	if (to) {
+		/* Setup timeout */
+		gotalarm = 0;
+		CatchSignal(SIGALRM, gotalarm_sig);
+		alarm(to);
+		/* End setup timeout. */
+	}
 
 	ldp = ldap_open(server, port);
 
@@ -115,9 +117,11 @@ static void gotalarm_sig(int signum)
 		DEBUG(10, ("Connected to LDAP server '%s:%d'\n", server, port));
 	}
 
-	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIG_IGN);
-	alarm(0);
+	if (to) {
+		/* Teardown timeout. */
+		alarm(0);
+		CatchSignal(SIGALRM, SIG_IGN);
+	}
 
 	return ldp;
 }
@@ -133,26 +137,39 @@ static int ldap_search_with_timeout(LDAP *ld,
 				    int sizelimit,
 				    LDAPMessage **res )
 {
+	int to = lp_ldap_timeout();
 	struct timeval timeout;
+	struct timeval *timeout_ptr = NULL;
 	int result;
 
 	/* Setup timeout for the ldap_search_ext_s call - local and remote. */
-	timeout.tv_sec = lp_ldap_timeout();
-	timeout.tv_usec = 0;
-
-	/* Setup alarm timeout.... Do we need both of these ? JRA. */
 	gotalarm = 0;
-	CatchSignal(SIGALRM, gotalarm_sig);
-	alarm(lp_ldap_timeout());
-	/* End setup timeout. */
+
+	if (to) {
+		timeout.tv_sec = to;
+	 	timeout.tv_usec = 0;
+		timeout_ptr = &timeout;
+
+		/* Setup alarm timeout. */
+		CatchSignal(SIGALRM, gotalarm_sig);
+		/* Make the alarm time one second beyond
+		   the timout we're setting for the
+		   remote search timeout, to allow that
+		   to fire in preference. */
+		alarm(to+1);
+		/* End setup timeout. */
+	}
+
 
 	result = ldap_search_ext_s(ld, base, scope, filter, attrs,
-				   attrsonly, sctrls, cctrls, &timeout,
+				   attrsonly, sctrls, cctrls, timeout_ptr,
 				   sizelimit, res);
 
-	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIG_IGN);
-	alarm(0);
+	if (to) {
+		/* Teardown alarm timeout. */
+		CatchSignal(SIGALRM, SIG_IGN);
+		alarm(0);
+	}
 
 	if (gotalarm != 0)
 		return LDAP_TIMELIMIT_EXCEEDED;
