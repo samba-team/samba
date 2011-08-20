@@ -1407,16 +1407,23 @@ static void get_ldap_errs(struct smbldap_state *ldap_state, char **pp_ld_error, 
 			LDAP_OPT_ERROR_STRING, pp_ld_error);
 }
 
-static int get_cached_ldap_connect(struct smbldap_state *ldap_state)
+static int get_cached_ldap_connect(struct smbldap_state *ldap_state, time_t abs_endtime)
 {
 	int attempts = 0;
 
 	while (1) {
 		int rc;
+		time_t now;
+
+		now = time_mono(NULL);
+		ldap_state->last_use = now;
+
+		if (abs_endtime && now > abs_endtime) {
+			smbldap_close(ldap_state);
+			return LDAP_TIMEOUT;
+		}
 
 		rc = smbldap_open(ldap_state);
-
-		ldap_state->last_use = time_mono(NULL);
 
 		if (rc == LDAP_SUCCESS) {
 			return LDAP_SUCCESS;
@@ -1511,7 +1518,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		char *ld_error = NULL;
 		int ld_errno;
 
-		rc = get_cached_ldap_connect(ldap_state);
+		rc = get_cached_ldap_connect(ldap_state, abs_endtime);
 		if (rc != LDAP_SUCCESS) {
 			break;
 		}
@@ -1665,7 +1672,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		char *ld_error = NULL;
 		int ld_errno;
 
-		rc = get_cached_ldap_connect(ldap_state);
+		rc = get_cached_ldap_connect(ldap_state, abs_endtime);
 		if (rc != LDAP_SUCCESS) {
 			break;
 		}
@@ -1715,7 +1722,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		char *ld_error = NULL;
 		int ld_errno;
 
-		rc = get_cached_ldap_connect(ldap_state);
+		rc = get_cached_ldap_connect(ldap_state, abs_endtime);
 		if (rc != LDAP_SUCCESS) {
 			break;
 		}
@@ -1765,7 +1772,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		char *ld_error = NULL;
 		int ld_errno;
 
-		rc = get_cached_ldap_connect(ldap_state);
+		rc = get_cached_ldap_connect(ldap_state, abs_endtime);
 		if (rc != LDAP_SUCCESS) {
 			break;
 		}
@@ -1811,7 +1818,7 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 		char *ld_error = NULL;
 		int ld_errno;
 
-		rc = get_cached_ldap_connect(ldap_state);
+		rc = get_cached_ldap_connect(ldap_state, abs_endtime);
 		if (rc != LDAP_SUCCESS) {
 			break;
 		}
