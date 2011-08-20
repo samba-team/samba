@@ -1407,57 +1407,44 @@ static void get_ldap_errs(struct smbldap_state *ldap_state, char **pp_ld_error, 
 			LDAP_OPT_ERROR_STRING, pp_ld_error);
 }
 
-static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
-			    int *attempts, time_t abs_endtime)
+static int get_cached_ldap_connect(struct smbldap_state *ldap_state)
 {
-	time_t now = time_mono(NULL);
-	int open_rc = LDAP_SERVER_DOWN;
-
-	if (*rc != LDAP_SERVER_DOWN)
-		goto no_next;
-
-	if (abs_endtime && now >= abs_endtime) {
-		smbldap_close(ldap_state);
-		*rc = LDAP_TIMEOUT;
-		goto no_next;
-	}
+	int attempts = 0;
 
 	while (1) {
+		int rc;
 
-		if (*attempts != 0)
-			smb_msleep(1000);
+		rc = smbldap_open(ldap_state);
 
-		*attempts += 1;
+		ldap_state->last_use = time_mono(NULL);
 
-		open_rc = smbldap_open(ldap_state);
-
-		if (open_rc == LDAP_SUCCESS) {
-			ldap_state->last_use = now;
-			return True;
+		if (rc == LDAP_SUCCESS) {
+			return LDAP_SUCCESS;
 		}
 
-		if (open_rc == LDAP_INSUFFICIENT_ACCESS) {
+		attempts++;
+		DEBUG(1, ("Connection to LDAP server failed for the "
+			"%d try!\n", attempts));
+
+		if (rc == LDAP_INSUFFICIENT_ACCESS) {
 			/* The fact that we are non-root or any other
 			 * access-denied condition will not change in the next
 			 * round of trying */
-			*rc = open_rc;
-			break;
+			return rc;
 		}
 
 		if (got_alarm) {
-			*rc = LDAP_TIMEOUT;
-			break;
+			smbldap_close(ldap_state);
+			return LDAP_TIMEOUT;
 		}
 
-		if (open_rc != LDAP_SUCCESS) {
-			DEBUG(1, ("Connection to LDAP server failed for the "
-				  "%d try!\n", *attempts));
+		smb_msleep(1000);
+
+		if (got_alarm) {
+			smbldap_close(ldap_state);
+			return LDAP_TIMEOUT;
 		}
 	}
-
- no_next:
-	ldap_state->last_use = now;
-	return False;
 }
 
 /*********************************************************************
@@ -1470,7 +1457,6 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 			      int sizelimit, LDAPMessage **res)
 {
 	int 		rc = LDAP_SERVER_DOWN;
-	int 		attempts = 0;
 	char           *utf8_filter;
 	int		to = lp_ldap_timeout();
 	time_t		abs_endtime = calc_ldap_abs_endtime(to);
@@ -1521,9 +1507,14 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+	while (1) {
 		char *ld_error = NULL;
 		int ld_errno;
+
+		rc = get_cached_ldap_connect(ldap_state);
+		if (rc != LDAP_SUCCESS) {
+			break;
+		}
 
 		rc = ldap_search_ext_s(ldap_state->ldap_struct, base, scope, 
 				       utf8_filter,
@@ -1542,10 +1533,11 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 			   ld_error ? ld_error : "unknown"));
 		SAFE_FREE(ld_error);
 
-		if (ld_errno == LDAP_SERVER_DOWN) {
-			ldap_unbind(ldap_state->ldap_struct);
-			ldap_state->ldap_struct = NULL;
+		if (ld_errno != LDAP_SERVER_DOWN) {
+			break;
 		}
+		ldap_unbind(ldap_state->ldap_struct);
+		ldap_state->ldap_struct = NULL;
 	}
 
 	TALLOC_FREE(utf8_filter);
@@ -1655,7 +1647,6 @@ done:
 int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs[])
 {
 	int 		rc = LDAP_SERVER_DOWN;
-	int 		attempts = 0;
 	char           *utf8_dn;
 	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 	size_t		converted_size;
@@ -1670,9 +1661,14 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+	while (1) {
 		char *ld_error = NULL;
 		int ld_errno;
+
+		rc = get_cached_ldap_connect(ldap_state);
+		if (rc != LDAP_SUCCESS) {
+			break;
+		}
 
 		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
 		if (rc == LDAP_SUCCESS) {
@@ -1687,10 +1683,11 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 			   ld_error ? ld_error : "unknown"));
 		SAFE_FREE(ld_error);
 
-		if (ld_errno == LDAP_SERVER_DOWN) {
-			ldap_unbind(ldap_state->ldap_struct);
-			ldap_state->ldap_struct = NULL;
+		if (ld_errno != LDAP_SERVER_DOWN) {
+			break;
 		}
+		ldap_unbind(ldap_state->ldap_struct);
+		ldap_state->ldap_struct = NULL;
 	}
 
 	TALLOC_FREE(utf8_dn);
@@ -1700,7 +1697,6 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs[])
 {
 	int 		rc = LDAP_SERVER_DOWN;
-	int 		attempts = 0;
 	char           *utf8_dn;
 	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 	size_t		converted_size;
@@ -1715,9 +1711,14 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+	while (1) {
 		char *ld_error = NULL;
 		int ld_errno;
+
+		rc = get_cached_ldap_connect(ldap_state);
+		if (rc != LDAP_SUCCESS) {
+			break;
+		}
 
 		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
 		if (rc == LDAP_SUCCESS) {
@@ -1732,10 +1733,11 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 			   ld_error ? ld_error : "unknown"));
 		SAFE_FREE(ld_error);
 
-		if (ld_errno == LDAP_SERVER_DOWN) {
-			ldap_unbind(ldap_state->ldap_struct);
-			ldap_state->ldap_struct = NULL;
+		if (ld_errno != LDAP_SERVER_DOWN) {
+			break;
 		}
+		ldap_unbind(ldap_state->ldap_struct);
+		ldap_state->ldap_struct = NULL;
 	}
 
 	TALLOC_FREE(utf8_dn);
@@ -1745,7 +1747,6 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 {
 	int 		rc = LDAP_SERVER_DOWN;
-	int 		attempts = 0;
 	char           *utf8_dn;
 	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 	size_t		converted_size;
@@ -1760,9 +1761,14 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+	while (1) {
 		char *ld_error = NULL;
 		int ld_errno;
+
+		rc = get_cached_ldap_connect(ldap_state);
+		if (rc != LDAP_SUCCESS) {
+			break;
+		}
 
 		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
 		if (rc == LDAP_SUCCESS) {
@@ -1777,10 +1783,11 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 			   ld_error ? ld_error : "unknown"));
 		SAFE_FREE(ld_error);
 
-		if (ld_errno == LDAP_SERVER_DOWN) {
-			ldap_unbind(ldap_state->ldap_struct);
-			ldap_state->ldap_struct = NULL;
+		if (ld_errno != LDAP_SERVER_DOWN) {
+			break;
 		}
+		ldap_unbind(ldap_state->ldap_struct);
+		ldap_state->ldap_struct = NULL;
 	}
 
 	TALLOC_FREE(utf8_dn);
@@ -1793,7 +1800,6 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 			       char **retoidp, struct berval **retdatap)
 {
 	int 		rc = LDAP_SERVER_DOWN;
-	int 		attempts = 0;
 	time_t		abs_endtime = calc_ldap_abs_endtime(lp_ldap_timeout());
 
 	if (!ldap_state)
@@ -1801,9 +1807,14 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 
 	setup_ldap_local_alarm(ldap_state, abs_endtime);
 
-	while (another_ldap_try(ldap_state, &rc, &attempts, abs_endtime)) {
+	while (1) {
 		char *ld_error = NULL;
 		int ld_errno;
+
+		rc = get_cached_ldap_connect(ldap_state);
+		if (rc != LDAP_SUCCESS) {
+			break;
+		}
 
 		rc = ldap_extended_operation_s(ldap_state->ldap_struct, reqoid,
 					       reqdata, serverctrls,
@@ -1820,10 +1831,11 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 			   ld_error ? ld_error : "unknown"));
 		SAFE_FREE(ld_error);
 
-		if (ld_errno == LDAP_SERVER_DOWN) {
-			ldap_unbind(ldap_state->ldap_struct);
-			ldap_state->ldap_struct = NULL;
+		if (ld_errno != LDAP_SERVER_DOWN) {
+			break;
 		}
+		ldap_unbind(ldap_state->ldap_struct);
+		ldap_state->ldap_struct = NULL;
 	}
 
 	return end_ldap_local_alarm(abs_endtime, rc);
