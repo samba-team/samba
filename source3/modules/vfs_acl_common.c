@@ -825,6 +825,13 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	const char *final_component = NULL;
 	struct smb_filename local_fname;
 	int saved_errno = 0;
+	char *saved_dir = NULL;
+
+	saved_dir = vfs_GetWd(talloc_tos(),conn);
+	if (!saved_dir) {
+		saved_errno = errno;
+		goto out;
+	}
 
 	if (!parent_dirname(talloc_tos(), path,
 			&parent_dir, &final_component)) {
@@ -837,7 +844,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 		parent_dir, final_component ));
 
 	/* cd into the parent dir to pin it. */
-	ret = SMB_VFS_CHDIR(conn, parent_dir);
+	ret = vfs_ChDir(conn, parent_dir);
 	if (ret == -1) {
 		saved_errno = errno;
 		goto out;
@@ -890,7 +897,9 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 
 	TALLOC_FREE(parent_dir);
 
-	vfs_ChDir(conn, conn->connectpath);
+	if (saved_dir) {
+		vfs_ChDir(conn, saved_dir);
+	}
 	if (saved_errno) {
 		errno = saved_errno;
 	}
