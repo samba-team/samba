@@ -3,6 +3,7 @@
 bld.SAMBA_LIBRARY('wbclient',
 	source='wbc_guid.c wbc_idmap.c wbclient.c wbc_pam.c wbc_pwd.c wbc_sid.c wbc_util.c',
 	deps='winbind-client',
+	pc_files='wbclient.pc',
 	public_headers='wbclient.h',
 	vnum='0'
 	)
