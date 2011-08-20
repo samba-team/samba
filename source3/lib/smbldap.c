@@ -1398,6 +1398,15 @@ static void setup_ldap_local_alarm(struct smbldap_state *ldap_state, time_t abso
 	}
 }
 
+static void get_ldap_errs(struct smbldap_state *ldap_state, char **pp_ld_error, int *p_ld_errno)
+{
+	ldap_get_option(ldap_state->ldap_struct,
+			LDAP_OPT_ERROR_NUMBER, p_ld_errno);
+
+	ldap_get_option(ldap_state->ldap_struct,
+			LDAP_OPT_ERROR_STRING, pp_ld_error);
+}
+
 static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 			    int *attempts, time_t abs_endtime)
 {
@@ -1525,11 +1534,8 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 			break;
 		}
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		get_ldap_errs(ldap_state, &ld_error, &ld_errno);
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(10, ("Failed search for base: %s, error: %d (%s) "
 			   "(%s)\n", base, ld_errno,
 			   ldap_err2string(rc),
@@ -1673,11 +1679,8 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 			break;
 		}
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		get_ldap_errs(ldap_state, &ld_error, &ld_errno);
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(10, ("Failed to modify dn: %s, error: %d (%s) "
 			   "(%s)\n", dn, ld_errno,
 			   ldap_err2string(rc),
@@ -1721,11 +1724,8 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 			break;
 		}
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		get_ldap_errs(ldap_state, &ld_error, &ld_errno);
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(10, ("Failed to add dn: %s, error: %d (%s) "
 			   "(%s)\n", dn, ld_errno,
 			   ldap_err2string(rc),
@@ -1769,11 +1769,8 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 			break;
 		}
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		get_ldap_errs(ldap_state, &ld_error, &ld_errno);
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(10, ("Failed to delete dn: %s, error: %d (%s) "
 			   "(%s)\n", dn, ld_errno,
 			   ldap_err2string(rc),
@@ -1815,11 +1812,8 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 			break;
 		}
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_NUMBER, &ld_errno);
+		get_ldap_errs(ldap_state, &ld_error, &ld_errno);
 
-		ldap_get_option(ldap_state->ldap_struct,
-				LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(10, ("Extended operation failed with error: "
 			   "%d (%s) (%s)\n", ld_errno,
 			   ldap_err2string(rc),
