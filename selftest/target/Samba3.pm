@@ -905,6 +905,7 @@ sub provision($$$$$$$)
 	ncalrpc dir = $prefix_abs/ncalrpc
 	rpc_server:epmapper = external
 	rpc_server:spoolss = external
+	rpc_server:lsass = external
 	rpc_server:lsarpc = external
 	rpc_server:samr = external
 	rpc_server:netlogon = external

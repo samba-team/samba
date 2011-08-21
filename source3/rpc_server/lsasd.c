@@ -644,6 +644,22 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
+	fd = create_named_pipe_socket("lsass");
+	if (fd < 0) {
+		ok = false;
+		goto done;
+	}
+	listen_fd[*listen_fd_size] = fd;
+	(*listen_fd_size)++;
+
+	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
+	if (rc == -1) {
+		DEBUG(0, ("Failed to listen on lsass pipe - %s\n",
+			  strerror(errno)));
+		ok = false;
+		goto done;
+	}
+
 	fd = create_dcerpc_ncalrpc_socket("lsarpc");
 	if (fd < 0) {
 		ok = false;
