@@ -162,16 +162,11 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
 
     # First try to see if we already have this entry
     found = False
-    try:
-        msg = idmapdb.search(expression='objectSid=%s' % str(sid))
-        if msg.count == 1:
-            found = True
-    except Exception, e:
-        raise e
+    msg = idmapdb.search(expression='objectSid=%s' % str(sid))
+    if msg.count == 1:
+        found = True
 
     if found:
-        print msg.count
-        print dir(msg)
         try:
             m = ldb.Message()
             m.dn = ldb.Dn(idmapdb, msg[0]['dn'])
@@ -181,8 +176,6 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
         except ldb.LdbError, e:
             logger.warn('Could not modify idmap entry for sid=%s, id=%s, type=%s (%s)',
                             str(sid), str(xid), xid_type, str(e))
-        except Exception, e:
-            raise e
     else:
         try:
             idmapdb.add({"dn": "CN=%s" % str(sid),
@@ -243,8 +236,6 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
             found = False
         else:
             raise ldb.LdbError(ecode, emsg)
-    except Exception, e:
-        raise e
 
     if found:
         logger.warn('Group already exists sid=%s, groupname=%s existing_groupname=%s, Ignoring.',
@@ -287,8 +278,6 @@ def add_users_to_group(samdb, group, members, logger):
             samdb.modify(m)
         except ldb.LdbError, e:
             logger.warn("Could not add member to group '%s'", groupmap.nt_name)
-        except Exception, e:
-            raise(e)
 
 
 def import_wins(samba4_winsdb, samba3_winsdb):
@@ -554,7 +543,7 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     # Get domain sid
     try:
         domainsid = passdb.get_global_sam_sid()
-    except:
+    except passdb.error:
         raise Exception("Can't find domain sid for '%s', Exiting." % domainname)
 
     # Get machine account, sid, rid
