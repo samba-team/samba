@@ -1656,11 +1656,12 @@ shares created by other users.
 </refsect2>
 
 <refsect2>
-<title>CONF</title>
+<title>[RPC] CONF</title>
 
 <para>Starting with version 3.2.0, a Samba server can be configured by data
 stored in registry. This configuration data can be edited with the new "net
-conf" commands.
+conf" commands. There is also the possiblity to configure a remote Samba server
+by enabling the RPC conf mode and specifying the the address of the remote server.
 </para>
 
 <para>
@@ -1678,27 +1679,27 @@ See the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 
 <para>The conf commands are:
 <simplelist>
-<member>net conf list - Dump the complete configuration in smb.conf like
+<member>net [rpc] conf list - Dump the complete configuration in smb.conf like
 format.</member>
-<member>net conf import - Import configuration from file in smb.conf
+<member>net [rpc] conf import - Import configuration from file in smb.conf
 format.</member>
-<member>net conf listshares - List the registry shares.</member>
-<member>net conf drop - Delete the complete configuration from
+<member>net [rpc] conf listshares - List the registry shares.</member>
+<member>net [rpc] conf drop - Delete the complete configuration from
 registry.</member>
-<member>net conf showshare - Show the definition of a registry share.</member>
-<member>net conf addshare - Create a new registry share.</member>
-<member>net conf delshare - Delete a registry share.</member>
-<member>net conf setparm - Store a parameter.</member>
-<member>net conf getparm - Retrieve the value of a parameter.</member>
-<member>net conf delparm - Delete a parameter.</member>
-<member>net conf getincludes - Show the includes of a share definition.</member>
-<member>net conf setincludes - Set includes for a share.</member>
-<member>net conf delincludes - Delete includes from a share definition.</member>
+<member>net [rpc] conf showshare - Show the definition of a registry share.</member>
+<member>net [rpc] conf addshare - Create a new registry share.</member>
+<member>net [rpc] conf delshare - Delete a registry share.</member>
+<member>net [rpc] conf setparm - Store a parameter.</member>
+<member>net [rpc] conf getparm - Retrieve the value of a parameter.</member>
+<member>net [rpc] conf delparm - Delete a parameter.</member>
+<member>net [rpc] conf getincludes - Show the includes of a share definition.</member>
+<member>net [rpc] conf setincludes - Set includes for a share.</member>
+<member>net [rpc] conf delincludes - Delete includes from a share definition.</member>
 </simplelist>
 </para>
 
 <refsect3>
-<title>CONF LIST</title>
+<title>[RPC] CONF LIST</title>
 
 <para>
 Print the configuration data stored in the registry in a smb.conf-like format to
@@ -1707,7 +1708,7 @@ standard output.
 </refsect3>
 
 <refsect3>
-<title>CONF IMPORT <replaceable>[--test|-T]</replaceable> <replaceable>filename</replaceable> <replaceable>[section]</replaceable></title>
+<title>[RPC] CONF IMPORT <replaceable>[--test|-T]</replaceable> <replaceable>filename</replaceable> <replaceable>[section]</replaceable></title>
 
 <para>
 This command imports configuration from a file in smb.conf format.
@@ -1723,7 +1724,7 @@ registry, and the resulting configuration is printed to standard output instead.
 </refsect3>
 
 <refsect3>
-<title>CONF LISTSHARES</title>
+<title>[RPC] CONF LISTSHARES</title>
 
 <para>
 List the names of the shares defined in registry.
@@ -1731,7 +1732,7 @@ List the names of the shares defined in registry.
 </refsect3>
 
 <refsect3>
-<title>CONF DROP</title>
+<title>[RPC] CONF DROP</title>
 
 <para>
 Delete the complete configuration data from registry.
@@ -1739,7 +1740,7 @@ Delete the complete configuration data from registry.
 </refsect3>
 
 <refsect3>
-<title>CONF SHOWSHARE <replaceable>sharename</replaceable></title>
+<title>[RPC] CONF SHOWSHARE <replaceable>sharename</replaceable></title>
 
 <para>
 Show the definition of the share or section specified. It is valid to specify
@@ -1749,7 +1750,7 @@ registry.
 </refsect3>
 
 <refsect3>
-<title>CONF ADDSHARE <replaceable>sharename</replaceable> <replaceable>path</replaceable> [<replaceable>writeable={y|N}</replaceable> [<replaceable>guest_ok={y|N}</replaceable> [<replaceable>comment</replaceable>]]] </title>
+<title>[RPC] CONF ADDSHARE <replaceable>sharename</replaceable> <replaceable>path</replaceable> [<replaceable>writeable={y|N}</replaceable> [<replaceable>guest_ok={y|N}</replaceable> [<replaceable>comment</replaceable>]]] </title>
 
 <para>Create a new share definition in registry.
 The sharename and path have to be given. The share name may
@@ -1761,7 +1762,7 @@ commands.
 </refsect3>
 
 <refsect3>
-<title>CONF DELSHARE <replaceable>sharename</replaceable></title>
+<title>[RPC] CONF DELSHARE <replaceable>sharename</replaceable></title>
 
 <para>
 Delete a share definition from registry.
@@ -1769,7 +1770,7 @@ Delete a share definition from registry.
 </refsect3>
 
 <refsect3>
-<title>CONF SETPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable> <replaceable>value</replaceable></title>
+<title>[RPC] CONF SETPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable> <replaceable>value</replaceable></title>
 
 <para>
 Store a parameter in registry. The section may be global or a sharename.
@@ -1778,7 +1779,7 @@ The section is created if it does not exist yet.
 </refsect3>
 
 <refsect3>
-<title>CONF GETPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable></title>
+<title>[RPC] CONF GETPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable></title>
 
 <para>
 Show a parameter stored in registry.
@@ -1786,7 +1787,7 @@ Show a parameter stored in registry.
 </refsect3>
 
 <refsect3>
-<title>CONF DELPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable></title>
+<title>[RPC] CONF DELPARM <replaceable>section</replaceable> <replaceable>parameter</replaceable></title>
 
 <para>
 Delete a parameter stored in registry.
@@ -1794,7 +1795,7 @@ Delete a parameter stored in registry.
 </refsect3>
 
 <refsect3>
-<title>CONF GETINCLUDES <replaceable>section</replaceable></title>
+<title>[RPC] CONF GETINCLUDES <replaceable>section</replaceable></title>
 
 <para>
 Get the list of includes for the provided section (global or share).
@@ -1820,7 +1821,7 @@ data from other registry keys.
 </refsect3>
 
 <refsect3>
-<title>CONF SETINCLUDES <replaceable>section</replaceable> [<replaceable>filename</replaceable>]+</title>
+<title>[RPC] CONF SETINCLUDES <replaceable>section</replaceable> [<replaceable>filename</replaceable>]+</title>
 
 <para>
 Set the list of includes for the provided section (global or share) to the given
@@ -1830,7 +1831,7 @@ macros like %I.
 </refsect3>
 
 <refsect3>
-<title>CONF DELINCLUDES <replaceable>section</replaceable></title>
+<title>[RPC] CONF DELINCLUDES <replaceable>section</replaceable></title>
 
 <para>
 Delete the list of includes from the provided section (global or share).
