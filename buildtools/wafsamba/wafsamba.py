@@ -279,7 +279,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     if link_name:
         t.link_name = link_name
 
-    if pc_files is not None:
+    if pc_files is not None and not private_library:
         bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
     if (manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and 

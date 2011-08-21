@@ -84,12 +84,8 @@ def build(bld):
 
     if bld.env.standalone_ldb:
         private_library = False
-        ldb_pc_files='ldb.pc'
-        pyldb_pc_files='pyldb-util.pc'
     else:
         private_library = True
-        ldb_pc_files=None
-        pyldb_pc_files=None
 
     LDB_MAP_SRC = bld.SUBDIR('ldb_map',
                              'ldb_map.c ldb_map_inbound.c ldb_map_outbound.c')
@@ -123,7 +119,7 @@ def build(bld):
                           public_headers_install=not private_library,
                           vnum=VERSION,
                           private_library=private_library,
-                          pc_files=pyldb_pc_files,
+                          pc_files='pyldb-util.pc',
                           pyext=True,
                           abi_directory='ABI',
                           abi_match='pyldb_*')
@@ -145,7 +141,7 @@ def build(bld):
                           public_headers='include/ldb.h include/ldb_errors.h '\
                           'include/ldb_module.h include/ldb_handlers.h',
                           public_headers_install=not private_library,
-                          pc_files=ldb_pc_files,
+                          pc_files='ldb.pc',
                           vnum=VERSION,
                           private_library=private_library,
                           manpages='man/ldb.3',

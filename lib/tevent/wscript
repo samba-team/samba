@@ -70,7 +70,6 @@ def build(bld):
 
     if bld.env.standalone_tevent:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
-        bld.PKG_CONFIG_FILES('tevent.pc', vnum=VERSION)
         private_library = False
     else:
         private_library = True
@@ -86,6 +85,7 @@ def build(bld):
                           vnum=VERSION,
                           public_headers='tevent.h',
                           public_headers_install=not private_library,
+                          pc_files='tevent.pc',
                           private_library=private_library)
 
     bld.SAMBA_PYTHON('pytevent',
