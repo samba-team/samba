@@ -198,6 +198,9 @@ def SAMBA_LIBRARY(bld, libname, source,
         if pc_files is None:
             raise Utils.WafError("public library '%s' must have pkg-config file" %
                        libname)
+        if public_headers is None:
+            raise Utils.WafError("public library '%s' must have header files" %
+                       libname)
 
     if target_type == 'PYTHON' or realname or not private_library:
         bundled_name = libname.replace('_', '-')
