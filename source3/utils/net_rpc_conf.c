@@ -169,6 +169,12 @@ static int rpc_conf_delincludes_usage(struct net_context *c, int argc,
 	return -1;
 }
 
+/**********************************************************
+ *
+ * helper functions
+ *
+ **********************************************************/
+
 static bool rpc_conf_reg_valname_forbidden(const char * valname)
 {
 	const char *forbidden_valnames[] = {
@@ -189,6 +195,11 @@ static bool rpc_conf_reg_valname_forbidden(const char * valname)
 	return false;
 
 }
+
+/*
+ * The function deletes a registry value with the name 'value' from the share
+ * with the name 'share_name'. 'parent_hnd' is the handle for the smbconf key.
+ */
 static NTSTATUS rpc_conf_del_value(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -259,6 +270,11 @@ error:
 	return status;;
 
 }
+
+/*
+ * The function sets a share in the registry with the parameters
+ * held in the smbconf_service struct
+ */
 static NTSTATUS rpc_conf_set_share(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -403,6 +419,11 @@ error:
 
 }
 
+/*
+ * The function opens the registry database and retrieves
+ * as a smbconf_service struct the share with the name
+ * 'share_name'
+ */
 static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   struct policy_handle *parent_hnd,
@@ -580,6 +601,10 @@ error:
 	return status;
 }
 
+/*
+ * The function prints the shares held as smbconf_service structs
+ * in a smbconf file format.
+ */
 static int rpc_conf_print_shares(uint32_t num_shares,
 				 struct smbconf_service *shares)
 {
@@ -612,6 +637,11 @@ static int rpc_conf_print_shares(uint32_t num_shares,
 	return 0;
 
 }
+
+/*
+ * The function openes the registry key
+ * HKLM/Software/Samba/smbconf with the give access_mask
+ */
 static NTSTATUS rpc_conf_open_conf(TALLOC_CTX *mem_ctx,
 				   struct dcerpc_binding_handle *b,
 				   uint32_t access_mask,
@@ -692,6 +722,13 @@ error:
 
 	return status;
 }
+
+/**********************************************************
+ *
+ * internal functions that provide the functionality
+ * net rpc conf
+ *
+ **********************************************************/
 
 static NTSTATUS rpc_conf_listshares_internal(struct net_context *c,
 					     const struct dom_sid *domain_sid,
@@ -2186,7 +2223,7 @@ static NTSTATUS rpc_conf_delincludes_internal(struct net_context *c,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto error;
 	}
-/* try REG_KEY_WRITE */
+
 	status = rpc_conf_open_conf(frame,
 				    b,
 				    REG_KEY_READ,
@@ -2222,6 +2259,12 @@ error:
 	return status;
 
 }
+
+/**********************************************************
+ *
+ * Functions that run the rpc commands for net rpc conf modules
+ *
+ **********************************************************/
 
 static int rpc_conf_drop(struct net_context *c, int argc,
 				const char **argv)
