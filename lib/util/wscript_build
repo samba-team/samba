@@ -54,7 +54,8 @@ bld.SAMBA_LIBRARY('tevent-util',
 	public_deps='tevent',
 	public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
 	header_path=[ ('*', 'util') ],
-		  vnum='0.0.1'
+	pc_files=[],
+	vnum='0.0.1'
 	)
 
 

@@ -670,6 +670,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR popt_samba3''',
                     public_headers='../source3/lib/netapi/netapi.h',
+                    pc_files=[],
                     vnum='0',
                     vars=locals())
 
@@ -679,6 +680,7 @@ bld.SAMBA3_LIBRARY('libsmb/smbclient',
                     LIBMSRPC_GEN msrpc3 libcli_lsa3 RPC_NDR_SRVSVC popt_samba3''',
                     public_headers='include/libsmbclient.h',
                     vnum='0',
+                    pc_files=[],
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('smbsharemodes',
@@ -686,6 +688,7 @@ bld.SAMBA3_LIBRARY('smbsharemodes',
                     public_deps='''talloc tdb_compat''',
                     deps='''ccan''',
                     public_headers='include/smb_share_modes.h',
+                    pc_files=[],
                     vnum='0',
                     vars=locals())
 
@@ -886,6 +889,7 @@ bld.SAMBA3_LIBRARY('smbconf',
                    deps='''LIBSMBCONF smbregistry REG_SMBCONF talloc param
                    util_reg samba-util errors3 charset SAMBA_VERSION''',
                    public_headers='../lib/smbconf/smbconf.h',
+                   pc_files=[],
                    vnum='0')
 
 bld.SAMBA3_LIBRARY('smbd_conn',

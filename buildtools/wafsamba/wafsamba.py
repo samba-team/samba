@@ -191,13 +191,19 @@ def SAMBA_LIBRARY(bld, libname, source,
     link_name = bld.map_shlib_extension(link_name, python=(target_type=='PYTHON'))
 
     # we don't want any public libraries without version numbers
-    if not private_library and vnum is None and soname is None and target_type != 'PYTHON' and not realname:
-        raise Utils.WafError("public library '%s' must have a vnum" % libname)
+    if (not private_library and target_type != 'PYTHON' and not realname):
+        if vnum is None and soname is None:
+            raise Utils.WafError("public library '%s' must have a vnum" %
+                    libname)
+        if pc_files is None:
+            raise Utils.WafError("public library '%s' must have pkg-config file" %
+                       libname)
 
     if target_type == 'PYTHON' or realname or not private_library:
         bundled_name = libname.replace('_', '-')
     else:
-        bundled_name = PRIVATE_NAME(bld, libname, bundled_extension, private_library)
+        bundled_name = PRIVATE_NAME(bld, libname, bundled_extension,
+            private_library)
 
     ldflags = TO_LIST(ldflags)
 
@@ -273,7 +279,8 @@ def SAMBA_LIBRARY(bld, libname, source,
     if pc_files is not None:
         bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
-    if manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
+    if (manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and 
+        bld.env['XSLTPROC_MANPAGES']):
         bld.MANPAGES(manpages)
 
 
