@@ -4472,7 +4472,7 @@ static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
 
 		for (j=0; j<alias->num_members; j++)
 			DEBUG(1, ("%s\\%s (%d); ",
-				  domains[j] ? domains[j] : "*unknown*", 
+				  domains[j] ? domains[j] : "*unknown*",
 				  names[j] ? names[j] : "*unknown*",types[j]));
 		DEBUG(1, ("\n"));
 	}
@@ -4811,7 +4811,7 @@ static bool get_user_tokens_from_file(FILE *f,
 		token->token.sids = NULL;
 		continue;
 	}
-	
+
 	return false;
 }
 
@@ -4901,7 +4901,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 		cli_close(cli, fnum);
 	cli_tdis(cli);
 	cli_state_set_tid(cli, cnum);
-	
+
 	return;
 }
 
@@ -6632,7 +6632,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 			print_trusted_domain(dom_list.domains[i].sid,
 					     dom_list.domains[i].name.string);
 
-			nt_status = vampire_trusted_domain(pipe_hnd, mem_ctx, &connect_hnd, 
+			nt_status = vampire_trusted_domain(pipe_hnd, mem_ctx, &connect_hnd,
 							   *dom_list.domains[i].sid,
 							   dom_list.domains[i].name.string);
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -6751,7 +6751,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
-	
+
 	/* query info level 5 to obtain sid of a domain being queried */
 	nt_status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					       &connect_hnd,
@@ -6834,13 +6834,13 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
-	
+
 	TALLOC_FREE(pipe_hnd);
 
 	/*
 	 * Listing trusting domains (stored in passdb backend, if local)
 	 */
-	
+
 	d_printf(_("\nTrusting domains list:\n\n"));
 
 	/*
