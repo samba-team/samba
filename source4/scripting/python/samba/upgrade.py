@@ -151,7 +151,14 @@ def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn)
 
 
 def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
-    """Create idmap entry"""
+    """Create idmap entry
+
+    :param idmapdb: Samba4 IDMAP database
+    :param sid: user/group sid
+    :param xid: user/group id
+    :param xid_type: type of id (UID/GID)
+    :param logger: Logger object
+    """
 
     # First try to see if we already have this entry
     found = False
@@ -187,16 +194,15 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
         except ldb.LdbError, e:
             logger.warn('Could not add idmap entry for sid=%s, id=%s, type=%s (%s)',
                             str(sid), str(xid), xid_type, str(e))
-        except Exception, e:
-            raise e
 
 
 def import_idmap(idmapdb, samba3_idmap, logger):
     """Import idmap data.
 
-    :param samba3_idmap: Samba 3 IDMAP database to import from
+    :param idmapdb: Samba4 IDMAP database
+    :param samba3_idmap: Samba3 IDMAP database to import from
+    :param logger: Logger object
     """
-
     currentxid = max(samba3_idmap.get_user_hwm(), samba3_idmap.get_group_hwm())
     lowerbound = currentxid
     # FIXME: upperbound
@@ -221,7 +227,12 @@ def import_idmap(idmapdb, samba3_idmap, logger):
 
 
 def add_group_from_mapping_entry(samdb, groupmap, logger):
-    """Add or modify group from group mapping entry"""
+    """Add or modify group from group mapping entry
+
+    param samdb: Samba4 SAM database
+    param groupmap: Groupmap entry
+    param logger: Logger object
+    """
 
     # First try to see if we already have this entry
     try:
@@ -257,13 +268,16 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
             samdb.add(m, controls=["relax:0"])
         except ldb.LdbError, e:
             logger.warn('Could not add group name=%s (%s)', groupmap.nt_name, str(e))
-        except Exception, e:
-            raise(e)
 
 
 def add_users_to_group(samdb, group, members, logger):
-    """Add user/member to group/alias"""
+    """Add user/member to group/alias
 
+    param samdb: Samba4 SAM database
+    param group: Groupmap object
+    param members: List of member SIDs
+    param logger: Logger object
+    """
     for member_sid in members:
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, "<SID=%s" % str(group.sid))
