@@ -81,7 +81,8 @@ def build(bld):
                           'compat/talloc_compat1.c',
                           public_deps='talloc',
                           soname='libtalloc.so.1',
-                          pc_files='talloc.pc',
+                          pc_files=[],
+                          public_headers=[],
                           enabled=bld.env.TALLOC_COMPAT1)
     else:
         private_library = True
@@ -96,6 +97,7 @@ def build(bld):
                           hide_symbols=True,
                           vnum=VERSION,
                           public_headers='talloc.h',
+                          pc_files='talloc.pc',
                           public_headers_install=not private_library,
                           private_library=private_library,
                           manpages='talloc.3')
