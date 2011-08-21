@@ -177,7 +177,6 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-
 	*gp_ctx = talloc_zero(mem_ctx, struct gp_context);
 	NT_STATUS_HAVE_NO_MEMORY(gp_ctx);
 
@@ -185,7 +184,7 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 	(*gp_ctx)->credentials = credentials;
 	(*gp_ctx)->ev_ctx = ev_ctx;
 	(*gp_ctx)->ldb_ctx = ldb_ctx;
-	(*gp_ctx)->active_dc = io->out.dcs[0];
+	(*gp_ctx)->active_dc = talloc_reference(*gp_ctx, &io->out.dcs[0]);
 
 	/* We don't need to keep the libnet context */
 	talloc_free(net_ctx);

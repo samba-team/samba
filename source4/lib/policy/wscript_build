@@ -5,7 +5,8 @@ bld.SAMBA_LIBRARY('samba-policy',
 	pc_files='samba-policy.pc',
 	public_deps='ldb samba-net',
 	vnum='0.0.1',
-	pyembed=True
+	pyembed=True,
+	public_headers='policy.h'
 	)
 
 bld.SAMBA_PYTHON('py_policy',
