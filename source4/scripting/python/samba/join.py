@@ -100,14 +100,14 @@ class dc_join(object):
         else:
             ctx.topology_dn = None
 
-        ctx.dnsdomain = ldb.Dn(ctx.samdb, ctx.base_dn).canonical_str().split('/')[0]
+        ctx.dnsdomain = ctx.samdb.domain_dns_name()
+        ctx.dnsforest = ctx.samdb.forest_dns_name()
+        ctx.dnshostname = ctx.samdb.host_dns_name()
 
         ctx.realm = ctx.dnsdomain
         lp.set("realm", ctx.realm)
 
         print("realm is %s" % ctx.realm)
-
-        ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
 
         ctx.acct_dn = "CN=%s,OU=Domain Controllers,%s" % (ctx.myname, ctx.base_dn)
 
@@ -115,7 +115,7 @@ class dc_join(object):
 
         ctx.SPNs = [ "HOST/%s" % ctx.myname,
                      "HOST/%s" % ctx.dnshostname,
-                     "GC/%s/%s" % (ctx.dnshostname, ctx.dnsdomain) ]
+                     "GC/%s/%s" % (ctx.dnshostname, ctx.dnsforest) ]
 
         # these elements are optional
         ctx.never_reveal_sid = None
