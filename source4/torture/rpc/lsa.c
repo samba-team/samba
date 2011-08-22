@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "lib/events/events.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
@@ -31,6 +32,7 @@
 #include "param/param.h"
 #include "../lib/crypto/crypto.h"
 #define TEST_MACHINENAME "lsatestmach"
+#define TRUSTPW "12345678"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
@@ -2394,6 +2396,225 @@ static bool test_CreateTrustedDomain(struct dcerpc_binding_handle *b,
 	return ret;
 }
 
+static bool gen_authinfo_internal(TALLOC_CTX *mem_ctx, const char *password,
+				  DATA_BLOB session_key,
+				  struct lsa_TrustDomainInfoAuthInfoInternal **_authinfo_internal)
+{
+	struct lsa_TrustDomainInfoAuthInfoInternal *authinfo_internal;
+	struct trustDomainPasswords auth_struct;
+	struct AuthenticationInformation *auth_info_array;
+	size_t converted_size;
+	DATA_BLOB auth_blob;
+	enum ndr_err_code ndr_err;
+
+	authinfo_internal = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoAuthInfoInternal);
+	if (authinfo_internal == NULL) {
+		return false;
+	}
+
+	auth_info_array = talloc_array(mem_ctx,
+				       struct AuthenticationInformation, 1);
+	if (auth_info_array == NULL) {
+		return false;
+	}
+
+	generate_random_buffer(auth_struct.confounder, sizeof(auth_struct.confounder));
+
+	auth_info_array[0].AuthType = TRUST_AUTH_TYPE_CLEAR;
+
+	if (!convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, password,
+				  strlen(password),
+				  &auth_info_array[0].AuthInfo.clear.password,
+				  &converted_size)) {
+		return false;
+	}
+
+	auth_info_array[0].AuthInfo.clear.size = converted_size;
+
+	auth_struct.outgoing.count = 1;
+	auth_struct.outgoing.current.count = 1;
+	auth_struct.outgoing.current.array = auth_info_array;
+	auth_struct.outgoing.previous.count = 0;
+	auth_struct.outgoing.previous.array = NULL;
+
+	auth_struct.incoming.count = 1;
+	auth_struct.incoming.current.count = 1;
+	auth_struct.incoming.current.array = auth_info_array;
+	auth_struct.incoming.previous.count = 0;
+	auth_struct.incoming.previous.array = NULL;
+
+
+	ndr_err = ndr_push_struct_blob(&auth_blob, mem_ctx, &auth_struct,
+				       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+
+	arcfour_crypt_blob(auth_blob.data, auth_blob.length, &session_key);
+
+	authinfo_internal->auth_blob.size = auth_blob.length;
+	authinfo_internal->auth_blob.data = auth_blob.data;
+
+	*_authinfo_internal = authinfo_internal;
+
+	return true;
+}
+
+static bool gen_authinfo(TALLOC_CTX *mem_ctx, const char *password,
+			 struct lsa_TrustDomainInfoAuthInfo **_authinfo)
+{
+	struct lsa_TrustDomainInfoAuthInfo *authinfo;
+	struct lsa_TrustDomainInfoBuffer *info_buffer;
+	size_t converted_size;
+
+	authinfo = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoAuthInfo);
+	if (authinfo == NULL) {
+		return false;
+	}
+
+	info_buffer = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoBuffer);
+	if (info_buffer == NULL) {
+		return false;
+	}
+
+	info_buffer->AuthType = TRUST_AUTH_TYPE_CLEAR;
+
+	if (!convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, password,
+				  strlen(password),
+				  &info_buffer->data.data,
+				  &converted_size)) {
+		return false;
+	}
+
+	info_buffer->data.size = converted_size;
+
+	authinfo->incoming_count = 1;
+	authinfo->incoming_current_auth_info = info_buffer;
+	authinfo->incoming_previous_auth_info = NULL;
+	authinfo->outgoing_count = 1;
+	authinfo->outgoing_current_auth_info = info_buffer;
+	authinfo->outgoing_previous_auth_info = NULL;
+
+	*_authinfo = authinfo;
+
+	return true;
+}
+
+static bool check_pw_with_ServerAuthenticate3(struct dcerpc_pipe *p,
+					     struct torture_context *tctx,
+					     uint32_t negotiate_flags,
+					     struct cli_credentials *machine_credentials,
+					     struct netlogon_creds_CredentialState **creds_out)
+{
+	struct netr_ServerReqChallenge r;
+	struct netr_ServerAuthenticate3 a;
+	struct netr_Credential credentials1, credentials2, credentials3;
+	struct netlogon_creds_CredentialState *creds;
+	struct samr_Password mach_password;
+	uint32_t rid;
+	const char *machine_name;
+	const char *plain_pass;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	machine_name = cli_credentials_get_workstation(machine_credentials);
+	plain_pass = cli_credentials_get_password(machine_credentials);
+
+	r.in.server_name = NULL;
+	r.in.computer_name = machine_name;
+	r.in.credentials = &credentials1;
+	r.out.return_credentials = &credentials2;
+
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
+		"ServerReqChallenge failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "ServerReqChallenge failed");
+
+	E_md4hash(plain_pass, mach_password.hash);
+
+	a.in.server_name = NULL;
+	a.in.account_name = talloc_asprintf(tctx, "%s$", machine_name);
+	a.in.secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
+	a.in.computer_name = machine_name;
+	a.in.negotiate_flags = &negotiate_flags;
+	a.in.credentials = &credentials3;
+	a.out.return_credentials = &credentials3;
+	a.out.negotiate_flags = &negotiate_flags;
+	a.out.rid = &rid;
+
+	creds = netlogon_creds_client_init(tctx, a.in.account_name,
+					   a.in.computer_name,
+					   &credentials1, &credentials2,
+					   &mach_password, &credentials3,
+					   negotiate_flags);
+
+	torture_assert(tctx, creds != NULL, "memory allocation");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerAuthenticate3_r(b, tctx, &a),
+		"ServerAuthenticate3 failed");
+	if (!NT_STATUS_IS_OK(a.out.result)) {
+		if (!NT_STATUS_EQUAL(a.out.result, NT_STATUS_ACCESS_DENIED)) {
+			torture_assert_ntstatus_ok(tctx, a.out.result,
+						   "ServerAuthenticate3 failed");
+		}
+		return false;
+	}
+	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3), "Credential chaining failed");
+
+	/* Prove that requesting a challenge again won't break it */
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
+		"ServerReqChallenge failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "ServerReqChallenge failed");
+
+	*creds_out = creds;
+	return true;
+}
+
+static bool check_dom_trust_pw(struct dcerpc_pipe *p,
+			       struct torture_context *tctx,
+			       const char *trusted_dom_name,
+			       const char *password)
+{
+	struct cli_credentials *credentials;
+	char *dummy;
+	struct netlogon_creds_CredentialState *creds;
+	struct dcerpc_pipe *pipe;
+	NTSTATUS status;
+	bool ok;
+
+	credentials = cli_credentials_init(tctx);
+	if (credentials == NULL) {
+		return false;
+	}
+
+	dummy = talloc_asprintf(tctx, "%s$", trusted_dom_name);
+	if (dummy == NULL) {
+		return false;
+	}
+
+	cli_credentials_set_username(credentials, dummy, CRED_SPECIFIED);
+	cli_credentials_set_password(credentials, password, CRED_SPECIFIED);
+	cli_credentials_set_workstation(credentials,
+					trusted_dom_name, CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
+
+	status = dcerpc_pipe_connect_b(tctx, &pipe, p->binding,
+				       &ndr_table_netlogon,
+				       cli_credentials_init_anon(tctx),
+				       tctx->ev, tctx->lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "dcerpc_pipe_connect_b failed.\n");
+		return false;
+	}
+
+	ok = check_pw_with_ServerAuthenticate3(pipe, tctx,
+					       NETLOGON_NEG_AUTH2_ADS_FLAGS,
+					       credentials, &creds);
+	talloc_free(pipe);
+
+	return ok;
+}
+
 static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 					      struct torture_context *tctx,
 					      struct policy_handle *handle,
@@ -2405,16 +2626,13 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 	struct lsa_CreateTrustedDomainEx r;
 	struct lsa_CreateTrustedDomainEx2 r2;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
-	struct lsa_TrustDomainInfoAuthInfoInternal authinfo_internal;
-	struct lsa_TrustDomainInfoAuthInfo authinfo;
-	struct trustDomainPasswords auth_struct;
-	DATA_BLOB auth_blob;
+	struct lsa_TrustDomainInfoAuthInfoInternal *authinfo_internal;
+	struct lsa_TrustDomainInfoAuthInfo *authinfo;
 	struct dom_sid **domsid;
 	struct policy_handle *trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
 	union lsa_TrustedDomainInfo *info = NULL;
 	DATA_BLOB session_key;
-	enum ndr_err_code ndr_err;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -2458,40 +2676,21 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 
 		trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION;
 
-		generate_random_buffer(auth_struct.confounder, sizeof(auth_struct.confounder));
-
-		auth_struct.outgoing.count = 0;
-		auth_struct.outgoing.current.count = 0;
-		auth_struct.outgoing.current.array = NULL;
-		auth_struct.outgoing.previous.count = 0;
-		auth_struct.outgoing.previous.array = NULL;
-
-		auth_struct.incoming.count = 0;
-		auth_struct.incoming.current.count = 0;
-		auth_struct.incoming.current.array = NULL;
-		auth_struct.incoming.previous.count = 0;
-		auth_struct.incoming.previous.array = NULL;
-
-
-		ndr_err = ndr_push_struct_blob(&auth_blob, tctx, &auth_struct,
-					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			torture_comment(tctx, "ndr_push_struct_blob of trustDomainPasswords structure failed");
+		if (!gen_authinfo_internal(tctx, TRUSTPW, session_key, &authinfo_internal)) {
+			torture_comment(tctx, "gen_authinfo_internal failed");
 			ret = false;
 		}
 
-		arcfour_crypt_blob(auth_blob.data, auth_blob.length, &session_key);
-
-		ZERO_STRUCT(authinfo);
-
-		authinfo_internal.auth_blob.size = auth_blob.length;
-		authinfo_internal.auth_blob.data = auth_blob.data;
+		if (!gen_authinfo(tctx, TRUSTPW, &authinfo)) {
+			torture_comment(tctx, "gen_authinfonfo failed");
+			ret = false;
+		}
 
 		if (ex2_call) {
 
 			r2.in.policy_handle = handle;
 			r2.in.info = &trustinfo;
-			r2.in.auth_info_internal = &authinfo_internal;
+			r2.in.auth_info_internal = authinfo_internal;
 			r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 			r2.out.trustdom_handle = &trustdom_handle[i];
 
@@ -2504,7 +2703,7 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 
 			r.in.policy_handle = handle;
 			r.in.info = &trustinfo;
-			r.in.auth_info = &authinfo;
+			r.in.auth_info = authinfo;
 			r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 			r.out.trustdom_handle = &trustdom_handle[i];
 
@@ -2533,6 +2732,20 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 			torture_comment(tctx, "CreateTrustedDomainEx failed2 - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
+			/* For outbound and MIT trusts there is no trust account */
+			if (trustinfo.trust_direction != 2 &&
+			    trustinfo.trust_type != 3) {
+				if (check_dom_trust_pw(p, tctx, trust_name,
+							"x" TRUSTPW "x")) {
+					torture_comment(tctx, "Password check passed unexpectedly\n");
+					ret = false;
+				}
+				if (!check_dom_trust_pw(p, tctx, trust_name,
+							TRUSTPW)) {
+					torture_comment(tctx, "Password check failed\n");
+					ret = false;
+				}
+			}
 
 			q.in.trustdom_handle = &trustdom_handle[i];
 			q.in.level = LSA_TRUSTED_DOMAIN_INFO_INFO_EX;
