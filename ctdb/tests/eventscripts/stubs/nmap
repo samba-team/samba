@@ -2,6 +2,13 @@
 
 prog="nmap"
 
+# Pretty that we're the shell and that this command could not be
+# found.
+if [ "$FAKE_NMAP_NOT_FOUND" = "yes" ] ; then
+    echo "sh: ${prog}: command not found" >&2
+    exit 127
+fi
+
 usage ()
 {
     cat >&2 <<EOF
