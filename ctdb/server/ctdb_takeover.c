@@ -483,7 +483,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	int ret;
 	struct ctdb_do_updateip_state *state;
 	struct ctdb_iface *old = vnn->iface;
-	char *new_name;
+	const char *new_name;
 
 	ctdb_vnn_unassign_iface(ctdb, vnn);
 	ret = ctdb_vnn_assign_iface(ctdb, vnn);
