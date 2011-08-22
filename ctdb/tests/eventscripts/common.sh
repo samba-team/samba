@@ -708,7 +708,13 @@ simple_test ()
     _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
     _rc=$?
 
-    if [ "$_out" = "$required_output" -a $_rc = $required_rc ] ; then
+    if [ -n "$OUT_FILTER" ] ; then
+	_fout=$(echo "$_out" | eval sed -r $OUT_FILTER)
+    else
+	_fout="$_out"
+    fi
+
+    if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	_passed=true
     else
 	_passed=false
@@ -770,7 +776,13 @@ iterate_test ()
 	_out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
 	_rc=$?
 
-	if [ "$_out" = "$required_output" -a $_rc = $required_rc ] ; then
+    if [ -n "$OUT_FILTER" ] ; then
+	_fout=$(echo "$_out" | eval sed -r $OUT_FILTER)
+    else
+	_fout="$_out"
+    fi
+
+	if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	    _passed=true
 	else
 	    _passed=false
