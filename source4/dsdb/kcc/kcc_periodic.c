@@ -356,9 +356,7 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 		r1 = &reps[count].ctr.ctr1;
 
 		r1->other_info               = talloc_zero(reps, struct repsFromTo1OtherInfo);
-		r1->other_info->dns_name     = talloc_asprintf(r1->other_info, "%s._msdcs.%s",
-							       GUID_string(mem_ctx, &ntds_guid),
-							       lpcfg_dnsdomain(s->task->lp_ctx));
+		r1->other_info->dns_name     = samdb_ntds_msdcs_dns_name(s->samdb, reps, &ntds_guid);
 		r1->source_dsa_obj_guid      = ntds_guid;
 		r1->source_dsa_invocation_id = invocation_id;
 		r1->replica_flags = kccsrv_replica_flags(s);
