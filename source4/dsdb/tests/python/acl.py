@@ -1682,7 +1682,7 @@ class AclSPNTests(AclTests):
         self.replace_spn(self.ldb_user1, ctx.acct_dn, "HOST/%s.%s/%s" %
                          (ctx.myname, ctx.dnsdomain, ctx.dnsdomain))
         self.replace_spn(self.ldb_user1, ctx.acct_dn, "GC/%s.%s/%s" %
-                         (ctx.myname, ctx.dnsdomain, ctx.dnsdomain))
+                         (ctx.myname, ctx.dnsdomain, ctx.dnsforest))
         self.replace_spn(self.ldb_user1, ctx.acct_dn, "ldap/%s/%s" % (ctx.myname, netbiosdomain))
         self.replace_spn(self.ldb_user1, ctx.acct_dn, "ldap/%s.%s/%s" %
                          (ctx.myname, ctx.dnsdomain, netbiosdomain))
@@ -1741,7 +1741,7 @@ class AclSPNTests(AclTests):
         self.replace_spn(self.ldb_admin, self.computerdn, "HOST/%s.%s/%s" %
                          (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
         self.replace_spn(self.ldb_admin, self.computerdn, "GC/%s.%s/%s" %
-                         (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
+                         (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsforest))
         self.replace_spn(self.ldb_admin, self.computerdn, "ldap/%s/%s" % (self.computername, netbiosdomain))
         self.replace_spn(self.ldb_admin, self.computerdn, "ldap/%s.%s/ForestDnsZones.%s" %
                          (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
@@ -1805,7 +1805,7 @@ class AclSPNTests(AclTests):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "GC/%s.%s/%s" %
-                             (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
+                             (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsforest))
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         try:
