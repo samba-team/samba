@@ -3589,6 +3589,10 @@ void lpcfg_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 {
 	int iService;
 
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->dump(f, show_defaults, maxtoprint);
+	}
+
 	defaults_saved = !show_defaults;
 
 	dump_globals(lp_ctx, f, show_defaults);
