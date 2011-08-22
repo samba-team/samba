@@ -54,6 +54,7 @@ setup_pstore ()
 # For testing backward compatibility...
 for i in $CTDB_NOT_IMPLEMENTED ; do
     if [ "$i" = "$1" ] ; then
+	echo "${prog}: command \"$i\" not implemented" >&2
 	usage
     fi
 done
