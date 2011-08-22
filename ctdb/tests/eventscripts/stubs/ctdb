@@ -168,7 +168,7 @@ case "$1" in
 	esac
 	;;
     getdebug)
-	case "$CTDB_DEBUGLEVEL" in
+	case "${CTDB_DEBUGLEVEL:-0}" in
 	    -3) _t="EMERG"  ;;
 	    -2) _t="ALERT"  ;;
 	    -1) _t="CRIT"   ;;
