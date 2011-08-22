@@ -615,7 +615,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(const struct dsdb_syntax_ctx
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		if (ldb_val_string_cmp("16010101000000.0Z", &in->values[i]) == 0) {
+		if (ldb_val_string_cmp(&in->values[i], "16010101000000.0Z") == 0) {
 			SBVALS(blobs[i].data, 0, 0);
 			continue;
 		}
@@ -757,7 +757,7 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ct
 		blobs[i] = data_blob_talloc(blobs, NULL, 8);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		if (ldb_val_string_cmp("16010101000000.0Z", &in->values[i]) == 0) {
+		if (ldb_val_string_cmp(&in->values[i], "16010101000000.0Z") == 0) {
 			SBVALS(blobs[i].data, 0, 0);
 			continue;
 		}
