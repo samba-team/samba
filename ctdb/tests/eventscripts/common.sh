@@ -177,6 +177,11 @@ ethtool_interfaces_up ()
     done
 }
 
+setup_nmap_output_filter ()
+{
+    OUT_FILTER="-e 's@^(DEBUG: # Nmap 5.21 scan initiated) .+ (as:)@\1 DATE \2@' -e 's@^(DEBUG: # Nmap done at) .+ (--)@\1 DATE \2@'"
+}
+
 ######################################################################
 
 # CTDB fakery
