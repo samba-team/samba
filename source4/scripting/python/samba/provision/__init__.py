@@ -1061,7 +1061,7 @@ def setup_samdb_rootdse(samdb, names):
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": names.schemadn,
         "DOMAINDN": names.domaindn,
-        "ROOTDN": names.rootdn,
+        "ROOTDN"  : names.rootdn,
         "CONFIGDN": names.configdn,
         "SERVERDN": names.serverdn,
         })
@@ -1608,7 +1608,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     names = guess_names(lp=lp, hostname=hostname, domain=domain,
         dnsdomain=realm, serverrole=serverrole, domaindn=domaindn,
         configdn=configdn, schemadn=schemadn, serverdn=serverdn,
-        sitename=sitename)
+        sitename=sitename, rootdn=rootdn)
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     paths.bind_gid = bind_gid
