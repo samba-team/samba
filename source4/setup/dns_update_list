@@ -4,7 +4,7 @@ A                                                        ${DNSDOMAIN} $IP
 A                                                        ${HOSTNAME} $IP
 AAAA                                                     ${DNSDOMAIN} $IP
 AAAA                                                     ${HOSTNAME} $IP
-CNAME ${NTDSGUID}._msdcs.${DNSDOMAIN}                    ${HOSTNAME}
+CNAME ${NTDSGUID}._msdcs.${DNSFOREST}                    ${HOSTNAME}
 SRV _kerberos._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN} ${HOSTNAME} 88
 SRV _ldap._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}     ${HOSTNAME} 389
 SRV _kerberos._tcp.dc._msdcs.${DNSDOMAIN}                ${HOSTNAME} 88
