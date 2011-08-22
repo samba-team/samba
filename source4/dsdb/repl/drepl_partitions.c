@@ -107,6 +107,7 @@ NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 	int ret;
 	const char *hostname;
 	struct ldb_dn *dn;
+	struct ldb_dn *forest_dn;
 
 	*target_principal = NULL;
 
@@ -148,9 +149,15 @@ NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 	 * on it's record, it must also have GC/hostname/realm
 	 * servicePrincipalName */
 
+	forest_dn = ldb_get_root_basedn(s->samdb);
+	if (forest_dn == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
 	*target_principal = talloc_asprintf(mem_ctx, "GC/%s/%s",
 					    hostname,
-					    lpcfg_dnsdomain(s->task->lp_ctx));
+					    samdb_dn_to_dns_domain(tmp_ctx, forest_dn));
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }

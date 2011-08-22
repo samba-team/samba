@@ -691,7 +691,6 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
 	struct drsuapi_DsReplicaUpdateRefs *r;
-	char *ntds_guid_str;
 	char *ntds_dns_name;
 	struct tevent_req *subreq;
 
@@ -700,15 +699,9 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 		return;
 	}
 
-	ntds_guid_str = GUID_string(r, &service->ntds_guid);
-	if (tevent_req_nomem(ntds_guid_str, req)) {
-		return;
-	}
-
-	ntds_dns_name = talloc_asprintf(r, "%s._msdcs.%s",
-					ntds_guid_str,
-					lpcfg_dnsdomain(service->task->lp_ctx));
+	ntds_dns_name = samdb_ntds_msdcs_dns_name(service->samdb, r, &service->ntds_guid);
 	if (tevent_req_nomem(ntds_dns_name, req)) {
+		talloc_free(r);
 		return;
 	}
 
@@ -728,6 +721,7 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 							   drsuapi->drsuapi_handle,
 							   r);
 	if (tevent_req_nomem(subreq, req)) {
+		talloc_free(r);
 		return;
 	}
 	tevent_req_set_callback(subreq, dreplsrv_update_refs_done, req);

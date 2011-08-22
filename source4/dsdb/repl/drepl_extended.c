@@ -93,10 +93,9 @@ static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
 		return WERR_NOMEM;
 	}
 
-	sdsa->repsFrom1->other_info->dns_name =
-		talloc_asprintf(sdsa->repsFrom1->other_info, "%s._msdcs.%s",
-				GUID_string(sdsa->repsFrom1->other_info, &sdsa->repsFrom1->source_dsa_obj_guid),
-				lpcfg_dnsdomain(service->task->lp_ctx));
+	sdsa->repsFrom1->other_info->dns_name = samdb_ntds_msdcs_dns_name(ldb,
+									  sdsa->repsFrom1->other_info,
+									  &sdsa->repsFrom1->source_dsa_obj_guid);
 	if (!sdsa->repsFrom1->other_info->dns_name) {
 		talloc_free(sdsa);
 		return WERR_NOMEM;
