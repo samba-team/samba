@@ -285,6 +285,19 @@ ctdb_get_1_public_address ()
     echo "${_addrs%% *}" | sed -r -e 's#(.*)/(.*)@(.*)#\3 \1 \2#g'
 }
 
+ctdb_not_implemented ()
+{
+    export CTDB_NOT_IMPLEMENTED="$1"
+    ctdb_not_implemented="\
+DEBUG: ctdb: command \"$1\" not implemented
+DEBUG: Usage: ctdb [-Y] cmd
+DEBUG: 
+DEBUG: A fake CTDB stub that prints items depending on the variables
+DEBUG: FAKE_CTDB_PNN (default 0) depending on command-line options.
+DEBUG: 
+DEBUG: Note that -Y is ignored."
+}
+
 ######################################################################
 
 # Samba fakery
