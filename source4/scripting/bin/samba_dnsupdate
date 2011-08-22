@@ -225,9 +225,9 @@ def get_subst_vars():
     samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
                   lp=lp)
 
-    vars['DNSDOMAIN'] = lp.get('realm').lower()
-    vars['DNSFOREST'] = lp.get('realm').lower()
-    vars['HOSTNAME']  = lp.get('netbios name').lower() + "." + vars['DNSDOMAIN']
+    vars['DNSDOMAIN'] = samdb.domain_dns_name()
+    vars['DNSFOREST'] = samdb.forest_dns_name()
+    vars['HOSTNAME']  = samdb.host_dns_name()
     vars['NTDSGUID']  = samdb.get_ntds_GUID()
     vars['SITE']      = samdb.server_site_name()
     res = samdb.search(base=samdb.get_default_basedn(), scope=SCOPE_BASE, attrs=["objectGUID"])
