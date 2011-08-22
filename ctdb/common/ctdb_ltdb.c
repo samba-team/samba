@@ -206,8 +206,6 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 */
 int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 {
-	struct ctdb_context *ctdb = ctdb_db->ctdb;
-
 	if (ctdb_db->persistent != 0) {
 		DEBUG(DEBUG_ERR,("Trying to delete emty record in persistent database\n"));
 		return 0;
