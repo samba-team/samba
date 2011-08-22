@@ -2354,6 +2354,42 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 	return dn;
 }
 
+
+/*
+  Find the DNS equivalent of a DN, in dotted DNS form
+*/
+char *samdb_dn_to_dns_domain(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+{
+	int i, num_components = ldb_dn_get_comp_num(dn);
+	char *dns_name = talloc_strdup(mem_ctx, "");
+	if (dns_name == NULL) {
+		return NULL;
+	}
+
+	for (i=0; i<num_components; i++) {
+		struct ldb_val *v = ldb_dn_get_component_val(dn, i);
+		char *s;
+		if (v == NULL) {
+			talloc_free(dns_name);
+			return NULL;
+		}
+		s = talloc_asprintf_append_buffer(dns_name, "%*.*s.", v->length, v->length, (char *)v->data);
+		if (s == NULL) {
+			talloc_free(dns_name);
+			return NULL;
+		}
+		dns_name = s;
+	}
+
+	/* remove the last '.' */
+	if (dns_name[0] != 0) {
+		dns_name[strlen(dns_name)-1] = 0;
+	}
+
+	return dns_name;
+}
+
+
 /*
   Find the DN of a domain, be it the netbios or DNS name 
 */
