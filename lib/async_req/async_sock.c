@@ -325,36 +325,24 @@ static void async_connect_connected(struct tevent_context *ev,
 		priv, struct tevent_req);
 	struct async_connect_state *state =
 		tevent_req_data(req, struct async_connect_state);
+	int ret;
 
-	/*
-	 * Stevens, Network Programming says that if there's a
-	 * successful connect, the socket is only writable. Upon an
-	 * error, it's both readable and writable.
-	 */
-	if ((flags & (TEVENT_FD_READ|TEVENT_FD_WRITE))
-	    == (TEVENT_FD_READ|TEVENT_FD_WRITE)) {
-		int ret;
-
-		ret = connect(state->fd,
-			      (struct sockaddr *)(void *)&state->address,
-			      state->address_len);
-		if (ret == 0) {
-			TALLOC_FREE(fde);
-			tevent_req_done(req);
-			return;
-		}
-
-		if (errno == EINPROGRESS) {
-			/* Try again later, leave the fde around */
-			return;
-		}
+	ret = connect(state->fd, (struct sockaddr *)(void *)&state->address,
+		      state->address_len);
+	if (ret == 0) {
+		state->sys_errno = 0;
 		TALLOC_FREE(fde);
-		tevent_req_error(req, errno);
+		tevent_req_done(req);
 		return;
 	}
-
-	state->sys_errno = 0;
-	tevent_req_done(req);
+	if (errno == EINPROGRESS) {
+		/* Try again later, leave the fde around */
+		return;
+	}
+	state->sys_errno = errno;
+	TALLOC_FREE(fde);
+	tevent_req_error(req, errno);
+	return;
 }
 
 int async_connect_recv(struct tevent_req *req, int *perrno)
