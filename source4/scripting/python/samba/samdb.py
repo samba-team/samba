@@ -574,6 +574,21 @@ accountExpires: %u
         """Get the server site name"""
         return dsdb._samdb_server_site_name(self)
 
+    def host_dns_name(self):
+        """return the DNS name of this host"""
+        res = self.search(base='', scope=ldb.SCOPE_BASE, attrs=['dNSHostName'])
+        return res[0]['dNSHostName'][0]
+
+    def domain_dns_name(self):
+        """return the DNS name of the domain root"""
+        domain_dn = self.get_default_basedn()
+        return domain_dn.canonical_str().split('/')[0]
+
+    def forest_dns_name(self):
+        """return the DNS name of the forest root"""
+        forest_dn = self.get_root_basedn()
+        return forest_dn.canonical_str().split('/')[0]
+
     def load_partition_usn(self, base_dn):
         return dsdb._dsdb_load_partition_usn(self, base_dn)
 
