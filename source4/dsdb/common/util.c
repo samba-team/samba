@@ -2367,13 +2367,14 @@ char *samdb_dn_to_dns_domain(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 	}
 
 	for (i=0; i<num_components; i++) {
-		struct ldb_val *v = ldb_dn_get_component_val(dn, i);
+		const struct ldb_val *v = ldb_dn_get_component_val(dn, i);
 		char *s;
 		if (v == NULL) {
 			talloc_free(dns_name);
 			return NULL;
 		}
-		s = talloc_asprintf_append_buffer(dns_name, "%*.*s.", v->length, v->length, (char *)v->data);
+		s = talloc_asprintf_append_buffer(dns_name, "%*.*s.",
+						  (int)v->length, (int)v->length, (char *)v->data);
 		if (s == NULL) {
 			talloc_free(dns_name);
 			return NULL;
@@ -2387,6 +2388,40 @@ char *samdb_dn_to_dns_domain(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 	}
 
 	return dns_name;
+}
+
+/*
+  Find the DNS _msdcs name for a given NTDS GUID. The resulting DNS
+  name is based on the forest DNS name
+*/
+char *samdb_ntds_msdcs_dns_name(struct ldb_context *samdb,
+				TALLOC_CTX *mem_ctx,
+				const struct GUID *ntds_guid)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *guid_str;
+	struct ldb_dn *forest_dn;
+	const char *dnsforest;
+	char *ret;
+
+	guid_str = GUID_string(tmp_ctx, ntds_guid);
+	if (guid_str == NULL) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	forest_dn = ldb_get_root_basedn(samdb);
+	if (forest_dn == NULL) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	dnsforest = samdb_dn_to_dns_domain(tmp_ctx, forest_dn);
+	if (dnsforest == NULL) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+	ret = talloc_asprintf(mem_ctx, "%s._msdcs.%s", guid_str, dnsforest);
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 
