@@ -94,6 +94,7 @@ sub print_header($$)
 	$file->("\tint (*get_numservices)(void);\n");
 	$file->("\tbool (*load)(const char *filename);\n");
 	$file->("\tbool (*set_cmdline)(const char *pszParmName, const char *pszParmValue);\n");
+	$file->("\tvoid (*dump)(FILE *f, bool show_defaults, int maxtoprint);\n");
 }
 
 sub print_footer($$) 

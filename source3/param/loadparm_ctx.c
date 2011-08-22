@@ -47,6 +47,7 @@ static const struct loadparm_s3_context s3_fns =
 	.get_numservices = lp_numservices,
 	.load = lp_load_for_s4_ctx,
 	.set_cmdline = lp_set_cmdline,
+	.dump = lp_dump,
 
 	.server_role = lp_server_role,
 
