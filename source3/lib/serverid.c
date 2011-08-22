@@ -236,7 +236,7 @@ bool serverid_exists(const struct server_id *id)
 	struct serverid_key key;
 	TDB_DATA tdbkey;
 
-	if (!lp_clustering() && procid_is_me(id)) {
+	if (procid_is_me(id)) {
 		return true;
 	}
 
