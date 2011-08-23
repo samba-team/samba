@@ -3034,6 +3034,7 @@ static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv
 	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
 	struct cattdb_data d;
+	bool persistent;
 
 	if (argc < 1) {
 		usage();
@@ -3042,7 +3043,7 @@ static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv
 	db_name = argv[0];
 
 
-	if (db_exists(ctdb, db_name)) {
+	if (db_exists(ctdb, db_name, &persistent)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		return -1;
 	}
