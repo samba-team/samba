@@ -37,6 +37,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
+#define REGDB_VERSION_KEYNAME "INFO/version"
+
 static struct db_context *regdb = NULL;
 static int regdb_refcount;
 
@@ -416,20 +418,18 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 static WERROR regdb_store_regdb_version(struct db_context *db, uint32_t version)
 {
 	NTSTATUS status;
-	const char *version_keyname = "INFO/version";
-
 	if (db == NULL) {
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
-	status = dbwrap_trans_store_int32(db, version_keyname, version);
+	status = dbwrap_trans_store_int32(db, REGDB_VERSION_KEYNAME, version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("regdb_store_regdb_version: error storing %s = %d: %s\n",
-			  version_keyname, version, nt_errstr(status)));
+			  REGDB_VERSION_KEYNAME, version, nt_errstr(status)));
 		return ntstatus_to_werror(status);
 	} else {
 		DEBUG(10, ("regdb_store_regdb_version: stored %s = %d\n",
-			  version_keyname, version));
+			  REGDB_VERSION_KEYNAME, version));
 		return WERR_OK;
 	}
 }
@@ -561,7 +561,6 @@ done:
 
 WERROR regdb_init(void)
 {
-	const char *vstring = "INFO/version";
 	uint32 vers_id, expected_version;
 	WERROR werr;
 
@@ -593,7 +592,7 @@ WERROR regdb_init(void)
 
 	expected_version = REGVER_V3;
 
-	vers_id = dbwrap_fetch_int32(regdb, vstring);
+	vers_id = dbwrap_fetch_int32(regdb, REGDB_VERSION_KEYNAME);
 	if (vers_id == -1) {
 		DEBUG(10, ("regdb_init: registry version uninitialized "
 			   "(got %d), initializing to version %d\n",
