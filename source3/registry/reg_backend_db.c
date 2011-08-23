@@ -382,6 +382,12 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 		return 1;
 	}
 
+	if (strncmp((const char *)rec->key.dptr, REGDB_VERSION_KEYNAME,
+	    strlen(REGDB_VERSION_KEYNAME)) == 0)
+	{
+		return 0;
+	}
+
 	keyname = strchr((const char *) rec->key.dptr, '/');
 	if (keyname) {
 		keyname = talloc_string_sub(mem_ctx,
