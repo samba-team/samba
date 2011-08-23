@@ -151,6 +151,7 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 		log_fn(log_priv, LOG_ERR, "ctdb_connect: no memory", ap);
 		goto fail;
 	}
+	ctdb->pnn = -1;
 	ctdb->outq = NULL;
 	ctdb->doneq = NULL;
 	ctdb->in = NULL;
