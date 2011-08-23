@@ -1,4 +1,43 @@
                    ==============================
+                   Release Notes for Samba 3.4.16
+			   , 2011
+                   ==============================
+
+
+This is the latest stable release of Samba 3.4.
+
+
+Changes since 3.4.15
+--------------------
+
+
+o   
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.4 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older versions follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.4.15
 			   August 23, 2011
                    ==============================
@@ -51,8 +90,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older versions follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.4.14
