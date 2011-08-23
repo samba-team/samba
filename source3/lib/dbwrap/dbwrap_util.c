@@ -53,16 +53,17 @@ int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v)
 	int32 v_store;
 	NTSTATUS status;
 
-	rec = db->fetch_locked(db, NULL, string_term_tdb_data(keystr));
+	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(keystr));
 	if (rec == NULL) {
 		return -1;
 	}
 
 	SIVAL(&v_store, 0, v);
 
-	status = rec->store(rec, make_tdb_data((const uint8 *)&v_store,
-					       sizeof(v_store)),
-			    TDB_REPLACE);
+	status = dbwrap_record_store(rec,
+				     make_tdb_data((const uint8 *)&v_store,
+						   sizeof(v_store)),
+				     TDB_REPLACE);
 	TALLOC_FREE(rec);
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
@@ -94,16 +95,17 @@ int dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
 	uint32 v_store;
 	NTSTATUS status;
 
-	rec = db->fetch_locked(db, NULL, string_term_tdb_data(keystr));
+	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(keystr));
 	if (rec == NULL) {
 		return -1;
 	}
 
 	SIVAL(&v_store, 0, v);
 
-	status = rec->store(rec, make_tdb_data((const uint8 *)&v_store,
-					       sizeof(v_store)),
-			    TDB_REPLACE);
+	status = dbwrap_record_store(rec,
+				     make_tdb_data((const uint8 *)&v_store,
+						   sizeof(v_store)),
+				     TDB_REPLACE);
 	TALLOC_FREE(rec);
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
@@ -130,18 +132,21 @@ static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
 	uint32_t v_store;
 	NTSTATUS ret;
 	struct dbwrap_change_uint32_atomic_context *state;
+	TDB_DATA value;
 
 	state = (struct dbwrap_change_uint32_atomic_context *)private_data;
 
-	rec = db->fetch_locked(db, NULL, string_term_tdb_data(state->keystr));
+	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(state->keystr));
 	if (!rec) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (rec->value.dptr == NULL) {
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dptr == NULL) {
 		val = *(state->oldval);
-	} else if (rec->value.dsize == sizeof(val)) {
-		val = IVAL(rec->value.dptr, 0);
+	} else if (value.dsize == sizeof(val)) {
+		val = IVAL(value.dptr, 0);
 		*(state->oldval) = val;
 	} else {
 		ret = NT_STATUS_UNSUCCESSFUL;
@@ -152,10 +157,10 @@ static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
 
 	SIVAL(&v_store, 0, val);
 
-	ret = rec->store(rec,
-			 make_tdb_data((const uint8 *)&v_store,
-				       sizeof(v_store)),
-			 TDB_REPLACE);
+	ret = dbwrap_record_store(rec,
+				  make_tdb_data((const uint8 *)&v_store,
+						sizeof(v_store)),
+				  TDB_REPLACE);
 
 done:
 	TALLOC_FREE(rec);
@@ -216,18 +221,21 @@ static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,
 	int32_t v_store;
 	NTSTATUS ret;
 	struct dbwrap_change_int32_atomic_context *state;
+	TDB_DATA value;
 
 	state = (struct dbwrap_change_int32_atomic_context *)private_data;
 
-	rec = db->fetch_locked(db, NULL, string_term_tdb_data(state->keystr));
+	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(state->keystr));
 	if (!rec) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (rec->value.dptr == NULL) {
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dptr == NULL) {
 		val = *(state->oldval);
-	} else if (rec->value.dsize == sizeof(val)) {
-		val = IVAL(rec->value.dptr, 0);
+	} else if (value.dsize == sizeof(val)) {
+		val = IVAL(value.dptr, 0);
 		*(state->oldval) = val;
 	} else {
 		ret = NT_STATUS_UNSUCCESSFUL;
@@ -238,10 +246,10 @@ static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,
 
 	SIVAL(&v_store, 0, val);
 
-	ret = rec->store(rec,
-			 make_tdb_data((const uint8_t *)&v_store,
-				       sizeof(v_store)),
-			 TDB_REPLACE);
+	ret = dbwrap_record_store(rec,
+				  make_tdb_data((const uint8_t *)&v_store,
+						sizeof(v_store)),
+				  TDB_REPLACE);
 
 done:
 	TALLOC_FREE(rec);
@@ -294,13 +302,13 @@ static NTSTATUS dbwrap_store_action(struct db_context *db, void *private_data)
 
 	store_ctx = (struct dbwrap_store_context *)private_data;
 
-	rec = db->fetch_locked(db, talloc_tos(), *(store_ctx->key));
+	rec = dbwrap_fetch_locked(db, talloc_tos(), *(store_ctx->key));
 	if (rec == NULL) {
 		DEBUG(5, ("fetch_locked failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = rec->store(rec, *(store_ctx->dbuf), store_ctx->flag);
+	status = dbwrap_record_store(rec, *(store_ctx->dbuf), store_ctx->flag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("store returned %s\n", nt_errstr(status)));
 	}
@@ -330,13 +338,13 @@ static NTSTATUS dbwrap_delete_action(struct db_context * db, void *private_data)
 	struct db_record *rec;
 	TDB_DATA *key = (TDB_DATA *)private_data;
 
-	rec = db->fetch_locked(db, talloc_tos(), *key);
+	rec = dbwrap_fetch_locked(db, talloc_tos(), *key);
 	if (rec == NULL) {
 		DEBUG(5, ("fetch_locked failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("delete_rec returned %s\n", nt_errstr(status)));
 	}
@@ -401,7 +409,7 @@ NTSTATUS dbwrap_trans_do(struct db_context *db,
 	int res;
 	NTSTATUS status;
 
-	res = db->transaction_start(db);
+	res = dbwrap_transaction_start(db);
 	if (res != 0) {
 		DEBUG(5, ("transaction_start failed\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -409,13 +417,13 @@ NTSTATUS dbwrap_trans_do(struct db_context *db,
 
 	status = action(db, private_data);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (db->transaction_cancel(db) != 0) {
+		if (dbwrap_transaction_cancel(db) != 0) {
 			smb_panic("Cancelling transaction failed");
 		}
 		return status;
 	}
 
-	res = db->transaction_commit(db);
+	res = dbwrap_transaction_commit(db);
 	if (res == 0) {
 		return NT_STATUS_OK;
 	}
@@ -435,9 +443,9 @@ static NTSTATUS dbwrap_trans_traverse_action(struct db_context* db, void* privat
 	struct dbwrap_trans_traverse_action_ctx* ctx =
 		(struct dbwrap_trans_traverse_action_ctx*)private_data;
 
-	int ret = db->traverse(db, ctx->f, ctx->private_data);
+	NTSTATUS status = dbwrap_traverse(db, ctx->f, ctx->private_data, NULL);
 
-	return (ret < 0) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
+	return status;
 }
 
 NTSTATUS dbwrap_trans_traverse(struct db_context *db,
