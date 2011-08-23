@@ -23,6 +23,7 @@
 #include "serverid.h"
 #include "messages.h"
 #include "ntdomain.h"
+#include <libgen.h>
 
 #include "lib/id_cache.h"
 
