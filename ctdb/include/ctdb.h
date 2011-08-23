@@ -116,6 +116,45 @@ void ctdb_disconnect(struct ctdb_connection *ctdb);
  ***/
 
 /**
+ * ctdb_num_active - get the number of active commands
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ *
+ * This command can be used to find the number of active commands we have
+ * issued. An active command is a command we have queued, or sent
+ * to the ctdb daemon but which we have not yet received a reply to.
+ *
+ * See Also:
+ *	ctdb_num_in_flight(), ctdb_num_out_queue()
+ */
+int ctdb_num_active(struct ctdb_connection *ctdb);
+
+/**
+ * ctdb_num_in_flight - get the number of commands in flight.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ *
+ * This command can be used to find the number of commands we have
+ * sent to the ctdb daemon to which we have not yet received/processed
+ * the reply.
+ *
+ * See Also:
+ *	ctdb_num_out_queue(), ctdb_num_active()
+ */
+int ctdb_num_in_flight(struct ctdb_connection *ctdb);
+
+/**
+ * ctdb_num_out_queue - get the number of commands in the out queue
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ *
+ * This command can be used to find the number of commands we have
+ * queued for delivery to the ctdb daemon but have not yet been
+ * written to the domain socket.
+ *
+ * See Also:
+ *	ctdb_num_in_flight(), ctdb_num_active()
+ */
+int ctdb_num_out_queue(struct ctdb_connection *ctdb);
+
+/**
  * ctdb_get_fd - get the filedescriptor to select/poll on
  * @ctdb: the ctdb_connection from ctdb_connect.
  *

@@ -1133,3 +1133,32 @@ bool ctdb_traverse_async(struct ctdb_db *ctdb_db,
 
 	return true;
 }
+
+int ctdb_num_out_queue(struct ctdb_connection *ctdb)
+{
+	struct ctdb_request *req;
+	int i;
+
+	for (i = 0, req = ctdb->outq; req; req = req->next, i++)
+		;
+
+	return i;
+}
+
+int ctdb_num_in_flight(struct ctdb_connection *ctdb)
+{
+	struct ctdb_request *req;
+	int i;
+
+	for (i = 0, req = ctdb->doneq; req; req = req->next, i++)
+		;
+
+	return i;
+}
+
+int ctdb_num_active(struct ctdb_connection *ctdb)
+{
+	return ctdb_num_out_queue(ctdb)
+		 + ctdb_num_in_flight(ctdb);
+}
+
