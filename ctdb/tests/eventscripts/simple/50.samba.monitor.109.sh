@@ -17,7 +17,7 @@ tcp_port_down 139
 required_result 1 <<EOF
 DEBUG: ctdb_check_ports - checker ctdb not implemented
 DEBUG: output from checker was:
-DEBUG: ctdb checktcpport 445 (exited with 0) with output:
+DEBUG: ctdb checktcpport 445 (exited with 1) with output:
 $ctdb_not_implemented
 ERROR: samba tcp port 139 is not responding
 DEBUG: nmap -n -oG - -PS 127.0.0.1 -p 445,139 shows this output:

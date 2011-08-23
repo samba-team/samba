@@ -18,7 +18,7 @@ tcp_port_down 139
 required_result 1 <<EOF
 DEBUG: ctdb_check_ports - checker ctdb not implemented
 DEBUG: output from checker was:
-DEBUG: ctdb checktcpport 445 (exited with 0) with output:
+DEBUG: ctdb checktcpport 445 (exited with 1) with output:
 $ctdb_not_implemented
 DEBUG: ctdb_check_ports - checker nmap not implemented
 DEBUG: output from checker was:
