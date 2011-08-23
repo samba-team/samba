@@ -622,11 +622,11 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     uint16_t *chosen_port)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = event_context_init(frame);
+	ev = tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
