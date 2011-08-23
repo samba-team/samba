@@ -591,6 +591,35 @@ bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 			    uint32_t *recmaster);
 
 /**
+ * ctdb_getrecmode_send - read the recovery mode of a node
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getrecmode_send(struct ctdb_connection *ctdb,
+		     uint32_t destnode,
+		     ctdb_callback_t callback, void *cbdata);
+
+/**
+ * ctdb_getrecmode_recv - read an ctdb_getrecmode reply from ctdbd
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @recmode: a pointer to the recmode to fill in
+ *
+ * This returns false if something went wrong, or otherwise fills in
+ * recmode.
+ */
+bool ctdb_getrecmode_recv(struct ctdb_connection *ctdb,
+			  struct ctdb_request *handle,
+			  uint32_t *recmode);
+
+/**
  * ctdb_cancel - cancel an uncompleted request
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @req: the uncompleted request.
@@ -708,6 +737,23 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 
 
 /**
+ * ctdb_getrecmode - read the recovery mode of a node (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @recmode: a pointer to the recmode to fill in
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * Returns true and fills in *recmode on success.
+ */
+bool ctdb_getrecmode(struct ctdb_connection *ctdb,
+		     uint32_t destnode,
+		     uint32_t *recmode);
+
+
+/**
  * ctdb_getnodemap - read the nodemap from a node (synchronous)
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -812,6 +858,10 @@ void ctdb_free_publicips(struct ctdb_all_public_ips *ips);
 
 #define ctdb_getrecmaster_send(ctdb, destnode, cb, cbdata)		\
 	ctdb_getrecmaster_send((ctdb), (destnode),			\
+			       ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getrecmode_send(ctdb, destnode, cb, cbdata)		\
+	ctdb_getrecmode_send((ctdb), (destnode),			\
 			       ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #define ctdb_getnodemap_send(ctdb, destnode, cb, cbdata)		\

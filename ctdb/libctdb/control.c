@@ -23,6 +23,7 @@
 
 /* Remove type-safety macros. */
 #undef ctdb_getrecmaster_send
+#undef ctdb_getrecmode_send
 #undef ctdb_getpnn_send
 #undef ctdb_getnodemap_send
 #undef ctdb_getpublicips_send
@@ -50,6 +51,33 @@ struct ctdb_request *ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
 					    void *private_data)
 {
 	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_RECMASTER,
+					destnode, NULL, 0,
+					callback, private_data);
+}
+
+bool ctdb_getrecmode_recv(struct ctdb_connection *ctdb,
+			  struct ctdb_request *req, uint32_t *recmode)
+{
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_RECMODE);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getrecmode_recv: status -1");
+		return false;
+	}
+	*recmode = reply->status;
+	return true;
+}
+
+struct ctdb_request *ctdb_getrecmode_send(struct ctdb_connection *ctdb,
+					    uint32_t destnode,
+					    ctdb_callback_t callback,
+					    void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_RECMODE,
 					destnode, NULL, 0,
 					callback, private_data);
 }

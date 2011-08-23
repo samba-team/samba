@@ -83,6 +83,23 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 	return ret;
 }
 
+bool ctdb_getrecmode(struct ctdb_connection *ctdb,
+		       uint32_t destnode, uint32_t *recmode)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	req = synchronous(ctdb,
+			  ctdb_getrecmode_send(ctdb, destnode, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_getrecmode_recv(ctdb, req, recmode);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
+
 struct ctdb_db *ctdb_attachdb(struct ctdb_connection *ctdb,
 			      const char *name, bool persistent,
 			      uint32_t tdb_flags)
