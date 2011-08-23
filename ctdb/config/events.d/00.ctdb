@@ -35,6 +35,8 @@ update_config_from_tdb() {
     fi
 }
 
+ctdb_check_args "$@"
+
 case "$1" in 
      init)
         # make sure we have a blank state directory for the scripts to work with
