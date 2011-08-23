@@ -737,10 +737,9 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		printf("hash:%d lmaster:%d\n", i, vnnmap->map[i]);
 	}
 
-	ret = ctdb_ctrl_getrecmode(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmode);
-	if (ret != 0) {
+	if (!ctdb_getrecmode(ctdb_connection, options.pnn, &recmode)) {
 		DEBUG(DEBUG_ERR, ("Unable to get recmode from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 	printf("Recovery mode:%s (%d)\n",recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"RECOVERY",recmode);
 
@@ -2545,8 +2544,7 @@ static uint32_t get_generation(struct ctdb_context *ctdb)
 		}
 
 		/* get recovery mode */
-		ret = ctdb_ctrl_getrecmode(ctdb, ctdb, TIMELIMIT(), recmaster, &recmode);
-		if (ret != 0) {
+		if (!ctdb_getrecmode(ctdb_connection, recmaster, &recmode)) {
 			DEBUG(DEBUG_ERR, ("Unable to get recmode from node %u\n", options.pnn));
 			exit(10);
 		}
