@@ -316,7 +316,7 @@ static int lsasd_children_main(struct tevent_context *ev_ctx,
 {
 	struct lsasd_children_data *data;
 	bool ok;
-	int ret;
+	int ret = 0;
 
 	ok = lsasd_child_init(ev_ctx, child_id, pf);
 	if (!ok) {
