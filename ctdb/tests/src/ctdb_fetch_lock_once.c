@@ -19,44 +19,68 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "cmdline.h"
-
-static struct ctdb_db_context *ctdb_db;
+#include <poll.h>
+#include <err.h>
+#include "ctdb.h"
 
 #define TESTKEY "testkey"
 
+static void rrl_cb(struct ctdb_db *ctdb_db,
+		   struct ctdb_lock *lock, TDB_DATA outdata, void *private)
+{
+	bool *rrl_cb_called = private;
+
+	printf("Record fetchlocked.\n");
+	printf("Press enter to release the record ...\n");
+	(void)getchar();
+	printf("Record released.\n");
+
+	*rrl_cb_called = true;
+	return;
+}
 
 /*
 	Just try locking/unlocking a single record once
 */
-static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
+static void fetch_lock_once(struct ctdb_connection *ctdb, struct ctdb_db *ctdb_db)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	TDB_DATA key, data;
-	struct ctdb_record_handle *h;
+	TDB_DATA key;
+	bool rrl_cb_finished = false;
 
 	key.dptr = discard_const(TESTKEY);
 	key.dsize = strlen(TESTKEY);
 
 	printf("Trying to fetch lock the record ...\n");
 
-	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
-	if (h == NULL) {
-		printf("Failed to fetch record '%s' on node %d\n", 
-	       		(const char *)key.dptr, ctdb_get_pnn(ctdb));
-		talloc_free(tmp_ctx);
+	/* In the non-contended case the callback might be invoked
+	 * immediately, before ctdb_readrecordlock_async() returns.
+	 * In the contended case the callback will be invoked later.
+	 *
+	 * Normally an application would not care whether the callback
+	 * has already been invoked here or not, but if the application
+	 * needs to know, it can use the *private_data pointer
+	 * to pass data through to the callback and back.
+	 */
+	if (!ctdb_readrecordlock_async(ctdb_db, key,
+				       rrl_cb, &rrl_cb_finished)) {
+		printf("Failed to send READRECORDLOCK\n");
 		exit(10);
 	}
+	while (!rrl_cb_finished) {
+		struct pollfd pfd;
 
-	printf("Record fetchlocked.\n");
-	printf("Press enter to release the record ...\n");
-	(void)getchar();
-
-	talloc_free(tmp_ctx);
-	printf("Record released.\n");
+		pfd.fd = ctdb_get_fd(ctdb);
+		pfd.events = ctdb_which_events(ctdb);
+		if (poll(&pfd, 1, -1) < 0) {
+			printf("Poll failed");
+			exit(10);
+		}
+		if (ctdb_service(ctdb, pfd.revents) < 0) {
+			err(1, "Failed to service");
+		}
+	}
 }
 
 /*
@@ -64,18 +88,17 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
 */
 int main(int argc, const char *argv[])
 {
-	struct ctdb_context *ctdb;
+	struct ctdb_connection *ctdb;
+	struct ctdb_db *ctdb_db;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		POPT_CTDB_CMDLINE
 		POPT_TABLEEND
 	};
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
-	struct event_context *ev;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -95,26 +118,27 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	ev = event_context_init(NULL);
-
-	ctdb = ctdb_cmdline_client(ev);
+	ctdb = ctdb_connect("/tmp/ctdb.socket",
+				       ctdb_log_file, stderr);
+	if (!ctdb)
+		err(1, "Connecting to /tmp/ctdb.socket");
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", false, 0);
+	ctdb_db = ctdb_attachdb(ctdb, "test.tdb", false, 0);
 	if (!ctdb_db) {
-		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
+		printf("ctdb_attachdb failed\n");
 		exit(1);
 	}
 
 	printf("Waiting for cluster\n");
 	while (1) {
 		uint32_t recmode=1;
-		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
+		ctdb_getrecmode(ctdb, CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
-		event_loop_once(ev);
+		sleep(1);
 	}
 
-	fetch_lock_once(ctdb, ev);
+	fetch_lock_once(ctdb, ctdb_db);
 
 	return 0;
 }
