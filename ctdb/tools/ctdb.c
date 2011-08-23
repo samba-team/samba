@@ -744,10 +744,9 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 	printf("Recovery mode:%s (%d)\n",recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"RECOVERY",recmode);
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
+	if (!ctdb_getrecmaster(ctdb_connection, options.pnn, &recmaster)) {
 		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 	printf("Recovery master:%d\n",recmaster);
 
@@ -1095,13 +1094,11 @@ static int control_disablescript(struct ctdb_context *ctdb, int argc, const char
  */
 static int control_recmaster(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
 	uint32_t recmaster;
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
+	if (!ctdb_getrecmaster(ctdb_connection, options.pnn, &recmaster)) {
 		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 	printf("%d\n",recmaster);
 
@@ -1596,10 +1593,9 @@ again:
 	}
 
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
+	if (!ctdb_getrecmaster(ctdb_connection, options.pnn, &recmaster)) {
 		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 
 	/* verify the node exists */
@@ -2543,8 +2539,7 @@ static uint32_t get_generation(struct ctdb_context *ctdb)
 		}
 
 		/* get the recmaster */
-		ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, &recmaster);
-		if (ret != 0) {
+		if (!ctdb_getrecmaster(ctdb_connection, CTDB_CURRENT_NODE, &recmaster)) {
 			DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
 			exit(10);
 		}
@@ -3593,7 +3588,6 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 static int control_isnotrecmaster(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t mypnn, recmaster;
-	int ret;
 
 	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
 	if (mypnn == -1) {
@@ -3601,8 +3595,7 @@ static int control_isnotrecmaster(struct ctdb_context *ctdb, int argc, const cha
 		return 1;
 	}
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
+	if (!ctdb_getrecmaster(ctdb_connection, options.pnn, &recmaster)) {
 		printf("Failed to get the recmaster\n");
 		return 1;
 	}
