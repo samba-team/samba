@@ -937,6 +937,7 @@ again:
 		ropath = talloc_asprintf(ctdb_db, "%s.RO", ctdb_db->db_path);
 		if (ropath == NULL) {
 			DEBUG(DEBUG_CRIT,("Failed to asprintf the tracking database\n"));
+			ctdb_db->readonly = false;
 			talloc_free(ctdb_db);
 			return -1;
 		}
@@ -946,6 +947,7 @@ again:
 				      O_CREAT|O_RDWR, 0);
 		if (ctdb_db->rottdb == NULL) {
 			DEBUG(DEBUG_CRIT,("Failed to open/create the tracking database '%s'\n", ropath));
+			ctdb_db->readonly = false;
 			talloc_free(ctdb_db);
 			return -1;
 		}

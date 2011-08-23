@@ -425,7 +425,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	}
 
 	/* Dont do READONLY if we dont have a tracking database */
-	if ((c->flags & CTDB_WANT_READONLY) && ctdb_db->rottdb == NULL) {
+	if ((c->flags & CTDB_WANT_READONLY) && !ctdb_db->readonly) {
 		c->flags &= ~CTDB_WANT_READONLY;
 	}
 

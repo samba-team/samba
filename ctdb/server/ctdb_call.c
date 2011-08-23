@@ -507,7 +507,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 
 	/* Dont do READONLY if we dont have a tracking database */
-	if ((c->flags & CTDB_WANT_READONLY) && ctdb_db->rottdb == NULL) {
+	if ((c->flags & CTDB_WANT_READONLY) && !ctdb_db->readonly) {
 		c->flags &= ~CTDB_WANT_READONLY;
 	}
 
