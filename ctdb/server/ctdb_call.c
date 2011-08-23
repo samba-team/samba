@@ -949,6 +949,272 @@ static int deferred_call_destructor(struct revokechild_deferred_call *deferred_c
 	return 0;
 }
 
+
+static int revokechild_destructor(struct revokechild_handle *rc)
+{
+	if (rc->fde != NULL) {
+		talloc_free(rc->fde);
+	}
+
+	if (rc->fd[0] != -1) {
+		close(rc->fd[0]);
+	}
+	if (rc->fd[1] != -1) {
+		close(rc->fd[1]);
+	}
+	kill(rc->child, SIGKILL);
+
+	DLIST_REMOVE(rc->ctdb_db->revokechild_active, rc);
+	return 0;
+}
+
+static void revokechild_handler(struct event_context *ev, struct fd_event *fde,
+		     uint16_t flags, void *private_data)
+{
+	struct revokechild_handle *rc = talloc_get_type(private_data,
+						     struct revokechild_handle);
+	int ret;
+	char c;
+
+	ret = read(rc->fd[0], &c, 1);
+	if (ret != 1) {
+		DEBUG(DEBUG_ERR,("Failed to read status from revokechild. errno:%d\n", errno));
+		rc->status = -1;
+		talloc_free(rc);
+		return;
+	}
+	if (c != 0) {
+		DEBUG(DEBUG_ERR,("revokechild returned failure. status:%d\n", c));
+		rc->status = -1;
+		talloc_free(rc);
+		return;
+	}
+
+	talloc_free(rc);
+}
+
+struct ctdb_revoke_state {
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA key;
+	struct ctdb_ltdb_header *header;
+	TDB_DATA data;
+	int count;
+	int status;
+	int finished;
+};
+
+static void update_record_cb(struct ctdb_client_control_state *state)
+{
+	struct ctdb_revoke_state *revoke_state;
+	int ret;
+	int32_t res;
+
+	if (state == NULL) {
+		return;
+	}
+	revoke_state = state->async.private_data;
+
+	state->async.fn = NULL;
+	 ret = ctdb_control_recv(state->ctdb, state, state, NULL, &res, NULL);
+	 if ((ret != 0) || (res != 0)) {
+		DEBUG(DEBUG_ERR,("Recv for revoke update record failed ret:%d res:%d\n", ret, res));
+		revoke_state->status = -1;
+	}
+
+	revoke_state->count--;
+	if (revoke_state->count <= 0) {
+		revoke_state->finished = 1;
+	}
+}
+
+static void revoke_send_cb(struct ctdb_context *ctdb, uint32_t pnn, void *private_data)
+{
+	struct ctdb_revoke_state *revoke_state = private_data;
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_ctrl_updaterecord_send(ctdb, revoke_state, timeval_current_ofs(5,0), pnn, revoke_state->ctdb_db, revoke_state->key, revoke_state->header, revoke_state->data);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR,("Failure to send update record to revoke readonly delegation\n"));
+		revoke_state->status = -1;
+		return;
+	}
+	state->async.fn           = update_record_cb;
+	state->async.private_data = revoke_state;
+
+	revoke_state->count++;
+
+}
+
+static void ctdb_revoke_timeout_handler(struct event_context *ev, struct timed_event *te,
+			     struct timeval yt, void *private_data)
+{
+	struct ctdb_revoke_state *state = private_data;
+
+	DEBUG(DEBUG_ERR,("Timed out waiting for revoke to finish\n"));
+	state->finished = 1;
+	state->status   = -1;
+}
+
+static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA tdata, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data)
+{
+	struct ctdb_revoke_state *state = talloc_zero(ctdb, struct ctdb_revoke_state);
+	int status;
+
+	state->ctdb_db = ctdb_db;
+	state->key     = key;
+	state->header  = header;
+	state->data    = data;
+
+	ctdb_trackingdb_traverse(ctdb, tdata, revoke_send_cb, state);
+
+	event_add_timed(ctdb->ev, state, timeval_current_ofs(5, 0), ctdb_revoke_timeout_handler, state);
+
+	while (state->finished == 0) {
+		event_loop_once(ctdb->ev);
+	}
+
+	status = state->status;
+
+	if (status == 0) {
+		struct ctdb_ltdb_header new_header;
+		TDB_DATA new_data;
+
+		if (ctdb_ltdb_lock(ctdb_db, key) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to chainlock the database in revokechild\n"));
+			talloc_free(state);
+			return -1;
+		}
+		if (ctdb_ltdb_fetch(ctdb_db, key, &new_header, state, &new_data) != 0) {
+			ctdb_ltdb_unlock(ctdb_db, key);
+			DEBUG(DEBUG_ERR,("Failed for fetch tdb record in revokechild\n"));
+			talloc_free(state);
+			return -1;
+		}
+		header->rsn++;
+		if (new_header.rsn > header->rsn) {
+			ctdb_ltdb_unlock(ctdb_db, key);
+			DEBUG(DEBUG_ERR,("RSN too high in tdb record in revokechild\n"));
+			talloc_free(state);
+			return -1;
+		}
+		if ( (new_header.flags & (CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS)) != (CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS) ) {
+			ctdb_ltdb_unlock(ctdb_db, key);
+			DEBUG(DEBUG_ERR,("Flags are wrong in tdb record in revokechild\n"));
+			talloc_free(state);
+			return -1;
+		}
+		new_header.rsn++;
+		new_header.flags |= CTDB_REC_RO_REVOKE_COMPLETE;
+		if (ctdb_ltdb_store(ctdb_db, key, &new_header, new_data) != 0) {
+			ctdb_ltdb_unlock(ctdb_db, key);
+			DEBUG(DEBUG_ERR,("Failed to write new record in revokechild\n"));
+			talloc_free(state);
+			return -1;
+		}
+		ctdb_ltdb_unlock(ctdb_db, key);
+	}
+
+	talloc_free(state);
+	return status;
+}
+
+
+int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data)
+{
+	TDB_DATA tdata;
+	struct revokechild_handle *rc;
+	pid_t parent = getpid();
+	int ret;
+
+	header->flags &= ~(CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY);
+	header->rsn   -= 1;
+
+	if ((rc = talloc_zero(ctdb_db, struct revokechild_handle)) == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate revokechild_handle\n"));
+		return -1;
+	}
+
+	tdata = tdb_fetch(ctdb_db->rottdb, key);
+	if (tdata.dsize > 0) {
+		uint8_t *tmp;
+
+		tmp = tdata.dptr;
+		tdata.dptr = talloc_memdup(rc, tdata.dptr, tdata.dsize);
+		free(tmp);
+	}
+
+	rc->status    = 0;
+	rc->ctdb      = ctdb;
+	rc->ctdb_db   = ctdb_db;
+	rc->fd[0]     = -1;
+	rc->fd[1]     = -1;
+
+	talloc_set_destructor(rc, revokechild_destructor);
+
+	rc->key.dsize = key.dsize;
+	rc->key.dptr  = talloc_memdup(rc, key.dptr, key.dsize);
+	if (rc->key.dptr == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate key for revokechild_handle\n"));
+		talloc_free(rc);
+		return -1;
+	}
+
+	ret = pipe(rc->fd);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to allocate key for revokechild_handle\n"));
+		talloc_free(rc);
+		return -1;
+	}
+
+
+	rc->child = ctdb_fork(ctdb);
+	if (rc->child == (pid_t)-1) {
+		DEBUG(DEBUG_ERR,("Failed to fork child for revokechild\n"));
+		talloc_free(rc);
+		return -1;
+	}
+
+	if (rc->child == 0) {
+		char c = 0;
+		close(rc->fd[0]);
+		debug_extra = talloc_asprintf(NULL, "revokechild-%s:", ctdb_db->db_name);
+
+		if (switch_from_server_to_client(ctdb, "revokechild-%s", ctdb_db->db_name) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to switch from server to client for revokechild process\n"));
+			c = 1;
+			goto child_finished;
+		}
+
+		c = ctdb_revoke_all_delegations(ctdb, ctdb_db, tdata, key, header, data);
+
+child_finished:
+		write(rc->fd[1], &c, 1);
+		/* make sure we die when our parent dies */
+		while (kill(parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+		}
+		_exit(0);
+	}
+
+	close(rc->fd[1]);
+	rc->fd[1] = -1;
+	set_close_on_exec(rc->fd[0]);
+
+	/* This is an active revokechild child process */
+	DLIST_ADD_END(ctdb_db->revokechild_active, rc, NULL);
+
+	rc->fde = event_add_fd(ctdb->ev, rc, rc->fd[0],
+				   EVENT_FD_READ, revokechild_handler,
+				   (void *)rc);
+	if (rc->fde == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to set up fd event for revokechild process\n"));
+		talloc_free(rc);
+	}
+	tevent_fd_set_auto_close(rc->fde);
+
+	return 0;
+}
+
 int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context)
 {
 	struct revokechild_handle *rc;
