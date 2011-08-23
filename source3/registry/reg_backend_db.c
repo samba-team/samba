@@ -484,6 +484,12 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 
 	keyname = (const char *)rec->key.dptr;
 
+	if (strncmp(keyname, REGDB_VERSION_KEYNAME,
+		    strlen(REGDB_VERSION_KEYNAME)) == 0)
+	{
+		return 0;
+	}
+
 	if (strncmp(keyname, REG_SORTED_SUBKEYS_PREFIX,
 		    strlen(REG_SORTED_SUBKEYS_PREFIX)) == 0)
 	{
