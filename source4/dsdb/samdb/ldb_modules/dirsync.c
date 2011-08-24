@@ -845,8 +845,8 @@ static int dirsync_search_callback(struct ldb_request *req, struct ldb_reply *ar
 		}
 
 		flags = DSDB_FLAG_NEXT_MODULE |
-				DSDB_RMD_FLAG_DELETED |
-				DSDB_SEARCH_SHOW_EXTENDED_DN;
+			DSDB_SEARCH_SHOW_DELETED |
+			DSDB_SEARCH_SHOW_EXTENDED_DN;
 
 		if (dsc->assystem) {
 			flags = flags | DSDB_FLAG_AS_SYSTEM;
