@@ -28,6 +28,21 @@
 
 static_decl_idmap;
 
+static void idmap_init(void)
+{
+	static bool initialized;
+
+	if (initialized) {
+		return;
+	}
+
+	DEBUG(10, ("idmap_init(): calling static_init_idmap\n"));
+
+	static_init_idmap;
+
+	initialized = true;
+}
+
 /**
  * Pointer to the backend methods. Modules register themselves here via
  * smb_register_idmap.
@@ -346,9 +361,7 @@ static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
 	char *modulename;
 	char *params;
 
-	DEBUG(10, ("idmap_init_default_domain: calling static_init_idmap\n"));
-
-	static_init_idmap;
+	idmap_init();
 
 	if (!parse_idmap_module(talloc_tos(), lp_idmap_backend(), &modulename,
 				&params)) {
@@ -546,7 +559,7 @@ static NTSTATUS idmap_alloc_init(struct idmap_alloc_context **ctx)
 	char *modulename, *params;
 	NTSTATUS ret = NT_STATUS_NO_MEMORY;;
 
-	static_init_idmap;
+	idmap_init();
 
 	if (idmap_alloc_ctx != NULL) {
 		*ctx = idmap_alloc_ctx;
