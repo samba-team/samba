@@ -96,7 +96,7 @@ bool serverid_register(const struct server_id id, uint32_t msg_flags)
 	serverid_fill_key(&id, &key);
 	tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
 
-	rec = db->fetch_locked(db, talloc_tos(), tdbkey);
+	rec = dbwrap_fetch_locked(db, talloc_tos(), tdbkey);
 	if (rec == NULL) {
 		DEBUG(1, ("Could not fetch_lock serverid.tdb record\n"));
 		return false;
@@ -107,7 +107,7 @@ bool serverid_register(const struct server_id id, uint32_t msg_flags)
 	data.msg_flags = msg_flags;
 
 	tdbdata = make_tdb_data((uint8_t *)&data, sizeof(data));
-	status = rec->store(rec, tdbdata, 0);
+	status = dbwrap_record_store(rec, tdbdata, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Storing serverid.tdb record failed: %s\n",
 			  nt_errstr(status)));
@@ -127,6 +127,7 @@ bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
 	struct serverid_data *data;
 	struct db_record *rec;
 	TDB_DATA tdbkey;
+	TDB_DATA value;
 	NTSTATUS status;
 	bool ret = false;
 
@@ -138,20 +139,22 @@ bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
 	serverid_fill_key(&id, &key);
 	tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
 
-	rec = db->fetch_locked(db, talloc_tos(), tdbkey);
+	rec = dbwrap_fetch_locked(db, talloc_tos(), tdbkey);
 	if (rec == NULL) {
 		DEBUG(1, ("Could not fetch_lock serverid.tdb record\n"));
 		return false;
 	}
 
-	if (rec->value.dsize != sizeof(struct serverid_data)) {
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dsize != sizeof(struct serverid_data)) {
 		DEBUG(1, ("serverid record has unexpected size %d "
-			  "(wanted %d)\n", (int)rec->value.dsize,
+			  "(wanted %d)\n", (int)value.dsize,
 			  (int)sizeof(struct serverid_data)));
 		goto done;
 	}
 
-	data = (struct serverid_data *)rec->value.dptr;
+	data = (struct serverid_data *)value.dptr;
 
 	if (do_reg) {
 		data->msg_flags |= msg_flags;
@@ -159,7 +162,7 @@ bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
 		data->msg_flags &= ~msg_flags;
 	}
 
-	status = rec->store(rec, rec->value, 0);
+	status = dbwrap_record_store(rec, value, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Storing serverid.tdb record failed: %s\n",
 			  nt_errstr(status)));
@@ -188,13 +191,13 @@ bool serverid_deregister(struct server_id id)
 	serverid_fill_key(&id, &key);
 	tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
 
-	rec = db->fetch_locked(db, talloc_tos(), tdbkey);
+	rec = dbwrap_fetch_locked(db, talloc_tos(), tdbkey);
 	if (rec == NULL) {
 		DEBUG(1, ("Could not fetch_lock serverid.tdb record\n"));
 		return false;
 	}
 
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Deleting serverid.tdb record failed: %s\n",
 			  nt_errstr(status)));
@@ -255,7 +258,7 @@ bool serverid_exists(const struct server_id *id)
 	state.id = id;
 	state.exists = false;
 
-	if (db->parse_record(db, tdbkey, server_exists_parse, &state) != 0) {
+	if (dbwrap_parse_record(db, tdbkey, server_exists_parse, &state) != 0) {
 		return false;
 	}
 	return state.exists;
@@ -266,20 +269,25 @@ static bool serverid_rec_parse(const struct db_record *rec,
 {
 	struct serverid_key key;
 	struct serverid_data data;
+	TDB_DATA tdbkey;
+	TDB_DATA tdbdata;
 
-	if (rec->key.dsize != sizeof(key)) {
+	tdbkey = dbwrap_record_get_key(rec);
+	tdbdata = dbwrap_record_get_value(rec);
+
+	if (tdbkey.dsize != sizeof(key)) {
 		DEBUG(1, ("Found invalid key length %d in serverid.tdb\n",
-			  (int)rec->key.dsize));
+			  (int)tdbkey.dsize));
 		return false;
 	}
-	if (rec->value.dsize != sizeof(data)) {
+	if (tdbdata.dsize != sizeof(data)) {
 		DEBUG(1, ("Found invalid value length %d in serverid.tdb\n",
-			  (int)rec->value.dsize));
+			  (int)tdbdata.dsize));
 		return false;
 	}
 
-	memcpy(&key, rec->key.dptr, sizeof(key));
-	memcpy(&data, rec->value.dptr, sizeof(data));
+	memcpy(&key, tdbkey.dptr, sizeof(key));
+	memcpy(&data, tdbdata.dptr, sizeof(data));
 
 	id->pid = key.pid;
 	id->task_id = key.task_id;
