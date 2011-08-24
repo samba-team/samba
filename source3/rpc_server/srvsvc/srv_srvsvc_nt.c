@@ -79,11 +79,14 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 	int i = fenum->ctr3->count;
 	char *fullpath = NULL;
 	const char *username;
+	TDB_DATA value;
 
-	if (rec->value.dsize != sizeof(struct pipe_open_rec))
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dsize != sizeof(struct pipe_open_rec))
 		return 0;
 
-	memcpy(&prec, rec->value.dptr, sizeof(struct pipe_open_rec));
+	memcpy(&prec, value.dptr, sizeof(struct pipe_open_rec));
 
 	if ( !process_exists(prec.pid) ) {
 		return 0;
