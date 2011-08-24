@@ -339,6 +339,10 @@ def ensure_external_module(modulename, location):
         import_bundled_package(modulename, location)
 
 
+def dn_from_dns_name(dnsdomain):
+    """return a DN from a DNS name domain/forest root"""
+    return "DC=" + ",DC=".join(dnsdomain.split("."))
+
 from samba import _glue
 version = _glue.version
 interface_ips = _glue.interface_ips

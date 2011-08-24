@@ -225,8 +225,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     # NT domain, kerberos realm, root dn, domain dn, domain dns name
     names.domain = string.upper(lp.get("workgroup"))
     names.realm = lp.get("realm")
-    basedn = "DC=" + names.realm.replace(".",",DC=")
     names.dnsdomain = names.realm.lower()
+    basedn = samba.dn_from_dns_name(names.dnsdomain)
     names.realm = string.upper(names.realm)
     # netbiosname
     # Get the netbiosname first (could be obtained from smb.conf in theory)
@@ -619,7 +619,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
             raise ProvisioningError("guess_names: Workgroup '%s' in smb.conf must match chosen domain '%s'!  Please remove the %s file and let provision generate it" % (lp.get("workgroup").upper(), domain, lp.configfile))
 
         if domaindn is None:
-            domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
+            domaindn = samba.dn_from_dns_name(dnsdomain)
 
         if domain == netbiosname:
             raise ProvisioningError("guess_names: Domain '%s' must not be equal to short host name '%s'!" % (domain, netbiosname))
