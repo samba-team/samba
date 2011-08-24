@@ -76,6 +76,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 			 */
 
 			struct server_id sess_pid;
+			TDB_DATA value;
 
 			snprintf(keystr, sizeof(keystr), "ID/%d", i);
 
@@ -85,13 +86,15 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 				return False;
 			}
 
-			if (rec->value.dsize != sizeof(sessionid)) {
+			value = dbwrap_record_get_value(rec);
+
+			if (value.dsize != sizeof(sessionid)) {
 				DEBUG(1, ("Re-using invalid record\n"));
 				break;
 			}
 
 			memcpy(&sess_pid,
-			       ((char *)rec->value.dptr)
+			       ((char *)value.dptr)
 			       + offsetof(struct sessionid, pid),
 			       sizeof(sess_pid));
 
@@ -162,7 +165,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 	data.dptr = (uint8 *)&sessionid;
 	data.dsize = sizeof(sessionid);
 
-	status = rec->store(rec, data, TDB_REPLACE);
+	status = dbwrap_record_store(rec, data, TDB_REPLACE);
 
 	TALLOC_FREE(rec);
 
@@ -194,6 +197,7 @@ void session_yield(user_struct *vuser)
 {
 	struct sessionid sessionid;
 	struct db_record *rec;
+	TDB_DATA value;
 
 	if (!vuser->session_keystr) {
 		return;
@@ -204,10 +208,12 @@ void session_yield(user_struct *vuser)
 		return;
 	}
 
-	if (rec->value.dsize != sizeof(sessionid))
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dsize != sizeof(sessionid))
 		return;
 
-	memcpy(&sessionid, rec->value.dptr, sizeof(sessionid));
+	memcpy(&sessionid, value.dptr, sizeof(sessionid));
 
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
@@ -218,7 +224,7 @@ void session_yield(user_struct *vuser)
 	smb_pam_close_session(sessionid.username, sessionid.id_str,
 			      sessionid.hostname);
 
-	rec->delete_rec(rec);
+	dbwrap_record_delete(rec);
 
 	TALLOC_FREE(rec);
 }
