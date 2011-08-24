@@ -423,23 +423,27 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 	struct db_record *rec;
 	int lock_ref_count = 0;
 	NTSTATUS status;
+	TDB_DATA value;
 
-	rec = posix_pending_close_db->fetch_locked(
+	rec = dbwrap_fetch_locked(
 		posix_pending_close_db, talloc_tos(),
 		locking_ref_count_key_fsp(fsp, &tmp));
 
 	SMB_ASSERT(rec != NULL);
 
-	if (rec->value.dptr != NULL) {
-		SMB_ASSERT(rec->value.dsize == sizeof(lock_ref_count));
-		memcpy(&lock_ref_count, rec->value.dptr,
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dptr != NULL) {
+		SMB_ASSERT(value.dsize == sizeof(lock_ref_count));
+		memcpy(&lock_ref_count, value.dptr,
 		       sizeof(lock_ref_count));
 	}
 
 	lock_ref_count++;
 
-	status = rec->store(rec, make_tdb_data((uint8 *)&lock_ref_count,
-					       sizeof(lock_ref_count)), 0);
+	status = dbwrap_record_store(rec,
+				     make_tdb_data((uint8 *)&lock_ref_count,
+				     sizeof(lock_ref_count)), 0);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
@@ -459,23 +463,27 @@ void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 	struct db_record *rec;
 	int lock_ref_count = 0;
 	NTSTATUS status;
+	TDB_DATA value;
 
-	rec = posix_pending_close_db->fetch_locked(
+	rec = dbwrap_fetch_locked(
 		posix_pending_close_db, talloc_tos(),
 		locking_ref_count_key_fsp(fsp, &tmp));
 
-	SMB_ASSERT((rec != NULL)
-		   && (rec->value.dptr != NULL)
-		   && (rec->value.dsize == sizeof(lock_ref_count)));
+	value = dbwrap_record_get_value(rec);
 
-	memcpy(&lock_ref_count, rec->value.dptr, sizeof(lock_ref_count));
+	SMB_ASSERT((rec != NULL)
+		   && (value.dptr != NULL)
+		   && (value.dsize == sizeof(lock_ref_count)));
+
+	memcpy(&lock_ref_count, value.dptr, sizeof(lock_ref_count));
 
 	SMB_ASSERT(lock_ref_count > 0);
 
 	lock_ref_count -= dcount;
 
-	status = rec->store(rec, make_tdb_data((uint8 *)&lock_ref_count,
-					       sizeof(lock_ref_count)), 0);
+	status = dbwrap_record_store(rec,
+				     make_tdb_data((uint8 *)&lock_ref_count,
+				     sizeof(lock_ref_count)), 0);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
@@ -498,14 +506,14 @@ static int get_windows_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	TDB_DATA dbuf;
-	int res;
+	NTSTATUS status;
 	int lock_ref_count = 0;
 
-	res = posix_pending_close_db->fetch(
+	status = dbwrap_fetch(
 		posix_pending_close_db, talloc_tos(),
 		locking_ref_count_key_fsp(fsp, &tmp), &dbuf);
 
-	SMB_ASSERT(res == 0);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
 	if (dbuf.dsize != 0) {
 		SMB_ASSERT(dbuf.dsize == sizeof(lock_ref_count));
@@ -528,7 +536,7 @@ static void delete_windows_lock_ref_count(files_struct *fsp)
 	struct lock_ref_count_key tmp;
 	struct db_record *rec;
 
-	rec = posix_pending_close_db->fetch_locked(
+	rec = dbwrap_fetch_locked(
 		posix_pending_close_db, talloc_tos(),
 		locking_ref_count_key_fsp(fsp, &tmp));
 
@@ -536,7 +544,7 @@ static void delete_windows_lock_ref_count(files_struct *fsp)
 
 	/* Not a bug if it doesn't exist - no locks were ever granted. */
 
-	rec->delete_rec(rec);
+	dbwrap_record_delete(rec);
 	TALLOC_FREE(rec);
 
 	DEBUG(10,("delete_windows_lock_ref_count for file %s\n",
@@ -552,25 +560,28 @@ static void add_fd_to_close_entry(files_struct *fsp)
 	struct db_record *rec;
 	uint8_t *new_data;
 	NTSTATUS status;
+	TDB_DATA value;
 
-	rec = posix_pending_close_db->fetch_locked(
+	rec = dbwrap_fetch_locked(
 		posix_pending_close_db, talloc_tos(),
 		fd_array_key_fsp(fsp));
 
 	SMB_ASSERT(rec != NULL);
 
-	new_data = talloc_array(
-		rec, uint8_t, rec->value.dsize + sizeof(fsp->fh->fd));
+	value = dbwrap_record_get_value(rec);
+
+	new_data = talloc_array(rec, uint8_t,
+				value.dsize + sizeof(fsp->fh->fd));
 
 	SMB_ASSERT(new_data != NULL);
 
-	memcpy(new_data, rec->value.dptr, rec->value.dsize);
-	memcpy(new_data + rec->value.dsize,
+	memcpy(new_data, value.dptr, value.dsize);
+	memcpy(new_data + value.dsize,
 	       &fsp->fh->fd, sizeof(fsp->fh->fd));
 
-	status = rec->store(
+	status = dbwrap_record_store(
 		rec, make_tdb_data(new_data,
-				   rec->value.dsize + sizeof(fsp->fh->fd)), 0);
+				   value.dsize + sizeof(fsp->fh->fd)), 0);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
@@ -588,12 +599,12 @@ static void delete_close_entries(files_struct *fsp)
 {
 	struct db_record *rec;
 
-	rec = posix_pending_close_db->fetch_locked(
+	rec = dbwrap_fetch_locked(
 		posix_pending_close_db, talloc_tos(),
 		fd_array_key_fsp(fsp));
 
 	SMB_ASSERT(rec != NULL);
-	rec->delete_rec(rec);
+	dbwrap_record_delete(rec);
 	TALLOC_FREE(rec);
 }
 
@@ -606,13 +617,13 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
 					      files_struct *fsp, int **entries)
 {
 	TDB_DATA dbuf;
-	int res;
+	NTSTATUS status;
 
-	res = posix_pending_close_db->fetch(
+	status = dbwrap_fetch(
 		posix_pending_close_db, mem_ctx, fd_array_key_fsp(fsp),
 		&dbuf);
 
-	SMB_ASSERT(res == 0);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
 	if (dbuf.dsize == 0) {
 		*entries = NULL;
