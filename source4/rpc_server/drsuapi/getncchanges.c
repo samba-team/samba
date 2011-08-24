@@ -1735,9 +1735,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		DEBUG(3,("UpdateRefs on getncchanges for %s\n",
 			 GUID_string(mem_ctx, &req10->destination_dsa_guid)));
 		ureq.naming_context = ncRoot;
-		ureq.dest_dsa_dns_name = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
-							 GUID_string(mem_ctx, &req10->destination_dsa_guid),
-							 lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx));
+		ureq.dest_dsa_dns_name = samdb_ntds_msdcs_dns_name(b_state->sam_ctx, mem_ctx,
+								   &req10->destination_dsa_guid);
 		if (!ureq.dest_dsa_dns_name) {
 			return WERR_NOMEM;
 		}
