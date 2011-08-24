@@ -102,10 +102,10 @@ static struct db_record *acl_tdb_lock(TALLOC_CTX *mem_ctx,
 
 	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, id);
-	return db->fetch_locked(db,
-				mem_ctx,
-				make_tdb_data(id_buf,
-					sizeof(id_buf)));
+	return dbwrap_fetch_locked(db,
+				   mem_ctx,
+				   make_tdb_data(id_buf,
+						 sizeof(id_buf)));
 }
 
 /*******************************************************************
@@ -130,7 +130,7 @@ static NTSTATUS acl_tdb_delete(vfs_handle_struct *handle,
 		return NT_STATUS_OK;
 	}
 
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	TALLOC_FREE(rec);
 	return status;
 }
@@ -173,10 +173,11 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, &id);
 
-	if (db->fetch(db,
-			ctx,
-			make_tdb_data(id_buf, sizeof(id_buf)),
-			&data) != 0) {
+	status = dbwrap_fetch(db,
+			      ctx,
+			      make_tdb_data(id_buf, sizeof(id_buf)),
+			      &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -219,16 +220,16 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 
 	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, &id);
-	rec = db->fetch_locked(db, talloc_tos(),
-				make_tdb_data(id_buf,
-					sizeof(id_buf)));
+	rec = dbwrap_fetch_locked(db, talloc_tos(),
+				  make_tdb_data(id_buf,
+						sizeof(id_buf)));
 	if (rec == NULL) {
 		DEBUG(0, ("store_acl_blob_fsp_tdb: fetch_lock failed\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	data.dptr = pblob->data;
 	data.dsize = pblob->length;
-	return rec->store(rec, data, 0);
+	return dbwrap_record_store(rec, data, 0);
 }
 
 /*********************************************************************
