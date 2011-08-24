@@ -390,6 +390,8 @@ sub_vars = get_subst_vars()
 update_list = []
 dns_list = []
 
+dup_set = set()
+
 # read each line, and check that the DNS name exists
 for line in file:
     line = line.strip()
@@ -400,7 +402,9 @@ for line in file:
         continue
     if d.type == 'AAAA' and len(IP6s) == 0:
         continue
-    dns_list.append(d)
+    if str(d) not in dup_set:
+        dns_list.append(d)
+        dup_set.add(str(d))
 
 # now expand the entries, if any are A record with ip set to $IP
 # then replace with multiple entries, one for each interface IP
