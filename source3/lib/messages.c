@@ -120,7 +120,7 @@ static int traverse_fn(struct db_record *rec, const struct server_id *id,
 
 		DEBUG(2, ("pid %s doesn't exist\n", procid_str_static(id)));
 
-		rec->delete_rec(rec);
+		dbwrap_record_delete(rec);
 	}
 	msg_all->n_sent++;
 	return 0;
