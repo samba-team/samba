@@ -107,9 +107,10 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, id);
 
-	if (db_ctx->fetch(db_ctx, mem_ctx,
-			  make_tdb_data(id_buf, sizeof(id_buf)),
-			  &data) != 0) {
+	status = dbwrap_fetch(db_ctx, mem_ctx,
+			      make_tdb_data(id_buf, sizeof(id_buf)),
+			      &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -130,8 +131,8 @@ static struct db_record *xattr_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
 
 	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, id);
-	return db_ctx->fetch_locked(db_ctx, mem_ctx,
-				    make_tdb_data(id_buf, sizeof(id_buf)));
+	return dbwrap_fetch_locked(db_ctx, mem_ctx,
+				   make_tdb_data(id_buf, sizeof(id_buf)));
 }
 
 /*
@@ -152,7 +153,7 @@ static NTSTATUS xattr_tdb_save_attrs(struct db_record *rec,
 		return status;
 	}
 
-	status = rec->store(rec, data, 0);
+	status = dbwrap_record_store(rec, data, 0);
 
 	TALLOC_FREE(data.dptr);
 
@@ -259,6 +260,7 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 	struct db_record *rec;
 	struct tdb_xattrs *attribs;
 	uint32_t i;
+	TDB_DATA data;
 
 	DEBUG(10, ("xattr_tdb_setattr called for file %s, name %s\n",
 		   file_id_string_tos(id), name));
@@ -271,7 +273,9 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 		return -1;
 	}
 
-	status = xattr_tdb_pull_attrs(rec, &rec->value, &attribs);
+	data = dbwrap_record_get_value(rec);
+
+	status = xattr_tdb_pull_attrs(rec, &data, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
@@ -485,6 +489,7 @@ static int xattr_tdb_removeattr(struct db_context *db_ctx,
 	struct db_record *rec;
 	struct tdb_xattrs *attribs;
 	uint32_t i;
+	TDB_DATA value;
 
 	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
 
@@ -494,7 +499,9 @@ static int xattr_tdb_removeattr(struct db_context *db_ctx,
 		return -1;
 	}
 
-	status = xattr_tdb_pull_attrs(rec, &rec->value, &attribs);
+	value = dbwrap_record_get_value(rec);
+
+	status = xattr_tdb_pull_attrs(rec, &value, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
@@ -520,7 +527,7 @@ static int xattr_tdb_removeattr(struct db_context *db_ctx,
 	attribs->num_eas -= 1;
 
 	if (attribs->num_eas == 0) {
-		rec->delete_rec(rec);
+		dbwrap_record_delete(rec);
 		TALLOC_FREE(rec);
 		return 0;
 	}
@@ -667,7 +674,7 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 	 */
 
 	if (rec != NULL) {
-		rec->delete_rec(rec);
+		dbwrap_record_delete(rec);
 		TALLOC_FREE(rec);
 	}
 
@@ -708,7 +715,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 	 */
 
 	if (rec != NULL) {
-		rec->delete_rec(rec);
+		dbwrap_record_delete(rec);
 		TALLOC_FREE(rec);
 	}
 
