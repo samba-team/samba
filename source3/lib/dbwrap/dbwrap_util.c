@@ -30,8 +30,10 @@ int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr)
 {
 	TDB_DATA dbuf;
 	int32 ret;
+	NTSTATUS status;
 
-	if (db->fetch(db, NULL, string_term_tdb_data(keystr), &dbuf) != 0) {
+	status = dbwrap_fetch_bystring(db, NULL, keystr, &dbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
@@ -69,8 +71,10 @@ bool dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
 			 uint32_t *val)
 {
 	TDB_DATA dbuf;
+	NTSTATUS status;
 
-	if (db->fetch(db, NULL, string_term_tdb_data(keystr), &dbuf) != 0) {
+	status = dbwrap_fetch_bystring(db, NULL, keystr, &dbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
