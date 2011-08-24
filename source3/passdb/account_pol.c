@@ -238,7 +238,7 @@ bool init_account_policy(void)
 
 	/* handle a Samba upgrade */
 
-	if (db->transaction_start(db) != 0) {
+	if (dbwrap_transaction_start(db) != 0) {
 		DEBUG(0, ("transaction_start failed\n"));
 		TALLOC_FREE(db);
 		return false;
@@ -249,7 +249,7 @@ bool init_account_policy(void)
 		/*
 		 * Race condition
 		 */
-		if (db->transaction_cancel(db)) {
+		if (dbwrap_transaction_cancel(db)) {
 			smb_panic("transaction_cancel failed");
 		}
 		return true;
@@ -287,7 +287,7 @@ bool init_account_policy(void)
 		}
 	}
 
-	if (db->transaction_commit(db) != 0) {
+	if (dbwrap_transaction_commit(db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
 		TALLOC_FREE(db);
 		return false;
@@ -296,7 +296,7 @@ bool init_account_policy(void)
 	return True;
 
  cancel:
-	if (db->transaction_cancel(db)) {
+	if (dbwrap_transaction_cancel(db)) {
 		smb_panic("transaction_cancel failed");
 	}
 	TALLOC_FREE(db);
