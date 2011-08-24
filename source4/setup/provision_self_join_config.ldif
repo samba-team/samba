@@ -1,0 +1,33 @@
+# Here are missing the objects for the NTFRS subscription since we don't
+# support this technique yet.
+
+# Objects under "Configuration/Sites/<Default sitename>/Servers"
+
+dn: ${SERVERDN}
+objectClass: top
+objectClass: server
+systemFlags: 1375731712
+dNSHostName: ${DNSNAME}
+
+dn: CN=NTDS Settings,${SERVERDN}
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+dMDLocation: ${SCHEMADN}
+hasMasterNCs: ${CONFIGDN}
+hasMasterNCs: ${SCHEMADN}
+hasMasterNCs: ${DOMAINDN}
+invocationId: ${INVOCATIONID}
+msDS-Behavior-Version: ${DOMAIN_CONTROLLER_FUNCTIONALITY}
+msDS-HasDomainNCs: ${DOMAINDN}
+# "msDS-HasInstantiatedNCs"s for DNS is added from provision_dnszones_modify.ldif
+msDS-HasInstantiatedNCs: B:8:0000000D:${CONFIGDN}
+msDS-HasInstantiatedNCs: B:8:0000000D:${SCHEMADN}
+msDS-HasInstantiatedNCs: B:8:00000005:${DOMAINDN}
+# "msDS-hasMasterNCs"s for DNS is added from provision_dnszones_modify.ldif
+msDS-hasMasterNCs: ${CONFIGDN}
+msDS-hasMasterNCs: ${SCHEMADN}
+msDS-hasMasterNCs: ${DOMAINDN}
+options: 1
+systemFlags: 33554432
+${NTDSGUID}

@@ -5,11 +5,6 @@ fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 replace: rIDManagerReference
 rIDManagerReference: CN=RID Manager$,CN=System,${DOMAINDN}
 
-dn: ${SCHEMADN}
-changetype: modify
-replace: fSMORoleOwner
-fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
-
 dn: CN=Infrastructure,${DOMAINDN}
 changetype: modify
 replace: fSMORoleOwner
@@ -19,16 +14,6 @@ dn: CN=RID Manager$,CN=System,${DOMAINDN}
 changetype: modify
 replace: fSMORoleOwner
 fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
-
-dn: CN=Partitions,${CONFIGDN}
-changetype: modify
-replace: fSMORoleOwner
-fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
-
-dn: CN=NTDS Site Settings,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
-changetype: modify
-replace: interSiteTopologyGenerator
-interSiteTopologyGenerator: CN=NTDS Settings,${SERVERDN}
 
 dn: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 changetype: add
@@ -42,3 +27,8 @@ dn: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 changetype: modify
 add: rIDSetReferences
 rIDSetReferences: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
+
+dn: ${SERVERDN}
+changetype: modify
+add: serverReference
+serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}

@@ -1,0 +1,14 @@
+dn: ${SCHEMADN}
+changetype: modify
+replace: fSMORoleOwner
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+
+dn: CN=Partitions,${CONFIGDN}
+changetype: modify
+replace: fSMORoleOwner
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+
+dn: CN=NTDS Site Settings,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
+changetype: modify
+replace: interSiteTopologyGenerator
+interSiteTopologyGenerator: CN=NTDS Settings,${SERVERDN}

@@ -31,7 +31,7 @@ import logging
 from samba import Ldb
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
-from samba.join import join_RODC, join_DC
+from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
@@ -76,12 +76,13 @@ class cmd_domain_export_keytab(Command):
 class cmd_domain_join(Command):
     """Joins domain as either member or backup domain controller *"""
 
-    synopsis = "%prog domain join <dnsdomain> [DC|RODC|MEMBER] [options]"
+    synopsis = "%prog domain join <dnsdomain> [DC|RODC|MEMBER|SUBDOMAIN] [options]"
 
     takes_options = [
         Option("--server", help="DC to join", type=str),
         Option("--site", help="site to join", type=str),
         Option("--targetdir", help="where to store provision", type=str),
+        Option("--parent-domain", help="parent domain to create subdomain under", type=str),
         Option("--domain-critical-only",
                help="only replicate critical domain objects",
                action="store_true"),
@@ -91,7 +92,7 @@ class cmd_domain_join(Command):
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
-            domain_critical_only=False):
+            domain_critical_only=False, parent_domain=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -120,6 +121,13 @@ class cmd_domain_join(Command):
             join_RODC(server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only)
+            return
+        elif role == "SUBDOMAIN":
+            netbios_domain = lp.get("workgroup")
+            if parent_domain is None:
+                parent_domain = ".".join(domain.split(".")[1:])
+            join_subdomain(server=server, creds=creds, lp=lp, dnsdomain=domain, parent_domain=parent_domain,
+                           site=site, netbios_name=netbios_name, netbios_domain=netbios_domain, targetdir=targetdir)
             return
         else:
             raise CommandError("Invalid role %s (possible values: MEMBER, DC, RODC)" % role)
