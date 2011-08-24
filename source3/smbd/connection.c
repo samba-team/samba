@@ -41,7 +41,7 @@ bool yield_connection(connection_struct *conn, const char *name)
 		return False;
 	}
 
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG( NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ? 3 : 0,
 		       ("deleting connection record returned %s\n",
@@ -81,7 +81,7 @@ static int count_fn(struct db_record *rec,
 			 procid_str_static(&crec->pid), crec->cnum,
 			 crec->servicename));
 
-		status = rec->delete_rec(rec);
+		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("count_fn: tdb_delete failed with error %s\n",
 				 nt_errstr(status)));
@@ -175,7 +175,7 @@ bool claim_connection(connection_struct *conn, const char *name)
 	dbuf.dptr = (uint8 *)&crec;
 	dbuf.dsize = sizeof(crec);
 
-	status = rec->store(rec, dbuf, TDB_REPLACE);
+	status = dbwrap_record_store(rec, dbuf, TDB_REPLACE);
 
 	TALLOC_FREE(rec);
 
