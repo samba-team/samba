@@ -576,6 +576,7 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 {
 	static struct db_context *mapping_db = NULL;
 	TDB_DATA data;
+	NTSTATUS status;
 
 	if (mapping_db == NULL) {
 		const char *dbname = lp_parm_const_string(
@@ -599,9 +600,10 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 		}
 	}
 
-	if (mapping_db->fetch(mapping_db, NULL,
+	status = dbwrap_fetch(mapping_db, NULL,
 			      string_term_tdb_data(sid_string_tos(src)),
-			      &data) != 0) {
+			      &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("could not find mapping for SID %s\n",
 			   sid_string_dbg(src)));
 		return False;
