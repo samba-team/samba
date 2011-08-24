@@ -624,9 +624,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 
-	if(options.machinereadable){
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:PartiallyOnline:\n");
-		for(i=0;i<nodemap->num;i++){
+	if (options.machinereadable) {
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
+		       ":Inactive:PartiallyOnline:ThisNode:\n");
+		for (i=0;i<nodemap->num;i++) {
 			int partially_online = 0;
 			int j;
 
@@ -650,7 +651,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 					talloc_free(ifaces);
 				}
 			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
@@ -658,7 +659,8 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE),
-			       partially_online);
+			       partially_online,
+			       (nodemap->nodes[i].pnn == mypnn));
 		}
 		return 0;
 	}
