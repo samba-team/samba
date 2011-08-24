@@ -204,16 +204,16 @@ struct dom_sid *get_global_sam_sid(void)
 		smb_panic("could not open secrets db");
 	}
 
-	if (db->transaction_start(db) != 0) {
+	if (dbwrap_transaction_start(db) != 0) {
 		smb_panic("could not start transaction on secrets db");
 	}
 
 	if (!(global_sam_sid = pdb_generate_sam_sid())) {
-		db->transaction_cancel(db);
+		dbwrap_transaction_cancel(db);
 		smb_panic("could not generate a machine SID");
 	}
 
-	if (db->transaction_commit(db) != 0) {
+	if (dbwrap_transaction_commit(db) != 0) {
 		smb_panic("could not start commit secrets db");
 	}
 
