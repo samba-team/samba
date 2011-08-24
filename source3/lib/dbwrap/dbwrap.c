@@ -130,16 +130,18 @@ struct db_record *dbwrap_fetch_locked(struct db_context *db,
 	return db->fetch_locked(db, mem_ctx, key);
 }
 
-TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-		      TDB_DATA key)
+NTSTATUS dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+		      TDB_DATA key, TDB_DATA *value)
 {
-	TDB_DATA result;
-
-	if (db->fetch(db, mem_ctx, key, &result) != 0) {
-		return make_tdb_data(NULL, 0);
+	if (value == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return result;
+	if (db->fetch(db, mem_ctx, key, value) != 0) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	return NT_STATUS_OK;
 }
 
 bool dbwrap_exists(struct db_context *db, TDB_DATA key)

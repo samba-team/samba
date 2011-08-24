@@ -1431,13 +1431,17 @@ static TDB_DATA regdb_fetch_key_internal(struct db_context *db,
 {
 	char *path = NULL;
 	TDB_DATA data;
+	NTSTATUS status;
 
 	path = normalize_reg_path(mem_ctx, key);
 	if (!path) {
 		return make_tdb_data(NULL, 0);
 	}
 
-	data = dbwrap_fetch_bystring(db, mem_ctx, path);
+	status = dbwrap_fetch_bystring(db, mem_ctx, path, &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		data = tdb_null;
+	}
 
 	TALLOC_FREE(path);
 	return data;
@@ -1796,9 +1800,10 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 		goto done;
 	}
 
-	old_data = dbwrap_fetch_bystring(db, ctx, keystr);
+	status = dbwrap_fetch_bystring(db, ctx, keystr, &old_data);
 
-	if ((old_data.dptr != NULL)
+	if (NT_STATUS_IS_OK(status)
+	    && (old_data.dptr != NULL)
 	    && (old_data.dsize == data.dsize)
 	    && (memcmp(old_data.dptr, data.dptr, data.dsize) == 0))
 	{
@@ -1871,8 +1876,8 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 		goto done;
 	}
 
-	data = dbwrap_fetch_bystring(regdb, tmp_ctx, tdbkey);
-	if (data.dptr == NULL) {
+	status = dbwrap_fetch_bystring(regdb, tmp_ctx, tdbkey, &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		err = WERR_BADFILE;
 		goto done;
 	}

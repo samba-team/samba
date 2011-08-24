@@ -6399,6 +6399,7 @@ static int getservicebyname(const char *pszServiceName, struct loadparm_service 
 	int iService = -1;
 	char *canon_name;
 	TDB_DATA data;
+	NTSTATUS status;
 
 	if (ServiceHash == NULL) {
 		return -1;
@@ -6406,9 +6407,13 @@ static int getservicebyname(const char *pszServiceName, struct loadparm_service 
 
 	canon_name = canonicalize_servicename(talloc_tos(), pszServiceName);
 
-	data = dbwrap_fetch_bystring(ServiceHash, canon_name, canon_name);
+	status = dbwrap_fetch_bystring(ServiceHash, canon_name, canon_name,
+				       &data);
 
-	if ((data.dptr != NULL) && (data.dsize == sizeof(iService))) {
+	if (NT_STATUS_IS_OK(status) &&
+	    (data.dptr != NULL) &&
+	    (data.dsize == sizeof(iService)))
+	{
 		iService = *(int *)data.dptr;
 	}
 
@@ -8541,12 +8546,18 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	{
-		TDB_DATA data = dbwrap_fetch_bystring(
-			ServiceHash, canon_name, canon_name);
+		TDB_DATA data;
+		NTSTATUS status;
+
+		status = dbwrap_fetch_bystring(ServiceHash, canon_name,
+					       canon_name, &data);
 
 		iService = -1;
 
-		if ((data.dptr != NULL) && (data.dsize == sizeof(iService))) {
+		if (NT_STATUS_IS_OK(status) &&
+		    (data.dptr != NULL) &&
+		    (data.dsize == sizeof(iService)))
+		{
 			iService = *(int *)data.dptr;
 		}
 	}

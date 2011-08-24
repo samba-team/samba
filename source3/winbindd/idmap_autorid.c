@@ -136,6 +136,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 	TDB_DATA data;
 	char *keystr;
 	struct dom_sid sid;
+	NTSTATUS status;
 
 	/* can this be one of our ids? */
 	if (map->xid.id < cfg->minvalue) {
@@ -160,10 +161,10 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	data = dbwrap_fetch_bystring(autorid_db, talloc_tos(), keystr);
+	status = dbwrap_fetch_bystring(autorid_db, talloc_tos(), keystr, &data);
 	TALLOC_FREE(keystr);
 
-	if (!data.dptr) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(4, ("id %d belongs to range %d which does not have "
 			  "domain mapping, ignoring mapping request\n",
 			  map->xid.id, range));
@@ -383,10 +384,11 @@ static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
 	TDB_DATA data;
 	struct autorid_global_config *cfg;
 	unsigned long minvalue, rangesize, maxranges;
+	NTSTATUS status;
 
-	data = dbwrap_fetch_bystring(autorid_db, ctx, CONFIGKEY);
+	status = dbwrap_fetch_bystring(autorid_db, ctx, CONFIGKEY, &data);
 
-	if (!data.dptr) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("No saved config found\n"));
 		return NULL;
 	}

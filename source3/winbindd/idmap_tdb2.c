@@ -355,8 +355,8 @@ static NTSTATUS idmap_tdb2_set_mapping_action(struct db_context *db,
 	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
 
 	/* check wheter sid mapping is already present in db */
-	data = dbwrap_fetch_bystring(db, tmp_ctx, state->ksidstr);
-	if (data.dptr) {
+	ret = dbwrap_fetch_bystring(db, tmp_ctx, state->ksidstr, &data);
+	if (!NT_STATUS_IS_OK(ret)) {
 		ret = NT_STATUS_OBJECT_NAME_COLLISION;
 		goto done;
 	}
@@ -585,9 +585,9 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_domain *dom, struct id_map *ma
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if the mapping exists */
-	data = dbwrap_fetch_bystring(ctx->db, keystr, keystr);
+	status = dbwrap_fetch_bystring(ctx->db, keystr, keystr, &data);
 
-	if (!data.dptr) {
+	if (!NT_STATUS_IS_OK(status)) {
 		char *sidstr;
 		struct idmap_tdb2_set_mapping_context store_state;
 
@@ -659,8 +659,8 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_domain *dom, struct id_map *ma
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr);
-	if (!data.dptr) {
+	ret = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr, &data);
+	if (!NT_STATUS_IS_OK(ret)) {
 		char *idstr;
 		struct idmap_tdb2_set_mapping_context store_state;
 

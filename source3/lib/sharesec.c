@@ -288,11 +288,11 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 
 	TALLOC_FREE(c_servicename);
 
-	data = dbwrap_fetch_bystring(share_db, talloc_tos(), key);
+	status = dbwrap_fetch_bystring(share_db, talloc_tos(), key, &data);
 
 	TALLOC_FREE(key);
 
-	if (data.dptr == NULL) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return get_share_security_default(ctx, psize,
 						  SEC_RIGHTS_DIR_ALL);
 	}

@@ -318,7 +318,10 @@ static int add_record(struct check_ctx* ctx, TDB_DATA key, TDB_DATA value)
 		return -1;
 	};
 	if (rec->value.dptr == 0) { /* first entry */
-		diff.oval = dbwrap_fetch(ctx->db, ctx->diff, key);
+		status = dbwrap_fetch(ctx->db, ctx->diff, key, &diff.oval);
+		if (!NT_STATUS_IS_OK(status)) {
+			diff.oval = tdb_null;
+		}
 	} else {
 		diff = unpack_diff(rec->value);
 		talloc_free(diff.nval.dptr);

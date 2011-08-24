@@ -537,6 +537,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods,
 	TDB_DATA 	data;
 	fstring 	keystr;
 	fstring		name;
+	NTSTATUS status;
 
 	if ( !user ) {
 		DEBUG(0,("pdb_getsampwnam: struct samu is NULL.\n"));
@@ -559,8 +560,8 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods,
 
 	/* get the record */
 
-	data = dbwrap_fetch_bystring(db_sam, talloc_tos(), keystr);
-	if (!data.dptr) {
+	status = dbwrap_fetch_bystring(db_sam, talloc_tos(), keystr, &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
 		DEBUGADD(5, (" Key: %s\n", keystr));
 		return NT_STATUS_NO_SUCH_USER;
@@ -611,10 +612,10 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods,
 
 	/* get the record */
 
-	data = dbwrap_fetch_bystring(db_sam, talloc_tos(), keystr);
-	if (!data.dptr) {
+	nt_status = dbwrap_fetch_bystring(db_sam, talloc_tos(), keystr, &data);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(5,("pdb_getsampwrid (TDB): error looking up RID %d by key %s.\n", rid, keystr));
-		return NT_STATUS_UNSUCCESSFUL;
+		return nt_status;
 	}
 
 	fstrcpy(name, (const char *)data.dptr);

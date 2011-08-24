@@ -173,6 +173,7 @@ static bool get_group_map_from_sid(struct dom_sid sid, GROUP_MAP *map)
 	TDB_DATA dbuf;
 	char *key;
 	int ret = 0;
+	NTSTATUS status;
 
 	/* the key is the SID, retrieving is direct */
 
@@ -181,8 +182,8 @@ static bool get_group_map_from_sid(struct dom_sid sid, GROUP_MAP *map)
 		return false;
 	}
 
-	dbuf = dbwrap_fetch_bystring(db, key, key);
-	if (dbuf.dptr == NULL) {
+	status = dbwrap_fetch_bystring(db, key, key, &dbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(key);
 		return false;
 	}
@@ -404,8 +405,8 @@ static NTSTATUS one_alias_membership(const struct dom_sid *member,
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX,
 		 sid_to_fstring(tmp, member));
 
-	dbuf = dbwrap_fetch_bystring(db, frame, key);
-	if (dbuf.dptr == NULL) {
+	status = dbwrap_fetch_bystring(db, frame, key, &dbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}

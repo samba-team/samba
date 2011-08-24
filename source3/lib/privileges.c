@@ -76,6 +76,7 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 	struct db_context *db = get_account_pol_db();
 	fstring tmp, keystr;
 	TDB_DATA data;
+	NTSTATUS status;
 
 	/* Fail if the admin has not enable privileges */
 
@@ -90,9 +91,9 @@ static bool get_privileges( const struct dom_sid *sid, uint64_t *mask )
 
 	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
 
-	data = dbwrap_fetch_bystring( db, talloc_tos(), keystr );
+	status = dbwrap_fetch_bystring(db, talloc_tos(), keystr, &data);
 
-	if ( !data.dptr ) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(4, ("get_privileges: No privileges assigned to SID "
 			  "[%s]\n", sid_string_dbg(sid)));
 		return False;

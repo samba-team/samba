@@ -458,10 +458,10 @@ NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
 	return dbwrap_store(db, string_term_tdb_data(key), data, flags);
 }
 
-TDB_DATA dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
-			       const char *key)
+NTSTATUS dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
+			       const char *key, TDB_DATA *value)
 {
-	return dbwrap_fetch(db, mem_ctx, string_term_tdb_data(key));
+	return dbwrap_fetch(db, mem_ctx, string_term_tdb_data(key), value);
 }
 
 
@@ -499,19 +499,19 @@ NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
 	return status;
 }
 
-TDB_DATA dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
-				     const char *key)
+NTSTATUS dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
+				     const char *key, TDB_DATA *value)
 {
 	char *key_upper;
-	TDB_DATA result;
+	NTSTATUS status;
 
 	key_upper = talloc_strdup_upper(talloc_tos(), key);
 	if (key_upper == NULL) {
-		return make_tdb_data(NULL, 0);
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	result = dbwrap_fetch_bystring(db, mem_ctx, key_upper);
+	status = dbwrap_fetch_bystring(db, mem_ctx, key_upper, value);
 
 	talloc_free(key_upper);
-	return result;
+	return status;
 }

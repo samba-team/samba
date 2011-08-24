@@ -90,10 +90,9 @@ NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	data = dbwrap_fetch_bystring_upper(db, key, key);
-	if (data.dptr == NULL) {
+	status = dbwrap_fetch_bystring_upper(db, key, key, &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to fetch record!\n"));
-		status = NT_STATUS_NOT_FOUND;
 		goto done;
 	}
 
@@ -216,10 +215,9 @@ NTSTATUS printer_list_get_last_refresh(time_t *last_refresh)
 
 	ZERO_STRUCT(data);
 
-	data = dbwrap_fetch_bystring(db, talloc_tos(), PL_TIMESTAMP_KEY);
-	if (data.dptr == NULL) {
+	status = dbwrap_fetch_bystring(db, talloc_tos(), PL_TIMESTAMP_KEY, &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to fetch record!\n"));
-		status = NT_STATUS_NOT_FOUND;
 		goto done;
 	}
 

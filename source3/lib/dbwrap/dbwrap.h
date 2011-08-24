@@ -72,8 +72,8 @@ struct db_record *dbwrap_fetch_locked(struct db_context *db,
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 		      TDB_DATA data, int flags);
-TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-		      TDB_DATA key);
+NTSTATUS dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+		      TDB_DATA key, TDB_DATA *value);
 bool dbwrap_exists(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_traverse(struct db_context *db,
 			 int (*f)(struct db_record*, void*),
@@ -100,8 +100,8 @@ int dbwrap_transaction_cancel(struct db_context *db);
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
 			       TDB_DATA data, int flags);
-TDB_DATA dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
-			       const char *key);
+NTSTATUS dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
+			       const char *key, TDB_DATA *value);
 
 int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr);
 int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v);
@@ -140,7 +140,7 @@ NTSTATUS dbwrap_trans_traverse(struct db_context *db,
 NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
 				     TDB_DATA data, int flags);
-TDB_DATA dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
-				     const char *key);
+NTSTATUS dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
+				     const char *key, TDB_DATA *value);
 
 #endif /* __DBWRAP_H__ */

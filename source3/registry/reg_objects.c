@@ -170,13 +170,15 @@ static WERROR regsubkey_ctr_index_for_keyname(struct regsubkey_ctr *ctr,
 					      uint32_t *idx)
 {
 	TDB_DATA data;
+	NTSTATUS status;
 
 	if ((ctr == NULL) || (keyname == NULL)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	data = dbwrap_fetch_bystring_upper(ctr->subkeys_hash, ctr, keyname);
-	if (data.dptr == NULL) {
+	status = dbwrap_fetch_bystring_upper(ctr->subkeys_hash, ctr, keyname,
+					     &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		return WERR_NOT_FOUND;
 	}
 

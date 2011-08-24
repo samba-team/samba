@@ -723,9 +723,9 @@ static NTSTATUS idmap_tdb_id_to_sid(struct idmap_domain *dom, struct id_map *map
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if the mapping exists */
-	data = dbwrap_fetch_bystring(ctx->db, NULL, keystr);
+	ret = dbwrap_fetch_bystring(ctx->db, NULL, keystr, &data);
 
-	if (!data.dptr) {
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(10,("Record %s not found\n", keystr));
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
@@ -772,8 +772,8 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_domain *dom, struct id_map *map
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr);
-	if (!data.dptr) {
+	ret = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr, &data);
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(10,("Record %s not found\n", keystr));
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
