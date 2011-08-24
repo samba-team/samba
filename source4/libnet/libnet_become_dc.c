@@ -2935,7 +2935,7 @@ static void becomeDC_drsuapi_update_refs_send(struct libnet_BecomeDC_state *s,
 
 	ntds_dns_name = talloc_asprintf(r, "%s._msdcs.%s",
 					ntds_guid_str,
-					s->domain.dns_name);
+					s->forest.dns_name);
 	if (composite_nomem(ntds_dns_name, c)) return;
 
 	r->in.bind_handle		= &drsuapi->bind_handle;
