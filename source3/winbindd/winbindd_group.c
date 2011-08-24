@@ -115,7 +115,7 @@ NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
 	c.len = 0;
 
 	res = talloc_dict_traverse(members, getgr_calc_memberlen, &c);
-	if (res != 0) {
+	if (res == -1) {
 		DEBUG(5, ("talloc_dict_traverse failed\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -128,7 +128,7 @@ NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
 	}
 
 	res = talloc_dict_traverse(members, getgr_unparse_members, &m);
-	if (res != 0) {
+	if (res == -1) {
 		DEBUG(5, ("talloc_dict_traverse failed\n"));
 		TALLOC_FREE(m.buf);
 		return NT_STATUS_INTERNAL_ERROR;
