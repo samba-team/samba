@@ -304,40 +304,47 @@ class dc_join(object):
         r.value_ctr = 1
 
 
-    def DsAddEntry(ctx, rec):
+    def DsAddEntry(ctx, recs):
         '''add a record via the DRSUAPI DsAddEntry call'''
         if ctx.drsuapi is None:
             ctx.drsuapi_connect()
         if ctx.tmp_samdb is None:
             ctx.create_tmp_samdb()
 
-        id = drsuapi.DsReplicaObjectIdentifier()
-        id.dn = rec['dn']
+        objects = []
+        for rec in recs:
+            id = drsuapi.DsReplicaObjectIdentifier()
+            id.dn = rec['dn']
 
-        attrs = []
-        for a in rec:
-            if a == 'dn':
-                continue
-            if not isinstance(rec[a], list):
-                v = [rec[a]]
-            else:
-                v = rec[a]
-            rattr = ctx.tmp_samdb.dsdb_DsReplicaAttribute(ctx.tmp_samdb, a, v)
-            attrs.append(rattr)
+            attrs = []
+            for a in rec:
+                if a == 'dn':
+                    continue
+                if not isinstance(rec[a], list):
+                    v = [rec[a]]
+                else:
+                    v = rec[a]
+                rattr = ctx.tmp_samdb.dsdb_DsReplicaAttribute(ctx.tmp_samdb, a, v)
+                attrs.append(rattr)
 
-        attribute_ctr = drsuapi.DsReplicaAttributeCtr()
-        attribute_ctr.num_attributes = len(attrs)
-        attribute_ctr.attributes = attrs
+            attribute_ctr = drsuapi.DsReplicaAttributeCtr()
+            attribute_ctr.num_attributes = len(attrs)
+            attribute_ctr.attributes = attrs
 
-        object = drsuapi.DsReplicaObject()
-        object.identifier = id
-        object.attribute_ctr = attribute_ctr
+            object = drsuapi.DsReplicaObject()
+            object.identifier = id
+            object.attribute_ctr = attribute_ctr
 
-        first_object = drsuapi.DsReplicaObjectListItem()
-        first_object.object = object
+            list_object = drsuapi.DsReplicaObjectListItem()
+            list_object.object = object
+            objects.append(list_object)
 
         req2 = drsuapi.DsAddEntryRequest2()
-        req2.first_object = first_object
+        req2.first_object = objects[0]
+        prev = req2.first_object
+        for o in objects[1:]:
+            prev.next_object = o
+            prev = o
 
         (level, ctr) = ctx.drsuapi.DsAddEntry(ctx.drsuapi_handle, 2, req2)
         if ctr.err_ver != 1:
@@ -349,6 +356,7 @@ class dc_join(object):
         if ctr.err_data.dir_err != drsuapi.DRSUAPI_DIRERR_OK:
             print("DsAddEntry failed with dir_err %u" % ctr.err_data.dir_err)
             raise RuntimeError("DsAddEntry failed")
+        return ctr.objects
 
 
     def join_add_ntdsdsa(ctx):
@@ -361,17 +369,12 @@ class dc_join(object):
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
             "dMDLocation" : ctx.schema_dn}
 
-        if ctx.subdomain:
-            # the local subdomain NC doesn't exist at this time
-            # so we have to add the base_dn NC later
-            nc_list = [ ctx.config_dn, ctx.schema_dn ]
-        else:
-            nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+        nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
 
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003 and not ctx.subdomain:
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-HasDomainNCs"] = ctx.base_dn
 
         if ctx.RODC:
@@ -386,31 +389,12 @@ class dc_join(object):
                 rec["msDS-HasMasterNCs"] = nc_list
             rec["options"] = "1"
             rec["invocationId"] = ndr_pack(ctx.invocation_id)
-            if ctx.subdomain:
-                ctx.samdb.add(rec, ['relax:0'])
-            else:
-                ctx.DsAddEntry(rec)
+            ctx.DsAddEntry([rec])
 
         # find the GUID of our NTDS DN
         res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
         ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
 
-
-    def join_modify_ntdsdsa(ctx):
-        '''modify the ntdsdsa object to add local partitions'''
-        print "Modifying %s using system privileges" % ctx.ntds_dn
-
-        # this works around the Enterprise Admins ACL on the NTDSDSA object
-        system_session_info = system_session()
-        ctx.samdb.set_session_info(system_session_info)
-
-        m = ldb.Message()
-        m.dn = ldb.Dn(ctx.samdb, ctx.ntds_dn)
-        m["HasMasterNCs"] = ldb.MessageElement(ctx.base_dn, ldb.FLAG_MOD_ADD, "HasMasterNCs")
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            m["msDS-HasDomainNCs"] = ldb.MessageElement(ctx.base_dn, ldb.FLAG_MOD_ADD, "msDS-HasDomainNCs")
-            m["msDS-HasMasterNCs"] = ldb.MessageElement(ctx.base_dn, ldb.FLAG_MOD_ADD, "msDS-HasMasterNCs")
-        ctx.samdb.modify(m, controls=['relax:0'])
 
     def join_add_objects(ctx):
         '''add the various objects needed for the join'''
@@ -440,9 +424,11 @@ class dc_join(object):
         rec = {
             "dn": ctx.server_dn,
             "objectclass" : "server",
+            # windows uses 50000000 decimal for systemFlags. A windows hex/decimal mixup bug?
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
                                 samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE |
                                 samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+            # windows seems to add the dnsHostName later
             "dnsHostName" : ctx.dnshostname}
 
         if ctx.acct_dn:
@@ -507,9 +493,6 @@ class dc_join(object):
     def join_add_objects2(ctx):
         '''add the various objects needed for the join, for subdomains post replication'''
 
-        if not ctx.subdomain:
-            return
-
         print "Adding %s" % ctx.partition_dn
         # NOTE: windows sends a ntSecurityDescriptor here, we
         # let it default
@@ -524,8 +507,47 @@ class dc_join(object):
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN)}
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
-        ctx.DsAddEntry(rec)
 
+        rec2 = {
+            "dn" : ctx.ntds_dn,
+            "objectclass" : "nTDSDSA",
+            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+            "dMDLocation" : ctx.schema_dn}
+
+        nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            rec2["msDS-Behavior-Version"] = str(ctx.behavior_version)
+
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            rec2["msDS-HasDomainNCs"] = ctx.base_dn
+
+        rec2["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
+        rec2["HasMasterNCs"]      = nc_list
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            rec2["msDS-HasMasterNCs"] = nc_list
+        rec2["options"] = "1"
+        rec2["invocationId"] = ndr_pack(ctx.invocation_id)
+
+        objects = ctx.DsAddEntry([rec, rec2])
+        if len(objects) != 2:
+            raise DCJoinException("Expected 2 objects from DsAddEntry")
+
+        ctx.ntds_guid = objects[1].guid
+
+        print("Replicating partition DN")
+        ctx.repl.replicate(ctx.partition_dn,
+                           misc.GUID("00000000-0000-0000-0000-000000000000"),
+                           ctx.ntds_guid,
+                           exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                           replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP)
+
+        print("Replicating NTDS DN")
+        ctx.repl.replicate(ctx.ntds_dn,
+                           misc.GUID("00000000-0000-0000-0000-000000000000"),
+                           ctx.ntds_guid,
+                           exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                           replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP)
 
     def join_provision(ctx):
         '''provision the local SAM'''
@@ -565,13 +587,10 @@ class dc_join(object):
         ctx.local_samdb = ctx.samdb
 
         print("Finding domain GUID from ncName")
-        res = ctx.samdb.search(base=ctx.partition_dn, scope=ldb.SCOPE_BASE, attrs=['ncName'],
-                               controls=["extended_dn:1:1"])
+        res = ctx.local_samdb.search(base=ctx.partition_dn, scope=ldb.SCOPE_BASE, attrs=['ncName'],
+                                     controls=["extended_dn:1:1"])
         domguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
         print("Got domain GUID %s" % domguid)
-
-
-        ctx.join_add_ntdsdsa()
 
         print("Calling own domain provision")
 
@@ -597,6 +616,7 @@ class dc_join(object):
         try:
             source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
             if ctx.ntds_guid is None:
+                print("Using DS_BIND_GUID_W2K3")
                 destination_dsa_guid = misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID_W2K3)
             else:
                 destination_dsa_guid = ctx.ntds_guid
@@ -634,6 +654,9 @@ class dc_join(object):
                 repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id,
                         destination_dsa_guid,
                         exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+            ctx.repl = repl
+            ctx.source_dsa_invocation_id = source_dsa_invocation_id
+            ctx.destination_dsa_guid = destination_dsa_guid
 
             print "Committing SAM database"
         except:
@@ -787,12 +810,11 @@ class dc_join(object):
         try:
             ctx.join_add_objects()
             ctx.join_provision()
-            ctx.join_add_objects2()
             ctx.join_replicate()
             if ctx.subdomain:
+                ctx.join_add_objects2()
                 ctx.join_provision_own_domain()
                 ctx.join_setup_trusts()
-                ctx.join_modify_ntdsdsa()
             ctx.join_finalise()
         except Exception:
             print "Join failed - cleaning up"

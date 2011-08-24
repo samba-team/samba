@@ -995,11 +995,11 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
                         "LDAPADMINREALM": backend_credentials.get_realm(),
                         "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password())
                         })
-
-        return secrets_ldb
     except Exception:
         secrets_ldb.transaction_cancel()
         raise
+    return secrets_ldb
+
 
 
 def setup_privileges(path, session_info, lp):
@@ -1597,10 +1597,6 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.wheel_gid,
                      domainsid, names.dnsdomain, names.domaindn, lp)
 
-        logger.info("Setting up sam.ldb rootDSE marking as synchronized")
-        setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"),
-                          { 'NTDSGUID' : names.ntdsguid })
-
         secretsdb_self_join(secrets_ldb, domain=names.domain,
                             realm=names.realm, dnsdomain=names.dnsdomain,
                             netbiosname=names.netbiosname, domainsid=domainsid,
@@ -1624,69 +1620,72 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                 # It might be that this attribute does not exist in this schema
                 raise
 
-        if serverrole == "domain controller":
-            secretsdb_setup_dns(secrets_ldb, names,
-                                paths.private_dir, realm=names.realm,
-                                dnsdomain=names.dnsdomain,
-                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+        secretsdb_setup_dns(secrets_ldb, names,
+                            paths.private_dir, realm=names.realm,
+                            dnsdomain=names.dnsdomain,
+                            dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
 
-            # Default DNS backend is BIND9 using txt files for zone information
-            if not dns_backend:
-                dns_backend = "BIND9"
+        # Default DNS backend is BIND9 using txt files for zone information
+        if not dns_backend:
+            dns_backend = "BIND9"
 
-            setup_ad_dns(samdb, names, logger, hostip=hostip, hostip6=hostip6,
-                         dns_backend=dns_backend, os_level=dom_for_fun_level)
+        setup_ad_dns(samdb, names, logger, hostip=hostip, hostip6=hostip6,
+                     dns_backend=dns_backend, os_level=dom_for_fun_level)
 
-            domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
-                                         attribute="objectGUID")
-            assert isinstance(domainguid, str)
+        domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
+                                     attribute="objectGUID")
+        assert isinstance(domainguid, str)
 
-            create_dns_dir(logger, paths)
+        create_dns_dir(logger, paths)
 
-            # Only make a zone file on the first DC, it should be
-            # replicated with DNS replication
-            if dns_backend == "BIND9":
-                create_zone_file(lp, logger, paths, targetdir,
-                                 dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
-                                 hostname=names.hostname, realm=names.realm,
-                                 domainguid=domainguid, ntdsguid=names.ntdsguid)
+        # Only make a zone file on the first DC, it should be
+        # replicated with DNS replication
+        if dns_backend == "BIND9":
+            create_zone_file(lp, logger, paths, targetdir,
+                             dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
+                             hostname=names.hostname, realm=names.realm,
+                             domainguid=domainguid, ntdsguid=names.ntdsguid)
 
-            create_named_conf(paths, realm=names.realm,
-                              dnsdomain=names.dnsdomain, dns_backend=dns_backend)
+        create_named_conf(paths, realm=names.realm,
+                          dnsdomain=names.dnsdomain, dns_backend=dns_backend)
 
-            create_named_txt(paths.namedtxt,
-                             realm=names.realm, dnsdomain=names.dnsdomain,
-                             dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
-                             private_dir=paths.private_dir,
-                             keytab_name=paths.dns_keytab)
-            logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
-            logger.info("and %s for further documentation required for secure DNS "
-                        "updates", paths.namedtxt)
+        create_named_txt(paths.namedtxt,
+                         realm=names.realm, dnsdomain=names.dnsdomain,
+                         dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
+                         private_dir=paths.private_dir,
+                         keytab_name=paths.dns_keytab)
+        logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
+        logger.info("and %s for further documentation required for secure DNS "
+                    "updates", paths.namedtxt)
 
-            lastProvisionUSNs = get_last_provision_usn(samdb)
-            maxUSN = get_max_usn(samdb, str(names.rootdn))
-            if lastProvisionUSNs is not None:
-                update_provision_usn(samdb, 0, maxUSN, invocationid, 1)
-            else:
-                set_provision_usn(samdb, 0, maxUSN, invocationid)
+    lastProvisionUSNs = get_last_provision_usn(samdb)
+    maxUSN = get_max_usn(samdb, str(names.rootdn))
+    if lastProvisionUSNs is not None:
+        update_provision_usn(samdb, 0, maxUSN, invocationid, 1)
+    else:
+        set_provision_usn(samdb, 0, maxUSN, invocationid)
 
-        # fix any dangling GUIDs from the provision
-        logger.info("Fixing provision GUIDs")
-        chk = dbcheck(samdb, samdb_schema=samdb,  verbose=False, fix=True, yes=True, quiet=True)
-        samdb.transaction_start()
-        # a small number of GUIDs are missing because of ordering issues in the
-        # provision code
-        for schema_obj in ['CN=Domain', 'CN=Organizational-Person', 'CN=Contact', 'CN=inetOrgPerson']:
-            chk.check_database(DN="%s,%s" % (schema_obj, names.schemadn),
-                               scope=ldb.SCOPE_BASE, attrs=['defaultObjectCategory'])
-        chk.check_database(DN="CN=IP Security,CN=System,%s" % names.domaindn,
-                           scope=ldb.SCOPE_ONELEVEL,
-                           attrs=['ipsecOwnersReference',
-                                  'ipsecFilterReference',
-                                  'ipsecISAKMPReference',
-                                  'ipsecNegotiationPolicyReference',
-                                  'ipsecNFAReference'])
-        samdb.transaction_commit()
+    logger.info("Setting up sam.ldb rootDSE marking as synchronized")
+    setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"),
+                      { 'NTDSGUID' : names.ntdsguid })
+
+    # fix any dangling GUIDs from the provision
+    logger.info("Fixing provision GUIDs")
+    chk = dbcheck(samdb, samdb_schema=samdb,  verbose=False, fix=True, yes=True, quiet=True)
+    samdb.transaction_start()
+    # a small number of GUIDs are missing because of ordering issues in the
+    # provision code
+    for schema_obj in ['CN=Domain', 'CN=Organizational-Person', 'CN=Contact', 'CN=inetOrgPerson']:
+        chk.check_database(DN="%s,%s" % (schema_obj, names.schemadn),
+                           scope=ldb.SCOPE_BASE, attrs=['defaultObjectCategory'])
+    chk.check_database(DN="CN=IP Security,CN=System,%s" % names.domaindn,
+                       scope=ldb.SCOPE_ONELEVEL,
+                       attrs=['ipsecOwnersReference',
+                              'ipsecFilterReference',
+                              'ipsecISAKMPReference',
+                              'ipsecNegotiationPolicyReference',
+                              'ipsecNFAReference'])
+    samdb.transaction_commit()
 
 
 def provision(logger, session_info, credentials, smbconf=None,
