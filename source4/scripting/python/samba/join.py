@@ -102,7 +102,7 @@ class dc_join(object):
 
         ctx.dnsdomain = ctx.samdb.domain_dns_name()
         ctx.dnsforest = ctx.samdb.forest_dns_name()
-        ctx.dnshostname = ctx.samdb.host_dns_name()
+        ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
 
         ctx.realm = ctx.dnsdomain
         lp.set("realm", ctx.realm)
