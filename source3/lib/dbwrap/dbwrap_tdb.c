@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_private.h"
 #include "dbwrap/dbwrap_tdb.h"
 #include "lib/util/tdb_wrap.h"
 

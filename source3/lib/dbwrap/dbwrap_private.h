@@ -23,6 +23,41 @@
 #ifndef __DBWRAP_PRIVATE_H__
 #define __DBWRAP_PRIVATE_H__
 
+struct db_record {
+	TDB_DATA key, value;
+	NTSTATUS (*store)(struct db_record *rec, TDB_DATA data, int flag);
+	NTSTATUS (*delete_rec)(struct db_record *rec);
+	void *private_data;
+};
+
+struct db_context {
+	struct db_record *(*fetch_locked)(struct db_context *db,
+					  TALLOC_CTX *mem_ctx,
+					  TDB_DATA key);
+	int (*fetch)(struct db_context *db, TALLOC_CTX *mem_ctx,
+		     TDB_DATA key, TDB_DATA *data);
+	int (*traverse)(struct db_context *db,
+			int (*f)(struct db_record *rec,
+				 void *private_data),
+			void *private_data);
+	int (*traverse_read)(struct db_context *db,
+			     int (*f)(struct db_record *rec,
+				      void *private_data),
+			     void *private_data);
+	int (*get_seqnum)(struct db_context *db);
+	int (*get_flags)(struct db_context *db);
+	int (*transaction_start)(struct db_context *db);
+	int (*transaction_commit)(struct db_context *db);
+	int (*transaction_cancel)(struct db_context *db);
+	int (*parse_record)(struct db_context *db, TDB_DATA key,
+			    int (*parser)(TDB_DATA key, TDB_DATA data,
+					  void *private_data),
+			    void *private_data);
+	int (*exists)(struct db_context *db,TDB_DATA key);
+	int (*wipe)(struct db_context *db);
+	void *private_data;
+	bool persistent;
+};
 
 int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 			  TDB_DATA key, TDB_DATA *data);
