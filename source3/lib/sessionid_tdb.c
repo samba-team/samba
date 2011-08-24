@@ -56,7 +56,7 @@ struct db_record *sessionid_fetch_record(TALLOC_CTX *mem_ctx, const char *key)
 	if (db == NULL) {
 		return NULL;
 	}
-	return db->fetch_locked(db, mem_ctx, string_term_tdb_data(key));
+	return dbwrap_fetch_locked(db, mem_ctx, string_term_tdb_data(key));
 }
 
 struct sessionid_traverse_state {
@@ -67,19 +67,23 @@ struct sessionid_traverse_state {
 
 static int sessionid_traverse_fn(struct db_record *rec, void *private_data)
 {
+	TDB_DATA key;
+	TDB_DATA value;
 	struct sessionid_traverse_state *state =
 		(struct sessionid_traverse_state *)private_data;
 	struct sessionid session;
 
-	if ((rec->key.dptr[rec->key.dsize-1] != '\0')
-	    || (rec->value.dsize != sizeof(struct sessionid))) {
+	key = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
+	if ((key.dptr[key.dsize-1] != '\0')
+	    || (value.dsize != sizeof(struct sessionid))) {
 		DEBUG(1, ("Found invalid record in sessionid.tdb\n"));
 		return 0;
 	}
 
-	memcpy(&session, rec->value.dptr, sizeof(session));
+	memcpy(&session, value.dptr, sizeof(session));
 
-	return state->fn(rec, (char *)rec->key.dptr, &session,
+	return state->fn(rec, (char *)key.dptr, &session,
 			 state->private_data);
 }
 
@@ -111,19 +115,24 @@ struct sessionid_traverse_read_state {
 static int sessionid_traverse_read_fn(struct db_record *rec,
 				      void *private_data)
 {
+	TDB_DATA key;
+	TDB_DATA value;
 	struct sessionid_traverse_read_state *state =
 		(struct sessionid_traverse_read_state *)private_data;
 	struct sessionid session;
 
-	if ((rec->key.dptr[rec->key.dsize-1] != '\0')
-	    || (rec->value.dsize != sizeof(struct sessionid))) {
+	key = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
+
+	if ((key.dptr[key.dsize-1] != '\0')
+	    || (value.dsize != sizeof(struct sessionid))) {
 		DEBUG(1, ("Found invalid record in sessionid.tdb\n"));
 		return 0;
 	}
 
-	memcpy(&session, rec->value.dptr, sizeof(session));
+	memcpy(&session, value.dptr, sizeof(session));
 
-	return state->fn((char *)rec->key.dptr, &session,
+	return state->fn((char *)key.dptr, &session,
 			 state->private_data);
 }
 
