@@ -287,7 +287,7 @@ void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain)
 
 	db_ctx = secrets_db_ctx();
 
-	return db_ctx->fetch_locked(
+	return dbwrap_fetch_locked(
 		db_ctx, mem_ctx, string_term_tdb_data(trust_keystr(domain)));
 }
 

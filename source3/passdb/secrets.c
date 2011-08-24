@@ -129,13 +129,15 @@ void *secrets_fetch(const char *key, size_t *size)
 {
 	TDB_DATA dbuf;
 	void *result;
+	NTSTATUS status;
 
 	if (!secrets_init()) {
 		return NULL;
 	}
 
-	if (db_ctx->fetch(db_ctx, talloc_tos(), string_tdb_data(key),
-			  &dbuf) != 0) {
+	status = dbwrap_fetch(db_ctx, talloc_tos(), string_tdb_data(key),
+			      &dbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
@@ -405,17 +407,22 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct trustdom_info *dom_info;
+	TDB_DATA key;
+	TDB_DATA value;
 
 	struct list_trusted_domains_state *state =
 		(struct list_trusted_domains_state *)private_data;
 
-	if ((rec->key.dsize < prefix_len)
-	    || (strncmp((char *)rec->key.dptr, SECRETS_DOMTRUST_ACCT_PASS,
+	key = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
+
+	if ((key.dsize < prefix_len)
+	    || (strncmp((char *)key.dptr, SECRETS_DOMTRUST_ACCT_PASS,
 			prefix_len) != 0)) {
 		return 0;
 	}
 
-	blob = data_blob_const(rec->value.dptr, rec->value.dsize);
+	blob = data_blob_const(value.dptr, value.dsize);
 
 	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &pass,
 			(ndr_pull_flags_fn_t)ndr_pull_TRUSTED_DOM_PASS);
@@ -475,7 +482,7 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	db_ctx->traverse_read(db_ctx, list_trusted_domain, (void *)&state);
+	dbwrap_traverse_read(db_ctx, list_trusted_domain, (void *)&state, NULL);
 
 	*num_domains = state.num_domains;
 	*domains = state.domains;
