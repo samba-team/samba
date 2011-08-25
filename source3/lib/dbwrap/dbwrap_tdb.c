@@ -160,12 +160,17 @@ static int db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		db->private_data, struct db_tdb_ctx);
 
 	struct tdb_fetch_state state;
+	int ret;
 
 	state.mem_ctx = mem_ctx;
 	state.result = 0;
 	state.data = tdb_null;
 
-	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetch_parse, &state);
+	ret = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetch_parse, &state);
+
+	if (ret < 0) {
+		return -1;
+	}
 
 	if (state.result == -1) {
 		return -1;
