@@ -357,7 +357,6 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 {
 	int count;
 	int idx;
-	bool compound_related = false;
 
 	count = req->in.vector_count;
 
@@ -405,7 +404,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 			 * compounded requests
 			 */
 			if (flags & SMB2_HDR_FLAG_CHAINED) {
-				compound_related = true;
+				req->compound_related = true;
 			}
 		} else if (idx > 4) {
 #if 0
@@ -418,13 +417,13 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 			 * all other requests should match the 2nd one
 			 */
 			if (flags & SMB2_HDR_FLAG_CHAINED) {
-				if (!compound_related) {
+				if (!req->compound_related) {
 					req->next_status =
 						NT_STATUS_INVALID_PARAMETER;
 					return NT_STATUS_OK;
 				}
 			} else {
-				if (compound_related) {
+				if (req->compound_related) {
 					req->next_status =
 						NT_STATUS_INVALID_PARAMETER;
 					return NT_STATUS_OK;
