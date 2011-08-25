@@ -35,119 +35,39 @@ from samba import dsdb
 from samba.ndr import ndr_pack
 
 
-def import_sam_policy(samldb, policy, dn):
-    """Import a Samba 3 policy database."""
-    samldb.modify_ldif("""
-dn: %s
-changetype: modify
-replace: minPwdLength
-minPwdLength: %d
-pwdHistoryLength: %d
-minPwdAge: %d
-maxPwdAge: %d
-lockoutDuration: %d
-samba3ResetCountMinutes: %d
-samba3UserMustLogonToChangePassword: %d
-samba3BadLockoutMinutes: %d
-samba3DisconnectTime: %d
+def import_sam_policy(samdb, policy, logger):
+    """Import a Samba 3 policy.
 
-""" % (dn, policy.min_password_length,
-    policy.password_history, policy.minimum_password_age,
-    policy.maximum_password_age, policy.lockout_duration,
-    policy.reset_count_minutes, policy.user_must_logon_to_change_password,
-    policy.bad_lockout_minutes, policy.disconnect_time))
-
-
-def import_sam_account(samldb,acc,domaindn,domainsid):
-    """Import a Samba 3 SAM account.
-
-    :param samldb: Samba 4 SAM Database handle
-    :param acc: Samba 3 account
-    :param domaindn: Domain DN
-    :param domainsid: Domain SID."""
-    if acc.nt_username is None or acc.nt_username == "":
-        acc.nt_username = acc.username
-
-    if acc.fullname is None:
-        try:
-            acc.fullname = pwd.getpwnam(acc.username)[4].split(",")[0]
-        except KeyError:
-            pass
-
-    if acc.fullname is None:
-        acc.fullname = acc.username
-
-    assert acc.fullname is not None
-    assert acc.nt_username is not None
-
-    samldb.add({
-        "dn": "cn=%s,%s" % (acc.fullname, domaindn),
-        "objectClass": ["top", "user"],
-        "lastLogon": str(acc.logon_time),
-        "lastLogoff": str(acc.logoff_time),
-        "unixName": acc.username,
-        "sAMAccountName": acc.nt_username,
-        "cn": acc.nt_username,
-        "description": acc.acct_desc,
-        "primaryGroupID": str(acc.group_rid),
-        "badPwdcount": str(acc.bad_password_count),
-        "logonCount": str(acc.logon_count),
-        "samba3Domain": acc.domain,
-        "samba3DirDrive": acc.dir_drive,
-        "samba3MungedDial": acc.munged_dial,
-        "samba3Homedir": acc.homedir,
-        "samba3LogonScript": acc.logon_script,
-        "samba3ProfilePath": acc.profile_path,
-        "samba3Workstations": acc.workstations,
-        "samba3KickOffTime": str(acc.kickoff_time),
-        "samba3BadPwdTime": str(acc.bad_password_time),
-        "samba3PassLastSetTime": str(acc.pass_last_set_time),
-        "samba3PassCanChangeTime": str(acc.pass_can_change_time),
-        "samba3PassMustChangeTime": str(acc.pass_must_change_time),
-        "objectSid": "%s-%d" % (domainsid, acc.user_rid),
-        "lmPwdHash:": acc.lm_password,
-        "ntPwdHash:": acc.nt_password,
-        })
-
-
-def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn):
-    """Upgrade a SAM group.
-
-    :param samldb: SAM database.
-    :param gid: Group GID
-    :param sid_name_use: SID name use
-    :param nt_name: NT Group Name
-    :param comment: NT Group Comment
-    :param domaindn: Domain DN
+    :param samdb: Samba4 SAM database
+    :param policy: Samba3 account policy
+    :param logger: Logger object
     """
 
-    if sid_name_use == 5: # Well-known group
-        return None
+    # Following entries are used -
+    #    min password length, password history, minimum password age,
+    #    maximum password age, lockout duration
+    #
+    # Following entries are not used -
+    #    reset count minutes, user must logon to change password,
+    #    bad lockout minutes, disconnect time
 
-    if nt_name in ("Domain Guests", "Domain Users", "Domain Admins"):
-        return None
+    m = ldb.Message()
+    m.dn = samdb.get_default_basedn()
+    m['a01'] = ldb.MessageElement(str(policy['min password length']), ldb.FLAG_MOD_REPLACE,
+                            'minPwdLength')
+    m['a02'] = ldb.MessageElement(str(policy['password history']), ldb.FLAG_MOD_REPLACE,
+                            'pwdHistoryLength')
+    m['a03'] = ldb.MessageElement(str(policy['minimum password age']), ldb.FLAG_MOD_REPLACE,
+                            'minPwdAge')
+    m['a04'] = ldb.MessageElement(str(policy['maximum password age']), ldb.FLAG_MOD_REPLACE,
+                            'maxPwdAge')
+    m['a05'] = ldb.MessageElement(str(policy['lockout duration']), ldb.FLAG_MOD_REPLACE,
+                            'lockoutDuration')
 
-    if gid == -1:
-        gr = grp.getgrnam(nt_name)
-    else:
-        gr = grp.getgrgid(gid)
-
-    if gr is None:
-        unixname = "UNKNOWN"
-    else:
-        unixname = gr.gr_name
-
-    assert unixname is not None
-
-    samldb.add({
-        "dn": "cn=%s,%s" % (nt_name, domaindn),
-        "objectClass": ["top", "group"],
-        "description": comment,
-        "cn": nt_name,
-        "objectSid": sid,
-        "unixName": unixname,
-        "samba3SidNameUse": str(sid_name_use)
-        })
+    try:
+        samdb.modify(m)
+    except ldb.LdbError, e:
+        logger.warn("Could not set account policy, (%s)", str(e))
 
 
 def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
@@ -487,36 +407,37 @@ def import_registry(samba4_registry, samba3_regdb):
             key_handle.set_value(value_name, value_type, value_data)
 
 
-def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
+def upgrade_from_samba3(samba3, logger, targetdir, session_info=None):
     """Upgrade from samba3 database to samba4 AD database
+
+    :param samba3: samba3 object
+    :param logger: Logger object
+    :param targetdir: samba4 database directory
+    :param session_info: Session information
     """
 
-    # Read samba3 smb.conf
-    oldconf = s3param.get_context();
-    oldconf.load(smbconf)
-
-    if oldconf.get("domain logons"):
+    if samba3.lp.get("domain logons"):
         serverrole = "domain controller"
     else:
-        if oldconf.get("security") == "user":
+        if samba3.lp.get("security") == "user":
             serverrole = "standalone"
         else:
             serverrole = "member server"
 
-    domainname = oldconf.get("workgroup")
-    realm = oldconf.get("realm")
-    netbiosname = oldconf.get("netbios name")
+    domainname = samba3.lp.get("workgroup")
+    realm = samba3.lp.get("realm")
+    netbiosname = samba3.lp.get("netbios name")
 
     # secrets db
     secrets_db = samba3.get_secrets_db()
 
     if not domainname:
         domainname = secrets_db.domains()[0]
-        logger.warning("No domain specified in smb.conf file, assuming '%s'",
+        logger.warning("No workgroup specified in smb.conf file, assuming '%s'",
                 domainname)
 
     if not realm:
-        if oldconf.get("domain logons"):
+        if serverrole == "domain controller":
             logger.warning("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (generally it's the upcased DNS domainname).")
             return
         else:
@@ -538,7 +459,9 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     # We must close the direct pytdb database before the C code loads it
     secrets_db.close()
 
-    passdb.set_secrets_dir(samba3.privatedir)
+    # Connect to old password backend
+    passdb.set_secrets_dir(samba3.lp.get("private dir"))
+    s3db = samba3.get_sam_db()
 
     # Get domain sid
     try:
@@ -548,17 +471,18 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
 
     # Get machine account, sid, rid
     try:
-        machineacct = old_passdb.getsampwnam('%s$' % netbiosname)
+        machineacct = s3db.getsampwnam('%s$' % netbiosname)
         machinesid, machinerid = machineacct.user_sid.split()
     except:
         pass
 
-    # Connect to old password backend
-    old_passdb = passdb.PDB(oldconf.get('passdb backend'))
+    # Export account policy
+    logger.info("Exporting account policy")
+    policy = s3db.get_account_policy()
 
-    # Import groups from old passdb backend
+    # Export groups from old passdb backend
     logger.info("Exporting groups")
-    grouplist = old_passdb.enum_group_mapping()
+    grouplist = s3db.enum_group_mapping()
     groupmembers = {}
     for group in grouplist:
         sid, rid = group.sid.split()
@@ -568,10 +492,10 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
 
         # Get members for each group/alias
         if group.sid_name_use == lsa.SID_NAME_ALIAS or group.sid_name_use == lsa.SID_NAME_WKN_GRP:
-            members = old_passdb.enum_aliasmem(group.sid)
+            members = s3db.enum_aliasmem(group.sid)
         elif group.sid_name_use == lsa.SID_NAME_DOM_GRP:
             try:
-                members = old_passdb.enum_group_members(group.sid)
+                members = s3db.enum_group_members(group.sid)
             except:
                 continue
         else:
@@ -581,9 +505,9 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
         groupmembers[group.nt_name] = members
 
 
-    # Import users from old passdb backend
+    # Export users from old passdb backend
     logger.info("Exporting users")
-    userlist = old_passdb.search_users(0)
+    userlist = s3db.search_users(0)
     userdata = {}
     uids = {}
     admin_user = None
@@ -597,9 +521,9 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
         if entry['rid'] >= next_rid:
             next_rid = entry['rid'] + 1
         
-        userdata[username] = old_passdb.getsampwnam(username)
+        userdata[username] = s3db.getsampwnam(username)
         try:
-            uids[username] = old_passdb.sid_to_id(userdata[username].user_sid)[0]
+            uids[username] = s3db.sid_to_id(userdata[username].user_sid)[0]
         except:
             try:
                 uids[username] = pwd.getpwnam(username).pw_uid
@@ -611,7 +535,6 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
         if username.lower() == 'administrator':
             admin_user = username
 
-
     logger.info("Next rid = %d", next_rid)
 
     # Do full provision
@@ -622,19 +545,26 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
                        hostname=netbiosname, machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL)
 
-    logger.info("Import WINS")
+    # Import WINS database
+    logger.info("Importing WINS database")
     import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
 
-    new_smbconf = result.lp.configfile
-    newconf = s3param.get_context()
-    newconf.load(new_smbconf)
+    # Set Account policy
+    logger.info("Importing Account policy")
+    import_sam_policy(result.samdb, policy, logger)
 
-    # Migrate idmap
-    logger.info("Migrating idmap database")
+    # Migrate IDMAP database
+    logger.info("Importing idmap database")
     import_idmap(result.idmap, samba3.get_idmap_db(), logger)
 
+    # Set the s3 context for samba4 configuration
+    new_lp_ctx = s3param.get_context()
+    new_lp_ctx.load(result.lp.configfile)
+    new_lp_ctx.set("private dir", result.lp.get("private dir"))
+    new_lp_ctx.set("state directory", result.lp.get("state directory"))
+
     # Connect to samba4 backend
-    new_passdb = passdb.PDB('samba4')
+    s4_passdb = passdb.PDB(new_lp_ctx.get("passdb backend"))
 
     # Export groups to samba4 backend
     logger.info("Importing groups")
@@ -649,7 +579,7 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     for username in userdata:
         if username.lower() == 'administrator' or username.lower() == 'root':
             continue
-        new_passdb.add_sam_account(userdata[username])
+        s4_passdb.add_sam_account(userdata[username])
         if username in uids:
             add_idmap_entry(result.idmap, userdata[username].user_sid, uids[username], "UID", logger)
 
@@ -661,14 +591,15 @@ def upgrade_from_samba3(samba3, logger, session_info, smbconf, targetdir):
     # Set password for administrator
     if admin_user:
         logger.info("Setting password for administrator")
-        admin_userdata = new_passdb.getsampwnam("administrator")
+        admin_userdata = s4_passdb.getsampwnam("administrator")
         admin_userdata.nt_passwd = userdata[admin_user].nt_passwd
         if userdata[admin_user].lanman_passwd:
             admin_userdata.lanman_passwd = userdata[admin_user].lanman_passwd
         admin_userdata.pass_last_set_time = userdata[admin_user].pass_last_set_time
         if userdata[admin_user].pw_history:
             admin_userdata.pw_history = userdata[admin_user].pw_history
-        new_passdb.update_sam_account(admin_userdata)
+        s4_passdb.update_sam_account(admin_userdata)
         logger.info("Administrator password has been set to password of user '%s'", admin_user)
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
+    # FIXME: shares

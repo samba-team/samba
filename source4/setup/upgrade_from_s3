@@ -28,15 +28,56 @@ import samba.getopt as options
 from samba.auth import system_session
 from samba.upgrade import upgrade_from_samba3
 from samba.samba3 import Samba3
-parser = optparse.OptionParser("upgrade_from_s3 [options] <libdir>")
-sambaopts = options.SambaOptions(parser)
-parser.add_option_group(sambaopts)
+from samba.samba3 import param as s3param
+
+def get_testparm_var(testparm, varname):
+    cmd = "%s -s -l --parameter-name='%s' 2>/dev/null" % (testparm, varname)
+    output = os.popen(cmd, 'r').readline()
+    return output.strip()
+
+cmd_help = """upgrade_from_s3 [options] <configuration_file> <targetdir>
+
+Input arguments are:
+  <configuration_file> - path to existing smb.conf
+  <targetdir>          - directory in which samba4 database will be created
+
+In addition, specify either samba3 database directory (with --libdir) or
+samba3 testparm utility (with --testparm).  """
+
+parser = optparse.OptionParser(cmd_help)
 parser.add_option_group(options.VersionOptions(parser))
 parser.add_option("--quiet", help="Be quiet")
-parser.add_option("--targetdir", type="string", metavar="DIR",
-                  help="Set target directory")
+parser.add_option("--libdir", type="string", metavar="DIR",
+                  help="samba3 database directory")
+parser.add_option("--testparm", type="string", metavar="PATH",
+                  help="samba3 testparm utility")
 
 opts, args = parser.parse_args()
+
+if len(args) < 2:
+    parser.print_usage()
+    sys.exit(1)
+
+smbconf = args[0]
+if not os.path.exists(smbconf):
+    print("error: %s does not exist" % smbconf)
+    sys.exit(1)
+
+targetdir = args[1]
+if not os.path.isdir(targetdir):
+    print("error: %s is not a directory" % targetdir)
+    sys.exit(1)
+
+libdir = opts.libdir
+testparm = opts.testparm
+
+if not libdir and not testparm:
+    print("error: please specify either libdir or testparm")
+    sys.exit(1)
+
+if libdir and testparm:
+    print("warning: both libdir and testparm specified, libdir will be ignored.")
+    libdir = None
 
 logger = logging.getLogger("upgrade")
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -45,23 +86,25 @@ if opts.quiet:
 else:
 	logger.setLevel(logging.INFO)
 
-if len(args) < 1:
-    parser.print_usage()
-    sys.exit(1)
+s3conf = s3param.get_context()
+#s3conf.load_default()
 
-logger.info("Reading Samba3 databases and smb.conf")
+# Set correct default values from libdir or testparm
+paths = {}
+if libdir:
+    paths["state directory"] = libdir
+    paths["private dir"] = libdir
+else:
+    paths["state directory"] = get_testparm_var(testparm, "state directory")
+    paths["private dir"] = get_testparm_var(testparm, "private dir")
 
-libdir = args[0]
-if not os.path.isdir(libdir):
-    print "error: %s is not a directory"
-    sys.exit(1)
+for p in paths:
+    s3conf.set(p, paths[p])
 
-lp = sambaopts.get_loadparm()
-smbconf = lp.configfile
-
-samba3 = Samba3(libdir, smbconf)
+# load smb.conf parameters
+logger.info("Reading smb.conf")
+s3conf.load(smbconf)
+samba3 = Samba3(smbconf, s3conf)
 
 logger.info("Provisioning")
-
-upgrade_from_samba3(samba3, logger, session_info=system_session(),
-            smbconf=smbconf, targetdir=opts.targetdir)
+upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session())

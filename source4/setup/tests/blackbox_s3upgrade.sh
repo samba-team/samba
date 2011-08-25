@@ -35,7 +35,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb1.conf <<EOF
    debug level = 0
 EOF
 
-testit "samba3-upgrade-member" $PYTHON $SRCDIR/source4/setup/upgrade_from_s3 --targetdir=$PREFIX/samba3-upgrade/s4_1 --configfile=$PREFIX/samba3-upgrade/samba3/smb1.conf $PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-member" $PYTHON $SRCDIR/source4/setup/upgrade_from_s3 $PREFIX/samba3-upgrade/samba3/smb1.conf $PREFIX/samba3-upgrade/s4_1 --libdir=$PREFIX/samba3-upgrade/samba3
 
 # Test 2 (s3 dc)
 cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
@@ -55,7 +55,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
    domain logons = yes
 EOF
 
-testit "samba3-upgrade-dc" $PYTHON $SRCDIR/source4/setup/upgrade_from_s3 --targetdir=$PREFIX/samba3-upgrade/s4_2 --configfile=$PREFIX/samba3-upgrade/samba3/smb2.conf $PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-dc" $PYTHON $SRCDIR/source4/setup/upgrade_from_s3 $PREFIX/samba3-upgrade/samba3/smb2.conf $PREFIX/samba3-upgrade/s4_2 --libdir=$PREFIX/samba3-upgrade/samba3
 
 rm -rf $PREFIX/samba3-upgrade
 
