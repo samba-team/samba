@@ -368,15 +368,20 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	const char *keyname;
 	NTSTATUS status;
+	struct db_context *db = (struct db_context *)private_data;
 
 	if (rec->key.dptr == NULL || rec->key.dsize == 0) {
 		return 0;
 	}
 
+	if (db == NULL) {
+		DEBUG(0, ("regdb_normalize_keynames_fn: ERROR: "
+			  "NULL db context handed in via private_data\n"));
+		return 1;
+	}
+
 	keyname = strchr((const char *) rec->key.dptr, '/');
 	if (keyname) {
-		struct db_record new_rec;
-
 		keyname = talloc_string_sub(mem_ctx,
 					    (const char *) rec->key.dptr,
 					    "/",
@@ -385,10 +390,6 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 		DEBUG(2, ("regdb_normalize_keynames_fn: Convert %s to %s\n",
 			  (const char *) rec->key.dptr,
 			  keyname));
-
-		new_rec.value = rec->value;
-		new_rec.key = string_term_tdb_data(keyname);
-		new_rec.private_data = rec->private_data;
 
 		/* Delete the original record and store the normalized key */
 		status = rec->delete_rec(rec);
@@ -399,7 +400,8 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 			return 1;
 		}
 
-		status = rec->store(&new_rec, new_rec.value, TDB_REPLACE);
+		status = dbwrap_store_bystring(db, keyname, rec->value,
+					       TDB_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("regdb_normalize_keynames_fn: "
 				 "failed to store new record for [%s]!\n",
@@ -440,7 +442,7 @@ static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 
 	mem_ctx = talloc_stackframe();
 
-	rc = regdb->traverse(db, regdb_normalize_keynames_fn, mem_ctx);
+	rc = db->traverse(db, regdb_normalize_keynames_fn, db);
 
 	talloc_free(mem_ctx);
 
