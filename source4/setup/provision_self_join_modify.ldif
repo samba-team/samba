@@ -15,14 +15,6 @@ changetype: modify
 replace: fSMORoleOwner
 fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 
-dn: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
-changetype: add
-objectClass: rIDSet
-rIDAllocationPool: ${RIDALLOCATIONSTART}-${RIDALLOCATIONEND}
-rIDPreviousAllocationPool: ${RIDALLOCATIONSTART}-${RIDALLOCATIONEND}
-rIDUsedPool: 0
-rIDNextRID: ${RIDALLOCATIONSTART}
-
 dn: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
 changetype: modify
 add: rIDSetReferences

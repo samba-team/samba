@@ -20,3 +20,10 @@ sAMAccountName: ${NETBIOSNAME}$
 userAccountControl: 532480
 clearTextPassword:: ${MACHINEPASS_B64}
 objectSid: ${DOMAINSID}-${DCRID}
+
+dn: CN=RID Set,CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
+objectClass: rIDSet
+rIDAllocationPool: ${RIDALLOCATIONSTART}-${RIDALLOCATIONEND}
+rIDPreviousAllocationPool: ${RIDALLOCATIONSTART}-${RIDALLOCATIONEND}
+rIDUsedPool: 0
+rIDNextRID: ${RIDALLOCATIONSTART}

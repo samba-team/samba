@@ -1065,7 +1065,7 @@ def setup_samdb_rootdse(samdb, names):
         })
 
 
-def setup_self_join(samdb, names, fill, machinepass, dnspass,
+def setup_self_join(samdb, admin_session_info, names, fill, machinepass, dnspass,
                     domainsid, next_rid, invocationid,
                     policyguid, policyguid_dc, domainControllerFunctionality,
                     ntdsguid, dc_rid=None):
@@ -1093,7 +1093,9 @@ def setup_self_join(samdb, names, fill, machinepass, dnspass,
               "SAMBA_VERSION_STRING": version,
               "NTDSGUID": ntdsguid_line,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(
-                  domainControllerFunctionality)})
+                  domainControllerFunctionality),
+              "RIDALLOCATIONSTART": str(next_rid + 100),
+              "RIDALLOCATIONEND": str(next_rid + 100 + 499)})
 
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), {
               "POLICYGUID": policyguid,
@@ -1124,17 +1126,23 @@ def setup_self_join(samdb, names, fill, machinepass, dnspass,
                 "CONFIGDN": names.configdn,
                 "SCHEMADN": names.schemadn,
                 "DEFAULTSITE": names.sitename,
+                "NETBIOSNAME": names.netbiosname,
                 "SERVERDN": names.serverdn,
                 })
 
+    system_session_info = system_session()
+    samdb.set_session_info(system_session_info)
     # Setup fSMORoleOwner entries to point at the newly created DC entry
+
+    # to modify a serverReference under cn=config when we are a subdomain, we must
+    # be system due to ACLs
     setup_modify_ldif(samdb, setup_path("provision_self_join_modify.ldif"), {
               "DOMAINDN": names.domaindn,
               "SERVERDN": names.serverdn,
               "NETBIOSNAME": names.netbiosname,
-              "RIDALLOCATIONSTART": str(next_rid + 100),
-              "RIDALLOCATIONEND": str(next_rid + 100 + 499),
               })
+
+    samdb.set_session_info(admin_session_info)
 
     # This is Samba4 specific and should be replaced by the correct
     # DNS AD-style setup
@@ -1425,7 +1433,7 @@ def fill_samdb(samdb, lp, names,
                 })
 
             logger.info("Setting up self join")
-            setup_self_join(samdb, names=names, fill=fill, invocationid=invocationid,
+            setup_self_join(samdb, admin_session_info, names=names, fill=fill, invocationid=invocationid,
                             dnspass=dnspass,
                             machinepass=machinepass,
                             domainsid=domainsid,
