@@ -774,19 +774,20 @@ static PyObject *py_samu_get_hours(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_hours;
 	const char *hours;
-	int i;
+	int hours_len, i;
 
 	hours = (const char *)pdb_get_hours(sam_acct);
 	if(! hours) {
 		Py_RETURN_NONE;
 	}
 
-	if ((py_hours = PyList_New(MAX_HOURS_LEN)) == NULL) {
+	hours_len = pdb_get_hours_len(sam_acct);
+	if ((py_hours = PyList_New(hours_len)) == NULL) {
 		PyErr_NoMemory();
 		return NULL;
 	}
 
-	for (i=0; i<MAX_HOURS_LEN; i++) {
+	for (i=0; i<hours_len; i++) {
 		PyList_SetItem(py_hours, i, PyInt_FromLong(hours[i]));
 	}
 	return py_hours;
