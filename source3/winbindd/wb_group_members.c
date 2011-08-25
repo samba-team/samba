@@ -209,8 +209,13 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 	 * and just continue if an error occured.
 	 */
 
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(
+			    status, NT_STATUS_TRUSTED_DOMAIN_FAILURE)) {
+			tevent_req_nterror(req, status);
+			return;
+		}
+		num_members = 0;
 	}
 
 	num_all_members = talloc_array_length(state->all_members);
