@@ -1402,19 +1402,24 @@ def fill_samdb(samdb, lp, names,
         # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
         if fill == FILL_FULL:
             setup_modify_ldif(samdb,
+                              setup_path("provision_configuration_references.ldif"), {
+                    "CONFIGDN": names.configdn,
+                    "SCHEMADN": names.schemadn})
+
+            logger.info("Setting up well known security principals")
+            setup_add_ldif(samdb, setup_path("provision_well_known_sec_princ.ldif"), {
+                "CONFIGDN": names.configdn,
+                })
+
+        if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
+            setup_modify_ldif(samdb,
                               setup_path("provision_basedn_references.ldif"),
                               {"DOMAINDN": names.domaindn})
 
-        setup_modify_ldif(samdb,
-            setup_path("provision_configuration_references.ldif"), {
-                "CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn})
-        if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
             logger.info("Setting up sam.ldb users and groups")
             setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
                 "DOMAINDN": names.domaindn,
                 "DOMAINSID": str(domainsid),
-                "CONFIGDN": names.configdn,
                 "ADMINPASS_B64": b64encode(adminpass.encode('utf-16-le')),
                 "KRBTGTPASS_B64": b64encode(krbtgtpass.encode('utf-16-le'))
                 })
