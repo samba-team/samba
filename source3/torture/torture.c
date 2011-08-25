@@ -7754,26 +7754,29 @@ static bool rbt_testval(struct db_context *db, const char *key,
 	TDB_DATA data = string_tdb_data(value);
 	bool ret = false;
 	NTSTATUS status;
+	TDB_DATA dbvalue;
 
-	rec = db->fetch_locked(db, db, string_tdb_data(key));
+	rec = dbwrap_fetch_locked(db, db, string_tdb_data(key));
 	if (rec == NULL) {
 		d_fprintf(stderr, "fetch_locked failed\n");
 		goto done;
 	}
-	status = rec->store(rec, data, 0);
+	status = dbwrap_record_store(rec, data, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "store failed: %s\n", nt_errstr(status));
 		goto done;
 	}
 	TALLOC_FREE(rec);
 
-	rec = db->fetch_locked(db, db, string_tdb_data(key));
+	rec = dbwrap_fetch_locked(db, db, string_tdb_data(key));
 	if (rec == NULL) {
 		d_fprintf(stderr, "second fetch_locked failed\n");
 		goto done;
 	}
-	if ((rec->value.dsize != data.dsize)
-	    || (memcmp(rec->value.dptr, data.dptr, data.dsize) != 0)) {
+
+	dbvalue = dbwrap_record_get_value(rec);
+	if ((dbvalue.dsize != data.dsize)
+	    || (memcmp(dbvalue.dptr, data.dptr, data.dsize) != 0)) {
 		d_fprintf(stderr, "Got wrong data back\n");
 		goto done;
 	}
@@ -8497,23 +8500,26 @@ static bool dbtrans_inc(struct db_context *db)
 	uint32_t *val;
 	bool ret = false;
 	NTSTATUS status;
+	TDB_DATA value;
 
-	rec = db->fetch_locked(db, db, string_term_tdb_data("transtest"));
+	rec = dbwrap_fetch_locked(db, db, string_term_tdb_data("transtest"));
 	if (rec == NULL) {
 		printf(__location__ "fetch_lock failed\n");
 		return false;
 	}
 
-	if (rec->value.dsize != sizeof(uint32_t)) {
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dsize != sizeof(uint32_t)) {
 		printf(__location__ "value.dsize = %d\n",
-		       (int)rec->value.dsize);
+		       (int)value.dsize);
 		goto fail;
 	}
 
-	val = (uint32_t *)rec->value.dptr;
+	val = (uint32_t *)value.dptr;
 	*val += 1;
 
-	status = rec->store(rec, make_tdb_data((uint8_t *)val,
+	status = dbwrap_record_store(rec, make_tdb_data((uint8_t *)val,
 					       sizeof(uint32_t)),
 			    0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -8535,6 +8541,7 @@ static bool run_local_dbtrans(int dummy)
 	NTSTATUS status;
 	uint32_t initial;
 	int res;
+	TDB_DATA value;
 
 	db = db_open(talloc_tos(), "transtest.tdb", 0, TDB_DEFAULT,
 		     O_RDWR|O_CREAT, 0600);
@@ -8543,21 +8550,23 @@ static bool run_local_dbtrans(int dummy)
 		return false;
 	}
 
-	res = db->transaction_start(db);
+	res = dbwrap_transaction_start(db);
 	if (res != 0) {
 		printf(__location__ "transaction_start failed\n");
 		return false;
 	}
 
-	rec = db->fetch_locked(db, db, string_term_tdb_data("transtest"));
+	rec = dbwrap_fetch_locked(db, db, string_term_tdb_data("transtest"));
 	if (rec == NULL) {
 		printf(__location__ "fetch_lock failed\n");
 		return false;
 	}
 
-	if (rec->value.dptr == NULL) {
+	value = dbwrap_record_get_value(rec);
+
+	if (value.dptr == NULL) {
 		initial = 0;
-		status = rec->store(
+		status = dbwrap_record_store(
 			rec, make_tdb_data((uint8_t *)&initial,
 					   sizeof(initial)),
 			0);
@@ -8570,7 +8579,7 @@ static bool run_local_dbtrans(int dummy)
 
 	TALLOC_FREE(rec);
 
-	res = db->transaction_commit(db);
+	res = dbwrap_transaction_commit(db);
 	if (res != 0) {
 		printf(__location__ "transaction_commit failed\n");
 		return false;
@@ -8580,7 +8589,7 @@ static bool run_local_dbtrans(int dummy)
 		uint32_t val, val2;
 		int i;
 
-		res = db->transaction_start(db);
+		res = dbwrap_transaction_start(db);
 		if (res != 0) {
 			printf(__location__ "transaction_start failed\n");
 			break;
@@ -8610,7 +8619,7 @@ static bool run_local_dbtrans(int dummy)
 
 		printf("val2=%d\r", val2);
 
-		res = db->transaction_commit(db);
+		res = dbwrap_transaction_commit(db);
 		if (res != 0) {
 			printf(__location__ "transaction_commit failed\n");
 			break;
