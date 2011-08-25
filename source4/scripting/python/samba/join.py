@@ -440,7 +440,7 @@ class dc_join(object):
                             serverdn=ctx.server_dn, domain=ctx.domain_name,
                             hostname=ctx.myname, domainsid=ctx.domsid,
                             machinepass=ctx.acct_pass, serverrole="domain controller",
-                            sitename=ctx.site, lp=ctx.lp)
+                            sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid)
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
