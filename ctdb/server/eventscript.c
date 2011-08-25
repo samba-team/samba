@@ -382,7 +382,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 		return -errno;
 	}
 
- 	if (!ctdb_fork_with_logging(state, ctdb, log_event_script_output,
+ 	if (!ctdb_fork_with_logging(state, ctdb, current->name, log_event_script_output,
 				    state, &state->child)) {
 		r = -errno;
 		close(state->fd[0]);

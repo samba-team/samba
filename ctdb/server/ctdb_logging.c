@@ -163,6 +163,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 
 struct ctdb_log_state {
 	struct ctdb_context *ctdb;
+	const char *prefix;
 	int fd, pfd;
 	char buf[1024];
 	uint16_t buf_used;
@@ -366,7 +367,11 @@ static void write_to_log(struct ctdb_log_state *log,
 			 const char *buf, unsigned int len)
 {
 	if (script_log_level <= LogLevel) {
-		do_debug("%*.*s\n", len, len, buf);
+		if (log != NULL && log->prefix != NULL) {
+			do_debug("%s: %*.*s\n", log->prefix, len, len, buf);
+		} else {
+			do_debug("%*.*s\n", len, len, buf);
+		}
 		/* log it in the eventsystem as well */
 		if (log->logfn)
 			log->logfn(log->buf, len, log->logfn_private);
@@ -386,7 +391,7 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 	if (!(flags & EVENT_FD_READ)) {
 		return;
 	}
-	
+
 	n = read(log->pfd, &log->buf[log->buf_used],
 		 sizeof(log->buf) - log->buf_used);
 	if (n > 0) {
@@ -436,6 +441,7 @@ static int log_context_destructor(struct ctdb_log_state *log)
 */
 struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 					      struct ctdb_context *ctdb,
+					      const char *log_prefix,
 					      void (*logfn)(const char *, uint16_t, void *),
 					      void *logfn_private, pid_t *pid)
 {
@@ -446,6 +452,7 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 	log = talloc_zero(mem_ctx, struct ctdb_log_state);
 	CTDB_NO_MEMORY_NULL(ctdb, log);
 	log->ctdb = ctdb;
+	log->prefix = log_prefix;
 	log->logfn = logfn;
 	log->logfn_private = (void *)logfn_private;
 
