@@ -706,7 +706,9 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 
 	oc_el = ldb_msg_find_element(req->op.add.message, "objectClass");
 	if (!oc_el || oc_el->num_values == 0) {
-		DEBUG(10,("acl:operation error %s\n", ldb_dn_get_linearized(req->op.add.message->dn)));
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "acl: unable to find objectClass on %s\n",
+				       ldb_dn_get_linearized(req->op.add.message->dn));
 		return ldb_module_done(req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 	}
 
@@ -952,8 +954,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 					     sid);
 
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("Object %s has no write dacl access\n",
-					   ldb_dn_get_linearized(req->op.mod.message->dn)));
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "Object %s has no write dacl access\n",
+						       ldb_dn_get_linearized(req->op.mod.message->dn));
 				dsdb_acl_debug(sd,
 					       acl_user_token(module),
 					       req->op.mod.message->dn,
@@ -1022,14 +1025,16 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (!insert_in_object_tree(tmp_ctx,
 						   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP,
 						   &new_node, &new_node)) {
-				DEBUG(10, ("acl_modify: cannot add to object tree securityGUID\n"));
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "acl_modify: cannot add to object tree securityGUID\n");
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
 			}
 
 			if (!insert_in_object_tree(tmp_ctx,
 						   &attr->schemaIDGUID, SEC_ADS_WRITE_PROP, &new_node, &new_node)) {
-				DEBUG(10, ("acl_modify: cannot add to object tree attributeGUID\n"));
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "acl_modify: cannot add to object tree attributeGUID\n");
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
 			}
@@ -1044,13 +1049,14 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 					     sid);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("Object %s has no write property access\n",
-				   ldb_dn_get_linearized(req->op.mod.message->dn)));
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "Object %s has no write property access\n",
+					       ldb_dn_get_linearized(req->op.mod.message->dn));
 			dsdb_acl_debug(sd,
-				  acl_user_token(module),
-				  req->op.mod.message->dn,
-				  true,
-				  10);
+				       acl_user_token(module),
+				       req->op.mod.message->dn,
+				       true,
+				       10);
 			ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 			goto fail;
 		}
@@ -1243,8 +1249,9 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 				     sid);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Object %s has no wp on name\n",
-			   ldb_dn_get_linearized(req->op.rename.olddn)));
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Object %s has no wp on name\n",
+				       ldb_dn_get_linearized(req->op.rename.olddn));
 		dsdb_acl_debug(sd,
 			  acl_user_token(module),
 			  req->op.rename.olddn,
@@ -1265,14 +1272,17 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	new_node = NULL;
 	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
 	if (!guid) {
-		DEBUG(10,("acl:renamed object has no object class\n"));
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "acl:renamed object has no object class\n");
 		talloc_free(tmp_ctx);
 		return ldb_module_done(req, NULL, NULL,  LDB_ERR_OPERATIONS_ERROR);
 	}
 
 	ret = dsdb_module_check_access_on_dn(module, req, newparent, SEC_ADS_CREATE_CHILD, guid, req);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "acl:access_denied renaming %s",
+				       ldb_dn_get_linearized(req->op.rename.olddn));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -1291,7 +1301,8 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	/* what about delete child on the current parent */
 	ret = dsdb_module_check_access_on_dn(module, req, oldparent, SEC_ADS_DELETE_CHILD, NULL, req);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn));
 		talloc_free(tmp_ctx);
 		return ldb_module_done(req, NULL, NULL, ret);
 	}

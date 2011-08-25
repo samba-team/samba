@@ -124,6 +124,9 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 			       dn,
 			       true,
 			       10);
+		ldb_asprintf_errstring(ldb,
+				       "dsdb_access: Access check failed on %s",
+				       ldb_dn_get_linearized(dn));
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 	return LDB_SUCCESS;

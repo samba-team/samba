@@ -77,7 +77,9 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 				    DSDB_SEARCH_SHOW_RECYCLED,
 				    parent);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("access_check: failed to find object %s\n", ldb_dn_get_linearized(dn)));
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "access_check: failed to find object %s\n",
+				       ldb_dn_get_linearized(dn));
 		return ret;
 	}
 	return dsdb_check_access_on_dn_internal(ldb, acl_res,
