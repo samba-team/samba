@@ -24,6 +24,7 @@
  * @date   Sep 2010
  */
 
+#include "includes.h"
 #include "reg_format.h"
 #include "reg_parse.h"
 #include "reg_parse_internal.h"
