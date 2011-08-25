@@ -468,8 +468,9 @@ plantestsuite_loadlist("samba4.%s.one" % t, "vampire_dc", [valgrindify(smb4tortu
 plantestsuite_loadlist("samba4.%s.two" % t, "vampire_dc", [valgrindify(smb4torture), "$LISTOPT", '$SERVER', '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', t])
 
 # some RODC testing
-plantestsuite_loadlist("samba4.rpc.echo", "rodc", [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME%$PASSWORD', '-W' '$DOMAIN', 'rpc.echo'])
-plantestsuite_loadlist("samba4.rpc.echo", "rodc:local", [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-P', '-W' '$DOMAIN', 'rpc.echo'])
+for env in ['rodc']:
+    plantestsuite_loadlist("samba4.rpc.echo", env, [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME%$PASSWORD', '-W' '$DOMAIN', 'rpc.echo'])
+    plantestsuite_loadlist("samba4.rpc.echo", "%s:local" % env, [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', "-k", "yes", '-P', '-W' '$DOMAIN', 'rpc.echo'])
 plantestsuite("samba4.blackbox.provision-backend.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision-backend.sh"), '$PREFIX/provision'])
 
 # Test renaming the DC
