@@ -355,6 +355,7 @@ struct smbd_smb2_request {
 	bool do_signing;
 	bool async;
 	bool cancelled;
+	bool compound_related;
 
 	/* fake smb1 request. */
 	struct smb_request *smb1req;
