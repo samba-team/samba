@@ -464,9 +464,16 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 	uint32_t buflen, len;
 	uint32_t num_items;
 	uint32_t i;
+	struct db_context *db = (struct db_context *)private_data;
 
 	if (rec->key.dptr == NULL || rec->key.dsize == 0) {
 		return 0;
+	}
+
+	if (db == NULL) {
+		DEBUG(0, ("regdb_normalize_keynames_fn: ERROR: "
+			  "NULL db context handed in via private_data\n"));
+		return 1;
 	}
 
 	keyname = (const char *)rec->key.dptr;
@@ -522,7 +529,7 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 		DEBUG(10, ("regdb_upgrade_v2_to_v3: "
 			   "writing subkey list for [%s\\%s]\n",
 			   keyname, subkeyname));
-		werr = regdb_store_subkey_list(regdb, keyname, subkeyname);
+		werr = regdb_store_subkey_list(db, keyname, subkeyname);
 		if (!W_ERROR_IS_OK(werr)) {
 			return 1;
 		}
@@ -535,9 +542,8 @@ static WERROR regdb_upgrade_v2_to_v3(struct db_context *db)
 {
 	int rc;
 	WERROR werr;
-	TALLOC_CTX *frame = talloc_stackframe();
 
-	rc = regdb->traverse(db, regdb_upgrade_v2_to_v3_fn, frame);
+	rc = regdb->traverse(db, regdb_upgrade_v2_to_v3_fn, db);
 	if (rc < 0) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
@@ -546,7 +552,6 @@ static WERROR regdb_upgrade_v2_to_v3(struct db_context *db)
 	werr = regdb_store_regdb_version(db, REGVER_V3);
 
 done:
-	talloc_free(frame);
 	return werr;
 }
 
