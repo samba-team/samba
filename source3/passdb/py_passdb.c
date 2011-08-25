@@ -2497,9 +2497,12 @@ static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
 	struct samr_displayentry *entry;
 	PyObject *py_aliaslist, *py_dict;
 	PyObject *py_domain_sid;
-	struct dom_sid *dom_sid;
+	struct dom_sid *domain_sid = NULL;
 
-	if (!PyArg_ParseTuple(args, "O!:search_users", dom_sid_Type, &py_domain_sid)) {
+	py_domain_sid = Py_None;
+	Py_INCREF(Py_None);
+
+	if (!PyArg_ParseTuple(args, "|O!:search_aliases", dom_sid_Type, &py_domain_sid)) {
 		return NULL;
 	}
 
@@ -2510,7 +2513,9 @@ static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	dom_sid = pytalloc_get_ptr(py_domain_sid);
+	if (py_domain_sid != Py_None) {
+		domain_sid = pytalloc_get_ptr(py_domain_sid);
+	}
 
 	search = talloc_zero(tframe, struct pdb_search);
 	if (search == NULL) {
@@ -2519,7 +2524,7 @@ static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!methods->search_aliases(methods, search, dom_sid)) {
+	if (!methods->search_aliases(methods, search, domain_sid)) {
 		PyErr_Format(py_pdb_error, "Unable to search aliases");
 		talloc_free(tframe);
 		return NULL;
@@ -3438,7 +3443,7 @@ static PyMethodDef py_pdb_methods[] = {
 		Search unix only groups. \n \
 		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
 	{ "search_aliases", (PyCFunction)py_pdb_search_aliases, METH_VARARGS,
-		"search_aliases(domain_sid) -> List\n\n \
+		"search_aliases([domain_sid]) -> List\n\n \
 		Search aliases. domain_sid is dcerpc.security.dom_sid object.\n \
 		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
 	{ "uid_to_sid", (PyCFunction)py_pdb_uid_to_sid, METH_VARARGS,
