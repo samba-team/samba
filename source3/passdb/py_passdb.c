@@ -613,7 +613,7 @@ static PyObject *py_samu_get_lanman_passwd(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_lm_pw = PyString_FromString(lm_pw);
+	py_lm_pw = PyString_FromStringAndSize(lm_pw, LM_HASH_LEN);
 	return py_lm_pw;
 }
 
@@ -639,7 +639,7 @@ static PyObject *py_samu_get_nt_passwd(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_nt_pw = PyString_FromString(nt_pw);
+	py_nt_pw = PyString_FromStringAndSize(nt_pw, NT_HASH_LEN);
 	return py_nt_pw;
 }
 
