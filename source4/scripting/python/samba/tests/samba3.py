@@ -19,11 +19,12 @@
 
 """Tests for samba.samba3."""
 
-from samba.samba3 import (GroupMappingDatabase, Registry, PolicyDatabase,
-        SecretsDatabase, TdbSam)
-from samba.samba3 import (WinsDatabase, SmbpasswdFile, ACB_NORMAL,
-        IdmapDatabase, SAMUser, ParamFile)
+from samba.samba3 import (Registry, SecretsDatabase)
+from samba.samba3 import (WinsDatabase, IdmapDatabase)
+from samba.samba3 import passdb
+from samba.samba3 import param as s3param
 from samba.tests import TestCase
+from samba.dcerpc.security import dom_sid
 import os
 
 for p in [ "../../../../../testdata/samba3", "../../../../testdata/samba3" ]:
@@ -57,108 +58,111 @@ class RegistryTestCase(TestCase):
                            self.registry.values("HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))
 
 
-class PolicyTestCase(TestCase):
+class PassdbTestCase(TestCase):
 
     def setUp(self):
-        super(PolicyTestCase, self).setUp()
-        self.policy = PolicyDatabase(os.path.join(DATADIR, "account_policy.tdb"))
+        super (PassdbTestCase, self).setUp()
+        self.lp = s3param.get_context()
+        self.lp.load(os.path.join(DATADIR, "smb.conf"))
+        self.lp.set("private dir", DATADIR)
+        self.lp.set("state directory", DATADIR)
+        passdb.set_secrets_dir(DATADIR)
+        self.pdb = passdb.PDB("tdbsam")
+
+    def tearDown(self):
+        self.lp = []
+        self.pdb = []
+        super(PassdbTestCase, self).tearDown()
+
+    def test_param(self):
+        self.assertEquals("BEDWYR", self.lp.get("netbios name"))
+        self.assertEquals("SAMBA", self.lp.get("workgroup"))
+        self.assertEquals("USER", self.lp.get("security"))
 
     def test_policy(self):
-        self.assertEquals(self.policy.min_password_length, 5)
-        self.assertEquals(self.policy.minimum_password_age, 0)
-        self.assertEquals(self.policy.maximum_password_age, 999999999)
-        self.assertEquals(self.policy.refuse_machine_password_change, 0)
-        self.assertEquals(self.policy.reset_count_minutes, 0)
-        self.assertEquals(self.policy.disconnect_time, -1)
-        self.assertEquals(self.policy.user_must_logon_to_change_password, None)
-        self.assertEquals(self.policy.password_history, 0)
-        self.assertEquals(self.policy.lockout_duration, 0)
-        self.assertEquals(self.policy.bad_lockout_minutes, None)
-
-
-class GroupsTestCase(TestCase):
-
-    def setUp(self):
-        super(GroupsTestCase, self).setUp()
-        self.groupdb = GroupMappingDatabase(os.path.join(DATADIR, "group_mapping.tdb"))
-
-    def tearDown(self):
-        self.groupdb.close()
-        super(GroupsTestCase, self).tearDown()
-
-    def test_group_length(self):
-        self.assertEquals(13, len(list(self.groupdb.groupsids())))
-
-    def test_get_group(self):
-        self.assertEquals((-1, 5L, 'Administrators', ''), self.groupdb.get_group("S-1-5-32-544"))
-
-    def test_groupsids(self):
-        sids = list(self.groupdb.groupsids())
-        self.assertTrue("S-1-5-32-544" in sids)
-
-    def test_alias_length(self):
-        self.assertEquals(0, len(list(self.groupdb.aliases())))
-
-
-class SecretsDbTestCase(TestCase):
-
-    def setUp(self):
-        super(SecretsDbTestCase, self).setUp()
-        self.secretsdb = SecretsDatabase(os.path.join(DATADIR, "secrets.tdb"))
-
-    def tearDown(self):
-        self.secretsdb.close()
-        super(SecretsDbTestCase, self).tearDown()
+        policy = self.pdb.get_account_policy()
+        self.assertEquals(0, policy['bad lockout attempt'])
+        self.assertEquals(4294967295, policy['disconnect time'])
+        self.assertEquals(0, policy['lockout duration'])
+        self.assertEquals(999999999, policy['maximum password age'])
+        self.assertEquals(0, policy['minimum password age'])
+        self.assertEquals(5, policy['min password length'])
+        self.assertEquals(0, policy['password history'])
+        self.assertEquals(0, policy['refuse machine password change'])
+        self.assertEquals(0, policy['reset count minutes'])
+        self.assertEquals(0, policy['user must logon to change password'])
 
     def test_get_sid(self):
-        self.assertTrue(self.secretsdb.get_sid("BEDWYR") is not None)
-
-
-class TdbSamTestCase(TestCase):
-
-    def setUp(self):
-        super(TdbSamTestCase, self).setUp()
-        self.samdb = TdbSam(os.path.join(DATADIR, "passdb.tdb"))
-
-    def tearDown(self):
-        self.samdb.close()
-        super(TdbSamTestCase, self).tearDown()
+        domain_sid = passdb.get_global_sam_sid()
+        self.assertEquals(dom_sid("S-1-5-21-2470180966-3899876309-2637894779"), domain_sid)
 
     def test_usernames(self):
-        self.assertEquals(3, len(list(self.samdb.usernames())))
+        userlist = self.pdb.search_users(0)
+        self.assertEquals(3, len(userlist))
 
     def test_getuser(self):
-        user = SAMUser("root")
-        user.logoff_time = 2147483647
-        user.kickoff_time = 2147483647
-        user.pass_can_change_time = 1125418267
-        user.username = "root"
-        user.uid = None
-        user.lm_password = 'U)\x02\x03\x1b\xed\xe9\xef\xaa\xd3\xb45\xb5\x14\x04\xee'
-        user.nt_password = '\x87\x8d\x80\x14`l\xda)gzD\xef\xa15?\xc7'
-        user.acct_ctrl = 16
-        user.pass_last_set_time = 1125418267
-        user.fullname = "root"
-        user.nt_username = ""
-        user.logoff_time = 2147483647
-        user.acct_desc = ""
-        user.group_rid = 1001
-        user.logon_count = 0
-        user.bad_password_count = 0
-        user.domain = "BEDWYR"
-        user.munged_dial = ""
-        user.workstations = ""
-        user.user_rid = 1000
-        user.kickoff_time = 2147483647
-        user.logoff_time = 2147483647
-        user.unknown_6 = 1260L
-        user.logon_divs = 0
-        user.hours = [True for i in range(168)]
-        other = self.samdb["root"]
-        for name in other.__dict__:
-            if other.__dict__[name] != user.__dict__[name]:
-                print "%s: %r != %r" % (name, other.__dict__[name], user.__dict__[name])
-        self.assertEquals(user, other)
+        user = self.pdb.getsampwnam("root")
+
+        self.assertEquals(16, user.acct_ctrl)
+        self.assertEquals("", user.acct_desc)
+        self.assertEquals(0, user.bad_password_count)
+        self.assertEquals(0, user.bad_password_time)
+        self.assertEquals(0, user.code_page)
+        self.assertEquals(0, user.country_code)
+        self.assertEquals("", user.dir_drive)
+        self.assertEquals("BEDWYR", user.domain)
+        self.assertEquals("root", user.full_name)
+        self.assertEquals(dom_sid('S-1-5-21-2470180966-3899876309-2637894779-513'), user.group_sid)
+        self.assertEquals("\\\\BEDWYR\\root", user.home_dir)
+        self.assertEquals([-1 for i in range(21)], user.hours)
+        self.assertEquals(21, user.hours_len)
+        self.assertEquals(9223372036854775807, user.kickoff_time)
+        self.assertEquals(None, user.lanman_passwd)
+        self.assertEquals(9223372036854775807, user.logoff_time)
+        self.assertEquals(0, user.logon_count)
+        self.assertEquals(168, user.logon_divs)
+        self.assertEquals("", user.logon_script)
+        self.assertEquals(0, user.logon_time)
+        self.assertEquals("", user.munged_dial)
+        self.assertEquals('\x87\x8d\x80\x14`l\xda)gzD\xef\xa15?\xc7', user.nt_passwd)
+        self.assertEquals("", user.nt_username)
+        self.assertEquals(1125418267, user.pass_can_change_time)
+        self.assertEquals(1125418267, user.pass_last_set_time)
+        self.assertEquals(2125418266, user.pass_must_change_time)
+        self.assertEquals(None, user.plaintext_passwd)
+        self.assertEquals("\\\\BEDWYR\\root\\profile", user.profile_path)
+        self.assertEquals(None, user.pw_history)
+        self.assertEquals(dom_sid("S-1-5-21-2470180966-3899876309-2637894779-1000"), user.user_sid)
+        self.assertEquals("root", user.username)
+        self.assertEquals("", user.workstations)
+
+    def test_group_length(self):
+        grouplist = self.pdb.enum_group_mapping()
+        self.assertEquals(13, len(grouplist))
+
+    def test_get_group(self):
+        group = self.pdb.getgrsid(dom_sid("S-1-5-32-544"))
+        self.assertEquals("Administrators", group.nt_name)
+        self.assertEquals(4294967295, group.gid)
+        self.assertEquals(5, group.sid_name_use)
+
+    def test_groupsids(self):
+        grouplist = self.pdb.enum_group_mapping()
+        sids = []
+        for g in grouplist:
+            sids.append(str(g.sid))
+        self.assertTrue("S-1-5-32-544" in sids)
+        self.assertTrue("S-1-5-32-545" in sids)
+        self.assertTrue("S-1-5-32-546" in sids)
+        self.assertTrue("S-1-5-32-548" in sids)
+        self.assertTrue("S-1-5-32-549" in sids)
+        self.assertTrue("S-1-5-32-550" in sids)
+        self.assertTrue("S-1-5-32-551" in sids)
+
+    def test_alias_length(self):
+        aliaslist = self.pdb.search_aliases()
+        self.assertEquals(1, len(aliaslist))
+        self.assertEquals("Jelmers NT Group", aliaslist[0]['account_name'])
 
 
 class WinsDatabaseTestCase(TestCase):
@@ -176,29 +180,6 @@ class WinsDatabaseTestCase(TestCase):
     def tearDown(self):
         self.winsdb.close()
         super(WinsDatabaseTestCase, self).tearDown()
-
-
-class SmbpasswdTestCase(TestCase):
-
-    def setUp(self):
-        super(SmbpasswdTestCase, self).setUp()
-        self.samdb = SmbpasswdFile(os.path.join(DATADIR, "smbpasswd"))
-
-    def test_length(self):
-        self.assertEquals(3, len(self.samdb))
-
-    def test_get_user(self):
-        user = SAMUser("rootpw")
-        user.lm_password = "552902031BEDE9EFAAD3B435B51404EE"
-        user.nt_password = "878D8014606CDA29677A44EFA1353FC7"
-        user.acct_ctrl = ACB_NORMAL
-        user.pass_last_set_time = int(1125418267)
-        user.uid = 0
-        self.assertEquals(user, self.samdb["rootpw"])
-
-    def tearDown(self):
-        self.samdb.close()
-        super(SmbpasswdTestCase, self).tearDown()
 
 
 class IdmapDbTestCase(TestCase):
@@ -229,26 +210,3 @@ class IdmapDbTestCase(TestCase):
     def tearDown(self):
         self.idmapdb.close()
         super(IdmapDbTestCase, self).tearDown()
-
-
-class ParamTestCase(TestCase):
-
-    def test_init(self):
-        file = ParamFile()
-        self.assertTrue(file is not None)
-
-    def test_add_section(self):
-        file = ParamFile()
-        file.add_section("global")
-        self.assertTrue(file["global"] is not None)
-
-    def test_set_param_string(self):
-        file = ParamFile()
-        file.add_section("global")
-        file.set_string("data", "bar")
-        self.assertEquals("bar", file.get_string("data"))
-
-    def test_get_section(self):
-        file = ParamFile()
-        self.assertEquals(None, file.get_section("unknown"))
-        self.assertRaises(KeyError, lambda: file["unknown"])
