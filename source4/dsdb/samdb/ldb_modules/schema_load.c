@@ -150,8 +150,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	char *error_string;
 	int ret;
 	struct ldb_result *schema_res;
-	struct ldb_result *a_res;
-	struct ldb_result *c_res;
+	struct ldb_result *res;
 	static const char *schema_attrs[] = {
 		"prefixMap",
 		"schemaInfo",
@@ -190,36 +189,21 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	/*
 	 * load the attribute definitions
 	 */
-	ret = dsdb_module_search(module, tmp_ctx, &a_res,
-				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-				 DSDB_FLAG_NEXT_MODULE,
-				 NULL,
-				 "(objectClass=attributeSchema)");
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-				       "dsdb_schema: failed to search attributeSchema objects: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-
-	/*
-	 * load the objectClass definitions
-	 */
-	ret = dsdb_module_search(module, tmp_ctx, &c_res,
+	ret = dsdb_module_search(module, tmp_ctx, &res,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
 				 NULL,
-				 "(objectClass=classSchema)");
+				 "(|(objectClass=attributeSchema)(objectClass=classSchema))");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
-				       "dsdb_schema: failed to search classSchema objects: %s",
+				       "dsdb_schema: failed to search attributeSchema and classSchema objects: %s",
 				       ldb_errstring(ldb));
 		goto failed;
 	}
 
 	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
-					   schema_res, a_res, c_res, schema, &error_string);
+					   schema_res, res, schema, &error_string);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
 				       "dsdb_schema load failed: %s",

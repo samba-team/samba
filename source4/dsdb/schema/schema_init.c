@@ -775,6 +775,33 @@ WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
 #define dsdb_oom(error_string, mem_ctx) *error_string = talloc_asprintf(mem_ctx, "dsdb out of memory at %s:%d\n", __FILE__, __LINE__)
 
 /* 
+ Fill a DSDB schema from the ldb results provided.  This is called
+ directly when a schema must be created with a pre-initialised prefixMap
+*/
+
+int dsdb_load_ldb_results_into_schema(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
+				      struct dsdb_schema *schema,
+				      struct ldb_result *attrs_class_res,
+				      char **error_string)
+{
+	unsigned int i;
+
+	for (i=0; i < attrs_class_res->count; i++) {
+		WERROR status = dsdb_schema_set_el_from_ldb_msg(ldb, schema, attrs_class_res->msgs[i]);
+		if (!W_ERROR_IS_OK(status)) {
+			*error_string = talloc_asprintf(mem_ctx,
+				      "dsdb_load_ldb_results_into_schema: failed to load attribute or class definition: %s:%s",
+				      ldb_dn_get_linearized(attrs_class_res->msgs[i]->dn),
+				      win_errstr(status));
+			DEBUG(0,(__location__ ": %s\n", *error_string));
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
  Create a DSDB schema from the ldb results provided.  This is called
  directly when the schema is provisioned from an on-disk LDIF file, or
  from dsdb_schema_from_schema_dn in schema_fsmo
@@ -782,16 +809,16 @@ WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
 
 int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				 struct ldb_result *schema_res,
-				 struct ldb_result *attrs_res, struct ldb_result *objectclass_res, 
+				 struct ldb_result *attrs_class_res,
 				 struct dsdb_schema **schema_out,
 				 char **error_string)
 {
 	WERROR status;
-	unsigned int i;
 	const struct ldb_val *prefix_val;
 	const struct ldb_val *info_val;
 	struct ldb_val info_val_default;
 	struct dsdb_schema *schema;
+	int ret;
 
 	schema = dsdb_new_schema(mem_ctx);
 	if (!schema) {
@@ -830,28 +857,9 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	for (i=0; i < attrs_res->count; i++) {
-		status = dsdb_attribute_from_ldb(ldb, schema, attrs_res->msgs[i]);
-		if (!W_ERROR_IS_OK(status)) {
-			*error_string = talloc_asprintf(mem_ctx, 
-				      "schema_fsmo_init: failed to load attribute definition: %s:%s",
-				      ldb_dn_get_linearized(attrs_res->msgs[i]->dn),
-				      win_errstr(status));
-			DEBUG(0,(__location__ ": %s\n", *error_string));
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
-	}
-
-	for (i=0; i < objectclass_res->count; i++) {
-		status = dsdb_class_from_ldb(schema, objectclass_res->msgs[i]);
-		if (!W_ERROR_IS_OK(status)) {
-			*error_string = talloc_asprintf(mem_ctx, 
-				      "schema_fsmo_init: failed to load class definition: %s:%s",
-				      ldb_dn_get_linearized(objectclass_res->msgs[i]->dn),
-				      win_errstr(status));
-			DEBUG(0,(__location__ ": %s\n", *error_string));
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
+	ret = dsdb_load_ldb_results_into_schema(mem_ctx, ldb, schema, attrs_class_res, error_string);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	schema->fsmo.master_dn = ldb_msg_find_attr_as_dn(ldb, schema, schema_res->msgs[0], "fSMORoleOwner");

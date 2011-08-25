@@ -112,11 +112,10 @@ bool drs_util_dsdb_schema_load_ldb(struct torture_context *tctx,
 				   const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
 				   bool reload_schema)
 {
-	int i, ret;
+	int ret;
 	WERROR werr;
-	const char *err_msg;
-	struct ldb_result *a_res;
-	struct ldb_result *c_res;
+	char *err_msg;
+	struct ldb_result *res;
 	struct ldb_dn *schema_dn;
 	struct dsdb_schema *ldap_schema;
 
@@ -137,50 +136,27 @@ bool drs_util_dsdb_schema_load_ldb(struct torture_context *tctx,
 			       "Failed to construct prefixMap from drsuapi data");
 
 	/*
-	 * load the attribute definitions
+	 * load the attribute and objectClass definitions
 	 */
-	ret = ldb_search(ldb, ldap_schema, &a_res,
+	ret = ldb_search(ldb, ldap_schema, &res,
 			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-			 "(objectClass=attributeSchema)");
+			 "(|(objectClass=attributeSchema)(objectClass=classSchema))");
 	if (ret != LDB_SUCCESS) {
 		err_msg = talloc_asprintf(tctx,
-					  "failed to search attributeSchema objects: %s",
+					  "failed to search attributeSchema or classSchema objects: %s",
 					  ldb_errstring(ldb));
 		torture_fail(tctx, err_msg);
 	}
 
-	/*
-	 * load the objectClass definitions
-	 */
-	ret = ldb_search(ldb, ldap_schema, &c_res,
-			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-			 "(objectClass=classSchema)");
+	ret = dsdb_load_ldb_results_into_schema(tctx, ldb, ldap_schema, res, &err_msg);
 	if (ret != LDB_SUCCESS) {
 		err_msg = talloc_asprintf(tctx,
-					  "failed to search classSchema objects: %s",
-					  ldb_errstring(ldb));
+					  "dsdb_load_ldb_results_into_schema failed: %s",
+					  err_msg);
 		torture_fail(tctx, err_msg);
 	}
 
-	/* Build schema */
-	for (i=0; i < a_res->count; i++) {
-		werr = dsdb_attribute_from_ldb(ldb, ldap_schema, a_res->msgs[i]);
-		torture_assert_werr_ok(tctx, werr,
-				       talloc_asprintf(tctx,
-						       "dsdb_attribute_from_ldb() failed for: %s",
-						       ldb_dn_get_linearized(a_res->msgs[i]->dn)));
-	}
-
-	for (i=0; i < c_res->count; i++) {
-		werr = dsdb_class_from_ldb(ldap_schema, c_res->msgs[i]);
-		torture_assert_werr_ok(tctx, werr,
-				       talloc_asprintf(tctx,
-						       "dsdb_class_from_ldb() failed for: %s",
-						       ldb_dn_get_linearized(c_res->msgs[i]->dn)));
-	}
-
-	talloc_free(a_res);
-	talloc_free(c_res);
+	talloc_free(res);
 
 	ret = dsdb_set_schema(ldb, ldap_schema);
 	if (ret != LDB_SUCCESS) {
