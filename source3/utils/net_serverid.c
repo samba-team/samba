@@ -49,7 +49,7 @@ static int net_serverid_wipe_fn(struct db_record *rec,
 	if (id->vnn != get_my_vnn()) {
 		return 0;
 	}
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *str = server_id_str(talloc_tos(), id);
 		DEBUG(1, ("Could not delete serverid.tdb record %s: %s\n",
@@ -77,7 +77,7 @@ static int net_serverid_wipedbs_conn(
 		DEBUG(10, ("Deleting connections.tdb record for pid %s\n",
 			   server_id_str(talloc_tos(), &key->pid)));
 
-		status = rec->delete_rec(rec);
+		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Could not delete connections.tdb record "
 				  "for pid %s: %s\n",
@@ -99,7 +99,7 @@ static int net_serverid_wipedbs_sessionid(struct db_record *rec,
 		DEBUG(10, ("Deleting sessionid.tdb record for pid %s\n",
 			   server_id_str(talloc_tos(), &session->pid)));
 
-		status = rec->delete_rec(rec);
+		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Could not delete session.tdb record "
 				  "for pid %s: %s\n",
