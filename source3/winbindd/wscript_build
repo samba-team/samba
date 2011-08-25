@@ -31,6 +31,7 @@ bld.SAMBA3_LIBRARY('idmap',
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_ADEX',
                     source=IDMAP_ADEX_SRC,
+                    deps='ads',
                     vars=locals(),
                     enabled=bld.env.HAVE_LDAP)
 
@@ -41,6 +42,7 @@ bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_AD',
                     source=IDMAP_AD_SRC,
+                    deps='ads',
                     vars=locals(),
                     enabled=bld.env.HAVE_LDAP)
 
