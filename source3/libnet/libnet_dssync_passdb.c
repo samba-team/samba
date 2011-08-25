@@ -63,16 +63,19 @@ static NTSTATUS dssync_insert_obj(struct dssync_passdb *pctx,
 {
 	NTSTATUS status;
 	struct db_record *rec;
+	TDB_DATA value;
 
-	rec = db->fetch_locked(db, talloc_tos(), obj->key);
+	rec = dbwrap_fetch_locked(db, talloc_tos(), obj->key);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (rec->value.dsize != 0) {
+
+	value = dbwrap_record_get_value(rec);
+	if (value.dsize != 0) {
 		abort();
 	}
 
-	status = rec->store(rec, obj->data, TDB_INSERT);
+	status = dbwrap_record_store(rec, obj->data, TDB_INSERT);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(rec);
 		return status;
@@ -103,15 +106,15 @@ static struct dssync_passdb_obj *dssync_search_obj_by_guid(struct dssync_passdb 
 							   const struct GUID *guid)
 {
 	struct dssync_passdb_obj *obj;
-	int ret;
 	TDB_DATA key;
 	TDB_DATA data;
+	NTSTATUS status;
 
 	key = make_tdb_data((const uint8_t *)(const void *)guid,
 			     sizeof(*guid));
 
-	ret = db->fetch(db, talloc_tos(), key, &data);
-	if (ret != 0) {
+	status = dbwrap_fetch(db, talloc_tos(), key, &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
@@ -160,16 +163,19 @@ static NTSTATUS dssync_insert_mem(struct dssync_passdb *pctx,
 {
 	NTSTATUS status;
 	struct db_record *rec;
+	TDB_DATA value;
 
-	rec = obj->members->fetch_locked(obj->members, talloc_tos(), mem->key);
+	rec = dbwrap_fetch_locked(obj->members, talloc_tos(), mem->key);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (rec->value.dsize != 0) {
+
+	value = dbwrap_record_get_value(rec);
+	if (value.dsize != 0) {
 		abort();
 	}
 
-	status = rec->store(rec, mem->data, TDB_INSERT);
+	status = dbwrap_record_store(rec, mem->data, TDB_INSERT);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(rec);
 		return status;
@@ -299,12 +305,14 @@ static int dssync_passdb_traverse_amembers(struct db_record *rec,
 	struct dom_sid *members;
 	bool is_member = false;
 	const char *action;
+	TDB_DATA value;
 
 	state->idx++;
 
 	alias_sid = state->obj->cur->object.identifier->sid;
 
-	mem = dssync_parse_mem(rec->value);
+	value = dbwrap_record_get_value(rec);
+	mem = dssync_parse_mem(value);
 	if (mem == NULL) {
 		return -1;
 	}
@@ -387,14 +395,16 @@ static int dssync_passdb_traverse_aliases(struct db_record *rec,
 		struct dssync_passdb);
 	struct dssync_passdb_traverse_amembers mstate;
 	struct dssync_passdb_obj *obj;
-	int ret;
+	TDB_DATA value;
+	NTSTATUS status;
 
 	state->idx++;
 	if (pctx->methods == NULL) {
 		return -1;
 	}
 
-	obj = dssync_parse_obj(rec->value);
+	value = dbwrap_record_get_value(rec);
+	obj = dssync_parse_obj(value);
 	if (obj == NULL) {
 		return -1;
 	}
@@ -403,10 +413,10 @@ static int dssync_passdb_traverse_aliases(struct db_record *rec,
 	mstate.ctx = state->ctx;
 	mstate.name = "members";
 	mstate.obj = obj;
-	ret = obj->members->traverse_read(obj->members,
-					  dssync_passdb_traverse_amembers,
-					  &mstate);
-	if (ret < 0) {
+	status = dbwrap_traverse_read(obj->members,
+				      dssync_passdb_traverse_amembers,
+				      &mstate, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
@@ -446,6 +456,7 @@ static int dssync_passdb_traverse_gmembers(struct db_record *rec,
 	struct group *grp;
 	uint32_t rid;
 	bool is_unix_member = false;
+	TDB_DATA value;
 
 	state->idx++;
 
@@ -456,7 +467,9 @@ static int dssync_passdb_traverse_gmembers(struct db_record *rec,
 		return -1;
 	}
 
-	mem = dssync_parse_mem(rec->value);
+	value = dbwrap_record_get_value(rec);
+
+	mem = dssync_parse_mem(value);
 	if (mem == NULL) {
 		return -1;
 	}
@@ -563,14 +576,17 @@ static int dssync_passdb_traverse_groups(struct db_record *rec,
 		struct dssync_passdb);
 	struct dssync_passdb_traverse_gmembers mstate;
 	struct dssync_passdb_obj *obj;
-	int ret;
+	TDB_DATA value;
+	NTSTATUS status;
 
 	state->idx++;
 	if (pctx->methods == NULL) {
 		return -1;
 	}
 
-	obj = dssync_parse_obj(rec->value);
+	value = dbwrap_record_get_value(rec);
+
+	obj = dssync_parse_obj(value);
 	if (obj == NULL) {
 		return -1;
 	}
@@ -579,10 +595,10 @@ static int dssync_passdb_traverse_groups(struct db_record *rec,
 	mstate.ctx = state->ctx;
 	mstate.name = "members";
 	mstate.obj = obj;
-	ret = obj->members->traverse_read(obj->members,
-					  dssync_passdb_traverse_gmembers,
-					  &mstate);
-	if (ret < 0) {
+	status = dbwrap_traverse_read(obj->members,
+				      dssync_passdb_traverse_gmembers,
+				      &mstate, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
@@ -597,25 +613,25 @@ static NTSTATUS passdb_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 		struct dssync_passdb);
 	struct dssync_passdb_traverse_aliases astate;
 	struct dssync_passdb_traverse_groups gstate;
-	int ret;
+	NTSTATUS status;
 
 	ZERO_STRUCT(astate);
 	astate.ctx = ctx;
 	astate.name = "aliases";
-	ret = pctx->aliases->traverse_read(pctx->aliases,
-					   dssync_passdb_traverse_aliases,
-					   &astate);
-	if (ret < 0) {
+	status = dbwrap_traverse_read(pctx->aliases,
+				      dssync_passdb_traverse_aliases,
+				      &astate, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	ZERO_STRUCT(gstate);
 	gstate.ctx = ctx;
 	gstate.name = "groups";
-	ret = pctx->groups->traverse_read(pctx->groups,
-					  dssync_passdb_traverse_groups,
-					  &gstate);
-	if (ret < 0) {
+	status = dbwrap_traverse_read(pctx->groups,
+				      dssync_passdb_traverse_groups,
+				      &gstate, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
