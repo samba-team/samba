@@ -154,6 +154,8 @@ class dc_join(object):
             ctx.del_noerror(ctx.server_dn, recursive=True)
             if ctx.topology_dn:
                 ctx.del_noerror(ctx.topology_dn)
+            if ctx.partition_dn:
+                ctx.del_noerror(ctx.partition_dn)
             if res:
                 ctx.new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
                 ctx.del_noerror(ctx.new_krbtgt_dn)
@@ -371,6 +373,19 @@ class dc_join(object):
                 rec["msDS-HasMasterNCs"] = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
             rec["options"] = "1"
             rec["invocationId"] = ndr_pack(misc.GUID(str(uuid.uuid4())))
+            ctx.DsAddEntry(rec)
+
+        if ctx.subdomain:
+            print "Adding %s" % ctx.partition_dn
+            rec = {
+                "dn" : ctx.partition_dn,
+                "objectclass" : "crossRef",
+                "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN),
+                "dnsRoot": ctx.dnsdomain,
+                "nCName" : extended_base_dn,
+                "nETBIOSName" : ctx.domain_name,
+                "ntMixedDomain": str(0),
+                "msDS-Behavior-Version" : str(ctx.behavior_version)}
             ctx.DsAddEntry(rec)
 
         # find the GUID of our NTDS DN
@@ -643,6 +658,7 @@ def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=Non
     ctx.domain_name = netbios_domain
     ctx.realm = dnsdomain
     ctx.dnsdomain = dnsdomain
+    ctx.partition_dn = "CN=%s,CN=Partitions,%s" % (ctx.domain_name, ctx.config_dn)
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
     ctx.domsid = str(security.random_sid())
     ctx.acct_dn = None
