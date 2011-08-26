@@ -562,6 +562,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None):
     new_lp_ctx.load(result.lp.configfile)
     new_lp_ctx.set("private dir", result.lp.get("private dir"))
     new_lp_ctx.set("state directory", result.lp.get("state directory"))
+    new_lp_ctx.set("lock directory", result.lp.get("lock directory"))
 
     # Connect to samba4 backend
     s4_passdb = passdb.PDB(new_lp_ctx.get("passdb backend"))

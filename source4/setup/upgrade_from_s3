@@ -87,16 +87,17 @@ else:
 	logger.setLevel(logging.INFO)
 
 s3conf = s3param.get_context()
-#s3conf.load_default()
 
 # Set correct default values from libdir or testparm
 paths = {}
 if libdir:
     paths["state directory"] = libdir
     paths["private dir"] = libdir
+    paths["lock directory"] = libdir
 else:
     paths["state directory"] = get_testparm_var(testparm, "state directory")
     paths["private dir"] = get_testparm_var(testparm, "private dir")
+    paths["lock directory"] = get_testparm_var(testparm, "lock directory")
 
 for p in paths:
     s3conf.set(p, paths[p])
