@@ -1361,7 +1361,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	status = winbindd_reinit_after_fork(child, child->logfilename);
 
-	nwritten = write(state.sock, &status, sizeof(status));
+	nwritten = sys_write(state.sock, &status, sizeof(status));
 	if (nwritten != sizeof(status)) {
 		DEBUG(1, ("fork_domain_child: Could not write status: "
 			  "nwritten=%d, error=%s\n", (int)nwritten,
