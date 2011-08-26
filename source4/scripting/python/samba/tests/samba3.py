@@ -23,7 +23,7 @@ from samba.samba3 import (Registry, SecretsDatabase)
 from samba.samba3 import (WinsDatabase, IdmapDatabase)
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
-from samba.tests import TestCase
+from samba.tests import TestCase, TestCaseInTempDir
 from samba.dcerpc.security import dom_sid
 import os
 
@@ -58,21 +58,25 @@ class RegistryTestCase(TestCase):
                            self.registry.values("HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))
 
 
-class PassdbTestCase(TestCase):
+class PassdbTestCase(TestCaseInTempDir):
 
     def setUp(self):
         super (PassdbTestCase, self).setUp()
+        os.system("cp -r %s %s" % (DATADIR, self.tempdir))
+        datadir = os.path.join(self.tempdir, "samba3")
+
         self.lp = s3param.get_context()
-        self.lp.load(os.path.join(DATADIR, "smb.conf"))
-        self.lp.set("private dir", DATADIR)
-        self.lp.set("state directory", DATADIR)
-        self.lp.set("lock directory", DATADIR)
-        passdb.set_secrets_dir(DATADIR)
+        self.lp.load(os.path.join(datadir, "smb.conf"))
+        self.lp.set("private dir", datadir)
+        self.lp.set("state directory", datadir)
+        self.lp.set("lock directory", datadir)
+        passdb.set_secrets_dir(datadir)
         self.pdb = passdb.PDB("tdbsam")
 
     def tearDown(self):
         self.lp = []
         self.pdb = []
+        os.system("rm -rf %s" % os.path.join(self.tempdir, "samba3"))
         super(PassdbTestCase, self).tearDown()
 
     def test_param(self):
