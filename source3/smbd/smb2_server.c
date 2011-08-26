@@ -886,6 +886,20 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
+		/*
+		 * We're splitting off the last SMB2
+		 * request in a compound set, and the
+		 * smb2_send_async_interim_response()
+		 * call above just sent all the replies
+		 * for the previous SMB2 requests in
+		 * this compound set. So we're no longer
+		 * in the "compound_related_in_progress"
+		 * state, and this is no longer a compound
+		 * request.
+		 */
+		req->compound_related = false;
+		req->sconn->smb2.compound_related_in_progress = false;
 	}
 
 	/* Don't return an intermediate packet on a pipe read/write. */
@@ -1303,6 +1317,10 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	} else {
 		req->compat_chain_fsp = NULL;
+	}
+
+	if (req->compound_related) {
+		req->sconn->smb2.compound_related_in_progress = true;
 	}
 
 	switch (opcode) {
@@ -1751,6 +1769,10 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		return NT_STATUS_OK;
 	}
 
+	if (req->compound_related) {
+		req->sconn->smb2.compound_related_in_progress = false;
+	}
+
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
 	/* Set credit for this operation (zero credits if this
@@ -1801,6 +1823,8 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *sconn);
+
 void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 					struct tevent_immediate *im,
 					void *private_data)
@@ -1823,9 +1847,13 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
 	}
-}
 
-static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *sconn);
+	status = smbd_smb2_request_next_incoming(sconn);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		return;
+	}
+}
 
 static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
 {
@@ -2463,6 +2491,14 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 	size_t max_send_queue_len;
 	size_t cur_send_queue_len;
 	struct tevent_req *subreq;
+
+	if (sconn->smb2.compound_related_in_progress) {
+		/*
+		 * Can't read another until the related
+		 * compound is done.
+		 */
+		return NT_STATUS_OK;
+	}
 
 	if (tevent_queue_length(sconn->smb2.recv_queue) > 0) {
 		/*
