@@ -849,7 +849,7 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 	status = dcerpc_samr_QueryDomainInfo(b,
 					     mem_ctx,
 					     &dom_pol,
-					     12,
+					     DomainLockoutInformation,
 					     &info,
 					     &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -901,7 +901,7 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 	status = dcerpc_samr_QueryDomainInfo(b,
 					     mem_ctx,
 					     &dom_pol,
-					     1,
+					     DomainPasswordInformation,
 					     &info,
 					     &result);
 	if (!NT_STATUS_IS_OK(status)) {
