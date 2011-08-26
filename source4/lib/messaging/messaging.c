@@ -545,6 +545,10 @@ NTSTATUS imessaging_send_ptr(struct imessaging_context *msg, struct server_id se
 */
 int imessaging_cleanup(struct imessaging_context *msg)
 {
+	if (!msg) {
+		return 0;
+	}
+
 	DEBUG(5,("imessaging: cleaning up %s\n", msg->path));
 	unlink(msg->path);
 	while (msg->names && msg->names[0]) {
