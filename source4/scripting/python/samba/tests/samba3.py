@@ -66,6 +66,7 @@ class PassdbTestCase(TestCase):
         self.lp.load(os.path.join(DATADIR, "smb.conf"))
         self.lp.set("private dir", DATADIR)
         self.lp.set("state directory", DATADIR)
+        self.lp.set("lock directory", DATADIR)
         passdb.set_secrets_dir(DATADIR)
         self.pdb = passdb.PDB("tdbsam")
 
