@@ -1329,7 +1329,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		close(fdpair[0]);
 
-		nread = read(fdpair[1], &status, sizeof(status));
+		nread = sys_read(fdpair[1], &status, sizeof(status));
 		if (nread != sizeof(status)) {
 			DEBUG(1, ("fork_domain_child: Could not read child status: "
 				  "nread=%d, error=%s\n", (int)nread,
