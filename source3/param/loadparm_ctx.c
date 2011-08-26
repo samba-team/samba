@@ -20,6 +20,30 @@
 #include "includes.h"
 #include "../source4/param/s3_param.h"
 
+static struct loadparm_service *lp_service_for_s4_ctx(const char *servicename)
+{
+	TALLOC_CTX *mem_ctx;
+	struct loadparm_service *service;
+
+	mem_ctx = talloc_stackframe();
+	service = lp_service(servicename);
+	talloc_free(mem_ctx);
+
+	return service;
+}
+
+static struct loadparm_service *lp_servicebynum_for_s4_ctx(int servicenum)
+{
+	TALLOC_CTX *mem_ctx;
+	struct loadparm_service *service;
+
+	mem_ctx = talloc_stackframe();
+	service = lp_servicebynum(servicenum);
+	talloc_free(mem_ctx);
+
+	return service;
+}
+
 static bool lp_load_for_s4_ctx(const char *filename)
 {
 	TALLOC_CTX *mem_ctx;
@@ -41,8 +65,8 @@ static const struct loadparm_s3_context s3_fns =
 	.get_parametric = lp_parm_const_string_service,
 	.get_parm_struct = lp_get_parameter,
 	.get_parm_ptr = lp_parm_ptr,
-	.get_service = lp_service,
-	.get_servicebynum = lp_servicebynum,
+	.get_service = lp_service_for_s4_ctx,
+	.get_servicebynum = lp_servicebynum_for_s4_ctx,
 	.get_default_loadparm_service = lp_default_loadparm_service,
 	.get_numservices = lp_numservices,
 	.load = lp_load_for_s4_ctx,
