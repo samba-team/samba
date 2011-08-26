@@ -13,6 +13,8 @@ sys.path.insert(0, "bin/python")
 
 import samba
 import samba.samba3
+from samba.samba3 import param as s3param
+from samba.dcerpc import lsa
 
 parser = optparse.OptionParser("samba3dump <libdir> [<smb.conf>]")
 parser.add_option("--format", type="choice", metavar="FORMAT",
@@ -29,36 +31,36 @@ def print_header(txt):
 
 def print_samba3_policy(pol):
     print_header("Account Policies")
-    print "Min password length: %d" % pol.min_password_length
-    print "Password history length: %d" % pol.password_history
-    if pol.user_must_logon_to_change_password:
-        print "User must logon to change password: %d" % pol.user_must_logon_to_change_password
-    if pol.maximum_password_age:
-        print "Maximum password age: %d" % pol.maximum_password_age
-    if pol.minimum_password_age:
-        print "Minimum password age: %d" % pol.minimum_password_age
-    if pol.lockout_duration:
-        print "Lockout duration: %d" % pol.lockout_duration
-    if pol.reset_count_minutes:
-        print "Reset Count Minutes: %d" % pol.reset_count_minutes
-    if pol.bad_lockout_minutes:
-        print "Bad Lockout Minutes: %d" % pol.bad_lockout_minutes
-    if pol.disconnect_time:
-        print "Disconnect Time: %d" % pol.disconnect_time
-    if pol.refuse_machine_password_change:
-        print "Refuse Machine Password Change: %d" % pol.refuse_machine_password_change
+    print "Min password length: %d" % pol['min password length']
+    print "Password history length: %d" % pol['password history']
+    if pol['user must logon to change password']:
+        print "User must logon to change password: %d" % pol['user must logon to change password']
+    if pol['maximum password age']:
+        print "Maximum password age: %d" % pol['maximum password age']
+    if pol['minimum password age']:
+        print "Minimum password age: %d" % pol['minimum password age']
+    if pol['lockout duration']:
+        print "Lockout duration: %d" % pol['lockout duration']
+    if pol['reset count minutes']:
+        print "Reset Count Minutes: %d" % pol['reset count minutes']
+    if pol['bad lockout attempt']:
+        print "Bad Lockout Minutes: %d" % pol['bad lockout attempt']
+    if pol['disconnect time']:
+        print "Disconnect Time: %d" % pol['disconnect time']
+    if pol['refuse machine password change']:
+        print "Refuse Machine Password Change: %d" % pol['refuse machine password change']
 
 def print_samba3_sam(samdb):
     print_header("SAM Database")
-    for user in samdb:
-        print "%s" % user
+    for user in samdb.search_users(0):
+        print "%s (%d): %s" % (user['account_name'], user['rid'], user['fullname'])
 
-def print_samba3_shares(shares):
+def print_samba3_shares(lp):
     print_header("Configured shares")
-    for s in shares:
-        print "--- %s ---" % s.name
-        for p in s:
-            print "\t%s = %s" % (p.key, p.value)
+    for s in lp.services():
+        print "--- %s ---" % s
+        for p in ['path']:
+            print "\t%s = %s" % (p, lp.get(p, s))
         print ""
 
 def print_samba3_secrets(secrets):
@@ -113,12 +115,14 @@ def print_samba3_winsdb(winsdb):
 def print_samba3_groupmappings(groupdb):
     print_header("Group Mappings")
     
-    for sid in groupdb.groupsids():
-        print "\t--- Group: %s ---" % sid
+    for g in groupdb.enum_group_mapping(samba.samba3.passdb.get_global_sam_sid(),
+                                        lsa.SID_NAME_DOM_GRP):
+        print "\t--- Group: %s ---" % g.sid
 
 def print_samba3_aliases(groupdb):
-    for sid in groupdb.aliases():
-        print "\t--- Alias: %s ---" % sid
+    for g in groupdb.enum_group_mapping(samba.samba3.passdb.get_global_sam_sid(),
+                                        lsa.SID_NAME_ALIAS):
+        print "\t--- Alias: %s ---" % g.sid
 
 def print_samba3_idmapdb(idmapdb):
     print_header("Winbindd SID<->GID/UID mappings")
@@ -133,33 +137,42 @@ def print_samba3_idmapdb(idmapdb):
         print "%s -> GID %d" % (idmapdb.get_group_sid(gid), gid)
 
 def print_samba3(samba3):
-    print_samba3_policy(samba3.get_policy_db())
+    passdb = samba3.get_sam_db()
+    print_samba3_policy(passdb.get_account_policy())
     print_samba3_winsdb(samba3.get_wins_db())
     print_samba3_regdb(samba3.get_registry())
     print_samba3_secrets(samba3.get_secrets_db())
     print_samba3_idmapdb(samba3.get_idmap_db())
-    print_samba3_sam(samba3.get_sam_db())
-    groupdb = samba3.get_groupmapping_db()
-    print_samba3_groupmappings(groupdb)
-    print_samba3_aliases(groupdb)
-    print_samba3_shares(samba3.get_shares())
+    print_samba3_sam(passdb)
+    print_samba3_groupmappings(passdb)
+    print_samba3_aliases(passdb)
+    print_samba3_shares(samba3.lp)
 
 def print_samba3_summary(samba3):
     print "WINS db entries: %d" % len(samba3.get_wins_db())
     print "Registry key count: %d" % len(samba3.get_registry())
-    groupdb = samba3.get_groupmapping_db()
-    print "Groupmap count: %d" % len(list(groupdb.groupsids()))
-    print "Alias count: %d" % len(list(groupdb.aliases()))
+    passdb = samba3.get_sam_db()
+    print "Groupmap count: %d" % len(passdb.enum_group_mapping())
+    print "Alias count: %d" % len(passdb.search_aliases())
     idmapdb = samba3.get_idmap_db()
     print "Idmap count: %d" % (len(list(idmapdb.uids())) + len(list(idmapdb.gids())))
 
+if len(args) < 1:
+    parser.print_help()
+    sys.exit(1)
+
 libdir = args[0]
-if len(args) > 1:
+if len(args) < 1:
     smbconf = args[1]
 else:
     smbconf = os.path.join(libdir, "smb.conf")
 
-samba3 = samba.samba3.Samba3(libdir, smbconf)
+s3_lp = s3param.get_context()
+s3_lp.set("private dir", libdir)
+s3_lp.set("state directory", libdir)
+s3_lp.set("lock directory", libdir)
+s3_lp.load(smbconf)
+samba3 = samba.samba3.Samba3(smbconf, s3_lp)
 
 if opts.format == "summary":
     print_samba3_summary(samba3)
