@@ -567,16 +567,17 @@ static PyObject *py_samu_get_group_sid(PyObject *obj, void *closure)
 	struct dom_sid *copy_group_sid;
 	TALLOC_CTX *mem_ctx;
 
+	mem_ctx = talloc_stackframe();
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	group_sid = pdb_get_group_sid(sam_acct);
 	if (group_sid == NULL) {
 		Py_RETURN_NONE;
 	}
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
 	copy_group_sid = dom_sid_dup(mem_ctx, group_sid);
 	if (copy_group_sid == NULL) {
 		PyErr_NoMemory();
