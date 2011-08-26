@@ -1647,7 +1647,7 @@ sub setup_subdom_dc($$$)
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
 		$cmd .= " $env->{CONFIGURATION}";
-		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD} --realm=$dc_vars->{DC_REALM}";
 		unless (system($cmd) == 0) {
 			warn("Failed to exec kcc\n$cmd");
 			return undef;
@@ -1661,7 +1661,7 @@ sub setup_subdom_dc($$$)
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SUBDOM_DC_SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
-		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD} --realm=$dc_vars->{DC_REALM}";
 		# replicate Configuration NC
 		my $cmd_repl = "$cmd \"$config_dn\"";
 		unless(system($cmd_repl) == 0) {

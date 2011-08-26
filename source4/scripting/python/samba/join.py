@@ -25,7 +25,7 @@ from samba.samdb import SamDB
 from samba import gensec, Ldb, drs_utils
 import ldb, samba, sys, os, uuid
 from samba.ndr import ndr_pack
-from samba.dcerpc import security, drsuapi, misc, nbt
+from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
 from samba.schema import Schema
@@ -33,6 +33,7 @@ from samba.net import Net
 from samba.dcerpc import security
 import logging
 import talloc
+import random
 
 # this makes debugging easier
 talloc.enable_null_tracking()
@@ -159,6 +160,30 @@ class dc_join(object):
             if res:
                 ctx.new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
                 ctx.del_noerror(ctx.new_krbtgt_dn)
+
+            if ctx.subdomain:
+                binding_options = "sign"
+                lsaconn = lsa.lsarpc("ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
+                                     ctx.lp, ctx.creds)
+
+                objectAttr = lsa.ObjectAttribute()
+                objectAttr.sec_qos = lsa.QosInfo()
+
+                pol_handle = lsaconn.OpenPolicy2(''.decode('utf-8'),
+                                                 objectAttr, security.SEC_FLAG_MAXIMUM_ALLOWED)
+
+                name = lsa.String()
+                name.string = ctx.realm
+                info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+
+                lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
+
+                name = lsa.String()
+                name.string = ctx.domain_name
+                info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+
+                lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
+
         except Exception:
             pass
 
@@ -194,6 +219,13 @@ class dc_join(object):
         res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
                                expression='ncName=%s' % ctx.samdb.get_default_basedn())
         return res[0]["nETBIOSName"][0]
+
+    def get_parent_partition_dn(ctx):
+        '''get the parent domain partition DN from parent DNS name'''
+        res = ctx.samdb.search(base=ctx.config_dn, attrs=[],
+                               expression='(&(objectclass=crossRef)(dnsRoot=%s)(systemFlags:%s:=%u))' %
+                               (ctx.parent_dnsdomain, ldb.OID_COMPARATOR_AND, samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN))
+        return str(res[0].dn)
 
     def get_mysid(ctx):
         '''get the SID of the connected user. Only works with w2k8 and later,
@@ -309,6 +341,67 @@ class dc_join(object):
                                                                 ctr.err_data.info.extended_err))
             raise RuntimeError("DsAddEntry failed")
 
+    def join_add_ntdsdsa(ctx):
+        '''add the ntdsdsa object'''
+        # FIXME: the partition (NC) assignment has to be made dynamic
+        print "Adding %s" % ctx.ntds_dn
+        rec = {
+            "dn" : ctx.ntds_dn,
+            "objectclass" : "nTDSDSA",
+            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+            "dMDLocation" : ctx.schema_dn}
+
+        if ctx.subdomain:
+            # the local subdomain NC doesn't exist at this time
+            # so we have to add the base_dn NC later
+            nc_list = [ ctx.config_dn, ctx.schema_dn ]
+        else:
+            nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
+
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003 and not ctx.subdomain:
+            rec["msDS-HasDomainNCs"] = ctx.base_dn
+
+        if ctx.RODC:
+            rec["objectCategory"] = "CN=NTDS-DSA-RO,%s" % ctx.schema_dn
+            rec["msDS-HasFullReplicaNCs"] = nc_list
+            rec["options"] = "37"
+            ctx.samdb.add(rec, ["rodc_join:1:1"])
+        else:
+            rec["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
+            rec["HasMasterNCs"]      = nc_list
+            if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+                rec["msDS-HasMasterNCs"] = nc_list
+            rec["options"] = "1"
+            rec["invocationId"] = ndr_pack(misc.GUID(str(uuid.uuid4())))
+            if ctx.subdomain:
+                ctx.samdb.add(rec, ['relax:0'])
+            else:
+                ctx.DsAddEntry(rec)
+
+        # find the GUID of our NTDS DN
+        res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+        ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
+
+
+    def join_modify_ntdsdsa(ctx):
+        '''modify the ntdsdsa object to add local partitions'''
+        print "Modifying %s using system privileges" % ctx.ntds_dn
+
+        # this works around the Enterprise Admins ACL on the NTDSDSA object
+        system_session_info = system_session()
+        ctx.samdb.set_session_info(system_session_info)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(ctx.samdb, ctx.ntds_dn)
+        m["HasMasterNCs"] = ldb.MessageElement(ctx.base_dn, ldb.FLAG_MOD_ADD, "HasMasterNCs")
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            m["msDS-HasDomainNCs"] = ldb.MessageElement(ctx.base_dn, ldb.FLAG_MOD_ADD, "msDS-HasDomainNCs")
+            m["msDS-HasMasterNCs"] = ldb.MessageElement(ctx.base_dn, ldb.FLAG_MOD_ADD, "msDS-HasMasterNCs")
+        ctx.samdb.modify(m, controls=['relax:0'])
+
     def join_add_objects(ctx):
         '''add the various objects needed for the join'''
         if ctx.acct_dn:
@@ -347,50 +440,12 @@ class dc_join(object):
 
         ctx.samdb.add(rec)
 
-        # FIXME: the partition (NC) assignment has to be made dynamic
-        print "Adding %s" % ctx.ntds_dn
-        rec = {
-            "dn" : ctx.ntds_dn,
-            "objectclass" : "nTDSDSA",
-            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
-            "dMDLocation" : ctx.schema_dn}
-
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
-
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec["msDS-HasDomainNCs"] = ctx.base_dn
-
-        if ctx.RODC:
-            rec["objectCategory"] = "CN=NTDS-DSA-RO,%s" % ctx.schema_dn
-            rec["msDS-HasFullReplicaNCs"] = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-            rec["options"] = "37"
-            ctx.samdb.add(rec, ["rodc_join:1:1"])
-        else:
-            rec["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
-            rec["HasMasterNCs"]      = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-            if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-                rec["msDS-HasMasterNCs"] = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-            rec["options"] = "1"
-            rec["invocationId"] = ndr_pack(misc.GUID(str(uuid.uuid4())))
-            ctx.DsAddEntry(rec)
-
         if ctx.subdomain:
-            print "Adding %s" % ctx.partition_dn
-            rec = {
-                "dn" : ctx.partition_dn,
-                "objectclass" : "crossRef",
-                "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN),
-                "dnsRoot": ctx.dnsdomain,
-                "nCName" : extended_base_dn,
-                "nETBIOSName" : ctx.domain_name,
-                "ntMixedDomain": str(0),
-                "msDS-Behavior-Version" : str(ctx.behavior_version)}
-            ctx.DsAddEntry(rec)
+            # the rest is done after replication
+            ctx.ntds_guid = None
+            return
 
-        # find the GUID of our NTDS DN
-        res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
-        ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
+        ctx.join_add_ntdsdsa()
 
         if ctx.connection_dn is not None:
             print "Adding %s" % ctx.connection_dn
@@ -438,6 +493,28 @@ class dc_join(object):
                                                          "userAccountControl")
             ctx.samdb.modify(m)
 
+
+    def join_add_objects2(ctx):
+        '''add the various objects needed for the join, for subdomains post replication'''
+
+        if not ctx.subdomain:
+            return
+
+        print "Adding %s" % ctx.partition_dn
+        # NOTE: windows sends a ntSecurityDescriptor here, we
+        # let it default
+        rec = {
+            "dn" : ctx.partition_dn,
+            "objectclass" : "crossRef",
+            "objectCategory" : "CN=Cross-Ref,%s" % ctx.schema_dn,
+            "nCName" : ctx.base_dn,
+            "nETBIOSName" : ctx.domain_name,
+            "dnsRoot": ctx.dnsdomain,
+            "trustParent" : ctx.parent_partition_dn,
+            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN)}
+        ctx.DsAddEntry(rec)
+
+
     def join_provision(ctx):
         '''provision the local SAM'''
 
@@ -454,6 +531,7 @@ class dc_join(object):
                             configdn=ctx.config_dn,
                             serverdn=ctx.server_dn, domain=ctx.domain_name,
                             hostname=ctx.myname, domainsid=ctx.domsid,
+                            domainguid=ctx.domguid,
                             machinepass=ctx.acct_pass, serverrole="domain controller",
                             sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid)
         print "Provision OK for domain DN %s" % presult.domaindn
@@ -465,7 +543,12 @@ class dc_join(object):
     def join_provision_own_domain(ctx):
         '''provision the local SAM'''
 
-        print "Calling bare provision"
+        # we now operate exclusively on the local database
+        ctx.samdb = ctx.local_samdb
+
+        ctx.join_add_ntdsdsa()
+
+        print("Calling own domain provision")
 
         logger = logging.getLogger("provision")
         logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -474,10 +557,11 @@ class dc_join(object):
 
         presult = provision_fill(ctx.local_samdb, secrets_ldb,
                                  logger, ctx.names, ctx.paths, domainsid=security.dom_sid(ctx.domsid),
+                                 domainguid=ctx.domguid,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="domain controller",
                                  lp=ctx.lp)
-        print "Provision OK for domain %s" % ctx.names.dnsdomain
+        print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
 
     def join_replicate(ctx):
@@ -487,7 +571,10 @@ class dc_join(object):
         ctx.local_samdb.transaction_start()
         try:
             source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
-            destination_dsa_guid = ctx.ntds_guid
+            if ctx.ntds_guid is None:
+                destination_dsa_guid = misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID_W2K3)
+            else:
+                destination_dsa_guid = ctx.ntds_guid
 
             if ctx.RODC:
                 repl_creds = Credentials()
@@ -542,6 +629,9 @@ class dc_join(object):
                                                 ldb.FLAG_MOD_REPLACE, "dsServiceName")
         ctx.local_samdb.modify(m)
 
+        if ctx.subdomain:
+            return
+
         secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
 
         print "Setting up secrets database"
@@ -554,19 +644,142 @@ class dc_join(object):
                             secure_channel_type=ctx.secure_channel_type,
                             key_version_number=ctx.key_version_number)
 
+    def join_setup_trusts(ctx):
+        '''provision the local SAM'''
+
+        def arcfour_encrypt(key, data):
+            from Crypto.Cipher import ARC4
+            c = ARC4.new(key)
+            return c.encrypt(data)
+
+        def string_to_array(string):
+            blob = [0] * len(string)
+
+            for i in range(len(string)):
+                blob[i] = ord(string[i])
+
+            return blob
+
+        print "Setup domain trusts with server %s" % ctx.server
+        binding_options = ""  # why doesn't signing work gere? w2k8r2 claims no session key
+        lsaconn = lsa.lsarpc("ncacn_np:%s[%s]" % (ctx.server, binding_options),
+                             ctx.lp, ctx.creds)
+
+        objectAttr = lsa.ObjectAttribute()
+        objectAttr.sec_qos = lsa.QosInfo()
+
+        pol_handle = lsaconn.OpenPolicy2(''.decode('utf-8'),
+                                         objectAttr, security.SEC_FLAG_MAXIMUM_ALLOWED)
+
+        info = lsa.TrustDomainInfoInfoEx()
+        info.domain_name.string = ctx.dnsdomain
+        info.netbios_name.string = ctx.domain_name
+        info.sid = security.dom_sid(ctx.domsid)
+        info.trust_direction = lsa.LSA_TRUST_DIRECTION_INBOUND | lsa.LSA_TRUST_DIRECTION_OUTBOUND
+        info.trust_type = lsa.LSA_TRUST_TYPE_UPLEVEL
+        info.trust_attributes = lsa.LSA_TRUST_ATTRIBUTE_WITHIN_FOREST
+
+        try:
+            oldname = lsa.String()
+            oldname.string = ctx.dnsdomain
+            oldinfo = lsaconn.QueryTrustedDomainInfoByName(pol_handle, oldname,
+                                                           lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            print("Removing old trust record for %s (SID %s)" % (ctx.dnsdomain, oldinfo.info_ex.sid))
+            lsaconn.DeleteTrustedDomain(pol_handle, oldinfo.info_ex.sid)
+        except RuntimeError:
+            pass
+
+        password_blob = string_to_array(ctx.trustdom_pass.encode('utf-16-le'))
+
+        clear_value = drsblobs.AuthInfoClear()
+        clear_value.size = len(password_blob)
+        clear_value.password = password_blob
+
+        clear_authentication_information = drsblobs.AuthenticationInformation()
+        clear_authentication_information.LastUpdateTime = 0
+        clear_authentication_information.AuthType = lsa.TRUST_AUTH_TYPE_CLEAR
+        clear_authentication_information.AuthInfo = clear_value
+
+        version_value = drsblobs.AuthInfoVersion()
+        version_value.version = 1
+
+        version = drsblobs.AuthenticationInformation()
+        version.LastUpdateTime = 0
+        version.AuthType = lsa.TRUST_AUTH_TYPE_VERSION
+        version.AuthInfo = version_value
+
+        authentication_information_array = drsblobs.AuthenticationInformationArray()
+        authentication_information_array.count = 2
+        authentication_information_array.array = [clear_authentication_information, version]
+
+        outgoing = drsblobs.trustAuthInOutBlob()
+        outgoing.count = 1
+        outgoing.current = authentication_information_array
+
+        trustpass = drsblobs.trustDomainPasswords()
+        confounder = [3] * 512
+
+        for i in range(512):
+            confounder[i] = random.randint(0, 255)
+
+        trustpass.confounder = confounder
+
+        trustpass.outgoing = outgoing
+        trustpass.incoming = outgoing
+
+        trustpass_blob = ndr_pack(trustpass)
+
+        encrypted_trustpass = arcfour_encrypt(lsaconn.session_key, trustpass_blob)
+
+        auth_blob = lsa.DATA_BUF2()
+        auth_blob.size = len(encrypted_trustpass)
+        auth_blob.data = string_to_array(encrypted_trustpass)
+
+        auth_info = lsa.TrustDomainInfoAuthInfoInternal()
+        auth_info.auth_blob = auth_blob
+
+        trustdom_handle = lsaconn.CreateTrustedDomainEx2(pol_handle,
+                                                         info,
+                                                         auth_info,
+                                                         security.SEC_STD_DELETE)
+
+        rec = {
+            "dn" : "cn=%s,cn=system,%s" % (ctx.parent_dnsdomain, ctx.base_dn),
+            "objectclass" : "trustedDomain",
+            "trustType" : str(info.trust_type),
+            "trustAttributes" : str(info.trust_attributes),
+            "trustDirection" : str(info.trust_direction),
+            "flatname" : ctx.parent_domain_name,
+            "trustPartner" : ctx.parent_dnsdomain,
+            "trustAuthIncoming" : ndr_pack(outgoing),
+            "trustAuthOutgoing" : ndr_pack(outgoing)
+            }
+        ctx.local_samdb.add(rec)
+
+        rec = {
+            "dn" : "cn=%s$,cn=users,%s" % (ctx.parent_domain_name, ctx.base_dn),
+            "objectclass" : "user",
+            "userAccountControl" : str(samba.dsdb.UF_INTERDOMAIN_TRUST_ACCOUNT),
+            "clearTextPassword" : ctx.trustdom_pass.encode('utf-16-le')
+            }
+        ctx.local_samdb.add(rec)
+
+
     def do_join(ctx):
         ctx.cleanup_old_join()
         try:
             ctx.join_add_objects()
             ctx.join_provision()
             ctx.join_replicate()
+            ctx.join_add_objects2()
             if ctx.subdomain:
                 ctx.join_provision_own_domain()
-            else:
-                ctx.join_finalise()
+                ctx.join_setup_trusts()
+                ctx.join_modify_ntdsdsa()
+            ctx.join_finalise()
         except Exception:
             print "Join failed - cleaning up"
-            ctx.cleanup_old_join()
+            #ctx.cleanup_old_join()
             raise
 
 
@@ -655,14 +868,19 @@ def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=Non
     """join as a DC"""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain)
     ctx.subdomain = True
+    ctx.parent_domain_name = ctx.domain_name
     ctx.domain_name = netbios_domain
     ctx.realm = dnsdomain
+    ctx.parent_dnsdomain = ctx.dnsdomain
+    ctx.parent_partition_dn = ctx.get_parent_partition_dn()
     ctx.dnsdomain = dnsdomain
     ctx.partition_dn = "CN=%s,CN=Partitions,%s" % (ctx.domain_name, ctx.config_dn)
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
     ctx.domsid = str(security.random_sid())
+    ctx.domguid = str(uuid.uuid4())
     ctx.acct_dn = None
     ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
+    ctx.trustdom_pass = samba.generate_random_password(32, 40)
 
     ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
 
