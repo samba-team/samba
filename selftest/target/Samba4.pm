@@ -637,7 +637,7 @@ sub provision_raw_step1($$)
              $ctx->{kdc_ipv4} = $ctx->{ipv4};
         }
 
-	Samba::mk_krb5_conf($ctx);
+	Samba::mk_krb5_conf($ctx, "");
 
 	open(PWD, ">$ctx->{nsswrap_passwd}");
 	print PWD "

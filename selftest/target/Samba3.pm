@@ -233,7 +233,7 @@ sub setup_admember($$$$)
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
-	Samba::mk_krb5_conf($ctx);
+	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
@@ -417,7 +417,7 @@ sub setup_ktest($$$)
 	$ctx->{realm} = "KTEST.SAMBA.EXAMPLE.COM";
 	$ctx->{dnsname} = lc($ctx->{realm});
 	$ctx->{kdc_ipv4} = "0.0.0.0";
-	Samba::mk_krb5_conf($ctx);
+	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
 
