@@ -601,6 +601,7 @@ struct smbd_server_connection {
 		uint32_t credits_granted;
 		uint32_t max_credits;
 		struct bitmap *credits_bitmap;
+		bool compound_related_in_progress;
 	} smb2;
 };
 
