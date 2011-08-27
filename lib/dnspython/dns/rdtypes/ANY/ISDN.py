@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -73,7 +73,7 @@ class ISDN(dns.rdata.Rdata):
         rdlen -= 1
         if l > rdlen:
             raise dns.exception.FormError
-        address = wire[current : current + l]
+        address = wire[current : current + l].unwrap()
         current += l
         rdlen -= l
         if rdlen > 0:
@@ -82,7 +82,7 @@ class ISDN(dns.rdata.Rdata):
             rdlen -= 1
             if l != rdlen:
                 raise dns.exception.FormError
-            subaddress = wire[current : current + l]
+            subaddress = wire[current : current + l].unwrap()
         else:
             subaddress = ''
         return cls(rdclass, rdtype, address, subaddress)

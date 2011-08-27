@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2004-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -79,7 +79,7 @@ class NSEC(dns.rdata.Rdata):
                 bitmap = ['\0'] * 32
                 window = new_window
             offset = nrdtype % 256
-            byte = offset / 8
+            byte = offset // 8
             bit = offset % 8
             octets = byte + 1
             bitmap[byte] = chr(ord(bitmap[byte]) | (0x80 >> bit))
@@ -111,7 +111,7 @@ class NSEC(dns.rdata.Rdata):
             rdlen -= 2
             if rdlen < octets:
                 raise dns.exception.FormError("bad NSEC bitmap length")
-            bitmap = wire[current : current + octets]
+            bitmap = wire[current : current + octets].unwrap()
             current += octets
             rdlen -= octets
             windows.append((window, bitmap))
@@ -125,17 +125,4 @@ class NSEC(dns.rdata.Rdata):
         self.next = self.next.choose_relativity(origin, relativize)
 
     def _cmp(self, other):
-        v = cmp(self.next, other.next)
-        if v == 0:
-            b1 = cStringIO.StringIO()
-            for (window, bitmap) in self.windows:
-                b1.write(chr(window))
-                b1.write(chr(len(bitmap)))
-                b1.write(bitmap)
-            b2 = cStringIO.StringIO()
-            for (window, bitmap) in other.windows:
-                b2.write(chr(window))
-                b2.write(chr(len(bitmap)))
-                b2.write(bitmap)
-            v = cmp(b1.getvalue(), b2.getvalue())
-        return v
+        return self._wire_cmp(other)

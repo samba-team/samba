@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -15,22 +15,28 @@
 
 """IPv4 helper functions."""
 
-import socket
-import sys
+import struct
 
-if sys.hexversion < 0x02030000 or sys.platform == 'win32':
-    #
-    # Some versions of Python 2.2 have an inet_aton which rejects
-    # the valid IP address '255.255.255.255'.  It appears this
-    # problem is still present on the Win32 platform even in 2.3.
-    # We'll work around the problem.
-    #
-    def inet_aton(text):
-        if text == '255.255.255.255':
-            return '\xff' * 4
-        else:
-            return socket.inet_aton(text)
-else:
-    inet_aton = socket.inet_aton
+import dns.exception
 
-inet_ntoa = socket.inet_ntoa
+def inet_ntoa(address):
+    if len(address) != 4:
+        raise dns.exception.SyntaxError
+    return '%u.%u.%u.%u' % (ord(address[0]), ord(address[1]),
+                            ord(address[2]), ord(address[3]))
+
+def inet_aton(text):
+    parts = text.split('.')
+    if len(parts) != 4:
+        raise dns.exception.SyntaxError
+    for part in parts:
+        if not part.isdigit():
+            raise dns.exception.SyntaxError
+        if len(part) > 1 and part[0] == '0':
+            # No leading zeros
+            raise dns.exception.SyntaxError
+    try:
+        bytes = [int(part) for part in parts]
+        return struct.pack('BBBB', *bytes)
+    except:
+        raise dns.exception.SyntaxError

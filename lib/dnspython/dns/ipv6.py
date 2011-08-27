@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -89,7 +89,7 @@ def inet_ntoa(address):
         hex = ':'.join(chunks)
     return hex
 
-_v4_ending = re.compile(r'(.*):(\d+)\.(\d+)\.(\d+)\.(\d+)$')
+_v4_ending = re.compile(r'(.*):(\d+\.\d+\.\d+\.\d+)$')
 _colon_colon_start = re.compile(r'::.*')
 _colon_colon_end = re.compile(r'.*::$')
 
@@ -113,9 +113,9 @@ def inet_aton(text):
     #
     m = _v4_ending.match(text)
     if not m is None:
-        text = "%s:%04x:%04x" % (m.group(1),
-                                 int(m.group(2)) * 256 + int(m.group(3)),
-                                 int(m.group(4)) * 256 + int(m.group(5)))
+        b = dns.ipv4.inet_aton(m.group(2))
+        text = "%s:%02x%02x:%02x%02x" % (m.group(1), ord(b[0]), ord(b[1]),
+                                         ord(b[2]), ord(b[3]))
     #
     # Try to turn '::<whatever>' into ':<whatever>'; if no match try to
     # turn '<whatever>::' into '<whatever>:'

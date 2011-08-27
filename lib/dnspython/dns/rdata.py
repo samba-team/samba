@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2001-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -32,6 +32,7 @@ import dns.name
 import dns.rdataclass
 import dns.rdatatype
 import dns.tokenizer
+import dns.wiredata
 
 _hex_chunksize = 32
 
@@ -256,6 +257,19 @@ class Rdata(object):
     def __hash__(self):
         return hash(self.to_digestable(dns.name.root))
 
+    def _wire_cmp(self, other):
+        # A number of types compare rdata in wire form, so we provide
+        # the method here instead of duplicating it.
+        #
+        # We specifiy an arbitrary origin of '.' when doing the
+        # comparison, since the rdata may have relative names and we
+        # can't convert a relative name to wire without an origin.
+        b1 = cStringIO.StringIO()
+        self.to_wire(b1, None, dns.name.root)
+        b2 = cStringIO.StringIO()
+        other.to_wire(b2, None, dns.name.root)
+        return cmp(b1.getvalue(), b2.getvalue())
+
     def from_text(cls, rdclass, rdtype, tok, origin = None, relativize = True):
         """Build an rdata object from text format.
 
@@ -399,12 +413,15 @@ def from_text(rdclass, rdtype, tok, origin = None, relativize = True):
     Once a class is chosen, its from_text() class method is called
     with the parameters to this function.
 
+    If I{tok} is a string, then a tokenizer is created and the string
+    is used as its input.
+
     @param rdclass: The rdata class
     @type rdclass: int
     @param rdtype: The rdata type
     @type rdtype: int
-    @param tok: The tokenizer
-    @type tok: dns.tokenizer.Tokenizer
+    @param tok: The tokenizer or input text
+    @type tok: dns.tokenizer.Tokenizer or string
     @param origin: The origin to use for relative names
     @type origin: dns.name.Name
     @param relativize: Should names be relativized?
@@ -456,5 +473,6 @@ def from_wire(rdclass, rdtype, wire, current, rdlen, origin = None):
     @type origin: dns.name.Name
     @rtype: dns.rdata.Rdata instance"""
 
+    wire = dns.wiredata.maybe_wrap(wire)
     cls = get_rdata_class(rdclass, rdtype)
     return cls.from_wire(rdclass, rdtype, wire, current, rdlen, origin)

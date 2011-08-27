@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2004-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -71,7 +71,7 @@ class NSEC3PARAM(dns.rdata.Rdata):
                                                              wire[current : current + 5])
         current += 5
         rdlen -= 5
-        salt = wire[current : current + slen]
+        salt = wire[current : current + slen].unwrap()
         current += slen
         rdlen -= slen
         if rdlen != 0:

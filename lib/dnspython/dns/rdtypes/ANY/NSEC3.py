@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2004-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -118,7 +118,7 @@ class NSEC3(dns.rdata.Rdata):
                 bitmap = ['\0'] * 32
                 window = new_window
             offset = nrdtype % 256
-            byte = offset / 8
+            byte = offset // 8
             bit = offset % 8
             octets = byte + 1
             bitmap[byte] = chr(ord(bitmap[byte]) | (0x80 >> bit))
@@ -145,13 +145,13 @@ class NSEC3(dns.rdata.Rdata):
                                                              wire[current : current + 5])
         current += 5
         rdlen -= 5
-        salt = wire[current : current + slen]
+        salt = wire[current : current + slen].unwrap()
         current += slen
         rdlen -= slen
         (nlen, ) = struct.unpack('!B', wire[current])
         current += 1
         rdlen -= 1
-        next = wire[current : current + nlen]
+        next = wire[current : current + nlen].unwrap()
         current += nlen
         rdlen -= nlen
         windows = []
@@ -166,7 +166,7 @@ class NSEC3(dns.rdata.Rdata):
             rdlen -= 2
             if rdlen < octets:
                 raise dns.exception.FormError("bad NSEC3 bitmap length")
-            bitmap = wire[current : current + octets]
+            bitmap = wire[current : current + octets].unwrap()
             current += octets
             rdlen -= octets
             windows.append((window, bitmap))

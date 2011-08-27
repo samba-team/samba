@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -95,7 +95,7 @@ class WKS(dns.rdata.Rdata):
         protocol, = struct.unpack('!B', wire[current + 4 : current + 5])
         current += 5
         rdlen -= 5
-        bitmap = wire[current : current + rdlen]
+        bitmap = wire[current : current + rdlen].unwrap()
         return cls(rdclass, rdtype, address, protocol, bitmap)
 
     from_wire = classmethod(from_wire)

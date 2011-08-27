@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Nominum, Inc.
+# Copyright (C) 2010, 2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -76,7 +76,7 @@ class DSBase(dns.rdata.Rdata):
         header = struct.unpack("!HBB", wire[current : current + 4])
         current += 4
         rdlen -= 4
-        digest = wire[current : current + rdlen]
+        digest = wire[current : current + rdlen].unwrap()
         return cls(rdclass, rdtype, header[0], header[1], header[2], digest)
 
     from_wire = classmethod(from_wire)

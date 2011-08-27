@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2001-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -74,7 +74,7 @@ def from_text(text):
     @param text: the text
     @type text: string
     @rtype: int
-    @raises dns.rdataclass.UnknownRdataClass: the class is unknown
+    @raises dns.rdataclass.UnknownRdataclass: the class is unknown
     @raises ValueError: the rdata class value is not >= 0 and <= 65535
     """
 

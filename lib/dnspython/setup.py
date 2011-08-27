@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2003-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -18,7 +18,7 @@
 import sys
 from distutils.core import setup
 
-version = '1.9.3'
+version = '1.10.0'
 
 kwargs = {
     'name' : 'dnspython',
@@ -38,13 +38,9 @@ direct manipulation of DNS zones, messages, names, and records.""",
     'license' : 'BSD-like',
     'url' : 'http://www.dnspython.org',
     'packages' : ['dns', 'dns.rdtypes', 'dns.rdtypes.IN', 'dns.rdtypes.ANY'],
-    }
-
-if sys.hexversion >= 0x02020300:
-    kwargs['download_url'] = \
-	'http://www.dnspython.org/kits/%s/dnspython-%s.tar.gz' % (version,
-                                                                  version)
-    kwargs['classifiers'] = [
+    'download_url' : \
+    'http://www.dnspython.org/kits/%s/dnspython-%s.tar.gz' % (version, version),
+    'classifiers' : [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
@@ -54,7 +50,8 @@ if sys.hexversion >= 0x02020300:
         "Programming Language :: Python",
         "Topic :: Internet :: Name Service (DNS)",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        ]
+        ],
+    }
 
 if sys.hexversion >= 0x02050000:
     kwargs['requires'] = []

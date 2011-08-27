@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -41,7 +41,7 @@ class SOA(dns.rdata.Rdata):
 
     __slots__ = ['mname', 'rname', 'serial', 'refresh', 'retry', 'expire',
                  'minimum']
-    
+
     def __init__(self, rdclass, rdtype, mname, rname, serial, refresh, retry,
                  expire, minimum):
         super(SOA, self).__init__(rdclass, rdtype)
@@ -59,7 +59,7 @@ class SOA(dns.rdata.Rdata):
         return '%s %s %d %d %d %d %d' % (
             mname, rname, self.serial, self.refresh, self.retry,
             self.expire, self.minimum )
-        
+
     def from_text(cls, rdclass, rdtype, tok, origin = None, relativize = True):
         mname = tok.get_name()
         rname = tok.get_name()
@@ -73,7 +73,7 @@ class SOA(dns.rdata.Rdata):
         tok.get_eol()
         return cls(rdclass, rdtype, mname, rname, serial, refresh, retry,
                    expire, minimum )
-    
+
     from_text = classmethod(from_text)
 
     def to_wire(self, file, compress = None, origin = None):

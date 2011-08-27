@@ -1,4 +1,4 @@
-# Copyright (C) 2006, 2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2006, 2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -140,7 +140,7 @@ class IPSECKEY(dns.rdata.Rdata):
             rdlen -= cused
         else:
             raise dns.exception.FormError('invalid IPSECKEY gateway type')
-        key = wire[current : current + rdlen]
+        key = wire[current : current + rdlen].unwrap()
         return cls(rdclass, rdtype, header[0], gateway_type, header[2],
                    gateway, key)
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -662,12 +662,12 @@ class NameTestCase(unittest.TestCase):
     def testBadReverseIPv4(self):
         def bad():
             n = dns.reversename.from_address('127.0.foo.1')
-        self.failUnlessRaises(socket.error, bad)
+        self.failUnlessRaises(dns.exception.SyntaxError, bad)
 
     def testBadReverseIPv6(self):
         def bad():
             n = dns.reversename.from_address('::1::1')
-        self.failUnlessRaises(socket.error, bad)
+        self.failUnlessRaises(dns.exception.SyntaxError, bad)
 
     def testForwardIPv4(self):
         n = dns.name.from_text('1.0.0.127.in-addr.arpa.')

@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2001-2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -267,8 +267,9 @@ class Renderer(object):
         @type other_data: string
         @param request_mac: This message is a response to the request which
         had the specified MAC.
-        @param algorithm: the TSIG algorithm to use
         @type request_mac: string
+        @param algorithm: the TSIG algorithm to use
+        @type algorithm: dns.name.Name object
         """
 
         self._set_section(ADDITIONAL)

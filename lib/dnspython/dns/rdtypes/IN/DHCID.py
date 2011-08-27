@@ -1,4 +1,4 @@
-# Copyright (C) 2006, 2007, 2009, 2010 Nominum, Inc.
+# Copyright (C) 2006, 2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -51,7 +51,7 @@ class DHCID(dns.rdata.Rdata):
         file.write(self.data)
 
     def from_wire(cls, rdclass, rdtype, wire, current, rdlen, origin = None):
-        data = wire[current : current + rdlen]
+        data = wire[current : current + rdlen].unwrap()
         return cls(rdclass, rdtype, data)
 
     from_wire = classmethod(from_wire)
