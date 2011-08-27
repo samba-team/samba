@@ -53,7 +53,7 @@ def visitTests(suite, visitor):
                 visitor.visitSuite(test)
                 visitTests(test, visitor)
             else:
-                print "unvisitable non-unittest.TestCase element %r (%r)" % (test, test.__class__)
+                print ("unvisitable non-unittest.TestCase element %r (%r)" % (test, test.__class__))
 
 
 class TestSuite(unittest.TestSuite):

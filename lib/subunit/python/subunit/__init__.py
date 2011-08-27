@@ -6,7 +6,7 @@
 #  license at the users choice. A copy of both licenses are available in the
 #  project source as Apache-2.0 and BSD. You may not use this file except in
 #  compliance with one of these two licences.
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under these licenses is distributed on an "AS IS" BASIS, WITHOUT
 #  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -49,7 +49,7 @@ details, tags, timestamping and progress markers).
 The test outcome methods ``addSuccess``, ``addError``, ``addExpectedFailure``,
 ``addFailure``, ``addSkip`` take an optional keyword parameter ``details``
 which can be used instead of the usual python unittest parameter.
-When used the value of details should be a dict from ``string`` to 
+When used the value of details should be a dict from ``string`` to
 ``testtools.content.Content`` objects. This is a draft API being worked on with
 the Python Testing In Python mail list, with the goal of permitting a common
 way to provide additional data beyond a traceback, such as captured data from
@@ -58,13 +58,13 @@ and newer).
 
 The ``tags(new_tags, gone_tags)`` method is called (if present) to add or
 remove tags in the test run that is currently executing. If called when no
-test is in progress (that is, if called outside of the ``startTest``, 
-``stopTest`` pair), the the tags apply to all sebsequent tests. If called
+test is in progress (that is, if called outside of the ``startTest``,
+``stopTest`` pair), the the tags apply to all subsequent tests. If called
 when a test is in progress, then the tags only apply to that test.
 
 The ``time(a_datetime)`` method is called (if present) when a ``time:``
 directive is encountered in a Subunit stream. This is used to tell a TestResult
-about the time that events in the stream occured at, to allow reconstructing
+about the time that events in the stream occurred at, to allow reconstructing
 test timing from a stream.
 
 The ``progress(offset, whence)`` method controls progress data for a stream.
@@ -87,7 +87,7 @@ tests, allowing isolation between the test runner and some tests.
 Similarly, ``IsolatedTestCase`` is a base class which can be subclassed to get
 tests that will fork() before that individual test is run.
 
-`ExecTestCase`` is a convenience wrapper for running an external 
+`ExecTestCase`` is a convenience wrapper for running an external
 program to get a Subunit stream and then report that back to an arbitrary
 result object::
 
@@ -98,7 +98,7 @@ result object::
 
      def test_script_two(self):
          './bin/script_two'
- 
+
  # Normally your normal test loading would take of this automatically,
  # It is only spelt out in detail here for clarity.
  suite = unittest.TestSuite([AggregateTests("test_script_one"),
@@ -116,26 +116,30 @@ Utility modules
 * subunit.test_results contains TestResult helper classes.
 """
 
-import datetime
 import os
 import re
-from StringIO import StringIO
 import subprocess
 import sys
 import unittest
 
-import iso8601
 from testtools import content, content_type, ExtendedToOriginalDecorator
+from testtools.compat import _b, _u, BytesIO, StringIO
 try:
     from testtools.testresult.real import _StringException
     RemoteException = _StringException
-    _remote_exception_str = '_StringException' # For testing.
+    # For testing: different pythons have different str() implementations.
+    if sys.version_info > (3, 0):
+        _remote_exception_str = "testtools.testresult.real._StringException"
+        _remote_exception_str_chunked = "34\r\n" + _remote_exception_str
+    else:
+        _remote_exception_str = "_StringException" 
+        _remote_exception_str_chunked = "1A\r\n" + _remote_exception_str
 except ImportError:
     raise ImportError ("testtools.testresult.real does not contain "
         "_StringException, check your version.")
 from testtools import testresult
 
-import chunked, details, test_results
+from subunit import chunked, details, iso8601, test_results
 
 
 PROGRESS_SET = 0
@@ -187,6 +191,19 @@ class _ParserState(object):
 
     def __init__(self, parser):
         self.parser = parser
+        self._test_sym = (_b('test'), _b('testing'))
+        self._colon_sym = _b(':')
+        self._error_sym = (_b('error'),)
+        self._failure_sym = (_b('failure'),)
+        self._progress_sym = (_b('progress'),)
+        self._skip_sym = _b('skip')
+        self._success_sym = (_b('success'), _b('successful'))
+        self._tags_sym = (_b('tags'),)
+        self._time_sym = (_b('time'),)
+        self._xfail_sym = (_b('xfail'),)
+        self._uxsuccess_sym = (_b('uxsuccess'),)
+        self._start_simple = _u(" [")
+        self._start_multipart = _u(" [ multipart")
 
     def addError(self, offset, line):
         """An 'error:' directive has been read."""
@@ -214,27 +231,29 @@ class _ParserState(object):
         if len(parts) == 2 and line.startswith(parts[0]):
             cmd, rest = parts
             offset = len(cmd) + 1
-            cmd = cmd.rstrip(':')
-            if cmd in ('test', 'testing'):
+            cmd = cmd.rstrip(self._colon_sym)
+            if cmd in self._test_sym:
                 self.startTest(offset, line)
-            elif cmd == 'error':
+            elif cmd in self._error_sym:
                 self.addError(offset, line)
-            elif cmd == 'failure':
+            elif cmd in self._failure_sym:
                 self.addFailure(offset, line)
-            elif cmd == 'progress':
+            elif cmd in self._progress_sym:
                 self.parser._handleProgress(offset, line)
-            elif cmd == 'skip':
+            elif cmd in self._skip_sym:
                 self.addSkip(offset, line)
-            elif cmd in ('success', 'successful'):
+            elif cmd in self._success_sym:
                 self.addSuccess(offset, line)
-            elif cmd in ('tags',):
+            elif cmd in self._tags_sym:
                 self.parser._handleTags(offset, line)
                 self.parser.subunitLineReceived(line)
-            elif cmd in ('time',):
+            elif cmd in self._time_sym:
                 self.parser._handleTime(offset, line)
                 self.parser.subunitLineReceived(line)
-            elif cmd == 'xfail':
+            elif cmd in self._xfail_sym:
                 self.addExpectedFail(offset, line)
+            elif cmd in self._uxsuccess_sym:
+                self.addUnexpectedSuccess(offset, line)
             else:
                 self.parser.stdOutLineReceived(line)
         else:
@@ -242,7 +261,7 @@ class _ParserState(object):
 
     def lostConnection(self):
         """Connection lost."""
-        self.parser._lostConnectionInTest(u'unknown state of ')
+        self.parser._lostConnectionInTest(_u('unknown state of '))
 
     def startTest(self, offset, line):
         """A test start command received."""
@@ -254,24 +273,26 @@ class _InTest(_ParserState):
 
     def _outcome(self, offset, line, no_details, details_state):
         """An outcome directive has been read.
-        
+
         :param no_details: Callable to call when no details are presented.
         :param details_state: The state to switch to for details
             processing of this outcome.
         """
-        if self.parser.current_test_description == line[offset:-1]:
+        test_name = line[offset:-1].decode('utf8')
+        if self.parser.current_test_description == test_name:
             self.parser._state = self.parser._outside_test
             self.parser.current_test_description = None
             no_details()
             self.parser.client.stopTest(self.parser._current_test)
             self.parser._current_test = None
             self.parser.subunitLineReceived(line)
-        elif self.parser.current_test_description + " [" == line[offset:-1]:
+        elif self.parser.current_test_description + self._start_simple == \
+            test_name:
             self.parser._state = details_state
             details_state.set_simple()
             self.parser.subunitLineReceived(line)
-        elif self.parser.current_test_description + " [ multipart" == \
-            line[offset:-1]:
+        elif self.parser.current_test_description + self._start_multipart == \
+            test_name:
             self.parser._state = details_state
             details_state.set_multipart()
             self.parser.subunitLineReceived(line)
@@ -295,6 +316,14 @@ class _InTest(_ParserState):
         """An 'xfail:' directive has been read."""
         self._outcome(offset, line, self._xfail,
             self.parser._reading_xfail_details)
+
+    def _uxsuccess(self):
+        self.parser.client.addUnexpectedSuccess(self.parser._current_test)
+
+    def addUnexpectedSuccess(self, offset, line):
+        """A 'uxsuccess:' directive has been read."""
+        self._outcome(offset, line, self._uxsuccess,
+            self.parser._reading_uxsuccess_details)
 
     def _failure(self):
         self.parser.client.addFailure(self.parser._current_test, details={})
@@ -322,7 +351,7 @@ class _InTest(_ParserState):
 
     def lostConnection(self):
         """Connection lost."""
-        self.parser._lostConnectionInTest(u'')
+        self.parser._lostConnectionInTest(_u(''))
 
 
 class _OutSideTest(_ParserState):
@@ -334,8 +363,9 @@ class _OutSideTest(_ParserState):
     def startTest(self, offset, line):
         """A test start command received."""
         self.parser._state = self.parser._in_test
-        self.parser._current_test = RemotedTestCase(line[offset:-1])
-        self.parser.current_test_description = line[offset:-1]
+        test_name = line[offset:-1].decode('utf8')
+        self.parser._current_test = RemotedTestCase(test_name)
+        self.parser.current_test_description = test_name
         self.parser.client.startTest(self.parser._current_test)
         self.parser.subunitLineReceived(line)
 
@@ -357,7 +387,7 @@ class _ReadingDetails(_ParserState):
 
     def lostConnection(self):
         """Connection lost."""
-        self.parser._lostConnectionInTest(u'%s report of ' %
+        self.parser._lostConnectionInTest(_u('%s report of ') %
             self._outcome_label())
 
     def _outcome_label(self):
@@ -382,7 +412,7 @@ class _ReadingFailureDetails(_ReadingDetails):
 
     def _outcome_label(self):
         return "failure"
- 
+
 
 class _ReadingErrorDetails(_ReadingDetails):
     """State for the subunit parser when reading error details."""
@@ -404,6 +434,17 @@ class _ReadingExpectedFailureDetails(_ReadingDetails):
 
     def _outcome_label(self):
         return "xfail"
+
+
+class _ReadingUnexpectedSuccessDetails(_ReadingDetails):
+    """State for the subunit parser when reading uxsuccess details."""
+
+    def _report_outcome(self):
+        self.parser.client.addUnexpectedSuccess(self.parser._current_test,
+            details=self.details_parser.get_details())
+
+    def _outcome_label(self):
+        return "uxsuccess"
 
 
 class _ReadingSkipDetails(_ReadingDetails):
@@ -430,7 +471,7 @@ class _ReadingSuccessDetails(_ReadingDetails):
 
 class TestProtocolServer(object):
     """A parser for subunit.
-    
+
     :ivar tags: The current tags associated with the protocol stream.
     """
 
@@ -441,8 +482,8 @@ class TestProtocolServer(object):
         :param stream: The stream that lines received which are not part of the
             subunit protocol should be written to. This allows custom handling
             of mixed protocols. By default, sys.stdout will be used for
-            convenience.
-        :param forward_stream: A stream to forward subunit lines to. This 
+            convenience. It should accept bytes to its write() method.
+        :param forward_stream: A stream to forward subunit lines to. This
             allows a filter to forward the entire stream while still parsing
             and acting on it. By default forward_stream is set to
             DiscardStream() and no forwarding happens.
@@ -450,6 +491,8 @@ class TestProtocolServer(object):
         self.client = ExtendedToOriginalDecorator(client)
         if stream is None:
             stream = sys.stdout
+            if sys.version_info > (3, 0):
+                stream = stream.buffer
         self._stream = stream
         self._forward_stream = forward_stream or DiscardStream()
         # state objects we can switch too
@@ -460,19 +503,24 @@ class TestProtocolServer(object):
         self._reading_skip_details = _ReadingSkipDetails(self)
         self._reading_success_details = _ReadingSuccessDetails(self)
         self._reading_xfail_details = _ReadingExpectedFailureDetails(self)
+        self._reading_uxsuccess_details = _ReadingUnexpectedSuccessDetails(self)
         # start with outside test.
         self._state = self._outside_test
+        # Avoid casts on every call
+        self._plusminus = _b('+-')
+        self._push_sym = _b('push')
+        self._pop_sym = _b('pop')
 
     def _handleProgress(self, offset, line):
         """Process a progress directive."""
         line = line[offset:].strip()
-        if line[0] in '+-':
+        if line[0] in self._plusminus:
             whence = PROGRESS_CUR
             delta = int(line)
-        elif line == "push":
+        elif line == self._push_sym:
             whence = PROGRESS_PUSH
             delta = None
-        elif line == "pop":
+        elif line == self._pop_sym:
             whence = PROGRESS_POP
             delta = None
         else:
@@ -482,7 +530,7 @@ class TestProtocolServer(object):
 
     def _handleTags(self, offset, line):
         """Process a tags command."""
-        tags = line[offset:].split()
+        tags = line[offset:].decode('utf8').split()
         new_tags, gone_tags = tags_to_new_gone(tags)
         self.client.tags(new_tags, gone_tags)
 
@@ -490,8 +538,9 @@ class TestProtocolServer(object):
         # Accept it, but do not do anything with it yet.
         try:
             event_time = iso8601.parse_date(line[offset:-1])
-        except TypeError, e:
-            raise TypeError("Failed to parse %r, got %r" % (line, e))
+        except TypeError:
+            raise TypeError(_u("Failed to parse %r, got %r")
+                % (line, sys.exec_info[1]))
         self.client.time(event_time)
 
     def lineReceived(self, line):
@@ -499,7 +548,7 @@ class TestProtocolServer(object):
         self._state.lineReceived(line)
 
     def _lostConnectionInTest(self, state_string):
-        error_string = u"lost connection during %stest '%s'" % (
+        error_string = _u("lost connection during %stest '%s'") % (
             state_string, self.current_test_description)
         self.client.addError(self._current_test, RemoteError(error_string))
         self.client.stopTest(self._current_test)
@@ -510,7 +559,7 @@ class TestProtocolServer(object):
 
     def readFrom(self, pipe):
         """Blocking convenience API to parse an entire stream.
-        
+
         :param pipe: A file-like object supporting readlines().
         :return: None.
         """
@@ -531,10 +580,11 @@ class TestProtocolServer(object):
 
 class TestProtocolClient(testresult.TestResult):
     """A TestResult which generates a subunit stream for a test run.
-    
+
     # Get a TestSuite or TestCase to run
     suite = make_suite()
-    # Create a stream (any object with a 'write' method)
+    # Create a stream (any object with a 'write' method). This should accept
+    # bytes not strings: subunit is a byte orientated protocol.
     stream = file('tests.log', 'wb')
     # Create a subunit result object which will output to the stream
     result = subunit.TestProtocolClient(stream)
@@ -551,10 +601,18 @@ class TestProtocolClient(testresult.TestResult):
         testresult.TestResult.__init__(self)
         self._stream = stream
         _make_stream_binary(stream)
+        self._progress_fmt = _b("progress: ")
+        self._bytes_eol = _b("\n")
+        self._progress_plus = _b("+")
+        self._progress_push = _b("push")
+        self._progress_pop = _b("pop")
+        self._empty_bytes = _b("")
+        self._start_simple = _b(" [\n")
+        self._end_simple = _b("]\n")
 
     def addError(self, test, error=None, details=None):
         """Report an error in test test.
-        
+
         Only one of error and details should be provided: conceptually there
         are two separate methods:
             addError(self, test, error)
@@ -569,7 +627,7 @@ class TestProtocolClient(testresult.TestResult):
 
     def addExpectedFailure(self, test, error=None, details=None):
         """Report an expected failure in test test.
-        
+
         Only one of error and details should be provided: conceptually there
         are two separate methods:
             addError(self, test, error)
@@ -584,7 +642,7 @@ class TestProtocolClient(testresult.TestResult):
 
     def addFailure(self, test, error=None, details=None):
         """Report a failure in test test.
-        
+
         Only one of error and details should be provided: conceptually there
         are two separate methods:
             addFailure(self, test, error)
@@ -597,9 +655,10 @@ class TestProtocolClient(testresult.TestResult):
         """
         self._addOutcome("failure", test, error=error, details=details)
 
-    def _addOutcome(self, outcome, test, error=None, details=None):
+    def _addOutcome(self, outcome, test, error=None, details=None,
+        error_permitted=True):
         """Report a failure in test test.
-        
+
         Only one of error and details should be provided: conceptually there
         are two separate methods:
             addOutcome(self, test, error)
@@ -611,43 +670,60 @@ class TestProtocolClient(testresult.TestResult):
             exc_info tuple.
         :param details: New Testing-in-python drafted API; a dict from string
             to subunit.Content objects.
-        """
-        self._stream.write("%s: %s" % (outcome, test.id()))
-        if error is None and details is None:
-            raise ValueError
+        :param error_permitted: If True then one and only one of error or
+            details must be supplied. If False then error must not be supplied
+            and details is still optional.  """
+        self._stream.write(_b("%s: %s" % (outcome, test.id())))
+        if error_permitted:
+            if error is None and details is None:
+                raise ValueError
+        else:
+            if error is not None:
+                raise ValueError
         if error is not None:
-            self._stream.write(" [\n")
+            self._stream.write(self._start_simple)
             # XXX: this needs to be made much stricter, along the lines of
             # Martin[gz]'s work in testtools. Perhaps subunit can use that?
             for line in self._exc_info_to_unicode(error, test).splitlines():
                 self._stream.write(("%s\n" % line).encode('utf8'))
-        else:
+        elif details is not None:
             self._write_details(details)
-        self._stream.write("]\n")
+        else:
+            self._stream.write(_b("\n"))
+        if details is not None or error is not None:
+            self._stream.write(self._end_simple)
 
     def addSkip(self, test, reason=None, details=None):
         """Report a skipped test."""
         if reason is None:
             self._addOutcome("skip", test, error=None, details=details)
         else:
-            self._stream.write("skip: %s [\n" % test.id())
-            self._stream.write("%s\n" % reason)
-            self._stream.write("]\n")
+            self._stream.write(_b("skip: %s [\n" % test.id()))
+            self._stream.write(_b("%s\n" % reason))
+            self._stream.write(self._end_simple)
 
     def addSuccess(self, test, details=None):
         """Report a success in a test."""
-        self._stream.write("successful: %s" % test.id())
-        if not details:
-            self._stream.write("\n")
-        else:
-            self._write_details(details)
-            self._stream.write("]\n")
-    addUnexpectedSuccess = addSuccess
+        self._addOutcome("successful", test, details=details, error_permitted=False)
+
+    def addUnexpectedSuccess(self, test, details=None):
+        """Report an unexpected success in test test.
+
+        Details can optionally be provided: conceptually there
+        are two separate methods:
+            addError(self, test)
+            addError(self, test, details)
+
+        :param details: New Testing-in-python drafted API; a dict from string
+            to subunit.Content objects.
+        """
+        self._addOutcome("uxsuccess", test, details=details,
+            error_permitted=False)
 
     def startTest(self, test):
         """Mark a test as starting its test run."""
         super(TestProtocolClient, self).startTest(test)
-        self._stream.write("test: %s\n" % test.id())
+        self._stream.write(_b("test: %s\n" % test.id()))
         self._stream.flush()
 
     def stopTest(self, test):
@@ -665,16 +741,19 @@ class TestProtocolClient(testresult.TestResult):
             PROGRESS_POP.
         """
         if whence == PROGRESS_CUR and offset > -1:
-            prefix = "+"
+            prefix = self._progress_plus
+            offset = _b(str(offset))
         elif whence == PROGRESS_PUSH:
-            prefix = ""
-            offset = "push"
+            prefix = self._empty_bytes
+            offset = self._progress_push
         elif whence == PROGRESS_POP:
-            prefix = ""
-            offset = "pop"
+            prefix = self._empty_bytes
+            offset = self._progress_pop
         else:
-            prefix = ""
-        self._stream.write("progress: %s%s\n" % (prefix, offset))
+            prefix = self._empty_bytes
+            offset = _b(str(offset))
+        self._stream.write(self._progress_fmt + prefix + offset +
+            self._bytes_eol)
 
     def time(self, a_datetime):
         """Inform the client of the time.
@@ -682,42 +761,42 @@ class TestProtocolClient(testresult.TestResult):
         ":param datetime: A datetime.datetime object.
         """
         time = a_datetime.astimezone(iso8601.Utc())
-        self._stream.write("time: %04d-%02d-%02d %02d:%02d:%02d.%06dZ\n" % (
+        self._stream.write(_b("time: %04d-%02d-%02d %02d:%02d:%02d.%06dZ\n" % (
             time.year, time.month, time.day, time.hour, time.minute,
-            time.second, time.microsecond))
+            time.second, time.microsecond)))
 
     def _write_details(self, details):
         """Output details to the stream.
 
         :param details: An extended details dict for a test outcome.
         """
-        self._stream.write(" [ multipart\n")
-        for name, content in sorted(details.iteritems()):
-            self._stream.write("Content-Type: %s/%s" %
-                (content.content_type.type, content.content_type.subtype))
+        self._stream.write(_b(" [ multipart\n"))
+        for name, content in sorted(details.items()):
+            self._stream.write(_b("Content-Type: %s/%s" %
+                (content.content_type.type, content.content_type.subtype)))
             parameters = content.content_type.parameters
             if parameters:
-                self._stream.write(";")
+                self._stream.write(_b(";"))
                 param_strs = []
-                for param, value in parameters.iteritems():
+                for param, value in parameters.items():
                     param_strs.append("%s=%s" % (param, value))
-                self._stream.write(",".join(param_strs))
-            self._stream.write("\n%s\n" % name)
+                self._stream.write(_b(",".join(param_strs)))
+            self._stream.write(_b("\n%s\n" % name))
             encoder = chunked.Encoder(self._stream)
-            map(encoder.write, content.iter_bytes())
+            list(map(encoder.write, content.iter_bytes()))
             encoder.close()
 
     def done(self):
         """Obey the testtools result.done() interface."""
 
 
-def RemoteError(description=u""):
+def RemoteError(description=_u("")):
     return (_StringException, _StringException(description), None)
 
 
 class RemotedTestCase(unittest.TestCase):
     """A class to represent test cases run in child processes.
-    
+
     Instances of this class are used to provide the Python test API a TestCase
     that can be printed to the screen, introspected for metadata and so on.
     However, as they are a simply a memoisation of a test that was actually
@@ -761,7 +840,7 @@ class RemotedTestCase(unittest.TestCase):
     def run(self, result=None):
         if result is None: result = self.defaultTestResult()
         result.startTest(self)
-        result.addError(self, RemoteError(u"Cannot run RemotedTestCases.\n"))
+        result.addError(self, RemoteError(_u("Cannot run RemotedTestCases.\n")))
         result.stopTest(self)
 
     def _strclass(self):
@@ -795,14 +874,16 @@ class ExecTestCase(unittest.TestCase):
 
     def _run(self, result):
         protocol = TestProtocolServer(result)
-        output = subprocess.Popen(self.script, shell=True,
-            stdout=subprocess.PIPE).communicate()[0]
-        protocol.readFrom(StringIO(output))
+        process = subprocess.Popen(self.script, shell=True,
+            stdout=subprocess.PIPE)
+        _make_stream_binary(process.stdout)
+        output = process.communicate()[0]
+        protocol.readFrom(BytesIO(output))
 
 
 class IsolatedTestCase(unittest.TestCase):
     """A TestCase which executes in a forked process.
-    
+
     Each test gets its own process, which has a performance overhead but will
     provide excellent isolation from global state (such as django configs,
     zope utilities and so on).
@@ -815,7 +896,7 @@ class IsolatedTestCase(unittest.TestCase):
 
 class IsolatedTestSuite(unittest.TestSuite):
     """A TestSuite which runs its tests in a forked process.
-    
+
     This decorator that will fork() before running the tests and report the
     results from the child process using a Subunit stream.  This is useful for
     handling tests that mutate global state, or are testing C extensions that
@@ -846,10 +927,10 @@ def run_isolated(klass, self, result):
         # at this point, sys.stdin is redirected, now we want
         # to filter it to escape ]'s.
         ### XXX: test and write that bit.
-
-        result = TestProtocolClient(sys.stdout)
+        stream = os.fdopen(1, 'wb')
+        result = TestProtocolClient(stream)
         klass.run(self, result)
-        sys.stdout.flush()
+        stream.flush()
         sys.stderr.flush()
         # exit HARD, exit NOW.
         os._exit(0)
@@ -859,7 +940,8 @@ def run_isolated(klass, self, result):
         os.close(c2pwrite)
         # hookup a protocol engine
         protocol = TestProtocolServer(result)
-        protocol.readFrom(os.fdopen(c2pread, 'rU'))
+        fileobj = os.fdopen(c2pread, 'rb')
+        protocol.readFrom(fileobj)
         os.waitpid(pid, 0)
         # TODO return code evaluation.
     return result
@@ -867,7 +949,7 @@ def run_isolated(klass, self, result):
 
 def TAP2SubUnit(tap, subunit):
     """Filter a TAP pipe into a subunit pipe.
-    
+
     :param tap: A tap pipe/stream/file object.
     :param subunit: A pipe/stream/file object to write subunit results to.
     :return: The exit code to exit with.
@@ -875,7 +957,6 @@ def TAP2SubUnit(tap, subunit):
     BEFORE_PLAN = 0
     AFTER_PLAN = 1
     SKIP_STREAM = 2
-    client = TestProtocolClient(subunit)
     state = BEFORE_PLAN
     plan_start = 1
     plan_stop = 0
@@ -1025,11 +1106,11 @@ class ProtocolTestCase(object):
     that has been encoded into the stream. The ``unittest.TestCase`` ``debug``
     and ``countTestCases`` methods are not supported because there isn't a
     sensible mapping for those methods.
-    
+
     # Get a stream (any object with a readline() method), in this case the
     # stream output by the example from ``subunit.TestProtocolClient``.
     stream = file('tests.log', 'rb')
-    # Create a parser which will read from the stream and emit 
+    # Create a parser which will read from the stream and emit
     # activity to a unittest.TestResult when run() is called.
     suite = subunit.ProtocolTestCase(stream)
     # Create a result object to accept the contents of that stream.
@@ -1055,7 +1136,6 @@ class ProtocolTestCase(object):
         _make_stream_binary(stream)
         self._passthrough = passthrough
         self._forward = forward
-        _make_stream_binary(forward)
 
     def __call__(self, result=None):
         return self.run(result)
@@ -1073,7 +1153,7 @@ class ProtocolTestCase(object):
 
 class TestResultStats(testresult.TestResult):
     """A pyunit TestResult interface implementation for making statistics.
-    
+
     :ivar total_tests: The total tests seen.
     :ivar passed_tests: The tests that passed.
     :ivar failed_tests: The tests that failed.
@@ -1124,20 +1204,44 @@ class TestResultStats(testresult.TestResult):
 
 def get_default_formatter():
     """Obtain the default formatter to write to.
-    
+
     :return: A file-like object.
     """
     formatter = os.getenv("SUBUNIT_FORMATTER")
     if formatter:
         return os.popen(formatter, "w")
     else:
-        return sys.stdout
+        stream = sys.stdout
+        if sys.version_info > (3, 0):
+            stream = stream.buffer
+        return stream
+
+
+if sys.version_info > (3, 0):
+    from io import UnsupportedOperation as _NoFilenoError
+else:
+    _NoFilenoError = AttributeError
+
+def read_test_list(path):
+    """Read a list of test ids from a file on disk.
+
+    :param path: Path to the file
+    :return: Sequence of test ids
+    """
+    f = open(path, 'rb')
+    try:
+        return [l.rstrip("\n") for l in f.readlines()]
+    finally:
+        f.close()
 
 
 def _make_stream_binary(stream):
     """Ensure that a stream will be binary safe. See _make_binary_on_windows."""
-    if getattr(stream, 'fileno', None) is not None:
-        _make_binary_on_windows(stream.fileno())
+    try:
+        fileno = stream.fileno()
+    except _NoFilenoError:
+        return
+    _make_binary_on_windows(fileno)
 
 def _make_binary_on_windows(fileno):
     """Win32 mangles \r\n to \n and that breaks streams. See bug lp:505078."""

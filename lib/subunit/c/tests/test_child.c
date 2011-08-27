@@ -16,6 +16,7 @@
  **/
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <check.h>
@@ -57,6 +58,8 @@ test_stdout_function(char const * expected,
      * DEAL.
      */
     function();
+    /* flush writes on FILE object to file descriptor */
+    fflush(stdout);
     /* restore stdout now */
     if (dup2(old_stdout, 1) != 1) {
       close(old_stdout);

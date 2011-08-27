@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 import sys
+if sys.platform == "win32":
+    import msvcrt, os
+    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 if len(sys.argv) == 2:
     # subunit.tests.test_test_protocol.TestExecTestCase.test_sample_method_args 
     # uses this code path to be sure that the arguments were passed to

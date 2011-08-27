@@ -17,7 +17,8 @@
 """Tests for subunit.TestResultStats."""
 
 import unittest
-from StringIO import StringIO
+
+from testtools.compat import _b, BytesIO, StringIO
 
 import subunit
 
@@ -28,7 +29,7 @@ class TestTestResultStats(unittest.TestCase):
     def setUp(self):
         self.output = StringIO()
         self.result = subunit.TestResultStats(self.output)
-        self.input_stream = StringIO()
+        self.input_stream = BytesIO()
         self.test = subunit.ProtocolTestCase(self.input_stream)
 
     def test_stats_empty(self):
@@ -39,7 +40,7 @@ class TestTestResultStats(unittest.TestCase):
         self.assertEqual(set(), self.result.seen_tags)
 
     def setUpUsedStream(self):
-        self.input_stream.write("""tags: global
+        self.input_stream.write(_b("""tags: global
 test passed
 success passed
 test failed
@@ -51,7 +52,7 @@ test skipped
 skip skipped
 test todo
 xfail todo
-""")
+"""))
         self.input_stream.seek(0)
         self.test.run(self.result)
     

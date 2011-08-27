@@ -14,8 +14,9 @@
 #  limitations under that license.
 #
 
-from cStringIO import StringIO
 import unittest
+
+from testtools.compat import _b, StringIO
 
 import subunit.tests
 from subunit import content, content_type, details
@@ -31,20 +32,20 @@ class TestSimpleDetails(unittest.TestCase):
 
     def test_lineReceived(self):
         parser = details.SimpleDetailsParser(None)
-        parser.lineReceived("foo\n")
-        parser.lineReceived("bar\n")
-        self.assertEqual("foo\nbar\n", parser._message)
+        parser.lineReceived(_b("foo\n"))
+        parser.lineReceived(_b("bar\n"))
+        self.assertEqual(_b("foo\nbar\n"), parser._message)
 
     def test_lineReceived_escaped_bracket(self):
         parser = details.SimpleDetailsParser(None)
-        parser.lineReceived("foo\n")
-        parser.lineReceived(" ]are\n")
-        parser.lineReceived("bar\n")
-        self.assertEqual("foo\n]are\nbar\n", parser._message)
+        parser.lineReceived(_b("foo\n"))
+        parser.lineReceived(_b(" ]are\n"))
+        parser.lineReceived(_b("bar\n"))
+        self.assertEqual(_b("foo\n]are\nbar\n"), parser._message)
 
     def test_get_message(self):
         parser = details.SimpleDetailsParser(None)
-        self.assertEqual("", parser.get_message())
+        self.assertEqual(_b(""), parser.get_message())
 
     def test_get_details(self):
         parser = details.SimpleDetailsParser(None)
@@ -53,13 +54,13 @@ class TestSimpleDetails(unittest.TestCase):
         expected['traceback'] = content.Content(
             content_type.ContentType("text", "x-traceback",
                 {'charset': 'utf8'}),
-            lambda:[""])
+            lambda:[_b("")])
         found = parser.get_details()
         self.assertEqual(expected.keys(), found.keys())
         self.assertEqual(expected['traceback'].content_type,
             found['traceback'].content_type)
-        self.assertEqual(''.join(expected['traceback'].iter_bytes()),
-            ''.join(found['traceback'].iter_bytes()))
+        self.assertEqual(_b('').join(expected['traceback'].iter_bytes()),
+            _b('').join(found['traceback'].iter_bytes()))
 
     def test_get_details_skip(self):
         parser = details.SimpleDetailsParser(None)
@@ -67,7 +68,7 @@ class TestSimpleDetails(unittest.TestCase):
         expected = {}
         expected['reason'] = content.Content(
             content_type.ContentType("text", "plain"),
-            lambda:[""])
+            lambda:[_b("")])
         found = parser.get_details("skip")
         self.assertEqual(expected, found)
 
@@ -77,7 +78,7 @@ class TestSimpleDetails(unittest.TestCase):
         expected = {}
         expected['message'] = content.Content(
             content_type.ContentType("text", "plain"),
-            lambda:[""])
+            lambda:[_b("")])
         found = parser.get_details("success")
         self.assertEqual(expected, found)
 
@@ -94,18 +95,18 @@ class TestMultipartDetails(unittest.TestCase):
 
     def test_parts(self):
         parser = details.MultipartDetailsParser(None)
-        parser.lineReceived("Content-Type: text/plain\n")
-        parser.lineReceived("something\n")
-        parser.lineReceived("F\r\n")
-        parser.lineReceived("serialised\n")
-        parser.lineReceived("form0\r\n")
+        parser.lineReceived(_b("Content-Type: text/plain\n"))
+        parser.lineReceived(_b("something\n"))
+        parser.lineReceived(_b("F\r\n"))
+        parser.lineReceived(_b("serialised\n"))
+        parser.lineReceived(_b("form0\r\n"))
         expected = {}
         expected['something'] = content.Content(
             content_type.ContentType("text", "plain"),
-            lambda:["serialised\nform"])
+            lambda:[_b("serialised\nform")])
         found = parser.get_details()
         self.assertEqual(expected.keys(), found.keys())
         self.assertEqual(expected['something'].content_type,
             found['something'].content_type)
-        self.assertEqual(''.join(expected['something'].iter_bytes()),
-            ''.join(found['something'].iter_bytes()))
+        self.assertEqual(_b('').join(expected['something'].iter_bytes()),
+            _b('').join(found['something'].iter_bytes()))

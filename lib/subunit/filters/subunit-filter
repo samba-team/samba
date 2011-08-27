@@ -28,13 +28,13 @@ Remember to quote shell metacharacters.
 
 from optparse import OptionParser
 import sys
-import unittest
 import re
 
 from subunit import (
     DiscardStream,
     ProtocolTestCase,
     TestProtocolClient,
+    read_test_list,
     )
 from subunit.test_results import TestResultFilter
 
@@ -46,24 +46,43 @@ parser.add_option("-e", "--no-error", action="store_true",
 parser.add_option("--failure", action="store_false",
     help="include failures", default=False, dest="failure")
 parser.add_option("-f", "--no-failure", action="store_true",
-    help="include failures", dest="failure")
+    help="exclude failures", dest="failure")
+parser.add_option("--passthrough", action="store_false",
+    help="Show all non subunit input.", default=False, dest="no_passthrough")
 parser.add_option("--no-passthrough", action="store_true",
     help="Hide all non subunit input.", default=False, dest="no_passthrough")
 parser.add_option("-s", "--success", action="store_false",
     help="include successes", dest="success")
-parser.add_option("--no-skip", action="store_true",
-    help="exclude skips", dest="skip")
 parser.add_option("--no-success", action="store_true",
     help="exclude successes", default=True, dest="success")
+parser.add_option("--no-skip", action="store_true",
+    help="exclude skips", dest="skip")
+parser.add_option("--xfail", action="store_false",
+    help="include expected falures", default=True, dest="xfail")
+parser.add_option("--no-xfail", action="store_true",
+    help="exclude expected falures", default=True, dest="xfail")
 parser.add_option("-m", "--with", type=str,
     help="regexp to include (case-sensitive by default)",
     action="append", dest="with_regexps")
+parser.add_option("--fixup-expected-failures", type=str,
+    help="File with list of test ids that are expected to fail; on failure "
+         "their result will be changed to xfail; on success they will be "
+         "changed to error.", dest="fixup_expected_failures", action="append")
 parser.add_option("--without", type=str,
     help="regexp to exclude (case-sensitive by default)",
     action="append", dest="without_regexps")
 
-(options, args) = parser.parse_args()
+def only_genuine_failures_callback(option, opt, value, parser):
+    parser.rargs.insert(0, '--no-passthrough')
+    parser.rargs.insert(0, '--no-xfail')
+    parser.rargs.insert(0, '--no-skip')
+    parser.rargs.insert(0, '--no-success')
 
+parser.add_option("-F", "--only-genuine-failures", action="callback",
+    callback=only_genuine_failures_callback,
+    help="Only pass through failures and exceptions.")
+
+(options, args) = parser.parse_args()
 
 def _compile_re_from_list(l):
     return re.compile("|".join(l), re.MULTILINE)
@@ -91,11 +110,15 @@ def _make_regexp_filter(with_regexps, without_regexps):
 
 regexp_filter = _make_regexp_filter(options.with_regexps,
         options.without_regexps)
+fixup_expected_failures = set()
+for path in options.fixup_expected_failures or ():
+    fixup_expected_failures.update(read_test_list(path))
 result = TestProtocolClient(sys.stdout)
 result = TestResultFilter(result, filter_error=options.error,
     filter_failure=options.failure, filter_success=options.success,
-    filter_skip=options.skip,
-    filter_predicate=regexp_filter)
+    filter_skip=options.skip, filter_xfail=options.xfail,
+    filter_predicate=regexp_filter,
+    fixup_expected_failures=fixup_expected_failures)
 if options.no_passthrough:
     passthrough_stream = DiscardStream()
 else:

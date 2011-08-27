@@ -10,13 +10,74 @@ test ids and also filter via a test id list file thanks to improvements in
 ``testtools.run``. See the testtools manual, or testrepository - a major
 user of such functionality.
 
+Additionally the protocol now has a keyword uxsuccess for Unexpected Success
+reporting. Older parsers will report tests with this status code as 'lost
+connection'.
+
 IMPROVEMENTS
 ~~~~~~~~~~~~
+
+* Add ``TimeCollapsingDecorator`` which collapses multiple sequential time()
+  calls into just the first and last. (Jonathan Lange)
+
+* Add ``TagCollapsingDecorator`` which collapses many tags() calls into one
+  where possible. (Jonathan Lange, Robert Collins)
+
+* Force flush of writes to stdout in c/tests/test_child.
+  (Jelmer Vernooij, #687611)
+
+* Provisional Python 3.x support.
+  (Robert Collins, Tres Seaver, Martin[gz], #666819)
+
+* ``subunit.chunked.Decoder`` Python class takes a new ``strict`` option,
+  which defaults to ``True``. When ``False``, the ``Decoder`` will accept
+  incorrect input that is still unambiguous. i.e. subunit will not barf if
+  a \r is missing from the input. (Martin Pool)
+
+* ``subunit-filter`` preserves the relative ordering of ``time:`` statements,
+  so you can now use filtered streams to gather data about how long it takes
+  to run a test. (Jonathan Lange, #716554)
+
+* ``subunit-ls`` now handles a stream with time: instructions that start
+  partway through the stream (which may lead to strange times) more gracefully.
+  (Robert Collins, #785954)
+
+* ``subunit-ls`` should handle the new test outcomes in Python2.7 better.
+  (Robert Collins, #785953)
+
+* ``TestResultFilter`` now collapses sequential calls to time().
+  (Jonathan Lange, #567150)
+
+* ``TestResultDecorator.tags()`` now actually works, and is no longer a buggy
+  copy/paste of ``TestResultDecorator.time()``. (Jonathan Lange, #681828)
+
+* ``TestResultFilter`` now supports a ``fixup_expected_failures``
+  argument. (Jelmer Vernooij, #755241)
 
 * The ``subunit.run`` Python module supports ``-l`` and ``--load-list`` as
   per ``testtools.run``. This required a dependency bump due to a small
   API change in ``testtools``. (Robert Collins)
 
+* The help for subunit-filter was confusing about the behaviour of ``-f`` /
+  ``--no-failure``. (Robert Collins, #703392)
+
+* The Python2.7 / testtools addUnexpectedSuccess API is now supported. This
+  required adding a new status code to the protocol. (Robert Collins, #654474)
+
+BUG FIXES
+~~~~~~~~~
+
+* Add 'subunit --no-xfail', which will omit expected failures from the subunit
+  stream. (John Arbash Meinel, #623642)
+
+* Add 'subunit -F/--only-genuine-failures' which sets all of '--no-skips',
+  '--no-xfail', '--no-passthrough, '--no-success', and gives you just the
+  failure stream. (John Arbash Meinel)
+
+CHANGES
+~~~~~~~
+
+* Newer testtools is needed as part of the Python 3 support. (Robert Collins)
 
 0.0.6
 -----

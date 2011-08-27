@@ -6,7 +6,7 @@
 #  license at the users choice. A copy of both licenses are available in the
 #  project source as Apache-2.0 and BSD. You may not use this file except in
 #  compliance with one of these two licences.
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under these licenses is distributed on an "AS IS" BASIS, WITHOUT
 #  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
@@ -16,12 +16,9 @@
 
 import datetime
 import unittest
-from StringIO import StringIO
-import os
-import sys
 
-from testtools.content_type import ContentType
-from testtools.content import Content
+from testtools import TestCase
+from testtools.testresult.doubles import ExtendedTestResult
 
 import subunit
 import subunit.iso8601 as iso8601
@@ -82,22 +79,22 @@ class TestHookedTestResultDecorator(unittest.TestCase):
 
     def test_startTest(self):
         self.result.startTest(self)
-        
+
     def test_startTestRun(self):
         self.result.startTestRun()
-        
+
     def test_stopTest(self):
         self.result.stopTest(self)
-        
+
     def test_stopTestRun(self):
         self.result.stopTestRun()
 
     def test_addError(self):
         self.result.addError(self, subunit.RemoteError())
-        
+
     def test_addError_details(self):
         self.result.addError(self, details={})
-        
+
     def test_addFailure(self):
         self.result.addFailure(self, subunit.RemoteError())
 
@@ -142,7 +139,7 @@ class TestHookedTestResultDecorator(unittest.TestCase):
 
     def test_time(self):
         self.result.time(None)
- 
+
 
 class TestAutoTimingTestResultDecorator(unittest.TestCase):
 
@@ -191,6 +188,110 @@ class TestAutoTimingTestResultDecorator(unittest.TestCase):
         self.result.startTest(self)
         self.assertEqual(3, len(self.decorated._calls))
         self.assertNotEqual(None, self.decorated._calls[2])
+
+
+class TestTagCollapsingDecorator(TestCase):
+
+    def test_tags_forwarded_outside_of_tests(self):
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TagCollapsingDecorator(result)
+        tag_collapser.tags(set(['a', 'b']), set())
+        self.assertEquals(
+            [('tags', set(['a', 'b']), set([]))], result._events)
+
+    def test_tags_collapsed_inside_of_tests(self):
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TagCollapsingDecorator(result)
+        test = subunit.RemotedTestCase('foo')
+        tag_collapser.startTest(test)
+        tag_collapser.tags(set(['a']), set())
+        tag_collapser.tags(set(['b']), set(['a']))
+        tag_collapser.tags(set(['c']), set())
+        tag_collapser.stopTest(test)
+        self.assertEquals(
+            [('startTest', test),
+             ('tags', set(['b', 'c']), set(['a'])),
+             ('stopTest', test)],
+            result._events)
+
+    def test_tags_collapsed_inside_of_tests_different_ordering(self):
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TagCollapsingDecorator(result)
+        test = subunit.RemotedTestCase('foo')
+        tag_collapser.startTest(test)
+        tag_collapser.tags(set(), set(['a']))
+        tag_collapser.tags(set(['a', 'b']), set())
+        tag_collapser.tags(set(['c']), set())
+        tag_collapser.stopTest(test)
+        self.assertEquals(
+            [('startTest', test),
+             ('tags', set(['a', 'b', 'c']), set()),
+             ('stopTest', test)],
+            result._events)
+
+
+class TestTimeCollapsingDecorator(TestCase):
+
+    def make_time(self):
+        # Heh heh.
+        return datetime.datetime(
+            2000, 1, self.getUniqueInteger(), tzinfo=iso8601.UTC)
+
+    def test_initial_time_forwarded(self):
+        # We always forward the first time event we see.
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TimeCollapsingDecorator(result)
+        a_time = self.make_time()
+        tag_collapser.time(a_time)
+        self.assertEquals([('time', a_time)], result._events)
+
+    def test_time_collapsed_to_first_and_last(self):
+        # If there are many consecutive time events, only the first and last
+        # are sent through.
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TimeCollapsingDecorator(result)
+        times = [self.make_time() for i in range(5)]
+        for a_time in times:
+            tag_collapser.time(a_time)
+        tag_collapser.startTest(subunit.RemotedTestCase('foo'))
+        self.assertEquals(
+            [('time', times[0]), ('time', times[-1])], result._events[:-1])
+
+    def test_only_one_time_sent(self):
+        # If we receive a single time event followed by a non-time event, we
+        # send exactly one time event.
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TimeCollapsingDecorator(result)
+        a_time = self.make_time()
+        tag_collapser.time(a_time)
+        tag_collapser.startTest(subunit.RemotedTestCase('foo'))
+        self.assertEquals([('time', a_time)], result._events[:-1])
+
+    def test_duplicate_times_not_sent(self):
+        # Many time events with the exact same time are collapsed into one
+        # time event.
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TimeCollapsingDecorator(result)
+        a_time = self.make_time()
+        for i in range(5):
+            tag_collapser.time(a_time)
+        tag_collapser.startTest(subunit.RemotedTestCase('foo'))
+        self.assertEquals([('time', a_time)], result._events[:-1])
+
+    def test_no_times_inserted(self):
+        result = ExtendedTestResult()
+        tag_collapser = subunit.test_results.TimeCollapsingDecorator(result)
+        a_time = self.make_time()
+        tag_collapser.time(a_time)
+        foo = subunit.RemotedTestCase('foo')
+        tag_collapser.startTest(foo)
+        tag_collapser.addSuccess(foo)
+        tag_collapser.stopTest(foo)
+        self.assertEquals(
+            [('time', a_time),
+             ('startTest', foo),
+             ('addSuccess', foo),
+             ('stopTest', foo)], result._events)
 
 
 def test_suite():

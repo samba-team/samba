@@ -16,11 +16,14 @@
 
 """Handlers for outcome details."""
 
-from cStringIO import StringIO
-
 from testtools import content, content_type
+from testtools.compat import _b, BytesIO
 
-import chunked
+from subunit import chunked
+
+end_marker = _b("]\n")
+quoted_marker = _b(" ]")
+empty = _b('')
 
 
 class DetailsParser(object):
@@ -31,14 +34,14 @@ class SimpleDetailsParser(DetailsParser):
     """Parser for single-part [] delimited details."""
 
     def __init__(self, state):
-        self._message = ""
+        self._message = _b("")
         self._state = state
 
     def lineReceived(self, line):
-        if line == "]\n":
+        if line == end_marker:
             self._state.endDetails()
             return
-        if line[0:2] == " ]":
+        if line[0:2] == quoted_marker:
             # quoted ] start
             self._message += line[1:]
         else:
@@ -77,18 +80,21 @@ class MultipartDetailsParser(DetailsParser):
         self._parse_state = self._look_for_content
 
     def _look_for_content(self, line):
-        if line == "]\n":
+        if line == end_marker:
             self._state.endDetails()
             return
         # TODO error handling
-        field, value = line[:-1].split(' ', 1)
-        main, sub = value.split('/')
+        field, value = line[:-1].decode('utf8').split(' ', 1)
+        try:
+            main, sub = value.split('/')
+        except ValueError:
+            raise ValueError("Invalid MIME type %r" % value)
         self._content_type = content_type.ContentType(main, sub)
         self._parse_state = self._get_name
 
     def _get_name(self, line):
-        self._name = line[:-1]
-        self._body = StringIO()
+        self._name = line[:-1].decode('utf8')
+        self._body = BytesIO()
         self._chunk_parser = chunked.Decoder(self._body)
         self._parse_state = self._feed_chunks
 
@@ -96,7 +102,7 @@ class MultipartDetailsParser(DetailsParser):
         residue = self._chunk_parser.write(line)
         if residue is not None:
             # Line based use always ends on no residue.
-            assert residue == '', 'residue: %r' % (residue,)
+            assert residue == empty, 'residue: %r' % (residue,)
             body = self._body
             self._details[self._name] = content.Content(
                 self._content_type, lambda:[body.getvalue()])

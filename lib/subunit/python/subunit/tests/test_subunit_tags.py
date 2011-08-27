@@ -17,7 +17,8 @@
 """Tests for subunit.tag_stream."""
 
 import unittest
-from StringIO import StringIO
+
+from testtools.compat import StringIO
 
 import subunit
 import subunit.test_results

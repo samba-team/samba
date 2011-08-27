@@ -20,7 +20,10 @@ from optparse import OptionParser
 import sys
 
 from subunit import DiscardStream, ProtocolTestCase
-from subunit.test_results import TestIdPrintingResult
+from subunit.test_results import (
+    AutoTimingTestResultDecorator,
+    TestIdPrintingResult,
+    )
 
 
 parser = OptionParser(description=__doc__)
@@ -30,7 +33,8 @@ parser.add_option("--times", action="store_true",
 parser.add_option("--no-passthrough", action="store_true",
     help="Hide all non subunit input.", default=False, dest="no_passthrough")
 (options, args) = parser.parse_args()
-result = TestIdPrintingResult(sys.stdout, options.times)
+result = AutoTimingTestResultDecorator(
+    TestIdPrintingResult(sys.stdout, options.times))
 if options.no_passthrough:
     passthrough_stream = DiscardStream()
 else:
