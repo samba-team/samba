@@ -1,8 +1,153 @@
 testtools NEWS
 ++++++++++++++
 
+Changes and improvements to testtools_, grouped by release.
+
 NEXT
 ~~~~
+
+Changes
+-------
+
+* ``AfterPreproccessing`` renamed to ``AfterPreprocessing``, which is a more
+  correct spelling.  Old name preserved for backwards compatibility, but is
+  now deprecated.  Please stop using it.
+  (Jonathan Lange, #813460)
+
+* ``gather_details`` takes two dicts, rather than two detailed objects.
+  (Jonathan Lange, #801027)
+
+* ``MatchesRegex`` mismatch now says "<value> does not match /<regex>/" rather
+  than "<regex> did not match <value>". The regular expression contains fewer
+  backslashes too. (Jonathan Lange, #818079)
+
+* Tests that run with ``AsynchronousDeferredRunTest`` now have the ``reactor``
+  attribute set to the running reactor. (Jonathan Lange, #720749)
+
+Improvements
+------------
+
+* All public matchers are now in ``testtools.matchers.__all__``.
+  (Jonathan Lange, #784859)
+
+* assertThat output is much less verbose, displaying only what the mismatch
+  tells us to display. Old-style verbose output can be had by passing
+  ``verbose=True`` to assertThat. (Jonathan Lange, #675323, #593190)
+
+* assertThat accepts a message which will be used to annotate the matcher. This
+  can be given as a third parameter or as a keyword parameter. (Robert Collins)
+
+* Automated the Launchpad part of the release process.
+  (Jonathan Lange, #623486)
+
+* Correctly display non-ASCII unicode output on terminals that claim to have a
+  unicode encoding. (Martin [gz], #804122)
+
+* ``DocTestMatches`` correctly handles unicode output from examples, rather
+  than raising an error. (Martin [gz], #764170)
+
+* ``ErrorHolder`` and ``PlaceHolder`` added to docs. (Jonathan Lange, #816597)
+
+* ``ExpectedException`` now matches any exception of the given type by
+  default, and also allows specifying a ``Matcher`` rather than a mere regular
+  expression. (Jonathan Lange, #791889)
+
+* ``FixtureSuite`` added, allows test suites to run with a given fixture.
+  (Jonathan Lange)
+
+* Hide testtools's own stack frames when displaying tracebacks, making it
+  easier for test authors to focus on their errors.
+  (Jonathan Lange, Martin [gz], #788974)
+
+* Less boilerplate displayed in test failures and errors.
+  (Jonathan Lange, #660852)
+
+* ``MatchesException`` now allows you to match exceptions against any matcher,
+  rather than just regular expressions.  (Jonathan Lange, #791889)
+
+* ``MatchesException`` now permits a tuple of types rather than a single type
+  (when using the type matching mode).  (Robert Collins)
+
+* ``MatchesStructure.byEquality`` added to make the common case of matching
+  many attributes by equality much easier.  ``MatchesStructure.byMatcher``
+  added in case folk want to match by things other than equality.
+  (Jonathan Lange)
+
+* New convenience assertions, ``assertIsNone`` and ``assertIsNotNone``.
+  (Christian Kampka)
+
+* New matchers:
+
+  * ``AllMatch`` matches many values against a single matcher.
+    (Jonathan Lange, #615108)
+
+  * ``Contains``. (Robert Collins)
+
+  * ``GreaterThan``. (Christian Kampka)
+
+* New helper, ``safe_hasattr`` added. (Jonathan Lange)
+
+* ``reraise`` added to ``testtools.compat``. (Jonathan Lange)
+
+
+0.9.11
+~~~~~~
+
+This release brings consistent use of super for better compatibility with
+multiple inheritance, fixed Python3 support, improvements in fixture and mather
+outputs and a compat helper for testing libraries that deal with bytestrings.
+
+Changes
+-------
+
+* ``TestCase`` now uses super to call base ``unittest.TestCase`` constructor,
+  ``setUp`` and ``tearDown``. (Tim Cole, #771508)
+
+* If, when calling ``useFixture`` an error occurs during fixture set up, we
+  still attempt to gather details from the fixture. (Gavin Panella)
+
+
+Improvements
+------------
+
+* Additional compat helper for ``BytesIO`` for libraries that build on
+  testtools and are working on Python 3 porting. (Robert Collins)
+
+* Corrected documentation for ``MatchesStructure`` in the test authors
+  document.  (Jonathan Lange)
+
+* ``LessThan`` error message now says something that is logically correct.
+  (Gavin Panella, #762008)
+
+* Multiple details from a single fixture are now kept separate, rather than
+  being mooshed together. (Gavin Panella, #788182)
+
+* Python 3 support now back in action. (Martin [gz], #688729)
+
+* ``try_import`` and ``try_imports`` have a callback that is called whenever
+  they fail to import a module.  (Martin Pool)
+
+
+0.9.10
+~~~~~~
+
+The last release of testtools could not be easy_installed.  This is considered
+severe enough for a re-release.
+
+Improvements
+------------
+
+* Include ``doc/`` in the source distribution, making testtools installable
+  from PyPI again (Tres Seaver, #757439)
+
+
+0.9.9
+~~~~~
+
+Many, many new matchers, vastly expanded documentation, stacks of bug fixes,
+better unittest2 integration.  If you've ever wanted to try out testtools but
+been afraid to do so, this is the release to try.
+
 
 Changes
 -------
@@ -14,7 +159,55 @@ Changes
 Improvements
 ------------
 
+* ``AnnotatedMismatch`` now correctly returns details.
+  (Jonathan Lange, #724691)
+
+* distutils integration for the testtools test runner. Can now use it for
+  'python setup.py test'. (Christian Kampka, #693773)
+
+* ``EndsWith`` and ``KeysEqual`` now in testtools.matchers.__all__.
+  (Jonathan Lange, #692158)
+
+* ``MatchesException`` extended to support a regular expression check against
+  the str() of a raised exception.  (Jonathan Lange)
+
 * ``MultiTestResult`` now forwards the ``time`` API. (Robert Collins, #692294)
+
+* ``MultiTestResult`` now documented in the manual. (Jonathan Lange, #661116)
+
+* New content helpers ``content_from_file``, ``content_from_stream`` and
+  ``attach_file`` make it easier to attach file-like objects to a
+  test. (Jonathan Lange, Robert Collins, #694126)
+
+* New ``ExpectedException`` context manager to help write tests against things
+  that are expected to raise exceptions. (Aaron Bentley)
+
+* New matchers:
+
+  * ``MatchesListwise`` matches an iterable of matchers against an iterable
+    of values. (Michael Hudson-Doyle)
+
+  * ``MatchesRegex`` matches a string against a regular expression.
+    (Michael Hudson-Doyle)
+
+  * ``MatchesStructure`` matches attributes of an object against given
+    matchers.  (Michael Hudson-Doyle)
+
+  * ``AfterPreproccessing`` matches values against a matcher after passing them
+    through a callable.  (Michael Hudson-Doyle)
+
+  * ``MatchesSetwise`` matches an iterable of matchers against an iterable of
+    values, without regard to order.  (Michael Hudson-Doyle)
+
+* ``setup.py`` can now build a snapshot when Bazaar is installed but the tree
+  is not a Bazaar tree. (Jelmer Vernooij)
+
+* Support for running tests using distutils (Christian Kampka, #726539)
+
+* Vastly improved and extended documentation. (Jonathan Lange)
+
+* Use unittest2 exception classes if available. (Jelmer Vernooij)
+
 
 0.9.8
 ~~~~~
@@ -55,6 +248,16 @@ Changes
 Improvements
 ------------
 
+* New matchers:
+
+  * ``EndsWith`` which complements the existing ``StartsWith`` matcher.
+    (Jonathan Lange, #669165)
+
+  * ``MatchesException`` matches an exception class and parameters. (Robert
+    Collins)
+
+  * ``KeysEqual`` matches a dictionary with particular keys.  (Jonathan Lange)
+
 * ``assertIsInstance`` supports a custom error message to be supplied, which
   is necessary when using ``assertDictEqual`` on Python 2.7 with a
   ``testtools.TestCase`` base class. (Jelmer Vernooij)
@@ -68,21 +271,13 @@ Improvements
 * Fix the runTest parameter of TestCase to actually work, rather than raising
   a TypeError.  (Jonathan Lange, #657760)
 
-* New matcher ``EndsWith`` added to complement the existing ``StartsWith``
-  matcher.  (Jonathan Lange, #669165)
-
 * Non-release snapshots of testtools will now work with buildout.
   (Jonathan Lange, #613734)
 
 * Malformed SyntaxErrors no longer blow up the test suite.  (Martin [gz])
 
-* ``MatchesException`` added to the ``testtools.matchers`` module - matches
-  an exception class and parameters. (Robert Collins)
-
 * ``MismatchesAll.describe`` no longer appends a trailing newline.
   (Michael Hudson-Doyle, #686790)
-
-* New ``KeysEqual`` matcher.  (Jonathan Lange)
 
 * New helpers for conditionally importing modules, ``try_import`` and
   ``try_imports``.  (Jonathan Lange)
@@ -466,3 +661,6 @@ Improvements
   a test success will now be reported. Previously an error was reported but
   production experience has shown that this is too disruptive for projects that
   are using skips: they cannot get a clean run on down-level result objects.
+
+
+.. _testtools: http://pypi.python.org/pypi/testtools

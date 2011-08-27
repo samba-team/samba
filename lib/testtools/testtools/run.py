@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009 testtools developers. See LICENSE for details.
 
 """python -m testtools.run testspec [testspec...]
 
@@ -158,12 +158,12 @@ class TestProgram(object):
             # OptimisingTestSuite.add, but with a standard protocol).
             # This is needed because the load_tests hook allows arbitrary
             # suites, even if that is rarely used.
-            source = file(self.load_list, 'rb')
+            source = open(self.load_list, 'rb')
             try:
                 lines = source.readlines()
             finally:
                 source.close()
-            test_ids = set(line.strip() for line in lines)
+            test_ids = set(line.strip().decode('utf-8') for line in lines)
             filtered = unittest.TestSuite()
             for test in iterate_tests(self.test):
                 if test.id() in test_ids:

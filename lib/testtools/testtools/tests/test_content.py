@@ -1,11 +1,33 @@
-# Copyright (c) 2008-2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
 
+import os
+import tempfile
 import unittest
+
 from testtools import TestCase
-from testtools.compat import _b, _u
-from testtools.content import Content, TracebackContent, text_content
-from testtools.content_type import ContentType, UTF8_TEXT
-from testtools.matchers import MatchesException, Raises
+from testtools.compat import (
+    _b,
+    _u,
+    StringIO,
+    )
+from testtools.content import (
+    attach_file,
+    Content,
+    content_from_file,
+    content_from_stream,
+    TracebackContent,
+    text_content,
+    )
+from testtools.content_type import (
+    ContentType,
+    UTF8_TEXT,
+    )
+from testtools.matchers import (
+    Equals,
+    MatchesException,
+    Raises,
+    raises,
+    )
 from testtools.tests.helpers import an_exc_info
 
 
@@ -15,10 +37,11 @@ raises_value_error = Raises(MatchesException(ValueError))
 class TestContent(TestCase):
 
     def test___init___None_errors(self):
-        self.assertThat(lambda:Content(None, None), raises_value_error)
-        self.assertThat(lambda:Content(None, lambda: ["traceback"]),
-            raises_value_error)
-        self.assertThat(lambda:Content(ContentType("text", "traceback"), None),
+        self.assertThat(lambda: Content(None, None), raises_value_error)
+        self.assertThat(
+            lambda: Content(None, lambda: ["traceback"]), raises_value_error)
+        self.assertThat(
+            lambda: Content(ContentType("text", "traceback"), None),
             raises_value_error)
 
     def test___init___sets_ivars(self):
@@ -64,12 +87,68 @@ class TestContent(TestCase):
         content = Content(content_type, lambda: [iso_version])
         self.assertEqual([text], list(content.iter_text()))
 
+    def test_from_file(self):
+        fd, path = tempfile.mkstemp()
+        self.addCleanup(os.remove, path)
+        os.write(fd, _b('some data'))
+        os.close(fd)
+        content = content_from_file(path, UTF8_TEXT, chunk_size=2)
+        self.assertThat(
+            list(content.iter_bytes()),
+            Equals([_b('so'), _b('me'), _b(' d'), _b('at'), _b('a')]))
+
+    def test_from_nonexistent_file(self):
+        directory = tempfile.mkdtemp()
+        nonexistent = os.path.join(directory, 'nonexistent-file')
+        content = content_from_file(nonexistent)
+        self.assertThat(content.iter_bytes, raises(IOError))
+
+    def test_from_file_default_type(self):
+        content = content_from_file('/nonexistent/path')
+        self.assertThat(content.content_type, Equals(UTF8_TEXT))
+
+    def test_from_file_eager_loading(self):
+        fd, path = tempfile.mkstemp()
+        os.write(fd, _b('some data'))
+        os.close(fd)
+        content = content_from_file(path, UTF8_TEXT, buffer_now=True)
+        os.remove(path)
+        self.assertThat(
+            ''.join(content.iter_text()), Equals('some data'))
+
+    def test_from_stream(self):
+        data = StringIO('some data')
+        content = content_from_stream(data, UTF8_TEXT, chunk_size=2)
+        self.assertThat(
+            list(content.iter_bytes()), Equals(['so', 'me', ' d', 'at', 'a']))
+
+    def test_from_stream_default_type(self):
+        data = StringIO('some data')
+        content = content_from_stream(data)
+        self.assertThat(content.content_type, Equals(UTF8_TEXT))
+
+    def test_from_stream_eager_loading(self):
+        fd, path = tempfile.mkstemp()
+        self.addCleanup(os.remove, path)
+        os.write(fd, _b('some data'))
+        stream = open(path, 'rb')
+        content = content_from_stream(stream, UTF8_TEXT, buffer_now=True)
+        os.write(fd, _b('more data'))
+        os.close(fd)
+        self.assertThat(
+            ''.join(content.iter_text()), Equals('some data'))
+
+    def test_from_text(self):
+        data = _u("some data")
+        expected = Content(UTF8_TEXT, lambda: [data.encode('utf8')])
+        self.assertEqual(expected, text_content(data))
+
 
 class TestTracebackContent(TestCase):
 
     def test___init___None_errors(self):
-        self.assertThat(lambda:TracebackContent(None, None),
-            raises_value_error) 
+        self.assertThat(
+            lambda: TracebackContent(None, None), raises_value_error)
 
     def test___init___sets_ivars(self):
         content = TracebackContent(an_exc_info, self)
@@ -81,12 +160,66 @@ class TestTracebackContent(TestCase):
         self.assertEqual(expected, ''.join(list(content.iter_text())))
 
 
-class TestBytesContent(TestCase):
+class TestAttachFile(TestCase):
 
-    def test_bytes(self):
-        data = _u("some data")
-        expected = Content(UTF8_TEXT, lambda: [data.encode('utf8')])
-        self.assertEqual(expected, text_content(data))
+    def make_file(self, data):
+        # GZ 2011-04-21: This helper could be useful for methods above trying
+        #                to use mkstemp, but should handle write failures and
+        #                always close the fd. There must be a better way.
+        fd, path = tempfile.mkstemp()
+        self.addCleanup(os.remove, path)
+        os.write(fd, _b(data))
+        os.close(fd)
+        return path
+
+    def test_simple(self):
+        class SomeTest(TestCase):
+            def test_foo(self):
+                pass
+        test = SomeTest('test_foo')
+        data = 'some data'
+        path = self.make_file(data)
+        my_content = text_content(data)
+        attach_file(test, path, name='foo')
+        self.assertEqual({'foo': my_content}, test.getDetails())
+
+    def test_optional_name(self):
+        # If no name is provided, attach_file just uses the base name of the
+        # file.
+        class SomeTest(TestCase):
+            def test_foo(self):
+                pass
+        test = SomeTest('test_foo')
+        path = self.make_file('some data')
+        base_path = os.path.basename(path)
+        attach_file(test, path)
+        self.assertEqual([base_path], list(test.getDetails()))
+
+    def test_lazy_read(self):
+        class SomeTest(TestCase):
+            def test_foo(self):
+                pass
+        test = SomeTest('test_foo')
+        path = self.make_file('some data')
+        attach_file(test, path, name='foo', buffer_now=False)
+        content = test.getDetails()['foo']
+        content_file = open(path, 'w')
+        content_file.write('new data')
+        content_file.close()
+        self.assertEqual(''.join(content.iter_text()), 'new data')
+
+    def test_eager_read_by_default(self):
+        class SomeTest(TestCase):
+            def test_foo(self):
+                pass
+        test = SomeTest('test_foo')
+        path = self.make_file('some data')
+        attach_file(test, path, name='foo')
+        content = test.getDetails()['foo']
+        content_file = open(path, 'w')
+        content_file.write('new data')
+        content_file.close()
+        self.assertEqual(''.join(content.iter_text()), 'some data')
 
 
 def test_suite():

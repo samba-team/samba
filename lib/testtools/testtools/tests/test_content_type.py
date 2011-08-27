@@ -1,4 +1,4 @@
-# Copyright (c) 2008 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008 testtools developers. See LICENSE for details.
 
 from testtools import TestCase
 from testtools.matchers import Equals, MatchesException, Raises
@@ -30,6 +30,16 @@ class TestContentType(TestCase):
         content_type3 = ContentType("foo", "bar", {"quux": "thing2"})
         self.assertTrue(content_type1.__eq__(content_type2))
         self.assertFalse(content_type1.__eq__(content_type3))
+
+    def test_basic_repr(self):
+        content_type = ContentType('text', 'plain')
+        self.assertThat(repr(content_type), Equals('text/plain'))
+
+    def test_extended_repr(self):
+        content_type = ContentType(
+            'text', 'plain', {'foo': 'bar', 'baz': 'qux'})
+        self.assertThat(
+            repr(content_type), Equals('text/plain; foo="bar", baz="qux"'))
 
 
 class TestBuiltinContentTypes(TestCase):

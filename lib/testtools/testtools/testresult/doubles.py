@@ -1,4 +1,4 @@
-# Copyright (c) 2009-2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009-2010 testtools developers. See LICENSE for details.
 
 """Doubles of test result objects, useful for testing unittest code."""
 

@@ -2,7 +2,7 @@
 
 # See README for copyright and licensing details.
 
-import unittest
+from unittest import TestSuite
 
 
 def test_suite():
@@ -11,6 +11,7 @@ def test_suite():
         test_content,
         test_content_type,
         test_deferredruntest,
+        test_distutilscmd,
         test_fixturesupport,
         test_helpers,
         test_matchers,
@@ -18,7 +19,7 @@ def test_suite():
         test_run,
         test_runtest,
         test_spinner,
-        test_testtools,
+        test_testcase,
         test_testresult,
         test_testsuite,
         )
@@ -27,15 +28,17 @@ def test_suite():
         test_content,
         test_content_type,
         test_deferredruntest,
+        test_distutilscmd,
         test_fixturesupport,
         test_helpers,
         test_matchers,
         test_monkey,
         test_run,
+        test_runtest,
         test_spinner,
+        test_testcase,
         test_testresult,
         test_testsuite,
-        test_testtools,
         ]
-    suites = map(lambda x:x.test_suite(), modules)
-    return unittest.TestSuite(suites)
+    suites = map(lambda x: x.test_suite(), modules)
+    return TestSuite(suites)

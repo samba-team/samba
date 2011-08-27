@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2010 testtools developers. See LICENSE for details.
 
 """Helpers for monkey-patching Python code."""
 
@@ -22,7 +22,7 @@ class MonkeyPatcher(object):
     def __init__(self, *patches):
         """Construct a `MonkeyPatcher`.
 
-        :param *patches: The patches to apply, each should be (obj, name,
+        :param patches: The patches to apply, each should be (obj, name,
             new_value). Providing patches here is equivalent to calling
             `add_patch`.
         """

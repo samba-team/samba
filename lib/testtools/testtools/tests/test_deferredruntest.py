@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2010-2011 testtools developers. See LICENSE for details.
 
 """Tests for the DeferredRunTest single test execution logic."""
 
@@ -8,12 +8,12 @@ import signal
 from testtools import (
     skipIf,
     TestCase,
+    TestResult,
     )
 from testtools.content import (
     text_content,
     )
 from testtools.helpers import try_import
-from testtools.tests.helpers import ExtendedTestResult
 from testtools.matchers import (
     Equals,
     KeysEqual,
@@ -21,6 +21,7 @@ from testtools.matchers import (
     Raises,
     )
 from testtools.runtest import RunTest
+from testtools.testresult.doubles import ExtendedTestResult
 from testtools.tests.test_spinner import NeedsTwistedTestCase
 
 assert_fails_with = try_import('testtools.deferredruntest.assert_fails_with')
@@ -334,6 +335,20 @@ class TestAsynchronousDeferredRunTest(NeedsTwistedTestCase):
                  ('stopTest', test)]))
         error = result._events[1][2]
         self.assertThat(error, KeysEqual('traceback', 'twisted-log'))
+
+    def test_exports_reactor(self):
+        # The reactor is set as an attribute on the test case.
+        reactor = self.make_reactor()
+        timeout = self.make_timeout()
+        class SomeCase(TestCase):
+            def test_cruft(self):
+                self.assertIs(reactor, self.reactor)
+        test = SomeCase('test_cruft')
+        runner = self.make_runner(test, timeout)
+        result = TestResult()
+        runner.run(result)
+        self.assertEqual([], result.errors)
+        self.assertEqual([], result.failures)
 
     def test_unhandled_error_from_deferred(self):
         # If there's a Deferred with an unhandled error, the test fails.  Each

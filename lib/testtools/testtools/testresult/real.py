@@ -1,4 +1,4 @@
-# Copyright (c) 2008 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008 testtools developers. See LICENSE for details.
 
 """Test results and related things."""
 
@@ -56,7 +56,7 @@ class TestResult(unittest.TestResult):
     def __init__(self):
         # startTestRun resets all attributes, and older clients don't know to
         # call startTestRun, so it is called once here.
-        # Because subclasses may reasonably not expect this, we call the 
+        # Because subclasses may reasonably not expect this, we call the
         # specific version we want to run.
         TestResult.startTestRun(self)
 
@@ -158,7 +158,7 @@ class TestResult(unittest.TestResult):
         """Convert an error in exc_info form or a contents dict to a string."""
         if err is not None:
             return self._exc_info_to_unicode(err, test)
-        return _details_to_str(details)
+        return _details_to_str(details, special='traceback')
 
     def _now(self):
         """Return the current 'test time'.
@@ -175,8 +175,9 @@ class TestResult(unittest.TestResult):
     def startTestRun(self):
         """Called before a test run starts.
 
-        New in python 2.7. The testtools version resets the result to a
-        pristine condition ready for use in another test run.
+        New in Python 2.7. The testtools version resets the result to a
+        pristine condition ready for use in another test run.  Note that this
+        is different from Python 2.7's startTestRun, which does nothing.
         """
         super(TestResult, self).__init__()
         self.skip_reasons = {}
@@ -309,7 +310,7 @@ class TextTestResult(TestResult):
             self.stream.write(
                 "%sUNEXPECTED SUCCESS: %s\n%s" % (
                     self.sep1, test.id(), self.sep2))
-        self.stream.write("Ran %d test%s in %.3fs\n\n" %
+        self.stream.write("\nRan %d test%s in %.3fs\n" %
             (self.testsRun, plural,
              self._delta_to_float(stop - self.__start)))
         if self.wasSuccessful():
@@ -519,8 +520,10 @@ class ExtendedToOriginalDecorator(object):
 
     def _details_to_exc_info(self, details):
         """Convert a details dict to an exc_info tuple."""
-        return (_StringException,
-            _StringException(_details_to_str(details)), None)
+        return (
+            _StringException,
+            _StringException(_details_to_str(details, special='traceback')),
+            None)
 
     def done(self):
         try:
@@ -602,19 +605,54 @@ class _StringException(Exception):
             return False
 
 
-def _details_to_str(details):
-    """Convert a details dict to a string."""
-    chars = []
+def _format_text_attachment(name, text):
+    if '\n' in text:
+        return "%s: {{{\n%s\n}}}\n" % (name, text)
+    return "%s: {{{%s}}}" % (name, text)
+
+
+def _details_to_str(details, special=None):
+    """Convert a details dict to a string.
+
+    :param details: A dictionary mapping short names to ``Content`` objects.
+    :param special: If specified, an attachment that should have special
+        attention drawn to it. The primary attachment. Normally it's the
+        traceback that caused the test to fail.
+    :return: A formatted string that can be included in text test results.
+    """
+    empty_attachments = []
+    binary_attachments = []
+    text_attachments = []
+    special_content = None
     # sorted is for testing, may want to remove that and use a dict
     # subclass with defined order for items instead.
     for key, content in sorted(details.items()):
         if content.content_type.type != 'text':
-            chars.append('Binary content: %s\n' % key)
+            binary_attachments.append((key, content.content_type))
             continue
-        chars.append('Text attachment: %s\n' % key)
-        chars.append('------------\n')
-        chars.extend(content.iter_text())
-        if not chars[-1].endswith('\n'):
-            chars.append('\n')
-        chars.append('------------\n')
-    return _u('').join(chars)
+        text = _u('').join(content.iter_text()).strip()
+        if not text:
+            empty_attachments.append(key)
+            continue
+        # We want the 'special' attachment to be at the bottom.
+        if key == special:
+            special_content = '%s\n' % (text,)
+            continue
+        text_attachments.append(_format_text_attachment(key, text))
+    if text_attachments and not text_attachments[-1].endswith('\n'):
+        text_attachments.append('')
+    if special_content:
+        text_attachments.append(special_content)
+    lines = []
+    if binary_attachments:
+        lines.append('Binary content:\n')
+        for name, content_type in binary_attachments:
+            lines.append('  %s (%s)\n' % (name, content_type))
+    if empty_attachments:
+        lines.append('Empty attachments:\n')
+        for name in empty_attachments:
+            lines.append('  %s\n' % (name,))
+    if (binary_attachments or empty_attachments) and text_attachments:
+        lines.append('\n')
+    lines.append('\n'.join(text_attachments))
+    return _u('').join(lines)

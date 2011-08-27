@@ -1,7 +1,22 @@
-# Copyright (c) 2008-2010 testtools developers. See LICENSE for details.
+# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
 
 """Compatibility support for python 2 and 3."""
 
+__metaclass__ = type
+__all__ = [
+    '_b',
+    '_u',
+    'advance_iterator',
+    'all',
+    'BytesIO',
+    'classtypes',
+    'isbaseexception',
+    'istext',
+    'str_is_unicode',
+    'StringIO',
+    'reraise',
+    'unicode_output_stream',
+    ]
 
 import codecs
 import linecache
@@ -11,14 +26,18 @@ import re
 import sys
 import traceback
 
-__metaclass__ = type
-__all__ = [
-    '_b',
-    '_u',
-    'advance_iterator',
-    'str_is_unicode',
-    'unicode_output_stream',
-    ]
+from testtools.helpers import try_imports
+
+BytesIO = try_imports(['StringIO.StringIO', 'io.BytesIO'])
+StringIO = try_imports(['StringIO.StringIO', 'io.StringIO'])
+
+try:
+    from testtools import _compat2x as _compat
+    _compat
+except SyntaxError:
+    from testtools import _compat3x as _compat
+
+reraise = _compat.reraise
 
 
 __u_doc = """A function version of the 'u' prefix.
@@ -114,7 +133,9 @@ def unicode_output_stream(stream):
         return codecs.getwriter("ascii")(stream, "replace")
     if writer.__module__.rsplit(".", 1)[1].startswith("utf"):
         # The current stream has a unicode encoding so no error handler is needed
-        return stream
+        if sys.version_info > (3, 0):
+            return stream
+        return writer(stream)
     if sys.version_info > (3, 0):
         # Python 3 doesn't seem to make this easy, handle a common case
         try:

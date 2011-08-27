@@ -1,16 +1,25 @@
-# Copyright (c) 2008-2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
 
 """Tests for matchers."""
 
 import doctest
+import re
 import sys
 
 from testtools import (
     Matcher, # check that Matcher is exposed at the top level for docs.
     TestCase,
     )
+from testtools.compat import (
+    StringIO,
+    _u,
+    )
 from testtools.matchers import (
+    AfterPreprocessing,
+    AllMatch,
     Annotate,
+    AnnotatedMismatch,
+    Contains,
     Equals,
     DocTestMatches,
     DoesNotEndWith,
@@ -18,23 +27,33 @@ from testtools.matchers import (
     EndsWith,
     KeysEqual,
     Is,
+    IsInstance,
     LessThan,
+    GreaterThan,
     MatchesAny,
     MatchesAll,
     MatchesException,
+    MatchesListwise,
+    MatchesRegex,
+    MatchesSetwise,
+    MatchesStructure,
     Mismatch,
+    MismatchDecorator,
     Not,
     NotEquals,
     Raises,
     raises,
     StartsWith,
     )
+from testtools.tests.helpers import FullStackRunTest
 
 # Silence pyflakes.
 Matcher
 
 
 class TestMismatch(TestCase):
+
+    run_tests_with = FullStackRunTest
 
     def test_constructor_arguments(self):
         mismatch = Mismatch("some description", {'detail': "things"})
@@ -49,6 +68,8 @@ class TestMismatch(TestCase):
 
 
 class TestMatchersInterface(object):
+
+    run_tests_with = FullStackRunTest
 
     def test_matches_match(self):
         matcher = self.matches_matcher
@@ -100,7 +121,25 @@ class TestDocTestMatchesInterface(TestCase, TestMatchersInterface):
         DocTestMatches("Ran 1 tests in ...s", doctest.ELLIPSIS))]
 
 
+class TestDocTestMatchesInterfaceUnicode(TestCase, TestMatchersInterface):
+
+    matches_matcher = DocTestMatches(_u("\xa7..."), doctest.ELLIPSIS)
+    matches_matches = [_u("\xa7"), _u("\xa7 more\n")]
+    matches_mismatches = ["\\xa7", _u("more \xa7"), _u("\n\xa7")]
+
+    str_examples = [("DocTestMatches(%r)" % (_u("\xa7\n"),),
+        DocTestMatches(_u("\xa7"))),
+        ]
+
+    describe_examples = [(
+        _u("Expected:\n    \xa7\nGot:\n    a\n"),
+        "a",
+        DocTestMatches(_u("\xa7"), doctest.ELLIPSIS))]
+
+
 class TestDocTestMatchesSpecific(TestCase):
+
+    run_tests_with = FullStackRunTest
 
     def test___init__simple(self):
         matcher = DocTestMatches("foo")
@@ -149,6 +188,26 @@ class TestIsInterface(TestCase, TestMatchersInterface):
     describe_examples = [("1 is not 2", 2, Is(1))]
 
 
+class TestIsInstanceInterface(TestCase, TestMatchersInterface):
+
+    class Foo:pass
+
+    matches_matcher = IsInstance(Foo)
+    matches_matches = [Foo()]
+    matches_mismatches = [object(), 1, Foo]
+
+    str_examples = [
+            ("IsInstance(str)", IsInstance(str)),
+            ("IsInstance(str, int)", IsInstance(str, int)),
+            ]
+
+    describe_examples = [
+            ("'foo' is not an instance of int", 'foo', IsInstance(int)),
+            ("'foo' is not an instance of any of (int, type)", 'foo',
+             IsInstance(int, type)),
+            ]
+
+
 class TestLessThanInterface(TestCase, TestMatchersInterface):
 
     matches_matcher = LessThan(4)
@@ -159,7 +218,40 @@ class TestLessThanInterface(TestCase, TestMatchersInterface):
         ("LessThan(12)", LessThan(12)),
         ]
 
-    describe_examples = [('4 is >= 4', 4, LessThan(4))]
+    describe_examples = [
+        ('4 is not > 5', 5, LessThan(4)),
+        ('4 is not > 4', 4, LessThan(4)),
+        ]
+
+
+class TestGreaterThanInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = GreaterThan(4)
+    matches_matches = [5, 8]
+    matches_mismatches = [-2, 0, 4]
+
+    str_examples = [
+        ("GreaterThan(12)", GreaterThan(12)),
+        ]
+
+    describe_examples = [
+        ('5 is not < 4', 4, GreaterThan(5)),
+        ('4 is not < 4', 4, GreaterThan(4)),
+        ]
+
+
+class TestContainsInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = Contains('foo')
+    matches_matches = ['foo', 'afoo', 'fooa']
+    matches_mismatches = ['f', 'fo', 'oo', 'faoo', 'foao']
+
+    str_examples = [
+        ("Contains(1)", Contains(1)),
+        ("Contains('foo')", Contains('foo')),
+        ]
+
+    describe_examples = [("1 not in 2", 2, Contains(1))]
 
 
 def make_error(type, *args, **kwargs):
@@ -209,6 +301,45 @@ class TestMatchesExceptionTypeInterface(TestCase, TestMatchersInterface):
         ("%r is not a %r" % (Exception, ValueError),
          error_base_foo,
          MatchesException(ValueError)),
+        ]
+
+
+class TestMatchesExceptionTypeReInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = MatchesException(ValueError, 'fo.')
+    error_foo = make_error(ValueError, 'foo')
+    error_sub = make_error(UnicodeError, 'foo')
+    error_bar = make_error(ValueError, 'bar')
+    matches_matches = [error_foo, error_sub]
+    matches_mismatches = [error_bar]
+
+    str_examples = [
+        ("MatchesException(%r)" % Exception,
+         MatchesException(Exception, 'fo.'))
+        ]
+    describe_examples = [
+        ("'bar' does not match /fo./",
+         error_bar, MatchesException(ValueError, "fo.")),
+        ]
+
+
+class TestMatchesExceptionTypeMatcherInterface(TestCase, TestMatchersInterface):
+
+    matches_matcher = MatchesException(
+        ValueError, AfterPreprocessing(str, Equals('foo')))
+    error_foo = make_error(ValueError, 'foo')
+    error_sub = make_error(UnicodeError, 'foo')
+    error_bar = make_error(ValueError, 'bar')
+    matches_matches = [error_foo, error_sub]
+    matches_mismatches = [error_bar]
+
+    str_examples = [
+        ("MatchesException(%r)" % Exception,
+         MatchesException(Exception, Equals('foo')))
+        ]
+    describe_examples = [
+        ("5 != %r" % (error_bar[1],),
+         error_bar, MatchesException(ValueError, Equals(5))),
         ]
 
 
@@ -303,6 +434,33 @@ class TestAnnotate(TestCase, TestMatchersInterface):
 
     describe_examples = [("1 != 2: foo", 2, Annotate('foo', Equals(1)))]
 
+    def test_if_message_no_message(self):
+        # Annotate.if_message returns the given matcher if there is no
+        # message.
+        matcher = Equals(1)
+        not_annotated = Annotate.if_message('', matcher)
+        self.assertIs(matcher, not_annotated)
+
+    def test_if_message_given_message(self):
+        # Annotate.if_message returns an annotated version of the matcher if a
+        # message is provided.
+        matcher = Equals(1)
+        expected = Annotate('foo', matcher)
+        annotated = Annotate.if_message('foo', matcher)
+        self.assertThat(
+            annotated,
+            MatchesStructure.fromExample(expected, 'annotation', 'matcher'))
+
+
+class TestAnnotatedMismatch(TestCase):
+
+    run_tests_with = FullStackRunTest
+
+    def test_forwards_details(self):
+        x = Mismatch('description', {'foo': 'bar'})
+        annotated = AnnotatedMismatch("annotation", x)
+        self.assertEqual(x.get_details(), annotated.get_details())
+
 
 class TestRaisesInterface(TestCase, TestMatchersInterface):
 
@@ -339,6 +497,8 @@ class TestRaisesExceptionMatcherInterface(TestCase, TestMatchersInterface):
 
 class TestRaisesBaseTypes(TestCase):
 
+    run_tests_with = FullStackRunTest
+
     def raiser(self):
         raise KeyboardInterrupt('foo')
 
@@ -372,6 +532,8 @@ class TestRaisesBaseTypes(TestCase):
 
 class TestRaisesConvenience(TestCase):
 
+    run_tests_with = FullStackRunTest
+
     def test_exc_type(self):
         self.assertThat(lambda: 1/0, raises(ZeroDivisionError))
 
@@ -384,12 +546,16 @@ class TestRaisesConvenience(TestCase):
 
 class DoesNotStartWithTests(TestCase):
 
+    run_tests_with = FullStackRunTest
+
     def test_describe(self):
         mismatch = DoesNotStartWith("fo", "bo")
         self.assertEqual("'fo' does not start with 'bo'.", mismatch.describe())
 
 
 class StartsWithTests(TestCase):
+
+    run_tests_with = FullStackRunTest
 
     def test_str(self):
         matcher = StartsWith("bar")
@@ -416,12 +582,16 @@ class StartsWithTests(TestCase):
 
 class DoesNotEndWithTests(TestCase):
 
+    run_tests_with = FullStackRunTest
+
     def test_describe(self):
         mismatch = DoesNotEndWith("fo", "bo")
         self.assertEqual("'fo' does not end with 'bo'.", mismatch.describe())
 
 
 class EndsWithTests(TestCase):
+
+    run_tests_with = FullStackRunTest
 
     def test_str(self):
         matcher = EndsWith("bar")
@@ -444,6 +614,259 @@ class EndsWithTests(TestCase):
         matcher = EndsWith("bar")
         mismatch = matcher.match("foo")
         self.assertEqual("bar", mismatch.expected)
+
+
+def run_doctest(obj, name):
+    p = doctest.DocTestParser()
+    t = p.get_doctest(
+        obj.__doc__, sys.modules[obj.__module__].__dict__, name, '', 0)
+    r = doctest.DocTestRunner()
+    output = StringIO()
+    r.run(t, out=output.write)
+    return r.failures, output.getvalue()
+
+
+class TestMatchesListwise(TestCase):
+
+    run_tests_with = FullStackRunTest
+
+    def test_docstring(self):
+        failure_count, output = run_doctest(
+            MatchesListwise, "MatchesListwise")
+        if failure_count:
+            self.fail("Doctest failed with %s" % output)
+
+
+class TestMatchesStructure(TestCase, TestMatchersInterface):
+
+    class SimpleClass:
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+
+    matches_matcher = MatchesStructure(x=Equals(1), y=Equals(2))
+    matches_matches = [SimpleClass(1, 2)]
+    matches_mismatches = [
+        SimpleClass(2, 2),
+        SimpleClass(1, 1),
+        SimpleClass(3, 3),
+        ]
+
+    str_examples = [
+        ("MatchesStructure(x=Equals(1))", MatchesStructure(x=Equals(1))),
+        ("MatchesStructure(y=Equals(2))", MatchesStructure(y=Equals(2))),
+        ("MatchesStructure(x=Equals(1), y=Equals(2))",
+         MatchesStructure(x=Equals(1), y=Equals(2))),
+        ]
+
+    describe_examples = [
+        ("""\
+Differences: [
+3 != 1: x
+]""", SimpleClass(1, 2), MatchesStructure(x=Equals(3), y=Equals(2))),
+        ("""\
+Differences: [
+3 != 2: y
+]""", SimpleClass(1, 2), MatchesStructure(x=Equals(1), y=Equals(3))),
+        ("""\
+Differences: [
+0 != 1: x
+0 != 2: y
+]""", SimpleClass(1, 2), MatchesStructure(x=Equals(0), y=Equals(0))),
+        ]
+
+    def test_fromExample(self):
+        self.assertThat(
+            self.SimpleClass(1, 2),
+            MatchesStructure.fromExample(self.SimpleClass(1, 3), 'x'))
+
+    def test_byEquality(self):
+        self.assertThat(
+            self.SimpleClass(1, 2),
+            MatchesStructure.byEquality(x=1))
+
+    def test_withStructure(self):
+        self.assertThat(
+            self.SimpleClass(1, 2),
+            MatchesStructure.byMatcher(LessThan, x=2))
+
+    def test_update(self):
+        self.assertThat(
+            self.SimpleClass(1, 2),
+            MatchesStructure(x=NotEquals(1)).update(x=Equals(1)))
+
+    def test_update_none(self):
+        self.assertThat(
+            self.SimpleClass(1, 2),
+            MatchesStructure(x=Equals(1), z=NotEquals(42)).update(
+                z=None))
+
+
+class TestMatchesRegex(TestCase, TestMatchersInterface):
+
+    matches_matcher = MatchesRegex('a|b')
+    matches_matches = ['a', 'b']
+    matches_mismatches = ['c']
+
+    str_examples = [
+        ("MatchesRegex('a|b')", MatchesRegex('a|b')),
+        ("MatchesRegex('a|b', re.M)", MatchesRegex('a|b', re.M)),
+        ("MatchesRegex('a|b', re.I|re.M)", MatchesRegex('a|b', re.I|re.M)),
+        ]
+
+    describe_examples = [
+        ("'c' does not match /a|b/", 'c', MatchesRegex('a|b')),
+        ("'c' does not match /a\d/", 'c', MatchesRegex(r'a\d')),
+        ]
+
+
+class TestMatchesSetwise(TestCase):
+
+    run_tests_with = FullStackRunTest
+
+    def assertMismatchWithDescriptionMatching(self, value, matcher,
+                                              description_matcher):
+        mismatch = matcher.match(value)
+        if mismatch is None:
+            self.fail("%s matched %s" % (matcher, value))
+        actual_description = mismatch.describe()
+        self.assertThat(
+            actual_description,
+            Annotate(
+                "%s matching %s" % (matcher, value),
+                description_matcher))
+
+    def test_matches(self):
+        self.assertIs(
+            None, MatchesSetwise(Equals(1), Equals(2)).match([2, 1]))
+
+    def test_mismatches(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex('.*There was 1 mismatch$', re.S))
+
+    def test_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3], MatchesSetwise(Equals(1), Equals(2), Equals(3)),
+            Equals('There was 1 matcher left over: Equals(1)'))
+
+    def test_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [1, 2, 3], MatchesSetwise(Equals(1), Equals(2)),
+            Equals('There was 1 value left over: [3]'))
+
+    def test_two_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [3], MatchesSetwise(Equals(1), Equals(2), Equals(3)),
+            MatchesRegex(
+                'There were 2 matchers left over: Equals\([12]\), '
+                'Equals\([12]\)'))
+
+    def test_two_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [1, 2, 3, 4], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex(
+                'There were 2 values left over: \[[34], [34]\]'))
+
+    def test_mismatch_and_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3], MatchesSetwise(Equals(0), Equals(1), Equals(2)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 1 extra matcher: Equals\([01]\)',
+                re.S))
+
+    def test_mismatch_and_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3, 4], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 1 extra value: \[[34]\]',
+                re.S))
+
+    def test_mismatch_and_two_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [3, 4], MatchesSetwise(
+                Equals(0), Equals(1), Equals(2), Equals(3)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 2 extra matchers: '
+                'Equals\([012]\), Equals\([012]\)', re.S))
+
+    def test_mismatch_and_two_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3, 4, 5], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 2 extra values: \[[145], [145]\]',
+                re.S))
+
+
+class TestAfterPreprocessing(TestCase, TestMatchersInterface):
+
+    def parity(x):
+        return x % 2
+
+    matches_matcher = AfterPreprocessing(parity, Equals(1))
+    matches_matches = [3, 5]
+    matches_mismatches = [2]
+
+    str_examples = [
+        ("AfterPreprocessing(<function parity>, Equals(1))",
+         AfterPreprocessing(parity, Equals(1))),
+        ]
+
+    describe_examples = [
+        ("1 != 0: after <function parity> on 2", 2,
+         AfterPreprocessing(parity, Equals(1))),
+        ("1 != 0", 2,
+         AfterPreprocessing(parity, Equals(1), annotate=False)),
+        ]
+
+
+class TestMismatchDecorator(TestCase):
+
+    run_tests_with = FullStackRunTest
+
+    def test_forwards_description(self):
+        x = Mismatch("description", {'foo': 'bar'})
+        decorated = MismatchDecorator(x)
+        self.assertEqual(x.describe(), decorated.describe())
+
+    def test_forwards_details(self):
+        x = Mismatch("description", {'foo': 'bar'})
+        decorated = MismatchDecorator(x)
+        self.assertEqual(x.get_details(), decorated.get_details())
+
+    def test_repr(self):
+        x = Mismatch("description", {'foo': 'bar'})
+        decorated = MismatchDecorator(x)
+        self.assertEqual(
+            '<testtools.matchers.MismatchDecorator(%r)>' % (x,),
+            repr(decorated))
+
+
+class TestAllMatch(TestCase, TestMatchersInterface):
+
+    matches_matcher = AllMatch(LessThan(10))
+    matches_matches = [
+        [9, 9, 9],
+        (9, 9),
+        iter([9, 9, 9, 9, 9]),
+        ]
+    matches_mismatches = [
+        [11, 9, 9],
+        iter([9, 12, 9, 11]),
+        ]
+
+    str_examples = [
+        ("AllMatch(LessThan(12))", AllMatch(LessThan(12))),
+        ]
+
+    describe_examples = [
+        ('Differences: [\n'
+         '10 is not > 11\n'
+         '10 is not > 10\n'
+         ']',
+         [11, 9, 10],
+         AllMatch(LessThan(10))),
+        ]
 
 
 def test_suite():

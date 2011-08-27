@@ -1,5 +1,23 @@
-Copyright (c) 2008-2010 Jonathan M. Lange <jml@mumak.net> and the testtools
+Copyright (c) 2008-2011 Jonathan M. Lange <jml@mumak.net> and the testtools
 authors.
+
+The testtools authors are:
+ * Canonical Ltd
+ * Twisted Matrix Labs
+ * Jonathan Lange
+ * Robert Collins
+ * Andrew Bennetts
+ * Benjamin Peterson
+ * Jamu Kakar
+ * James Westby
+ * Martin [gz]
+ * Michael Hudson-Doyle
+ * Aaron Bentley
+ * Christian Kampka
+ * Gavin Panella
+ * Martin Pool
+
+and are collectively referred to as "testtools developers".
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

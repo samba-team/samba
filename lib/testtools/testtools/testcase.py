@@ -1,10 +1,12 @@
-# Copyright (c) 2008-2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
 
 """Test case related stuff."""
 
 __metaclass__ = type
 __all__ = [
     'clone_test_with_new_id',
+    'ExpectedException',
+    'gather_details',
     'run_test_with',
     'skip',
     'skipIf',
@@ -22,10 +24,20 @@ from testtools import (
     content,
     try_import,
     )
-from testtools.compat import advance_iterator
+from testtools.compat import (
+    advance_iterator,
+    reraise,
+    )
 from testtools.matchers import (
     Annotate,
+    Contains,
     Equals,
+    MatchesAll,
+    MatchesException,
+    Is,
+    IsInstance,
+    Not,
+    Raises,
     )
 from testtools.monkey import patch
 from testtools.runtest import RunTest
@@ -35,6 +47,7 @@ wraps = try_import('functools.wraps')
 
 class TestSkipped(Exception):
     """Raised within TestCase.run() when a test is skipped."""
+testSkipped = try_import('unittest2.case.SkipTest', TestSkipped)
 TestSkipped = try_import('unittest.case.SkipTest', TestSkipped)
 
 
@@ -45,6 +58,8 @@ class _UnexpectedSuccess(Exception):
     module.
     """
 _UnexpectedSuccess = try_import(
+    'unittest2.case._UnexpectedSuccess', _UnexpectedSuccess)
+_UnexpectedSuccess = try_import(
     'unittest.case._UnexpectedSuccess', _UnexpectedSuccess)
 
 class _ExpectedFailure(Exception):
@@ -54,30 +69,33 @@ class _ExpectedFailure(Exception):
     module.
     """
 _ExpectedFailure = try_import(
+    'unittest2.case._ExpectedFailure', _ExpectedFailure)
+_ExpectedFailure = try_import(
     'unittest.case._ExpectedFailure', _ExpectedFailure)
 
 
 def run_test_with(test_runner, **kwargs):
-    """Decorate a test as using a specific `RunTest`.
+    """Decorate a test as using a specific ``RunTest``.
 
-    e.g.
+    e.g.::
+
       @run_test_with(CustomRunner, timeout=42)
       def test_foo(self):
           self.assertTrue(True)
 
     The returned decorator works by setting an attribute on the decorated
-    function.  `TestCase.__init__` looks for this attribute when deciding
-    on a `RunTest` factory.  If you wish to use multiple decorators on a test
-    method, then you must either make this one the top-most decorator, or
-    you must write your decorators so that they update the wrapping function
-    with the attributes of the wrapped function.  The latter is recommended
-    style anyway.  `functools.wraps`, `functools.wrapper` and
-    `twisted.python.util.mergeFunctionMetadata` can help you do this.
+    function.  `TestCase.__init__` looks for this attribute when deciding on a
+    ``RunTest`` factory.  If you wish to use multiple decorators on a test
+    method, then you must either make this one the top-most decorator, or you
+    must write your decorators so that they update the wrapping function with
+    the attributes of the wrapped function.  The latter is recommended style
+    anyway.  ``functools.wraps``, ``functools.wrapper`` and
+    ``twisted.python.util.mergeFunctionMetadata`` can help you do this.
 
-    :param test_runner: A `RunTest` factory that takes a test case and an
-        optional list of exception handlers.  See `RunTest`.
-    :param **kwargs: Keyword arguments to pass on as extra arguments to
-        `test_runner`.
+    :param test_runner: A ``RunTest`` factory that takes a test case and an
+        optional list of exception handlers.  See ``RunTest``.
+    :param kwargs: Keyword arguments to pass on as extra arguments to
+        'test_runner'.
     :return: A decorator to be used for marking a test as needing a special
         runner.
     """
@@ -91,14 +109,45 @@ def run_test_with(test_runner, **kwargs):
     return decorator
 
 
+def _copy_content(content_object):
+    """Make a copy of the given content object.
+
+    The content within `content_object` is iterated and saved. This is useful
+    when the source of the content is volatile, a log file in a temporary
+    directory for example.
+
+    :param content_object: A `content.Content` instance.
+    :return: A `content.Content` instance with the same mime-type as
+        `content_object` and a non-volatile copy of its content.
+    """
+    content_bytes = list(content_object.iter_bytes())
+    content_callback = lambda: content_bytes
+    return content.Content(content_object.content_type, content_callback)
+
+
+def gather_details(source_dict, target_dict):
+    """Merge the details from `source_dict` into `target_dict`.
+
+    :param source_dict: A dictionary of details will be gathered.
+    :param target_dict: A dictionary into which details will be gathered.
+    """
+    for name, content_object in source_dict.items():
+        new_name = name
+        disambiguator = itertools.count(1)
+        while new_name in target_dict:
+            new_name = '%s-%d' % (name, advance_iterator(disambiguator))
+        name = new_name
+        target_dict[name] = _copy_content(content_object)
+
+
 class TestCase(unittest.TestCase):
     """Extensions to the basic TestCase.
 
     :ivar exception_handlers: Exceptions to catch from setUp, runTest and
         tearDown. This list is able to be modified at any time and consists of
         (exception_class, handler(case, result, exception_value)) pairs.
-    :cvar run_tests_with: A factory to make the `RunTest` to run tests with.
-        Defaults to `RunTest`.  The factory is expected to take a test case
+    :cvar run_tests_with: A factory to make the ``RunTest`` to run tests with.
+        Defaults to ``RunTest``.  The factory is expected to take a test case
         and an optional list of exception handlers.
     """
 
@@ -110,13 +159,13 @@ class TestCase(unittest.TestCase):
         """Construct a TestCase.
 
         :param testMethod: The name of the method to run.
-        :param runTest: Optional class to use to execute the test. If not
-            supplied `testtools.runtest.RunTest` is used. The instance to be
-            used is created when run() is invoked, so will be fresh each time.
-            Overrides `run_tests_with` if given.
+        :keyword runTest: Optional class to use to execute the test. If not
+            supplied ``RunTest`` is used. The instance to be used is created
+            when run() is invoked, so will be fresh each time. Overrides
+            ``TestCase.run_tests_with`` if given.
         """
         runTest = kwargs.pop('runTest', None)
-        unittest.TestCase.__init__(self, *args, **kwargs)
+        super(TestCase, self).__init__(*args, **kwargs)
         self._cleanups = []
         self._unique_id_gen = itertools.count(1)
         # Generators to ensure unique traceback ids.  Maps traceback label to
@@ -263,16 +312,31 @@ class TestCase(unittest.TestCase):
         :param message: An optional message to include in the error.
         """
         matcher = Equals(expected)
-        if message:
-            matcher = Annotate(message, matcher)
-        self.assertThat(observed, matcher)
+        self.assertThat(observed, matcher, message)
 
     failUnlessEqual = assertEquals = assertEqual
 
     def assertIn(self, needle, haystack):
         """Assert that needle is in haystack."""
-        self.assertTrue(
-            needle in haystack, '%r not in %r' % (needle, haystack))
+        self.assertThat(haystack, Contains(needle))
+
+    def assertIsNone(self, observed, message=''):
+        """Assert that 'observed' is equal to None.
+
+        :param observed: The observed value.
+        :param message: An optional message describing the error.
+        """
+        matcher = Is(None)
+        self.assertThat(observed, matcher, message)
+
+    def assertIsNotNone(self, observed, message=''):
+        """Assert that 'observed' is not equal to None.
+
+        :param observed: The observed value.
+        :param message: An optional message describing the error.
+        """
+        matcher = Not(Is(None))
+        self.assertThat(observed, matcher, message)
 
     def assertIs(self, expected, observed, message=''):
         """Assert that 'expected' is 'observed'.
@@ -281,30 +345,25 @@ class TestCase(unittest.TestCase):
         :param observed: The observed value.
         :param message: An optional message describing the error.
         """
-        if message:
-            message = ': ' + message
-        self.assertTrue(
-            expected is observed,
-            '%r is not %r%s' % (expected, observed, message))
+        matcher = Is(expected)
+        self.assertThat(observed, matcher, message)
 
     def assertIsNot(self, expected, observed, message=''):
         """Assert that 'expected' is not 'observed'."""
-        if message:
-            message = ': ' + message
-        self.assertTrue(
-            expected is not observed,
-            '%r is %r%s' % (expected, observed, message))
+        matcher = Not(Is(expected))
+        self.assertThat(observed, matcher, message)
 
     def assertNotIn(self, needle, haystack):
         """Assert that needle is not in haystack."""
-        self.assertTrue(
-            needle not in haystack, '%r in %r' % (needle, haystack))
+        matcher = Not(Contains(needle))
+        self.assertThat(haystack, matcher)
 
     def assertIsInstance(self, obj, klass, msg=None):
-        if msg is None:
-            msg = '%r is not an instance of %s' % (
-                obj, self._formatTypes(klass))
-        self.assertTrue(isinstance(obj, klass), msg)
+        if isinstance(klass, tuple):
+            matcher = IsInstance(*klass)
+        else:
+            matcher = IsInstance(klass)
+        self.assertThat(obj, matcher, msg)
 
     def assertRaises(self, excClass, callableObj, *args, **kwargs):
         """Fail unless an exception of class excClass is thrown
@@ -314,22 +373,29 @@ class TestCase(unittest.TestCase):
            deemed to have suffered an error, exactly as for an
            unexpected exception.
         """
-        try:
-            ret = callableObj(*args, **kwargs)
-        except excClass:
-            return sys.exc_info()[1]
-        else:
-            excName = self._formatTypes(excClass)
-            self.fail("%s not raised, %r returned instead." % (excName, ret))
+        class ReRaiseOtherTypes(object):
+            def match(self, matchee):
+                if not issubclass(matchee[0], excClass):
+                    reraise(*matchee)
+        class CaptureMatchee(object):
+            def match(self, matchee):
+                self.matchee = matchee[1]
+        capture = CaptureMatchee()
+        matcher = Raises(MatchesAll(ReRaiseOtherTypes(),
+                MatchesException(excClass), capture))
+
+        self.assertThat(lambda: callableObj(*args, **kwargs), matcher)
+        return capture.matchee
     failUnlessRaises = assertRaises
 
-    def assertThat(self, matchee, matcher):
+    def assertThat(self, matchee, matcher, message='', verbose=False):
         """Assert that matchee is matched by matcher.
 
         :param matchee: An object to match with matcher.
         :param matcher: An object meeting the testtools.Matcher protocol.
         :raises self.failureException: When matcher does not match thing.
         """
+        matcher = Annotate.if_message(message, matcher)
         mismatch = matcher.match(matchee)
         if not mismatch:
             return
@@ -341,8 +407,13 @@ class TestCase(unittest.TestCase):
                 full_name = "%s-%d" % (name, suffix)
                 suffix += 1
             self.addDetail(full_name, content)
-        self.fail('Match failed. Matchee: "%s"\nMatcher: %s\nDifference: %s\n'
-            % (matchee, matcher, mismatch.describe()))
+        if verbose:
+            message = (
+                'Match failed. Matchee: "%s"\nMatcher: %s\nDifference: %s\n'
+                % (matchee, matcher, mismatch.describe()))
+        else:
+            message = mismatch.describe()
+        self.fail(message)
 
     def defaultTestResult(self):
         return TestResult()
@@ -363,6 +434,7 @@ class TestCase(unittest.TestCase):
         be removed. This separation preserves the original intent of the test
         while it is in the expectFailure mode.
         """
+        # TODO: implement with matchers.
         self._add_reason(reason)
         try:
             predicate(*args, **kwargs)
@@ -507,31 +579,23 @@ class TestCase(unittest.TestCase):
         :return: The fixture, after setting it up and scheduling a cleanup for
            it.
         """
-        fixture.setUp()
-        self.addCleanup(fixture.cleanUp)
-        self.addCleanup(self._gather_details, fixture.getDetails)
-        return fixture
-
-    def _gather_details(self, getDetails):
-        """Merge the details from getDetails() into self.getDetails()."""
-        details = getDetails()
-        my_details = self.getDetails()
-        for name, content_object in details.items():
-            new_name = name
-            disambiguator = itertools.count(1)
-            while new_name in my_details:
-                new_name = '%s-%d' % (name, advance_iterator(disambiguator))
-            name = new_name
-            content_bytes = list(content_object.iter_bytes())
-            content_callback = lambda:content_bytes
-            self.addDetail(name,
-                content.Content(content_object.content_type, content_callback))
+        try:
+            fixture.setUp()
+        except:
+            gather_details(fixture.getDetails(), self.getDetails())
+            raise
+        else:
+            self.addCleanup(fixture.cleanUp)
+            self.addCleanup(
+                gather_details, fixture.getDetails(), self.getDetails())
+            return fixture
 
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        super(TestCase, self).setUp()
         self.__setup_called = True
 
     def tearDown(self):
+        super(TestCase, self).tearDown()
         unittest.TestCase.tearDown(self)
         self.__teardown_called = True
 
@@ -539,8 +603,8 @@ class TestCase(unittest.TestCase):
 class PlaceHolder(object):
     """A placeholder test.
 
-    `PlaceHolder` implements much of the same interface as `TestCase` and is
-    particularly suitable for being added to `TestResult`s.
+    `PlaceHolder` implements much of the same interface as TestCase and is
+    particularly suitable for being added to TestResults.
     """
 
     def __init__(self, test_id, short_description=None):
@@ -630,7 +694,7 @@ if types.FunctionType not in copy._copy_dispatch:
 
 
 def clone_test_with_new_id(test, new_id):
-    """Copy a TestCase, and give the copied test a new id.
+    """Copy a `TestCase`, and give the copied test a new id.
 
     This is only expected to be used on tests that have been constructed but
     not executed.
@@ -675,3 +739,49 @@ def skipUnless(condition, reason):
     def _id(obj):
         return obj
     return _id
+
+
+class ExpectedException:
+    """A context manager to handle expected exceptions.
+
+    In Python 2.5 or later::
+
+      def test_foo(self):
+          with ExpectedException(ValueError, 'fo.*'):
+              raise ValueError('foo')
+
+    will pass.  If the raised exception has a type other than the specified
+    type, it will be re-raised.  If it has a 'str()' that does not match the
+    given regular expression, an AssertionError will be raised.  If no
+    exception is raised, an AssertionError will be raised.
+    """
+
+    def __init__(self, exc_type, value_re=None):
+        """Construct an `ExpectedException`.
+
+        :param exc_type: The type of exception to expect.
+        :param value_re: A regular expression to match against the
+            'str()' of the raised exception.
+        """
+        self.exc_type = exc_type
+        self.value_re = value_re
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            raise AssertionError('%s not raised.' % self.exc_type.__name__)
+        if exc_type != self.exc_type:
+            return False
+        if self.value_re:
+            matcher = MatchesException(self.exc_type, self.value_re)
+            mismatch = matcher.match((exc_type, exc_value, traceback))
+            if mismatch:
+                raise AssertionError(mismatch.describe())
+        return True
+
+
+# Signal that this is part of the testing framework, and that code from this
+# should not normally appear in tracebacks.
+__unittest = True

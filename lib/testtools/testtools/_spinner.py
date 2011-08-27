@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2010 testtools developers. See LICENSE for details.
 
 """Evil reactor-spinning logic for running Twisted tests.
 
@@ -91,9 +91,9 @@ def trap_unhandled_errors(function, *args, **kwargs):
     If 'function' raises, then don't bother doing any unhandled error
     jiggery-pokery, since something horrible has probably happened anyway.
 
-    :return: A tuple of '(result, error)', where 'result' is the value returned
-        by 'function' and 'error' is a list of `defer.DebugInfo` objects that
-        have unhandled errors in Deferreds.
+    :return: A tuple of '(result, error)', where 'result' is the value
+        returned by 'function' and 'error' is a list of 'defer.DebugInfo'
+        objects that have unhandled errors in Deferreds.
     """
     real_DebugInfo = defer.DebugInfo
     debug_infos = []
@@ -215,9 +215,9 @@ class Spinner(object):
         """Clean up any junk in the reactor.
 
         Will always iterate the reactor a number of times equal to
-        `_OBLIGATORY_REACTOR_ITERATIONS`.  This is to work around bugs in
-        various Twisted APIs where a Deferred fires but still leaves work
-        (e.g. cancelling a call, actually closing a connection) for the
+        ``Spinner._OBLIGATORY_REACTOR_ITERATIONS``.  This is to work around
+        bugs in various Twisted APIs where a Deferred fires but still leaves
+        work (e.g. cancelling a call, actually closing a connection) for the
         reactor to do.
         """
         for i in range(self._OBLIGATORY_REACTOR_ITERATIONS):
@@ -269,10 +269,10 @@ class Spinner(object):
         the Deferred fires and its chain completes or until the timeout is
         reached -- whichever comes first.
 
-        :raise TimeoutError: If 'timeout' is reached before the `Deferred`
+        :raise TimeoutError: If 'timeout' is reached before the Deferred
             returned by 'function' has completed its callback chain.
         :raise NoResultError: If the reactor is somehow interrupted before
-            the `Deferred` returned by 'function' has completed its callback
+            the Deferred returned by 'function' has completed its callback
             chain.
         :raise StaleJunkError: If there's junk in the spinner from a previous
             run.

@@ -1,4 +1,4 @@
-# Copyright (c) 2009-2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009-2010 testtools developers. See LICENSE for details.
 
 """Individual test case execution."""
 
@@ -35,7 +35,7 @@ class RunTest(object):
     :ivar handlers: A list of (ExceptionClass, handler_function) for
         exceptions that should be caught if raised from the user
         code. Exceptions that are caught are checked against this list in
-        first to last order.  There is a catch-all of `Exception` at the end
+        first to last order.  There is a catch-all of 'Exception' at the end
         of the list, so to add a new exception to the list, insert it at the
         front (which ensures that it will be checked before any existing base
         classes in the list. If you add multiple exceptions some of which are
@@ -145,7 +145,7 @@ class RunTest(object):
         See the docstring for addCleanup for more information.
 
         :return: None if all cleanups ran without error,
-            `self.exception_caught` if there was an error.
+            ``exception_caught`` if there was an error.
         """
         failing = False
         while self.case._cleanups:
@@ -162,7 +162,7 @@ class RunTest(object):
 
         Exceptions are processed by `_got_user_exception`.
 
-        :return: Either whatever 'fn' returns or `self.exception_caught` if
+        :return: Either whatever 'fn' returns or ``exception_caught`` if
             'fn' raised an exception.
         """
         try:
@@ -181,8 +181,8 @@ class RunTest(object):
         :param exc_info: A sys.exc_info() tuple for the user error.
         :param tb_label: An optional string label for the error.  If
             not specified, will default to 'traceback'.
-        :return: `exception_caught` if we catch one of the exceptions that
-            have handlers in `self.handlers`, otherwise raise the error.
+        :return: 'exception_caught' if we catch one of the exceptions that
+            have handlers in 'handlers', otherwise raise the error.
         """
         if exc_info[0] is MultipleExceptions:
             for sub_exc_info in exc_info[1].args:
@@ -198,3 +198,8 @@ class RunTest(object):
                 self._exceptions.append(e)
                 return self.exception_caught
         raise e
+
+
+# Signal that this is part of the testing framework, and that code from this
+# should not normally appear in tracebacks.
+__unittest = True

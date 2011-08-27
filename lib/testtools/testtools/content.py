@@ -1,15 +1,42 @@
-# Copyright (c) 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009-2011 testtools developers. See LICENSE for details.
 
 """Content - a MIME-like Content object."""
 
-import codecs
+__all__ = [
+    'attach_file',
+    'Content',
+    'content_from_file',
+    'content_from_stream',
+    'text_content',
+    'TracebackContent',
+    ]
 
+import codecs
+import os
+
+from testtools import try_import
 from testtools.compat import _b
 from testtools.content_type import ContentType, UTF8_TEXT
 from testtools.testresult import TestResult
 
+functools = try_import('functools')
 
 _join_b = _b("").join
+
+
+DEFAULT_CHUNK_SIZE = 4096
+
+
+def _iter_chunks(stream, chunk_size):
+    """Read 'stream' in chunks of 'chunk_size'.
+
+    :param stream: A file-like object to read from.
+    :param chunk_size: The size of each read from 'stream'.
+    """
+    chunk = stream.read(chunk_size)
+    while chunk:
+        yield chunk
+        chunk = stream.read(chunk_size)
 
 
 class Content(object):
@@ -100,3 +127,112 @@ def text_content(text):
     This is useful for adding details which are short strings.
     """
     return Content(UTF8_TEXT, lambda: [text.encode('utf8')])
+
+
+
+def maybe_wrap(wrapper, func):
+    """Merge metadata for func into wrapper if functools is present."""
+    if functools is not None:
+        wrapper = functools.update_wrapper(wrapper, func)
+    return wrapper
+
+
+def content_from_file(path, content_type=None, chunk_size=DEFAULT_CHUNK_SIZE,
+                      buffer_now=False):
+    """Create a `Content` object from a file on disk.
+
+    Note that unless 'read_now' is explicitly passed in as True, the file
+    will only be read from when ``iter_bytes`` is called.
+
+    :param path: The path to the file to be used as content.
+    :param content_type: The type of content.  If not specified, defaults
+        to UTF8-encoded text/plain.
+    :param chunk_size: The size of chunks to read from the file.
+        Defaults to `DEFAULT_CHUNK_SIZE`.
+    :param buffer_now: If True, read the file from disk now and keep it in
+        memory. Otherwise, only read when the content is serialized.
+    """
+    if content_type is None:
+        content_type = UTF8_TEXT
+    def reader():
+        # This should be try:finally:, but python2.4 makes that hard. When
+        # We drop older python support we can make this use a context manager
+        # for maximum simplicity.
+        stream = open(path, 'rb')
+        for chunk in _iter_chunks(stream, chunk_size):
+            yield chunk
+        stream.close()
+    return content_from_reader(reader, content_type, buffer_now)
+
+
+def content_from_stream(stream, content_type=None,
+                        chunk_size=DEFAULT_CHUNK_SIZE, buffer_now=False):
+    """Create a `Content` object from a file-like stream.
+
+    Note that the stream will only be read from when ``iter_bytes`` is
+    called.
+
+    :param stream: A file-like object to read the content from. The stream
+        is not closed by this function or the content object it returns.
+    :param content_type: The type of content. If not specified, defaults
+        to UTF8-encoded text/plain.
+    :param chunk_size: The size of chunks to read from the file.
+        Defaults to `DEFAULT_CHUNK_SIZE`.
+    :param buffer_now: If True, reads from the stream right now. Otherwise,
+        only reads when the content is serialized. Defaults to False.
+    """
+    if content_type is None:
+        content_type = UTF8_TEXT
+    reader = lambda: _iter_chunks(stream, chunk_size)
+    return content_from_reader(reader, content_type, buffer_now)
+
+
+def content_from_reader(reader, content_type, buffer_now):
+    """Create a Content object that will obtain the content from reader.
+
+    :param reader: A callback to read the content. Should return an iterable of
+        bytestrings.
+    :param content_type: The content type to create.
+    :param buffer_now: If True the reader is evaluated immediately and
+        buffered.
+    """
+    if content_type is None:
+        content_type = UTF8_TEXT
+    if buffer_now:
+        contents = list(reader())
+        reader = lambda: contents
+    return Content(content_type, reader)
+
+
+def attach_file(detailed, path, name=None, content_type=None,
+                chunk_size=DEFAULT_CHUNK_SIZE, buffer_now=True):
+    """Attach a file to this test as a detail.
+
+    This is a convenience method wrapping around `addDetail`.
+
+    Note that unless 'read_now' is explicitly passed in as True, the file
+    *must* exist when the test result is called with the results of this
+    test, after the test has been torn down.
+
+    :param detailed: An object with details
+    :param path: The path to the file to attach.
+    :param name: The name to give to the detail for the attached file.
+    :param content_type: The content type of the file.  If not provided,
+        defaults to UTF8-encoded text/plain.
+    :param chunk_size: The size of chunks to read from the file.  Defaults
+        to something sensible.
+    :param buffer_now: If False the file content is read when the content
+        object is evaluated rather than when attach_file is called.
+        Note that this may be after any cleanups that obj_with_details has, so
+        if the file is a temporary file disabling buffer_now may cause the file
+        to be read after it is deleted. To handle those cases, using
+        attach_file as a cleanup is recommended because it guarantees a
+        sequence for when the attach_file call is made::
+
+            detailed.addCleanup(attach_file, 'foo.txt', detailed)
+    """
+    if name is None:
+        name = os.path.basename(path)
+    content_object = content_from_file(
+        path, content_type, chunk_size, buffer_now)
+    detailed.addDetail(name, content_object)

@@ -1,10 +1,9 @@
-# Copyright (c) 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009-2011 testtools developers. See LICENSE for details.
 
 """Test ConcurrentTestSuite and related things."""
 
 __metaclass__ = type
 
-import datetime
 import unittest
 
 from testtools import (
@@ -12,10 +11,11 @@ from testtools import (
     iterate_tests,
     TestCase,
     )
-from testtools.matchers import (
-    Equals,
-    )
+from testtools.helpers import try_import
+from testtools.testsuite import FixtureSuite
 from testtools.tests.helpers import LoggingResult
+
+FunctionFixture = try_import('fixtures.FunctionFixture')
 
 
 class TestConcurrentTestSuiteRun(TestCase):
@@ -46,6 +46,28 @@ class TestConcurrentTestSuiteRun(TestCase):
     def split_suite(self, suite):
         tests = list(iterate_tests(suite))
         return tests[0], tests[1]
+
+
+class TestFixtureSuite(TestCase):
+
+    def setUp(self):
+        super(TestFixtureSuite, self).setUp()
+        if FunctionFixture is None:
+            self.skip("Need fixtures")
+
+    def test_fixture_suite(self):
+        log = []
+        class Sample(TestCase):
+            def test_one(self):
+                log.append(1)
+            def test_two(self):
+                log.append(2)
+        fixture = FunctionFixture(
+            lambda: log.append('setUp'),
+            lambda fixture: log.append('tearDown'))
+        suite = FixtureSuite(fixture, [Sample('test_one'), Sample('test_two')])
+        suite.run(LoggingResult([]))
+        self.assertEqual(['setUp', 1, 2, 'tearDown'], log)
 
 
 def test_suite():

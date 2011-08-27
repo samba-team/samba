@@ -1,7 +1,8 @@
-# Copyright (c) 2008-2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
 
 """Tests for extensions to the base test library."""
 
+from doctest import ELLIPSIS
 from pprint import pformat
 import sys
 import unittest
@@ -18,21 +19,35 @@ from testtools import (
     skipUnless,
     testcase,
     )
+from testtools.compat import _b
 from testtools.matchers import (
+    Annotate,
+    DocTestMatches,
     Equals,
     MatchesException,
     Raises,
     )
-from testtools.tests.helpers import (
-    an_exc_info,
-    LoggingResult,
+from testtools.testresult.doubles import (
     Python26TestResult,
     Python27TestResult,
     ExtendedTestResult,
     )
+from testtools.tests.helpers import (
+    an_exc_info,
+    FullStackRunTest,
+    LoggingResult,
+    )
+try:
+    exec('from __future__ import with_statement')
+except SyntaxError:
+    pass
+else:
+    from testtools.tests.test_with_with import *
 
 
 class TestPlaceHolder(TestCase):
+
+    run_test_with = FullStackRunTest
 
     def makePlaceHolder(self, test_id="foo", short_description=None):
         return PlaceHolder(test_id, short_description)
@@ -107,6 +122,8 @@ class TestPlaceHolder(TestCase):
 
 
 class TestErrorHolder(TestCase):
+
+    run_test_with = FullStackRunTest
 
     def makeException(self):
         try:
@@ -194,7 +211,9 @@ class TestErrorHolder(TestCase):
 
 
 class TestEquality(TestCase):
-    """Test `TestCase`'s equality implementation."""
+    """Test ``TestCase``'s equality implementation."""
+
+    run_test_with = FullStackRunTest
 
     def test_identicalIsEqual(self):
         # TestCase's are equal if they are identical.
@@ -208,6 +227,8 @@ class TestEquality(TestCase):
 
 class TestAssertions(TestCase):
     """Test assertions in TestCase."""
+
+    run_test_with = FullStackRunTest
 
     def raiseError(self, exceptionFactory, *args, **kwargs):
         raise exceptionFactory(*args, **kwargs)
@@ -235,16 +256,8 @@ class TestAssertions(TestCase):
         # assertRaises raises self.failureException when it's passed a
         # callable that raises no error.
         ret = ('orange', 42)
-        try:
-            self.assertRaises(RuntimeError, lambda: ret)
-        except self.failureException:
-            # We expected assertRaises to raise this exception.
-            e = sys.exc_info()[1]
-            self.assertEqual(
-                '%s not raised, %r returned instead.'
-                % (self._formatTypes(RuntimeError), ret), str(e))
-        else:
-            self.fail('Expected assertRaises to fail, but it did not.')
+        self.assertFails("<function <lambda> at ...> returned ('orange', 42)",
+            self.assertRaises, RuntimeError, lambda: ret)
 
     def test_assertRaises_fails_when_different_error_raised(self):
         # assertRaises re-raises an exception that it didn't expect.
@@ -289,15 +302,14 @@ class TestAssertions(TestCase):
         failure = self.assertRaises(
             self.failureException,
             self.assertRaises, expectedExceptions, lambda: None)
-        self.assertEqual(
-            '%s not raised, None returned instead.'
-            % self._formatTypes(expectedExceptions), str(failure))
+        self.assertFails('<function <lambda> at ...> returned None',
+            self.assertRaises, expectedExceptions, lambda: None)
 
     def assertFails(self, message, function, *args, **kwargs):
         """Assert that function raises a failure with the given message."""
         failure = self.assertRaises(
             self.failureException, function, *args, **kwargs)
-        self.assertEqual(message, str(failure))
+        self.assertThat(failure, DocTestMatches(message, ELLIPSIS))
 
     def test_assertIn_success(self):
         # assertIn(needle, haystack) asserts that 'needle' is in 'haystack'.
@@ -322,9 +334,10 @@ class TestAssertions(TestCase):
     def test_assertNotIn_failure(self):
         # assertNotIn(needle, haystack) fails the test when 'needle' is in
         # 'haystack'.
-        self.assertFails('3 in [1, 2, 3]', self.assertNotIn, 3, [1, 2, 3])
+        self.assertFails('[1, 2, 3] matches Contains(3)', self.assertNotIn,
+            3, [1, 2, 3])
         self.assertFails(
-            '%r in %r' % ('foo', 'foo bar baz'),
+            "'foo bar baz' matches Contains('foo')",
             self.assertNotIn, 'foo', 'foo bar baz')
 
     def test_assertIsInstance(self):
@@ -358,7 +371,7 @@ class TestAssertions(TestCase):
             """Simple class for testing assertIsInstance."""
 
         self.assertFails(
-            '42 is not an instance of %s' % self._formatTypes(Foo),
+            "'42' is not an instance of %s" % self._formatTypes(Foo),
             self.assertIsInstance, 42, Foo)
 
     def test_assertIsInstance_failure_multiple_classes(self):
@@ -372,12 +385,13 @@ class TestAssertions(TestCase):
             """Another simple class for testing assertIsInstance."""
 
         self.assertFails(
-            '42 is not an instance of %s' % self._formatTypes([Foo, Bar]),
+            "'42' is not an instance of any of (%s)" % self._formatTypes([Foo, Bar]),
             self.assertIsInstance, 42, (Foo, Bar))
 
     def test_assertIsInstance_overridden_message(self):
         # assertIsInstance(obj, klass, msg) permits a custom message.
-        self.assertFails("foo", self.assertIsInstance, 42, str, "foo")
+        self.assertFails("'42' is not an instance of str: foo",
+            self.assertIsInstance, 42, str, "foo")
 
     def test_assertIs(self):
         # assertIs asserts that an object is identical to another object.
@@ -409,16 +423,17 @@ class TestAssertions(TestCase):
     def test_assertIsNot_fails(self):
         # assertIsNot raises assertion errors if one object is identical to
         # another.
-        self.assertFails('None is None', self.assertIsNot, None, None)
+        self.assertFails('None matches Is(None)', self.assertIsNot, None, None)
         some_list = [42]
         self.assertFails(
-            '[42] is [42]', self.assertIsNot, some_list, some_list)
+            '[42] matches Is([42])', self.assertIsNot, some_list, some_list)
 
     def test_assertIsNot_fails_with_message(self):
         # assertIsNot raises assertion errors if one object is identical to
         # another, and includes a user-supplied message if it's provided.
         self.assertFails(
-            'None is None: foo bar', self.assertIsNot, None, None, "foo bar")
+            'None matches Is(None): foo bar', self.assertIsNot, None, None,
+            "foo bar")
 
     def test_assertThat_matches_clean(self):
         class Matcher(object):
@@ -450,9 +465,34 @@ class TestAssertions(TestCase):
         self.assertEqual([
             ('match', "foo"),
             ('describe_diff', "foo"),
-            ('__str__',),
             ], calls)
         self.assertFalse(result.wasSuccessful())
+
+    def test_assertThat_output(self):
+        matchee = 'foo'
+        matcher = Equals('bar')
+        expected = matcher.match(matchee).describe()
+        self.assertFails(expected, self.assertThat, matchee, matcher)
+
+    def test_assertThat_message_is_annotated(self):
+        matchee = 'foo'
+        matcher = Equals('bar')
+        expected = Annotate('woo', matcher).match(matchee).describe()
+        self.assertFails(expected, self.assertThat, matchee, matcher, 'woo')
+
+    def test_assertThat_verbose_output(self):
+        matchee = 'foo'
+        matcher = Equals('bar')
+        expected = (
+            'Match failed. Matchee: "%s"\n'
+            'Matcher: %s\n'
+            'Difference: %s\n' % (
+                matchee,
+                matcher,
+                matcher.match(matchee).describe(),
+                ))
+        self.assertFails(
+            expected, self.assertThat, matchee, matcher, verbose=True)
 
     def test_assertEqual_nice_formatting(self):
         message = "These things ought not be equal."
@@ -461,20 +501,11 @@ class TestAssertions(TestCase):
              'Major': 'A military officer, ranked below colonel',
              'Blair': 'To shout loudly',
              'Brown': 'The colour of healthy human faeces'}
-        expected_error = '\n'.join(
-            [message,
-             'not equal:',
-             'a = %s' % pformat(a),
-             'b = %s' % pformat(b),
-             ''])
         expected_error = '\n'.join([
-            'Match failed. Matchee: "%r"' % b,
-            'Matcher: Annotate(%r, Equals(%r))' % (message, a),
-            'Difference: !=:',
+            '!=:',
             'reference = %s' % pformat(a),
             'actual = %s' % pformat(b),
             ': ' + message,
-            ''
             ])
         self.assertFails(expected_error, self.assertEqual, a, b, message)
         self.assertFails(expected_error, self.assertEquals, a, b, message)
@@ -483,19 +514,29 @@ class TestAssertions(TestCase):
     def test_assertEqual_formatting_no_message(self):
         a = "cat"
         b = "dog"
-        expected_error = '\n'.join([
-            'Match failed. Matchee: "dog"',
-            'Matcher: Equals(\'cat\')',
-            'Difference: \'cat\' != \'dog\'',
-            ''
-            ])
+        expected_error = "'cat' != 'dog'"
         self.assertFails(expected_error, self.assertEqual, a, b)
         self.assertFails(expected_error, self.assertEquals, a, b)
         self.assertFails(expected_error, self.failUnlessEqual, a, b)
 
+    def test_assertIsNone(self):
+        self.assertIsNone(None)
+
+        expected_error = 'None is not 0'
+        self.assertFails(expected_error, self.assertIsNone, 0)
+
+    def test_assertIsNotNone(self):
+        self.assertIsNotNone(0)
+        self.assertIsNotNone("0")
+
+        expected_error = 'None matches Is(None)'
+        self.assertFails(expected_error, self.assertIsNotNone, None)
+
 
 class TestAddCleanup(TestCase):
     """Tests for TestCase.addCleanup."""
+
+    run_test_with = FullStackRunTest
 
     class LoggingTest(TestCase):
         """A test that logs calls to setUp, runTest and tearDown."""
@@ -662,6 +703,8 @@ class TestAddCleanup(TestCase):
 
 class TestWithDetails(TestCase):
 
+    run_test_with = FullStackRunTest
+
     def assertDetailsProvided(self, case, expected_outcome, expected_keys):
         """Assert that when case is run, details are provided to the result.
 
@@ -688,11 +731,13 @@ class TestWithDetails(TestCase):
 
     def get_content(self):
         return content.Content(
-            content.ContentType("text", "foo"), lambda: ['foo'])
+            content.ContentType("text", "foo"), lambda: [_b('foo')])
 
 
 class TestExpectedFailure(TestWithDetails):
     """Tests for expected failures and unexpected successess."""
+
+    run_test_with = FullStackRunTest
 
     def make_unexpected_case(self):
         class Case(TestCase):
@@ -757,6 +802,8 @@ class TestExpectedFailure(TestWithDetails):
 class TestUniqueFactories(TestCase):
     """Tests for getUniqueString and getUniqueInteger."""
 
+    run_test_with = FullStackRunTest
+
     def test_getUniqueInteger(self):
         # getUniqueInteger returns an integer that increments each time you
         # call it.
@@ -785,6 +832,8 @@ class TestUniqueFactories(TestCase):
 class TestCloneTestWithNewId(TestCase):
     """Tests for clone_test_with_new_id."""
 
+    run_test_with = FullStackRunTest
+
     def test_clone_test_with_new_id(self):
         class FooTestCase(TestCase):
             def test_foo(self):
@@ -811,6 +860,8 @@ class TestCloneTestWithNewId(TestCase):
 
 
 class TestDetailsProvided(TestWithDetails):
+
+    run_test_with = FullStackRunTest
 
     def test_addDetail(self):
         mycontent = self.get_content()
@@ -915,6 +966,8 @@ class TestDetailsProvided(TestWithDetails):
 
 class TestSetupTearDown(TestCase):
 
+    run_test_with = FullStackRunTest
+
     def test_setUpNotCalled(self):
         class DoesnotcallsetUp(TestCase):
             def setUp(self):
@@ -938,6 +991,8 @@ class TestSetupTearDown(TestCase):
 
 class TestSkipping(TestCase):
     """Tests for skipping of tests functionality."""
+
+    run_test_with = FullStackRunTest
 
     def test_skip_causes_skipException(self):
         self.assertThat(lambda:self.skip("Skip this test"),
@@ -1040,6 +1095,8 @@ class TestSkipping(TestCase):
 
 class TestOnException(TestCase):
 
+    run_test_with = FullStackRunTest
+
     def test_default_works(self):
         events = []
         class Case(TestCase):
@@ -1073,6 +1130,8 @@ class TestOnException(TestCase):
 
 
 class TestPatchSupport(TestCase):
+
+    run_test_with = FullStackRunTest
 
     class Case(TestCase):
         def test(self):
@@ -1128,6 +1187,39 @@ class TestPatchSupport(TestCase):
         marker = object()
         value = getattr(self, 'doesntexist', marker)
         self.assertIs(marker, value)
+
+
+class TestTestCaseSuper(TestCase):
+
+    run_test_with = FullStackRunTest
+
+    def test_setup_uses_super(self):
+        class OtherBaseCase(unittest.TestCase):
+            setup_called = False
+            def setUp(self):
+                self.setup_called = True
+                super(OtherBaseCase, self).setUp()
+        class OurCase(TestCase, OtherBaseCase):
+            def runTest(self):
+                pass
+        test = OurCase()
+        test.setUp()
+        test.tearDown()
+        self.assertTrue(test.setup_called)
+
+    def test_teardown_uses_super(self):
+        class OtherBaseCase(unittest.TestCase):
+            teardown_called = False
+            def tearDown(self):
+                self.teardown_called = True
+                super(OtherBaseCase, self).tearDown()
+        class OurCase(TestCase, OtherBaseCase):
+            def runTest(self):
+                pass
+        test = OurCase()
+        test.setUp()
+        test.tearDown()
+        self.assertTrue(test.teardown_called)
 
 
 def test_suite():

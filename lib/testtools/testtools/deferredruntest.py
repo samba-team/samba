@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2010 testtools developers. See LICENSE for details.
 
 """Individual test case execution for tests that return Deferreds.
 
@@ -15,7 +15,7 @@ __all__ = [
 
 import sys
 
-from testtools import try_imports
+from testtools.compat import StringIO
 from testtools.content import (
     Content,
     text_content,
@@ -33,8 +33,6 @@ from testtools._spinner import (
 from twisted.internet import defer
 from twisted.python import log
 from twisted.trial.unittest import _LogObserver
-
-StringIO = try_imports(['StringIO.StringIO', 'io.StringIO'])
 
 
 class _DeferredRunTest(RunTest):
@@ -95,10 +93,10 @@ class AsynchronousDeferredRunTest(_DeferredRunTest):
                  debug=False):
         """Construct an `AsynchronousDeferredRunTest`.
 
-        :param case: The `testtools.TestCase` to run.
+        :param case: The `TestCase` to run.
         :param handlers: A list of exception handlers (ExceptionType, handler)
             where 'handler' is a callable that takes a `TestCase`, a
-            `TestResult` and the exception raised.
+            ``testtools.TestResult`` and the exception raised.
         :param reactor: The Twisted reactor to use.  If not given, we use the
             default reactor.
         :param timeout: The maximum time allowed for running a test.  The
@@ -217,6 +215,7 @@ class AsynchronousDeferredRunTest(_DeferredRunTest):
 
     def _run_core(self):
         # Add an observer to trap all logged errors.
+        self.case.reactor = self._reactor
         error_observer = _log_observer
         full_log = StringIO()
         full_observer = log.FileLogObserver(full_log)
@@ -289,11 +288,12 @@ def assert_fails_with(d, *exc_types, **kwargs):
     peril; expect the API to change.
 
     :param d: A Deferred that is expected to fail.
-    :param *exc_types: The exception types that the Deferred is expected to
+    :param exc_types: The exception types that the Deferred is expected to
         fail with.
     :param failureException: An optional keyword argument.  If provided, will
-        raise that exception instead of `testtools.TestCase.failureException`.
-    :return: A Deferred that will fail with an `AssertionError` if 'd' does
+        raise that exception instead of
+        ``testtools.TestCase.failureException``.
+    :return: A Deferred that will fail with an ``AssertionError`` if 'd' does
         not fail with one of the exception types.
     """
     failureException = kwargs.pop('failureException', None)

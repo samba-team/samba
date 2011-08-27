@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009-2011 testtools developers. See LICENSE for details.
 
 """Test suites and related things."""
 
@@ -8,10 +8,10 @@ __all__ = [
   'iterate_tests',
   ]
 
-try:
-    from Queue import Queue
-except ImportError:
-    from queue import Queue
+from testtools.helpers import try_imports
+
+Queue = try_imports(['Queue.Queue', 'queue.Queue'])
+
 import threading
 import unittest
 
@@ -85,3 +85,17 @@ class ConcurrentTestSuite(unittest.TestSuite):
             test.run(process_result)
         finally:
             queue.put(test)
+
+
+class FixtureSuite(unittest.TestSuite):
+
+    def __init__(self, fixture, tests):
+        super(FixtureSuite, self).__init__(tests)
+        self._fixture = fixture
+
+    def run(self, result):
+        self._fixture.setUp()
+        try:
+            super(FixtureSuite, self).run(result)
+        finally:
+            self._fixture.cleanUp()
