@@ -79,6 +79,7 @@ bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
 		NEED_BLOB(20);
 		SIVAL(blob->data, 0, parms->rename_information.in.overwrite);
+		SIVAL(blob->data, 4, 0);
 		SBVAL(blob->data, 8, parms->rename_information.in.root_fid);
 		len = smbcli_blob_append_string(NULL, mem_ctx, blob,
 						parms->rename_information.in.new_name, 
