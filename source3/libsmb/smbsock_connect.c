@@ -37,11 +37,11 @@ struct cli_session_request_state {
 static void cli_session_request_sent(struct tevent_req *subreq);
 static void cli_session_request_recvd(struct tevent_req *subreq);
 
-struct tevent_req *cli_session_request_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    int sock,
-					    const struct nmb_name *called,
-					    const struct nmb_name *calling)
+static struct tevent_req *cli_session_request_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					int sock,
+					const struct nmb_name *called,
+					const struct nmb_name *calling)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_request_state *state;
@@ -140,7 +140,7 @@ static void cli_session_request_recvd(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-bool cli_session_request_recv(struct tevent_req *req, int *err, uint8_t *resp)
+static bool cli_session_request_recv(struct tevent_req *req, int *err, uint8_t *resp)
 {
 	struct cli_session_request_state *state = tevent_req_data(
 		req, struct cli_session_request_state);

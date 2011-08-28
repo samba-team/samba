@@ -51,11 +51,4 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 		      uint8_t min_wct, uint8_t *pwct, uint16_t **pvwv,
 		      uint32_t *pnum_bytes, uint8_t **pbytes);
 
-struct tevent_req *cli_session_request_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    int sock,
-					    const struct nmb_name *called,
-					    const struct nmb_name *calling);
-bool cli_session_request_recv(struct tevent_req *req, int *err, uint8_t *resp);
-
 #endif
