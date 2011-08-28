@@ -301,6 +301,11 @@ uint16_t cli_smb_req_mid(struct tevent_req *req)
 {
 	struct cli_smb_state *state = tevent_req_data(
 		req, struct cli_smb_state);
+
+	if (state->mid != 0) {
+		return state->mid;
+	}
+
 	return SVAL(state->header, smb_mid);
 }
 
