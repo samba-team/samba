@@ -51,13 +51,6 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 		      uint8_t min_wct, uint8_t *pwct, uint16_t **pvwv,
 		      uint32_t *pnum_bytes, uint8_t **pbytes);
 
-struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
-						    struct event_context *ev,
-						    struct cli_state *cli);
-NTSTATUS cli_smb_oplock_break_waiter_recv(struct tevent_req *req,
-					  uint16_t *pfnum,
-					  uint8_t *plevel);
-
 struct tevent_req *cli_session_request_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    int sock,

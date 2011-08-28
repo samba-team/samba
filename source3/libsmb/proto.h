@@ -693,6 +693,13 @@ NTSTATUS cli_message(struct cli_state *cli, const char *host,
 
 /* The following definitions come from libsmb/clioplock.c  */
 
+struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
+						    struct event_context *ev,
+						    struct cli_state *cli);
+NTSTATUS cli_smb_oplock_break_waiter_recv(struct tevent_req *req,
+					  uint16_t *pfnum,
+					  uint8_t *plevel);
+
 struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct cli_state *cli,

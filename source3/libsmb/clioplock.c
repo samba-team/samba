@@ -22,6 +22,85 @@
 #include "async_smb.h"
 #include "libsmb/libsmb.h"
 
+struct cli_smb_oplock_break_waiter_state {
+	uint16_t fnum;
+	uint8_t level;
+};
+
+static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
+						    struct event_context *ev,
+						    struct cli_state *cli)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_smb_oplock_break_waiter_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_smb_oplock_break_waiter_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/*
+	 * Create a fake SMB request that we will never send out. This is only
+	 * used to be set into the pending queue with the right mid.
+	 */
+	subreq = cli_smb_req_create(mem_ctx, ev, cli, 0, 0, 0, NULL, 0, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	cli_smb_req_set_mid(subreq, 0xffff);
+
+	if (!cli_smb_req_set_pending(subreq)) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb_oplock_break_waiter_done, req);
+	return req;
+}
+
+static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb_oplock_break_waiter_state *state = tevent_req_data(
+		req, struct cli_smb_oplock_break_waiter_state);
+	uint8_t wct;
+	uint16_t *vwv;
+	uint32_t num_bytes;
+	uint8_t *bytes;
+	uint8_t *inbuf;
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, state, &inbuf, 8, &wct, &vwv,
+			      &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->fnum = SVAL(vwv+2, 0);
+	state->level = CVAL(vwv+3, 1);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb_oplock_break_waiter_recv(struct tevent_req *req,
+					  uint16_t *pfnum,
+					  uint8_t *plevel)
+{
+	struct cli_smb_oplock_break_waiter_state *state = tevent_req_data(
+		req, struct cli_smb_oplock_break_waiter_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pfnum = state->fnum;
+	*plevel = state->level;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
 send an ack for an oplock break request
 ****************************************************************************/
