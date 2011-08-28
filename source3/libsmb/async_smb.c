@@ -1091,7 +1091,6 @@ struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_smb_oplock_break_waiter_state *state;
-	struct cli_smb_state *smb_state;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_smb_oplock_break_waiter_state);
@@ -1107,8 +1106,7 @@ struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	smb_state = tevent_req_data(subreq, struct cli_smb_state);
-	SSVAL(smb_state->header, smb_mid, 0xffff);
+	cli_smb_req_set_mid(subreq, 0xffff);
 
 	if (!cli_smb_req_set_pending(subreq)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
