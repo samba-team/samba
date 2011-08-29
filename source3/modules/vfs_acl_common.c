@@ -862,7 +862,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 
 	/* Ensure we have this file open with DELETE access. */
 	id = vfs_file_id_from_sbuf(conn, &local_fname.st);
-	for (fsp = file_find_di_first(id); fsp; file_find_di_next(fsp)) {
+	for (fsp = file_find_di_first(id); fsp; fsp = file_find_di_next(fsp)) {
 		if (fsp->access_mask & DELETE_ACCESS &&
 				fsp->delete_on_close) {
 			/* We did open this for delete,
