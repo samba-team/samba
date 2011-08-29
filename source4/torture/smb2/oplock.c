@@ -734,6 +734,7 @@ static bool test_smb2_oplock_exclusive6(struct torture_context *tctx,
 	bool ret = true;
 	union smb_open io;
 	union smb_setfileinfo sinfo;
+	struct smb2_close closeio;
 	struct smb2_handle h, h1;
 
 	status = torture_smb2_testdir(tree1, BASEDIR, &h);
@@ -772,7 +773,8 @@ static bool test_smb2_oplock_exclusive6(struct torture_context *tctx,
 	h1 = io.smb2.out.file.handle;
 	CHECK_VAL(io.smb2.out.oplock_level, SMB2_OPLOCK_LEVEL_EXCLUSIVE);
 
-	torture_comment(tctx, "rename should not generate a break but get "
+	torture_comment(tctx, "rename with the parent directory handle open "
+			"for DELETE should not generate a break but get "
 			"a sharing violation\n");
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
@@ -781,8 +783,44 @@ static bool test_smb2_oplock_exclusive6(struct torture_context *tctx,
 	sinfo.rename_information.in.new_name = fname2;
 	status = smb2_setinfo_file(tree1, &sinfo);
 
-	torture_comment(tctx, "trying rename while first file open\n");
+	torture_comment(tctx, "trying rename while parent handle open for delete.\n");
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_SHARING_VIOLATION,
+				      "Incorrect status");
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
+
+	/* Close the parent directry handle. */
+	ZERO_STRUCT(closeio);
+	closeio.in.file.handle = h;
+	status = smb2_close(tree1, &closeio);
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
+				      "Incorrect status");
+
+	/* Re-open without DELETE access. */
+	ZERO_STRUCT(io);
+	io.smb2.in.oplock_level = 0;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL & (~SEC_STD_DELETE);
+	io.smb2.in.file_attributes   = FILE_ATTRIBUTE_DIRECTORY;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.smb2.in.fname = BASEDIR;
+
+	status = smb2_create(tree1, tctx, &(io.smb2));
+	torture_assert_ntstatus_ok(tctx, status, "Error opening the base directory");
+
+	torture_comment(tctx, "rename with the parent directory handle open "
+			"without DELETE should succeed without a break\n");
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h1;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.new_name = fname2;
+	status = smb2_setinfo_file(tree1, &sinfo);
+
+	torture_comment(tctx, "trying rename while parent handle open without delete\n");
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
 				      "Incorrect status");
 	torture_wait_for_oplock_break(tctx);
 	CHECK_VAL(break_info.count, 0);
