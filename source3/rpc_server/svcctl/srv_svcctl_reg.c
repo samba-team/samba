@@ -510,12 +510,12 @@ static bool svcctl_add_service(TALLOC_CTX *mem_ctx,
 					 &action,
 					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("eventlog_init_winreg_keys: Could not create key %s: %s\n",
+		DEBUG(0, ("svcctl_init_winreg_keys: Could not create key %s: %s\n",
 			wkey.name, nt_errstr(status)));
 		goto done;
 	}
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("eventlog_init_winreg_keys: Could not create key %s: %s\n",
+		DEBUG(0, ("svcctl_init_winreg_keys: Could not create key %s: %s\n",
 			wkey.name, win_errstr(result)));
 		goto done;
 	}
