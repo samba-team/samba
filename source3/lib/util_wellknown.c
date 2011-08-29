@@ -55,7 +55,7 @@ static const struct rid_name_map nt_authority_users[] = {
 	{  6, "Service"},
 	{  7, "Anonymous Logon"},
 	{  8, "Proxy"},
-	{  9, "ServerLogon"},
+	{  9, "Enterprise Domain Controllers"},
 	{ 10, "Self"},
 	{ 11, "Authenticated Users"},
 	{ 12, "Restricted"},
