@@ -72,6 +72,7 @@ NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
 	struct nb_packet_server *result;
 	struct tevent_fd *fde;
 	NTSTATUS status;
+	int rc;
 
 	result = talloc_zero(mem_ctx, struct nb_packet_server);
 	if (result == NULL) {
@@ -84,6 +85,11 @@ NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
 	result->listen_sock = create_pipe_sock(
 		nmbd_socket_dir(), "unexpected", 0755);
 	if (result->listen_sock == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+	rc = listen(result->listen_sock, 5);
+	if (rc < 0) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}

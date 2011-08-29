@@ -209,6 +209,7 @@ bool setup_named_pipe_socket(const char *pipe_name,
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
+	int rc;
 
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (!state) {
@@ -222,6 +223,13 @@ bool setup_named_pipe_socket(const char *pipe_name,
 	}
 	state->fd = create_named_pipe_socket(pipe_name);
 	if (state->fd == -1) {
+		goto out;
+	}
+
+	rc = listen(state->fd, 5);
+	if (rc < 0) {
+		DEBUG(0, ("Failed to listen on pipe socket %s: %s\n",
+			  pipe_name, strerror(errno)));
 		goto out;
 	}
 
@@ -852,6 +860,7 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
+	int rc;
 
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
@@ -875,6 +884,13 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 
 	state->fd = create_dcerpc_ncalrpc_socket(name);
 	if (state->fd == -1) {
+		goto out;
+	}
+
+	rc = listen(state->fd, 5);
+	if (rc < 0) {
+		DEBUG(0, ("Failed to listen on ncalrpc socket %s: %s\n",
+			  name, strerror(errno)));
 		goto out;
 	}
 

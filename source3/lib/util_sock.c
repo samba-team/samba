@@ -1298,12 +1298,6 @@ int create_pipe_sock(const char *socket_dir,
 		goto out_close;
 	}
 
-	if (listen(sock, 5) == -1) {
-		DEBUG(0, ("listen failed on pipe socket %s: %s\n", path,
-			strerror(errno)));
-		goto out_close;
-	}
-
 	SAFE_FREE(path);
 
 	umask(old_umask);

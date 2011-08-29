@@ -957,6 +957,7 @@ static bool winbindd_setup_listeners(void)
 	struct winbindd_listen_state *pub_state = NULL;
 	struct winbindd_listen_state *priv_state = NULL;
 	struct tevent_fd *fde;
+	int rc;
 
 	pub_state = talloc(winbind_event_context(),
 			   struct winbindd_listen_state);
@@ -968,6 +969,10 @@ static bool winbindd_setup_listeners(void)
 	pub_state->fd = create_pipe_sock(
 		get_winbind_pipe_dir(), WINBINDD_SOCKET_NAME, 0755);
 	if (pub_state->fd == -1) {
+		goto failed;
+	}
+	rc = listen(pub_state->fd, 5);
+	if (rc < 0) {
 		goto failed;
 	}
 
@@ -990,6 +995,10 @@ static bool winbindd_setup_listeners(void)
 	priv_state->fd = create_pipe_sock(
 		get_winbind_priv_pipe_dir(), WINBINDD_SOCKET_NAME, 0750);
 	if (priv_state->fd == -1) {
+		goto failed;
+	}
+	rc = listen(priv_state->fd, 5);
+	if (rc < 0) {
 		goto failed;
 	}
 
