@@ -59,6 +59,48 @@ static WERROR regdb_create_subkey_internal(struct db_context *db,
 					   const char *key,
 					   const char *subkey);
 
+
+struct regdb_trans_ctx {
+	NTSTATUS (*action)(struct db_context *, void *);
+	void *private_data;
+};
+
+static NTSTATUS regdb_trans_do_action(struct db_context *db, void *private_data)
+{
+	NTSTATUS status;
+	int32_t version_id;
+	struct regdb_trans_ctx *ctx = (struct regdb_trans_ctx *)private_data;
+
+	version_id = dbwrap_fetch_int32(db, REGDB_VERSION_KEYNAME);
+
+	if (version_id != REGVER_V3) {
+		DEBUG(0, ("ERROR: changed registry version %d found while "
+			  "trying to write to the registry. Version %d "
+			  "expected.  Denying access.\n",
+			  version_id, REGVER_V3));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = ctx->action(db,  ctx->private_data);
+	return status;
+}
+
+static WERROR regdb_trans_do(struct db_context *db,
+			     NTSTATUS (*action)(struct db_context *, void *),
+			     void *private_data)
+{
+	NTSTATUS status;
+	struct regdb_trans_ctx ctx;
+
+
+	ctx.action = action;
+	ctx.private_data = private_data;
+
+	status = dbwrap_trans_do(db, regdb_trans_do_action, &ctx);
+
+	return ntstatus_to_werror(status);
+}
+
 /* List the deepest path into the registry.  All part components will be created.*/
 
 /* If you want to have a part of the path controlled by the tdb and part by
