@@ -1234,7 +1234,9 @@ http://msdn.microsoft.com/en-us/library/cc246334(PROT.13).aspx
 #define CAP_W2K_SMBS         0x2000
 #define CAP_LARGE_READX      0x4000
 #define CAP_LARGE_WRITEX     0x8000
+#define CAP_LWIO             0x10000
 #define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
+#define CAP_DYNAMIC_REAUTH    0x20000000
 #define CAP_EXTENDED_SECURITY 0x80000000
 
 /* printing types */
