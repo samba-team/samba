@@ -63,6 +63,7 @@ static const struct rid_name_map nt_authority_users[] = {
 	{ 13, "Terminal Server User"},
 	{ 14, "Remote Interactive Logon"},
 	{ 15, "This Organization"},
+	{ 17, "IUSR"},
 	{ 18, "SYSTEM"},
 	{ 19, "Local Service"},
 	{ 20, "Network Service"},
