@@ -52,6 +52,14 @@ static const struct rid_name_map builtin_aliases[] = {
 		"Windows Authorization Access Group" },
 	{ BUILTIN_RID_TS_LICENSE_SERVERS,
 		"Terminal Server License Servers" },
+	{ BUILTIN_RID_DISTRIBUTED_COM_USERS,
+		"Distributed COM Users" },
+	{ BUILTIN_RID_CRYPTO_OPERATORS,
+		"Cryptographic Operators" },
+	{ BUILTIN_RID_EVENT_LOG_READERS,
+		"Event Log Readers" },
+	{ BUILTIN_RID_CERT_SERV_DCOM_ACCESS,
+		"Certificate Service DCOM Access" },
 	{  0, NULL}};
 
 /*******************************************************************
