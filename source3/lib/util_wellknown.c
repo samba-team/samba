@@ -42,6 +42,9 @@ static const struct rid_name_map everyone_users[] = {
 static const struct rid_name_map creator_owner_users[] = {
 	{ 0, "Creator Owner" },
 	{ 1, "Creator Group" },
+	{ 2, "Creator Owner Server" },
+	{ 3, "Creator Group Server" },
+	{ 4, "Owner Rights" },
 	{ 0, NULL}};
 
 static const struct rid_name_map nt_authority_users[] = {
