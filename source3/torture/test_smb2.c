@@ -153,3 +153,66 @@ bool run_smb2_basic(int dummy)
 
 	return true;
 }
+
+bool run_smb2_negprot(int dummy)
+{
+	struct cli_state *cli;
+	NTSTATUS status;
+	enum protocol_types protocol;
+	const char *name = NULL;
+
+	printf("Starting SMB2-NEGPROT\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+	cli->smb2.pid = 0xFEFF;
+
+	status = smbXcli_negprot(cli->conn, cli->timeout,
+				 PROTOCOL_CORE, PROTOCOL_SMB2_22);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	protocol = smbXcli_conn_protocol(cli->conn);
+
+	switch (protocol) {
+	case PROTOCOL_SMB2_02:
+		name = "SMB2_02";
+		break;
+	case PROTOCOL_SMB2_10:
+		name = "SMB2_10";
+		break;
+	case PROTOCOL_SMB2_22:
+		name = "SMB2_22";
+		break;
+	default:
+		break;
+	}
+
+	if (name) {
+		printf("Server supports %s\n", name);
+	} else {
+		printf("Server DOES NOT support SMB2\n");
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn, cli->timeout,
+				 protocol, protocol);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_ABORTED)) {
+		printf("2nd smbXcli_negprot should disconnect - returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	if (smbXcli_conn_is_connected(cli->conn)) {
+		printf("2nd smbXcli_negprot should disconnect "
+		       "- still connected\n");
+		return false;
+	}
+
+	return true;
+}
