@@ -668,25 +668,24 @@ result_print ()
 	if [ -n "$_iteration" ] ; then
 	    cat <<EOF
 
-##################################################
-##################################################
+==================================================
 Iteration $_iteration
 EOF
 	fi
 
 cat <<EOF
-##################################################
+--------------------------------------------------
 Output (Exit status: ${_rc}):
-##################################################
+--------------------------------------------------
 $_out
 EOF
     fi
 
     if ! $_passed ; then
 	cat <<EOF
-##################################################
+--------------------------------------------------
 Required output (Exit status: ${required_rc}):
-##################################################
+--------------------------------------------------
 $required_output
 EOF
     fi
@@ -699,20 +698,19 @@ result_footer ()
     if [ "$EVENTSCRIPT_TESTS_VERBOSE" = "yes" ] || ! $_passed ; then
 
 	cat <<EOF
-##################################################
+--------------------------------------------------
 CTDB_BASE="$CTDB_BASE"
 CTDB_ETCDIR="$CTDB_ETCDIR"
 ctdb client is "$(which ctdb)"
-##################################################
+--------------------------------------------------
 EOF
     fi
-
-    echo
 
     if $_passed ; then
 	echo "PASSED"
 	return 0
     else
+	echo
 	echo "FAILED"
 	return 1
     fi
@@ -732,7 +730,7 @@ simple_test ()
 {
     [ -n "$event" ] || die 'simple_test: $event not set'
 
-    echo "Running \"${CTDB_BASE}/events.d/$script $event\""
+    echo "Running \"$script $event $*\""
     _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
     _rc=$?
 
@@ -788,7 +786,7 @@ iterate_test ()
     _setup_default="$2"
     shift 2
 
-    echo "Running $_repeats iterations of \"${CTDB_BASE}/events.d/$script $event\" $args"
+    echo "Running $_repeats iterations of \"$script $event\" $args"
 
     _result=true
 
