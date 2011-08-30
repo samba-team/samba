@@ -750,6 +750,17 @@ simple_test ()
     result_footer "$_passed"
 }
 
+simple_test_event ()
+{
+    # If something has previously failed then don't continue.
+    : ${_passed:=true}
+    $_passed || return 1
+
+    event="$1" ; shift
+    echo "##################################################"
+    simple_test "$@"
+}
+
 # Run an eventscript iteratively.
 # - 1st argument is the number of iterations.
 # - 2nd argument is something to eval to do setup for every iteration.
