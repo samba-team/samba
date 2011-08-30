@@ -25,7 +25,6 @@ sys.path.insert(0, "bin/python")
 
 from samba import netcmd
 from samba.netcmd import SuperCommand
-from samba.netcmd.netacl import cmd_acl
 from samba.netcmd.dbcheck import cmd_dbcheck
 from samba.netcmd.delegation import cmd_delegation
 from samba.netcmd.domain import cmd_domain
@@ -48,7 +47,6 @@ class cmd_sambatool(SuperCommand):
     """samba-tool SuperCommand"""
     
     subcommands = {}
-    subcommands["acl"] = cmd_acl()
     subcommands["dbcheck"] =  cmd_dbcheck()
     subcommands["delegation"] = cmd_delegation()
     subcommands["domain"] = cmd_domain()
