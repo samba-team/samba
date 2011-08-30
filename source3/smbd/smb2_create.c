@@ -537,7 +537,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (exta) {
 			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				tevent_req_nterror(req,NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return tevent_req_post(req, ev);
 			}
 
@@ -552,7 +552,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (mxac) {
 			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return tevent_req_post(req, ev);
 			}
 
@@ -570,7 +570,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			enum ndr_err_code ndr_err;
 
 			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return tevent_req_post(req, ev);
 			}
 
@@ -592,7 +592,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (dhnq) {
 			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return tevent_req_post(req, ev);
 			}
 
@@ -618,7 +618,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (alsi) {
 			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return tevent_req_post(req, ev);
 			}
 
@@ -635,7 +635,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			struct tm *tm;
 
 			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return tevent_req_post(req, ev);
 			}
 
