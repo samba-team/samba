@@ -45,7 +45,9 @@ from samba.netcmd import (
     Option,
     )
 
-class cmd_ds_acl_set(Command):
+
+
+class cmd_dsacl_set(Command):
     """Modify access list on a directory object"""
 
     synopsis = "set --objectdn=objectdn --car=control right --action=[deny|allow] --trusteedn=trustee-dn"
@@ -170,8 +172,8 @@ class cmd_ds_acl_set(Command):
         self.print_new_acl(samdb, objectdn)
 
 
-class cmd_ds_acl(SuperCommand):
+class cmd_dsacl(SuperCommand):
     """DS ACLs manipulation"""
 
     subcommands = {}
-    subcommands["set"] = cmd_ds_acl_set()
+    subcommands["set"] = cmd_dsacl_set()
