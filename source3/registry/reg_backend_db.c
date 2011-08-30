@@ -615,7 +615,7 @@ WERROR regdb_init(void)
 	}
 
 	if (vers_id > expected_version || vers_id == 0) {
-		DEBUG(1, ("regdb_init: unknown registry version %d "
+		DEBUG(0, ("regdb_init: unknown registry version %d "
 			  "(code version = %d), refusing initialization\n",
 			  vers_id, expected_version));
 		return WERR_CAN_NOT_COMPLETE;
