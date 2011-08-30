@@ -2507,6 +2507,7 @@ static const struct {
 	{PROTOCOL_NT1,		"NT LANMAN 1.0"},
 	{PROTOCOL_NT1,		"NT LM 0.12"},
 	{PROTOCOL_SMB2_02,	"SMB 2.002"},
+	{PROTOCOL_SMB2_10,	"SMB 2.???"},
 };
 
 static const struct {
@@ -2514,6 +2515,7 @@ static const struct {
 	uint16_t smb2_dialect;
 } smb2cli_prots[] = {
 	{PROTOCOL_SMB2_02,	SMB2_DIALECT_REVISION_202},
+	{PROTOCOL_SMB2_10,	SMB2_DIALECT_REVISION_210},
 };
 
 struct smbXcli_negprot_state {
@@ -3102,7 +3104,19 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	SSVAL(buf, 4, state->conn->smb2.client.security_mode);
 	SSVAL(buf, 6, 0);	/* Reserved */
 	SSVAL(buf, 8, 0); 	/* Capabilities */
-	memset(buf+12, 0, 16);	/* ClientGuid */
+	if (state->max_protocol >= PROTOCOL_SMB2_10) {
+		NTSTATUS status;
+		DATA_BLOB blob;
+
+		status = GUID_to_ndr_blob(&state->conn->smb2.client.guid,
+					  state, &blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+		memcpy(buf+12, blob.data, 16); /* ClientGuid */
+	} else {
+		memset(buf+12, 0, 16);	/* ClientGuid */
+	}
 	SBVAL(buf, 28, 0);	/* ClientStartTime */
 
 	return smb2cli_req_send(state, state->ev,
@@ -3166,7 +3180,30 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	}
 
 	if (conn->protocol == PROTOCOL_NONE) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		if (state->min_protocol >= PROTOCOL_SMB2_02) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (dialect_revision != SMB2_DIALECT_REVISION_2FF) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		/* make sure we do not loop forever */
+		state->min_protocol = PROTOCOL_SMB2_02;
+
+		/*
+		 * send a SMB2 negprot, in order to negotiate
+		 * the SMB2 dialect. This needs to use the
+		 * message id 1.
+		 */
+		state->conn->smb2.mid = 1;
+		subreq = smbXcli_negprot_smb2_subreq(state);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, smbXcli_negprot_smb2_done, req);
 		return;
 	}
 
