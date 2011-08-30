@@ -1814,9 +1814,34 @@ done:
 	return status;
 }
 
+struct regdb_store_values_ctx {
+	const char *key;
+	struct regval_ctr *values;
+};
+
+static NTSTATUS regdb_store_values_action(struct db_context *db,
+					  void *private_data)
+{
+	NTSTATUS status;
+	struct regdb_store_values_ctx *ctx =
+		(struct regdb_store_values_ctx *)private_data;
+
+	status = regdb_store_values_internal(db, ctx->key, ctx->values);
+
+	return status;
+}
+
 bool regdb_store_values(const char *key, struct regval_ctr *values)
 {
-	return NT_STATUS_IS_OK(regdb_store_values_internal(regdb, key, values));
+	WERROR werr;
+	struct regdb_store_values_ctx ctx;
+
+	ctx.key = key;
+	ctx.values = values;
+
+	werr = regdb_trans_do(regdb, regdb_store_values_action, &ctx);
+
+	return W_ERROR_IS_OK(werr);
 }
 
 static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
