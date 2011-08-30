@@ -1056,8 +1056,8 @@ ctdb_reconfigure_try_lock ()
 ctdb_replay_monitor_status ()
 {
     echo "Replaying previous status for this script due to reconfigure..."
-    ctdb scriptstatus | \
-	grep -q -E "^${script_name}[[:space:]]+Status:OK[[:space:]]"
+    ctdb scriptstatus -Y | \
+	grep -q -F ":${script_name}:0:OK:"
     exit $?
 }
 
