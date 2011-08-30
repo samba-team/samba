@@ -1,5 +1,8 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
+# Print a message and exit.
+die () { echo "$@" >&2 ; exit 1 ; }
+
 # Augment PATH with relevant stubs/ directories.  We do this by actually
 # setting PATH, and also by setting $EVENTSCRIPTS_PATH and then
 # prepending that to $PATH in rc.local to avoid the PATH reset in
@@ -30,8 +33,7 @@ if [ -d "${EVENTSCRIPTS_TESTCASE_DIR}/etc" ] ; then
 elif [ -d "${EVENTSCRIPTS_TESTS_DIR}/etc" ] ; then
     CTDB_ETCDIR="${EVENTSCRIPTS_TESTS_DIR}/etc"
 else
-    echo "Unable to set \$CTDB_ETCDIR" >&2
-    exit 1
+    die "Unable to set \$CTDB_ETCDIR"
 fi
 export CTDB_ETCDIR
 
@@ -42,8 +44,7 @@ elif [ -d "${EVENTSCRIPTS_TESTCASE_DIR}/etc/ctdb" ] ; then
 elif [ -d "${EVENTSCRIPTS_TESTS_DIR}/etc-ctdb" ] ; then
     CTDB_BASE="${EVENTSCRIPTS_TESTS_DIR}/etc-ctdb"
 else
-    echo "Unable to set \$CTDB_BASE" >&2
-    exit 1
+    die "Unable to set \$CTDB_BASE"
 fi
 export CTDB_BASE
 
@@ -426,9 +427,7 @@ rpc_services_up ()
 	    rquotad)  _t="1:2" ;;
 	    nlockmgr) _t="3:4" ;;
 	    status)   _t="1:1" ;;
-	    *)
-		echo "Internal error - unsupported RPC service \"${_i}\""
-		exit 1
+	    *) die "Internal error - unsupported RPC service \"${_i}\"" ;;
 	esac
 
 	FAKE_RPCINFO_SERVICES="${FAKE_RPCINFO_SERVICES}${FAKE_RPCINFO_SERVICES:+ }${_i}:${_t}"
@@ -556,8 +555,7 @@ Starting nfslock: OK"
 setup_vsftpd ()
 {
     if [ "$1" != "down" ] ; then
-	echo "setup_vsftpd up not implemented!!!"
-	exit 1
+	die "setup_vsftpd up not implemented!!!"
     else
 	debug "Setting up VSFTPD environment: service down, not managed by CTDB"
 
@@ -576,8 +574,7 @@ setup_vsftpd ()
 setup_httpd ()
 {
     if [ "$1" != "down" ] ; then
-	echo "setup_httpd up not implemented!!!"
-	exit 1
+	die "setup_httpd up not implemented!!!"
     else
 	debug "Setting up HTTPD environment: service down, not managed by CTDB"
 
