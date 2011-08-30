@@ -8,4 +8,4 @@ setup_vsftpd "down"
 
 ok_null
 
-simple_test $cmd
+simple_test
