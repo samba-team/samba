@@ -262,9 +262,9 @@ WERROR init_registry_key(const char *add_path)
 
 	init_ctx.add_path = add_path;
 
-	return ntstatus_to_werror(dbwrap_trans_do(regdb,
-						  init_registry_key_action,
-						  &init_ctx));
+	return regdb_trans_do(regdb,
+			      init_registry_key_action,
+			      &init_ctx);
 }
 
 /***********************************************************************
@@ -397,9 +397,9 @@ do_init:
 	 * transaction behaviour.
 	 */
 
-	werr = ntstatus_to_werror(dbwrap_trans_do(regdb,
-						  init_registry_data_action,
-						  NULL));
+	werr = regdb_trans_do(regdb,
+			      init_registry_data_action,
+			      NULL);
 
 done:
 	TALLOC_FREE(frame);
@@ -1201,9 +1201,9 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 	store_ctx.key = key;
 	store_ctx.ctr = ctr;
 
-	werr = ntstatus_to_werror(dbwrap_trans_do(db,
-						  regdb_store_keys_action,
-						  &store_ctx));
+	werr = regdb_trans_do(db,
+			      regdb_store_keys_action,
+			      &store_ctx);
 
 	ret = W_ERROR_IS_OK(werr);
 
@@ -1290,9 +1290,9 @@ static WERROR regdb_create_subkey_internal(struct db_context *db,
 	create_ctx.key = key;
 	create_ctx.subkey = subkey;
 
-	werr = ntstatus_to_werror(dbwrap_trans_do(db,
-						  regdb_create_subkey_action,
-						  &create_ctx));
+	werr = regdb_trans_do(db,
+			      regdb_create_subkey_action,
+			      &create_ctx);
 
 done:
 	talloc_free(mem_ctx);
@@ -1332,9 +1332,9 @@ static WERROR regdb_create_basekey(struct db_context *db, const char *key)
 
 	create_ctx.key = key;
 
-	werr = ntstatus_to_werror(dbwrap_trans_do(db,
-						  regdb_create_basekey_action,
-						  &create_ctx));
+	werr = regdb_trans_do(db,
+			      regdb_create_basekey_action,
+			      &create_ctx);
 
 	return werr;
 }
@@ -1416,9 +1416,9 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey, bool lazy
 	delete_ctx.path = path;
 	delete_ctx.lazy = lazy;
 
-	werr = ntstatus_to_werror(dbwrap_trans_do(regdb,
-						  regdb_delete_subkey_action,
-						  &delete_ctx));
+	werr = regdb_trans_do(regdb,
+			      regdb_delete_subkey_action,
+			      &delete_ctx);
 
 done:
 	talloc_free(mem_ctx);
