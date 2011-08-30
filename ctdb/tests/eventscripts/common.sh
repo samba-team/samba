@@ -730,7 +730,7 @@ simple_test ()
 {
     [ -n "$event" ] || die 'simple_test: $event not set'
 
-    echo "Running \"$script $event $*\""
+    echo "Running \"$script $event${1:+ }$*\""
     _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
     _rc=$?
 
