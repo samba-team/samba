@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "client.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "libsmb/smb2cli.h"
 #include "libcli/security/security.h"
 
@@ -43,9 +44,10 @@ bool run_smb2_basic(int dummy)
 	}
 	cli->smb2.pid = 0xFEFF;
 
-	status = smb2cli_negprot(cli);
+	status = smbXcli_negprot(cli->conn, cli->timeout,
+				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smb2cli_negprot returned %s\n", nt_errstr(status));
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
 	}
 
