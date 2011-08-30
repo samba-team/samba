@@ -459,7 +459,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/substitute.o lib/substitute_generic.o ../lib/util/substitute.o lib/dbwrap/dbwrap_util.o \
 	  lib/ms_fnmatch.o ../lib/util/ms_fnmatch.o lib/errmap_unix.o ../libcli/util/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o \
-	  libsmb/clisigning.o libsmb/smb_signing.o \
+	  libsmb/smb_signing.o \
 	  ../lib/util/charset/iconv.o intl/lang_tdb.o \
 	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
 	  lib/sessionid_tdb.o \
@@ -594,7 +594,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
 	     libsmb/clioplock.o libsmb/clirap2.o \
 	     libsmb/smb_seal.o libsmb/async_smb.o \
-	     libsmb/read_smb.o \
+	     libsmb/read_smb.o libsmb/clisigning.o \
 	     libsmb/smb2cli_base.o \
 	     libsmb/smb2cli_negprot.o \
 	     libsmb/smb2cli_session.o \
