@@ -49,8 +49,8 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 				      struct regsubkey_ctr *ctr);
 static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 				       struct regval_ctr *values);
-static bool regdb_store_values_internal(struct db_context *db, const char *key,
-					struct regval_ctr *values);
+static NTSTATUS regdb_store_values_internal(struct db_context *db, const char *key,
+					    struct regval_ctr *values);
 static WERROR regdb_store_subkey_list(struct db_context *db, const char *parent,
 				      const char *key);
 
@@ -335,9 +335,12 @@ static NTSTATUS init_registry_data_action(struct db_context *db,
 		{
 			regdb_ctr_add_value(values,
 					    &builtin_registry_values[i]);
-			regdb_store_values_internal(db,
+			status = regdb_store_values_internal(db,
 					builtin_registry_values[i].path,
 					values);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
 		}
 		TALLOC_FREE(values);
 	}
@@ -1751,19 +1754,20 @@ int regdb_fetch_values(const char* key, struct regval_ctr *values)
 	return regdb_fetch_values_internal(regdb, key, values);
 }
 
-static bool regdb_store_values_internal(struct db_context *db, const char *key,
-					struct regval_ctr *values)
+static NTSTATUS regdb_store_values_internal(struct db_context *db,
+					    const char *key,
+					    struct regval_ctr *values)
 {
 	TDB_DATA old_data, data;
 	char *keystr = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int len;
 	NTSTATUS status;
-	bool result = false;
 
 	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
 
 	if (!regdb_key_exists(db, key)) {
+		status = NT_STATUS_NOT_FOUND;
 		goto done;
 	}
 
@@ -1772,6 +1776,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 	len = regdb_pack_values(values, data.dptr, data.dsize);
 	if (len <= 0) {
 		DEBUG(0,("regdb_store_values: unable to pack values. len <= 0\n"));
+		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -1784,6 +1789,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 
 	keystr = talloc_asprintf(ctx, "%s\\%s", REG_VALUE_PREFIX, key );
 	if (!keystr) {
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 	keystr = normalize_reg_path(ctx, keystr);
@@ -1797,22 +1803,20 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 	    && (old_data.dsize == data.dsize)
 	    && (memcmp(old_data.dptr, data.dptr, data.dsize) == 0))
 	{
-		result = true;
+		status = NT_STATUS_OK;
 		goto done;
 	}
 
 	status = dbwrap_trans_store_bystring(db, keystr, data, TDB_REPLACE);
 
-	result = NT_STATUS_IS_OK(status);
-
 done:
 	TALLOC_FREE(ctx);
-	return result;
+	return status;
 }
 
 bool regdb_store_values(const char *key, struct regval_ctr *values)
 {
-	return regdb_store_values_internal(regdb, key, values);
+	return NT_STATUS_IS_OK(regdb_store_values_internal(regdb, key, values));
 }
 
 static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
