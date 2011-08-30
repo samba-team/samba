@@ -598,16 +598,27 @@ define_test ()
     desc="$1"
 
     _f="$0"
-    _f="${_f#./}"      # strip leading ./
-    _f="${_f#simple/}" # strip leading simple/
-    _f="${_f%%/*}"     # if subdir, strip off file
-    _f="${_f%.sh}"     # strip off .sh suffix if any
+    _f="${_f#./}"          # strip leading ./
+    _f="${_f#simple/}"     # strip leading simple/
+    _f="${_f#multievent/}" # strip leading multievent/
+    _f="${_f%%/*}"         # if subdir, strip off file
+    _f="${_f%.sh}"         # strip off .sh suffix if any
 
-    # Remaining format should be NN.service.event.NNN:
+    # Remaining format should be NN.service.event.NNN or NN.service.NNN:
     _num="${_f##*.}"
     _f="${_f%.*}"
-    event="${_f##*.}"
-    script="${_f%.*}"
+    case "$_f" in
+	*.*.*)
+	    script="${_f%.*}"
+	    event="${_f##*.}"
+	    ;;
+	*.*)
+	    script="$_f"
+	    unset event
+	    ;;
+	*)
+	    die "Internal error - unknown testcase filename format"
+    esac
 
     printf "%-14s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
@@ -719,6 +730,8 @@ EOF
 # useful for debugging.
 simple_test ()
 {
+    [ -n "$event" ] || die 'simple_test: $event not set'
+
     echo "Running \"${CTDB_BASE}/events.d/$script $event\""
     _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
     _rc=$?
@@ -759,6 +772,8 @@ simple_test ()
 # iteration.
 iterate_test ()
 {
+    [ -n "$event" ] || die 'simple_test: $event not set'
+
     args=""
     if [ "$1" = "--" ] ; then
 	shift
