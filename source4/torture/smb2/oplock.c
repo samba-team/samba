@@ -790,7 +790,7 @@ static bool test_smb2_oplock_exclusive6(struct torture_context *tctx,
 	CHECK_VAL(break_info.count, 0);
 	CHECK_VAL(break_info.failures, 0);
 
-	/* Close the parent directry handle. */
+	/* Close the parent directory handle. */
 	ZERO_STRUCT(closeio);
 	closeio.in.file.handle = h;
 	status = smb2_close(tree1, &closeio);
