@@ -29,7 +29,7 @@ from samba.netcmd import (
 
 class cmd_time(Command):
     """Retrieve the time on a remote server *"""
-    synopsis = "%prog time <server-name>"
+    synopsis = "%prog time [server-name] [options]"
 
     takes_args = ["server_name?"]
 
