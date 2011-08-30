@@ -23,6 +23,25 @@
 #include "lib/util/tdb_wrap.h"
 #include "util_tdb.h"
 #ifdef CLUSTER_SUPPORT
+
+/*
+ * It is not possible to include ctdb.h and tdb_compat.h (included via
+ * some other include above) without warnings. This fixes those
+ * warnings.
+ */
+
+#ifdef typesafe_cb
+#undef typesafe_cb
+#endif
+
+#ifdef typesafe_cb_preargs
+#undef typesafe_cb_preargs
+#endif
+
+#ifdef typesafe_cb_postargs
+#undef typesafe_cb_postargs
+#endif
+
 #include "ctdb.h"
 #include "ctdb_private.h"
 #include "ctdbd_conn.h"

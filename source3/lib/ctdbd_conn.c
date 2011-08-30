@@ -27,7 +27,26 @@
 #include "ctdb_packet.h"
 #include "messages.h"
 
+/*
+ * It is not possible to include ctdb.h and tdb_compat.h (included via
+ * some other include above) without warnings. This fixes those
+ * warnings.
+ */
+
+#ifdef typesafe_cb
+#undef typesafe_cb
+#endif
+
+#ifdef typesafe_cb_preargs
+#undef typesafe_cb_preargs
+#endif
+
+#ifdef typesafe_cb_postargs
+#undef typesafe_cb_postargs
+#endif
+
 /* paths to these include files come from --with-ctdb= in configure */
+
 #include "ctdb.h"
 #include "ctdb_private.h"
 
