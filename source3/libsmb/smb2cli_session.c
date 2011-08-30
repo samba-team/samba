@@ -76,7 +76,8 @@ static struct tevent_req *smb2cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_SESSSETUP,
 				  0, 0, /* flags */
 				  cli->smb2.pid,
-				  0, 0, /* tid, uid */
+				  0, /* tid */
+				  cli->smb2.uid,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
