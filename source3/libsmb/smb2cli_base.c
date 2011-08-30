@@ -665,24 +665,67 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 }
 
 NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			  struct iovec **piov, int body_size)
+			  struct iovec **piov,
+			  const struct smb2cli_req_expected_response *expected,
+			  size_t num_expected)
 {
 	struct smb2cli_req_state *state =
 		tevent_req_data(req,
 		struct smb2cli_req_state);
 	NTSTATUS status;
+	size_t body_size;
+	bool found_status = false;
+	bool found_size = false;
+	size_t i;
+
+	if (num_expected == 0) {
+		found_status = true;
+		found_size = true;
+	}
 
 	if (tevent_req_is_nterror(req, &status)) {
+		for (i=0; i < num_expected; i++) {
+			if (NT_STATUS_EQUAL(status, expected[i].status)) {
+				found_status = true;
+				break;
+			}
+		}
+
+		if (found_status) {
+			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		}
+
 		return status;
 	}
 
 	status = NT_STATUS(IVAL(state->recv_iov[0].iov_base, SMB2_HDR_STATUS));
+	body_size = SVAL(state->recv_iov[1].iov_base, 0);
 
-	if (body_size != 0) {
-		if (body_size != SVAL(state->recv_iov[1].iov_base, 0)) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	for (i=0; i < num_expected; i++) {
+		if (!NT_STATUS_EQUAL(status, expected[i].status)) {
+			continue;
+		}
+
+		found_status = true;
+		if (expected[i].body_size == 0) {
+			found_size = true;
+			break;
+		}
+
+		if (expected[i].body_size == body_size) {
+			found_size = true;
+			break;
 		}
 	}
+
+	if (!found_status) {
+		return status;
+	}
+
+	if (!found_size) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	if (piov != NULL) {
 		*piov = talloc_move(mem_ctx, &state->recv_iov);
 	}

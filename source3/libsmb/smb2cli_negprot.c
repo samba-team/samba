@@ -93,8 +93,15 @@ static void smb2cli_negprot_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct iovec *iov;
 	uint8_t *body;
+	static const struct smb2cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.body_size = 0x41
+	}
+	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov, 65);
+	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+				  expected, ARRAY_SIZE(expected));
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);

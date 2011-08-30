@@ -111,8 +111,15 @@ static void smb2cli_query_directory_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct iovec *iov;
 	uint16_t data_offset;
+	static const struct smb2cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.body_size = 0x09
+	}
+	};
 
-	status = smb2cli_req_recv(subreq, state, &iov, 9);
+	status = smb2cli_req_recv(subreq, state, &iov,
+				  expected, ARRAY_SIZE(expected));
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}

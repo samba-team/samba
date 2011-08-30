@@ -98,8 +98,19 @@ static void smb2cli_sesssetup_blob_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct iovec *iov;
 	uint16_t offset, length;
+	static const struct smb2cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_MORE_PROCESSING_REQUIRED,
+		.body_size = 0x09
+	},
+	{
+		.status = NT_STATUS_OK,
+		.body_size = 0x09
+	}
+	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov, 9);
+	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+				  expected, ARRAY_SIZE(expected));
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		TALLOC_FREE(subreq);
@@ -363,8 +374,15 @@ static void smb2cli_logoff_done(struct tevent_req *subreq)
 		struct tevent_req);
 	NTSTATUS status;
 	struct iovec *iov;
+	static const struct smb2cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.body_size = 0x04
+	}
+	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov, 4);
+	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

@@ -162,8 +162,15 @@ static void smb2cli_create_done(struct tevent_req *subreq)
 	struct iovec *iov;
 	uint8_t *body;
 	uint32_t offset, length;
+	static const struct smb2cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.body_size = 0x59
+	}
+	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov, 89);
+	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+				  expected, ARRAY_SIZE(expected));
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}

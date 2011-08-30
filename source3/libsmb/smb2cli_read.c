@@ -89,8 +89,19 @@ static void smb2cli_read_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct iovec *iov;
 	uint8_t data_offset;
+	static const struct smb2cli_req_expected_response expected[] = {
+	{
+		.status = STATUS_BUFFER_OVERFLOW,
+		.body_size = 0x11
+	},
+	{
+		.status = NT_STATUS_OK,
+		.body_size = 0x11
+	}
+	};
 
-	status = smb2cli_req_recv(subreq, state, &iov, 17);
+	status = smb2cli_req_recv(subreq, state, &iov,
+				  expected, ARRAY_SIZE(expected));
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
