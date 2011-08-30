@@ -959,7 +959,7 @@ static int control_one_scriptstatus(struct ctdb_context *ctdb,
 			break;
 		}
 		if (options.machinereadable) {
-			printf("%s:%s:%i:%s:%lu.%06lu:%lu.%06lu:%s:\n",
+			printf(":%s:%s:%i:%s:%lu.%06lu:%lu.%06lu:%s:\n",
 			       ctdb_eventscript_call_names[type],
 			       script_status->scripts[i].name,
 			       script_status->scripts[i].status,
