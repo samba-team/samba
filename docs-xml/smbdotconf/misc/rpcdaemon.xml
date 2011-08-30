@@ -1,0 +1,69 @@
+<samba:parameter name="rpc_daemon"
+                 context="G"
+		 type="string"
+		 advanced="1" print="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	Defines whether to use the embedded code or start a separate daemon
+	for the defined rpc services.
+	The rpc_daemon prefix must be followed by the server name, and a value.
+	</para>
+
+	<para>
+	Two possible values are currently supported:
+		<command moreinfo="none">disabled</command>
+		<command moreinfo="none">fork</command>
+	</para>
+
+	<para>
+	The classic method is to run rpc services as internal daemons
+	embedded in smbd, therefore the external daemons are
+	<emphasis>disabled</emphasis> by default.
+	</para>
+
+	<para>
+	Choosing the <emphasis>fork</emphasis> option will cause samba to fork
+	a separate proces for each daemon configured this way. Each daemon may
+	in turn fork a number of children used to handle requests from multiple
+	smbds and direct tcp/ip connections (if the Endpoint Mapper is
+	enabled). Communication with smbd happens over named pipes and require
+	that said pipes are forward to the external daemon (see <smbconfoption
+	name="rpc_server"/>).
+	</para>
+
+	<para>
+	Forked RPC Daemons support dynamically forking children to handle
+	connections. The heuristics about how many children to keep around and
+	how fast to allow them to fork and also how many clients each child is
+	allowed to handle concurrently is defined by parametrical options named
+	after the daemon.
+	Five options are currently supported:
+		<command moreinfo="none">prefork_min_children</command>
+		<command moreinfo="none">prefork_max_children</command>
+		<command moreinfo="none">prefork_spawn_rate</command>
+		<command moreinfo="none">prefork_max_allowed_clients</command>
+		<command moreinfo="none">prefork_child_min_life</command>
+
+	To set one of these options use the follwing syntax:
+	<programlisting>
+	damonname:prefork_min_children = 5
+	</programlisting>
+	</para>
+
+	<para>
+	Samba includes separate daemons for spoolss and the lsarpc/lsass,
+	netlogon and samr pipes. Currently three daemons are available and they
+	are called:
+		<command moreinfo="none">empd</command>
+		<command moreinfo="none">lsasd</command>
+		<command moreinfo="none">spoolssd</command>
+	Example:
+	<programlisting>
+	rpc_daemon:spoolssd = fork
+	</programlisting>
+	</para>
+</description>
+
+<value type="default">disabled</value>
+</samba:parameter>
