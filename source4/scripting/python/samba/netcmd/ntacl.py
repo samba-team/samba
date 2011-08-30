@@ -37,7 +37,9 @@ from samba.netcmd import (
     Option,
     )
 
-class cmd_acl_set(Command):
+
+
+class cmd_ntacl_set(Command):
     """Set ACLs on a file"""
     synopsis = "%prog set <acl> <file> [--xattr-backend=native|tdb] [--eadb-file=file] [options]"
 
@@ -74,7 +76,8 @@ class cmd_acl_set(Command):
             raise CommandError("Unable to read domain SID from configuration files")
 
 
-class cmd_acl_get(Command):
+
+class cmd_ntacl_get(Command):
     """Set ACLs on a file"""
     synopsis = "%prog get <file> [--as-sddl] [--xattr-backend=native|tdb] [--eadb-file=file] [options]"
 
@@ -99,10 +102,11 @@ class cmd_acl_get(Command):
             acl.dump()
 
 
-class cmd_nt_acl(SuperCommand):
+
+class cmd_ntacl(SuperCommand):
     """NT ACLs manipulation"""
 
     subcommands = {}
-    subcommands["set"] = cmd_acl_set()
-    subcommands["get"] = cmd_acl_get()
+    subcommands["set"] = cmd_ntacl_set()
+    subcommands["get"] = cmd_ntacl_get()
 

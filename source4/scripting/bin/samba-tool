@@ -35,6 +35,7 @@ from samba.netcmd.fsmo import cmd_fsmo
 from samba.netcmd.gpo import cmd_gpo
 from samba.netcmd.group import cmd_group
 from samba.netcmd.ldapcmp import cmd_ldapcmp
+from samba.netcmd.ntacl import cmd_ntacl
 from samba.netcmd.rodc import cmd_rodc
 from samba.netcmd.spn import cmd_spn
 from samba.netcmd.testparm import cmd_testparm
@@ -57,6 +58,7 @@ class cmd_sambatool(SuperCommand):
     subcommands["gpo"] = cmd_gpo()
     subcommands["group"] = cmd_group()
     subcommands["ldapcmp"] = cmd_ldapcmp()
+    subcommands["ntacl"] = cmd_ntacl()
     subcommands["rodc"] = cmd_rodc()
     subcommands["spn"] = cmd_spn() 
     subcommands["testparm"] =  cmd_testparm()

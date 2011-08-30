@@ -23,12 +23,12 @@
 from samba.netcmd import (
     SuperCommand,
     )
-from samba.netcmd.ntacl import cmd_nt_acl
+from samba.netcmd.ntacl import cmd_ntacl
 from samba.netcmd.dsacl import cmd_dsacl
 
 class cmd_acl(SuperCommand):
     """NT ACLs manipulation"""
 
     subcommands = {}
-    subcommands["nt"] = cmd_nt_acl()
+    subcommands["nt"] = cmd_ntacl()
     subcommands["ds"] = cmd_dsacl()
