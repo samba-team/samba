@@ -377,7 +377,6 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/file_access.c
                smbd/dnsregister.c smbd/globals.c
                smbd/smb2_server.c
-               smbd/smb2_signing.c
                smbd/smb2_glue.c
                smbd/smb2_negprot.c
                smbd/smb2_sesssetup.c

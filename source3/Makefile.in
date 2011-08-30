@@ -601,6 +601,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/smb2cli_tcon.o \
 	     libsmb/smb2cli_create.o \
 	     ../libcli/smb/smb2_create_blob.o \
+	     ../libcli/smb/smb2_signing.o \
 	     libsmb/smb2cli_close.o \
 	     libsmb/smb2cli_flush.o \
 	     libsmb/smb2cli_read.o \
@@ -929,7 +930,6 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       smbd/file_access.o \
 	       smbd/dnsregister.o smbd/globals.o \
 	       smbd/smb2_server.o \
-	       smbd/smb2_signing.o \
 	       smbd/smb2_glue.o \
 	       smbd/smb2_negprot.o \
 	       smbd/smb2_sesssetup.o \

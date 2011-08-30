@@ -1,7 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-
-   SMB and SMB2 common header
+   SMB2 signing
 
    Copyright (C) Stefan Metzmacher 2009
 
@@ -19,14 +18,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __LIBCLI_SMB_SMB_COMMON_H__
-#define __LIBCLI_SMB_SMB_COMMON_H__
+#ifndef _LIBCLI_SMB_SMB2_SIGNING_H_
+#define _LIBCLI_SMB_SMB2_SIGNING_H_
 
-#include "libcli/smb/smb2_constants.h"
-#include "libcli/smb/smb2_create_blob.h"
-#include "libcli/smb/smb2_signing.h"
-#include "libcli/smb/smb_constants.h"
-#include "libcli/smb/smb_util.h"
-#include "libcli/smb/smb_unix_ext.h"
+struct iovec;
 
-#endif
+NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
+			       struct iovec *vector,
+			       int count);
+
+NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
+				const struct iovec *vector,
+				int count);
+
+#endif /* _LIBCLI_SMB_SMB2_SIGNING_H_ */

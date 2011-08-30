@@ -19,8 +19,7 @@
 */
 
 #include "includes.h"
-#include "smbd/smbd.h"
-#include "smbd/globals.h"
+#include "system/filesys.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/crypto/crypto.h"
 

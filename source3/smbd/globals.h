@@ -133,13 +133,6 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn);
 void smbd_lock_socket(struct smbd_server_connection *sconn);
 void smbd_unlock_socket(struct smbd_server_connection *sconn);
 
-NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
-			       struct iovec *vector,
-			       int count);
-NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
-				const struct iovec *vector,
-				int count);
-
 NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
 			 uint8_t type,

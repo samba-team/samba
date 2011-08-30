@@ -2,9 +2,12 @@
 
 
 bld.SAMBA_LIBRARY('cli_smb_common',
-	source='smb2_create_blob.c util.c',
+	source='smb2_create_blob.c smb2_signing.c util.c',
 	autoproto='smb_common_proto.h',
+	deps='LIBCRYPTO',
 	public_deps='talloc samba-util',
 	private_library=True,
-	public_headers='smb_common.h smb2_constants.h smb2_create_blob.h',
+	public_headers='''smb_common.h smb2_constants.h
+			smb2_create_blob.h smb2_signing.h
+	''',
 	)
