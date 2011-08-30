@@ -1521,18 +1521,18 @@ static bool api_pipe_request(struct pipes_struct *p,
 				struct ncacn_packet *pkt)
 {
 	bool ret = False;
-	bool changed_user = False;
 	struct pipe_rpc_fns *pipe_fns;
 
-	if (p->pipe_bound &&
-	    ((p->auth.auth_type == DCERPC_AUTH_TYPE_NTLMSSP) ||
-	     (p->auth.auth_type == DCERPC_AUTH_TYPE_KRB5) ||
-	     (p->auth.auth_type == DCERPC_AUTH_TYPE_SPNEGO))) {
-		if(!become_authenticated_pipe_user(p->session_info)) {
-			data_blob_free(&p->out_data.rdata);
-			return False;
-		}
-		changed_user = True;
+	if (!p->pipe_bound) {
+		DEBUG(1, ("Pipe not bound!\n"));
+		data_blob_free(&p->out_data.rdata);
+		return false;
+	}
+
+	if (!become_authenticated_pipe_user(p->session_info)) {
+		DEBUG(1, ("Failed to become pipe user!\n"));
+		data_blob_free(&p->out_data.rdata);
+		return false;
 	}
 
 	/* get the set of RPC functions for this context */
@@ -1557,9 +1557,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 			  pkt->u.request.context_id));
 	}
 
-	if (changed_user) {
-		unbecome_authenticated_pipe_user();
-	}
+	unbecome_authenticated_pipe_user();
 
 	return ret;
 }
