@@ -25,7 +25,8 @@
 /* offsets into header elements for a sync SMB2 request */
 #define SMB2_HDR_PROTOCOL_ID    0x00
 #define SMB2_HDR_LENGTH		0x04
-#define SMB2_HDR_EPOCH		0x06
+#define SMB2_HDR_CREDIT_CHARGE	0x06
+#define SMB2_HDR_EPOCH		SMB2_HDR_CREDIT_CHARGE /* TODO: remove this */
 #define SMB2_HDR_STATUS		0x08
 #define SMB2_HDR_OPCODE		0x0c
 #define SMB2_HDR_CREDIT		0x0e
