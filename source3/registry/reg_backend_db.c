@@ -1892,47 +1892,68 @@ done:
 	return err;
 }
 
+struct regdb_set_secdesc_ctx {
+	const char *key;
+	struct security_descriptor *secdesc;
+};
+
+static NTSTATUS regdb_set_secdesc_action(struct db_context *db,
+					 void *private_data)
+{
+	char *tdbkey;
+	NTSTATUS status;
+	TDB_DATA tdbdata;
+	struct regdb_set_secdesc_ctx *ctx =
+		(struct regdb_set_secdesc_ctx *)private_data;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	tdbkey = talloc_asprintf(frame, "%s\\%s", REG_SECDESC_PREFIX, ctx->key);
+	if (tdbkey == NULL) {
+		goto done;
+	}
+
+	tdbkey = normalize_reg_path(frame, tdbkey);
+	if (tdbkey == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (ctx->secdesc == NULL) {
+		/* assuming a delete */
+		status = dbwrap_delete_bystring(db, tdbkey);
+		goto done;
+	}
+
+	status = marshall_sec_desc(frame, ctx->secdesc, &tdbdata.dptr,
+				   &tdbdata.dsize);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = dbwrap_store_bystring(db, tdbkey, tdbdata, 0);
+
+done:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static WERROR regdb_set_secdesc(const char *key,
 				struct security_descriptor *secdesc)
 {
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	char *tdbkey;
-	WERROR err = WERR_NOMEM;
-	TDB_DATA tdbdata;
+	WERROR err;
+	struct regdb_set_secdesc_ctx ctx;
 
 	if (!regdb_key_exists(regdb, key)) {
 		err = WERR_BADFILE;
 		goto done;
 	}
 
-	tdbkey = talloc_asprintf(mem_ctx, "%s\\%s", REG_SECDESC_PREFIX, key);
-	if (tdbkey == NULL) {
-		goto done;
-	}
+	ctx.key = key;
+	ctx.secdesc = secdesc;
 
-	tdbkey = normalize_reg_path(mem_ctx, tdbkey);
-	if (tdbkey == NULL) {
-		err = WERR_NOMEM;
-		goto done;
-	}
+	err = regdb_trans_do(regdb, regdb_set_secdesc_action, &ctx);
 
-	if (secdesc == NULL) {
-		/* assuming a delete */
-		err = ntstatus_to_werror(dbwrap_trans_delete_bystring(regdb,
-								      tdbkey));
-		goto done;
-	}
-
-	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc,
-						   &tdbdata.dptr,
-						   &tdbdata.dsize));
-	W_ERROR_NOT_OK_GOTO_DONE(err);
-
-	err = ntstatus_to_werror(dbwrap_trans_store_bystring(regdb, tdbkey,
-							     tdbdata, 0));
-
- done:
-	TALLOC_FREE(mem_ctx);
+done:
 	return err;
 }
 
