@@ -129,6 +129,8 @@ monitor_interfaces()
 	return 1
 }
 
+ctdb_check_args "$@"
+
 case "$1" in 
      #############################
      # called when ctdbd starts up
@@ -158,10 +160,6 @@ case "$1" in
      ################################################
      # called when ctdbd wants to claim an IP address
      takeip)
-	if [ $# != 4 ]; then
-	   echo "ERROR: must supply interface, IP and maskbits"
-	   exit 1
-	fi
 	iface=$2
 	ip=$3
 	maskbits=$4
@@ -181,11 +179,6 @@ case "$1" in
      ##################################################
      # called when ctdbd wants to release an IP address
      releaseip)
-	if [ $# != 4 ]; then
-	   echo "ERROR: must supply interface, IP and maskbits"
-	   exit 1
-	fi
-
 	# releasing an IP is a bit more complex than it seems. Once the IP
 	# is released, any open tcp connections to that IP on this host will end
 	# up being stuck. Some of them (such as NFS connections) will be unkillable
@@ -220,11 +213,6 @@ case "$1" in
      ##################################################
      # called when ctdbd wants to update an IP address
      updateip)
-	if [ $# != 5 ]; then
-	   echo "ERROR: must supply old interface, new interface, IP and maskbits"
-	   exit 1
-	fi
-
 	# moving an IP is a bit more complex than it seems.
 	# First we drop all traffic on the old interface.
 	# Then we try to add the ip to the new interface and before

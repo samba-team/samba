@@ -326,6 +326,8 @@ setup_per_ip_routing()
 	return $?;
 }
 
+ctdb_check_args "$@"
+
 case "$1" in
      #############################
      # called when ctdbd starts up
@@ -368,10 +370,6 @@ case "$1" in
      ################################################
      # called when ctdbd wants to claim an IP address
      takeip)
-	if [ $# != 4 ]; then
-	   echo "must supply interface, IP and maskbits"
-	   exit 1
-	fi
 	iface=$2
 	ip=$3
 	maskbits=$4
@@ -410,10 +408,6 @@ case "$1" in
      ################################################
      # called when ctdbd wants to claim an IP address
      updateip)
-	if [ $# != 5 ]; then
-	   echo "must supply old interface, new interface, IP and maskbits"
-	   exit 1
-	fi
 	oiface=$2
 	niface=$3
 	ip=$4
@@ -455,11 +449,6 @@ case "$1" in
      ##################################################
      # called when ctdbd wants to release an IP address
      releaseip)
-	if [ $# != 4 ]; then
-	   echo "must supply interface, IP and maskbits"
-	   exit 1
-	fi
-
 	iface=$2
 	ip=$3
 	maskbits=$4

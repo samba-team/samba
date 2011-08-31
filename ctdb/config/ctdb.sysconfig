@@ -295,6 +295,10 @@ CTDB_DEBUGLEVEL=ERR
 # above 90%
 # CTDB_CHECK_FS_USE="/:90 /var:90"
 
+# Should CTDB automatically start and stop services when it is told to
+# newly manage or no longer manage them?
+CTDB_SERVICE_AUTOSTARTSTOP=yes
+
 # 
 #
 # set any default tuning options for ctdb
