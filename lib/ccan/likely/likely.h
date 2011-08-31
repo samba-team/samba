@@ -30,7 +30,9 @@
  *		return false;
  *	}
  */
+#ifndef likely
 #define likely(cond) __builtin_expect(!!(cond), 1)
+#endif
 
 /**
  * unlikely - indicate that a condition is unlikely to be true.
@@ -51,10 +53,16 @@
  *			fprintf(stderr, "Overflow!");
  *	}
  */
+#ifndef unlikely
 #define unlikely(cond) __builtin_expect(!!(cond), 0)
+#endif
 #else
+#ifndef likely
 #define likely(cond) (!!(cond))
+#endif
+#ifndef unlikely
 #define unlikely(cond) (!!(cond))
+#endif
 #endif
 #else /* CCAN_LIKELY_DEBUG versions */
 #define likely(cond) \
