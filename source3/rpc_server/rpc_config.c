@@ -30,7 +30,7 @@ struct rpc_service_defaults {
 	const char *name;
 	const char *def_mode;
 } rpc_service_defaults[] = {
-	{ "epmapper", "external" },
+	{ "epmapper", "disabled" },
 	/* { "spoolss", "embedded" }, */
 	/* { "lsarpc", "embedded" }, */
 	/* { "samr", "embedded" }, */
@@ -77,7 +77,7 @@ struct rpc_daemon_defaults {
 	const char *name;
 	const char *def_type;
 } rpc_daemon_defaults[] = {
-	{ "epmd", "fork" },
+	{ "epmd", "disabled" },
 	/* { "spoolssd", "embedded" }, */
 	/* { "lsasd", "embedded" }, */
 
