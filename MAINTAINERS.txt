@@ -72,6 +72,11 @@ policy:
          Other non-trivial (typo, etc) commits require pre- or post-push review by the
          maintainer or one of the maintainers of the containing subsystem.
 
+files: lib/ccan
+maintainers:
+         Rusty Russell <rusty@samba.org>
+policy:
+         Please ping me when changes made, so I can sync with CCAN project.
 
 =======================================================================
 
