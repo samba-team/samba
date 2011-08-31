@@ -904,7 +904,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	/* Don't return an intermediate packet on a pipe read/write. */
 	if (req->tcon && req->tcon->compat_conn && IS_IPC(req->tcon->compat_conn)) {
-		return NT_STATUS_OK;
+		goto ipc_out;
 	}
 
 	reqhdr = (uint8_t *)req->out.vector[i].iov_base;
@@ -993,6 +993,8 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	/* Note we're going async with this request. */
 	req->async = true;
 
+  ipc_out:
+
 	/*
 	 * Now manipulate req so that the outstanding async request
 	 * is the only one left in the struct smbd_smb2_request.
@@ -1040,19 +1042,22 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	smb2_setup_nbt_length(req->out.vector,
 		req->out.vector_count);
 
-	/* Ensure our final reply matches the interim one. */
-	reqhdr = (uint8_t *)req->out.vector[1].iov_base;
-	SIVAL(reqhdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
-	SBVAL(reqhdr, SMB2_HDR_PID, async_id);
+	if (req->async) {
+		/* Ensure our final reply matches the interim one. */
+		reqhdr = (uint8_t *)req->out.vector[1].iov_base;
+		SIVAL(reqhdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
+		SBVAL(reqhdr, SMB2_HDR_PID, async_id);
 
-	{
-		const uint8_t *inhdr =
-			(const uint8_t *)req->in.vector[1].iov_base;
-		DEBUG(10,("smbd_smb2_request_pending_queue: opcode[%s] mid %llu "
-			"going async\n",
-			smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
-			(unsigned long long)async_id ));
+		{
+			const uint8_t *inhdr =
+				(const uint8_t *)req->in.vector[1].iov_base;
+			DEBUG(10,("smbd_smb2_request_pending_queue: opcode[%s] mid %llu "
+				"going async\n",
+				smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
+				(unsigned long long)async_id ));
+		}
 	}
+
 	return NT_STATUS_OK;
 }
 
