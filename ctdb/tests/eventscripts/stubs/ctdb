@@ -201,18 +201,25 @@ EOF
 	$machine_readable || not_implemented "$1, without -Y"
 	[ "$2" != "all" ] || not_implemented "scriptstatus all"
 	# For now just assume everything is good.
-	_d1=$(date '+%s.%N')
-	_d2=$(date '+%s.%N')
 	echo ":Type:Name:Code:Status:Start:End:Error Output...:"
 	for _i in "$CTDB_BASE/events.d/"*.* ; do
+	    _d1=$(date '+%s.%N')
 	    _b="${_i##*/}" # basename
-	    _status="OK"
-	    _code="0"
-	    if [ ! -x "$_i" ] ; then
-		_status="DISABLED"
-		_code="-8"
+
+	    _f="$FAKE_CTDB_SCRIPTSTATUS/$_b"
+	    if [ -r "$_f" ] ; then
+		read _code _status _err_out <"$_f"
+	    else
+		_code="0"
+		_status="OK"
+		if [ ! -x "$_i" ] ; then
+		    _status="DISABLED"
+		    _code="-8"
+		fi
+		_err_out=""
 	    fi
-	    echo ":${2:-monitor}:${_b}:${_code}:${_status}:${_d1}:${_d2}::"
+	    _d2=$(date '+%s.%N')
+	    echo ":${2:-monitor}:${_b}:${_code}:${_status}:${_d1}:${_d2}:${_err_out}:"
 	done
 	;;
     *)

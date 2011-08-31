@@ -238,6 +238,10 @@ setup_ctdb ()
     export FAKE_CTDB_NODES_DOWN="$EVENTSCRIPTS_TESTS_VAR_DIR/nodes-down"
     mkdir -p "$FAKE_CTDB_NODES_DOWN"
     rm -f "$FAKE_CTDB_NODES_DOWN"/*
+
+    export FAKE_CTDB_SCRIPTSTATUS="$EVENTSCRIPTS_TESTS_VAR_DIR/scriptstatus"
+    mkdir -p "$FAKE_CTDB_SCRIPTSTATUS"
+    rm -f "$FAKE_CTDB_SCRIPTSTATUS"/*
 }
 
 
@@ -290,13 +294,19 @@ ctdb_not_implemented ()
 {
     export CTDB_NOT_IMPLEMENTED="$1"
     ctdb_not_implemented="\
-DEBUG: ctdb: command \"$1\" not implemented
-DEBUG: Usage: ctdb [-Y] cmd
-DEBUG: 
-DEBUG: A fake CTDB stub that prints items depending on the variables
-DEBUG: FAKE_CTDB_PNN (default 0) depending on command-line options.
-DEBUG: 
-DEBUG: Note that -Y is ignored."
+DEBUG: ctdb: command \"$1\" not implemented in stub"
+}
+
+ctdb_fake_scriptstatus ()
+{
+    _code="$1"
+    _status="$2"
+    _err_out="$3"
+
+    _d1=$(date '+%s.%N')
+    _d2=$(date '+%s.%N')
+
+    echo "$_code $_status $_err_out" >"$FAKE_CTDB_SCRIPTSTATUS/$script"
 }
 
 ######################################################################
