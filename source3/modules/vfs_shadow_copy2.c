@@ -99,7 +99,7 @@
 #include "system/filesys.h"
 #include "include/ntioctl.h"
 #include "smbd/proto.h"
-#include <tdb.h>
+#include <ccan/hash/hash.h>
 #include "util_tdb.h"
 
 #define GMT_NAME_LEN 24 /* length of a @GMT- name */
@@ -438,9 +438,8 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 		   without significant VFS changes
 		*/
 		uint32_t shash;
-		TDB_DATA data = string_tdb_data(fname);
 
-		shash = tdb_jenkins_hash(&data) & 0xFF000000;
+		shash = hash(fname, strlen(fname), 0) & 0xFF000000;
 		if (shash == 0) {
 			shash = 1;
 		}
