@@ -41,20 +41,28 @@ struct rpc_service_defaults {
 
 enum rpc_service_mode_e rpc_service_mode(const char *name)
 {
+	const char *pipe_name = name;
 	const char *rpcsrv_type;
 	enum rpc_service_mode_e state;
 	const char *def;
 	int i;
 
+	/* Handle pipes with multiple names */
+	if (strcmp(pipe_name, "lsass") == 0) {
+		pipe_name = "lsarpc";
+	} else if (strcmp(pipe_name, "plugplay") == 0) {
+		pipe_name = "ntsvcs";
+	}
+
 	def = "embedded";
 	for (i = 0; rpc_service_defaults[i].name; i++) {
-		if (strcasecmp_m(name, rpc_service_defaults[i].name) == 0) {
+		if (strcasecmp_m(pipe_name, rpc_service_defaults[i].name) == 0) {
 			def = rpc_service_defaults[i].def_mode;
 		}
 	}
 
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server", name, def);
+					   "rpc_server", pipe_name, def);
 
 	if (strcasecmp_m(rpcsrv_type, "embedded") == 0) {
 		state = RPC_SERVICE_MODE_EMBEDDED;

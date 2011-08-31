@@ -288,7 +288,6 @@ sub setup_plugin_s4_dc($$$$)
         rpc_daemon:epmd = disabled
         rpc_daemon:lsasd = disabled
         rpc_server:tcpip = no
-        rpc_server:lsass = external
         rpc_server:lsarpc = external
         rpc_server:netlogon = external
         rpc_server:samr = external
@@ -905,7 +904,6 @@ sub provision($$$$$$$)
 	ncalrpc dir = $prefix_abs/ncalrpc
 	rpc_server:epmapper = external
 	rpc_server:spoolss = external
-	rpc_server:lsass = external
 	rpc_server:lsarpc = external
 	rpc_server:samr = external
 	rpc_server:netlogon = external
