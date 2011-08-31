@@ -129,10 +129,11 @@ bld.SAMBA3_MODULE('idmap_autorid',
 NSS_INFO_TEMPLATE_SRC = 'nss_info_template.c'
 NSS_INFO_SRC = 'nss_info.c'
 
-bld.SAMBA3_SUBSYSTEM('nss_info',
-                    source=NSS_INFO_SRC,
-                    deps='samba-util',
-                    vars=locals())
+bld.SAMBA3_LIBRARY('nss_info',
+                   source=NSS_INFO_SRC,
+                   deps='samba-util param',
+                   vars=locals(),
+                   private_library=True)
 
 bld.SAMBA3_MODULE('nss_info_template',
                  subsystem='nss_info',
