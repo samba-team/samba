@@ -523,7 +523,7 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 
 	if (!g_lock_parse(talloc_tos(), rec->value, &num_locks, &locks)) {
 		DEBUG(10, ("g_lock_parse for %s failed\n", name));
-		status = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_FILE_INVALID;
 		goto done;
 	}
 
@@ -535,7 +535,7 @@ static NTSTATUS g_lock_force_unlock(struct g_lock_ctx *ctx, const char *name,
 
 	if (i == num_locks) {
 		DEBUG(10, ("g_lock_force_unlock: Lock not found\n"));
-		status = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_NOT_FOUND;
 		goto done;
 	}
 
