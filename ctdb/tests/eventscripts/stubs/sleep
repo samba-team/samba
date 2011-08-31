@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ "$FAKE_SLEEP_REALLY" = "yes" ] ; then
+    /bin/sleep "$@"
+elif [ -n "$FAKE_SLEEP_FORCE" ] ; then
+    /bin/sleep "$FAKE_SLEEP_FORCE"
+else
+    :
+fi

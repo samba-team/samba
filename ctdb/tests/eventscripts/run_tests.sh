@@ -15,6 +15,12 @@ for i ; do
 	    export EVENTSCRIPT_TESTS_VERBOSE="yes"
 	    shift
 	    ;;
+	-T)
+	    # This will cause tests to fail but is good for debugging
+	    # individual tests when they fail.
+	    export EVENTSCRIPTS_TESTS_TRACE="sh -x"
+	    shift
+	    ;;
 	-*)
 	    opts="$opts $i"
 	    shift

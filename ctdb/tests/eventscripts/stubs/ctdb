@@ -2,6 +2,8 @@
 
 prog="ctdb"
 
+not_implemented_exit_code=1
+
 usage ()
 {
     cat >&2 <<EOF
@@ -9,26 +11,28 @@ Usage: $prog [-Y] cmd
 
 A fake CTDB stub that prints items depending on the variables
 FAKE_CTDB_PNN (default 0) depending on command-line options.
-
-Note that -Y is ignored.
-
 EOF
     exit 1
 }
 
-# $POSIXLY_CORRECT means that the command passed to onnode can take
-# options and getopt won't reorder things to make them options to this
-# script.
+not_implemented ()
+{
+    echo "${prog}: command \"$1\" not implemented in stub" >&2
+    exit $not_implemented_exit_code
+}
+
+# Don't set $POSIXLY_CORRECT here.
 _temp=$(getopt -n "$prog" -o "Yvh" -l help -- "$@") || \
     usage
 
 eval set -- "$_temp"
 
 verbose=false
+machine_readable=false
 
 while true ; do
     case "$1" in
-	-Y) shift ;;
+	-Y) machine_readable=true ; shift ;;
 	-v) verbose=true ; shift ;;
 	--) shift ; break ;;
 	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
@@ -50,6 +54,13 @@ setup_pstore ()
     pstore_dir="$CTDB_VARDIR/fake-ctdb/pstore/$1"
     mkdir -p "$pstore_dir"
 }
+
+# For testing backward compatibility...
+for i in $CTDB_NOT_IMPLEMENTED ; do
+    if [ "$i" = "$1" ] ; then
+	not_implemented "$i"
+    fi
+done
 
 case "$1" in
     ip)
@@ -159,8 +170,58 @@ case "$1" in
 		exit 1
 	esac
 	;;
-    *)
-	echo "${prog}: command \"$1\" not implemented in stub"
-	exit 1
-esac
+    getdebug)
+	case "${CTDB_DEBUGLEVEL:-0}" in
+	    -3) _t="EMERG"  ;;
+	    -2) _t="ALERT"  ;;
+	    -1) _t="CRIT"   ;;
+	    0) _t="ERR"     ;;
+	    1) _t="WARNING" ;;
+	    2) _t="NOTICE"  ;;
+	    3) _t="INFO"    ;;
+	    4) _t="DEBUG"   ;;
+	    *) _t="ERR"     ;;
+	esac
 
+	cat<<EOF
+:Name:Level:
+:${_t}:${CTDB_DEBUGLEVEL}:
+EOF
+	;;
+    checktcpport)
+	for _i in $FAKE_TCP_LISTEN ; do
+	    if [ "$2" = "${_i##*:}" ] ; then
+		exit 98
+	    fi
+	done
+
+	exit 0
+	;;
+    scriptstatus)
+	$machine_readable || not_implemented "$1, without -Y"
+	[ "$2" != "all" ] || not_implemented "scriptstatus all"
+	# For now just assume everything is good.
+	echo ":Type:Name:Code:Status:Start:End:Error Output...:"
+	for _i in "$CTDB_BASE/events.d/"*.* ; do
+	    _d1=$(date '+%s.%N')
+	    _b="${_i##*/}" # basename
+
+	    _f="$FAKE_CTDB_SCRIPTSTATUS/$_b"
+	    if [ -r "$_f" ] ; then
+		read _code _status _err_out <"$_f"
+	    else
+		_code="0"
+		_status="OK"
+		if [ ! -x "$_i" ] ; then
+		    _status="DISABLED"
+		    _code="-8"
+		fi
+		_err_out=""
+	    fi
+	    _d2=$(date '+%s.%N')
+	    echo ":${2:-monitor}:${_b}:${_code}:${_status}:${_d1}:${_d2}:${_err_out}:"
+	done
+	;;
+    *)
+	not_implemented "$1"
+esac

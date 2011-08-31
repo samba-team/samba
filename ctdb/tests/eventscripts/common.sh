@@ -1,5 +1,8 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
+# Print a message and exit.
+die () { echo "$@" >&2 ; exit 1 ; }
+
 # Augment PATH with relevant stubs/ directories.  We do this by actually
 # setting PATH, and also by setting $EVENTSCRIPTS_PATH and then
 # prepending that to $PATH in rc.local to avoid the PATH reset in
@@ -30,8 +33,7 @@ if [ -d "${EVENTSCRIPTS_TESTCASE_DIR}/etc" ] ; then
 elif [ -d "${EVENTSCRIPTS_TESTS_DIR}/etc" ] ; then
     CTDB_ETCDIR="${EVENTSCRIPTS_TESTS_DIR}/etc"
 else
-    echo "Unable to set \$CTDB_ETCDIR" >&2
-    exit 1
+    die "Unable to set \$CTDB_ETCDIR"
 fi
 export CTDB_ETCDIR
 
@@ -42,8 +44,7 @@ elif [ -d "${EVENTSCRIPTS_TESTCASE_DIR}/etc/ctdb" ] ; then
 elif [ -d "${EVENTSCRIPTS_TESTS_DIR}/etc-ctdb" ] ; then
     CTDB_BASE="${EVENTSCRIPTS_TESTS_DIR}/etc-ctdb"
 else
-    echo "Unable to set \$CTDB_BASE" >&2
-    exit 1
+    die "Unable to set \$CTDB_BASE"
 fi
 export CTDB_BASE
 
@@ -109,7 +110,7 @@ tcp_port_down ()
 {
     for _i ; do
 	debug "Marking TCP port \"${_i}\" as not listening"
-	FAKE_NETSTAT_TCP_LISTEN=$(echo "$FAKE_NETSTAT_TCP_LISTEN" | sed -r -e "s@[[:space:]]*[\.0-9]+:${_i}@@g")
+	FAKE_TCP_LISTEN=$(echo "$FAKE_TCP_LISTEN" | sed -r -e "s@[[:space:]]*[\.0-9]+:${_i}@@g")
     done
 }
 
@@ -177,6 +178,11 @@ ethtool_interfaces_up ()
     done
 }
 
+setup_nmap_output_filter ()
+{
+    OUT_FILTER="-e 's@^(DEBUG: # Nmap 5.21 scan initiated) .+ (as:)@\1 DATE \2@' -e 's@^(DEBUG: # Nmap done at) .+ (--)@\1 DATE \2@'"
+}
+
 ######################################################################
 
 # CTDB fakery
@@ -232,6 +238,10 @@ setup_ctdb ()
     export FAKE_CTDB_NODES_DOWN="$EVENTSCRIPTS_TESTS_VAR_DIR/nodes-down"
     mkdir -p "$FAKE_CTDB_NODES_DOWN"
     rm -f "$FAKE_CTDB_NODES_DOWN"/*
+
+    export FAKE_CTDB_SCRIPTSTATUS="$EVENTSCRIPTS_TESTS_VAR_DIR/scriptstatus"
+    mkdir -p "$FAKE_CTDB_SCRIPTSTATUS"
+    rm -f "$FAKE_CTDB_SCRIPTSTATUS"/*
 }
 
 
@@ -280,6 +290,25 @@ ctdb_get_1_public_address ()
     echo "${_addrs%% *}" | sed -r -e 's#(.*)/(.*)@(.*)#\3 \1 \2#g'
 }
 
+ctdb_not_implemented ()
+{
+    export CTDB_NOT_IMPLEMENTED="$1"
+    ctdb_not_implemented="\
+DEBUG: ctdb: command \"$1\" not implemented in stub"
+}
+
+ctdb_fake_scriptstatus ()
+{
+    _code="$1"
+    _status="$2"
+    _err_out="$3"
+
+    _d1=$(date '+%s.%N')
+    _d2=$(date '+%s.%N')
+
+    echo "$_code $_status $_err_out" >"$FAKE_CTDB_SCRIPTSTATUS/$script"
+}
+
 ######################################################################
 
 # Samba fakery
@@ -303,8 +332,13 @@ setup_samba ()
 	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
 	export CTDB_MANAGED_SERVICES="foo samba winbind bar"
 
-	export FAKE_NETSTAT_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
+	export FAKE_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
 	export FAKE_WBINFO_FAIL="no"
+
+	# Some things in 50.samba are backgrounded and waited for.  If
+	# we don't sleep at all then timeouts can happen.  This avoids
+	# that...  :-)
+	export FAKE_SLEEP_FORCE=0.1
     else
 	debug "Marking Samba services as down, not listening and not managed by CTDB"
         # Get into known state.
@@ -321,7 +355,7 @@ setup_samba ()
 	unset CTDB_MANAGES_SAMBA
 	unset CTDB_MANAGES_WINBIND
 
-	export FAKE_NETSTAT_TCP_LISTEN=""
+	export FAKE_TCP_LISTEN=""
 	export FAKE_WBINFO_FAIL="yes"
     fi
 
@@ -403,9 +437,7 @@ rpc_services_up ()
 	    rquotad)  _t="1:2" ;;
 	    nlockmgr) _t="3:4" ;;
 	    status)   _t="1:1" ;;
-	    *)
-		echo "Internal error - unsupported RPC service \"${_i}\""
-		exit 1
+	    *) die "Internal error - unsupported RPC service \"${_i}\"" ;;
 	esac
 
 	FAKE_RPCINFO_SERVICES="${FAKE_RPCINFO_SERVICES}${FAKE_RPCINFO_SERVICES:+ }${_i}:${_t}"
@@ -533,8 +565,7 @@ Starting nfslock: OK"
 setup_vsftpd ()
 {
     if [ "$1" != "down" ] ; then
-	echo "setup_vsftpd up not implemented!!!"
-	exit 1
+	die "setup_vsftpd up not implemented!!!"
     else
 	debug "Setting up VSFTPD environment: service down, not managed by CTDB"
 
@@ -553,8 +584,7 @@ setup_vsftpd ()
 setup_httpd ()
 {
     if [ "$1" != "down" ] ; then
-	echo "setup_httpd up not implemented!!!"
-	exit 1
+	die "setup_httpd up not implemented!!!"
     else
 	debug "Setting up HTTPD environment: service down, not managed by CTDB"
 
@@ -578,16 +608,27 @@ define_test ()
     desc="$1"
 
     _f="$0"
-    _f="${_f#./}"      # strip leading ./
-    _f="${_f#simple/}" # strip leading simple/
-    _f="${_f%%/*}"     # if subdir, strip off file
-    _f="${_f%.sh}"     # strip off .sh suffix if any
+    _f="${_f#./}"          # strip leading ./
+    _f="${_f#simple/}"     # strip leading simple/
+    _f="${_f#multievent/}" # strip leading multievent/
+    _f="${_f%%/*}"         # if subdir, strip off file
+    _f="${_f%.sh}"         # strip off .sh suffix if any
 
-    # Remaining format should be NN.service.event.NNN:
+    # Remaining format should be NN.service.event.NNN or NN.service.NNN:
     _num="${_f##*.}"
     _f="${_f%.*}"
-    event="${_f##*.}"
-    script="${_f%.*}"
+    case "$_f" in
+	*.*.*)
+	    script="${_f%.*}"
+	    event="${_f##*.}"
+	    ;;
+	*.*)
+	    script="$_f"
+	    unset event
+	    ;;
+	*)
+	    die "Internal error - unknown testcase filename format"
+    esac
 
     printf "%-14s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
@@ -637,25 +678,24 @@ result_print ()
 	if [ -n "$_iteration" ] ; then
 	    cat <<EOF
 
-##################################################
-##################################################
+==================================================
 Iteration $_iteration
 EOF
 	fi
 
 cat <<EOF
-##################################################
+--------------------------------------------------
 Output (Exit status: ${_rc}):
-##################################################
+--------------------------------------------------
 $_out
 EOF
     fi
 
     if ! $_passed ; then
 	cat <<EOF
-##################################################
+--------------------------------------------------
 Required output (Exit status: ${required_rc}):
-##################################################
+--------------------------------------------------
 $required_output
 EOF
     fi
@@ -668,20 +708,19 @@ result_footer ()
     if [ "$EVENTSCRIPT_TESTS_VERBOSE" = "yes" ] || ! $_passed ; then
 
 	cat <<EOF
-##################################################
+--------------------------------------------------
 CTDB_BASE="$CTDB_BASE"
 CTDB_ETCDIR="$CTDB_ETCDIR"
 ctdb client is "$(which ctdb)"
-##################################################
+--------------------------------------------------
 EOF
     fi
-
-    echo
 
     if $_passed ; then
 	echo "PASSED"
 	return 0
     else
+	echo
 	echo "FAILED"
 	return 1
     fi
@@ -699,11 +738,19 @@ EOF
 # useful for debugging.
 simple_test ()
 {
-    echo "Running \"${CTDB_BASE}/events.d/$script $event\""
+    [ -n "$event" ] || die 'simple_test: $event not set'
+
+    echo "Running \"$script $event${1:+ }$*\""
     _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
     _rc=$?
 
-    if [ "$_out" = "$required_output" -a $_rc = $required_rc ] ; then
+    if [ -n "$OUT_FILTER" ] ; then
+	_fout=$(echo "$_out" | eval sed -r $OUT_FILTER)
+    else
+	_fout="$_out"
+    fi
+
+    if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	_passed=true
     else
 	_passed=false
@@ -711,6 +758,17 @@ simple_test ()
 
     result_print "$_passed" "$_out" "$_rc"
     result_footer "$_passed"
+}
+
+simple_test_event ()
+{
+    # If something has previously failed then don't continue.
+    : ${_passed:=true}
+    $_passed || return 1
+
+    event="$1" ; shift
+    echo "##################################################"
+    simple_test "$@"
 }
 
 # Run an eventscript iteratively.
@@ -733,6 +791,8 @@ simple_test ()
 # iteration.
 iterate_test ()
 {
+    [ -n "$event" ] || die 'simple_test: $event not set'
+
     args=""
     if [ "$1" = "--" ] ; then
 	shift
@@ -747,7 +807,7 @@ iterate_test ()
     _setup_default="$2"
     shift 2
 
-    echo "Running $_repeats iterations of \"${CTDB_BASE}/events.d/$script $event\" $args"
+    echo "Running $_repeats iterations of \"$script $event\" $args"
 
     _result=true
 
@@ -765,7 +825,13 @@ iterate_test ()
 	_out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
 	_rc=$?
 
-	if [ "$_out" = "$required_output" -a $_rc = $required_rc ] ; then
+    if [ -n "$OUT_FILTER" ] ; then
+	_fout=$(echo "$_out" | eval sed -r $OUT_FILTER)
+    else
+	_fout="$_out"
+    fi
+
+	if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
 	    _passed=true
 	else
 	    _passed=false

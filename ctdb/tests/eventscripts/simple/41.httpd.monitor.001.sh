@@ -8,4 +8,4 @@ setup_httpd "down"
 
 ok_null
 
-simple_test $cmd
+simple_test
