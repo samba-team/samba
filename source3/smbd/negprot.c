@@ -743,7 +743,8 @@ void reply_negprot(struct smb_request *req)
 
 	TALLOC_FREE(cliprotos);
 
-	if (lp_async_smb_echo_handler() && !fork_echo_handler(sconn)) {
+	if (lp_async_smb_echo_handler() && (get_Protocol() < PROTOCOL_SMB2) &&
+	    !fork_echo_handler(sconn)) {
 		exit_server("Failed to fork echo handler");
 	}
 
