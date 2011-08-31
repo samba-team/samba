@@ -2735,15 +2735,21 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 			/* For outbound and MIT trusts there is no trust account */
 			if (trustinfo.trust_direction != 2 &&
 			    trustinfo.trust_type != 3) {
-				if (check_dom_trust_pw(p, tctx, trust_name,
-							"x" TRUSTPW "x")) {
-					torture_comment(tctx, "Password check passed unexpectedly\n");
-					ret = false;
-				}
-				if (!check_dom_trust_pw(p, tctx, trust_name,
-							TRUSTPW)) {
-					torture_comment(tctx, "Password check failed\n");
-					ret = false;
+
+				if (torture_setting_bool(tctx, "samba3", false) ||
+				    torture_setting_bool(tctx, "samba4", false)) {
+					torture_comment(tctx, "skipping trusted domain auth tests against samba");
+				} else {
+					if (check_dom_trust_pw(p, tctx, trust_name,
+								"x" TRUSTPW "x")) {
+						torture_comment(tctx, "Password check passed unexpectedly\n");
+						ret = false;
+					}
+					if (!check_dom_trust_pw(p, tctx, trust_name,
+								TRUSTPW)) {
+						torture_comment(tctx, "Password check failed\n");
+						ret = false;
+					}
 				}
 			}
 
