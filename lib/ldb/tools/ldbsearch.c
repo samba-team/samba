@@ -204,10 +204,6 @@ static int do_search(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (basedn == NULL) {
-		basedn = ldb_get_default_basedn(ldb);
-	}
-
 again:
 	/* free any previous requests */
 	if (req) talloc_free(req);
@@ -222,6 +218,30 @@ again:
 		talloc_free(sctx);
 		printf("allocating request failed: %s\n", ldb_errstring(ldb));
 		return ret;
+	}
+
+	if (basedn == NULL) {
+		/*
+		  we need to use a NULL base DN when doing a cross-ncs
+		  search so we find results on all partitions in a
+		  forest. When doing a domain-local search, default to
+		  the default basedn
+		 */
+		struct ldb_control *ctrl;
+		struct ldb_search_options_control *search_options = NULL;
+
+		ctrl = ldb_request_get_control(req, LDB_CONTROL_SEARCH_OPTIONS_OID);
+		if (ctrl) {
+			search_options = talloc_get_type(ctrl->data, struct ldb_search_options_control);
+		}
+
+		if (ctrl == NULL || search_options == NULL ||
+		    !(search_options->search_options & LDB_SEARCH_OPTION_PHANTOM_ROOT)) {
+			struct ldb_dn *base = ldb_get_default_basedn(ldb);
+			if (base != NULL) {
+				req->op.search.base = base;
+			}
+		}
 	}
 
 	sctx->pending = 0;
