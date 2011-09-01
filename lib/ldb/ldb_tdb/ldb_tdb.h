@@ -33,14 +33,6 @@ struct ltdb_private {
 	bool warn_unindexed;
 };
 
-/*
-  the async local context
-  holds also internal search state during a full db search
-*/
-struct ltdb_req_spy {
-	struct ltdb_context *ctx;
-};
-
 struct ltdb_context {
 	struct ldb_module *module;
 	struct ldb_request *req;

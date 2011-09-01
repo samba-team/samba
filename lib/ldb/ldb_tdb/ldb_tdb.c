@@ -52,6 +52,12 @@
 #include "ldb_tdb.h"
 #include <lib/tdb_compat/tdb_compat.h>
 
+/*
+  prevent memory errors on callbacks
+*/
+struct ltdb_req_spy {
+	struct ltdb_context *ctx;
+};
 
 /*
   map a tdb error code to a ldb error code
@@ -1221,9 +1227,10 @@ static void ltdb_timeout(struct tevent_context *ev,
 		ltdb_request_done(ctx, LDB_ERR_TIME_LIMIT_EXCEEDED);
 	}
 
-	if (!ctx->request_terminated) {
+	if (ctx->spy) {
 		/* neutralize the spy */
 		ctx->spy->ctx = NULL;
+		ctx->spy = NULL;
 	}
 	talloc_free(ctx);
 }
@@ -1318,9 +1325,10 @@ static void ltdb_callback(struct tevent_context *ev,
 	}
 
 done:
-	if (!ctx->request_terminated) {
+	if (ctx->spy) {
 		/* neutralize the spy */
 		ctx->spy->ctx = NULL;
+		ctx->spy = NULL;
 	}
 	talloc_free(ctx);
 }
@@ -1330,7 +1338,9 @@ static int ltdb_request_destructor(void *ptr)
 	struct ltdb_req_spy *spy = talloc_get_type(ptr, struct ltdb_req_spy);
 
 	if (spy->ctx != NULL) {
+		spy->ctx->spy = NULL;
 		spy->ctx->request_terminated = true;
+		spy->ctx = NULL;
 	}
 
 	return 0;
