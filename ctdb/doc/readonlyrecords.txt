@@ -47,8 +47,8 @@ Client-side implementation must be possible with only minor conditionals added t
 Implementation
 ==============
 
-Three new flags are allocated in the ctdb/ltdb record header.
-HAVE_DELEGATIONS, HAVE_READONLY_LOCK and REVOKING_READONLY
+Four new flags are allocated in the ctdb/ltdb record header.
+HAVE_DELEGATIONS, HAVE_READONLY_LOCK, REVOKING_READONLY and REVOKE_COMPLETE
 
 HAVE_DELEGATIONS is a flag that can only be set on the node that is currently the DMASTER for the record. When set, this
 flag indicates that there are Read-Only locks delegated to other nodes in the cluster for this record.
@@ -64,6 +64,24 @@ When the delegations are about to be revoked, the REVOKING_READONLY flag is set 
 Once all delegations are revoked, both flags are cleared at the same time.
 While REVOKING_READONLY is set, any requests for the record, either normal request or request for readonly will be deferred.
 Deferred requests are linked to a list of deferred requests for the hash of the record until the time that the revokation is completed.
+This flags is set by the main ctdb daemon when it starts revoking this record.
+
+REVOKE_COMPLETE
+The actual revoke of records is done by a child process, spawned from the ctdb amin daemon when it starts the process to revoke the records.
+Once the child process has finished revoking all delegations, it will set the flag REVOKE_COMPLETE for this record to signal to the master daemon that the record has been successfully revoked.
+At this stage the child process will also trigger an event in the main daemon that revoke is complete, and that the main dameon should start re-processing all deferred calls.
+
+
+
+Once the revoke process is completed. There will be at least one deferred call to access this record, the initical call to for an exclusive fetch_lock() that triggered the revoke process to be started.
+In addition to nthis deferred call there may also be additional requests that have also become deferred while the revoke was in process. These can be either exclusive fetch_locks() or they can be other calls to request a new readonly lock on the record.
+Once the revoke is completed, the main daemon will reprocess all exclusive fetch_lock() requests immediately and respond to the clients.
+But any requests for readadonly locks will be deferred for an additional period of time before they are re-processed.
+This is to allow the client that needs a fetch_lock() to update the record to get some time to access and work on the record without having to compete with the possibly very many requests to get new readonly delegations created.
+
+
+
+
 
 
 The ctdbdb structure is expanded so that it contains one extra TDB database for each normal, non-persistent datbase.
