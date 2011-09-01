@@ -669,7 +669,7 @@ WERROR regdb_init(void)
 	}
 
 	if (vers_id == REGDB_VERSION_V1) {
-		DEBUG(10, ("regdb_init: upgrading registry fromversion %d "
+		DEBUG(10, ("regdb_init: upgrading registry from version %d "
 			   "to %d\n", REGDB_VERSION_V1, REGDB_VERSION_V2));
 
 		werr = regdb_upgrade_v1_to_v2(regdb);
