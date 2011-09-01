@@ -7,9 +7,6 @@ srcdir = "."
 
 import samba_version
 
-# mark this as a top level build, for source3 rules
-bld.env.toplevel_build = True
-bld.env.use_intree_heimdal = True
 bld.env.suffix3 = "3"
 
 # create separate build groups for building the asn1 and et compiler, then
@@ -33,6 +30,7 @@ bld.RECURSE('lib/replace')
 bld.RECURSE('lib/socket')
 bld.RECURSE('lib/talloc')
 bld.RECURSE('lib/tevent')
+bld.RECURSE('lib/addns')
 bld.RECURSE('lib/ccan')
 bld.RECURSE('lib/tdb_compat')
 bld.RECURSE('lib/ldb')

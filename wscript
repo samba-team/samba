@@ -16,8 +16,6 @@ samba_dist.DIST_DIRS('.')
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
 
-os.environ['TOPLEVEL_BUILD'] = '1'
-
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
@@ -42,7 +40,6 @@ def set_options(opt):
 
 
 def configure(conf):
-    conf.env.toplevel_build = True
     version = samba_version.load_version(env=conf.env)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)

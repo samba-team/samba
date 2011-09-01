@@ -599,8 +599,7 @@ def SAMBA_CONFIG_H(conf, path=None):
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
         conf.ADD_CFLAGS('-Wall -g -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k -Wmissing-prototypes -fno-common',
                         testflags=True)
-        if os.getenv('TOPLEVEL_BUILD'):
-            conf.ADD_CFLAGS('-Wcast-qual', testflags=True)
+        conf.ADD_CFLAGS('-Wcast-qual', testflags=True)
         conf.env.DEVELOPER_MODE = True
 
     if Options.options.picky_developer:

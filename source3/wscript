@@ -1,10 +1,6 @@
 #! /usr/bin/env python
 
-srcdir = '..'
-blddir = 'bin'
-
-APPNAME='samba'
-VERSION=None
+srcdir=".."
 
 import sys, os
 from optparse import SUPPRESS_HELP
@@ -18,17 +14,6 @@ import samba3
 Options.default_prefix = '/usr/local/samba'
 
 def set_options(opt):
-    if not os.getenv('TOPLEVEL_BUILD'):
-        opt.BUILTIN_DEFAULT('NONE')
-        opt.PRIVATE_EXTENSION_DEFAULT('s3')
-        opt.RECURSE('../lib/replace')
-        opt.RECURSE('../dynconfig')
-        opt.RECURSE('selftest')
-        opt.RECURSE('../lib/nss_wrapper')
-        opt.RECURSE('../lib/uid_wrapper')
-        opt.RECURSE('../lib/socket_wrapper')
-        opt.RECURSE('../lib/tevent')
-        opt.RECURSE('../lib/tdb_compat')
 
     opt.add_option('--with-static-modules',
                    help=("Comma-separated list of names of modules to statically link in"),
@@ -43,7 +28,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('winbind')
     opt.SAMBA3_ADD_OPTION('swat')
     opt.SAMBA3_ADD_OPTION('ads')
-    opt.SAMBA3_ADD_OPTION('krb5')
+    opt.SAMBA3_ADD_OPTION('mit-krb5-checks', default=False)
     opt.SAMBA3_ADD_OPTION('ldap')
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
@@ -78,65 +63,12 @@ def set_options(opt):
 def configure(conf):
     from samba_utils import TO_LIST
 
-    if not conf.env.toplevel_build:
-        version = samba_version.load_version(env=conf.env)
-        conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
-        conf.DEFINE('_SAMBA_WAF_BUILD_', version.MAJOR)
-        conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
-        conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
-
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
         conf.env.developer = True
 
     if Options.options.with_swat:
         conf.env['build_swat'] = True
-
-    if not conf.env.toplevel_build:
-
-        conf.RECURSE('../lib/replace')
-
-        conf.find_program('python', var='PYTHON', mandatory=True)
-        conf.find_program('perl', var='PERL', mandatory=True)
-        conf.find_program('xsltproc', var='XSLTPROC')
-
-        # enable tool to build python extensions
-        conf.check_tool('python')
-        conf.check_python_version((2,4,2))
-        conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
-
-        if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:
-            # Mac OSX needs to have this and it's also needed that the python is compiled with this
-            # otherwise you face errors about common symbols
-            if not conf.CHECK_SHLIB_W_PYTHON("Checking if -fno-common is needed"):
-                conf.ADD_CFLAGS('-fno-common')
-            if not conf.CHECK_SHLIB_W_PYTHON("Checking if -undefined dynamic_lookup is not need"):
-                conf.env.append_value('shlib_LINKFLAGS', ['-undefined', 'dynamic_lookup'])
-        if int(conf.env['PYTHON_VERSION'][0]) >= 3:
-           raise Utils.WafError('Python version 3.x is not supported by Samba yet')
-
-        conf.RECURSE('../dynconfig')
-        conf.RECURSE('../lib/ccan')
-        conf.RECURSE('../lib/tdb_compat')
-        conf.RECURSE('../lib/talloc')
-        conf.RECURSE('../lib/tevent')
-        conf.RECURSE('../lib/popt')
-        conf.RECURSE('../lib/nss_wrapper')
-        conf.RECURSE('../lib/socket_wrapper')
-        conf.RECURSE('../lib/zlib')
-        conf.RECURSE('../libcli/smbreadline')
-        conf.RECURSE('../lib/util')
-        conf.RECURSE('../lib/util/charset')
-
-        conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace #lib''')
-        if not conf.env.USING_SYSTEM_TDB:
-            conf.ADD_EXTRA_INCLUDES('#lib/tdb_compat')
-        if not conf.env.USING_SYSTEM_TEVENT:
-            conf.ADD_EXTRA_INCLUDES('#lib/tevent')
-        if not conf.env.USING_SYSTEM_TALLOC:
-            conf.ADD_EXTRA_INCLUDES('#lib/talloc')
-        if not conf.env.USING_SYSTEM_POPT:
-            conf.ADD_EXTRA_INCLUDES('#lib/popt')
 
     conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
@@ -637,7 +569,7 @@ msg.msg_acctrightslen = sizeof(fd);
 
     # Check for kerberos
     have_gssapi=False
-    if Options.options.with_krb5 and not conf.env.toplevel_build:
+    if Options.options.with_mit_krb5_checks and conf.env.developer:
         Logs.info("Looking for kerberos features")
         conf.find_program('krb5-config', var='KRB5_CONFIG')
         if conf.env.KRB5_CONFIG:
@@ -830,12 +762,6 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         'HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER', addmain=False,
         link=False,
         msg="Checking for KRB5_DEPRECATED define taking an identifier")
-    elif not conf.env.toplevel_build:
-        conf.SET_TARGET_TYPE('krb5', 'EMPTY')
-        conf.SET_TARGET_TYPE('gssapi', 'EMPTY')
-        conf.SET_TARGET_TYPE('gssapi_krb5', 'EMPTY')
-        conf.SET_TARGET_TYPE('com_err', 'EMPTY')
-        conf.SET_TARGET_TYPE('k5crypto', 'EMPTY')
 
     if Options.options.with_ads:
         use_ads=True
@@ -1736,8 +1662,7 @@ main() {
         default_static_modules.extend(TO_LIST('pdb_ads auth_netlogond charset_weird'))
         default_shared_modules.extend(TO_LIST('perfcount_test'))
 
-    if conf.env.toplevel_build:
-        default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4'))
+    default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4'))
 
     if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
         default_static_modules.extend(TO_LIST('vfs_posixacl'))
@@ -1821,12 +1746,6 @@ main() {
                 conf.DEFINE('%s_init' % entry, 'samba_init_module')
                 conf.env[shared_env].append('%s' % entry)
 
-    if not os.getenv('TOPLEVEL_BUILD'):
-        # we don't want PYTHONDIR in config.h, as otherwise changing
-        # --prefix causes a complete rebuild
-        del(conf.env.defines['PYTHONDIR'])
-        del(conf.env.defines['PYTHONARCHDIR'])
-
     conf.SAMBA_CONFIG_H('include/config.h')
 
 def ctags(ctx):
@@ -1837,12 +1756,3 @@ def ctags(ctx):
     print("Running: %s" % cmd)
     os.system(cmd)
 
-if not os.getenv('TOPLEVEL_BUILD'):
-    def wildcard_cmd(cmd):
-        '''called on a unknown command'''
-        from samba_wildcard import run_named_build_task
-        run_named_build_task(cmd)
-    def main():
-        from samba_wildcard import wildcard_main
-        wildcard_main(wildcard_cmd)
-    Scripting.main = main

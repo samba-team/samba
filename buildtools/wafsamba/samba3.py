@@ -52,7 +52,7 @@ def s3_fix_kwargs(bld, kwargs):
 
     # the extra_includes list is relative to the source3 directory
     extra_includes = [ '.', 'include', 'lib', '../lib/tdb_compat' ]
-    if bld.env.use_intree_heimdal:
+    if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
         extra_includes += [ '../source4/heimdal/lib/com_err',
                             '../source4/heimdal/lib/gssapi',
                             '../source4/heimdal_build' ]

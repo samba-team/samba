@@ -634,10 +634,7 @@ SPLIT_TOKENS_SRC = 'utils/split_tokens.c'
 
 LIBS='ICONV'
 
-if bld.env.toplevel_build:
-    config_h = "../include/config.h"
-else:
-    config_h = "include/config.h"
+config_h = "../include/config.h"
 
 bld.SAMBA_BLDOPTIONS('smbd/build_options.c')
 
@@ -650,15 +647,6 @@ t.env.SRCDIR = bld.path.abspath()
 t.env.BUILDDIR = bld.path.abspath()
 
 bld.SETUP_BUILD_GROUPS()
-
-if not bld.env.toplevel_build:
-    # when using a toplevel build, these are already supplied
-    samba_version.load_version(bld.env)
-    bld.SAMBA_MKVERSION('include/version.h')
-    bld.RECURSE('../lib/replace')
-    bld.RECURSE('../dynconfig')
-    bld.env.suffix3 = ''
-
 
 ######################## SUBSYSTEMS #################################
 
@@ -744,11 +732,10 @@ bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
                     source=PARAM_UTIL_SRC,
                     deps='samba-util')
 
-if bld.env.toplevel_build:
-    bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
-                         source='param/loadparm_ctx.c',
-                         deps='''s3_param_h param''',
-                         vars=locals())
+bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
+                     source='param/loadparm_ctx.c',
+                     deps='''s3_param_h param''',
+                     vars=locals())
 
 bld.SAMBA_GENERATOR('param/param_global_h',
                     source= 'param/loadparm.c ../script/mkparamdefs.pl',
@@ -759,12 +746,11 @@ bld.SAMBA3_SUBSYSTEM('param',
                    source=PARAM_WITHOUT_REG_SRC,
                    deps='samba-util PARAM_UTIL smbd_conn ldap lber LOADPARM_CTX samba3core smbconf param_local_h param/param_global_h''')
 
-if bld.env.toplevel_build:
-    bld.SAMBA3_PYTHON('pys3param',
-                      source='param/pyparam.c',
-                      deps='param',
-                      public_deps='samba-hostconfig pytalloc-util talloc',
-                      realname='samba/samba3/param.so')
+bld.SAMBA3_PYTHON('pys3param',
+                  source='param/pyparam.c',
+                  deps='param',
+                  public_deps='samba-hostconfig pytalloc-util talloc',
+                  realname='samba/samba3/param.so')
     
 bld.SAMBA3_SUBSYSTEM('param_service',
                      source='param/service.c',
@@ -1419,60 +1405,8 @@ swat_dir = os.path.join(bld.curdir, '../swat')
 swat_files = recursive_dirlist(swat_dir, swat_dir, '*')
 bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
-# additional compatibility rules.
-# these rules allow us to have a common set of waf rules for toplevel and source3
-# builds. Effectively these are build rule aliases
-
-if not bld.env.toplevel_build:
-    bld.SAMBA3_SUBSYSTEM('POPT_SAMBA', source='', deps='popt_samba3')
-    bld.SAMBA3_SUBSYSTEM('ldb3',
-                        source='lib/ldb_compat.c',
-                        deps='samba-util')
-    bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
-    bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='tevent-util')
-    bld.SAMBA3_SUBSYSTEM('cli-ldap', '', deps='tevent-util')
-    bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX', '')
-
 ########################## INCLUDES #################################
 
-bld.RECURSE('../lib/util/charset')
-bld.RECURSE('../auth')
-bld.RECURSE('../auth/kerberos')
-bld.RECURSE('../lib/addns')
-bld.RECURSE('../lib/async_req')
-bld.RECURSE('../lib/ccan')
-bld.RECURSE('../lib/socket')
-bld.RECURSE('../lib/param')
-bld.RECURSE('../libcli/auth')
-bld.RECURSE('../libcli/drsuapi')
-bld.RECURSE('../libcli/ldap')
-bld.RECURSE('../libcli/cldap')
-bld.RECURSE('../libcli/named_pipe_auth')
-bld.RECURSE('../libcli/netlogon')
-bld.RECURSE('../libcli/samsync')
-bld.RECURSE('../libcli/security')
-bld.RECURSE('../libcli/smb')
-bld.RECURSE('../libcli/util')
-bld.RECURSE('../libcli/smbreadline')
-bld.RECURSE('../libcli/nbt')
-bld.RECURSE('../libcli/registry')
-bld.RECURSE('../lib/crypto')
-bld.RECURSE('../lib/iniparser/src')
-bld.RECURSE('../lib/nss_wrapper')
-bld.RECURSE('../lib/popt')
-bld.RECURSE('../librpc')
-bld.RECURSE('../lib/smbconf')
-bld.RECURSE('../lib/socket_wrapper')
-bld.RECURSE('../lib/uid_wrapper')
-bld.RECURSE('../lib/talloc')
-bld.RECURSE('../lib/tdb_compat')
-bld.RECURSE('../lib/util')
-bld.RECURSE('../lib/tevent')
-bld.RECURSE('../lib/tsocket')
-bld.RECURSE('../lib/zlib')
-bld.RECURSE('../libds/common')
-bld.RECURSE('../nsswitch')
-bld.RECURSE('../nsswitch/libwbclient')
 bld.RECURSE('auth')
 bld.RECURSE('libgpo/gpext')
 bld.RECURSE('lib/pthreadpool')

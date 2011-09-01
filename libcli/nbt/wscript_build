@@ -11,22 +11,21 @@ bld.SAMBA_SUBSYSTEM('lmhosts',
                     deps='replace talloc'
                     )
 
-if bld.env._SAMBA_BUILD_ == 4:
-    bld.SAMBA_LIBRARY('cli-nbt',
-                      source='nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c',
-                      public_deps='ndr NDR_NBT tevent tevent-util NDR_SECURITY samba_socket samba-util lmhosts',
-                      private_library=True
-                      )
+bld.SAMBA_LIBRARY('cli-nbt',
+                  source='nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c',
+                  public_deps='ndr NDR_NBT tevent tevent-util NDR_SECURITY samba_socket samba-util lmhosts',
+                  private_library=True
+                  )
 
-    bld.SAMBA_BINARY('nmblookup',
-                     source='tools/nmblookup.c',
-                     manpages='man/nmblookup.1',
-                     deps='samba-hostconfig samba-util cli-nbt popt POPT_SAMBA netif LIBCLI_RESOLVE'
-                     )
+bld.SAMBA_BINARY('nmblookup',
+                 source='tools/nmblookup.c',
+                 manpages='man/nmblookup.1',
+                 deps='samba-hostconfig samba-util cli-nbt popt POPT_SAMBA netif LIBCLI_RESOLVE'
+                 )
 
-    bld.SAMBA_PYTHON('python_netbios',
-                     source='pynbt.c',
-                     public_deps='cli-nbt DYNCONFIG samba-hostconfig',
-                     realname='samba/netbios.so'
-                     )
+bld.SAMBA_PYTHON('python_netbios',
+                 source='pynbt.c',
+                 public_deps='cli-nbt DYNCONFIG samba-hostconfig',
+                 realname='samba/netbios.so'
+                 )
 
