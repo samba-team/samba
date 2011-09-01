@@ -73,11 +73,11 @@ static NTSTATUS regdb_trans_do_action(struct db_context *db, void *private_data)
 
 	version_id = dbwrap_fetch_int32(db, REGDB_VERSION_KEYNAME);
 
-	if (version_id != REGVER_V3) {
+	if (version_id != REGDB_VERSION_V3) {
 		DEBUG(0, ("ERROR: changed registry version %d found while "
 			  "trying to write to the registry. Version %d "
 			  "expected.  Denying access.\n",
-			  version_id, REGVER_V3));
+			  version_id, REGDB_VERSION_V3));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -501,7 +501,7 @@ static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 		return WERR_REG_IO_FAILURE;
 	}
 
-	werr = regdb_store_regdb_version(db, REGVER_V2);
+	werr = regdb_store_regdb_version(db, REGDB_VERSION_V2);
 	return werr;
 }
 
@@ -606,7 +606,7 @@ static WERROR regdb_upgrade_v2_to_v3(struct db_context *db)
 		goto done;
 	}
 
-	werr = regdb_store_regdb_version(db, REGVER_V3);
+	werr = regdb_store_regdb_version(db, REGDB_VERSION_V3);
 
 done:
 	return werr;
@@ -647,7 +647,7 @@ WERROR regdb_init(void)
 	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
 		   regdb_refcount));
 
-	expected_version = REGVER_V3;
+	expected_version = REGDB_VERSION_V3;
 
 	vers_id = dbwrap_fetch_int32(regdb, REGDB_VERSION_KEYNAME);
 	if (vers_id == -1) {
@@ -670,9 +670,9 @@ WERROR regdb_init(void)
 		return WERR_REG_IO_FAILURE;
 	}
 
-	if (vers_id == REGVER_V1) {
+	if (vers_id == REGDB_VERSION_V1) {
 		DEBUG(10, ("regdb_init: upgrading registry fromversion %d "
-			   "to %d\n", REGVER_V1, REGVER_V2));
+			   "to %d\n", REGDB_VERSION_V1, REGDB_VERSION_V2));
 
 		werr = regdb_upgrade_v1_to_v2(regdb);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -680,12 +680,12 @@ WERROR regdb_init(void)
 			return werr;
 		}
 
-		vers_id = REGVER_V2;
+		vers_id = REGDB_VERSION_V2;
 	}
 
-	if (vers_id == REGVER_V2) {
+	if (vers_id == REGDB_VERSION_V2) {
 		DEBUG(10, ("regdb_init: upgrading registry from version %d "
-			   "to %d\n", REGVER_V2, REGVER_V3));
+			   "to %d\n", REGDB_VERSION_V2, REGDB_VERSION_V3));
 
 		werr = regdb_upgrade_v2_to_v3(regdb);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -693,7 +693,7 @@ WERROR regdb_init(void)
 			return werr;
 		}
 
-		vers_id = REGVER_V3;
+		vers_id = REGDB_VERSION_V3;
 	}
 
 	/* future upgrade code should go here */
