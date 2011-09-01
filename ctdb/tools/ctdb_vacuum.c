@@ -467,7 +467,7 @@ int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	for (i=0;i<dbmap->num;i++) {
 		if (ctdb_vacuum_db(ctdb, dbmap->dbs[i].dbid, nodemap, 
-				   dbmap->dbs[i].persistent, vacuum_limit) != 0) {
+				   dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, vacuum_limit) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to vacuum db 0x%x\n", dbmap->dbs[i].dbid));
 			return -1;
 		}
@@ -630,7 +630,7 @@ int ctdb_repack(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	for (i=0;i<dbmap->num;i++) {
 		if (ctdb_repack_db(ctdb, dbmap->dbs[i].dbid, 
-				   dbmap->dbs[i].persistent, repack_limit) != 0) {
+				   dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, repack_limit) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to repack db 0x%x\n", dbmap->dbs[i].dbid));
 			return -1;
 		}

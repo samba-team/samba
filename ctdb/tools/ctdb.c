@@ -123,7 +123,7 @@ static int db_exists(struct ctdb_context *ctdb, const char *db_name, bool *persi
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		if (!strcmp(name, db_name)) {
 			if (persistent) {
-				*persistent = dbmap->dbs[i].persistent;
+				*persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			}
 			return 0;
 		}
@@ -3567,7 +3567,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 					    dbmap->dbs[i].dbid, ctdb, &name);
 			ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
 					      dbmap->dbs[i].dbid, ctdb, &health);
-			persistent = dbmap->dbs[i].persistent;
+			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			printf(":0x%08X:%s:%s:%d:%d:\n",
 			       dbmap->dbs[i].dbid, name, path,
 			       !!(persistent), !!(health));
@@ -3585,7 +3585,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
-		persistent = dbmap->dbs[i].persistent;
+		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 		printf("dbid:0x%08x name:%s path:%s%s%s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?" PERSISTENT":"",
@@ -3629,7 +3629,7 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
-		persistent = dbmap->dbs[i].persistent;
+		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nHEALTH: %s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?"yes":"no",
@@ -4223,7 +4223,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 				     allow_unhealthy));
 	}
 
-	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
 		talloc_free(tmp_ctx);
@@ -4275,7 +4275,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 
 	dbhdr.version = DB_VERSION;
 	dbhdr.timestamp = time(NULL);
-	dbhdr.persistent = dbmap->dbs[i].persistent;
+	dbhdr.persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 	dbhdr.size = bd->len;
 	if (strlen(argv[0]) >= MAX_DB_NAME) {
 		DEBUG(DEBUG_ERR,("Too long dbname\n"));
@@ -4622,7 +4622,7 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR, ("Unable to attach to database '%s'\n",
 				  argv[0]));

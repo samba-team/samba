@@ -211,7 +211,8 @@ struct ctdb_dbid_map {
 	uint32_t num;
 	struct ctdb_dbid {
 		uint32_t dbid;
-		bool persistent;
+#define CTDB_DB_FLAGS_PERSISTENT	0x01
+		uint8_t flags;
 	} dbs[1];
 };
 int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb,
