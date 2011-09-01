@@ -3554,12 +3554,13 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	}
 
 	if(options.machinereadable){
-		printf(":ID:Name:Path:Persistent:Unhealthy:\n");
+		printf(":ID:Name:Path:Persistent:Unhealthy:ReadOnly:\n");
 		for(i=0;i<dbmap->num;i++){
 			const char *path;
 			const char *name;
 			const char *health;
 			bool persistent;
+			bool readonly;
 
 			ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn,
 					    dbmap->dbs[i].dbid, ctdb, &path);
@@ -3568,9 +3569,10 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 			ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
 					      dbmap->dbs[i].dbid, ctdb, &health);
 			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
-			printf(":0x%08X:%s:%s:%d:%d:\n",
+			readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
+			printf(":0x%08X:%s:%s:%d:%d:%d:\n",
 			       dbmap->dbs[i].dbid, name, path,
-			       !!(persistent), !!(health));
+			       !!(persistent), !!(health), !!(readonly));
 		}
 		return 0;
 	}
@@ -3581,14 +3583,17 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		const char *name;
 		const char *health;
 		bool persistent;
+		bool readonly;
 
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
 		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
-		printf("dbid:0x%08x name:%s path:%s%s%s\n",
+		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
+		printf("dbid:0x%08x name:%s path:%s%s%s%s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?" PERSISTENT":"",
+		       readonly?" READONLY":"",
 		       health?" UNHEALTHY":"");
 	}
 
@@ -3621,6 +3626,7 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 		const char *name;
 		const char *health;
 		bool persistent;
+		bool readonly;
 
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		if (strcmp(name, db_name) != 0) {
@@ -3630,9 +3636,11 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
 		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
-		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nHEALTH: %s\n",
+		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
+		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nREADONLY: %s\nHEALTH: %s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?"yes":"no",
+		       readonly?"yes":"no",
 		       health?health:"OK");
 		return 0;
 	}

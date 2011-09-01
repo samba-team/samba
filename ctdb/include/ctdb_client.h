@@ -212,6 +212,7 @@ struct ctdb_dbid_map {
 	struct ctdb_dbid {
 		uint32_t dbid;
 #define CTDB_DB_FLAGS_PERSISTENT	0x01
+#define CTDB_DB_FLAGS_READONLY		0x02
 		uint8_t flags;
 	} dbs[1];
 };
