@@ -75,7 +75,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct ether_header *eh;
 	struct arphdr *ah;
 	struct ip6_hdr *ip6;
-	struct icmp6_hdr *icmp6;
+	struct nd_neighbor_solicit *nd_ns;
 	struct ifreq if_hwaddr;
 	unsigned char buffer[78]; /* ipv6 neigh solicitation size */
 	char *ptr;
@@ -223,17 +223,18 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		ip6 = (struct ip6_hdr *)(eh+1);
 		ip6->ip6_vfc  = 0x60;
-		ip6->ip6_plen = htons(24);
+		ip6->ip6_plen = htons(sizeof(*nd_ns));
 		ip6->ip6_nxt  = IPPROTO_ICMPV6;
 		ip6->ip6_hlim = 255;
 		ip6->ip6_dst  = addr->ip6.sin6_addr;
 
-		icmp6 = (struct icmp6_hdr *)(ip6+1);
-		icmp6->icmp6_type = ND_NEIGHBOR_SOLICIT;
-		icmp6->icmp6_code = 0;
-		memcpy(&icmp6->icmp6_data32[1], &addr->ip6.sin6_addr, 16);
+		nd_ns = (struct nd_neighbor_solicit *)(ip6+1);
+		nd_ns->nd_ns_type = ND_NEIGHBOR_SOLICIT;
+		nd_ns->nd_ns_code = 0;
+		nd_ns->nd_ns_reserved = 0;
+		nd_ns->nd_ns_target = addr->ip6.sin6_addr;
 
-		icmp6->icmp6_cksum = tcp_checksum6((uint16_t *)icmp6, ntohs(ip6->ip6_plen), ip6);
+		nd_ns->nd_ns_cksum = tcp_checksum6((uint16_t *)nd_ns, ntohs(ip6->ip6_plen), ip6);
 
 		sall.sll_family = AF_PACKET;
 		sall.sll_halen = 6;
