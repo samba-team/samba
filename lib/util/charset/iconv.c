@@ -97,7 +97,6 @@ static struct charset_functions *find_charset_functions(const char *name)
 		if(strcasecmp(c->name, name) == 0) { 
 			return c;
 		}
-		c = c->next;
 	}
 
 	return NULL;
