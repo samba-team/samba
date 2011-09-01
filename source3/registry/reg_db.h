@@ -27,6 +27,8 @@
 #define REGDB_VERSION_V3    3  /* different definition of key existence, */
                                /* sorted subkeys cache removed. */
 
+#define REGDB_CODE_VERSION REGDB_VERSION_V3
+
 #define REG_VALUE_PREFIX    "SAMBA_REGVAL"
 #define REG_SECDESC_PREFIX  "SAMBA_SECDESC"
 #define REG_SORTED_SUBKEYS_PREFIX  "SAMBA_SORTED_SUBKEYS"

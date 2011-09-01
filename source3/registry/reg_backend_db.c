@@ -73,11 +73,11 @@ static NTSTATUS regdb_trans_do_action(struct db_context *db, void *private_data)
 
 	version_id = dbwrap_fetch_int32(db, REGDB_VERSION_KEYNAME);
 
-	if (version_id != REGDB_VERSION_V3) {
+	if (version_id != REGDB_CODE_VERSION) {
 		DEBUG(0, ("ERROR: changed registry version %d found while "
 			  "trying to write to the registry. Version %d "
 			  "expected.  Denying access.\n",
-			  version_id, REGDB_VERSION_V3));
+			  version_id, REGDB_CODE_VERSION));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -618,7 +618,7 @@ done:
 
 WERROR regdb_init(void)
 {
-	uint32 vers_id, expected_version;
+	uint32 vers_id;
 	WERROR werr;
 
 	if (regdb) {
@@ -647,22 +647,20 @@ WERROR regdb_init(void)
 	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
 		   regdb_refcount));
 
-	expected_version = REGDB_VERSION_V3;
-
 	vers_id = dbwrap_fetch_int32(regdb, REGDB_VERSION_KEYNAME);
 	if (vers_id == -1) {
 		DEBUG(10, ("regdb_init: registry version uninitialized "
 			   "(got %d), initializing to version %d\n",
-			   vers_id, expected_version));
+			   vers_id, REGDB_CODE_VERSION));
 
-		werr = regdb_store_regdb_version(regdb, expected_version);
+		werr = regdb_store_regdb_version(regdb, REGDB_CODE_VERSION);
 		return werr;
 	}
 
-	if (vers_id > expected_version || vers_id == 0) {
+	if (vers_id > REGDB_CODE_VERSION || vers_id == 0) {
 		DEBUG(0, ("regdb_init: unknown registry version %d "
 			  "(code version = %d), refusing initialization\n",
-			  vers_id, expected_version));
+			  vers_id, REGDB_CODE_VERSION));
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
