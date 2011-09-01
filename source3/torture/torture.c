@@ -8869,6 +8869,7 @@ static struct {
 	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
 	{ "LOCAL-TEVENT-SELECT", run_local_tevent_select, 0},
 	{ "LOCAL-CONVERT-STRING", run_local_convert_string, 0},
+	{ "LOCAL-CONV-AUTH-INFO", run_local_conv_auth_info, 0},
 	{NULL, NULL, 0}};
 
 

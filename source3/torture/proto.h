@@ -93,5 +93,6 @@ bool run_addrchange(int dummy);
 bool run_notify_online(int dummy);
 bool run_nttrans_create(int dummy);
 bool run_smb2_basic(int dummy);
+bool run_local_conv_auth_info(int dummy);
 
 #endif /* __TORTURE_H__ */

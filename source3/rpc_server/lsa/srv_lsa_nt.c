@@ -48,6 +48,7 @@
 #include "rpc_server/srv_access_check.h"
 #include "../librpc/gen_ndr/ndr_wkssvc.h"
 #include "../libcli/auth/libcli_auth.h"
+#include "rpc_client/util_lsarpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -2023,21 +2024,6 @@ static NTSTATUS pdb_trusted_domain_2_info_ex(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_trusted_domain_2_auth_info(struct pdb_trusted_domain *td,
-				  struct lsa_TrustDomainInfoAuthInfo *auth_info)
-{
-/* If I understand it correctly lsa_TrustDomainInfoAuthInfo is send unencrypted
- * and related calls should not be used. If there is a use case, it can be
- * implemented later. */
-	auth_info->incoming_count = 0;
-	auth_info->incoming_current_auth_info = NULL;
-	auth_info->incoming_previous_auth_info = NULL;
-	auth_info->outgoing_count = 0;
-	auth_info->outgoing_current_auth_info = NULL;
-	auth_info->outgoing_previous_auth_info = NULL;
-	return NT_STATUS_OK;
-}
-
 NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 				     struct lsa_QueryTrustedDomainInfo *r)
 {
@@ -2148,7 +2134,9 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 			return status;
 		}
 		info->full_info.posix_offset.posix_offset = *td->trust_posix_offset;
-		status = pdb_trusted_domain_2_auth_info(td,
+		status = auth_blob_2_auth_info(p->mem_ctx,
+						    td->trust_auth_incoming,
+						    td->trust_auth_outgoing,
 						    &info->full_info.auth_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -2162,7 +2150,9 @@ NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
 		info->full_info2_internal.posix_offset.posix_offset = *td->trust_posix_offset;
-		status = pdb_trusted_domain_2_auth_info(td,
+		status = auth_blob_2_auth_info(p->mem_ctx,
+					  td->trust_auth_incoming,
+					  td->trust_auth_outgoing,
 					  &info->full_info2_internal.auth_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -3571,20 +3561,6 @@ static NTSTATUS info_ex_2_pdb_trusted_domain(
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS auth_info_2_pdb_trusted_domain(struct lsa_TrustDomainInfoAuthInfo *auth_info,
-					   struct pdb_trusted_domain *td)
-{
-/* If I understand it correctly lsa_TrustDomainInfoAuthInfo is send unencrypted
- * and related calls should not be used. If there is a use case, it can be
- * implemented later. */
-	td->trust_auth_incoming.length = 0;
-	td->trust_auth_incoming.data = NULL;
-	td->trust_auth_outgoing.length = 0;
-	td->trust_auth_outgoing.data = NULL;
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
 				       TALLOC_CTX *mem_ctx, DATA_BLOB *auth_blob,
 				       struct trustDomainPasswords *auth_struct)
@@ -3658,7 +3634,9 @@ static NTSTATUS setInfoTrustedDomain_base(struct pipes_struct *p,
 		if (!(policy->access & LSA_TRUSTED_SET_AUTH)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		nt_status = auth_info_2_pdb_trusted_domain(&info->auth_info, td);
+		nt_status = auth_info_2_auth_blob(td, &info->auth_info,
+						  &td->trust_auth_incoming,
+						  &td->trust_auth_outgoing);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
@@ -3673,7 +3651,10 @@ static NTSTATUS setInfoTrustedDomain_base(struct pipes_struct *p,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
-		nt_status = auth_info_2_pdb_trusted_domain(&info->full_info.auth_info, td);
+		nt_status = auth_info_2_auth_blob(td,
+						  &info->full_info.auth_info,
+						  &td->trust_auth_incoming,
+						  &td->trust_auth_outgoing);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
