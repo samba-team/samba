@@ -16,7 +16,6 @@ cleanup_list = []
 
 builddirs = {
     "samba3"  : "source3",
-    "samba3-waf": "source3",
     "samba4"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
@@ -29,7 +28,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba3", "samba3-waf", "samba4", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "samba3", "samba4", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
     "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
@@ -39,12 +38,6 @@ tasks = {
                  ("install", "make install", "text/plain"),
                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-                 ("clean", "make clean", "text/plain") ],
-
-    "samba3-waf" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
-                 ("configure", "./configure.developer ${PREFIX}", "text/plain"),
-                 ("make", "make -j", "text/plain"),
-                 ("install", "make install", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
