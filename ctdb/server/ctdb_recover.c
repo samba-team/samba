@@ -1324,3 +1324,4 @@ int32_t ctdb_control_continue_node(struct ctdb_context *ctdb)
 
 	return 0;
 }
+

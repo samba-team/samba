@@ -4082,6 +4082,29 @@ static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  set the readonly capability for a database
+ */
+static int control_setdbreadonly(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t db_id;
+	int ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_id = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_set_db_readonly(ctdb, options.pnn, db_id);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to set db to support readonly\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   run an eventscript on a node
  */
 static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5072,6 +5095,7 @@ static const struct {
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbid> <prio:1-3>"},
 	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
+	{ "setdbreadonly",    control_setdbreadonly,	false,	false, "Set DB readonly capable", "<dbid>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },

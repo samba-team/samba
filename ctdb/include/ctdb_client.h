@@ -599,4 +599,10 @@ int ctdb_ctrl_updaterecord_recv(struct ctdb_context *ctdb, struct ctdb_client_co
 int
 ctdb_ctrl_updaterecord(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data);
 
+
+struct ctdb_client_control_state *
+ctdb_ctrl_set_db_readonly_send(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
+int ctdb_ctrl_set_db_readonly_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state);
+int ctdb_ctrl_set_db_readonly(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
+
 #endif /* _CTDB_CLIENT_H */

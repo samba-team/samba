@@ -1461,4 +1461,6 @@ typedef void (*deferred_requeue_fn)(void *call_context, struct ctdb_req_header *
 
 int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context);
 
+int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
+
 #endif
