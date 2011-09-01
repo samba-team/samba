@@ -51,6 +51,9 @@ interface frsrpc
 
 	const uint32 FRSRPC_CO_IFLAG_NONE = 0x0000000;
 
+	const string FRSRPC_COMPRESSION_GUID = "64d2f7d2-2695-436d-8830-8d3c58701e15";
+
+
 	typedef [bitmap32bit,flag(NDR_PAHEX)] bitmap {
 		FRSRPC_CO_IFLAG_VVRETIRE_EXEC	= 0x00000001,
 		FRSRPC_CO_IFLAG_CO_ABORT	= 0x00000002,
