@@ -306,6 +306,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 	/* If this is not a priviledged users, return */
 	if (p->transport != NCALRPC ||
 	    !is_priviledged_pipe(p->session_info)) {
+		p->rng_fault_state = true;
 		return EPMAPPER_STATUS_CANT_PERFORM_OP;
 	}
 
@@ -442,6 +443,7 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 	/* If this is not a priviledged users, return */
 	if (p->transport != NCALRPC ||
 	    !is_priviledged_pipe(p->session_info)) {
+		p->rng_fault_state = true;
 		return EPMAPPER_STATUS_CANT_PERFORM_OP;
 	}
 
