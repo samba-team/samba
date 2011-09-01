@@ -103,7 +103,7 @@ static void update_conf(struct tevent_context *ev,
 {
 	change_to_root_user();
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
-	reload_printers(ev, msg);
+	load_printers(ev, msg);
 
 	spoolss_reopen_logs(spoolss_child_id);
 	if (spoolss_child_id == 0) {
@@ -237,7 +237,7 @@ static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
 
 	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	reload_printers(ev, msg_ctx);
+	load_printers(ev, msg_ctx);
 	spoolss_reopen_logs(spoolss_child_id);
 }
 
