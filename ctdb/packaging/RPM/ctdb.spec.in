@@ -146,6 +146,8 @@ development libraries for ctdb
 %{_libdir}/libctdb.a
 
 %changelog
+* Thu Sep 1 2011 : Version 1.11
+ - Major updates.
 * Tue May 25 2010 : Version 1.10
  - New version 1.10
 * Tue May 25 2010 : Version 1.9
