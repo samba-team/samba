@@ -39,6 +39,11 @@ static const struct rid_name_map everyone_users[] = {
 	{ 0, "Everyone" },
 	{ 0, NULL}};
 
+static const struct rid_name_map local_authority_users[] = {
+	{ 0, "Local" },
+	{ 1, "Console Logon" },
+	{ 0, NULL}};
+
 static const struct rid_name_map creator_owner_users[] = {
 	{ 0, "Creator Owner" },
 	{ 1, "Creator Group" },
@@ -70,6 +75,7 @@ static const struct rid_name_map nt_authority_users[] = {
 
 static struct sid_name_map_info special_domains[] = {
 	{ &global_sid_World_Domain, "", everyone_users },
+	{ &global_sid_Local_Authority, "", local_authority_users },
 	{ &global_sid_Creator_Owner_Domain, "", creator_owner_users },
 	{ &global_sid_NT_Authority, "NT Authority", nt_authority_users },
 	{ NULL, NULL, NULL }};

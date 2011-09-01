@@ -38,6 +38,8 @@ const struct dom_sid global_sid_World_Domain =               /* Everyone domain 
 { 1, 0, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const struct dom_sid global_sid_World =                      /* Everyone */
 { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const struct dom_sid global_sid_Local_Authority =            /* Local Authority */
+{ 1, 0, {0,0,0,0,0,2}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const struct dom_sid global_sid_Creator_Owner_Domain =       /* Creator Owner domain */
 { 1, 0, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const struct dom_sid global_sid_NT_Authority =    		/* NT Authority */
