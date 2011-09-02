@@ -1538,50 +1538,6 @@ static void check_owning_objs(canon_ace *ace, struct dom_sid *pfile_owner_sid, s
 }
 
 /****************************************************************************
- If an ACE entry is SMB_ACL_USER_OBJ and not CREATOR_OWNER, map to SMB_ACL_USER.
- If an ACE entry is SMB_ACL_GROUP_OBJ and not CREATOR_GROUP, map to SMB_ACL_GROUP
-****************************************************************************/
-
-static bool dup_owning_ace(canon_ace *dir_ace, canon_ace *ace)
-{
-	/* dir ace must be followings.
-	   SMB_ACL_USER_OBJ : trustee(CREATOR_OWNER) -> Posix ACL d:u::perm
-	   SMB_ACL_USER     : not trustee    -> Posix ACL u:user:perm
-	   SMB_ACL_USER_OBJ : trustee -> convert to SMB_ACL_USER : trustee
-	   Posix ACL u:trustee:perm
-
-	   SMB_ACL_GROUP_OBJ: trustee(CREATOR_GROUP) -> Posix ACL d:g::perm
-	   SMB_ACL_GROUP    : not trustee   -> Posix ACL g:group:perm
-	   SMB_ACL_GROUP_OBJ: trustee -> convert to SMB_ACL_GROUP : trustee
-	   Posix ACL g:trustee:perm
-	*/
-
-	if (ace->type == SMB_ACL_USER_OBJ &&
-			!(dom_sid_equal(&ace->trustee, &global_sid_Creator_Owner))) {
-		canon_ace *dup_ace = dup_canon_ace(ace);
-
-		if (dup_ace == NULL) {
-			return false;
-		}
-		dup_ace->type = SMB_ACL_USER;
-		DLIST_ADD_END(dir_ace, dup_ace, canon_ace *);
-	}
-
-	if (ace->type == SMB_ACL_GROUP_OBJ &&
-			!(dom_sid_equal(&ace->trustee, &global_sid_Creator_Group))) {
-		canon_ace *dup_ace = dup_canon_ace(ace);
-
-		if (dup_ace == NULL) {
-			return false;
-		}
-		dup_ace->type = SMB_ACL_GROUP;
-		DLIST_ADD_END(dir_ace, dup_ace, canon_ace *);
-	}
-
-	return true;
-}
-
-/****************************************************************************
  Unpack a struct security_descriptor into two canonical ace lists.
 ****************************************************************************/
 
@@ -1829,34 +1785,6 @@ static bool create_canon_ace_lists(files_struct *fsp,
 				if( DEBUGLVL( 10 )) {
 					dbgtext("create_canon_ace_lists: adding dir ACL:\n");
 					print_canon_ace( current_ace, 0);
-				}
-
-				/*
-				 * We have a lossy mapping: directory ACE entries
-				 * CREATOR_OWNER ------\
-				 *     (map to)         +---> SMB_ACL_USER_OBJ
-				 * owning sid    ------/
-				 *
-				 * CREATOR_GROUP ------\
-				 *     (map to)         +---> SMB_ACL_GROUP_OBJ
-				 * primary group sid --/
-				 *
-				 * on set. And on read of a directory ACL
-				 *
-				 * SMB_ACL_USER_OBJ ----> CREATOR_OWNER
-				 * SMB_ACL_GROUP_OBJ ---> CREATOR_GROUP.
-				 *
-				 * Deal with this on set by duplicating
-				 * owning sid and primary group sid ACE
-				 * entries into the directory ACL.
-				 * Fix from Tsukasa Hamano <hamano@osstech.co.jp>.
-				 */
-
-				if (!dup_owning_ace(dir_ace, current_ace)) {
-					DEBUG(0,("create_canon_ace_lists: malloc fail !\n"));
-					free_canon_ace_list(file_ace);
-					free_canon_ace_list(dir_ace);
-					return false;
 				}
 
 				/*
