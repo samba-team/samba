@@ -45,6 +45,7 @@ ctdb {
 	max_call_latency	CTDB:23:34
 	max_lockwait_latency	CTDB:24:35
 	max_childwrite_latency	CTDB:25:36
+	num_recoveries		CTDB:26:37
 }
 
 ctdb.node {

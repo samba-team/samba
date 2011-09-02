@@ -23,9 +23,10 @@
 #include <pcp/impl.h>
 #include <pcp/pmda.h>
 #include "../../include/includes.h"
-#include "../../lib/events/events.h"
+#include "../../lib/tevent/tevent.h"
 #include "../../include/ctdb.h"
 #include "../../include/ctdb_private.h"
+#include "../../include/ctdb_protocol.h"
 #include "domain.h"
 
 /*
@@ -154,6 +155,9 @@ static pmdaMetric metrictab[] = {
 	/* max_childwrite_latency */
 	{ NULL, { PMDA_PMID(25,36), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
+	/* num_recoveries */
+	{ NULL, { PMDA_PMID(26,37), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
+		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 };
 
 static struct event_context *ev;
@@ -231,7 +235,8 @@ pmda_ctdb_daemon_connect(void)
 
 	ctdb->daemon.queue = ctdb_queue_setup(ctdb, ctdb, ctdb->daemon.sd,
 					      CTDB_DS_ALIGNMENT,
-					      pmda_ctdb_q_read_cb, ctdb);
+					      pmda_ctdb_q_read_cb, ctdb,
+					      "to-ctdbd");
 	if (ctdb->daemon.queue == NULL) {
 		fprintf(stderr, "Failed to setup queue\n");
 		goto err_sd;
@@ -437,19 +442,22 @@ pmda_ctdb_fetch_cb(pmdaMetric *mdesc, unsigned int inst, pmAtomValue *atom)
 		atom->ul = stats->max_hop_count;
 		break;
 	case 21:
-		atom->d = stats->reclock.ctdbd;
+		atom->d = stats->reclock.ctdbd.max;
 		break;
 	case 22:
-		atom->d = stats->reclock.recd;
+		atom->d = stats->reclock.recd.max;
 		break;
 	case 23:
-		atom->d = stats->max_call_latency;
+		atom->d = stats->call_latency.max;
 		break;
 	case 24:
-		atom->d = stats->max_lockwait_latency;
+		atom->d = stats->lockwait_latency.max;
 		break;
 	case 25:
-		atom->d = stats->max_childwrite_latency;
+		atom->d = stats->childwrite_latency.max;
+		break;
+	case 26:
+		atom->d = stats->num_recoveries;
 		break;
 	default:
 		return PM_ERR_PMID;

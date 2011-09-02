@@ -102,3 +102,5 @@
 @ ctdb.max_lockwait_latency maximum time spent waiting for a tdb chainlock
 
 @ ctdb.max_childwrite_latency maximum time spent performing a childwrite
+
+@ ctdb.num_recoveries number of recoveries finished
