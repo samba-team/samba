@@ -63,6 +63,7 @@ class SamDB(samba.Ldb):
             dsdb._dsdb_set_am_rodc(self, am_rodc)
 
     def connect(self, url=None, flags=0, options=None):
+        '''connect to the database'''
         if self.lp is not None and not os.path.exists(url):
             url = self.lp.private_path(url)
         self.url = url
@@ -71,9 +72,11 @@ class SamDB(samba.Ldb):
                 options=options)
 
     def am_rodc(self):
+        '''return True if we are an RODC'''
         return dsdb._am_rodc(self)
 
     def domain_dn(self):
+        '''return the domain DN'''
         return str(self.get_default_basedn())
 
     def enable_account(self, search_filter):
