@@ -1,5 +1,5 @@
 /*
- * CTDB PMDA
+ * CTDB Performance Metrics Domain Agent (PMDA) for Performance Co-Pilot (PCP)
  *
  * Copyright (c) 1995,2004 Silicon Graphics, Inc.  All Rights Reserved.
  * Copyright (c) 2011 David Disseldorp
@@ -32,13 +32,10 @@
  * CTDB PMDA
  *
  * This PMDA connects to the locally running ctdbd daemon and pulls
- * statistics for export via PCP.
+ * statistics for export via PCP. The ctdbd Unix domain socket path can be
+ * specified with the CTDB_SOCKET environment variable, otherwise the default
+ * path is used.
  */
-
-/*
- * list of instances
- */
-
 
 /*
  * All metrics supported in this PMDA - one table entry for each.
@@ -48,7 +45,6 @@
  * of one of the instance domains declared in the instance domain table
  * (i.e. in indomtab, above).
  */
-
 static pmdaMetric metrictab[] = {
 	/* num_clients */
 	{ NULL, { PMDA_PMID(0,0), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
@@ -198,7 +194,7 @@ pmda_ctdb_daemon_connect(void)
 
 	socket_name = getenv("CTDB_SOCKET");
 	if (socket_name == NULL) {
-		socket_name = "/var/lib/ctdb/ctdb.socket";
+		socket_name = CTDB_PATH;
 	}
 
 	ret = ctdb_set_socketname(ctdb, socket_name);
@@ -228,7 +224,8 @@ pmda_ctdb_daemon_connect(void)
 	set_close_on_exec(ctdb->daemon.sd);
 
 	if (connect(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		fprintf(stderr, "Failed to connect to ctdb daemon\n");
+		fprintf(stderr, "Failed to connect to ctdb daemon via %s\n",
+			ctdb->daemon.name);
 		goto err_sd;
 	}
 
@@ -265,8 +262,9 @@ pmda_ctdb_daemon_disconnect(void)
 		ctdb->methods->shutdown(ctdb);
 	}
 
-	if (ctdb->daemon.sd != -1)
+	if (ctdb->daemon.sd != -1) {
 		close(ctdb->daemon.sd);
+	}
 
 	talloc_free(ctdb);
 	talloc_free(ev);
@@ -357,8 +355,9 @@ pmda_ctdb_fetch_cb(pmdaMetric *mdesc, unsigned int inst, pmAtomValue *atom)
 	int ret;
 	__pmID_int *id = (__pmID_int *)&(mdesc->m_desc.pmid);
 
-	if (inst != PM_IN_NULL)
+	if (inst != PM_IN_NULL) {
 		return PM_ERR_INST;
+	}
 
 	if (stats == NULL) {
 		fprintf(stderr, "stats not available\n");
@@ -397,18 +396,21 @@ pmda_ctdb_fetch_cb(pmdaMetric *mdesc, unsigned int inst, pmAtomValue *atom)
 		break;
 	case 10:
 		ret = fill_node(id->item, atom);
-		if (ret)
+		if (ret) {
 			goto err_out;
+		}
 		break;
 	case 11:
 		ret = fill_client(id->item, atom);
-		if (ret)
+		if (ret) {
 			goto err_out;
+		}
 		break;
 	case 12:
 		ret = fill_timeout(id->item, atom);
-		if (ret)
+		if (ret) {
 			goto err_out;
+		}
 		break;
 	case 13:
 		atom->ul = stats->total_calls;
@@ -515,13 +517,15 @@ err_out:
 void
 pmda_ctdb_init(pmdaInterface *dp)
 {
-	if (dp->status != 0)
+	if (dp->status != 0) {
 		return;
+	}
 
 	dp->version.two.fetch = pmda_ctdb_fetch;
 	pmdaSetFetchCallBack(dp, pmda_ctdb_fetch_cb);
 
-	pmdaInit(dp, NULL, 0, metrictab, sizeof(metrictab)/sizeof(metrictab[0]));
+	pmdaInit(dp, NULL, 0, metrictab,
+		 (sizeof(metrictab) / sizeof(metrictab[0])));
 }
 
 static char *
@@ -541,12 +545,12 @@ usage(void)
 {
 	fprintf(stderr, "Usage: %s [options]\n\n", pmProgname);
 	fputs("Options:\n"
-	  "  -d domain	use domain (numeric) for metrics domain of PMDA\n"
-	  "  -l logfile   write log into logfile rather than using default log name\n"
+	  "  -d domain        use domain (numeric) for metrics domain of PMDA\n"
+	  "  -l logfile       write log into logfile rather than using default log name\n"
 	  "\nExactly one of the following options may appear:\n"
-	  "  -i port	  expect PMCD to connect on given inet port (number or name)\n"
-	  "  -p		   expect PMCD to supply stdin/stdout (pipe)\n"
-	  "  -u socket	expect PMCD to connect on given unix domain socket\n",
+	  "  -i port          expect PMCD to connect on given inet port (number or name)\n"
+	  "  -p               expect PMCD to supply stdin/stdout (pipe)\n"
+	  "  -u socket        expect PMCD to connect on given unix domain socket\n",
 	  stderr);
 	exit(1);
 }
@@ -566,11 +570,13 @@ main(int argc, char **argv)
 	pmdaDaemon(&dispatch, PMDA_INTERFACE_2, pmProgname, CTDB,
 		   log_file, helpfile());
 
-	if (pmdaGetOpt(argc, argv, "d:i:l:pu:?", &dispatch, &err) != EOF)
+	if (pmdaGetOpt(argc, argv, "d:i:l:pu:?", &dispatch, &err) != EOF) {
 		err++;
+	}
 
-	if (err)
+	if (err) {
 		usage();
+	}
 
 	pmdaOpenLog(&dispatch);
 	pmda_ctdb_init(&dispatch);
