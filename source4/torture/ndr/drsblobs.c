@@ -129,7 +129,7 @@ static bool trust_domain_passwords_check_in(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->outgoing.current.array[0].LastUpdateTime, 0xB6416B4C, "outgoing current last update time mismatch");
 	torture_assert_int_equal(tctx, r->outgoing.current.array[0].AuthType, TRUST_AUTH_TYPE_CLEAR, "outgoing current auth type mismatch");
 	torture_assert_int_equal(tctx, r->outgoing.current.array[0].AuthInfo.clear.size, 0x0000001c, "outgoing current auth info size mismatch");
-	/* torture_assert_mem_equal(tctx, r->outgoing.current.array[0].AuthInfo.clear.password, trust_domain_passwords_in+512+12+8+4+4, 0x0000001c, "outgoing current auth info password mismatch"); */
+	torture_assert_mem_equal(tctx, r->outgoing.current.array[0].AuthInfo.clear.password, trust_domain_passwords_in+512+12+8+4+4, 0x0000001c, "outgoing current auth info password mismatch");
 
 	torture_assert_int_equal(tctx, r->outgoing.previous.count, 0, "outgoing previous count mismatch");
 
@@ -141,7 +141,7 @@ static bool trust_domain_passwords_check_in(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->incoming.current.array[0].LastUpdateTime, 0xB6416B4C, "incoming current last update time mismatch");
 	torture_assert_int_equal(tctx, r->incoming.current.array[0].AuthType, TRUST_AUTH_TYPE_CLEAR, "incoming current auth type mismatch");
 	torture_assert_int_equal(tctx, r->incoming.current.array[0].AuthInfo.clear.size, 0x0000001c, "incoming current auth info size mismatch");
-/*	torture_assert_mem_equal(tctx, r->incoming.current.array[0].AuthInfo.clear.password, trust_domain_passwords_in+512+12+8+4+4+0x0000001c+12+8+4+4, 0x0000001c, "incoming current auth info password mismatch"); */
+	torture_assert_mem_equal(tctx, r->incoming.current.array[0].AuthInfo.clear.password, trust_domain_passwords_in+512+12+8+4+4+0x0000001c+12+8+4+4, 0x0000001c, "incoming current auth info password mismatch");
 
 	torture_assert_int_equal(tctx, r->incoming.previous.count, 0, "incoming previous count mismatch");
 
