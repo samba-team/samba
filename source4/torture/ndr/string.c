@@ -105,7 +105,7 @@ test_ndr_pull_string (struct torture_context *tctx, const char *string,
 static bool
 torture_ndr_string(struct torture_context *torture)
 {
-	const char *saved_dos_cp = lpcfg_dos_charset(torture->lp_ctx);
+	const char *saved_dos_cp = talloc_strdup(torture, lpcfg_dos_charset(torture->lp_ctx));
 
 	torture_assert(torture,
 	               test_ndr_push_string (torture, ascii, fl_ascii_null,
