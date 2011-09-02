@@ -3695,6 +3695,15 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
+	/*
+	 * When sending a PRINTER_NOTIFY_FIELD_SERVER_NAME we should send the
+	 * correct servername.
+	 */
+	pinfo2->servername = talloc_strdup(pinfo2, Printer->servername);
+	if (pinfo2->servername == NULL) {
+		return WERR_NOMEM;
+	}
+
 	for (i=0; i<option->count; i++) {
 		option_type = option->types[i];
 
