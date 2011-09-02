@@ -167,9 +167,9 @@ tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_one.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_fetch_lock_once: libctdb/libctdb.a tests/src/ctdb_fetch_lock_once.o 
+tests/bin/ctdb_fetch_lock_once: libctdb/libctdb.a tests/src/ctdb_fetch_lock_once.o @TDB_OBJ@
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o libctdb/libctdb.a -ltdb $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ @TDB_OBJ@ tests/src/ctdb_fetch_lock_once.o libctdb/libctdb.a $(LIB_FLAGS)
 
 tests/bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/src/ctdb_store.o 
 	@echo Linking $@
