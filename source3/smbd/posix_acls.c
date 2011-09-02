@@ -1484,6 +1484,7 @@ static bool ensure_canon_entry_valid(canon_ace **pp_ace,
  Check if a POSIX ACL has the required SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ entries.
  If it does not have them, check if there are any entries where the trustee is the
  file owner or the owning group, and map these to SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ.
+ Note we must not do this to default directory ACLs.
 ****************************************************************************/
 
 static void check_owning_objs(canon_ace *ace, DOM_SID *pfile_owner_sid, DOM_SID *pfile_grp_sid)
@@ -1908,16 +1909,14 @@ static bool create_canon_ace_lists(files_struct *fsp,
 		dir_ace = NULL;
 	} else {
 		/*
-		 * Check if we have SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ entries in each
-		 * ACL. If we don't have them, check if any SMB_ACL_USER/SMB_ACL_GROUP
-		 * entries can be converted to *_OBJ. Usually we will already have these
-		 * entries in the Default ACL, and the Access ACL will not have them.
+		 * Check if we have SMB_ACL_USER_OBJ and SMB_ACL_GROUP_OBJ entries in
+		 * the file ACL. If we don't have them, check if any SMB_ACL_USER/SMB_ACL_GROUP
+		 * entries can be converted to *_OBJ. Don't do this for the default
+		 * ACL, we will create them separately for this if needed inside
+		 * ensure_canon_entry_valid().
 		 */
 		if (file_ace) {
 			check_owning_objs(file_ace, pfile_owner_sid, pfile_grp_sid);
-		}
-		if (dir_ace) {
-			check_owning_objs(dir_ace, pfile_owner_sid, pfile_grp_sid);
 		}
 	}
 
