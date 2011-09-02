@@ -816,10 +816,7 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
     try:
         logger.info("Setting up sam.ldb partitions and settings")
         setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
-                "SCHEMADN": ldb.Dn(schema.ldb, names.schemadn).get_casefold(),
-                "CONFIGDN": ldb.Dn(schema.ldb, names.configdn).get_casefold(),
-                "DOMAINDN": ldb.Dn(schema.ldb, names.domaindn).get_casefold(),
-                "LDAP_BACKEND_LINE": ldap_backend_line,
+                "LDAP_BACKEND_LINE": ldap_backend_line
         })
 
 
