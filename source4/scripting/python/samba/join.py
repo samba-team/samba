@@ -83,6 +83,7 @@ class dc_join(object):
         ctx.config_dn = str(ctx.samdb.get_config_basedn())
         ctx.domsid = ctx.samdb.get_domain_sid()
         ctx.domain_name = ctx.get_domain_name()
+        ctx.invocation_id = misc.GUID(str(uuid.uuid4()))
 
         ctx.dc_ntds_dn = ctx.get_dsServiceName()
         ctx.dc_dnsHostName = ctx.get_dnsHostName()
@@ -375,7 +376,7 @@ class dc_join(object):
             if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
                 rec["msDS-HasMasterNCs"] = nc_list
             rec["options"] = "1"
-            rec["invocationId"] = ndr_pack(misc.GUID(str(uuid.uuid4())))
+            rec["invocationId"] = ndr_pack(ctx.invocation_id)
             if ctx.subdomain:
                 ctx.samdb.add(rec, ['relax:0'])
             else:
@@ -512,6 +513,8 @@ class dc_join(object):
             "dnsRoot": ctx.dnsdomain,
             "trustParent" : ctx.parent_partition_dn,
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CR_NTDS_NC|samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN)}
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
         ctx.DsAddEntry(rec)
 
 
@@ -543,8 +546,15 @@ class dc_join(object):
     def join_provision_own_domain(ctx):
         '''provision the local SAM'''
 
-        # we now operate exclusively on the local database
-        ctx.samdb = ctx.local_samdb
+        # we now operate exclusively on the local database, which
+        # we need to reopen in order to get the newly created schema
+        print("Reconnecting to local samdb")
+        ctx.samdb = SamDB(url=ctx.local_samdb.url,
+                          session_info=system_session(),
+                          lp=ctx.local_samdb.lp,
+                          global_schema=False)
+        ctx.samdb.set_invocation_id(str(ctx.invocation_id))
+        ctx.local_samdb = ctx.samdb
 
         ctx.join_add_ntdsdsa()
 
@@ -560,7 +570,7 @@ class dc_join(object):
                                  domainguid=ctx.domguid,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="domain controller",
-                                 lp=ctx.lp)
+                                 lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6)
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
 
@@ -770,8 +780,8 @@ class dc_join(object):
         try:
             ctx.join_add_objects()
             ctx.join_provision()
-            ctx.join_replicate()
             ctx.join_add_objects2()
+            ctx.join_replicate()
             if ctx.subdomain:
                 ctx.join_provision_own_domain()
                 ctx.join_setup_trusts()

@@ -1345,15 +1345,6 @@ def fill_samdb(samdb, lp, names,
     else:
         samdb.transaction_commit()
 
-    samdb = SamDB(session_info=admin_session_info, auto_connect=False,
-                credentials=provision_backend.credentials, lp=lp,
-                global_schema=False, am_rodc=am_rodc)
-
-    # Set the NTDS settings DN manually - in order to have it already around
-    # before the provisioned tree exists and we connect
-    samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
-    samdb.connect(path)
-
     samdb.transaction_start()
     try:
         samdb.invocation_id = invocationid
@@ -1801,6 +1792,9 @@ def provision(logger, session_info, credentials, smbconf=None,
             logger.warning("More than one IPv6 address found. Using %s", hostip6)
     if hostip6 is None:
         logger.warning("No IPv6 address will be assigned")
+
+    names.hostip = hostip
+    names.hostip6 = hostip6
 
     if serverrole is None:
         serverrole = lp.get("server role")
