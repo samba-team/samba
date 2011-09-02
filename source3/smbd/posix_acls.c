@@ -1748,6 +1748,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
 				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 
+				canon_ace *current_dir_ace = current_ace;
 				DLIST_ADD_END(dir_ace, current_ace, canon_ace *);
 
 				/*
@@ -1808,6 +1809,43 @@ static bool create_canon_ace_lists(files_struct *fsp,
 					 * pointer is now owned by the dir_ace list.
 					 */
 					current_ace = NULL;
+				}
+
+				/*
+				 * current_ace is now either owned by file_ace
+				 * or is NULL. We can safely operate on current_dir_ace
+				 * to treat mapping for default acl entries differently
+				 * than access acl entries.
+				 */
+
+				if (current_dir_ace->owner_type == UID_ACE) {
+					/*
+					 * We already decided above this is a uid,
+					 * for default acls ace's only CREATOR_OWNER
+					 * maps to ACL_USER_OBJ. All other uid
+					 * ace's are ACL_USER.
+					 */
+					if (sid_equal(&current_dir_ace->trustee,
+							&global_sid_Creator_Owner)) {
+						current_dir_ace->type = SMB_ACL_USER_OBJ;
+					} else {
+						current_dir_ace->type = SMB_ACL_USER;
+					}
+				}
+
+				if (current_dir_ace->owner_type == GID_ACE) {
+					/*
+					 * We already decided above this is a gid,
+					 * for default acls ace's only CREATOR_GROUP
+					 * maps to ACL_GROUP_OBJ. All other uid
+					 * ace's are ACL_GROUP.
+					 */
+					if (sid_equal(&current_dir_ace->trustee,
+							&global_sid_Creator_Group)) {
+						current_dir_ace->type = SMB_ACL_GROUP_OBJ;
+					} else {
+						current_dir_ace->type = SMB_ACL_GROUP;
+					}
 				}
 			}
 		}
