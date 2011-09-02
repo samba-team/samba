@@ -842,7 +842,7 @@ class LDAPBundel(object):
 
 class cmd_ldapcmp(Command):
     """compare two ldap databases"""
-    synopsis = "ldapcmp URL1 URL2 <domain|configuration|schema> [options]"
+    synopsis = "%prog ldapcmp <URL1> <URL2> (domain|configuration|schema) [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
